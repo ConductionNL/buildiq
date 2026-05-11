@@ -188,15 +188,18 @@ export default {
 	flex-direction: column;
 	gap: 8px;
 }
+
 .version-history__header h3 {
 	margin: 0;
 	font-size: 15px;
 }
+
 .version-history__empty {
 	color: var(--color-text-maxcontrast, #888);
 	font-size: 13px;
 	font-style: italic;
 }
+
 .version-history__list {
 	list-style: none;
 	padding: 0;
@@ -205,6 +208,7 @@ export default {
 	flex-direction: column;
 	gap: 8px;
 }
+
 .version-history__row {
 	display: flex;
 	flex-direction: column;
@@ -214,28 +218,34 @@ export default {
 	border-radius: var(--border-radius, 4px);
 	background: var(--color-background-hover, transparent);
 }
+
 .version-history__row--current {
 	border-color: var(--color-primary-element, #0082c9);
 	background: var(--color-primary-light, #e6f0fa);
 }
+
 .version-history__row-main {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 }
+
 .version-history__when {
 	font-size: 13px;
 	color: var(--color-text-maxcontrast, #888);
 }
+
 .version-history__by,
 .version-history__notes {
 	font-size: 12px;
 	color: var(--color-text-maxcontrast, #888);
 }
+
 .version-history__actions {
 	display: flex;
 	gap: 8px;
 }
+
 .version-history__btn {
 	font-size: 13px;
 	padding: 4px 8px;
@@ -245,6 +255,7 @@ export default {
 	background: var(--color-main-background, #fff);
 	color: var(--color-main-text, #222);
 }
+
 .version-history__btn--danger {
 	color: var(--color-error, #d63f3f);
 }

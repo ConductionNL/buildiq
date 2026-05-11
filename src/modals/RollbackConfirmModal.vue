@@ -94,6 +94,7 @@ export default {
 	font-size: 14px;
 	margin-bottom: 12px;
 }
+
 .rollback-confirm__meta {
 	display: grid;
 	grid-template-columns: auto 1fr;
@@ -101,9 +102,11 @@ export default {
 	font-size: 13px;
 	color: var(--color-text-maxcontrast, #888);
 }
+
 .rollback-confirm__meta dt {
 	font-weight: bold;
 }
+
 .rollback-confirm__meta dd {
 	margin: 0;
 }

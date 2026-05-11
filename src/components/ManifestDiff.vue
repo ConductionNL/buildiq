@@ -154,23 +154,28 @@ export default {
 	flex-direction: column;
 	gap: 6px;
 }
+
 .manifest-diff__header h3 {
 	margin: 0;
 	font-size: 15px;
 }
+
 .manifest-diff__pair {
 	color: var(--color-text-maxcontrast, #888);
 	font-size: 12px;
 }
+
 .manifest-diff__loading,
 .manifest-diff__empty,
 .manifest-diff__error {
 	font-size: 13px;
 	color: var(--color-text-maxcontrast, #888);
 }
+
 .manifest-diff__error {
 	color: var(--color-error, #d63f3f);
 }
+
 .manifest-diff__pane {
 	font-family: monospace;
 	font-size: 12px;
@@ -182,12 +187,14 @@ export default {
 	max-height: 480px;
 	overflow-y: auto;
 }
+
 .manifest-diff__part--added {
 	background: var(--color-success-default-background, rgba(70, 186, 97, 0.18));
 	color: var(--color-success-text, #2d8a3e);
 	display: inline-block;
 	width: 100%;
 }
+
 .manifest-diff__part--removed {
 	background: var(--color-error-default-background, rgba(214, 63, 63, 0.18));
 	color: var(--color-error-text, #b32d2d);
@@ -195,6 +202,7 @@ export default {
 	width: 100%;
 	text-decoration: line-through;
 }
+
 .manifest-diff__part--unchanged {
 	color: var(--color-main-text, #222);
 }

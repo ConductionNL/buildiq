@@ -339,17 +339,20 @@ export default {
 	padding: var(--default-grid-baseline, 8px);
 	height: 100%;
 }
+
 .openbuilt-editor__list {
 	width: 240px;
 	flex-shrink: 0;
 	overflow-y: auto;
 	border-right: 1px solid var(--color-border, #ddd);
 }
+
 .openbuilt-editor__list ul {
 	list-style: none;
 	padding: 0;
 	margin: 0;
 }
+
 .openbuilt-editor__list li {
 	padding: 8px 12px;
 	cursor: pointer;
@@ -358,9 +361,11 @@ export default {
 	justify-content: space-between;
 	align-items: center;
 }
+
 .openbuilt-editor__list li.active {
 	background: var(--color-primary-light, #e6f0fa);
 }
+
 .openbuilt-editor__pane {
 	flex: 1 1 auto;
 	display: flex;
@@ -368,9 +373,11 @@ export default {
 	gap: 8px;
 	padding: 8px 16px;
 }
+
 .openbuilt-editor__pane-header h2 {
 	margin: 0 0 4px;
 }
+
 .openbuilt-editor__meta {
 	display: flex;
 	gap: 8px;
@@ -378,16 +385,19 @@ export default {
 	font-size: 13px;
 	color: var(--color-text-maxcontrast, #888);
 }
+
 .openbuilt-editor__modified {
 	color: var(--color-warning, #c97900);
 	font-weight: bold;
 }
+
 .openbuilt-editor__tabs {
 	display: flex;
 	gap: 4px;
 	margin-top: 8px;
 	border-bottom: 1px solid var(--color-border, #ddd);
 }
+
 .openbuilt-editor__tabs button {
 	background: transparent;
 	border: none;
@@ -396,10 +406,12 @@ export default {
 	color: var(--color-main-text, #222);
 	border-bottom: 2px solid transparent;
 }
+
 .openbuilt-editor__tabs button.active {
 	border-bottom-color: var(--color-primary-element, #0082c9);
 	color: var(--color-primary-element, #0082c9);
 }
+
 .openbuilt-editor__editor-tab,
 .openbuilt-editor__history-tab,
 .openbuilt-editor__diff-tab {
@@ -408,6 +420,7 @@ export default {
 	gap: 8px;
 	flex: 1 1 auto;
 }
+
 .openbuilt-editor__textarea {
 	flex: 1 1 auto;
 	min-height: 400px;
@@ -417,15 +430,18 @@ export default {
 	border: 1px solid var(--color-border, #ddd);
 	border-radius: var(--border-radius, 4px);
 }
+
 .openbuilt-editor__error {
 	color: var(--color-error, #d63f3f);
 	font-size: 13px;
 }
+
 .openbuilt-editor__actions {
 	display: flex;
 	gap: 8px;
 	align-items: center;
 }
+
 .openbuilt-editor__toast {
 	padding: 6px 10px;
 	background: var(--color-success-default-background, rgba(70, 186, 97, 0.2));
@@ -433,10 +449,12 @@ export default {
 	border-radius: var(--border-radius, 4px);
 	font-size: 13px;
 }
+
 .openbuilt-editor__help {
 	font-size: 13px;
 	color: var(--color-text-maxcontrast, #888);
 }
+
 .openbuilt-editor__badge {
 	display: inline-block;
 	font-size: 11px;
@@ -447,14 +465,17 @@ export default {
 	background: var(--color-background-dark, #eee);
 	color: var(--color-main-text, #222);
 }
+
 .openbuilt-editor__badge--draft {
 	background: var(--color-background-dark, #eee);
 	color: var(--color-main-text, #222);
 }
+
 .openbuilt-editor__badge--published {
 	background: var(--color-success-default-background, rgba(70, 186, 97, 0.2));
 	color: var(--color-success-text, #2d8a3e);
 }
+
 .openbuilt-editor__badge--archived {
 	background: var(--color-warning-default-background, rgba(201, 121, 0, 0.2));
 	color: var(--color-warning-text, #8a5300);
