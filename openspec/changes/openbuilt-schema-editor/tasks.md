@@ -1,6 +1,6 @@
 ## 1. Implementation Tasks — openbuilt-schema-designer (v1)
 
-- [ ] 1.1 **Wire `useSchemasStore` via `createObjectStore`**
+- [x] 1.1 **Wire `useSchemasStore` via `createObjectStore`**
   - spec_ref: REQ-OBSD-001, REQ-OBSD-002, REQ-OBSD-006
   - files: `src/store/schemas.js`
   - acceptance_criteria: `useSchemasStore` is created via
@@ -14,7 +14,7 @@
     contract and asserts list / create / update / delete round-trip
     via the store.
 
-- [ ] 1.2 **Build `SchemaListPanel.vue` and the schema-list route**
+- [x] 1.2 **Build `SchemaListPanel.vue` and the schema-list route**
   - spec_ref: REQ-OBSD-001
   - files: `src/components/schema-editor/SchemaListPanel.vue`,
     `src/views/SchemaDesigner.vue` (list-mode render branch)
@@ -28,7 +28,7 @@
     `/builder/hello-world/schemas`, asserts the seeded
     `hello-message` schema row renders.
 
-- [ ] 1.3 **Build `SchemaHeaderForm.vue` for Add Schema and detail header**
+- [x] 1.3 **Build `SchemaHeaderForm.vue` for Add Schema and detail header**
   - spec_ref: REQ-OBSD-002
   - files: `src/components/schema-editor/SchemaHeaderForm.vue`
   - acceptance_criteria: Captures `slug` (kebab-case pattern,
@@ -41,7 +41,7 @@
   - Test: Playwright walks the Add flow happy-path; second test
     walks the duplicate-slug path and asserts the inline error.
 
-- [ ] 1.4 **Build `FieldRow.vue` + `FieldTypePicker.vue`**
+- [x] 1.4 **Build `FieldRow.vue` + `FieldTypePicker.vue`** (combined into `FieldEditor.vue` per task brief)
   - spec_ref: REQ-OBSD-003
   - files: `src/components/schema-editor/FieldRow.vue`,
     `src/components/schema-editor/FieldTypePicker.vue`
