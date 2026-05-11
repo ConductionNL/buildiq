@@ -54,6 +54,8 @@ phpqa_output.log
 **/update*Settings*
 **/rebase*
 **/setup*
+!tests/vitest/setup.js
+!tests/e2e/global-setup.ts
 
 # Temporary test files that shouldn't be committed
 simple-solr-test.php

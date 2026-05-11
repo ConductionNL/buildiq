@@ -17,15 +17,15 @@
 import { loadState } from '@nextcloud/initial-state'
 
 /**
- * @typedef {Object} ApplicationPermissions
- * @property {string[]} [owners]
- * @property {string[]} [editors]
- * @property {string[]} [viewers]
+ * @typedef {object} ApplicationPermissions
+ * @property {string[]} [owners] - Group IDs with owner role (full control)
+ * @property {string[]} [editors] - Group IDs with editor role (save drafts)
+ * @property {string[]} [viewers] - Group IDs with viewer role (read-only)
  */
 
 /**
- * @typedef {Object} Application
- * @property {ApplicationPermissions} [permissions]
+ * @typedef {object} Application
+ * @property {ApplicationPermissions} [permissions] - Per-Application permission block
  */
 
 /**
