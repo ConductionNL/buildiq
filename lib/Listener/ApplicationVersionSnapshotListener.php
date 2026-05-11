@@ -54,16 +54,16 @@ use Psr\Log\LoggerInterface;
 /**
  * Snapshots an Application's manifest into ApplicationVersion on publish.
  *
- * @template-implements IEventListener<ObjectTransitionedEvent>
+ * @template-implements IEventListener<Event>
  */
 class ApplicationVersionSnapshotListener implements IEventListener
 {
-    private const REGISTER_SLUG          = 'openbuilt';
-    private const APPLICATION_SCHEMA     = 'application';
-    private const VERSION_SCHEMA         = 'application-version';
-    private const PUBLISH_FROM           = 'draft';
-    private const PUBLISH_TO             = 'published';
-    private const DEFAULT_PUBLISHED_BY   = 'system';
+    private const REGISTER_SLUG        = 'openbuilt';
+    private const APPLICATION_SCHEMA   = 'application';
+    private const VERSION_SCHEMA       = 'application-version';
+    private const PUBLISH_FROM         = 'draft';
+    private const PUBLISH_TO           = 'published';
+    private const DEFAULT_PUBLISHED_BY = 'system';
     private const DEFAULT_SNAPSHOT_NOTES = 'Published via lifecycle transition';
 
     /**
@@ -83,12 +83,10 @@ class ApplicationVersionSnapshotListener implements IEventListener
     /**
      * Handle the ObjectTransitionedEvent.
      *
-     * Filters on Application + draft→published, then creates the
-     * ApplicationVersion snapshot and writes back currentVersion +
-     * status reset on the Application. Failures are logged but
-     * never thrown — a snapshot failure must not block the
-     * underlying publish transition (it already succeeded by the
-     * time this listener runs).
+     * Filters on Application + draft→published, then delegates to
+     * `snapshotPublish()`. Failures are logged but never thrown — a
+     * snapshot failure must not block the underlying publish
+     * transition (it already succeeded by the time this listener runs).
      *
      * @param Event $event Dispatched event
      *
@@ -96,74 +94,12 @@ class ApplicationVersionSnapshotListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        if ($event instanceof ObjectTransitionedEvent === false) {
-            return;
-        }
-
-        if ($event->getSchema() !== self::APPLICATION_SCHEMA) {
-            return;
-        }
-
-        if ($event->getFrom() !== self::PUBLISH_FROM || $event->getTo() !== self::PUBLISH_TO) {
+        if ($this->isPublishTransition(event: $event) === false) {
             return;
         }
 
         try {
-            $applicationData = $event->getObject()->jsonSerialize();
-            $applicationSelf = (is_array($applicationData) === true ? ($applicationData['@self'] ?? []) : []);
-            $applicationUuid = ($applicationSelf['id'] ?? ($applicationSelf['uuid'] ?? ($applicationData['uuid'] ?? null)));
-
-            if ($applicationUuid === null) {
-                $this->logger->warning('OpenBuilt: ApplicationVersionSnapshotListener could not resolve Application UUID; skipping snapshot.');
-                return;
-            }
-
-            $manifest = ($applicationData['manifest'] ?? []);
-            $version  = ($applicationData['version'] ?? '0.0.0');
-            $userId   = ($event->getUserId() ?? self::DEFAULT_PUBLISHED_BY);
-
-            // Create the ApplicationVersion sibling row. OR's standard scoping
-            // (organisation + register + schema) applies on saveObject so the
-            // snapshot inherits the Application's org context.
-            $snapshot = $this->objectService->saveObject(
-                object: [
-                    'applicationUuid' => $applicationUuid,
-                    'version'         => $version,
-                    'manifest'        => $manifest,
-                    'publishedAt'     => gmdate('Y-m-d\TH:i:s\Z'),
-                    'publishedBy'     => $userId,
-                    'notes'           => self::DEFAULT_SNAPSHOT_NOTES,
-                ],
-                register: self::REGISTER_SLUG,
-                schema: self::VERSION_SCHEMA
-            );
-
-            $snapshotData = (method_exists($snapshot, 'jsonSerialize') === true ? $snapshot->jsonSerialize() : []);
-            $snapshotSelf = (is_array($snapshotData) === true ? ($snapshotData['@self'] ?? []) : []);
-            $snapshotUuid = ($snapshotSelf['id'] ?? ($snapshotSelf['uuid'] ?? ($snapshotData['uuid'] ?? null)));
-
-            if ($snapshotUuid === null) {
-                $this->logger->warning('OpenBuilt: ApplicationVersionSnapshotListener created a snapshot but could not read its UUID; currentVersion not updated.');
-                return;
-            }
-
-            // Writeback — update Application.currentVersion AND reset status
-            // back to draft (design.md Decision 3: persistent status is `draft`
-            // when editable; "is published right now" is `currentVersion != null`).
-            $existing = (is_array($applicationData) === true ? $applicationData : []);
-            unset($existing['@self']);
-            $existing['currentVersion'] = $snapshotUuid;
-            $existing['status']         = self::PUBLISH_FROM;
-
-            $this->objectService->saveObject(
-                object: $existing,
-                register: self::REGISTER_SLUG,
-                schema: self::APPLICATION_SCHEMA
-            );
-
-            $this->logger->info(
-                'OpenBuilt: snapshotted Application '.$applicationUuid.' as ApplicationVersion '.$snapshotUuid.' (version '.$version.').'
-            );
+            $this->snapshotPublish(event: $event);
         } catch (\Throwable $e) {
             // Never bubble up — the publish itself already succeeded; a
             // failed snapshot must not roll the transition back.
@@ -171,6 +107,190 @@ class ApplicationVersionSnapshotListener implements IEventListener
                 'OpenBuilt: ApplicationVersionSnapshotListener failed: '.$e->getMessage(),
                 ['exception' => $e]
             );
-        }//end try
+        }
     }//end handle()
+
+    /**
+     * Filter the incoming event to only the Application draft→published transition.
+     *
+     * @param Event $event Dispatched event.
+     *
+     * @return bool True when the event matches the snapshot trigger.
+     */
+    private function isPublishTransition(Event $event): bool
+    {
+        if ($event instanceof ObjectTransitionedEvent === false) {
+            return false;
+        }
+
+        if ($event->getSchema() !== self::APPLICATION_SCHEMA) {
+            return false;
+        }
+
+        if ($event->getFrom() !== self::PUBLISH_FROM) {
+            return false;
+        }
+
+        if ($event->getTo() !== self::PUBLISH_TO) {
+            return false;
+        }
+
+        return true;
+    }//end isPublishTransition()
+
+    /**
+     * Create the ApplicationVersion row and writeback Application.currentVersion.
+     *
+     * The caller must have passed the event through {@see isPublishTransition()}
+     * so the cast to ObjectTransitionedEvent is safe.
+     *
+     * @param Event $event The (already filtered) publish event.
+     *
+     * @return void
+     */
+    private function snapshotPublish(Event $event): void
+    {
+        if ($event instanceof ObjectTransitionedEvent === false) {
+            // Belt-and-braces guard — should never trip thanks to handle()'s filter.
+            return;
+        }
+
+        $applicationData = $event->getObject()->jsonSerialize();
+        $applicationUuid = $this->extractUuid(data: $applicationData);
+
+        if ($applicationUuid === null) {
+            $this->logger->warning(
+                'OpenBuilt: ApplicationVersionSnapshotListener could not resolve Application UUID; skipping snapshot.'
+            );
+            return;
+        }
+
+        $snapshot     = $this->createSnapshot(applicationData: $applicationData, applicationUuid: $applicationUuid, event: $event);
+        $snapshotUuid = $this->extractUuid(data: $this->normaliseSerialised(object: $snapshot));
+
+        if ($snapshotUuid === null) {
+            $this->logger->warning(
+                'OpenBuilt: ApplicationVersionSnapshotListener created a snapshot but could not read its UUID;'
+                .' currentVersion not updated.'
+            );
+            return;
+        }
+
+        $this->updateApplicationCurrentVersion(applicationData: $applicationData, snapshotUuid: $snapshotUuid);
+
+        $this->logger->info(
+            'OpenBuilt: snapshotted Application '.$applicationUuid.' as ApplicationVersion '.$snapshotUuid
+            .' (version '.($applicationData['version'] ?? '0.0.0').').'
+        );
+    }//end snapshotPublish()
+
+    /**
+     * Save a new ApplicationVersion sibling row carrying a byte-equal manifest copy.
+     *
+     * @param array<string, mixed>    $applicationData Serialised Application data.
+     * @param string                  $applicationUuid Resolved Application UUID.
+     * @param ObjectTransitionedEvent $event           The publish event (for actor id).
+     *
+     * @return mixed The OR-returned snapshot entity/array.
+     */
+    private function createSnapshot(array $applicationData, string $applicationUuid, ObjectTransitionedEvent $event): mixed
+    {
+        $manifest = ($applicationData['manifest'] ?? []);
+        $version  = ($applicationData['version'] ?? '0.0.0');
+        $userId   = ($event->getUserId() ?? self::DEFAULT_PUBLISHED_BY);
+
+        // OR's standard scoping (organisation + register + schema) applies on
+        // saveObject so the snapshot inherits the Application's org context.
+        return $this->objectService->saveObject(
+            object: [
+                'applicationUuid' => $applicationUuid,
+                'version'         => $version,
+                'manifest'        => $manifest,
+                'publishedAt'     => gmdate('Y-m-d\TH:i:s\Z'),
+                'publishedBy'     => $userId,
+                'notes'           => self::DEFAULT_SNAPSHOT_NOTES,
+            ],
+            register: self::REGISTER_SLUG,
+            schema: self::VERSION_SCHEMA
+        );
+    }//end createSnapshot()
+
+    /**
+     * Writeback — point Application.currentVersion at the new snapshot and reset status.
+     *
+     * Design.md Decision 3: persistent status is `draft` when editable;
+     * "is published right now" is `currentVersion != null`.
+     *
+     * @param array<string, mixed> $applicationData Serialised Application data.
+     * @param string               $snapshotUuid    UUID of the newly created snapshot.
+     *
+     * @return void
+     */
+    private function updateApplicationCurrentVersion(array $applicationData, string $snapshotUuid): void
+    {
+        $existing = $applicationData;
+        unset($existing['@self']);
+        $existing['currentVersion'] = $snapshotUuid;
+        $existing['status']         = self::PUBLISH_FROM;
+
+        $this->objectService->saveObject(
+            object: $existing,
+            register: self::REGISTER_SLUG,
+            schema: self::APPLICATION_SCHEMA
+        );
+    }//end updateApplicationCurrentVersion()
+
+    /**
+     * Read the canonical UUID out of an OR-serialised object array.
+     *
+     * Looks in `@self.id`, `@self.uuid`, then top-level `uuid`.
+     *
+     * @param array<string, mixed> $data Serialised object array.
+     *
+     * @return string|null The UUID or null if not present.
+     */
+    private function extractUuid(array $data): ?string
+    {
+        $self = [];
+        if (isset($data['@self']) === true && is_array($data['@self']) === true) {
+            $self = $data['@self'];
+        }
+
+        if (isset($self['id']) === true) {
+            return (string) $self['id'];
+        }
+
+        if (isset($self['uuid']) === true) {
+            return (string) $self['uuid'];
+        }
+
+        if (isset($data['uuid']) === true) {
+            return (string) $data['uuid'];
+        }
+
+        return null;
+    }//end extractUuid()
+
+    /**
+     * Coerce an OR-returned entity/array to a plain associative array.
+     *
+     * @param mixed $object The OR object/result entry.
+     *
+     * @return array<string, mixed>
+     */
+    private function normaliseSerialised(mixed $object): array
+    {
+        if (is_array($object) === true) {
+            return $object;
+        }
+
+        if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
+            $serialised = $object->jsonSerialize();
+            if (is_array($serialised) === true) {
+                return $serialised;
+            }
+        }
+
+        return [];
+    }//end normaliseSerialised()
 }//end class

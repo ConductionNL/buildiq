@@ -206,6 +206,11 @@ class ApplicationsController extends Controller
      * @param string $to   ApplicationVersion UUID or the literal `draft`
      *
      * @return JSONResponse Both blobs on 200, or a 404 envelope on miss
+     *
+     * IDOR-safe: slug → BuiltAppRoute lookup enforces org scope via OR's
+     * standard multitenancy (RegisterMapper::find + ObjectService::searchObjects),
+     * and the resolveVersionBlob() check on `applicationUuid` rejects snapshots
+     * that do not belong to this Application. Mirrors getManifest()'s pattern.
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
