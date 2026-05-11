@@ -81,6 +81,11 @@ class RunExportJob extends QueuedJob
             return;
         }
 
+        // Lifecycle transition: queued → running (declarative, via OR
+        // TransitionEngine). The schema's `x-openregister-lifecycle.transitions`
+        // entry named "start" drives this; we never write `status` directly.
+        $this->exportJobService->transitionJob($jobUuid, 'start');
+
         try {
             $context = [
                 'appId'        => 'exported-app',
@@ -100,21 +105,47 @@ class RunExportJob extends QueuedJob
             );
 
             // Optional GitHub push — fetch the PAT exactly once.
-            $pat = $this->exportJobService->fetchPat($jobUuid);
+            $pushResult = null;
+            $pat        = $this->exportJobService->fetchPat($jobUuid);
             if ($pat !== null && $pat !== '') {
-                $this->githubPushService->push(
+                $pushResult = $this->githubPushService->push(
                     $jobUuid,
                     dirname($zipPath).'/'.$jobUuid,
                     $pat
                 );
             }
 
+            // Lifecycle transition: running → succeeded. Side fields
+            // (downloadUrl, githubRepoUrl, githubPullRequestUrl) are merged
+            // via the ObjectService save path so audit + events fire
+            // correctly without racing the lifecycle field.
+            $extra = [
+                'downloadUrl' => '/index.php/apps/openbuilt/api/exports/'.$jobUuid.'/download',
+            ];
+            if (is_array($pushResult) === true) {
+                if (isset($pushResult['repoUrl']) === true && $pushResult['repoUrl'] !== '') {
+                    $extra['githubRepoUrl'] = $pushResult['repoUrl'];
+                }
+
+                if (isset($pushResult['pullRequestUrl']) === true && $pushResult['pullRequestUrl'] !== '') {
+                    $extra['githubPullRequestUrl'] = $pushResult['pullRequestUrl'];
+                }
+            }
+
+            $this->exportJobService->transitionJob($jobUuid, 'succeed', $extra);
             $this->logger->info('OpenBuilt export succeeded', ['jobUuid' => $jobUuid]);
         } catch (\Throwable $e) {
-            // No-auto-retry: log + leave the job in failed state.
+            // No-auto-retry: fire the declarative 'fail' transition, merge
+            // an errorMessage onto the record, and leave it for the user
+            // (memory: crashes → needs-input).
             $this->logger->error(
                 'OpenBuilt export failed',
                 ['jobUuid' => $jobUuid, 'error' => $e->getMessage()]
+            );
+            $this->exportJobService->transitionJob(
+                $jobUuid,
+                'fail',
+                ['errorMessage' => $e->getMessage()]
             );
         } finally {
             // Always clear the PAT — both success and failure are terminal.

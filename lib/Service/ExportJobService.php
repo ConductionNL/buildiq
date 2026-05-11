@@ -116,6 +116,12 @@ class ExportJobService
      * Persist the ExportJob record via OR (best-effort; falls back to a no-op
      * when OR is not available so unit tests can stub the path).
      *
+     * NOTE: This persists the *initial* record only. Subsequent state
+     * transitions MUST go through transitionJob() so OR's lifecycle engine
+     * (TransitionEngine + ObjectTransitionedEvent + guards) is the source of
+     * truth — direct status writes here would bypass the declarative
+     * x-openregister-lifecycle on the exportJob schema.
+     *
      * @param array<string,mixed> $job Sanitised job record.
      *
      * @return void
@@ -136,6 +142,128 @@ class ExportJobService
             $this->logger->warning('Could not persist ExportJob to OR: '.$e->getMessage());
         }
     }//end persistJob()
+
+    /**
+     * Drive an ExportJob through its declarative lifecycle.
+     *
+     * Calls OR's TransitionEngine — which looks up the named transition
+     * in `x-openregister-lifecycle`, validates the allowed `from` states,
+     * runs guards, saves through ObjectService (so audit + events fire),
+     * and dispatches ObjectTransitionedEvent.
+     *
+     * If OR's TransitionEngine isn't available on the installed version
+     * (older OR releases), we log the gap and return false so the caller
+     * can decide what to do; we never silently fall back to direct status
+     * writes (that would defeat the entire declarative contract).
+     *
+     * @param string              $jobUuid     ExportJob UUID.
+     * @param string              $action      Transition action name
+     *                                         ('start', 'succeed', 'fail').
+     * @param array<string,mixed> $extraFields Optional fields to merge
+     *                                         alongside the transition
+     *                                         (e.g. errorMessage on 'fail',
+     *                                         downloadUrl on 'succeed').
+     *
+     * @return bool True when the transition fired, false when OR's
+     *              lifecycle engine is not available (gap recorded).
+     */
+    public function transitionJob(
+        string $jobUuid,
+        string $action,
+        array $extraFields=[],
+    ): bool {
+        $engineClass = 'OCA\\OpenRegister\\Service\\Lifecycle\\TransitionEngine';
+
+        if ($this->container->has($engineClass) === false) {
+            // Documented gap: spec REQ-OBEX-006 calls for declarative
+            // lifecycle; older OR builds without TransitionEngine cannot
+            // honour it. Surface this so the issue is visible — never
+            // silently write status directly.
+            $this->logger->warning(
+                'OpenBuilt export: OR TransitionEngine unavailable — '
+                .'lifecycle transition "'.$action.'" SKIPPED on job '.$jobUuid.'. '
+                .'Bump OpenRegister to >= the build that ships '
+                .'OCA\\OpenRegister\\Service\\Lifecycle\\TransitionEngine.'
+            );
+            return false;
+        }
+
+        try {
+            $engine = $this->container->get($engineClass);
+            if (method_exists($engine, 'transition') === false) {
+                $this->logger->warning(
+                    'OpenBuilt export: OR TransitionEngine present but '
+                    .'transition() method missing — likely API drift.'
+                );
+                return false;
+            }
+
+            $engine->transition($jobUuid, $action);
+
+            // Side fields (errorMessage, downloadUrl, …) are NOT part of the
+            // transition itself; merge them via the standard ObjectService
+            // save path so they go through validation but do not race with
+            // the lifecycle field.
+            if ($extraFields !== []) {
+                $this->mergeJobFields($jobUuid, $extraFields);
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                'OpenBuilt export: lifecycle transition "'.$action.'" failed on job '
+                .$jobUuid.': '.$e->getMessage()
+            );
+            return false;
+        }
+    }//end transitionJob()
+
+    /**
+     * Merge side-fields onto an existing ExportJob record via OR.
+     *
+     * @param string              $jobUuid Job UUID.
+     * @param array<string,mixed> $fields  Fields to merge (errorMessage,
+     *                                     downloadUrl, downloadExpiresAt, …).
+     *
+     * @return void
+     */
+    public function mergeJobFields(string $jobUuid, array $fields): void
+    {
+        if ($fields === []) {
+            return;
+        }
+
+        try {
+            if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
+                return;
+            }
+
+            $service = $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
+            if (method_exists($service, 'find') === false || method_exists($service, 'saveObject') === false) {
+                return;
+            }
+
+            $existing = $service->find(id: $jobUuid);
+            if ($existing === null) {
+                return;
+            }
+
+            // Defensive merge: never let callers overwrite `status` here —
+            // that field is owned by the lifecycle engine.
+            unset($fields['status'], $fields['uuid']);
+
+            if (method_exists($existing, 'getObject') === true) {
+                $data    = $existing->getObject() ?? [];
+                $merged  = array_merge($data, $fields);
+                $merged['uuid'] = $jobUuid;
+                $service->saveObject($merged);
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                'OpenBuilt export: mergeJobFields failed on job '.$jobUuid.': '.$e->getMessage()
+            );
+        }
+    }//end mergeJobFields()
 
     /**
      * Resolve a download path for the given ExportJob UUID.
