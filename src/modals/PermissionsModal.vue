@@ -148,14 +148,17 @@ export default {
 	gap: 12px;
 	padding: 8px 0;
 }
+
 .openbuilt-permissions-modal__help {
 	font-size: 13px;
 	color: var(--color-text-maxcontrast, #888);
 }
+
 .openbuilt-permissions-modal__error {
 	color: var(--color-error, #d63f3f);
 	font-size: 13px;
 }
+
 .openbuilt-permissions-modal__actions {
 	display: flex;
 	gap: 8px;
