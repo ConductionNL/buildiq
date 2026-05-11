@@ -6,6 +6,7 @@ parameters:
         - phpstan-bootstrap.php
     excludePaths:
         - vendor
+        - lib/Resources/template
     scanDirectories:
         - vendor/nextcloud/ocp
     reportUnmatchedIgnoredErrors: false

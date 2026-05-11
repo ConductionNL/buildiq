@@ -8,6 +8,9 @@
     <exclude-pattern>*/vendor/*</exclude-pattern>
     <exclude-pattern>*/node_modules/*</exclude-pattern>
     <exclude-pattern>composer-setup.php</exclude-pattern>
+    <!-- The embedded nextcloud-app-template snapshot is shipped verbatim as a resource;
+         it is not OpenBuilt code, so we exclude it from our coding-standard sweep. -->
+    <exclude-pattern>lib/Resources/template/*</exclude-pattern>
 
     <arg name="basepath" value="."/>
     <arg name="colors"/>
