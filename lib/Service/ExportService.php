@@ -29,10 +29,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuilt\Service;
 
+use FilesystemIterator;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
 use ZipArchive;
 
@@ -110,9 +113,9 @@ class ExportService
         array $context,
         string $jobUuid,
     ): string {
-        $scratchDir = $this->prepareScratchDir($jobUuid);
-        $this->copyTemplate($this->templateRoot, $scratchDir);
-        $this->resolvePlaceholders($scratchDir, $context);
+        $scratchDir = $this->prepareScratchDir(jobUuid: $jobUuid);
+        $this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
+        $this->resolvePlaceholders(rootDir: $scratchDir, context: $context);
 
         // Audit-trail entry names only the source — never the PAT, never secret values.
         $this->logger->info(
@@ -124,7 +127,7 @@ class ExportService
             ]
         );
 
-        return $this->packageZip($scratchDir, $jobUuid);
+        return $this->packageZip(sourceDir: $scratchDir, jobUuid: $jobUuid);
     }//end generateAppZip()
 
     /**
@@ -139,7 +142,7 @@ class ExportService
      */
     public function packageZip(string $sourceDir, string $jobUuid): string
     {
-        $exportRoot = $this->getOrCreateAppDataDir('exports');
+        $exportRoot = $this->getOrCreateAppDataDir(name: 'exports');
         $zipPath    = $exportRoot.'/'.$jobUuid.'.zip';
 
         if (is_dir(dirname($zipPath)) === false) {
@@ -155,7 +158,7 @@ class ExportService
             throw new RuntimeException('Unable to open ZIP archive: '.$zipPath);
         }
 
-        $entries = $this->listFilesSorted($sourceDir);
+        $entries = $this->listFilesSorted(baseDir: $sourceDir);
         foreach ($entries as $relativePath) {
             $absolute = $sourceDir.'/'.$relativePath;
             $zip->addFile($absolute, $relativePath);
@@ -168,7 +171,7 @@ class ExportService
         }
 
         // Pin mtime on the file itself for reproducibility.
-        @touch($zipPath, $this->zipTimestamp);
+        touch($zipPath, $this->zipTimestamp);
 
         return $zipPath;
     }//end packageZip()
@@ -189,8 +192,8 @@ class ExportService
             return $files;
         }
 
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS)
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($baseDir, FilesystemIterator::SKIP_DOTS)
         );
         foreach ($iterator as $file) {
             if ($file->isFile() === true) {
@@ -215,15 +218,15 @@ class ExportService
      */
     public function resolvePlaceholders(string $rootDir, array $context): void
     {
-        $map = $this->placeholderResolver->buildMap(
-            array_map(
-                static fn ($v) => is_string($v) ? $v : (string) $v,
-                $context
-            )
-        );
+        $stringContext = [];
+        foreach ($context as $key => $value) {
+            $stringContext[$key] = (string) $value;
+        }
 
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($rootDir, \FilesystemIterator::SKIP_DOTS)
+        $map = $this->placeholderResolver->buildMap(context: $stringContext);
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($rootDir, FilesystemIterator::SKIP_DOTS)
         );
         foreach ($iterator as $file) {
             if ($file->isFile() === false) {
@@ -231,7 +234,7 @@ class ExportService
             }
 
             $path = (string) $file->getPathname();
-            if ($this->isBinary($path) === true) {
+            if ($this->isBinary(path: $path) === true) {
                 continue;
             }
 
@@ -240,10 +243,10 @@ class ExportService
                 continue;
             }
 
-            $resolved = $this->placeholderResolver->resolve($original, $map);
+            $resolved = $this->placeholderResolver->resolve(content: $original, map: $map);
             if ($resolved !== $original) {
                 file_put_contents($path, $resolved);
-                @touch($path, $this->zipTimestamp);
+                touch($path, $this->zipTimestamp);
             }
         }//end foreach
     }//end resolvePlaceholders()
@@ -285,9 +288,9 @@ class ExportService
 
         $skip = ['.snapshot-meta.json', '.path-manifest.txt'];
 
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($source, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
         );
         foreach ($iterator as $entry) {
             $relative = ltrim(str_replace($source, '', (string) $entry->getPathname()), '/');
@@ -305,7 +308,7 @@ class ExportService
             }
 
             copy((string) $entry->getPathname(), $target);
-            @touch($target, $this->zipTimestamp);
+            touch($target, $this->zipTimestamp);
         }
     }//end copyTemplate()
 
@@ -318,11 +321,11 @@ class ExportService
      */
     public function prepareScratchDir(string $jobUuid): string
     {
-        $workRoot = $this->getOrCreateAppDataDir('work');
+        $workRoot = $this->getOrCreateAppDataDir(name: 'work');
         $scratch  = $workRoot.'/'.$jobUuid;
 
         if (is_dir($scratch) === true) {
-            $this->rrmdir($scratch);
+            $this->rrmdir(dir: $scratch);
         }
 
         mkdir($scratch, 0o755, true);
@@ -390,16 +393,18 @@ class ExportService
             return;
         }
 
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
         );
         foreach ($iterator as $entry) {
+            $path = (string) $entry->getPathname();
             if ($entry->isDir() === true) {
-                rmdir((string) $entry->getPathname());
-            } else {
-                unlink((string) $entry->getPathname());
+                rmdir($path);
+                continue;
             }
+
+            unlink($path);
         }
 
         rmdir($dir);

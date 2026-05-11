@@ -79,6 +79,21 @@ class ExportJobService
         $jobUuid = $this->uuid4();
         $target  = (string) ($payload['target'] ?? 'zip');
 
+        $githubOrg        = null;
+        $githubRepo       = null;
+        $githubVisibility = 'private';
+        if (isset($payload['githubOrg']) === true) {
+            $githubOrg = (string) $payload['githubOrg'];
+        }
+
+        if (isset($payload['githubRepo']) === true) {
+            $githubRepo = (string) $payload['githubRepo'];
+        }
+
+        if (isset($payload['githubVisibility']) === true) {
+            $githubVisibility = (string) $payload['githubVisibility'];
+        }
+
         $job = [
             'uuid'               => $jobUuid,
             'applicationSlug'    => $applicationSlug,
@@ -86,9 +101,9 @@ class ExportJobService
             'applicationVersion' => (string) ($payload['applicationVersion'] ?? ''),
             'target'             => $target,
             'status'             => 'queued',
-            'githubOrg'          => isset($payload['githubOrg']) ? (string) $payload['githubOrg'] : null,
-            'githubRepo'         => isset($payload['githubRepo']) ? (string) $payload['githubRepo'] : null,
-            'githubVisibility'   => isset($payload['githubVisibility']) ? (string) $payload['githubVisibility'] : 'private',
+            'githubOrg'          => $githubOrg,
+            'githubRepo'         => $githubRepo,
+            'githubVisibility'   => $githubVisibility,
             'includeSeedData'    => (bool) ($payload['includeSeedData'] ?? false),
             'license'            => (string) ($payload['license'] ?? 'EUPL-1.2'),
             'log'                => [],
@@ -98,12 +113,12 @@ class ExportJobService
             // Store PAT keyed by job UUID; never persist it in the OR record.
             $this->credentialsManager->store(
                 Application::APP_ID,
-                $this->credentialKey($jobUuid),
+                $this->credentialKey(jobUuid: $jobUuid),
                 $githubPat
             );
         }
 
-        $this->persistJob($job);
+        $this->persistJob(job: $job);
         $this->jobList->add(
             \OCA\OpenBuilt\BackgroundJob\RunExportJob::class,
             ['jobUuid' => $jobUuid]
@@ -205,7 +220,7 @@ class ExportJobService
             // save path so they go through validation but do not race with
             // the lifecycle field.
             if ($extraFields !== []) {
-                $this->mergeJobFields($jobUuid, $extraFields);
+                $this->mergeJobFields(jobUuid: $jobUuid, fields: $extraFields);
             }
 
             return true;
@@ -215,7 +230,7 @@ class ExportJobService
                 .$jobUuid.': '.$e->getMessage()
             );
             return false;
-        }
+        }//end try
     }//end transitionJob()
 
     /**
@@ -253,8 +268,8 @@ class ExportJobService
             unset($fields['status'], $fields['uuid']);
 
             if (method_exists($existing, 'getObject') === true) {
-                $data    = $existing->getObject() ?? [];
-                $merged  = array_merge($data, $fields);
+                $data           = $existing->getObject() ?? [];
+                $merged         = array_merge($data, $fields);
                 $merged['uuid'] = $jobUuid;
                 $service->saveObject($merged);
             }
@@ -262,7 +277,7 @@ class ExportJobService
             $this->logger->warning(
                 'OpenBuilt export: mergeJobFields failed on job '.$jobUuid.': '.$e->getMessage()
             );
-        }
+        }//end try
     }//end mergeJobFields()
 
     /**
@@ -296,7 +311,7 @@ class ExportJobService
      */
     public function fetchPat(string $jobUuid): ?string
     {
-        $value = $this->credentialsManager->retrieve(Application::APP_ID, $this->credentialKey($jobUuid));
+        $value = $this->credentialsManager->retrieve(Application::APP_ID, $this->credentialKey(jobUuid: $jobUuid));
         if (is_string($value) === true && $value !== '') {
             return $value;
         }
@@ -314,7 +329,7 @@ class ExportJobService
     public function clearPat(string $jobUuid): void
     {
         try {
-            $this->credentialsManager->delete(Application::APP_ID, $this->credentialKey($jobUuid));
+            $this->credentialsManager->delete(Application::APP_ID, $this->credentialKey(jobUuid: $jobUuid));
         } catch (\Throwable $e) {
             $this->logger->debug('PAT delete returned no-op: '.$e->getMessage());
         }

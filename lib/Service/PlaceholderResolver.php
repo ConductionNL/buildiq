@@ -127,8 +127,12 @@ final class PlaceholderResolver
         $boundaryMarked = (string) preg_replace('/(?<=[a-z0-9])(?=[A-Z])/', '_', $value);
         $boundaryMarked = (string) preg_replace('/(?<=[A-Z])(?=[A-Z][a-z])/', '_', $boundaryMarked);
 
-        $parts = preg_split('/[^A-Za-z0-9]+/', $boundaryMarked) ?: [];
-        $out   = '';
+        $parts = preg_split('/[^A-Za-z0-9]+/', $boundaryMarked);
+        if ($parts === false) {
+            $parts = [];
+        }
+
+        $out = '';
         foreach ($parts as $part) {
             if ($part === '') {
                 continue;

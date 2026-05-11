@@ -44,8 +44,8 @@ class CleanupExpiredExports extends TimedJob
         ITimeFactory $time,
         private LoggerInterface $logger,
     ) {
-        parent::__construct($time);
-        $this->setInterval(86400);
+        parent::__construct(time: $time);
+        $this->setInterval(seconds: 86400);
     }//end __construct()
 
     /**
@@ -54,12 +54,17 @@ class CleanupExpiredExports extends TimedJob
      * Preserves the ExportJob OR record — only the ZIP file is purged
      * (audit trail remains intact). Idempotent.
      *
-     * @param mixed $argument Job argument (unused).
+     * @param mixed $argument Job argument injected by Nextcloud. Unused —
+     *                        we always scan the same fixed location.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     protected function run($argument): void
     {
+        unset($argument);
+
         $exportsRoot = sys_get_temp_dir().'/openbuilt-exports';
         if (is_dir($exportsRoot) === false) {
             return;
@@ -68,11 +73,18 @@ class CleanupExpiredExports extends TimedJob
         $now          = time();
         $expiryWindow = 86400;
         // 24h
-        $purged = 0;
-        foreach (glob($exportsRoot.'/*.zip') ?: [] as $zip) {
+        $purged   = 0;
+        $zipPaths = glob($exportsRoot.'/*.zip');
+        if ($zipPaths === false) {
+            $zipPaths = [];
+        }
+
+        foreach ($zipPaths as $zip) {
             $mtime = filemtime($zip);
             if ($mtime !== false && ($now - $mtime) > $expiryWindow) {
-                if (@unlink($zip) === true) {
+                // Suppress unlink warnings — concurrent cleanup of the same
+                // ZIP from a sibling worker is harmless and need not be logged.
+                if (unlink($zip) === true) {
                     $purged++;
                 }
             }

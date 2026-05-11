@@ -172,7 +172,7 @@ class ExportsController extends Controller
         } catch (\Throwable $e) {
             $this->logger->debug('OpenBuilt export: job authz lookup failed: '.$e->getMessage());
             return false;
-        }
+        }//end try
     }//end isAuthorisedForJob()
 
     /**
@@ -184,7 +184,7 @@ class ExportsController extends Controller
      */
     private function validateSubmitBody(array $body): ?JSONResponse
     {
-        $target = is_string($body['target'] ?? null) ? (string) $body['target'] : 'zip';
+        $target = $this->readStringField(body: $body, field: 'target', default: 'zip');
         if (in_array($target, ['zip', 'github'], true) === false) {
             return new JSONResponse(
                 ['error' => 'Invalid target: must be zip or github.'],
@@ -192,7 +192,7 @@ class ExportsController extends Controller
             );
         }
 
-        $applicationVersion = is_string($body['applicationVersion'] ?? null) ? (string) $body['applicationVersion'] : '';
+        $applicationVersion = $this->readStringField(body: $body, field: 'applicationVersion', default: '');
         if ($applicationVersion === '') {
             return new JSONResponse(
                 ['error' => 'applicationVersion is required.'],
@@ -201,18 +201,50 @@ class ExportsController extends Controller
         }
 
         if ($target === 'github') {
-            $org  = is_string($body['githubOrg'] ?? null) ? (string) $body['githubOrg'] : '';
-            $repo = is_string($body['githubRepo'] ?? null) ? (string) $body['githubRepo'] : '';
-            if ($org === '' || $repo === '') {
-                return new JSONResponse(
-                    ['error' => 'githubOrg and githubRepo are required for target=github.'],
-                    Http::STATUS_UNPROCESSABLE_ENTITY
-                );
-            }
+            return $this->validateGithubFields(body: $body);
         }
 
         return null;
     }//end validateSubmitBody()
+
+    /**
+     * Validate the GitHub-specific required fields.
+     *
+     * @param array<string,mixed> $body Decoded body params.
+     *
+     * @return JSONResponse|null
+     */
+    private function validateGithubFields(array $body): ?JSONResponse
+    {
+        $org  = $this->readStringField(body: $body, field: 'githubOrg', default: '');
+        $repo = $this->readStringField(body: $body, field: 'githubRepo', default: '');
+        if ($org === '' || $repo === '') {
+            return new JSONResponse(
+                ['error' => 'githubOrg and githubRepo are required for target=github.'],
+                Http::STATUS_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        return null;
+    }//end validateGithubFields()
+
+    /**
+     * Pull a string field from the request body with a default.
+     *
+     * @param array<string,mixed> $body    Body.
+     * @param string              $field   Field name.
+     * @param string              $default Default when missing/non-string.
+     *
+     * @return string
+     */
+    private function readStringField(array $body, string $field, string $default): string
+    {
+        if (is_string($body[$field] ?? null) === true) {
+            return (string) $body[$field];
+        }
+
+        return $default;
+    }//end readStringField()
 
     /**
      * Queue an export of an Application version.
@@ -227,7 +259,7 @@ class ExportsController extends Controller
     {
         // ADR-005 Rule 3 guard: per-object authorization on a #[NoAdminRequired]
         // endpoint. Without this any authed user could POST to any slug.
-        if ($this->isAuthorisedForApplication($slug) === false) {
+        if ($this->isAuthorisedForApplication(applicationSlug: $slug) === false) {
             return new JSONResponse(
                 ['error' => 'Forbidden.'],
                 Http::STATUS_FORBIDDEN
@@ -235,14 +267,18 @@ class ExportsController extends Controller
         }
 
         $body            = $this->request->getParams();
-        $validationError = $this->validateSubmitBody($body);
+        $validationError = $this->validateSubmitBody(body: $body);
         if ($validationError !== null) {
             return $validationError;
         }
 
         // The PAT is handed straight to the credentials manager — never logged
         // and removed from the request payload before further processing.
-        $pat = is_string($body['githubPat'] ?? null) ? (string) $body['githubPat'] : null;
+        $pat = null;
+        if (is_string($body['githubPat'] ?? null) === true) {
+            $pat = (string) $body['githubPat'];
+        }
+
         unset($body['githubPat']);
 
         try {
@@ -281,7 +317,7 @@ class ExportsController extends Controller
     #[NoCSRFRequired]
     public function download(string $uuid): Response
     {
-        if ($this->isAuthorisedForJob($uuid) === false) {
+        if ($this->isAuthorisedForJob(jobUuid: $uuid) === false) {
             // Mask non-authorised as 404 to avoid revealing job UUIDs to
             // unauthorised callers (defence in depth on the IDOR vector).
             return new JSONResponse(['error' => 'Unknown export job.'], Http::STATUS_NOT_FOUND);
