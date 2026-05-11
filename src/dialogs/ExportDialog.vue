@@ -52,7 +52,9 @@
 				</p>
 			</template>
 
-			<p v-if="errorMessage" class="export-dialog__error">{{ errorMessage }}</p>
+			<p v-if="errorMessage" class="export-dialog__error">
+				{{ errorMessage }}
+			</p>
 		</form>
 
 		<template #actions>
@@ -182,11 +184,13 @@ export default {
 	gap: var(--default-grid-baseline, 8px);
 	padding: var(--default-grid-baseline, 8px) 0;
 }
+
 .export-dialog__scope-hint {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.85rem;
 	margin: 0;
 }
+
 .export-dialog__error {
 	color: var(--color-error);
 	margin: 0;

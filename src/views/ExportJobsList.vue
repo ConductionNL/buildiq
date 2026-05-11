@@ -40,7 +40,9 @@
 				</tr>
 			</tbody>
 		</table>
-		<p v-else>{{ t('openbuilt', 'No exports yet.') }}</p>
+		<p v-else>
+			{{ t('openbuilt', 'No exports yet.') }}
+		</p>
 
 		<ExportDialog
 			v-if="showDialog"
@@ -120,22 +122,26 @@ export default {
 .export-jobs {
 	padding: var(--default-grid-baseline, 8px);
 }
+
 .export-jobs__header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	gap: var(--default-grid-baseline, 8px);
 }
+
 .export-jobs__table {
 	width: 100%;
 	border-collapse: collapse;
 }
+
 .export-jobs__table th,
 .export-jobs__table td {
 	padding: var(--default-grid-baseline, 8px);
 	border-bottom: 1px solid var(--color-border);
 	text-align: start;
 }
+
 .export-jobs__error {
 	color: var(--color-error);
 }
