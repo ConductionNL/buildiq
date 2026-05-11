@@ -211,6 +211,24 @@ enforced server-side. A user who has `openbuilt.use` but no role on
 any Application sees an empty list, not an error — REQ-OBR-007's
 empty-state UI handles this.
 
+**Upstream schema gap (logged 2026-05-11)** — We tried shipping
+`<permission>openbuilt.use</permission>` as a child of `<navigation>`
+and verified via `occ app:enable openbuilt --force` (Nextcloud 32-dev)
+that the upstream `apps/info.xsd` schema rejects the element
+("appinfo file cannot be read"). Tracking issue filed at
+[nextcloud/server#60310](https://github.com/nextcloud/server/issues/60310).
+
+Until the upstream schema accepts the element, REQ-OBRBAC-006's
+navigation gate ships in **fallback mode** only: operators restrict
+top-bar visibility via the app-level group restriction
+(`occ app:enable openbuilt --groups <group>`), which is coarser
+(restricts the whole app, not just the entry) but available today.
+The per-Application server-side RBAC enforced by
+`ApplicationsController::getManifest` + `::listMine` is the
+load-bearing security boundary either way; the navigation gate is
+coarse top-bar visibility only. When upstream #60310 lands, we
+re-add the `<permission>` element and amend this decision.
+
 **Alternatives considered**
 
 - *Ship a new `Settings/AdminSettings.php` and a Vue admin page
