@@ -1,0 +1,16 @@
+{
+	"$comment": "Bundled app manifest baked in at OpenBuilt export time. ADR-024 Tier-4 manifest consumer: the exported app mounts CnAppRoot with this manifest as the SINGLE source of truth for navigation, pages, deep links, and theming. No OpenBuilt runtime dependency — once unzipped + installed, the app stands alone.",
+	"id": "{{appId}}",
+	"namespace": "{{appNamespace}}",
+	"name": "{{appName}}",
+	"version": "{{appVersion}}",
+	"description": "{{appDescription}}",
+	"license": "{{license}}",
+	"author": {
+		"name": "{{authorName}}",
+		"email": "{{authorEmail}}"
+	},
+	"navigation": [],
+	"pages": [],
+	"deepLinks": []
+}

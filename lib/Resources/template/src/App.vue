@@ -1,86 +1,41 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
+<!--
+	Tier-4 manifest consumer per ADR-024.
+
+	The exported app does NOT scaffold its own navigation, settings shells,
+	or page wiring. It mounts CnAppRoot from @conduction/nextcloud-vue and
+	hands it the bundled manifest (src/manifest.json, baked in by OpenBuilt's
+	PlaceholderResolver at export time). CnAppRoot owns:
+	  - the NcContent + NcAppNavigation + NcAppContent skeleton,
+	  - the router instance derived from manifest.pages,
+	  - the deep-link registration,
+	  - the optional NL Design system theme overlay.
+
+	No OpenBuilt runtime dependency. The unzipped tree builds and installs
+	standalone — manifest changes ship via this file, not via OR records.
+
+	This file pairs with the chain spec #2 overload of useAppManifest:
+	useAppManifest({ manifest }) lets us pass an in-process JS object
+	(loaded by main.js) instead of forcing a network round-trip.
+-->
 <template>
-	<NcContent app-name="app-template">
-		<template v-if="storesReady && !hasOpenRegisters">
-			<NcAppContent class="open-register-missing">
-				<NcEmptyContent
-					:name="t('app-template', 'OpenRegister is required')"
-					:description="t('app-template', 'This app needs OpenRegister to store and manage data. Please install OpenRegister from the app store to get started.')">
-					<template #icon>
-						<img :src="appIcon"
-							alt=""
-							width="64"
-							height="64">
-					</template>
-					<template #action>
-						<NcButton
-							v-if="isAdmin"
-							type="primary"
-							:href="appStoreUrl">
-							{{ t('app-template', 'Install OpenRegister') }}
-						</NcButton>
-					</template>
-				</NcEmptyContent>
-			</NcAppContent>
-		</template>
-		<template v-else-if="storesReady && hasOpenRegisters">
-			<MainMenu />
-			<NcAppContent>
-				<router-view />
-			</NcAppContent>
-		</template>
-		<NcAppContent v-else>
-			<div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-				<NcLoadingIcon :size="64" />
-			</div>
-		</NcAppContent>
-	</NcContent>
+	<CnAppRoot :manifest="manifest" :app-id="appId" />
 </template>
 
 <script>
-import { NcButton, NcContent, NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import { generateUrl, imagePath } from '@nextcloud/router'
-import { initializeStores } from './store/store.js'
-import { useSettingsStore } from './store/modules/settings.js'
-import MainMenu from './navigation/MainMenu.vue'
+import { CnAppRoot } from '@conduction/nextcloud-vue'
+import manifest from './manifest.json'
 
 export default {
 	name: 'App',
 	components: {
-		NcButton,
-		NcContent,
-		NcAppContent,
-		NcEmptyContent,
-		NcLoadingIcon,
-		MainMenu,
+		CnAppRoot,
 	},
-
 	data() {
 		return {
-			storesReady: false,
+			manifest,
+			appId: manifest.id,
 		}
-	},
-
-	computed: {
-		hasOpenRegisters() {
-			const settingsStore = useSettingsStore()
-			return settingsStore.hasOpenRegisters
-		},
-		isAdmin() {
-			const settingsStore = useSettingsStore()
-			return settingsStore.getIsAdmin
-		},
-		appIcon() {
-			return imagePath('app-template', 'app-dark.svg')
-		},
-		appStoreUrl() {
-			return generateUrl('/settings/apps/integration/openregister')
-		},
-	},
-
-	async created() {
-		await initializeStores()
-		this.storesReady = true
 	},
 }
 </script>

@@ -47,6 +47,7 @@ psalm.xml
 src/App.vue
 src/assets/app.css
 src/main.js
+src/manifest.json
 src/navigation/MainMenu.vue
 src/pinia.js
 src/router/index.js
