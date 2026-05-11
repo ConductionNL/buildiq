@@ -23,6 +23,12 @@ return [
         // and BuiltAppRoute schemas (^[a-z0-9][a-z0-9-]*[a-z0-9]$, min 2 max 48 chars).
         ['name' => 'applications#getManifest', 'url' => '/api/applications/{slug}/manifest', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // Versioning — diff endpoint (chain spec #6 openbuilt-versioning, REQ-OBV-005). Returns
+        // two ApplicationVersion manifest blobs in one round-trip so the client diff component
+        // does not double-fetch. `from`/`to` are ApplicationVersion UUIDs OR the literal `draft`.
+        // Specific route MUST precede the SPA catch-all (memory rule: Symfony specific-first).
+        ['name' => 'applications#diffVersions', 'url' => '/api/applications/{slug}/versions/diff', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
         // SPA catch-all — same controller as the index route; must use a distinct route name
         // (duplicate names replace the earlier route in Symfony, which breaks GET /).
         ['name' => 'dashboard#catchAll', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '.+'], 'defaults' => ['path' => '']],

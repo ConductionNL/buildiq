@@ -42,7 +42,8 @@ use Psr\Log\LoggerInterface;
  */
 class SeedHelloWorld implements IRepairStep
 {
-    private const SEED_SLUG = 'hello-world';
+    private const SEED_SLUG    = 'hello-world';
+    private const SEED_VERSION = '1.0.0';
 
     /**
      * Constructor.
@@ -102,14 +103,15 @@ class SeedHelloWorld implements IRepairStep
             // not yet support `on_transition.upsert_relation` as a declarative action
             // that creates a sibling object. Until OR ships that hook we explicitly
             // create the BuiltAppRoute here. This is the ADR-031 §Exceptions(1) path.
-            $application = $this->objectService->saveObject(
+            $seedManifest = $this->buildHelloWorldManifest();
+            $application  = $this->objectService->saveObject(
                 object: [
                     'slug'        => self::SEED_SLUG,
                     'name'        => 'Hello World',
                     'description' => 'The canonical seed virtual app for OpenBuilt. Exercises index + detail + form page types.',
-                    'version'     => '0.1.0',
+                    'version'     => self::SEED_VERSION,
                     'status'      => 'published',
-                    'manifest'    => $this->buildHelloWorldManifest(),
+                    'manifest'    => $seedManifest,
                 ],
                 register: 'openbuilt',
                 schema: 'application'
@@ -136,6 +138,48 @@ class SeedHelloWorld implements IRepairStep
                     schema: 'built-app-route'
                 );
                 $output->info('Created BuiltAppRoute for hello-world.');
+
+                // Seed one ApplicationVersion snapshot (chain spec #6 openbuilt-versioning)
+                // so the version-history panel is non-empty on a fresh install and the
+                // diff view has something to render in the walkthrough. Same
+                // ADR-031 §Exceptions(1) rationale as the BuiltAppRoute upkeep above —
+                // the lifecycle action declared on Application is not yet executed by
+                // OR's engine, so we wire the seed snapshot explicitly. The listener
+                // does the same on every subsequent publish.
+                $snapshot = $this->objectService->saveObject(
+                    object: [
+                        'applicationUuid' => $applicationUuid,
+                        'version'         => self::SEED_VERSION,
+                        'manifest'        => $seedManifest,
+                        'publishedAt'     => gmdate('Y-m-d\TH:i:s\Z'),
+                        'publishedBy'     => 'system',
+                        'notes'           => 'Seeded by OpenBuilt install — initial published version',
+                    ],
+                    register: 'openbuilt',
+                    schema: 'application-version'
+                );
+
+                $snapshotData = $snapshot->jsonSerialize();
+                $snapshotSelf = ($snapshotData['@self'] ?? []);
+                $snapshotUuid = ($snapshotSelf['id'] ?? ($snapshotSelf['uuid'] ?? ($snapshotData['uuid'] ?? null)));
+
+                if ($snapshotUuid !== null) {
+                    // Patch the Application with currentVersion pointing at the snapshot.
+                    $this->objectService->saveObject(
+                        object: [
+                            'slug'           => self::SEED_SLUG,
+                            'name'           => 'Hello World',
+                            'description'    => 'The canonical seed virtual app for OpenBuilt. Exercises index + detail + form page types.',
+                            'version'        => self::SEED_VERSION,
+                            'status'         => 'published',
+                            'manifest'       => $seedManifest,
+                            'currentVersion' => $snapshotUuid,
+                        ],
+                        register: 'openbuilt',
+                        schema: 'application'
+                    );
+                    $output->info('Seeded initial ApplicationVersion '.$snapshotUuid.' (currentVersion set).');
+                }
             }
 
             // Seed three sample HelloMessage objects.

@@ -24,8 +24,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuilt\AppInfo;
 
+use OCA\OpenBuilt\Listener\ApplicationVersionSnapshotListener;
 use OCA\OpenBuilt\Listener\DeepLinkRegistrationListener;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
+use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -64,6 +66,15 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(
             event: DeepLinkRegistrationEvent::class,
             listener: DeepLinkRegistrationListener::class
+        );
+
+        // Snapshot the Application's manifest into ApplicationVersion on
+        // draft→published transitions (chain spec #6 openbuilt-versioning,
+        // ADR-031 §Exceptions(1) — declarative-first fallback because OR's
+        // engine does not yet execute on_transition.create_relation).
+        $context->registerEventListener(
+            event: ObjectTransitionedEvent::class,
+            listener: ApplicationVersionSnapshotListener::class
         );
 
         // Repair steps (InitializeSettings + SeedHelloWorld) are declared in info.xml.
