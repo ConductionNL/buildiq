@@ -68,7 +68,25 @@
         "From": "Van",
         "To": "Naar",
         "Current draft": "Huidig concept",
-        "Loading diff…": "Vergelijking laden…"
+        "Loading diff…": "Vergelijking laden…",
+        "openbuilt.rbac.role.label": "Rol",
+        "openbuilt.rbac.role.owner": "Eigenaar",
+        "openbuilt.rbac.role.editor": "Bewerker",
+        "openbuilt.rbac.role.viewer": "Lezer",
+        "openbuilt.rbac.role.none": "Geen toegang",
+        "openbuilt.rbac.empty.no_applications": "Geen applicaties beschikbaar — vraag een eigenaar om toegang.",
+        "openbuilt.rbac.permissions.title": "Rechten",
+        "openbuilt.rbac.permissions.open": "Rechten…",
+        "openbuilt.rbac.permissions.help": "Stel in welke Nextcloud-groepen deze virtuele app mogen bekijken, bewerken of bezitten. Leden van deze groepen zien de app in hun lijst; alleen eigenaren mogen publiceren, archiveren, verwijderen, eigenaarschap overdragen of deze rechten wijzigen.",
+        "openbuilt.rbac.permissions.owners": "Eigenaren (volledige controle)",
+        "openbuilt.rbac.permissions.editors": "Bewerkers (kunnen concepten opslaan)",
+        "openbuilt.rbac.permissions.viewers": "Lezers (alleen-lezen)",
+        "openbuilt.rbac.permissions.save": "Rechten opslaan",
+        "openbuilt.rbac.permissions.saving": "Opslaan…",
+        "openbuilt.rbac.permissions.cancel": "Annuleren",
+        "openbuilt.rbac.permissions.orphan_error": "Minimaal één eigenaar-groep is vereist — opslaan zonder eigenaren zou deze applicatie wees maken.",
+        "openbuilt.rbac.permissions.role_required_save": "Bewerker- of eigenaar-rol vereist om het manifest op te slaan.",
+        "openbuilt.rbac.error.forbidden": "Je toegang tot deze applicatie is ingetrokken. De lijst wordt vernieuwd."
     },
     "plurals": ""
 }

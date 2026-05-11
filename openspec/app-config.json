@@ -22,7 +22,8 @@
   },
   "capabilities": [
     "openbuilt-application-register",
-    "openbuilt-runtime"
+    "openbuilt-runtime",
+    "openbuilt-rbac"
   ],
   "createdAt": "2026-05-11",
   "updatedAt": "2026-05-11"

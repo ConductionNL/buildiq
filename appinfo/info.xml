@@ -44,6 +44,19 @@ Vrij en open source onder de EUPL-1.2-licentie.
         <php min-version="8.1"/>
     </dependencies>
 
+    <!--
+        openbuilt.use navigation-entry gate (REQ-OBRBAC-006).
+        Nextcloud's info.xml `<navigations>` schema does not yet expose a
+        `<permission>` sub-element for per-group visibility; per design.md
+        Decision 4 we rely on Nextcloud's standard "Admin → Apps → OpenBuilt
+        → Restrict to groups" mechanism, which configures the app-level
+        group restriction at install time. The per-Application RBAC enforced
+        server-side by ApplicationsController::getManifest (REQ-OBR-006) is
+        the load-bearing security boundary; the navigation gate is coarse
+        visibility only. Operators configure it via OCC:
+            occ app:enable openbuilt --groups team-alpha
+        See docs/openbuilt-rbac.md for the full operator guide.
+    -->
     <navigations>
         <navigation>
             <id>openbuilt</id>
@@ -62,10 +75,12 @@ Vrij en open source onder de EUPL-1.2-licentie.
         <install>
             <step>OCA\OpenBuilt\Repair\InitializeSettings</step>
             <step>OCA\OpenBuilt\Repair\SeedHelloWorld</step>
+            <step>OCA\OpenBuilt\Repair\PopulateApplicationPermissions</step>
         </install>
         <post-migration>
             <step>OCA\OpenBuilt\Repair\InitializeSettings</step>
             <step>OCA\OpenBuilt\Repair\SeedHelloWorld</step>
+            <step>OCA\OpenBuilt\Repair\PopulateApplicationPermissions</step>
         </post-migration>
     </repair-steps>
 </info>
