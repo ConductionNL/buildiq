@@ -145,7 +145,7 @@ describe('SchemaDesigner', () => {
 			},
 		})
 		// Wait for mounted() to settle.
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		await wrapper.vm.$nextTick()
 		expect(storeMocks.fetchCollection).toHaveBeenCalledWith('schema')
 		expect(wrapper.vm.schemas).toHaveLength(1)
@@ -162,7 +162,7 @@ describe('SchemaDesigner', () => {
 				$router: { push: vi.fn() },
 			},
 		})
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		expect(dialogMocks.showError).toHaveBeenCalled()
 	})
 
@@ -177,11 +177,11 @@ describe('SchemaDesigner', () => {
 				$router: { push },
 			},
 		})
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		// Fire the SchemaListPanel @add event.
 		await wrapper.find('.emit-add').trigger('click')
 		// Flush addSchema's awaits.
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		expect(storeMocks.saveObject).toHaveBeenCalled()
 		const [type, body] = storeMocks.saveObject.mock.calls[0]
 		expect(type).toBe('schema')
@@ -210,7 +210,7 @@ describe('SchemaDesigner', () => {
 				$router: { push: vi.fn() },
 			},
 		})
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		await expect(
 			wrapper.vm.addSchema({ slug: 'dup', title: 'D', version: '0.1.0' }),
 		).rejects.toMatchObject({ status: 409 })
@@ -226,7 +226,7 @@ describe('SchemaDesigner', () => {
 				$router: { push: vi.fn() },
 			},
 		})
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		await wrapper.vm.$nextTick()
 		expect(storeMocks.fetchObject).toHaveBeenCalledWith('schema', 'hello')
 		expect(wrapper.vm.staged).toBeTruthy()
@@ -245,7 +245,7 @@ describe('SchemaDesigner', () => {
 				$router: { push: vi.fn() },
 			},
 		})
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		await wrapper.vm.$nextTick()
 		// Initial staged matches persisted → no changes.
 		expect(wrapper.vm.hasStagedChanges).toBe(false)
@@ -279,7 +279,7 @@ describe('SchemaDesigner', () => {
 				$router: { push: vi.fn() },
 			},
 		})
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		await wrapper.vm.$nextTick()
 		// Mutate the staged title so there is a change to save.
 		wrapper.vm.onHeaderChange({
@@ -314,10 +314,10 @@ describe('SchemaDesigner', () => {
 				$router: { push: vi.fn() },
 			},
 		})
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		// Fire the SchemaListPanel @delete event.
 		await wrapper.find('.emit-delete').trigger('click')
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		expect(storeMocks.deleteObject).toHaveBeenCalledWith('schema', 'hello')
 		expect(dialogMocks.showSuccess).toHaveBeenCalled()
 		// Refresh was triggered after the delete settled.
@@ -335,9 +335,9 @@ describe('SchemaDesigner', () => {
 				$router: { push: vi.fn() },
 			},
 		})
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		await wrapper.find('.emit-delete').trigger('click')
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		expect(dialogMocks.showError).toHaveBeenCalled()
 	})
 
@@ -351,7 +351,7 @@ describe('SchemaDesigner', () => {
 				$router: { push },
 			},
 		})
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		await wrapper.find('.emit-open').trigger('click')
 		expect(push).toHaveBeenCalledWith({
 			name: 'SchemaDesigner',
@@ -369,7 +369,7 @@ describe('SchemaDesigner', () => {
 				$router: { push: vi.fn() },
 			},
 		})
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.canSave).toBe(false)
 	})
@@ -384,7 +384,7 @@ describe('SchemaDesigner', () => {
 				$router: { push: vi.fn() },
 			},
 		})
-		await new Promise((r) => setTimeout(r, 0))
+		await new Promise((resolve) => setTimeout(resolve, 0))
 		await wrapper.vm.$nextTick()
 		wrapper.vm.onHeaderChange({
 			slug: wrapper.vm.staged.slug,

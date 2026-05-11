@@ -1,0 +1,321 @@
+{
+	"info": {
+		"_postman_id": "openbuilt-schema-editor-collection",
+		"name": "OpenBuilt Schema Editor — Integration Tests",
+		"description": "Integration tests for spec #4 (openbuilt-schema-editor). Exercises the per-app register schema CRUD endpoints (POST/PUT/DELETE) under `openbuilt-{slug}`.\n\nThese endpoints depend on chain spec #3 (openregister-runtime-schema-api). Until that spec is merged, the `/api/registers/{register}/schemas` surface returns 404; those requests are guarded by `pm.test.skip()` so the collection passes when the upstream API isn't live yet.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{ "key": "username", "value": "{{admin_user}}", "type": "string" },
+			{ "key": "password", "value": "{{admin_password}}", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:8080", "type": "string" },
+		{ "key": "admin_user", "value": "admin", "type": "string" },
+		{ "key": "admin_password", "value": "admin", "type": "string" },
+		{ "key": "app_slug", "value": "hello-world", "type": "string" },
+		{ "key": "register_slug", "value": "openbuilt-hello-world", "type": "string" },
+		{ "key": "schema_slug", "value": "hello-message-integration", "type": "string" },
+		{ "key": "or_api_available", "value": "", "type": "string" }
+	],
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Nextcloud status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/status.php",
+							"host": ["{{base_url}}"],
+							"path": ["status.php"]
+						},
+						"description": "Verify Nextcloud is running before exercising any app endpoint."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Nextcloud responds with 200', function () {",
+									"    pm.response.to.have.status(200)",
+									"})",
+									"pm.test('Nextcloud reports installed', function () {",
+									"    pm.expect(pm.response.json().installed).to.be.true",
+									"})"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "OpenRegister runtime schema API probe",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "OCS-APIRequest", "value": "true" }],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_slug}}/schemas",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openregister", "api", "registers", "{{register_slug}}", "schemas"]
+						},
+						"description": "Probe for the per-register schema endpoint that chain spec #3 (openregister-runtime-schema-api) provides. The probe stashes a `or_api_available` flag so downstream requests can pm.test.skip() when the endpoint isn't deployed yet."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Probe — never fails, just records availability.",
+									"const available = pm.response.code !== 404",
+									"pm.collectionVariables.set('or_api_available', available ? 'true' : 'false')",
+									"pm.test('OR runtime schema endpoint probe — recording availability', function () {",
+									"    pm.expect([200, 401, 403, 404]).to.include(pm.response.code)",
+									"})"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Schema CRUD (chain #3 dependent)",
+			"item": [
+				{
+					"name": "POST schema",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{schema_slug}}\",\n  \"title\": \"Hello message (integration)\",\n  \"description\": \"Created by openbuilt-schema-editor integration tests.\",\n  \"version\": \"0.1.0\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"subject\": { \"type\": \"string\", \"maxLength\": 200 }\n  },\n  \"required\": [\"subject\"],\n  \"x-property-order\": [\"subject\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_slug}}/schemas",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openregister", "api", "registers", "{{register_slug}}", "schemas"]
+						},
+						"description": "Create a new schema in the per-app register. Spec REQ-OBSD-002."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.collectionVariables.get('or_api_available') !== 'true') {",
+									"    pm.test.skip('OR runtime schema endpoint not deployed (chain #3 not merged) — skipping POST')",
+									"    return",
+									"}",
+									"pm.test('POST schema returns 201 or 200', function () {",
+									"    pm.expect([200, 201]).to.include(pm.response.code)",
+									"})",
+									"pm.test('Response carries the schema slug', function () {",
+									"    const json = pm.response.json()",
+									"    const slug = json.slug || (json['@self'] && json['@self'].slug)",
+									"    pm.expect(slug).to.eql(pm.collectionVariables.get('schema_slug'))",
+									"})"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET schema list — POST schema appears",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "OCS-APIRequest", "value": "true" }],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_slug}}/schemas",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openregister", "api", "registers", "{{register_slug}}", "schemas"]
+						},
+						"description": "List schemas in the per-app register; verify the POSTed schema is present. Spec REQ-OBSD-001."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.collectionVariables.get('or_api_available') !== 'true') {",
+									"    pm.test.skip('OR runtime schema endpoint not deployed (chain #3 not merged) — skipping list verification')",
+									"    return",
+									"}",
+									"pm.test('GET schemas returns 200', function () {",
+									"    pm.response.to.have.status(200)",
+									"})",
+									"pm.test('Newly created schema is in the list', function () {",
+									"    const body = pm.response.json()",
+									"    const list = Array.isArray(body) ? body : (body.results || body.data || [])",
+									"    const slugs = list.map((s) => s.slug || (s['@self'] && s['@self'].slug))",
+									"    pm.expect(slugs).to.include(pm.collectionVariables.get('schema_slug'))",
+									"})"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PUT schema — edit + add field",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{schema_slug}}\",\n  \"title\": \"Hello message (renamed)\",\n  \"description\": \"Updated by integration tests.\",\n  \"version\": \"0.2.0\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"subject\": { \"type\": \"string\", \"maxLength\": 200 },\n    \"body\": { \"type\": \"string\", \"maxLength\": 2000 }\n  },\n  \"required\": [\"subject\"],\n  \"x-property-order\": [\"subject\", \"body\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_slug}}/schemas/{{schema_slug}}",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openregister", "api", "registers", "{{register_slug}}", "schemas", "{{schema_slug}}"]
+						},
+						"description": "Update the schema — bumps version, renames title, adds a `body` field. Spec REQ-OBSD-003 + REQ-OBSD-006."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.collectionVariables.get('or_api_available') !== 'true') {",
+									"    pm.test.skip('OR runtime schema endpoint not deployed (chain #3 not merged) — skipping PUT')",
+									"    return",
+									"}",
+									"pm.test('PUT schema returns 200', function () {",
+									"    pm.response.to.have.status(200)",
+									"})",
+									"pm.test('Response reflects updated title', function () {",
+									"    const json = pm.response.json()",
+									"    pm.expect(json.title).to.eql('Hello message (renamed)')",
+									"})",
+									"pm.test('Response has both properties', function () {",
+									"    const json = pm.response.json()",
+									"    pm.expect(json.properties).to.have.property('subject')",
+									"    pm.expect(json.properties).to.have.property('body')",
+									"})"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST schema with lifecycle + on_transition actions (ADR-031)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{schema_slug}}-lifecycle\",\n  \"title\": \"Lifecycle test\",\n  \"description\": \"\",\n  \"version\": \"0.1.0\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"subject\": { \"type\": \"string\" }\n  },\n  \"x-openregister-lifecycle\": {\n    \"initial\": \"draft\",\n    \"states\": [\n      { \"name\": \"draft\", \"label\": \"Draft\" },\n      { \"name\": \"published\", \"label\": \"Published\" }\n    ],\n    \"transitions\": [\n      {\n        \"from\": \"draft\",\n        \"to\": \"published\",\n        \"label\": \"Publish\",\n        \"on_transition\": {\n          \"actions\": [\n            { \"type\": \"audit-event-emit\", \"payload\": \"hello.published\" }\n          ]\n        }\n      }\n    ]\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_slug}}/schemas",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openregister", "api", "registers", "{{register_slug}}", "schemas"]
+						},
+						"description": "Create a schema with the declarative x-openregister-lifecycle + typed on_transition.actions block. Spec REQ-OBSD-004 + ADR-031."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.collectionVariables.get('or_api_available') !== 'true') {",
+									"    pm.test.skip('OR runtime schema endpoint not deployed (chain #3 not merged) — skipping lifecycle POST')",
+									"    return",
+									"}",
+									"pm.test('POST schema with lifecycle returns 201 or 200', function () {",
+									"    pm.expect([200, 201]).to.include(pm.response.code)",
+									"})",
+									"pm.test('Persisted lifecycle preserves typed on_transition actions', function () {",
+									"    const json = pm.response.json()",
+									"    const lc = json['x-openregister-lifecycle']",
+									"    pm.expect(lc.initial).to.eql('draft')",
+									"    pm.expect(lc.transitions[0].on_transition.actions[0].type).to.eql('audit-event-emit')",
+									"})"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE schema",
+					"request": {
+						"method": "DELETE",
+						"header": [{ "key": "OCS-APIRequest", "value": "true" }],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_slug}}/schemas/{{schema_slug}}",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openregister", "api", "registers", "{{register_slug}}", "schemas", "{{schema_slug}}"]
+						},
+						"description": "Tear-down delete. Spec REQ-OBSD-008."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.collectionVariables.get('or_api_available') !== 'true') {",
+									"    pm.test.skip('OR runtime schema endpoint not deployed (chain #3 not merged) — skipping DELETE')",
+									"    return",
+									"}",
+									"pm.test('DELETE schema returns 204 or 200', function () {",
+									"    pm.expect([200, 204]).to.include(pm.response.code)",
+									"})"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE lifecycle schema (teardown)",
+					"request": {
+						"method": "DELETE",
+						"header": [{ "key": "OCS-APIRequest", "value": "true" }],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_slug}}/schemas/{{schema_slug}}-lifecycle",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openregister", "api", "registers", "{{register_slug}}", "schemas", "{{schema_slug}}-lifecycle"]
+						},
+						"description": "Tear-down delete of the lifecycle fixture. Spec REQ-OBSD-008."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.collectionVariables.get('or_api_available') !== 'true') {",
+									"    pm.test.skip('OR runtime schema endpoint not deployed (chain #3 not merged) — skipping lifecycle DELETE')",
+									"    return",
+									"}",
+									"pm.test('DELETE lifecycle schema returns 204 or 200', function () {",
+									"    pm.expect([200, 204, 404]).to.include(pm.response.code)",
+									"})"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
