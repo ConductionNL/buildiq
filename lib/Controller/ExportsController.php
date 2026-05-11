@@ -121,7 +121,9 @@ class ExportsController extends Controller
                 return false;
             }
 
-            $found = $service->find(id: $applicationSlug);
+            // Positional call: $service is untyped at this point (DI
+            // container returns object) so PHPStan can't verify named args.
+            $found = $service->find($applicationSlug);
             return $found !== null;
         } catch (\Throwable $e) {
             $this->logger->debug('OpenBuilt export: authz fallback lookup failed: '.$e->getMessage());
@@ -153,7 +155,8 @@ class ExportsController extends Controller
                 return false;
             }
 
-            $found = $service->find(id: $jobUuid);
+            // Positional call: $service is untyped at this point.
+            $found = $service->find($jobUuid);
             if ($found === null) {
                 return false;
             }

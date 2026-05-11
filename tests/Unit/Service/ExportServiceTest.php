@@ -8,7 +8,6 @@ use OCA\OpenBuilt\Service\ExportService;
 use OCA\OpenBuilt\Service\PlaceholderResolver;
 use OCP\Files\IAppData;
 use PHPUnit\Framework\TestCase;
-use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use ZipArchive;
 
@@ -82,12 +81,10 @@ final class ExportServiceTest extends TestCase
     private function buildService(): ExportService
     {
         $appData = $this->createStub(IAppData::class);
-        $container = $this->createStub(ContainerInterface::class);
         return new ExportService(
             $appData,
             new PlaceholderResolver(),
-            new NullLogger(),
-            $container
+            new NullLogger()
         );
     }//end buildService()
 

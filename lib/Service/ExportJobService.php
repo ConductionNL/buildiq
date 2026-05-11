@@ -258,7 +258,8 @@ class ExportJobService
                 return;
             }
 
-            $existing = $service->find(id: $jobUuid);
+            // Positional call: $service is untyped at this point.
+            $existing = $service->find($jobUuid);
             if ($existing === null) {
                 return;
             }

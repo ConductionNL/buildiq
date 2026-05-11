@@ -32,7 +32,6 @@ namespace OCA\OpenBuilt\Service;
 use FilesystemIterator;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -82,13 +81,11 @@ class ExportService
      * @param IAppData            $appData             The app-data area for scratch + exports.
      * @param PlaceholderResolver $placeholderResolver Pure resolver for {{tokens}}.
      * @param LoggerInterface     $logger              Logger.
-     * @param ContainerInterface  $container           Container for optional OR services.
      */
     public function __construct(
         private IAppData $appData,
         private PlaceholderResolver $placeholderResolver,
         private LoggerInterface $logger,
-        private ContainerInterface $container,
     ) {
         $this->templateRoot = dirname(__DIR__).'/Resources/template';
         // 2026-01-01T00:00:00Z — fixed for deterministic ZIPs.
