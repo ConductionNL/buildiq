@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenBuilt\Tests\Unit\Controller;
 
 use OCA\OpenBuilt\Controller\ApplicationsController;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroup;
@@ -69,6 +71,13 @@ class ApplicationsControllerTest extends TestCase
     private IGroupManager&MockObject $groupManager;
 
     /**
+     * Mock OR audit-trail mapper.
+     *
+     * @var AuditTrailMapper&MockObject
+     */
+    private AuditTrailMapper&MockObject $auditTrailMapper;
+
+    /**
      * Set up test fixtures.
      *
      * @return void
@@ -81,8 +90,9 @@ class ApplicationsControllerTest extends TestCase
         $this->objectService = $this->getMockBuilder(\stdClass::class)
             ->addMethods(['searchObjects', 'find'])
             ->getMock();
-        $this->userSession  = $this->createMock(IUserSession::class);
-        $this->groupManager = $this->createMock(IGroupManager::class);
+        $this->userSession      = $this->createMock(IUserSession::class);
+        $this->groupManager     = $this->createMock(IGroupManager::class);
+        $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
     }//end setUp()
 
     /**
@@ -141,6 +151,7 @@ class ApplicationsControllerTest extends TestCase
             schemaMapper: $schemaMapper,
             userSession: $this->userSession,
             groupManager: $this->groupManager,
+            auditTrailMapper: $this->auditTrailMapper,
         );
     }//end buildController()
 
@@ -318,4 +329,127 @@ class ApplicationsControllerTest extends TestCase
         $data = $result->getData();
         self::assertSame('inconsistent_state', $data['error']);
     }//end testGetManifestReturns500WhenRouteMissingApplicationUuid()
+
+    /**
+     * listMine returns only Applications the caller has a role on
+     * (REQ-OBRBAC-002 / REQ-OBR-007). Non-role rows are filtered out
+     * server-side; the caller never sees their `permissions` or
+     * `manifest` payloads.
+     *
+     * @return void
+     */
+    public function testListMineFiltersToRoledApplications(): void
+    {
+        $controller = $this->buildController(uid: 'bob', callerGroups: ['team-alpha']);
+
+        $alpha = [
+            'uuid'        => 'app-alpha',
+            'slug'        => 'alpha',
+            'name'        => 'Alpha',
+            'manifest'    => ['version' => '1.0.0'],
+            'permissions' => ['owners' => [], 'editors' => [], 'viewers' => ['team-alpha']],
+        ];
+        $beta = [
+            'uuid'        => 'app-beta',
+            'slug'        => 'beta',
+            'name'        => 'Beta',
+            'manifest'    => ['version' => '1.0.0'],
+            'permissions' => ['owners' => ['team-omega'], 'editors' => [], 'viewers' => []],
+        ];
+
+        $this->objectService->method('searchObjects')->willReturn([$alpha, $beta]);
+
+        $result = $controller->listMine();
+
+        self::assertSame(Http::STATUS_OK, $result->getStatus());
+        $data = $result->getData();
+        self::assertCount(1, $data);
+        self::assertSame('app-alpha', $data[0]['uuid']);
+    }//end testListMineFiltersToRoledApplications()
+
+    /**
+     * listMine returns the full unfiltered list to a Nextcloud admin
+     * and records a single audit event for the bypass (REQ-OBRBAC-006).
+     *
+     * @return void
+     */
+    public function testListMineAdminBypassReturnsAllAndAudits(): void
+    {
+        $controller = $this->buildController(uid: 'sysadmin', callerGroups: ['admin'], isAdmin: true);
+
+        $alpha = [
+            'uuid'        => 'app-alpha',
+            'slug'        => 'alpha',
+            'permissions' => ['owners' => [], 'editors' => [], 'viewers' => ['team-alpha']],
+        ];
+        $beta = [
+            'uuid'        => 'app-beta',
+            'slug'        => 'beta',
+            'permissions' => ['owners' => ['team-omega'], 'editors' => [], 'viewers' => []],
+        ];
+
+        $this->objectService->method('searchObjects')->willReturn([$alpha, $beta]);
+
+        $this->logger->expects(self::atLeastOnce())
+            ->method('info')
+            ->with(
+                self::stringContains('rbac.admin_bypass'),
+                self::callback(static function (array $ctx): bool {
+                    return ($ctx['actor'] ?? null) === 'sysadmin'
+                        && ($ctx['count'] ?? null) === 2;
+                })
+            );
+
+        $result = $controller->listMine();
+
+        self::assertSame(Http::STATUS_OK, $result->getStatus());
+        self::assertCount(2, $result->getData());
+    }//end testListMineAdminBypassReturnsAllAndAudits()
+
+    /**
+     * Admin bypass on the manifest endpoint writes an entry to the OR
+     * audit trail (REQ-OBRBAC-006), not just the PSR logger. The
+     * Application is passed in as an ObjectEntity so the mapper can be
+     * called.
+     *
+     * @return void
+     */
+    public function testGetManifestAdminBypassWritesOrAuditTrail(): void
+    {
+        $controller = $this->buildController(uid: 'sysadmin', callerGroups: ['admin'], isAdmin: true);
+
+        // Use an ObjectEntity-like stub so the controller reaches the
+        // AuditTrailMapper write path (the array-only fixture used by
+        // wireApplication() exercises the fallback PSR-log branch).
+        $manifest = [
+            'version' => '1.0.0',
+            'menu'    => [],
+            'pages'   => [['id' => 'p1', 'route' => '/', 'type' => 'index']],
+        ];
+
+        $entity = $this->createMock(ObjectEntity::class);
+        $entity->method('jsonSerialize')->willReturn([
+            'manifest'    => $manifest,
+            'permissions' => ['owners' => ['team-alpha'], 'editors' => [], 'viewers' => []],
+        ]);
+
+        $this->objectService->method('searchObjects')
+            ->willReturn([['applicationUuid' => 'abc-123']]);
+        $this->objectService->method('find')->willReturn($entity);
+
+        $this->auditTrailMapper->expects(self::once())
+            ->method('createAuditTrailEntry')
+            ->with(
+                self::identicalTo($entity),
+                self::equalTo('rbac.admin_bypass'),
+                self::callback(static function (array $ctx): bool {
+                    return ($ctx['actor'] ?? null) === 'sysadmin'
+                        && ($ctx['slug'] ?? null) === 'hello-world';
+                })
+            );
+
+        $result = $controller->getManifest(slug: 'hello-world');
+
+        self::assertSame(Http::STATUS_OK, $result->getStatus());
+    }//end testGetManifestAdminBypassWritesOrAuditTrail()
 }//end class

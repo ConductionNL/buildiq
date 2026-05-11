@@ -3,10 +3,12 @@
 /**
  * OpenBuilt Applications Controller
  *
- * Serves the per-virtual-app manifest endpoint. Per design.md Decision 6
- * this is the ONLY app-local controller surface — all CRUD on Application
- * and BuiltAppRoute objects is delegated to OpenRegister's REST API
- * directly (ADR-022).
+ * Serves the per-virtual-app manifest endpoint plus the RBAC-filtered list
+ * endpoint used by the editor (REQ-OBRBAC-002 / REQ-OBR-007). Per design.md
+ * Decision 6 only the manifest endpoint exists; this controller adds a
+ * minimal `listMine` action because OR's schema-level read rule is a
+ * coarse group-ACL (not a row-level filter on the Application's
+ * `permissions` block) so the list MUST be filtered server-side here.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -28,6 +30,8 @@ declare(strict_types=1);
 namespace OCA\OpenBuilt\Controller;
 
 use OCA\OpenBuilt\AppInfo\Application;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -38,11 +42,12 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
- * Controller for the OpenBuilt manifest endpoint.
+ * Controller for the OpenBuilt manifest + list endpoints.
  */
 class ApplicationsController extends Controller
 {
@@ -53,15 +58,22 @@ class ApplicationsController extends Controller
     private const ADMIN_GROUP = 'admin';
 
     /**
+     * Audit-event identifier emitted to the OR audit trail when an admin
+     * bypasses the per-Application permissions check (REQ-OBRBAC-006).
+     */
+    private const EVENT_ADMIN_BYPASS = 'rbac.admin_bypass';
+
+    /**
      * Constructor.
      *
-     * @param IRequest        $request        The current HTTP request
-     * @param LoggerInterface $logger         PSR logger for diagnostics
-     * @param ObjectService   $objectService  OpenRegister object service (hard dep via info.xml)
-     * @param RegisterMapper  $registerMapper Resolves slugs/UUIDs to numeric register IDs
-     * @param SchemaMapper    $schemaMapper   Resolves slugs/UUIDs to numeric schema IDs
-     * @param IUserSession    $userSession    Current Nextcloud user session
-     * @param IGroupManager   $groupManager   Group membership resolver
+     * @param IRequest              $request          The current HTTP request
+     * @param LoggerInterface       $logger           PSR logger for diagnostics
+     * @param ObjectService         $objectService    OpenRegister object service (hard dep via info.xml)
+     * @param RegisterMapper        $registerMapper   Resolves slugs/UUIDs to numeric register IDs
+     * @param SchemaMapper          $schemaMapper     Resolves slugs/UUIDs to numeric schema IDs
+     * @param IUserSession          $userSession      Current Nextcloud user session
+     * @param IGroupManager         $groupManager     Group membership resolver
+     * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
      *
      * @return void
      */
@@ -73,6 +85,7 @@ class ApplicationsController extends Controller
         private readonly SchemaMapper $schemaMapper,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
+        private readonly ?AuditTrailMapper $auditTrailMapper = null,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
     }//end __construct()
@@ -175,8 +188,9 @@ class ApplicationsController extends Controller
             // ADR-022 §Exceptions(1)). Returns 403 with a fixed error envelope
             // when the caller has no role intersection and is not exercising
             // the audited admin bypass declared in REQ-OBRBAC-006.
-            $denial = $this->enforcePermissions(
-                application: $applicationArray,
+            $denial = $this->requirePermission(
+                application: $application instanceof ObjectEntity ? $application : null,
+                applicationArray: $applicationArray,
                 slug: $slug
             );
             if ($denial !== null) {
@@ -366,6 +380,113 @@ class ApplicationsController extends Controller
     }//end resolveVersionBlob()
 
     /**
+     * Return the list of Applications the caller has any role on.
+     *
+     * Closes the list-endpoint IDOR (REQ-OBRBAC-002 / REQ-OBR-007). OR's
+     * schema-level read rule is a coarse group ACL — not a row-level
+     * predicate on `permissions.owners ∪ editors ∪ viewers` — so the
+     * frontend cannot rely on OR's REST list endpoint without leaking
+     * every Application's permissions block and manifest to every
+     * authenticated user. This action fetches all Applications via OR
+     * and filters them server-side using the same role-derivation rule
+     * as `requirePermission`. Admin callers receive the full unfiltered
+     * list and a single audit event is recorded (REQ-OBRBAC-006).
+     *
+     * Output shape mirrors what `ApplicationEditor.vue` previously
+     * received from OR REST: a flat array of Application objects with
+     * `uuid`, `id`, `slug`, `name`, `status`, `version`, `manifest`,
+     * `permissions` — no OR envelope, no pagination metadata.
+     *
+     * @return JSONResponse The filtered Application list
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function listMine(): JSONResponse
+    {
+        try {
+            $user = $this->userSession->getUser();
+            if ($user === null) {
+                return new JSONResponse(
+                    data: ['error' => 'forbidden', 'code' => 'openbuilt.rbac.no_role'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
+
+            $registerId = $this->registerMapper->find('openbuilt', _multitenancy: false)->getId();
+            $appSchema  = $this->schemaMapper->find('application', _multitenancy: false)->getId();
+
+            // Fetch all Applications scoped to the openbuilt register +
+            // application schema. OR's multitenancy + RBAC still applies;
+            // the per-Application filter below is the load-bearing
+            // authorization boundary.
+            $results = $this->objectService->searchObjects(
+                query: [
+                    '@self' => [
+                        'register' => $registerId,
+                        'schema'   => $appSchema,
+                    ],
+                ]
+            );
+
+            if (is_array($results) === false) {
+                $results = [];
+            }
+
+            $userGroups = $this->getUserGroupIds(user: $user);
+            $isAdmin    = $this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP);
+
+            $filtered     = [];
+            $adminBypassUsed = false;
+            foreach ($results as $entry) {
+                $app = $this->normaliseObject(object: $entry);
+                if ($app === []) {
+                    continue;
+                }
+
+                $authorised = $this->collectAuthorisedGroups(application: $app);
+                $hasRole    = count(array_intersect($userGroups, $authorised)) > 0;
+
+                if ($hasRole === true) {
+                    $filtered[] = $app;
+                    continue;
+                }
+
+                if ($isAdmin === true) {
+                    // Admin sees the row via the bypass; single audit
+                    // event for the listing covers all rows surfaced
+                    // by the bypass (the per-row manifest fetch is the
+                    // surface that emits a separate per-slug audit).
+                    $filtered[]      = $app;
+                    $adminBypassUsed = true;
+                }
+            }
+
+            if ($adminBypassUsed === true) {
+                $this->logger->info(
+                    'OpenBuilt: rbac.admin_bypass exercised on Application list',
+                    [
+                        'actor'     => $user->getUID(),
+                        'event'     => self::EVENT_ADMIN_BYPASS.'.list',
+                        'count'     => count($filtered),
+                        'timestamp' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+                    ]
+                );
+            }
+
+            return new JSONResponse(data: $filtered, statusCode: Http::STATUS_OK);
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                'OpenBuilt: listMine failed: '.$e->getMessage(),
+                ['exception' => $e]
+            );
+            return new JSONResponse(
+                data: ['error' => 'internal_error', 'message' => 'Failed to load applications'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+    }//end listMine()
+
+    /**
      * Enforce the per-Application RBAC permissions block.
      *
      * Computes the caller's group set and intersects with the Application's
@@ -374,18 +495,23 @@ class ApplicationsController extends Controller
      * with the fixed `openbuilt.rbac.no_role` error envelope otherwise.
      *
      * Admin bypass per design.md Decision 5: a caller in the Nextcloud
-     * `admin` group always passes; the bypass is logged as a
-     * `rbac.admin_bypass` audit-style event (REQ-OBRBAC-006). The bypass
-     * MUST stay narrow — controller-only, audited — to avoid becoming a
-     * hidden parallel auth pathway.
+     * `admin` group always passes; the bypass is recorded as a
+     * `rbac.admin_bypass` event in OR's per-object audit trail
+     * (REQ-OBRBAC-006) so it surfaces in REQ-OBRBAC-007's permission
+     * history panel. The bypass MUST stay narrow — controller-only,
+     * audited — to avoid becoming a hidden parallel auth pathway.
      *
-     * @param array<string, mixed> $application The Application data
-     * @param string               $slug        The slug used in the audit envelope
+     * @param ObjectEntity|null    $application      The Application entity (for audit-trail write)
+     * @param array<string, mixed> $applicationArray The Application data (for permission inspection)
+     * @param string               $slug             The slug used in the audit envelope
      *
      * @return JSONResponse|null Null on allow, 403 JSONResponse on deny
      */
-    private function enforcePermissions(array $application, string $slug): ?JSONResponse
-    {
+    private function requirePermission(
+        ?ObjectEntity $application,
+        array $applicationArray,
+        string $slug
+    ): ?JSONResponse {
         $user = $this->userSession->getUser();
         if ($user === null) {
             // Unauthenticated callers should not reach a #[NoAdminRequired]
@@ -398,22 +524,14 @@ class ApplicationsController extends Controller
         }
 
         $userGroups = $this->getUserGroupIds(user: $user);
-        $authorised = $this->collectAuthorisedGroups(application: $application);
+        $authorised = $this->collectAuthorisedGroups(application: $applicationArray);
 
         if (count(array_intersect($userGroups, $authorised)) > 0) {
             return null;
         }
 
         if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === true) {
-            $this->logger->info(
-                'OpenBuilt: rbac.admin_bypass exercised',
-                [
-                    'actor'     => $user->getUID(),
-                    'slug'      => $slug,
-                    'event'     => 'rbac.admin_bypass',
-                    'timestamp' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
-                ]
-            );
+            $this->recordAdminBypass(application: $application, slug: $slug, actor: $user->getUID());
             return null;
         }
 
@@ -421,16 +539,75 @@ class ApplicationsController extends Controller
             data: ['error' => 'forbidden', 'code' => 'openbuilt.rbac.no_role'],
             statusCode: Http::STATUS_FORBIDDEN
         );
-    }//end enforcePermissions()
+    }//end requirePermission()
+
+    /**
+     * Record an admin-bypass event in OR's audit trail (REQ-OBRBAC-006).
+     *
+     * Writes a structured entry to OpenRegister's per-object audit trail
+     * via AuditTrailMapper so the bypass surfaces in REQ-OBRBAC-007's
+     * Permission history panel rather than being buried in the Nextcloud
+     * log. Falls back to the PSR logger when OR's audit mapper is
+     * unavailable (e.g. OR not loaded in a unit-test harness) so the
+     * controller never silently drops an audit event.
+     *
+     * @param ObjectEntity|null $application The Application entity bypassed
+     * @param string            $slug        The slug used in the audit envelope
+     * @param string            $actor       The bypassing user's UID
+     *
+     * @return void
+     */
+    private function recordAdminBypass(?ObjectEntity $application, string $slug, string $actor): void
+    {
+        $timestamp = (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM);
+        $context   = [
+            'event'     => self::EVENT_ADMIN_BYPASS,
+            'actor'     => $actor,
+            'slug'      => $slug,
+            'timestamp' => $timestamp,
+        ];
+
+        if ($this->auditTrailMapper !== null && $application !== null) {
+            try {
+                $this->auditTrailMapper->createAuditTrailEntry(
+                    object: $application,
+                    action: self::EVENT_ADMIN_BYPASS,
+                    context: $context
+                );
+                // Mirror to the PSR logger at info level so the bypass is
+                // discoverable in operator-facing log streams as well — the
+                // audit trail is the system of record, the PSR log is the
+                // operational tap.
+                $this->logger->info(
+                    'OpenBuilt: rbac.admin_bypass exercised',
+                    $context
+                );
+                return;
+            } catch (\Throwable $e) {
+                $this->logger->error(
+                    'OpenBuilt: failed to record admin bypass in OR audit trail; falling back to PSR log',
+                    array_merge($context, ['exception' => $e->getMessage()])
+                );
+            }
+        }
+
+        // Fallback path — audit mapper unavailable or no Application
+        // entity (defensive). Emit to PSR logger at info level so the
+        // event still surfaces somewhere reviewable.
+        $this->logger->info(
+            'OpenBuilt: rbac.admin_bypass exercised',
+            $context
+        );
+    }//end recordAdminBypass()
 
     /**
      * Return the given user's Nextcloud group ID list.
      *
-     * @param \OCP\IUser $user The Nextcloud user
+     * @param IUser $user The Nextcloud user
      *
      * @return array<int, string>
      */
-    private function getUserGroupIds(\OCP\IUser $user): array
+    private function getUserGroupIds(IUser $user): array
     {
         $groups = $this->groupManager->getUserGroups($user);
         $ids    = [];
@@ -464,6 +641,7 @@ class ApplicationsController extends Controller
             if (is_array($bucket) === false) {
                 continue;
             }
+
             foreach ($bucket as $gid) {
                 if (is_string($gid) === true && $gid !== '') {
                     $merged[$gid] = true;

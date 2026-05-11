@@ -240,9 +240,14 @@ export default {
 		},
 		async refresh() {
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuilt/application')
-				const { data } = await axios.get(url, { params: { _limit: 100 } })
-				this.applications = (data && data.results) ? data.results : (Array.isArray(data) ? data : [])
+				// REQ-OBRBAC-002 / REQ-OBR-007 — list endpoint filters server-side
+				// by the caller's role on each Application. Calling OR's REST
+				// directly would leak every Application + permissions block to
+				// every authed user (IDOR). The frontend filter via hasAnyRole
+				// is belt-and-braces only.
+				const url = generateUrl('/apps/openbuilt/api/applications')
+				const { data } = await axios.get(url)
+				this.applications = Array.isArray(data) ? data : []
 			} catch (e) {
 				this.applications = []
 				this.validationError = `Failed to load applications: ${e.message || e}`
