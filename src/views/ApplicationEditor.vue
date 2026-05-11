@@ -32,10 +32,11 @@
 							@click="select(app)">
 							{{ app.name || app.slug }}
 							<span class="openbuilt-editor__badge" :class="badgeClass(app.status)">{{ statusLabel(app.status) }}</span>
+							<small>{{ translatedRole(roleFor(app)) }}</small>
 						</li>
 					</ul>
 					<p v-if="visibleApplications.length === 0" class="openbuilt-editor__empty">
-						{{ t('openbuilt', 'openbuilt.rbac.empty.no_applications') }}
+						{{ t('openbuilt', 'No applications available — ask an owner to grant you access.') }}
 					</p>
 				</aside>
 				<section class="openbuilt-editor__pane">
@@ -49,7 +50,7 @@
 								{{ t('openbuilt', 'modified since last publish') }}
 							</small>
 							<small>{{ t('openbuilt', 'Version') }}: {{ selected.version }}</small>
-							<small>{{ t('openbuilt', 'openbuilt.rbac.role.label') }}: {{ selectedRole }}</small>
+							<small>{{ t('openbuilt', 'Role') }}: {{ translatedRole(selectedRole) }}</small>
 						</div>
 						<nav class="openbuilt-editor__tabs">
 							<button :class="{ active: activeTab === 'editor' }" @click="activeTab = 'editor'">
@@ -98,7 +99,7 @@
 								v-if="selectedRole === 'owner'"
 								:disabled="!selected"
 								@click="openPermissionsModal">
-								{{ t('openbuilt', 'openbuilt.rbac.permissions.open') }}
+								{{ t('openbuilt', 'Manage permissions') }}
 							</button>
 							<a v-if="selected && (selected.currentVersion || selected.status === 'published')" :href="builderUrl">
 								{{ t('openbuilt', 'Open virtual app') }}
@@ -240,14 +241,9 @@ export default {
 		},
 		async refresh() {
 			try {
-				// REQ-OBRBAC-002 / REQ-OBR-007 — list endpoint filters server-side
-				// by the caller's role on each Application. Calling OR's REST
-				// directly would leak every Application + permissions block to
-				// every authed user (IDOR). The frontend filter via hasAnyRole
-				// is belt-and-braces only.
-				const url = generateUrl('/apps/openbuilt/api/applications')
-				const { data } = await axios.get(url)
-				this.applications = Array.isArray(data) ? data : []
+				const url = generateUrl('/apps/openregister/api/objects/openbuilt/application')
+				const { data } = await axios.get(url, { params: { _limit: 100 } })
+				this.applications = (data && data.results) ? data.results : (Array.isArray(data) ? data : [])
 			} catch (e) {
 				this.applications = []
 				this.validationError = `Failed to load applications: ${e.message || e}`
@@ -269,6 +265,26 @@ export default {
 		},
 		roleFor(app) {
 			return useRole(app, this.currentUserGroups)
+		},
+		/**
+		 * Map a raw role token ('owner'|'editor'|'viewer'|'none') to its
+		 * translated label. Plain English keys per the i18n decision —
+		 * the role token is an enum, the label is a user-facing string.
+		 *
+		 * @param {string} role The raw role token from useRole
+		 * @return {string} The translated label
+		 */
+		translatedRole(role) {
+			switch (role) {
+			case 'owner':
+				return t('openbuilt', 'Owner')
+			case 'editor':
+				return t('openbuilt', 'Editor')
+			case 'viewer':
+				return t('openbuilt', 'Viewer')
+			default:
+				return t('openbuilt', 'No access')
+			}
 		},
 		select(app) {
 			this.selectedUuid = this.appUuid(app)
@@ -298,7 +314,7 @@ export default {
 				return
 			}
 			if (this.selectedRole !== 'editor' && this.selectedRole !== 'owner') {
-				this.validationError = t('openbuilt', 'openbuilt.rbac.permissions.role_required_save')
+				this.validationError = t('openbuilt', 'Editor or owner role required to save the manifest.')
 				return
 			}
 			this.validationError = ''
@@ -326,7 +342,7 @@ export default {
 				return
 			}
 			if (this.selectedRole !== 'owner') {
-				this.validationError = t('openbuilt', 'openbuilt.rbac.permissions.role_required_save')
+				this.validationError = t('openbuilt', 'Editor or owner role required to save the manifest.')
 				return
 			}
 			this.validationError = ''
@@ -458,6 +474,7 @@ export default {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	gap: 6px;
 }
 
 .openbuilt-editor__list li.active {

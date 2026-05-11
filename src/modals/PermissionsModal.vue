@@ -12,47 +12,47 @@
   -->
 <template>
 	<NcDialog
-		:name="t('openbuilt', 'openbuilt.rbac.permissions.title')"
+		:name="t('openbuilt', 'Permissions')"
 		:open="open"
 		size="normal"
 		@update:open="onClose">
 		<div class="openbuilt-permissions-modal">
 			<p class="openbuilt-permissions-modal__help">
-				{{ t('openbuilt', 'openbuilt.rbac.permissions.help') }}
+				{{ t('openbuilt', 'Configure which Nextcloud groups can view, edit, or own this virtual app. Members of any of these groups will see the app in their list; only owners may publish, archive, delete, transfer ownership, or change these permissions.') }}
 			</p>
 
 			<NcSelect
 				v-model="ownersModel"
 				:options="groupOptions"
 				:multiple="true"
-				:input-label="t('openbuilt', 'openbuilt.rbac.permissions.owners')"
+				:input-label="t('openbuilt', 'Owners (full control)')"
 				label="label"
 				track-by="value" />
 			<NcSelect
 				v-model="editorsModel"
 				:options="groupOptions"
 				:multiple="true"
-				:input-label="t('openbuilt', 'openbuilt.rbac.permissions.editors')"
+				:input-label="t('openbuilt', 'Editors (can save drafts)')"
 				label="label"
 				track-by="value" />
 			<NcSelect
 				v-model="viewersModel"
 				:options="groupOptions"
 				:multiple="true"
-				:input-label="t('openbuilt', 'openbuilt.rbac.permissions.viewers')"
+				:input-label="t('openbuilt', 'Viewers (read-only)')"
 				label="label"
 				track-by="value" />
 
 			<div v-if="orphanError" class="openbuilt-permissions-modal__error">
-				{{ t('openbuilt', 'openbuilt.rbac.permissions.orphan_error') }}
+				{{ t('openbuilt', 'At least one owner group is required — saving with no owners would orphan this application.') }}
 			</div>
 
 			<div class="openbuilt-permissions-modal__actions">
 				<NcButton type="tertiary" @click="onClose">
-					{{ t('openbuilt', 'openbuilt.rbac.permissions.cancel') }}
+					{{ t('openbuilt', 'Cancel') }}
 				</NcButton>
 				<NcButton type="primary" :disabled="saving" @click="save">
-					{{ saving ? t('openbuilt', 'openbuilt.rbac.permissions.saving') : t('openbuilt', 'openbuilt.rbac.permissions.save') }}
+					{{ saving ? t('openbuilt', 'Saving permissions…') : t('openbuilt', 'Save permissions') }}
 				</NcButton>
 			</div>
 		</div>
