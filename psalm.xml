@@ -66,6 +66,8 @@
                 <referencedClass name="OCA\OpenRegister\Service\ConfigurationService"/>
                 <referencedClass name="OCA\OpenRegister\Db\RegisterMapper"/>
                 <referencedClass name="OCA\OpenRegister\Db\SchemaMapper"/>
+                <referencedClass name="OCA\OpenRegister\Db\AuditTrailMapper"/>
+                <referencedClass name="OCA\OpenRegister\Db\ObjectEntity"/>
                 <!-- Nextcloud server internals -->
                 <referencedClass name="OC"/>
                 <!-- GuzzleHttp (loaded via composer at runtime) -->

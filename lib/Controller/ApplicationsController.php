@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuilt\Controller;
 
+use DateTimeImmutable;
+use DateTimeInterface;
 use OCA\OpenBuilt\AppInfo\Application;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -45,6 +47,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Controller for the OpenBuilt manifest + list endpoints.
@@ -85,7 +88,7 @@ class ApplicationsController extends Controller
         private readonly SchemaMapper $schemaMapper,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
-        private readonly ?AuditTrailMapper $auditTrailMapper = null,
+        private readonly ?AuditTrailMapper $auditTrailMapper=null,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
     }//end __construct()
@@ -124,72 +127,25 @@ class ApplicationsController extends Controller
     public function getManifest(string $slug): JSONResponse
     {
         try {
-            // Resolve register + schema slugs to numeric IDs. OR's searchObjects
-            // expects numeric IDs in @self; the slug-resolution shortcut isn't
-            // applied at this layer (verified during smoke-test 2026-05-11).
-            // _multitenancy=false bypasses the org filter on the LOOKUP only —
-            // object-level multitenancy is still enforced via searchObjects below.
-            $registerId  = $this->registerMapper->find('openbuilt', _multitenancy: false)->getId();
-            $routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
-
-            // Step 1 — resolve slug → applicationUuid via the BuiltAppRoute index.
-            // Per OR's ObjectService::searchObjects: query shape is
-            // { '@self': { register, schema, ... }, <field>: <value>, ... }
-            // where @self holds metadata filters and direct keys filter JSON-payload fields.
-            $routeResults = $this->objectService->searchObjects(
-                query: [
-                    '@self' => [
-                        'register' => $registerId,
-                        'schema'   => $routeSchema,
-                    ],
-                    'slug'  => $slug,
-                ]
-            );
-
-            if (empty($routeResults) === true) {
-                $this->logger->debug('OpenBuilt: no BuiltAppRoute found for slug='.$slug);
-                return new JSONResponse(
-                    data: ['error' => 'not_found', 'message' => 'No published virtual app found for slug '.$slug],
-                    statusCode: Http::STATUS_NOT_FOUND
-                );
+            $resolved = $this->resolveApplicationBySlug(slug: $slug);
+            if ($resolved instanceof JSONResponse) {
+                return $resolved;
             }
 
-            // FindAll renders entities; result entries may be ObjectEntity or arrays.
-            $route           = $this->normaliseObject(object: $routeResults[0]);
-            $applicationUuid = ($route['applicationUuid'] ?? null);
-
-            if ($applicationUuid === null) {
-                $this->logger->warning('OpenBuilt: BuiltAppRoute for slug '.$slug.' is missing applicationUuid');
-                return new JSONResponse(
-                    data: ['error' => 'inconsistent_state', 'message' => 'Route exists but has no applicationUuid'],
-                    statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-                );
-            }
-
-            // Step 2 — load the Application object.
-            $application = $this->objectService->find(
-                id: $applicationUuid,
-                register: 'openbuilt',
-                schema: 'application'
-            );
-
-            if ($application === null) {
-                $this->logger->warning('OpenBuilt: Application '.$applicationUuid.' (for slug '.$slug.') not found');
-                return new JSONResponse(
-                    data: ['error' => 'inconsistent_state', 'message' => 'Route points to an Application that does not exist'],
-                    statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-                );
-            }
-
-            $applicationArray = $this->normaliseObject(object: $application);
+            [$application, $applicationArray, $applicationUuid] = $resolved;
 
             // RBAC enforcement per REQ-OBRBAC-002 / REQ-OBR-006 — deny-by-default
             // before any branch that would emit the manifest payload (ADR-005,
             // ADR-022 §Exceptions(1)). Returns 403 with a fixed error envelope
             // when the caller has no role intersection and is not exercising
             // the audited admin bypass declared in REQ-OBRBAC-006.
+            $applicationEntity = null;
+            if ($application instanceof ObjectEntity) {
+                $applicationEntity = $application;
+            }
+
             $denial = $this->requirePermission(
-                application: $application instanceof ObjectEntity ? $application : null,
+                application: $applicationEntity,
                 applicationArray: $applicationArray,
                 slug: $slug
             );
@@ -209,7 +165,7 @@ class ApplicationsController extends Controller
 
             // Return the manifest UNWRAPPED — useAppManifest expects the bare object.
             return new JSONResponse(data: $manifest, statusCode: Http::STATUS_OK);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Generate a correlation ID so the client and server logs share an
             // identifier — operators can grep `correlationId=<id>` in app.log
             // without needing the request timestamp. Per MWest review on PR #2.
@@ -380,6 +336,77 @@ class ApplicationsController extends Controller
     }//end resolveVersionBlob()
 
     /**
+     * Resolve a virtual-app slug to the Application object + array form + uuid.
+     *
+     * Returns either a `JSONResponse` (404 / 500) when resolution fails, or a
+     * tuple `[ObjectEntity|array, array, string]` of (raw entity, normalised
+     * data, applicationUuid) for the happy path. Splitting this out keeps
+     * `getManifest` below PHPMD's 100-line method-length budget.
+     *
+     * @param string $slug The virtual-app slug from the URL
+     *
+     * @return JSONResponse|array{0: ObjectEntity|array<string, mixed>, 1: array<string, mixed>, 2: string}
+     */
+    private function resolveApplicationBySlug(string $slug): JSONResponse|array
+    {
+        // Resolve register + schema slugs to numeric IDs. OR's searchObjects
+        // expects numeric IDs in @self; the slug-resolution shortcut isn't
+        // applied at this layer (verified during smoke-test 2026-05-11).
+        // _multitenancy=false bypasses the org filter on the LOOKUP only —
+        // object-level multitenancy is still enforced via searchObjects below.
+        $registerId  = $this->registerMapper->find('openbuilt', _multitenancy: false)->getId();
+        $routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
+
+        // Step 1 — resolve slug → applicationUuid via the BuiltAppRoute index.
+        $routeResults = $this->objectService->searchObjects(
+            query: [
+                '@self' => [
+                    'register' => $registerId,
+                    'schema'   => $routeSchema,
+                ],
+                'slug'  => $slug,
+            ]
+        );
+
+        if (empty($routeResults) === true) {
+            $this->logger->debug('OpenBuilt: no BuiltAppRoute found for slug='.$slug);
+            return new JSONResponse(
+                data: ['error' => 'not_found', 'message' => 'No published virtual app found for slug '.$slug],
+                statusCode: Http::STATUS_NOT_FOUND
+            );
+        }
+
+        // FindAll renders entities; result entries may be ObjectEntity or arrays.
+        $route           = $this->normaliseObject(object: $routeResults[0]);
+        $applicationUuid = ($route['applicationUuid'] ?? null);
+
+        if ($applicationUuid === null) {
+            $this->logger->warning('OpenBuilt: BuiltAppRoute for slug '.$slug.' is missing applicationUuid');
+            return new JSONResponse(
+                data: ['error' => 'inconsistent_state', 'message' => 'Route exists but has no applicationUuid'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+
+        // Step 2 — load the Application object.
+        $application = $this->objectService->find(
+            id: $applicationUuid,
+            register: 'openbuilt',
+            schema: 'application'
+        );
+
+        if ($application === null) {
+            $this->logger->warning('OpenBuilt: Application '.$applicationUuid.' (for slug '.$slug.') not found');
+            return new JSONResponse(
+                data: ['error' => 'inconsistent_state', 'message' => 'Route points to an Application that does not exist'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+
+        return [$application, $this->normaliseObject(object: $application), (string) $applicationUuid];
+    }//end resolveApplicationBySlug()
+
+    /**
      * Return the list of Applications the caller has any role on.
      *
      * Closes the list-endpoint IDOR (REQ-OBRBAC-002 / REQ-OBR-007). OR's
@@ -435,7 +462,7 @@ class ApplicationsController extends Controller
             $userGroups = $this->getUserGroupIds(user: $user);
             $isAdmin    = $this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP);
 
-            $filtered     = [];
+            $filtered        = [];
             $adminBypassUsed = false;
             foreach ($results as $entry) {
                 $app = $this->normaliseObject(object: $entry);
@@ -459,7 +486,7 @@ class ApplicationsController extends Controller
                     $filtered[]      = $app;
                     $adminBypassUsed = true;
                 }
-            }
+            }//end foreach
 
             if ($adminBypassUsed === true) {
                 $this->logger->info(
@@ -468,13 +495,13 @@ class ApplicationsController extends Controller
                         'actor'     => $user->getUID(),
                         'event'     => self::EVENT_ADMIN_BYPASS.'.list',
                         'count'     => count($filtered),
-                        'timestamp' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+                        'timestamp' => (new DateTimeImmutable())->format(DateTimeInterface::ATOM),
                     ]
                 );
             }
 
             return new JSONResponse(data: $filtered, statusCode: Http::STATUS_OK);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->logger->error(
                 'OpenBuilt: listMine failed: '.$e->getMessage(),
                 ['exception' => $e]
@@ -559,7 +586,7 @@ class ApplicationsController extends Controller
      */
     private function recordAdminBypass(?ObjectEntity $application, string $slug, string $actor): void
     {
-        $timestamp = (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM);
+        $timestamp = (new DateTimeImmutable())->format(DateTimeInterface::ATOM);
         $context   = [
             'event'     => self::EVENT_ADMIN_BYPASS,
             'actor'     => $actor,
@@ -583,13 +610,13 @@ class ApplicationsController extends Controller
                     $context
                 );
                 return;
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $this->logger->error(
                     'OpenBuilt: failed to record admin bypass in OR audit trail; falling back to PSR log',
                     array_merge($context, ['exception' => $e->getMessage()])
                 );
-            }
-        }
+            }//end try
+        }//end if
 
         // Fallback path — audit mapper unavailable or no Application
         // entity (defensive). Emit to PSR logger at info level so the

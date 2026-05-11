@@ -126,7 +126,7 @@ class PopulateApplicationPermissions implements IRepairStep
                     schema: 'application'
                 );
                 $patched++;
-            }
+            }//end foreach
 
             $output->info('Permissions populated on '.$patched.' Application(s).');
             $this->logger->info(
@@ -170,8 +170,8 @@ class PopulateApplicationPermissions implements IRepairStep
     /**
      * Extract the OR uuid from a normalised Application array.
      *
-     * Per the memory rule, OR serialises uuid into @self.id (canonical),
-     * @self.uuid (legacy), or top-level uuid.
+     * Per the memory rule, OR serialises uuid into the "@self.id" key
+     * (canonical), the "@self.uuid" key (legacy), or top-level uuid.
      *
      * @param array<string, mixed> $application The Application data
      *
