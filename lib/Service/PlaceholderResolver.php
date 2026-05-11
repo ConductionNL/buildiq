@@ -108,13 +108,26 @@ final class PlaceholderResolver
     /**
      * PascalCase'd identifier suitable for a PHP namespace.
      *
+     * Splits on:
+     *   - hyphens, underscores, whitespace, and any other non-alphanumeric;
+     *   - camelCase boundaries (lowercase followed by uppercase), so
+     *     `MyCoolApp` survives as `My`/`Cool`/`App` and is re-cased correctly.
+     *
+     * Each segment is then lowercased and ucfirst'd. This makes
+     * pascalCase() idempotent: pascalCase(pascalCase($x)) === pascalCase($x).
+     *
      * @param string $value Source value.
      *
      * @return string PascalCase'd identifier.
      */
     public function pascalCase(string $value): string
     {
-        $parts = preg_split('/[^A-Za-z0-9]+/', $value) ?: [];
+        // Insert a separator at camelCase boundaries: lower→Upper and Upper→UpperLower.
+        // Example: 'MyCoolApp' → 'My_Cool_App'; 'XMLParser' → 'XML_Parser'.
+        $boundaryMarked = (string) preg_replace('/(?<=[a-z0-9])(?=[A-Z])/', '_', $value);
+        $boundaryMarked = (string) preg_replace('/(?<=[A-Z])(?=[A-Z][a-z])/', '_', $boundaryMarked);
+
+        $parts = preg_split('/[^A-Za-z0-9]+/', $boundaryMarked) ?: [];
         $out   = '';
         foreach ($parts as $part) {
             if ($part === '') {

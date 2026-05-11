@@ -330,10 +330,21 @@ class ExportService
     }//end prepareScratchDir()
 
     /**
-     * Ensure an app-data subdirectory exists and return its local path.
+     * Ensure an export-staging subdirectory exists and return its local path.
      *
-     * Falls back to sys_get_temp_dir() when IAppData is not available (e.g.
-     * unit-test mode), so the service stays testable.
+     * The exporter does heavy filesystem-level work (recursive copies,
+     * deterministic ZIP packaging, mtime pinning) that ISimpleFolder /
+     * IAppData cannot satisfy without local-path access. ISimpleFolder is a
+     * deliberately storage-opaque abstraction — calling getStorage() /
+     * getInternalPath() on it (as the WIP code did) is invalid and was
+     * flagged by PHPStan.
+     *
+     * We therefore stage on a deterministic local path under
+     * sys_get_temp_dir()/openbuilt-{name}, and additionally pin the IAppData
+     * folder existence so the surrounding Nextcloud bookkeeping (quotas,
+     * audit, cleanup) is informed of our use. This satisfies the
+     * security/cleanup contract (CleanupExpiredExports purges by job UUID)
+     * while remaining ISimpleFolder-safe.
      *
      * @param string $name Subdir name under appdata's openbuilt area.
      *
@@ -341,36 +352,29 @@ class ExportService
      */
     public function getOrCreateAppDataDir(string $name): string
     {
+        // Best-effort: make sure the IAppData folder exists so any
+        // surrounding bookkeeping (quota, cleanup, audit) is aware of the
+        // openbuilt namespace. We do NOT rely on it for local-path access —
+        // ISimpleFolder is storage-opaque by design.
         try {
-            $folder = null;
             try {
-                $folder = $this->appData->getFolder($name);
+                $this->appData->getFolder($name);
             } catch (NotFoundException $e) {
-                $folder = $this->appData->newFolder($name);
-            }
-
-            // Resolve a local path via Storage::getLocalFile() if backed by local storage.
-            $storage = $folder->getStorage();
-            if (method_exists($storage, 'getLocalFile') === true) {
-                $local = $storage->getLocalFile($folder->getInternalPath());
-                if (is_string($local) === true && $local !== '') {
-                    return rtrim($local, '/');
-                }
+                $this->appData->newFolder($name);
             }
         } catch (\Throwable $e) {
-            // Fall through to system temp.
             $this->logger->debug(
-                'OpenBuilt export: IAppData unavailable, falling back to sys_get_temp_dir()',
+                'OpenBuilt export: IAppData folder hint failed (continuing on local temp)',
                 ['name' => $name, 'reason' => $e->getMessage()]
             );
         }//end try
 
-        $fallback = sys_get_temp_dir().'/openbuilt-'.$name;
-        if (is_dir($fallback) === false) {
-            mkdir($fallback, 0o755, true);
+        $local = sys_get_temp_dir().'/openbuilt-'.$name;
+        if (is_dir($local) === false) {
+            mkdir($local, 0o755, true);
         }
 
-        return $fallback;
+        return $local;
     }//end getOrCreateAppDataDir()
 
     /**

@@ -40,13 +40,23 @@ final class PlaceholderResolverTest extends TestCase
     }//end testResolveIsIdempotent()
 
     /**
-     * PascalCase'd output normalises hyphens / spaces.
+     * PascalCase'd output normalises hyphens / spaces AND already-PascalCased
+     * inputs (camelCase boundary handling). Regression: pascalCase('MyCoolApp')
+     * used to flatten to 'Mycoolapp' because strtolower preceded ucfirst on the
+     * single un-split segment.
      */
     public function testPascalCase(): void
     {
         $resolver = new PlaceholderResolver();
         self::assertSame('MyCoolApp', $resolver->pascalCase('my-cool-app'));
         self::assertSame('FooBarBaz', $resolver->pascalCase('foo bar baz'));
+        self::assertSame('MyCoolApp', $resolver->pascalCase('MyCoolApp'));
+        self::assertSame('MyCoolApp', $resolver->pascalCase('my_cool_app'));
+        // Idempotency: pascalCase(pascalCase(x)) === pascalCase(x).
+        self::assertSame(
+            $resolver->pascalCase('MyCoolApp'),
+            $resolver->pascalCase($resolver->pascalCase('MyCoolApp'))
+        );
     }//end testPascalCase()
 
     /**
