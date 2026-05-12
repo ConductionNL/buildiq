@@ -9,6 +9,10 @@
         This is a custom ruleset for OpenBuilt Nextcloud.
     </description>
 
+    <!-- The embedded nextcloud-app-template snapshot is shipped as a verbatim
+         resource; it is not OpenBuilt code, so we exclude it from MD scans. -->
+    <exclude-pattern>*/lib/Resources/template/*</exclude-pattern>
+
     <!-- Clean Code Rules -->
     <rule ref="rulesets/cleancode.xml/BooleanArgumentFlag"/>
     <rule ref="rulesets/cleancode.xml/ElseExpression"/>

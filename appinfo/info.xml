@@ -92,4 +92,8 @@ Vrij en open source onder de EUPL-1.2-licentie.
             <step>OCA\OpenBuilt\Repair\PopulateApplicationPermissions</step>
         </post-migration>
     </repair-steps>
+
+    <background-jobs>
+        <job>OCA\OpenBuilt\BackgroundJob\CleanupExpiredExports</job>
+    </background-jobs>
 </info>

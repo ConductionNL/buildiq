@@ -12,6 +12,7 @@
         <directory name="lib" />
         <ignoreFiles>
             <directory name="vendor" />
+            <directory name="lib/Resources/template" />
         </ignoreFiles>
     </projectFiles>
     <stubs>
@@ -53,6 +54,12 @@
                 <referencedClass name="OCP\AppFramework\Http\JSONResponse"/>
                 <referencedClass name="OCP\AppFramework\Http\TemplateResponse"/>
                 <referencedClass name="OCP\AppFramework\Http\DataResponse"/>
+                <referencedClass name="OCP\AppFramework\Http\DataDownloadResponse"/>
+                <referencedClass name="OCP\AppFramework\Http\Response"/>
+                <referencedClass name="OCP\AppFramework\Http"/>
+                <referencedClass name="OCP\AppFramework\Utility\ITimeFactory"/>
+                <referencedClass name="OCP\Files\IAppData"/>
+                <referencedClass name="OCP\Security\ICredentialsManager"/>
                 <referencedClass name="OCP\IL10N"/>
                 <referencedClass name="OCP\IURLGenerator"/>
                 <referencedClass name="OCP\Http\Client\IClient"/>

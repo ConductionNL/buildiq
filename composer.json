@@ -12,7 +12,10 @@
 	"autoload": {
 		"psr-4": {
 			"OCA\\OpenBuilt\\": "lib/"
-		}
+		},
+		"exclude-from-classmap": [
+			"lib/Resources/template/"
+		]
 	},
 	"require": {
 		"php": "^8.1"
