@@ -101,6 +101,12 @@
 								@click="openPermissionsModal">
 								{{ t('openbuilt', 'Manage permissions') }}
 							</button>
+							<router-link
+								v-if="selected"
+								class="openbuilt-editor__link"
+								:to="{ name: 'PageDesigner', params: { slug: selected.slug } }">
+								{{ t('openbuilt', 'Design pages') }}
+							</router-link>
 							<a v-if="selected && (selected.currentVersion || selected.status === 'published')" :href="builderUrl">
 								{{ t('openbuilt', 'Open virtual app') }}
 							</a>
