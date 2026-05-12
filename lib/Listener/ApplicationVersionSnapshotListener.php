@@ -11,15 +11,20 @@
  * Application's `currentVersion` to point at the new snapshot and
  * resets `status` back to `draft` (design.md Decision 3).
  *
+ * On the same draft→published transition it also upserts the
+ * Application's `BuiltAppRoute` (slug → applicationUuid) so the
+ * manifest endpoint can resolve `{slug}` for user-created apps the
+ * way SeedHelloWorld already does for the hello-world seed.
+ *
  * ADR-031 §Exceptions(1) — declarative-first failure mode. OR's
  * lifecycle engine does NOT yet execute the declarative
- * `on_transition.create_relation` action documented on the
- * Application schema; until it does we run the same logic from a
- * single PHP listener subscribed to ObjectTransitionedEvent. The
- * declarative metadata stays in `openbuilt_register.json` so the
- * intent is discoverable by OR-engine maintainers (same pattern
- * bootstrap-openbuilt's SeedHelloWorld documented for the route
- * upsert).
+ * `on_transition.create_relation` / `on_transition.upsert_relation`
+ * actions documented on the Application schema; until it does we run
+ * the same logic from a single PHP listener subscribed to
+ * ObjectTransitionedEvent. The declarative metadata stays in
+ * `openbuilt_register.json` so the intent is discoverable by
+ * OR-engine maintainers (same pattern bootstrap-openbuilt's
+ * SeedHelloWorld documented for the route upsert).
  *
  * Per ADR-031 + design.md Decision 6, NO `VersioningService`,
  * `SnapshotService`, or `ApplicationVersionManager` class exists.
@@ -61,6 +66,7 @@ class ApplicationVersionSnapshotListener implements IEventListener
     private const REGISTER_SLUG        = 'openbuilt';
     private const APPLICATION_SCHEMA   = 'application';
     private const VERSION_SCHEMA       = 'application-version';
+    private const ROUTE_SCHEMA         = 'built-app-route';
     private const PUBLISH_FROM         = 'draft';
     private const PUBLISH_TO           = 'published';
     private const DEFAULT_PUBLISHED_BY = 'system';
@@ -165,6 +171,10 @@ class ApplicationVersionSnapshotListener implements IEventListener
             return;
         }
 
+        // Upsert the slug → applicationUuid route so GET /api/applications/{slug}/manifest
+        // resolves for user-created apps (the on_transition.upsert_relation fallback).
+        $this->upsertBuiltAppRoute(applicationData: $applicationData, applicationUuid: $applicationUuid);
+
         $snapshot     = $this->createSnapshot(applicationData: $applicationData, applicationUuid: $applicationUuid, event: $event);
         $snapshotUuid = $this->extractUuid(data: $this->normaliseSerialised(object: $snapshot));
 
@@ -183,6 +193,106 @@ class ApplicationVersionSnapshotListener implements IEventListener
             .' (version '.($applicationData['version'] ?? '0.0.0').').'
         );
     }//end snapshotPublish()
+
+    /**
+     * Find-or-create the Application's BuiltAppRoute (slug → applicationUuid).
+     *
+     * Mirrors SeedHelloWorld's explicit route creation — the
+     * `on_transition.upsert_relation` action declared on the Application
+     * schema's `publish` transition (ADR-031 §Exceptions(1) fallback). When
+     * a route already exists for the slug it is updated to point at this
+     * Application; otherwise a fresh one is created. Failures are logged but
+     * not thrown (handled by the caller's try/catch).
+     *
+     * @param array<string, mixed> $applicationData Serialised Application data.
+     * @param string               $applicationUuid Resolved Application UUID.
+     *
+     * @return void
+     */
+    private function upsertBuiltAppRoute(array $applicationData, string $applicationUuid): void
+    {
+        $slug = $this->extractSlug(data: $applicationData);
+        if ($slug === null) {
+            $this->logger->warning(
+                'OpenBuilt: ApplicationVersionSnapshotListener could not resolve Application slug;'
+                .' BuiltAppRoute not upserted.'
+            );
+            return;
+        }
+
+        $existing = [];
+        try {
+            $existing = $this->objectService->searchObjectsBySlug(
+                registerSlug: self::REGISTER_SLUG,
+                schemaSlug: self::ROUTE_SCHEMA,
+                filters: ['slug' => $slug]
+            );
+        } catch (\Throwable $e) {
+            // A missing register/schema slug makes searchObjectsBySlug() throw —
+            // treat as "no route yet" and fall through to the create path.
+            $this->logger->debug(
+                'OpenBuilt: BuiltAppRoute lookup for slug '.$slug.' failed ('.$e->getMessage().'); will create.'
+            );
+        }
+
+        if (is_array($existing) === true && empty($existing) === false) {
+            $route = $this->normaliseSerialised(object: $existing[0]);
+            if (($route['applicationUuid'] ?? null) === $applicationUuid) {
+                // Already correct — nothing to do.
+                return;
+            }
+
+            $route['slug']            = $slug;
+            $route['applicationUuid'] = $applicationUuid;
+            $this->objectService->saveObject(
+                object: $route,
+                register: self::REGISTER_SLUG,
+                schema: self::ROUTE_SCHEMA
+            );
+            $this->logger->info('OpenBuilt: updated BuiltAppRoute '.$slug.' → Application '.$applicationUuid.'.');
+            return;
+        }
+
+        $this->objectService->saveObject(
+            object: [
+                'slug'            => $slug,
+                'applicationUuid' => $applicationUuid,
+            ],
+            register: self::REGISTER_SLUG,
+            schema: self::ROUTE_SCHEMA
+        );
+        $this->logger->info('OpenBuilt: created BuiltAppRoute '.$slug.' → Application '.$applicationUuid.'.');
+    }//end upsertBuiltAppRoute()
+
+    /**
+     * Read the Application slug out of an OR-serialised object array.
+     *
+     * Looks in top-level `slug`, then `@self.slug`.
+     *
+     * @param array<string, mixed> $data Serialised object array.
+     *
+     * @return string|null The slug or null if not present/blank.
+     */
+    private function extractSlug(array $data): ?string
+    {
+        $candidates = [];
+        if (isset($data['slug']) === true) {
+            $candidates[] = $data['slug'];
+        }
+
+        if (isset($data['@self']) === true && is_array($data['@self']) === true && isset($data['@self']['slug']) === true) {
+            $candidates[] = $data['@self']['slug'];
+        }
+
+        foreach ($candidates as $candidate) {
+            $slug = trim((string) $candidate);
+            if ($slug !== '') {
+                return $slug;
+            }
+        }
+
+        return null;
+    }//end extractSlug()
 
     /**
      * Save a new ApplicationVersion sibling row carrying a byte-equal manifest copy.

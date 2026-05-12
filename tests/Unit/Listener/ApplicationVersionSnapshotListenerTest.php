@@ -4,12 +4,14 @@
  * Unit tests for ApplicationVersionSnapshotListener.
  *
  * Spec #6 openbuilt-versioning. The listener is the declarative-first
- * fallback (ADR-031 §Exceptions(1)) that snapshots the Application's
- * manifest into an ApplicationVersion sibling row whenever OR fires the
- * draft → published ObjectTransitionedEvent. These tests pin the
- * filter (schema/from/to discrimination), the happy-path save +
- * currentVersion writeback, the missing-OR resilience, and the
- * idempotency-on-repeat-publish contract.
+ * fallback (ADR-031 §Exceptions(1)) for the Application schema's `publish`
+ * transition: on the draft → published ObjectTransitionedEvent it (a)
+ * upserts the Application's BuiltAppRoute (slug → applicationUuid) and (b)
+ * snapshots the manifest into an ApplicationVersion sibling, then patches
+ * Application.currentVersion. These tests pin the filter (schema/from/to
+ * discrimination), the happy-path route-upsert + save + currentVersion
+ * writeback, the missing-OR resilience, and the idempotency-on-repeat-publish
+ * contract.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -37,7 +39,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Tests for the snapshot-on-publish listener.
+ * Tests for the publish-transition listener.
  *
  * NOTE: the listener accepts the real ObjectTransitionedEvent type-hint, but
  * we cannot construct it directly here (it requires an ObjectEntity which
@@ -73,15 +75,18 @@ class ApplicationVersionSnapshotListenerTest extends TestCase
 
         $this->logger        = $this->createMock(LoggerInterface::class);
         $this->objectService = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['saveObject'])
+            ->addMethods(['saveObject', 'searchObjectsBySlug'])
             ->getMock();
+
+        // Default: no BuiltAppRoute exists yet → the listener creates one.
+        $this->objectService->method('searchObjectsBySlug')->willReturn([]);
     }//end setUp()
 
     /**
      * Build a fake ObjectTransitionedEvent.
      *
      * We mock the real OR class (loaded via the openregister submodule on
-     * the include path) but stub the three accessors the listener calls.
+     * the include path) but stub the accessors the listener calls.
      *
      * @param string               $schema           Schema slug.
      * @param string               $from             Transition `from` state.
@@ -134,6 +139,20 @@ class ApplicationVersionSnapshotListenerTest extends TestCase
     }//end makeReturnedEntity()
 
     /**
+     * Resolve the `object`/`schema` named-arg pair out of a captured saveObject() call.
+     *
+     * @param array<int|string, mixed> $args Captured variadic args.
+     *
+     * @return array{0: mixed, 1: mixed} [payload, schema]
+     */
+    private function unpackSave(array $args): array
+    {
+        $payload = ($args['object'] ?? ($args[0] ?? null));
+        $schema  = ($args['schema'] ?? ($args[2] ?? null));
+        return [$payload, $schema];
+    }//end unpackSave()
+
+    /**
      * Non-Application transitions (e.g. a transition on a different schema)
      * must be a no-op — no OR write, no log.
      *
@@ -183,12 +202,12 @@ class ApplicationVersionSnapshotListenerTest extends TestCase
     }//end testHandleIgnoresNonPublishTransition()
 
     /**
-     * Happy path: draft→published on Application creates ApplicationVersion
-     * AND patches Application.currentVersion to the new snapshot.
+     * Happy path: draft→published on Application upserts the BuiltAppRoute,
+     * creates the ApplicationVersion AND patches Application.currentVersion.
      *
      * @return void
      */
-    public function testHandleCreatesSnapshotAndPatchesCurrentVersionOnPublish(): void
+    public function testHandleUpsertsRouteCreatesSnapshotAndPatchesCurrentVersionOnPublish(): void
     {
         $manifest = [
             'version' => '1.0.0',
@@ -212,18 +231,16 @@ class ApplicationVersionSnapshotListenerTest extends TestCase
             userId: 'alice'
         );
 
-        // First saveObject — creates the ApplicationVersion sibling.
-        // Second saveObject — patches the parent Application with currentVersion.
+        // Three saveObject calls: BuiltAppRoute upsert, ApplicationVersion
+        // create, then the Application currentVersion writeback.
         $snapshotEntity = $this->makeReturnedEntity(['@self' => ['id' => 'snap-uuid-1']]);
 
         $captured = [];
-        $this->objectService->expects(self::exactly(2))
+        $this->objectService->expects(self::exactly(3))
             ->method('saveObject')
             ->willReturnCallback(function (...$args) use (&$captured, $snapshotEntity) {
-                // PHP 8 named-args: $args[0] is `object`, then register, schema.
                 $captured[] = $args;
-                $payload    = $args[0] ?? ($args['object'] ?? null);
-                $schema     = $args['schema'] ?? ($args[2] ?? null);
+                [$payload, $schema] = $this->unpackSave($args);
                 if ($schema === 'application-version') {
                     return $snapshotEntity;
                 }
@@ -236,28 +253,87 @@ class ApplicationVersionSnapshotListenerTest extends TestCase
         );
         $listener->handle($event);
 
-        self::assertCount(2, $captured, 'Expected exactly 2 saveObject() calls (snapshot + writeback)');
+        self::assertCount(3, $captured, 'Expected exactly 3 saveObject() calls (route + snapshot + writeback)');
 
-        // First call: snapshot — carries applicationUuid + manifest + actor uid.
-        $snapshotArgs    = $captured[0];
-        $snapshotPayload = ($snapshotArgs['object'] ?? $snapshotArgs[0]);
-        $snapshotSchema  = ($snapshotArgs['schema'] ?? $snapshotArgs[2]);
-        self::assertSame('application-version', $snapshotSchema);
-        self::assertSame('app-uuid-1', $snapshotPayload['applicationUuid']);
-        self::assertSame($manifest, $snapshotPayload['manifest']);
-        self::assertSame('1.0.0', $snapshotPayload['version']);
-        self::assertSame('alice', $snapshotPayload['publishedBy']);
-        self::assertArrayHasKey('publishedAt', $snapshotPayload);
+        // Index calls by schema so the assertions don't depend on call order.
+        $bySchema = [];
+        foreach ($captured as $args) {
+            [$payload, $schema] = $this->unpackSave($args);
+            $bySchema[$schema] = $payload;
+        }
 
-        // Second call: writeback — Application gets currentVersion + status reset.
-        $writeArgs    = $captured[1];
-        $writePayload = ($writeArgs['object'] ?? $writeArgs[0]);
-        $writeSchema  = ($writeArgs['schema'] ?? $writeArgs[2]);
-        self::assertSame('application', $writeSchema);
-        self::assertSame('snap-uuid-1', $writePayload['currentVersion']);
+        // BuiltAppRoute upsert — slug → applicationUuid.
+        self::assertArrayHasKey('built-app-route', $bySchema);
+        self::assertSame('hello-world', $bySchema['built-app-route']['slug']);
+        self::assertSame('app-uuid-1', $bySchema['built-app-route']['applicationUuid']);
+
+        // Snapshot — carries applicationUuid + manifest + actor uid.
+        self::assertArrayHasKey('application-version', $bySchema);
+        self::assertSame('app-uuid-1', $bySchema['application-version']['applicationUuid']);
+        self::assertSame($manifest, $bySchema['application-version']['manifest']);
+        self::assertSame('1.0.0', $bySchema['application-version']['version']);
+        self::assertSame('alice', $bySchema['application-version']['publishedBy']);
+        self::assertArrayHasKey('publishedAt', $bySchema['application-version']);
+
+        // Writeback — Application gets currentVersion + status reset.
+        self::assertArrayHasKey('application', $bySchema);
+        self::assertSame('snap-uuid-1', $bySchema['application']['currentVersion']);
         // Per design.md Decision 3 the status is reset to draft so the next edit cycle starts clean.
-        self::assertSame('draft', $writePayload['status']);
-    }//end testHandleCreatesSnapshotAndPatchesCurrentVersionOnPublish()
+        self::assertSame('draft', $bySchema['application']['status']);
+    }//end testHandleUpsertsRouteCreatesSnapshotAndPatchesCurrentVersionOnPublish()
+
+    /**
+     * When a BuiltAppRoute already points at this Application the listener
+     * leaves it untouched — only the snapshot + writeback fire.
+     *
+     * @return void
+     */
+    public function testHandleSkipsRouteUpsertWhenAlreadyCorrect(): void
+    {
+        $applicationData = [
+            '@self'    => ['id' => 'app-uuid-9'],
+            'slug'     => 'already-routed',
+            'version'  => '2.0.0',
+            'manifest' => ['version' => '2.0.0', 'pages' => []],
+        ];
+
+        // Re-stub searchObjectsBySlug for this test: the route exists and is correct.
+        $this->objectService = $this->getMockBuilder(\stdClass::class)
+            ->addMethods(['saveObject', 'searchObjectsBySlug'])
+            ->getMock();
+        $this->objectService->method('searchObjectsBySlug')->willReturn([
+            ['@self' => ['id' => 'route-uuid-9'], 'slug' => 'already-routed', 'applicationUuid' => 'app-uuid-9'],
+        ]);
+
+        $event = $this->makeEvent(
+            schema: 'application',
+            from: 'draft',
+            to: 'published',
+            serialisedObject: $applicationData
+        );
+
+        $schemas = [];
+        $this->objectService->expects(self::exactly(2))
+            ->method('saveObject')
+            ->willReturnCallback(function (...$args) use (&$schemas) {
+                [, $schema] = $this->unpackSave($args);
+                $schemas[]  = $schema;
+                if ($schema === 'application-version') {
+                    return $this->makeReturnedEntity(['@self' => ['id' => 'snap-uuid-9']]);
+                }
+                return $this->makeReturnedEntity(['@self' => ['id' => 'app-uuid-9']]);
+            });
+
+        $listener = new ApplicationVersionSnapshotListener(
+            logger: $this->logger,
+            objectService: $this->objectService
+        );
+        $listener->handle($event);
+
+        self::assertNotContains('built-app-route', $schemas, 'route already correct → no route saveObject');
+        self::assertContains('application-version', $schemas);
+        self::assertContains('application', $schemas);
+    }//end testHandleSkipsRouteUpsertWhenAlreadyCorrect()
 
     /**
      * Missing ObjectService responses must not crash — the listener swallows
@@ -273,6 +349,7 @@ class ApplicationVersionSnapshotListenerTest extends TestCase
             to: 'published',
             serialisedObject: [
                 '@self'    => ['id' => 'app-uuid-2'],
+                'slug'     => 'broken',
                 'manifest' => ['v' => 1],
                 'version'  => '1.0.0',
             ]
@@ -298,11 +375,11 @@ class ApplicationVersionSnapshotListenerTest extends TestCase
     }//end testHandleLogsAndDoesNotThrowWhenOrServiceFails()
 
     /**
-     * Repeat-publish: handle() called twice with byte-equal manifest results
-     * in TWO snapshot rows (append-only history per design.md Decision 3).
-     * The contract we pin here is "the listener does not silently swallow
-     * a repeat publish" — duplicate-detection is OR's job, not the
-     * listener's. We simply assert each invocation causes its own save.
+     * Repeat-publish: first publish creates the route + a snapshot; the
+     * second publish finds the route already correct (skip) and appends a
+     * second snapshot row (append-only history per design.md Decision 3).
+     * The contract pinned here is "each publish appends its own snapshot" —
+     * duplicate-detection is OR's job, not the listener's.
      *
      * @return void
      */
@@ -323,15 +400,22 @@ class ApplicationVersionSnapshotListenerTest extends TestCase
             serialisedObject: $serialisedObject
         );
 
-        $callCount = 0;
+        // 1st publish: no route yet. 2nd publish: route exists and is correct.
+        $this->objectService = $this->getMockBuilder(\stdClass::class)
+            ->addMethods(['saveObject', 'searchObjectsBySlug'])
+            ->getMock();
+        $this->objectService->method('searchObjectsBySlug')->willReturnOnConsecutiveCalls(
+            [],
+            [['@self' => ['id' => 'route-3'], 'slug' => 'idempotent', 'applicationUuid' => 'app-uuid-3']],
+        );
+
+        $schemas = [];
         $this->objectService->method('saveObject')
-            ->willReturnCallback(function (...$args) use (&$callCount) {
-                $callCount++;
-                // Each snapshot return is a fresh entity with a fresh uuid; the
-                // writeback returns its inbound payload as-is.
-                $schema = $args['schema'] ?? ($args[2] ?? null);
+            ->willReturnCallback(function (...$args) use (&$schemas) {
+                [, $schema] = $this->unpackSave($args);
+                $schemas[]  = $schema;
                 if ($schema === 'application-version') {
-                    return $this->makeReturnedEntity(['@self' => ['id' => 'snap-'.$callCount]]);
+                    return $this->makeReturnedEntity(['@self' => ['id' => 'snap-'.count($schemas)]]);
                 }
                 return $this->makeReturnedEntity(['@self' => ['id' => 'app-uuid-3']]);
             });
@@ -343,8 +427,10 @@ class ApplicationVersionSnapshotListenerTest extends TestCase
         $listener->handle($event);
         $listener->handle($event);
 
-        // Two publish events → 4 saves (2 snapshots + 2 writebacks).
-        self::assertSame(4, $callCount);
+        // publish 1 = route + snapshot + writeback (3); publish 2 = snapshot + writeback (2).
+        self::assertSame(5, count($schemas));
+        self::assertSame(2, count(array_filter($schemas, static fn ($s) => $s === 'application-version')));
+        self::assertSame(1, count(array_filter($schemas, static fn ($s) => $s === 'built-app-route')));
     }//end testHandleProducesIndependentSnapshotsOnRepeatPublish()
 
     /**
