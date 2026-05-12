@@ -1,0 +1,510 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "OpenBuilt Register",
+    "description": "Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.",
+    "version": "0.2.0"
+  },
+  "x-openregister": {
+    "type": "application",
+    "app": "openbuilt",
+    "openregister": "^v0.2.10",
+    "description": "OpenBuilt register namespace. Hosts the Application + BuiltAppRoute control schemas, the ApplicationTemplate catalogue (spec #8), and the seed `hello-message` schema for the canonical hello-world virtual app."
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Application": {
+        "slug": "application",
+        "icon": "AppsBoxOutline",
+        "version": "0.1.0",
+        "title": "Application",
+        "description": "A virtual app built with OpenBuilt. Holds the manifest blob (per ADR-024) plus metadata and lifecycle. Rendered at runtime by mounting CnAppRoot with the manifest.",
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "manifest",
+          "version",
+          "status"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "minLength": 2,
+            "maxLength": 48,
+            "description": "Kebab-case slug; uniquely identifies the virtual app within its organisation. Drives the runtime path /builder/{slug}/*. Max 48 chars so the synthetic appId `openbuilt-{slug}` fits NC appId caps (per design.md OQ-4)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name displayed in the OpenBuilt shell."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional long-form description of the virtual app."
+          },
+          "manifest": {
+            "type": "object",
+            "description": "JSON manifest blob conforming to @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json (v1.4.0+). Per ADR-024, this is consumed by useAppManifest + CnAppRoot at runtime.",
+            "required": [
+              "version",
+              "menu",
+              "pages"
+            ],
+            "additionalProperties": true
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$",
+            "description": "Semver of this Application's manifest content. Bumped when the manifest changes substantively."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ],
+            "default": "draft",
+            "description": "Lifecycle state. Driven by x-openregister-lifecycle below — not by direct writes."
+          },
+          "currentVersion": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the most recent ApplicationVersion snapshot. Maintained by the snapshot-on-publish lifecycle action (see chain spec #6 openbuilt-versioning). Optional — never-published Applications carry no currentVersion."
+          },
+          "permissions": {
+            "type": "object",
+            "description": "Per-Application RBAC block per REQ-OBRBAC-001 (openbuilt-rbac). Each array contains Nextcloud group IDs (gid). The caller must be a member of at least one group across owners ∪ editors ∪ viewers to access the manifest endpoint. owners gate destructive actions (publish, archive, delete, transfer, permissions edit); editors gate save; viewers gate read.",
+            "properties": {
+              "owners": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Nextcloud group IDs with owner role: full control including publish/archive/delete/transfer-ownership/edit-permissions."
+              },
+              "editors": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Nextcloud group IDs with editor role: can save manifest drafts but cannot publish or change permissions."
+              },
+              "viewers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Nextcloud group IDs with viewer role: read-only access to the Application."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "x-openregister-lifecycle": {
+          "field": "status",
+          "initial": "draft",
+          "states": {
+            "draft": {
+              "description": "Editable, not exposed via the manifest endpoint, not reachable at /builder/{slug}."
+            },
+            "published": {
+              "description": "Exposed via GET /api/applications/{slug}/manifest, reachable at /builder/{slug}/*. The on_transition action upserts the corresponding BuiltAppRoute for fast slug → application lookup."
+            },
+            "archived": {
+              "description": "No longer reachable. Preserved for restore. The on_transition action removes the BuiltAppRoute."
+            }
+          },
+          "transitions": [
+            {
+              "name": "publish",
+              "from": "draft",
+              "to": "published",
+              "description": "Make the virtual app reachable at /builder/{slug}. Also snapshots the current manifest into an ApplicationVersion sibling and bumps currentVersion (chain spec #6 openbuilt-versioning).",
+              "on_transition": {
+                "upsert_relation": {
+                  "schema": "openbuilt/built-app-route",
+                  "match": {
+                    "slug": "@self.slug"
+                  },
+                  "payload": {
+                    "slug": "@self.slug",
+                    "applicationUuid": "@self.uuid"
+                  }
+                },
+                "create_relation": {
+                  "schema": "openbuilt/application-version",
+                  "payload": {
+                    "applicationUuid": "@self.uuid",
+                    "version": "@self.version",
+                    "manifest": "@self.manifest",
+                    "publishedAt": "@now",
+                    "publishedBy": "@actor",
+                    "notes": "Published via lifecycle transition"
+                  },
+                  "writeback": {
+                    "self.currentVersion": "@result.uuid",
+                    "self.status": "draft"
+                  }
+                }
+              }
+            },
+            {
+              "name": "archive",
+              "from": "published",
+              "to": "archived",
+              "description": "Hide the virtual app without deleting it.",
+              "on_transition": {
+                "delete_relation": {
+                  "schema": "openbuilt/built-app-route",
+                  "match": {
+                    "slug": "@self.slug"
+                  }
+                }
+              }
+            },
+            {
+              "name": "reopen",
+              "from": "archived",
+              "to": "draft",
+              "description": "Restore an archived virtual app to draft for further editing."
+            },
+            {
+              "name": "republish",
+              "from": "archived",
+              "to": "published",
+              "description": "Restore an archived virtual app directly to published.",
+              "on_transition": {
+                "upsert_relation": {
+                  "schema": "openbuilt/built-app-route",
+                  "match": {
+                    "slug": "@self.slug"
+                  },
+                  "payload": {
+                    "slug": "@self.slug",
+                    "applicationUuid": "@self.uuid"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "ApplicationTemplate": {
+        "slug": "application-template",
+        "icon": "ViewGridOutline",
+        "version": "0.1.0",
+        "title": "Application Template",
+        "description": "A pre-baked starter pack for building an Application from a recognisable use case — manifest plus companion schemas. Seeded Conduction-curated templates carry isSeeded: true. Per the hybrid register model this schema is shared across the `openbuilt` register; cloned user schemas land in a per-app `openbuilt-{slug}` register.",
+        "type": "object",
+        "required": [
+          "slug",
+          "title",
+          "description",
+          "useCase",
+          "category",
+          "manifest",
+          "isSeeded",
+          "version"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Kebab-case unique slug for the template.",
+            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "minLength": 2,
+            "maxLength": 48,
+            "example": "permit-tracker"
+          },
+          "title": {
+            "type": "string",
+            "description": "Human-readable title (plain English) shown in the gallery.",
+            "example": "Permit Tracker"
+          },
+          "description": {
+            "type": "string",
+            "description": "One-paragraph plain-English summary.",
+            "example": "Municipal building-permit workflow with index, detail, form, and kanban pages."
+          },
+          "useCase": {
+            "type": "string",
+            "description": "Short one-line label describing the use case (plain English).",
+            "example": "Municipal building-permit workflow"
+          },
+          "category": {
+            "type": "string",
+            "description": "Top-level category used for filtering in the gallery.",
+            "enum": [
+              "government-services",
+              "internal-operations",
+              "citizen-engagement",
+              "field-work"
+            ]
+          },
+          "screenshotUrl": {
+            "type": "string",
+            "description": "Relative path under the app's img/templates/ folder, or an OR Files URL.",
+            "example": "img/templates/permit-tracker.svg"
+          },
+          "manifest": {
+            "type": "object",
+            "description": "Full app-manifest JSON blob (ADR-024) to be deep-copied on clone.",
+            "additionalProperties": true
+          },
+          "companionSchemas": {
+            "type": "array",
+            "description": "JSON-schema blobs to be cloned alongside the manifest into the user's per-app register (openbuilt-{slug}).",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "isSeeded": {
+            "type": "boolean",
+            "description": "True for Conduction-shipped templates, false for org-local templates.",
+            "default": false
+          },
+          "sourceUrl": {
+            "type": "string",
+            "description": "Link back to the originating user-story / RFP / blog post for traceability."
+          },
+          "version": {
+            "type": "string",
+            "description": "Semver version of the template — recorded on clone for one-shot snapshot semantics.",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+            "example": "1.0.0"
+          }
+        }
+      },
+      "BuiltAppRoute": {
+        "slug": "built-app-route",
+        "icon": "RouterNetwork",
+        "version": "0.1.0",
+        "title": "Built App Route",
+        "description": "Index from slug → applicationUuid. Maintained by the Application lifecycle (upserted on publish, deleted on archive). Used by the runtime to resolve /builder/{slug} → manifest in a single OR lookup. Per ADR-022 this is an explicit flattened index rather than scanning the Application collection.",
+        "type": "object",
+        "required": [
+          "slug",
+          "applicationUuid"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "minLength": 2,
+            "maxLength": 48,
+            "description": "Matches the Application slug. Unique within the organisation (enforced by lifecycle upkeep + 4xx on conflict)."
+          },
+          "applicationUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the published Application this route resolves to."
+          }
+        }
+      },
+      "HelloMessage": {
+        "slug": "hello-message",
+        "icon": "MessageTextOutline",
+        "version": "0.1.0",
+        "title": "Hello Message",
+        "description": "Seed schema for the canonical hello-world virtual app. Three sample messages are seeded on install so the install is testable out of the box.",
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Short message title."
+          },
+          "body": {
+            "type": "string",
+            "description": "Optional longer message body."
+          }
+        }
+      },
+      "ApplicationVersion": {
+        "slug": "application-version",
+        "icon": "HistoryIcon",
+        "version": "0.1.0",
+        "title": "Application Version",
+        "description": "Append-only snapshot of an Application's manifest at the moment it was published. Created by the snapshot-on-publish lifecycle action (chain spec #6 openbuilt-versioning). History is never destructive — rollback creates a NEW snapshot instead of removing existing rows (design.md Decision 3).",
+        "type": "object",
+        "required": [
+          "applicationUuid",
+          "version",
+          "manifest",
+          "publishedAt",
+          "publishedBy"
+        ],
+        "properties": {
+          "applicationUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the parent Application this snapshot belongs to."
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$",
+            "description": "Semver version string copied from the Application's `version` field at snapshot time."
+          },
+          "manifest": {
+            "type": "object",
+            "description": "Full deep-copy of the Application's manifest blob at snapshot time. Per design.md Decision 1 this is a full blob, not a JSON Patch delta.",
+            "additionalProperties": true
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp recording when the snapshot was taken (i.e. when the publish transition fired)."
+          },
+          "publishedBy": {
+            "type": "string",
+            "description": "Nextcloud user id of the actor who triggered the publish. `system` for snapshots created by repair steps."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-text changelog entry. v1 leaves this populated by the lifecycle action with a default string — a future spec may add a notes-prompt UX."
+          }
+        }
+      },
+      "exportJob": {
+        "slug": "export-job",
+        "icon": "PackageVariant",
+        "version": "0.1.0",
+        "title": "Export Job",
+        "description": "Asynchronous pipeline that turns a published Application into a standalone Nextcloud app — delivered as a ZIP download or pushed to GitHub. Lifecycle is declarative per ADR-031; the file-generation surface is an ADR-031 §Exceptions(3) imperative path.",
+        "type": "object",
+        "required": [
+          "applicationUuid",
+          "applicationVersion",
+          "target",
+          "status"
+        ],
+        "properties": {
+          "applicationUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the source Application record being exported."
+          },
+          "applicationVersion": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+(?:[-+][\\w.-]+)?$",
+            "description": "Semver of the Application version being exported."
+          },
+          "target": {
+            "type": "string",
+            "enum": [
+              "zip",
+              "github"
+            ],
+            "description": "Delivery target — ZIP download or push to a new GitHub repository."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed"
+            ],
+            "default": "queued",
+            "description": "Lifecycle state. Transitions are enforced by OR's lifecycle engine."
+          },
+          "githubOrg": {
+            "type": "string",
+            "description": "Target GitHub organisation (only when target=github)."
+          },
+          "githubRepo": {
+            "type": "string",
+            "description": "Target GitHub repository name (only when target=github)."
+          },
+          "githubVisibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private"
+            ],
+            "description": "Visibility for the new GitHub repository (only when target=github)."
+          },
+          "githubRepoUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the created GitHub repository (populated on success when target=github)."
+          },
+          "githubPullRequestUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the placeholder pull request opened against the repo's default branch."
+          },
+          "includeSeedData": {
+            "type": "boolean",
+            "default": false,
+            "description": "When true, exports seed data alongside the schema bundle."
+          },
+          "license": {
+            "type": "string",
+            "default": "EUPL-1.2",
+            "description": "License chosen by the user for the exported app."
+          },
+          "downloadUrl": {
+            "type": "string",
+            "description": "Relative URL where the ZIP can be downloaded (only when target=zip)."
+          },
+          "downloadExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO-8601 timestamp at which the ZIP expires and is purged by the cleanup job."
+          },
+          "errorMessage": {
+            "type": "string",
+            "description": "Human-readable failure reason. Never contains the GitHub PAT (see Decision 3 in design.md)."
+          },
+          "log": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Ordered list of progress entries. Never contains the GitHub PAT."
+          }
+        },
+        "x-openregister-lifecycle": {
+          "states": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed"
+          ],
+          "initialState": "queued",
+          "terminalStates": [
+            "succeeded",
+            "failed"
+          ],
+          "transitions": [
+            {
+              "from": "queued",
+              "to": "running",
+              "name": "start"
+            },
+            {
+              "from": "running",
+              "to": "succeeded",
+              "name": "succeed"
+            },
+            {
+              "from": "running",
+              "to": "failed",
+              "name": "fail"
+            }
+          ]
+        },
+        "x-openregister-lifecycle-exception": {
+          "reference": "openspec/changes/openbuilt-export-to-real-app/design.md#decision-7",
+          "rationale": "File generation, ZIP packaging, and GitHub API calls are imperative by nature. ADR-031 §Exceptions(3) allows code for OS-bound side effects. The lifecycle itself remains declarative."
+        }
+      }
+    }
+  }
+}
