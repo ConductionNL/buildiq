@@ -42,7 +42,8 @@ use Psr\Log\LoggerInterface;
  */
 class SeedHelloWorld implements IRepairStep
 {
-    private const SEED_SLUG = 'hello-world';
+    private const SEED_SLUG    = 'hello-world';
+    private const SEED_VERSION = '1.0.0';
 
     /**
      * Constructor.
@@ -80,74 +81,18 @@ class SeedHelloWorld implements IRepairStep
         $output->info('Seeding hello-world virtual app...');
 
         try {
-            // Idempotency guard — if a hello-world Application already exists, do nothing.
-            $existing = $this->objectService->findAll(
-                config: [
-                    'filters' => [
-                        'register' => 'openbuilt',
-                        'schema'   => 'application',
-                        'slug'     => self::SEED_SLUG,
-                    ],
-                    'limit'   => 1,
-                ]
-            );
-
-            if (empty($existing) === false) {
+            if ($this->seedAlreadyExists() === true) {
                 $output->info('hello-world Application already exists; skipping seed.');
                 return;
             }
 
-            // Create the Application object with the canonical hello-world manifest.
-            // NOTE (design.md OQ-1): OR's current x-openregister-lifecycle engine does
-            // not yet support `on_transition.upsert_relation` as a declarative action
-            // that creates a sibling object. Until OR ships that hook we explicitly
-            // create the BuiltAppRoute here. This is the ADR-031 §Exceptions(1) path.
-            $application = $this->objectService->saveObject(
-                object: [
-                    'slug'        => self::SEED_SLUG,
-                    'name'        => 'Hello World',
-                    'description' => 'The canonical seed virtual app for OpenBuilt. Exercises index + detail + form page types.',
-                    'version'     => '0.1.0',
-                    'status'      => 'published',
-                    'manifest'    => $this->buildHelloWorldManifest(),
-                ],
-                register: 'openbuilt',
-                schema: 'application'
-            );
+            $applicationUuid = $this->seedApplicationAndRoute(output: $output);
 
-            // ObjectEntity exposes its fields via jsonSerialize() (returns an array
-            // including the OR-assigned uuid). __call-based getters like getUuid()
-            // are invisible to method_exists, so we read through the array.
-            // OR places the canonical uuid under @self.id in the serialized shape.
-            $applicationData = $application->jsonSerialize();
-            $applicationSelf = ($applicationData['@self'] ?? []);
-            $applicationUuid = ($applicationSelf['id'] ?? ($applicationSelf['uuid'] ?? $applicationData['uuid'] ?? null));
-
-            $output->info('Created hello-world Application (uuid='.($applicationUuid ?? 'unknown').').');
-
-            // Explicit BuiltAppRoute upkeep — fallback for the missing lifecycle hook.
             if ($applicationUuid !== null) {
-                $this->objectService->saveObject(
-                    object: [
-                        'slug'            => self::SEED_SLUG,
-                        'applicationUuid' => $applicationUuid,
-                    ],
-                    register: 'openbuilt',
-                    schema: 'built-app-route'
-                );
-                $output->info('Created BuiltAppRoute for hello-world.');
+                $this->seedInitialSnapshot(output: $output, applicationUuid: $applicationUuid);
             }
 
-            // Seed three sample HelloMessage objects.
-            foreach ($this->buildSampleMessages() as $message) {
-                $this->objectService->saveObject(
-                    object: $message,
-                    register: 'openbuilt',
-                    schema: 'hello-message'
-                );
-            }
-
-            $output->info('Seeded three sample HelloMessage objects.');
+            $this->seedSampleMessages(output: $output);
 
             $this->logger->info('OpenBuilt: hello-world virtual app seeded successfully');
         } catch (\Throwable $e) {
@@ -158,6 +103,180 @@ class SeedHelloWorld implements IRepairStep
             );
         }//end try
     }//end run()
+
+    /**
+     * Idempotency guard — true when a hello-world Application is already present.
+     *
+     * @return bool
+     */
+    private function seedAlreadyExists(): bool
+    {
+        $existing = $this->objectService->findAll(
+            config: [
+                'filters' => [
+                    'register' => 'openbuilt',
+                    'schema'   => 'application',
+                    'slug'     => self::SEED_SLUG,
+                ],
+                'limit'   => 1,
+            ]
+        );
+
+        return empty($existing) === false;
+    }//end seedAlreadyExists()
+
+    /**
+     * Create the hello-world Application AND the BuiltAppRoute pointing at it.
+     *
+     * Returns the application UUID (or null if OR did not return one) so the
+     * caller can chain the initial snapshot seed. Per design.md OQ-1, OR's
+     * x-openregister-lifecycle engine does not yet support
+     * `on_transition.upsert_relation`, so the BuiltAppRoute is created
+     * explicitly — ADR-031 §Exceptions(1) declarative-first failure mode.
+     *
+     * @param IOutput $output Progress reporter.
+     *
+     * @return string|null The created Application's UUID, or null on miss.
+     */
+    private function seedApplicationAndRoute(IOutput $output): ?string
+    {
+        $seedManifest = $this->buildHelloWorldManifest();
+        $application  = $this->objectService->saveObject(
+            object: [
+                'slug'        => self::SEED_SLUG,
+                'name'        => 'Hello World',
+                'description' => 'The canonical seed virtual app for OpenBuilt. Exercises index + detail + form page types.',
+                'version'     => self::SEED_VERSION,
+                'status'      => 'published',
+                'manifest'    => $seedManifest,
+            ],
+            register: 'openbuilt',
+            schema: 'application'
+        );
+
+        $applicationData = $application->jsonSerialize();
+        $applicationUuid = $this->extractUuid(data: $applicationData);
+
+        $output->info('Created hello-world Application (uuid='.($applicationUuid ?? 'unknown').').');
+
+        if ($applicationUuid === null) {
+            return null;
+        }
+
+        $this->objectService->saveObject(
+            object: [
+                'slug'            => self::SEED_SLUG,
+                'applicationUuid' => $applicationUuid,
+            ],
+            register: 'openbuilt',
+            schema: 'built-app-route'
+        );
+        $output->info('Created BuiltAppRoute for hello-world.');
+
+        return $applicationUuid;
+    }//end seedApplicationAndRoute()
+
+    /**
+     * Seed one ApplicationVersion snapshot AND point Application.currentVersion at it.
+     *
+     * Chain spec #6 openbuilt-versioning — same ADR-031 §Exceptions(1) rationale
+     * as the BuiltAppRoute upkeep above. The listener does the same on every
+     * subsequent publish.
+     *
+     * @param IOutput $output          Progress reporter.
+     * @param string  $applicationUuid The parent Application's UUID.
+     *
+     * @return void
+     */
+    private function seedInitialSnapshot(IOutput $output, string $applicationUuid): void
+    {
+        $seedManifest = $this->buildHelloWorldManifest();
+
+        $snapshot = $this->objectService->saveObject(
+            object: [
+                'applicationUuid' => $applicationUuid,
+                'version'         => self::SEED_VERSION,
+                'manifest'        => $seedManifest,
+                'publishedAt'     => gmdate('Y-m-d\TH:i:s\Z'),
+                'publishedBy'     => 'system',
+                'notes'           => 'Seeded by OpenBuilt install — initial published version',
+            ],
+            register: 'openbuilt',
+            schema: 'application-version'
+        );
+
+        $snapshotData = $snapshot->jsonSerialize();
+        $snapshotUuid = $this->extractUuid(data: $snapshotData);
+
+        if ($snapshotUuid === null) {
+            return;
+        }
+
+        // Patch the Application with currentVersion pointing at the snapshot.
+        $this->objectService->saveObject(
+            object: [
+                'slug'           => self::SEED_SLUG,
+                'name'           => 'Hello World',
+                'description'    => 'The canonical seed virtual app for OpenBuilt. Exercises index + detail + form page types.',
+                'version'        => self::SEED_VERSION,
+                'status'         => 'published',
+                'manifest'       => $seedManifest,
+                'currentVersion' => $snapshotUuid,
+            ],
+            register: 'openbuilt',
+            schema: 'application'
+        );
+        $output->info('Seeded initial ApplicationVersion '.$snapshotUuid.' (currentVersion set).');
+    }//end seedInitialSnapshot()
+
+    /**
+     * Seed three sample HelloMessage objects.
+     *
+     * @param IOutput $output Progress reporter.
+     *
+     * @return void
+     */
+    private function seedSampleMessages(IOutput $output): void
+    {
+        foreach ($this->buildSampleMessages() as $message) {
+            $this->objectService->saveObject(
+                object: $message,
+                register: 'openbuilt',
+                schema: 'hello-message'
+            );
+        }
+
+        $output->info('Seeded three sample HelloMessage objects.');
+    }//end seedSampleMessages()
+
+    /**
+     * Read the canonical UUID out of an OR-serialised object array.
+     *
+     * @param array<string, mixed> $data Serialised object array.
+     *
+     * @return string|null The UUID or null if not present.
+     */
+    private function extractUuid(array $data): ?string
+    {
+        $self = [];
+        if (isset($data['@self']) === true && is_array($data['@self']) === true) {
+            $self = $data['@self'];
+        }
+
+        if (isset($self['id']) === true) {
+            return (string) $self['id'];
+        }
+
+        if (isset($self['uuid']) === true) {
+            return (string) $self['uuid'];
+        }
+
+        if (isset($data['uuid']) === true) {
+            return (string) $data['uuid'];
+        }
+
+        return null;
+    }//end extractUuid()
 
     /**
      * Build the canonical hello-world manifest.

@@ -54,6 +54,11 @@
             "enum": ["draft", "published", "archived"],
             "default": "draft",
             "description": "Lifecycle state. Driven by x-openregister-lifecycle below — not by direct writes."
+          },
+          "currentVersion": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the most recent ApplicationVersion snapshot. Maintained by the snapshot-on-publish lifecycle action (see chain spec #6 openbuilt-versioning). Optional — never-published Applications carry no currentVersion."
           }
         },
         "x-openregister-lifecycle": {
@@ -75,12 +80,27 @@
               "name": "publish",
               "from": "draft",
               "to": "published",
-              "description": "Make the virtual app reachable at /builder/{slug}.",
+              "description": "Make the virtual app reachable at /builder/{slug}. Also snapshots the current manifest into an ApplicationVersion sibling and bumps currentVersion (chain spec #6 openbuilt-versioning).",
               "on_transition": {
                 "upsert_relation": {
                   "schema": "openbuilt/built-app-route",
                   "match": { "slug": "@self.slug" },
                   "payload": { "slug": "@self.slug", "applicationUuid": "@self.uuid" }
+                },
+                "create_relation": {
+                  "schema": "openbuilt/application-version",
+                  "payload": {
+                    "applicationUuid": "@self.uuid",
+                    "version": "@self.version",
+                    "manifest": "@self.manifest",
+                    "publishedAt": "@now",
+                    "publishedBy": "@actor",
+                    "notes": "Published via lifecycle transition"
+                  },
+                  "writeback": {
+                    "self.currentVersion": "@result.uuid",
+                    "self.status": "draft"
+                  }
                 }
               }
             },
@@ -157,6 +177,45 @@
           "body": {
             "type": "string",
             "description": "Optional longer message body."
+          }
+        }
+      },
+      "ApplicationVersion": {
+        "slug": "application-version",
+        "icon": "HistoryIcon",
+        "version": "0.1.0",
+        "title": "Application Version",
+        "description": "Append-only snapshot of an Application's manifest at the moment it was published. Created by the snapshot-on-publish lifecycle action (chain spec #6 openbuilt-versioning). History is never destructive — rollback creates a NEW snapshot instead of removing existing rows (design.md Decision 3).",
+        "type": "object",
+        "required": ["applicationUuid", "version", "manifest", "publishedAt", "publishedBy"],
+        "properties": {
+          "applicationUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the parent Application this snapshot belongs to."
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$",
+            "description": "Semver version string copied from the Application's `version` field at snapshot time."
+          },
+          "manifest": {
+            "type": "object",
+            "description": "Full deep-copy of the Application's manifest blob at snapshot time. Per design.md Decision 1 this is a full blob, not a JSON Patch delta.",
+            "additionalProperties": true
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp recording when the snapshot was taken (i.e. when the publish transition fired)."
+          },
+          "publishedBy": {
+            "type": "string",
+            "description": "Nextcloud user id of the actor who triggered the publish. `system` for snapshots created by repair steps."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-text changelog entry. v1 leaves this populated by the lifecycle action with a default string — a future spec may add a notes-prompt UX."
           }
         }
       }

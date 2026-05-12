@@ -1,0 +1,338 @@
+{
+	"info": {
+		"_postman_id": "openbuilt-versioning-collection",
+		"name": "OpenBuilt Versioning — REQ-OBV-001..005",
+		"description": "Newman integration suite for the openbuilt-versioning OpenSpec change. Exercises the snapshot-on-publish listener, the version-list filter, the diff endpoint, and the rollback (re-publish on prior manifest) flow. The collection is self-contained: it locates the seeded hello-world Application by slug, captures its UUID + current ApplicationVersion UUID into collection variables, then drives the lifecycle through publish → diff → rollback → republish. Teardown PUTs the original manifest back so the suite is idempotent.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{ "key": "username", "value": "{{admin_user}}", "type": "string" },
+			{ "key": "password", "value": "{{admin_password}}", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:8080", "type": "string" },
+		{ "key": "admin_user", "value": "admin", "type": "string" },
+		{ "key": "admin_password", "value": "admin", "type": "string" },
+		{ "key": "test_slug", "value": "hello-world", "type": "string" },
+		{ "key": "application_uuid", "value": "", "type": "string" },
+		{ "key": "v1_uuid", "value": "", "type": "string" },
+		{ "key": "v2_uuid", "value": "", "type": "string" },
+		{ "key": "original_manifest", "value": "", "type": "string" }
+	],
+	"item": [
+		{
+			"name": "Setup — locate the seeded hello-world Application + initial v1.0.0 snapshot",
+			"description": "Captures the Application's uuid + its current v1.0.0 ApplicationVersion uuid so the rest of the suite can chain. Also stashes the original manifest into a collection variable for the teardown.",
+			"item": [
+				{
+					"name": "0.1 Health check",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{base_url}}/status.php", "host": ["{{base_url}}"], "path": ["status.php"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Nextcloud reachable', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "0.2 Locate hello-world Application",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application?filter[slug]={{test_slug}}",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application"],
+							"query": [{ "key": "filter[slug]", "value": "{{test_slug}}" }]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('OR returns the seeded Application', function () { pm.response.to.have.status(200); });",
+									"const body = pm.response.json();",
+									"const rows = (body && body.results) || (Array.isArray(body) ? body : []);",
+									"const app = rows.find(r => (r.slug === pm.collectionVariables.get('test_slug') || (r['@self'] && r['@self'].slug === pm.collectionVariables.get('test_slug'))));",
+									"pm.test('hello-world present', function () { pm.expect(app, 'expected to find hello-world').to.not.be.undefined; });",
+									"if (app) {",
+									"    const uuid = app.uuid || (app['@self'] && app['@self'].id) || app.id;",
+									"    pm.collectionVariables.set('application_uuid', String(uuid));",
+									"    pm.collectionVariables.set('original_manifest', JSON.stringify(app.manifest || {}));",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "0.3 GET ApplicationVersion list — expect at least the seeded v1.0.0",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application-version?filter[applicationUuid]={{application_uuid}}",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application-version"],
+							"query": [{ "key": "filter[applicationUuid]", "value": "{{application_uuid}}" }]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Versions list returns 200', function () { pm.response.to.have.status(200); });",
+									"const body = pm.response.json();",
+									"const rows = (body && body.results) || (Array.isArray(body) ? body : []);",
+									"pm.test('Seeded v1.0.0 ApplicationVersion exists', function () {",
+									"    const v1 = rows.find(r => r.version === '1.0.0' && r.applicationUuid === pm.collectionVariables.get('application_uuid'));",
+									"    pm.expect(v1, 'expected the seeded v1.0.0 row from the SeedHelloWorld repair step').to.not.be.undefined;",
+									"    if (v1) {",
+									"        const uuid = v1.uuid || (v1['@self'] && v1['@self'].id) || v1.id;",
+									"        pm.collectionVariables.set('v1_uuid', String(uuid));",
+									"    }",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "REQ-OBV-001 — publish a manifest edit triggers snapshot listener",
+			"description": "Bump the Application's version field via OR PUT. The lifecycle's draft → published transition fires ObjectTransitionedEvent → ApplicationVersionSnapshotListener creates a new ApplicationVersion row. We assert the row appears in the list and that the Application's currentVersion is now updated.",
+			"item": [
+				{
+					"name": "1.1 PUT Application to v1.1.0 (triggers draft→published)",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"version\":\"1.1.0\",\"status\":\"published\",\"manifest\":{\"version\":\"1.1.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuilt.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuilt.helloworld.title.messages\",\"config\":{\"register\":\"openbuilt\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}},{\"id\":\"About\",\"route\":\"/about\",\"type\":\"detail\",\"title\":\"openbuilt.helloworld.title.about\",\"config\":{\"register\":\"openbuilt\",\"schema\":\"hello-message\"}}]}}"
+						},
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{application_uuid}}",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{application_uuid}}"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Publish PUT accepted', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "1.2 GET ApplicationVersion list — v1.1.0 must now appear",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application-version?filter[applicationUuid]={{application_uuid}}",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application-version"],
+							"query": [{ "key": "filter[applicationUuid]", "value": "{{application_uuid}}" }]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Versions list returns 200', function () { pm.response.to.have.status(200); });",
+									"const body = pm.response.json();",
+									"const rows = (body && body.results) || (Array.isArray(body) ? body : []);",
+									"pm.test('v1.1.0 snapshot row created by the listener', function () {",
+									"    const v2 = rows.find(r => r.version === '1.1.0' && r.applicationUuid === pm.collectionVariables.get('application_uuid'));",
+									"    pm.expect(v2, 'listener must have appended a v1.1.0 row').to.not.be.undefined;",
+									"    if (v2) {",
+									"        const uuid = v2.uuid || (v2['@self'] && v2['@self'].id) || v2.id;",
+									"        pm.collectionVariables.set('v2_uuid', String(uuid));",
+									"    }",
+									"});",
+									"pm.test('Append-only — v1.0.0 row still present (history not rewritten)', function () {",
+									"    const v1 = rows.find(r => r.version === '1.0.0' && r.applicationUuid === pm.collectionVariables.get('application_uuid'));",
+									"    pm.expect(v1, 'v1.0.0 must NOT have been deleted by the publish').to.not.be.undefined;",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "REQ-OBV-005 — diff endpoint returns both manifest blobs",
+			"description": "GET the thin-glue diff endpoint. With v1_uuid + v2_uuid known we expect a 200 with { from, to } shape where from.version='1.0.0' and to.version='1.1.0'.",
+			"item": [
+				{
+					"name": "2.1 GET diff between v1.0.0 and v1.1.0",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/diff?from={{v1_uuid}}&to={{v2_uuid}}",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openbuilt", "api", "applications", "{{test_slug}}", "versions", "diff"],
+							"query": [
+								{ "key": "from", "value": "{{v1_uuid}}" },
+								{ "key": "to", "value": "{{v2_uuid}}" }
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Diff endpoint returns 200', function () { pm.response.to.have.status(200); });",
+									"const body = pm.response.json();",
+									"pm.test('Response shape is { from, to } with manifest + version + publishedAt', function () {",
+									"    pm.expect(body).to.have.property('from');",
+									"    pm.expect(body).to.have.property('to');",
+									"    pm.expect(body.from).to.have.property('manifest');",
+									"    pm.expect(body.from).to.have.property('version');",
+									"    pm.expect(body.to).to.have.property('manifest');",
+									"    pm.expect(body.to).to.have.property('version');",
+									"});",
+									"pm.test('Versions match the requested UUIDs', function () {",
+									"    pm.expect(body.from.version).to.equal('1.0.0');",
+									"    pm.expect(body.to.version).to.equal('1.1.0');",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "REQ-OBR-009 — rollback action appends a new snapshot row",
+			"description": "Rollback is implemented as a re-publish whose payload is the old manifest blob. We PUT the v1.0.0 manifest back onto the Application (with a draft→published transition) and assert that a THIRD ApplicationVersion row appears — history is append-only per design.md Decision 3.",
+			"item": [
+				{
+					"name": "3.1 POST rollback action (PUT old manifest, re-publish)",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"version\":\"1.0.0-rb1\",\"status\":\"published\",\"manifest\":{\"version\":\"1.0.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuilt.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuilt.helloworld.title.messages\",\"config\":{\"register\":\"openbuilt\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}}]}}"
+						},
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{application_uuid}}",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{application_uuid}}"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Rollback (re-publish) accepted', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "3.2 GET ApplicationVersion list — 3 rows now (append-only)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application-version?filter[applicationUuid]={{application_uuid}}",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application-version"],
+							"query": [{ "key": "filter[applicationUuid]", "value": "{{application_uuid}}" }]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Versions list returns 200', function () { pm.response.to.have.status(200); });",
+									"const body = pm.response.json();",
+									"const rows = (body && body.results) || (Array.isArray(body) ? body : []);",
+									"const own = rows.filter(r => r.applicationUuid === pm.collectionVariables.get('application_uuid'));",
+									"pm.test('At least three ApplicationVersion rows after rollback (1.0.0 + 1.1.0 + rollback)', function () {",
+									"    pm.expect(own.length).to.be.at.least(3);",
+									"});",
+									"pm.test('Rollback row carries the old manifest version (1.0.0)', function () {",
+									"    const rollback = own.find(r => (r.version || '').startsWith('1.0.0') && r.version !== '1.0.0');",
+									"    pm.expect(rollback, 'expected an append-only rollback row with version like 1.0.0-rb1').to.not.be.undefined;",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Teardown — restore original manifest + state",
+			"description": "Restore the Application's manifest to the seeded value so the suite is idempotent across reruns. We intentionally do NOT delete the appended ApplicationVersion rows — the rollback test asserts append-only history, and re-running the suite simply appends more rows. This is the same convention the rbac suite uses for its seed Application (it only resets the permissions block).",
+			"item": [
+				{
+					"name": "4.1 PUT original manifest back",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"version\":\"1.0.0\",\"status\":\"published\",\"manifest\":{\"version\":\"1.0.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuilt.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuilt.helloworld.title.messages\",\"config\":{\"register\":\"openbuilt\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}}]}}"
+						},
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{application_uuid}}",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{application_uuid}}"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Teardown PUT accepted', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
