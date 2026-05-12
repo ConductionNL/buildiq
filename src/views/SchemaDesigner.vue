@@ -168,7 +168,9 @@ export default {
 	},
 	computed: {
 		appSlug() {
-			return this.$route.params.slug
+			// Falls back to the hello-world seed app when reached via the
+			// top-level /schemas shortcut (which carries no :slug param).
+			return this.$route.params.slug || 'hello-world'
 		},
 		schemaId() {
 			return this.$route.params.schemaId || ''

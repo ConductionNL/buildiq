@@ -51,6 +51,27 @@ export function createObjectStore() {
 	})
 }
 
+// Manifest-renderer family — stubbed so App.vue / main.js transitive
+// imports load under the vitest pipeline. None of the current tests mount
+// these; they only need the symbols to exist.
+export const CnAppRoot = stub('CnAppRoot')
+export const CnAppNav = stub('CnAppNav')
+export const CnPageRenderer = { name: 'CnPageRenderer', render: (h) => h('div') }
+export const defaultPageTypes = {}
+export function registerIcons() {}
+export function registerTranslations() {}
+
+/**
+ * Lightweight stand-in for the lib's manifest validator. The unit suite
+ * only needs it to be callable; the structural manifest checks live in
+ * tests/vitest/manifest.spec.js. Returns `{ valid: true, errors: [] }`.
+ *
+ * @return {{valid: boolean, errors: Array}}
+ */
+export function validateManifest() {
+	return { valid: true, errors: [] }
+}
+
 export default {
 	NcModal,
 	NcDialog,
@@ -62,4 +83,11 @@ export default {
 	NcNoteCard,
 	NcLoadingIcon,
 	createObjectStore,
+	CnAppRoot,
+	CnAppNav,
+	CnPageRenderer,
+	defaultPageTypes,
+	registerIcons,
+	registerTranslations,
+	validateManifest,
 }

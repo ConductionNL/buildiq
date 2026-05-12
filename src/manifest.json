@@ -1,0 +1,21 @@
+{
+	"$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest.schema.json",
+	"version": "1.0.0",
+	"dependencies": ["openregister"],
+	"menu": [
+		{ "id": "Dashboard", "label": "Dashboard", "icon": "icon-category-dashboard", "route": "Dashboard", "order": 10 },
+		{ "id": "VirtualApps", "label": "Virtual apps", "icon": "icon-category-app-bundles", "route": "VirtualApps", "order": 20 },
+		{ "id": "Schemas", "label": "Schemas", "icon": "icon-category-customization", "route": "Schemas", "order": 30 },
+		{ "id": "Exports", "label": "Exports", "icon": "icon-download", "route": "Exports", "order": 40 },
+		{ "id": "Documentation", "label": "Documentation", "icon": "icon-info", "href": "https://github.com/ConductionNL/openbuilt", "section": "settings", "order": 90 }
+	],
+	"pages": [
+		{ "id": "Dashboard", "route": "/", "type": "custom", "title": "Dashboard", "component": "DashboardView" },
+		{ "id": "VirtualApps", "route": "/applications", "type": "custom", "title": "Virtual apps", "component": "ApplicationsView" },
+		{ "id": "Schemas", "route": "/schemas", "type": "custom", "title": "Schemas", "component": "SchemaDesignerView" },
+		{ "id": "SchemaDesignerList", "route": "/builder/:slug/schemas", "type": "custom", "title": "Schemas", "component": "SchemaDesignerView" },
+		{ "id": "SchemaDesigner", "route": "/builder/:slug/schemas/:schemaId", "type": "custom", "title": "Schema", "component": "SchemaDesignerView" },
+		{ "id": "Exports", "route": "/exports", "type": "custom", "title": "Exports", "component": "ExportJobsView" },
+		{ "id": "BuilderHost", "route": "/builder/:slug/:pathMatch(.*)?", "type": "custom", "title": "Virtual app", "component": "BuilderHostView" }
+	]
+}
