@@ -1,19 +1,17 @@
-/*
+/**
+ * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuilt Contributors
  * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * Global setup for Vitest unit tests. Stubs the Nextcloud `t()` and `n()`
- * translation helpers so component renders that call them resolve to the
- * bare key string. Loaded automatically via `test.setupFiles` in
- * `vitest.config.js`.
+ * Global setup for OpenBuilt Vitest unit tests. Stubs the Nextcloud
+ * `t()` and `n()` translation helpers so component renders that call
+ * them resolve to the bare key string. Loaded automatically via
+ * `test.setupFiles` in `vitest.config.js`.
  *
- * Helpers are exposed BOTH ways so component templates and script-level
- * calls both work:
- *   - Vue 2's template compiler emits `_vm.t(...)` — looks on instance.
- *   - Plain script-level `t(...)` calls look on globalThis.
- *
- * Per memory rule we keep the stubs visible — beforeEach in individual
- * specs can override if they care about translation arguments.
+ * The helpers are exposed two ways because Vue 2's template compiler
+ * emits `_vm.t(...)` (looking on the component instance), while plain
+ * script code calls `t(...)` (looking on the global). We register them
+ * as a global mixin so every mounted component has them on `this`, AND
+ * on `globalThis` so direct script-level calls resolve.
  */
 
 import Vue from 'vue'
