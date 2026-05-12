@@ -1,0 +1,11 @@
+{
+  "label": "Tutorials",
+  "position": 2,
+  "collapsible": true,
+  "collapsed": false,
+  "link": {
+    "type": "generated-index",
+    "title": "OpenBuilt tutorials",
+    "description": "Step-by-step walkthroughs for everyday OpenBuilt tasks. The user track covers building an app — templates, schemas, pages, data wiring, preview, versions, export. The admin track covers org-wide configuration — RBAC, the template catalogue, and OpenBuilt settings."
+  }
+}
