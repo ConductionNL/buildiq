@@ -27,6 +27,8 @@ declare(strict_types=1);
 namespace OCA\OpenBuilt\Tests\Unit\Repair;
 
 use OCA\OpenBuilt\Repair\SeedApplicationTemplates;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -61,9 +63,9 @@ class SeedApplicationTemplatesTest extends TestCase
     /**
      * Mock OR ObjectService.
      *
-     * @var MockObject
+     * @var ObjectService&MockObject
      */
-    private MockObject $objectService;
+    private ObjectService&MockObject $objectService;
 
     /**
      * Mock IAppManager.
@@ -98,9 +100,7 @@ class SeedApplicationTemplatesTest extends TestCase
         $this->logger        = $this->createMock(LoggerInterface::class);
         $this->output        = $this->createMock(IOutput::class);
         $this->appManager    = $this->createMock(IAppManager::class);
-        $this->objectService = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['findAll', 'saveObject'])
-            ->getMock();
+        $this->objectService = $this->createMock(ObjectService::class);
     }//end setUp()
 
     /**
@@ -262,9 +262,11 @@ class SeedApplicationTemplatesTest extends TestCase
         $savedSlugs = [];
         $this->objectService->method('saveObject')
             ->willReturnCallback(
-                static function (array $object) use (&$savedSlugs) {
+                function (array $object) use (&$savedSlugs): ObjectEntity {
                     $savedSlugs[] = $object['slug'] ?? null;
-                    return ['uuid' => 'fake-uuid-'.($object['slug'] ?? 'x')];
+                    $entity        = $this->createMock(ObjectEntity::class);
+                    $entity->method('jsonSerialize')->willReturn(['uuid' => 'fake-uuid-'.($object['slug'] ?? 'x')]);
+                    return $entity;
                 }
             );
 

@@ -25,6 +25,11 @@ namespace OCA\OpenBuilt\Tests\Unit\Controller;
 use OCA\OpenBuilt\Controller\ApplicationsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroup;
@@ -43,11 +48,11 @@ use Psr\Log\LoggerInterface;
 class ApplicationsControllerTest extends TestCase
 {
     /**
-     * Mock OR ObjectService — typed as object since the real class lives in another app.
+     * Mock OR ObjectService.
      *
-     * @var MockObject
+     * @var ObjectService&MockObject
      */
-    private MockObject $objectService;
+    private ObjectService&MockObject $objectService;
 
     /**
      * Mock logger.
@@ -87,9 +92,7 @@ class ApplicationsControllerTest extends TestCase
         parent::setUp();
 
         $this->logger        = $this->createMock(LoggerInterface::class);
-        $this->objectService = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['searchObjects', 'find'])
-            ->getMock();
+        $this->objectService = $this->createMock(ObjectService::class);
         $this->userSession      = $this->createMock(IUserSession::class);
         $this->groupManager     = $this->createMock(IGroupManager::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
@@ -108,22 +111,20 @@ class ApplicationsControllerTest extends TestCase
     {
         $request = $this->createMock(IRequest::class);
 
-        $registerEntity = $this->getMockBuilder(\stdClass::class)
+        $registerEntity = $this->getMockBuilder(Register::class)
+            ->disableOriginalConstructor()
             ->addMethods(['getId'])
             ->getMock();
         $registerEntity->method('getId')->willReturn(926);
-        $registerMapper = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['find'])
-            ->getMock();
+        $registerMapper = $this->createMock(RegisterMapper::class);
         $registerMapper->method('find')->willReturn($registerEntity);
 
-        $schemaEntity = $this->getMockBuilder(\stdClass::class)
+        $schemaEntity = $this->getMockBuilder(Schema::class)
+            ->disableOriginalConstructor()
             ->addMethods(['getId'])
             ->getMock();
         $schemaEntity->method('getId')->willReturn(1635);
-        $schemaMapper = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['find'])
-            ->getMock();
+        $schemaMapper = $this->createMock(SchemaMapper::class);
         $schemaMapper->method('find')->willReturn($schemaEntity);
 
         $user = $this->createMock(IUser::class);
@@ -173,11 +174,15 @@ class ApplicationsControllerTest extends TestCase
         ];
         $this->objectService->method('searchObjects')
             ->willReturn([['applicationUuid' => 'abc-123']]);
-        $this->objectService->method('find')
-            ->willReturn([
-                'manifest'    => $manifest,
-                'permissions' => $permissions,
-            ]);
+
+        // OR's ObjectService::find() returns an ObjectEntity (or null); the
+        // controller normalises it via jsonSerialize().
+        $applicationEntity = $this->createMock(ObjectEntity::class);
+        $applicationEntity->method('jsonSerialize')->willReturn([
+            'manifest'    => $manifest,
+            'permissions' => $permissions,
+        ]);
+        $this->objectService->method('find')->willReturn($applicationEntity);
     }//end wireApplication()
 
     /**

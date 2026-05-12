@@ -208,7 +208,7 @@
 					]
 				},
 				{
-					"name": "PUT publishes the newman-roundtrip Application",
+					"name": "PUT saves a manifest edit before publish (newman-roundtrip)",
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -218,10 +218,10 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"name\": \"Newman Round-trip\",\n  \"description\": \"Synthetic Application created by the Newman CRUD round-trip\",\n  \"version\": \"0.0.2\",\n  \"status\": \"published\",\n  \"manifest\": {\n    \"version\": \"1.0.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuilt\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  }\n}"
+							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"name\": \"Newman Round-trip\",\n  \"description\": \"Synthetic Application created by the Newman CRUD round-trip\",\n  \"version\": \"0.0.2\",\n  \"status\": \"draft\",\n  \"manifest\": {\n    \"version\": \"1.0.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuilt\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  }\n}"
 						},
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{created_uuid}}",
-						"description": "Publish transitions trigger BuiltAppRoute upkeep (REQ-OBA-003 / REQ-OBA-004)."
+						"description": "Save pending manifest edits while still in draft (mirrors ApplicationEditor.vue's publish() step 1). The publish happens via the lifecycle transition below, not by flipping status here — a raw status=published PUT would never fire ObjectTransitionedEvent and so the BuiltAppRoute would never be created (REQ-OBA-003 / REQ-OBA-004)."
 					},
 					"event": [
 						{
@@ -233,8 +233,38 @@
 									"    pm.response.to.have.status(200);",
 									"});",
 									"const body = pm.response.json();",
-									"pm.test('status flipped to published', function () {",
-									"    pm.expect(body.status || (body['@self'] && body['@self'].status)).to.eql('published');",
+									"pm.test('still in draft (publish happens via lifecycle transition)', function () {",
+									"    pm.expect(body.status || (body['@self'] && body['@self'].status)).to.eql('draft');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST the publish lifecycle transition (fires ObjectTransitionedEvent)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"action\": \"publish\" }"
+						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{created_uuid}}/transition",
+						"description": "A raw PUT with status=published does NOT make OR fire ObjectTransitionedEvent, so the BuiltAppRoute (slug -> uuid) that GET /api/applications/{slug}/manifest resolves is never created. OR's lifecycle transition endpoint (POST /api/objects/{id}/transition with {action}) fires the event -> ApplicationVersionSnapshotListener upserts the BuiltAppRoute (REQ-OBA-003 / REQ-OBA-004). This is the server-side equivalent of ApplicationEditor.vue's publish() flow."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('transition returns 200 or 204', function () {",
+									"    pm.expect([200, 204]).to.include(pm.response.code);",
 									"});"
 								]
 							}

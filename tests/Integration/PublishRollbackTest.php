@@ -37,6 +37,10 @@ declare(strict_types=1);
 namespace OCA\OpenBuilt\Tests\Integration;
 
 use OCA\OpenBuilt\Listener\ApplicationVersionSnapshotListener;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Event\ObjectTransitionedEvent;
+use OCA\OpenRegister\Service\ObjectService;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -49,21 +53,42 @@ use Psr\Log\NullLogger;
  *   - the rollback handler's append-only semantics (re-uses the listener
  *     by re-emitting a draft→published transition on the restored manifest)
  *
- * We never touch the DB — a tiny FakeObjectService records every saveObject
+ * We never touch the DB — a mocked ObjectService records every saveObject
  * call so the assertion phase can reconstruct the history.
  */
 class PublishRollbackTest extends TestCase
 {
 
     /**
-     * In-memory OR shim — records every saveObject call and supports find().
+     * Mocked OR ObjectService — records every saveObject call.
      *
-     * @var object
+     * @var ObjectService&MockObject
      */
-    private object $fakeObjectService;
+    private ObjectService&MockObject $fakeObjectService;
 
     /**
-     * Set up fixtures: a fresh listener bound to a fresh FakeObjectService.
+     * Every saveObject call's `{schema, object}` pair — used for assertions.
+     *
+     * @var array<int, array<string, mixed>>
+     */
+    private array $saved = [];
+
+    /**
+     * Counter for fake UUID minting.
+     *
+     * @var int
+     */
+    private int $uuidCounter = 0;
+
+    /**
+     * In-memory storage keyed by (schema, uuid).
+     *
+     * @var array<string, array<string, array<string, mixed>>>
+     */
+    private array $store = [];
+
+    /**
+     * Set up fixtures: a fresh in-memory ObjectService shim.
      *
      * @return void
      */
@@ -71,93 +96,63 @@ class PublishRollbackTest extends TestCase
     {
         parent::setUp();
 
-        // Build the fake OR shim as an anonymous class so it implements the
-        // narrow surface our SUT actually invokes (saveObject + find).
-        $this->fakeObjectService = new class () {
-            /**
-             * Every saveObject call's payload — used for assertions.
-             *
-             * @var array<int, array<string, mixed>>
-             */
-            public array $saved = [];
+        // The publish/rollback cycle is driven by OR's lifecycle feature
+        // (ObjectTransitionedEvent), which is absent from OR's `main` — skip
+        // rather than fatal-error on the missing class.
+        if (class_exists(ObjectTransitionedEvent::class) === false) {
+            $this->markTestSkipped('OpenRegister does not provide ObjectTransitionedEvent (lifecycle feature not in the installed OR release).');
+        }
 
-            /**
-             * Counter for fake UUID minting.
-             *
-             * @var int
-             */
-            private int $uuidCounter = 0;
+        $this->saved       = [];
+        $this->store       = [];
+        $this->uuidCounter = 0;
 
-            /**
-             * In-memory storage keyed by (schema, uuid).
-             *
-             * @var array<string, array<string, array<string, mixed>>>
-             */
-            public array $store = [];
+        $this->fakeObjectService = $this->createMock(ObjectService::class);
 
-            /**
-             * Mimic ObjectService::saveObject — assigns a uuid + appends to history.
-             *
-             * @param array<string, mixed> $object   The payload.
-             * @param string               $register Register slug (ignored).
-             * @param string               $schema   Schema slug.
-             *
-             * @return object Entity-like value exposing jsonSerialize().
-             *
-             * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-             */
-            public function saveObject(array $object, string $register, string $schema): object
-            {
-                $existing = ($object['@self']['id'] ?? $object['uuid'] ?? null);
-                if ($existing === null) {
-                    $this->uuidCounter++;
-                    $uuid           = 'uuid-'.$schema.'-'.$this->uuidCounter;
-                    $object['@self'] = ['id' => $uuid];
-                } else {
-                    $uuid = (string) $existing;
-                    if (isset($object['@self']) === false) {
-                        $object['@self'] = ['id' => $uuid];
-                    }
-                }
-
-                $this->store[$schema][$uuid] = $object;
-                $this->saved[]               = ['schema' => $schema, 'object' => $object];
-
-                return new class ($object) {
-                    /**
-                     * @param array<string, mixed> $payload Stored serialised payload.
-                     */
-                    public function __construct(private array $payload)
-                    {
-                    }
-
-                    /**
-                     * @return array<string, mixed>
-                     */
-                    public function jsonSerialize(): array
-                    {
-                        return $this->payload;
-                    }
-                };
+        // ObjectService::saveObject(array|ObjectEntity $object, ?array $extend, mixed $register, mixed $schema):
+        // the SUT calls it with named args (object/register/schema) — captured here as positional [object, [], register, schema].
+        $this->fakeObjectService->method('saveObject')->willReturnCallback(
+            function (...$args): ObjectEntity {
+                $object = ($args['object'] ?? ($args[0] ?? []));
+                $schema = (string) ($args['schema'] ?? ($args[3] ?? ''));
+                return $this->recordSave($object, $schema);
             }
+        );
 
-            /**
-             * Mimic ObjectService::find — look up by (schema, uuid).
-             *
-             * @param string $id       The uuid.
-             * @param string $register Register slug (ignored).
-             * @param string $schema   Schema slug.
-             *
-             * @return array<string, mixed>|null
-             *
-             * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-             */
-            public function find(string $id, string $register, string $schema): ?array
-            {
-                return ($this->store[$schema][$id] ?? null);
-            }
-        };
+        // The listener's BuiltAppRoute lookup goes through searchObjectsBySlug;
+        // an empty result makes it fall through to the create path.
+        $this->fakeObjectService->method('searchObjectsBySlug')->willReturn([]);
     }//end setUp()
+
+    /**
+     * Mimic ObjectService::saveObject — assigns a uuid + appends to history.
+     *
+     * @param array<string, mixed> $object The payload.
+     * @param string               $schema Schema slug.
+     *
+     * @return ObjectEntity Entity-like value exposing jsonSerialize().
+     */
+    private function recordSave(array $object, string $schema): ObjectEntity
+    {
+        $existing = ($object['@self']['id'] ?? $object['uuid'] ?? null);
+        if ($existing === null) {
+            $this->uuidCounter++;
+            $uuid            = 'uuid-'.$schema.'-'.$this->uuidCounter;
+            $object['@self'] = ['id' => $uuid];
+        } else {
+            $uuid = (string) $existing;
+            if (isset($object['@self']) === false) {
+                $object['@self'] = ['id' => $uuid];
+            }
+        }
+
+        $this->store[$schema][$uuid] = $object;
+        $this->saved[]               = ['schema' => $schema, 'object' => $object];
+
+        $entity = $this->createMock(ObjectEntity::class);
+        $entity->method('jsonSerialize')->willReturn($object);
+        return $entity;
+    }//end recordSave()
 
     /**
      * Build a fake ObjectTransitionedEvent stub.
@@ -168,14 +163,12 @@ class PublishRollbackTest extends TestCase
      *
      * @return \PHPUnit\Framework\MockObject\MockObject
      */
-    private function transition(string $from, string $to, array $applicationData): \PHPUnit\Framework\MockObject\MockObject
+    private function transition(string $from, string $to, array $applicationData): MockObject
     {
-        $entity = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['jsonSerialize'])
-            ->getMock();
+        $entity = $this->createMock(ObjectEntity::class);
         $entity->method('jsonSerialize')->willReturn($applicationData);
 
-        $event = $this->getMockBuilder(\OCA\OpenRegister\Event\ObjectTransitionedEvent::class)
+        $event = $this->getMockBuilder(ObjectTransitionedEvent::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['getSchema', 'getFrom', 'getTo', 'getObject', 'getUserId'])
             ->getMock();
@@ -198,7 +191,7 @@ class PublishRollbackTest extends TestCase
     private function savedFor(string $schema): array
     {
         $matches = [];
-        foreach ($this->fakeObjectService->saved as $entry) {
+        foreach ($this->saved as $entry) {
             if ($entry['schema'] === $schema) {
                 $matches[] = $entry['object'];
             }

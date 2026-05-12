@@ -31,6 +31,12 @@ declare(strict_types=1);
 namespace OCA\OpenBuilt\Tests\Unit\Controller;
 
 use OCA\OpenBuilt\Controller\ApplicationsController;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
@@ -63,23 +69,23 @@ class CreateFromTemplateTest extends TestCase
     /**
      * Mock OR ObjectService.
      *
-     * @var MockObject
+     * @var ObjectService&MockObject
      */
-    private MockObject $objectService;
+    private ObjectService&MockObject $objectService;
 
     /**
      * Mock RegisterMapper.
      *
-     * @var MockObject
+     * @var RegisterMapper&MockObject
      */
-    private MockObject $registerMapper;
+    private RegisterMapper&MockObject $registerMapper;
 
     /**
      * Mock SchemaMapper.
      *
-     * @var MockObject
+     * @var SchemaMapper&MockObject
      */
-    private MockObject $schemaMapper;
+    private SchemaMapper&MockObject $schemaMapper;
 
     /**
      * Mock IUserSession.
@@ -105,9 +111,9 @@ class CreateFromTemplateTest extends TestCase
     /**
      * Per-app Register entity stub.
      *
-     * @var MockObject
+     * @var Register&MockObject
      */
-    private MockObject $perAppRegister;
+    private Register&MockObject $perAppRegister;
 
     /**
      * The slug of the template under test in fixtures.
@@ -130,30 +136,30 @@ class CreateFromTemplateTest extends TestCase
         $this->userSession  = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
 
-        $this->objectService = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['searchObjects', 'find', 'saveObject'])
-            ->getMock();
+        $this->objectService = $this->createMock(ObjectService::class);
 
         // RegisterMapper mock chain: find()->getId(), create + update.
-        $registerEntity = $this->getMockBuilder(\stdClass::class)
+        $registerEntity = $this->getMockBuilder(Register::class)
+            ->disableOriginalConstructor()
             ->addMethods(['getId'])
             ->getMock();
         $registerEntity->method('getId')->willReturn(926);
 
-        $this->perAppRegister = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['getId', 'getSlug', 'getSchemas', 'setSchemas'])
+        $this->perAppRegister = $this->getMockBuilder(Register::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getSchemas', 'setSchemas'])
+            ->addMethods(['getId', 'getSlug'])
             ->getMock();
         $this->perAppRegister->method('getId')->willReturn(2001);
         $this->perAppRegister->method('getSlug')->willReturn('openbuilt-my-permits');
         $this->perAppRegister->method('getSchemas')->willReturn([]);
-        $this->perAppRegister->method('setSchemas')->willReturn(null);
+        $this->perAppRegister->method('setSchemas')->willReturn($this->perAppRegister);
 
-        $this->registerMapper = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['find', 'createFromArray', 'update'])
-            ->getMock();
+        $this->registerMapper = $this->createMock(RegisterMapper::class);
         // Default: shared register find succeeds, per-app register find throws (not yet provisioned).
         $this->registerMapper->method('find')->willReturnCallback(
-            function (string $slug) use ($registerEntity): object {
+            function (...$args) use ($registerEntity): Register {
+                $slug = (string) ($args['id'] ?? $args[0]);
                 if ($slug === 'openbuilt') {
                     return $registerEntity;
                 }
@@ -164,20 +170,21 @@ class CreateFromTemplateTest extends TestCase
         $this->registerMapper->method('update')->willReturn($this->perAppRegister);
 
         // SchemaMapper mock chain: find()->getId() for shared schemas; createFromArray for clones.
-        $applicationTemplateSchema = $this->getMockBuilder(\stdClass::class)
+        $applicationTemplateSchema = $this->getMockBuilder(Schema::class)
+            ->disableOriginalConstructor()
             ->addMethods(['getId'])
             ->getMock();
         $applicationTemplateSchema->method('getId')->willReturn(1635);
-        $applicationSchema = $this->getMockBuilder(\stdClass::class)
+        $applicationSchema = $this->getMockBuilder(Schema::class)
+            ->disableOriginalConstructor()
             ->addMethods(['getId'])
             ->getMock();
         $applicationSchema->method('getId')->willReturn(1636);
 
-        $this->schemaMapper = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['find', 'createFromArray'])
-            ->getMock();
+        $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->schemaMapper->method('find')->willReturnCallback(
-            function (string $slug) use ($applicationTemplateSchema, $applicationSchema): object {
+            function (...$args) use ($applicationTemplateSchema, $applicationSchema): Schema {
+                $slug = (string) ($args['id'] ?? $args[0]);
                 if ($slug === 'application-template') {
                     return $applicationTemplateSchema;
                 }
@@ -199,6 +206,43 @@ class CreateFromTemplateTest extends TestCase
             auditTrailMapper: null,
         );
     }//end setUp()
+
+    /**
+     * Build a Schema test double that reports the given numeric id.
+     *
+     * SchemaMapper::createFromArray() returns a Schema; the controller only
+     * calls getId() on the result.
+     *
+     * @param int $id The schema id to report.
+     *
+     * @return Schema&MockObject
+     */
+    private function schemaWithId(int $id): Schema&MockObject
+    {
+        $schema = $this->getMockBuilder(Schema::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['getId'])
+            ->getMock();
+        $schema->method('getId')->willReturn($id);
+        return $schema;
+    }//end schemaWithId()
+
+    /**
+     * Build an ObjectEntity test double whose jsonSerialize() returns $payload.
+     *
+     * ObjectService::saveObject() returns an ObjectEntity; the controller
+     * normalises it via jsonSerialize().
+     *
+     * @param array<string, mixed> $payload Serialised object payload.
+     *
+     * @return ObjectEntity&MockObject
+     */
+    private function savedEntity(array $payload): ObjectEntity&MockObject
+    {
+        $entity = $this->createMock(ObjectEntity::class);
+        $entity->method('jsonSerialize')->willReturn($payload);
+        return $entity;
+    }//end savedEntity()
 
     /**
      * Register an authenticated user for the test.
@@ -324,11 +368,6 @@ class CreateFromTemplateTest extends TestCase
         );
 
         // Expect a schema clone CALL with the prefixed slug `my-permits-permit-application`.
-        $createdSchema = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['getId'])
-            ->getMock();
-        $createdSchema->method('getId')->willReturn(7777);
-
         $this->schemaMapper->expects(self::once())
             ->method('createFromArray')
             ->with(self::callback(
@@ -336,11 +375,11 @@ class CreateFromTemplateTest extends TestCase
                     return ($payload['slug'] ?? null) === 'my-permits-permit-application';
                 }
             ))
-            ->willReturn($createdSchema);
+            ->willReturn($this->schemaWithId(7777));
 
         $this->objectService->expects(self::once())
             ->method('saveObject')
-            ->willReturn(['uuid' => 'new-uuid-1', 'slug' => 'my-permits']);
+            ->willReturn($this->savedEntity(['uuid' => 'new-uuid-1', 'slug' => 'my-permits']));
 
         $result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
 
@@ -367,17 +406,13 @@ class CreateFromTemplateTest extends TestCase
             []
         );
 
-        $createdSchema = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['getId'])
-            ->getMock();
-        $createdSchema->method('getId')->willReturn(7777);
-        $this->schemaMapper->method('createFromArray')->willReturn($createdSchema);
+        $this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
 
         $savedPayload = null;
         $this->objectService->method('saveObject')->willReturnCallback(
-            static function (array $object) use (&$savedPayload) {
+            function (array $object) use (&$savedPayload): ObjectEntity {
                 $savedPayload = $object;
-                return ['uuid' => 'new-uuid-2'];
+                return $this->savedEntity(['uuid' => 'new-uuid-2']);
             }
         );
 
@@ -412,17 +447,13 @@ class CreateFromTemplateTest extends TestCase
             []
         );
 
-        $createdSchema = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['getId'])
-            ->getMock();
-        $createdSchema->method('getId')->willReturn(8888);
-        $this->schemaMapper->method('createFromArray')->willReturn($createdSchema);
+        $this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(8888));
 
         $savedPayload = null;
         $this->objectService->method('saveObject')->willReturnCallback(
-            static function (array $object) use (&$savedPayload) {
+            function (array $object) use (&$savedPayload): ObjectEntity {
                 $savedPayload = $object;
-                return ['uuid' => 'new-uuid-3'];
+                return $this->savedEntity(['uuid' => 'new-uuid-3']);
             }
         );
 
@@ -453,17 +484,13 @@ class CreateFromTemplateTest extends TestCase
             []
         );
 
-        $createdSchema = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['getId'])
-            ->getMock();
-        $createdSchema->method('getId')->willReturn(9999);
-        $this->schemaMapper->method('createFromArray')->willReturn($createdSchema);
+        $this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(9999));
 
         $savedPayload = null;
         $this->objectService->method('saveObject')->willReturnCallback(
-            static function (array $object) use (&$savedPayload) {
+            function (array $object) use (&$savedPayload): ObjectEntity {
                 $savedPayload = $object;
-                return ['uuid' => 'new-uuid-4'];
+                return $this->savedEntity(['uuid' => 'new-uuid-4']);
             }
         );
 

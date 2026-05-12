@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuilt\Tests\Unit\Repair;
 
 use OCA\OpenBuilt\Repair\PopulateApplicationPermissions;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -43,9 +44,9 @@ class PopulateApplicationPermissionsTest extends TestCase
     /**
      * Mock OR ObjectService.
      *
-     * @var MockObject
+     * @var ObjectService&MockObject
      */
-    private MockObject $objectService;
+    private ObjectService&MockObject $objectService;
 
     /**
      * Mock IOutput.
@@ -65,9 +66,7 @@ class PopulateApplicationPermissionsTest extends TestCase
 
         $this->logger        = $this->createMock(LoggerInterface::class);
         $this->output        = $this->createMock(IOutput::class);
-        $this->objectService = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['findAll', 'saveObject'])
-            ->getMock();
+        $this->objectService = $this->createMock(ObjectService::class);
     }//end setUp()
 
     /**
@@ -122,9 +121,7 @@ class PopulateApplicationPermissionsTest extends TestCase
                         && ($object['permissions']['owners'] ?? null) === ['admin']
                         && ($object['permissions']['editors'] ?? null) === []
                         && ($object['permissions']['viewers'] ?? null) === [];
-                }),
-                'openbuilt',
-                'application'
+                })
             );
 
         $step = new PopulateApplicationPermissions(

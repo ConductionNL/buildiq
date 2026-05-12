@@ -29,6 +29,12 @@ declare(strict_types=1);
 namespace OCA\OpenBuilt\Tests\Unit\Controller;
 
 use OCA\OpenBuilt\Controller\ApplicationsController;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -54,9 +60,9 @@ class ApplicationsControllerDiffTest extends TestCase
     /**
      * Mock OR ObjectService.
      *
-     * @var MockObject
+     * @var ObjectService&MockObject
      */
-    private MockObject $objectService;
+    private ObjectService&MockObject $objectService;
 
     /**
      * Mock logger.
@@ -76,26 +82,22 @@ class ApplicationsControllerDiffTest extends TestCase
 
         $request             = $this->createMock(IRequest::class);
         $this->logger        = $this->createMock(LoggerInterface::class);
-        $this->objectService = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['searchObjects', 'find'])
-            ->getMock();
+        $this->objectService = $this->createMock(ObjectService::class);
 
-        $registerEntity = $this->getMockBuilder(\stdClass::class)
+        $registerEntity = $this->getMockBuilder(Register::class)
+            ->disableOriginalConstructor()
             ->addMethods(['getId'])
             ->getMock();
         $registerEntity->method('getId')->willReturn(926);
-        $registerMapper = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['find'])
-            ->getMock();
+        $registerMapper = $this->createMock(RegisterMapper::class);
         $registerMapper->method('find')->willReturn($registerEntity);
 
-        $schemaEntity = $this->getMockBuilder(\stdClass::class)
+        $schemaEntity = $this->getMockBuilder(Schema::class)
+            ->disableOriginalConstructor()
             ->addMethods(['getId'])
             ->getMock();
         $schemaEntity->method('getId')->willReturn(1635);
-        $schemaMapper = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['find'])
-            ->getMock();
+        $schemaMapper = $this->createMock(SchemaMapper::class);
         $schemaMapper->method('find')->willReturn($schemaEntity);
 
         // diffVersions() does not exercise RBAC, but the controller constructor
@@ -119,6 +121,23 @@ class ApplicationsControllerDiffTest extends TestCase
             groupManager: $groupManager,
         );
     }//end setUp()
+
+    /**
+     * Wrap a plain array into an ObjectEntity-like test double.
+     *
+     * OR's ObjectService::find() returns an ObjectEntity (or null); the
+     * controller normalises the result via jsonSerialize().
+     *
+     * @param array<string, mixed> $payload Serialised object payload.
+     *
+     * @return ObjectEntity&MockObject
+     */
+    private function entity(array $payload): ObjectEntity&MockObject
+    {
+        $entity = $this->createMock(ObjectEntity::class);
+        $entity->method('jsonSerialize')->willReturn($payload);
+        return $entity;
+    }//end entity()
 
     /**
      * Happy path: both UUIDs resolve to valid ApplicationVersion rows whose
@@ -155,13 +174,13 @@ class ApplicationsControllerDiffTest extends TestCase
             ->willReturnCallback(function (...$args) use ($application, $oldVersion, $newVersion) {
                 $id = $args['id'] ?? $args[0];
                 if ($id === 'app-uuid-1') {
-                    return $application;
+                    return $this->entity($application);
                 }
                 if ($id === 'snap-old') {
-                    return $oldVersion;
+                    return $this->entity($oldVersion);
                 }
                 if ($id === 'snap-new') {
-                    return $newVersion;
+                    return $this->entity($newVersion);
                 }
                 return null;
             });
@@ -200,7 +219,7 @@ class ApplicationsControllerDiffTest extends TestCase
             ->willReturnCallback(function (...$args) use ($application) {
                 $id = $args['id'] ?? $args[0];
                 if ($id === 'app-uuid-1') {
-                    return $application;
+                    return $this->entity($application);
                 }
                 // Both snapshot lookups return null → 404 from the resolver.
                 return null;
@@ -242,10 +261,10 @@ class ApplicationsControllerDiffTest extends TestCase
             ->willReturnCallback(function (...$args) use ($application, $foreignSnap) {
                 $id = $args['id'] ?? $args[0];
                 if ($id === 'app-uuid-1') {
-                    return $application;
+                    return $this->entity($application);
                 }
                 if ($id === 'snap-foreign') {
-                    return $foreignSnap;
+                    return $this->entity($foreignSnap);
                 }
                 return null;
             });

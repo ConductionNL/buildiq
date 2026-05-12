@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenBuilt\Tests\Unit\Repair;
 
 use OCA\OpenBuilt\Repair\SeedHelloWorld;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -41,11 +43,11 @@ class SeedHelloWorldTest extends TestCase
     private LoggerInterface&MockObject $logger;
 
     /**
-     * Mock OR ObjectService — typed as object since the real class lives in another app.
+     * Mock OR ObjectService.
      *
-     * @var MockObject
+     * @var ObjectService&MockObject
      */
-    private MockObject $objectService;
+    private ObjectService&MockObject $objectService;
 
     /**
      * Mock IOutput.
@@ -65,9 +67,7 @@ class SeedHelloWorldTest extends TestCase
 
         $this->logger        = $this->createMock(LoggerInterface::class);
         $this->output        = $this->createMock(IOutput::class);
-        $this->objectService = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['findAll', 'saveObject'])
-            ->getMock();
+        $this->objectService = $this->createMock(ObjectService::class);
     }//end setUp()
 
     /**
@@ -124,27 +124,26 @@ class SeedHelloWorldTest extends TestCase
 
         // Returned entities must jsonSerialize() to an array carrying a uuid so the
         // seed code can chain (Application uuid → snapshot, snapshot uuid → patch).
-        $appEntity = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['jsonSerialize'])
-            ->getMock();
+        $appEntity = $this->createMock(ObjectEntity::class);
         $appEntity->method('jsonSerialize')->willReturn(['@self' => ['id' => 'app-uuid-seed']]);
 
-        $snapEntity = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['jsonSerialize'])
-            ->getMock();
+        $snapEntity = $this->createMock(ObjectEntity::class);
         $snapEntity->method('jsonSerialize')->willReturn(['@self' => ['id' => 'snap-uuid-seed']]);
 
-        $genericEntity = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['jsonSerialize'])
-            ->getMock();
+        $genericEntity = $this->createMock(ObjectEntity::class);
         $genericEntity->method('jsonSerialize')->willReturn(['@self' => ['id' => 'generic']]);
+
+        // ObjectService::saveObject(array|ObjectEntity $object, ?array $extend, mixed $register, mixed $schema):
+        // the named-arg call site (object/register/schema) yields positional args [object, [], register, schema].
+        $schemaOf = static fn (array $args): mixed => ($args['schema'] ?? ($args[3] ?? null));
+        $objectOf = static fn (array $args): mixed => ($args['object'] ?? ($args[0] ?? null));
 
         $captured = [];
         $this->objectService->expects(self::exactly(7))
             ->method('saveObject')
-            ->willReturnCallback(function (...$args) use (&$captured, $appEntity, $snapEntity, $genericEntity) {
+            ->willReturnCallback(function (...$args) use (&$captured, $appEntity, $snapEntity, $genericEntity, $schemaOf) {
                 $captured[] = $args;
-                $schema     = $args['schema'] ?? ($args[2] ?? null);
+                $schema     = $schemaOf($args);
                 if ($schema === 'application') {
                     return $appEntity;
                 }
@@ -158,11 +157,11 @@ class SeedHelloWorldTest extends TestCase
         $step->run($this->output);
 
         // Assert at least one save targets the application-version schema with a 1.0.0 manifest.
-        $snapshotCalls = array_values(array_filter($captured, function (array $args): bool {
-            return (($args['schema'] ?? ($args[2] ?? null)) === 'application-version');
+        $snapshotCalls = array_values(array_filter($captured, static function (array $args) use ($schemaOf): bool {
+            return ($schemaOf($args) === 'application-version');
         }));
         self::assertCount(1, $snapshotCalls, 'Expected exactly one initial ApplicationVersion seed save.');
-        $payload = $snapshotCalls[0]['object'] ?? $snapshotCalls[0][0];
+        $payload = $objectOf($snapshotCalls[0]);
         self::assertSame('1.0.0', $payload['version']);
         self::assertSame('app-uuid-seed', $payload['applicationUuid']);
         self::assertArrayHasKey('manifest', $payload);
