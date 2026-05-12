@@ -2,23 +2,32 @@
 //
 // Custom-component registry for OpenBuilt's manifest-driven app shell.
 //
-// OpenBuilt's own pages are tooling UIs (a dashboard, the virtual-app
-// manager, the schema designer, the export-jobs list, the virtual-app
-// host) rather than generic register CRUD, so every page declares
-// `type: "custom"` in src/manifest.json and resolves its view here.
+// Most of OpenBuilt's surfaces are now built-in manifest page types — the
+// Dashboard is `type: "dashboard"` and the Virtual apps list/detail are
+// `type: "index"` / `type: "detail"` (with custom cards, sidebar tabs and an
+// actions bar resolved from this registry). The remaining `type: "custom"`
+// pages are the tooling UIs that have no generic CRUD equivalent (schema
+// designer, page designer, export-jobs list, virtual-app host).
 // Keep this file SHORT — adding entries should be a deliberate decision;
-// removing them (by moving a page onto a built-in manifest type) is the
-// right direction.
+// moving a page onto a built-in manifest type is the right direction.
 //
 // Resolution order at runtime (CnPageRenderer):
-//   1. Built-in page types          (CnIndexPage, CnDetailPage, …)
-//   2. Built-in widget types        (version-info, register-mapping, …)
+//   1. Built-in page types          (CnIndexPage, CnDetailPage, CnDashboardPage, …)
+//   2. Built-in widget types        (data, metadata, audit-trail, version-info, …)
 //   3. customComponents (this file) ← consumer-injected components
+//      (also resolves `pages[].config.cardComponent`, `…sidebarTabs[].component`
+//       and `…actionsComponent`).
 //
 // See ADR-024 (app manifest) and docs/migrating-to-manifest.md in
 // @conduction/nextcloud-vue.
 
-import ApplicationsView from './views/ApplicationEditor.vue'
+// Virtual apps — index card + detail sidebar tabs + detail actions.
+import ApplicationCard from './components/ApplicationCard.vue'
+import ApplicationManifestTab from './components/tabs/ApplicationManifestTab.vue'
+import ApplicationVersionsTab from './components/tabs/ApplicationVersionsTab.vue'
+import ApplicationDiffTab from './components/tabs/ApplicationDiffTab.vue'
+import ApplicationDetailActions from './components/ApplicationDetailActions.vue'
+// Tooling pages that stay `type: "custom"`.
 import SchemaDesignerView from './views/SchemaDesigner.vue'
 import PageDesignerView from './views/PageDesignerHost.vue'
 import ExportJobsView from './views/ExportJobsList.vue'
@@ -30,11 +39,19 @@ import TemplateGalleryView from './views/TemplateGallery.vue'
 import FeaturesRoadmapView from './views/FeaturesRoadmap.vue'
 
 export default {
-	// (The Dashboard page is now a built-in `type: "dashboard"` manifest
-	// page with OpenRegister-backed stats-block widgets — no custom view.)
-	// Virtual-app manager — list + detail + Editor/History/Diff tabs,
-	// raw-JSON manifest editor, publish, RBAC permissions modal, export.
-	ApplicationsView,
+	// VirtualApps (`type: index`) card — name, status pill, version, "live"
+	// marker, caller's role; click navigates to VirtualAppDetail.
+	ApplicationCard,
+	// VirtualAppDetail (`type: detail`) sidebar tabs: raw-JSON manifest
+	// editor (the visual designer lives at /builder/:slug/pages), version
+	// history (+ rollback), and the manifest diff.
+	ApplicationManifestTab,
+	ApplicationVersionsTab,
+	ApplicationDiffTab,
+	// VirtualAppDetail actions bar — Publish (OR lifecycle transition),
+	// Manage permissions (PermissionsModal, ADR-004 modal isolation),
+	// Design pages, Open virtual app.
+	ApplicationDetailActions,
 	// Visual schema designer for a virtual app's register
 	// (/builder/:slug/schemas[/:schemaId] and the paramless /schemas
 	// shortcut, which defaults to the hello-world seed app).

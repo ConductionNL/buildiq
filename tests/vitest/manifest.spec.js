@@ -33,20 +33,42 @@ describe('src/manifest.json', () => {
 		}
 	})
 
-	it('every custom page resolves a registered component', () => {
+	// Every name the manifest references against the customComponents registry:
+	// `type: custom` pages' `component`, plus index pages' `config.cardComponent`,
+	// detail pages' `config.sidebarTabs[].component` and `config.actionsComponent`.
+	const referencedComponents = () => {
+		const refs = new Set()
 		for (const page of manifest.pages) {
-			if (page.type !== 'custom') {
-				continue
+			if (page.type === 'custom' && typeof page.component === 'string') {
+				refs.add(page.component)
 			}
-			expect(typeof page.component, `page "${page.id}"`).toBe('string')
-			expect(customComponents, `page "${page.id}" → "${page.component}"`).toHaveProperty(page.component)
+			const cfg = page.config || {}
+			if (typeof cfg.cardComponent === 'string') {
+				refs.add(cfg.cardComponent)
+			}
+			if (typeof cfg.actionsComponent === 'string') {
+				refs.add(cfg.actionsComponent)
+			}
+			if (typeof cfg.headerComponent === 'string') {
+				refs.add(cfg.headerComponent)
+			}
+			for (const tab of cfg.sidebarTabs || []) {
+				if (typeof tab.component === 'string') {
+					refs.add(tab.component)
+				}
+			}
+		}
+		return refs
+	}
+
+	it('every component the manifest references resolves to a registered component', () => {
+		for (const name of referencedComponents()) {
+			expect(customComponents, `manifest references "${name}"`).toHaveProperty(name)
 		}
 	})
 
 	it('has no unused customComponents entries', () => {
-		const referenced = new Set(
-			manifest.pages.filter((p) => p.type === 'custom').map((p) => p.component),
-		)
+		const referenced = referencedComponents()
 		for (const name of Object.keys(customComponents)) {
 			expect(referenced, `customComponents.${name} is unreferenced`).toContain(name)
 		}
