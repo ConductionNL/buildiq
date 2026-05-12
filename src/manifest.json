@@ -12,7 +12,54 @@
 		{ "id": "FeaturesRoadmapMenu", "label": "Features & roadmap", "icon": "icon-toggle", "route": "FeaturesRoadmap", "section": "settings", "order": 95 }
 	],
 	"pages": [
-		{ "id": "Dashboard", "route": "/", "type": "custom", "title": "Dashboard", "component": "DashboardView" },
+		{
+			"id": "Dashboard",
+			"route": "/",
+			"type": "dashboard",
+			"title": "Dashboard",
+			"config": {
+				"widgets": [
+					{
+						"id": "ob-apps",
+						"type": "stats-block",
+						"title": "Virtual apps",
+						"iconClass": "icon-category-app-bundles",
+						"props": { "countLabel": "apps", "variant": "primary" },
+						"dataSource": { "register": "openbuilt", "schema": "application", "aggregate": "count" }
+					},
+					{
+						"id": "ob-published",
+						"type": "stats-block",
+						"title": "Published",
+						"iconClass": "icon-checkmark",
+						"props": { "countLabel": "live", "variant": "success" },
+						"dataSource": { "register": "openbuilt", "schema": "built-app-route", "aggregate": "count" }
+					},
+					{
+						"id": "ob-templates",
+						"type": "stats-block",
+						"title": "Templates",
+						"iconClass": "icon-category-organization",
+						"props": { "countLabel": "templates", "variant": "default" },
+						"dataSource": { "register": "openbuilt", "schema": "application-template", "aggregate": "count" }
+					},
+					{
+						"id": "ob-versions",
+						"type": "stats-block",
+						"title": "Published versions",
+						"iconClass": "icon-history",
+						"props": { "countLabel": "snapshots", "variant": "default" },
+						"dataSource": { "register": "openbuilt", "schema": "application-version", "aggregate": "count" }
+					}
+				],
+				"layout": [
+					{ "id": "ob-apps",       "widgetId": "ob-apps",       "gridX": 0, "gridY": 0, "gridWidth": 3, "gridHeight": 2, "showTitle": true },
+					{ "id": "ob-published",  "widgetId": "ob-published",  "gridX": 3, "gridY": 0, "gridWidth": 3, "gridHeight": 2, "showTitle": true },
+					{ "id": "ob-templates",  "widgetId": "ob-templates",  "gridX": 6, "gridY": 0, "gridWidth": 3, "gridHeight": 2, "showTitle": true },
+					{ "id": "ob-versions",   "widgetId": "ob-versions",   "gridX": 9, "gridY": 0, "gridWidth": 3, "gridHeight": 2, "showTitle": true }
+				]
+			}
+		},
 		{ "id": "VirtualApps", "route": "/applications", "type": "custom", "title": "Virtual apps", "component": "ApplicationsView" },
 		{ "id": "Schemas", "route": "/schemas", "type": "custom", "title": "Schemas", "component": "SchemaDesignerView" },
 		{ "id": "Templates", "route": "/templates", "type": "custom", "title": "Templates", "component": "TemplateGalleryView" },

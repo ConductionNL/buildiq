@@ -18,7 +18,6 @@
 // See ADR-024 (app manifest) and docs/migrating-to-manifest.md in
 // @conduction/nextcloud-vue.
 
-import DashboardView from './views/Dashboard.vue'
 import ApplicationsView from './views/ApplicationEditor.vue'
 import SchemaDesignerView from './views/SchemaDesigner.vue'
 import PageDesignerView from './views/PageDesignerHost.vue'
@@ -31,8 +30,8 @@ import TemplateGalleryView from './views/TemplateGallery.vue'
 import FeaturesRoadmapView from './views/FeaturesRoadmap.vue'
 
 export default {
-	// Starter dashboard — sample KPIs / activity placeholders.
-	DashboardView,
+	// (The Dashboard page is now a built-in `type: "dashboard"` manifest
+	// page with OpenRegister-backed stats-block widgets — no custom view.)
 	// Virtual-app manager — list + detail + Editor/History/Diff tabs,
 	// raw-JSON manifest editor, publish, RBAC permissions modal, export.
 	ApplicationsView,
