@@ -166,4 +166,89 @@ class SeedHelloWorldTest extends TestCase
         self::assertSame('app-uuid-seed', $payload['applicationUuid']);
         self::assertArrayHasKey('manifest', $payload);
     }//end testRunCreatesApplicationAndThreeMessagesOnFreshInstall()
+
+    /**
+     * Test that the seeded hello-world manifest blob is structurally valid against the
+     * canonical app-manifest contract (ADR-024): a version string, a menu of well-formed
+     * entries, and a non-empty list of well-formed pages whose ids are unique and whose
+     * data-bound types declare a register + schema; every menu route resolves to a page id.
+     * Covers bootstrap-openbuilt verification task 4.3.
+     *
+     * @return void
+     */
+    public function testSeededHelloWorldManifestIsStructurallyValid(): void
+    {
+        $this->objectService->method('findAll')->willReturn([]);
+
+        $captured = [];
+        $entity   = $this->createMock(ObjectEntity::class);
+        $entity->method('jsonSerialize')->willReturn(['@self' => ['id' => 'app-uuid-seed']]);
+        $this->objectService->method('saveObject')
+            ->willReturnCallback(function (...$args) use (&$captured, $entity) {
+                $captured[] = $args;
+                return $entity;
+            });
+
+        $step = new SeedHelloWorld(logger: $this->logger, objectService: $this->objectService);
+        $step->run($this->output);
+
+        // The Application save is the one whose schema arg is 'application'.
+        $schemaOf = static fn (array $args): mixed => ($args['schema'] ?? ($args[3] ?? null));
+        $objectOf = static fn (array $args): mixed => ($args['object'] ?? ($args[0] ?? null));
+        $appCalls = array_values(array_filter($captured, static fn (array $a): bool => $schemaOf($a) === 'application'));
+        self::assertNotEmpty($appCalls, 'Expected a saveObject call against the application schema.');
+
+        $manifest = $objectOf($appCalls[0])['manifest'] ?? null;
+        self::assertIsArray($manifest, 'Seeded Application carries a manifest array.');
+
+        // version
+        self::assertArrayHasKey('version', $manifest);
+        self::assertIsString($manifest['version']);
+        self::assertNotSame('', $manifest['version']);
+
+        // pages
+        self::assertArrayHasKey('pages', $manifest);
+        self::assertIsArray($manifest['pages']);
+        self::assertNotEmpty($manifest['pages'], 'A virtual app needs at least one page.');
+        $pageIds       = [];
+        $allowedTypes  = ['index', 'detail', 'dashboard', 'logs', 'settings', 'chat', 'files', 'form', 'custom'];
+        $dataBoundTypes = ['index', 'detail', 'form'];
+        foreach ($manifest['pages'] as $page) {
+            self::assertIsArray($page);
+            foreach (['id', 'route', 'type', 'title'] as $required) {
+                self::assertArrayHasKey($required, $page, "page is missing '$required'");
+                self::assertIsString($page[$required]);
+                self::assertNotSame('', $page[$required], "page '$required' is empty");
+            }
+            self::assertContains($page['type'], $allowedTypes, "page '{$page['id']}' has an unknown type '{$page['type']}'");
+            self::assertNotContains($page['id'], $pageIds, "duplicate page id '{$page['id']}'");
+            $pageIds[] = $page['id'];
+            if (in_array($page['type'], $dataBoundTypes, true) === true) {
+                self::assertArrayHasKey('config', $page, "data-bound page '{$page['id']}' needs a config");
+                self::assertIsString($page['config']['register'] ?? null, "page '{$page['id']}' config needs a register");
+                self::assertIsString($page['config']['schema'] ?? null, "page '{$page['id']}' config needs a schema");
+            }
+        }
+
+        // menu
+        self::assertArrayHasKey('menu', $manifest);
+        self::assertIsArray($manifest['menu']);
+        foreach ($manifest['menu'] as $entry) {
+            self::assertIsArray($entry);
+            self::assertIsString($entry['id'] ?? null);
+            self::assertNotSame('', $entry['id']);
+            self::assertIsString($entry['label'] ?? null);
+            self::assertNotSame('', $entry['label']);
+            // An entry routes to a page id, links out via href, or invokes a built-in action.
+            $targets = array_filter([
+                isset($entry['route']) ? 'route' : null,
+                isset($entry['href']) ? 'href' : null,
+                isset($entry['action']) ? 'action' : null,
+            ]);
+            self::assertNotEmpty($targets, "menu entry '{$entry['id']}' has no route/href/action");
+            if (isset($entry['route']) === true) {
+                self::assertContains($entry['route'], $pageIds, "menu entry '{$entry['id']}' routes to unknown page '{$entry['route']}'");
+            }
+        }
+    }//end testSeededHelloWorldManifestIsStructurallyValid()
 }//end class
