@@ -21,6 +21,7 @@
 import DashboardView from './views/Dashboard.vue'
 import ApplicationsView from './views/ApplicationEditor.vue'
 import SchemaDesignerView from './views/SchemaDesigner.vue'
+import PageDesignerView from './views/PageDesigner.vue'
 import ExportJobsView from './views/ExportJobsList.vue'
 import BuilderHostView from './views/BuilderHost.vue'
 import TemplateGalleryView from './views/TemplateGallery.vue'
@@ -35,6 +36,10 @@ export default {
 	// (/builder/:slug/schemas[/:schemaId] and the paramless /schemas
 	// shortcut, which defaults to the hello-world seed app).
 	SchemaDesignerView,
+	// Visual manifest page designer for a virtual app
+	// (/builder/:slug/pages) — three-pane page-list / per-type sub-editor
+	// / validator side-panel (REQ-OBPD-003).
+	PageDesignerView,
 	// Export-jobs list — status of Phase-2 "export to real app" runs.
 	ExportJobsView,
 	// Virtual-app host — mounts a nested CnAppRoot rendering the virtual

@@ -17,6 +17,7 @@
 		{ "id": "Templates", "route": "/templates", "type": "custom", "title": "Templates", "component": "TemplateGalleryView" },
 		{ "id": "SchemaDesignerList", "route": "/builder/:slug/schemas", "type": "custom", "title": "Schemas", "component": "SchemaDesignerView" },
 		{ "id": "SchemaDesigner", "route": "/builder/:slug/schemas/:schemaId", "type": "custom", "title": "Schema", "component": "SchemaDesignerView" },
+		{ "id": "PageDesigner", "route": "/builder/:slug/pages", "type": "custom", "title": "Page designer", "component": "PageDesignerView" },
 		{ "id": "Exports", "route": "/exports", "type": "custom", "title": "Exports", "component": "ExportJobsView" },
 		{ "id": "BuilderHost", "route": "/builder/:slug/:pathMatch(.*)?", "type": "custom", "title": "Virtual app", "component": "BuilderHostView" }
 	]

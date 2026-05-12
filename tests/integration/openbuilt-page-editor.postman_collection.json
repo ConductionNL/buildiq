@@ -1,0 +1,233 @@
+{
+	"info": {
+		"_postman_id": "openbuilt-page-editor-collection",
+		"name": "OpenBuilt Page Editor Integration",
+		"description": "Newman/Postman coverage for openspec change `openbuilt-page-editor` (task 7 — integration). Drives the OR REST Application endpoint plus the openbuilt manifest endpoint to verify the editor's save flow round-trips correctly, the manifest endpoint reflects mutations, and invalid manifests are rejected with a 4xx. Designed to be idempotent: the final teardown step restores the hello-world manifest captured in the first request.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{ "key": "username", "value": "{{admin_user}}", "type": "string" },
+			{ "key": "password", "value": "{{admin_password}}", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:8080", "type": "string" },
+		{ "key": "admin_user", "value": "admin", "type": "string" },
+		{ "key": "admin_password", "value": "admin", "type": "string" }
+	],
+	"item": [
+		{
+			"name": "1. GET hello-world Application via OR REST",
+			"request": {
+				"method": "GET",
+				"header": [
+					{ "key": "OCS-APIRequest", "value": "true" },
+					{ "key": "Accept", "value": "application/json" }
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application?_filter[slug]=hello-world&_limit=1",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application"],
+					"query": [
+						{ "key": "_filter[slug]", "value": "hello-world" },
+						{ "key": "_limit", "value": "1" }
+					]
+				},
+				"description": "Locate the seeded hello-world Application object and stash its UUID + original manifest for the mutating steps that follow."
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+							"const body = pm.response.json();",
+							"const results = body.results || body.data || body;",
+							"pm.test('hello-world Application is present', function () {",
+							"    pm.expect(Array.isArray(results) ? results.length : 1).to.be.greaterThan(0);",
+							"});",
+							"const app = Array.isArray(results) ? results[0] : results;",
+							"pm.expect(app, 'application object').to.be.an('object');",
+							"pm.collectionVariables.set('app_uuid', app.uuid || app.id);",
+							"pm.collectionVariables.set('original_manifest', JSON.stringify(app.manifest));",
+							"pm.collectionVariables.set('original_application', JSON.stringify(app));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "2. PUT hello-world with mutated manifest (add page) — 200",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{ "key": "OCS-APIRequest", "value": "true" },
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json" }
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{app_uuid}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{app_uuid}}"]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{{mutated_body}}"
+				},
+				"description": "Append a new page to the manifest and PUT the full Application object back. The pre-request script clones the original Application, appends a marker page, and stores the serialised body in `mutated_body`."
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const original = JSON.parse(pm.collectionVariables.get('original_application'));",
+							"const mutated = JSON.parse(JSON.stringify(original));",
+							"mutated.manifest = mutated.manifest || { version: '0.1.0', menu: [], pages: [] };",
+							"mutated.manifest.pages = Array.isArray(mutated.manifest.pages) ? mutated.manifest.pages : [];",
+							"mutated.manifest.pages.push({",
+							"    id: 'newman-added',",
+							"    type: 'index',",
+							"    route: '/newman-added',",
+							"    config: { register: 'openbuilt', schema: 'hello-message' }",
+							"});",
+							"pm.collectionVariables.set('mutated_body', JSON.stringify(mutated));"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Save returns 200', function () { pm.response.to.have.status(200); });",
+							"const body = pm.response.json();",
+							"const saved = body.results || body.data || body;",
+							"pm.test('Saved manifest includes newman-added page', function () {",
+							"    const pages = (saved.manifest && saved.manifest.pages) || [];",
+							"    const ids = pages.map(function (p) { return p.id; });",
+							"    pm.expect(ids).to.include('newman-added');",
+							"});"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "3. GET /api/applications/hello-world/manifest reflects new page",
+			"request": {
+				"method": "GET",
+				"header": [
+					{ "key": "OCS-APIRequest", "value": "true" },
+					{ "key": "Accept", "value": "application/json" }
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/hello-world/manifest",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openbuilt", "api", "applications", "hello-world", "manifest"]
+				},
+				"description": "Cross-check that the openbuilt manifest endpoint serves the mutated manifest the runtime reads. Confirms the save flow + caching layer (if any) propagate correctly."
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Manifest endpoint returns 200', function () { pm.response.to.have.status(200); });",
+							"const manifest = pm.response.json();",
+							"pm.test('newman-added page is reflected', function () {",
+							"    const pages = (manifest && manifest.pages) || (manifest && manifest.data && manifest.data.pages) || [];",
+							"    const ids = pages.map(function (p) { return p.id; });",
+							"    pm.expect(ids).to.include('newman-added');",
+							"});"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "4. PUT invalid manifest — assert 4xx",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{ "key": "OCS-APIRequest", "value": "true" },
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json" }
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{app_uuid}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{app_uuid}}"]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{{invalid_body}}"
+				},
+				"description": "Send a manifest that omits the required `pages` array. OR's JSON Schema validation should reject the write with a 4xx status (REQ-OBPD-009 + MODIFIED REQ-OBR-005 — Invalid edit is blocked before save)."
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const original = JSON.parse(pm.collectionVariables.get('original_application'));",
+							"const invalid = JSON.parse(JSON.stringify(original));",
+							"// Drop the required `pages` array — manifest schema requires version+menu+pages.",
+							"invalid.manifest = { version: '0.1.0', menu: [] };",
+							"pm.collectionVariables.set('invalid_body', JSON.stringify(invalid));"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Invalid manifest is rejected with 4xx', function () {",
+							"    pm.expect(pm.response.code).to.be.within(400, 499);",
+							"});"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Teardown — restore original manifest",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{ "key": "OCS-APIRequest", "value": "true" },
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json" }
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{app_uuid}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{app_uuid}}"]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{{original_application}}"
+				},
+				"description": "Restore the original hello-world Application body captured in step 1 so the suite is idempotent across reruns."
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Restore returns 200', function () { pm.response.to.have.status(200); });"
+						]
+					}
+				}
+			]
+		}
+	]
+}

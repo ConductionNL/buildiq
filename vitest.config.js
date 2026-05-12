@@ -65,6 +65,7 @@ module.exports = {
 					/vue-select/,
 					/vue-multiselect/,
 					/floating-vue/,
+					/vuedraggable/,
 				],
 			},
 		},
@@ -75,6 +76,14 @@ module.exports = {
 			{
 				find: /^@conduction\/nextcloud-vue$/,
 				replacement: path.resolve(__dirname, 'tests/vitest/stubs/conduction-nextcloud-vue.js'),
+			},
+			// vuedraggable uses SortableJS + a live DOM that jsdom can't
+			// satisfy; the page-list / menu-tree specs mock it per-test
+			// where reorder semantics matter, so the default alias is a
+			// passthrough stub that just renders the default slot.
+			{
+				find: /^vuedraggable$/,
+				replacement: path.resolve(__dirname, 'tests/vitest/stubs/vuedraggable.js'),
 			},
 		],
 	},

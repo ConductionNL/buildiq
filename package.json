@@ -39,7 +39,8 @@
     "pinia": "^2.1.7",
     "vue": "^2.7.14",
     "vue-material-design-icons": "^5.3.0",
-    "vue-router": "^3.6.5"
+    "vue-router": "^3.6.5",
+    "vuedraggable": "^2.24.3"
   },
   "overrides": {
     "libxmljs2": "^0.37.0"

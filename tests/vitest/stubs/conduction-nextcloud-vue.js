@@ -72,6 +72,19 @@ export function validateManifest() {
 	return { valid: true, errors: [] }
 }
 
+/**
+ * Legacy arity-1 stand-in for `useAppManifest`. Chain spec #2 ships an
+ * arity-2 overload `(appId, bundledManifest)`; `useLivePreview.js` uses
+ * the function arity as the discriminator, so an arity-1 stub here keeps
+ * the default "preview unavailable" path active. Tests that need the
+ * arity-2 shape swap this out via `vi.mock(...)`.
+ *
+ * @return {{manifest: null, loading: boolean}}
+ */
+export function useAppManifest(_appId) {
+	return { manifest: null, loading: false }
+}
+
 export default {
 	NcModal,
 	NcDialog,
@@ -90,4 +103,5 @@ export default {
 	registerIcons,
 	registerTranslations,
 	validateManifest,
+	useAppManifest,
 }
