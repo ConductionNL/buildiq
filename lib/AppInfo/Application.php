@@ -26,6 +26,7 @@ namespace OCA\OpenBuilt\AppInfo;
 
 use OCA\OpenBuilt\Listener\ApplicationVersionSnapshotListener;
 use OCA\OpenBuilt\Listener\DeepLinkRegistrationListener;
+use OCA\OpenBuilt\Mcp\OpenBuiltToolProvider;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCP\AppFramework\App;
@@ -75,6 +76,16 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(
             event: ObjectTransitionedEvent::class,
             listener: ApplicationVersionSnapshotListener::class
+        );
+
+        // Register OpenBuiltToolProvider as the MCP tool provider for the AI Chat Companion.
+        // The alias key 'OCA\OpenRegister\Mcp\IMcpToolProvider::openbuilt' is the format
+        // that OR's McpToolsService enumerates to discover per-app providers (hydra ADR-035).
+        // The interface ships in openregister PR #1466 (ai-chat-companion-orchestrator);
+        // until then OpenBuilt implements the test stub at tests/Stubs/Mcp/IMcpToolProvider.php.
+        $context->registerServiceAlias(
+            'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::openbuilt',
+            OpenBuiltToolProvider::class
         );
 
         // Repair steps (InitializeSettings + SeedHelloWorld) are declared in info.xml.
