@@ -23,5 +23,9 @@ jobs:
       enable-phpunit: true
       enable-newman: true
       database: sqlite
-      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"main"}]'
+      # OpenRegister `development` carries the runtime-schema-API (auto-create
+      # Register on application-type imports — OR PR #1464) and the lifecycle
+      # engine (ObjectTransitionedEvent) that OpenBuilt's repair steps + the
+      # Newman publish step need; `main` predates both. See openbuilt#29.
+      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"}]'
       enable-sbom: true
