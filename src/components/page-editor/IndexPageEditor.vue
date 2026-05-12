@@ -12,7 +12,7 @@
 		<div class="index-page-editor__group">
 			<label>
 				{{ t('openbuilt', 'Register') }}
-				<select :value="config.register || ''" @change="update('register', $event.target.value)">
+				<select :value="config.register || ''" :aria-invalid="isInvalid('register')" @change="update('register', $event.target.value)">
 					<option value="">
 						{{ t('openbuilt', '— select register —') }}
 					</option>
@@ -20,10 +20,15 @@
 						{{ r.title || r.slug }}
 					</option>
 				</select>
+				<InlineFieldMark :error="markFor('register')" />
 			</label>
 			<label>
 				{{ t('openbuilt', 'Schema') }}
-				<select :value="config.schema || ''" :disabled="!config.register" @change="update('schema', $event.target.value)">
+				<select
+					:value="config.schema || ''"
+					:disabled="!config.register"
+					:aria-invalid="isInvalid('schema')"
+					@change="update('schema', $event.target.value)">
 					<option value="">
 						{{ t('openbuilt', '— select schema —') }}
 					</option>
@@ -31,6 +36,7 @@
 						{{ s.title || s.slug }}
 					</option>
 				</select>
+				<InlineFieldMark :error="markFor('schema')" />
 			</label>
 			<label>
 				{{ t('openbuilt', 'Card component (optional)') }}
@@ -38,7 +44,9 @@
 					type="text"
 					:value="config.cardComponent || ''"
 					:placeholder="t('openbuilt', 'customComponents key')"
+					:aria-invalid="isInvalid('cardComponent')"
 					@input="update('cardComponent', $event.target.value)">
+				<InlineFieldMark :error="markFor('cardComponent')" />
 			</label>
 		</div>
 
@@ -48,6 +56,7 @@
 				:model-value="config.columns || []"
 				:schema-properties="schemaProperties"
 				@update:modelValue="update('columns', $event)" />
+			<InlineFieldMark :error="markFor('columns')" />
 		</fieldset>
 
 		<fieldset class="index-page-editor__fieldset">
@@ -55,6 +64,7 @@
 			<ActionBuilder
 				:model-value="config.actions || []"
 				@update:modelValue="update('actions', $event)" />
+			<InlineFieldMark :error="markFor('actions')" />
 		</fieldset>
 
 		<fieldset class="index-page-editor__fieldset">
@@ -66,6 +76,7 @@
 					@change="onSidebarToggle($event.target.checked)">
 				{{ t('openbuilt', 'Enabled') }}
 			</label>
+			<InlineFieldMark :error="markFor('sidebar')" />
 			<SidebarSectionBuilder
 				v-if="sidebarEnabled"
 				:model-value="(config.sidebar && config.sidebar.columnGroups) || []"
@@ -78,7 +89,9 @@
 import ColumnBuilder from './fields/ColumnBuilder.vue'
 import ActionBuilder from './fields/ActionBuilder.vue'
 import SidebarSectionBuilder from './fields/SidebarSectionBuilder.vue'
+import InlineFieldMark from './fields/InlineFieldMark.vue'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'IndexPageEditor',
@@ -86,7 +99,9 @@ export default {
 		ColumnBuilder,
 		ActionBuilder,
 		SidebarSectionBuilder,
+		InlineFieldMark,
 	},
+	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
 			type: Object,
@@ -95,6 +110,14 @@ export default {
 		// Current Application slug. Drives the hybrid register model so the
 		// register picker hoists `openbuilt-{slug}` to the top of the list.
 		appSlug: {
+			type: String,
+			default: '',
+		},
+		pageType: {
+			type: String,
+			default: 'index',
+		},
+		parentRoute: {
 			type: String,
 			default: '',
 		},
@@ -112,6 +135,9 @@ export default {
 		}
 	},
 	computed: {
+		validatedConfigKeys() {
+			return ['register', 'schema', 'cardComponent', 'columns', 'actions', 'sidebar']
+		},
 		sidebarEnabled() {
 			const s = this.config.sidebar
 			if (s == null) {

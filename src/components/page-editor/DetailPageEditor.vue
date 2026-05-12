@@ -12,7 +12,7 @@
 		<div class="detail-page-editor__group">
 			<label>
 				{{ t('openbuilt', 'Register') }}
-				<select :value="config.register || ''" @change="update('register', $event.target.value)">
+				<select :value="config.register || ''" :aria-invalid="isInvalid('register')" @change="update('register', $event.target.value)">
 					<option value="">
 						{{ t('openbuilt', '— select register —') }}
 					</option>
@@ -20,10 +20,15 @@
 						{{ r.title || r.slug }}
 					</option>
 				</select>
+				<InlineFieldMark :error="markFor('register')" />
 			</label>
 			<label>
 				{{ t('openbuilt', 'Schema') }}
-				<select :value="config.schema || ''" :disabled="!config.register" @change="update('schema', $event.target.value)">
+				<select
+					:value="config.schema || ''"
+					:disabled="!config.register"
+					:aria-invalid="isInvalid('schema')"
+					@change="update('schema', $event.target.value)">
 					<option value="">
 						{{ t('openbuilt', '— select schema —') }}
 					</option>
@@ -31,6 +36,7 @@
 						{{ s.title || s.slug }}
 					</option>
 				</select>
+				<InlineFieldMark :error="markFor('schema')" />
 			</label>
 		</div>
 
@@ -95,6 +101,7 @@
 					:model-value="(config.sidebar && config.sidebar.tabs) || []"
 					@update:modelValue="updateSidebarKey('tabs', $event)" />
 			</div>
+			<InlineFieldMark :error="markFor('sidebar')" />
 		</fieldset>
 
 		<fieldset class="detail-page-editor__fieldset">
@@ -102,17 +109,21 @@
 			<SidebarTabBuilder
 				:model-value="(config.sidebarProps && config.sidebarProps.tabs) || []"
 				@update:modelValue="updateSidebarPropsTabs($event)" />
+			<InlineFieldMark :error="markFor('sidebarProps')" />
 		</fieldset>
 	</div>
 </template>
 
 <script>
 import SidebarTabBuilder from './fields/SidebarTabBuilder.vue'
+import InlineFieldMark from './fields/InlineFieldMark.vue'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'DetailPageEditor',
-	components: { SidebarTabBuilder },
+	components: { SidebarTabBuilder, InlineFieldMark },
+	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
 			type: Object,
@@ -128,6 +139,10 @@ export default {
 			type: String,
 			default: '',
 		},
+		pageType: {
+			type: String,
+			default: 'detail',
+		},
 	},
 	emits: ['update:config'],
 	setup(props) {
@@ -141,6 +156,9 @@ export default {
 		}
 	},
 	computed: {
+		validatedConfigKeys() {
+			return ['register', 'schema', 'sidebar', 'sidebarProps']
+		},
 		routeParams() {
 			const matches = this.parentRoute.match(/:([A-Za-z_][A-Za-z0-9_]*)/g) || []
 			return matches.map((m) => m.slice(1))
