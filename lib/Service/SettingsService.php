@@ -5,11 +5,14 @@
  *
  * Service for managing OpenBuilt application configuration and settings.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenBuilt\Service
  *
- * @author    Conduction Development Team <dev@conductio.nl>
- * @copyright 2024 Conduction B.V.
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version GIT: <git-id>
@@ -124,11 +127,39 @@ class SettingsService
     /**
      * Load configuration from openbuilt_register.json via OpenRegister.
      *
-     * @param bool $force Force re-import even if already configured.
+     * Idempotent — relies on OR's ConfigurationService::importFromApp to
+     * detect already-imported state and short-circuit. Call
+     * reloadConfiguration() to force a re-import.
      *
      * @return array<string,mixed> Result with success flag, message, and version.
      */
-    public function loadConfiguration(bool $force=false): array
+    public function loadConfiguration(): array
+    {
+        return $this->doLoadConfiguration(force: false);
+    }//end loadConfiguration()
+
+    /**
+     * Force a re-import of openbuilt_register.json via OpenRegister, ignoring
+     * any cached or already-imported state.
+     *
+     * Used by the InitializeSettings repair step and the admin "Reload" action.
+     *
+     * @return array<string,mixed> Result with success flag, message, and version.
+     */
+    public function reloadConfiguration(): array
+    {
+        return $this->doLoadConfiguration(force: true);
+    }//end reloadConfiguration()
+
+    /**
+     * Shared implementation of the configuration import — private so the
+     * boolean flag never reaches the public API.
+     *
+     * @param bool $force Whether to force re-import.
+     *
+     * @return array<string,mixed>
+     */
+    private function doLoadConfiguration(bool $force): array
     {
         if ($this->isOpenRegisterAvailable() === false) {
             $this->logger->warning('OpenBuilt: OpenRegister not available, skipping register initialization');
@@ -138,16 +169,50 @@ class SettingsService
             ];
         }
 
+        $configPath = __DIR__.'/../Settings/openbuilt_register.json';
+        if (file_exists($configPath) === false) {
+            $this->logger->error('OpenBuilt: openbuilt_register.json not found at '.$configPath);
+            return [
+                'success' => false,
+                'message' => 'Configuration file openbuilt_register.json not found.',
+            ];
+        }
+
+        $configContent = file_get_contents($configPath);
+        if ($configContent === false) {
+            $this->logger->error('OpenBuilt: failed to read openbuilt_register.json');
+            return [
+                'success' => false,
+                'message' => 'Failed to read configuration file.',
+            ];
+        }
+
+        $configData = json_decode($configContent, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->logger->error('OpenBuilt: failed to parse openbuilt_register.json: '.json_last_error_msg());
+            return [
+                'success' => false,
+                'message' => 'Failed to parse configuration file: '.json_last_error_msg(),
+            ];
+        }
+
+        $configVersion = ($configData['info']['version'] ?? '0.0.0');
+
         try {
             $configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationService');
-            $result = $configurationService->importFromApp(appId: Application::APP_ID, force: $force);
+            $result = $configurationService->importFromApp(
+                appId: Application::APP_ID,
+                data: $configData,
+                version: $configVersion,
+                force: $force
+            );
 
             if (empty($result) === false) {
                 $this->logger->info('OpenBuilt: register configuration imported successfully');
                 return [
                     'success' => true,
                     'message' => 'Configuration imported successfully.',
-                    'version' => ($result['version'] ?? 'unknown'),
+                    'version' => ($result['version'] ?? $configVersion),
                 ];
             }
 
@@ -165,5 +230,5 @@ class SettingsService
                 'message' => $e->getMessage(),
             ];
         }//end try
-    }//end loadConfiguration()
+    }//end doLoadConfiguration()
 }//end class

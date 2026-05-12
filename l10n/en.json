@@ -28,7 +28,23 @@
         "Settings saved successfully": "Settings saved successfully",
         "Saving...": "Saving...",
         "This app needs OpenRegister to store and manage data. Please install OpenRegister from the app store to get started.": "This app needs OpenRegister to store and manage data. Please install OpenRegister from the app store to get started.",
-        "User settings will appear here in a future update.": "User settings will appear here in a future update."
+        "User settings will appear here in a future update.": "User settings will appear here in a future update.",
+
+        "Virtual apps": "Virtual apps",
+        "No virtual apps yet — seed `hello-world` should appear after install.": "No virtual apps yet — seed `hello-world` should appear after install.",
+        "Status": "Status",
+        "Version": "Version",
+        "Integrator-only editor: edit the raw JSON manifest below. The visual editor lives in a follow-on release (openbuilt-page-editor).": "Integrator-only editor: edit the raw JSON manifest below. The visual editor lives in a follow-on release (openbuilt-page-editor).",
+        "Paste or edit the JSON manifest here. See @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json for the canonical schema.": "Paste or edit the JSON manifest here. See @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json for the canonical schema.",
+        "Invalid manifest": "Invalid manifest",
+        "Saving…": "Saving…",
+        "Open virtual app": "Open virtual app",
+
+        "openbuilt.helloworld.menu.messages": "Messages",
+        "openbuilt.helloworld.title.messages": "Hello World — messages",
+        "openbuilt.helloworld.title.message": "Message",
+        "openbuilt.helloworld.title.create": "New message",
+        "openbuilt.editor.help": "Integrator-only editor: edit the raw JSON manifest. Visual editor lives in chain spec openbuilt-page-editor."
     },
     "plurals": ""
 }

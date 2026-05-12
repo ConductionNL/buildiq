@@ -9,31 +9,154 @@
     "type": "application",
     "app": "openbuilt",
     "openregister": "^v0.2.10",
-    "description": "Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code."
+    "description": "OpenBuilt register namespace. Hosts the Application + BuiltAppRoute control schemas plus the seed `hello-message` schema for the canonical hello-world virtual app."
   },
   "paths": {},
   "components": {
     "schemas": {
-      "example": {
-        "slug": "example",
-        "icon": "FileDocumentOutline",
+      "Application": {
+        "slug": "application",
+        "icon": "AppsBoxOutline",
         "version": "0.1.0",
-        "title": "Example",
-        "description": "Example schema — replace with your app's actual schemas.",
+        "title": "Application",
+        "description": "A virtual app built with OpenBuilt. Holds the manifest blob (per ADR-024) plus metadata and lifecycle. Rendered at runtime by mounting CnAppRoot with the manifest.",
         "type": "object",
-        "required": [
-          "title"
-        ],
+        "required": ["slug", "name", "manifest", "version", "status"],
         "properties": {
-          "title": {
+          "slug": {
             "type": "string",
-            "description": "The title of the example object",
-            "example": "My example"
+            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "minLength": 2,
+            "maxLength": 48,
+            "description": "Kebab-case slug; uniquely identifies the virtual app within its organisation. Drives the runtime path /builder/{slug}/*. Max 48 chars so the synthetic appId `openbuilt-{slug}` fits NC appId caps (per design.md OQ-4)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name displayed in the OpenBuilt shell."
           },
           "description": {
             "type": "string",
-            "description": "An optional description",
-            "example": "This is an example"
+            "description": "Optional long-form description of the virtual app."
+          },
+          "manifest": {
+            "type": "object",
+            "description": "JSON manifest blob conforming to @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json (v1.4.0+). Per ADR-024, this is consumed by useAppManifest + CnAppRoot at runtime.",
+            "required": ["version", "menu", "pages"],
+            "additionalProperties": true
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$",
+            "description": "Semver of this Application's manifest content. Bumped when the manifest changes substantively."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["draft", "published", "archived"],
+            "default": "draft",
+            "description": "Lifecycle state. Driven by x-openregister-lifecycle below — not by direct writes."
+          }
+        },
+        "x-openregister-lifecycle": {
+          "field": "status",
+          "initial": "draft",
+          "states": {
+            "draft": {
+              "description": "Editable, not exposed via the manifest endpoint, not reachable at /builder/{slug}."
+            },
+            "published": {
+              "description": "Exposed via GET /api/applications/{slug}/manifest, reachable at /builder/{slug}/*. The on_transition action upserts the corresponding BuiltAppRoute for fast slug → application lookup."
+            },
+            "archived": {
+              "description": "No longer reachable. Preserved for restore. The on_transition action removes the BuiltAppRoute."
+            }
+          },
+          "transitions": [
+            {
+              "name": "publish",
+              "from": "draft",
+              "to": "published",
+              "description": "Make the virtual app reachable at /builder/{slug}.",
+              "on_transition": {
+                "upsert_relation": {
+                  "schema": "openbuilt/built-app-route",
+                  "match": { "slug": "@self.slug" },
+                  "payload": { "slug": "@self.slug", "applicationUuid": "@self.uuid" }
+                }
+              }
+            },
+            {
+              "name": "archive",
+              "from": "published",
+              "to": "archived",
+              "description": "Hide the virtual app without deleting it.",
+              "on_transition": {
+                "delete_relation": {
+                  "schema": "openbuilt/built-app-route",
+                  "match": { "slug": "@self.slug" }
+                }
+              }
+            },
+            {
+              "name": "reopen",
+              "from": "archived",
+              "to": "draft",
+              "description": "Restore an archived virtual app to draft for further editing."
+            },
+            {
+              "name": "republish",
+              "from": "archived",
+              "to": "published",
+              "description": "Restore an archived virtual app directly to published.",
+              "on_transition": {
+                "upsert_relation": {
+                  "schema": "openbuilt/built-app-route",
+                  "match": { "slug": "@self.slug" },
+                  "payload": { "slug": "@self.slug", "applicationUuid": "@self.uuid" }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "BuiltAppRoute": {
+        "slug": "built-app-route",
+        "icon": "RouterNetwork",
+        "version": "0.1.0",
+        "title": "Built App Route",
+        "description": "Index from slug → applicationUuid. Maintained by the Application lifecycle (upserted on publish, deleted on archive). Used by the runtime to resolve /builder/{slug} → manifest in a single OR lookup. Per ADR-022 this is an explicit flattened index rather than scanning the Application collection.",
+        "type": "object",
+        "required": ["slug", "applicationUuid"],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "minLength": 2,
+            "maxLength": 48,
+            "description": "Matches the Application slug. Unique within the organisation (enforced by lifecycle upkeep + 4xx on conflict)."
+          },
+          "applicationUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the published Application this route resolves to."
+          }
+        }
+      },
+      "HelloMessage": {
+        "slug": "hello-message",
+        "icon": "MessageTextOutline",
+        "version": "0.1.0",
+        "title": "Hello Message",
+        "description": "Seed schema for the canonical hello-world virtual app. Three sample messages are seeded on install so the install is testable out of the box.",
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Short message title."
+          },
+          "body": {
+            "type": "string",
+            "description": "Optional longer message body."
           }
         }
       }

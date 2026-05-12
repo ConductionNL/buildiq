@@ -2,64 +2,299 @@
 	"info": {
 		"_postman_id": "openbuilt-collection",
 		"name": "OpenBuilt Integration Tests",
-		"description": "Integration test collection for the OpenBuilt Nextcloud app. Real API tests are authored during apply phase of bootstrap-openbuilt (tasks 5.1–5.3).",
+		"description": "Newman/Postman integration test collection for the OpenBuilt Nextcloud app.\n\nCovers:\n  - the public per-slug manifest endpoint (200 hello-world + 404 unknown);\n  - CRUD round-trip on Application objects via OpenRegister's REST API (POST/GET/PUT/DELETE);\n  - the manifest after a publish transition.\n\nAssumes the SeedHelloWorld repair step has run on a fresh install and the openbuilt + openregister apps are enabled. Run via the runner pattern documented in tests/integration/README.md.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
 		"type": "basic",
 		"basic": [
-			{
-				"key": "username",
-				"value": "{{admin_user}}",
-				"type": "string"
-			},
-			{
-				"key": "password",
-				"value": "{{admin_password}}",
-				"type": "string"
-			}
+			{ "key": "username", "value": "{{admin_user}}", "type": "string" },
+			{ "key": "password", "value": "{{admin_password}}", "type": "string" }
 		]
 	},
 	"variable": [
-		{
-			"key": "base_url",
-			"value": "http://localhost:8080",
-			"type": "string"
-		},
-		{
-			"key": "admin_user",
-			"value": "admin",
-			"type": "string"
-		},
-		{
-			"key": "admin_password",
-			"value": "admin",
-			"type": "string"
-		}
+		{ "key": "base_url", "value": "http://localhost:8080", "type": "string" },
+		{ "key": "admin_user", "value": "admin", "type": "string" },
+		{ "key": "admin_password", "value": "admin", "type": "string" },
+		{ "key": "created_uuid", "value": "", "type": "string" }
 	],
 	"item": [
 		{
-			"name": "Health Check",
+			"name": "Manifest endpoint",
 			"item": [
 				{
-					"name": "Nextcloud status",
+					"name": "GET hello-world manifest returns 200 with version/menu/pages",
 					"request": {
 						"method": "GET",
-						"url": "{{base_url}}/status.php",
-						"description": "Verify Nextcloud is running."
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/hello-world/manifest",
+						"description": "Public manifest read for the seeded hello-world virtual app."
 					},
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"type": "text/javascript",
 								"exec": [
-									"pm.test('Nextcloud is running', function () {",
+									"pm.test('returns 200', function () {",
 									"    pm.response.to.have.status(200);",
-									"    const json = pm.response.json();",
-									"    pm.expect(json.installed).to.be.true;",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('manifest is returned unwrapped (no envelope)', function () {",
+									"    pm.expect(body).to.not.have.property('error');",
+									"    pm.expect(body).to.not.have.property('data');",
+									"});",
+									"pm.test('manifest has version', function () {",
+									"    pm.expect(body).to.have.property('version');",
+									"    pm.expect(body.version).to.be.a('string');",
+									"});",
+									"pm.test('manifest has menu array', function () {",
+									"    pm.expect(body).to.have.property('menu');",
+									"    pm.expect(body.menu).to.be.an('array');",
+									"});",
+									"pm.test('manifest has pages array', function () {",
+									"    pm.expect(body).to.have.property('pages');",
+									"    pm.expect(body.pages).to.be.an('array');",
+									"    pm.expect(body.pages.length).to.be.greaterThan(0);",
 									"});"
-								],
-								"type": "text/javascript"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET unknown-slug manifest returns 404",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/no-such-slug/manifest",
+						"description": "Manifest lookup for a slug with no BuiltAppRoute must 404 with the not_found error code."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 404', function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('error envelope is not_found', function () {",
+									"    pm.expect(body).to.have.property('error');",
+									"    pm.expect(body.error).to.eql('not_found');",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "OpenRegister-backed Application CRUD",
+			"item": [
+				{
+					"name": "GET /openregister/objects/openbuilt/application lists hello-world",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application",
+						"description": "After SeedHelloWorld runs, the openbuilt/application register lists at least one object with slug='hello-world'."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"const results = (body && body.results) ? body.results : body;",
+									"pm.test('result set is a non-empty array', function () {",
+									"    pm.expect(results).to.be.an('array');",
+									"    pm.expect(results.length).to.be.greaterThan(0);",
+									"});",
+									"pm.test('at least one Application has slug=hello-world', function () {",
+									"    const hello = results.find(function (r) { return r && r.slug === 'hello-world'; });",
+									"    pm.expect(hello, 'no Application with slug=hello-world found').to.not.be.undefined;",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST creates a draft Application (newman-roundtrip)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"name\": \"Newman Round-trip\",\n  \"description\": \"Synthetic Application created by the Newman CRUD round-trip\",\n  \"version\": \"0.0.1\",\n  \"status\": \"draft\",\n  \"manifest\": {\n    \"version\": \"1.0.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuilt\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  }\n}"
+						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application",
+						"description": "Create a synthetic Application object via OR REST (ADR-022: CRUD goes to OR directly, not an OB wrapper)."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 201', function () {",
+									"    pm.expect([200, 201]).to.include(pm.response.code);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('response carries a uuid we can round-trip', function () {",
+									"    const self = body['@self'] || {};",
+									"    const uuid = self.id || self.uuid || body.uuid || body.id;",
+									"    pm.expect(uuid, 'no uuid in POST response').to.be.a('string');",
+									"    pm.collectionVariables.set('created_uuid', uuid);",
+									"});",
+									"pm.test('slug echoes back from server', function () {",
+									"    pm.expect(body.slug || (body['@self'] && body['@self'].slug)).to.eql('newman-roundtrip');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET the freshly-created Application by uuid",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{created_uuid}}",
+						"description": "Read-back asserts the POST landed on disk and the uuid resolves."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('slug round-trips', function () {",
+									"    pm.expect(body.slug || (body['@self'] && body['@self'].slug)).to.eql('newman-roundtrip');",
+									"});",
+									"pm.test('manifest is present and not empty', function () {",
+									"    pm.expect(body.manifest, 'no manifest on GET').to.be.an('object');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PUT publishes the newman-roundtrip Application",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"name\": \"Newman Round-trip\",\n  \"description\": \"Synthetic Application created by the Newman CRUD round-trip\",\n  \"version\": \"0.0.2\",\n  \"status\": \"published\",\n  \"manifest\": {\n    \"version\": \"1.0.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuilt\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  }\n}"
+						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{created_uuid}}",
+						"description": "Publish transitions trigger BuiltAppRoute upkeep (REQ-OBA-003 / REQ-OBA-004)."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('status flipped to published', function () {",
+									"    pm.expect(body.status || (body['@self'] && body['@self'].status)).to.eql('published');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET the manifest endpoint after publish (newman-roundtrip)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/newman-roundtrip/manifest",
+						"description": "After the publish transition, the BuiltAppRoute is upserted and the manifest endpoint resolves the new slug."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('manifest has version 1.0.0', function () {",
+									"    pm.expect(body.version).to.eql('1.0.0');",
+									"});",
+									"pm.test('manifest has at least one page', function () {",
+									"    pm.expect(body.pages).to.be.an('array');",
+									"    pm.expect(body.pages.length).to.be.greaterThan(0);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE cleans up the round-trip Application",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{created_uuid}}",
+						"description": "Tear down the round-trip Application so re-runs stay idempotent. OR returns 200 or 204."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 204', function () {",
+									"    pm.expect([200, 204]).to.include(pm.response.code);",
+									"});"
+								]
 							}
 						}
 					]

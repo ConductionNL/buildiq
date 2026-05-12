@@ -137,8 +137,7 @@ class SettingsControllerTest extends TestCase
         ];
 
         $this->settingsService->expects($this->once())
-            ->method('loadConfiguration')
-            ->with(force: true)
+            ->method('reloadConfiguration')
             ->willReturn($loadResult);
 
         $result = $this->controller->load();

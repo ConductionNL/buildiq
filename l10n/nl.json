@@ -28,7 +28,23 @@
         "Settings saved successfully": "Instellingen succesvol opgeslagen",
         "Saving...": "Opslaan...",
         "This app needs OpenRegister to store and manage data. Please install OpenRegister from the app store to get started.": "Deze app heeft OpenRegister nodig om gegevens op te slaan en te beheren. Installeer OpenRegister via de app store om te beginnen.",
-        "User settings will appear here in a future update.": "Gebruikersinstellingen verschijnen hier in een toekomstige update."
+        "User settings will appear here in a future update.": "Gebruikersinstellingen verschijnen hier in een toekomstige update.",
+
+        "Virtual apps": "Virtuele apps",
+        "No virtual apps yet — seed `hello-world` should appear after install.": "Nog geen virtuele apps — de `hello-world`-seed zou na installatie zichtbaar moeten zijn.",
+        "Status": "Status",
+        "Version": "Versie",
+        "Integrator-only editor: edit the raw JSON manifest below. The visual editor lives in a follow-on release (openbuilt-page-editor).": "Editor voor integrators: bewerk hieronder het ruwe JSON-manifest. De visuele editor komt in een vervolg-release (openbuilt-page-editor).",
+        "Paste or edit the JSON manifest here. See @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json for the canonical schema.": "Plak of bewerk hier het JSON-manifest. Zie @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json voor het canonieke schema.",
+        "Invalid manifest": "Ongeldig manifest",
+        "Saving…": "Opslaan…",
+        "Open virtual app": "Open virtuele app",
+
+        "openbuilt.helloworld.menu.messages": "Berichten",
+        "openbuilt.helloworld.title.messages": "Hello World — berichten",
+        "openbuilt.helloworld.title.message": "Bericht",
+        "openbuilt.helloworld.title.create": "Nieuw bericht",
+        "openbuilt.editor.help": "Editor voor integrators: bewerk het ruwe JSON-manifest. De visuele editor komt in vervolgspec openbuilt-page-editor."
     },
     "plurals": ""
 }

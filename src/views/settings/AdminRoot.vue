@@ -22,6 +22,7 @@
 
 <script>
 import { CnVersionInfoCard } from '@conduction/nextcloud-vue'
+import { loadState } from '@nextcloud/initial-state'
 import Settings from './Settings.vue'
 import { initializeStores } from '../../store/store.js'
 
@@ -34,7 +35,9 @@ export default {
 	data() {
 		return {
 			storesReady: false,
-			appVersion: document.getElementById('openbuilt-settings')?.dataset?.version || 'Unknown',
+			// ADR-004 + hydra-gate-initial-state: server data flows via
+			// IInitialState + loadState, never via DOM data-* attributes.
+			appVersion: loadState('openbuilt', 'version', 'Unknown'),
 		}
 	},
 	async created() {

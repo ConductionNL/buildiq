@@ -88,3 +88,9 @@ openspec/test-site-results/**/*.jpg
 openspec/test-site-results/**/*.jpeg
 openspec/test-site-results/**/*.gif
 openspec/test-site-results/**/*.webp
+
+# Playwright artefacts (e2e tests live in tests/e2e/, the artefacts do not).
+/playwright-report/
+/test-results/
+/.playwright/
+/playwright/.cache/

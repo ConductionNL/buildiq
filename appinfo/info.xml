@@ -61,9 +61,11 @@ Vrij en open source onder de EUPL-1.2-licentie.
     <repair-steps>
         <install>
             <step>OCA\OpenBuilt\Repair\InitializeSettings</step>
+            <step>OCA\OpenBuilt\Repair\SeedHelloWorld</step>
         </install>
         <post-migration>
             <step>OCA\OpenBuilt\Repair\InitializeSettings</step>
+            <step>OCA\OpenBuilt\Repair\SeedHelloWorld</step>
         </post-migration>
     </repair-steps>
 </info>

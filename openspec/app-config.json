@@ -20,6 +20,10 @@
     "nextcloudRefs": ["stable31", "stable32"],
     "enableNewman": false
   },
+  "capabilities": [
+    "openbuilt-application-register",
+    "openbuilt-runtime"
+  ],
   "createdAt": "2026-05-11",
   "updatedAt": "2026-05-11"
 }

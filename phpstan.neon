@@ -19,6 +19,7 @@ parameters:
         - '#OCA\\OpenRegister\\[a-zA-Z\\]+.*not found#'
         - '#on an unknown class OCA\\OpenRegister\\#'
         - '#has invalid return type OCA\\OpenRegister\\#'
+        - '#has invalid type OCA\\OpenRegister\\#'
         # GuzzleHttp is available at runtime via Nextcloud but not in composer require
         - '#unknown class GuzzleHttp\\#'
         - '#GuzzleHttp\\[a-zA-Z\\]+.*not found#'

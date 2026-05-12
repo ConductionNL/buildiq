@@ -1,10 +1,12 @@
 <?php
-// SPDX-License-Identifier: EUPL-1.2
 
 /**
  * OpenBuilt Application
  *
  * Main application class for the OpenBuilt Nextcloud app.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category AppInfo
  * @package  OCA\OpenBuilt\AppInfo
@@ -64,8 +66,7 @@ class Application extends App implements IBootstrap
             listener: DeepLinkRegistrationListener::class
         );
 
-        // Initialize register and schemas on install/upgrade — declared in info.xml repair-steps.
-
+        // Repair steps (InitializeSettings + SeedHelloWorld) are declared in info.xml.
     }//end register()
 
     /**
