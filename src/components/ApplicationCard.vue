@@ -10,8 +10,12 @@
   - marker when a published snapshot exists, and the caller's role.
   -->
 <template>
-	<NcAppContentDetails class="ob-app-card" :class="{ 'ob-app-card--selected': selected }">
-		<div class="ob-app-card__inner" role="button" tabindex="0" @click="$emit('click')" @keyup.enter="$emit('click')">
+	<div class="ob-app-card" :class="{ 'ob-app-card--selected': selected }">
+		<div class="ob-app-card__inner"
+			role="button"
+			tabindex="0"
+			@click="$emit('click')"
+			@keyup.enter="$emit('click')">
 			<div class="ob-app-card__head">
 				<h3 class="ob-app-card__title">
 					{{ app.name || app.slug || t('openbuilt', 'Untitled app') }}
@@ -28,16 +32,14 @@
 				<span class="ob-app-card__chip ob-app-card__chip--muted">/{{ app.slug }}</span>
 			</div>
 		</div>
-	</NcAppContentDetails>
+	</div>
 </template>
 
 <script>
-import { NcAppContentDetails } from '@nextcloud/vue'
 import { useRole, getCurrentUserGroups } from '../composables/useRole.js'
 
 export default {
 	name: 'ApplicationCard',
-	components: { NcAppContentDetails },
 	props: {
 		// CnIndexPage passes the row both as `item` and `object`.
 		object: { type: Object, default: null },
