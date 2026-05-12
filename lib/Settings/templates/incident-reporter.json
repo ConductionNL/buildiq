@@ -1,0 +1,68 @@
+{
+  "slug": "incident-reporter",
+  "title": "Incident Reporter",
+  "description": "Report and triage field incidents — flexible severity and status workflow.",
+  "useCase": "Field-work incident reporting",
+  "category": "field-work",
+  "screenshotUrl": "img/templates/incident-reporter.svg",
+  "isSeeded": true,
+  "sourceUrl": "https://github.com/ConductionNL/concurrentie-analyse/blob/main/app-builder/README.md#user-stories",
+  "version": "1.0.0",
+  "manifest": {
+    "version": "1.0.0",
+    "dependencies": ["openregister"],
+    "menu": [
+      { "label": "Report", "route": "/report" },
+      { "label": "Incidents", "route": "/incidents" }
+    ],
+    "pages": [
+      {
+        "name": "IncidentForm",
+        "route": "/report",
+        "type": "form",
+        "title": "Report an incident",
+        "config": { "schema": "incident" }
+      },
+      {
+        "name": "Incidents",
+        "route": "/incidents",
+        "type": "index",
+        "title": "All incidents",
+        "config": { "schema": "incident" }
+      },
+      {
+        "name": "IncidentDetail",
+        "route": "/incidents/:id",
+        "type": "detail",
+        "title": "Incident detail",
+        "config": { "schema": "incident" }
+      }
+    ]
+  },
+  "companionSchemas": [
+    {
+      "slug": "incident",
+      "title": "Incident",
+      "version": "0.1.0",
+      "type": "object",
+      "required": ["reportedBy", "incidentType", "severity"],
+      "properties": {
+        "reportedBy": { "type": "string" },
+        "location": { "type": "string" },
+        "incidentType": { "type": "string" },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "default": "medium"
+        },
+        "description": { "type": "string" },
+        "reportedAt": { "type": "string", "format": "date-time" },
+        "status": {
+          "type": "string",
+          "enum": ["new", "triaged", "resolved"],
+          "default": "new"
+        }
+      }
+    }
+  ]
+}

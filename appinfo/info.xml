@@ -85,11 +85,13 @@ Vrij en open source onder de EUPL-1.2-licentie.
             <step>OCA\OpenBuilt\Repair\InitializeSettings</step>
             <step>OCA\OpenBuilt\Repair\SeedHelloWorld</step>
             <step>OCA\OpenBuilt\Repair\PopulateApplicationPermissions</step>
+            <step>OCA\OpenBuilt\Repair\SeedApplicationTemplates</step>
         </install>
         <post-migration>
             <step>OCA\OpenBuilt\Repair\InitializeSettings</step>
             <step>OCA\OpenBuilt\Repair\SeedHelloWorld</step>
             <step>OCA\OpenBuilt\Repair\PopulateApplicationPermissions</step>
+            <step>OCA\OpenBuilt\Repair\SeedApplicationTemplates</step>
         </post-migration>
     </repair-steps>
 

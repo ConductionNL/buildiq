@@ -1,0 +1,188 @@
+{
+	"info": {
+		"_postman_id": "openbuilt-templates-marketplace",
+		"name": "OpenBuilt Templates Marketplace",
+		"description": "Newman/Postman integration tests for the openbuilt-templates-marketplace spec. Covers REQ-OBTC-003 (list seeded templates), REQ-OBTC-004 (createFromTemplate happy path + 4xx slug-collision), REQ-OBTC-009 (cross-user slug reuse).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{ "key": "username", "value": "{{primary_user}}", "type": "string" },
+			{ "key": "password", "value": "{{primary_password}}", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:8080", "type": "string" },
+		{ "key": "primary_user", "value": "admin", "type": "string" },
+		{ "key": "primary_password", "value": "admin", "type": "string" },
+		{ "key": "second_user", "value": "tester", "type": "string" },
+		{ "key": "second_password", "value": "tester1234", "type": "string" },
+		{ "key": "template_slug", "value": "permit-tracker", "type": "string" },
+		{ "key": "clone_slug", "value": "newman-permits", "type": "string" },
+		{ "key": "clone_uuid", "value": "", "type": "string" }
+	],
+	"item": [
+		{
+			"name": "GET applicationTemplates — list returns 4 seeded records",
+			"request": {
+				"method": "GET",
+				"header": [
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "OCS-APIRequest", "value": "true" }
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application-template",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application-template"]
+				},
+				"description": "Read the seeded ApplicationTemplate records directly from OpenRegister (REQ-OBTC-003)."
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+							"const body = pm.response.json();",
+							"const results = Array.isArray(body) ? body : (body.results || []);",
+							"pm.test('At least four seeded templates returned', function () {",
+							"    pm.expect(results.length).to.be.at.least(4);",
+							"});",
+							"const slugs = results.map(r => r.slug);",
+							"pm.test('All four canonical slugs are present', function () {",
+							"    ['permit-tracker','stakeholder-consultation','employee-onboarding','incident-reporter'].forEach(s => {",
+							"        pm.expect(slugs).to.include(s);",
+							"    });",
+							"});"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "POST createFromTemplate — happy path returns 201 + new uuid",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "OCS-APIRequest", "value": "true" },
+					{ "key": "requesttoken", "value": "newman-stub" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Newman permits\",\n  \"slug\": \"{{clone_slug}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/from-template/{{template_slug}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openbuilt", "api", "applications", "from-template", "{{template_slug}}"]
+				},
+				"description": "Clone the `permit-tracker` template into a fresh draft Application (REQ-OBTC-004)."
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 Created', function () { pm.response.to.have.status(201); });",
+							"const body = pm.response.json();",
+							"pm.test('Response carries a uuid + slug', function () {",
+							"    pm.expect(body).to.have.property('uuid');",
+							"    pm.expect(body.slug).to.eql(pm.variables.get('clone_slug'));",
+							"});",
+							"pm.collectionVariables.set('clone_uuid', body.uuid);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "POST createFromTemplate — same user + same slug → 409 slug_collision",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "OCS-APIRequest", "value": "true" },
+					{ "key": "requesttoken", "value": "newman-stub" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Newman permits (dup)\",\n  \"slug\": \"{{clone_slug}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/from-template/{{template_slug}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openbuilt", "api", "applications", "from-template", "{{template_slug}}"]
+				},
+				"description": "Re-clone with the same slug as the same user — slug collision returns 409 (REQ-OBTC-004 slug-uniqueness)."
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('4xx status', function () {",
+							"    pm.expect(pm.response.code).to.be.within(400, 499);",
+							"});",
+							"const body = pm.response.json();",
+							"pm.test('Error code is slug_collision', function () {",
+							"    pm.expect(body.error).to.eql('slug_collision');",
+							"});"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "POST createFromTemplate — different user + same slug → 201 (cross-user reuse OK)",
+			"request": {
+				"method": "POST",
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{ "key": "username", "value": "{{second_user}}", "type": "string" },
+						{ "key": "password", "value": "{{second_password}}", "type": "string" }
+					]
+				},
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "OCS-APIRequest", "value": "true" },
+					{ "key": "requesttoken", "value": "newman-stub" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Tester permits\",\n  \"slug\": \"{{clone_slug}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/from-template/{{template_slug}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openbuilt", "api", "applications", "from-template", "{{template_slug}}"]
+				},
+				"description": "Same slug, different user — multi-user isolation lets the clone succeed (REQ-OBTC-004 owner-scoped uniqueness)."
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 Created for different owner', function () { pm.response.to.have.status(201); });",
+							"const body = pm.response.json();",
+							"pm.test('Response carries a uuid + matching slug', function () {",
+							"    pm.expect(body).to.have.property('uuid');",
+							"    pm.expect(body.slug).to.eql(pm.variables.get('clone_slug'));",
+							"});"
+						]
+					}
+				}
+			]
+		}
+	]
+}

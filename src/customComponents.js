@@ -23,6 +23,7 @@ import ApplicationsView from './views/ApplicationEditor.vue'
 import SchemaDesignerView from './views/SchemaDesigner.vue'
 import ExportJobsView from './views/ExportJobsList.vue'
 import BuilderHostView from './views/BuilderHost.vue'
+import TemplateGalleryView from './views/TemplateGallery.vue'
 
 export default {
 	// Starter dashboard — sample KPIs / activity placeholders.
@@ -39,4 +40,7 @@ export default {
 	// Virtual-app host — mounts a nested CnAppRoot rendering the virtual
 	// app's manifest from GET /api/applications/{slug}/manifest.
 	BuilderHostView,
+	// Template gallery — browse seeded ApplicationTemplate records and
+	// clone one into a new virtual app (openbuilt-templates-marketplace).
+	TemplateGalleryView,
 }

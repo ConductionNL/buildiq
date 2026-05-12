@@ -1,0 +1,81 @@
+{
+  "slug": "employee-onboarding",
+  "title": "Employee Onboarding",
+  "description": "Track new-hire onboarding tasks, documents, and status across departments.",
+  "useCase": "HR onboarding workflow",
+  "category": "internal-operations",
+  "screenshotUrl": "img/templates/employee-onboarding.svg",
+  "isSeeded": true,
+  "sourceUrl": "https://github.com/ConductionNL/concurrentie-analyse/blob/main/app-builder/README.md#user-stories",
+  "version": "1.0.0",
+  "manifest": {
+    "version": "1.0.0",
+    "dependencies": ["openregister"],
+    "menu": [
+      { "label": "Onboardings", "route": "/onboardings" },
+      { "label": "Tasks", "route": "/tasks" }
+    ],
+    "pages": [
+      {
+        "name": "Onboardings",
+        "route": "/onboardings",
+        "type": "index",
+        "title": "All onboardings",
+        "config": { "schema": "onboarding-task" }
+      },
+      {
+        "name": "OnboardingDetail",
+        "route": "/onboardings/:id",
+        "type": "detail",
+        "title": "Onboarding detail",
+        "config": { "schema": "onboarding-task", "relatedSchema": "onboarding-document" }
+      },
+      {
+        "name": "OnboardingTaskChecklist",
+        "route": "/tasks",
+        "type": "checklist",
+        "title": "Onboarding tasks",
+        "config": { "schema": "onboarding-task", "groupBy": "status" }
+      },
+      {
+        "name": "OnboardingDocumentForm",
+        "route": "/documents/new",
+        "type": "form",
+        "title": "Add onboarding document",
+        "config": { "schema": "onboarding-document" }
+      }
+    ]
+  },
+  "companionSchemas": [
+    {
+      "slug": "onboarding-task",
+      "title": "Onboarding Task",
+      "version": "0.1.0",
+      "type": "object",
+      "required": ["employeeName", "status"],
+      "properties": {
+        "employeeName": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "department": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in-progress", "done"],
+          "default": "pending"
+        }
+      }
+    },
+    {
+      "slug": "onboarding-document",
+      "title": "Onboarding Document",
+      "version": "0.1.0",
+      "type": "object",
+      "required": ["taskUuid", "documentName"],
+      "properties": {
+        "taskUuid": { "type": "string", "format": "uuid" },
+        "documentName": { "type": "string" },
+        "uploadedFile": { "type": "string" },
+        "approved": { "type": "boolean", "default": false }
+      }
+    }
+  ]
+}

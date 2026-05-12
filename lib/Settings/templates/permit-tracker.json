@@ -1,0 +1,71 @@
+{
+  "slug": "permit-tracker",
+  "title": "Permit Tracker",
+  "description": "Municipal building-permit workflow with index, detail, form, and kanban pages.",
+  "useCase": "Municipal building-permit workflow",
+  "category": "government-services",
+  "screenshotUrl": "img/templates/permit-tracker.svg",
+  "isSeeded": true,
+  "sourceUrl": "https://github.com/ConductionNL/concurrentie-analyse/blob/main/app-builder/README.md#user-stories",
+  "version": "1.0.0",
+  "manifest": {
+    "version": "1.0.0",
+    "dependencies": ["openregister"],
+    "menu": [
+      { "label": "Applications", "route": "/applications" },
+      { "label": "Kanban", "route": "/kanban" },
+      { "label": "Submit", "route": "/submit" }
+    ],
+    "pages": [
+      {
+        "name": "Applications",
+        "route": "/applications",
+        "type": "index",
+        "title": "Permit applications",
+        "config": { "schema": "permit-application" }
+      },
+      {
+        "name": "ApplicationDetail",
+        "route": "/applications/:id",
+        "type": "detail",
+        "title": "Application detail",
+        "config": { "schema": "permit-application" }
+      },
+      {
+        "name": "ApplicationForm",
+        "route": "/submit",
+        "type": "form",
+        "title": "Submit a permit application",
+        "config": { "schema": "permit-application" }
+      },
+      {
+        "name": "ApplicationKanban",
+        "route": "/kanban",
+        "type": "kanban",
+        "title": "Application pipeline",
+        "config": { "schema": "permit-application", "groupBy": "status" }
+      }
+    ]
+  },
+  "companionSchemas": [
+    {
+      "slug": "permit-application",
+      "title": "Permit Application",
+      "version": "0.1.0",
+      "type": "object",
+      "required": ["applicant", "status"],
+      "properties": {
+        "applicant": { "type": "string", "description": "Name of the applicant" },
+        "address": { "type": "string", "description": "Address the permit applies to" },
+        "buildingType": { "type": "string", "description": "Type of building/structure" },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "submitted", "under-review", "approved", "rejected"],
+          "default": "draft"
+        },
+        "submittedAt": { "type": "string", "format": "date-time" },
+        "decision": { "type": "string", "description": "Decision rationale" }
+      }
+    }
+  ]
+}

@@ -6,6 +6,7 @@
 		{ "id": "Dashboard", "label": "Dashboard", "icon": "icon-category-dashboard", "route": "Dashboard", "order": 10 },
 		{ "id": "VirtualApps", "label": "Virtual apps", "icon": "icon-category-app-bundles", "route": "VirtualApps", "order": 20 },
 		{ "id": "Schemas", "label": "Schemas", "icon": "icon-category-customization", "route": "Schemas", "order": 30 },
+		{ "id": "Templates", "label": "Templates", "icon": "icon-category-organization", "route": "Templates", "order": 35 },
 		{ "id": "Exports", "label": "Exports", "icon": "icon-download", "route": "Exports", "order": 40 },
 		{ "id": "Documentation", "label": "Documentation", "icon": "icon-info", "href": "https://github.com/ConductionNL/openbuilt", "section": "settings", "order": 90 }
 	],
@@ -13,6 +14,7 @@
 		{ "id": "Dashboard", "route": "/", "type": "custom", "title": "Dashboard", "component": "DashboardView" },
 		{ "id": "VirtualApps", "route": "/applications", "type": "custom", "title": "Virtual apps", "component": "ApplicationsView" },
 		{ "id": "Schemas", "route": "/schemas", "type": "custom", "title": "Schemas", "component": "SchemaDesignerView" },
+		{ "id": "Templates", "route": "/templates", "type": "custom", "title": "Templates", "component": "TemplateGalleryView" },
 		{ "id": "SchemaDesignerList", "route": "/builder/:slug/schemas", "type": "custom", "title": "Schemas", "component": "SchemaDesignerView" },
 		{ "id": "SchemaDesigner", "route": "/builder/:slug/schemas/:schemaId", "type": "custom", "title": "Schema", "component": "SchemaDesignerView" },
 		{ "id": "Exports", "route": "/exports", "type": "custom", "title": "Exports", "component": "ExportJobsView" },

@@ -1,0 +1,82 @@
+{
+  "slug": "stakeholder-consultation",
+  "title": "Stakeholder Consultation",
+  "description": "Run a public consultation: publish a topic, collect citizen comments, close on a deadline.",
+  "useCase": "Citizen engagement on policy or planning topics",
+  "category": "citizen-engagement",
+  "screenshotUrl": "img/templates/stakeholder-consultation.svg",
+  "isSeeded": true,
+  "sourceUrl": "https://github.com/ConductionNL/concurrentie-analyse/blob/main/app-builder/README.md#user-stories",
+  "version": "1.0.0",
+  "manifest": {
+    "version": "1.0.0",
+    "dependencies": ["openregister"],
+    "menu": [
+      { "label": "Consultations", "route": "/consultations" },
+      { "label": "Submit", "route": "/submit" }
+    ],
+    "pages": [
+      {
+        "name": "Consultations",
+        "route": "/consultations",
+        "type": "index",
+        "title": "Open consultations",
+        "config": { "schema": "consultation" }
+      },
+      {
+        "name": "ConsultationDetail",
+        "route": "/consultations/:id",
+        "type": "detail",
+        "title": "Consultation detail",
+        "config": { "schema": "consultation", "relatedSchema": "consultation-comment" }
+      },
+      {
+        "name": "ConsultationForm",
+        "route": "/submit",
+        "type": "form",
+        "title": "Start a new consultation",
+        "config": { "schema": "consultation" }
+      },
+      {
+        "name": "CommentForm",
+        "route": "/comment",
+        "type": "form",
+        "title": "Add your comment",
+        "config": { "schema": "consultation-comment" }
+      }
+    ]
+  },
+  "companionSchemas": [
+    {
+      "slug": "consultation",
+      "title": "Consultation",
+      "version": "0.1.0",
+      "type": "object",
+      "required": ["title", "status"],
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "openFrom": { "type": "string", "format": "date" },
+        "closeAt": { "type": "string", "format": "date" },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "open", "closed"],
+          "default": "draft"
+        }
+      }
+    },
+    {
+      "slug": "consultation-comment",
+      "title": "Consultation Comment",
+      "version": "0.1.0",
+      "type": "object",
+      "required": ["consultationUuid", "body"],
+      "properties": {
+        "consultationUuid": { "type": "string", "format": "uuid" },
+        "authorName": { "type": "string" },
+        "body": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  ]
+}

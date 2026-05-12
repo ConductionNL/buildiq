@@ -9,7 +9,7 @@
     "type": "application",
     "app": "openbuilt",
     "openregister": "^v0.2.10",
-    "description": "OpenBuilt register namespace. Hosts the Application + BuiltAppRoute control schemas plus the seed `hello-message` schema for the canonical hello-world virtual app."
+    "description": "OpenBuilt register namespace. Hosts the Application + BuiltAppRoute control schemas, the ApplicationTemplate catalogue (spec #8), and the seed `hello-message` schema for the canonical hello-world virtual app."
   },
   "paths": {},
   "components": {
@@ -190,6 +190,92 @@
               }
             }
           ]
+        }
+      },
+      "ApplicationTemplate": {
+        "slug": "application-template",
+        "icon": "ViewGridOutline",
+        "version": "0.1.0",
+        "title": "Application Template",
+        "description": "A pre-baked starter pack for building an Application from a recognisable use case — manifest plus companion schemas. Seeded Conduction-curated templates carry isSeeded: true. Per the hybrid register model this schema is shared across the `openbuilt` register; cloned user schemas land in a per-app `openbuilt-{slug}` register.",
+        "type": "object",
+        "required": [
+          "slug",
+          "title",
+          "description",
+          "useCase",
+          "category",
+          "manifest",
+          "isSeeded",
+          "version"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Kebab-case unique slug for the template.",
+            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "minLength": 2,
+            "maxLength": 48,
+            "example": "permit-tracker"
+          },
+          "title": {
+            "type": "string",
+            "description": "Human-readable title (plain English) shown in the gallery.",
+            "example": "Permit Tracker"
+          },
+          "description": {
+            "type": "string",
+            "description": "One-paragraph plain-English summary.",
+            "example": "Municipal building-permit workflow with index, detail, form, and kanban pages."
+          },
+          "useCase": {
+            "type": "string",
+            "description": "Short one-line label describing the use case (plain English).",
+            "example": "Municipal building-permit workflow"
+          },
+          "category": {
+            "type": "string",
+            "description": "Top-level category used for filtering in the gallery.",
+            "enum": [
+              "government-services",
+              "internal-operations",
+              "citizen-engagement",
+              "field-work"
+            ]
+          },
+          "screenshotUrl": {
+            "type": "string",
+            "description": "Relative path under the app's img/templates/ folder, or an OR Files URL.",
+            "example": "img/templates/permit-tracker.svg"
+          },
+          "manifest": {
+            "type": "object",
+            "description": "Full app-manifest JSON blob (ADR-024) to be deep-copied on clone.",
+            "additionalProperties": true
+          },
+          "companionSchemas": {
+            "type": "array",
+            "description": "JSON-schema blobs to be cloned alongside the manifest into the user's per-app register (openbuilt-{slug}).",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "isSeeded": {
+            "type": "boolean",
+            "description": "True for Conduction-shipped templates, false for org-local templates.",
+            "default": false
+          },
+          "sourceUrl": {
+            "type": "string",
+            "description": "Link back to the originating user-story / RFP / blog post for traceability."
+          },
+          "version": {
+            "type": "string",
+            "description": "Semver version of the template — recorded on clone for one-shot snapshot semantics.",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+            "example": "1.0.0"
+          }
         }
       },
       "BuiltAppRoute": {

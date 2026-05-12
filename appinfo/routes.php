@@ -25,6 +25,13 @@ return [
         // is order-sensitive when prefix overlaps).
         ['name' => 'applications#listMine', 'url' => '/api/applications', 'verb' => 'GET'],
 
+        // Clone-from-template action (openbuilt-templates-marketplace REQ-OBTC-004 / REQ-OBTC-005).
+        // POST so it does not collide with the GET {slug} routes; #[NoAdminRequired] on the
+        // controller method. Creates a per-app `openbuilt-{newSlug}` register, deep-copies the
+        // template's companion schemas into it, rewrites manifest schema refs, and persists a new
+        // Application in the shared `openbuilt` register tagged with the caller's UID.
+        ['name' => 'applications#createFromTemplate', 'url' => '/api/applications/from-template/{templateSlug}', 'verb' => 'POST'],
+
         // Manifest endpoint — returns the stored manifest JSON blob for a given virtual-app slug.
         // Per ADR-016 routes.php is the only registration path; #[NoAdminRequired] is set on the
         // controller method so auth-required-but-non-admin users can hit it (per design.md Decision 6).
