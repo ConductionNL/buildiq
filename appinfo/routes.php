@@ -16,6 +16,15 @@ return [
         // Health check endpoint.
         ['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
 
+        // RBAC-filtered Application list (openbuilt-rbac REQ-OBRBAC-002 / REQ-OBR-007).
+        // OR's schema-level read rule is a coarse group ACL — not a row-level filter on the
+        // Application's `permissions` block — so the editor list MUST go through this
+        // endpoint, NOT directly through `/apps/openregister/api/objects/openbuilt/application`,
+        // which would leak every Application + permissions to every authed user (IDOR).
+        // Listed BEFORE the {slug} route so the wildcard does not shadow it (Symfony router
+        // is order-sensitive when prefix overlaps).
+        ['name' => 'applications#listMine', 'url' => '/api/applications', 'verb' => 'GET'],
+
         // Manifest endpoint — returns the stored manifest JSON blob for a given virtual-app slug.
         // Per ADR-016 routes.php is the only registration path; #[NoAdminRequired] is set on the
         // controller method so auth-required-but-non-admin users can hit it (per design.md Decision 6).

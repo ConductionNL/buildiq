@@ -59,6 +59,28 @@
             "type": "string",
             "format": "uuid",
             "description": "UUID of the most recent ApplicationVersion snapshot. Maintained by the snapshot-on-publish lifecycle action (see chain spec #6 openbuilt-versioning). Optional — never-published Applications carry no currentVersion."
+          },
+          "permissions": {
+            "type": "object",
+            "description": "Per-Application RBAC block per REQ-OBRBAC-001 (openbuilt-rbac). Each array contains Nextcloud group IDs (gid). The caller must be a member of at least one group across owners ∪ editors ∪ viewers to access the manifest endpoint. owners gate destructive actions (publish, archive, delete, transfer, permissions edit); editors gate save; viewers gate read.",
+            "properties": {
+              "owners": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Nextcloud group IDs with owner role: full control including publish/archive/delete/transfer-ownership/edit-permissions."
+              },
+              "editors": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Nextcloud group IDs with editor role: can save manifest drafts but cannot publish or change permissions."
+              },
+              "viewers": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Nextcloud group IDs with viewer role: read-only access to the Application."
+              }
+            },
+            "additionalProperties": false
           }
         },
         "x-openregister-lifecycle": {

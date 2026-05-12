@@ -44,6 +44,28 @@ Vrij en open source onder de EUPL-1.2-licentie.
         <php min-version="8.1"/>
     </dependencies>
 
+    <!--
+        openbuilt.use navigation-entry gate (REQ-OBRBAC-006).
+
+        SPEC INTENT — REQ-OBRBAC-006 calls for a <permission>openbuilt.use</permission>
+        child on the <navigation> element so admins can restrict the top-bar
+        entry to selected groups. We tried shipping that element and verified
+        2026-05-11 with `occ app:enable openbuilt --force` on Nextcloud 32 that
+        the upstream apps/info.xsd schema rejects the `<permission>` child
+        ("appinfo file cannot be read"). The schema does not yet expose this
+        sub-element; an upstream issue is filed at:
+            https://github.com/nextcloud/server/issues/60310
+
+        FALLBACK — per design.md Decision 4 we rely on Nextcloud's standard
+        app-level group restriction:
+            occ app:enable openbuilt --groups team-alpha
+        which configures group visibility outside info.xml. Per-Application
+        RBAC enforced server-side by ApplicationsController::getManifest +
+        ::listMine (REQ-OBRBAC-002 / REQ-OBR-006) remains the load-bearing
+        security boundary; this gate is coarse top-bar visibility only.
+
+        See docs/openbuilt-rbac.md for the operator guide.
+    -->
     <navigations>
         <navigation>
             <id>openbuilt</id>
@@ -62,10 +84,12 @@ Vrij en open source onder de EUPL-1.2-licentie.
         <install>
             <step>OCA\OpenBuilt\Repair\InitializeSettings</step>
             <step>OCA\OpenBuilt\Repair\SeedHelloWorld</step>
+            <step>OCA\OpenBuilt\Repair\PopulateApplicationPermissions</step>
         </install>
         <post-migration>
             <step>OCA\OpenBuilt\Repair\InitializeSettings</step>
             <step>OCA\OpenBuilt\Repair\SeedHelloWorld</step>
+            <step>OCA\OpenBuilt\Repair\PopulateApplicationPermissions</step>
         </post-migration>
     </repair-steps>
 </info>

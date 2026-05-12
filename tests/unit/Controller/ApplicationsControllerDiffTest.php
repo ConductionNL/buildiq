@@ -30,7 +30,10 @@ namespace OCA\OpenBuilt\Tests\Unit\Controller;
 
 use OCA\OpenBuilt\Controller\ApplicationsController;
 use OCP\AppFramework\Http;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -95,12 +98,25 @@ class ApplicationsControllerDiffTest extends TestCase
             ->getMock();
         $schemaMapper->method('find')->willReturn($schemaEntity);
 
+        // diffVersions() does not exercise RBAC, but the controller constructor
+        // requires the IUserSession + IGroupManager dependencies introduced by
+        // the openbuilt-rbac change — provide permissive mocks.
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('diff-tester');
+        $userSession = $this->createMock(IUserSession::class);
+        $userSession->method('getUser')->willReturn($user);
+        $groupManager = $this->createMock(IGroupManager::class);
+        $groupManager->method('getUserGroups')->willReturn([]);
+        $groupManager->method('isInGroup')->willReturn(false);
+
         $this->controller = new ApplicationsController(
             request: $request,
             logger: $this->logger,
             objectService: $this->objectService,
             registerMapper: $registerMapper,
             schemaMapper: $schemaMapper,
+            userSession: $userSession,
+            groupManager: $groupManager,
         );
     }//end setUp()
 

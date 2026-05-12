@@ -141,7 +141,13 @@ class SeedHelloWorld implements IRepairStep
     private function seedApplicationAndRoute(IOutput $output): ?string
     {
         $seedManifest = $this->buildHelloWorldManifest();
-        $application  = $this->objectService->saveObject(
+
+        // Per design.md OQ-4 of openbuilt-rbac the hello-world demo defaults to
+        // admin-only after the migration so operators consciously decide to
+        // broaden access; this matches the "ACTION REQUIRED: re-grant access"
+        // deployment note. Operators who want the demo broadly visible can
+        // grant `viewers` explicitly via the Permissions panel.
+        $application = $this->objectService->saveObject(
             object: [
                 'slug'        => self::SEED_SLUG,
                 'name'        => 'Hello World',
@@ -149,6 +155,11 @@ class SeedHelloWorld implements IRepairStep
                 'version'     => self::SEED_VERSION,
                 'status'      => 'published',
                 'manifest'    => $seedManifest,
+                'permissions' => [
+                    'owners'  => ['admin'],
+                    'editors' => [],
+                    'viewers' => [],
+                ],
             ],
             register: 'openbuilt',
             schema: 'application'

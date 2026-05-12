@@ -7,7 +7,11 @@
   - openbuilt.editor.help documents that.
   -
   - Per ADR-022 the editor reads/writes Application objects via OR's
-  - REST API directly — no app-local CRUD wrapper.
+  - REST API directly — no app-local CRUD wrapper. Per the openbuilt-rbac
+  - change the list filters out Applications on which the caller has no
+  - role (REQ-OBR-007) and destructive actions gate via `useRole(app)`
+  - (REQ-OBR-008 / REQ-OBRBAC-004). The Permissions modal lives in
+  - `src/modals/PermissionsModal.vue` per ADR-004 `gate-modal-isolation`.
   -
   - Chain spec #6 (openbuilt-versioning) adds the Publish action,
   - status + "draft modified" badges, version-history sibling panel,
@@ -22,17 +26,18 @@
 					<h3>{{ t('openbuilt', 'Virtual apps') }}</h3>
 					<ul>
 						<li
-							v-for="app in applications"
+							v-for="app in visibleApplications"
 							:key="app.uuid || app.id"
 							:class="{ active: appUuid(app) === selectedUuid }"
 							@click="select(app)">
 							{{ app.name || app.slug }}
 							<span class="openbuilt-editor__badge" :class="badgeClass(app.status)">{{ statusLabel(app.status) }}</span>
+							<small>{{ translatedRole(roleFor(app)) }}</small>
 						</li>
 					</ul>
-					<button v-if="applications.length === 0" disabled>
-						{{ t('openbuilt', 'No virtual apps yet — seed `hello-world` should appear after install.') }}
-					</button>
+					<p v-if="visibleApplications.length === 0" class="openbuilt-editor__empty">
+						{{ t('openbuilt', 'No applications available — ask an owner to grant you access.') }}
+					</p>
 				</aside>
 				<section class="openbuilt-editor__pane">
 					<header v-if="selected" class="openbuilt-editor__pane-header">
@@ -45,6 +50,7 @@
 								{{ t('openbuilt', 'modified since last publish') }}
 							</small>
 							<small>{{ t('openbuilt', 'Version') }}: {{ selected.version }}</small>
+							<small>{{ t('openbuilt', 'Role') }}: {{ translatedRole(selectedRole) }}</small>
 						</div>
 						<nav class="openbuilt-editor__tabs">
 							<button :class="{ active: activeTab === 'editor' }" @click="activeTab = 'editor'">
@@ -70,16 +76,30 @@
 							class="openbuilt-editor__textarea"
 							data-testid="openbuilt-editor-textarea"
 							spellcheck="false"
+							:readonly="selectedRole === 'viewer'"
 							:placeholder="t('openbuilt', 'Paste or edit the JSON manifest here. See @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json for the canonical schema.')" />
 						<div v-if="validationError" class="openbuilt-editor__error">
 							{{ t('openbuilt', 'Invalid manifest') }}: {{ validationError }}
 						</div>
 						<div class="openbuilt-editor__actions">
-							<button :disabled="!selected || saving" data-testid="openbuilt-editor-save" @click="save">
+							<button
+								v-if="selectedRole === 'editor' || selectedRole === 'owner'"
+								:disabled="!selected || saving"
+								data-testid="openbuilt-editor-save"
+								@click="save">
 								{{ saving ? t('openbuilt', 'Saving…') : t('openbuilt', 'Save') }}
 							</button>
-							<button :disabled="!selected || publishing || !canPublish" @click="publish">
+							<button
+								v-if="selectedRole === 'owner'"
+								:disabled="!selected || publishing || !canPublish"
+								@click="publish">
 								{{ publishing ? t('openbuilt', 'Publishing…') : t('openbuilt', 'Publish') }}
+							</button>
+							<button
+								v-if="selectedRole === 'owner'"
+								:disabled="!selected"
+								@click="openPermissionsModal">
+								{{ t('openbuilt', 'Manage permissions') }}
 							</button>
 							<a v-if="selected && (selected.currentVersion || selected.status === 'published')" :href="builderUrl">
 								{{ t('openbuilt', 'Open virtual app') }}
@@ -106,6 +126,12 @@
 					</div>
 				</section>
 			</div>
+			<PermissionsModal
+				:open="permissionsModalOpen"
+				:application="selected"
+				:available-groups="availableGroups"
+				@update:open="permissionsModalOpen = $event"
+				@save="onPermissionsSave" />
 		</NcAppContent>
 	</div>
 </template>
@@ -117,6 +143,8 @@ import { validateManifest } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import VersionHistory from './VersionHistory.vue'
 import ManifestDiff from '../components/ManifestDiff.vue'
+import PermissionsModal from '../modals/PermissionsModal.vue'
+import { useRole, hasAnyRole, getCurrentUserGroups } from '../composables/useRole.js'
 
 export default {
 	name: 'ApplicationEditor',
@@ -124,6 +152,7 @@ export default {
 		NcAppContent,
 		VersionHistory,
 		ManifestDiff,
+		PermissionsModal,
 	},
 	data() {
 		return {
@@ -136,11 +165,24 @@ export default {
 			publishToast: '',
 			activeTab: 'editor',
 			diffPair: { from: 'draft', to: '' },
+			currentUserGroups: getCurrentUserGroups(),
+			permissionsModalOpen: false,
+			availableGroups: [],
 		}
 	},
 	computed: {
+		visibleApplications() {
+			// REQ-OBR-007 — filter the list to Applications on which the
+			// caller has at least one role (or any role when admin bypass
+			// is active server-side; the frontend never sees admins as a
+			// special case — they get the same filter as anyone else).
+			return this.applications.filter(app => hasAnyRole(app, this.currentUserGroups))
+		},
 		selected() {
 			return this.applications.find(a => this.appUuid(a) === this.selectedUuid) || null
+		},
+		selectedRole() {
+			return useRole(this.selected, this.currentUserGroups)
 		},
 		builderUrl() {
 			if (!this.selected) {
@@ -170,8 +212,12 @@ export default {
 	},
 	async mounted() {
 		await this.refresh()
-		if (this.applications.length > 0) {
-			this.select(this.applications[0])
+		this.availableGroups = Array.from(new Set([
+			...this.currentUserGroups,
+			...this.collectKnownGroups(),
+		]))
+		if (this.visibleApplications.length > 0) {
+			this.select(this.visibleApplications[0])
 		}
 	},
 	methods: {
@@ -203,6 +249,43 @@ export default {
 				this.validationError = `Failed to load applications: ${e.message || e}`
 			}
 		},
+		collectKnownGroups() {
+			// Surface groups already referenced in any Application's
+			// permissions so the owner can pick from them in the modal.
+			const gids = new Set()
+			for (const app of this.applications) {
+				const perms = (app && app.permissions) || {}
+				;['owners', 'editors', 'viewers'].forEach(role => {
+					if (Array.isArray(perms[role])) {
+						perms[role].forEach(g => gids.add(g))
+					}
+				})
+			}
+			return Array.from(gids)
+		},
+		roleFor(app) {
+			return useRole(app, this.currentUserGroups)
+		},
+		/**
+		 * Map a raw role token ('owner'|'editor'|'viewer'|'none') to its
+		 * translated label. Plain English keys per the i18n decision —
+		 * the role token is an enum, the label is a user-facing string.
+		 *
+		 * @param {string} role The raw role token from useRole
+		 * @return {string} The translated label
+		 */
+		translatedRole(role) {
+			switch (role) {
+			case 'owner':
+				return t('openbuilt', 'Owner')
+			case 'editor':
+				return t('openbuilt', 'Editor')
+			case 'viewer':
+				return t('openbuilt', 'Viewer')
+			default:
+				return t('openbuilt', 'No access')
+			}
+		},
 		select(app) {
 			this.selectedUuid = this.appUuid(app)
 			this.manifestText = JSON.stringify(app.manifest || {}, null, 2)
@@ -230,6 +313,10 @@ export default {
 			if (!this.selected) {
 				return
 			}
+			if (this.selectedRole !== 'editor' && this.selectedRole !== 'owner') {
+				this.validationError = t('openbuilt', 'Editor or owner role required to save the manifest.')
+				return
+			}
 			this.validationError = ''
 			const parsed = this.parseAndValidate()
 			if (parsed === null) {
@@ -252,6 +339,10 @@ export default {
 		},
 		async publish() {
 			if (!this.selected || this.publishing) {
+				return
+			}
+			if (this.selectedRole !== 'owner') {
+				this.validationError = t('openbuilt', 'Editor or owner role required to save the manifest.')
 				return
 			}
 			this.validationError = ''
@@ -328,6 +419,29 @@ export default {
 			}
 			return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
 		},
+		openPermissionsModal() {
+			if (this.selectedRole !== 'owner') {
+				return
+			}
+			this.permissionsModalOpen = true
+		},
+		async onPermissionsSave(permissions) {
+			if (this.selectedRole !== 'owner' || !this.selected) {
+				return
+			}
+			try {
+				const url = generateUrl(`/apps/openregister/api/objects/openbuilt/application/${this.selectedUuid}`)
+				await axios.put(url, { ...this.selected, permissions })
+				this.permissionsModalOpen = false
+				await this.refresh()
+				const updated = this.applications.find(a => this.appUuid(a) === this.selectedUuid)
+				if (updated) {
+					this.select(updated)
+				}
+			} catch (e) {
+				this.validationError = `Failed to save permissions: ${e.message || e}`
+			}
+		},
 	},
 }
 </script>
@@ -360,10 +474,17 @@ export default {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	gap: 6px;
 }
 
 .openbuilt-editor__list li.active {
 	background: var(--color-primary-light, #e6f0fa);
+}
+
+.openbuilt-editor__empty {
+	font-size: 13px;
+	color: var(--color-text-maxcontrast, #888);
+	padding: 8px 12px;
 }
 
 .openbuilt-editor__pane {
