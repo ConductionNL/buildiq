@@ -8,7 +8,8 @@
 		{ "id": "Schemas", "label": "Schemas", "icon": "icon-category-customization", "route": "Schemas", "order": 30 },
 		{ "id": "Templates", "label": "Templates", "icon": "icon-category-organization", "route": "Templates", "order": 35 },
 		{ "id": "Exports", "label": "Exports", "icon": "icon-download", "route": "Exports", "order": 40 },
-		{ "id": "Documentation", "label": "Documentation", "icon": "icon-info", "href": "https://github.com/ConductionNL/openbuilt", "section": "settings", "order": 90 }
+		{ "id": "Documentation", "label": "Documentation", "icon": "icon-info", "href": "https://github.com/ConductionNL/openbuilt", "section": "settings", "order": 90 },
+		{ "id": "FeaturesRoadmapMenu", "label": "Features & roadmap", "icon": "icon-toggle", "route": "FeaturesRoadmap", "section": "settings", "order": 95 }
 	],
 	"pages": [
 		{ "id": "Dashboard", "route": "/", "type": "custom", "title": "Dashboard", "component": "DashboardView" },
@@ -19,6 +20,7 @@
 		{ "id": "SchemaDesigner", "route": "/builder/:slug/schemas/:schemaId", "type": "custom", "title": "Schema", "component": "SchemaDesignerView" },
 		{ "id": "PageDesigner", "route": "/builder/:slug/pages", "type": "custom", "title": "Page designer", "component": "PageDesignerView" },
 		{ "id": "Exports", "route": "/exports", "type": "custom", "title": "Exports", "component": "ExportJobsView" },
-		{ "id": "BuilderHost", "route": "/builder/:slug/:pathMatch(.*)?", "type": "custom", "title": "Virtual app", "component": "BuilderHostView" }
+		{ "id": "BuilderHost", "route": "/builder/:slug/:pathMatch(.*)?", "type": "custom", "title": "Virtual app", "component": "BuilderHostView" },
+		{ "id": "FeaturesRoadmap", "route": "/features-roadmap", "type": "custom", "title": "Features & roadmap", "component": "FeaturesRoadmap" }
 	]
 }

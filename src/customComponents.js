@@ -25,6 +25,10 @@ import PageDesignerView from './views/PageDesigner.vue'
 import ExportJobsView from './views/ExportJobsList.vue'
 import BuilderHostView from './views/BuilderHost.vue'
 import TemplateGalleryView from './views/TemplateGallery.vue'
+// Features & Roadmap page — thin wrapper around the lib's
+// CnFeaturesAndRoadmapView (in-product roadmap surface powered by
+// OpenRegister's github-issue-proxy). See ConductionNL/hydra#251.
+import FeaturesRoadmapView from './views/FeaturesRoadmap.vue'
 
 export default {
 	// Starter dashboard — sample KPIs / activity placeholders.
@@ -48,4 +52,6 @@ export default {
 	// Template gallery — browse seeded ApplicationTemplate records and
 	// clone one into a new virtual app (openbuilt-templates-marketplace).
 	TemplateGalleryView,
+	// Features & Roadmap page (lib's CnFeaturesAndRoadmapView).
+	FeaturesRoadmap: FeaturesRoadmapView,
 }
