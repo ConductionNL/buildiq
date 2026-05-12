@@ -14,6 +14,7 @@
 			<WidgetBuilder
 				:model-value="config.widgets || []"
 				@update:modelValue="update('widgets', $event)" />
+			<InlineFieldMark :error="markFor('widgets')" />
 		</fieldset>
 
 		<fieldset class="dashboard-page-editor__fieldset">
@@ -21,6 +22,7 @@
 			<LayoutItemBuilder
 				:model-value="config.layout || []"
 				@update:modelValue="update('layout', $event)" />
+			<InlineFieldMark :error="markFor('layout')" />
 		</fieldset>
 	</div>
 </template>
@@ -28,17 +30,37 @@
 <script>
 import WidgetBuilder from './fields/WidgetBuilder.vue'
 import LayoutItemBuilder from './fields/LayoutItemBuilder.vue'
+import InlineFieldMark from './fields/InlineFieldMark.vue'
+import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'DashboardPageEditor',
-	components: { WidgetBuilder, LayoutItemBuilder },
+	components: { WidgetBuilder, LayoutItemBuilder, InlineFieldMark },
+	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
 			type: Object,
 			default: () => ({}),
 		},
+		pageType: {
+			type: String,
+			default: 'dashboard',
+		},
+		appSlug: {
+			type: String,
+			default: '',
+		},
+		parentRoute: {
+			type: String,
+			default: '',
+		},
 	},
 	emits: ['update:config'],
+	computed: {
+		validatedConfigKeys() {
+			return ['widgets', 'layout']
+		},
+	},
 	methods: {
 		update(key, value) {
 			const next = { ...this.config }

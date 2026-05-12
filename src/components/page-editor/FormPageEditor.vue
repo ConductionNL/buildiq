@@ -37,6 +37,7 @@
 				class="form-page-editor__input"
 				:value="config.submitHandler || ''"
 				:placeholder="t('openbuilt', 'customComponents registry key')"
+				:aria-invalid="isInvalid('submitHandler')"
 				@input="setSubmitHandler($event.target.value)">
 			<input
 				v-else-if="submitShape === 'endpoint'"
@@ -44,7 +45,9 @@
 				class="form-page-editor__input"
 				:value="config.submitEndpoint || ''"
 				:placeholder="t('openbuilt', '/api/objects/:slug/...')"
+				:aria-invalid="isInvalid('submitEndpoint')"
 				@input="setSubmitEndpoint($event.target.value)">
+			<InlineFieldMark :error="markFor(submitShape === 'endpoint' ? 'submitEndpoint' : 'submitHandler')" />
 			<label class="form-page-editor__group-row">
 				{{ t('openbuilt', 'Method') }}
 				<select
@@ -100,24 +103,43 @@
 			<FormFieldBuilder
 				:model-value="config.fields || []"
 				@update:modelValue="update('fields', $event)" />
+			<InlineFieldMark :error="markFor('fields')" />
 		</fieldset>
 	</div>
 </template>
 
 <script>
 import FormFieldBuilder from './fields/FormFieldBuilder.vue'
+import InlineFieldMark from './fields/InlineFieldMark.vue'
+import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'FormPageEditor',
-	components: { FormFieldBuilder },
+	components: { FormFieldBuilder, InlineFieldMark },
+	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
 			type: Object,
 			default: () => ({}),
 		},
+		pageType: {
+			type: String,
+			default: 'form',
+		},
+		appSlug: {
+			type: String,
+			default: '',
+		},
+		parentRoute: {
+			type: String,
+			default: '',
+		},
 	},
 	emits: ['update:config'],
 	computed: {
+		validatedConfigKeys() {
+			return ['submitHandler', 'submitEndpoint', 'submitMethod', 'mode', 'submitLabel', 'successMessage', 'fields', 'initialValue']
+		},
 		submitShape() {
 			if (this.config.submitHandler) {
 				return 'handler'
