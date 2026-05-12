@@ -10,10 +10,12 @@
  *  - Never block the UI thread; the validator runs via setTimeout, the
  *    editor stays responsive while results catch up asynchronously.
  *
- * Sub-editors call `register(pathPrefix, fieldRef)` on mount and
- * `unregister(pathPrefix)` on unmount. After each validator pass the
- * composable groups error paths by their longest matching registered
- * prefix and assigns the mapped field ref an error-marked state.
+ * Sub-editors call `register(pathPrefix)` on mount and
+ * `unregister(pathPrefix)` on unmount (via the `pageEditorValidation`
+ * mixin + the `pageEditorValidator` object PageDesigner provides). After
+ * each validator pass the composable groups error paths by registered
+ * prefix and exposes `errorMap` (`{ prefix → { hasError, message } }`)
+ * and `errorFor(prefix)` for the sub-editors' inline marks.
  *
  * Path mapping convention: validateManifest emits paths in JSON Pointer
  * shorthand like `/pages/1/config/columns/0`. Sub-editors register a
@@ -55,15 +57,16 @@ export function useManifestValidator() {
 	}
 
 	/**
-	 * Register a field component against a JSON-Pointer path prefix.
-	 * When the validator reports an error path whose prefix matches, the
-	 * registered ref is decorated with an inline error mark.
+	 * Register a field against a JSON-Pointer path prefix. When the
+	 * validator reports an error path that starts with this prefix the
+	 * sub-editor reads it back via `errorMap` / `errorsByPrefix` and
+	 * paints an inline mark next to the field (task 5.5 / REQ-OBPD-011).
 	 *
-	 * @param {string} pathPrefix - JSON-Pointer prefix like `/pages/0/id`.
-	 * @param {object} fieldRef - object exposing `markError(message)` and
-	 *   `clearError()` methods (sub-editor field wrapper).
+	 * @param {string} pathPrefix - JSON-Pointer prefix like `/pages/0/config/columns`.
+	 * @param {object} [fieldRef] - optional opaque handle (kept for callers
+	 *   that want to stash a DOM ref alongside the registration).
 	 */
-	function register(pathPrefix, fieldRef) {
+	function register(pathPrefix, fieldRef = true) {
 		fieldRefs.set(pathPrefix, fieldRef)
 	}
 
@@ -74,19 +77,72 @@ export function useManifestValidator() {
 	const hasErrors = computed(() => errors.value.length > 0)
 
 	/**
-	 * For each registered prefix, find the longest matching error path and
-	 * return it. Used by sub-editors to decorate their inline field marks.
+	 * Errors whose JSON-Pointer path starts with `prefix`. A `/`, space
+	 * or `:` boundary is required after the prefix so `/pages/1` does not
+	 * also swallow `/pages/10/...`; the space / colon cases tolerate
+	 * validators that append a "<pointer> is required" suffix.
+	 *
+	 * @param {string} prefix - JSON-Pointer prefix.
+	 * @return {Array<string>}
+	 */
+	function matchingErrors(prefix) {
+		return errors.value.filter((e) => {
+			if (typeof e !== 'string') {
+				return false
+			}
+			return e === prefix
+				|| e.startsWith(prefix + '/')
+				|| e.startsWith(prefix + ' ')
+				|| e.startsWith(prefix + ':')
+		})
+	}
+
+	/**
+	 * For each registered prefix, the list of error strings whose path
+	 * starts with it. Kept for callers that want every matching error.
 	 */
 	const errorsByPrefix = computed(() => {
 		const result = new Map()
 		for (const prefix of fieldRefs.keys()) {
-			const hits = errors.value.filter((e) => typeof e === 'string' && e.startsWith(prefix))
+			const hits = matchingErrors(prefix)
 			if (hits.length) {
 				result.set(prefix, hits)
 			}
 		}
 		return result
 	})
+
+	/**
+	 * For each registered prefix, a `{ hasError, message }` bag — the
+	 * compact shape sub-editors hand to `<InlineFieldMark>`. `message` is
+	 * the first matching error string (the side-panel list is the full
+	 * overview). Prefixes with no matching error are still present with
+	 * `hasError: false` so callers can bind unconditionally.
+	 *
+	 * @return {Map<string, {hasError: boolean, message: string}>}
+	 */
+	const errorMap = computed(() => {
+		const result = new Map()
+		for (const prefix of fieldRefs.keys()) {
+			const hits = matchingErrors(prefix)
+			result.set(prefix, {
+				hasError: hits.length > 0,
+				message: hits.length ? hits[0] : '',
+			})
+		}
+		return result
+	})
+
+	/**
+	 * `{ hasError, message }` for a single prefix (convenience accessor
+	 * over `errorMap`; returns the empty bag for unregistered prefixes).
+	 *
+	 * @param {string} prefix - JSON-Pointer prefix.
+	 * @return {{hasError: boolean, message: string}}
+	 */
+	function errorFor(prefix) {
+		return errorMap.value.get(prefix) || { hasError: false, message: '' }
+	}
 
 	return {
 		errors,
@@ -96,6 +152,8 @@ export function useManifestValidator() {
 		register,
 		unregister,
 		errorsByPrefix,
+		errorMap,
+		errorFor,
 		DEBOUNCE_MS,
 	}
 }
