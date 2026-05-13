@@ -76,28 +76,28 @@
           },
           "permissions": {
             "type": "object",
-            "description": "Per-Application RBAC block per REQ-OBRBAC-001 (openbuilt-rbac). Each array contains Nextcloud group IDs (gid). The caller must be a member of at least one group across owners ∪ editors ∪ viewers to access the manifest endpoint. owners gate destructive actions (publish, archive, delete, transfer, permissions edit); editors gate save; viewers gate read.",
+            "description": "Per-Application RBAC block per REQ-OBRBAC-001 (openbuilt-rbac). Each entry is a principal — either a Nextcloud user UID (prefix `user:<uid>`) or a Nextcloud group GID (prefix `group:<gid>` OR bare value, kept for back-compat). The caller is granted access when their UID matches a `user:` entry in any role OR when their group memberships intersect a `group:`/bare entry in any role. Bare strings continue to mean GID for backwards compatibility with pre-#37 manifests. owners gate destructive actions (publish, archive, delete, transfer, permissions edit); editors gate save; viewers gate read.",
             "properties": {
               "owners": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "Nextcloud group IDs with owner role: full control including publish/archive/delete/transfer-ownership/edit-permissions."
+                "description": "Principals with owner role (full control including publish/archive/delete/transfer-ownership/edit-permissions). Each entry is a `user:<uid>`, `group:<gid>`, or bare group GID."
               },
               "editors": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "Nextcloud group IDs with editor role: can save manifest drafts but cannot publish or change permissions."
+                "description": "Principals with editor role: can save manifest drafts but cannot publish or change permissions. Each entry is a `user:<uid>`, `group:<gid>`, or bare group GID."
               },
               "viewers": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "Nextcloud group IDs with viewer role: read-only access to the Application."
+                "description": "Principals with viewer role: read-only access. Each entry is a `user:<uid>`, `group:<gid>`, or bare group GID."
               }
             },
             "additionalProperties": false
