@@ -23,6 +23,14 @@ jobs:
       enable-phpunit: true
       enable-newman: true
       database: sqlite
+      # The Newman collections drive the `hello-world` seed app + the
+      # OpenBuilt registers/schemas; re-running the repair steps (via a
+      # disable/enable cycle, which fires the post-migration steps) after the
+      # server + OpenRegister are up guarantees SeedHelloWorld /
+      # PopulateApplicationPermissions / SeedApplicationTemplates /
+      # InitializeSettings have run — otherwise the API calls 404 on missing
+      # registers and the prerequest scripts JSONError on the 404 bodies.
+      newman-seed-command: 'php occ app:disable openbuilt && php occ app:enable openbuilt'
       # OpenRegister `development` carries the runtime-schema-API (auto-create
       # Register on application-type imports — OR PR #1464) and the lifecycle
       # engine (ObjectTransitionedEvent) that OpenBuilt's repair steps + the
