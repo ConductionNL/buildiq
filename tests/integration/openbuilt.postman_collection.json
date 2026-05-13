@@ -127,7 +127,10 @@
 									"    pm.expect(results.length).to.be.greaterThan(0);",
 									"});",
 									"pm.test('at least one Application has slug=hello-world', function () {",
-									"    const hello = results.find(function (r) { return r && r.slug === 'hello-world'; });",
+									"    // OR REST returns the canonical slug at @self.slug; some fixtures",
+									"    // also surface a top-level .slug copy. Accept either so the suite",
+									"    // works regardless of which version of OR is under test.",
+									"    const hello = results.find(function (r) { return r && ((r['@self'] && r['@self'].slug === 'hello-world') || r.slug === 'hello-world'); });",
 									"    pm.expect(hello, 'no Application with slug=hello-world found').to.not.be.undefined;",
 									"});"
 								]

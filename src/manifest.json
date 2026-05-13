@@ -76,7 +76,7 @@
 		},
 		{
 			"id": "VirtualAppDetail",
-			"route": "/applications/:id",
+			"route": "/applications/:objectId",
 			"type": "detail",
 			"title": "Virtual app",
 			"config": {

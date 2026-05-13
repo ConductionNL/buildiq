@@ -114,7 +114,7 @@
 				"header": [
 					{ "key": "OCS-APIRequest", "value": "true" }
 				],
-				"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/exportJob/{{job_uuid}}",
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/export-job/{{job_uuid}}",
 				"description": "Standard OR REST polling — ADR-022. Frontend uses the same endpoint at 2s intervals."
 			},
 			"event": [

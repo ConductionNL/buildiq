@@ -4,18 +4,18 @@
   -
   - ApplicationCard — custom card for the Virtual apps index grid
   - (`pages[].config.cardComponent: "ApplicationCard"`). CnIndexPage
-  - mounts one per row passing `{ item, object, schema, register, selected }`
-  - and listens for `click` (→ navigate to the detail) and `select`.
+  - mounts one per row passing `{ item, object, schema, register, selected }`.
+  - The card body is a `<router-link>` to VirtualAppDetail so a click navigates
+  - directly to /applications/{objectId} — CnIndexPage's own `row-click`
+  - event is emit-only (no auto-routing), so we own the navigation here.
   - Shows the virtual app's name, lifecycle-status pill, version, a "live"
   - marker when a published snapshot exists, and the caller's role.
   -->
 <template>
 	<div class="ob-app-card" :class="{ 'ob-app-card--selected': selected }">
-		<div class="ob-app-card__inner"
-			role="button"
-			tabindex="0"
-			@click="$emit('click')"
-			@keyup.enter="$emit('click')">
+		<router-link
+			class="ob-app-card__inner"
+			:to="{ name: 'VirtualAppDetail', params: { objectId: appUuid } }">
 			<div class="ob-app-card__head">
 				<h3 class="ob-app-card__title">
 					{{ app.name || app.slug || t('openbuilt', 'Untitled app') }}
@@ -31,7 +31,7 @@
 				<span v-if="role !== 'none'" class="ob-app-card__chip">{{ roleLabel }}</span>
 				<span class="ob-app-card__chip ob-app-card__chip--muted">/{{ app.slug }}</span>
 			</div>
-		</div>
+		</router-link>
 	</div>
 </template>
 
@@ -50,6 +50,13 @@ export default {
 	computed: {
 		app() {
 			return this.object || this.item || {}
+		},
+		// CnDetailPage reads :objectId from $route.params, which we set here.
+		// OR returns the canonical id under @self.id; fall back to uuid/id for
+		// objects coming from older mock fixtures or pre-@self responses.
+		appUuid() {
+			const self = this.app['@self'] || {}
+			return self.id || this.app.uuid || this.app.id || ''
 		},
 		statusKey() {
 			return ['draft', 'published', 'archived'].includes(this.app.status) ? this.app.status : 'draft'

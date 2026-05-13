@@ -110,6 +110,15 @@ class ExportsController extends Controller
         // authed user can read OR records via the public REST surface so
         // this is no weaker than the rest of the OR-backed UX — but it
         // does block the "POST /exports with a guessed slug" IDOR vector.
+        //
+        // openbuilt#36: a slug-only `find($slug)` call without explicit
+        // register/schema context returned null because OR's
+        // currentRegister/currentSchema are null on this fresh service
+        // instance. Pass `register: 'openbuilt'` + `schema: 'application'`
+        // explicitly so OR resolves the slug against the right table.
+        // `ObjectService::find` accepts either numeric ids OR kebab slugs
+        // as the `$id` argument (MagicMapper:: find tolerates both), so
+        // the slug-only call path is correct here once we set context.
         try {
             if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
                 // OR not installed — no source records can exist; deny.
@@ -121,14 +130,39 @@ class ExportsController extends Controller
                 return false;
             }
 
-            // Positional call: $service is untyped at this point (DI
-            // container returns object) so PHPStan can't verify named args.
-            $found = $service->find($applicationSlug);
-            return $found !== null;
+            // Use the call_user_func_array shape so PHPStan accepts the
+            // named-argument equivalent without seeing the untyped $service
+            // signature. The OR contract is documented at
+            // openregister/lib/Service/ObjectService.php::find($id, ..., $register, $schema, ...).
+            try {
+                $found = $service->find(
+                    $applicationSlug,
+                    [],
+                    false,
+                    'openbuilt',
+                    'application'
+                );
+                return $found !== null;
+            } catch (\Throwable $findError) {
+                // OR's find() throws `Multiple objects found with same
+                // identifier` when more than one row in
+                // openbuilt/application shares the slug. That's a data-
+                // hygiene problem upstream, but for the IDOR guard the
+                // mere existence of >=1 row means the slug resolves — so
+                // we treat it as "authorised" (the same way the
+                // happy-path single-row return does). Any other throwable
+                // is logged + denied.
+                if (str_contains($findError->getMessage(), 'Multiple objects found') === true) {
+                    return true;
+                }
+
+                $this->logger->debug('OpenBuilt export: authz fallback find() threw: '.$findError->getMessage());
+                return false;
+            }//end try
         } catch (\Throwable $e) {
             $this->logger->debug('OpenBuilt export: authz fallback lookup failed: '.$e->getMessage());
             return false;
-        }
+        }//end try
     }//end isAuthorisedForApplication()
 
     /**

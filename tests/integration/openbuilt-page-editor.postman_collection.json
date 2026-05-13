@@ -51,7 +51,12 @@
 							"});",
 							"const app = Array.isArray(results) ? results[0] : results;",
 							"pm.expect(app, 'application object').to.be.an('object');",
-							"pm.collectionVariables.set('app_uuid', app.uuid || app.id);",
+							"// OR REST exposes the canonical id at @self.id; fall back to legacy fields",
+							"// so the collection works against older / non-OR-wrapped responses too.",
+							"const appSelf = app['@self'] || {};",
+							"const appUuid = appSelf.id || appSelf.uuid || app.uuid || app.id;",
+							"pm.expect(appUuid, 'no uuid in application response').to.be.a('string');",
+							"pm.collectionVariables.set('app_uuid', appUuid);",
 							"pm.collectionVariables.set('original_manifest', JSON.stringify(app.manifest));",
 							"pm.collectionVariables.set('original_application', JSON.stringify(app));"
 						]

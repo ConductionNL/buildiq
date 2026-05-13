@@ -21,14 +21,23 @@ jobs:
       enable-frontend: true
       enable-eslint: true
       enable-phpunit: true
-      # Newman disabled (openbuilt#11): the collections need the `hello-world`
-      # seed app + the `openbuilt`/`exportJob`/`application` registers
-      # provisioned. `SeedHelloWorld` swallows exceptions, so when the
-      # seed-against-OR path fails in CI the app simply isn't there and every
-      # API call 404s (then the prerequest scripts JSONError on the 404 body).
-      # Re-running the repair steps (disable/enable) didn't help — needs the
-      # OR runtime-schema-API integration in `SeedHelloWorld` made CI-robust.
-      # PHPUnit runs and is green.
+      # Newman stays disabled while the openbuilt#33 fixes are in flight.
+      # The collection bugs in this PR are fixed (uuid `@self.id` extraction,
+      # `export-job` slug correction, hello-world `@self.slug` fallback). But
+      # an upstream OR-side infrastructure blocker still prevents the seed
+      # from running in CI:
+      #
+      #   1. `OpenBuilt: SeedHelloWorld failed: Call to undefined function
+      #      React\Async\await()` — OR's runtime-schema-API on `development`
+      #      pulls `react/async` but the composer dependency isn't surfacing
+      #      in the CI install, so the function isn't autoloaded.
+      #   2. SQLite (`database: sqlite`) trips
+      #      `[PermissionHandler] no such function: REGEXP` from OR's
+      #      MagicMapper. The query uses MySQL's REGEXP operator which
+      #      SQLite doesn't ship.
+      #
+      # File those as their own issues; once both are unblocked, flip this
+      # back to `true` and re-evaluate.
       enable-newman: false
       database: sqlite
       newman-seed-command: 'php occ app:disable openbuilt && php occ app:enable openbuilt'
