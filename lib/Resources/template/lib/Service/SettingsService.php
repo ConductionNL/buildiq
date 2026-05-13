@@ -139,8 +139,42 @@ class SettingsService
         }
 
         try {
+            $configPath = __DIR__.'/../Settings/app_template_register.json';
+            if (file_exists($configPath) === false) {
+                $this->logger->error('AppTemplate: app_template_register.json not found at '.$configPath);
+                return [
+                    'success' => false,
+                    'message' => 'Configuration file app_template_register.json not found.',
+                ];
+            }
+
+            $configContent = file_get_contents($configPath);
+            if ($configContent === false) {
+                $this->logger->error('AppTemplate: failed to read app_template_register.json');
+                return [
+                    'success' => false,
+                    'message' => 'Failed to read configuration file.',
+                ];
+            }
+
+            $configData = json_decode($configContent, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->logger->error('AppTemplate: failed to parse app_template_register.json: '.json_last_error_msg());
+                return [
+                    'success' => false,
+                    'message' => 'Failed to parse configuration file: '.json_last_error_msg(),
+                ];
+            }
+
+            $configVersion = ($configData['info']['version'] ?? '0.0.0');
+
             $configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationService');
-            $result = $configurationService->importFromApp(appId: Application::APP_ID, force: $force);
+            $result = $configurationService->importFromApp(
+                appId: Application::APP_ID,
+                data: $configData,
+                version: $configVersion,
+                force: $force
+            );
 
             if (empty($result) === false) {
                 $this->logger->info('AppTemplate: register configuration imported successfully');
