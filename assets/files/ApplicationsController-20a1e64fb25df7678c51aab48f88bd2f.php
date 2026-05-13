@@ -477,7 +477,8 @@ class ApplicationsController extends Controller
                 }
 
                 $authorised = $this->collectAuthorisedGroups(application: $app);
-                $hasRole    = count(array_intersect($userGroups, $authorised)) > 0;
+                $hasRole    = in_array($user->getUID(), $authorised['users'], true)
+                    || count(array_intersect($userGroups, $authorised['groups'])) > 0;
 
                 if ($hasRole === true) {
                     $filtered[] = $app;
@@ -559,7 +560,16 @@ class ApplicationsController extends Controller
         $userGroups = $this->getUserGroupIds(user: $user);
         $authorised = $this->collectAuthorisedGroups(application: $applicationArray);
 
-        if (count(array_intersect($userGroups, $authorised)) > 0) {
+        // Match the caller against the user-UID bucket first (exact UID
+        // match), then against the group-GID bucket (intersection with
+        // caller's groups). Either match grants access; both buckets are
+        // independent so a username and a same-named group don't clash
+        // (openbuilt#37).
+        if (in_array($user->getUID(), $authorised['users'], true) === true) {
+            return null;
+        }
+
+        if (count(array_intersect($userGroups, $authorised['groups'])) > 0) {
             return null;
         }
 
@@ -652,37 +662,76 @@ class ApplicationsController extends Controller
     }//end getUserGroupIds()
 
     /**
-     * Flatten `permissions.owners ∪ editors ∪ viewers` to a deduplicated array.
+     * Flatten `permissions.owners ∪ editors ∪ viewers` into separate
+     * user-UID and group-GID buckets.
      *
      * Per REQ-OBRBAC-002 the three role buckets union into the "any role"
-     * set the manifest endpoint checks against.
+     * set the manifest endpoint checks against. Per openbuilt#37 the
+     * principal type is encoded in the string itself rather than living
+     * in a single shared namespace where a username and a group GID can
+     * coincidentally clash (the seeded `owners: ["admin"]` matched
+     * everyone in the `admin` group, not just the `admin` user).
+     *
+     * Recognised prefixes:
+     *   - `user:<uid>`   — match if the caller's UID equals `<uid>`.
+     *   - `group:<gid>`  — match if any of the caller's group GIDs equals `<gid>`.
+     *   - `<value>`      — back-compat: treated as a group GID, same as
+     *                      `group:<value>`. The seeded `owners: ["admin"]`
+     *                      keeps working under this fallback. Apps that
+     *                      want to grant access to a specific user MUST
+     *                      use the `user:` prefix to disambiguate.
      *
      * @param array<string, mixed> $application The Application data
      *
-     * @return array<int, string>
+     * @return array{users: array<int, string>, groups: array<int, string>}
+     *   Two deduplicated lists; `users` are UID values the caller's UID
+     *   should be compared against; `groups` are GID values the caller's
+     *   group memberships should be intersected with.
      */
     private function collectAuthorisedGroups(array $application): array
     {
         $permissions = ($application['permissions'] ?? []);
         if (is_array($permissions) === false) {
-            return [];
+            return ['users' => [], 'groups' => []];
         }
 
-        $merged = [];
+        $userSet  = [];
+        $groupSet = [];
         foreach (['owners', 'editors', 'viewers'] as $role) {
             $bucket = ($permissions[$role] ?? []);
             if (is_array($bucket) === false) {
                 continue;
             }
 
-            foreach ($bucket as $gid) {
-                if (is_string($gid) === true && $gid !== '') {
-                    $merged[$gid] = true;
+            foreach ($bucket as $principal) {
+                if (is_string($principal) === false || $principal === '') {
+                    continue;
                 }
-            }
-        }
 
-        return array_keys($merged);
+                if (str_starts_with($principal, 'user:') === true) {
+                    $uid = substr($principal, 5);
+                    if ($uid !== '') {
+                        $userSet[$uid] = true;
+                    }
+
+                    continue;
+                }
+
+                $gid = $principal;
+                if (str_starts_with($principal, 'group:') === true) {
+                    $gid = substr($principal, 6);
+                }
+
+                if ($gid !== '') {
+                    $groupSet[$gid] = true;
+                }
+            }//end foreach
+        }//end foreach
+
+        return [
+            'users'  => array_keys($userSet),
+            'groups' => array_keys($groupSet),
+        ];
     }//end collectAuthorisedGroups()
 
     /**
