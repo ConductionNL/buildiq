@@ -3,11 +3,14 @@
 /**
  * Unit tests for SettingsController.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Test
  * @package  OCA\OpenBuilt\Tests\Unit\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
- * @copyright 2024 Conduction B.V.
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version GIT: <git-id>
@@ -21,8 +24,11 @@ namespace OCA\OpenBuilt\Tests\Unit\Controller;
 
 use OCA\OpenBuilt\Controller\SettingsController;
 use OCA\OpenBuilt\Service\SettingsService;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -54,6 +60,13 @@ class SettingsControllerTest extends TestCase
     private SettingsService&MockObject $settingsService;
 
     /**
+     * Mock user session.
+     *
+     * @var IUserSession&MockObject
+     */
+    private IUserSession&MockObject $userSession;
+
+    /**
      * Set up test fixtures.
      *
      * @return void
@@ -64,10 +77,16 @@ class SettingsControllerTest extends TestCase
 
         $this->request         = $this->createMock(IRequest::class);
         $this->settingsService = $this->createMock(SettingsService::class);
+        $this->userSession     = $this->createMock(IUserSession::class);
+
+        // Default: authenticated user.
+        $user = $this->createMock(IUser::class);
+        $this->userSession->method('getUser')->willReturn($user);
 
         $this->controller = new SettingsController(
-            request: $this->request,
-            settingsService: $this->settingsService,
+            $this->request,
+            $this->settingsService,
+            $this->userSession,
         );
 
     }//end setUp()
@@ -146,4 +165,28 @@ class SettingsControllerTest extends TestCase
         self::assertTrue($result->getData()['success']);
 
     }//end testLoadReturnsConfigurationResult()
+
+    /**
+     * Test that unauthenticated requests return 401.
+     *
+     * @return void
+     */
+    public function testIndexReturns401WhenNoSession(): void
+    {
+        $unauthSession = $this->createMock(IUserSession::class);
+        $unauthSession->method('getUser')->willReturn(null);
+
+        $controller = new SettingsController(
+            $this->request,
+            $this->settingsService,
+            $unauthSession,
+        );
+
+        $this->settingsService->expects($this->never())->method('getSettings');
+
+        $result = $controller->index();
+
+        self::assertSame(Http::STATUS_UNAUTHORIZED, $result->getStatus());
+
+    }//end testIndexReturns401WhenNoSession()
 }//end class
