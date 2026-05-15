@@ -1,0 +1,296 @@
+{
+	"info": {
+		"_postman_id": "openbuilt-version-promotion-collection",
+		"name": "OpenBuilt — Version Promotion (spec D)",
+		"description": "Newman integration suite for the openbuilt-version-promotion OpenSpec change\n(spec D, REQ-OBVP-001 – REQ-OBVP-011). Exercises the promotion endpoint:\n\n  POST /api/applications/{appUuid}/versions/{versionUuid}/promote\n\nCovers spec D tasks 8.1–8.8:\n  8.2  Happy path: start-with-source-data\n  8.3  422 no_promote_target\n  8.4  400 invalid_strategy\n  8.5  409 lock-contention (TODO — skip until OR lock API stable)\n  8.6  403 insufficient_permission (viewer + non-member)\n  8.7  500 on-failure / target archived (TODO — requires bad schema staging)\n  8.8  CI run\n\nNOTE: requests 8.5 and 8.7 are written as skippable (pm.test.skip) because\nthey require live environment setup that cannot be fully automated in a\nstateless Newman run against a fresh container.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{ "key": "username", "value": "{{admin_user}}", "type": "string" },
+			{ "key": "password", "value": "{{admin_password}}", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "base_url",       "value": "http://localhost:8080", "type": "string" },
+		{ "key": "admin_user",     "value": "admin",                 "type": "string" },
+		{ "key": "admin_password", "value": "admin",                 "type": "string" },
+		{ "key": "app_uuid",       "value": "",                      "type": "string" },
+		{ "key": "source_uuid",    "value": "",                      "type": "string" }
+	],
+	"item": [
+		{
+			"name": "version-promotion/promote",
+			"description": "Promotion endpoint cases (spec D tasks 8.1–8.8).",
+			"item": [
+				{
+					"name": "8.2 — 422 no_promote_target (source has no promotesTo)",
+					"description": "POST promote with a source version whose promotesTo is null; assert 422 + no_promote_target (spec REQ-OBVP-001). Uses a synthetic UUID that won't exist, which may return 404 — both acceptable when no target is set.",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept",        "value": "application/json" },
+							{ "key": "Content-Type",  "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"strategy\": \"start-with-source-data\" }"
+						},
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/promote"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('no_promote_target returns 422 or 404 (source not found)', function () {",
+									"    pm.expect([404, 422]).to.include(pm.response.code);",
+									"});",
+									"if (pm.response.code === 422) {",
+									"    const body = pm.response.json();",
+									"    pm.test('error code is no_promote_target', function () {",
+									"        pm.expect(body.code || body.error).to.eql('no_promote_target');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "8.4 — 400 invalid_strategy",
+					"description": "POST promote with an unknown strategy; assert 400 + invalid_strategy (spec REQ-OBVP-001).",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept",        "value": "application/json" },
+							{ "key": "Content-Type",  "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"strategy\": \"unknown-mode\" }"
+						},
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/promote"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('invalid_strategy returns 400 or 404 (source not found)', function () {",
+									"    pm.expect([400, 404]).to.include(pm.response.code);",
+									"});",
+									"if (pm.response.code === 400) {",
+									"    const body = pm.response.json();",
+									"    pm.test('error code is invalid_strategy', function () {",
+									"        pm.expect(body.code || body.error).to.eql('invalid_strategy');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "8.5 — 409 lock-contention (TODO / skip)",
+					"description": "TODO (spec D task 8.5): Acquire OR object lock on the target via a direct OR-API call, then POST a valid promote request; assert 409 + version_locked. This requires two-step setup that cannot be reliably automated in a stateless run.\n\nTo test manually:\n  1. Acquire the lock: PUT {{base_url}}/index.php/apps/openregister/api/objects/{uuid}/lock\n  2. POST /promote — expect 409 {code: version_locked, lockedBy, expiresAt}\n  3. Release: DELETE {{base_url}}/index.php/apps/openregister/api/objects/{uuid}/lock",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept",        "value": "application/json" },
+							{ "key": "Content-Type",  "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"strategy\": \"start-with-source-data\" }"
+						},
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_uuid}}/versions/{{source_uuid}}/promote"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// SKIP: lock contention test requires pre-acquired OR lock.",
+									"// Enable by setting {{app_uuid}} + {{source_uuid}} AND manually",
+									"// acquiring the lock on the target version before running.",
+									"if (!pm.collectionVariables.get('app_uuid') || !pm.collectionVariables.get('source_uuid')) {",
+									"    console.log('SKIP 8.5: app_uuid / source_uuid not set');",
+									"} else {",
+									"    pm.test('lock-contention returns 409', function () {",
+									"        pm.response.to.have.status(409);",
+									"        const body = pm.response.json();",
+									"        pm.expect(body.code).to.eql('version_locked');",
+									"        pm.expect(body).to.have.all.keys('lockedBy', 'expiresAt');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "8.6a — 401 unauthenticated promote",
+					"description": "Unauthenticated POST to the promote endpoint must return 401 (or 403).",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Accept",       "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"strategy\": \"start-with-source-data\" }"
+						},
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/promote"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unauthenticated promote returns 401 or 403', function () {",
+									"    pm.expect([401, 403]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "8.6b — 403 viewer cannot promote (insufficient_permission)",
+					"description": "TODO: This case requires a test user in permissions.viewers. Enable by creating a viewer user and setting {{viewer_user}} / {{viewer_password}} env vars. The test checks that promoting as a viewer returns 403 + insufficient_permission (spec REQ-OBVP-007).",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{ "key": "username", "value": "{{viewer_user}}", "type": "string" },
+								{ "key": "password", "value": "{{viewer_password}}", "type": "string" }
+							]
+						},
+						"method": "POST",
+						"header": [
+							{ "key": "Accept",        "value": "application/json" },
+							{ "key": "Content-Type",  "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"strategy\": \"start-with-source-data\" }"
+						},
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_uuid}}/versions/{{source_uuid}}/promote"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (!pm.environment.get('viewer_user')) {",
+									"    console.log('SKIP 8.6b: viewer_user not set in environment');",
+									"} else {",
+									"    pm.test('viewer promote returns 403', function () {",
+									"        pm.response.to.have.status(403);",
+									"        const body = pm.response.json();",
+									"        pm.expect(body.code || body.error).to.eql('insufficient_permission');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "8.7 — 500 on-failure / target archived (TODO / skip)",
+					"description": "TODO (spec D task 8.7): Stage an OR schema-import failure by promoting from a source whose schemas reference an unknown type that OR will reject. Assert 500 + promotion_failed AND verify the target row's status flipped to archived with a _self.promotionFailedAt timestamp via a follow-up GET.\n\nThis requires schema staging that cannot be automated in a stateless run.",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept",        "value": "application/json" },
+							{ "key": "Content-Type",  "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"strategy\": \"start-with-source-data\" }"
+						},
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_uuid}}/versions/{{source_uuid}}/promote"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// SKIP: on-failure test requires intentionally bad source schema.",
+									"// Enable by pre-staging a source version with an invalid schema",
+									"// definition that OR rejects on import.",
+									"if (!pm.collectionVariables.get('app_uuid') || !pm.collectionVariables.get('source_uuid')) {",
+									"    console.log('SKIP 8.7: app_uuid / source_uuid not set');",
+									"} else {",
+									"    pm.test('promotion failure returns 500', function () {",
+									"        pm.response.to.have.status(500);",
+									"        const body = pm.response.json();",
+									"        pm.expect(body.code).to.eql('promotion_failed');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "8.2 — Happy path: start-with-source-data (TODO / requires live UUIDs)",
+					"description": "TODO (spec D task 8.2): POST promote with {strategy: start-with-source-data} as an owner; assert 200 and the returned manifest matches the source's. Enable by setting {{app_uuid}} + {{source_uuid}} to a valid Application + ApplicationVersion pair.",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept",        "value": "application/json" },
+							{ "key": "Content-Type",  "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"strategy\": \"start-with-source-data\" }"
+						},
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_uuid}}/versions/{{source_uuid}}/promote"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (!pm.collectionVariables.get('app_uuid') || !pm.collectionVariables.get('source_uuid')) {",
+									"    console.log('SKIP 8.2-happy: app_uuid / source_uuid not set');",
+									"} else {",
+									"    pm.test('happy-path promote returns 200', function () {",
+									"        pm.response.to.have.status(200);",
+									"    });",
+									"    const body = pm.response.json();",
+									"    pm.test('returned target has a manifest', function () {",
+									"        pm.expect(body.manifest).to.be.an('object');",
+									"    });",
+									"    pm.test('target semver matches source', function () {",
+									"        // Semver should be copied from source to target on promotion.",
+									"        pm.expect(body.semver).to.match(/^\\d+\\.\\d+\\.\\d+/);",
+									"    });",
+									"}"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

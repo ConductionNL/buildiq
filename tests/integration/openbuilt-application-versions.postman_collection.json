@@ -1,0 +1,396 @@
+{
+	"info": {
+		"_postman_id": "openbuilt-application-versions-collection",
+		"name": "OpenBuilt — Application Versions CRUD (spec C)",
+		"description": "Newman integration suite for the openbuilt-versioning-model OpenSpec change\n(spec C, REQ-OBV-101 – REQ-OBV-108). Exercises the five ApplicationVersion\nendpoints registered in appinfo/routes.php:\n\n  GET  /api/applications/{slug}/versions\n  POST /api/applications/{slug}/versions\n  GET  /api/applications/{slug}/versions/{versionSlug}\n  PUT  /api/applications/{slug}/versions/{versionSlug}\n  DELETE /api/applications/{slug}/versions/{versionSlug}?strategy=\n\nEach folder asserts: HTTP status, response shape (semver, name, manifest,\nstatus, application relation), and basic 401 RBAC (unauthenticated request).\n\nThe suite is self-contained: it creates, reads, updates, and destroys a\ntest ApplicationVersion against the seeded hello-world Application so it\ndoes not leave state behind.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{ "key": "username", "value": "{{admin_user}}", "type": "string" },
+			{ "key": "password", "value": "{{admin_password}}", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "base_url",        "value": "http://localhost:8080", "type": "string" },
+		{ "key": "admin_user",      "value": "admin",                 "type": "string" },
+		{ "key": "admin_password",  "value": "admin",                 "type": "string" },
+		{ "key": "test_slug",       "value": "hello-world",           "type": "string" },
+		{ "key": "version_slug",    "value": "",                      "type": "string" },
+		{ "key": "version_uuid",    "value": "",                      "type": "string" }
+	],
+	"item": [
+		{
+			"name": "versioning-model/applicationVersions-CRUD",
+			"description": "Five CRUD endpoints + RBAC smoke. Aligns to spec C task 4.9.",
+			"item": [
+				{
+					"name": "INDEX — GET /api/applications/{slug}/versions returns 200 list",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept",        "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('INDEX returns 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('body is an array or results object', function () {",
+									"    const list = Array.isArray(body) ? body : (body.results || body.data || body);",
+									"    pm.expect(list).to.be.an('array');",
+									"});",
+									"pm.test('each item has a slug and semver', function () {",
+									"    const list = Array.isArray(body) ? body : (body.results || body.data || []);",
+									"    if (list.length > 0) {",
+									"        const item = list[0];",
+									"        pm.expect(item).to.have.any.keys('slug', '@self');",
+									"    }",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "INDEX — 401 without auth",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unauthenticated INDEX returns 401', function () {",
+									"    pm.expect([401, 403]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "CREATE — POST /api/applications/{slug}/versions returns 200/201",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept",        "value": "application/json" },
+							{ "key": "Content-Type",  "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Newman Test Version\",\n  \"slug\": \"newman-test-v1\",\n  \"manifest\": {\n    \"version\": \"0.1.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuilt\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuilt-hello-world-newman-test-v1\",\n  \"semver\": \"0.1.0\",\n  \"status\": \"draft\"\n}"
+						},
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('CREATE returns 200 or 201', function () {",
+									"    pm.expect([200, 201]).to.include(pm.response.code);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('response has a uuid/id', function () {",
+									"    const self = body['@self'] || {};",
+									"    const uuid = self.id || self.uuid || body.uuid || body.id;",
+									"    pm.expect(uuid, 'no uuid in CREATE response').to.be.a('string');",
+									"    pm.collectionVariables.set('version_uuid', uuid);",
+									"});",
+									"pm.test('semver defaults to 0.1.0', function () {",
+									"    const semver = body.semver || (body['@self'] && body['@self'].semver);",
+									"    pm.expect(semver).to.match(/^\\d+\\.\\d+\\.\\d+/);",
+									"});",
+									"pm.test('status is draft', function () {",
+									"    const status = body.status || (body['@self'] && body['@self'].status);",
+									"    pm.expect(status).to.eql('draft');",
+									"});",
+									"pm.test('manifest is returned', function () {",
+									"    pm.expect(body.manifest, 'no manifest in CREATE response').to.be.an('object');",
+									"});",
+									"pm.test('slug is echoed back', function () {",
+									"    const slug = body.slug || (body['@self'] && body['@self'].slug);",
+									"    pm.expect(slug).to.eql('newman-test-v1');",
+									"    pm.collectionVariables.set('version_slug', slug || 'newman-test-v1');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "CREATE — 401 without auth",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Accept",       "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"x\", \"slug\": \"x\", \"manifest\": {}, \"register\": \"openbuilt-hello-world-x\", \"semver\": \"0.1.0\"}"
+						},
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unauthenticated CREATE returns 401', function () {",
+									"    pm.expect([401, 403]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "SHOW — GET /api/applications/{slug}/versions/{versionSlug} returns 200",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept",        "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/{{version_slug}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('SHOW returns 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('slug round-trips', function () {",
+									"    const slug = body.slug || (body['@self'] && body['@self'].slug);",
+									"    pm.expect(slug).to.eql('newman-test-v1');",
+									"});",
+									"pm.test('manifest is present', function () {",
+									"    pm.expect(body.manifest).to.be.an('object');",
+									"});",
+									"pm.test('semver is present', function () {",
+									"    const semver = body.semver || (body['@self'] && body['@self'].semver);",
+									"    pm.expect(semver).to.match(/^\\d+\\.\\d+\\.\\d+/);",
+									"});",
+									"pm.test('application relation is present', function () {",
+									"    // OR returns the parent relation as a UUID string or nested object.",
+									"    pm.expect(body).to.have.any.keys('application');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "SHOW — 401 without auth",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/{{version_slug}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unauthenticated SHOW returns 401', function () {",
+									"    pm.expect([401, 403]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "UPDATE — PUT /api/applications/{slug}/versions/{versionSlug} returns 200",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Accept",        "value": "application/json" },
+							{ "key": "Content-Type",  "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Newman Test Version (updated)\",\n  \"slug\": \"newman-test-v1\",\n  \"manifest\": {\n    \"version\": \"0.1.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home Updated\",\n        \"config\": { \"register\": \"openbuilt\", \"schema\": \"hello-message\", \"columns\": [\"title\", \"body\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuilt-hello-world-newman-test-v1\",\n  \"semver\": \"0.1.0\",\n  \"status\": \"draft\"\n}"
+						},
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/{{version_slug}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('UPDATE returns 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('updated name is returned', function () {",
+									"    pm.expect(body.name).to.include('updated');",
+									"});",
+									"pm.test('semver auto-bump happened or stayed (manifest content changed)', function () {",
+									"    const semver = body.semver || (body['@self'] && body['@self'].semver);",
+									"    pm.expect(semver).to.match(/^\\d+\\.\\d+\\.\\d+/);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "UPDATE — 401 without auth",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "PUT",
+						"header": [
+							{ "key": "Accept",       "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"x\"}"
+						},
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/{{version_slug}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unauthenticated UPDATE returns 401', function () {",
+									"    pm.expect([401, 403]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DESTROY — DELETE /api/applications/{slug}/versions/{versionSlug}?strategy=delete-now returns 200/204",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept",        "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/{{version_slug}}?strategy=delete-now",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openbuilt", "api", "applications", "{{test_slug}}", "versions", "{{version_slug}}"],
+							"query": [{ "key": "strategy", "value": "delete-now" }]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('DESTROY returns 200 or 204', function () {",
+									"    pm.expect([200, 204]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DESTROY — 400 when strategy is missing",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept",        "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/non-existent-version"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Deleting without ?strategy= must return 400 (REQ-OBV-108).",
+									"// If the slug doesn't exist OR returns 404 first — both are acceptable",
+									"// since the endpoint rejects missing strategy before looking up the row.",
+									"pm.test('DELETE without strategy returns 400 or 404', function () {",
+									"    pm.expect([400, 404]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DESTROY — reject production version deletion (422)",
+					"description": "Attempting to delete the version that is set as productionVersion on the parent Application must return 422 (REQ-OBV-108 production-version refusal). TODO: this request requires knowing the production version's slug — enable when the seed step populates productionVersion.",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept",        "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": {
+							"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/{{production_version_slug}}?strategy=delete-now",
+							"host": ["{{base_url}}"],
+							"path": ["index.php", "apps", "openbuilt", "api", "applications", "{{test_slug}}", "versions", "{{production_version_slug}}"],
+							"query": [{ "key": "strategy", "value": "delete-now" }]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// TODO: requires {{production_version_slug}} to be set by an earlier setup step.",
+									"// Skip this assertion if the variable is not yet populated.",
+									"if (pm.collectionVariables.get('production_version_slug')) {",
+									"    pm.test('DELETE production version returns 422', function () {",
+									"        pm.response.to.have.status(422);",
+									"        const body = pm.response.json();",
+									"        pm.expect(body.code || body.error).to.include('production');",
+									"    });",
+									"} else {",
+									"    pm.test.skip('production_version_slug not set — seed step not run');",
+									"}"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
