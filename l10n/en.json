@@ -229,7 +229,23 @@
         "Unknown application version.": "Unknown application version.",
         "Draft versions cannot be exported.": "Draft versions cannot be exported.",
         "Repository already exists in the target organisation.": "Repository already exists in the target organisation.",
-        "GitHub authentication failed. Please check the token scope and try again.": "GitHub authentication failed. Please check the token scope and try again."
+        "GitHub authentication failed. Please check the token scope and try again.": "GitHub authentication failed. Please check the token scope and try again.",
+        "Promote version": "Promote version",
+        "This version has no downstream target. Set a \"Promotes to\" relation to enable promotion.": "This version has no downstream target. Set a \"Promotes to\" relation to enable promotion.",
+        "Cancel": "Cancel",
+        "Source register:": "Source register:",
+        "Target register:": "Target register:",
+        "Data strategy": "Data strategy",
+        "Start target with source data": "Start target with source data",
+        "Replace the target version's rows with copies of the source's rows. Useful when the test data is the new shape of production data.": "Replace the target version's rows with copies of the source's rows. Useful when the test data is the new shape of production data.",
+        "Migrate target's existing data": "Migrate target's existing data",
+        "Keep the target version's existing rows and apply the source's schema set. OpenRegister handles column-level migration for breaking changes.": "Keep the target version's existing rows and apply the source's schema set. OpenRegister handles column-level migration for breaking changes.",
+        "Empty start (destructive)": "Empty start (destructive)",
+        "Drop every row in the target's register and install the source's schema set without copying data. This cannot be undone.": "Drop every row in the target's register and install the source's schema set without copying data. This cannot be undone.",
+        "Type the application slug to confirm": "Type the application slug to confirm",
+        "Empty start will permanently delete every row in the target's register. Type \"{slug}\" to confirm.": "Empty start will permanently delete every row in the target's register. Type \"{slug}\" to confirm.",
+        "Promote {source} to {target}": "Promote {source} to {target}",
+        "Promote": "Promote"
     },
     "plurals": ""
 }

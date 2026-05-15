@@ -299,6 +299,30 @@ namespace OCA\OpenRegister\Service {
             {
                 return true;
             }
+
+            /**
+             * @return array<string, mixed>
+             */
+            public function lockObject(string $identifier, ?string $process = null, ?int $duration = null): array
+            {
+                return [];
+            }
+
+            /**
+             * @return bool
+             */
+            public function unlockObject(string|int $identifier): bool
+            {
+                return true;
+            }
+
+            /**
+             * @return array<string, mixed>|null
+             */
+            public function getLockInfo(string $identifier): ?array
+            {
+                return null;
+            }
         }
     }
 

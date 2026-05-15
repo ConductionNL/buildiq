@@ -57,6 +57,16 @@ return [
         ['name' => 'applicationVersions#update',  'url' => '/api/applications/{slug}/versions/{versionSlug}',  'verb' => 'PUT',    'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applicationVersions#destroy', 'url' => '/api/applications/{slug}/versions/{versionSlug}',  'verb' => 'DELETE', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // Manual promotion endpoint (openbuilt-version-promotion REQ-OBVP-001).
+        // Spec mandates UUID path params (`{appUuid}/versions/{versionUuid}/promote`)
+        // to distinguish this surface from the slug-based CRUD above. The trailing
+        // `/promote` literal is sufficient to disambiguate from the `{versionSlug}`
+        // routes — Symfony tries the more-specific URL first and the requirements
+        // enforce the UUID shape so a kebab-case version slug cannot accidentally
+        // match. #[NoAdminRequired] is set on the controller method; RBAC happens
+        // inside (owners + editors only — admins NOT auto-granted, REQ-OBVP-007).
+        ['name' => 'versionPromotion#promote', 'url' => '/api/applications/{appUuid}/versions/{versionUuid}/promote', 'verb' => 'POST', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}', 'versionUuid' => '[a-f0-9-]{8,}']],
+
         // Icon-serving endpoints (openbuilt-nextcloud-nav REQ-OBICON-002 / REQ-OBICON-003).
         // Both are #[NoAdminRequired] on the controller. The dark route uses a longer
         // URL pattern ("{slug}-dark.svg") that is unambiguous — it cannot shadow the
