@@ -200,33 +200,15 @@ class IconService
     {
         if ($application !== null) {
             // Step 1: iconDark.ref.
-            $iconDark = ($application['iconDark'] ?? null);
-            if (is_array($iconDark) === true) {
-                $ref = ($iconDark['ref'] ?? null);
-                if (is_string($ref) === true && $ref !== '') {
-                    $stream = $this->fetchAttachedFileStream(
-                        application: $application,
-                        filename: $ref
-                    );
-                    if ($stream !== null) {
-                        return ['stream' => $stream, 'mimeType' => 'image/svg+xml'];
-                    }
-                }
+            $stream = $this->streamForIconField(application: $application, field: 'iconDark');
+            if ($stream !== null) {
+                return ['stream' => $stream, 'mimeType' => 'image/svg+xml'];
             }
 
             // Step 2: icon.ref (light icon as dark fallback).
-            $icon = ($application['icon'] ?? null);
-            if (is_array($icon) === true) {
-                $ref = ($icon['ref'] ?? null);
-                if (is_string($ref) === true && $ref !== '') {
-                    $stream = $this->fetchAttachedFileStream(
-                        application: $application,
-                        filename: $ref
-                    );
-                    if ($stream !== null) {
-                        return ['stream' => $stream, 'mimeType' => 'image/svg+xml'];
-                    }
-                }
+            $stream = $this->streamForIconField(application: $application, field: 'icon');
+            if ($stream !== null) {
+                return ['stream' => $stream, 'mimeType' => 'image/svg+xml'];
             }
         }//end if
 
@@ -239,6 +221,31 @@ class IconService
         // Step 4: /img/app.svg.
         return $this->fallbackStream(path: $this->serverRoot.self::FALLBACK_LIGHT_PATH);
     }//end resolveIconDark()
+
+    /**
+     * Resolve the attached file stream for a named icon field on an Application.
+     *
+     * Returns null when the field is absent, has no ref, or the file cannot be fetched.
+     *
+     * @param array<string,mixed> $application Application data array.
+     * @param string              $field       The icon field name (e.g. `iconDark`, `icon`).
+     *
+     * @return resource|null A readable PHP stream, or null on failure.
+     */
+    private function streamForIconField(array $application, string $field): mixed
+    {
+        $iconField = ($application[$field] ?? null);
+        if (is_array($iconField) === false) {
+            return null;
+        }
+
+        $ref = ($iconField['ref'] ?? null);
+        if (is_string($ref) === false || $ref === '') {
+            return null;
+        }
+
+        return $this->fetchAttachedFileStream(application: $application, filename: $ref);
+    }//end streamForIconField()
 
     /**
      * Fetch a file attached to an Application record from OR as a PHP stream.

@@ -13,9 +13,12 @@
   -->
 <template>
 	<div class="ob-app-card" :class="{ 'ob-app-card--selected': selected }">
-		<router-link
+		<div
 			class="ob-app-card__inner"
-			:to="{ name: 'VirtualAppDetail', params: { objectId: appUuid } }">
+			tabindex="0"
+			role="link"
+			@click="onCardActivate"
+			@keyup.enter="onCardActivate">
 			<div class="ob-app-card__head">
 				<img
 					class="ob-app-card__icon"
@@ -23,11 +26,12 @@
 					:alt="app.name || app.slug"
 					width="20"
 					height="20"
-					@error="onIconError" />
+					@error="onIconError">
 				<h3 class="ob-app-card__title">
 					{{ app.name || app.slug || t('openbuilt', 'Untitled app') }}
 				</h3>
 				<span class="ob-app-card__badge" :class="`ob-app-card__badge--${statusKey}`">{{ statusLabel }}</span>
+				<span v-if="app.currentVersion" class="ob-app-card__badge ob-app-card__badge--live">{{ t('openbuilt', 'Live') }}</span>
 			</div>
 			<p v-if="app.description" class="ob-app-card__desc">
 				{{ app.description }}
@@ -37,7 +41,7 @@
 				<span v-if="role !== 'none'" class="ob-app-card__chip">{{ roleLabel }}</span>
 				<span class="ob-app-card__chip ob-app-card__chip--muted">/{{ app.slug }}</span>
 			</div>
-		</router-link>
+		</div>
 	</div>
 </template>
 
@@ -88,6 +92,12 @@ export default {
 	methods: {
 		onIconError(e) {
 			e.target.src = '/apps/openbuilt/img/app.svg'
+		},
+		onCardActivate(event) {
+			this.$emit('click', event)
+			if (this.$router) {
+				this.$router.push({ name: 'VirtualAppDetail', params: { objectId: this.appUuid } })
+			}
 		},
 	},
 }

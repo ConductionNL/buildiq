@@ -6,15 +6,12 @@
 		:can-close="true"
 		size="normal"
 		@closing="onCancel">
+		<!-- No-target state -->
 		<div v-if="!targetVersion" class="promote-dialog promote-dialog--no-target">
 			<p>{{ t('openbuilt', 'This version has no downstream target. Set a "Promotes to" relation to enable promotion.') }}</p>
-			<template #actions>
-				<NcButton type="tertiary" @click="onCancel">
-					{{ t('openbuilt', 'Cancel') }}
-				</NcButton>
-			</template>
 		</div>
 
+		<!-- Form state -->
 		<form v-else class="promote-dialog" @submit.prevent="onConfirm">
 			<header class="promote-dialog__header">
 				<h3>{{ summaryText }}</h3>
@@ -36,7 +33,7 @@
 					type="radio">
 					<strong>{{ t('openbuilt', 'Start target with source data') }}</strong>
 					<span class="promote-dialog__strategy-description">
-						{{ t('openbuilt', 'Replace the target version''s rows with copies of the source''s rows. Useful when the test data is the new shape of production data.') }}
+						{{ t('openbuilt', "Replace the target version's rows with copies of the source's rows. Useful when the test data is the new shape of production data.") }}
 					</span>
 				</NcCheckboxRadioSwitch>
 
@@ -45,9 +42,9 @@
 					value="migrate-existing-data"
 					name="promote-strategy"
 					type="radio">
-					<strong>{{ t('openbuilt', 'Migrate target''s existing data') }}</strong>
+					<strong>{{ t('openbuilt', "Migrate target's existing data") }}</strong>
 					<span class="promote-dialog__strategy-description">
-						{{ t('openbuilt', 'Keep the target version''s existing rows and apply the source''s schema set. OpenRegister handles column-level migration for breaking changes.') }}
+						{{ t('openbuilt', "Keep the target version's existing rows and apply the source's schema set. OpenRegister handles column-level migration for breaking changes.") }}
 					</span>
 				</NcCheckboxRadioSwitch>
 
@@ -58,7 +55,7 @@
 					type="radio">
 					<strong>{{ t('openbuilt', 'Empty start (destructive)') }}</strong>
 					<span class="promote-dialog__strategy-description promote-dialog__strategy-description--destructive">
-						{{ t('openbuilt', 'Drop every row in the target''s register and install the source''s schema set without copying data. This cannot be undone.') }}
+						{{ t('openbuilt', "Drop every row in the target's register and install the source's schema set without copying data. This cannot be undone.") }}
 					</span>
 				</NcCheckboxRadioSwitch>
 			</fieldset>
@@ -71,19 +68,21 @@
 					autocomplete="off"
 					:helper-text="confirmHelperText" />
 			</div>
-
-			<template #actions>
-				<NcButton type="tertiary" @click="onCancel">
-					{{ t('openbuilt', 'Cancel') }}
-				</NcButton>
-				<NcButton
-					type="primary"
-					:disabled="!isDestructiveGateMet"
-					@click="onConfirm">
-					{{ t('openbuilt', 'Promote') }}
-				</NcButton>
-			</template>
 		</form>
+
+		<!-- Actions slot — always at NcDialog level -->
+		<template #actions>
+			<NcButton type="tertiary" @click="onCancel">
+				{{ t('openbuilt', 'Cancel') }}
+			</NcButton>
+			<NcButton
+				v-if="targetVersion"
+				type="primary"
+				:disabled="!isDestructiveGateMet"
+				@click="onConfirm">
+				{{ t('openbuilt', 'Promote') }}
+			</NcButton>
+		</template>
 	</NcDialog>
 </template>
 
@@ -193,7 +192,7 @@ export default {
 		 * @return {string}
 		 */
 		confirmHelperText() {
-			return t('openbuilt', 'Empty start will permanently delete every row in the target''s register. Type "{slug}" to confirm.', { slug: this.application?.slug || '' })
+			return t('openbuilt', "Empty start will permanently delete every row in the target's register. Type \"{slug}\" to confirm.", { slug: this.application?.slug || '' })
 		},
 	},
 	watch: {

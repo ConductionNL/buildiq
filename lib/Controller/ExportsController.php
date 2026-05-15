@@ -106,22 +106,24 @@ class ExportsController extends Controller
             }
         }
 
-        // Fallback guard: the source Application MUST exist in OR. Any
-        // authed user can read OR records via the public REST surface so
-        // this is no weaker than the rest of the OR-backed UX — but it
-        // does block the "POST /exports with a guessed slug" IDOR vector.
-        //
-        // openbuilt#36: a slug-only `find($slug)` call without explicit
-        // register/schema context returned null because OR's
-        // currentRegister/currentSchema are null on this fresh service
-        // instance. Pass `register: 'openbuilt'` + `schema: 'application'`
-        // explicitly so OR resolves the slug against the right table.
-        // `ObjectService::find` accepts either numeric ids OR kebab slugs
-        // as the `$id` argument (MagicMapper:: find tolerates both), so
-        // the slug-only call path is correct here once we set context.
+        // Fallback: the source Application MUST exist in OR.
+        return $this->fallbackAuthoriseViaOrLookup(applicationSlug: $applicationSlug);
+    }//end isAuthorisedForApplication()
+
+    /**
+     * Fallback IDOR guard: verify the Application slug resolves in OR.
+     *
+     * Openbuilt#36: pass `register: 'openbuilt'` + `schema: 'application'`
+     * explicitly so OR resolves the slug against the right table.
+     *
+     * @param string $applicationSlug Slug of the source Application.
+     *
+     * @return bool True when the Application exists (slug resolves).
+     */
+    private function fallbackAuthoriseViaOrLookup(string $applicationSlug): bool
+    {
         try {
             if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
-                // OR not installed — no source records can exist; deny.
                 return false;
             }
 
@@ -130,10 +132,6 @@ class ExportsController extends Controller
                 return false;
             }
 
-            // Use the call_user_func_array shape so PHPStan accepts the
-            // named-argument equivalent without seeing the untyped $service
-            // signature. The OR contract is documented at
-            // openregister/lib/Service/ObjectService.php::find($id, ..., $register, $schema, ...).
             try {
                 $found = $service->find(
                     $applicationSlug,
@@ -144,14 +142,8 @@ class ExportsController extends Controller
                 );
                 return $found !== null;
             } catch (\Throwable $findError) {
-                // OR's find() throws `Multiple objects found with same
-                // identifier` when more than one row in
-                // openbuilt/application shares the slug. That's a data-
-                // hygiene problem upstream, but for the IDOR guard the
-                // mere existence of >=1 row means the slug resolves — so
-                // we treat it as "authorised" (the same way the
-                // happy-path single-row return does). Any other throwable
-                // is logged + denied.
+                // OR throws `Multiple objects found` when >=1 row shares the slug.
+                // The slug resolving means the Application exists — authorise.
                 if (str_contains($findError->getMessage(), 'Multiple objects found') === true) {
                     return true;
                 }
@@ -163,7 +155,7 @@ class ExportsController extends Controller
             $this->logger->debug('OpenBuilt export: authz fallback lookup failed: '.$e->getMessage());
             return false;
         }//end try
-    }//end isAuthorisedForApplication()
+    }//end fallbackAuthoriseViaOrLookup()
 
     /**
      * Authorize the caller for an ExportJob UUID.

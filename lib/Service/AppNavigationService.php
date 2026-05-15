@@ -212,9 +212,38 @@ class AppNavigationService
             return false;
         }
 
-        $uid = $user->getUID();
+        $uid           = $user->getUID();
+        $allPrincipals = $this->flattenPermissions(permissions: $permissions);
 
-        // Flatten all three role arrays into one principal list.
+        // 1. Wildcard sentinel — visible to everyone signed in.
+        if (in_array(self::WILDCARD, $allPrincipals, strict: true) === true) {
+            return true;
+        }
+
+        // 2. Direct UID match.
+        if (in_array('user:'.$uid, $allPrincipals, strict: true) === true) {
+            return true;
+        }
+
+        // 3. Group-based match.
+        $userGroups = $groupManager->getUserGroupIds(user: $user);
+        if ($this->principalsMatchGroups(principals: $allPrincipals, userGroups: $userGroups) === true) {
+            return true;
+        }
+
+        // 4. Nextcloud admin always sees all entries.
+        return $groupManager->isAdmin($uid);
+    }//end isVisibleForCurrentUser()
+
+    /**
+     * Flatten the three permission role arrays into a single principal list.
+     *
+     * @param array<string,mixed> $permissions The Application's permissions block.
+     *
+     * @return array<mixed> All principals from owners + editors + viewers.
+     */
+    private function flattenPermissions(array $permissions): array
+    {
         $owners  = ($permissions['owners'] ?? []);
         $editors = ($permissions['editors'] ?? []);
         $viewers = ($permissions['viewers'] ?? []);
@@ -231,35 +260,32 @@ class AppNavigationService
             $viewers = [];
         }
 
-        $allPrincipals = array_merge($owners, $editors, $viewers);
+        return array_merge($owners, $editors, $viewers);
+    }//end flattenPermissions()
 
-        // 1. Wildcard sentinel — visible to everyone signed in.
-        if (in_array(self::WILDCARD, $allPrincipals, strict: true) === true) {
-            return true;
-        }
-
-        // 2. Direct UID match.
-        if (in_array('user:'.$uid, $allPrincipals, strict: true) === true) {
-            return true;
-        }
-
-        // 3. Group-based match.
-        $userGroups = $groupManager->getUserGroupIds(user: $user);
-
-        foreach ($allPrincipals as $principal) {
+    /**
+     * Check whether any principal in the list matches one of the user's groups.
+     *
+     * @param array<mixed>  $principals All principals from the permissions block.
+     * @param array<string> $userGroups The calling user's group IDs.
+     *
+     * @return bool True when a group match is found.
+     */
+    private function principalsMatchGroups(array $principals, array $userGroups): bool
+    {
+        foreach ($principals as $principal) {
             if (is_string($principal) === false) {
                 continue;
             }
 
             // Strip "group:" prefix for the normalised comparison.
+            $gid = $principal;
             if (str_starts_with($principal, 'group:') === true) {
                 $gid = substr($principal, strlen('group:'));
-            } else {
-                $gid = $principal;
-            }//end if
+            }
 
             if ($gid === '*') {
-                // Already handled by the wildcard sentinel above.
+                // Already handled by the wildcard sentinel in the caller.
                 continue;
             }
 
@@ -268,9 +294,8 @@ class AppNavigationService
             }
         }//end foreach
 
-        // 4. Nextcloud admin always sees all entries.
-        return $groupManager->isAdmin($uid);
-    }//end isVisibleForCurrentUser()
+        return false;
+    }//end principalsMatchGroups()
 
     /**
      * Fetch (and cache per-request) all published Applications from OR.
