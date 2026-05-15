@@ -57,6 +57,14 @@ return [
         ['name' => 'applicationVersions#update',  'url' => '/api/applications/{slug}/versions/{versionSlug}',  'verb' => 'PUT',    'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applicationVersions#destroy', 'url' => '/api/applications/{slug}/versions/{versionSlug}',  'verb' => 'DELETE', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // Icon-serving endpoints (openbuilt-nextcloud-nav REQ-OBICON-002 / REQ-OBICON-003).
+        // Both are #[NoAdminRequired] on the controller. The dark route uses a longer
+        // URL pattern ("{slug}-dark.svg") that is unambiguous — it cannot shadow the
+        // light route because slugs are kebab-case [a-z0-9-] and never end in "-dark".
+        // Placed before the SPA catch-all; after exports so slug patterns don't collide.
+        ['name' => 'icon#iconLight', 'url' => '/icons/{slug}.svg',      'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'icon#iconDark',  'url' => '/icons/{slug}-dark.svg', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
         // Export pipeline (Phase-2 graduation).
         ['name' => 'exports#submit',   'url' => '/api/applications/{slug}/exports', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'exports#download', 'url' => '/api/exports/{uuid}/download',     'verb' => 'GET'],
