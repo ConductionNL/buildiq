@@ -354,6 +354,10 @@ class ExportsController extends Controller
     #[NoCSRFRequired]
     public function download(string $uuid): Response
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(['error' => 'Unauthenticated.'], Http::STATUS_UNAUTHORIZED);
+        }
+
         if ($this->isAuthorisedForJob(jobUuid: $uuid) === false) {
             // Mask non-authorised as 404 to avoid revealing job UUIDs to
             // unauthorised callers (defence in depth on the IDOR vector).
