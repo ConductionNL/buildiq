@@ -291,6 +291,14 @@ namespace OCA\OpenRegister\Service {
             {
                 return new \OCA\OpenRegister\Db\ObjectEntity();
             }
+
+            /**
+             * @return bool
+             */
+            public function deleteObject(string $uuid, bool $_rbac = true, bool $_multitenancy = true): bool
+            {
+                return true;
+            }
         }
     }
 
@@ -308,6 +316,33 @@ namespace OCA\OpenRegister\Service {
             public function importFromApp(string $appId, array $data, string $version, bool $force = false): array
             {
                 return [];
+            }
+        }
+    }
+
+    if (class_exists(RegisterService::class, autoload: false) === false) {
+        /**
+         * Stub RegisterService — `find`/`delete` call surface used by
+         * ApplicationVersionService and MigrateToVersionedModel.
+         */
+        class RegisterService
+        {
+            /**
+             * @return \OCA\OpenRegister\Db\Register
+             */
+            public function delete(\OCA\OpenRegister\Db\Register $register): \OCA\OpenRegister\Db\Register
+            {
+                return $register;
+            }
+
+            /**
+             * @param array<int, string>|null $_extend
+             *
+             * @return \OCA\OpenRegister\Db\Register
+             */
+            public function find(int|string $id, ?array $_extend = [], bool $_multitenancy = true): \OCA\OpenRegister\Db\Register
+            {
+                return new \OCA\OpenRegister\Db\Register();
             }
         }
     }
@@ -393,6 +428,108 @@ namespace OCA\OpenRegister\Event {
             public function getAction(): string
             {
                 return $this->action;
+            }
+        }
+    }
+
+    if (class_exists(ObjectCreatingEvent::class, autoload: false) === false) {
+        /**
+         * Stub ObjectCreatingEvent — supports `stopPropagation`/`setErrors`/`getObject`.
+         */
+        class ObjectCreatingEvent extends \OCP\EventDispatcher\Event implements \Psr\EventDispatcher\StoppableEventInterface
+        {
+            private bool $propagationStopped = false;
+
+            /**
+             * @var array<string, mixed>
+             */
+            private array $errors = [];
+
+            public function __construct(private readonly \OCA\OpenRegister\Db\ObjectEntity $object)
+            {
+                parent::__construct();
+            }
+
+            public function getObject(): \OCA\OpenRegister\Db\ObjectEntity
+            {
+                return $this->object;
+            }
+
+            public function isPropagationStopped(): bool
+            {
+                return $this->propagationStopped;
+            }
+
+            public function stopPropagation(): void
+            {
+                $this->propagationStopped = true;
+            }
+
+            /**
+             * @param array<string, mixed> $errors
+             */
+            public function setErrors(array $errors): void
+            {
+                $this->errors = $errors;
+            }
+
+            /**
+             * @return array<string, mixed>
+             */
+            public function getErrors(): array
+            {
+                return $this->errors;
+            }
+        }
+    }
+
+    if (class_exists(ObjectUpdatingEvent::class, autoload: false) === false) {
+        /**
+         * Stub ObjectUpdatingEvent — same shape as ObjectCreatingEvent.
+         */
+        class ObjectUpdatingEvent extends \OCP\EventDispatcher\Event implements \Psr\EventDispatcher\StoppableEventInterface
+        {
+            private bool $propagationStopped = false;
+
+            /**
+             * @var array<string, mixed>
+             */
+            private array $errors = [];
+
+            public function __construct(private readonly \OCA\OpenRegister\Db\ObjectEntity $object)
+            {
+                parent::__construct();
+            }
+
+            public function getObject(): \OCA\OpenRegister\Db\ObjectEntity
+            {
+                return $this->object;
+            }
+
+            public function isPropagationStopped(): bool
+            {
+                return $this->propagationStopped;
+            }
+
+            public function stopPropagation(): void
+            {
+                $this->propagationStopped = true;
+            }
+
+            /**
+             * @param array<string, mixed> $errors
+             */
+            public function setErrors(array $errors): void
+            {
+                $this->errors = $errors;
+            }
+
+            /**
+             * @return array<string, mixed>
+             */
+            public function getErrors(): array
+            {
+                return $this->errors;
             }
         }
     }
