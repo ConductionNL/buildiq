@@ -14,7 +14,7 @@ const t = (app, str) => str
 describe('ApplicationCard', () => {
 	const factory = (object, extra = {}) => shallowMount(ApplicationCard, {
 		propsData: { object, ...extra },
-		mocks: { t },
+		mocks: { t, $router: { push: vi.fn() } },
 	})
 
 	it('renders the app name, status pill and version', () => {

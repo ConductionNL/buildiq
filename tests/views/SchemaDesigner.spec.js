@@ -102,9 +102,10 @@ const editorStubs = {
 	},
 }
 
-function makeRouter({ slug = 'hello-world', schemaId = '' } = {}) {
+function makeRouter({ slug = 'hello-world', schemaId = '', version = undefined } = {}) {
 	return {
 		params: { slug, schemaId },
+		query: version ? { _version: version } : {},
 	}
 }
 
@@ -356,6 +357,7 @@ describe('SchemaDesigner', () => {
 		expect(push).toHaveBeenCalledWith({
 			name: 'SchemaDesigner',
 			params: { slug: 'hello-world', schemaId: 'hello' },
+			query: {},
 		})
 	})
 
