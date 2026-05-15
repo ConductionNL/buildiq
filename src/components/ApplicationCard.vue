@@ -8,8 +8,8 @@
   - The card body is a `<router-link>` to VirtualAppDetail so a click navigates
   - directly to /applications/{objectId} — CnIndexPage's own `row-click`
   - event is emit-only (no auto-routing), so we own the navigation here.
-  - Shows the virtual app's name, lifecycle-status pill, version, a "live"
-  - marker when a published snapshot exists, and the caller's role.
+  - Shows the virtual app's name, lifecycle-status pill, version, and the
+  - caller's role.
   -->
 <template>
 	<div class="ob-app-card" :class="{ 'ob-app-card--selected': selected }">
@@ -31,7 +31,6 @@
 					{{ app.name || app.slug || t('openbuilt', 'Untitled app') }}
 				</h3>
 				<span class="ob-app-card__badge" :class="`ob-app-card__badge--${statusKey}`">{{ statusLabel }}</span>
-				<span v-if="app.currentVersion" class="ob-app-card__badge ob-app-card__badge--live">{{ t('openbuilt', 'Live') }}</span>
 			</div>
 			<p v-if="app.description" class="ob-app-card__desc">
 				{{ app.description }}
