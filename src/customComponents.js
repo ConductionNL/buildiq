@@ -26,6 +26,7 @@ import ApplicationCard from './components/ApplicationCard.vue'
 import ApplicationManifestTab from './components/tabs/ApplicationManifestTab.vue'
 import ApplicationVersionsTab from './components/tabs/ApplicationVersionsTab.vue'
 import ApplicationDiffTab from './components/tabs/ApplicationDiffTab.vue'
+import ApplicationIconTab from './components/tabs/ApplicationIconTab.vue'
 import ApplicationDetailActions from './components/ApplicationDetailActions.vue'
 // Tooling pages that stay `type: "custom"`.
 import SchemaDesignerView from './views/SchemaDesigner.vue'
@@ -44,10 +45,11 @@ export default {
 	ApplicationCard,
 	// VirtualAppDetail (`type: detail`) sidebar tabs: raw-JSON manifest
 	// editor (the visual designer lives at /builder/:slug/pages), version
-	// history (+ rollback), and the manifest diff.
+	// history (+ rollback), the manifest diff, and icon upload/preview.
 	ApplicationManifestTab,
 	ApplicationVersionsTab,
 	ApplicationDiffTab,
+	ApplicationIconTab,
 	// VirtualAppDetail actions bar — Publish (OR lifecycle transition),
 	// Manage permissions (PermissionsModal, ADR-004 modal isolation),
 	// Design pages, Open virtual app.
