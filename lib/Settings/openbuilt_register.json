@@ -50,6 +50,30 @@
               "type": "many-to-one"
             }
           },
+          "icon": {
+            "type": "object",
+            "description": "Optional top-level light icon reference. Points to an SVG file attached to the Application record via OR files-attached-to-object (ADR-001). Sibling to manifest — not inside it. Drives the /icons/{slug}.svg endpoint (REQ-OBICON-002).",
+            "required": ["ref"],
+            "properties": {
+              "ref": {
+                "type": "string",
+                "description": "Filename of the SVG file attached to this Application record."
+              }
+            },
+            "additionalProperties": false
+          },
+          "iconDark": {
+            "type": "object",
+            "description": "Optional top-level dark icon reference. Points to an SVG file attached to the Application record via OR files-attached-to-object (ADR-001). Sibling to manifest — not inside it. Drives the /icons/{slug}-dark.svg endpoint (REQ-OBICON-003).",
+            "required": ["ref"],
+            "properties": {
+              "ref": {
+                "type": "string",
+                "description": "Filename of the dark-mode SVG file attached to this Application record."
+              }
+            },
+            "additionalProperties": false
+          },
           "permissions": {
             "type": "object",
             "description": "Per-Application RBAC block per REQ-OBRBAC-001 (openbuilt-rbac). Each entry is a principal — either a Nextcloud user UID (prefix `user:<uid>`) or a Nextcloud group GID (prefix `group:<gid>` OR bare value, kept for back-compat). The caller is granted access when their UID matches a `user:` entry in any role OR when their group memberships intersect a `group:`/bare entry in any role. Bare strings continue to mean GID for backwards compatibility with pre-#37 manifests. owners gate destructive actions (publish, archive, delete, transfer, permissions edit); editors gate save; viewers gate read.",
