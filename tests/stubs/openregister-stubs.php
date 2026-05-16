@@ -206,7 +206,10 @@ namespace OCA\OpenRegister\Db {
 
     if (class_exists(AuditTrailMapper::class, autoload: false) === false) {
         /**
-         * Stub AuditTrailMapper — `createAuditTrailEntry` call surface.
+         * Stub AuditTrailMapper — call surface covering the methods used by
+         * OpenBuilt services. `getDistinctActorCount` is the new aggregation
+         * delivered by `openregister-distinct-actor-aggregation`; declaring
+         * it here lets the unit tests mock it before the OR floor lands.
          */
         class AuditTrailMapper
         {
@@ -218,6 +221,35 @@ namespace OCA\OpenRegister\Db {
             public function createAuditTrailEntry(ObjectEntity $object, string $action, array $context = []): AuditTrail
             {
                 return new AuditTrail();
+            }
+
+            /**
+             * @param array<int> $schemaIds Schema IDs to aggregate over.
+             * @param int        $hours     Window in hours.
+             *
+             * @return int Distinct actor count.
+             */
+            public function getDistinctActorCount(array $schemaIds, int $hours): int
+            {
+                return 0;
+            }
+
+            /**
+             * @param array<int> $schemaIds Schema IDs to aggregate over.
+             *
+             * @return array<int, array<string, int>>
+             */
+            public function getStatisticsGroupedBySchema(array $schemaIds): array
+            {
+                return [];
+            }
+
+            /**
+             * @return array{labels: array<int, string>, series: array<int, array{name: string, data: array<int, int>}>}
+             */
+            public function getActionChartData(?\DateTime $from = null, ?\DateTime $till = null, ?int $registerId = null, ?int $schemaId = null): array
+            {
+                return ['labels' => [], 'series' => []];
             }
         }
     }
@@ -322,6 +354,44 @@ namespace OCA\OpenRegister\Service {
             public function getLockInfo(string $identifier): ?array
             {
                 return null;
+            }
+
+            /**
+             * Stub setter for the current register context. Real OR signature
+             * is `setRegister(Register|string|int): static`.
+             *
+             * @param mixed $register Register reference.
+             *
+             * @return static
+             */
+            public function setRegister(mixed $register): static
+            {
+                return $this;
+            }
+
+            /**
+             * Stub setter for the current schema context. Real OR signature
+             * is `setSchema(Schema|string|int): static`.
+             *
+             * @param mixed $schema Schema reference.
+             *
+             * @return static
+             */
+            public function setSchema(mixed $schema): static
+            {
+                return $this;
+            }
+
+            /**
+             * Stub object count — returns 0 by default.
+             *
+             * @param array<string, mixed> $config Optional config.
+             *
+             * @return int
+             */
+            public function count(array $config = []): int
+            {
+                return 0;
             }
         }
     }

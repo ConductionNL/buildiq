@@ -57,6 +57,16 @@ export function createObjectStore() {
 export const CnAppRoot = stub('CnAppRoot')
 export const CnAppNav = stub('CnAppNav')
 export const CnPageRenderer = { name: 'CnPageRenderer', render: (h) => h('div') }
+export const CnCard = {
+	name: 'CnCard',
+	props: ['title', 'description', 'titleTooltip', 'icon', 'iconSize', 'labels', 'stats'],
+	render(h) {
+		return h('div', { class: 'cn-card-stub' }, [
+			h('h3', this.title),
+			h('p', this.description),
+		])
+	},
+}
 export const defaultPageTypes = {}
 export function registerIcons() {}
 export function registerTranslations() {}

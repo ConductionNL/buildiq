@@ -63,6 +63,15 @@ return [
         ['name' => 'applicationVersions#update',  'url' => '/api/applications/{slug}/versions/{versionSlug}',  'verb' => 'PUT',    'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applicationVersions#destroy', 'url' => '/api/applications/{slug}/versions/{versionSlug}',  'verb' => 'DELETE', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // Insights endpoint (openbuilt-app-detail-overview REQ-OBAI-001 / REQ-OBAI-007).
+        // GET /api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d
+        // Returns `{kpis, activity}` for a single ApplicationVersion. #[NoAdminRequired] on
+        // the controller method; RBAC happens inside ApplicationInsightsService (viewer-or-
+        // better for production, editor-or-better for non-production, NC admins NOT
+        // auto-granted — mirrors openbuilt-version-routing). UUID path params + the
+        // trailing `/insights` literal disambiguate from the slug-based CRUD routes.
+        ['name' => 'applicationInsights#getInsights', 'url' => '/api/applications/{appUuid}/versions/{versionUuid}/insights', 'verb' => 'GET', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}', 'versionUuid' => '[a-f0-9-]{8,}']],
+
         // Manual promotion endpoint (openbuilt-version-promotion REQ-OBVP-001).
         // Spec mandates UUID path params (`{appUuid}/versions/{versionUuid}/promote`)
         // to distinguish this surface from the slug-based CRUD above. The trailing
