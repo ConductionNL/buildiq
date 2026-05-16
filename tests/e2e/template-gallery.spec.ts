@@ -36,7 +36,10 @@ async function loginAsAdmin(page: Page): Promise<void> {
 	await page.locator('input[name="user"]').fill(ADMIN_USER)
 	await page.locator('input[name="password"]').fill(ADMIN_PASS)
 	await page.locator('button[type="submit"]').click()
-	await page.waitForURL(/index\.php\/apps\//, { timeout: 15_000 })
+	// Accept both pretty URLs (`/apps/dashboard/`) and the legacy form
+	// (`/index.php/apps/dashboard/`) — pretty-URL rewrites are enabled in
+	// modern NC installs and the redirect drops the `/index.php` prefix.
+	await page.waitForURL(/\/apps\//, { timeout: 15_000 })
 }
 
 test.describe('OpenBuilt template gallery', () => {

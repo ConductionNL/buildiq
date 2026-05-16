@@ -1189,24 +1189,102 @@ class ApplicationsController extends Controller
      */
     private function provisionPerAppRegister(string $newSlug, string $ownerUid): \OCA\OpenRegister\Db\Register
     {
-        $registerSlug = 'openbuilt-'.$newSlug;
+        // Cross-user collision guard (#77): OR's register slugs are
+        // organisation-wide unique, so two callers wanting the same
+        // template+slug would otherwise share a register. The first
+        // attempt at scoping always namespaced by owner, but that
+        // breaks every existing single-tenant install (their existing
+        // registers are still at `openbuilt-{slug}`). So we keep the
+        // legacy un-namespaced slug AS LONG AS the existing register
+        // belongs to the caller; otherwise fall back to the
+        // owner-namespaced form.
+        $legacyRegisterSlug = 'openbuilt-'.$newSlug;
 
         try {
-            return $this->registerMapper->find($registerSlug, _multitenancy: false);
+            $existing = $this->registerMapper->find($legacyRegisterSlug, _multitenancy: false);
+
+            $existingOwner = $this->extractRegisterOwner($existing);
+            if ($existingOwner === '' || $existingOwner === $ownerUid) {
+                return $existing;
+            }
+
+            // Different user owns the org-wide slug — namespace ours.
+            return $this->findOrCreateRegister(
+                slug: 'openbuilt-'.$ownerUid.'-'.$newSlug,
+                appSlug: $newSlug,
+                ownerUid: $ownerUid,
+            );
         } catch (Throwable) {
-            // Register does not exist yet — create it.
+            // Legacy slug not taken — claim it for this user.
+        }
+
+        return $this->findOrCreateRegister(
+            slug: $legacyRegisterSlug,
+            appSlug: $newSlug,
+            ownerUid: $ownerUid,
+        );
+    }//end provisionPerAppRegister()
+
+    /**
+     * Find or create a per-app register at an exact slug.
+     *
+     * @param string $slug     The register slug to find/create
+     * @param string $appSlug  The application slug (for the title)
+     * @param string $ownerUid The owner UID (for the description audit trail)
+     *
+     * @return \OCA\OpenRegister\Db\Register
+     */
+    private function findOrCreateRegister(
+        string $slug,
+        string $appSlug,
+        string $ownerUid,
+    ): \OCA\OpenRegister\Db\Register {
+        try {
+            return $this->registerMapper->find($slug, _multitenancy: false);
+        } catch (Throwable) {
+            // Not found — create it.
         }
 
         return $this->registerMapper->createFromArray(
             [
-                'slug'        => $registerSlug,
-                'title'       => 'OpenBuilt — '.$newSlug,
-                'description' => 'Per-app schema namespace for OpenBuilt app `'.$newSlug.'` (owner: '.$ownerUid.').',
+                'slug'        => $slug,
+                'title'       => 'OpenBuilt — '.$appSlug,
+                'description' => 'Per-app schema namespace for OpenBuilt app `'.$appSlug.'` (owner: '.$ownerUid.').',
                 'version'     => '0.1.0',
                 'schemas'     => [],
             ]
         );
-    }//end provisionPerAppRegister()
+    }//end findOrCreateRegister()
+
+    /**
+     * Extract the owner UID from a Register entity, tolerating either an
+     * `owner` field on the entity itself or one inside an `@self` block.
+     *
+     * @param mixed $register The Register entity (or non-Register junk).
+     *
+     * @return string The owner UID, or empty string when not determinable.
+     */
+    private function extractRegisterOwner(mixed $register): string
+    {
+        if (is_object($register) === true && method_exists($register, 'getOwner') === true) {
+            $owner = $register->getOwner();
+            if (is_string($owner) === true) {
+                return $owner;
+            }
+        }
+
+        if (is_object($register) === true && method_exists($register, 'jsonSerialize') === true) {
+            $data = $register->jsonSerialize();
+            if (is_array($data) === true) {
+                $owner = ($data['owner'] ?? ($data['@self']['owner'] ?? null));
+                if (is_string($owner) === true) {
+                    return $owner;
+                }
+            }
+        }
+
+        return '';
+    }//end extractRegisterOwner()
 
     /**
      * Clone companion schemas into the per-app register.

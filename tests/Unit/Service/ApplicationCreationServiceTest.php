@@ -171,6 +171,94 @@ class ApplicationCreationServiceTest extends TestCase
         self::assertSame('some-other-register', $result['pages'][0]['config']['register']);
     }//end substituteRegisterSlugDoesNotTouchNonTokenFields()
 
+    /**
+     * substituteVersionContext rewrites both register AND schema.
+     *
+     * openbuilt#75 — without this the KPI / insights cards aggregate
+     * against `hello-message` (the un-namespaced template slug), which
+     * doesn't exist in the per-version register, so counts leak the
+     * same numbers across all tiers.
+     *
+     * @test
+     *
+     * @return void
+     */
+    public function substituteVersionContextNamespacesSchemaSlugAlongsideRegister(): void
+    {
+        $manifest = [
+            'pages' => [
+                ['id' => 'Dashboard', 'config' => ['widgets' => []]],
+                ['id' => 'Messages', 'config' => ['register' => '{registerSlug}', 'schema' => 'hello-message']],
+            ],
+        ];
+
+        $result = $this->service->substituteVersionContext(
+            manifest: $manifest,
+            registerSlug: 'openbuilt-permit-flow-development',
+            schemaSlugPrefix: 'permit-flow-development-'
+        );
+
+        self::assertSame('openbuilt-permit-flow-development', $result['pages'][1]['config']['register']);
+        self::assertSame('permit-flow-development-hello-message', $result['pages'][1]['config']['schema']);
+    }//end substituteVersionContextNamespacesSchemaSlugAlongsideRegister()
+
+    /**
+     * substituteVersionContext is idempotent: re-running with the same
+     * prefix MUST NOT double-prefix the schema slug.
+     *
+     * @test
+     *
+     * @return void
+     */
+    public function substituteVersionContextIsIdempotentOnAlreadyNamespacedSlugs(): void
+    {
+        $manifest = [
+            'pages' => [
+                [
+                    'id'     => 'Messages',
+                    'config' => [
+                        'register' => 'openbuilt-permit-flow-development',
+                        'schema'   => 'permit-flow-development-hello-message',
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->service->substituteVersionContext(
+            manifest: $manifest,
+            registerSlug: 'openbuilt-permit-flow-development',
+            schemaSlugPrefix: 'permit-flow-development-'
+        );
+
+        // Schema must NOT become `permit-flow-development-permit-flow-development-hello-message`.
+        self::assertSame('permit-flow-development-hello-message', $result['pages'][0]['config']['schema']);
+    }//end substituteVersionContextIsIdempotentOnAlreadyNamespacedSlugs()
+
+    /**
+     * substituteVersionContext leaves schema alone when no prefix is provided
+     * (backwards-compat with the legacy substituteRegisterSlug entry point).
+     *
+     * @test
+     *
+     * @return void
+     */
+    public function substituteVersionContextLeavesSchemaAloneWhenPrefixEmpty(): void
+    {
+        $manifest = [
+            'pages' => [
+                ['id' => 'Messages', 'config' => ['register' => '{registerSlug}', 'schema' => 'hello-message']],
+            ],
+        ];
+
+        $result = $this->service->substituteVersionContext(
+            manifest: $manifest,
+            registerSlug: 'openbuilt-my-app-production',
+            schemaSlugPrefix: ''
+        );
+
+        self::assertSame('hello-message', $result['pages'][0]['config']['schema']);
+    }//end substituteVersionContextLeavesSchemaAloneWhenPrefixEmpty()
+
     // -------------------------------------------------------------------------
     // resolveVersionChain
     // -------------------------------------------------------------------------
