@@ -580,9 +580,19 @@ class ApplicationCreationService
         );
 
         // Seed the default schema set into the freshly-provisioned register.
+        // Schema slugs are unique per organisation, so namespace each seed slug
+        // with the app+version prefix to avoid colliding with the same seed
+        // already installed in another register (e.g. the global `openbuilt`
+        // register or another wizard-provisioned app's register).
+        $slugPrefix = $appSlug.'-'.$versionSlug.'-';
         $createdIds = [];
         foreach ($defaultSchemas as $schemaBlob) {
-            $schema       = $this->schemaMapper->createFromArray(object: $schemaBlob);
+            $blob         = $schemaBlob;
+            $originalSlug = (string) ($blob['slug'] ?? '');
+            if ($originalSlug !== '') {
+                $blob['slug'] = $slugPrefix.$originalSlug;
+            }
+            $schema       = $this->schemaMapper->createFromArray(object: $blob);
             $createdIds[] = $schema->getId();
         }
 
