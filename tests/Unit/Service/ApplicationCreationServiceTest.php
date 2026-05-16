@@ -369,8 +369,13 @@ class ApplicationCreationServiceTest extends TestCase
      */
     private function stubSuccessfulCreation(string $appUuid, array $versionUuids): void
     {
-        // Build the mock register.
-        $mockRegister = $this->createMock(Register::class);
+        // Build the mock register. Register::getId() resolves via Entity::__call so it must
+        // be declared through addMethods() rather than mocked via createMock() alone.
+        $mockRegister = $this->getMockBuilder(Register::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getSchemas', 'setSchemas'])
+            ->addMethods(['getId'])
+            ->getMock();
         $mockRegister->method('getSchemas')->willReturn([]);
         $mockRegister->method('getId')->willReturn(1);
 
@@ -378,21 +383,33 @@ class ApplicationCreationServiceTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($mockRegister);
         $this->registerMapper->method('update')->willReturn($mockRegister);
 
-        // Build mock schema.
-        $mockSchema = $this->createMock(Schema::class);
+        // Build mock schema. Schema::getId() resolves via Entity::__call so it must be
+        // declared through addMethods() rather than mocked via createMock() alone.
+        $mockSchema = $this->getMockBuilder(Schema::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['getId'])
+            ->getMock();
         $mockSchema->method('getId')->willReturn(1);
         $this->schemaMapper->method('find')->willReturn($mockSchema);
         $this->schemaMapper->method('createFromArray')->willReturn($mockSchema);
 
-        // Prepare the sequential return values.
-        $appResult     = ['id' => $appUuid, 'uuid' => $appUuid];
-        $versionResults = [];
+        // Build ObjectEntity mocks for saveObject return values.
+        // saveObject() must return an ObjectEntity; normaliseObject() calls jsonSerialize()
+        // on the result to extract the UUID, so each mock's jsonSerialize() returns the payload.
+        $makeEntity = function (array $payload): \OCA\OpenRegister\Db\ObjectEntity {
+            $entity = $this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class);
+            $entity->method('jsonSerialize')->willReturn($payload);
+            return $entity;
+        };
+
+        $appEntity      = $makeEntity(['id' => $appUuid, 'uuid' => $appUuid]);
+        $versionEntities = [];
         foreach ($versionUuids as $slug => $uuid) {
-            $versionResults[] = ['id' => $uuid, 'uuid' => $uuid, 'slug' => $slug];
+            $versionEntities[] = $makeEntity(['id' => $uuid, 'uuid' => $uuid, 'slug' => $slug]);
         }
 
         // Map saveObject call sequence: app, then versions (×2 for create+wiring), then productionVersion update.
-        $callQueue = [$appResult, ...$versionResults, ...array_fill(0, count($versionUuids), $appResult), $appResult];
+        $callQueue = [$appEntity, ...$versionEntities, ...array_fill(0, count($versionUuids), $appEntity), $appEntity];
 
         $callIndex = 0;
         $this->objectService->method('saveObject')

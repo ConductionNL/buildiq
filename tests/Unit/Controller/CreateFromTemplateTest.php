@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuilt\Tests\Unit\Controller;
 
 use OCA\OpenBuilt\Controller\ApplicationsController;
+use OCA\OpenBuilt\Service\ManifestResolverService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -109,6 +110,13 @@ class CreateFromTemplateTest extends TestCase
     private IGroupManager&MockObject $groupManager;
 
     /**
+     * Mock ManifestResolverService (unused by createFromTemplate but required by the ctor).
+     *
+     * @var ManifestResolverService&MockObject
+     */
+    private ManifestResolverService&MockObject $manifestResolver;
+
+    /**
      * Per-app Register entity stub.
      *
      * @var Register&MockObject
@@ -131,10 +139,11 @@ class CreateFromTemplateTest extends TestCase
     {
         parent::setUp();
 
-        $this->request      = $this->createMock(IRequest::class);
-        $this->logger       = $this->createMock(LoggerInterface::class);
-        $this->userSession  = $this->createMock(IUserSession::class);
-        $this->groupManager = $this->createMock(IGroupManager::class);
+        $this->request          = $this->createMock(IRequest::class);
+        $this->logger           = $this->createMock(LoggerInterface::class);
+        $this->userSession      = $this->createMock(IUserSession::class);
+        $this->groupManager     = $this->createMock(IGroupManager::class);
+        $this->manifestResolver = $this->createMock(ManifestResolverService::class);
 
         $this->objectService = $this->createMock(ObjectService::class);
 
@@ -203,6 +212,7 @@ class CreateFromTemplateTest extends TestCase
             schemaMapper: $this->schemaMapper,
             userSession: $this->userSession,
             groupManager: $this->groupManager,
+            manifestResolver: $this->manifestResolver,
             auditTrailMapper: null,
         );
     }//end setUp()

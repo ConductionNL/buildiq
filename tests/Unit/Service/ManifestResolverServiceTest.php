@@ -286,14 +286,16 @@ class ManifestResolverServiceTest extends TestCase
     {
         $manifest    = ['version' => '1.0.0', 'pages' => ['home']];
         $application = [
+            'uuid'              => 'app-uuid',
             'slug'              => 'hello-world',
             'productionVersion' => 'prod-uuid',
             'permissions'       => ['owners' => ['user:alice'], 'editors' => []],
         ];
         $version     = [
-            'uuid'     => 'staging-uuid',
-            'slug'     => 'staging',
-            'manifest' => $manifest,
+            'uuid'        => 'staging-uuid',
+            'slug'        => 'staging',
+            'application' => 'app-uuid',
+            'manifest'    => $manifest,
         ];
 
         $this->objectService->method('searchObjects')
@@ -324,14 +326,16 @@ class ManifestResolverServiceTest extends TestCase
     {
         $manifest    = ['version' => '1.0.0', 'pages' => []];
         $application = [
+            'uuid'              => 'app-uuid',
             'slug'              => 'hello-world',
             'productionVersion' => 'prod-uuid',
             'permissions'       => ['owners' => [], 'editors' => ['user:bob']],
         ];
         $version     = [
-            'uuid'     => 'staging-uuid',
-            'slug'     => 'staging',
-            'manifest' => $manifest,
+            'uuid'        => 'staging-uuid',
+            'slug'        => 'staging',
+            'application' => 'app-uuid',
+            'manifest'    => $manifest,
         ];
 
         $this->objectService->method('searchObjects')
@@ -364,15 +368,17 @@ class ManifestResolverServiceTest extends TestCase
     {
         $manifest    = ['version' => '2.0.0', 'pages' => ['home', 'about']];
         $application = [
+            'uuid'              => 'app-uuid',
             'slug'              => 'hello-world',
             'productionVersion' => 'prod-uuid',
             'permissions'       => ['owners' => [], 'editors' => []],
         ];
         // The requested version IS the production version.
         $prodVersion = [
-            'uuid'     => 'prod-uuid',
-            'slug'     => 'production',
-            'manifest' => $manifest,
+            'uuid'        => 'prod-uuid',
+            'slug'        => 'production',
+            'application' => 'app-uuid',
+            'manifest'    => $manifest,
         ];
 
         $this->objectService->method('searchObjects')

@@ -579,7 +579,10 @@ namespace OCA\OpenRegister\Event {
 
     if (class_exists(ObjectUpdatingEvent::class, autoload: false) === false) {
         /**
-         * Stub ObjectUpdatingEvent — same shape as ObjectCreatingEvent.
+         * Stub ObjectUpdatingEvent — exposes the new object via getNewObject()
+         * (the real OR class signature is `__construct(ObjectEntity $newObject,
+         * ?ObjectEntity $oldObject = null)`). Tests that previously called
+         * `$event->getObject()` SHALL be updated to `getNewObject()`.
          */
         class ObjectUpdatingEvent extends \OCP\EventDispatcher\Event implements \Psr\EventDispatcher\StoppableEventInterface
         {
@@ -590,14 +593,21 @@ namespace OCA\OpenRegister\Event {
              */
             private array $errors = [];
 
-            public function __construct(private readonly \OCA\OpenRegister\Db\ObjectEntity $object)
-            {
+            public function __construct(
+                private readonly \OCA\OpenRegister\Db\ObjectEntity $newObject,
+                private readonly ?\OCA\OpenRegister\Db\ObjectEntity $oldObject = null,
+            ) {
                 parent::__construct();
             }
 
-            public function getObject(): \OCA\OpenRegister\Db\ObjectEntity
+            public function getNewObject(): \OCA\OpenRegister\Db\ObjectEntity
             {
-                return $this->object;
+                return $this->newObject;
+            }
+
+            public function getOldObject(): ?\OCA\OpenRegister\Db\ObjectEntity
+            {
+                return $this->oldObject;
             }
 
             public function isPropagationStopped(): bool
