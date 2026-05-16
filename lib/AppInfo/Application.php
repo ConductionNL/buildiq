@@ -27,6 +27,7 @@ namespace OCA\OpenBuilt\AppInfo;
 use OCA\OpenBuilt\Listener\ProductionVersionGuardListener;
 use OCA\OpenBuilt\Listener\DeepLinkRegistrationListener;
 use OCA\OpenBuilt\Mcp\OpenBuiltToolProvider;
+use OCA\OpenBuilt\Service\AppNavigationService;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
@@ -34,6 +35,7 @@ use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\INavigationManager;
 
 /**
  * Main application class for the OpenBuilt Nextcloud app.
@@ -107,13 +109,24 @@ class Application extends App implements IBootstrap
     /**
      * Boot the application.
      *
+     * Registers per-published-app top-bar navigation entries via
+     * AppNavigationService (REQ-OBNAV-001 / openbuilt-nextcloud-nav).
+     * Lazily resolved from the DI container to avoid instantiating the
+     * service tree when OR is not installed.
+     *
      * @param IBootContext $context The boot context
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function boot(IBootContext $context): void
     {
+        try {
+            $container = $context->getAppContainer();
+            $container->get(AppNavigationService::class)
+                ->registerNavEntries($container->get(INavigationManager::class));
+        } catch (\Throwable $e) {
+            // Boot must never throw — log and continue.
+            // OpenRegister may not be installed on this instance.
+        }//end try
     }//end boot()
 }//end class

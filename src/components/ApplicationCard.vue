@@ -17,6 +17,13 @@
 			class="ob-app-card__inner"
 			:to="{ name: 'VirtualAppDetail', params: { objectId: appUuid } }">
 			<div class="ob-app-card__head">
+				<img
+					class="ob-app-card__icon"
+					:src="`/index.php/apps/openbuilt/icons/${app.slug}.svg`"
+					:alt="app.name || app.slug"
+					width="20"
+					height="20"
+					@error="onIconError" />
 				<h3 class="ob-app-card__title">
 					{{ app.name || app.slug || t('openbuilt', 'Untitled app') }}
 				</h3>
@@ -27,7 +34,6 @@
 			</p>
 			<div class="ob-app-card__meta">
 				<span class="ob-app-card__chip">{{ t('openbuilt', 'Version') }} {{ app.version || '—' }}</span>
-				<span v-if="app.currentVersion" class="ob-app-card__chip ob-app-card__chip--live">{{ t('openbuilt', 'Live') }}</span>
 				<span v-if="role !== 'none'" class="ob-app-card__chip">{{ roleLabel }}</span>
 				<span class="ob-app-card__chip ob-app-card__chip--muted">/{{ app.slug }}</span>
 			</div>
@@ -79,6 +85,11 @@ export default {
 			}[this.role] || ''
 		},
 	},
+	methods: {
+		onIconError(e) {
+			e.target.src = '/apps/openbuilt/img/app.svg'
+		},
+	},
 }
 </script>
 
@@ -112,6 +123,13 @@ export default {
 	gap: 8px;
 }
 
+.ob-app-card__icon {
+	width: 20px;
+	height: 20px;
+	object-fit: contain;
+	flex-shrink: 0;
+}
+
 .ob-app-card__title {
 	margin: 0;
 	font-size: 15px;
@@ -141,11 +159,6 @@ export default {
 	border-radius: var(--border-radius-pill, 12px);
 	background: var(--color-background-dark, #eee);
 	color: var(--color-main-text, #222);
-}
-
-.ob-app-card__chip--live {
-	background: var(--color-success-default-background, rgba(70, 186, 97, 0.2));
-	color: var(--color-success-text, #2d8a3e);
 }
 
 .ob-app-card__chip--muted {

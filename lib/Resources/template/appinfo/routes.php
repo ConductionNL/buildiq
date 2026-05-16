@@ -1,5 +1,18 @@
 <?php
-// SPDX-License-Identifier: EUPL-1.2
+
+/**
+ * OpenBuilt app-template scaffolding routes.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Routes
+ * @package   OCA\AppTemplate
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ */
 
 declare(strict_types=1);
 

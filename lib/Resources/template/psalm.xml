@@ -63,6 +63,27 @@
                 <referencedClass name="OCA\OpenRegister\Event\DeepLinkRegistrationEvent"/>
                 <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
                 <referencedClass name="OCA\OpenRegister\Service\ConfigurationService"/>
+                <referencedClass name="OCA\OpenRegister\Service\FileService"/>
+                <referencedClass name="OCA\OpenRegister\Db\ObjectEntity"/>
+                <referencedClass name="OCA\OpenRegister\Db\Register"/>
+                <referencedClass name="OCA\OpenRegister\Db\RegisterMapper"/>
+                <referencedClass name="OCA\OpenRegister\Service\RegisterService"/>
+                <!-- Additional OCP classes -->
+                <referencedClass name="OCP\AppFramework\Http\Response"/>
+                <referencedClass name="OCP\AppFramework\Http\StreamResponse"/>
+                <referencedClass name="OCP\AppFramework\Http\DataDownloadResponse"/>
+                <referencedClass name="OCP\AppFramework\Http\Attribute\NoAdminRequired"/>
+                <referencedClass name="OCP\AppFramework\Http\Attribute\NoCSRFRequired"/>
+                <referencedClass name="OCP\AppFramework\Bootstrap\IBootContext"/>
+                <referencedClass name="OCP\AppFramework\Bootstrap\IRegistrationContext"/>
+                <referencedClass name="OCP\AppFramework\Http"/>
+                <referencedClass name="OCP\INavigationManager"/>
+                <referencedClass name="OCP\Migration\IOutput"/>
+                <referencedClass name="OCP\Migration\IRepairStep"/>
+                <referencedClass name="OCP\IGroup"/>
+                <referencedClass name="OCP\IUser"/>
+                <referencedClass name="Psr\Container\ContainerInterface"/>
+                <referencedClass name="Psr\Log\LoggerInterface"/>
                 <!-- Nextcloud server internals -->
                 <referencedClass name="OC"/>
                 <!-- GuzzleHttp (loaded via composer at runtime) -->

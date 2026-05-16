@@ -218,6 +218,10 @@ class ApplicationsController extends Controller
     #[NoCSRFRequired]
     public function diffVersions(string $slug, string $from, string $to): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return $this->errorResponse(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+        }
+
         try {
             $registerId  = $this->registerMapper->find('openbuilt', _multitenancy: false)->getId();
             $routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
