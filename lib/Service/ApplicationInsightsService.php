@@ -681,8 +681,13 @@ class ApplicationInsightsService
 
             $total = 0;
             foreach ($schemaIds as $schemaId) {
-                $chart  = $this->auditTrailMapper->getActionChartData($from, $till, null, (int) $schemaId);
-                $total += $this->sumChartSeries($chart);
+                $chart  = $this->auditTrailMapper->getActionChartData(
+                    from: $from,
+                    till: $till,
+                    registerId: null,
+                    schemaId: (int) $schemaId
+                );
+                $total += $this->sumChartSeries(chart: $chart);
             }
 
             return $total;
