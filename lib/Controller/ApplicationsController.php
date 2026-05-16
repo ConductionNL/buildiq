@@ -1312,7 +1312,13 @@ class ApplicationsController extends Controller
             ];
 
             if ($owner !== null) {
-                $query['owner'] = $owner;
+                // OR records ownership under `@self.owner`, not at the
+                // top level. Placing the filter on the top-level `owner`
+                // field made every owner-scoped lookup miss (#51) — the
+                // slug-collision check then fell through and the org-wide
+                // register-slug unique constraint raised `clone_failed`
+                // instead of the documented `slug_collision`.
+                $query['@self']['owner'] = $owner;
             }
 
             $results = $this->objectService->searchObjects(query: $query);
