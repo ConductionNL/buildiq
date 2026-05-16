@@ -41,7 +41,8 @@ test.describe('OpenBuilt ZIP export', () => {
 			await page.fill('input[name="user"]', ADMIN_USER)
 			await page.fill('input[name="password"]', ADMIN_PASSWORD)
 			await page.locator('button[type="submit"], input[type="submit"]').first().click()
-			await page.waitForURL(/\/index\.php\/apps\//, { timeout: 15_000 })
+			// Pretty URLs in modern NC drop the `/index.php` prefix; accept both.
+			await page.waitForURL(/\/apps\//, { timeout: 15_000 })
 		}
 	})
 

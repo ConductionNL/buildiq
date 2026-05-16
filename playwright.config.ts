@@ -29,10 +29,12 @@ export default defineConfig({
 			username: process.env.NC_ADMIN_USER || 'admin',
 			password: process.env.NC_ADMIN_PASSWORD || 'admin',
 		},
-		extraHTTPHeaders: {
-			// Nextcloud rejects unauthenticated OCS/API calls without this header.
-			'OCS-APIRequest': 'true',
-		},
+		// Note: do NOT set `OCS-APIRequest: true` here globally. The header
+		// makes Nextcloud treat every request as an API call — including the
+		// HTML page loads — which breaks the browser-based login redirect
+		// (no Location header is emitted, the page stays on /login).
+		// Specs that need OCS-APIRequest set it on their explicit `request`
+		// calls (e.g. versionRouting.spec.ts, applicationDetailOverview.spec.ts).
 		trace: 'on-first-retry',
 		screenshot: 'only-on-failure',
 		video: 'retain-on-failure',
