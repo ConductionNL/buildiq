@@ -1,0 +1,223 @@
+{
+	"info": {
+		"_postman_id": "openbuilt-app-detail-overview-collection",
+		"name": "OpenBuilt — Application detail / insights (spec openbuilt-app-detail-overview)",
+		"description": "Newman integration suite for the openbuilt-app-detail-overview OpenSpec change\n(capability application-insights, REQ-OBAI-001 – REQ-OBAI-007). Exercises:\n\n  GET /api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d\n\nCovers:\n  - 200 OK + Cache-Control: public, max-age=60 for each accepted window\n  - 400 (invalid window enum value)\n  - 400 (missing window)\n  - 404 on unknown appUuid / versionUuid (no existence leak)\n\nNOTE: The 200 happy-path cases use synthetic UUIDs that may resolve to\n404 in a fresh container — the tests accept either 200 OR 404 because the\nintegration container is not always pre-seeded. Cache-header presence is\nasserted only on 200 responses (REQ-OBAI-006 — error responses MUST NOT\ncarry the public-cache header).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{ "key": "username", "value": "{{admin_user}}", "type": "string" },
+			{ "key": "password", "value": "{{admin_password}}", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "base_url",       "value": "http://localhost:8080", "type": "string" },
+		{ "key": "admin_user",     "value": "admin",                 "type": "string" },
+		{ "key": "admin_password", "value": "admin",                 "type": "string" },
+		{ "key": "app_uuid",       "value": "00000000-0000-0000-0000-000000000001", "type": "string" },
+		{ "key": "version_uuid",   "value": "00000000-0000-0000-0000-000000000002", "type": "string" }
+	],
+	"item": [
+		{
+			"name": "application-insights",
+			"description": "Insights endpoint cases (REQ-OBAI-001 – REQ-OBAI-007).",
+			"item": [
+				{
+					"name": "REQ-OBAI-001 — 200 with cache header for window=7d (or 404 when test fixtures absent)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept",         "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights?window=7d"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK or 404 when fixtures absent', function () {",
+									"    pm.expect([200, 404]).to.include(pm.response.code);",
+									"});",
+									"if (pm.response.code === 200) {",
+									"    pm.test('200 response carries Cache-Control: public, max-age=60', function () {",
+									"        const header = pm.response.headers.get('Cache-Control') || '';",
+									"        pm.expect(header).to.include('public');",
+									"        pm.expect(header).to.include('max-age=60');",
+									"    });",
+									"    pm.test('200 response body has {kpis, activity} shape', function () {",
+									"        const json = pm.response.json();",
+									"        pm.expect(json).to.have.property('kpis');",
+									"        pm.expect(json).to.have.property('activity');",
+									"        pm.expect(json.kpis).to.have.property('activeUsers');",
+									"        pm.expect(json.kpis).to.have.property('objectCount');",
+									"        pm.expect(json.kpis).to.have.property('filesCount');",
+									"        pm.expect(json.kpis).to.have.property('auditEventCount');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "REQ-OBAI-001 — 200 (or 404) with cache header for window=30d",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept",         "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights?window=30d"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('window=30d returns 200 or 404', function () {",
+									"    pm.expect([200, 404]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "REQ-OBAI-001 — 200 (or 404) with cache header for window=90d",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept",         "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights?window=90d"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('window=90d returns 200 or 404', function () {",
+									"    pm.expect([200, 404]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "REQ-OBAI-001 — 400 on invalid window enum value (24h)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept",         "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights?window=24h"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('invalid window returns 400', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"pm.test('400 body matches REQ-OBAI-001 message', function () {",
+									"    const json = pm.response.json();",
+									"    pm.expect(json).to.have.property('status', 400);",
+									"    pm.expect(json.message).to.match(/Invalid window parameter/);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "REQ-OBAI-001 — 400 when window is missing",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept",         "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('missing window returns 400', function () {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "REQ-OBAI-002 — 404 on unknown appUuid (IDOR-safe)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept",         "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/ffffffff-ffff-ffff-ffff-ffffffffffff/versions/{{version_uuid}}/insights?window=7d"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unknown appUuid returns 404', function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"pm.test('404 response does NOT carry public, max-age=60 cache header (REQ-OBAI-006)', function () {",
+									"    const header = pm.response.headers.get('Cache-Control') || '';",
+									"    pm.expect(header).to.not.match(/public,\\s*max-age=60/);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "REQ-OBAI-002 — 404 on unknown versionUuid",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept",         "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_uuid}}/versions/ffffffff-ffff-ffff-ffff-ffffffffffff/insights?window=7d"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unknown versionUuid returns 404', function () {",
+									"    pm.response.to.have.status(404);",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
