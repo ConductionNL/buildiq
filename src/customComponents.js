@@ -28,6 +28,13 @@ import ApplicationVersionsTab from './components/tabs/ApplicationVersionsTab.vue
 import ApplicationDiffTab from './components/tabs/ApplicationDiffTab.vue'
 import ApplicationIconTab from './components/tabs/ApplicationIconTab.vue'
 import ApplicationDetailActions from './components/ApplicationDetailActions.vue'
+// Maintainer-dashboard main area for VirtualAppDetail
+// (openbuilt-app-detail-overview REQ-OBADO-001) — replaces the
+// generic CnDetailPage data widget. Owns hero strip + version pill
+// tabs + window toggle + KPI grid + activity chart + structural
+// widgets. Registered as the page entry's `headerComponent` in
+// src/manifest.json.
+import ApplicationDetailHeader from './components/applicationDetail/ApplicationDetailHeader.vue'
 // Virtual apps index "Add application" actions bar — opens the four-step
 // creation wizard (openbuilt-app-creation-wizard REQ-OBWIZ-001).
 // Referenced by the VirtualApps page's config.actionsComponent.
@@ -61,6 +68,10 @@ export default {
 	// Manage permissions (PermissionsModal, ADR-004 modal isolation),
 	// Design pages, Open virtual app.
 	ApplicationDetailActions,
+	// VirtualAppDetail headerComponent (openbuilt-app-detail-overview
+	// REQ-OBADO-001 / REQ-OBADO-011) — purpose-built maintainer
+	// dashboard replacing the generic main-area data widget.
+	ApplicationDetailHeader,
 	// Visual schema designer for a virtual app's register
 	// (/builder/:slug/schemas[/:schemaId] and the paramless /schemas
 	// shortcut, which defaults to the hello-world seed app).
