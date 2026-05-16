@@ -94,11 +94,6 @@ class ApplicationCreationControllerTest extends TestCase
             userSession: $this->userSession,
         );
 
-        // Default: authenticated as 'admin'.
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($user);
-
         // Default: request returns basic params.
         $this->request->method('getParams')->willReturn([
             'name'   => 'Test App',
@@ -106,6 +101,22 @@ class ApplicationCreationControllerTest extends TestCase
             'preset' => 'single',
         ]);
     }//end setUp()
+
+    /**
+     * Configure the user session to return an authenticated 'admin' user.
+     *
+     * PHPUnit 10 does not allow re-configuring a mock method that was already
+     * stubbed in setUp(). Each test must call this helper explicitly when it
+     * requires an authenticated session. Tests that expect 401 must NOT call it.
+     *
+     * @return void
+     */
+    private function authenticateAsAdmin(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($user);
+    }//end authenticateAsAdmin()
 
     // -------------------------------------------------------------------------
     // NoAdminRequired attribute
@@ -134,8 +145,8 @@ class ApplicationCreationControllerTest extends TestCase
      */
     public function wizardReturns401WhenNoUserSession(): void
     {
-        $this->userSession->method('getUser')->willReturn(null);
-
+        // No authenticateAsAdmin() call here — userSession::getUser() returns null
+        // by default for an unconfigured PHPUnit 10 mock, triggering the 401 branch.
         $response = $this->controller->wizard();
 
         self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
@@ -153,6 +164,8 @@ class ApplicationCreationControllerTest extends TestCase
      */
     public function wizardReturns201WithApplicationUuidOnSuccess(): void
     {
+        $this->authenticateAsAdmin();
+
         $this->creationService->method('createApplication')
             ->willReturn('app-uuid-001');
 
@@ -173,6 +186,8 @@ class ApplicationCreationControllerTest extends TestCase
      */
     public function wizardReturns422OnValidationFailure(): void
     {
+        $this->authenticateAsAdmin();
+
         $this->creationService->method('createApplication')
             ->willThrowException(new WizardCreationException(
                 errorCode: 'validation_error',
@@ -201,6 +216,8 @@ class ApplicationCreationControllerTest extends TestCase
      */
     public function wizardReturns500OnRollbackComplete(): void
     {
+        $this->authenticateAsAdmin();
+
         $this->creationService->method('createApplication')
             ->willThrowException(new WizardCreationException(
                 errorCode: 'wizard_rollback',
@@ -229,6 +246,8 @@ class ApplicationCreationControllerTest extends TestCase
      */
     public function wizardReturns500WithOrphanedResourcesOnRollbackPartial(): void
     {
+        $this->authenticateAsAdmin();
+
         $this->creationService->method('createApplication')
             ->willThrowException(new WizardCreationException(
                 errorCode: 'wizard_rollback',
