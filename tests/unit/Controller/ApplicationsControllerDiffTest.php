@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuilt\Tests\Unit\Controller;
 
 use OCA\OpenBuilt\Controller\ApplicationsController;
+use OCA\OpenBuilt\Service\ManifestResolverService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -119,6 +120,7 @@ class ApplicationsControllerDiffTest extends TestCase
             schemaMapper: $schemaMapper,
             userSession: $userSession,
             groupManager: $groupManager,
+            manifestResolver: $this->createMock(ManifestResolverService::class),
         );
     }//end setUp()
 

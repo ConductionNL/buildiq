@@ -121,16 +121,43 @@ class MigrateToVersionedModelTest extends TestCase
     }//end step()
 
     /**
-     * Short-circuit: versioned schema already present → no deletions.
+     * Short-circuit: no Application rows carry pre-spec-C shape → no deletions.
+     *
+     * The previous check probed for the `applicationVersion` schema's
+     * existence, but `InitializeSettings` imports that schema BEFORE
+     * this step runs, so the probe always fired true and the migration
+     * was skipped (openbuilt#69). The new check inspects Application
+     * row shape and only proceeds when at least one row still carries
+     * a legacy `manifest` / `version` / `status` / `currentVersion`
+     * top-level field.
      *
      * @return void
      */
     public function testShortCircuitsWhenVersionedSchemaPresent(): void
     {
-        // schemaMapper->find('applicationVersion', ...) succeeds (no throw) on first call.
-        $this->schemaMapper->method('find')->willReturn($this->createMock(Schema::class));
+        // Register + schema lookups succeed.
+        $register = $this->getMockBuilder(Register::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['getId'])
+            ->getMock();
+        $register->method('getId')->willReturn(1);
+        $this->registerMapper->method('find')->willReturn($register);
 
-        $this->objectService->expects(self::never())->method('findAll');
+        $this->schemaMapper->method('find')->willReturn(
+            $this->getMockBuilder(Schema::class)
+                ->disableOriginalConstructor()
+                ->addMethods(['getId'])
+                ->getMock()
+        );
+
+        // Application rows already match the post-C shape (no legacy keys).
+        $postCRows = [
+            $this->mockEntity(['id' => 'uuid-a', 'slug' => 'app-a', 'name' => 'App A']),
+        ];
+        $this->objectService->method('findAll')->willReturn($postCRows);
+
+        // No deletions should fire: rows look post-C so the short-circuit
+        // returns true and `run()` exits before touching either service.
         $this->objectService->expects(self::never())->method('deleteObject');
         $this->registerService->expects(self::never())->method('delete');
 

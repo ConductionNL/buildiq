@@ -207,9 +207,10 @@ class ApplicationCreationService
             $registerSlug = 'openbuilt-'.$appSlug.'-'.$versionSlug;
 
             // 3a: Create ApplicationVersion
-            $versionManifest = $this->substituteRegisterSlug(
+            $versionManifest = $this->substituteVersionContext(
                 manifest: $defaultManifest,
-                registerSlug: $registerSlug
+                registerSlug: $registerSlug,
+                schemaSlugPrefix: $appSlug.'-'.$versionSlug.'-'
             );
 
             $versionPayload = [
@@ -815,6 +816,35 @@ class ApplicationCreationService
      */
     public function substituteRegisterSlug(array $manifest, string $registerSlug): array
     {
+        return $this->substituteVersionContext(
+            manifest: $manifest,
+            registerSlug: $registerSlug,
+            schemaSlugPrefix: ''
+        );
+    }//end substituteRegisterSlug()
+
+    /**
+     * Substitute the per-version context tokens in a manifest template.
+     *
+     * Walks all `pages[*].config` blocks. Replaces the `{registerSlug}`
+     * token in `register` and rewrites every non-empty `config.schema`
+     * to the namespaced seed slug `{schemaSlugPrefix}{originalSchemaSlug}`
+     * so the manifest references the actual per-version schemas created
+     * by {@see provisionRegister()} (openbuilt#75 — without this the
+     * KPI / insights cards aggregated against a non-existent schema and
+     * leaked the same numbers across all tiers).
+     *
+     * @param array<string,mixed> $manifest         The manifest template blob
+     * @param string              $registerSlug     The per-version register slug
+     * @param string              $schemaSlugPrefix Namespaced prefix for schema slugs (e.g. `permit-flow-development-`)
+     *
+     * @return array<string,mixed> The manifest with tokens substituted
+     */
+    public function substituteVersionContext(
+        array $manifest,
+        string $registerSlug,
+        string $schemaSlugPrefix
+    ): array {
         if (isset($manifest['pages']) === false || is_array($manifest['pages']) === false) {
             return $manifest;
         }
@@ -831,11 +861,20 @@ class ApplicationCreationService
             if (isset($page['config']['register']) === true && $page['config']['register'] === '{registerSlug}') {
                 $page['config']['register'] = $registerSlug;
             }
+
+            if ($schemaSlugPrefix !== ''
+                && isset($page['config']['schema']) === true
+                && is_string($page['config']['schema']) === true
+                && $page['config']['schema'] !== ''
+                && str_starts_with($page['config']['schema'], $schemaSlugPrefix) === false
+            ) {
+                $page['config']['schema'] = $schemaSlugPrefix.$page['config']['schema'];
+            }
         }
 
         unset($page);
         return $manifest;
-    }//end substituteRegisterSlug()
+    }//end substituteVersionContext()
 
     /**
      * Get the UID of the currently authenticated user.

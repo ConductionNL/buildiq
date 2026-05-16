@@ -76,7 +76,8 @@ describe('useSchemasStore — re-registers when register changes', () => {
 		expect(registerObjectType).toHaveBeenCalledWith(
 			'schema',
 			'schemas',
-			'openbuilt-hello-world-staging',
+			'api',
+			{ registerSlug: 'openbuilt-hello-world-staging' },
 		)
 	})
 
@@ -100,7 +101,8 @@ describe('useSchemasStore — re-registers when register changes', () => {
 		expect(registerObjectType).toHaveBeenCalledWith(
 			'schema',
 			'schemas',
-			'openbuilt-hello-world',
+			'api',
+			{ registerSlug: 'openbuilt-hello-world' },
 		)
 	})
 
@@ -122,14 +124,24 @@ describe('useSchemasStore — re-registers when register changes', () => {
 		// First call — registers to staging
 		useSchemasStore('hello-world', 'staging')
 		expect(registerObjectType).toHaveBeenCalledTimes(1)
-		expect(registerObjectType).toHaveBeenLastCalledWith('schema', 'schemas', 'openbuilt-hello-world-staging')
+		expect(registerObjectType).toHaveBeenLastCalledWith(
+			'schema',
+			'schemas',
+			'api',
+			{ registerSlug: 'openbuilt-hello-world-staging' },
+		)
 
 		// Simulate version change — objectTypeRegistry now has the old register recorded
-		fakeStore.objectTypeRegistry.schema = { register: 'openbuilt-hello-world-staging' }
+		fakeStore.objectTypeRegistry.schema = { slugs: { registerSlug: 'openbuilt-hello-world-staging' } }
 
 		// Second call with different version — should re-register
 		useSchemasStore('hello-world', 'production')
 		expect(registerObjectType).toHaveBeenCalledTimes(2)
-		expect(registerObjectType).toHaveBeenLastCalledWith('schema', 'schemas', 'openbuilt-hello-world-production')
+		expect(registerObjectType).toHaveBeenLastCalledWith(
+			'schema',
+			'schemas',
+			'api',
+			{ registerSlug: 'openbuilt-hello-world-production' },
+		)
 	})
 })
