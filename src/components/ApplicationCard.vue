@@ -8,14 +8,17 @@
   - The card body is a `<router-link>` to VirtualAppDetail so a click navigates
   - directly to /applications/{objectId} — CnIndexPage's own `row-click`
   - event is emit-only (no auto-routing), so we own the navigation here.
-  - Shows the virtual app's name, lifecycle-status pill, version, a "live"
-  - marker when a published snapshot exists, and the caller's role.
+  - Shows the virtual app's name, lifecycle-status pill, version, and the
+  - caller's role.
   -->
 <template>
 	<div class="ob-app-card" :class="{ 'ob-app-card--selected': selected }">
-		<router-link
+		<div
 			class="ob-app-card__inner"
-			:to="{ name: 'VirtualAppDetail', params: { objectId: appUuid } }">
+			tabindex="0"
+			role="link"
+			@click="onCardActivate"
+			@keyup.enter="onCardActivate">
 			<div class="ob-app-card__head">
 				<img
 					class="ob-app-card__icon"
@@ -23,7 +26,7 @@
 					:alt="app.name || app.slug"
 					width="20"
 					height="20"
-					@error="onIconError" />
+					@error="onIconError">
 				<h3 class="ob-app-card__title">
 					{{ app.name || app.slug || t('openbuilt', 'Untitled app') }}
 				</h3>
@@ -37,7 +40,7 @@
 				<span v-if="role !== 'none'" class="ob-app-card__chip">{{ roleLabel }}</span>
 				<span class="ob-app-card__chip ob-app-card__chip--muted">/{{ app.slug }}</span>
 			</div>
-		</router-link>
+		</div>
 	</div>
 </template>
 
@@ -88,6 +91,12 @@ export default {
 	methods: {
 		onIconError(e) {
 			e.target.src = '/apps/openbuilt/img/app.svg'
+		},
+		onCardActivate(event) {
+			this.$emit('click', event)
+			if (this.$router) {
+				this.$router.push({ name: 'VirtualAppDetail', params: { objectId: this.appUuid } })
+			}
 		},
 	},
 }

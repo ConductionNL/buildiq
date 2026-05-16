@@ -8,6 +8,12 @@
   prop in, update:manifest / save-and-preview events out) so it can also
   be embedded as a tab in ApplicationEditor later.
 
+  Version routing (spec `openbuilt-version-routing` REQ-OBVR-004):
+  Reads `?_version=<versionSlug>` from `$route.query._version`. The
+  useApplicationVersion composable resolves the active version. On 404
+  (unknown or unauthorised version), the "version not found" UI state is
+  rendered (REQ-OBVR-009).
+
   Tracks issue #26 (PageDesigner used to render with an empty manifest).
 -->
 <template>
@@ -43,7 +49,12 @@
 			{{ error }}
 		</div>
 
-		<div v-if="loading" class="page-designer-host__loading">
+		<!-- REQ-OBVR-009: version-not-found state — identical for both "doesn't exist" and "you can't see it" -->
+		<NcEmptyContent
+			v-if="versionNotFound"
+			:name="t('openbuilt', 'Version not found')"
+			:description="t('openbuilt', 'The requested version does not exist or you do not have access to it.')" />
+		<div v-else-if="loading" class="page-designer-host__loading">
 			<NcLoadingIcon :size="44" />
 		</div>
 		<NcEmptyContent
@@ -63,6 +74,7 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import PageDesigner from './PageDesigner.vue'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
@@ -85,6 +97,10 @@ export default {
 			manifest: { ...EMPTY_MANIFEST },
 			toast: '',
 			error: '',
+			// REQ-OBVR-004: reactive version state from useApplicationVersion.
+			applicationVersion: null,
+			versionLoading: false,
+			versionError: null,
 		}
 	},
 
@@ -96,6 +112,27 @@ export default {
 		 */
 		routeSlug() {
 			return this.$route.params.slug || ''
+		},
+
+		/**
+		 * REQ-OBVR-004: read `?_version=` from the URL query.
+		 * The underscore-prefix form avoids colliding with user-defined `?version=` params.
+		 *
+		 * @return {string|undefined}
+		 */
+		versionSlug() {
+			return this.$route.query._version || undefined
+		},
+
+		/**
+		 * REQ-OBVR-009: true when the version fetch completed with an error (404 etc.)
+		 * and no applicationVersion was resolved. Renders the version-not-found UI state —
+		 * identical for both "doesn't exist" and "you can't see it" cases.
+		 *
+		 * @return {boolean}
+		 */
+		versionNotFound() {
+			return !this.versionLoading && this.versionError !== null && this.applicationVersion === null
 		},
 
 		/**
@@ -124,15 +161,50 @@ export default {
 
 	watch: {
 		routeSlug() {
+			this.resolveVersion()
 			this.load()
+		},
+		versionSlug() {
+			this.resolveVersion()
 		},
 	},
 
 	created() {
+		// REQ-OBVR-004: resolve the active ApplicationVersion on created.
+		// NOTE: we do NOT call $router.replace() or $router.push() here — that
+		// would strip ?_version= and break bookmarkability (REQ-OBVR-008).
+		this.resolveVersion()
 		this.load()
 	},
 
 	methods: {
+		/**
+		 * Resolve the active ApplicationVersion via useApplicationVersion composable
+		 * (REQ-OBVR-004 / REQ-OBVR-005). Called on created and when slug/versionSlug change.
+		 *
+		 * @return {void}
+		 */
+		resolveVersion() {
+			this.versionError = null
+			const { applicationVersion, loading, error } = useApplicationVersion(
+				this.routeSlug,
+				this.versionSlug,
+			)
+			this.applicationVersion = applicationVersion.value
+			this.versionLoading = loading.value
+			const unwatch = this.$watch(() => applicationVersion.value, (v) => {
+				this.applicationVersion = v
+			})
+			const unwatchLoading = this.$watch(() => loading.value, (v) => {
+				this.versionLoading = v
+				if (!v) {
+					unwatch()
+					unwatchLoading()
+					this.versionError = error.value
+				}
+			})
+		},
+
 		/**
 		 * Fetch the Application for the current slug and seed the editor manifest.
 		 *

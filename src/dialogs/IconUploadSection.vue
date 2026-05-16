@@ -40,7 +40,7 @@
 					:src="iconLightUrl"
 					:alt="t('openbuilt', 'Light icon preview')"
 					class="ob-icon-section__preview-img"
-					@error="onLightPreviewError" />
+					@error="onLightPreviewError">
 				<span v-else class="ob-icon-section__preview-empty">—</span>
 			</div>
 			<label class="ob-icon-section__file-label">
@@ -50,7 +50,7 @@
 					accept=".svg"
 					class="ob-icon-section__file-input"
 					:disabled="uploading"
-					@change="onLightFileChange" />
+					@change="onLightFileChange">
 				<span>{{ t('openbuilt', 'Upload SVG') }}</span>
 			</label>
 			<button
@@ -74,7 +74,7 @@
 					:src="iconDarkUrl"
 					:alt="t('openbuilt', 'Dark icon preview')"
 					class="ob-icon-section__preview-img"
-					@error="onDarkPreviewError" />
+					@error="onDarkPreviewError">
 				<span v-else class="ob-icon-section__preview-empty">—</span>
 			</div>
 			<label class="ob-icon-section__file-label">
@@ -84,7 +84,7 @@
 					accept=".svg"
 					class="ob-icon-section__file-input"
 					:disabled="uploading"
-					@change="onDarkFileChange" />
+					@change="onDarkFileChange">
 				<span>{{ t('openbuilt', 'Upload SVG') }}</span>
 			</label>
 			<button
@@ -97,7 +97,9 @@
 			<span v-if="darkError" class="ob-icon-section__error">{{ darkError }}</span>
 		</div>
 
-		<p v-if="uploadError" class="ob-icon-section__global-error">{{ uploadError }}</p>
+		<p v-if="uploadError" class="ob-icon-section__global-error">
+			{{ uploadError }}
+		</p>
 	</div>
 </template>
 
@@ -106,7 +108,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
 const REGISTER = 'openbuilt'
-const SCHEMA   = 'application'
+const SCHEMA = 'application'
 
 export default {
 	name: 'IconUploadSection',
@@ -120,15 +122,15 @@ export default {
 
 	data() {
 		return {
-			lightRef:    null,
-			darkRef:     null,
-			uploading:   false,
-			lightError:  '',
-			darkError:   '',
+			lightRef: null,
+			darkRef: null,
+			uploading: false,
+			lightError: '',
+			darkError: '',
 			uploadError: '',
 			// Cache-busting nonces appended to preview URLs after upload.
-			lightNonce:  Date.now(),
-			darkNonce:   Date.now(),
+			lightNonce: Date.now(),
+			darkNonce: Date.now(),
 		}
 	},
 
@@ -152,7 +154,7 @@ export default {
 			immediate: true,
 			handler(app) {
 				this.lightRef = app?.icon?.ref || null
-				this.darkRef  = app?.iconDark?.ref || null
+				this.darkRef = app?.iconDark?.ref || null
 			},
 		},
 	},
@@ -197,9 +199,9 @@ export default {
 
 		async uploadIcon(file, variant) {
 			if (!this.objectUuid) return
-			this.uploading    = true
-			this.uploadError  = ''
-			const filename    = variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
+			this.uploading = true
+			this.uploadError = ''
+			const filename = variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
 
 			try {
 				// 1. Upload the file to OR's files-attached-to-object endpoint.
@@ -207,26 +209,26 @@ export default {
 				formData.append('file', file, filename)
 
 				const uploadUrl = generateUrl(
-					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files`
+					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files`,
 				)
 				await axios.post(uploadUrl, formData, {
 					headers: { 'Content-Type': 'multipart/form-data' },
 				})
 
 				// 2. Patch the Application record with the new icon ref.
-				const field   = variant === 'dark' ? 'iconDark' : 'icon'
+				const field = variant === 'dark' ? 'iconDark' : 'icon'
 				const payload = { [field]: { ref: filename } }
 				const patchUrl = generateUrl(
-					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}`
+					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}`,
 				)
 				await axios.put(patchUrl, payload)
 
 				// 3. Update local state and notify parent.
 				if (variant === 'dark') {
-					this.darkRef   = filename
+					this.darkRef = filename
 					this.darkNonce = Date.now()
 				} else {
-					this.lightRef   = filename
+					this.lightRef = filename
 					this.lightNonce = Date.now()
 				}
 
@@ -254,30 +256,30 @@ export default {
 
 		async removeIcon(variant) {
 			if (!this.objectUuid) return
-			this.uploading   = true
+			this.uploading = true
 			this.uploadError = ''
-			const filename   = variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
-			const field      = variant === 'dark' ? 'iconDark' : 'icon'
+			const filename = variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
+			const field = variant === 'dark' ? 'iconDark' : 'icon'
 
 			try {
 				// 1. Delete the file from OR.
 				const deleteUrl = generateUrl(
-					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files/${filename}`
+					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files/${filename}`,
 				)
 				await axios.delete(deleteUrl)
 
 				// 2. Clear the ref on the Application.
 				const patchUrl = generateUrl(
-					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}`
+					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}`,
 				)
 				await axios.put(patchUrl, { [field]: null })
 
 				// 3. Update local state.
 				if (variant === 'dark') {
-					this.darkRef   = null
+					this.darkRef = null
 					this.darkNonce = Date.now()
 				} else {
-					this.lightRef   = null
+					this.lightRef = null
 					this.lightNonce = Date.now()
 				}
 

@@ -130,6 +130,8 @@ import CalculationEditor from '../components/schema-editor/CalculationEditor.vue
 import NotificationEditor from '../components/schema-editor/NotificationEditor.vue'
 
 import { useSchemasStore } from '../store/schemas.js'
+import { useApplicationVersion } from '../composables/useApplicationVersion.js'
+import { buildVersionedRoute } from '../router/helpers.js'
 
 /**
  * Schema object type slug as registered with the store factory.
@@ -164,6 +166,10 @@ export default {
 			saveError: '',
 			staged: null,
 			persisted: null,
+			// REQ-OBVR-004: reactive version state resolved by useApplicationVersion.
+			applicationVersion: null,
+			versionLoading: false,
+			versionError: null,
 		}
 	},
 	computed: {
@@ -175,11 +181,22 @@ export default {
 		schemaId() {
 			return this.$route.params.schemaId || ''
 		},
+		/**
+		 * REQ-OBVR-004: read `?_version=` from the URL query.
+		 * The underscore-prefix param name is OpenBuilt's system-reserved marker
+		 * to avoid colliding with user-defined `?version=` params.
+		 *
+		 * @return {string|undefined}
+		 */
+		versionSlug() {
+			return this.$route.query._version || undefined
+		},
 		store() {
 			// Re-creates the binding when appSlug changes; the store
 			// factory re-registers the `schema` type to the per-app
 			// register `openbuilt-{slug}` on every call (idempotent).
-			return useSchemasStore(this.appSlug)
+			// REQ-OBVR-007: pass versionSlug so the store targets the correct register.
+			return useSchemasStore(this.appSlug, this.versionSlug)
 		},
 		otherSchemaSlugs() {
 			return this.schemas
@@ -254,17 +271,60 @@ export default {
 		},
 		appSlug: {
 			handler() {
+				this.resolveVersion()
+				this.refreshList()
+			},
+		},
+		versionSlug: {
+			handler() {
+				this.resolveVersion()
 				this.refreshList()
 			},
 		},
 	},
 	async mounted() {
+		// REQ-OBVR-004: resolve the active ApplicationVersion via useApplicationVersion.
+		this.resolveVersion()
 		await this.refreshList()
 		if (this.schemaId) {
 			await this.loadDetail()
 		}
 	},
 	methods: {
+		/**
+		 * Resolve the active ApplicationVersion via useApplicationVersion composable
+		 * (REQ-OBVR-004 / REQ-OBVR-005). Called on mount and when appSlug / versionSlug
+		 * change. Wires the reactive version state into component data so the template
+		 * and store can read it.
+		 *
+		 * NOTE: we do NOT call $router.replace() here — that would strip ?_version=
+		 * and break bookmarkability (REQ-OBVR-008). We just read what the URL contains.
+		 *
+		 * @return {void}
+		 */
+		resolveVersion() {
+			const { applicationVersion, loading, error } = useApplicationVersion(
+				this.appSlug,
+				this.versionSlug,
+			)
+			// Watch the reactive refs and mirror them into component data.
+			this.applicationVersion = applicationVersion.value
+			this.versionLoading = loading.value
+			this.versionError = error.value
+			// Set up watchers to keep component data in sync as the fetch resolves.
+			const unwatch = this.$watch(() => applicationVersion.value, (v) => {
+				this.applicationVersion = v
+			})
+			const unwatchLoading = this.$watch(() => loading.value, (v) => {
+				this.versionLoading = v
+				if (!v) {
+					// Fetch complete — clean up watchers to avoid leaks.
+					unwatch()
+					unwatchLoading()
+					this.versionError = error.value
+				}
+			})
+		},
 		async refreshList() {
 			this.loadingList = true
 			try {
@@ -413,23 +473,29 @@ export default {
 			}
 			const newSlug = (data && (data.slug || (data['@self'] && data['@self'].slug))) || payload.slug
 			await this.refreshList()
-			this.$router.push({
-				name: 'SchemaDesigner',
-				params: { slug: this.appSlug, schemaId: newSlug },
-			})
+			// REQ-OBVR-006: use buildVersionedRoute to forward ?_version= on navigation.
+			this.$router.push(buildVersionedRoute(
+				'SchemaDesigner',
+				{ slug: this.appSlug, schemaId: newSlug },
+				this.versionSlug,
+			))
 			showSuccess(this.t('openbuilt', 'Schema {slug} created.', { slug: newSlug }))
 		},
 		openSchema(slug) {
-			this.$router.push({
-				name: 'SchemaDesigner',
-				params: { slug: this.appSlug, schemaId: slug },
-			})
+			// REQ-OBVR-006: use buildVersionedRoute to forward ?_version= on navigation.
+			this.$router.push(buildVersionedRoute(
+				'SchemaDesigner',
+				{ slug: this.appSlug, schemaId: slug },
+				this.versionSlug,
+			))
 		},
 		goToList() {
-			this.$router.push({
-				name: 'SchemaDesignerList',
-				params: { slug: this.appSlug },
-			})
+			// REQ-OBVR-006: use buildVersionedRoute to forward ?_version= on navigation.
+			this.$router.push(buildVersionedRoute(
+				'SchemaDesignerList',
+				{ slug: this.appSlug },
+				this.versionSlug,
+			))
 		},
 		async deleteSchema(slug) {
 			const ok = await this.store.deleteObject(SCHEMA_TYPE, slug)
@@ -441,6 +507,7 @@ export default {
 			await this.refreshList()
 			showSuccess(this.t('openbuilt', 'Schema {slug} deleted.', { slug }))
 			if (this.schemaId === slug) {
+				// goToList uses buildVersionedRoute internally — ?_version= is preserved.
 				this.goToList()
 			}
 		},
