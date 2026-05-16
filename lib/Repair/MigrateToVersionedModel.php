@@ -147,25 +147,37 @@ class MigrateToVersionedModel implements IRepairStep
      */
     private function isAlreadyVersioned(): bool
     {
-        // Test 1 — does the versioned schema exist?
-        try {
-            $this->schemaMapper->find(self::VERSIONED_SCHEMA, _multitenancy: false);
-            return true;
-        } catch (Throwable) {
-            // Not found — fall through to Test 2.
-        }
-
-        // Test 2 — do any Application rows carry the legacy `currentVersion` field?
+        // The previous check was "does the versioned schema exist?" — but
+        // InitializeSettings imports the schema register BEFORE this step
+        // runs, so the `applicationVersion` schema is always present by
+        // the time we reach here. That made the short-circuit always fire
+        // and the migration always skip (issue #69).
+        //
+        // Correct check: examine the Application rows themselves. If any
+        // row carries a legacy top-level `manifest` / `version` / `status`
+        // / `currentVersion` field (the pre-spec-C shape), the install
+        // still has pre-migration data. If no Application rows exist OR
+        // all surviving rows already match the post-C shape, we're
+        // versioned.
         try {
             $applications = $this->enumerateApplications();
         } catch (Throwable) {
-            // If the register or schema do not exist yet, we are on a
-            // fresh install — no pre-migration data to migrate.
+            // No openbuilt register or no Application schema — fresh
+            // install. Nothing to migrate.
+            return true;
+        }
+
+        if ($applications === []) {
             return true;
         }
 
         foreach ($applications as $row) {
-            if (array_key_exists('currentVersion', $row) === true) {
+            // Pre-C shape keys we need to migrate away from.
+            if (array_key_exists('currentVersion', $row) === true
+                || array_key_exists('manifest', $row) === true
+                || array_key_exists('version', $row) === true
+                || array_key_exists('status', $row) === true
+            ) {
                 return false;
             }
         }

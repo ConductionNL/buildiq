@@ -523,7 +523,14 @@ export default {
 			try {
 				const url = generateUrl(`/apps/openregister/api/objects/openbuilt/application/${encodeURIComponent(uuid)}`)
 				const { data } = await axios.get(url)
-				this.application = (data && (data['@self'] ? { ...data, ...(data['@self'] || {}) } : data)) || null
+				// Keep user-visible fields from `data` and stash OR's internal
+				// metadata block separately. The previous merge spread `@self`
+				// OVER `data`, which overwrote `data.description` (the real
+				// app description) with `@self.description` (an internal OR
+				// metadata field carrying e.g. node IDs). See issue #73.
+				this.application = data
+					? { ...data, '@self': data['@self'] || {} }
+					: null
 				this.loadVersions()
 			} catch (e) {
 				this.error = e instanceof Error ? e : new Error(String(e))
@@ -544,7 +551,13 @@ export default {
 				const list = Array.isArray(data)
 					? data
 					: (data && Array.isArray(data.results) ? data.results : [])
-				this.versions = list
+				// OR's object-list shape carries the UUID in `id` (mirrored
+				// from `@self.id`) but the chain/pill logic reads `uuid`.
+				// Normalise once so every consumer sees `v.uuid`.
+				this.versions = list.map((v) => ({
+					...v,
+					uuid: v.uuid || v.id || (v['@self'] && v['@self'].id) || null,
+				}))
 
 				const versionSlugFromRoute = (this.$route && this.$route.query && this.$route.query._version) || ''
 				const match = versionSlugFromRoute

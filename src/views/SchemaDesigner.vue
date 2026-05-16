@@ -329,7 +329,19 @@ export default {
 			this.loadingList = true
 			try {
 				const results = await this.store.fetchCollection(SCHEMA_TYPE)
-				this.schemas = Array.isArray(results) ? results : []
+				const all = Array.isArray(results) ? results : []
+				// OR's schemas endpoint returns every schema in the
+				// organisation. Filter to the namespaced subset that
+				// belongs to this app+version register so the designer
+				// only shows the user's relevant schemas. Per the wizard
+				// (issue #71) seed slugs are `{appSlug}-{versionSlug}-X`.
+				const prefix = this.versionSlug
+					? `${this.appSlug}-${this.versionSlug}-`
+					: `${this.appSlug}-`
+				this.schemas = all.filter((s) => {
+					const slug = s.slug || (s['@self'] && s['@self'].slug) || ''
+					return typeof slug === 'string' && slug.startsWith(prefix)
+				})
 				const err = this.store.errors[SCHEMA_TYPE]
 				if (err) {
 					showError(this.t('openbuilt', 'Failed to load schemas: {error}', { error: err }))
