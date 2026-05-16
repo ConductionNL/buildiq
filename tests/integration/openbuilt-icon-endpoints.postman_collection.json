@@ -1,0 +1,113 @@
+{
+	"info": {
+		"_postman_id": "openbuilt-icon-endpoints-collection",
+		"name": "OpenBuilt — Icon Endpoints (spec A)",
+		"description": "Newman integration suite for the openbuilt-nextcloud-nav OpenSpec change\n(spec A, REQ-OBICON-002 / REQ-OBICON-003). Exercises the two icon-serving\nendpoints registered in appinfo/routes.php:\n\n  GET /icons/{slug}.svg       → IconController::iconLight\n  GET /icons/{slug}-dark.svg  → IconController::iconDark\n\nCovers spec A task 7.6:\n  - GET /icons/hello-world.svg returns 200 + Content-Type: image/svg+xml\n  - GET /icons/hello-world-dark.svg returns 200 + Content-Type: image/svg+xml\n  - Unauthenticated request returns 401 (or 403)\n\nPresupposes the seeded hello-world Application with attached SVG icons\n(SeedHelloWorld repair step, or OR-uploaded attachments).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{ "key": "username", "value": "{{admin_user}}", "type": "string" },
+			{ "key": "password", "value": "{{admin_password}}", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "base_url",       "value": "http://localhost:8080", "type": "string" },
+		{ "key": "admin_user",     "value": "admin",                 "type": "string" },
+		{ "key": "admin_password", "value": "admin",                 "type": "string" },
+		{ "key": "test_slug",      "value": "hello-world",           "type": "string" }
+	],
+	"item": [
+		{
+			"name": "nextcloud-nav/icons",
+			"description": "Icon-serving endpoint cases (spec A task 7.6).",
+			"item": [
+				{
+					"name": "7.6a — GET /icons/{slug}.svg returns 200 + SVG content-type",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/icons/{{test_slug}}.svg"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('light icon returns 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Content-Type is image/svg+xml', function () {",
+									"    pm.expect(pm.response.headers.get('Content-Type')).to.include('image/svg+xml');",
+									"});",
+									"pm.test('response body is non-empty SVG', function () {",
+									"    const text = pm.response.text();",
+									"    pm.expect(text.length).to.be.greaterThan(0);",
+									"    // Either a proper SVG or the fallback static file.",
+									"    // Both are valid -- the endpoint must return SOMETHING.",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "7.6b — GET /icons/{slug}-dark.svg returns 200 + SVG content-type",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/icons/{{test_slug}}-dark.svg"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('dark icon returns 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Content-Type is image/svg+xml', function () {",
+									"    pm.expect(pm.response.headers.get('Content-Type')).to.include('image/svg+xml');",
+									"});",
+									"pm.test('response body is non-empty', function () {",
+									"    pm.expect(pm.response.text().length).to.be.greaterThan(0);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "7.6c — GET /icons/{slug}.svg without auth returns 401",
+					"description": "Icon endpoint is #[NoAdminRequired] but still requires Nextcloud auth. Unauthenticated request must return 401 (or 403 on some NC versions).",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/index.php/apps/openbuilt/icons/{{test_slug}}.svg"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unauthenticated icon request returns 401 or 403', function () {",
+									"    pm.expect([401, 403]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

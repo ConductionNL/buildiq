@@ -36,7 +36,7 @@
 				{{ app.description }}
 			</p>
 			<div class="ob-app-card__meta">
-				<span class="ob-app-card__chip">{{ t('openbuilt', 'Version') }} {{ app.version || '—' }}</span>
+				<span class="ob-app-card__chip">{{ t('openbuilt', 'Version') }} {{ productionSemver }}</span>
 				<span v-if="role !== 'none'" class="ob-app-card__chip">{{ roleLabel }}</span>
 				<span class="ob-app-card__chip ob-app-card__chip--muted">/{{ app.slug }}</span>
 			</div>
@@ -60,6 +60,33 @@ export default {
 		app() {
 			return this.object || this.item || {}
 		},
+		/**
+		 * Resolve the inline productionVersion object, if OR returned it via
+		 * `?extend=productionVersion` (or the store pre-fetched it). Falls back
+		 * to null so the card can show skeleton defaults.
+		 *
+		 * Spec C moved `status` and `semver` from Application onto
+		 * ApplicationVersion. The card reads them from productionVersion so the
+		 * status badge and version chip stay accurate.
+		 *
+		 * @return {object|null}
+		 */
+		productionVersion() {
+			const pv = this.app.productionVersion
+			if (!pv || typeof pv !== 'object') {
+				return null
+			}
+			return pv
+		},
+		/**
+		 * Semver string from the production ApplicationVersion, or '—' while
+		 * loading / when the application has no production version yet.
+		 *
+		 * @return {string}
+		 */
+		productionSemver() {
+			return (this.productionVersion && this.productionVersion.semver) || '—'
+		},
 		// CnDetailPage reads :objectId from $route.params, which we set here.
 		// OR returns the canonical id under @self.id; fall back to uuid/id for
 		// objects coming from older mock fixtures or pre-@self responses.
@@ -67,8 +94,16 @@ export default {
 			const self = this.app['@self'] || {}
 			return self.id || this.app.uuid || this.app.id || ''
 		},
+		/**
+		 * Status key resolved from productionVersion (spec C). Falls back to
+		 * 'draft' when no production version is present so the card has a
+		 * sensible default while loading or for brand-new applications.
+		 *
+		 * @return {string}
+		 */
 		statusKey() {
-			return ['draft', 'published', 'archived'].includes(this.app.status) ? this.app.status : 'draft'
+			const status = this.productionVersion && this.productionVersion.status
+			return ['draft', 'published', 'archived'].includes(status) ? status : 'draft'
 		},
 		statusLabel() {
 			return {
