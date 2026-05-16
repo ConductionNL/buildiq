@@ -18,13 +18,22 @@ export default defineConfig({
 	testDir: 'tests/e2e',
 	timeout: 30_000,
 	expect: { timeout: 5_000 },
-	fullyParallel: true,
+	// Don't run specs in parallel: Nextcloud's brute-force throttle fires
+	// after a handful of near-simultaneous form logins from the same IP
+	// and every subsequent spec falls back to the /login page. Serial
+	// execution with one shared storageState (via globalSetup) avoids it.
+	fullyParallel: false,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 1 : 0,
-	workers: process.env.CI ? 1 : undefined,
+	workers: 1,
+	globalSetup: './tests/e2e/global-setup.ts',
 	reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
 	use: {
 		baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8080',
+		// Authenticated browser context populated by globalSetup. Empty
+		// when login fails — specs then surface the actual login page in
+		// their failure snapshots.
+		storageState: 'tests/e2e/.auth/admin.json',
 		httpCredentials: {
 			username: process.env.NC_ADMIN_USER || 'admin',
 			password: process.env.NC_ADMIN_PASSWORD || 'admin',

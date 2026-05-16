@@ -43,7 +43,10 @@ test.describe('Icon upload on Application detail page (spec A task 7.5)', () => 
 
 	test('Icon tab is accessible from the Application detail page', async ({ page }) => {
 		// Navigate to the Applications list, then open the hello-world detail.
-		await page.goto('/index.php/apps/openbuilt')
+		// Land on the Virtual apps index — the ApplicationCards live at
+		// `/applications`, not at the app root (which redirects to the
+		// Dashboard widget page).
+		await page.goto('/index.php/apps/openbuilt/applications')
 		await expect(page.locator('.ob-app-card, [data-testid*="app-card"]').first()).toBeVisible({ timeout: 15_000 })
 
 		// Navigate to the hello-world detail page. The card links to
@@ -81,7 +84,10 @@ test.describe('Icon upload on Application detail page (spec A task 7.5)', () => 
 	})
 
 	test('uploading a minimal SVG updates the preview src', async ({ page }) => {
-		await page.goto('/index.php/apps/openbuilt')
+		// Land on the Virtual apps index — the ApplicationCards live at
+		// `/applications`, not at the app root (which redirects to the
+		// Dashboard widget page).
+		await page.goto('/index.php/apps/openbuilt/applications')
 		await expect(page.locator('.ob-app-card, [data-testid*="app-card"]').first()).toBeVisible({ timeout: 15_000 })
 
 		// Open the hello-world detail.
