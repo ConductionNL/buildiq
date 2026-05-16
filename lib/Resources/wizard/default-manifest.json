@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0",
+  "menu": [
+    { "id": "dashboard", "label": "Dashboard", "icon": "icon-category-dashboard", "route": "Dashboard", "order": 10 },
+    { "id": "messages", "label": "Messages", "icon": "icon-comment", "route": "MessagesIndex", "order": 20 }
+  ],
+  "pages": [
+    {
+      "id": "Dashboard",
+      "route": "/",
+      "type": "dashboard",
+      "title": "Dashboard",
+      "config": {
+        "widgets": [],
+        "layout": []
+      }
+    },
+    {
+      "id": "MessagesIndex",
+      "route": "/messages",
+      "type": "index",
+      "title": "Messages",
+      "config": {
+        "register": "{registerSlug}",
+        "schema": "hello-message",
+        "columns": ["body"]
+      }
+    }
+  ]
+}
