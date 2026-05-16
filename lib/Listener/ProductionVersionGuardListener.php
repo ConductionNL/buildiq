@@ -78,13 +78,16 @@ class ProductionVersionGuardListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        if (($event instanceof ObjectCreatingEvent) === false
-            && ($event instanceof ObjectUpdatingEvent) === false
-        ) {
+        if ($event instanceof ObjectCreatingEvent) {
+            $entity = $event->getObject();
+        } else if ($event instanceof ObjectUpdatingEvent) {
+            // OR's ObjectUpdatingEvent exposes the new object via getNewObject()
+            // (not getObject() — the two events have different APIs).
+            $entity = $event->getNewObject();
+        } else {
             return;
         }
 
-        $entity = $event->getObject();
         $schema = $this->extractSchemaSlug(entity: $entity);
         if ($schema !== ApplicationVersionService::APPLICATION_SCHEMA) {
             return;
