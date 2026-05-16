@@ -137,13 +137,17 @@ class ApplicationVersionsController extends Controller
                 _multitenancy: false
             )->getId();
 
+            // OR's searchObjects doesn't reliably filter by relation-string equality
+            // on the `application` field (the value is stored both inline AND in
+            // @self.relations, and the matcher matches neither shape consistently).
+            // Fetch every ApplicationVersion row and filter client-side by the
+            // parent Application UUID. Cheap — we expect ~3 rows per app.
             $rows = $this->objectService->searchObjects(
                 query: [
-                    '@self'       => [
+                    '@self' => [
                         'register' => $registerId,
                         'schema'   => $schemaId,
                     ],
-                    'application' => $applicationUuid,
                 ]
             );
 
@@ -152,10 +156,16 @@ class ApplicationVersionsController extends Controller
                 $rowsList = $rows;
             }
 
-            $normalised = array_map(
-                fn ($row): array => $this->normaliseObject(object: $row),
-                $rowsList
-            );
+            $normalised = [];
+            foreach ($rowsList as $row) {
+                $normalisedRow = $this->normaliseObject(object: $row);
+                $rowAppUuid    = (string) ($normalisedRow['application'] ?? '');
+                if ($rowAppUuid !== $applicationUuid) {
+                    continue;
+                }
+
+                $normalised[] = $normalisedRow;
+            }
 
             return new JSONResponse(data: $normalised, statusCode: Http::STATUS_OK);
         } catch (Throwable $e) {

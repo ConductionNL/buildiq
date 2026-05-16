@@ -27,12 +27,21 @@ import { createObjectStore } from '@conduction/nextcloud-vue'
 
 const STORE_ID = 'openbuilt-schemas'
 
-// Runtime schema CRUD lives under /api/registers (chain #3) — not the
-// /api/objects surface that backs ordinary OR object CRUD.
-const RUNTIME_SCHEMA_BASE_URL = '/apps/openregister/api/registers'
+// We point at OR's existing schemas CRUD (`/api/schemas/{id}`) because
+// the proposed runtime per-register schema endpoint (`/api/registers/{r}/
+// schemas/{slug}`) hasn't shipped on the OR floor yet (spec C chain #3).
+//
+// `useObjectStore._buildUrl` concatenates `${baseUrl}/${register}/${schema}
+// /${id}`. We satisfy that template by splitting `/apps/openregister`,
+// `api`, and `schemas` across the baseUrl + register + schema slots, then
+// fetching by slug in the id position. The store's `register` slot is no
+// longer carrying the OR register name; we keep the per-version register
+// info on the type config under `slugs.registerSlug` for callers that
+// need to filter the collection.
+const SCHEMA_API_BASE_URL = '/apps/openregister'
 
 const useSchemasStoreRaw = createObjectStore(STORE_ID, {
-	baseUrl: RUNTIME_SCHEMA_BASE_URL,
+	baseUrl: SCHEMA_API_BASE_URL,
 })
 
 /**
@@ -77,14 +86,16 @@ export function useSchemasStore(appSlug, versionSlug) {
 	const register = registerSlugForApp(appSlug, versionSlug)
 	const type = 'schema'
 
-	// Register the object type once per (store, type, register) tuple. The base
-	// store records the register/schema pair under the type slug; here
-	// we use literal `schema` for both because chain #3's endpoint shape
-	// expects `/registers/{register}/schemas[/{slug}]`.
-	// Re-register when register changes (different version selected).
+	// Slot the URL segments so `_buildUrl` produces
+	//   `/apps/openregister/api/schemas[/{slug}]`
+	// (OR's existing schemas CRUD).
+	// We keep the per-version OR register name on `slugs.registerSlug`
+	// so the consumer can filter the global schema collection client-side
+	// to only the schemas owned by the selected version's register.
 	if (!store.objectTypeRegistry[type]
-		|| store.objectTypeRegistry[type].register !== register) {
-		store.registerObjectType(type, 'schemas', register)
+		|| !store.objectTypeRegistry[type].slugs
+		|| store.objectTypeRegistry[type].slugs.registerSlug !== register) {
+		store.registerObjectType(type, 'schemas', 'api', { registerSlug: register })
 	}
 	return store
 }
