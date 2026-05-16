@@ -66,6 +66,19 @@ Click **Create** to submit. The backend then runs atomically:
 
 On any failure, all already-created objects roll back in reverse creation order. On success, the wizard closes and you land on the new app's detail page at `/apps/openbuilt/applications/<uuid>`.
 
+![Application detail page after wizard create](./img/app-detail-after-create.png)
+
+The detail page renders:
+- The hero with status badge and **window toggle** (7d / 30d / 90d)
+- Four KPI cards: **Active users**, **Object count**, **Files**, **Audit events** — all at 0 for a fresh app
+- The **activity placeholder** ("No activity in the selected window") until the audit trail accumulates events
+- The **Register** widget showing the production version's per-version OR register (`openbuilt-{appSlug}-production`) with `Schemas`, `Objects`, and `Files` counts
+- The **Schemas** widget listing the seeded `{appSlug}-production-hello-message` schema (or "No schemas yet in this version" until the wizard's schema seed runs)
+- The **+ Add schema** affordance to start designing
+- Returning to **Virtual apps** confirms the new app appears in the index card grid:
+
+![Virtual apps index after wizard create](./img/index-after-wizard.png)
+
 ## 5. What you have now
 
 - One `Application` record with your slug.

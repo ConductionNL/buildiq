@@ -136,9 +136,10 @@ class ApplicationCreationService
         // ---- State tracker for rollback -------------------------------------
         // Indexed by version slug.
         $state = [
-            'applicationUuid' => null,
-            'versionUuids'    => [],
-            'registerSlugs'   => [],
+            'applicationUuid'  => null,
+            'versionUuids'     => [],
+            'registerSlugs'    => [],
+            'versionPayloads'  => [],
         ];
 
         // ---- Step 2: Create Application -------------------------------------
@@ -231,6 +232,10 @@ class ApplicationCreationService
                 $versionUuid    = (string) ($versionData['id'] ?? $versionData['uuid'] ?? '');
                 $state['versionUuids'][$versionSlug]  = $versionUuid;
                 $state['registerSlugs'][$versionSlug] = $registerSlug;
+                // Keep the full payload so we can do the chain-wiring patch
+                // below without OR rejecting a partial payload against the
+                // schema's `required[]` validator (issue #71).
+                $state['versionPayloads'][$versionSlug] = $versionPayload;
             } catch (Throwable $e) {
                 $this->logger->error(
                     'OpenBuilt: wizard create-version failed for '.$versionSlug.': '.$e->getMessage(),
@@ -302,8 +307,16 @@ class ApplicationCreationService
             }
 
             try {
+                // OR's saveObject runs full-schema validation against `required[]`
+                // even when a UUID is passed (no separate PATCH semantics for an
+                // ApplicationVersion in this OR floor). Merge `promotesTo` into
+                // the full payload we kept from the create step so the validator
+                // sees all required fields.
+                $fullPayload = ($state['versionPayloads'][$currentSlug] ?? []);
+                $fullPayload['promotesTo'] = $nextUuid;
+
                 $this->objectService->saveObject(
-                    object: ['promotesTo' => $nextUuid],
+                    object: $fullPayload,
                     register: ApplicationVersionService::REGISTER_SLUG,
                     schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
                     uuid: $currentUuid
@@ -337,8 +350,23 @@ class ApplicationCreationService
         $terminalUuid = (string) ($state['versionUuids'][$terminalSlug] ?? '');
 
         try {
+            // OR runs full-schema validation on saveObject even with UUID set;
+            // build a full Application payload with the productionVersion field
+            // patched, mirroring the chain-wiring fix above (issue #71).
+            $applicationFullPayload = [
+                'slug'              => $appSlug,
+                'name'              => $appName,
+                'description'       => $description,
+                'permissions'       => [
+                    'owners'  => ['user:'.$this->resolveCallerUid()],
+                    'editors' => [],
+                    'viewers' => [],
+                ],
+                'productionVersion' => $terminalUuid,
+            ];
+
             $this->objectService->saveObject(
-                object: ['productionVersion' => $terminalUuid],
+                object: $applicationFullPayload,
                 register: ApplicationVersionService::REGISTER_SLUG,
                 schema: ApplicationVersionService::APPLICATION_SCHEMA,
                 uuid: $state['applicationUuid']
