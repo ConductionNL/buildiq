@@ -209,6 +209,9 @@ export default {
 	},
 	data() {
 		return {
+			// CnDetailPage's #header slot only forwards presentational props
+			// (title/description/icon), not the resolved record — so we fetch
+			// the Application ourselves by UUID via OR's API on mount.
 			application: this.object || null,
 			versions: [],
 			selectedWindow: '7d',
@@ -374,8 +377,10 @@ export default {
 	},
 	watch: {
 		object(next) {
-			this.application = next || null
-			this.loadVersions()
+			if (next) {
+				this.application = next
+				this.loadVersions()
+			}
 		},
 		objectId() {
 			this.refreshApplication()
@@ -396,7 +401,9 @@ export default {
 		},
 	},
 	mounted() {
-		if (!this.application && this.objectId) {
+		// CnDetailPage's #header slot doesn't pass the resolved object, so we
+		// fetch the Application by UUID from the route params on mount.
+		if (!this.application) {
 			this.refreshApplication()
 		} else {
 			this.loadVersions()
@@ -511,9 +518,10 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async refreshApplication() {
-			if (!this.objectId) return
+			const uuid = this.objectId || (this.$route && this.$route.params && this.$route.params.objectId) || ''
+			if (!uuid) return
 			try {
-				const url = generateUrl(`/apps/openregister/api/objects/openbuilt/application/${encodeURIComponent(this.objectId)}`)
+				const url = generateUrl(`/apps/openregister/api/objects/openbuilt/application/${encodeURIComponent(uuid)}`)
 				const { data } = await axios.get(url)
 				this.application = (data && (data['@self'] ? { ...data, ...(data['@self'] || {}) } : data)) || null
 				this.loadVersions()

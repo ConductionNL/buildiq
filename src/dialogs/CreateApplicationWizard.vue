@@ -70,8 +70,8 @@
 			</details>
 		</div>
 
-		<!-- Footer navigation -->
-		<template #actions>
+		<!-- Footer navigation (NcModal has no #actions slot — render inline). -->
+		<div class="wizard__footer">
 			<NcButton
 				v-if="step > 1"
 				type="tertiary"
@@ -79,7 +79,7 @@
 				@click="goBack">
 				{{ t('openbuilt', 'Back') }}
 			</NcButton>
-
+			<span class="wizard__footer-spacer" />
 			<NcButton
 				v-if="step < 4"
 				type="primary"
@@ -98,7 +98,7 @@
 				</template>
 				{{ submitting ? t('openbuilt', 'Creating…') : t('openbuilt', 'Create') }}
 			</NcButton>
-		</template>
+		</div>
 	</NcModal>
 </template>
 
@@ -327,6 +327,19 @@ export default {
 .wizard__body {
 	padding: 8px 0;
 	min-height: 240px;
+}
+
+.wizard__footer {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 16px 0 4px;
+	border-top: 1px solid var(--color-border, #ddd);
+	margin-top: 16px;
+}
+
+.wizard__footer-spacer {
+	flex: 1 1 auto;
 }
 
 .wizard__error-banner {
