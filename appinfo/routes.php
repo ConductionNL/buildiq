@@ -45,6 +45,18 @@ return [
         // Specific route MUST precede the SPA catch-all (memory rule: Symfony specific-first).
         ['name' => 'applications#diffVersions', 'url' => '/api/applications/{slug}/versions/diff', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // ApplicationVersion CRUD + strategy-aware delete (spec
+        // `application-versions` REQ-OBV-107 / REQ-OBV-108 of
+        // openbuilt-versioning-model). Specific routes MUST precede the
+        // SPA catch-all to win Symfony's order-sensitive router (memory
+        // rule: specific-first). The `/diff` route above stays first
+        // because its URL is more specific than `{versionSlug}`.
+        ['name' => 'applicationVersions#index',   'url' => '/api/applications/{slug}/versions',                'verb' => 'GET',    'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applicationVersions#create',  'url' => '/api/applications/{slug}/versions',                'verb' => 'POST',   'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applicationVersions#show',    'url' => '/api/applications/{slug}/versions/{versionSlug}',  'verb' => 'GET',    'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applicationVersions#update',  'url' => '/api/applications/{slug}/versions/{versionSlug}',  'verb' => 'PUT',    'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applicationVersions#destroy', 'url' => '/api/applications/{slug}/versions/{versionSlug}',  'verb' => 'DELETE', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
         // Export pipeline (Phase-2 graduation).
         ['name' => 'exports#submit',   'url' => '/api/applications/{slug}/exports', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'exports#download', 'url' => '/api/exports/{uuid}/download',     'verb' => 'GET'],

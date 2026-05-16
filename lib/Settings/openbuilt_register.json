@@ -3,13 +3,13 @@
   "info": {
     "title": "OpenBuilt Register",
     "description": "Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "x-openregister": {
     "type": "application",
     "app": "openbuilt",
     "openregister": "^v0.2.10",
-    "description": "OpenBuilt register namespace. Hosts the Application + BuiltAppRoute control schemas, the ApplicationTemplate catalogue (spec #8), and the seed `hello-message` schema for the canonical hello-world virtual app."
+    "description": "OpenBuilt register namespace. Hosts the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue (spec #8), and the seed `hello-message` schema for the canonical hello-world virtual app. Per ADR-002 the Application schema is the logical app (slug/name/permissions + productionVersion relation); ApplicationVersion carries the manifest, register reference, semver, and lifecycle."
   },
   "paths": {},
   "components": {
@@ -17,16 +17,13 @@
       "Application": {
         "slug": "application",
         "icon": "AppsBoxOutline",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "title": "Application",
-        "description": "A virtual app built with OpenBuilt. Holds the manifest blob (per ADR-024) plus metadata and lifecycle. Rendered at runtime by mounting CnAppRoot with the manifest.",
+        "description": "A virtual app built with OpenBuilt. Per ADR-002 the Application carries identity (slug, name, description, permissions) plus a productionVersion relation to the ApplicationVersion currently exposed at the canonical URL. Manifest, semver, and lifecycle now live on ApplicationVersion.",
         "type": "object",
         "required": [
           "slug",
-          "name",
-          "manifest",
-          "version",
-          "status"
+          "name"
         ],
         "properties": {
           "slug": {
@@ -44,35 +41,14 @@
             "type": "string",
             "description": "Optional long-form description of the virtual app."
           },
-          "manifest": {
-            "type": "object",
-            "description": "JSON manifest blob conforming to @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json (v1.4.0+). Per ADR-024, this is consumed by useAppManifest + CnAppRoot at runtime.",
-            "required": [
-              "version",
-              "menu",
-              "pages"
-            ],
-            "additionalProperties": true
-          },
-          "version": {
-            "type": "string",
-            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$",
-            "description": "Semver of this Application's manifest content. Bumped when the manifest changes substantively."
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "draft",
-              "published",
-              "archived"
-            ],
-            "default": "draft",
-            "description": "Lifecycle state. Driven by x-openregister-lifecycle below — not by direct writes."
-          },
-          "currentVersion": {
+          "productionVersion": {
             "type": "string",
             "format": "uuid",
-            "description": "UUID of the most recent ApplicationVersion snapshot. Maintained by the snapshot-on-publish lifecycle action (see chain spec #6 openbuilt-versioning). Optional — never-published Applications carry no currentVersion."
+            "description": "Relation → ApplicationVersion currently exposed at the canonical /apps/openbuilt/{slug} URL. Set explicitly by the admin (creation wizard, detail-page version switcher), not derived from chain terminality. The referenced ApplicationVersion's `application` relation MUST point back at this Application — enforced server-side by ApplicationVersionService::guardProductionVersionOwnership() (ADR-031 §Exceptions(1) cross-row guard).",
+            "x-openregister-relation": {
+              "target": "openbuilt/applicationVersion",
+              "type": "many-to-one"
+            }
           },
           "permissions": {
             "type": "object",
@@ -102,94 +78,6 @@
             },
             "additionalProperties": false
           }
-        },
-        "x-openregister-lifecycle": {
-          "field": "status",
-          "initial": "draft",
-          "states": {
-            "draft": {
-              "description": "Editable, not exposed via the manifest endpoint, not reachable at /builder/{slug}."
-            },
-            "published": {
-              "description": "Exposed via GET /api/applications/{slug}/manifest, reachable at /builder/{slug}/*. The on_transition action upserts the corresponding BuiltAppRoute for fast slug → application lookup."
-            },
-            "archived": {
-              "description": "No longer reachable. Preserved for restore. The on_transition action removes the BuiltAppRoute."
-            }
-          },
-          "transitions": [
-            {
-              "name": "publish",
-              "from": "draft",
-              "to": "published",
-              "description": "Make the virtual app reachable at /builder/{slug}. Also snapshots the current manifest into an ApplicationVersion sibling and bumps currentVersion (chain spec #6 openbuilt-versioning).",
-              "on_transition": {
-                "upsert_relation": {
-                  "schema": "openbuilt/built-app-route",
-                  "match": {
-                    "slug": "@self.slug"
-                  },
-                  "payload": {
-                    "slug": "@self.slug",
-                    "applicationUuid": "@self.uuid"
-                  }
-                },
-                "create_relation": {
-                  "schema": "openbuilt/application-version",
-                  "payload": {
-                    "applicationUuid": "@self.uuid",
-                    "version": "@self.version",
-                    "manifest": "@self.manifest",
-                    "publishedAt": "@now",
-                    "publishedBy": "@actor",
-                    "notes": "Published via lifecycle transition"
-                  },
-                  "writeback": {
-                    "self.currentVersion": "@result.uuid",
-                    "self.status": "draft"
-                  }
-                }
-              }
-            },
-            {
-              "name": "archive",
-              "from": "published",
-              "to": "archived",
-              "description": "Hide the virtual app without deleting it.",
-              "on_transition": {
-                "delete_relation": {
-                  "schema": "openbuilt/built-app-route",
-                  "match": {
-                    "slug": "@self.slug"
-                  }
-                }
-              }
-            },
-            {
-              "name": "reopen",
-              "from": "archived",
-              "to": "draft",
-              "description": "Restore an archived virtual app to draft for further editing."
-            },
-            {
-              "name": "republish",
-              "from": "archived",
-              "to": "published",
-              "description": "Restore an archived virtual app directly to published.",
-              "on_transition": {
-                "upsert_relation": {
-                  "schema": "openbuilt/built-app-route",
-                  "match": {
-                    "slug": "@self.slug"
-                  },
-                  "payload": {
-                    "slug": "@self.slug",
-                    "applicationUuid": "@self.uuid"
-                  }
-                }
-              }
-            }
-          ]
         }
       },
       "ApplicationTemplate": {
@@ -326,48 +214,135 @@
         }
       },
       "ApplicationVersion": {
-        "slug": "application-version",
-        "icon": "HistoryIcon",
+        "slug": "applicationVersion",
+        "icon": "SourceBranchOutline",
         "version": "0.1.0",
         "title": "Application Version",
-        "description": "Append-only snapshot of an Application's manifest at the moment it was published. Created by the snapshot-on-publish lifecycle action (chain spec #6 openbuilt-versioning). History is never destructive — rollback creates a NEW snapshot instead of removing existing rows (design.md Decision 3).",
+        "description": "A deployable runtime for an Application (ADR-002). Each ApplicationVersion owns its own per-version OpenRegister register so production and test data are physically isolated. The admin-defined linear promotion chain reads via the optional `promotesTo` relation. Lifecycle (draft → published → archived) is per-version; the `draft → published` transition upserts the BuiltAppRoute slug index.",
         "type": "object",
         "required": [
-          "applicationUuid",
-          "version",
+          "name",
+          "slug",
           "manifest",
-          "publishedAt",
-          "publishedBy"
+          "register",
+          "semver",
+          "status",
+          "application"
         ],
         "properties": {
-          "applicationUuid": {
+          "name": {
             "type": "string",
-            "format": "uuid",
-            "description": "UUID of the parent Application this snapshot belongs to."
+            "description": "Human-readable display label set by the admin (e.g. `Production`, `Staging`, `Development`)."
           },
-          "version": {
+          "slug": {
             "type": "string",
-            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$",
-            "description": "Semver version string copied from the Application's `version` field at snapshot time."
+            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "minLength": 2,
+            "maxLength": 48,
+            "description": "URL-safe kebab-case slug for this version (e.g. `production`, `staging`, `development`)."
           },
           "manifest": {
             "type": "object",
-            "description": "Full deep-copy of the Application's manifest blob at snapshot time. Per design.md Decision 1 this is a full blob, not a JSON Patch delta.",
+            "description": "JSON manifest blob conforming to @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json (v1.4.0+). Per ADR-024, this is consumed by useAppManifest + CnAppRoot at runtime. Per ADR-002 the manifest now lives on ApplicationVersion (was on Application).",
             "additionalProperties": true
           },
-          "publishedAt": {
+          "register": {
             "type": "string",
-            "format": "date-time",
-            "description": "ISO 8601 timestamp recording when the snapshot was taken (i.e. when the publish transition fired)."
+            "pattern": "^openbuilt-[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "description": "Per-version OpenRegister register name carrying this version's schemas and objects. Convention: `openbuilt-{appSlug}-{versionSlug}` (e.g. `openbuilt-hello-world-production`). Actual provisioning is owned by the creation-wizard capability (sibling spec)."
           },
-          "publishedBy": {
+          "semver": {
             "type": "string",
-            "description": "Nextcloud user id of the actor who triggered the publish. `system` for snapshots created by repair steps."
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$",
+            "default": "0.1.0",
+            "description": "Semantic version of this ApplicationVersion. Initial value `0.1.0`. Patch-bumped automatically by ApplicationVersionService::onSave() when the manifest content changes (SHA-256 of canonicalised manifest differs from the previously-stored hash). Metadata-only edits do NOT bump semver. Minor/major bumps remain manual."
           },
-          "notes": {
+          "status": {
             "type": "string",
-            "description": "Optional free-text changelog entry. v1 leaves this populated by the lifecycle action with a default string — a future spec may add a notes-prompt UX."
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ],
+            "default": "draft",
+            "description": "Per-version lifecycle state. Driven by x-openregister-lifecycle below."
+          },
+          "application": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Relation → parent Application (required). Real first-class OR relation, not a UUID string (ADR-002 §Decision).",
+            "x-openregister-relation": {
+              "target": "openbuilt/application",
+              "type": "many-to-one"
+            }
+          },
+          "promotesTo": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Optional relation → next ApplicationVersion in the linear promotion chain. Terminal versions have `promotesTo: null`. Cycle detection is enforced server-side by ApplicationVersionService::guardNoCycle() (ADR-031 §Exceptions(1) cross-row).",
+            "x-openregister-relation": {
+              "target": "openbuilt/applicationVersion",
+              "type": "many-to-one"
+            }
           }
+        },
+        "x-openregister-validation": {
+          "rules": [
+            {
+              "id": "promotesTo-no-self-loop",
+              "description": "Same-row self-loop guard: an ApplicationVersion cannot promote to itself. Broader cross-row cycle detection lives in ApplicationVersionService::guardNoCycle().",
+              "when": "promotesTo != null",
+              "assert": "promotesTo != self.uuid",
+              "message": "promotesTo cannot equal the version's own UUID (self-loop)."
+            }
+          ]
+        },
+        "x-openregister-lifecycle": {
+          "field": "status",
+          "initial": "draft",
+          "states": {
+            "draft": {
+              "description": "Editable working version, not exposed at the canonical `/apps/openbuilt/{slug}` URL unless this version is the parent Application's productionVersion."
+            },
+            "published": {
+              "description": "Reachable through routing — eligible to be the parent Application's productionVersion. The on_transition action upserts the corresponding BuiltAppRoute keyed by the parent Application's slug."
+            },
+            "archived": {
+              "description": "No longer reachable. Preserved for restore via the `reopen` transition."
+            }
+          },
+          "transitions": [
+            {
+              "name": "publish",
+              "from": "draft",
+              "to": "published",
+              "description": "Mark this version as ready to be the parent Application's productionVersion. Relocated from Application schema per ADR-002 — published-ness is per-version now.",
+              "on_transition": {
+                "upsert_relation": {
+                  "schema": "openbuilt/built-app-route",
+                  "match": {
+                    "slug": "@self.application.slug"
+                  },
+                  "payload": {
+                    "slug": "@self.application.slug",
+                    "applicationUuid": "@self.application.uuid"
+                  }
+                }
+              }
+            },
+            {
+              "name": "archive",
+              "from": "published",
+              "to": "archived",
+              "description": "Retire a published version. Operators are responsible for swapping the parent Application's productionVersion off this row first."
+            },
+            {
+              "name": "reopen",
+              "from": "archived",
+              "to": "draft",
+              "description": "Restore an archived ApplicationVersion to draft for further editing."
+            }
+          ]
         }
       },
       "exportJob": {
