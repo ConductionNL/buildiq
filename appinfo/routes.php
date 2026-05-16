@@ -16,6 +16,12 @@ return [
         // Health check endpoint.
         ['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
 
+        // App-creation wizard endpoint (openbuilt-app-creation-wizard REQ-OBWIZ-001).
+        // POST /api/applications/wizard — atomic creation of Application + N versions + N registers.
+        // #[NoAdminRequired] on the controller method; RBAC is implicit (caller becomes owner).
+        // Must precede the {slug} + collection routes so it does not shadow them.
+        ['name' => 'applicationCreation#wizard', 'url' => '/api/applications/wizard', 'verb' => 'POST'],
+
         // RBAC-filtered Application list (openbuilt-rbac REQ-OBRBAC-002 / REQ-OBR-007).
         // OR's schema-level read rule is a coarse group ACL — not a row-level filter on the
         // Application's `permissions` block — so the editor list MUST go through this

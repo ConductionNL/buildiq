@@ -69,6 +69,7 @@
 				"register": "openbuilt",
 				"schema": "application",
 				"viewMode": "cards",
+				"actionsComponent": "VirtualAppsActions",
 				"cardComponent": "ApplicationCard",
 				"columns": ["name", "status", "version", "@self.updated"],
 				"sidebar": { "enabled": true, "showMetadata": true }
