@@ -161,23 +161,20 @@ class ApplicationVersionLifecycleSchemaTest extends TestCase
         self::assertIsArray($transitions);
         self::assertCount(3, $transitions, 'expected exactly 3 transitions (publish/archive/reopen)');
 
-        $byName = [];
-        foreach ($transitions as $t) {
-            self::assertIsArray($t);
-            self::assertArrayHasKey('name', $t);
-            $byName[$t['name']] = $t;
-        }
+        // The post-OR-#1520 shape is a MAP keyed by action name, with
+        // `from` as an array of states. The list-shape form (where each
+        // transition had a `name` field and a string `from`) is no longer
+        // accepted by OR's LifecycleAnnotationValidator.
+        self::assertSame(['publish', 'archive', 'reopen'], array_keys($transitions));
 
-        self::assertSame(['publish', 'archive', 'reopen'], array_keys($byName));
+        self::assertSame(['draft'], $transitions['publish']['from']);
+        self::assertSame('published', $transitions['publish']['to']);
 
-        self::assertSame('draft', $byName['publish']['from']);
-        self::assertSame('published', $byName['publish']['to']);
+        self::assertSame(['published'], $transitions['archive']['from']);
+        self::assertSame('archived', $transitions['archive']['to']);
 
-        self::assertSame('published', $byName['archive']['from']);
-        self::assertSame('archived', $byName['archive']['to']);
-
-        self::assertSame('archived', $byName['reopen']['from']);
-        self::assertSame('draft', $byName['reopen']['to']);
+        self::assertSame(['archived'], $transitions['reopen']['from']);
+        self::assertSame('draft', $transitions['reopen']['to']);
     }//end testThreeTransitionsAreDeclared()
 
     /**
@@ -190,13 +187,7 @@ class ApplicationVersionLifecycleSchemaTest extends TestCase
     public function testPublishUpsertsBuiltAppRoute(): void
     {
         $lifecycle  = $this->lifecycle();
-        $transition = null;
-        foreach ($lifecycle['transitions'] as $t) {
-            if (($t['name'] ?? null) === 'publish') {
-                $transition = $t;
-                break;
-            }
-        }
+        $transition = $lifecycle['transitions']['publish'] ?? null;
 
         self::assertIsArray($transition, 'publish transition must exist');
         self::assertArrayHasKey('on_transition', $transition);
@@ -224,10 +215,18 @@ class ApplicationVersionLifecycleSchemaTest extends TestCase
     public function testDisallowedTransitionIsAbsent(): void
     {
         $lifecycle = $this->lifecycle();
-        $pairs     = array_map(
-            static fn (array $t): string => sprintf('%s->%s', ($t['from'] ?? '?'), ($t['to'] ?? '?')),
-            $lifecycle['transitions']
-        );
+        // Each transition's `from` is an array of states post-OR-#1520.
+        // Walk the cartesian product so we still catch a stray
+        // (e.g.) `draft → archived` even if it slipped into a multi-from
+        // transition.
+        $pairs = [];
+        foreach ($lifecycle['transitions'] as $spec) {
+            $froms = ($spec['from'] ?? []);
+            $to    = ($spec['to'] ?? '?');
+            foreach ((array) $froms as $from) {
+                $pairs[] = sprintf('%s->%s', (string) $from, (string) $to);
+            }
+        }
 
         self::assertNotContains('draft->archived', $pairs);
         self::assertNotContains('published->draft', $pairs);
