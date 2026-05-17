@@ -335,10 +335,9 @@
               "description": "No longer reachable. Preserved for restore via the `reopen` transition."
             }
           },
-          "transitions": [
-            {
-              "name": "publish",
-              "from": "draft",
+          "transitions": {
+            "publish": {
+              "from": ["draft"],
               "to": "published",
               "description": "Mark this version as ready to be the parent Application's productionVersion. Relocated from Application schema per ADR-002 — published-ness is per-version now.",
               "on_transition": {
@@ -354,19 +353,17 @@
                 }
               }
             },
-            {
-              "name": "archive",
-              "from": "published",
+            "archive": {
+              "from": ["published"],
               "to": "archived",
               "description": "Retire a published version. Operators are responsible for swapping the parent Application's productionVersion off this row first."
             },
-            {
-              "name": "reopen",
-              "from": "archived",
+            "reopen": {
+              "from": ["archived"],
               "to": "draft",
               "description": "Restore an archived ApplicationVersion to draft for further editing."
             }
-          ]
+          }
         }
       },
       "exportJob": {
@@ -470,34 +467,20 @@
           }
         },
         "x-openregister-lifecycle": {
-          "states": [
-            "queued",
-            "running",
-            "succeeded",
-            "failed"
-          ],
-          "initialState": "queued",
-          "terminalStates": [
-            "succeeded",
-            "failed"
-          ],
-          "transitions": [
-            {
-              "from": "queued",
-              "to": "running",
-              "name": "start"
-            },
-            {
-              "from": "running",
-              "to": "succeeded",
-              "name": "succeed"
-            },
-            {
-              "from": "running",
-              "to": "failed",
-              "name": "fail"
-            }
-          ]
+          "field": "status",
+          "initial": "queued",
+          "states": {
+            "queued":    { "description": "Newly created; waiting to be picked up by the worker." },
+            "running":   { "description": "Worker is actively generating the export bundle." },
+            "succeeded": { "description": "Generation finished; download artifact is ready." },
+            "failed":    { "description": "Generation failed irrecoverably; see error field." }
+          },
+          "final": ["succeeded", "failed"],
+          "transitions": {
+            "start":   { "from": ["queued"],  "to": "running" },
+            "succeed": { "from": ["running"], "to": "succeeded" },
+            "fail":    { "from": ["running"], "to": "failed" }
+          }
         },
         "x-openregister-lifecycle-exception": {
           "reference": "openspec/changes/openbuilt-export-to-real-app/design.md#decision-7",
