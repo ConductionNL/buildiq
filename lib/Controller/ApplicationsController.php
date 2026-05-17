@@ -1203,7 +1203,7 @@ class ApplicationsController extends Controller
         try {
             $existing = $this->registerMapper->find($legacyRegisterSlug, _multitenancy: false);
 
-            $existingOwner = $this->extractRegisterOwner($existing);
+            $existingOwner = $this->extractRegisterOwner(register: $existing);
             if ($existingOwner === '' || $existingOwner === $ownerUid) {
                 return $existing;
             }

@@ -3,189 +3,107 @@
 ## Purpose
 TBD - created by archiving change openbuilt-versioning. Update Purpose after archive.
 ## Requirements
-### Requirement: REQ-OBV-001 ApplicationVersion schema declared in OpenRegister
-
-The system SHALL declare an `ApplicationVersion` schema in
-`lib/Settings/openbuilt_register.json` under the `openbuilt` register
-namespace. The schema SHALL define properties `uuid` (string,
-UUID-format), `applicationUuid` (string, UUID-format, required —
-foreign reference to the parent Application), `version` (string,
-semver pattern, required), `manifest` (object, required — full
-manifest blob copy at snapshot time), `publishedAt` (string, ISO
-8601 date-time, required), `publishedBy` (string, NC user id,
-required), and `notes` (string, optional). The schema SHALL be
-imported into OpenRegister at app install / post-migration time via
-the existing repair step. No PHP service class (e.g.
-`ApplicationVersionService`) SHALL be written to wrap CRUD over this
-schema — clients read and write `ApplicationVersion` rows via OR's
-REST API per ADR-022.
-
-#### Scenario: Schema is available after install
-
-- **WHEN** the OpenBuilt app's repair step runs against an install
-  that already has the `Application` schema from spec #1
-- **THEN** OpenRegister exposes the `openbuilt/application-version`
-  schema with the declared properties
-- **AND** the schema appears in OR's standard schema listing for the
-  `openbuilt` register namespace
-
-#### Scenario: ApplicationVersion row is created via OR REST
-
-- **WHEN** a client POSTs a valid payload (carrying
-  `applicationUuid`, `version`, `manifest`, `publishedAt`,
-  `publishedBy`) to OR's REST endpoint for the
-  `openbuilt/application-version` namespace
-- **THEN** OR persists the object, returns 201, and the returned
-  object carries an OR-assigned `uuid` and the submitted fields
-
 ### Requirement: REQ-OBV-002 Snapshot is created on draft-to-published transition
 
-The system SHALL create an `ApplicationVersion` row every time an
-`Application` transitions from `draft` to `published`. The snapshot
-SHALL deep-copy the Application's current `manifest` blob, capture
-its current `version` string, set `publishedAt` to the transition's
-server timestamp, set `publishedBy` to the authenticated actor's NC
-user id, and set `applicationUuid` to the Application's UUID. The
-snapshot creation SHALL be declared as
-`x-openregister-lifecycle.on_transition` action metadata on the
-`Application` schema. If OR's lifecycle engine does not yet expose
-an action that can create a sibling object on a state transition,
-the system MAY ship a single
-`ApplicationVersionSnapshotListener` PHP class subscribed to OR's
-`ObjectLifecycleTransitionedEvent` as an ADR-031 §Exceptions(1)
-fallback — the behaviour observed from outside SHALL be identical
-in either case.
+The system SHALL NOT spawn sibling `ApplicationVersion` rows on
+`draft → published` transitions. Snapshot-on-publish writeback is retired under
+ADR-002; the versioned model treats every `ApplicationVersion` row as a long-lived
+first-class object, not an append-only snapshot. History on a version is captured
+by OR's object-time-travel on the `ApplicationVersion` row itself.
 
-#### Scenario: Publishing creates a snapshot
+The system SHALL NOT subscribe any PHP listener
+(`ApplicationVersionSnapshotListener` or any successor) to OR's
+`ObjectLifecycleTransitionedEvent` for the purpose of creating sibling
+ApplicationVersion rows. The `Application.x-openregister-lifecycle` block SHALL NOT
+declare a `create_relation(ApplicationVersion)` action on any transition.
 
-- **WHEN** an authenticated user transitions a `draft` Application
-  to `published` via the lifecycle endpoint
-- **THEN** a new `ApplicationVersion` row exists in OR with
-  `applicationUuid` matching the Application's UUID, `manifest`
-  byte-equal to the Application's manifest at transition time,
-  `version` matching the Application's `version`, and `publishedAt`
-  / `publishedBy` populated
+The publish transition lives on `ApplicationVersion` itself (per
+`application-versions`/REQ-OBV-106) — moving an existing `ApplicationVersion` from
+`draft` to `published` MUST upsert the `BuiltAppRoute` slug index, and nothing
+else.
 
-#### Scenario: Failed transition creates no snapshot
+#### Scenario: Publishing does NOT create a sibling ApplicationVersion
 
-- **WHEN** an authenticated user attempts a disallowed transition
-  (e.g. `draft → archived` per spec #1's lifecycle declaration)
-- **THEN** no `ApplicationVersion` row is created
-- **AND** no audit `lifecycle.transition` entry is recorded
+- **GIVEN** an Application X with one `ApplicationVersion` V in `draft`
+- **WHEN** V transitions from `draft` to `published`
+- **THEN** only V exists in the ApplicationVersion collection for X
+- **AND** no sibling ApplicationVersion row is created
+- **AND** OR's audit trail records the lifecycle transition on V (not a new row)
+
+#### Scenario: No snapshot listener subscribed
+
+- **WHEN** the OpenBuilt app boots
+- **THEN** no `ApplicationVersionSnapshotListener` (or successor) is registered as
+  an event listener for `ObjectLifecycleTransitionedEvent`
 
 ### Requirement: REQ-OBV-003 Rollback restores a previous snapshot as the draft manifest
 
-The system SHALL support rolling back an Application to any of its
-historical `ApplicationVersion` snapshots. The rollback action
-SHALL copy the chosen `ApplicationVersion.manifest` blob onto the
-Application's current draft manifest (leaving the Application in
-`draft` status, ready for republish), set the Application's
-`version` to the chosen snapshot's `version` suffixed with a
-rollback marker (e.g. `+rollback`) so that the next publish creates
-a new distinct snapshot, and SHALL **not** delete or overwrite any
-existing `ApplicationVersion` row — history is append-only.
+The system SHALL support rolling back any `ApplicationVersion` to a prior point in
+its OR object-history via OR's time-travel API on the version row itself —
+restoring a previous state of an `ApplicationVersion` MUST NOT be implemented by
+copying from a sibling snapshot row (the append-only snapshot model is retired
+under ADR-002).
 
-#### Scenario: Rollback restores the manifest without history rewrite
+The rollback action SHALL restore the chosen historical state of the row's
+`manifest` (and any other fields captured by OR's time-travel), SHALL leave the
+version's `status` at whatever the historical state recorded, and SHALL trigger
+the manifest-hash semver bump (per `application-versions`/REQ-OBV-103) only when
+the restored `manifest` differs from the immediately-prior saved state.
 
-- **WHEN** an Application has three historical `ApplicationVersion`
-  rows (v1.0.0, v1.1.0, v1.2.0)
-- **AND** an authenticated user rolls back to v1.0.0
-- **THEN** the Application's draft `manifest` is byte-equal to
-  v1.0.0's `manifest`
-- **AND** all three original `ApplicationVersion` rows remain
-  unchanged in OR
-- **AND** the Application's `status` is `draft`
+#### Scenario: Rollback uses OR object-time-travel on the version row
 
-#### Scenario: Republish after rollback creates a fresh snapshot
-
-- **WHEN** the user from the previous scenario publishes the
-  rolled-back draft
-- **THEN** a fourth `ApplicationVersion` row is created with a new
-  `uuid`, the restored manifest, and a fresh `publishedAt`
-- **AND** the Application's `currentVersion` points at the new row,
-  not at v1.0.0
-
-### Requirement: REQ-OBV-004 Version history is retained without retention cap
-
-The system SHALL retain every `ApplicationVersion` row indefinitely
-for the foreseeable future of an Application's lifetime. No
-automatic deletion, time-based expiry, or "keep last N" trimming
-SHALL be applied in v1. Retention policy is explicitly deferred —
-storage cost is bounded by manifest blob size (kilobytes per snapshot)
-and the expected publish cadence (a handful per day per app at most).
-If a future spec introduces a retention cap, it SHALL be opt-in
-per Application.
-
-#### Scenario: Old snapshots remain queryable
-
-- **WHEN** an Application has been publishing for an extended period
-  and accumulated many `ApplicationVersion` rows
-- **THEN** the oldest row remains readable via OR REST
-- **AND** no row has been deleted by automatic retention logic
+- **GIVEN** an ApplicationVersion V with three historical states recorded by OR
+  object-history (states t0, t1, t2)
+- **WHEN** an authorised user rolls V back to state t1
+- **THEN** OR's time-travel API is called on V to restore t1
+- **AND** no sibling `ApplicationVersion` row is created
+- **AND** V's `manifest` matches t1's `manifest`
 
 ### Requirement: REQ-OBV-005 Diff endpoint returns two manifest blobs in one call
 
 The system SHALL expose
-`GET /index.php/apps/openbuilt/api/applications/{slug}/versions/diff?from={uuidA}&to={uuidB}`
-backed by `ApplicationsController::diffVersions`. The endpoint
-SHALL resolve `{slug}` to an Application via the `BuiltAppRoute`
-index (spec #1), look up both referenced `ApplicationVersion` rows
-(or accept the literal string `draft` for either parameter to mean
-"the current draft manifest on the Application"), and return a JSON
-body of shape `{ from: { manifest, version, publishedAt }, to: {
-manifest, version, publishedAt } }` so that the client diff
-component renders without a second round-trip. The endpoint SHALL
-respond `200` on success, `404` if any referenced version row is
-missing, and SHALL enforce the same organisation scoping as the
-manifest endpoint (spec #1). The endpoint SHALL carry
-`#[NoAdminRequired]` and SHALL be registered in
-`appinfo/routes.php`.
+`GET /index.php/apps/openbuilt/api/applications/{slug}/versions/diff?from={fromRef}&to={toRef}`
 
-#### Scenario: Diff endpoint returns both manifests
+The diff endpoint changes shape under the versioned model: diffing two
+`ApplicationVersion` rows is the canonical case; comparing two historical states
+of one ApplicationVersion (time-travel diff on a single row) is the second
+supported case.
 
-- **WHEN** an authenticated user GETs the diff endpoint with two
-  valid `ApplicationVersion` UUIDs for the same Application
+The endpoint URL parameters work as follows:
+where `{fromRef}` and `{toRef}` are either:
+
+- An ApplicationVersion `slug` (e.g. `staging`) — diff is against the current saved
+  state of that version's manifest.
+- The literal `current:<versionSlug>` (e.g. `current:staging`) — equivalent to
+  the bare slug above; reserved syntax for forward compatibility.
+- A version-history reference `history:<versionSlug>:<revisionId>` — diff is against
+  the named OR object-history revision of that version.
+
+The endpoint SHALL return a JSON body `{ from: { manifest, semver, savedAt }, to:
+{ manifest, semver, savedAt } }`. The endpoint SHALL carry `#[NoAdminRequired]` and
+respect the parent Application's `permissions` RBAC block (viewers may diff).
+Missing references SHALL return `404`.
+
+#### Scenario: Diff two ApplicationVersions by slug
+
+- **WHEN** an authorised viewer GETs the diff endpoint with `from=development` and
+  `to=production` for an Application `<slug>`
 - **THEN** the response is `200 application/json`
-- **AND** the body contains both manifests unwrapped under `from`
-  and `to`
+- **AND** the body contains the development version's manifest under `from` and the
+  production version's manifest under `to`
 
-#### Scenario: Diff against current draft
+#### Scenario: Diff two historical revisions of one version
 
-- **WHEN** an authenticated user GETs the diff endpoint with
-  `from=draft` and `to=<latest-published-version-uuid>`
-- **THEN** `from.manifest` is the Application's current draft
-  manifest and `to.manifest` is the published snapshot's manifest
+- **WHEN** an authorised viewer GETs the diff endpoint with
+  `from=history:staging:r5` and `to=history:staging:r9`
+- **THEN** the response is `200`
+- **AND** `from.manifest` is the manifest captured at revision r5 of the staging
+  version; `to.manifest` is the manifest at revision r9
 
 #### Scenario: Missing version returns 404
 
-- **WHEN** an authenticated user GETs the diff endpoint with a
-  `from` UUID that has no matching `ApplicationVersion`
+- **WHEN** an authorised viewer GETs the diff endpoint with `from=<slug>` for a
+  version slug that does not exist
 - **THEN** the response is `404` with a JSON error body
 - **AND** no partial data is leaked
-
-### Requirement: REQ-OBV-006 Current version reference is maintained on the Application
-
-The `Application` schema (spec #1) SHALL be extended with a
-`currentVersion` property (string, UUID-format, optional). The
-declarative lifecycle action that creates the snapshot SHALL also
-update the Application's `currentVersion` to point at the freshly
-created `ApplicationVersion` row's `uuid`. The same listener
-fallback path described in REQ-OBV-002 SHALL be used if the
-declarative path is unavailable. Reading `Application.currentVersion`
-SHALL be the canonical way to identify "the latest published
-manifest" without scanning the `ApplicationVersion` collection.
-
-#### Scenario: First publish populates currentVersion
-
-- **WHEN** an Application that has never been published transitions
-  from `draft` to `published`
-- **THEN** the Application's `currentVersion` is set to the UUID of
-  the newly created `ApplicationVersion` row
-
-#### Scenario: Re-publish updates currentVersion
-
-- **WHEN** an Application is published a second time
-- **THEN** its `currentVersion` is updated to the UUID of the
-  second `ApplicationVersion` row
-- **AND** the first row remains intact and discoverable via OR REST
 

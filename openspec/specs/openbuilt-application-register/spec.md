@@ -6,30 +6,36 @@ TBD - created by archiving change bootstrap-openbuilt. Update Purpose after arch
 ### Requirement: REQ-OBA-001 Application schema registered in OpenRegister
 
 The system SHALL declare an `Application` schema in
-`lib/Settings/openbuilt_register.json` under the `openbuilt` register
-namespace. The schema SHALL define properties `uuid` (string,
-UUID-format), `slug` (string, kebab-case pattern), `name` (string,
-required), `description` (string, optional), `manifest` (object,
-required — the manifest JSON blob), `version` (string, semver pattern,
-required), and `status` (string, enum: `draft | published | archived`,
-required, default `draft`). The schema SHALL be imported into
-OpenRegister at app install / post-migration time via a repair step.
+`lib/Settings/openbuilt_register.json` under the `openbuilt` register namespace.
+Under the versioned model (ADR-002) the Application schema SHALL define the following
+top-level properties: `uuid` (string, UUID-format), `slug` (string, kebab-case
+pattern), `name` (string, required), `description` (string, optional), `permissions`
+(object, optional — RBAC block per REQ-OBA-006), and `productionVersion` (relation
+→ ApplicationVersion, optional — names which ApplicationVersion end users see at the
+canonical URL).
+
+The Application schema SHALL NOT define `manifest`, `version`, `status`, or
+`currentVersion` — those properties move to the new `ApplicationVersion` schema or
+disappear entirely (`currentVersion` is retired per ADR-002 §Decision). The schema
+SHALL be imported into OpenRegister at app install / post-migration time via the
+existing repair step.
 
 #### Scenario: Schema is available after install
 
 - **WHEN** the OpenBuilt app is installed and its repair step runs
-- **THEN** OpenRegister exposes the `openbuilt` register containing
-  the `Application` schema
+- **THEN** OpenRegister exposes the `openbuilt` register containing the
+  `Application` schema with the versioned-model property set above
 - **AND** the schema's properties match the declaration in
   `lib/Settings/openbuilt_register.json`
 
 #### Scenario: Application object is created via OR REST
 
 - **WHEN** a client POSTs a payload to OR's REST endpoint for the
-  `openbuilt/application` namespace with a valid `manifest`, `slug`,
-  `name`, `version`, and `status: draft`
-- **THEN** OR persists the object, returns 201, and the returned
-  object carries an OR-assigned `uuid` and the submitted fields
+  `openbuilt/application` namespace with valid `slug`, `name`, and `permissions`
+- **THEN** OR persists the object, returns 201, and the returned object carries an
+  OR-assigned `uuid` and the submitted fields
+- **AND** the returned object has no `manifest`, `version`, `status`, or
+  `currentVersion` field
 
 ### Requirement: REQ-OBA-002 Manifest blob is structurally valid
 
@@ -82,55 +88,47 @@ spec does not touch `app-manifest.schema.json` and carries no upstream coupling.
 
 ### Requirement: REQ-OBA-003 Declarative lifecycle drives state transitions
 
-The `Application` schema SHALL declare its state machine via
-`x-openregister-lifecycle` in
-`lib/Settings/openbuilt_register.json`. The lifecycle SHALL define
-three states (`draft`, `published`, `archived`) and the allowed
-transitions: `draft → published`, `published → archived`,
-`archived → draft` (re-open for editing). No service class (e.g.
-`ApplicationLifecycleService`) SHALL be written; the lifecycle is the
-canonical declarative example for this spec per ADR-031. Each
-transition SHALL be recorded in OR's audit trail.
+Under the versioned model, the `Application` schema SHALL NOT declare a
+`status`-based state machine in `x-openregister-lifecycle` — lifecycle is per-version
+now. The Application's previous `draft | published | archived` lifecycle SHALL
+relocate to the `ApplicationVersion` schema (see capability
+`application-versions`, REQ-OBV-106).
 
-#### Scenario: Allowed transition succeeds with an audit entry
+The Application schema MAY retain `x-openregister-lifecycle` only for any cross-row
+hooks (e.g. integrity guards) — it SHALL NOT carry a `states` block or `transitions`
+in v1 of this change. No `ApplicationLifecycleService` SHALL be written.
 
-- **WHEN** an authorised user transitions a `draft` Application to
-  `published` via the lifecycle endpoint
-- **THEN** the object's `status` becomes `published`
-- **AND** OR's audit trail records a `lifecycle.transition` event with
-  the from-state, to-state, and actor identity
+#### Scenario: Application has no status state machine
 
-#### Scenario: Disallowed transition is rejected
-
-- **WHEN** a client attempts to transition a `draft` Application
-  directly to `archived` (a transition not declared in the lifecycle)
-- **THEN** the system returns a 4xx error
-- **AND** the object's `status` remains `draft`
-- **AND** no audit entry is recorded
+- **WHEN** the OpenBuilt repair step runs and imports the Application schema
+- **THEN** the imported schema does not expose a `status` enum
+- **AND** the imported schema's `x-openregister-lifecycle` carries no `states` or
+  `transitions` block
 
 ### Requirement: REQ-OBA-004 BuiltAppRoute index for slug lookup
 
 The system SHALL declare a `BuiltAppRoute` schema in
-`lib/Settings/openbuilt_register.json` with properties `slug` (string,
-required, kebab-case pattern) and `applicationUuid` (string,
-UUID-format, required). The `slug` property SHALL be unique within an
-organisation. The repair step SHALL create or maintain a
-`BuiltAppRoute` row for every published Application, keyed by its
-slug, so that the runtime can resolve `slug → Application UUID` in a
-single OR lookup without scanning every Application.
+`lib/Settings/openbuilt_register.json` with properties `slug` (string, required,
+kebab-case pattern) and `applicationUuid` (string, UUID-format, required). The `slug`
+property SHALL be unique within an organisation. The `BuiltAppRoute` row SHALL be
+created or updated by the `on_transition` action that fires when an
+`ApplicationVersion` transitions from `draft` to `published` (the action is declared
+on `ApplicationVersion`'s lifecycle — see `application-versions`/REQ-OBV-106, not on
+`Application`'s). The `applicationUuid` field on the route record points at the
+parent Application (i.e. `ApplicationVersion.application.uuid`).
 
-#### Scenario: Publishing an Application creates a BuiltAppRoute
+#### Scenario: Publishing the first version creates a BuiltAppRoute
 
-- **WHEN** an Application with `slug: hello-world` transitions from
-  `draft` to `published`
-- **THEN** a `BuiltAppRoute` object exists with `slug: hello-world`
-  and `applicationUuid` matching the Application's UUID
+- **WHEN** an Application with `slug: hello-world` has its first ApplicationVersion
+  transition from `draft` to `published`
+- **THEN** a `BuiltAppRoute` object exists with `slug: hello-world` and
+  `applicationUuid` matching the Application's `uuid`
 
 #### Scenario: Slug uniqueness is enforced per organisation
 
-- **WHEN** a client attempts to publish a second Application with
-  `slug: hello-world` in the same organisation
-- **THEN** the system returns a 4xx error citing the slug conflict
+- **WHEN** an admin attempts to create a second Application with `slug: hello-world`
+  in the same organisation
+- **THEN** OR returns a 4xx error citing the slug conflict
 - **AND** no second `BuiltAppRoute` is created
 
 ### Requirement: REQ-OBA-005 Multi-tenant scoping via OR organisation
@@ -147,56 +145,6 @@ authorization layer (ADR-022 — no app-local RBAC duplication).
   organisation B
 - **THEN** OR returns an empty list (or a 403, per its standard
   contract) — the cross-org objects are not visible
-
-### Requirement: REQ-OBA-006 Application schema carries a currentVersion reference
-
-The `Application` schema declared in `lib/Settings/openbuilt_register.json` (REQ-OBA-001) SHALL be extended with a `currentVersion` property of type string with UUID-format. The property SHALL be optional (an Application that has never been published has no `currentVersion`). When populated, it SHALL hold the `uuid` of the most recent `ApplicationVersion` row for this Application (see capability `openbuilt-version-snapshots`, REQ-OBV-006). The schema change SHALL remain backward-compatible: existing Applications imported from spec #1 carry no `currentVersion` and SHALL continue to load, list, and edit without error.
-
-#### Scenario: Existing Applications remain valid without currentVersion
-
-- **WHEN** the OpenBuilt repair step runs an upgrade on an install
-  that already has seeded Applications from spec #1
-- **THEN** those Applications continue to load via OR REST
-- **AND** their `currentVersion` field is absent or `null`
-- **AND** the textarea editor renders them without validation
-  errors
-
-#### Scenario: currentVersion is updated atomically with the snapshot
-
-- **WHEN** an Application transitions from `draft` to `published`
-- **THEN** the same lifecycle action that creates the
-  `ApplicationVersion` row also writes the new row's `uuid` into
-  the Application's `currentVersion`
-- **AND** both writes are observed by a subsequent OR REST GET of
-  the Application
-
-### Requirement: REQ-OBA-007 Draft-to-published transition declares a snapshot action
-
-The `x-openregister-lifecycle` block on the `Application` schema (REQ-OBA-003) SHALL declare an `on_transition` action on the `draft → published` edge that creates a new `ApplicationVersion` row populated from the Application's current `manifest`, `version`, the actor's NC user id, and the transition timestamp; updates the Application's `currentVersion` to the new row's `uuid`; and sets the Application's `status` back to `draft` so that the next edit session continues from a draft state, while the just-created `ApplicationVersion` serves as the "published" record (see design.md Decision 3 for rationale).
-
-If OR's lifecycle engine cannot yet express a sibling-object create action in `on_transition`, the action MAY be implemented as a single PHP listener subscribed to `ObjectLifecycleTransitionedEvent` per ADR-031 §Exceptions(1) — mirroring the OQ-1 escape hatch bootstrap-openbuilt established. The observed behaviour SHALL be identical in either case. The implementer SHALL NOT introduce a generic `VersioningService` / `SnapshotService` class.
-
-#### Scenario: Declarative path emits the snapshot
-
-- **WHEN** OR's engine supports `on_transition.create_relation` (or
-  equivalent)
-- **AND** an Application transitions from `draft` to `published`
-- **THEN** a snapshot is created without any custom PHP listener
-  being invoked
-- **AND** the OR audit trail records both the transition and the
-  snapshot create
-
-#### Scenario: Listener fallback produces the same outcome
-
-- **WHEN** OR's engine does not yet expose the sibling-create action
-  and the fallback `ApplicationVersionSnapshotListener` is registered
-- **AND** an Application transitions from `draft` to `published`
-- **THEN** the listener creates the `ApplicationVersion` row,
-  updates `currentVersion`, and resets the Application's `status`
-  to `draft`
-- **AND** the resulting Application + ApplicationVersion records
-  are byte-equal (modulo `uuid` and timestamps) to the declarative
-  path
 
 ### Requirement: REQ-OBA-006 Application schema carries a permissions block
 
@@ -282,4 +230,33 @@ has a populated `permissions` field.
   install
 - **THEN** no Application is changed
 - **AND** no duplicate audit entries are produced
+
+### Requirement: REQ-OBA-008 Application carries a productionVersion relation
+
+The `Application` schema SHALL be extended with a `productionVersion` property of
+type relation (OR's first-class relation type — not a raw UUID string per ADR-002
+§Decision). The relation SHALL point at exactly one `ApplicationVersion` row.
+The property SHALL be optional (an Application that has not yet had its production
+version chosen — e.g. immediately after creation, before the creation wizard
+finishes — carries no `productionVersion`).
+
+When populated, `productionVersion` SHALL satisfy the integrity guard in
+`application-versions`/REQ-OBV-105: the referenced ApplicationVersion's
+`application` relation MUST point back at this Application. Mismatched pointers
+SHALL be rejected with a 422 response.
+
+#### Scenario: Schema declares productionVersion as an optional relation
+
+- **WHEN** the OpenBuilt repair step runs and imports the Application schema
+- **THEN** the imported schema exposes `productionVersion` as a relation property
+  referencing `applicationVersion`
+- **AND** the property is omittable
+
+#### Scenario: Pointing at a foreign ApplicationVersion is rejected
+
+- **GIVEN** an Application X and an ApplicationVersion V whose `application`
+  relation points at a different Application Y
+- **WHEN** a client saves `X.productionVersion = V`
+- **THEN** the response is `422` citing the back-reference mismatch
+- **AND** X's `productionVersion` is unchanged
 

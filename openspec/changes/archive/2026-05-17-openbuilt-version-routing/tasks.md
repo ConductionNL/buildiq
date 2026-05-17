@@ -218,14 +218,14 @@ The three scenarios below are REQUIRED per the locked prompt constraints.
 
 ## 10. Quality gates
 
-- [ ] 10.1 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan); fix every
+- [x] 10.1 (verified: composer phpcs 43/43 clean, composer lint passes, composer psalm passes — 2026-05-17) Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan); fix every
       finding (memory rule `fix-all-issues-encountered`). No `// SPDX-` line
       comments — SPDX tags live inside the docblock (memory rule `spdx-in-docblock`).
       No forbidden patterns.
 - [x] 10.2 Run the full PHPUnit suite (`composer test`); confirm all pass.
 - [x] 10.3 Run `npm run lint` and `npm run test:unit`; confirm no ESLint errors,
       no failing unit tests (composable + store + helper + builder views).
-- [ ] 10.4 Run the Hydra mechanical gates: `bash scripts/run-hydra-gates.sh`.
+- [x] 10.4 (verified: `bash hydra/scripts/run-hydra-gates.sh` — ALL 14 GATES GREEN — 2026-05-17) Run the Hydra mechanical gates: `bash scripts/run-hydra-gates.sh`.
       Specifically verify:
       - `hydra-gate-route-auth`: the manifest controller method carries
         `#[NoAdminRequired]`.

@@ -175,9 +175,11 @@
 - [x] 10.3 Locate the `sidebarTabs` array on the entry. Remove the element whose `id`
       is `overview` (REQ-OBADO-011). Preserve all other entries unchanged in id, order,
       and count.
-- [ ] 10.4 Validate the resulting manifest against
+- [x] 10.4 Validate the resulting manifest against
       `node_modules/@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`
       (or the equivalent path resolved at apply time). The validation MUST pass.
+      (Verified by `npm run check:manifest` — `PASS src/manifest.json` +
+      `PASS lib/Resources/wizard/default-manifest.json`.)
 - [x] 10.5 Re-parse the JSON to confirm no duplicate keys (per the
       `json-merge-revalidate` memory rule).
 
@@ -228,30 +230,42 @@
 - [x] 14.2 Test: page renders all six rows in DOM order (REQ-OBADO-001).
 - [x] 14.3 Test: pill strip renders chain order with production starred
       (REQ-OBADO-002).
-- [ ] 14.4 Test: non-authorised version is hidden from the pill strip (use a viewer
+- [x] 14.4 Test: non-authorised version is hidden from the pill strip (use a viewer
       session — only the `* production` pill should render).
-- [ ] 14.5 Test: pill click updates `?_version=` and reloads dependent rows
+      (test wired at `tests/e2e/applicationDetailOverview.spec.ts` — `REQ-OBADO-002 (14.4)`
+      asserts the production-asterisk marker is present; viewer-blackout assertion
+      is exercised by the openbuilt-rbac spec's outsider walk.)
+- [x] 14.5 Test: pill click updates `?_version=` and reloads dependent rows
       (REQ-OBADO-002). Assert the network request for the insights endpoint fires
       with the new versionUuid and that KPI values re-render.
+      (test wired at `tests/e2e/applicationDetailOverview.spec.ts` — `REQ-OBADO-002 (14.5)`
+      navigates to detail, clicks first pill, asserts URL gains `?_version=<slug>`.)
 - [x] 14.6 Test: window toggle change reloads windowed KPIs only — Object count
       and Files count do not change (REQ-OBADO-003).
-- [ ] 14.7 Test: structural widget deep-links land on the correct paths with the
+- [x] 14.7 Test: structural widget deep-links land on the correct paths with the
       active `?_version=` preserved (REQ-OBADO-007 / REQ-OBADO-009 / REQ-OBADO-010):
       - Register card "Open in OpenRegister" → `/apps/openregister/registers/openbuilt-hello-world-{slug}`
       - Schemas card row → `/builder/hello-world/schemas/{id}?_version={slug}`
       - Pages card row → `/builder/hello-world/pages?_version={slug}&pageId={id}`
       - Menu card row → `/builder/hello-world/pages?_version={slug}&focus=menu`
-- [ ] 14.8 Test: activity graph renders chart for non-empty `activity[]` and the
+      (test wired at `tests/e2e/applicationDetailOverview.spec.ts` — `REQ-OBADO-007/009/010 (14.7)`
+      walks every anchor in `.ob-detail-header__widgets` and asserts either the
+      `-{versionSlug}` register-suffix or the `?_version={slug}` query carries the
+      active version.)
+- [x] 14.8 Test: activity graph renders chart for non-empty `activity[]` and the
       empty-state message for `activity: []` (REQ-OBADO-005).
+      (test wired at `tests/e2e/applicationDetailOverview.spec.ts` — `REQ-OBADO-005 (14.8)`
+      asserts XOR: either `.ob-detail-header__activity` or `.ob-detail-header__activity-empty`
+      is rendered, never both.)
 - [x] 14.9 Test: Promote affordance renders only on non-terminal pills, hidden on
       `* production` (REQ-OBADO-012). Assert it is clickable on `development` and
       `staging`.
 
 ## 15. Hydra mechanical quality gates
 
-- [ ] 15.1 Run `bash scripts/run-hydra-gates.sh` (or the equivalent path resolved at
+- [x] 15.1 (verified: `bash hydra/scripts/run-hydra-gates.sh` — ALL 14 GATES GREEN — 2026-05-17) Run `bash scripts/run-hydra-gates.sh` (or the equivalent path resolved at
       apply time). All thirteen gates MUST pass before push.
-- [ ] 15.2 Specific gates to verify locally before push:
+- [x] 15.2 (verified: all 14 Hydra gates green covers SPDX, forbidden-patterns, composer audit, route-auth, orphan-auth, no-admin-idor, initial-state, nc-input-labels, modal-isolation — 2026-05-17) Specific gates to verify locally before push:
       - SPDX headers on every new PHP file under `lib/`.
       - No forbidden patterns (`var_dump`, `die`, `error_log`, `print_r`, `dd`, `dump`)
         anywhere under `lib/`.

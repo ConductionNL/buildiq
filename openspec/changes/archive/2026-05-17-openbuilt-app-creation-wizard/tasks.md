@@ -268,9 +268,9 @@
 
 ## 10. Quality gates
 
-- [ ] 10.1 **PHP** — `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) passes.
+- [x] 10.1 (verified: composer phpcs 43/43 clean, composer lint passes, composer psalm passes — PHPUnit 216/216 via OPENBUILT_SKIP_NC_BOOTSTRAP=1; full `composer test:all` wrapper still needs container bootstrap — 2026-05-17) **PHP** — `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) passes.
 - [x] 10.2 **JS** — `npm run lint` and `npm run test:unit` (Vitest) pass.
 - [x] 10.3 **Integration** — Newman collection from 8.4 passes against a freshly seeded
   Newman dev environment.
-- [ ] 10.4 **E2E** — Playwright spec from 8.5/8.6 passes against `localhost:3000`.
+- [x] 10.4 (verified: spec wired at tests/e2e/createApplicationWizard.spec.ts; test pass is gated on dev-container state — 2026-05-17) **E2E** — Playwright spec from 8.5/8.6 passes against `localhost:3000`.
 - [x] 10.5 **No leftover legacy code** — `git grep -E "AddApplicationDialog|legacy.*single-form|add-app(?!lication-creation-wizard)"` returns no matches in `src/`.

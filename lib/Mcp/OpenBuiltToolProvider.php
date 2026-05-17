@@ -8,7 +8,18 @@
  * new apps, promote versions, and mutate a draft version's manifest (pages,
  * widgets, menu items) and per-version schemas.
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * @category Service
+ * @package  OCA\OpenBuilt\Mcp
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  */
 
@@ -91,7 +102,8 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         [
             'id'          => 'openbuilt.createApp',
             'name'        => 'Create a new virtual app',
-            'description' => 'Create a new OpenBuilt virtual app with an initial draft ApplicationVersion. Preset chooses the version chain: "single", "dev-prod" or "dev-staging-prod".',
+            'description' => 'Create a new OpenBuilt virtual app with an initial draft ApplicationVersion.'
+                .' Preset chooses the version chain: "single", "dev-prod" or "dev-staging-prod".',
             'inputSchema' => [
                 'type'       => 'object',
                 'properties' => [
@@ -106,13 +118,18 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         [
             'id'          => 'openbuilt.promoteVersion',
             'name'        => 'Promote a virtual app version',
-            'description' => 'Promote a virtual app from one version (e.g. development) to the next (e.g. production). Strategy "empty-start" (default, safest) leaves the target empty.',
+            'description' => 'Promote a virtual app from one version (e.g. development) to the next (e.g. production).'
+                .' Strategy "empty-start" (default, safest) leaves the target empty.',
             'inputSchema' => [
                 'type'       => 'object',
                 'properties' => [
                     'appSlug'           => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'minLength' => 2, 'maxLength' => 48],
                     'sourceVersionSlug' => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'minLength' => 2, 'maxLength' => 48],
-                    'strategy'          => ['type' => 'string', 'enum' => ['empty-start', 'start-with-source-data', 'migrate-existing-data'], 'default' => 'empty-start'],
+                    'strategy'          => [
+                        'type'    => 'string',
+                        'enum'    => ['empty-start', 'start-with-source-data', 'migrate-existing-data'],
+                        'default' => 'empty-start',
+                    ],
                 ],
                 'required'   => ['appSlug', 'sourceVersionSlug'],
             ],
@@ -120,7 +137,10 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         [
             'id'          => 'openbuilt.upsertSchema',
             'name'        => 'Create or update a schema in a virtual app',
-            'description' => 'Create or update a JSON Schema in the given app version\'s per-version OR register. Slug is automatically namespaced with appSlug+versionSlug. Properties is a JSON Schema property map; required is an array of property names. Defaults versionSlug to "development".',
+            'description' => 'Create or update a JSON Schema in the given app version\'s per-version OR register.'
+                .' Slug is automatically namespaced with appSlug+versionSlug.'
+                .' Properties is a JSON Schema property map; required is an array of property names.'
+                .' Defaults versionSlug to "development".',
             'inputSchema' => [
                 'type'       => 'object',
                 'properties' => [
@@ -138,7 +158,11 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         [
             'id'          => 'openbuilt.upsertPage',
             'name'        => 'Create or update a page in a virtual app',
-            'description' => 'Create or update a page in the draft manifest. pageId is the unique key; if it exists it is replaced. Type is one of dashboard, index, detail, form. config is page-type-specific (e.g. {register, schema, columns} for index pages, {widgets, layout} for dashboards). Defaults versionSlug to "development".',
+            'description' => 'Create or update a page in the draft manifest.'
+                .' pageId is the unique key; if it exists it is replaced.'
+                .' Type is one of dashboard, index, detail, form.'
+                .' config is page-type-specific (e.g. {register, schema, columns} for index pages,'
+                .' {widgets, layout} for dashboards). Defaults versionSlug to "development".',
             'inputSchema' => [
                 'type'       => 'object',
                 'properties' => [
@@ -156,7 +180,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         [
             'id'          => 'openbuilt.addWidget',
             'name'        => 'Add a widget to a page',
-            'description' => 'Append a widget to a page\'s config.widgets array in the draft manifest. widgetType is e.g. "stat-counter", "chart", "list". widgetConfig is widget-type-specific. Defaults versionSlug to "development".',
+            'description' => 'Append a widget to a page\'s config.widgets array in the draft manifest.'
+                .' widgetType is e.g. "stat-counter", "chart", "list". widgetConfig is widget-type-specific.'
+                .' Defaults versionSlug to "development".',
             'inputSchema' => [
                 'type'       => 'object',
                 'properties' => [
@@ -172,7 +198,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         [
             'id'          => 'openbuilt.upsertMenuItem',
             'name'        => 'Create or update a menu item',
-            'description' => 'Create or update a top-level menu item in the draft manifest. id is the unique key; if it exists it is replaced. route should match a page id. order controls sort. icon is an MDI/standard icon name. Defaults versionSlug to "development".',
+            'description' => 'Create or update a top-level menu item in the draft manifest.'
+                .' id is the unique key; if it exists it is replaced. route should match a page id.'
+                .' order controls sort. icon is an MDI/standard icon name. Defaults versionSlug to "development".',
             'inputSchema' => [
                 'type'       => 'object',
                 'properties' => [
@@ -189,6 +217,14 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         ],
     ];
 
+    /**
+     * Constructor.
+     *
+     * @param IUserSession       $userSession  User session used to resolve the current authenticated user.
+     * @param IGroupManager      $groupManager Group manager used for admin checks.
+     * @param ContainerInterface $container    DI container used to resolve OpenRegister and OpenBuilt services lazily.
+     * @param LoggerInterface    $logger       PSR logger used for non-fatal warnings and error logging.
+     */
     public function __construct(
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
@@ -197,6 +233,11 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     ) {
     }//end __construct()
 
+    /**
+     * Return the Nextcloud app id this provider belongs to.
+     *
+     * @return string
+     */
     public function getAppId(): string
     {
         return 'openbuilt';
@@ -204,6 +245,8 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end getAppId()
 
     /**
+     * Return the catalogue of MCP tools exposed by this provider.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function getTools(): array
@@ -213,7 +256,10 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end getTools()
 
     /**
-     * @param array<string, mixed> $arguments
+     * Dispatch an MCP tool invocation to the matching handler.
+     *
+     * @param string               $toolId    Fully qualified tool id (e.g. "openbuilt.listApps").
+     * @param array<string, mixed> $arguments Raw tool arguments as supplied by the MCP client.
      *
      * @return array<string, mixed>
      */
@@ -242,7 +288,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     // =========================================================================
 
     /**
-     * @param array<string, mixed> $args
+     * Handle the openbuilt.listApps tool: return matching virtual apps with sources.
+     *
+     * @param array<string, mixed> $args Tool arguments (limit, statusFilter).
      *
      * @return array<string, mixed>
      */
@@ -289,7 +337,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end handleListApps()
 
     /**
-     * @param array<string, mixed> $args
+     * Handle the openbuilt.getAppManifest tool: resolve a published app slug to its runtime manifest.
+     *
+     * @param array<string, mixed> $args Tool arguments (slug).
      *
      * @return array<string, mixed>
      */
@@ -341,7 +391,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     // =========================================================================
 
     /**
-     * @param array<string, mixed> $args
+     * Handle the openbuilt.createApp tool: create a new virtual app with an initial draft version.
+     *
+     * @param array<string, mixed> $args Tool arguments (slug, name, description, preset).
      *
      * @return array<string, mixed>
      */
@@ -393,7 +445,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end handleCreateApp()
 
     /**
-     * @param array<string, mixed> $args
+     * Handle the openbuilt.promoteVersion tool: promote one app version into its downstream target.
+     *
+     * @param array<string, mixed> $args Tool arguments (appSlug, sourceVersionSlug, strategy).
      *
      * @return array<string, mixed>
      */
@@ -422,7 +476,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         try {
             $objectService = $this->container->get('OCA\OpenRegister\Service\ObjectService');
 
-            $loaded = $this->loadVersion($objectService, $appSlug, $sourceVersionSlug);
+            $loaded = $this->loadVersion(objectService: $objectService, appSlug: $appSlug, versionSlug: $sourceVersionSlug);
             if (isset($loaded['error']) === true) {
                 return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
             }
@@ -449,7 +503,10 @@ class OpenBuiltToolProvider implements IMcpToolProvider
                 'sources'  => [$this->sourceDescriptor(uuid: $loaded['appUuid'], slug: $appSlug, label: $loaded['appName'])],
             ];
         } catch (\Throwable $e) {
-            $this->logger->error('OpenBuilt MCP: promoteVersion failed', ['appSlug' => $appSlug, 'source' => $sourceVersionSlug, 'exception' => $e->getMessage()]);
+            $this->logger->error(
+                'OpenBuilt MCP: promoteVersion failed',
+                ['appSlug' => $appSlug, 'source' => $sourceVersionSlug, 'exception' => $e->getMessage()]
+            );
             return $this->errorResult(error: 'promote_failed', message: 'Failed to promote version: '.$e->getMessage());
         }//end try
 
@@ -460,7 +517,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     // =========================================================================
 
     /**
-     * @param array<string, mixed> $args
+     * Handle the openbuilt.upsertSchema tool: create or update a per-version OR schema.
+     *
+     * @param array<string, mixed> $args Tool arguments (appSlug, versionSlug, slug, title, description, properties, required).
      *
      * @return array<string, mixed>
      */
@@ -491,7 +550,10 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         }
 
         if (is_array($properties) === false || $properties === []) {
-            return $this->errorResult(error: 'invalid_arguments', message: 'properties must be a non-empty object of JSON-Schema property definitions.');
+            return $this->errorResult(
+                error: 'invalid_arguments',
+                message: 'properties must be a non-empty object of JSON-Schema property definitions.'
+            );
         }
 
         if (is_array($required) === false) {
@@ -518,7 +580,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
                 'properties'  => (array) $properties,
             ];
 
-            // findBySlug returns Schema[] (may be empty). Take the first hit.
+            // FindBySlug returns Schema[] (may be empty). Take the first hit.
             $existing = null;
             try {
                 $matches = $schemaMapper->findBySlug($namespacedSlug);
@@ -547,7 +609,10 @@ class OpenBuiltToolProvider implements IMcpToolProvider
                     $register->setSchemas(array_values(array_unique(array_merge($current, [$schema->getId()]))));
                     $registerMapper->update($register);
                 } catch (\Throwable $e) {
-                    $this->logger->warning('OpenBuilt MCP: upsertSchema attach-to-register failed', ['register' => $registerSlug, 'exception' => $e->getMessage()]);
+                    $this->logger->warning(
+                        'OpenBuilt MCP: upsertSchema attach-to-register failed',
+                        ['register' => $registerSlug, 'exception' => $e->getMessage()]
+                    );
                 }
             }//end if
 
@@ -570,7 +635,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end handleUpsertSchema()
 
     /**
-     * @param array<string, mixed> $args
+     * Handle the openbuilt.upsertPage tool: create or update a page entry in the draft manifest.
+     *
+     * @param array<string, mixed> $args Tool arguments (appSlug, versionSlug, pageId, title, type, route, config).
      *
      * @return array<string, mixed>
      */
@@ -615,7 +682,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         try {
             $objectService = $this->container->get('OCA\OpenRegister\Service\ObjectService');
 
-            $loaded = $this->loadVersion($objectService, $appSlug, $versionSlug);
+            $loaded = $this->loadVersion(objectService: $objectService, appSlug: $appSlug, versionSlug: $versionSlug);
             if (isset($loaded['error']) === true) {
                 return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
             }
@@ -649,11 +716,17 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             }
 
             $manifest['pages'] = array_values($pages);
-            $saved = $this->saveVersionManifest($objectService, $version, $manifest);
+            $saved = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
+
+            if ($replaced === true) {
+                $action = 'updated';
+            } else {
+                $action = 'created';
+            }
 
             return [
                 'success'   => true,
-                'action'    => $replaced ? 'updated' : 'created',
+                'action'    => $action,
                 'page'      => $newPage,
                 'pageCount' => count($pages),
                 'version'   => [
@@ -669,7 +742,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end handleUpsertPage()
 
     /**
-     * @param array<string, mixed> $args
+     * Handle the openbuilt.addWidget tool: append a widget to a page's config in the draft manifest.
+     *
+     * @param array<string, mixed> $args Tool arguments (appSlug, versionSlug, pageId, widgetType, widgetConfig).
      *
      * @return array<string, mixed>
      */
@@ -704,7 +779,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         try {
             $objectService = $this->container->get('OCA\OpenRegister\Service\ObjectService');
 
-            $loaded = $this->loadVersion($objectService, $appSlug, $versionSlug);
+            $loaded = $this->loadVersion(objectService: $objectService, appSlug: $appSlug, versionSlug: $versionSlug);
             if (isset($loaded['error']) === true) {
                 return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
             }
@@ -737,7 +812,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             $pages[$foundIdx]      = $page;
             $manifest['pages']     = array_values($pages);
 
-            $saved = $this->saveVersionManifest($objectService, $version, $manifest);
+            $saved = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
 
             return [
                 'success'     => true,
@@ -758,7 +833,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end handleAddWidget()
 
     /**
-     * @param array<string, mixed> $args
+     * Handle the openbuilt.upsertMenuItem tool: create or update a top-level menu item in the draft manifest.
+     *
+     * @param array<string, mixed> $args Tool arguments (appSlug, versionSlug, id, label, icon, route, order).
      *
      * @return array<string, mixed>
      */
@@ -770,7 +847,11 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         $label       = (string) ($args['label'] ?? '');
         $icon        = (string) ($args['icon'] ?? '');
         $route       = (string) ($args['route'] ?? '');
-        $order       = isset($args['order']) ? (int) $args['order'] : 100;
+        if (isset($args['order']) === true) {
+            $order = (int) $args['order'];
+        } else {
+            $order = 100;
+        }
 
         if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
             return $this->errorResult(error: 'invalid_arguments', message: "Invalid appSlug '{$appSlug}'.");
@@ -795,7 +876,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         try {
             $objectService = $this->container->get('OCA\OpenRegister\Service\ObjectService');
 
-            $loaded = $this->loadVersion($objectService, $appSlug, $versionSlug);
+            $loaded = $this->loadVersion(objectService: $objectService, appSlug: $appSlug, versionSlug: $versionSlug);
             if (isset($loaded['error']) === true) {
                 return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
             }
@@ -820,11 +901,17 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             }
 
             $manifest['menu'] = array_values($menu);
-            $saved            = $this->saveVersionManifest($objectService, $version, $manifest);
+            $saved            = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
+
+            if ($replaced === true) {
+                $action = 'updated';
+            } else {
+                $action = 'created';
+            }
 
             return [
                 'success'   => true,
-                'action'    => $replaced ? 'updated' : 'created',
+                'action'    => $action,
                 'menuItem'  => $newItem,
                 'menuCount' => count($menu),
                 'version'   => [
@@ -845,6 +932,10 @@ class OpenBuiltToolProvider implements IMcpToolProvider
 
     /**
      * Resolve <appSlug, versionSlug> to {version, appUuid, appName}, or {error,message}.
+     *
+     * @param object $objectService OpenRegister ObjectService instance used for slug lookups.
+     * @param string $appSlug       Application slug to resolve.
+     * @param string $versionSlug   ApplicationVersion slug to resolve under the application.
      *
      * @return array{version?: array, appUuid?: string, appName?: string, error?: string, message?: string}
      */
@@ -879,8 +970,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
      * Save an ApplicationVersion with a new manifest. Retains the full payload so
      * OR's `required[]` validator does not reject a partial save.
      *
-     * @param array<string, mixed> $version
-     * @param array<string, mixed> $manifest
+     * @param object               $objectService OpenRegister ObjectService instance used to persist the version.
+     * @param array<string, mixed> $version       The existing ApplicationVersion as an associative array.
+     * @param array<string, mixed> $manifest      The new manifest blob to write onto the version.
      *
      * @return array<string, mixed>
      */
@@ -906,7 +998,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end saveVersionManifest()
 
     /**
-     * @param array<string, mixed> $args
+     * Validate and normalise arguments for the openbuilt.listApps tool.
+     *
+     * @param array<string, mixed> $args Raw tool arguments.
      *
      * @return array{limit?: int, statusFilter?: string, error?: string}
      */
@@ -931,6 +1025,11 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end validateListAppsArgs()
 
     /**
+     * Resolve a published-app slug to its underlying Application object via the built-app-route schema.
+     *
+     * @param object $objectService OpenRegister ObjectService instance used for slug lookups.
+     * @param string $slug          Public route slug of the published virtual app.
+     *
      * @return array{application?: array<string, mixed>, error?: string, message?: string}
      */
     private function resolveApplicationBySlug(object $objectService, string $slug): array
@@ -956,7 +1055,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end resolveApplicationBySlug()
 
     /**
-     * @param mixed $raw
+     * Map a raw Application object/array into the compact representation returned by listApps.
+     *
+     * @param mixed $raw Raw OR Application entity, array, or any JSON-serialisable value.
      *
      * @return array{uuid: string, slug: string, name: string, description: string, status: string, version: string}
      */
@@ -976,6 +1077,12 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end mapApplication()
 
     /**
+     * Build an MCP "source" descriptor pointing at the OpenBuilt app deep link.
+     *
+     * @param string $uuid  Application UUID.
+     * @param string $slug  Application slug used to build the deep link.
+     * @param string $label Human-readable label for the source descriptor.
+     *
      * @return array{type: string, uuid: string, url: string, label: string}
      */
     private function sourceDescriptor(string $uuid, string $slug, string $label): array
@@ -985,6 +1092,11 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end sourceDescriptor()
 
     /**
+     * Build a uniform MCP error envelope used by every handler.
+     *
+     * @param string $error   Machine-readable error code (e.g. "invalid_arguments").
+     * @param string $message Human-readable, end-user-safe error message.
+     *
      * @return array{isError: true, error: string, message: string}
      */
     private function errorResult(string $error, string $message): array
@@ -993,6 +1105,11 @@ class OpenBuiltToolProvider implements IMcpToolProvider
 
     }//end errorResult()
 
+    /**
+     * Return the authenticated user's UID, or null if there is no session user.
+     *
+     * @return string|null
+     */
     private function requireAuthenticatedUser(): ?string
     {
         $user = $this->userSession->getUser();
@@ -1001,16 +1118,34 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         }
 
         $uid = $user->getUID();
-        return $uid === '' ? null : $uid;
+        if ($uid === '') {
+            return null;
+        }
+
+        return $uid;
 
     }//end requireAuthenticatedUser()
 
+    /**
+     * Check whether the given user id belongs to the admin group.
+     *
+     * @param string $userId User id to check.
+     *
+     * @return bool
+     */
     public function isAdmin(string $userId): bool
     {
         return $this->groupManager->isAdmin($userId);
 
     }//end isAdmin()
 
+    /**
+     * Validate that a candidate string matches the OpenBuilt slug shape (lowercase, hyphen-separated, 2-48 chars).
+     *
+     * @param string $candidate Candidate slug to validate.
+     *
+     * @return bool
+     */
     private function isValidSlug(string $candidate): bool
     {
         if (strlen($candidate) < 2 || strlen($candidate) > 48) {
@@ -1021,6 +1156,13 @@ class OpenBuiltToolProvider implements IMcpToolProvider
 
     }//end isValidSlug()
 
+    /**
+     * Build a Nextcloud deep link into the OpenBuilt builder for the given application slug.
+     *
+     * @param string $slug Application slug (empty falls back to the app root).
+     *
+     * @return string
+     */
     private function buildDeepLink(string $slug): string
     {
         if ($slug === '') {
@@ -1032,6 +1174,10 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end buildDeepLink()
 
     /**
+     * Coerce an OR entity, array, or generic value into an associative array.
+     *
+     * @param mixed $item Value to coerce (OR entity, array, or jsonSerialize-able object).
+     *
      * @return array<string, mixed>
      */
     private function toArray(mixed $item): array
@@ -1052,7 +1198,11 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end toArray()
 
     /**
-     * @param array<string, mixed> $item
+     * Extract a UUID from a normalised OR object array, falling back through common metadata locations.
+     *
+     * @param array<string, mixed> $item Normalised OR object as an associative array.
+     *
+     * @return string
      */
     private function extractUuid(array $item): string
     {
