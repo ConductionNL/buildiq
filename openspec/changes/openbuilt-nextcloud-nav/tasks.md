@@ -1,6 +1,6 @@
 ## 1. Schema register patch — top-level icon fields on Application
 
-- [ ] 1.1 **Patch `application` schema in `lib/Settings/openbuilt_register.json`**
+- [x] 1.1 **Patch `application` schema in `lib/Settings/openbuilt_register.json`**
   - spec_ref: REQ-OBICON-001, REQ-OBA-002 (modified)
   - files: `lib/Settings/openbuilt_register.json`
   - Add two optional **top-level** properties under
@@ -16,7 +16,7 @@
     top-level `"icon": { "ref": "app-icon.svg" }` validates against the patched schema; a
     payload containing top-level `"icon": "string"` fails validation.
 
-- [ ] 1.2 **Re-import schema on upgrade via existing `InitializeSettings` repair step**
+- [x] 1.2 **Re-import schema on upgrade via existing `InitializeSettings` repair step**
   - spec_ref: REQ-OBICON-001
   - files: `lib/Repair/InitializeSettings.php` (verify it calls
     `ConfigurationService::importFromApp('openbuilt')` — no change needed if already correct)
@@ -25,7 +25,7 @@
 
 ## 2. Icon-serving PHP layer
 
-- [ ] 2.1 **Create `lib/Service/IconService.php`**
+- [x] 2.1 **Create `lib/Service/IconService.php`**
   - spec_ref: REQ-OBICON-002, REQ-OBICON-003
   - files: `lib/Service/IconService.php` (NEW)
   - Methods:
@@ -34,7 +34,7 @@
   - Must carry SPDX + EUPL-1.2 docblock per project standards.
   - acceptance_criteria: PHPUnit: mock ObjectService to return a stream; assert correct bytes returned. Mock ObjectService to throw; assert fallback stream returned. `composer check:strict` passes.
 
-- [ ] 2.2 **Create `lib/Controller/IconController.php`**
+- [x] 2.2 **Create `lib/Controller/IconController.php`**
   - spec_ref: REQ-OBICON-002, REQ-OBICON-003
   - files: `lib/Controller/IconController.php` (NEW)
   - Methods:
@@ -43,7 +43,7 @@
   - Both methods carry `#[NoAdminRequired]`.
   - acceptance_criteria: PHPUnit: mock IconService; assert 200 + correct headers. `composer check:strict` passes.
 
-- [ ] 2.3 **Register icon routes in `appinfo/routes.php`**
+- [x] 2.3 **Register icon routes in `appinfo/routes.php`**
   - spec_ref: REQ-OBICON-002, REQ-OBICON-003
   - files: `appinfo/routes.php`
   - Add before the SPA catch-all, after the exports routes:
@@ -55,7 +55,7 @@
 
 ## 3. Navigation wiring
 
-- [ ] 3.1 **Create `lib/Service/AppNavigationService.php`**
+- [x] 3.1 **Create `lib/Service/AppNavigationService.php`**
   - spec_ref: REQ-OBNAV-001, REQ-OBNAV-002, REQ-OBNAV-003, REQ-OBNAV-004
   - files: `lib/Service/AppNavigationService.php` (NEW)
   - Responsibilities:
@@ -64,7 +64,7 @@
     - Order: `1000 + (abs(crc32($slug)) % 1000)` — deterministic, alpha-spread, after openbuilt's own static entry.
   - acceptance_criteria: PHPUnit: mock ObjectService to return one published + one draft Application; assert only the published entry is registered; assert gating closure returns `true` for matching user and `false` for non-matching user; `composer check:strict` passes.
 
-- [ ] 3.2 **Wire `AppNavigationService` inside `Application::boot()`**
+- [x] 3.2 **Wire `AppNavigationService` inside `Application::boot()`**
   - spec_ref: REQ-OBNAV-001
   - files: `lib/AppInfo/Application.php`
   - Inside the currently-empty `boot()` method, resolve `AppNavigationService` lazily and call `registerNavEntries()`:
@@ -80,7 +80,7 @@
 
 ## 4. Frontend — ApplicationCard update
 
-- [ ] 4.1 **Add icon `<img>` before the title in `ApplicationCard.vue`**
+- [x] 4.1 **Add icon `<img>` before the title in `ApplicationCard.vue`**
   - spec_ref: REQ-OBR-007
   - files: `src/components/ApplicationCard.vue`
   - In the `ob-app-card__head` div, add before `<h3>`:
@@ -98,7 +98,7 @@
   - Add `.ob-app-card__icon { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }` to `<style scoped>`.
   - acceptance_criteria: Playwright: navigating to the virtual-apps index shows `<img>` elements with the icon endpoint src on each card.
 
-- [ ] 4.2 **Remove the redundant Live chip from `ApplicationCard.vue`**
+- [x] 4.2 **Remove the redundant Live chip from `ApplicationCard.vue`**
   - spec_ref: REQ-OBR-007
   - files: `src/components/ApplicationCard.vue`
   - Remove line 30: `<span v-if="app.currentVersion" class="ob-app-card__chip ob-app-card__chip--live">{{ t('openbuilt', 'Live') }}</span>`
@@ -107,7 +107,7 @@
 
 ## 5. Frontend — Application detail page icon section
 
-- [ ] 5.1 **Add icon upload/preview section to the Application detail page**
+- [x] 5.1 **Add icon upload/preview section to the Application detail page**
   - spec_ref: REQ-OBICON-004
   - files: `src/views/SchemaDesigner.vue` (or the appropriate detail-page component — verify the tab extension point before modifying)
   - Add an **Icon** tab / section containing:
@@ -143,20 +143,20 @@
 
 ## 7. Tests
 
-- [ ] 7.1 **PHPUnit: `IconServiceTest`** — unit tests for `IconService::getIconStream`; covers light + dark happy paths, OR-failure fallback, and unknown-slug 404 case.
+- [x] 7.1 **PHPUnit: `IconServiceTest`** — unit tests for `IconService::getIconStream`; covers light + dark happy paths, OR-failure fallback, and unknown-slug 404 case.
   - files: `tests/Unit/Service/IconServiceTest.php` (NEW)
 
-- [ ] 7.2 **PHPUnit: `IconControllerTest`** — unit tests for `IconController::iconLight` and `iconDark`; assert `Content-Type: image/svg+xml` and `Cache-Control: public, max-age=60` headers.
+- [x] 7.2 **PHPUnit: `IconControllerTest`** — unit tests for `IconController::iconLight` and `iconDark`; assert `Content-Type: image/svg+xml` and `Cache-Control: public, max-age=60` headers.
   - files: `tests/Unit/Controller/IconControllerTest.php` (NEW)
 
-- [ ] 7.3 **PHPUnit: `AppNavigationServiceTest`** — unit tests for `registerNavEntries`; covers published-only filter, gating-closure user/group/admin/wildcard branches, and draft+archived exclusion.
+- [x] 7.3 **PHPUnit: `AppNavigationServiceTest`** — unit tests for `registerNavEntries`; covers published-only filter, gating-closure user/group/admin/wildcard branches, and draft+archived exclusion.
   - files: `tests/Unit/Service/AppNavigationServiceTest.php` (NEW)
 
-- [ ] 7.4 **Playwright: icon appears in ApplicationCard** — navigate to virtual-apps index, assert each card contains an `<img>` with an icon endpoint src; assert no "Live" chip text.
+- [x] 7.4 **Playwright: icon appears in ApplicationCard** — navigate to virtual-apps index, assert each card contains an `<img>` with an icon endpoint src; assert no "Live" chip text.
   - files: `tests/e2e/applicationCard.spec.ts` (new test block or new file)
 
-- [ ] 7.5 **Playwright: icon upload on detail page** — navigate to an Application's detail page icon tab, upload a local SVG, assert the preview src updates; click remove, assert preview reverts.
+- [x] 7.5 **Playwright: icon upload on detail page** — navigate to an Application's detail page icon tab, upload a local SVG, assert the preview src updates; click remove, assert preview reverts.
   - files: `tests/e2e/iconUpload.spec.ts` (NEW)
 
-- [ ] 7.6 **Newman: icon endpoints reachable** — `GET /icons/hello-world.svg` and `GET /icons/hello-world-dark.svg` return 200 with `Content-Type: image/svg+xml`; unauthenticated request returns 401.
+- [x] 7.6 **Newman: icon endpoints reachable** — `GET /icons/hello-world.svg` and `GET /icons/hello-world-dark.svg` return 200 with `Content-Type: image/svg+xml`; unauthenticated request returns 401.
   - files: add to existing Newman collection or `tests/newman/openbuilt.postman_collection.json`

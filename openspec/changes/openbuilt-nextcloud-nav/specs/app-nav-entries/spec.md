@@ -74,7 +74,7 @@ are all empty (or absent) SHALL NOT be visible to non-admin users, regardless of
 - **AND** the Application is published with empty permissions
 - **THEN** the admin's request cycle includes the nav entry
 
-### Requirement: REQ-OBNAV-003 `group:*` wildcard makes entry visible to all signed-in users
+### Requirement: REQ-OBNAV-003 `group:*` wildcard SHALL make entry visible to all signed-in users
 
 If the literal string `group:*` appears in any of `permissions.owners`,
 `permissions.editors`, or `permissions.viewers` on a published Application, the system SHALL
