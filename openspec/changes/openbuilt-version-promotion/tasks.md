@@ -83,7 +83,7 @@
 
 - [x] 3.1 Open `appinfo/routes.php` and add the entry:
       `['name' => 'VersionPromotion#promote', 'url' => '/api/applications/{appUuid}/versions/{versionUuid}/promote', 'verb' => 'POST']`.
-- [ ] 3.2 Verify the route resolves at runtime via
+- [x] 3.2 Verify the route resolves at runtime via
       `php occ route:list 2>&1 | grep promote` after an `apache2ctl graceful` in
       the dev container.
 
@@ -259,7 +259,7 @@
       destructive-confirmation input both have proper labels), and
       `hydra-gate-route-auth` (the new route's controller method carries
       `#[NoAdminRequired]`).
-- [ ] 10.5 Run `openspec validate openbuilt-version-promotion --strict`; confirm
+- [x] 10.5 Run `openspec validate openbuilt-version-promotion --strict`; confirm
       clean.
 - [ ] 10.6 Open PR against `development` (memory rule
       `feature-branches-from-dev`); reference ADR-002, the foundation change

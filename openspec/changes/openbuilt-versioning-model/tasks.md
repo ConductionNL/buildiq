@@ -224,7 +224,7 @@
       finding (no pre-existing issues left unaddressed — memory rule
       `fix-all-issues-encountered`).
 - [x] 10.2 Run the full PHPUnit suite (`composer test`); confirm all pass.
-- [ ] 10.3 Re-run `openspec validate openbuilt-versioning-model --strict`;
+- [x] 10.3 Re-run `openspec validate openbuilt-versioning-model --strict`;
       confirm clean.
 - [ ] 10.4 Open PR against `development` (memory rule
       `feature-branches-from-dev`); reference ADR-002, this change id, and the
