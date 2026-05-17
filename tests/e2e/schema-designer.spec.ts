@@ -49,20 +49,20 @@ const SCHEMA_SLUG = 'message'
 
 test.describe('OpenBuilt Schema Designer — end-to-end (REQ-OBSD-001..008)', () => {
 	test.beforeEach(async ({ page }) => {
-		// Log in via the Nextcloud /login form. Cookies persist for the
-		// remainder of this test's context.
-		await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' })
-		await page.fill('input[name="user"]', ADMIN_USER)
-		await page.fill('input[name="password"]', ADMIN_PASS)
-		await Promise.all([
-			page.waitForLoadState('networkidle'),
-			page.click('button[type="submit"]'),
-		])
+		// Session is established by globalSetup (tests/e2e/global-setup.ts)
+		// which writes storageState that every spec inherits via the
+		// playwright.config.ts `use.storageState` setting. The legacy
+		// per-spec form-login fight with the brute-force throttle and
+		// is unnecessary now. Kept as a no-op `beforeEach` so the
+		// reference frame is obvious to readers.
+		void ADMIN_USER
+		void ADMIN_PASS
+		void page
 	})
 
 	test('create virtual app → add schema → add 2 fields → save → edit → delete', async ({ page }) => {
 		// Step 1 — open the OpenBuilt app at the Applications page.
-		await page.goto(`${BASE_URL}/index.php/apps/openbuilt/applications`, {
+		await page.goto(`${BASE_URL}/apps/openbuilt/applications`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -80,7 +80,7 @@ test.describe('OpenBuilt Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 		}
 
 		// Step 3 — navigate to the Schema Designer for this virtual app.
-		await page.goto(`${BASE_URL}/index.php/apps/openbuilt/builder/${APP_SLUG}/schemas`, {
+		await page.goto(`${BASE_URL}/apps/openbuilt/builder/${APP_SLUG}/schemas`, {
 			waitUntil: 'domcontentloaded',
 		})
 

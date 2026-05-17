@@ -71,7 +71,7 @@ test.describe('openbuilt-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRB
 	})
 
 	test('REQ-OBRBAC-003: outsider sees no Applications in the editor list', async ({ page }) => {
-		await page.goto(`${NEXTCLOUD_URL}/index.php/apps/openbuilt`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuilt/applications`)
 
 		// Give the SPA up to 10s to fetch the filtered list. The empty
 		// state copy is exact text from src/views/ApplicationEditor.vue
@@ -97,7 +97,7 @@ test.describe('openbuilt-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRB
 			{ timeout: 10_000 },
 		).catch(() => null)
 
-		await page.goto(`${NEXTCLOUD_URL}/index.php/apps/openbuilt/builder/${TEST_SLUG}`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuilt/builder/${TEST_SLUG}`)
 
 		const manifestResp = await manifestRequestPromise
 		// The page may render a deny screen without hitting the manifest

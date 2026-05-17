@@ -57,7 +57,7 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		test.skip(apps.length === 0, 'hello-world Application not seeded')
 
 		const objectId = apps[0].uuid || apps[0].id
-		await page.goto(`${BASE}/index.php/apps/openbuilt/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/openbuilt/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header', { timeout: 15_000 })
 
 		// REQ-OBADO-001 — hero, controls, KPIs, activity, widgets all present.
@@ -77,7 +77,7 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		test.skip(apps.length === 0, 'app not seeded')
 
 		const objectId = apps[0].uuid || apps[0].id
-		await page.goto(`${BASE}/index.php/apps/openbuilt/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/openbuilt/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__pill', { timeout: 15_000 })
 
 		const pills = page.locator('.ob-detail-header__pill')
@@ -97,7 +97,7 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		test.skip(apps.length === 0, 'app not seeded')
 
 		const objectId = apps[0].uuid || apps[0].id
-		await page.goto(`${BASE}/index.php/apps/openbuilt/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/openbuilt/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__window-btn', { timeout: 15_000 })
 
 		// Click 30d and assert the URL fragment / network call reflects the change.
@@ -120,7 +120,7 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		test.skip(apps.length === 0, 'app not seeded')
 
 		const objectId = apps[0].uuid || apps[0].id
-		await page.goto(`${BASE}/index.php/apps/openbuilt/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/openbuilt/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__pill', { timeout: 15_000 })
 
 		const pills = page.locator('.ob-detail-header__pill-group')
