@@ -238,7 +238,7 @@ The three scenarios below are REQUIRED per the locked prompt constraints.
       - `hydra-gate-spdx`: SPDX header present in docblock on `ManifestResolverService`.
       - `hydra-gate-forbidden-patterns`: no `var_dump`, `die`, etc.
 - [x] 10.5 Run `openspec validate openbuilt-version-routing --strict`; confirm clean.
-- [ ] 10.6 Open PR against `development` (memory rule `feature-branches-from-dev`);
+- [x] 10.6 Open PR against `development` (memory rule `feature-branches-from-dev`);
       reference ADR-002, the foundation change `openbuilt-versioning-model`, sibling
       spec `openbuilt-version-promotion`, and the downstream changes
       `openbuilt-app-detail-overview` and `openbuilt-app-creation-wizard` in the

@@ -226,7 +226,7 @@
 - [x] 10.2 Run the full PHPUnit suite (`composer test`); confirm all pass.
 - [x] 10.3 Re-run `openspec validate openbuilt-versioning-model --strict`;
       confirm clean.
-- [ ] 10.4 Open PR against `development` (memory rule
+- [x] 10.4 Open PR against `development` (memory rule
       `feature-branches-from-dev`); reference ADR-002, this change id, and the
       four sibling spec ids in the description so reviewers can trace the chain
       delivery wave.

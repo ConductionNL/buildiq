@@ -632,9 +632,12 @@ class OpenBuiltToolProvider implements IMcpToolProvider
                 'config' => $config,
             ];
 
+            // Case-insensitive id lookup so the LLM doesn't have to remember
+            // exact casing ("dashboard" must still find "Dashboard").
             $replaced = false;
+            $pageIdLc = strtolower($pageId);
             foreach ($pages as $i => $existing) {
-                if (is_array($existing) === true && (string) ($existing['id'] ?? '') === $pageId) {
+                if (is_array($existing) === true && strtolower((string) ($existing['id'] ?? '')) === $pageIdLc) {
                     $pages[$i] = $newPage;
                     $replaced  = true;
                     break;
@@ -710,9 +713,11 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             $manifest = (array) ($version['manifest'] ?? []);
             $pages    = (array) ($manifest['pages'] ?? []);
 
+            // Case-insensitive lookup (see upsertPage rationale).
             $foundIdx = null;
+            $pageIdLc = strtolower($pageId);
             foreach ($pages as $i => $existing) {
-                if (is_array($existing) === true && (string) ($existing['id'] ?? '') === $pageId) {
+                if (is_array($existing) === true && strtolower((string) ($existing['id'] ?? '')) === $pageIdLc) {
                     $foundIdx = $i;
                     break;
                 }
