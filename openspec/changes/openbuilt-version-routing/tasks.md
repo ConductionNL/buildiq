@@ -45,7 +45,7 @@
 - [x] 2.5 Verify the controller method carries `#[NoAdminRequired]`. The production
       manifest is publicly accessible; RBAC lives in the resolver service
       (REQ-OBVR-002).
-- [ ] 2.6 Run `php occ route:list 2>&1 | grep manifest` after `apache2ctl graceful`
+- [x] 2.6 Run `php occ route:list 2>&1 | grep manifest` after `apache2ctl graceful`
       to confirm the existing route is still registered (no new entries needed).
 
 ## 3. `useApplicationVersion.js` composable
@@ -237,7 +237,7 @@ The three scenarios below are REQUIRED per the locked prompt constraints.
         not `false`/exception/empty-array (no silent fail-open).
       - `hydra-gate-spdx`: SPDX header present in docblock on `ManifestResolverService`.
       - `hydra-gate-forbidden-patterns`: no `var_dump`, `die`, etc.
-- [ ] 10.5 Run `openspec validate openbuilt-version-routing --strict`; confirm clean.
+- [x] 10.5 Run `openspec validate openbuilt-version-routing --strict`; confirm clean.
 - [ ] 10.6 Open PR against `development` (memory rule `feature-branches-from-dev`);
       reference ADR-002, the foundation change `openbuilt-versioning-model`, sibling
       spec `openbuilt-version-promotion`, and the downstream changes

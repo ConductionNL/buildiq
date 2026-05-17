@@ -136,10 +136,10 @@ class ApplicationCreationService
         // ---- State tracker for rollback -------------------------------------
         // Indexed by version slug.
         $state = [
-            'applicationUuid'  => null,
-            'versionUuids'     => [],
-            'registerSlugs'    => [],
-            'versionPayloads'  => [],
+            'applicationUuid' => null,
+            'versionUuids'    => [],
+            'registerSlugs'   => [],
+            'versionPayloads' => [],
         ];
 
         // ---- Step 2: Create Application -------------------------------------
@@ -621,6 +621,7 @@ class ApplicationCreationService
             if ($originalSlug !== '') {
                 $blob['slug'] = $slugPrefix.$originalSlug;
             }
+
             $schema       = $this->schemaMapper->createFromArray(object: $blob);
             $createdIds[] = $schema->getId();
         }
@@ -870,7 +871,7 @@ class ApplicationCreationService
             ) {
                 $page['config']['schema'] = $schemaSlugPrefix.$page['config']['schema'];
             }
-        }
+        }//end foreach
 
         unset($page);
         return $manifest;

@@ -160,10 +160,10 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             'inputSchema' => [
                 'type'       => 'object',
                 'properties' => [
-                    'appSlug'     => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'minLength' => 2, 'maxLength' => 48],
-                    'versionSlug' => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'default' => 'development'],
-                    'pageId'      => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64],
-                    'widgetType'  => ['type' => 'string', 'minLength' => 1, 'maxLength' => 48],
+                    'appSlug'      => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'minLength' => 2, 'maxLength' => 48],
+                    'versionSlug'  => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'default' => 'development'],
+                    'pageId'       => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64],
+                    'widgetType'   => ['type' => 'string', 'minLength' => 1, 'maxLength' => 48],
                     'widgetConfig' => ['type' => 'object'],
                 ],
                 'required'   => ['appSlug', 'pageId', 'widgetType'],
@@ -355,24 +355,29 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         if ($slug === '' || $this->isValidSlug(candidate: $slug) === false) {
             return $this->errorResult(error: 'invalid_arguments', message: "Invalid slug '{$slug}'.");
         }
+
         if ($name === '' || strlen($name) < 2 || strlen($name) > 80) {
             return $this->errorResult(error: 'invalid_arguments', message: 'Name must be between 2 and 80 characters.');
         }
+
         if (in_array(needle: $preset, haystack: self::CREATE_PRESETS, strict: true) === false) {
             return $this->errorResult(error: 'invalid_arguments', message: "Invalid preset '{$preset}'.");
         }
+
         if ($this->requireAuthenticatedUser() === null) {
             return $this->errorResult(error: 'forbidden', message: 'You must be signed in to create a virtual app.');
         }
 
         try {
             $creationService = $this->container->get('OCA\OpenBuilt\Service\ApplicationCreationService');
-            $appUuid         = $creationService->createApplication([
-                'slug'        => $slug,
-                'name'        => $name,
-                'description' => $description,
-                'preset'      => $preset,
-            ]);
+            $appUuid         = $creationService->createApplication(
+                    [
+                        'slug'        => $slug,
+                        'name'        => $name,
+                        'description' => $description,
+                        'preset'      => $preset,
+                    ]
+                    );
 
             return [
                 'success' => true,
@@ -401,12 +406,15 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
             return $this->errorResult(error: 'invalid_arguments', message: "Invalid appSlug '{$appSlug}'.");
         }
+
         if ($sourceVersionSlug === '' || $this->isValidSlug(candidate: $sourceVersionSlug) === false) {
             return $this->errorResult(error: 'invalid_arguments', message: "Invalid sourceVersionSlug '{$sourceVersionSlug}'.");
         }
+
         if (in_array(needle: $strategy, haystack: self::PROMOTE_STRATEGIES, strict: true) === false) {
             return $this->errorResult(error: 'invalid_arguments', message: "Invalid strategy '{$strategy}'.");
         }
+
         if ($this->requireAuthenticatedUser() === null) {
             return $this->errorResult(error: 'forbidden', message: 'You must be signed in to promote a virtual app version.');
         }
@@ -469,18 +477,23 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
             return $this->errorResult(error: 'invalid_arguments', message: "Invalid appSlug '{$appSlug}'.");
         }
+
         if ($this->isValidSlug(candidate: $versionSlug) === false) {
             return $this->errorResult(error: 'invalid_arguments', message: "Invalid versionSlug '{$versionSlug}'.");
         }
+
         if ($rawSlug === '' || $this->isValidSlug(candidate: $rawSlug) === false) {
             return $this->errorResult(error: 'invalid_arguments', message: "Invalid schema slug '{$rawSlug}'.");
         }
+
         if ($title === '') {
             return $this->errorResult(error: 'invalid_arguments', message: 'title is required.');
         }
+
         if (is_array($properties) === false || $properties === []) {
             return $this->errorResult(error: 'invalid_arguments', message: 'properties must be a non-empty object of JSON-Schema property definitions.');
         }
+
         if (is_array($required) === false) {
             $required = [];
         }
@@ -517,11 +530,11 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             }
 
             if ($existing !== null) {
-                $schema  = $schemaMapper->updateFromArray($existing->getId(), $blob);
-                $action  = 'updated';
+                $schema = $schemaMapper->updateFromArray($existing->getId(), $blob);
+                $action = 'updated';
             } else {
-                $schema  = $schemaMapper->createFromArray($blob);
-                $action  = 'created';
+                $schema = $schemaMapper->createFromArray($blob);
+                $action = 'created';
 
                 // Attach the new schema to the per-version register.
                 try {
@@ -530,22 +543,23 @@ class OpenBuiltToolProvider implements IMcpToolProvider
                     if (is_array($current) === false) {
                         $current = [];
                     }
+
                     $register->setSchemas(array_values(array_unique(array_merge($current, [$schema->getId()]))));
                     $registerMapper->update($register);
                 } catch (\Throwable $e) {
                     $this->logger->warning('OpenBuilt MCP: upsertSchema attach-to-register failed', ['register' => $registerSlug, 'exception' => $e->getMessage()]);
                 }
-            }
+            }//end if
 
             return [
                 'success' => true,
                 'action'  => $action,
                 'schema'  => [
-                    'id'             => $schema->getId(),
-                    'slug'           => $namespacedSlug,
-                    'shortSlug'      => $rawSlug,
-                    'title'          => $title,
-                    'register'       => $registerSlug,
+                    'id'        => $schema->getId(),
+                    'slug'      => $namespacedSlug,
+                    'shortSlug' => $rawSlug,
+                    'title'     => $title,
+                    'register'  => $registerSlug,
                 ],
             ];
         } catch (\Throwable $e) {
@@ -573,18 +587,23 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
             return $this->errorResult(error: 'invalid_arguments', message: "Invalid appSlug '{$appSlug}'.");
         }
+
         if ($pageId === '') {
             return $this->errorResult(error: 'invalid_arguments', message: 'pageId is required.');
         }
+
         if ($title === '') {
             return $this->errorResult(error: 'invalid_arguments', message: 'title is required.');
         }
+
         if (in_array(needle: $type, haystack: self::PAGE_TYPES, strict: true) === false) {
             return $this->errorResult(error: 'invalid_arguments', message: "Invalid page type '{$type}'.");
         }
+
         if ($route === '') {
             return $this->errorResult(error: 'invalid_arguments', message: 'route is required.');
         }
+
         if (is_array($config) === false) {
             $config = [];
         }
@@ -621,6 +640,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
                     break;
                 }
             }
+
             if ($replaced === false) {
                 $pages[] = $newPage;
             }
@@ -629,11 +649,11 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             $saved = $this->saveVersionManifest($objectService, $version, $manifest);
 
             return [
-                'success'  => true,
-                'action'   => $replaced ? 'updated' : 'created',
-                'page'     => $newPage,
+                'success'   => true,
+                'action'    => $replaced ? 'updated' : 'created',
+                'page'      => $newPage,
                 'pageCount' => count($pages),
-                'version'  => [
+                'version'   => [
                     'uuid' => $this->extractUuid(item: $saved),
                     'slug' => (string) ($saved['slug'] ?? $versionSlug),
                 ],
@@ -661,12 +681,15 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
             return $this->errorResult(error: 'invalid_arguments', message: "Invalid appSlug '{$appSlug}'.");
         }
+
         if ($pageId === '') {
             return $this->errorResult(error: 'invalid_arguments', message: 'pageId is required.');
         }
+
         if ($widgetType === '') {
             return $this->errorResult(error: 'invalid_arguments', message: 'widgetType is required.');
         }
+
         if (is_array($widgetConfig) === false) {
             $widgetConfig = [];
         }
@@ -694,29 +717,30 @@ class OpenBuiltToolProvider implements IMcpToolProvider
                     break;
                 }
             }
+
             if ($foundIdx === null) {
                 return $this->errorResult(error: 'not_found', message: "Page '{$pageId}' not found in manifest.");
             }
 
-            $page                = $pages[$foundIdx];
-            $pageConfig          = (array) ($page['config'] ?? []);
-            $widgets             = (array) ($pageConfig['widgets'] ?? []);
-            $widget              = ['type' => $widgetType, 'config' => $widgetConfig];
-            $widgets[]           = $widget;
+            $page       = $pages[$foundIdx];
+            $pageConfig = (array) ($page['config'] ?? []);
+            $widgets    = (array) ($pageConfig['widgets'] ?? []);
+            $widget     = ['type' => $widgetType, 'config' => $widgetConfig];
+            $widgets[]  = $widget;
             $pageConfig['widgets'] = $widgets;
-            $page['config']      = $pageConfig;
-            $pages[$foundIdx]    = $page;
-            $manifest['pages']   = array_values($pages);
+            $page['config']        = $pageConfig;
+            $pages[$foundIdx]      = $page;
+            $manifest['pages']     = array_values($pages);
 
             $saved = $this->saveVersionManifest($objectService, $version, $manifest);
 
             return [
-                'success'      => true,
-                'added'        => true,
-                'widget'       => $widget,
-                'pageId'       => $pageId,
-                'widgetCount'  => count($widgets),
-                'version'      => [
+                'success'     => true,
+                'added'       => true,
+                'widget'      => $widget,
+                'pageId'      => $pageId,
+                'widgetCount' => count($widgets),
+                'version'     => [
                     'uuid' => $this->extractUuid(item: $saved),
                     'slug' => (string) ($saved['slug'] ?? $versionSlug),
                 ],
@@ -746,12 +770,15 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
             return $this->errorResult(error: 'invalid_arguments', message: "Invalid appSlug '{$appSlug}'.");
         }
+
         if ($id === '') {
             return $this->errorResult(error: 'invalid_arguments', message: 'id is required.');
         }
+
         if ($label === '') {
             return $this->errorResult(error: 'invalid_arguments', message: 'label is required.');
         }
+
         if ($route === '') {
             return $this->errorResult(error: 'invalid_arguments', message: 'route is required.');
         }
@@ -782,6 +809,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
                     break;
                 }
             }
+
             if ($replaced === false) {
                 $menu[] = $newItem;
             }
@@ -883,6 +911,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         if (isset($args['limit']) === true) {
             $limit = (int) $args['limit'];
         }
+
         if ($limit < 1 || $limit > 50) {
             return ['error' => "Invalid limit {$limit}."];
         }
@@ -965,6 +994,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         if ($user === null) {
             return null;
         }
+
         $uid = $user->getUID();
         return $uid === '' ? null : $uid;
 
@@ -981,6 +1011,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         if (strlen($candidate) < 2 || strlen($candidate) > 48) {
             return false;
         }
+
         return (bool) preg_match('/^[a-z0-9][a-z0-9-]*[a-z0-9]$/', $candidate);
 
     }//end isValidSlug()
@@ -990,6 +1021,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         if ($slug === '') {
             return '/apps/openbuilt';
         }
+
         return "/apps/openbuilt/builder/{$slug}";
 
     }//end buildDeepLink()
@@ -1002,12 +1034,14 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         if (is_array($item) === true) {
             return $item;
         }
+
         if (is_object($item) === true && method_exists($item, 'jsonSerialize') === true) {
             $serialised = $item->jsonSerialize();
             if (is_array($serialised) === true) {
                 return $serialised;
             }
         }
+
         return (array) $item;
 
     }//end toArray()

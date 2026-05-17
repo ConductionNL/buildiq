@@ -1,6 +1,6 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
-### Requirement: REQ-OBR-007 ApplicationCard renders icon and omits redundant Live chip
+### Requirement: REQ-OBR-013 ApplicationCard renders icon and omits redundant Live chip
 
 `ApplicationCard.vue` SHALL render the Application's icon in front of the app title using an
 `<img>` element whose `src` is the URL of the icon-serving light endpoint

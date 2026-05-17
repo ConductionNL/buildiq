@@ -1,5 +1,8 @@
-## ADDED Requirements
+# app-nav-entries Specification
 
+## Purpose
+TBD - created by archiving change openbuilt-nextcloud-nav. Update Purpose after archive.
+## Requirements
 ### Requirement: REQ-OBNAV-001 Dynamic per-app top-bar entry for each published Application
 
 The system SHALL register one `INavigationManager` entry per published Application in
@@ -74,12 +77,12 @@ are all empty (or absent) SHALL NOT be visible to non-admin users, regardless of
 - **AND** the Application is published with empty permissions
 - **THEN** the admin's request cycle includes the nav entry
 
-### Requirement: REQ-OBNAV-003 `group:*` wildcard SHALL make entry visible to all signed-in users
+### Requirement: REQ-OBNAV-003 group-wildcard nav-entry visibility SHALL apply to all signed-in users
 
-If the literal string `group:*` appears in any of `permissions.owners`,
-`permissions.editors`, or `permissions.viewers` on a published Application, the system SHALL
-make the nav entry visible to every signed-in Nextcloud user regardless of their group
-memberships. The wildcard SHALL be detected before the group-intersection check runs.
+The system SHALL make the nav entry visible to every signed-in Nextcloud user, regardless of
+their group memberships, when the literal string `group:*` appears in any of
+`permissions.owners`, `permissions.editors`, or `permissions.viewers` on a published
+Application. The wildcard SHALL be detected before the group-intersection check runs.
 
 #### Scenario: `group:*` in owners makes entry universally visible
 
@@ -112,3 +115,4 @@ because the service re-queries the `status == published` filter on every request
 - **WHEN** an Application is transitioned from `draft` to `published`
 - **THEN** on the next Nextcloud request boot cycle, the nav entry for that Application is
   present in `INavigationManager::getAll()` for eligible users
+
