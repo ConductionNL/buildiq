@@ -37,6 +37,33 @@ Features are defined in [`openspec/specs/`](openspec/specs/) and tracked via the
 - **Textarea manifest editor** — JSON-only for v1 (visual editor lives in chain spec #5)
 - **Seeded `hello-world` Application** exercising `index`, `detail`, and `form` page types out of the box
 
+### Visual designer (Design tab + Raw JSON fallback)
+
+Each Application's editor exposes two tabs (`openbuilt-page-editor` v1.1):
+
+- **Design** (default) — type-aware sub-editors for the six manifest page types
+  (`index`, `detail`, `form`, `dashboard`, `chat`, `logs`, `settings`, `files`,
+  `custom`). The Design tab carries an inline-mark validator that flags ADR-024
+  schema errors on the offending field instead of dumping a side-panel summary,
+  plus an undo/redo stack scoped to the in-flight manifest.
+- **Raw JSON** — the integrator fallback. Drops you into the manifest's bare
+  JSON when a manifest shape isn't yet supported by a Design-tab sub-editor, or
+  when you want to bulk-edit. Edits round-trip losslessly through `parse →
+  stringify → parse` (Vitest spec `tests/composables/manifestRoundTrip.spec.js`)
+  so external authoring tools — git diffs, IDE auto-format — stay coherent
+  with the Design tab.
+
+Run the canonical-shape validator locally:
+
+```bash
+npm run check:manifest
+```
+
+The script (`scripts/check-manifest.js`) validates the OpenBuilt shell
+manifest plus the wizard seed against
+`@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json` (the
+ADR-024 canonical schema) and exits non-zero on any structural drift.
+
 ### Chained follow-on specs
 - `nextcloud-vue-in-memory-manifest` (in `nextcloud-vue/`) — `useAppManifest` overload accepting an in-memory manifest object
 - `openregister-runtime-schema-api` (in `openregister/`) — runtime schema-creation API
