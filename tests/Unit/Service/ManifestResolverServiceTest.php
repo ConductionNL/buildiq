@@ -459,4 +459,94 @@ class ManifestResolverServiceTest extends TestCase
 
         self::assertSame($manifest, $result);
     }//end testResolveWithEmptyVersionSlugUsesProductionPath()
+
+    /**
+     * REQ-OBVR-003 task 7.5: non-member caller on a non-production version
+     * gets null (→ 404) — distinct from the viewer-403 and admin-403 cases
+     * because the caller has NO entry in any permission bucket at all.
+     *
+     * @return void
+     */
+    public function testResolveReturnsNullForNonMemberCallerOnNonProductionVersion(): void
+    {
+        $application = [
+            'slug'              => 'hello-world',
+            'productionVersion' => 'prod-uuid',
+            'permissions'       => [
+                'owners'  => ['user:alice'],
+                'editors' => ['user:bob'],
+                'viewers' => ['user:carol'],
+            ],
+        ];
+        $version     = [
+            'uuid'     => 'staging-uuid',
+            'slug'     => 'staging',
+            'manifest' => ['version' => '1.0.0', 'pages' => []],
+        ];
+
+        $this->objectService->method('searchObjects')
+            ->willReturnOnConsecutiveCalls([$application], [$version]);
+
+        // `dave` is in no permission bucket.
+        $dave = $this->createMock(IUser::class);
+        $dave->method('getUID')->willReturn('dave');
+
+        $result = $this->service->resolve(
+            appSlug: 'hello-world',
+            versionSlug: 'staging',
+            caller: $dave
+        );
+
+        self::assertNull($result);
+    }//end testResolveReturnsNullForNonMemberCallerOnNonProductionVersion()
+
+    /**
+     * REQ-OBVR-003 task 7.9: the resolver emits a debug log with the
+     * `version_access_denied` event marker when RBAC denies access — server
+     * side only, never leaked to the HTTP response.
+     *
+     * @return void
+     */
+    public function testResolveLogsVersionAccessDeniedOnRbacFailure(): void
+    {
+        $application = [
+            'uuid'              => 'app-uuid',
+            'slug'              => 'hello-world',
+            'productionVersion' => 'prod-uuid',
+            'permissions'       => ['owners' => ['user:alice'], 'editors' => []],
+        ];
+        $version     = [
+            'uuid'        => 'staging-uuid',
+            'slug'        => 'staging',
+            'application' => 'app-uuid',
+            'manifest'    => ['version' => '1.0.0', 'pages' => []],
+        ];
+
+        $this->objectService->method('searchObjects')
+            ->willReturnOnConsecutiveCalls([$application], [$version]);
+
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+
+        $matched = false;
+        $this->logger
+            ->method('debug')
+            ->willReturnCallback(function ($message, array $context = []) use (&$matched): void {
+                if (($context['event'] ?? null) === 'version_access_denied') {
+                    $matched = true;
+                }
+            });
+
+        $result = $this->service->resolve(
+            appSlug: 'hello-world',
+            versionSlug: 'staging',
+            caller: $bob
+        );
+
+        self::assertNull($result);
+        self::assertTrue(
+            $matched,
+            'resolver must emit a debug log with event=version_access_denied on RBAC denial'
+        );
+    }//end testResolveLogsVersionAccessDeniedOnRbacFailure()
 }//end class

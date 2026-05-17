@@ -223,7 +223,7 @@
 - [ ] 10.1 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan); fix every
       finding (no pre-existing issues left unaddressed — memory rule
       `fix-all-issues-encountered`).
-- [ ] 10.2 Run the full PHPUnit suite (`composer test`); confirm all pass.
+- [x] 10.2 Run the full PHPUnit suite (`composer test`); confirm all pass.
 - [ ] 10.3 Re-run `openspec validate openbuilt-versioning-model --strict`;
       confirm clean.
 - [ ] 10.4 Open PR against `development` (memory rule

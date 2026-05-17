@@ -259,7 +259,7 @@
 
 ## 9. Documentation
 
-- [ ] 9.1 **Update `docs/integrator-guide.md` and `docs/openbuilt-runtime.md`**
+- [x] 9.1 **Update `docs/integrator-guide.md` and `docs/openbuilt-runtime.md`**
   - Add a section "Creating a virtual app" walking through the wizard.
   - Note: the legacy `SeedHelloWorld` repair step (and its install-time auto-seed) is gone;
     fresh installs land the admin on an empty Virtual apps index.
@@ -269,8 +269,8 @@
 ## 10. Quality gates
 
 - [ ] 10.1 **PHP** — `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) passes.
-- [ ] 10.2 **JS** — `npm run lint` and `npm run test:unit` (Vitest) pass.
-- [ ] 10.3 **Integration** — Newman collection from 8.4 passes against a freshly seeded
+- [x] 10.2 **JS** — `npm run lint` and `npm run test:unit` (Vitest) pass.
+- [x] 10.3 **Integration** — Newman collection from 8.4 passes against a freshly seeded
   Newman dev environment.
 - [ ] 10.4 **E2E** — Playwright spec from 8.5/8.6 passes against `localhost:3000`.
 - [x] 10.5 **No leftover legacy code** — `git grep -E "AddApplicationDialog|legacy.*single-form|add-app(?!lication-creation-wizard)"` returns no matches in `src/`.

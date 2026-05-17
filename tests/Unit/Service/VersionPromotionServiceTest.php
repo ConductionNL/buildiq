@@ -386,6 +386,98 @@ class VersionPromotionServiceTest extends TestCase
     }//end testPromoteFailureArchivesTargetAndReleasesLock()
 
     /**
+     * REQ-OBVP-009 task 6.10: the source register / version row is unmodified
+     * when promotion fails.
+     *
+     * Source-side guarantee: every save during a promotion that crashes is
+     * against the TARGET row (status flip, archived flip) and the TARGET's
+     * register (schema/object copies). The source manifest, semver, status,
+     * and register pointer must round-trip untouched.
+     *
+     * @return void
+     */
+    public function testPromoteFailureLeavesSourceUnmodified(): void
+    {
+        $source = [
+            'id'         => 'u-src',
+            'register'   => 'openbuilt-app-staging',
+            'manifest'   => ['version' => '1.5.0', 'pages' => []],
+            'semver'     => '1.5.0',
+            'status'     => 'published',
+            'promotesTo' => 'u-tgt',
+        ];
+
+        $target = [
+            'id'       => 'u-tgt',
+            'register' => 'openbuilt-app-production',
+            'manifest' => ['version' => '1.0.0'],
+            'semver'   => '1.0.0',
+            'status'   => 'published',
+        ];
+
+        $targetEntity = $this->buildObjectEntity(uuid: 'u-tgt', payload: $target);
+
+        $this->objectService->method('find')->willReturn($targetEntity);
+        $this->registerMapper
+            ->method('find')
+            ->willReturn($this->buildRegister(id: 1, slug: 'openbuilt-app-staging', schemas: ['s1']));
+
+        $savedArchived = $this->buildObjectEntity(
+            uuid: 'u-tgt',
+            payload: [
+                'id'       => 'u-tgt',
+                'register' => 'openbuilt-app-production',
+                'status'   => 'archived',
+            ]
+        );
+
+        // Track every saveObject call to verify the source row is never the
+        // subject of a write.
+        $savedPayloads = [];
+        $callCount     = 0;
+        $this->objectService
+            ->method('saveObject')
+            ->willReturnCallback(
+                static function (...$args) use (&$callCount, &$savedPayloads, $savedArchived): ObjectEntity {
+                    $callCount++;
+                    $savedPayloads[] = $args[0];
+                    if ($callCount === 1) {
+                        throw new RuntimeException('strategy step boom');
+                    }
+
+                    return $savedArchived;
+                }
+            );
+
+        $this->expectException(PromotionFailedException::class);
+
+        try {
+            $this->service->promote(
+                source: $source,
+                strategy: VersionPromotionService::STRATEGY_MIGRATE_EXISTING_DATA
+            );
+        } catch (PromotionFailedException $e) {
+            // Verify EVERY save was against the target uuid, never the source.
+            foreach ($savedPayloads as $payload) {
+                if (is_array($payload) === true) {
+                    $writtenUuid = ($payload['id'] ?? $payload['uuid'] ?? null);
+                    self::assertNotSame(
+                        'u-src',
+                        $writtenUuid,
+                        'source row must never be written during a failed promotion'
+                    );
+                }
+            }
+
+            // The in-memory source payload is untouched.
+            self::assertSame('1.5.0', $source['semver']);
+            self::assertSame('published', $source['status']);
+            self::assertSame('openbuilt-app-staging', $source['register']);
+            throw $e;
+        }
+    }//end testPromoteFailureLeavesSourceUnmodified()
+
+    /**
      * REQ-OBVP-002: start-with-source-data wipes target and copies source rows.
      *
      * @return void

@@ -164,7 +164,7 @@
       assert target's status is `archived`, target's `_self.promotionFailedAt` is
       set, OR lock is released, exception thrown is a 500-mapped exception with
       `{code: "promotion_failed", strategy, message}` (spec REQ-OBVP-009).
-- [ ] 6.10 Test `promote` — source register is unmodified on failure (the source
+- [x] 6.10 Test `promote` — source register is unmodified on failure (the source
       is read-only throughout) (spec REQ-OBVP-009).
 - [x] 6.11 Test `promote` — OR lock contention: mock lock acquisition to throw a
       `LockHeldException`; assert the service throws a 409-mapped exception with
@@ -180,7 +180,7 @@
 - [x] 7.3 Test `promote` with an editor user — succeeds (spec REQ-OBVP-007).
 - [x] 7.4 Test `promote` with a viewer user — returns 403 with
       `code: "insufficient_permission"` (spec REQ-OBVP-007).
-- [ ] 7.5 Test `promote` with a non-member user — returns 403 (spec REQ-OBVP-007).
+- [x] 7.5 Test `promote` with a non-member user — returns 403 (spec REQ-OBVP-007).
 - [x] 7.6 Test `promote` with a Nextcloud admin user who is NOT in
       `permissions.owners` or `permissions.editors` — returns 403. Admin power
       does NOT auto-grant (spec REQ-OBVP-007 — deliberate constraint).
@@ -247,8 +247,8 @@
       finding (memory rule `fix-all-issues-encountered`). No `// SPDX-` line
       comments — SPDX tags live inside the docblock (memory rule
       `spdx-in-docblock`).
-- [ ] 10.2 Run `composer test` (full PHPUnit suite); confirm all pass.
-- [ ] 10.3 Run `npm run lint` and `npm run test:unit` (front-end); confirm the
+- [x] 10.2 Run `composer test` (full PHPUnit suite); confirm all pass.
+- [x] 10.3 Run `npm run lint` and `npm run test:unit` (front-end); confirm the
       dialog component test passes and the new file has no ESLint errors.
 - [ ] 10.4 Run the Hydra mechanical gates: `bash scripts/run-hydra-gates.sh`
       covers SPDX, forbidden-patterns, stub-scan, composer-audit, route-auth,

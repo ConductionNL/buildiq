@@ -24,7 +24,42 @@ A virtual app is one record in OpenBuilt's `Application` OR schema. The shape is
 
 The `manifest` object validates against [`@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`](https://github.com/ConductionNL/nextcloud-vue/blob/main/src/schemas/app-manifest.schema.json). The closed `type` enum for pages is `index | detail | dashboard | logs | settings | chat | files | form | custom`.
 
-## Step-by-step
+## Creating a virtual app with the wizard
+
+For most operators the visual wizard at **Virtual apps → New application** is the
+quicker path. It walks you through three steps in one round-trip:
+
+1. **Identity** — pick a slug + human-readable name + description.
+2. **Versions** — accept the default chain (`development → staging → production`)
+   or adjust it. Each version maps to its own per-version register
+   (`openbuilt-{slug}-{versionSlug}`) so production data is physically isolated
+   from staging and development. The wizard's chain editor enforces ADR-002's
+   linear-chain rule (no fan-out, no cycles, exactly one terminal `production`
+   tier).
+3. **Permissions** — pick the owners / editors / viewers. The caller is
+   pre-filled into `owners`. Group `group:*` becomes the "all signed-in users"
+   wildcard per REQ-OBRBAC-004.
+
+On submit the wizard atomically creates the `Application` record, the N
+`ApplicationVersion` rows, and N per-version registers — and seeds each
+register with the default schema set (`hello-message` by default) under the
+namespaced slug `{appSlug}-{versionSlug}-{originalSchemaSlug}`. The manifest's
+`config.register` and `config.schema` pointers are rewritten to match
+(`openbuilt-{slug}-{tier}` and `{appSlug}-{tier}-hello-message` respectively)
+so the insights service and the runtime each address the right per-tier slice.
+
+**Empty-state landing** — fresh installs no longer auto-seed a `hello-world`
+Application (the legacy `SeedHelloWorld` repair step was retired by
+`openbuilt-versioning-model`). New deploys land the admin on an empty Virtual
+apps index with a CTA pointing at the wizard. Pre-existing installs are not
+affected; the migration step `MigrateToVersionedModel` only fires when
+pre-spec-C Application rows are present and is idempotent on re-runs.
+
+For further reading on what each step writes through to OR, see
+[`openbuilt-runtime.md`](./openbuilt-runtime.md) and the wizard chain spec
+[`openspec/changes/openbuilt-app-creation-wizard/`](../openspec/changes/openbuilt-app-creation-wizard/).
+
+## Step-by-step (manual / integrator path)
 
 1. **Pick a slug.** Must be kebab-case, 2–48 chars, unique within your organisation. The synthetic appId in CnAppRoot becomes `openbuilt-${slug}`.
 2. **Design your schemas** in OpenRegister directly (the OpenBuilt schema editor lands in chain spec `openbuilt-schema-editor`). At minimum: one schema per primary entity your app shows.

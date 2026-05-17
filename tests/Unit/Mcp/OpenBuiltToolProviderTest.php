@@ -110,7 +110,7 @@ class OpenBuiltToolProviderTest extends TestCase
     }//end testGetAppIdReturnsOpenbuilt()
 
     /**
-     * getTools() returns exactly two well-formed descriptors with openbuilt.* ids.
+     * getTools() returns four well-formed descriptors with openbuilt.* ids.
      *
      * @return void
      */
@@ -118,11 +118,16 @@ class OpenBuiltToolProviderTest extends TestCase
     {
         $tools = $this->provider->getTools();
 
-        $this->assertCount(2, $tools);
+        // The catalogue grew from 2 (listApps + getAppManifest) to 4
+        // (added createApp + promoteVersion in the wizard + promotion
+        // chain). Assert the new shape.
+        $this->assertCount(4, $tools);
 
         $ids = array_column($tools, 'id');
         $this->assertContains('openbuilt.listApps', $ids);
         $this->assertContains('openbuilt.getAppManifest', $ids);
+        $this->assertContains('openbuilt.createApp', $ids);
+        $this->assertContains('openbuilt.promoteVersion', $ids);
 
         foreach ($tools as $tool) {
             $this->assertArrayHasKey('id', $tool);

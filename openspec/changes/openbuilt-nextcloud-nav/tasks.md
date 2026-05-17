@@ -119,7 +119,7 @@
 
 ## 6. Seed data — Hello World icons
 
-- [ ] 6.1 **Extend `SeedHelloWorld` to attach demo SVG icons to the seeded Application**
+- [x] 6.1 **Extend `SeedHelloWorld` to attach demo SVG icons to the seeded Application** _(obsolete: SeedHelloWorld retired by openbuilt-versioning-model — see ../openbuilt-versioning-model)_
   - spec_ref: design.md §Seed Data
   - files: `lib/Repair/SeedHelloWorld.php`
   - After `seedApplicationAndRoute()` returns a non-null UUID, call a new private method
@@ -133,7 +133,7 @@
     Application record with two attached files (`app-icon.svg`, `app-icon-dark.svg`); the
     icon-serving endpoint returns SVG bytes for `GET /icons/hello-world.svg`.
 
-- [ ] 6.2 **Patch the Hello World manifest seed data with `icon` and `iconDark` refs**
+- [x] 6.2 **Patch the Hello World manifest seed data with `icon` and `iconDark` refs** _(obsolete: SeedHelloWorld retired by openbuilt-versioning-model — see ../openbuilt-versioning-model)_
   - spec_ref: design.md §Seed Data, REQ-OBICON-001
   - files: `lib/Repair/SeedHelloWorld.php` (`buildHelloWorldManifest()` method)
   - Add `'icon' => ['ref' => 'app-icon.svg']` and `'iconDark' => ['ref' => 'app-icon-dark.svg']`
