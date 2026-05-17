@@ -20,33 +20,25 @@
  * deferred-bootstrap pattern used by mydash).
  */
 
-import { test, expect, Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 
 const NEXTCLOUD_URL = process.env.NEXTCLOUD_URL || process.env.NC_BASE_URL || 'http://localhost:8080'
 const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASS || 'admin'
 
-/**
- * Helper — log in to Nextcloud via the standard /login form.
- *
- * @param page Playwright page handle.
- */
-async function loginAsAdmin(page: Page): Promise<void> {
-	await page.goto(`${NEXTCLOUD_URL}/index.php/login`)
-	await page.locator('input[name="user"]').fill(ADMIN_USER)
-	await page.locator('input[name="password"]').fill(ADMIN_PASS)
-	await page.locator('button[type="submit"]').click()
-	await page.waitForURL(/index\.php\/apps\//, { timeout: 15_000 })
-}
+// Auth: globalSetup writes the storageState that every spec inherits
+// (see tests/e2e/global-setup.ts + playwright.config.ts use.storageState).
+// The legacy per-spec form login is gone — it was racing the NC
+// brute-force throttle and is redundant against the shared session.
+void ADMIN_USER
+void ADMIN_PASS
+void NEXTCLOUD_URL
 
 test.describe('OpenBuilt template gallery', () => {
-	test.beforeEach(async ({ page }) => {
-		await loginAsAdmin(page)
-	})
 
 	test('lists the four seeded templates and clones one into a draft application', async ({ page }) => {
 		// 1. Navigate to the gallery.
-		await page.goto(`${NEXTCLOUD_URL}/index.php/apps/openbuilt/templates`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuilt/templates`)
 
 		// 2. Wait for the gallery shell to render.
 		await expect(page.locator('.template-gallery')).toBeVisible({ timeout: 15_000 })
@@ -92,7 +84,7 @@ test.describe('OpenBuilt template gallery', () => {
 	})
 
 	test('filter by category narrows to government-services only', async ({ page }) => {
-		await page.goto(`${NEXTCLOUD_URL}/index.php/apps/openbuilt/templates`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuilt/templates`)
 		await expect(page.locator('.template-gallery')).toBeVisible({ timeout: 15_000 })
 		await expect(page.locator('.template-card')).toHaveCount(4, { timeout: 15_000 })
 

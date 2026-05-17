@@ -1,5 +1,5 @@
 <?php
-// SPDX-License-Identifier: EUPL-1.2
+
 /**
  * Enforce named parameters for all calls to internal (our own) code.
  *
@@ -14,8 +14,15 @@
  * - Nextcloud/third-party method calls ($variable->method() where $variable !== $this)
  * - Any call we cannot determine is "our code"
  *
- * @author  Conduction
- * @package CustomSniffs
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Sniff
+ * @package   CustomSniffs
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
 
 namespace CustomSniffs\Sniffs\Functions;

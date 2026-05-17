@@ -1,5 +1,19 @@
 <?php
 
+/**
+ * OpenBuilt app-template integration test bootstrap.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Test
+ * @package   OCA\AppTemplate\Tests
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ */
+
 declare(strict_types=1);
 
 // Define that we're running PHPUnit.

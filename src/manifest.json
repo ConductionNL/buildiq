@@ -65,12 +65,14 @@
 			"route": "/applications",
 			"type": "index",
 			"title": "Virtual apps",
+			"actionsComponent": "VirtualAppsActions",
 			"config": {
 				"register": "openbuilt",
 				"schema": "application",
 				"viewMode": "cards",
 				"cardComponent": "ApplicationCard",
 				"columns": ["name", "status", "version", "@self.updated"],
+				"showAdd": false,
 				"sidebar": { "enabled": true, "showMetadata": true }
 			}
 		},
@@ -79,15 +81,16 @@
 			"route": "/applications/:objectId",
 			"type": "detail",
 			"title": "Virtual app",
+			"headerComponent": "ApplicationDetailHeader",
+			"actionsComponent": "ApplicationDetailActions",
 			"config": {
 				"register": "openbuilt",
 				"schema": "application",
-				"actionsComponent": "ApplicationDetailActions",
 				"sidebarTabs": [
-					{ "id": "overview", "label": "Overview", "icon": "icon-info", "widgets": [{ "type": "data" }, { "type": "metadata" }], "order": 10 },
 					{ "id": "manifest", "label": "Manifest", "icon": "icon-edit", "component": "ApplicationManifestTab", "order": 20 },
 					{ "id": "history", "label": "Version history", "icon": "icon-history", "component": "ApplicationVersionsTab", "order": 30 },
 					{ "id": "diff", "label": "Diff", "icon": "icon-files", "component": "ApplicationDiffTab", "order": 40 },
+					{ "id": "icons", "label": "Icons", "icon": "icon-image", "component": "ApplicationIconTab", "order": 50 },
 					{ "id": "audit", "label": "Audit trail", "icon": "icon-history", "widgets": [{ "type": "audit-trail" }], "order": 90 }
 				]
 			}

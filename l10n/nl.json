@@ -229,7 +229,23 @@
         "Unknown application version.": "Onbekende applicatieversie.",
         "Draft versions cannot be exported.": "Conceptversies kunnen niet worden geëxporteerd.",
         "Repository already exists in the target organisation.": "Repository bestaat al in de doelorganisatie.",
-        "GitHub authentication failed. Please check the token scope and try again.": "GitHub-authenticatie is mislukt. Controleer de tokenscope en probeer het opnieuw."
+        "GitHub authentication failed. Please check the token scope and try again.": "GitHub-authenticatie is mislukt. Controleer de tokenscope en probeer het opnieuw.",
+        "Promote version": "Versie promoveren",
+        "This version has no downstream target. Set a \"Promotes to\" relation to enable promotion.": "Deze versie heeft geen downstream-doel. Stel een \"Promoveert naar\"-relatie in om promotie mogelijk te maken.",
+        "Cancel": "Annuleren",
+        "Source register:": "Bronregister:",
+        "Target register:": "Doelregister:",
+        "Data strategy": "Datastrategie",
+        "Start target with source data": "Start doel met brongegevens",
+        "Replace the target version's rows with copies of the source's rows. Useful when the test data is the new shape of production data.": "Vervang de rijen van de doelversie door kopieën van de bronrijen. Handig wanneer de testgegevens de nieuwe vorm van de productiegegevens zijn.",
+        "Migrate target's existing data": "Migreer bestaande gegevens van het doel",
+        "Keep the target version's existing rows and apply the source's schema set. OpenRegister handles column-level migration for breaking changes.": "Behoud de bestaande rijen van de doelversie en pas de schemaset van de bron toe. OpenRegister verzorgt de kolomgewijze migratie voor breaking changes.",
+        "Empty start (destructive)": "Lege start (destructief)",
+        "Drop every row in the target's register and install the source's schema set without copying data. This cannot be undone.": "Verwijder elke rij in het register van het doel en installeer de schemaset van de bron zonder gegevens te kopiëren. Dit kan niet ongedaan gemaakt worden.",
+        "Type the application slug to confirm": "Typ de slug van de applicatie ter bevestiging",
+        "Empty start will permanently delete every row in the target's register. Type \"{slug}\" to confirm.": "Lege start verwijdert permanent elke rij in het register van het doel. Typ \"{slug}\" ter bevestiging.",
+        "Promote {source} to {target}": "{source} promoveren naar {target}",
+        "Promote": "Promoveren"
     },
     "plurals": ""
 }

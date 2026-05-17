@@ -206,7 +206,10 @@ namespace OCA\OpenRegister\Db {
 
     if (class_exists(AuditTrailMapper::class, autoload: false) === false) {
         /**
-         * Stub AuditTrailMapper — `createAuditTrailEntry` call surface.
+         * Stub AuditTrailMapper — call surface covering the methods used by
+         * OpenBuilt services. `getDistinctActorCount` is the new aggregation
+         * delivered by `openregister-distinct-actor-aggregation`; declaring
+         * it here lets the unit tests mock it before the OR floor lands.
          */
         class AuditTrailMapper
         {
@@ -218,6 +221,35 @@ namespace OCA\OpenRegister\Db {
             public function createAuditTrailEntry(ObjectEntity $object, string $action, array $context = []): AuditTrail
             {
                 return new AuditTrail();
+            }
+
+            /**
+             * @param array<int> $schemaIds Schema IDs to aggregate over.
+             * @param int        $hours     Window in hours.
+             *
+             * @return int Distinct actor count.
+             */
+            public function getDistinctActorCount(array $schemaIds, int $hours): int
+            {
+                return 0;
+            }
+
+            /**
+             * @param array<int> $schemaIds Schema IDs to aggregate over.
+             *
+             * @return array<int, array<string, int>>
+             */
+            public function getStatisticsGroupedBySchema(array $schemaIds): array
+            {
+                return [];
+            }
+
+            /**
+             * @return array{labels: array<int, string>, series: array<int, array{name: string, data: array<int, int>}>}
+             */
+            public function getActionChartData(?\DateTime $from = null, ?\DateTime $till = null, ?int $registerId = null, ?int $schemaId = null): array
+            {
+                return ['labels' => [], 'series' => []];
             }
         }
     }
@@ -291,6 +323,76 @@ namespace OCA\OpenRegister\Service {
             {
                 return new \OCA\OpenRegister\Db\ObjectEntity();
             }
+
+            /**
+             * @return bool
+             */
+            public function deleteObject(string $uuid, bool $_rbac = true, bool $_multitenancy = true): bool
+            {
+                return true;
+            }
+
+            /**
+             * @return array<string, mixed>
+             */
+            public function lockObject(string $identifier, ?string $process = null, ?int $duration = null): array
+            {
+                return [];
+            }
+
+            /**
+             * @return bool
+             */
+            public function unlockObject(string|int $identifier): bool
+            {
+                return true;
+            }
+
+            /**
+             * @return array<string, mixed>|null
+             */
+            public function getLockInfo(string $identifier): ?array
+            {
+                return null;
+            }
+
+            /**
+             * Stub setter for the current register context. Real OR signature
+             * is `setRegister(Register|string|int): static`.
+             *
+             * @param mixed $register Register reference.
+             *
+             * @return static
+             */
+            public function setRegister(mixed $register): static
+            {
+                return $this;
+            }
+
+            /**
+             * Stub setter for the current schema context. Real OR signature
+             * is `setSchema(Schema|string|int): static`.
+             *
+             * @param mixed $schema Schema reference.
+             *
+             * @return static
+             */
+            public function setSchema(mixed $schema): static
+            {
+                return $this;
+            }
+
+            /**
+             * Stub object count — returns 0 by default.
+             *
+             * @param array<string, mixed> $config Optional config.
+             *
+             * @return int
+             */
+            public function count(array $config = []): int
+            {
+                return 0;
+            }
         }
     }
 
@@ -308,6 +410,33 @@ namespace OCA\OpenRegister\Service {
             public function importFromApp(string $appId, array $data, string $version, bool $force = false): array
             {
                 return [];
+            }
+        }
+    }
+
+    if (class_exists(RegisterService::class, autoload: false) === false) {
+        /**
+         * Stub RegisterService — `find`/`delete` call surface used by
+         * ApplicationVersionService and MigrateToVersionedModel.
+         */
+        class RegisterService
+        {
+            /**
+             * @return \OCA\OpenRegister\Db\Register
+             */
+            public function delete(\OCA\OpenRegister\Db\Register $register): \OCA\OpenRegister\Db\Register
+            {
+                return $register;
+            }
+
+            /**
+             * @param array<int, string>|null $_extend
+             *
+             * @return \OCA\OpenRegister\Db\Register
+             */
+            public function find(int|string $id, ?array $_extend = [], bool $_multitenancy = true): \OCA\OpenRegister\Db\Register
+            {
+                return new \OCA\OpenRegister\Db\Register();
             }
         }
     }
@@ -393,6 +522,118 @@ namespace OCA\OpenRegister\Event {
             public function getAction(): string
             {
                 return $this->action;
+            }
+        }
+    }
+
+    if (class_exists(ObjectCreatingEvent::class, autoload: false) === false) {
+        /**
+         * Stub ObjectCreatingEvent — supports `stopPropagation`/`setErrors`/`getObject`.
+         */
+        class ObjectCreatingEvent extends \OCP\EventDispatcher\Event implements \Psr\EventDispatcher\StoppableEventInterface
+        {
+            private bool $propagationStopped = false;
+
+            /**
+             * @var array<string, mixed>
+             */
+            private array $errors = [];
+
+            public function __construct(private readonly \OCA\OpenRegister\Db\ObjectEntity $object)
+            {
+                parent::__construct();
+            }
+
+            public function getObject(): \OCA\OpenRegister\Db\ObjectEntity
+            {
+                return $this->object;
+            }
+
+            public function isPropagationStopped(): bool
+            {
+                return $this->propagationStopped;
+            }
+
+            public function stopPropagation(): void
+            {
+                $this->propagationStopped = true;
+            }
+
+            /**
+             * @param array<string, mixed> $errors
+             */
+            public function setErrors(array $errors): void
+            {
+                $this->errors = $errors;
+            }
+
+            /**
+             * @return array<string, mixed>
+             */
+            public function getErrors(): array
+            {
+                return $this->errors;
+            }
+        }
+    }
+
+    if (class_exists(ObjectUpdatingEvent::class, autoload: false) === false) {
+        /**
+         * Stub ObjectUpdatingEvent — exposes the new object via getNewObject()
+         * (the real OR class signature is `__construct(ObjectEntity $newObject,
+         * ?ObjectEntity $oldObject = null)`). Tests that previously called
+         * `$event->getObject()` SHALL be updated to `getNewObject()`.
+         */
+        class ObjectUpdatingEvent extends \OCP\EventDispatcher\Event implements \Psr\EventDispatcher\StoppableEventInterface
+        {
+            private bool $propagationStopped = false;
+
+            /**
+             * @var array<string, mixed>
+             */
+            private array $errors = [];
+
+            public function __construct(
+                private readonly \OCA\OpenRegister\Db\ObjectEntity $newObject,
+                private readonly ?\OCA\OpenRegister\Db\ObjectEntity $oldObject = null,
+            ) {
+                parent::__construct();
+            }
+
+            public function getNewObject(): \OCA\OpenRegister\Db\ObjectEntity
+            {
+                return $this->newObject;
+            }
+
+            public function getOldObject(): ?\OCA\OpenRegister\Db\ObjectEntity
+            {
+                return $this->oldObject;
+            }
+
+            public function isPropagationStopped(): bool
+            {
+                return $this->propagationStopped;
+            }
+
+            public function stopPropagation(): void
+            {
+                $this->propagationStopped = true;
+            }
+
+            /**
+             * @param array<string, mixed> $errors
+             */
+            public function setErrors(array $errors): void
+            {
+                $this->errors = $errors;
+            }
+
+            /**
+             * @return array<string, mixed>
+             */
+            public function getErrors(): array
+            {
+                return $this->errors;
             }
         }
     }

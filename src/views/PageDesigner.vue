@@ -119,6 +119,7 @@ import StubPageEditor from '../components/page-editor/StubPageEditor.vue'
 import { useLivePreview } from '../composables/useLivePreview.js'
 import { useManifestValidator } from '../composables/useManifestValidator.js'
 import { useManifestHistory } from '../composables/useManifestHistory.js'
+import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 
 // Closed mapping of page.type → sub-editor component. Adding a new type
 // requires both the schema enum bump in `app-manifest.schema.json` AND a
@@ -187,6 +188,10 @@ export default {
 		return {
 			selectedIndex: -1,
 			depthError: false,
+			// REQ-OBVR-004: reactive version state resolved by useApplicationVersion.
+			applicationVersion: null,
+			versionLoading: false,
+			versionError: null,
 		}
 	},
 	computed: {
@@ -232,6 +237,28 @@ export default {
 	},
 	mounted() {
 		document.addEventListener('keydown', this.onKeydown)
+		// REQ-OBVR-004: resolve the active ApplicationVersion on mount.
+		// `this.slug` comes from the parent prop; `$route.query._version` reads
+		// the query param from the URL (preserved by Vue Router across reloads,
+		// satisfying REQ-OBVR-008 bookmarkability).
+		// NOTE: no $router.replace() call here — that would strip ?_version=.
+		if (this.slug) {
+			const versionSlug = (this.$route && this.$route.query && this.$route.query._version) || undefined
+			const { applicationVersion, loading, error } = useApplicationVersion(this.slug, versionSlug)
+			this.applicationVersion = applicationVersion.value
+			this.versionLoading = loading.value
+			const unwatch = this.$watch(() => applicationVersion.value, (v) => {
+				this.applicationVersion = v
+			})
+			const unwatchLoading = this.$watch(() => loading.value, (v) => {
+				this.versionLoading = v
+				if (!v) {
+					unwatch()
+					unwatchLoading()
+					this.versionError = error.value
+				}
+			})
+		}
 	},
 	beforeDestroy() {
 		document.removeEventListener('keydown', this.onKeydown)

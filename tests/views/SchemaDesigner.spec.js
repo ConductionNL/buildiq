@@ -102,9 +102,10 @@ const editorStubs = {
 	},
 }
 
-function makeRouter({ slug = 'hello-world', schemaId = '' } = {}) {
+function makeRouter({ slug = 'hello-world', schemaId = '', version = undefined } = {}) {
 	return {
 		params: { slug, schemaId },
+		query: version ? { _version: version } : {},
 	}
 }
 
@@ -115,7 +116,12 @@ function makeRouter({ slug = 'hello-world', schemaId = '' } = {}) {
 // equivalent but key-ordered-different JSON string and the
 // `JSON.stringify` diff in the SUT (correctly) reports a change.
 const persistedSchema = {
-	slug: 'hello',
+	// Schema slugs are namespaced `{appSlug}-{versionSlug}-{slug}` since
+	// PR #74 — the SchemaDesigner filters the org-wide schema collection
+	// down to ones owned by the active app+version. The default route is
+	// `hello-world` with no `_version`, so the fixture must carry the
+	// `hello-world-` prefix to survive the client-side filter.
+	slug: 'hello-world-hello',
 	title: 'Hello',
 	description: '',
 	version: '0.1.0',
@@ -149,7 +155,7 @@ describe('SchemaDesigner', () => {
 		await wrapper.vm.$nextTick()
 		expect(storeMocks.fetchCollection).toHaveBeenCalledWith('schema')
 		expect(wrapper.vm.schemas).toHaveLength(1)
-		expect(wrapper.vm.schemas[0].slug).toBe('hello')
+		expect(wrapper.vm.schemas[0].slug).toBe('hello-world-hello')
 	})
 
 	it('REQ-OBSD-001: surfaces a showError toast when the store reports a list error', async () => {
@@ -230,7 +236,7 @@ describe('SchemaDesigner', () => {
 		await wrapper.vm.$nextTick()
 		expect(storeMocks.fetchObject).toHaveBeenCalledWith('schema', 'hello')
 		expect(wrapper.vm.staged).toBeTruthy()
-		expect(wrapper.vm.staged.slug).toBe('hello')
+		expect(wrapper.vm.staged.slug).toBe('hello-world-hello')
 		expect(wrapper.vm.staged.fields).toHaveLength(1)
 		expect(wrapper.vm.staged.fields[0].name).toBe('subject')
 	})
@@ -295,7 +301,7 @@ describe('SchemaDesigner', () => {
 		expect(type).toBe('schema')
 		expect(body).toMatchObject({
 			id: 'hello',
-			slug: 'hello',
+			slug: 'hello-world-hello',
 			title: 'Hello renamed',
 			version: '0.2.0',
 			type: 'object',
@@ -356,6 +362,7 @@ describe('SchemaDesigner', () => {
 		expect(push).toHaveBeenCalledWith({
 			name: 'SchemaDesigner',
 			params: { slug: 'hello-world', schemaId: 'hello' },
+			query: {},
 		})
 	})
 

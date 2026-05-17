@@ -7,11 +7,11 @@
  * (change: ai-chat-companion-orchestrator). Used only in environments where
  * the openregister runtime is not installed (e.g. bare CI containers).
  *
- * This file is loaded by tests/bootstrap-unit.php when the real interface is absent.
- * It is NOT scanned by PHPCS.
+ * This file is loaded by tests/bootstrap-unit.php (and tests/bootstrap.php)
+ * when the real interface is absent. It is NOT scanned by PHPCS.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Stubs\Mcp
+ * @package  OCA\Scholiq\Tests\Stubs\Mcp
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,7 +27,7 @@ if (interface_exists(IMcpToolProvider::class) === false) {
      * Stub interface for IMcpToolProvider — used only in standalone unit tests.
      *
      * Deferred until openregister PR #1466 (ai-chat-companion-orchestrator) ships
-     * the real interface. OpenBuilt implements this stub in production; the stub is
+     * the real interface. Scholiq implements this stub in production; the stub is
      * replaced by the real interface when the openregister app is installed.
      */
     interface IMcpToolProvider
@@ -36,7 +36,7 @@ if (interface_exists(IMcpToolProvider::class) === false) {
         /**
          * Returns the app ID that namespaces every tool id this provider exposes.
          *
-         * @return string The app slug (e.g. "openbuilt")
+         * @return string The app slug (e.g. "scholiq")
          */
         public function getAppId(): string;
 
@@ -56,7 +56,7 @@ if (interface_exists(IMcpToolProvider::class) === false) {
          * Returns a success payload or a structured error envelope.
          * MUST NOT throw — all failure paths return an array.
          *
-         * @param string               $toolId    The tool id (e.g. "openbuilt.getAppManifest")
+         * @param string               $toolId    The tool id (e.g. "scholiq.listCourses")
          * @param array<string, mixed> $arguments Tool arguments from the LLM call
          *
          * @return array<string, mixed>

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuilt\Tests\Unit\Controller;
 
 use OCA\OpenBuilt\Controller\ApplicationsController;
+use OCA\OpenBuilt\Service\ManifestResolverService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -152,6 +153,7 @@ class ApplicationsControllerTest extends TestCase
             schemaMapper: $schemaMapper,
             userSession: $this->userSession,
             groupManager: $this->groupManager,
+            manifestResolver: $this->createMock(ManifestResolverService::class),
             auditTrailMapper: $this->auditTrailMapper,
         );
     }//end buildController()

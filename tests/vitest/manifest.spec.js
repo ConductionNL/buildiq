@@ -35,12 +35,20 @@ describe('src/manifest.json', () => {
 
 	// Every name the manifest references against the customComponents registry:
 	// `type: custom` pages' `component`, plus index pages' `config.cardComponent`,
-	// detail pages' `config.sidebarTabs[].component` and `config.actionsComponent`.
+	// detail pages' `config.sidebarTabs[].component` and `config.actionsComponent`,
+	// plus the page-level `headerComponent` (sugar field per nc-vue, also accepted
+	// inside `config.headerComponent` for compat with older manifests).
 	const referencedComponents = () => {
 		const refs = new Set()
 		for (const page of manifest.pages) {
 			if (page.type === 'custom' && typeof page.component === 'string') {
 				refs.add(page.component)
+			}
+			if (typeof page.headerComponent === 'string') {
+				refs.add(page.headerComponent)
+			}
+			if (typeof page.actionsComponent === 'string') {
+				refs.add(page.actionsComponent)
 			}
 			const cfg = page.config || {}
 			if (typeof cfg.cardComponent === 'string') {

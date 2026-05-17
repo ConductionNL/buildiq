@@ -41,13 +41,14 @@ test.describe('OpenBuilt ZIP export', () => {
 			await page.fill('input[name="user"]', ADMIN_USER)
 			await page.fill('input[name="password"]', ADMIN_PASSWORD)
 			await page.locator('button[type="submit"], input[type="submit"]').first().click()
-			await page.waitForURL(/\/index\.php\/apps\//, { timeout: 15_000 })
+			// Pretty URLs in modern NC drop the `/index.php` prefix; accept both.
+			await page.waitForURL(/\/apps\//, { timeout: 15_000 })
 		}
 	})
 
 	test('export a hello-world Application as a ZIP and download it', async ({ page }) => {
 		// 1. Navigate to the hello-world editor.
-		await page.goto(`${NEXTCLOUD_URL}/index.php/apps/openbuilt/applications/${APPLICATION_SLUG}`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuilt/applications/${APPLICATION_SLUG}`)
 
 		// 2. Open the Export dialog. The button is wired in
 		//    src/views/ApplicationDetail.vue per task 8.3.
@@ -85,7 +86,7 @@ test.describe('OpenBuilt ZIP export', () => {
 
 	test('export dialog rejects submission with invalid target', async ({ page }) => {
 		// Locks the client-side guard mirror of the 422 controller path.
-		await page.goto(`${NEXTCLOUD_URL}/index.php/apps/openbuilt/applications/${APPLICATION_SLUG}`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuilt/applications/${APPLICATION_SLUG}`)
 		const exportButton = page.getByRole('button', { name: /export/i })
 		await expect(exportButton).toBeVisible({ timeout: 15_000 })
 		await exportButton.click()

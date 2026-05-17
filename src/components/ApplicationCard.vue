@@ -8,15 +8,25 @@
   - The card body is a `<router-link>` to VirtualAppDetail so a click navigates
   - directly to /applications/{objectId} — CnIndexPage's own `row-click`
   - event is emit-only (no auto-routing), so we own the navigation here.
-  - Shows the virtual app's name, lifecycle-status pill, version, a "live"
-  - marker when a published snapshot exists, and the caller's role.
+  - Shows the virtual app's name, lifecycle-status pill, version, and the
+  - caller's role.
   -->
 <template>
 	<div class="ob-app-card" :class="{ 'ob-app-card--selected': selected }">
-		<router-link
+		<div
 			class="ob-app-card__inner"
-			:to="{ name: 'VirtualAppDetail', params: { objectId: appUuid } }">
+			tabindex="0"
+			role="link"
+			@click="onCardActivate"
+			@keyup.enter="onCardActivate">
 			<div class="ob-app-card__head">
+				<img
+					class="ob-app-card__icon"
+					:src="`/index.php/apps/openbuilt/icons/${app.slug}.svg`"
+					:alt="app.name || app.slug"
+					width="20"
+					height="20"
+					@error="onIconError">
 				<h3 class="ob-app-card__title">
 					{{ app.name || app.slug || t('openbuilt', 'Untitled app') }}
 				</h3>
@@ -26,12 +36,11 @@
 				{{ app.description }}
 			</p>
 			<div class="ob-app-card__meta">
-				<span class="ob-app-card__chip">{{ t('openbuilt', 'Version') }} {{ app.version || '—' }}</span>
-				<span v-if="app.currentVersion" class="ob-app-card__chip ob-app-card__chip--live">{{ t('openbuilt', 'Live') }}</span>
+				<span class="ob-app-card__chip">{{ t('openbuilt', 'Version') }} {{ productionSemver }}</span>
 				<span v-if="role !== 'none'" class="ob-app-card__chip">{{ roleLabel }}</span>
 				<span class="ob-app-card__chip ob-app-card__chip--muted">/{{ app.slug }}</span>
 			</div>
-		</router-link>
+		</div>
 	</div>
 </template>
 
@@ -51,6 +60,33 @@ export default {
 		app() {
 			return this.object || this.item || {}
 		},
+		/**
+		 * Resolve the inline productionVersion object, if OR returned it via
+		 * `?extend=productionVersion` (or the store pre-fetched it). Falls back
+		 * to null so the card can show skeleton defaults.
+		 *
+		 * Spec C moved `status` and `semver` from Application onto
+		 * ApplicationVersion. The card reads them from productionVersion so the
+		 * status badge and version chip stay accurate.
+		 *
+		 * @return {object|null}
+		 */
+		productionVersion() {
+			const pv = this.app.productionVersion
+			if (!pv || typeof pv !== 'object') {
+				return null
+			}
+			return pv
+		},
+		/**
+		 * Semver string from the production ApplicationVersion, or '—' while
+		 * loading / when the application has no production version yet.
+		 *
+		 * @return {string}
+		 */
+		productionSemver() {
+			return (this.productionVersion && this.productionVersion.semver) || '—'
+		},
 		// CnDetailPage reads :objectId from $route.params, which we set here.
 		// OR returns the canonical id under @self.id; fall back to uuid/id for
 		// objects coming from older mock fixtures or pre-@self responses.
@@ -58,8 +94,16 @@ export default {
 			const self = this.app['@self'] || {}
 			return self.id || this.app.uuid || this.app.id || ''
 		},
+		/**
+		 * Status key resolved from productionVersion (spec C). Falls back to
+		 * 'draft' when no production version is present so the card has a
+		 * sensible default while loading or for brand-new applications.
+		 *
+		 * @return {string}
+		 */
 		statusKey() {
-			return ['draft', 'published', 'archived'].includes(this.app.status) ? this.app.status : 'draft'
+			const status = this.productionVersion && this.productionVersion.status
+			return ['draft', 'published', 'archived'].includes(status) ? status : 'draft'
 		},
 		statusLabel() {
 			return {
@@ -77,6 +121,17 @@ export default {
 				editor: t('openbuilt', 'Editor'),
 				viewer: t('openbuilt', 'Viewer'),
 			}[this.role] || ''
+		},
+	},
+	methods: {
+		onIconError(e) {
+			e.target.src = '/apps/openbuilt/img/app.svg'
+		},
+		onCardActivate(event) {
+			this.$emit('click', event)
+			if (this.$router) {
+				this.$router.push({ name: 'VirtualAppDetail', params: { objectId: this.appUuid } })
+			}
 		},
 	},
 }
@@ -112,6 +167,13 @@ export default {
 	gap: 8px;
 }
 
+.ob-app-card__icon {
+	width: 20px;
+	height: 20px;
+	object-fit: contain;
+	flex-shrink: 0;
+}
+
 .ob-app-card__title {
 	margin: 0;
 	font-size: 15px;
@@ -141,11 +203,6 @@ export default {
 	border-radius: var(--border-radius-pill, 12px);
 	background: var(--color-background-dark, #eee);
 	color: var(--color-main-text, #222);
-}
-
-.ob-app-card__chip--live {
-	background: var(--color-success-default-background, rgba(70, 186, 97, 0.2));
-	color: var(--color-success-text, #2d8a3e);
 }
 
 .ob-app-card__chip--muted {

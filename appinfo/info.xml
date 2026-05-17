@@ -22,7 +22,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
 
 **Ondersteuning:** Voor ondersteuning, neem contact op via support@conduction.nl.
     ]]></description>
-    <version>0.2.0</version>
+    <version>0.3.5</version>
     <licence>agpl</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenBuilt</namespace>
@@ -83,13 +83,13 @@ Vrij en open source onder de EUPL-1.2-licentie.
     <repair-steps>
         <install>
             <step>OCA\OpenBuilt\Repair\InitializeSettings</step>
-            <step>OCA\OpenBuilt\Repair\SeedHelloWorld</step>
+            <step>OCA\OpenBuilt\Repair\MigrateToVersionedModel</step>
             <step>OCA\OpenBuilt\Repair\PopulateApplicationPermissions</step>
             <step>OCA\OpenBuilt\Repair\SeedApplicationTemplates</step>
         </install>
         <post-migration>
             <step>OCA\OpenBuilt\Repair\InitializeSettings</step>
-            <step>OCA\OpenBuilt\Repair\SeedHelloWorld</step>
+            <step>OCA\OpenBuilt\Repair\MigrateToVersionedModel</step>
             <step>OCA\OpenBuilt\Repair\PopulateApplicationPermissions</step>
             <step>OCA\OpenBuilt\Repair\SeedApplicationTemplates</step>
         </post-migration>

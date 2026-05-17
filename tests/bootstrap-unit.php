@@ -53,6 +53,12 @@ foreach ($orCandidates as $orPath) {
 // register a stub set so type-hinted parameters resolve.
 require_once __DIR__ . '/stubs/openregister-stubs.php';
 
+// OpenRegister's IMcpToolProvider interface ships in PR #1466 (ai-chat
+// companion orchestrator). Until that merges, the interface may not be
+// loadable in unit-test isolation — load the stub so `implements
+// IMcpToolProvider` doesn't blow up at class-load time.
+require_once __DIR__ . '/Stubs/Mcp/IMcpToolProvider.php';
+
 // If the surrounding Nextcloud server is present (we're running inside
 // the docker container), boot it so functional tests can talk to OC.
 // In a stripped CI environment we skip — unit tests don't need it.

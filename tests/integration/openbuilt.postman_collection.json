@@ -149,10 +149,10 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"name\": \"Newman Round-trip\",\n  \"description\": \"Synthetic Application created by the Newman CRUD round-trip\",\n  \"version\": \"0.0.1\",\n  \"status\": \"draft\",\n  \"manifest\": {\n    \"version\": \"1.0.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuilt\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  }\n}"
+							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"name\": \"Newman Round-trip\",\n  \"description\": \"Synthetic Application created by the Newman CRUD round-trip\"\n}"
 						},
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application",
-						"description": "Create a synthetic Application object via OR REST (ADR-022: CRUD goes to OR directly, not an OB wrapper)."
+						"description": "Create a synthetic Application object via OR REST. Per ADR-002 (versioned-app model) the `manifest`/`version`/`status` fields live on ApplicationVersion now, NOT the Application itself."
 					},
 					"event": [
 						{
@@ -187,7 +187,7 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{created_uuid}}",
-						"description": "Read-back asserts the POST landed on disk and the uuid resolves."
+						"description": "Read-back asserts the POST landed on disk and the uuid resolves. Versioned model: no manifest at this layer; verified separately on the version record below."
 					},
 					"event": [
 						{
@@ -201,9 +201,6 @@
 									"const body = pm.response.json();",
 									"pm.test('slug round-trips', function () {",
 									"    pm.expect(body.slug || (body['@self'] && body['@self'].slug)).to.eql('newman-roundtrip');",
-									"});",
-									"pm.test('manifest is present and not empty', function () {",
-									"    pm.expect(body.manifest, 'no manifest on GET').to.be.an('object');",
 									"});"
 								]
 							}
@@ -211,7 +208,46 @@
 					]
 				},
 				{
-					"name": "PUT saves a manifest edit before publish (newman-roundtrip)",
+					"name": "POST creates an ApplicationVersion under the new Application",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Newman Round-trip v1\",\n  \"slug\": \"production\",\n  \"manifest\": {\n    \"version\": \"1.0.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuilt\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuilt-newman-roundtrip-production\",\n  \"semver\": \"1.0.0\",\n  \"status\": \"draft\",\n  \"application\": \"{{created_uuid}}\"\n}"
+						},
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/newman-roundtrip/versions",
+						"description": "Per ADR-002, the manifest + status + semver live on ApplicationVersion. POST against the version-aware OpenBuilt endpoint so the parent-relation guard runs."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 201', function () {",
+									"    pm.expect([200, 201]).to.include(pm.response.code);",
+									"});",
+									"const body = pm.response.json();",
+									"const versionUuid = (body['@self'] && (body['@self'].id || body['@self'].uuid)) || body.uuid || body.id;",
+									"pm.test('version uuid is captured', function () {",
+									"    pm.expect(versionUuid).to.be.a('string');",
+									"});",
+									"pm.collectionVariables.set('created_version_uuid', versionUuid);",
+									"pm.test('manifest persisted on the version (not the application)', function () {",
+									"    pm.expect(body.manifest).to.be.an('object');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PATCH set the Application's productionVersion pointer",
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -221,10 +257,10 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"name\": \"Newman Round-trip\",\n  \"description\": \"Synthetic Application created by the Newman CRUD round-trip\",\n  \"version\": \"0.0.2\",\n  \"status\": \"draft\",\n  \"manifest\": {\n    \"version\": \"1.0.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuilt\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  }\n}"
+							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"name\": \"Newman Round-trip\",\n  \"description\": \"Synthetic Application created by the Newman CRUD round-trip\",\n  \"productionVersion\": \"{{created_version_uuid}}\"\n}"
 						},
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{created_uuid}}",
-						"description": "Save pending manifest edits while still in draft (mirrors ApplicationEditor.vue's publish() step 1). The publish happens via the lifecycle transition below, not by flipping status here — a raw status=published PUT would never fire ObjectTransitionedEvent and so the BuiltAppRoute would never be created (REQ-OBA-003 / REQ-OBA-004)."
+						"description": "ADR-002: the application's `productionVersion` field carries the UUID of the version that should be served as the live manifest."
 					},
 					"event": [
 						{
@@ -236,8 +272,9 @@
 									"    pm.response.to.have.status(200);",
 									"});",
 									"const body = pm.response.json();",
-									"pm.test('still in draft (publish happens via lifecycle transition)', function () {",
-									"    pm.expect(body.status || (body['@self'] && body['@self'].status)).to.eql('draft');",
+									"const prod = body.productionVersion || (body['@self'] && body['@self'].relations && body['@self'].relations.productionVersion);",
+									"pm.test('productionVersion points at the new version', function () {",
+									"    pm.expect(prod).to.eql(pm.collectionVariables.get('created_version_uuid'));",
 									"});"
 								]
 							}
@@ -245,7 +282,7 @@
 					]
 				},
 				{
-					"name": "POST the publish lifecycle transition (fires ObjectTransitionedEvent)",
+					"name": "POST publish lifecycle transition on the ApplicationVersion",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -257,8 +294,8 @@
 							"mode": "raw",
 							"raw": "{ \"action\": \"publish\" }"
 						},
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{created_uuid}}/transition",
-						"description": "A raw PUT with status=published does NOT make OR fire ObjectTransitionedEvent, so the BuiltAppRoute (slug -> uuid) that GET /api/applications/{slug}/manifest resolves is never created. OR's lifecycle transition endpoint (POST /api/objects/{id}/transition with {action}) fires the event -> ApplicationVersionSnapshotListener upserts the BuiltAppRoute (REQ-OBA-003 / REQ-OBA-004). This is the server-side equivalent of ApplicationEditor.vue's publish() flow."
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{created_version_uuid}}/transition",
+						"description": "Publishing is a state machine on the VERSION now (ADR-002). The transition fires ObjectTransitionedEvent → ApplicationVersionSnapshotListener upserts the BuiltAppRoute."
 					},
 					"event": [
 						{
@@ -283,7 +320,7 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/newman-roundtrip/manifest",
-						"description": "After the publish transition, the BuiltAppRoute is upserted and the manifest endpoint resolves the new slug."
+						"description": "After the publish transition + productionVersion pointer set, ManifestResolverService should resolve the slug to the version's manifest."
 					},
 					"event": [
 						{
@@ -301,6 +338,31 @@
 									"pm.test('manifest has at least one page', function () {",
 									"    pm.expect(body.pages).to.be.an('array');",
 									"    pm.expect(body.pages.length).to.be.greaterThan(0);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE cleans up the round-trip ApplicationVersion",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/newman-roundtrip/versions/production?strategy=hard",
+						"description": "Drop the version + its per-version register first so the parent Application can be safely deleted."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 204', function () {",
+									"    pm.expect([200, 204]).to.include(pm.response.code);",
 									"});"
 								]
 							}

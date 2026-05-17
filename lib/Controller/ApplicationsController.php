@@ -38,6 +38,7 @@ namespace OCA\OpenBuilt\Controller;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenBuilt\AppInfo\Application;
+use OCA\OpenBuilt\Service\ManifestResolverService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -75,14 +76,15 @@ class ApplicationsController extends Controller
     /**
      * Constructor.
      *
-     * @param IRequest              $request          The current HTTP request
-     * @param LoggerInterface       $logger           PSR logger for diagnostics
-     * @param ObjectService         $objectService    OpenRegister object service (hard dep via info.xml)
-     * @param RegisterMapper        $registerMapper   Resolves slugs/UUIDs to numeric register IDs
-     * @param SchemaMapper          $schemaMapper     Resolves slugs/UUIDs to numeric schema IDs
-     * @param IUserSession          $userSession      Current Nextcloud user session
-     * @param IGroupManager         $groupManager     Group membership resolver
-     * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
+     * @param IRequest                $request          The current HTTP request
+     * @param LoggerInterface         $logger           PSR logger for diagnostics
+     * @param ObjectService           $objectService    OpenRegister object service (hard dep via info.xml)
+     * @param RegisterMapper          $registerMapper   Resolves slugs/UUIDs to numeric register IDs
+     * @param SchemaMapper            $schemaMapper     Resolves slugs/UUIDs to numeric schema IDs
+     * @param IUserSession            $userSession      Current Nextcloud user session
+     * @param IGroupManager           $groupManager     Group membership resolver
+     * @param ManifestResolverService $manifestResolver Version-aware manifest resolver (REQ-OBVR-002)
+     * @param AuditTrailMapper|null   $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
      *
      * @return void
      */
@@ -94,6 +96,7 @@ class ApplicationsController extends Controller
         private readonly SchemaMapper $schemaMapper,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
+        private readonly ManifestResolverService $manifestResolver,
         private readonly ?AuditTrailMapper $auditTrailMapper=null,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
@@ -106,23 +109,29 @@ class ApplicationsController extends Controller
      * manifest. The manifest is returned UNWRAPPED (no OR envelope) so
      * useAppManifest in @conduction/nextcloud-vue consumes it directly.
      *
+     * Version routing (spec `openbuilt-version-routing` REQ-OBVR-001):
+     * ---------------------------------------------------------------
+     * An optional `?_version=<versionSlug>` query parameter selects a specific
+     * ApplicationVersion. The underscore-prefix form (`_version`, not `version`)
+     * is OpenBuilt's system-reserved namespace marker — it prevents collision
+     * with user-defined `?version=` params that citizen developers may add to
+     * their virtual apps' routes.
+     *
+     * When `?_version=` is present, the request is routed through
+     * ManifestResolverService which enforces RBAC: viewers and non-members
+     * receive 404 (not 403) for non-production versions; unknown version slugs
+     * also 404 (same response — no existence leak, REQ-OBVR-003 / Decision 8).
+     *
+     * When `?_version=` is absent the endpoint behaves exactly as before,
+     * returning the production manifest to any authenticated caller with any
+     * role on the Application (the existing requirePermission check).
+     *
      * Visibility model
      * ----------------
-     * Manifests are publicly readable to every authenticated user in the
-     * org. `#[NoAdminRequired]` is intentional: the hello-world seed app
-     * (and any future "always-on" virtual app) is publicly mountable as
-     * soon as a route exists. The manifest body contains the structural
-     * description of the UI (routes, widgets, endpoints) but no row-level
-     * data — that is fetched separately through OpenRegister and goes
-     * through OR's own authorisation layer.
-     *
-     * Future role-scoped manifests (admin-only apps, group-restricted
-     * apps) must NOT be implemented by hardening this endpoint. The
-     * canonical extension point is the BuiltAppRoute schema itself: add
-     * a `restrictToGroup` (or similar) property and filter the route
-     * lookup above on the current user's groups. That keeps the visibility
-     * model declarative and avoids scattering per-endpoint ACL logic.
-     * Tracked for the RBAC spec (PR #6 / feature/spec-openbuilt-rbac).
+     * `#[NoAdminRequired]` is intentional: the hello-world seed app (and any
+     * future "always-on" virtual app) is publicly mountable as soon as a route
+     * exists. RBAC lives inside ManifestResolverService (for versioned access)
+     * and requirePermission (for the production path).
      *
      * @param string $slug The virtual-app slug from the URL
      *
@@ -133,6 +142,24 @@ class ApplicationsController extends Controller
     public function getManifest(string $slug): JSONResponse
     {
         try {
+            // REQ-OBVR-001: read the `?_version=` query parameter.
+            // The param name uses a leading underscore to avoid colliding with any
+            // user-defined `?version=` params in citizen-developer apps. Null when absent.
+            $versionSlugRaw = $this->request->getParam('_version');
+            $versionSlug    = null;
+            if ($versionSlugRaw !== null && $versionSlugRaw !== '') {
+                $versionSlug = $versionSlugRaw;
+            }
+
+            // When `?_version=` is present, delegate to ManifestResolverService which
+            // performs the two-step lookup (Application → ApplicationVersion) and RBAC
+            // gate (REQ-OBVR-002 / REQ-OBVR-003). Both "unknown version" and
+            // "unauthorised caller" return identical 404 to prevent slug enumeration.
+            if ($versionSlug !== null) {
+                return $this->resolveVersionedManifestResponse(slug: $slug, versionSlug: $versionSlug);
+            }
+
+            // No `?_version=` param: original production-manifest path (backwards-compat).
             $resolved = $this->resolveApplicationBySlug(slug: $slug);
             if ($resolved instanceof JSONResponse) {
                 return $resolved;
@@ -192,6 +219,37 @@ class ApplicationsController extends Controller
     }//end getManifest()
 
     /**
+     * Delegate to ManifestResolverService for versioned-manifest access.
+     *
+     * Performs the two-step lookup (Application → ApplicationVersion) and RBAC
+     * gate (REQ-OBVR-002 / REQ-OBVR-003). Both "unknown version" and
+     * "unauthorised caller" return identical 404 to prevent slug enumeration.
+     *
+     * @param string $slug        The virtual-app slug from the URL.
+     * @param string $versionSlug The version slug from `?_version=`.
+     *
+     * @return JSONResponse 200 with manifest, or 404 when not found / not authorised.
+     */
+    private function resolveVersionedManifestResponse(string $slug, string $versionSlug): JSONResponse
+    {
+        $caller   = $this->userSession->getUser();
+        $manifest = $this->manifestResolver->resolve(
+            appSlug: $slug,
+            versionSlug: $versionSlug,
+            caller: $caller
+        );
+
+        if ($manifest === null) {
+            return new JSONResponse(
+                data: ['status' => Http::STATUS_NOT_FOUND, 'message' => 'Version not found'],
+                statusCode: Http::STATUS_NOT_FOUND
+            );
+        }
+
+        return new JSONResponse(data: $manifest, statusCode: Http::STATUS_OK);
+    }//end resolveVersionedManifestResponse()
+
+    /**
      * Return two manifest blobs side-by-side so the client diff component
      * can render without a second round-trip (REQ-OBV-005, chain spec #6).
      *
@@ -218,6 +276,10 @@ class ApplicationsController extends Controller
     #[NoCSRFRequired]
     public function diffVersions(string $slug, string $from, string $to): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return $this->errorResponse(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+        }
+
         try {
             $registerId  = $this->registerMapper->find('openbuilt', _multitenancy: false)->getId();
             $routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
@@ -468,32 +530,12 @@ class ApplicationsController extends Controller
             $userGroups = $this->getUserGroupIds(user: $user);
             $isAdmin    = $this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP);
 
-            $filtered        = [];
-            $adminBypassUsed = false;
-            foreach ($results as $entry) {
-                $app = $this->normaliseObject(object: $entry);
-                if ($app === []) {
-                    continue;
-                }
-
-                $authorised = $this->collectAuthorisedGroups(application: $app);
-                $hasRole    = in_array($user->getUID(), $authorised['users'], true)
-                    || count(array_intersect($userGroups, $authorised['groups'])) > 0;
-
-                if ($hasRole === true) {
-                    $filtered[] = $app;
-                    continue;
-                }
-
-                if ($isAdmin === true) {
-                    // Admin sees the row via the bypass; single audit
-                    // event for the listing covers all rows surfaced
-                    // by the bypass (the per-row manifest fetch is the
-                    // surface that emits a separate per-slug audit).
-                    $filtered[]      = $app;
-                    $adminBypassUsed = true;
-                }
-            }//end foreach
+            [$filtered, $adminBypassUsed] = $this->filterApplicationsByRole(
+                results: $results,
+                uid: $user->getUID(),
+                userGroups: $userGroups,
+                isAdmin: $isAdmin
+            );
 
             if ($adminBypassUsed === true) {
                 $this->logger->info(
@@ -519,6 +561,51 @@ class ApplicationsController extends Controller
             );
         }//end try
     }//end listMine()
+
+    /**
+     * Filter a raw OR result set to Applications the caller is authorised to see.
+     *
+     * Returns a two-element tuple: [filteredApps, adminBypassUsed].
+     *
+     * @param array<mixed>  $results    Raw OR search result entries.
+     * @param string        $uid        Caller's UID.
+     * @param array<string> $userGroups Caller's group IDs.
+     * @param bool          $isAdmin    Whether the caller is in the Nextcloud admin group.
+     *
+     * @return array{0: array<array<string,mixed>>, 1: bool} [filtered list, adminBypassUsed].
+     */
+    private function filterApplicationsByRole(
+        array $results,
+        string $uid,
+        array $userGroups,
+        bool $isAdmin
+    ): array {
+        $filtered        = [];
+        $adminBypassUsed = false;
+
+        foreach ($results as $entry) {
+            $app = $this->normaliseObject(object: $entry);
+            if ($app === []) {
+                continue;
+            }
+
+            $authorised = $this->collectAuthorisedGroups(application: $app);
+            $hasRole    = in_array($uid, $authorised['users'], true)
+                || count(array_intersect($userGroups, $authorised['groups'])) > 0;
+
+            if ($hasRole === true) {
+                $filtered[] = $app;
+                continue;
+            }
+
+            if ($isAdmin === true) {
+                $filtered[]      = $app;
+                $adminBypassUsed = true;
+            }
+        }//end foreach
+
+        return [$filtered, $adminBypassUsed];
+    }//end filterApplicationsByRole()
 
     /**
      * Enforce the per-Application RBAC permissions block.
@@ -704,27 +791,11 @@ class ApplicationsController extends Controller
             }
 
             foreach ($bucket as $principal) {
-                if (is_string($principal) === false || $principal === '') {
-                    continue;
-                }
-
-                if (str_starts_with($principal, 'user:') === true) {
-                    $uid = substr($principal, 5);
-                    if ($uid !== '') {
-                        $userSet[$uid] = true;
-                    }
-
-                    continue;
-                }
-
-                $gid = $principal;
-                if (str_starts_with($principal, 'group:') === true) {
-                    $gid = substr($principal, 6);
-                }
-
-                if ($gid !== '') {
-                    $groupSet[$gid] = true;
-                }
+                $this->classifyPrincipal(
+                    principal: $principal,
+                    userSet: $userSet,
+                    groupSet: $groupSet
+                );
             }//end foreach
         }//end foreach
 
@@ -733,6 +804,42 @@ class ApplicationsController extends Controller
             'groups' => array_keys($groupSet),
         ];
     }//end collectAuthorisedGroups()
+
+    /**
+     * Classify a single permissions principal into the UID or GID accumulator sets.
+     *
+     * Modifies $userSet and $groupSet by reference.
+     *
+     * @param mixed               $principal The raw principal value from the permissions bucket.
+     * @param array<string, bool> $userSet   Accumulator for user UIDs (keyed, deduped).
+     * @param array<string, bool> $groupSet  Accumulator for group GIDs (keyed, deduped).
+     *
+     * @return void
+     */
+    private function classifyPrincipal(mixed $principal, array &$userSet, array &$groupSet): void
+    {
+        if (is_string($principal) === false || $principal === '') {
+            return;
+        }
+
+        if (str_starts_with($principal, 'user:') === true) {
+            $uid = substr($principal, 5);
+            if ($uid !== '') {
+                $userSet[$uid] = true;
+            }
+
+            return;
+        }
+
+        $gid = $principal;
+        if (str_starts_with($principal, 'group:') === true) {
+            $gid = substr($principal, 6);
+        }
+
+        if ($gid !== '') {
+            $groupSet[$gid] = true;
+        }
+    }//end classifyPrincipal()
 
     /**
      * Clone an Application from a template.
@@ -1082,24 +1189,102 @@ class ApplicationsController extends Controller
      */
     private function provisionPerAppRegister(string $newSlug, string $ownerUid): \OCA\OpenRegister\Db\Register
     {
-        $registerSlug = 'openbuilt-'.$newSlug;
+        // Cross-user collision guard (#77): OR's register slugs are
+        // organisation-wide unique, so two callers wanting the same
+        // template+slug would otherwise share a register. The first
+        // attempt at scoping always namespaced by owner, but that
+        // breaks every existing single-tenant install (their existing
+        // registers are still at `openbuilt-{slug}`). So we keep the
+        // legacy un-namespaced slug AS LONG AS the existing register
+        // belongs to the caller; otherwise fall back to the
+        // owner-namespaced form.
+        $legacyRegisterSlug = 'openbuilt-'.$newSlug;
 
         try {
-            return $this->registerMapper->find($registerSlug, _multitenancy: false);
+            $existing = $this->registerMapper->find($legacyRegisterSlug, _multitenancy: false);
+
+            $existingOwner = $this->extractRegisterOwner(register: $existing);
+            if ($existingOwner === '' || $existingOwner === $ownerUid) {
+                return $existing;
+            }
+
+            // Different user owns the org-wide slug — namespace ours.
+            return $this->findOrCreateRegister(
+                slug: 'openbuilt-'.$ownerUid.'-'.$newSlug,
+                appSlug: $newSlug,
+                ownerUid: $ownerUid,
+            );
         } catch (Throwable) {
-            // Register does not exist yet — create it.
+            // Legacy slug not taken — claim it for this user.
+        }
+
+        return $this->findOrCreateRegister(
+            slug: $legacyRegisterSlug,
+            appSlug: $newSlug,
+            ownerUid: $ownerUid,
+        );
+    }//end provisionPerAppRegister()
+
+    /**
+     * Find or create a per-app register at an exact slug.
+     *
+     * @param string $slug     The register slug to find/create
+     * @param string $appSlug  The application slug (for the title)
+     * @param string $ownerUid The owner UID (for the description audit trail)
+     *
+     * @return \OCA\OpenRegister\Db\Register
+     */
+    private function findOrCreateRegister(
+        string $slug,
+        string $appSlug,
+        string $ownerUid,
+    ): \OCA\OpenRegister\Db\Register {
+        try {
+            return $this->registerMapper->find($slug, _multitenancy: false);
+        } catch (Throwable) {
+            // Not found — create it.
         }
 
         return $this->registerMapper->createFromArray(
             [
-                'slug'        => $registerSlug,
-                'title'       => 'OpenBuilt — '.$newSlug,
-                'description' => 'Per-app schema namespace for OpenBuilt app `'.$newSlug.'` (owner: '.$ownerUid.').',
+                'slug'        => $slug,
+                'title'       => 'OpenBuilt — '.$appSlug,
+                'description' => 'Per-app schema namespace for OpenBuilt app `'.$appSlug.'` (owner: '.$ownerUid.').',
                 'version'     => '0.1.0',
                 'schemas'     => [],
             ]
         );
-    }//end provisionPerAppRegister()
+    }//end findOrCreateRegister()
+
+    /**
+     * Extract the owner UID from a Register entity, tolerating either an
+     * `owner` field on the entity itself or one inside an `@self` block.
+     *
+     * @param mixed $register The Register entity (or non-Register junk).
+     *
+     * @return string The owner UID, or empty string when not determinable.
+     */
+    private function extractRegisterOwner(mixed $register): string
+    {
+        if (is_object($register) === true && method_exists($register, 'getOwner') === true) {
+            $owner = $register->getOwner();
+            if (is_string($owner) === true) {
+                return $owner;
+            }
+        }
+
+        if (is_object($register) === true && method_exists($register, 'jsonSerialize') === true) {
+            $data = $register->jsonSerialize();
+            if (is_array($data) === true) {
+                $owner = ($data['owner'] ?? ($data['@self']['owner'] ?? null));
+                if (is_string($owner) === true) {
+                    return $owner;
+                }
+            }
+        }
+
+        return '';
+    }//end extractRegisterOwner()
 
     /**
      * Clone companion schemas into the per-app register.
@@ -1205,7 +1390,13 @@ class ApplicationsController extends Controller
             ];
 
             if ($owner !== null) {
-                $query['owner'] = $owner;
+                // OR records ownership under `@self.owner`, not at the
+                // top level. Placing the filter on the top-level `owner`
+                // field made every owner-scoped lookup miss (#51) — the
+                // slug-collision check then fell through and the org-wide
+                // register-slug unique constraint raised `clone_failed`
+                // instead of the documented `slug_collision`.
+                $query['@self']['owner'] = $owner;
             }
 
             $results = $this->objectService->searchObjects(query: $query);
