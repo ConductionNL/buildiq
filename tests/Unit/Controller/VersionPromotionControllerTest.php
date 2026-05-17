@@ -176,6 +176,39 @@ class VersionPromotionControllerTest extends TestCase
     }//end testReturns403ForViewer()
 
     /**
+     * 403 for a user who has no role at all on the Application (REQ-OBVP-007 task 7.5).
+     *
+     * Distinct from viewer-403 (a viewer holds a role; promote still requires
+     * editor or owner) and admin-403 (admin bypass is deliberately disabled):
+     * here the caller is a plain authenticated user with NO entry in any of
+     * the three permission buckets.
+     *
+     * @return void
+     */
+    public function testReturns403ForNonMember(): void
+    {
+        $this->wireUser(uid: 'eve-outsider');
+
+        $appEntity = $this->buildEntity(payload: [
+            'id'          => 'u-app',
+            'slug'        => 'hello',
+            'permissions' => [
+                'owners'  => ['user:alice'],
+                'editors' => ['user:bob'],
+                'viewers' => [],
+            ],
+        ]);
+        $sourceEntity = $this->buildEntity(payload: ['id' => 'u-ver', 'application' => 'u-app']);
+
+        $this->objectService
+            ->method('find')
+            ->willReturnOnConsecutiveCalls($appEntity, $sourceEntity);
+
+        $response = $this->controller->promote(appUuid: 'u-app', versionUuid: 'u-ver');
+        self::assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+    }//end testReturns403ForNonMember()
+
+    /**
      * 403 for a Nextcloud admin who is NOT in owners/editors (deliberate
      * constraint per spec REQ-OBVP-007).
      *

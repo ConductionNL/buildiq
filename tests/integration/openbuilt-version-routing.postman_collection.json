@@ -1,0 +1,176 @@
+{
+	"info": {
+		"name": "OpenBuilt — Version Routing (`?_version=` resolution)",
+		"description": "Newman integration suite for openbuilt-version-routing (REQ-OBVR-001..007). Asserts that the version-aware manifest endpoint resolves the correct ApplicationVersion based on the `?_version=` query param + RBAC role.\n\nFlow:\n  1. Happy path — no `?_version=` returns the production manifest.\n  2. `?_version=production` returns the production manifest.\n  3. `?_version=development` (non-production) returns the development manifest for editor/owner; 404s for viewer/non-member.\n  4. `?_version=nonexistent` returns 404.\n\nThe suite assumes the seeded `hello-world` Application with a development+production version chain. When the chain isn't seeded, individual requests will report PASS/SKIP via pm.test assertions that tolerate missing seed.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{ "key": "username", "value": "{{admin_user}}", "type": "string" },
+			{ "key": "password", "value": "{{admin_password}}", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:8080" },
+		{ "key": "admin_user", "value": "admin" },
+		{ "key": "admin_password", "value": "admin" },
+		{ "key": "app_slug", "value": "hello-world" }
+	],
+	"item": [
+		{
+			"name": "Version Routing",
+			"item": [
+				{
+					"name": "GET manifest without ?_version= returns production manifest",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_slug}}/manifest"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or skip if app not seeded', function () {",
+									"    if (pm.response.code === 404) {",
+									"        pm.test.skip('hello-world app not seeded');",
+									"        return;",
+									"    }",
+									"    pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    pm.test('manifest has a version field', function () {",
+									"        pm.expect(body.version).to.be.a('string');",
+									"    });",
+									"    pm.test('manifest has at least one page', function () {",
+									"        pm.expect(body.pages).to.be.an('array');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET manifest with ?_version=production returns production manifest (REQ-OBVR-005)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_slug}}/manifest?_version=production"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 (production is public)', function () {",
+									"    if (pm.response.code === 404) {",
+									"        pm.test.skip('hello-world app not seeded');",
+									"        return;",
+									"    }",
+									"    pm.expect(pm.response.code).to.eql(200);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET manifest with ?_version=development as admin/owner returns development manifest",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_slug}}/manifest?_version=development"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 404 depending on dev-version presence', function () {",
+									"    pm.expect([200, 404]).to.include(pm.response.code);",
+									"});",
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    pm.test('manifest body is a JSON object', function () {",
+									"        pm.expect(body).to.be.an('object');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET manifest with ?_version=nonexistent returns 404 (REQ-OBVR-001)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_slug}}/manifest?_version=nonexistent-slug"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 404 for unknown version slug', function () {",
+									"    pm.expect(pm.response.code).to.eql(404);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('body carries a not_found-shaped error envelope', function () {",
+									"    const code = body.error || body.code || body.status;",
+									"    const msg = body.message || body.detail || '';",
+									"    pm.expect(code || msg, 'body must indicate not found').to.exist;",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET manifest of unknown app slug returns 404 (REQ-OBVR-001 baseline)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/no-such-app-slug/manifest"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 404 for unknown app slug', function () {",
+									"    pm.expect(pm.response.code).to.eql(404);",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

@@ -87,15 +87,45 @@ OpenBuilt does **not** ship an `ApplicationLifecycleService.php` / `ApplicationS
 
 > If OR's current lifecycle engine doesn't yet support the `on_transition.upsert_relation` / `delete_relation` actions for sibling-object upkeep, the fallback is a single PHP listener `lib/Listener/BuiltAppRouteSyncListener.php` subscribed to `ObjectLifecycleTransitionedEvent` (per design.md OQ-1). The listener is the ADR-031 §Exceptions(1) path; behaviour from the user's perspective is identical either way.
 
-## Seed: `hello-world`
+## Creating a virtual app (wizard flow)
 
-`lib/Repair/SeedHelloWorld.php` runs idempotently on every install + post-migration:
+Most operators reach the virtual app via the visual wizard at **Virtual apps →
+New application**. The flow is owned by `ApplicationCreationController` +
+`ApplicationCreationService` and lands in a single transactional round-trip:
 
-1. Guard on `openbuilt/application` slug `hello-world` — if present, no-op.
-2. Save one `Application` (`slug: hello-world`, `status: published`, version `0.1.0`) with a manifest exercising `index`, `detail`, and `form` page types against the seeded `hello-message` schema.
-3. Save three sample `hello-message` objects.
+1. **Submit** the wizard's three-step payload (`identity`, `versions[]`,
+   `permissions`) to `POST /api/applications/wizard`.
+2. The service creates the parent `Application` row, then per version:
+    - one `ApplicationVersion` row carrying the manifest, register pointer, and
+      semver,
+    - one per-version OR register `openbuilt-{appSlug}-{versionSlug}`,
+    - the default schema set (currently just `hello-message`) seeded into the
+      per-version register under namespaced slugs
+      (`{appSlug}-{versionSlug}-{originalSlug}`).
+3. The first version in the chain's `productionVersion` pointer is set on the
+   parent Application.
+4. The wizard rewrites the manifest's `pages[].config.register` and
+   `pages[].config.schema` to the namespaced per-version values before save —
+   so the runtime + insights service address the right per-tier slice (see
+   `ApplicationCreationService::substituteVersionContext()`).
 
-The seed gives integrators a working virtual app on minute one of an OpenBuilt install — browse to `/index.php/apps/openbuilt/builder/hello-world` post-install.
+Rollback is best-effort: if any step fails the service tears down the registers
++ application + version rows it managed to create so the org-wide unique slug
+isn't squatted.
+
+### Empty-state landing (no auto-seed)
+
+The legacy `lib/Repair/SeedHelloWorld.php` repair step was retired by
+[`openbuilt-versioning-model`](../openspec/changes/openbuilt-versioning-model/).
+Fresh installs land the admin on an empty Virtual apps index with a CTA
+pointing at the wizard; pre-existing installs that still carry pre-spec-C
+Application rows are migrated by `MigrateToVersionedModel` (destructive but
+idempotent — see ADR-002).
+
+The `hello-world` slug now ships only as part of the wizard's
+`default-manifest.json`/`default-schemas.json` blueprint, so every freshly
+provisioned app gets the same one-index-one-detail-one-form starter and the
+`/builder/{slug}` route resolves the moment publish fires.
 
 ## File map
 
