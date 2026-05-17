@@ -26,7 +26,7 @@ import { test, expect } from '@playwright/test'
 test.describe('ApplicationCard — icon + productionVersion fields (spec A / spec C)', () => {
 
 	test('index page renders ApplicationCards with icon <img> elements', async ({ page }) => {
-		await page.goto('/index.php/apps/openbuilt/applications')
+		await page.goto('/apps/openbuilt/applications')
 
 		// Wait for the SPA to hydrate and the Applications list to appear.
 		// The list renders one card per Application. The seeded hello-world
@@ -46,7 +46,7 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 	})
 
 	test('hello-world ApplicationCard shows a status badge (not raw "Live" chip)', async ({ page }) => {
-		await page.goto('/index.php/apps/openbuilt/applications')
+		await page.goto('/apps/openbuilt/applications')
 
 		// Wait for at least the seeded hello-world card.
 		await expect(
@@ -66,7 +66,7 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 	})
 
 	test('hello-world ApplicationCard status badge is one of the known values', async ({ page }) => {
-		await page.goto('/index.php/apps/openbuilt/applications')
+		await page.goto('/apps/openbuilt/applications')
 
 		// Find the card for hello-world specifically.
 		const helloCard = page.locator('[data-slug="hello-world"], .ob-app-card').first()
@@ -85,7 +85,7 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 	})
 
 	test('hello-world ApplicationCard version chip shows semver or — placeholder', async ({ page }) => {
-		await page.goto('/index.php/apps/openbuilt/applications')
+		await page.goto('/apps/openbuilt/applications')
 
 		const helloCard = page.locator('[data-slug="hello-world"], .ob-app-card').first()
 		await expect(helloCard).toBeVisible({ timeout: 15_000 })

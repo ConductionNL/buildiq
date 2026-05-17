@@ -64,7 +64,7 @@ test.describe('openbuilt-versioning — publish + rollback (REQ-OBV-005 / REQ-OB
 
 	test('publish a manifest edit then roll back to v1.0.0 — history grows append-only', async ({ page }) => {
 		// Step 1 — open the openbuilt shell + navigate to the hello-world editor.
-		await page.goto(`${NEXTCLOUD_URL}/index.php/apps/openbuilt`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuilt/applications`)
 		// The list-page renders an entry per Application. Click the seeded
 		// row's edit affordance — accept either a [data-slug] anchor or the
 		// rendered slug text.

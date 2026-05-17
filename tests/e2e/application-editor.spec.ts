@@ -18,7 +18,7 @@ import { test, expect } from '@playwright/test'
  */
 test.describe('ApplicationEditor — textarea round-trip', () => {
 	test('loads, edits hello-world manifest, saves successfully', async ({ page, request }) => {
-		await page.goto('/index.php/apps/openbuilt/applications')
+		await page.goto('/apps/openbuilt/applications')
 
 		// The editor lists Applications down the left rail and selects the
 		// first one (hello-world) on mount. The textarea binds to the

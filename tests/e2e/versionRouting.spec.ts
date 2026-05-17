@@ -142,7 +142,7 @@ test.describe('9.2 Unauthorised access to non-production version shows 404 UI (R
 		}
 
 		// Navigate to the builder with the staging version.
-		await page.goto(`${BASE}/index.php/apps/openbuilt/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`)
+		await page.goto(`${BASE}/apps/openbuilt/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`)
 		await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {})
 
 		// The view must show a "not found" UI — no schema list, no stack trace,
@@ -200,7 +200,7 @@ test.describe('9.3 Default version resolution — most-upstream-non-production f
 		}
 
 		// Navigate to the builder root (no ?_version=).
-		await page.goto(`${BASE}/index.php/apps/openbuilt/builder/${TEST_SLUG}`)
+		await page.goto(`${BASE}/apps/openbuilt/builder/${TEST_SLUG}`)
 		await page.waitForLoadState('networkidle', { timeout: 20_000 })
 
 		// The composable (useApplicationVersion) should resolve "development"

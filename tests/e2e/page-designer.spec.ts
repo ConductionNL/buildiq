@@ -17,34 +17,21 @@
  * `npm run test:e2e:install` once before invoking `npm run test:e2e`.
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 
 const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASS ?? 'admin'
 
-/**
- * Drive the Nextcloud login form. `httpCredentials` only covers HTTP basic
- * auth on direct fetches — the UI itself requires a session cookie that we
- * can only obtain via the login form.
- */
-async function loginAsAdmin(page: Page): Promise<void> {
-	await page.goto('/index.php/login')
-	await page.locator('input[name="user"]').fill(ADMIN_USER)
-	await page.locator('input[name="password"]').fill(ADMIN_PASS)
-	await page.locator('button[type="submit"]').first().click()
-	// Wait for the global header that only renders on authenticated pages.
-	await page.waitForSelector('#header, header.header', { timeout: 20_000 })
-}
+// Auth: globalSetup populates storageState; per-spec form login is gone.
+void ADMIN_USER
+void ADMIN_PASS
 
 test.describe('openbuilt page designer', () => {
-	test.beforeEach(async ({ page }) => {
-		await loginAsAdmin(page)
-	})
 
 	test('REQ-OBPD-002 + REQ-OBPD-003 + REQ-OBPD-009: add page → save → renders in builder', async ({ page }) => {
 		// Open the editor pre-focused on the Design tab (router alias from
 		// task 5.3 of the spec).
-		await page.goto('/index.php/apps/openbuilt/applications/hello-world/design')
+		await page.goto('/apps/openbuilt/applications/hello-world/design')
 
 		// The application editor mounts asynchronously after the manifest
 		// fetch returns. Wait for the page-list pane to settle before
@@ -92,12 +79,12 @@ test.describe('openbuilt page designer', () => {
 
 		// REQ-OBPD-003: navigate to the built virtual app and assert the
 		// newly-added route renders inside the inner CnAppRoot mount.
-		await page.goto('/index.php/apps/openbuilt/builder/hello-world/added-by-e2e')
+		await page.goto('/apps/openbuilt/builder/hello-world/added-by-e2e')
 		await expect(page.locator('#openbuilt-builder, .cn-app-root')).toBeVisible({ timeout: 15_000 })
 	})
 
 	test('REQ-OBR-005: edits survive a Design ↔ Raw JSON tab switch', async ({ page }) => {
-		await page.goto('/index.php/apps/openbuilt/applications/hello-world/design')
+		await page.goto('/apps/openbuilt/applications/hello-world/design')
 		await page.waitForSelector('.page-designer__left', { timeout: 20_000 })
 
 		// Switch to the Raw JSON tab and mutate the manifest.

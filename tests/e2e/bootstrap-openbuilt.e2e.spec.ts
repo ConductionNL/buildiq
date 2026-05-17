@@ -18,7 +18,7 @@ import { test, expect } from '@playwright/test'
  */
 test.describe('bootstrap-openbuilt hello-world', () => {
 	test('renders the three seeded hello-message objects on the index page', async ({ page }) => {
-		await page.goto('/index.php/apps/openbuilt/builder/hello-world')
+		await page.goto('/apps/openbuilt/builder/hello-world')
 
 		// The SPA needs a moment to fetch the manifest and resolve the index page.
 		// The hello-world manifest's index page lists `hello-message` objects with

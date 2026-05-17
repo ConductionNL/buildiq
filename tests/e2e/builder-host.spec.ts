@@ -15,9 +15,9 @@ import { test, expect } from '@playwright/test'
  */
 test.describe('BuilderHost — hello-world journey', () => {
 	test('loads /builder/hello-world and renders the seeded index page', async ({ page }) => {
-		await page.goto('/index.php/apps/openbuilt/builder/hello-world')
+		await page.goto('/apps/openbuilt/builder/hello-world')
 
-		await expect(page).toHaveURL(/\/index\.php\/apps\/openbuilt\/builder\/hello-world/)
+		await expect(page).toHaveURL(/\/apps\/openbuilt\/builder\/hello-world/)
 
 		// The hello-world manifest's index page lists hello-message objects.
 		// The three seeded titles must all be visible before this passes.
@@ -35,7 +35,7 @@ test.describe('BuilderHost — hello-world journey', () => {
 	})
 
 	test('navigates to a hello-message detail page', async ({ page }) => {
-		await page.goto('/index.php/apps/openbuilt/builder/hello-world')
+		await page.goto('/apps/openbuilt/builder/hello-world')
 
 		// Click the first seeded message — the manifest defines the detail
 		// page at /messages/:id so the inner router forwards us there.
@@ -58,7 +58,7 @@ test.describe('BuilderHost — hello-world journey', () => {
 		// The manifest declares a form page at /messages/new. Hit it directly
 		// to skip menu/CTA discovery (DOM may be in flux until the page-editor
 		// spec lands).
-		await page.goto('/index.php/apps/openbuilt/builder/hello-world/messages/new')
+		await page.goto('/apps/openbuilt/builder/hello-world/messages/new')
 
 		await expect(page).toHaveURL(/\/builder\/hello-world\/messages\/new/)
 
