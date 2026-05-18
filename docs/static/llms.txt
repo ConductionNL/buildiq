@@ -6,22 +6,18 @@ OpenBuilt is an open-source citizen-developer app builder for the Nextcloud work
 
 ## Docs
 
-- [Tutorials](https://openbuilt.conduction.nl/tutorials): step-by-step walkthroughs.
-- [Features](https://openbuilt.conduction.nl/Features): what the app does, organised by capability.
-- [Use cases](https://openbuilt.conduction.nl/UseCases): real customer scenarios.
-- [Integrations](https://openbuilt.conduction.nl/Integrations): which external systems the app talks to.
-- [Technical](https://openbuilt.conduction.nl/Technical): architecture, data model, security posture.
-- [User guide](https://openbuilt.conduction.nl/user-guide): end-user documentation.
-- [API](https://openbuilt.conduction.nl/api): OpenAPI reference.
+- [Documentation](https://openbuilt.conduction.nl/docs/intro): main entry, including tutorials, user guide, and admin guide.
+- [API reference](https://openbuilt.conduction.nl/api): OpenAPI documentation.
 
 ## Optional
 
-- [Install](https://openbuilt.conduction.nl/installation): install from the Nextcloud app store.
-- [Source](https://openbuilt.conduction.nl): repository and issue tracker.
+- [Install](https://www.conduction.nl/install): self-host on your Nextcloud instance.
+- [Source code](https://github.com/ConductionNL/openbuilt): repository and issue tracker.
 - [App page](https://www.conduction.nl/apps/openbuilt): product positioning on conduction.nl.
 
 ## Contact
 
 - Email: info@conduction.nl
-- GitHub: https://github.com/ConductionNL/openbuilt
+- Web: https://www.conduction.nl
+- GitHub: https://github.com/ConductionNL
 - Conduction B.V. · KvK 76741850 · Lauriergracht 14h, Amsterdam, Netherlands
