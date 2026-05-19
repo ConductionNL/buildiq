@@ -1,15 +1,61 @@
 {
-	"$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest.schema.json",
-	"version": "1.0.0",
-	"dependencies": ["openregister"],
+	"$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
+	"version": "2.0.0",
+	"dependencies": [
+		"openregister"
+	],
 	"menu": [
-		{ "id": "Dashboard", "label": "Dashboard", "icon": "icon-category-dashboard", "route": "Dashboard", "order": 10 },
-		{ "id": "VirtualApps", "label": "Virtual apps", "icon": "icon-category-app-bundles", "route": "VirtualApps", "order": 20 },
-		{ "id": "Schemas", "label": "Schemas", "icon": "icon-category-customization", "route": "Schemas", "order": 30 },
-		{ "id": "Templates", "label": "Templates", "icon": "icon-category-organization", "route": "Templates", "order": 35 },
-		{ "id": "Exports", "label": "Exports", "icon": "icon-download", "route": "Exports", "order": 40 },
-		{ "id": "Documentation", "label": "Documentation", "icon": "icon-info", "href": "https://github.com/ConductionNL/openbuilt", "section": "settings", "order": 90 },
-		{ "id": "FeaturesRoadmapMenu", "label": "Features & roadmap", "icon": "icon-toggle", "route": "FeaturesRoadmap", "section": "settings", "order": 95 }
+		{
+			"id": "Dashboard",
+			"label": "Dashboard",
+			"icon": "icon-category-dashboard",
+			"route": "Dashboard",
+			"order": 10
+		},
+		{
+			"id": "VirtualApps",
+			"label": "Virtual apps",
+			"icon": "icon-category-app-bundles",
+			"route": "VirtualApps",
+			"order": 20
+		},
+		{
+			"id": "Schemas",
+			"label": "Schemas",
+			"icon": "icon-category-customization",
+			"route": "Schemas",
+			"order": 30
+		},
+		{
+			"id": "Templates",
+			"label": "Templates",
+			"icon": "icon-category-organization",
+			"route": "Templates",
+			"order": 35
+		},
+		{
+			"id": "Exports",
+			"label": "Exports",
+			"icon": "icon-download",
+			"route": "Exports",
+			"order": 40
+		},
+		{
+			"id": "Documentation",
+			"label": "Documentation",
+			"icon": "icon-info",
+			"href": "https://github.com/ConductionNL/openbuilt",
+			"section": "settings",
+			"order": 90
+		},
+		{
+			"id": "FeaturesRoadmapMenu",
+			"label": "Features & roadmap",
+			"icon": "icon-toggle",
+			"route": "FeaturesRoadmap",
+			"section": "settings",
+			"order": 95
+		}
 	],
 	"pages": [
 		{
@@ -17,48 +63,97 @@
 			"route": "/",
 			"type": "dashboard",
 			"title": "Dashboard",
-			"config": {
-				"widgets": [
-					{
-						"id": "ob-apps",
-						"type": "stats-block",
+			"config": {},
+			"widgets": [
+				{
+					"widgetKey": "stats-block",
+					"slot": "body",
+					"gridX": 0,
+					"gridY": 0,
+					"gridWidth": 3,
+					"gridHeight": 2,
+					"props": {
 						"title": "Virtual apps",
 						"iconClass": "icon-category-app-bundles",
-						"props": { "countLabel": "apps", "variant": "primary" },
-						"dataSource": { "register": "openbuilt", "schema": "application", "aggregate": "count" }
+						"props": {
+							"countLabel": "apps",
+							"variant": "primary"
+						},
+						"showTitle": true
 					},
-					{
-						"id": "ob-published",
-						"type": "stats-block",
+					"dataSource": {
+						"register": "openbuilt",
+						"schema": "application",
+						"aggregate": "count"
+					}
+				},
+				{
+					"widgetKey": "stats-block",
+					"slot": "body",
+					"gridX": 3,
+					"gridY": 0,
+					"gridWidth": 3,
+					"gridHeight": 2,
+					"props": {
 						"title": "Published",
 						"iconClass": "icon-checkmark",
-						"props": { "countLabel": "live", "variant": "success" },
-						"dataSource": { "register": "openbuilt", "schema": "built-app-route", "aggregate": "count" }
+						"props": {
+							"countLabel": "live",
+							"variant": "success"
+						},
+						"showTitle": true
 					},
-					{
-						"id": "ob-templates",
-						"type": "stats-block",
+					"dataSource": {
+						"register": "openbuilt",
+						"schema": "built-app-route",
+						"aggregate": "count"
+					}
+				},
+				{
+					"widgetKey": "stats-block",
+					"slot": "body",
+					"gridX": 6,
+					"gridY": 0,
+					"gridWidth": 3,
+					"gridHeight": 2,
+					"props": {
 						"title": "Templates",
 						"iconClass": "icon-category-organization",
-						"props": { "countLabel": "templates", "variant": "default" },
-						"dataSource": { "register": "openbuilt", "schema": "application-template", "aggregate": "count" }
+						"props": {
+							"countLabel": "templates",
+							"variant": "default"
+						},
+						"showTitle": true
 					},
-					{
-						"id": "ob-versions",
-						"type": "stats-block",
+					"dataSource": {
+						"register": "openbuilt",
+						"schema": "application-template",
+						"aggregate": "count"
+					}
+				},
+				{
+					"widgetKey": "stats-block",
+					"slot": "body",
+					"gridX": 9,
+					"gridY": 0,
+					"gridWidth": 3,
+					"gridHeight": 2,
+					"props": {
 						"title": "Published versions",
 						"iconClass": "icon-history",
-						"props": { "countLabel": "snapshots", "variant": "default" },
-						"dataSource": { "register": "openbuilt", "schema": "application-version", "aggregate": "count" }
+						"props": {
+							"countLabel": "snapshots",
+							"variant": "default"
+						},
+						"showTitle": true
+					},
+					"dataSource": {
+						"register": "openbuilt",
+						"schema": "application-version",
+						"aggregate": "count"
 					}
-				],
-				"layout": [
-					{ "id": "ob-apps",       "widgetId": "ob-apps",       "gridX": 0, "gridY": 0, "gridWidth": 3, "gridHeight": 2, "showTitle": true },
-					{ "id": "ob-published",  "widgetId": "ob-published",  "gridX": 3, "gridY": 0, "gridWidth": 3, "gridHeight": 2, "showTitle": true },
-					{ "id": "ob-templates",  "widgetId": "ob-templates",  "gridX": 6, "gridY": 0, "gridWidth": 3, "gridHeight": 2, "showTitle": true },
-					{ "id": "ob-versions",   "widgetId": "ob-versions",   "gridX": 9, "gridY": 0, "gridWidth": 3, "gridHeight": 2, "showTitle": true }
-				]
-			}
+				}
+			]
 		},
 		{
 			"id": "VirtualApps",
@@ -70,11 +165,31 @@
 				"register": "openbuilt",
 				"schema": "application",
 				"viewMode": "cards",
-				"cardComponent": "ApplicationCard",
-				"columns": ["name", "status", "version", "@self.updated"],
+				"columns": [
+					"name",
+					"status",
+					"version",
+					"@self.updated"
+				],
 				"showAdd": false,
-				"sidebar": { "enabled": true, "showMetadata": true }
-			}
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				}
+			},
+			"widgets": [
+				{
+					"widgetKey": "card-grid",
+					"slot": "body",
+					"gridX": 0,
+					"gridY": 0,
+					"gridWidth": 12,
+					"gridHeight": 4,
+					"props": {
+						"component": "ApplicationCard"
+					}
+				}
+			]
 		},
 		{
 			"id": "VirtualAppDetail",
@@ -87,21 +202,111 @@
 				"register": "openbuilt",
 				"schema": "application",
 				"sidebarTabs": [
-					{ "id": "manifest", "label": "Manifest", "icon": "icon-edit", "component": "ApplicationManifestTab", "order": 20 },
-					{ "id": "history", "label": "Version history", "icon": "icon-history", "component": "ApplicationVersionsTab", "order": 30 },
-					{ "id": "diff", "label": "Diff", "icon": "icon-files", "component": "ApplicationDiffTab", "order": 40 },
-					{ "id": "icons", "label": "Icons", "icon": "icon-image", "component": "ApplicationIconTab", "order": 50 },
-					{ "id": "audit", "label": "Audit trail", "icon": "icon-history", "widgets": [{ "type": "audit-trail" }], "order": 90 }
+					{
+						"id": "manifest",
+						"label": "Manifest",
+						"icon": "icon-edit",
+						"component": "ApplicationManifestTab",
+						"order": 20
+					},
+					{
+						"id": "history",
+						"label": "Version history",
+						"icon": "icon-history",
+						"component": "ApplicationVersionsTab",
+						"order": 30
+					},
+					{
+						"id": "diff",
+						"label": "Diff",
+						"icon": "icon-files",
+						"component": "ApplicationDiffTab",
+						"order": 40
+					},
+					{
+						"id": "icons",
+						"label": "Icons",
+						"icon": "icon-image",
+						"component": "ApplicationIconTab",
+						"order": 50
+					}
 				]
-			}
+			},
+			"widgets": [
+				{
+					"widgetKey": "audit-trail",
+					"slot": "sidebar",
+					"tabGroup": "audit",
+					"gridX": 0,
+					"gridY": 0,
+					"gridWidth": 1,
+					"gridHeight": 1
+				}
+			]
 		},
-		{ "id": "Schemas", "route": "/schemas", "type": "custom", "title": "Schemas", "component": "SchemaDesignerView" },
-		{ "id": "Templates", "route": "/templates", "type": "custom", "title": "Templates", "component": "TemplateGalleryView" },
-		{ "id": "SchemaDesignerList", "route": "/builder/:slug/schemas", "type": "custom", "title": "Schemas", "component": "SchemaDesignerView" },
-		{ "id": "SchemaDesigner", "route": "/builder/:slug/schemas/:schemaId", "type": "custom", "title": "Schema", "component": "SchemaDesignerView" },
-		{ "id": "PageDesigner", "route": "/builder/:slug/pages", "type": "custom", "title": "Page designer", "component": "PageDesignerView" },
-		{ "id": "Exports", "route": "/exports", "type": "custom", "title": "Exports", "component": "ExportJobsView" },
-		{ "id": "BuilderHost", "route": "/builder/:slug/:pathMatch(.*)?", "type": "custom", "title": "Virtual app", "component": "BuilderHostView" },
-		{ "id": "FeaturesRoadmap", "route": "/features-roadmap", "type": "custom", "title": "Features & roadmap", "component": "FeaturesRoadmap" }
+		{
+			"id": "Schemas",
+			"route": "/schemas",
+			"type": "custom",
+			"title": "Schemas",
+			"component": "SchemaDesignerView",
+			"_note": "Visual schema designer for the hello-world seed app. Three-pane canvas (field palette / schema canvas / JSON preview) with drag-and-drop field placement — no standard index/detail type models this UX. Conversion blocked on a future dedicated 'designer' page type."
+		},
+		{
+			"id": "Templates",
+			"route": "/templates",
+			"type": "custom",
+			"title": "Templates",
+			"component": "TemplateGalleryView",
+			"_note": "Template gallery browse+clone surface. Cards show preview thumbnails and a 'Use template' CTA that triggers the 4-step creation wizard. No standard page type supports gallery-style card browsing with wizard launch; decomposition deferred until a gallery page type is available."
+		},
+		{
+			"id": "SchemaDesignerList",
+			"route": "/builder/:slug/schemas",
+			"type": "custom",
+			"title": "Schemas",
+			"component": "SchemaDesignerView",
+			"_note": "Schema designer mounted inside the per-app builder context (/builder/:slug). Shares SchemaDesignerView with the top-level /schemas shortcut but scoped to the virtual app identified by :slug. The builder context route pattern (parameterised, multi-segment) requires a custom component that reads :slug to scope its OR register queries."
+		},
+		{
+			"id": "SchemaDesigner",
+			"route": "/builder/:slug/schemas/:schemaId",
+			"type": "custom",
+			"title": "Schema",
+			"component": "SchemaDesignerView",
+			"_note": "Schema designer focused on a specific schema within the builder context. Two route params (:slug and :schemaId) drive the canvas; no standard detail type addresses designer-canvas layout. Will be revisited when the 'designer' page type lands in ADR-024."
+		},
+		{
+			"id": "PageDesigner",
+			"route": "/builder/:slug/pages",
+			"type": "custom",
+			"title": "Page designer",
+			"component": "PageDesignerView",
+			"_note": "Three-pane manifest page designer (page-list / per-type sub-editor / validator side-panel, REQ-OBPD-003). Loads the virtual app's manifest from OR, renders an interactive designer, and writes edits back via PATCH. No standard page type supports a two-way manifest editor; decomposition blocked on a future 'designer' page type."
+		},
+		{
+			"id": "Exports",
+			"route": "/exports",
+			"type": "custom",
+			"title": "Exports",
+			"component": "ExportJobsView",
+			"_note": "Export-jobs status list for Phase-2 'export to real Nextcloud app' runs. Shows job progress, logs, and artefact download links. The schema is a job-queue model (not a standard OR object) so the index page type's register/schema wiring does not apply."
+		},
+		{
+			"id": "BuilderHost",
+			"route": "/builder/:slug/:pathMatch(.*)?",
+			"type": "custom",
+			"title": "Virtual app",
+			"component": "BuilderHostView",
+			"_note": "Virtual-app host that mounts a nested CnAppRoot rendering the virtual app's own manifest from GET /api/applications/{slug}/manifest. This is a meta-app-shell (app inside app) pattern that no standard page type supports. It is the core runtime surface of openbuilt and will always require a custom host component."
+		},
+		{
+			"id": "FeaturesRoadmap",
+			"route": "/features-roadmap",
+			"type": "custom",
+			"title": "Features & roadmap",
+			"component": "FeaturesRoadmap",
+			"_note": "Thin wrapper around the lib's CnFeaturesAndRoadmapView (in-product roadmap powered by the OpenRegister GitHub-issue proxy). Registered as custom because CnFeaturesAndRoadmapView is a full-page lib component with its own layout that does not fit any standard page type."
+		}
 	]
 }

@@ -15,6 +15,7 @@
 		:manifest="manifest"
 		:custom-components="customComponents"
 		:page-types="pageTypes"
+		:registry="registry"
 		:translate="translateForApp"
 		:permissions="permissions">
 		<template #dependency-missing>
@@ -91,6 +92,18 @@ export default {
 		pageTypes: {
 			type: Object,
 			default: null,
+		},
+		/**
+		 * v2 component registry — map of registry key → `{ kind, component, ...metadata }`.
+		 * Passed to CnAppRoot which validates kinds at mounted() time and provides the
+		 * map to descendants via `cnRegistry`. Resolves type:"custom" page components,
+		 * modals, and future widget/form-field/cell-renderer entries.
+		 *
+		 * @type {object}
+		 */
+		registry: {
+			type: Object,
+			default: () => ({}),
 		},
 	},
 
