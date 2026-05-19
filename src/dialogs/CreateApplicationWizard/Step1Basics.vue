@@ -25,7 +25,7 @@
 				:value="payload.name"
 				:placeholder="t('openbuilt', 'e.g. My Permit Tracker')"
 				autocomplete="off"
-				@input="onNameInput" />
+				@input="onNameInput">
 		</div>
 
 		<!-- Slug chip + Advanced toggle -->
@@ -54,7 +54,7 @@
 					:value="payload.slug"
 					:placeholder="t('openbuilt', 'kebab-case-slug')"
 					autocomplete="off"
-					@input="onSlugInput" />
+					@input="onSlugInput">
 				<p v-if="slugError" class="wizard-step1__error-msg" role="alert">
 					{{ slugError }}
 				</p>
@@ -90,7 +90,7 @@
 						type="file"
 						accept=".svg,image/svg+xml"
 						class="wizard-step1__file-input"
-						@change="onIconChange('icon', $event)" />
+						@change="onIconChange('icon', $event)">
 				</div>
 				<div class="wizard-step1__icon-slot">
 					<label for="wizard-icon-dark" class="wizard-step1__file-label">
@@ -101,7 +101,7 @@
 						type="file"
 						accept=".svg,image/svg+xml"
 						class="wizard-step1__file-input"
-						@change="onIconChange('iconDark', $event)" />
+						@change="onIconChange('iconDark', $event)">
 				</div>
 			</div>
 		</div>

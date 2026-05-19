@@ -23,7 +23,6 @@
 		size="normal"
 		@update:show="onModalShowUpdate"
 		@close="onClose">
-
 		<!-- Step indicator -->
 		<div class="wizard__step-indicator">
 			<span

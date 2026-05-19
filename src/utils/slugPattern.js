@@ -39,7 +39,7 @@ const _slugRegex = new RegExp(SLUG_PATTERN)
  *   6. Trim leading and trailing hyphens.
  *
  * @param {string} input - The raw name string
- * @returns {string} Derived slug (may be empty when input contains only
+ * @return {string} Derived slug (may be empty when input contains only
  *   characters that are stripped by step 4)
  */
 export function toKebabCase(input) {
@@ -59,7 +59,7 @@ export function toKebabCase(input) {
  * Validate a slug string against the canonical pattern.
  *
  * @param {string} slug - The slug to validate (may be derived or user-typed)
- * @returns {{ valid: boolean, message?: string }} Validation result.
+ * @return {{ valid: boolean, message?: string }} Validation result.
  *   When valid is false, message contains a user-facing error string.
  */
 export function validateSlug(slug) {

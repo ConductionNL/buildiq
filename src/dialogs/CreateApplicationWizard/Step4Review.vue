@@ -52,11 +52,11 @@
 			</h4>
 			<div class="wizard-step4__icon-previews">
 				<figure v-if="iconLightUrl" class="wizard-step4__icon-preview">
-					<img :src="iconLightUrl" :alt="t('openbuilt', 'Light icon preview')" class="wizard-step4__icon-img" />
+					<img :src="iconLightUrl" :alt="t('openbuilt', 'Light icon preview')" class="wizard-step4__icon-img">
 					<figcaption>{{ t('openbuilt', 'Light') }}</figcaption>
 				</figure>
 				<figure v-if="iconDarkUrl" class="wizard-step4__icon-preview wizard-step4__icon-preview--dark">
-					<img :src="iconDarkUrl" :alt="t('openbuilt', 'Dark icon preview')" class="wizard-step4__icon-img" />
+					<img :src="iconDarkUrl" :alt="t('openbuilt', 'Dark icon preview')" class="wizard-step4__icon-img">
 					<figcaption>{{ t('openbuilt', 'Dark') }}</figcaption>
 				</figure>
 			</div>

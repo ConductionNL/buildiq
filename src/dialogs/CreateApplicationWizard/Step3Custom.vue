@@ -26,7 +26,6 @@
 				@dragover.prevent="onDragOver(index)"
 				@drop.prevent="onDrop(index)"
 				@dragend="onDragEnd">
-
 				<!-- Drag handle (visual enhancement; ↑/↓ are accessibility path) -->
 				<span class="wizard-step3__drag-handle" aria-hidden="true" title="Drag to reorder">⠿</span>
 
@@ -39,7 +38,7 @@
 						:value="row.name"
 						:placeholder="t('openbuilt', 'Version name (e.g. Production)')"
 						autocomplete="off"
-						@input="onNameInput(index, $event)" />
+						@input="onNameInput(index, $event)">
 				</div>
 
 				<!-- Slug chip + Advanced toggle -->
@@ -69,7 +68,7 @@
 						:value="row.slug"
 						:placeholder="t('openbuilt', 'kebab-case-slug')"
 						autocomplete="off"
-						@input="onSlugInput(index, $event)" />
+						@input="onSlugInput(index, $event)">
 					<p v-if="getSlugError(index)" class="wizard-step3__error-msg" role="alert">
 						{{ getSlugError(index) }}
 					</p>
@@ -184,12 +183,6 @@ export default {
 		},
 	},
 
-	mounted() {
-		// Emit initial validity + versions so the parent wizard shell can
-		// enable/disable the Next button before the user makes any change.
-		this.emit()
-	},
-
 	watch: {
 		isValid(_newVal) {
 			this.emit()
@@ -201,6 +194,12 @@ export default {
 				this.emit()
 			},
 		},
+	},
+
+	mounted() {
+		// Emit initial validity + versions so the parent wizard shell can
+		// enable/disable the Next button before the user makes any change.
+		this.emit()
 	},
 
 	methods: {
