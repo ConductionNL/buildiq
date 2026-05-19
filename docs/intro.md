@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+description: Get started with OpenBuilt, the no-code app builder inside Nextcloud. Compose apps from OpenRegister schemas, OpenConnector flows, and Pipelinq.
 ---
 
 # OpenBuilt

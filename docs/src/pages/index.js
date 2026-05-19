@@ -233,7 +233,7 @@ export default function Home() {
   return (
     <Layout
       title="OpenBuilt, no-code app builder inside Nextcloud"
-      description="Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code."
+      description="Citizen-developer app builder for Nextcloud. Compose apps from registers, connectors, workflows, and documents without writing code."
     >
       <main className="marketing-page">
         <DetailHero
