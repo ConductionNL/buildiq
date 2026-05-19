@@ -232,7 +232,7 @@ const WIDGETS = [
 export default function Home() {
   return (
     <Layout
-      title="OpenBuilt"
+      title="OpenBuilt, no-code app builder inside Nextcloud"
       description="Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code."
     >
       <main className="marketing-page">
