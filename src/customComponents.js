@@ -42,13 +42,10 @@ import VirtualAppsActions from './components/VirtualAppsActions.vue'
 // Tooling pages that stay `type: "custom"`.
 import SchemaDesignerView from './views/SchemaDesigner.vue'
 import PageDesignerView from './views/PageDesignerHost.vue'
-import ExportJobsView from './views/ExportJobsList.vue'
 import BuilderHostView from './views/BuilderHost.vue'
-import TemplateGalleryView from './views/TemplateGallery.vue'
 // Features & Roadmap page — thin wrapper around the lib's
 // CnFeaturesAndRoadmapView (in-product roadmap surface powered by
 // OpenRegister's github-issue-proxy). See ConductionNL/hydra#251.
-import FeaturesRoadmapView from './views/FeaturesRoadmap.vue'
 
 export default {
 	// VirtualApps (`type: index`) card — name, status pill, version, "live"
@@ -83,13 +80,10 @@ export default {
 	// persists edits back.
 	PageDesignerView,
 	// Export-jobs list — status of Phase-2 "export to real app" runs.
-	ExportJobsView,
 	// Virtual-app host — mounts a nested CnAppRoot rendering the virtual
 	// app's manifest from GET /api/applications/{slug}/manifest.
 	BuilderHostView,
 	// Template gallery — browse seeded ApplicationTemplate records and
 	// clone one into a new virtual app (openbuilt-templates-marketplace).
-	TemplateGalleryView,
 	// Features & Roadmap page (lib's CnFeaturesAndRoadmapView).
-	FeaturesRoadmap: FeaturesRoadmapView,
 }

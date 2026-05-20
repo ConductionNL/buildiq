@@ -34,20 +34,17 @@ import SchemaDesignerView from './views/SchemaDesigner.vue'
 
 // Template gallery — browse seeded ApplicationTemplate records and clone
 // one into a new virtual app (openbuilt-templates-marketplace).
-import TemplateGalleryView from './views/TemplateGallery.vue'
 
 // Visual manifest page designer — three-pane editor that reads and writes
 // a virtual app's manifest via PATCH (REQ-OBPD-003).
 import PageDesignerView from './views/PageDesignerHost.vue'
 
 // Export-jobs status list — Phase-2 "export to real Nextcloud app" runs.
-import ExportJobsView from './views/ExportJobsList.vue'
 
 // Virtual-app host — nested CnAppRoot rendering a virtual app's own manifest.
 import BuilderHostView from './views/BuilderHost.vue'
 
 // Features & Roadmap page — wrapper around CnFeaturesAndRoadmapView.
-import FeaturesRoadmapView from './views/FeaturesRoadmap.vue'
 
 // ── Widget components (kind: "widget") ───────────────────────────────────────
 
@@ -71,24 +68,12 @@ export default {
 		kind: 'page',
 		component: SchemaDesignerView,
 	},
-	TemplateGalleryView: {
-		kind: 'page',
-		component: TemplateGalleryView,
-	},
 	PageDesignerView: {
 		kind: 'page',
 		component: PageDesignerView,
 	},
-	ExportJobsView: {
-		kind: 'page',
-		component: ExportJobsView,
-	},
 	BuilderHostView: {
 		kind: 'page',
 		component: BuilderHostView,
-	},
-	FeaturesRoadmap: {
-		kind: 'page',
-		component: FeaturesRoadmapView,
 	},
 }
