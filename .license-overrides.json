@@ -1,0 +1,3 @@
+{
+  "pako": "(MIT AND Zlib) — both MIT and Zlib are permissive, EUPL-1.2 / AGPL-3.0 compatible licenses. The compound SPDX expression confuses the allowlist matcher (it looks for exact-match licenses, not SPDX AND/OR expressions). Approved 2026-05-20."
+}
