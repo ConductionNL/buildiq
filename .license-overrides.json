@@ -1,0 +1,4 @@
+{
+  "pako": "(MIT AND Zlib) — both MIT and Zlib are permissive, EUPL-1.2 / AGPL-3.0 compatible licenses. The compound SPDX AND expression confuses the allowlist matcher (it looks for exact-match licenses, not SPDX AND/OR expressions). Approved 2026-05-20.",
+  "sha.js": "(MIT AND BSD-3-Clause) — both MIT and BSD-3-Clause are permissive, EUPL-1.2 / AGPL-3.0 compatible licenses. Same compound-SPDX matcher limitation as pako. Approved 2026-05-20."
+}
