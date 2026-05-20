@@ -1,0 +1,8 @@
+{
+  "spec_slug": "openbuilt-template-catalogue",
+  "title": "openbuilt-template-catalogue Specification",
+  "app": "openbuilt",
+  "repo": "https://github.com/ConductionNL/openbuilt",
+  "depends_on": [],
+  "issue": null
+}
