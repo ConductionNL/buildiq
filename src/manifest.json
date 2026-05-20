@@ -247,50 +247,98 @@
 		{
 			"id": "Schemas",
 			"route": "/schemas",
-			"type": "custom",
+			"type": "index",
 			"title": "Schemas",
-			"component": "SchemaDesignerView",
-			"_note": "Visual schema designer for the hello-world seed app. Three-pane canvas (field palette / schema canvas / JSON preview) with drag-and-drop field placement — no standard index/detail type models this UX. Conversion blocked on a future dedicated 'designer' page type."
+			"config": {
+				"register": "openbuilt",
+				"schema": "application",
+				"viewMode": "table",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				}
+			},
+			"_note": "Top-level schemas overview \u2014 uses the openbuilt register's `application` schema as the listing source; per-app drill-down lives under /builder/:slug/schemas."
 		},
 		{
 			"id": "Templates",
 			"route": "/templates",
-			"type": "custom",
+			"type": "index",
 			"title": "Templates",
-			"component": "TemplateGalleryView",
-			"_note": "Template gallery browse+clone surface. Cards show preview thumbnails and a 'Use template' CTA that triggers the 4-step creation wizard. No standard page type supports gallery-style card browsing with wizard launch; decomposition deferred until a gallery page type is available."
+			"config": {
+				"register": "openbuilt",
+				"schema": "application-template",
+				"viewMode": "cards",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				}
+			}
 		},
 		{
 			"id": "SchemaDesignerList",
 			"route": "/builder/:slug/schemas",
-			"type": "custom",
+			"type": "index",
 			"title": "Schemas",
-			"component": "SchemaDesignerView",
-			"_note": "Schema designer mounted inside the per-app builder context (/builder/:slug). Shares SchemaDesignerView with the top-level /schemas shortcut but scoped to the virtual app identified by :slug. The builder context route pattern (parameterised, multi-segment) requires a custom component that reads :slug to scope its OR register queries."
+			"config": {
+				"register": "openbuilt",
+				"schema": "application",
+				"viewMode": "cards",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				}
+			},
+			"_note": "Per-app schema list under the builder route. Scoped to the virtual app identified by :slug \u2014 the index page type's filter wiring kicks in via the route param."
 		},
 		{
 			"id": "SchemaDesigner",
 			"route": "/builder/:slug/schemas/:schemaId",
-			"type": "custom",
+			"type": "detail",
 			"title": "Schema",
-			"component": "SchemaDesignerView",
-			"_note": "Schema designer focused on a specific schema within the builder context. Two route params (:slug and :schemaId) drive the canvas; no standard detail type addresses designer-canvas layout. Will be revisited when the 'designer' page type lands in ADR-024."
+			"config": {
+				"register": "openbuilt",
+				"schema": "application",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				}
+			},
+			"slots": {
+				"default": "SchemaDesignerView"
+			}
 		},
 		{
 			"id": "PageDesigner",
 			"route": "/builder/:slug/pages",
-			"type": "custom",
+			"type": "detail",
 			"title": "Page designer",
-			"component": "PageDesignerView",
-			"_note": "Three-pane manifest page designer (page-list / per-type sub-editor / validator side-panel, REQ-OBPD-003). Loads the virtual app's manifest from OR, renders an interactive designer, and writes edits back via PATCH. No standard page type supports a two-way manifest editor; decomposition blocked on a future 'designer' page type."
+			"config": {
+				"register": "openbuilt",
+				"schema": "application",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				}
+			},
+			"slots": {
+				"default": "PageDesignerView"
+			}
 		},
 		{
 			"id": "Exports",
 			"route": "/exports",
-			"type": "custom",
+			"type": "index",
 			"title": "Exports",
-			"component": "ExportJobsView",
-			"_note": "Export-jobs status list for Phase-2 'export to real Nextcloud app' runs. Shows job progress, logs, and artefact download links. The schema is a job-queue model (not a standard OR object) so the index page type's register/schema wiring does not apply."
+			"config": {
+				"register": "openbuilt",
+				"schema": "export-job",
+				"viewMode": "table",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				}
+			}
 		},
 		{
 			"id": "BuilderHost",
@@ -303,10 +351,8 @@
 		{
 			"id": "FeaturesRoadmap",
 			"route": "/features-roadmap",
-			"type": "custom",
-			"title": "Features & roadmap",
-			"component": "FeaturesRoadmap",
-			"_note": "Thin wrapper around the lib's CnFeaturesAndRoadmapView (in-product roadmap powered by the OpenRegister GitHub-issue proxy). Registered as custom because CnFeaturesAndRoadmapView is a full-page lib component with its own layout that does not fit any standard page type."
+			"type": "roadmap",
+			"title": "Features & roadmap"
 		}
 	]
 }
