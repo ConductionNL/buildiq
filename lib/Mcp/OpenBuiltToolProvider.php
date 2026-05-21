@@ -594,7 +594,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             if ($existing !== null) {
                 $schema = $schemaMapper->updateFromArray($existing->getId(), $blob);
                 $action = 'updated';
-            } else {
+            }
+
+            if ($existing === null) {
                 $schema = $schemaMapper->createFromArray($blob);
                 $action = 'created';
 
@@ -718,10 +720,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             $manifest['pages'] = array_values($pages);
             $saved = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
 
+            $action = 'created';
             if ($replaced === true) {
                 $action = 'updated';
-            } else {
-                $action = 'created';
             }
 
             return [
@@ -847,10 +848,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         $label       = (string) ($args['label'] ?? '');
         $icon        = (string) ($args['icon'] ?? '');
         $route       = (string) ($args['route'] ?? '');
+        $order       = 100;
         if (isset($args['order']) === true) {
             $order = (int) $args['order'];
-        } else {
-            $order = 100;
         }
 
         if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
@@ -903,10 +903,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             $manifest['menu'] = array_values($menu);
             $saved            = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
 
+            $action = 'created';
             if ($replaced === true) {
                 $action = 'updated';
-            } else {
-                $action = 'created';
             }
 
             return [

@@ -84,7 +84,9 @@ class ProductionVersionGuardListener implements IEventListener
             // OR's ObjectUpdatingEvent exposes the new object via getNewObject()
             // (not getObject() — the two events have different APIs).
             $entity = $event->getNewObject();
-        } else {
+        }
+
+        if (isset($entity) === false) {
             return;
         }
 

@@ -9,10 +9,6 @@
         This is a custom ruleset for OpenBuilt Nextcloud.
     </description>
 
-    <!-- The embedded nextcloud-app-template snapshot is shipped as a verbatim
-         resource; it is not OpenBuilt code, so we exclude it from MD scans. -->
-    <exclude-pattern>*/lib/Resources/template/*</exclude-pattern>
-
     <!-- Clean Code Rules -->
     <rule ref="rulesets/cleancode.xml/BooleanArgumentFlag"/>
     <rule ref="rulesets/cleancode.xml/ElseExpression"/>
@@ -27,42 +23,13 @@
     <rule ref="rulesets/codesize.xml/CyclomaticComplexity"/>
     <rule ref="rulesets/codesize.xml/NPathComplexity"/>
     <rule ref="rulesets/codesize.xml/ExcessiveMethodLength"/>
+    <rule ref="rulesets/codesize.xml/ExcessiveClassLength"/>
     <rule ref="rulesets/codesize.xml/ExcessiveParameterList"/>
     <rule ref="rulesets/codesize.xml/ExcessivePublicCount"/>
     <rule ref="rulesets/codesize.xml/TooManyFields"/>
     <rule ref="rulesets/codesize.xml/TooManyMethods"/>
     <rule ref="rulesets/codesize.xml/TooManyPublicMethods"/>
-    <!--
-        ExcessiveClassLength threshold raised to 1500: ApplicationsController
-        is the single app-local HTTP surface (design.md Decision 6) and now
-        also hosts the clone-from-template endpoint (createFromTemplate, spec
-        #8 openbuilt-templates-marketplace) with its ~13 OR-integration helper
-        methods (per-app register provisioning, companion-schema cloning,
-        manifest schema-ref rewriting). Splitting across controllers would
-        just scatter the same OR plumbing; the default 1000 fits a vanilla CRUD
-        controller, not a four-endpoint integration surface crossing two apps.
-    -->
-    <rule ref="rulesets/codesize.xml/ExcessiveClassLength">
-        <properties>
-            <property name="minimum" value="1500" />
-        </properties>
-    </rule>
-    <!--
-        ExcessiveClassComplexity threshold raised to 120: ApplicationsController
-        is the single app-local HTTP surface (design.md Decision 6) and now
-        hosts the manifest endpoint, the RBAC-filtered list endpoint
-        (openbuilt-rbac), the manifest-diff endpoint (openbuilt-versioning) and
-        the clone-from-template endpoint (createFromTemplate, spec #8
-        openbuilt-templates-marketplace), each with its own slug→entity
-        resolution, error envelopes and OR-integration helpers. Splitting
-        across multiple controllers would just scatter the same OR-integration
-        plumbing; the default 50 fits a single-purpose CRUD controller.
-    -->
-    <rule ref="rulesets/codesize.xml/ExcessiveClassComplexity">
-        <properties>
-            <property name="maximum" value="120" />
-        </properties>
-    </rule>
+    <rule ref="rulesets/codesize.xml/ExcessiveClassComplexity"/>
 
     <!-- Controversial Rules -->
     <rule ref="rulesets/controversial.xml/Superglobals"/>
@@ -80,20 +47,7 @@
     <rule ref="rulesets/design.xml/GotoStatement"/>
     <rule ref="rulesets/design.xml/NumberOfChildren"/>
     <rule ref="rulesets/design.xml/DepthOfInheritance"/>
-    <!--
-        CouplingBetweenObjects threshold raised to 20 to accommodate the
-        ApplicationsController, which integrates OR (RegisterMapper,
-        SchemaMapper, ObjectService, AuditTrailMapper, ObjectEntity) +
-        NC OCP types + DateTime + Psr\Log + Throwable. The PHPMD default
-        of 13 fits a vanilla CRUD controller; an integration controller
-        crossing two NC apps and OCP cannot stay under that without
-        artificial indirection.
-    -->
-    <rule ref="rulesets/design.xml/CouplingBetweenObjects">
-        <properties>
-            <property name="maximum" value="20" />
-        </properties>
-    </rule>
+    <rule ref="rulesets/design.xml/CouplingBetweenObjects"/>
     <rule ref="rulesets/design.xml/DevelopmentCodeFragment"/>
     <rule ref="rulesets/design.xml/EmptyCatchBlock"/>
     <rule ref="rulesets/design.xml/CountInLoopExpression"/>

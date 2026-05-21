@@ -150,12 +150,13 @@ class SlugValidator
 
         foreach ($slugs as $idx => $slug) {
             $lower = strtolower((string) $slug);
-            if (isset($seen[$lower]) === true) {
-                $dupes[$lower][] = $seen[$lower];
-                $dupes[$lower][] = $idx;
-            } else {
+            if (isset($seen[$lower]) === false) {
                 $seen[$lower] = $idx;
+                continue;
             }
+
+            $dupes[$lower][] = $seen[$lower];
+            $dupes[$lower][] = $idx;
         }
 
         if ($dupes === []) {

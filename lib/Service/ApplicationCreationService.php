@@ -130,7 +130,6 @@ class ApplicationCreationService
         $appSlug     = (string) ($payload['slug'] ?? '');
         $appName     = (string) ($payload['name'] ?? '');
         $description = (string) ($payload['description'] ?? '');
-        $preset      = (string) ($payload['preset'] ?? '');
         $versions    = $this->resolveVersionChain(payload: $payload);
 
         // ---- State tracker for rollback -------------------------------------
@@ -182,10 +181,9 @@ class ApplicationCreationService
         if ($state['applicationUuid'] === '') {
             $orphaned = [];
             $this->rollback(state: $state, orphaned: $orphaned);
+            $status = 'complete';
             if ($orphaned !== []) {
                 $status = 'partial';
-            } else {
-                $status = 'complete';
             }
 
             throw new WizardCreationException(
@@ -244,9 +242,8 @@ class ApplicationCreationService
                 );
                 $orphaned = [];
                 $this->rollback(state: $state, orphaned: $orphaned);
-                if ($orphaned === []) {
-                    $status = 'complete';
-                } else {
+                $status = 'complete';
+                if ($orphaned !== []) {
                     $status = 'partial';
                 }
 
@@ -275,9 +272,8 @@ class ApplicationCreationService
                 );
                 $orphaned = [];
                 $this->rollback(state: $state, orphaned: $orphaned);
-                if ($orphaned === []) {
-                    $status = 'complete';
-                } else {
+                $status = 'complete';
+                if ($orphaned !== []) {
                     $status = 'partial';
                 }
 
@@ -329,9 +325,8 @@ class ApplicationCreationService
                 );
                 $orphaned = [];
                 $this->rollback(state: $state, orphaned: $orphaned);
-                if ($orphaned === []) {
-                    $status = 'complete';
-                } else {
+                $status = 'complete';
+                if ($orphaned !== []) {
                     $status = 'partial';
                 }
 
@@ -379,9 +374,8 @@ class ApplicationCreationService
             );
             $orphaned = [];
             $this->rollback(state: $state, orphaned: $orphaned);
-            if ($orphaned === []) {
-                $status = 'complete';
-            } else {
+            $status = 'complete';
+            if ($orphaned !== []) {
                 $status = 'partial';
             }
 
@@ -438,7 +432,6 @@ class ApplicationCreationService
         }
 
         // Validate preset or custom versions.
-        $preset   = (string) ($payload['preset'] ?? '');
         $versions = $this->resolveVersionChain(payload: $payload);
 
         if ($versions === []) {
