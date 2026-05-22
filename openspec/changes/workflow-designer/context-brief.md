@@ -3,6 +3,17 @@ status: draft
 ---
 # Workflow Designer (Visual BPMN-light)
 
+## Placement & Information Architecture
+
+**Placement type:** `SUB_PAGE` — Sub-page beneath a top-level menu entry. Renders as a page inside the parent surface (usually reachable via a router child route or a tab on the parent index page).
+
+**Lives at:** sub-tool / Designers > Workflow Designer
+
+**Rationale:** one of four designers  
+_Source: /tmp/ia-small5.md_
+
+> **Implementation note for builders:** Respect the placement above. Do not promote this spec to a top-level menu item, sub-page, or new route unless the placement type explicitly says so. If the placement is `DETAIL_TAB`, `WIDGET`, `ACTION`, `SETTING`, or `INFRA`, the feature must NOT introduce a new entry in the app sidebar. When in doubt, ask before creating a new top-level surface.
+
 ## Purpose
 
 OpenBuilt is een low-code app builder waarmee citizen developers data-applicaties bouwen door schemas te definiëren, pagina's te ontwerpen en logica te configureren, zonder code te schrijven. De huidige scope dekt **gegevens** (schema-designer), **interface** (page-designer), **navigatie en runtime** en **delivery** (versioning, exporter, RBAC). Wat ontbreekt is de **procesdimensie**: hoe stroomt data en werk door de applicatie heen — wie krijgt wat te doen, in welke volgorde, onder welke voorwaarden, en met welke escalatie als iets blijft liggen. In de praktijk strandt elke OpenBuilt-applicatie van enige omvang op het ontbreken hiervan; gebruikers bouwen workarounds met handmatige taakverdeling buiten de app, of installeren een externe BPM-engine (Camunda, Flowable) die niet integreert met hun OpenBuilt-data en RBAC-model.
