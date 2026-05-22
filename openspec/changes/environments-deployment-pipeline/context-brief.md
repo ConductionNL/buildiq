@@ -4,6 +4,17 @@ Draft — openbuilt spec brief, 2026-05-21.
 
 # Environments & Deployment Pipeline
 
+## Placement & Information Architecture
+
+**Placement type:** `TOP_MENU` — Top-level menu entry — this functionality earns its own item in the app's left-nav.
+
+**Lives at:** Deploy
+
+**Rationale:** pipeline + environments share Deploy  
+_Source: /tmp/ia-small5.md_
+
+> **Implementation note for builders:** Respect the placement above. Do not promote this spec to a top-level menu item, sub-page, or new route unless the placement type explicitly says so. If the placement is `DETAIL_TAB`, `WIDGET`, `ACTION`, `SETTING`, or `INFRA`, the feature must NOT introduce a new entry in the app sidebar. When in doubt, ask before creating a new top-level surface.
+
 ## Purpose
 
 Citizen-developer apps built in openbuilt currently live in one environment — the environment where they were drag-built. That is fine for prototypes but unacceptable for any app the organisation actually depends on (e.g. an inkoop-aanvraag-flow used daily by 200 mensen). This spec introduces a multi-environment model — **dev / test / staging / production** — with a controlled promote-pipeline between them. Each environment has its own data store (registers + schemas), its own config (API-keys, endpoints, feature-flags), and its own running URL. A build in dev does not affect data in production; a schema change in test does not migrate production data until explicitly promoted. The pipeline is one-click but audited: every promote captures who, when, what changed (manifest diff + schema diff), test-results, and a rollback-point. Rollback is symmetric — promote v5 to production, find a bug, rollback to v4 with one button and the previous version is live again in seconds. This is the difference between "openbuilt is a fun toy" and "openbuilt is approved as a citizen-dev platform under the IT-governance policy".
