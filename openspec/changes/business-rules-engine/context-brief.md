@@ -2,6 +2,17 @@ status: draft
 
 # Business Rules Engine
 
+## Placement & Information Architecture
+
+**Placement type:** `SUB_PAGE` — Sub-page beneath a top-level menu entry. Renders as a page inside the parent surface (usually reachable via a router child route or a tab on the parent index page).
+
+**Lives at:** sub-tool / Designers > Business Rules Designer
+
+**Rationale:** rules authoring is a designer  
+_Source: /tmp/ia-small5.md_
+
+> **Implementation note for builders:** Respect the placement above. Do not promote this spec to a top-level menu item, sub-page, or new route unless the placement type explicitly says so. If the placement is `DETAIL_TAB`, `WIDGET`, `ACTION`, `SETTING`, or `INFRA`, the feature must NOT introduce a new entry in the app sidebar. When in doubt, ask before creating a new top-level surface.
+
 ## Purpose
 
 OpenBuilt stelt citizen-developers in staat om binnen het Nextcloud-ecosysteem custom apps te ontwerpen via de page-designer en runtime. Wat momenteel ontbreekt is een gestructureerde manier om bedrijfsregels (business rules) los van UI-code te modelleren: validaties, workflow-routering, automatische berekeningen, conditionele zichtbaarheid van velden, en escalatie-logica. Nu eindigen deze als verspreide IF-conditions in templates, hardcoded backend-checks, of (erger) niet-gevalideerde aannames in formulieren.
