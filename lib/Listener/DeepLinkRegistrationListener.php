@@ -15,6 +15,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-deep-link-registration/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-deep-link-registration/tasks.md#task-2
  */
 
 declare(strict_types=1);
