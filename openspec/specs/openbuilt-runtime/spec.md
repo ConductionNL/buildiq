@@ -1,9 +1,25 @@
 # openbuilt-runtime Specification
 
 ## Purpose
-TBD - created by archiving change bootstrap-openbuilt. Update Purpose after archive.
+
+The OpenBuilt runtime: foundational shell + per-slug manifest serving, plus every
+delta later archived chains have layered on the same capability. Defines the
+slug-keyed manifest endpoint backed by the `BuiltAppRoute` index, the nested
+`CnAppRoot` mount under `/builder/:slug/*` (inner router resolves path segments
+after the slug), the seeded hello-world Application (idempotent), and the tabbed
+Application editor (Design / Raw JSON). Layers added by subsequent archives —
+schema-designer routes mounted under the outer router (orthogonal to the
+runtime-preview mount), a Publish action with version-snapshot toast, a
+draft-vs-published indicator with "modified since last publish" marker, a
+VersionHistory panel + audit-clean rollback, a ManifestDiff side-by-side view,
+and the RBAC overlay (403-before-payload gate on the manifest endpoint,
+group-filtered list view, role-gated editor controls, group set provided via
+`IInitialState` per ADR-004) — all live here alongside the ApplicationCard
+icon / no-Live-chip refinement.
+
 ## Requirements
-### Requirement: REQ-OBR-001 Manifest endpoint per virtual-app slug
+
+### Requirement: Manifest endpoint per virtual-app slug
 
 The system SHALL expose
 `GET /index.php/apps/openbuilt/api/applications/{slug}/manifest`
@@ -15,6 +31,8 @@ matching published Application exists in the caller's organisation
 scope. The endpoint SHALL be registered via `appinfo/routes.php`
 (ADR-016) with `#[NoAdminRequired]` and a route-auth posture that
 treats it as authenticated-user-readable.
+
+**ID:** REQ-OBR-001
 
 #### Scenario: Endpoint returns the stored manifest
 
@@ -31,7 +49,7 @@ treats it as authenticated-user-readable.
   that has no matching `BuiltAppRoute`
 - **THEN** the response is `404` with a JSON error body
 
-### Requirement: REQ-OBR-002 OpenBuilt shell mounts a nested CnAppRoot per virtual app
+### Requirement: OpenBuilt shell mounts a nested CnAppRoot per virtual app
 
 The OpenBuilt frontend SHALL register a route `/builder/:slug/*` whose
 view (`BuilderHost.vue`) mounts a **nested** `CnAppRoot` instance.
@@ -43,6 +61,8 @@ app inside the OpenBuilt shell. The outer OpenBuilt shell's
 `CnAppNav`, header, and chrome SHALL remain visible; the inner
 `CnAppRoot` SHALL render only into the OpenBuilt page area.
 
+**ID:** REQ-OBR-002
+
 #### Scenario: Navigating into a virtual app renders its manifest pages
 
 - **WHEN** an authenticated user navigates to
@@ -53,7 +73,7 @@ app inside the OpenBuilt shell. The outer OpenBuilt shell's
 - **AND** the index page declared in the `hello-world` manifest
   renders
 
-### Requirement: REQ-OBR-003 Path segments after the slug forward to the inner router
+### Requirement: Path segments after the slug forward to the inner router
 
 For routes matching `/builder/:slug/*`, the system SHALL forward the
 path segments after `/{slug}` to the **inner** manifest's vue-router
@@ -61,6 +81,8 @@ so that detail, form, and dashboard pages inside the virtual app
 resolve correctly. The outer OpenBuilt router SHALL treat everything
 after `/{slug}/` as opaque to the inner router; the inner router
 MUST match its own routes against that suffix.
+
+**ID:** REQ-OBR-003
 
 #### Scenario: Detail route inside a virtual app resolves
 
@@ -70,7 +92,7 @@ MUST match its own routes against that suffix.
   for the `hello-message` schema
 - **AND** the detail page renders for the requested object id
 
-### Requirement: REQ-OBR-004 Seeded hello-world Application exercises index, detail, form
+### Requirement: Seeded hello-world Application exercises index, detail, form
 
 The repair step SHALL seed a single Application with `slug:
 hello-world`, `status: published`, a `manifest` declaring at least
@@ -79,6 +101,8 @@ a seeded `hello-message` schema in the OpenBuilt register, plus three
 sample `hello-message` objects. The seed SHALL be idempotent (safe to
 re-run) and SHALL only run when no `Application` with `slug:
 hello-world` exists in the system organisation scope.
+
+**ID:** REQ-OBR-004
 
 #### Scenario: Fresh install renders the seeded virtual app
 
@@ -97,7 +121,7 @@ hello-world` exists in the system organisation scope.
 - **THEN** no duplicate `hello-world` Application is created
 - **AND** no duplicate `hello-message` objects are created
 
-### Requirement: REQ-OBR-005 Textarea manifest editor saves to the Application object
+### Requirement: Textarea manifest editor saves to the Application object
 
 The OpenBuilt shell SHALL render a **tabbed Application editor** for
 the `manifest` field of an `Application` object, composed of two
@@ -121,6 +145,8 @@ Application back to OR via the same REST endpoint used by spec #1.
 The shared in-flight manifest state SHALL persist across tab switches
 without saving, so edits made in one tab are visible in the other on
 tab change.
+
+**ID:** REQ-OBR-005
 
 #### Scenario: Invalid edit is blocked before save
 
@@ -152,7 +178,7 @@ tab change.
 - **THEN** the textarea's JSON content reflects the unsaved page title
 - **AND** the dirty indicator persists across the tab switch
 
-### Requirement: REQ-OBR-006 Schema designer routes mounted under the builder host
+### Requirement: Schema designer routes mounted under the builder host
 
 The OpenBuilt frontend router SHALL register two new routes under the
 existing `/builder/:slug/*` host (from `bootstrap-openbuilt`
@@ -173,6 +199,14 @@ from `bootstrap-openbuilt` SHALL continue to mount the nested
 CnAppRoot for the runtime preview and SHALL be unaffected by this
 addition.
 
+**ID:** REQ-OBR-006a
+
+_Disambiguation note: original `REQ-OBR-006` from the
+`openbuilt-schema-editor` archive delta. Suffix `a` assigned 2026-05-24
+to disambiguate from `REQ-OBR-006b` (Publish action, from
+`openbuilt-versioning`) and `REQ-OBR-006c` (Manifest 403 RBAC gate,
+from `openbuilt-rbac`) per ADR-037._
+
 #### Scenario: Schema list route renders the designer, not the virtual app
 
 - **WHEN** an authenticated user navigates to
@@ -190,7 +224,7 @@ addition.
 - **AND** the Schemas menu entry is reachable from the outer shell's
   navigation
 
-### Requirement: REQ-OBR-007 Schemas menu entry surfaced in the builder host
+### Requirement: Schemas menu entry surfaced in the builder host
 
 `src/views/BuilderHost.vue` SHALL surface a **Schemas** menu entry in
 the OpenBuilt outer-shell secondary navigation while the user is in a
@@ -201,6 +235,14 @@ authorised to read the virtual app's Application object; chain spec
 entry SHALL use a translation key (`openbuilt.builder.menu.schemas`)
 in both `l10n/en.json` and `l10n/nl.json`.
 
+**ID:** REQ-OBR-007a
+
+_Disambiguation note: original `REQ-OBR-007` from the
+`openbuilt-schema-editor` archive delta. Suffix `a` assigned 2026-05-24
+to disambiguate from `REQ-OBR-007b` (Draft-vs-published indicator, from
+`openbuilt-versioning`) and `REQ-OBR-007c` (List filters by role, from
+`openbuilt-rbac`) per ADR-037._
+
 #### Scenario: Schemas entry appears in the builder context
 
 - **WHEN** an authenticated user opens
@@ -210,7 +252,7 @@ in both `l10n/en.json` and `l10n/nl.json`.
 - **AND** clicking the entry navigates to
   `/builder/hello-world/schemas`
 
-### Requirement: REQ-OBR-006 Application editor exposes a Publish action
+### Requirement: Application editor exposes a Publish action
 
 `ApplicationEditor.vue` (REQ-OBR-005) SHALL render a "Publish"
 action button alongside the existing Save action. Clicking Publish
@@ -223,6 +265,13 @@ transition success, surface a confirmation toast naming the new
 transition failure (e.g. slug-conflict per REQ-OBA-004), surface an
 inline error and leave the manifest in draft state. The button
 SHALL be disabled while the lifecycle call is in flight.
+
+**ID:** REQ-OBR-006b
+
+_Disambiguation note: original `REQ-OBR-006` from the
+`openbuilt-versioning` archive delta. Suffix `b` assigned 2026-05-24
+to disambiguate from `REQ-OBR-006a` (Schema designer routes) and
+`REQ-OBR-006c` (Manifest 403 RBAC gate) per ADR-037._
 
 #### Scenario: Successful publish creates a snapshot
 
@@ -241,7 +290,7 @@ SHALL be disabled while the lifecycle call is in flight.
 - **AND** the editor surfaces the validation error inline (same
   contract as Save)
 
-### Requirement: REQ-OBR-007 Draft-vs-published indicator surfaces lifecycle state
+### Requirement: Draft-vs-published indicator surfaces lifecycle state
 
 The OpenBuilt shell SHALL surface the Application's current
 `status` (and a marker for "has unpublished draft changes") in two
@@ -252,6 +301,13 @@ header for an open Application carries the same badge plus a
 manifest differs from the most recent `ApplicationVersion.manifest`.
 The badge SHALL use Nextcloud CSS variables for colour (no
 hardcoded colour literals — per ADR-010).
+
+**ID:** REQ-OBR-007b
+
+_Disambiguation note: original `REQ-OBR-007` from the
+`openbuilt-versioning` archive delta. Suffix `b` assigned 2026-05-24
+to disambiguate from `REQ-OBR-007a` (Schemas menu entry) and
+`REQ-OBR-007c` (List filters by role) per ADR-037._
 
 #### Scenario: Newly published Application shows published badge
 
@@ -270,7 +326,7 @@ hardcoded colour literals — per ADR-010).
   "modified since last publish" marker
 - **AND** the list row reflects the same state
 
-### Requirement: REQ-OBR-008 VersionHistory.vue lists snapshots for an Application
+### Requirement: VersionHistory.vue lists snapshots for an Application
 
 The OpenBuilt shell SHALL render a `VersionHistory.vue` panel
 inside `ApplicationEditor.vue` (collapsible / a sibling tab,
@@ -279,6 +335,13 @@ the current Application in reverse-chronological order (newest
 first). Each row SHALL display `version`, `publishedAt` (localised),
 `publishedBy`, and any `notes`. The list SHALL be read from OR REST
 filtered by `applicationUuid` — no app-local wrapper service.
+
+**ID:** REQ-OBR-008a
+
+_Disambiguation note: original `REQ-OBR-008` from the
+`openbuilt-versioning` archive delta. Suffix `a` assigned 2026-05-24
+to disambiguate from `REQ-OBR-008b` (Editor UIs gate destructive
+actions per role, from `openbuilt-rbac`) per ADR-037._
 
 #### Scenario: History panel renders snapshots
 
@@ -296,7 +359,7 @@ filtered by `applicationUuid` — no app-local wrapper service.
 - **THEN** the version-history panel renders an empty state
 - **AND** no console error is emitted from the empty-list fetch
 
-### Requirement: REQ-OBR-009 Rollback action restores a chosen snapshot
+### Requirement: Rollback action restores a chosen snapshot
 
 Each row in the `VersionHistory.vue` panel SHALL carry a "Roll back
 to this version" action. Clicking it SHALL: (a) prompt for
@@ -310,6 +373,13 @@ audit-clean — it does **not** delete or mutate existing
 `ApplicationVersion` rows. The confirmation modal SHALL live in
 its own SFC under `src/modals/` per Hydra modal-isolation gate
 (ADR-004).
+
+**ID:** REQ-OBR-009a
+
+_Disambiguation note: original `REQ-OBR-009` from the
+`openbuilt-versioning` archive delta. Suffix `a` assigned 2026-05-24
+to disambiguate from `REQ-OBR-009b` (Caller's group set via
+IInitialState, from `openbuilt-rbac`) per ADR-037._
 
 #### Scenario: Rollback restores manifest and stays in draft
 
@@ -327,7 +397,7 @@ its own SFC under `src/modals/` per Hydra modal-isolation gate
 - **THEN** no PUT is sent to OR
 - **AND** the textarea content is unchanged
 
-### Requirement: REQ-OBR-010 ManifestDiff.vue renders a side-by-side diff
+### Requirement: ManifestDiff.vue renders a side-by-side diff
 
 The OpenBuilt shell SHALL ship a `ManifestDiff.vue` component
 rendering a client-side side-by-side diff between two manifest
@@ -340,6 +410,8 @@ lines, removed lines, and unchanged lines with NL Design
 colour-coded tokens using Nextcloud CSS variables. By default the
 editor SHALL preselect `from=draft` and `to=<currentVersion>` when
 the diff view is opened.
+
+**ID:** REQ-OBR-010
 
 #### Scenario: Default diff shows current draft vs latest published
 
@@ -361,7 +433,7 @@ the diff view is opened.
 - **AND** the rendered diff matches what the diff endpoint
   returned for that pair
 
-### Requirement: REQ-OBR-006 Manifest endpoint returns 403 for unauthorised callers
+### Requirement: Manifest endpoint returns 403 for unauthorised callers
 
 `ApplicationsController::getManifest` SHALL be extended with a
 permissions check that runs after the organisation-scope resolution
@@ -379,6 +451,13 @@ SHALL be ordered before the manifest-body emission and SHALL NOT
 leak any Application metadata (no name, no description, no manifest
 fragment). Implementation is a single in-controller check — no new
 service class — per ADR-022 §Exceptions(1).
+
+**ID:** REQ-OBR-006c
+
+_Disambiguation note: original `REQ-OBR-006` from the
+`openbuilt-rbac` archive delta. Suffix `c` assigned 2026-05-24 to
+disambiguate from `REQ-OBR-006a` (Schema designer routes) and
+`REQ-OBR-006b` (Publish action) per ADR-037._
 
 #### Scenario: Caller without a role gets 403 (not 200, not 404)
 
@@ -399,7 +478,7 @@ service class — per ADR-022 §Exceptions(1).
 - **THEN** the response is `200 application/json` and the body is
   the stored `manifest` blob
 
-### Requirement: REQ-OBR-007 Application list view filters by caller's roles
+### Requirement: Application list view filters by caller's roles
 
 The system SHALL ensure the frontend Application list (the entry view of the OpenBuilt shell, currently `ApplicationEditor.vue`'s list mode) renders only Applications on which the caller has at least one role.
 
@@ -413,6 +492,13 @@ in JS using the caller's group set, which is provided to the
 frontend via `IInitialState::provideInitialState('openbuilt',
 'currentUserGroups', [...])` consumed by `loadState` (per ADR-004 —
 no `document.getElementById().dataset` reads).
+
+**ID:** REQ-OBR-007c
+
+_Disambiguation note: original `REQ-OBR-007` from the
+`openbuilt-rbac` archive delta. Suffix `c` assigned 2026-05-24 to
+disambiguate from `REQ-OBR-007a` (Schemas menu entry) and
+`REQ-OBR-007b` (Draft-vs-published indicator) per ADR-037._
 
 #### Scenario: User sees only authorised applications
 
@@ -432,7 +518,7 @@ no `document.getElementById().dataset` reads).
 - **AND** the empty-state UI explains "No applications available —
   ask an owner to grant you access"
 
-### Requirement: REQ-OBR-008 Editor UIs gate destructive actions per role
+### Requirement: Editor UIs gate destructive actions per role
 
 The system SHALL gate role-restricted actions in the OpenBuilt editor views (currently the textarea editor `ApplicationEditor.vue`; the visual editors arriving in chain specs #5 and #6 when they land) via a shared `useRole(application)` composable that returns the caller's effective role (`owner | editor | viewer | none`). The
 mapping in REQ-OBRBAC-004 is the canonical source. UI controls
@@ -448,8 +534,15 @@ SHALL be:
   Permissions panel and the Permission history panel.
 
 A user whose role is `none` cannot reach the editor at all
-(REQ-OBR-007 ensures the Application doesn't appear in their
-list; REQ-OBR-006 ensures direct-URL access returns 403).
+(REQ-OBR-007c ensures the Application doesn't appear in their
+list; REQ-OBR-006c ensures direct-URL access returns 403).
+
+**ID:** REQ-OBR-008b
+
+_Disambiguation note: original `REQ-OBR-008` from the
+`openbuilt-rbac` archive delta. Suffix `b` assigned 2026-05-24 to
+disambiguate from `REQ-OBR-008a` (VersionHistory panel, from
+`openbuilt-versioning`) per ADR-037._
 
 #### Scenario: Editor sees Save but not Publish
 
@@ -466,7 +559,7 @@ list; REQ-OBR-006 ensures direct-URL access returns 403).
   enabled
 - **AND** the Permission history panel is reachable
 
-### Requirement: REQ-OBR-009 Caller's group set is provided via initial state
+### Requirement: Caller's group set is provided via initial state
 
 The OpenBuilt PHP layer SHALL provide the caller's Nextcloud group
 IDs to the frontend via
@@ -481,6 +574,13 @@ data-attribute, fetch endpoint, or `document.getElementById`
 pattern (ADR-004 hard rule; enforced by the
 `gate-initial-state` Hydra gate).
 
+**ID:** REQ-OBR-009b
+
+_Disambiguation note: original `REQ-OBR-009` from the
+`openbuilt-rbac` archive delta. Suffix `b` assigned 2026-05-24 to
+disambiguate from `REQ-OBR-009a` (Rollback action, from
+`openbuilt-versioning`) per ADR-037._
+
 #### Scenario: Frontend sees the caller's groups
 
 - **WHEN** the OpenBuilt shell boots for user `bob` (in groups
@@ -490,7 +590,7 @@ pattern (ADR-004 hard rule; enforced by the
 - **AND** no DOM data-attribute access is needed to obtain the
   groups
 
-### Requirement: REQ-OBR-013 ApplicationCard renders icon and omits redundant Live chip
+### Requirement: ApplicationCard renders icon and omits redundant Live chip
 
 `ApplicationCard.vue` SHALL render the Application's icon in front of the app title using an
 `<img>` element whose `src` is the URL of the icon-serving light endpoint
@@ -500,6 +600,8 @@ conditionally rendered on `app.currentVersion` (line 30 of the original file); t
 lifecycle-status pill (line 23) already communicates "Published" state to the user and the
 Live chip produces duplicate signalling. The `ob-app-card__chip--live` CSS rule and the
 `v-if="app.currentVersion"` conditional SHALL be removed.
+
+**ID:** REQ-OBR-013
 
 #### Scenario: Published app card shows icon before the title
 
@@ -526,4 +628,3 @@ Live chip produces duplicate signalling. The `ob-app-card__chip--live` CSS rule 
 - **THEN** the title heading, description paragraph, version chip, role chip, and slug chip
   continue to render in their expected positions and the card's click navigation to
   VirtualAppDetail is unaffected
-

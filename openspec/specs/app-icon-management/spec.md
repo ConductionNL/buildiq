@@ -1,9 +1,19 @@
 # app-icon-management Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-nextcloud-nav. Update Purpose after archive.
+
+Lets an operator brand each published OpenBuilt virtual app with per-app SVG icons
+(light + dark) so the published app surfaces with its own identity in the Nextcloud
+top bar and in OpenBuilt's own card grid. Adds top-level `icon` / `iconDark` ref
+fields to the `Application` schema (sibling to `slug`, `name`, `manifest`,
+`permissions`), thin icon-serving endpoints with a clear fallback chain, and the
+upload / preview / remove UX on the Application detail page — all routed through
+OR's existing files-attached-to-object mechanism (ADR-001) so no new openbuilt-side
+file storage is introduced.
+
 ## Requirements
-### Requirement: REQ-OBICON-001 Icon fields on Application schema (top-level)
+
+### Requirement: Icon fields on Application schema (top-level)
 
 The `Application` schema in `lib/Settings/openbuilt_register.json` SHALL declare two optional
 top-level properties — `icon` and `iconDark` — as siblings to `slug`, `name`, `manifest`,
@@ -11,6 +21,8 @@ top-level properties — `icon` and `iconDark` — as siblings to `slug`, `name`
 `<filename>` is the name of an SVG file attached to the Application record via OpenRegister's
 files-attached-to-object mechanism (ADR-001). Both fields SHALL be optional; omitting them
 SHALL NOT cause schema validation failure.
+
+**ID:** REQ-OBICON-001
 
 Icons live outside the `manifest` object deliberately: they are openbuilt-side admin
 metadata, not part of the manifest the citizen developer designs and the runtime serves
@@ -35,7 +47,7 @@ any upstream coupling with `@conduction/nextcloud-vue`.
   `ref` key)
 - **THEN** OR returns a 4xx validation error indicating `icon.ref` is required
 
-### Requirement: REQ-OBICON-002 Icon-serving endpoint (light)
+### Requirement: Icon-serving endpoint (light)
 
 The system SHALL expose `GET /index.php/apps/openbuilt/icons/{slug}.svg` backed by
 `IconController::iconLight`. The endpoint SHALL:
@@ -48,6 +60,8 @@ The system SHALL expose `GET /index.php/apps/openbuilt/icons/{slug}.svg` backed 
    OpenBuilt's own `/img/app.svg` filesystem asset.
 4. Set `Cache-Control: public, max-age=60` on every successful response.
 5. Require any valid NC session (`#[NoAdminRequired]`); return `401` when no session exists.
+
+**ID:** REQ-OBICON-002
 
 #### Scenario: Endpoint returns the attached light icon
 
@@ -69,7 +83,7 @@ The system SHALL expose `GET /index.php/apps/openbuilt/icons/{slug}.svg` backed 
 - **WHEN** a request arrives at `/icons/{slug}.svg` with no NC session cookie or token
 - **THEN** the response is `401`
 
-### Requirement: REQ-OBICON-003 Icon-serving endpoint (dark)
+### Requirement: Icon-serving endpoint (dark)
 
 The system SHALL expose `GET /index.php/apps/openbuilt/icons/{slug}-dark.svg` backed by
 `IconController::iconDark`. The endpoint SHALL apply the following fallback chain in order:
@@ -80,6 +94,8 @@ The system SHALL expose `GET /index.php/apps/openbuilt/icons/{slug}-dark.svg` ba
 4. OpenBuilt's own `/img/app.svg` filesystem asset (final fallback).
 
 Cache and auth posture SHALL be identical to REQ-OBICON-002.
+
+**ID:** REQ-OBICON-003
 
 #### Scenario: Endpoint returns the attached dark icon
 
@@ -102,7 +118,7 @@ Cache and auth posture SHALL be identical to REQ-OBICON-002.
 - **THEN** the response is `200 image/svg+xml` containing the contents of
   OpenBuilt's `/img/app-dark.svg`
 
-### Requirement: REQ-OBICON-004 Icon section on Application detail page
+### Requirement: Icon section on Application detail page
 
 The Application detail page SHALL include an **Icon** section exposing:
 
@@ -119,6 +135,8 @@ The Application detail page SHALL include an **Icon** section exposing:
 
 The section SHALL NOT introduce a new openbuilt-side file-storage mechanism; all file I/O
 goes through OR's existing files-attached-to-object endpoint (ADR-001).
+
+**ID:** REQ-OBICON-004
 
 #### Scenario: User uploads a light icon
 
@@ -138,4 +156,3 @@ goes through OR's existing files-attached-to-object endpoint (ADR-001).
 
 - **WHEN** a user attempts to upload a file with a non-`.svg` extension in either icon slot
 - **THEN** the uploader displays an inline error message and does not submit the file to OR
-

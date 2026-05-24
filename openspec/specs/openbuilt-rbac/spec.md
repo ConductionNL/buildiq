@@ -1,9 +1,23 @@
 # openbuilt-rbac Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-rbac. Update Purpose after archive.
+
+Closes the per-built-app RBAC gap left open by `bootstrap-openbuilt`'s "auth-only"
+posture. Introduces a per-virtual-app role model (`owner | editor | viewer`)
+declaratively stored on the Application schema's `permissions` block keyed by
+Nextcloud group IDs, layered on top of OR's existing organisation scoping
+(ADR-022). Enforcement spans the manifest endpoint (403 before any payload leak),
+the Application list (declarative OR filter preferred, frontend fallback via
+`loadState`), the editor UIs (role → action mapping consumed via a single
+`useRole(application)` composable), a no-orphan transfer-ownership flow (direct
+declarative `permissions` PUT — no transfer service), the audited admin bypass,
+and the global `openbuilt.use` nav-entry permission grantable through Nextcloud's
+standard admin UI. Every permission change writes through OR's native
+object-change audit trail.
+
 ## Requirements
-### Requirement: REQ-OBRBAC-001 Permissions field shape and default on creation
+
+### Requirement: Permissions field shape and default on creation
 
 The system SHALL extend the `Application` schema with an optional
 `permissions` property of shape
@@ -17,6 +31,8 @@ an array containing the **creator's primary Nextcloud group**
 default to empty arrays. If the creator has no group membership, the
 system SHALL fall back to the `admin` group as the sole owner so the
 Application is never created in an unreachable "no owner" state.
+
+**ID:** REQ-OBRBAC-001
 
 #### Scenario: New Application gets creator's primary group as owner
 
@@ -34,7 +50,7 @@ Application is never created in an unreachable "no owner" state.
   `permissions.owners = ["admin"]`
 - **AND** the user is recorded as the actor in the OR audit trail
 
-### Requirement: REQ-OBRBAC-002 Manifest endpoint enforces role membership
+### Requirement: Manifest endpoint enforces role membership
 
 The system SHALL augment
 `GET /index.php/apps/openbuilt/api/applications/{slug}/manifest` so
@@ -48,6 +64,8 @@ elevated via the admin-bypass declared in REQ-OBRBAC-006), the
 controller SHALL respond `403 Forbidden` with a JSON error body. The
 check SHALL run before any other branch that would return the
 manifest payload — deny-by-default per ADR-005.
+
+**ID:** REQ-OBRBAC-002
 
 #### Scenario: Member of viewer group reads the manifest
 
@@ -75,7 +93,7 @@ manifest payload — deny-by-default per ADR-005.
 - **AND** the response body does not leak the Application's
   `name`, `description`, or any manifest content
 
-### Requirement: REQ-OBRBAC-003 Application list filters out unauthorised entries
+### Requirement: Application list filters out unauthorised entries
 
 The OpenBuilt shell's Application list view SHALL display only
 Applications on which the caller has at least one role
@@ -96,6 +114,8 @@ order of preference:
 In both paths, the user-visible behaviour is identical: unauthorised
 Applications do not appear in the list.
 
+**ID:** REQ-OBRBAC-003
+
 #### Scenario: List omits Applications without any role
 
 - **WHEN** user `bob` opens the OpenBuilt Application list
@@ -105,7 +125,7 @@ Applications do not appear in the list.
 - **AND** the omitted 7 do not appear in the response payload
   consumed by the frontend
 
-### Requirement: REQ-OBRBAC-004 Role-to-action mapping in editor UIs
+### Requirement: Role-to-action mapping in editor UIs
 
 The system SHALL gate destructive and write actions in the OpenBuilt
 editor UIs according to the following role → action mapping. Buttons
@@ -127,6 +147,8 @@ SHALL consume the same `useRole(application)` composable.
 | Transfer ownership | no | no | yes |
 | Delete Application | no | no | yes |
 
+**ID:** REQ-OBRBAC-004
+
 #### Scenario: Viewer cannot save manifest edits
 
 - **WHEN** a user with only `viewer` role on an Application opens it
@@ -145,7 +167,7 @@ SHALL consume the same `useRole(application)` composable.
 - **AND** the Publish button SHALL be hidden (or disabled with a
   tooltip explaining "owner role required")
 
-### Requirement: REQ-OBRBAC-005 Transfer-ownership flow
+### Requirement: Transfer-ownership flow
 
 The system SHALL support an owner replacing the `permissions.owners`
 list of an Application. The transfer SHALL be a single declarative
@@ -156,6 +178,8 @@ permissions panel of the editor (`owner`-gated per REQ-OBRBAC-004)
 that opens a group picker and PUTs the updated `permissions` block.
 The system SHALL reject (`4xx`) any transfer that would result in an
 empty `permissions.owners` array, preventing accidental orphaning.
+
+**ID:** REQ-OBRBAC-005
 
 #### Scenario: Owner transfers ownership to a different group
 
@@ -175,7 +199,7 @@ empty `permissions.owners` array, preventing accidental orphaning.
 - **THEN** the system returns a `4xx` error citing the orphan-check
 - **AND** the Application's `permissions` is unchanged
 
-### Requirement: REQ-OBRBAC-006 Global `openbuilt.use` navigation-entry permission
+### Requirement: Global `openbuilt.use` navigation-entry permission
 
 The system SHALL extend `appinfo/info.xml` to declare an
 `openbuilt.use` group-permission on the `<navigations>` entry. The
@@ -193,6 +217,8 @@ permission SHALL be:
   enforced by REQ-OBRBAC-002 / REQ-OBRBAC-003 / REQ-OBRBAC-004; a
   user with `openbuilt.use` who has no role on any Application sees
   an empty list, not an error.
+
+**ID:** REQ-OBRBAC-006
 
 A Nextcloud administrator MAY also bypass per-Application
 `permissions` checks for incident response, but ONLY when explicitly
@@ -219,7 +245,7 @@ exercised so the action is reviewable.
 - **AND** the OR audit trail contains a `rbac.admin_bypass` event
   naming the actor, the slug, and the timestamp
 
-### Requirement: REQ-OBRBAC-007 Permission changes are recorded in the OR audit trail
+### Requirement: Permission changes are recorded in the OR audit trail
 
 The system SHALL record every change to an Application's `permissions` property in OpenRegister's standard per-object audit trail, regardless of whether the change is made through the OpenBuilt frontend permissions panel, the textarea editor, OR REST directly, or the transfer-ownership flow. The audit
 entry SHALL be the OR-native object-change event (no app-local
@@ -228,6 +254,8 @@ values, the actor's UID, and the timestamp, leveraging OR's existing
 change-tracking per ADR-022. The OpenBuilt editor SHALL expose this
 audit trail in a "Permission history" panel visible to `owner` role
 holders only.
+
+**ID:** REQ-OBRBAC-007
 
 #### Scenario: Permission change appears in the audit trail
 
@@ -244,4 +272,3 @@ holders only.
 - **THEN** the "Permission history" panel SHALL NOT be visible
 - **AND** any direct API call the panel would make SHALL be gated by
   the same owner-only check
-

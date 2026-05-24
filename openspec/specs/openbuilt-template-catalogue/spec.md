@@ -1,9 +1,22 @@
 # openbuilt-template-catalogue Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-templates-marketplace. Update Purpose after archive.
+
+Ships the starter-template gallery that turns OpenBuilt's competitor-parity
+"day-one templates" promise into a working surface. Declares an `ApplicationTemplate`
+schema, seeds four Conduction-curated templates (permit-tracker,
+stakeholder-consultation, employee-onboarding, incident-reporter) via an idempotent
+repair step, renders a filterable gallery view, and one-click clones a chosen
+template into a new draft Application — namespacing every cloned companion schema
+under the new Application's slug to avoid collisions, recording the source
+template + version on `templateOrigin` for traceability, and redirecting straight
+into the page editor for customisation. Clones are one-shot snapshots (no
+back-propagation); curated templates are read-only via UI; gallery and seed
+content are fully i18n'd (nl/en minimum).
+
 ## Requirements
-### Requirement: REQ-OBTC-001 ApplicationTemplate schema declares the template record contract
+
+### Requirement: ApplicationTemplate schema declares the template record contract
 
 The system SHALL declare an `ApplicationTemplate` schema in
 `lib/Settings/openbuilt_register.json` under the existing `openbuilt`
@@ -42,6 +55,8 @@ per organisation via OR's standard `organisation` field. No bespoke
 not have a draft/published/archived state machine of their own; they
 are either present or removed.
 
+**ID:** REQ-OBTC-001
+
 #### Scenario: Schema validation rejects a template with no manifest
 
 - **WHEN** an API client posts an `ApplicationTemplate` with `title`
@@ -57,7 +72,7 @@ are either present or removed.
 - **THEN** the second request is rejected with a 4xx error
 - **AND** the first template remains intact
 
-### Requirement: REQ-OBTC-002 Four Conduction-curated templates seeded via repair step
+### Requirement: Four Conduction-curated templates seeded via repair step
 
 The system SHALL seed at minimum four Conduction-curated
 `ApplicationTemplate` records on install via
@@ -89,6 +104,8 @@ already-seeded install SHALL produce no duplicates and SHALL be
 guarded by per-template `slug` existence checks (matching the
 `SeedHelloWorld.php` guard pattern).
 
+**ID:** REQ-OBTC-002
+
 #### Scenario: Fresh install seeds four templates
 
 - **WHEN** the OpenBuilt app is installed on a fresh Nextcloud
@@ -104,7 +121,7 @@ guarded by per-template `slug` existence checks (matching the
 - **THEN** no duplicate templates are created
 - **AND** no existing template data is overwritten
 
-### Requirement: REQ-OBTC-003 Gallery view lists templates with filter and detail
+### Requirement: Gallery view lists templates with filter and detail
 
 The OpenBuilt frontend SHALL register a Vue route `/templates` whose
 view (`src/views/TemplateGallery.vue`) lists every
@@ -124,6 +141,8 @@ The gallery SHALL render using `@conduction/nextcloud-vue`'s standard
 `CnAppRoot` chrome (no bespoke layout system) and SHALL use Nextcloud
 CSS variables only (per ADR-010 — no hardcoded colours).
 
+**ID:** REQ-OBTC-003
+
 #### Scenario: Filtering by category narrows the gallery
 
 - **WHEN** a user opens `/index.php/apps/openbuilt/templates` and
@@ -139,7 +158,7 @@ CSS variables only (per ADR-010 — no hardcoded colours).
   from template" CTA
 - **AND** clicking the CTA navigates to `/templates`
 
-### Requirement: REQ-OBTC-004 "Use this template" clones into a new Application
+### Requirement: "Use this template" clones into a new Application
 
 The system SHALL expose `POST
 /index.php/apps/openbuilt/api/applications/from-template/{templateSlug}`
@@ -165,6 +184,8 @@ The route SHALL be registered in `appinfo/routes.php` (ADR-016) with
 PHP code surface in this spec beyond the seed step (≤30 LOC). No
 state-machine or "template service" class is introduced (ADR-031).
 
+**ID:** REQ-OBTC-004
+
 #### Scenario: Clone produces a draft Application with the template manifest
 
 - **WHEN** an authenticated user POSTs `{ name: "My permits", slug:
@@ -187,7 +208,7 @@ state-machine or "template service" class is introduced (ADR-031).
 - **AND** no Application is created
 - **AND** no companion schemas are cloned
 
-### Requirement: REQ-OBTC-005 Cloned companion schemas are namespaced by Application slug
+### Requirement: Cloned companion schemas are namespaced by Application slug
 
 When a template clone runs, the system SHALL prefix every cloned
 companion-schema `slug` with the new Application's slug joined by a
@@ -202,6 +223,8 @@ This avoids slug collisions when multiple Applications are cloned from
 the same template into the same organisation, and keeps the original
 template's companion schemas untouched.
 
+**ID:** REQ-OBTC-005
+
 #### Scenario: Two clones of the same template coexist
 
 - **WHEN** an authenticated user clones `permit-tracker` into
@@ -212,7 +235,7 @@ template's companion schemas untouched.
 - **AND** each Application's manifest references its own prefixed
   schema slug
 
-### Requirement: REQ-OBTC-006 Clone redirects to the page editor for customisation
+### Requirement: Clone redirects to the page editor for customisation
 
 After a successful template clone, the frontend SHALL redirect the
 user to the page editor view (from chain spec #5,
@@ -227,6 +250,8 @@ deployment), the frontend SHALL fall back to the textarea editor
 shipped in chain spec #1 (REQ-OBR-005) without breaking the clone
 flow.
 
+**ID:** REQ-OBTC-006
+
 #### Scenario: Clone redirects into the page editor
 
 - **WHEN** a user successfully clones `permit-tracker` from the
@@ -235,7 +260,7 @@ flow.
   Application
 - **AND** the editor surface shows the cloned manifest's first page
 
-### Requirement: REQ-OBTC-007 Template clones are one-shot snapshots
+### Requirement: Template clones are one-shot snapshots
 
 A cloned Application SHALL be a fully independent record from the
 source template. The system SHALL NOT propagate later changes to a
@@ -247,6 +272,8 @@ template's `version` SHALL be recorded on the new Application under
 This decision is documented in `design.md` (Decision 5 — Versioning)
 and is explicitly deferred to a future versioning spec.
 
+**ID:** REQ-OBTC-007
+
 #### Scenario: Updating a template does not change existing clones
 
 - **GIVEN** a user has cloned the `permit-tracker` template (version
@@ -257,7 +284,7 @@ and is explicitly deferred to a future versioning spec.
   unchanged
 - **AND** the user's `templateOrigin.version` still reads `1.0.0`
 
-### Requirement: REQ-OBTC-008 Conduction-curated templates are read-only via UI
+### Requirement: Conduction-curated templates are read-only via UI
 
 The system SHALL present Conduction-shipped templates (records with
 `isSeeded: true`) as read-only in the gallery and SHALL NOT expose UI
@@ -271,6 +298,8 @@ Org-local user-submitted templates (an explicit non-goal of this spec;
 deferred to a follow-up) will be `isSeeded: false` and editable; that
 flow lives in a separate change.
 
+**ID:** REQ-OBTC-008
+
 #### Scenario: Gallery hides edit controls on a seeded template
 
 - **WHEN** a user views the `permit-tracker` template card in the
@@ -279,7 +308,7 @@ flow lives in a separate change.
   rendered
 - **AND** only the "Use this template" action is shown
 
-### Requirement: REQ-OBTC-009 Template manifests validate against the canonical app-manifest schema
+### Requirement: Template manifests validate against the canonical app-manifest schema
 
 Every seeded template's `manifest` blob SHALL validate against the
 canonical `app-manifest.schema.json` pinned in `package.json`
@@ -290,6 +319,8 @@ Cloned manifests (REQ-OBTC-004) inherit this guarantee transitively
 because they are byte-for-byte copies modulo the schema-slug rewrite
 in REQ-OBTC-005.
 
+**ID:** REQ-OBTC-009
+
 #### Scenario: A broken seeded manifest fails install
 
 - **WHEN** a developer modifies the `permit-tracker` seed manifest to
@@ -299,7 +330,7 @@ in REQ-OBTC-005.
   citing the offending page type
 - **AND** no `permit-tracker` template is seeded
 
-### Requirement: REQ-OBTC-010 i18n keys for gallery and seeded templates
+### Requirement: i18n keys for gallery and seeded templates
 
 The system SHALL ensure every user-visible string in the gallery view
 (gallery section title, filter labels, category labels, "Use this
@@ -310,10 +341,11 @@ i18n keys (preferred) or as English strings with Dutch translations
 shipped in `l10n/nl.json` so the gallery is bilingual on install
 (per the project-wide nl/en minimum).
 
+**ID:** REQ-OBTC-010
+
 #### Scenario: Dutch user sees Dutch gallery copy
 
 - **WHEN** an authenticated Dutch-locale user opens
   `/index.php/apps/openbuilt/templates`
 - **THEN** the page title, filter labels, and the four seeded
   template descriptions render in Dutch
-

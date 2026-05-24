@@ -1,9 +1,23 @@
 # openbuilt-page-designer Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-page-editor. Update Purpose after archive.
+
+Ships the visual Page Designer that replaces the textarea-only manifest editor
+from `bootstrap-openbuilt`, giving citizen developers a structured UI for
+authoring `manifest.menu[]` and `manifest.pages[]`. Provides one sub-editor per
+canonical page type (`index | detail | dashboard | logs | settings | chat | files |
+form | custom`), each authoring only its own `pages[].config` sub-shape per the
+`@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json` v1.4.0+ contract.
+A two-level menu-tree editor enforces the canonical nesting depth and exactly-one-of
+rules; a sandboxed `CnAppRoot` live-preview pane mounts the in-flight manifest
+without saving when chain spec #2 (in-memory manifest loader) is detected. The
+Raw JSON tab from spec #1 stays as the secondary fallback (shared in-flight
+state). Save flows through OR REST — no app-local controller for manifest writes
+(ADR-022).
+
 ## Requirements
-### Requirement: REQ-OBPD-001 Menu tree editor with two-level nesting
+
+### Requirement: Menu tree editor with two-level nesting
 
 The system SHALL provide a `MenuTreeEditor.vue` component that
 authors the manifest's `menu[]` array. The editor SHALL support
@@ -16,6 +30,8 @@ default `main`), `href`, and `action` (closed enum: `user-settings`,
 optional). The editor MUST enforce the canonical schema rule that
 `action`, when set, makes `route` and `href` ignored, by surfacing a
 disabled-with-tooltip state on those fields.
+
+**ID:** REQ-OBPD-001
 
 #### Scenario: Drag-reorder updates the manifest in order
 
@@ -41,7 +57,7 @@ disabled-with-tooltip state on those fields.
 - **AND** clears any pre-existing values from `route` and `href` in the
   manifest output
 
-### Requirement: REQ-OBPD-002 Page list editor with uniqueness and route-pattern validation
+### Requirement: Page list editor with uniqueness and route-pattern validation
 
 The system SHALL provide a `PageListEditor.vue` component that
 authors the manifest's `pages[]` array. The editor SHALL support
@@ -55,6 +71,8 @@ following invariants before allowing a save:
   closed enum (`index` | `detail` | `dashboard` | `logs` | `settings`
   | `chat` | `files` | `form` | `custom`) before any other field is
   shown, so the correct per-type sub-editor mounts immediately.
+
+**ID:** REQ-OBPD-002
 
 #### Scenario: Duplicate id blocks save with a marked error
 
@@ -71,7 +89,7 @@ following invariants before allowing a save:
 - **AND** the new page is appended to `pages[]` with `type: 'form'`
   and a placeholder `id` + `route` the user is prompted to fill in
 
-### Requirement: REQ-OBPD-003 Per-page-type config sub-editor for each of the nine canonical types
+### Requirement: Per-page-type config sub-editor for each of the nine canonical types
 
 The system SHALL ship one Vue sub-editor component per canonical page
 type declared in the
@@ -86,6 +104,8 @@ config sub-shape declared in the canonical schema's `pages[].config`
 description block. The page-list editor SHALL mount the sub-editor
 whose name matches the selected page's `type` field.
 
+**ID:** REQ-OBPD-003
+
 #### Scenario: Switching page type swaps the sub-editor
 
 - **WHEN** the user edits an existing `type: index` page and changes
@@ -97,7 +117,7 @@ whose name matches the selected page's `type` field.
 - **AND** the side-panel validator confirms the new shape against the
   canonical schema
 
-### Requirement: REQ-OBPD-004 Index-page sub-editor: register, schema, columns, actions
+### Requirement: Index-page sub-editor: register, schema, columns, actions
 
 `IndexPageEditor.vue` SHALL author the index-type `config` block per
 the canonical schema. It SHALL expose:
@@ -117,6 +137,8 @@ the canonical schema. It SHALL expose:
 - Optional **sidebar** + **cardComponent** sub-blocks matching the
   canonical schema's index `sidebar` and `cardComponent` shapes.
 
+**ID:** REQ-OBPD-004
+
 #### Scenario: Column picker offers @self.* metadata fields
 
 - **WHEN** the user opens the column-selector dropdown for an index
@@ -126,7 +148,7 @@ the canonical schema. It SHALL expose:
 - **AND** selecting `@self.created` adds the column to `columns[]` in
   string shorthand `"@self.created"`
 
-### Requirement: REQ-OBPD-005 Detail-page sub-editor: sidebar tabs and route param schema
+### Requirement: Detail-page sub-editor: sidebar tabs and route param schema
 
 `DetailPageEditor.vue` SHALL author the detail-type `config` block. It
 SHALL expose:
@@ -143,6 +165,8 @@ SHALL expose:
   open-enum tab definition (`{ id, label, icon?, widgets?, component?,
   order? }`).
 
+**ID:** REQ-OBPD-005
+
 #### Scenario: Tab list overrides the built-in sidebar tabs
 
 - **WHEN** the user adds three tabs (`overview`, `audit`, `relations`)
@@ -152,7 +176,7 @@ SHALL expose:
 - **AND** the validator confirms each tab declares exactly one of
   `widgets[]` OR `component`
 
-### Requirement: REQ-OBPD-006 Form-page sub-editor with exactly-one-of submit handling
+### Requirement: Form-page sub-editor with exactly-one-of submit handling
 
 `FormPageEditor.vue` SHALL author the form-type `config` block. It
 SHALL expose:
@@ -171,6 +195,8 @@ SHALL expose:
 - Optional **submitLabel**, **successMessage**, **initialValue**
   inputs.
 
+**ID:** REQ-OBPD-006
+
 #### Scenario: Setting submitHandler clears submitEndpoint
 
 - **WHEN** the user enters a `submitEndpoint` and then types a value
@@ -188,7 +214,7 @@ SHALL expose:
   closed enum
 - **AND** the parent editor's Save button is disabled
 
-### Requirement: REQ-OBPD-007 Custom-page sub-editor reads the customComponents registry
+### Requirement: Custom-page sub-editor reads the customComponents registry
 
 `CustomPageEditor.vue` SHALL surface a **component-name picker**
 populated from the consuming app's `customComponents` registry —
@@ -201,6 +227,8 @@ The sub-editor SHALL also expose a free-form JSON editor for the
 `config` sub-shape, because the canonical schema explicitly allows
 `type: custom` configs to be "any shape the custom component
 expects".
+
+**ID:** REQ-OBPD-007
 
 #### Scenario: Registry-backed picker lists known components
 
@@ -218,7 +246,7 @@ expects".
 - **AND** an i18n warning explains the validation-deferral
 - **AND** the value writes through to `pages[].component` unchanged
 
-### Requirement: REQ-OBPD-008 Live-preview pane mounts a sandboxed CnAppRoot when available
+### Requirement: Live-preview pane mounts a sandboxed CnAppRoot when available
 
 The Page Designer SHALL provide an optional right-hand pane that
 mounts a **sandboxed** `CnAppRoot` instance configured from the
@@ -230,6 +258,8 @@ detected at runtime. When the overload is absent, the pane SHALL
 collapse to a "save & reload" affordance that opens
 `/builder/:slug` in a new browser tab against the last saved
 manifest, with an inline i18n note explaining the limitation.
+
+**ID:** REQ-OBPD-008
 
 The sandboxed `CnAppRoot` SHALL:
 
@@ -256,7 +286,7 @@ The sandboxed `CnAppRoot` SHALL:
 - **AND** clicking the button saves the manifest and opens
   `/builder/:slug` in a new tab
 
-### Requirement: REQ-OBPD-009 Save flow PUTs the manifest via OpenRegister REST
+### Requirement: Save flow PUTs the manifest via OpenRegister REST
 
 The Page Designer's Save action SHALL serialise the in-flight
 manifest, validate it via
@@ -266,6 +296,8 @@ updated `Application` object via OpenRegister's existing REST API at
 — the same path the spec #1 textarea editor already uses. The
 designer MUST NOT introduce a new openbuilt-side controller for
 manifest writes (ADR-022).
+
+**ID:** REQ-OBPD-009
 
 #### Scenario: Save persists via OR REST
 
@@ -284,7 +316,7 @@ manifest writes (ADR-022).
 - **AND** clicking the (disabled) button surfaces a tooltip
   enumerating the blocking error count
 
-### Requirement: REQ-OBPD-010 Raw JSON fallback tab preserves the spec-1 textarea
+### Requirement: Raw JSON fallback tab preserves the spec-1 textarea
 
 The Application edit view SHALL retain the textarea-based JSON
 manifest editor shipped by spec #1 (`bootstrap-openbuilt`) as a
@@ -293,6 +325,8 @@ secondary tab labelled "Raw JSON". The Design tab (the new
 tabs SHALL share the same in-flight manifest state, so edits made in
 one tab are visible in the other when the user switches tabs without
 saving.
+
+**ID:** REQ-OBPD-010
 
 #### Scenario: Switching tabs preserves unsaved edits
 
@@ -311,7 +345,7 @@ saving.
   in its side-panel error list and disables the Design tab inputs
   until the JSON is valid again
 
-### Requirement: REQ-OBPD-011 Debounced validator surface decorates editor panes inline
+### Requirement: Debounced validator surface decorates editor panes inline
 
 The system SHALL provide `useManifestValidator.js`, a composable
 that wraps `validateManifest` from `@conduction/nextcloud-vue` and
@@ -322,6 +356,8 @@ pane occupies the right column), and as an **inline mark** on the
 specific editor field whose JSON path matches the error path. The
 composable MUST NOT block the editor on validation — the UI stays
 responsive and the validator output catches up asynchronously.
+
+**ID:** REQ-OBPD-011
 
 #### Scenario: Error path maps to inline field mark
 
@@ -339,4 +375,3 @@ responsive and the validator output catches up asynchronously.
 - **THEN** the validator runs at most once during that window
 - **AND** the editor remains responsive (no input lag attributable to
   validation)
-

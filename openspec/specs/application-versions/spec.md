@@ -1,9 +1,21 @@
 # application-versions Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-versioning-model. Update Purpose after archive.
+
+Defines the `ApplicationVersion` schema and its lifecycle — the deployable runtime
+half of ADR-002's two-object versioning model (`Application` logical + N
+`ApplicationVersion` deployable). Each version owns its own per-version OR register
+so production data is structurally isolated from dev/staging data, declares its own
+`draft → published → archived` lifecycle (publishing now lives per-version, not on
+Application), enforces a cycle-free linear `promotesTo` chain, auto-bumps `semver`
+on manifest content changes, and exposes a CRUD endpoint family that the creation
+wizard and detail page surfaces consume. `Application.productionVersion` becomes
+the explicit production pointer, set by admin action and ownership-validated on
+every save.
+
 ## Requirements
-### Requirement: REQ-OBV-101 ApplicationVersion schema declared in OpenRegister
+
+### Requirement: ApplicationVersion schema declared in OpenRegister
 
 The system SHALL declare an `ApplicationVersion` schema in
 `lib/Settings/openbuilt_register.json` under the `openbuilt` register namespace
@@ -33,6 +45,8 @@ The system SHALL declare an `ApplicationVersion` schema in
 The schema SHALL be imported into OpenRegister at app install / post-migration time
 via `ConfigurationService::importFromApp()` in the existing repair step.
 
+**ID:** REQ-OBV-101
+
 #### Scenario: Schema is available after install
 
 - **WHEN** the OpenBuilt repair step runs on a fresh install
@@ -49,12 +63,14 @@ via `ConfigurationService::importFromApp()` in the existing repair step.
 - **THEN** OR persists the object, returns 201, and the returned object carries an
   OR-assigned `uuid` and the submitted fields
 
-### Requirement: REQ-OBV-102 Initial semver is 0.1.0 on creation
+### Requirement: Initial semver is 0.1.0 on creation
 
 The system SHALL set `semver` to the plain string `0.1.0` on every newly created
 `ApplicationVersion` row that does not supply a `semver` value at creation time. No
 prerelease tag, no build metadata. The default applies whether the row is created by
 the creation wizard, by the API directly, or by any other consumer.
+
+**ID:** REQ-OBV-102
 
 #### Scenario: Fresh ApplicationVersion defaults to 0.1.0
 
@@ -68,7 +84,7 @@ the creation wizard, by the API directly, or by any other consumer.
 - **THEN** the persisted row's `semver` is `2.5.0` (the auto-bump does not override
   an explicitly-supplied value at creation)
 
-### Requirement: REQ-OBV-103 Manifest content change auto-bumps the patch component
+### Requirement: Manifest content change auto-bumps the patch component
 
 The system SHALL maintain `ApplicationVersion.semver` by patch-bumping it whenever
 the saved `manifest` content differs from the previously-saved `manifest` content.
@@ -79,6 +95,8 @@ encoding). The previous hash SHALL be persisted on the row in a mapper-internal
 `register`, `permissions`, or any non-`manifest` property) SHALL NOT bump `semver`.
 The bump increments the patch component (e.g. `0.1.0 → 0.1.1`, `1.4.7 → 1.4.8`).
 Minor and major bumps remain manual (explicit `semver` value on the save payload).
+
+**ID:** REQ-OBV-103
 
 The hash-diff logic SHALL live in `ApplicationVersionService::onSave()`, called on
 the existing OR save path (per ADR-031 §Exceptions(2) — stateful diff is outside
@@ -107,7 +125,7 @@ declarative calc vocabulary).
   identical semantic content (the canonicalised JSON is byte-equal)
 - **THEN** the persisted `semver` remains `0.1.5`
 
-### Requirement: REQ-OBV-104 Cycle prevention on the promotesTo chain
+### Requirement: Cycle prevention on the promotesTo chain
 
 The system SHALL reject any `ApplicationVersion` save where setting `promotesTo`
 would create a cycle in the linear promotion chain. The check SHALL walk
@@ -118,6 +136,8 @@ row's `uuid`) SHALL be rejected by an `x-openregister-validation` same-row check
 Broader cycle detection SHALL run as
 `ApplicationVersionService::guardNoCycle()` (per ADR-031 §Exceptions(1) —
 cross-row validation).
+
+**ID:** REQ-OBV-104
 
 #### Scenario: Self-loop is rejected
 
@@ -141,7 +161,7 @@ cross-row validation).
 - **WHEN** a client saves B with `promotesTo = C`
 - **THEN** the save succeeds (`A → B → C`)
 
-### Requirement: REQ-OBV-105 Production version is set explicitly on Application
+### Requirement: Production version is set explicitly on Application
 
 The `Application.productionVersion` relation pointer SHALL be set explicitly by the
 admin (e.g. via the creation wizard's preset or the detail-page version switcher,
@@ -154,6 +174,8 @@ that the referenced ApplicationVersion's `application` relation points back at t
 Application. Mismatches SHALL be rejected with a 422 response. Implementation:
 `ApplicationVersionService::guardProductionVersionOwnership()`, invoked from the
 Application pre-save path (per ADR-031 §Exceptions(1) — cross-row).
+
+**ID:** REQ-OBV-105
 
 #### Scenario: Setting productionVersion to a valid version succeeds
 
@@ -178,7 +200,7 @@ Application pre-save path (per ADR-031 §Exceptions(1) — cross-row).
   `V_dev.promotesTo = V_stage` and `V_stage.promotesTo = V_prod`
 - **THEN** `X.productionVersion` is still `V_prod`
 
-### Requirement: REQ-OBV-106 Lifecycle on ApplicationVersion drives BuiltAppRoute upsert
+### Requirement: Lifecycle on ApplicationVersion drives BuiltAppRoute upsert
 
 The `ApplicationVersion` schema SHALL declare its state machine via
 `x-openregister-lifecycle` with states (`draft`, `published`, `archived`) and
@@ -188,6 +210,8 @@ transitions (`draft → published`, `published → archived`, `archived → draf
 parent Application's `uuid`. This action is **relocated** from the Application
 schema (chain spec `openbuilt-application-register` REQ-OBA-004) — published-ness
 is per-version under the new model.
+
+**ID:** REQ-OBV-106
 
 #### Scenario: Publishing an ApplicationVersion upserts BuiltAppRoute
 
@@ -206,7 +230,7 @@ is per-version under the new model.
 - **AND** the version's `status` is unchanged
 - **AND** no audit entry is recorded
 
-### Requirement: REQ-OBV-107 ApplicationVersion CRUD endpoints
+### Requirement: ApplicationVersion CRUD endpoints
 
 The system SHALL expose `ApplicationVersionsController` at
 `/index.php/apps/openbuilt/api/applications/{slug}/versions` with the following
@@ -224,6 +248,8 @@ methods:
 All endpoints SHALL carry `#[NoAdminRequired]` and SHALL respect the parent
 Application's `permissions` RBAC block (owners/editors for write, viewers for
 read). All endpoints SHALL be registered in `appinfo/routes.php`.
+
+**ID:** REQ-OBV-107
 
 #### Scenario: List endpoint returns versions for one app
 
@@ -244,7 +270,7 @@ read). All endpoints SHALL be registered in `appinfo/routes.php`.
   `semver`
 - **THEN** the response is `201` and the returned row has `semver: "0.1.0"`
 
-### Requirement: REQ-OBV-108 Version-deletion endpoint accepts a strategy
+### Requirement: Version-deletion endpoint accepts a strategy
 
 The system SHALL accept the `?strategy=` query parameter on `DELETE` with three
 values:
@@ -264,6 +290,8 @@ The endpoint SHALL reject deletion of the ApplicationVersion currently pointed a
 by `Application.productionVersion` with a 422 response naming the constraint.
 Strategy-branching logic lives in
 `ApplicationVersionService::deleteVersion($versionUuid, $strategy)`.
+
+**ID:** REQ-OBV-108
 
 #### Scenario: delete-now drops the register and the version row
 
@@ -302,4 +330,3 @@ Strategy-branching logic lives in
 - **WHEN** a client sends `DELETE …/versions/staging` without a `strategy` query
   param (or with an unknown value)
 - **THEN** the response is `400` citing the missing/invalid strategy
-

@@ -1,9 +1,20 @@
 # openbuilt-application-register Specification
 
 ## Purpose
-TBD - created by archiving change bootstrap-openbuilt. Update Purpose after archive.
+
+Declares the OR-backed registry that stores every virtual app's `Application`
+record (logical half of the ADR-002 two-object versioning model — `productionVersion`
+pointer, no manifest, no status), plus the `BuiltAppRoute` slug index that powers
+runtime slug-to-Application lookup. Adds the optional top-level `icon`/`iconDark`
+ref fields (per ADR-001, sibling to manifest), the `permissions` RBAC block
+(populated for legacy seeds via an idempotent migration), and multi-tenant
+scoping via OR's standard `organisation` field (ADR-022). Lifecycle relocates to
+`ApplicationVersion` under the versioned model — Application carries no
+`status` enum and no state machine.
+
 ## Requirements
-### Requirement: REQ-OBA-001 Application schema registered in OpenRegister
+
+### Requirement: Application schema registered in OpenRegister
 
 The system SHALL declare an `Application` schema in
 `lib/Settings/openbuilt_register.json` under the `openbuilt` register namespace.
@@ -19,6 +30,8 @@ The Application schema SHALL NOT define `manifest`, `version`, `status`, or
 disappear entirely (`currentVersion` is retired per ADR-002 §Decision). The schema
 SHALL be imported into OpenRegister at app install / post-migration time via the
 existing repair step.
+
+**ID:** REQ-OBA-001
 
 #### Scenario: Schema is available after install
 
@@ -37,12 +50,14 @@ existing repair step.
 - **AND** the returned object has no `manifest`, `version`, `status`, or
   `currentVersion` field
 
-### Requirement: REQ-OBA-002 Manifest blob is structurally valid
+### Requirement: Manifest blob is structurally valid
 
 The `manifest` property of every `Application` object SHALL validate against the canonical
 app-manifest schema at `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`
 (v1.4.0 or later). The system SHALL reject save operations whose `manifest` blob fails schema
 validation, returning a 4xx response that identifies the failing property path.
+
+**ID:** REQ-OBA-002
 
 The `Application` schema SHALL additionally declare two optional top-level properties —
 `icon` and `iconDark` — each of shape `{ "ref": "<filename>" }` referencing an OR-attached
@@ -86,7 +101,7 @@ spec does not touch `app-manifest.schema.json` and carries no upstream coupling.
 - **THEN** OR persists the object, returns 201, and the returned object carries an OR-assigned
   `uuid` and the submitted fields
 
-### Requirement: REQ-OBA-003 Declarative lifecycle drives state transitions
+### Requirement: Declarative lifecycle drives state transitions
 
 Under the versioned model, the `Application` schema SHALL NOT declare a
 `status`-based state machine in `x-openregister-lifecycle` — lifecycle is per-version
@@ -98,6 +113,8 @@ The Application schema MAY retain `x-openregister-lifecycle` only for any cross-
 hooks (e.g. integrity guards) — it SHALL NOT carry a `states` block or `transitions`
 in v1 of this change. No `ApplicationLifecycleService` SHALL be written.
 
+**ID:** REQ-OBA-003
+
 #### Scenario: Application has no status state machine
 
 - **WHEN** the OpenBuilt repair step runs and imports the Application schema
@@ -105,7 +122,7 @@ in v1 of this change. No `ApplicationLifecycleService` SHALL be written.
 - **AND** the imported schema's `x-openregister-lifecycle` carries no `states` or
   `transitions` block
 
-### Requirement: REQ-OBA-004 BuiltAppRoute index for slug lookup
+### Requirement: BuiltAppRoute index for slug lookup
 
 The system SHALL declare a `BuiltAppRoute` schema in
 `lib/Settings/openbuilt_register.json` with properties `slug` (string, required,
@@ -116,6 +133,8 @@ created or updated by the `on_transition` action that fires when an
 on `ApplicationVersion`'s lifecycle — see `application-versions`/REQ-OBV-106, not on
 `Application`'s). The `applicationUuid` field on the route record points at the
 parent Application (i.e. `ApplicationVersion.application.uuid`).
+
+**ID:** REQ-OBA-004
 
 #### Scenario: Publishing the first version creates a BuiltAppRoute
 
@@ -131,13 +150,15 @@ parent Application (i.e. `ApplicationVersion.application.uuid`).
 - **THEN** OR returns a 4xx error citing the slug conflict
 - **AND** no second `BuiltAppRoute` is created
 
-### Requirement: REQ-OBA-005 Multi-tenant scoping via OR organisation
+### Requirement: Multi-tenant scoping via OR organisation
 
 Every `Application` and `BuiltAppRoute` object SHALL inherit
 OpenRegister's `organisation` field for multi-tenant scoping. List,
 read, write, and lifecycle operations SHALL only return / accept
 objects in the caller's organisation scope, enforced by OR's existing
 authorization layer (ADR-022 — no app-local RBAC duplication).
+
+**ID:** REQ-OBA-005
 
 #### Scenario: Cross-organisation reads are blocked
 
@@ -146,7 +167,7 @@ authorization layer (ADR-022 — no app-local RBAC duplication).
 - **THEN** OR returns an empty list (or a 403, per its standard
   contract) — the cross-org objects are not visible
 
-### Requirement: REQ-OBA-006 Application schema carries a permissions block
+### Requirement: Application schema carries a permissions block
 
 The system SHALL extend the `Application` schema in `lib/Settings/openbuilt_register.json` with an optional `permissions` property of shape:
 
@@ -163,6 +184,8 @@ The system SHALL extend the `Application` schema in `lib/Settings/openbuilt_regi
   }
 }
 ```
+
+**ID:** REQ-OBA-006
 
 Each array element is a Nextcloud group ID (`gid`) string. The
 property is optional in the schema so that legacy Applications
@@ -202,7 +225,7 @@ addition to `Application` per ADR-031 (no service class).
 - **THEN** OR rejects the save with a 4xx citing the unknown
   property under `permissions`
 
-### Requirement: REQ-OBA-007 Migration populates permissions for pre-existing Applications
+### Requirement: Migration populates permissions for pre-existing Applications
 
 The OpenBuilt repair step SHALL include an idempotent migration
 that, for every existing `Application` object whose `permissions`
@@ -214,6 +237,8 @@ that already has a non-empty `permissions.owners`. The seeded
 field) is the canonical case the migration covers; after this
 spec's apply phase, every Application in every installed instance
 has a populated `permissions` field.
+
+**ID:** REQ-OBA-007
 
 #### Scenario: Pre-existing Application receives a default permissions block
 
@@ -231,7 +256,7 @@ has a populated `permissions` field.
 - **THEN** no Application is changed
 - **AND** no duplicate audit entries are produced
 
-### Requirement: REQ-OBA-008 Application carries a productionVersion relation
+### Requirement: Application carries a productionVersion relation
 
 The `Application` schema SHALL be extended with a `productionVersion` property of
 type relation (OR's first-class relation type — not a raw UUID string per ADR-002
@@ -244,6 +269,8 @@ When populated, `productionVersion` SHALL satisfy the integrity guard in
 `application-versions`/REQ-OBV-105: the referenced ApplicationVersion's
 `application` relation MUST point back at this Application. Mismatched pointers
 SHALL be rejected with a 422 response.
+
+**ID:** REQ-OBA-008
 
 #### Scenario: Schema declares productionVersion as an optional relation
 
@@ -259,4 +286,3 @@ SHALL be rejected with a 422 response.
 - **WHEN** a client saves `X.productionVersion = V`
 - **THEN** the response is `422` citing the back-reference mismatch
 - **AND** X's `productionVersion` is unchanged
-

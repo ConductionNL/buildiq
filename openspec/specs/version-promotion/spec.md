@@ -1,9 +1,25 @@
 # version-promotion Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-version-promotion. Update Purpose after archive.
+
+Lands the promotion flow that moves a manifest + schema set + (optionally) data
+from a source `ApplicationVersion` to its single downstream `promotesTo`
+neighbour, completing the chain mechanics that `openbuilt-versioning-model`
+defines but intentionally leaves out of scope. Ships the promotion endpoint, the
+`<NcDialog>`-based `PromoteVersionDialog.vue` (modal-isolated per ADR-004), and
+three admin-chosen data strategies — `start-with-source-data` (wipe target,
+copy source rows), `migrate-existing-data` (keep target rows, apply source
+schemas), and `empty-start` (wipe target rows, schema-only) — gated by OR object
+lock on the target (409 on contention), editor-or-owner permission (no admin
+auto-grant), uniform semver inheritance (target picks up source's value), and
+on-failure target flip to `archived` with a `_self.promotionFailedAt` marker for
+recovery. Default strategy is a pure function of chain position
+(production-target → migrate; mid-chain → start-with-source-data; never
+empty-start), implemented identically in PHP and JS.
+
 ## Requirements
-### Requirement: REQ-OBVP-001 Promotion endpoint accepts a strategy and targets `sourceVersion.promotesTo`
+
+### Requirement: Promotion endpoint accepts a strategy and targets `sourceVersion.promotesTo`
 
 The system SHALL expose `POST /index.php/apps/openbuilt/api/applications/{appUuid}/versions/{versionUuid}/promote`
 mounted on `VersionPromotionController::promote(string $appUuid, string $versionUuid)`,
@@ -14,6 +30,8 @@ accept a JSON request body `{"strategy": "start-with-source-data" | "migrate-exi
 `422 Unprocessable Entity` with body `{"code": "no_promote_target"}` and SHALL NOT
 modify any data. The endpoint SHALL be registered in `appinfo/routes.php` and SHALL
 carry `#[NoAdminRequired]`.
+
+**ID:** REQ-OBVP-001
 
 #### Scenario: Successful promotion returns 200 with the updated target
 
@@ -42,7 +60,7 @@ carry `#[NoAdminRequired]`.
   `"code": "invalid_strategy"`
 - **AND** no ApplicationVersion row is modified
 
-### Requirement: REQ-OBVP-002 `start-with-source-data` replaces target rows + imports source schema set
+### Requirement: `start-with-source-data` replaces target rows + imports source schema set
 
 The system SHALL, when invoked with `strategy: "start-with-source-data"`:
 
@@ -60,6 +78,8 @@ The system SHALL, when invoked with `strategy: "start-with-source-data"`:
 On success the endpoint SHALL return `200 application/json` with the updated target
 ApplicationVersion.
 
+**ID:** REQ-OBVP-002
+
 #### Scenario: start-with-source-data wipes target rows and copies from source
 
 - **GIVEN** a source register with 5 rows across 2 schemas and a target register with
@@ -71,7 +91,7 @@ ApplicationVersion.
 - **AND** the target ApplicationVersion's `manifest` equals the source's `manifest`
 - **AND** the target ApplicationVersion's `semver` equals the source's `semver`
 
-### Requirement: REQ-OBVP-003 `migrate-existing-data` keeps target rows + imports source schema set
+### Requirement: `migrate-existing-data` keeps target rows + imports source schema set
 
 The system SHALL, when invoked with `strategy: "migrate-existing-data"`:
 
@@ -87,6 +107,8 @@ The system SHALL, when invoked with `strategy: "migrate-existing-data"`:
 On success the endpoint SHALL return `200 application/json` with the updated target
 ApplicationVersion.
 
+**ID:** REQ-OBVP-003
+
 #### Scenario: migrate-existing-data preserves target rows and applies source schemas
 
 - **GIVEN** a target register with 10 existing rows
@@ -96,7 +118,7 @@ ApplicationVersion.
 - **AND** the target ApplicationVersion's `manifest` equals the source's `manifest`
 - **AND** the target ApplicationVersion's `semver` equals the source's `semver`
 
-### Requirement: REQ-OBVP-004 `empty-start` drops target rows + imports source schema set
+### Requirement: `empty-start` drops target rows + imports source schema set
 
 The system SHALL, when invoked with `strategy: "empty-start"`:
 
@@ -113,6 +135,8 @@ The endpoint SHALL NOT enforce the dialog's destructive-confirmation gate
 that the client has obtained admin intent. On success the endpoint SHALL return
 `200 application/json` with the updated target ApplicationVersion.
 
+**ID:** REQ-OBVP-004
+
 #### Scenario: empty-start wipes target rows and leaves the register schema-only
 
 - **GIVEN** a target register with 7 existing rows
@@ -122,7 +146,7 @@ that the client has obtained admin intent. On success the endpoint SHALL return
 - **AND** the target ApplicationVersion's `manifest` equals the source's `manifest`
 - **AND** the target ApplicationVersion's `semver` equals the source's `semver`
 
-### Requirement: REQ-OBVP-005 Schema diff handling deferred to OR
+### Requirement: Schema diff handling deferred to OR
 
 The promotion endpoint SHALL invoke OR's schema-import / register-merge API for the
 target register with the source's schema set; OR's own breaking-change handling
@@ -130,6 +154,8 @@ drives the outcome. The endpoint SHALL NOT implement an openbuilt-side schema-di
 dry-run, or breaking-change preflight. If OR's API returns a failure response, the
 endpoint SHALL treat that as a promotion failure (REQ-OBVP-009) and the on-failure
 status flip applies.
+
+**ID:** REQ-OBVP-005
 
 #### Scenario: OR's schema-import success continues the strategy step
 
@@ -148,7 +174,7 @@ status flip applies.
 - **AND** the endpoint returns `500 Internal Server Error` with OR's error payload
   preserved in `message`
 
-### Requirement: REQ-OBVP-006 OR object lock acquisition on target + 409 on contention
+### Requirement: OR object lock acquisition on target + 409 on contention
 
 The promotion endpoint SHALL acquire OR's object lock on the **target**
 ApplicationVersion row before performing any schema-import, data-copy, or manifest
@@ -157,6 +183,8 @@ failure. If the lock is already held by another caller, the endpoint SHALL retur
 `409 Conflict` with body `{"code": "version_locked", "lockedBy": "<uid>",
 "expiresAt": "<ISO-8601 timestamp>"}` where `lockedBy` and `expiresAt` come from OR's
 lock metadata. The endpoint SHALL NOT modify any data on contention.
+
+**ID:** REQ-OBVP-006
 
 #### Scenario: 409 returned on lock contention
 
@@ -179,7 +207,7 @@ lock metadata. The endpoint SHALL NOT modify any data on contention.
 - **THEN** the OR object lock on the target ApplicationVersion is no longer held
 - **AND** the target's `status` is `archived` per REQ-OBVP-009
 
-### Requirement: REQ-OBVP-007 Permission: editor or owner on parent Application required
+### Requirement: Permission: editor or owner on parent Application required
 
 The promotion endpoint SHALL resolve the caller's role against the parent
 Application's `permissions.{owners, editors}` blocks. If the caller is neither an
@@ -188,6 +216,8 @@ owner nor an editor, the endpoint SHALL return `403 Forbidden` with body
 SHALL NOT be auto-granted promotion permission — this is a deliberate constraint;
 an admin who is not in `permissions.owners` or `permissions.editors` on the specific
 Application SHALL be rejected with `403`.
+
+**ID:** REQ-OBVP-007
 
 #### Scenario: Viewer is rejected
 
@@ -217,13 +247,15 @@ Application SHALL be rejected with `403`.
 - **WHEN** the user POSTs a valid promote request (with no lock contention)
 - **THEN** the response is `200 application/json` with the updated target
 
-### Requirement: REQ-OBVP-008 Semver: target inherits source's value uniformly
+### Requirement: Semver: target inherits source's value uniformly
 
 The promotion endpoint SHALL set `targetVersion.semver` to `sourceVersion.semver` at
 the moment of promotion, regardless of whether the target is the production version
 or a mid-chain version. The endpoint SHALL NOT introduce any additional semver bump
 on the target. The next manifest edit on the upstream source SHALL fire the existing
 spec-C semver auto-bump (REQ-OBV-103); this spec adds no new bump rule.
+
+**ID:** REQ-OBVP-008
 
 #### Scenario: Target inherits source semver on promotion to production
 
@@ -239,7 +271,7 @@ spec-C semver auto-bump (REQ-OBV-103); this spec adds no new bump rule.
 - **WHEN** an owner promotes with any strategy
 - **THEN** the target's `semver` is `0.3.4` after the promotion
 
-### Requirement: REQ-OBVP-009 On-failure target flips to archived and endpoint returns 500
+### Requirement: On-failure target flips to archived and endpoint returns 500
 
 The system SHALL handle any failure inside `VersionPromotionService::promote()` (e.g.
 OR schema-import failure, register-row copy failure, manifest save failure) by
@@ -258,6 +290,8 @@ The source register SHALL NOT be modified by failure handling — it is read-onl
 throughout the promotion flow. Re-promotion after the underlying issue is resolved
 is the prescribed recovery path; alternative recovery is deletion of the archived
 target via the spec-C deletion endpoint with `?strategy=delete-now`.
+
+**ID:** REQ-OBVP-009
 
 #### Scenario: Failure during data copy archives the target
 
@@ -283,7 +317,7 @@ target via the spec-C deletion endpoint with `?strategy=delete-now`.
   promotion overwrites status alongside manifest + semver)
 - **AND** the target's state reflects the source's current state
 
-### Requirement: REQ-OBVP-010 Dialog `PromoteVersionDialog.vue` ships with destructive-confirmation gate
+### Requirement: Dialog `PromoteVersionDialog.vue` ships with destructive-confirmation gate
 
 The system SHALL ship a Vue component at `src/dialogs/PromoteVersionDialog.vue`
 implemented as a standalone `.vue` file using `<NcDialog>` (per ADR-004
@@ -310,6 +344,8 @@ SHALL:
 
 The dialog SHALL NOT call the backend endpoint itself — the parent surface (delivered
 by spec B) is responsible for the network call.
+
+**ID:** REQ-OBVP-010
 
 #### Scenario: Dialog mounts with chain-position default
 
@@ -357,7 +393,7 @@ by spec B) is responsible for the network call.
 - **THEN** the dialog emits `cancel` with no payload
 - **AND** the dialog closes
 
-### Requirement: REQ-OBVP-011 Default-strategy rule is a pure function of chain position
+### Requirement: Default-strategy rule is a pure function of chain position
 
 The system SHALL implement a pure function
 `defaultStrategyFor(application: Application, target: ApplicationVersion):
@@ -370,6 +406,8 @@ The function SHALL never return `"empty-start"`. The function SHALL be implement
 both PHP (`VersionPromotionService::defaultStrategyFor()`) and JS (inside
 `PromoteVersionDialog.vue` or a sibling helper imported by it). Both implementations
 SHALL be unit-tested.
+
+**ID:** REQ-OBVP-011
 
 #### Scenario: Production target returns migrate-existing-data
 
@@ -389,4 +427,3 @@ SHALL be unit-tested.
 
 - **WHEN** `defaultStrategyFor` is called with any valid `(Application, target)` pair
 - **THEN** the return value is never `"empty-start"`
-

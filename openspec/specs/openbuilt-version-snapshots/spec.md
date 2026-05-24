@@ -1,15 +1,25 @@
 # openbuilt-version-snapshots Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-versioning. Update Purpose after archive.
+
+Retires the append-only snapshot model originally proposed by `openbuilt-versioning`
+and re-roots version history on OR's object-time-travel directly against each
+`ApplicationVersion` row. Defines the diff endpoint contract that lets the OpenBuilt
+shell compare two `ApplicationVersion` rows (or two historical states of the same row)
+in a single round-trip, so the rollback and compare flows in
+`application-detail-overview` have an authoritative server-side source.
+
 ## Requirements
-### Requirement: REQ-OBV-002 Snapshot is created on draft-to-published transition
+
+### Requirement: Snapshot is created on draft-to-published transition
 
 The system SHALL NOT spawn sibling `ApplicationVersion` rows on
 `draft → published` transitions. Snapshot-on-publish writeback is retired under
 ADR-002; the versioned model treats every `ApplicationVersion` row as a long-lived
 first-class object, not an append-only snapshot. History on a version is captured
 by OR's object-time-travel on the `ApplicationVersion` row itself.
+
+**ID:** REQ-OBV-002
 
 The system SHALL NOT subscribe any PHP listener
 (`ApplicationVersionSnapshotListener` or any successor) to OR's
@@ -36,13 +46,15 @@ else.
 - **THEN** no `ApplicationVersionSnapshotListener` (or successor) is registered as
   an event listener for `ObjectLifecycleTransitionedEvent`
 
-### Requirement: REQ-OBV-003 Rollback restores a previous snapshot as the draft manifest
+### Requirement: Rollback restores a previous snapshot as the draft manifest
 
 The system SHALL support rolling back any `ApplicationVersion` to a prior point in
 its OR object-history via OR's time-travel API on the version row itself —
 restoring a previous state of an `ApplicationVersion` MUST NOT be implemented by
 copying from a sibling snapshot row (the append-only snapshot model is retired
 under ADR-002).
+
+**ID:** REQ-OBV-003
 
 The rollback action SHALL restore the chosen historical state of the row's
 `manifest` (and any other fields captured by OR's time-travel), SHALL leave the
@@ -59,10 +71,12 @@ the restored `manifest` differs from the immediately-prior saved state.
 - **AND** no sibling `ApplicationVersion` row is created
 - **AND** V's `manifest` matches t1's `manifest`
 
-### Requirement: REQ-OBV-005 Diff endpoint returns two manifest blobs in one call
+### Requirement: Diff endpoint returns two manifest blobs in one call
 
 The system SHALL expose
 `GET /index.php/apps/openbuilt/api/applications/{slug}/versions/diff?from={fromRef}&to={toRef}`
+
+**ID:** REQ-OBV-005
 
 The diff endpoint changes shape under the versioned model: diffing two
 `ApplicationVersion` rows is the canonical case; comparing two historical states

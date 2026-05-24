@@ -1,14 +1,28 @@
 # application-insights Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-app-detail-overview. Update Purpose after archive.
+
+Exposes the version-scoped insights endpoint that powers the KPI grid and the
+activity-graph card on the Application detail page. Returns four KPI scalars
+(active users, object count, files count, audit-event count) plus an event-bucketed
+activity timeline, sourced from OR aggregation calls over the version's per-version
+register schema-set. Schema-set is derived server-side by walking
+`manifest.pages[].config.{register,schema}` and unique-ing to the version's own
+register; cross-register references are ignored. Auth gate mirrors
+`openbuilt-version-routing` REQ-OBVR-003 exactly (production: viewers OK;
+non-production: editors-or-better; no admin auto-grant; failure → 404 not 403);
+responses carry `Cache-Control: public, max-age=60`.
+
 ## Requirements
-### Requirement: REQ-OBAI-001 Insights endpoint returns KPIs and activity timeline for a version
+
+### Requirement: Insights endpoint returns KPIs and activity timeline for a version
 
 The system SHALL expose
 `GET /index.php/apps/openbuilt/api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d`,
 returning a single JSON payload containing four KPI scalars and an activity
 timeline scoped to the named ApplicationVersion's per-version register.
+
+**ID:** REQ-OBAI-001
 
 Path parameters:
 
@@ -79,7 +93,7 @@ The response SHALL carry the header `Cache-Control: public, max-age=60`.
   `/api/applications/<nil>/versions/<nil>/insights?window=7d`
 - **THEN** the response is `404 Not Found`
 
-### Requirement: REQ-OBAI-002 Auth gate mirrors openbuilt-version-routing
+### Requirement: Auth gate mirrors openbuilt-version-routing
 
 The endpoint SHALL apply the same RBAC gate as
 `openbuilt-version-routing` REQ-OBVR-003:
@@ -96,6 +110,8 @@ The endpoint SHALL apply the same RBAC gate as
 The controller SHALL carry `#[NoAdminRequired]`. The RBAC check SHALL live inside
 the service layer (`ApplicationInsightsService`), not the controller, so the gate is
 testable in isolation and mirrors the shape of `ManifestResolverService`.
+
+**ID:** REQ-OBAI-002
 
 #### Scenario: Viewer can read production insights
 
@@ -127,7 +143,7 @@ testable in isolation and mirrors the shape of `ManifestResolverService`.
 - **THEN** the response is `404 Not Found`
   _(admins are not auto-granted — same policy as openbuilt-version-routing)_
 
-### Requirement: REQ-OBAI-003 Schema-set walk over the version's manifest.pages[].config
+### Requirement: Schema-set walk over the version's manifest.pages[].config
 
 The system SHALL derive the schema-set for a version's insights aggregation by
 walking the version's `manifest.pages[].config.{register,schema}` entries
@@ -146,6 +162,8 @@ server-side and unique-ing the resulting schema IDs. The walk SHALL:
 The resulting schema-set drives all four KPI aggregations and the activity-chart
 call. An empty schema-set is a valid input — all four KPIs return `0` and
 `activity` is `[]`.
+
+**ID:** REQ-OBAI-003
 
 #### Scenario: Walk derives unique schema IDs from manifest.pages
 
@@ -172,7 +190,7 @@ call. An empty schema-set is a valid input — all four KPIs return `0` and
   `{"kpis":{"activeUsers":0,"objectCount":0,"filesCount":0,"auditEventCount":0},
   "activity":[]}`
 
-### Requirement: REQ-OBAI-004 KPI aggregations source
+### Requirement: KPI aggregations source
 
 The four KPI scalars SHALL be computed from these OR-facing sources:
 
@@ -193,6 +211,8 @@ to the window.
 The Files-count KPI is a v1 proxy for "storage" — it counts files, not bytes. The
 canonical storage-bytes aggregation is deferred (separate spec).
 
+**ID:** REQ-OBAI-004
+
 #### Scenario: 7d window translates to 168 hours
 
 - **WHEN** the caller GETs the insights endpoint with `window=7d`
@@ -207,7 +227,7 @@ canonical storage-bytes aggregation is deferred (separate spec).
 - **AND** `filesCount` is the current count of OR-attached files for the
   register (no window filter)
 
-### Requirement: REQ-OBAI-005 Activity payload sourced from getActionChartData
+### Requirement: Activity payload sourced from getActionChartData
 
 The `activity` array SHALL be sourced from
 `AuditTrailMapper::getActionChartData(schemaIds, hours)` called once per request
@@ -217,6 +237,8 @@ Each element of `activity` SHALL have the shape
 `{ "timestamp": "<iso8601>", "eventCount": <int> }`. The bucket granularity SHALL
 match `getActionChartData`'s native granularity (no resampling in this spec).
 
+**ID:** REQ-OBAI-005
+
 #### Scenario: Activity payload reflects getActionChartData buckets
 
 - **GIVEN** `getActionChartData` returns three daily buckets for the 7d window
@@ -224,12 +246,14 @@ match `getActionChartData`'s native granularity (no resampling in this spec).
 - **THEN** the response's `activity` array contains exactly those three buckets
   with `timestamp` (ISO 8601) and `eventCount` (int) fields
 
-### Requirement: REQ-OBAI-006 Cache-Control: public, max-age=60 on successful responses
+### Requirement: Cache-Control: public, max-age=60 on successful responses
 
 Successful (`200`) responses SHALL carry the header
 `Cache-Control: public, max-age=60`. Error responses (`400`, `404`) SHALL NOT carry
 this header. The 60-second window is a fixed compile-time value in this spec; future
 tuning is out of scope.
+
+**ID:** REQ-OBAI-006
 
 #### Scenario: 200 carries the cache header
 
@@ -242,7 +266,7 @@ tuning is out of scope.
 - **WHEN** the endpoint responds `404` (unknown appUuid)
 - **THEN** the response does NOT carry the `Cache-Control` header from this spec
 
-### Requirement: REQ-OBAI-007 Route registration in appinfo/routes.php
+### Requirement: Route registration in appinfo/routes.php
 
 The system SHALL register exactly one new route entry in
 `appinfo/routes.php` pointing at `ApplicationInsightsController::getInsights`,
@@ -252,6 +276,8 @@ matching the path
 The route entry SHALL carry the auth posture attribute on the controller method
 (per hydra-gate-route-auth): `#[NoAdminRequired]` (the RBAC gate lives inside the
 service; the controller itself is authenticated-only).
+
+**ID:** REQ-OBAI-007
 
 #### Scenario: routes.php declares the insights route
 
@@ -265,4 +291,3 @@ service; the controller itself is authenticated-only).
 
 - **WHEN** static-analysis reads `ApplicationInsightsController`
 - **THEN** the `getInsights` method is annotated with `#[NoAdminRequired]`
-

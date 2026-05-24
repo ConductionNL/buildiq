@@ -1,9 +1,23 @@
 # openbuilt-schema-designer Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-schema-editor. Update Purpose after archive.
+
+Ships the visual Schema Designer that gives non-technical authors direct authoring
+power over the data model of their virtual app — replacing the deploy-time
+`lib/Settings/{app}_register.json` pattern. Scoped to the current virtual app's
+register namespace, the designer composes a JSON Schema body with declarative
+`x-openregister-*` extension blocks (lifecycle, aggregations, calculations,
+notifications, relations, widgets) through typed sub-editors. Every
+behaviour-shaping field is declarative — no free-text PHP, no JavaScript callbacks,
+no service-class references; the editor is code, but the product is declarative
+(canonical ADR-031 example). Persists via OR's runtime schema CRUD endpoint (chain
+spec `openregister-runtime-schema-api`), surfaces confirm-before-destructive flows
+for delete-field / delete-schema, and runs live client-side validation that
+disables Save until the staged change is valid.
+
 ## Requirements
-### Requirement: REQ-OBSD-001 Schema list panel scoped to the virtual app's register namespace
+
+### Requirement: Schema list panel scoped to the virtual app's register namespace
 
 The OpenBuilt schema designer SHALL render a list of schemas scoped to
 the current virtual app's OpenRegister register namespace. The list
@@ -17,6 +31,8 @@ an **Add Schema** action and per-row **Open**, **Rename**, and
 that wraps OR's runtime schema list endpoint (chain spec
 `openregister-runtime-schema-api`) and SHALL NOT bypass that endpoint
 with direct DB reads.
+
+**ID:** REQ-OBSD-001
 
 #### Scenario: Designer lists the schemas of the current virtual app
 
@@ -35,7 +51,7 @@ with direct DB reads.
   `customer` schema
 - **THEN** the schema list panel does NOT render the `customer` row
 
-### Requirement: REQ-OBSD-002 Add Schema flow captures slug, title, description, version
+### Requirement: Add Schema flow captures slug, title, description, version
 
 When the user activates the **Add Schema** action, the designer SHALL
 render a guided form via `SchemaHeaderForm.vue` capturing:
@@ -54,6 +70,8 @@ and on success SHALL route the user to the schema's detail view
 returned by the runtime endpoint SHALL surface inline on the failing
 field.
 
+**ID:** REQ-OBSD-002
+
 #### Scenario: Valid Add Schema submission persists and routes to the schema
 
 - **WHEN** the user submits the Add Schema form with
@@ -71,7 +89,7 @@ field.
 - **AND** the form surfaces the conflict inline on the `slug` field
 - **AND** the router does NOT navigate away from the form
 
-### Requirement: REQ-OBSD-003 Field editor manages property add, remove, reorder, type, and validation
+### Requirement: Field editor manages property add, remove, reorder, type, and validation
 
 The schema detail view SHALL render the schema's `properties` map as
 an ordered list of `FieldRow.vue` rows. For each property the user
@@ -99,6 +117,8 @@ Changes SHALL be staged in the Pinia store and persisted only when the
 user activates **Save** (REQ-OBSD-006). Live validation feedback
 (REQ-OBSD-006) SHALL apply to each row.
 
+**ID:** REQ-OBSD-003
+
 #### Scenario: Adding a string property with a regex validation
 
 - **WHEN** the user adds a new property `email` of type `string`
@@ -115,7 +135,7 @@ user activates **Save** (REQ-OBSD-006). Live validation feedback
 - **AND** the user reloads the schema detail view
 - **THEN** `body` is rendered above `title`
 
-### Requirement: REQ-OBSD-004 Visual lifecycle editor authors x-openregister-lifecycle declaratively
+### Requirement: Visual lifecycle editor authors x-openregister-lifecycle declaratively
 
 The schema detail view SHALL render a `LifecycleEditor.vue` panel that
 lets the user author the schema's `x-openregister-lifecycle` block in
@@ -138,6 +158,8 @@ record. The editor's output, when serialised, SHALL match the
 `x-openregister-lifecycle` JSON Schema shape consumed by OR's
 declarative engine on schema reload (chain spec
 `openregister-runtime-schema-api`).
+
+**ID:** REQ-OBSD-004
 
 #### Scenario: Author a draft → published → archived lifecycle
 
@@ -162,7 +184,7 @@ declarative engine on schema reload (chain spec
 - **AND** the Save button is disabled until the user designates a new
   initial state
 
-### Requirement: REQ-OBSD-005 Sub-editors for aggregations, calculations, notifications, relations, widgets
+### Requirement: Sub-editors for aggregations, calculations, notifications, relations, widgets
 
 The schema detail view SHALL render five further declarative
 sub-editors, each surfaced under a collapsible section:
@@ -195,6 +217,8 @@ sub-editors, each surfaced under a collapsible section:
 All five editors SHALL produce declarative JSON output and SHALL NOT
 accept free-text code in any field that affects runtime behaviour.
 
+**ID:** REQ-OBSD-005
+
 #### Scenario: Add a count aggregation over a related collection
 
 - **WHEN** the user opens the `AggregationEditor` on a `customer`
@@ -216,7 +240,7 @@ accept free-text code in any field that affects runtime behaviour.
   formula DSL"
 - **AND** the Save button is disabled
 
-### Requirement: REQ-OBSD-006 Live validation and explicit Save persist to OR's runtime schema CRUD
+### Requirement: Live validation and explicit Save persist to OR's runtime schema CRUD
 
 The designer SHALL run **live client-side validation** on every edit:
 field name uniqueness, slug pattern, semver pattern, required-field
@@ -241,6 +265,8 @@ The runtime endpoint SHALL trigger OR's declarative-engine reload and
 cache invalidation (per chain spec #3); the designer SHALL NOT
 duplicate that work.
 
+**ID:** REQ-OBSD-006
+
 #### Scenario: Invalid staged state disables Save until corrected
 
 - **WHEN** the user removes the only `initial` lifecycle state
@@ -255,7 +281,7 @@ duplicate that work.
 - **AND** on `200 OK` the local store is refreshed from the response
 - **AND** a success toast is surfaced
 
-### Requirement: REQ-OBSD-007 Designer output is declarative-only (ADR-031 compliance)
+### Requirement: Designer output is declarative-only (ADR-031 compliance)
 
 The schema designer's serialised output SHALL be valid JSON Schema
 with declarative `x-openregister-*` extension blocks only. The
@@ -267,6 +293,8 @@ as a typed declarative record drawn from OR's declarative vocabulary
 applied to a code-only spec: the editor is code, but its product
 is declarative.
 
+**ID:** REQ-OBSD-007
+
 #### Scenario: Designer output contains no imperative references
 
 - **WHEN** the user saves any schema authored in the designer
@@ -275,7 +303,7 @@ is declarative.
 - **AND** every `x-openregister-*` block validates against the
   declarative-vocabulary JSON Schema published by OR (chain spec #3)
 
-### Requirement: REQ-OBSD-008 Confirm-before-destructive on delete-field and delete-schema
+### Requirement: Confirm-before-destructive on delete-field and delete-schema
 
 The designer SHALL surface a confirmation dialog before performing
 either of the following destructive actions:
@@ -294,6 +322,8 @@ either of the following destructive actions:
 In both cases, cancelling the dialog SHALL leave the staged store
 state unchanged.
 
+**ID:** REQ-OBSD-008
+
 #### Scenario: Delete-field requires a confirmation click
 
 - **WHEN** the user clicks the remove action on a `FieldRow.vue`
@@ -309,4 +339,3 @@ state unchanged.
 - **THEN** the dialog's **Delete** button is disabled until the user
   types the schema's slug exactly
 - **AND** cancelling the dialog leaves the schema in the list
-

@@ -1,9 +1,21 @@
 # application-detail-overview Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-app-detail-overview. Update Purpose after archive.
+
+Replaces the generic `CnDetailPage` main area on `/applications/:objectId` with a
+purpose-built maintainer cockpit registered as the `headerComponent` on the
+`VirtualAppDetail` page entry. Renders six stacked rows — hero strip (icon, name,
+description, status, role, production semver), version pill tabs (chain order,
+production starred, non-authorised hidden, Promote affordance on each non-terminal
+pill), a 7d/30d/90d window toggle, a four-card KPI grid (active users, object count,
+files count, audit events), an activity-graph card, and a five-card structural-widget
+grid (Register / Schemas / Groups / Pages / Menu) that deep-links into the existing
+builder views and OpenRegister. Consumes the insights endpoint owned by
+`application-insights` for KPI + activity data.
+
 ## Requirements
-### Requirement: REQ-OBADO-001 Application detail main area renders six stacked rows
+
+### Requirement: Application detail main area renders six stacked rows
 
 The system SHALL replace the generic `CnDetailPage` main area on
 `/applications/:objectId` with `ApplicationDetailHeader.vue`, registered as the
@@ -24,6 +36,8 @@ The sidebar (Manifest / Version history / Diff / Audit tabs) is unchanged by thi
 spec. The redundant Overview sidebar tab entry SHALL be removed from
 `sidebarTabs` on the `VirtualAppDetail` page entry in `src/manifest.json`.
 
+**ID:** REQ-OBADO-001
+
 #### Scenario: Page renders six rows in order
 
 - **GIVEN** an Application `hello-world` with at least one ApplicationVersion
@@ -40,7 +54,7 @@ spec. The redundant Overview sidebar tab entry SHALL be removed from
 - **THEN** the hero strip displays that icon (not a per-version icon)
   _(per ADR-001 — assets live on the Application, not the ApplicationVersion)_
 
-### Requirement: REQ-OBADO-002 Version pill tabs render chain order, production starred, non-authorised hidden
+### Requirement: Version pill tabs render chain order, production starred, non-authorised hidden
 
 The pill strip SHALL render one pill per `ApplicationVersion` in the
 Application's `versions` relation, ordered by the `promotesTo` chain (most-upstream
@@ -60,6 +74,8 @@ Clicking a pill SHALL update the URL's `?_version=<versionSlug>` query parameter
 the `buildVersionedRoute` helper from `openbuilt-version-routing`. The hero strip,
 KPI grid, activity-graph card, and structural-widget grid SHALL re-scope to the
 newly-selected version on the same render cycle.
+
+**ID:** REQ-OBADO-002
 
 #### Scenario: Pill strip renders chain order
 
@@ -89,13 +105,15 @@ newly-selected version on the same render cycle.
   data, and the structural-widget contents all re-fetch and re-render for the
   `staging` version
 
-### Requirement: REQ-OBADO-003 Window toggle scopes time-windowed KPIs and activity graph
+### Requirement: Window toggle scopes time-windowed KPIs and activity graph
 
 The window toggle SHALL offer three values: `7d`, `30d`, `90d`, with `7d` as the
 default. The selected window SHALL be passed to the insights endpoint as
 `?window=7d|30d|90d` (REQ-OBAI-001). The Active-users KPI, the Audit-events KPI, and
 the activity-graph card SHALL scope to the selected window. The Object-count KPI
 and Files-count KPI SHALL NOT scope to the window — they are point-in-time totals.
+
+**ID:** REQ-OBADO-003
 
 #### Scenario: Default window is 7d
 
@@ -112,7 +130,7 @@ and Files-count KPI SHALL NOT scope to the window — they are point-in-time tot
 - **AND** the Object-count KPI and Files-count KPI values do not change
   _(they are point-in-time totals not affected by the window)_
 
-### Requirement: REQ-OBADO-004 KPI grid renders four cards
+### Requirement: KPI grid renders four cards
 
 The KPI grid SHALL render four cards in a responsive grid (desktop: 4 columns;
 tablet: 2 columns; mobile: 1 column). Each card SHALL be presentational only
@@ -129,6 +147,8 @@ The Files-count card SHALL be labelled "Files" (not "Storage") and SHALL carry a
 tooltip explaining it is a count of OR-attached files across all objects in the
 selected version's register.
 
+**ID:** REQ-OBADO-004
+
 #### Scenario: KPI grid renders four cards with values from the insights response
 
 - **GIVEN** the insights endpoint returns
@@ -143,7 +163,7 @@ selected version's register.
 - **THEN** a tooltip appears explaining "count of OR-attached files across all
   objects in this version's register; storage-bytes aggregation deferred"
 
-### Requirement: REQ-OBADO-005 Activity-graph card renders the timeline from the insights response
+### Requirement: Activity-graph card renders the timeline from the insights response
 
 The activity-graph card SHALL render an event timeline using the
 `activity[]` array from the insights response (REQ-OBAI-001). Each array entry has
@@ -151,6 +171,8 @@ The activity-graph card SHALL render an event timeline using the
 selected window's range on the X axis and event counts on the Y axis. Empty arrays
 SHALL render an empty-state message ("No activity in the selected window") rather
 than an empty chart frame.
+
+**ID:** REQ-OBADO-005
 
 #### Scenario: Activity graph renders the timeline
 
@@ -167,7 +189,7 @@ than an empty chart frame.
 - **THEN** the activity-graph card displays "No activity in the selected window"
 - **AND** no empty chart frame is shown
 
-### Requirement: REQ-OBADO-006 Register widget renders read-only with an "Open in OpenRegister" deep-link
+### Requirement: Register widget renders read-only with an "Open in OpenRegister" deep-link
 
 The `RegisterWidget.vue` component SHALL render a card with:
 
@@ -182,6 +204,8 @@ The `RegisterWidget.vue` component SHALL render a card with:
 
 No inline create. No row click action.
 
+**ID:** REQ-OBADO-006
+
 #### Scenario: Register widget deep-links to OpenRegister
 
 - **GIVEN** an Application `hello-world` with the `production` version selected
@@ -189,7 +213,7 @@ No inline create. No row click action.
 - **THEN** the browser navigates to
   `/apps/openregister/registers/openbuilt-hello-world-production`
 
-### Requirement: REQ-OBADO-007 Schemas widget renders rows with deep-link and inline "+ Add schema"
+### Requirement: Schemas widget renders rows with deep-link and inline "+ Add schema"
 
 The `SchemasWidget.vue` component SHALL render a card listing the schemas in the
 selected version's register. Each row SHALL display the schema name, its object
@@ -201,6 +225,8 @@ The card header SHALL include an inline "+ Add schema" button. Clicking SHALL op
 the existing create-schema dialog if a global registration exists; otherwise it
 SHALL log a deferred notice (the dialog itself is owned by a future schema-designer
 spec) and take no action.
+
+**ID:** REQ-OBADO-007
 
 #### Scenario: Row click deep-links to the schema designer with the active version
 
@@ -224,7 +250,7 @@ spec) and take no action.
   registered — deferred to schema-designer spec")
 - **AND** no UI change occurs
 
-### Requirement: REQ-OBADO-008 Groups widget renders permissions entries with role badges
+### Requirement: Groups widget renders permissions entries with role badges
 
 The `GroupsWidget.vue` component SHALL render a card listing the entries in the
 Application's `permissions.{owners,editors,viewers}` arrays. Each row SHALL display
@@ -232,6 +258,8 @@ the entry name (group name or user UID), a role badge (`owner` / `editor` /
 `viewer`), and a member count (for groups; "1" for users). Row click SHALL open
 the existing permissions editor for the Application; the exact path is verified at
 apply time and recorded in the apply-time task notes.
+
+**ID:** REQ-OBADO-008
 
 #### Scenario: Groups card lists permissions entries with role badges
 
@@ -241,13 +269,15 @@ apply time and recorded in the apply-time task notes.
 - **THEN** the Groups card lists four rows: `g:admins` (owner badge),
   `u:alice` (editor badge), `g:devs` (editor badge), `g:everyone` (viewer badge)
 
-### Requirement: REQ-OBADO-009 Pages widget renders manifest pages with deep-link
+### Requirement: Pages widget renders manifest pages with deep-link
 
 The `PagesWidget.vue` component SHALL render a card listing entries from the
 selected version's `manifest.pages[]`. Each row SHALL display the page id, route,
 type, and title. Row click SHALL navigate to
 `/builder/{slug}/pages?_version={versionSlug}&pageId={id}` via the
 `buildVersionedRoute` helper.
+
+**ID:** REQ-OBADO-009
 
 #### Scenario: Row click deep-links to the page designer focused on the page
 
@@ -258,13 +288,15 @@ type, and title. Row click SHALL navigate to
 - **THEN** the router navigates to
   `/builder/hello-world/pages?_version=development&pageId=customers-list`
 
-### Requirement: REQ-OBADO-010 Menu widget renders manifest menu entries with deep-link
+### Requirement: Menu widget renders manifest menu entries with deep-link
 
 The `MenuWidget.vue` component SHALL render a card listing entries from the
 selected version's `manifest.menu[]`. Each row SHALL display the label, route,
 order, and section. Row click SHALL navigate to
 `/builder/{slug}/pages?_version={versionSlug}&focus=menu` via the
 `buildVersionedRoute` helper.
+
+**ID:** REQ-OBADO-010
 
 #### Scenario: Row click deep-links to the page designer with menu focus
 
@@ -274,7 +306,7 @@ order, and section. Row click SHALL navigate to
 - **THEN** the router navigates to
   `/builder/hello-world/pages?_version=production&focus=menu`
 
-### Requirement: REQ-OBADO-011 Manifest config: add headerComponent, drop Overview sidebar tab
+### Requirement: Manifest config: add headerComponent, drop Overview sidebar tab
 
 The system SHALL update `src/manifest.json`'s `VirtualAppDetail` page entry to:
 
@@ -289,6 +321,8 @@ whichever IDs the manifest carries at apply time) SHALL be preserved unchanged.
 The manifest update SHALL validate against the canonical manifest schema at
 `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json` after the edit.
 
+**ID:** REQ-OBADO-011
+
 #### Scenario: Manifest carries the headerComponent and no Overview sidebar tab
 
 - **WHEN** the change is applied
@@ -297,7 +331,7 @@ The manifest update SHALL validate against the canonical manifest schema at
 - **AND** no `sidebarTabs` entry with id `overview` is present
 - **AND** the remaining `sidebarTabs` entries are unchanged in count, id, and order
 
-### Requirement: REQ-OBADO-012 Pill strip renders a Promote button on each non-terminal pill
+### Requirement: Pill strip renders a Promote button on each non-terminal pill
 
 Each pill whose corresponding ApplicationVersion has a `promotesTo` target SHALL
 render a small "Promote" affordance (icon button or trailing chevron) on the pill.
@@ -307,6 +341,8 @@ defines only the trigger surface.
 
 If no promotion dialog is registered (e.g. `openbuilt-version-promotion` not yet
 applied), the button SHALL render but click SHALL log a deferred notice and no-op.
+
+**ID:** REQ-OBADO-012
 
 #### Scenario: Promote button renders on non-terminal pills
 
@@ -322,4 +358,3 @@ applied), the button SHALL render but click SHALL log a deferred notice and no-o
 - **GIVEN** the promotion dialog from `openbuilt-version-promotion` is registered
 - **WHEN** the user clicks Promote on the `staging` pill
 - **THEN** the dialog opens, pre-targeted at the `staging` version
-

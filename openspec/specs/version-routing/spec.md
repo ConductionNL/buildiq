@@ -1,9 +1,24 @@
 # version-routing Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-version-routing. Update Purpose after archive.
+
+Defines the URL contract that makes the ADR-002 versioned model reachable from the
+frontend: an optional `?_version=<versionSlug>` query parameter (the underscore
+prefix is OpenBuilt's reserved-namespace marker, avoiding collision with
+user-defined `?version=`) on both the manifest endpoint and the builder paths,
+with server-side RBAC so end users always see only production. Encapsulates the
+two-step slug resolution (Application by `slug` → ApplicationVersion by
+`application` + `slug`) plus the editor/owner gate in `ManifestResolverService`
+(viewers / non-members / NC admins without per-app role all receive 404 — not 403,
+no existence leak). Ships a `useApplicationVersion(appSlug, versionSlug)`
+composable as the single source of truth for frontend version resolution, a
+`buildVersionedRoute` helper that forwards the active `_version` across in-app
+links, and store-level register routing so OR calls automatically target the right
+per-version register.
+
 ## Requirements
-### Requirement: REQ-OBVR-001 Manifest endpoint accepts optional `?_version=<versionSlug>` query param
+
+### Requirement: Manifest endpoint accepts optional `?_version=<versionSlug>` query param
 
 The system SHALL accept an optional query parameter `_version` (underscore-prefix form)
 on `GET /index.php/apps/openbuilt/api/applications/{slug}/manifest`. The underscore
@@ -18,6 +33,8 @@ gate defined in REQ-OBVR-003.
 
 The endpoint SHALL NOT add new routes in `appinfo/routes.php` — the existing route
 entry gains a query-parameter contract only.
+
+**ID:** REQ-OBVR-001
 
 #### Scenario: No `?_version=` param returns the production manifest
 
@@ -55,7 +72,7 @@ entry gains a query-parameter contract only.
 - **THEN** the response is `404 Not Found`
 - **AND** the response body is `{"status": 404, "message": "Version not found"}`
 
-### Requirement: REQ-OBVR-002 `ManifestResolverService` owns the two-step slug resolution
+### Requirement: `ManifestResolverService` owns the two-step slug resolution
 
 The system SHALL implement a `ManifestResolverService` (new file or modify existing
 manifest service) that encapsulates the resolution of an application slug + optional
@@ -79,6 +96,8 @@ maps `null` → `404` and non-null → `200`.
 The `ManifestController` method MUST carry `#[NoAdminRequired]` (the production manifest
 is publicly accessible; the RBAC gate lives inside the resolver service).
 
+**ID:** REQ-OBVR-002
+
 #### Scenario: Service resolves production manifest without RBAC (no `versionSlug`)
 
 - **GIVEN** an Application with `productionVersion` record available
@@ -100,7 +119,7 @@ is publicly accessible; the RBAC gate lives inside the resolver service).
   called
 - **THEN** the service returns null (causing the controller to return 404)
 
-### Requirement: REQ-OBVR-003 RBAC gate: editor/owner required for non-production versions; 404 (not 403) on failure
+### Requirement: RBAC gate: editor/owner required for non-production versions; 404 (not 403) on failure
 
 The system SHALL, when `?_version=<versionSlug>` resolves to a non-production version
 (i.e. `resolvedVersion.uuid !== Application.productionVersion.uuid`), check the caller's
@@ -124,6 +143,8 @@ receive `404`, not `200`.
 `ManifestResolverService` SHALL log a `debug`-level line with the real reason
 (`version_access_denied` + caller uid) when it returns `null` for an RBAC failure.
 The log line is server-side only and SHALL NOT be exposed in the HTTP response.
+
+**ID:** REQ-OBVR-003
 
 #### Scenario: Viewer receives 404 for non-production version
 
@@ -169,7 +190,7 @@ The log line is server-side only and SHALL NOT be exposed in the HTTP response.
 - **AND** the HTTP response body is `{"status": 404, "message": "Version not found"}`
   (no mention of authorisation)
 
-### Requirement: REQ-OBVR-004 Builder paths read `?_version=` from `$route.query`
+### Requirement: Builder paths read `?_version=` from `$route.query`
 
 The system SHALL read `$route.query._version` in the `created()` or `mounted()` hook
 (Options API) of each of the following builder views:
@@ -184,6 +205,8 @@ Each view SHALL pass the resolved `versionSlug` (or `undefined` when absent) to
 `applicationVersion` object. No new Vue Router route entries are required — the
 existing routes with `:slug` retain their shape; `?_version=` is a query param that
 Vue Router already preserves across in-app navigation and on page reload.
+
+**ID:** REQ-OBVR-004
 
 #### Scenario: SchemaDesignerView reads `?_version=staging` from the URL
 
@@ -209,7 +232,7 @@ Vue Router already preserves across in-app navigation and on page reload.
 - **THEN** `useApplicationVersion('hello-world', undefined)` resolves to the `production`
   ApplicationVersion (only version available)
 
-### Requirement: REQ-OBVR-005 `useApplicationVersion(appSlug, versionSlug)` composable
+### Requirement: `useApplicationVersion(appSlug, versionSlug)` composable
 
 The system SHALL provide a Vue composable at `src/composables/useApplicationVersion.js`
 with the signature:
@@ -231,6 +254,8 @@ version qualifies. The composable SHALL expose the selected `ApplicationVersion`
 
 The composable is the single source of truth for version resolution on the frontend;
 all four builder views SHALL delegate to it rather than implementing their own lookup.
+
+**ID:** REQ-OBVR-005
 
 #### Scenario: Composable resolves a named version
 
@@ -257,7 +282,7 @@ all four builder views SHALL delegate to it rather than implementing their own l
 - **WHEN** the fetch fails
 - **THEN** `error.value` holds the caught error and `loading.value` is `false`
 
-### Requirement: REQ-OBVR-006 `buildVersionedRoute(routeName, params, currentVersion)` helper
+### Requirement: `buildVersionedRoute(routeName, params, currentVersion)` helper
 
 The system SHALL provide a helper function `buildVersionedRoute` in
 `src/router/index.js` (or a sibling file imported by it) with the following contract:
@@ -276,6 +301,8 @@ All internal navigation that opens builder paths SHALL use `buildVersionedRoute`
 of constructing route objects directly. This prevents accidental strip of `?_version=`
 from the URL when the admin navigates between builder sub-sections.
 
+**ID:** REQ-OBVR-006
+
 #### Scenario: Helper forwards the version param when present
 
 - **WHEN** `buildVersionedRoute('schemas', { slug: 'hello-world' }, 'staging')` is called
@@ -288,7 +315,7 @@ from the URL when the admin navigates between builder sub-sections.
 - **THEN** the returned object is
   `{ name: 'schemas', params: { slug: 'hello-world' }, query: {} }`
 
-### Requirement: REQ-OBVR-007 `schemas.js` store accepts `versionSlug` and routes the register name
+### Requirement: `schemas.js` store accepts `versionSlug` and routes the register name
 
 The system SHALL modify `src/stores/schemas.js` so that every OR call that targets the
 per-app register name accepts an optional `versionSlug` parameter. When `versionSlug`
@@ -300,6 +327,8 @@ from `Application.productionVersion.register`).
 The store SHALL expose `versionSlug` as a piece of reactive state so that views can
 set it once (after resolving via `useApplicationVersion`) and subsequent store calls
 automatically target the correct register.
+
+**ID:** REQ-OBVR-007
 
 #### Scenario: Store targets the staging register when versionSlug is 'staging'
 
@@ -315,7 +344,7 @@ automatically target the correct register.
 - **WHEN** the store fetches schemas
 - **THEN** the OR call targets register `openbuilt-hello-world-production`
 
-### Requirement: REQ-OBVR-008 Browser reload preserves `?_version=` (bookmarkability)
+### Requirement: Browser reload preserves `?_version=` (bookmarkability)
 
 The system SHALL not add any logic to "clean" or redirect away from `?_version=` on
 page load. Vue Router's default query-param preservation behaviour is sufficient; this
@@ -326,6 +355,8 @@ mount).
 An authorised caller who bookmarks `/builder/hello-world/schemas?_version=staging` SHALL
 be able to reload the page and land on the same version without being redirected to the
 default.
+
+**ID:** REQ-OBVR-008
 
 #### Scenario: Reload of a versioned builder URL stays on the same version
 
@@ -343,7 +374,7 @@ default.
 - **THEN** the URL becomes `/builder/hello-world/pages?_version=staging`
 - **AND** `PageDesigner.vue` resolves to the `staging` ApplicationVersion
 
-### Requirement: REQ-OBVR-009 CnAppRoot shows a version-not-found message on 404
+### Requirement: CnAppRoot shows a version-not-found message on 404
 
 The system SHALL ensure that when `CnAppRoot` (in `BuilderHostView` or
 `PageDesignerHostView`) receives a `404` response from the manifest endpoint for a
@@ -356,10 +387,11 @@ this spec requires only that `BuilderHostView` / `PageDesignerHostView` propagat
 error state from `useApplicationVersion` to the slot or prop that `CnAppRoot` uses
 for its error display.
 
+**ID:** REQ-OBVR-009
+
 #### Scenario: CnAppRoot shows version-not-found on 404
 
 - **GIVEN** `useApplicationVersion('hello-world', 'nonexistent')` resolves to a 404
 - **WHEN** `BuilderHostView` renders
 - **THEN** the view shows the "version not found" UI state (no manifest, no stack trace)
 - **AND** no HTTP 403 or 401 cue is visible to the caller
-

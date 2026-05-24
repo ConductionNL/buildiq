@@ -1,9 +1,17 @@
 # app-nav-entries Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-nextcloud-nav. Update Purpose after archive.
+
+Makes every published OpenBuilt virtual app a first-class Nextcloud navigation citizen
+by registering a per-app top-bar entry under `INavigationManager` on each request boot,
+visibility-gated by the Application's `permissions` RBAC block (with a `group:*` wildcard
+for universal visibility), and read live from OR with no writeback or cached nav-entry
+table. Closes the gap that previously forced users to enter the OpenBuilt shell, find
+the app, and click through to reach a published virtual app.
+
 ## Requirements
-### Requirement: REQ-OBNAV-001 Dynamic per-app top-bar entry for each published Application
+
+### Requirement: Dynamic per-app top-bar entry for each published Application
 
 The system SHALL register one `INavigationManager` entry per published Application in
 `Application::boot()` using `INavigationManager::add()` with a closure factory. Each entry
@@ -19,6 +27,8 @@ SHALL carry:
 
 The entries SHALL be registered by `AppNavigationService`, which is lazily resolved from the
 DI container inside the `boot()` method.
+
+**ID:** REQ-OBNAV-001
 
 #### Scenario: Published app appears in the Nextcloud top bar
 
@@ -37,7 +47,7 @@ DI container inside the `boot()` method.
 - **WHEN** an Application has `status: archived`
 - **THEN** no nav entry with `id = "openbuilt-app-{slug}"` appears for any user
 
-### Requirement: REQ-OBNAV-002 Nav entry gated by permissions RBAC
+### Requirement: Nav entry gated by permissions RBAC
 
 Each nav entry's visibility closure SHALL resolve the signed-in user's UID and group
 memberships via `IUserSession` and `IGroupManager` and return `true` only when the user
@@ -52,6 +62,8 @@ satisfies at least one of the following:
 
 An Application whose `permissions.owners`, `permissions.editors`, and `permissions.viewers`
 are all empty (or absent) SHALL NOT be visible to non-admin users, regardless of status.
+
+**ID:** REQ-OBNAV-002
 
 #### Scenario: Owner-role user sees the nav entry
 
@@ -77,12 +89,14 @@ are all empty (or absent) SHALL NOT be visible to non-admin users, regardless of
 - **AND** the Application is published with empty permissions
 - **THEN** the admin's request cycle includes the nav entry
 
-### Requirement: REQ-OBNAV-003 group-wildcard nav-entry visibility SHALL apply to all signed-in users
+### Requirement: group-wildcard nav-entry visibility SHALL apply to all signed-in users
 
 The system SHALL make the nav entry visible to every signed-in Nextcloud user, regardless of
 their group memberships, when the literal string `group:*` appears in any of
 `permissions.owners`, `permissions.editors`, or `permissions.viewers` on a published
 Application. The wildcard SHALL be detected before the group-intersection check runs.
+
+**ID:** REQ-OBNAV-003
 
 #### Scenario: `group:*` in owners makes entry universally visible
 
@@ -96,12 +110,14 @@ Application. The wildcard SHALL be detected before the group-intersection check 
 - **AND** an arbitrary signed-in user with no matching group memberships requests a page
 - **THEN** that user's request cycle includes the nav entry
 
-### Requirement: REQ-OBNAV-004 Nav entry list is re-evaluated per request without writeback
+### Requirement: Nav entry list is re-evaluated per request without writeback
 
 The set of published Applications SHALL be read from OR on each boot-cycle evaluation inside
 `AppNavigationService`. No writeback to a separate nav-entry table or a cached register SHALL
 occur. The update from draft to published (or published to archived) is detected automatically
 because the service re-queries the `status == published` filter on every request boot cycle.
+
+**ID:** REQ-OBNAV-004
 
 #### Scenario: Transitioning an Application to archived removes its nav entry
 
@@ -115,4 +131,3 @@ because the service re-queries the `status == published` filter on every request
 - **WHEN** an Application is transitioned from `draft` to `published`
 - **THEN** on the next Nextcloud request boot cycle, the nav entry for that Application is
   present in `INavigationManager::getAll()` for eligible users
-

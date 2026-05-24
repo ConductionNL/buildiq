@@ -1,14 +1,27 @@
 # application-creation-wizard Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-app-creation-wizard. Update Purpose after archive.
+
+Replaces the legacy single-form "Add Application" dialog with a four-step wizard
+that provisions the full ADR-002 chain in one atomic backend call: an `Application`
+row + N `ApplicationVersion` rows + N per-version registers (named
+`openbuilt-{appSlug}-{versionSlug}`), each pre-seeded with the default `hello-message`
+schema and the default manifest. Supports `single | dev-prod | dev-staging-prod |
+custom` presets, enforces unique slugs per chain (leading-`_` reserved for openbuilt
+system use), provides full rollback on any provisioning failure, sets the caller as
+sole owner, and retires install-time auto-seed (`SeedHelloWorld` does not return) —
+fresh installs are empty until the admin runs the wizard.
+
 ## Requirements
-### Requirement: REQ-OBWIZ-001 Wizard replaces the legacy Add-Application entry point
+
+### Requirement: Wizard replaces the legacy Add-Application entry point
 
 The Virtual apps index SHALL open the four-step `CreateApplicationWizard` dialog when the
 admin clicks the "Add Application" button. The legacy single-form Add-Application dialog
 SHALL be removed in the same change. No fallback / feature-flagged escape hatch SHALL
 exist.
+
+**ID:** REQ-OBWIZ-001
 
 #### Scenario: Clicking Add Application opens the wizard
 
@@ -16,11 +29,13 @@ exist.
 - **THEN** the `CreateApplicationWizard` `NcModal` opens at step 1 (Basics)
 - **AND** no other dialog opens; the legacy single-form Add dialog is absent from the bundle
 
-### Requirement: REQ-OBWIZ-002 Four-step wizard shape
+### Requirement: Four-step wizard shape
 
 The wizard SHALL consist of four steps in fixed order: (1) **Basics** — name, slug, description, optional light + dark icon upload; (2) **Preset** — radio cards for `single`, `dev-prod`, `dev-staging-prod`, `custom`; (3) **Custom chain** — admin-defined version list, shown ONLY when preset is `custom`; (4) **Review** — read-only summary + Create button.
 
 Selecting any preset other than `custom` SHALL skip step 3 and jump straight to step 4.
+
+**ID:** REQ-OBWIZ-002
 
 #### Scenario: Selecting a canned preset skips the custom step
 
@@ -40,7 +55,7 @@ Selecting any preset other than `custom` SHALL skip step 3 and jump straight to 
 - **THEN** the previously-entered name, slug, and description from step 1 are still in place
 - **AND** the previously-selected preset is still highlighted
 
-### Requirement: REQ-OBWIZ-003 Preset shapes
+### Requirement: Preset shapes
 
 Each preset SHALL produce a deterministic version chain when reviewed and submitted:
 
@@ -50,6 +65,8 @@ Each preset SHALL produce a deterministic version chain when reviewed and submit
 | `dev-prod` | `development → production` | `production` |
 | `dev-staging-prod` | `development → staging → production` | `production` |
 | `custom` | Admin-defined in step 3 | Terminal (bottom) row |
+
+**ID:** REQ-OBWIZ-003
 
 #### Scenario: dev-staging-prod preset produces a three-version chain
 
@@ -69,7 +86,7 @@ Each preset SHALL produce a deterministic version chain when reviewed and submit
 - **AND** the Application's `productionVersion` points at it
 - **AND** the version's `promotesTo` is null
 
-### Requirement: REQ-OBWIZ-004 Custom-chain composer
+### Requirement: Custom-chain composer
 
 When the admin selects the `custom` preset, step 3 SHALL present an add-row list where each
 row carries a `name` text input and an auto-derived `slug` chip. The composer SHALL support
@@ -77,6 +94,8 @@ adding rows (`+ Add version` button), removing rows (`×` per row), and reorderi
 (both via drag handles and via `↑`/`↓` keyboard-accessible buttons). Row order top-to-bottom
 SHALL be interpreted as upstream-to-downstream. The composer SHALL enforce a minimum of one
 row.
+
+**ID:** REQ-OBWIZ-004
 
 #### Scenario: Admin composes a 3-version chain by adding rows
 
@@ -93,11 +112,13 @@ row.
 - **AND** clicks `×` on the `Production` row
 - **THEN** the row is NOT removed; an inline error appears: "At least one version is required"
 
-### Requirement: REQ-OBWIZ-005 Slug derivation + leading-underscore rejection
+### Requirement: Slug derivation + leading-underscore rejection
 
 The wizard SHALL auto-derive slugs from names client-side via a `toKebabCase` function: lowercase the input, replace spaces with `-`, strip characters outside `[a-z0-9-]`, collapse double `--`, trim leading/trailing `-`. The derived slug SHALL be displayed as an editable chip with an `Advanced` toggle that reveals the slug input.
 
 The slug pattern (enforced both client-side and server-side) SHALL be `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$`. Leading underscores SHALL be rejected with the user-facing message: "Version slugs cannot start with `_` (reserved for openbuilt system use)."
+
+**ID:** REQ-OBWIZ-005
 
 #### Scenario: Slug auto-derives from app name
 
@@ -118,13 +139,15 @@ The slug pattern (enforced both client-side and server-side) SHALL be `^(?!_)[a-
 - **THEN** an inline error appears: "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` —
   lowercase letters, digits, and hyphens only"
 
-### Requirement: REQ-OBWIZ-006 No duplicate version slugs within a chain
+### Requirement: No duplicate version slugs within a chain
 
 Within a single app's chain, two `ApplicationVersion` rows SHALL NOT share a slug. The
 wizard SHALL enforce this client-side as the admin types (inline error on the duplicating
 row) and server-side at the `/api/applications/wizard` endpoint (the endpoint rejects the
 whole payload with `422 Unprocessable Entity` and a JSON body identifying both colliding
 rows).
+
+**ID:** REQ-OBWIZ-006
 
 #### Scenario: Client-side duplicate-slug error
 
@@ -149,13 +172,15 @@ rows).
 - **THEN** the wizard accepts the payload and creates `app-b`'s `production` version without error
 - **AND** `openbuilt-app-a-production` and `openbuilt-app-b-production` registers coexist
 
-### Requirement: REQ-OBWIZ-007 Atomic creation with full rollback on failure
+### Requirement: Atomic creation with full rollback on failure
 
 The wizard's backend endpoint SHALL provision the full chain atomically by sequencing:
 (1) validate payload, (2) create `Application`, (3) for each version create
 `ApplicationVersion` + provision per-version register `openbuilt-{appSlug}-{versionSlug}`,
 (4) wire each non-terminal version's `promotesTo` to the next downstream UUID, (5) set
 `Application.productionVersion` to the terminal version's UUID.
+
+**ID:** REQ-OBWIZ-007
 
 On ANY failure at any step, the endpoint SHALL roll back every successfully-created object
 in reverse creation order (registers first, then ApplicationVersion rows, then Application
@@ -193,12 +218,14 @@ so the admin can resolve manually.
   `orphanedResources: ["openbuilt-<slug>-development"]`
 - **AND** the message body advises the admin to remove the orphaned register manually
 
-### Requirement: REQ-OBWIZ-008 Per-version registers + seed schema set
+### Requirement: Per-version registers + seed schema set
 
 For each `ApplicationVersion` row created by the wizard, a corresponding OR register SHALL
 be provisioned with the name `openbuilt-{appSlug}-{versionSlug}`. Each freshly-provisioned
 register SHALL have the default schema set (the single `hello-message` schema from
 `lib/Resources/wizard/default-schemas.json`) installed and zero objects in it.
+
+**ID:** REQ-OBWIZ-008
 
 #### Scenario: Each version gets its own register with the seed schema
 
@@ -208,7 +235,7 @@ register SHALL have the default schema set (the single `hello-message` schema fr
 - **AND** each register has exactly one schema named `hello-message`
 - **AND** each register has zero objects
 
-### Requirement: REQ-OBWIZ-009 Initial manifest, semver, status per version
+### Requirement: Initial manifest, semver, status per version
 
 Each freshly-created `ApplicationVersion` row SHALL carry:
 - `manifest` — copy of `lib/Resources/wizard/default-manifest.json` with the per-version
@@ -218,6 +245,8 @@ Each freshly-created `ApplicationVersion` row SHALL carry:
 - `status` — `draft`.
 - `application` relation — the new Application's UUID.
 
+**ID:** REQ-OBWIZ-009
+
 #### Scenario: Versions start with the default Hello-World manifest
 
 - **WHEN** the wizard creates an app with preset `single` and slug `hello-world`
@@ -226,12 +255,14 @@ Each freshly-created `ApplicationVersion` row SHALL carry:
 - **AND** the version's `semver` is `0.1.0`
 - **AND** the version's `status` is `draft`
 
-### Requirement: REQ-OBWIZ-010 Caller becomes sole owner
+### Requirement: Caller becomes sole owner
 
 The wizard endpoint SHALL set the new Application's `permissions.owners` to a single-element
 array containing the calling user's UID (in `user:<uid>` form). `permissions.editors` and
 `permissions.viewers` SHALL be empty arrays. The admin grants further roles via the
 permissions editor post-creation.
+
+**ID:** REQ-OBWIZ-010
 
 #### Scenario: Caller becomes owner; no other principals
 
@@ -240,10 +271,12 @@ permissions editor post-creation.
 - **AND** `permissions.editors` is `[]`
 - **AND** `permissions.viewers` is `[]`
 
-### Requirement: REQ-OBWIZ-011 No install-time auto-seed
+### Requirement: No install-time auto-seed
 
 The openbuilt app SHALL NOT create any virtual app at install / upgrade time. After
 `occ maintenance:repair`, the Virtual apps index SHALL be empty for a fresh install.
+
+**ID:** REQ-OBWIZ-011
 
 #### Scenario: Fresh install has no virtual apps until admin creates one
 
@@ -251,4 +284,3 @@ The openbuilt app SHALL NOT create any virtual app at install / upgrade time. Af
 - **AND** `occ maintenance:repair` has run
 - **THEN** the Virtual apps index page shows the empty state
 - **AND** the Add Application button (opening the wizard) is the only call-to-action
-

@@ -1,8 +1,21 @@
 # openbuilt-exporter Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-export-to-real-app. Update Purpose after archive.
+
+Ships the graduation path that turns a published OpenBuilt virtual app into a
+standalone Nextcloud app — its own `appinfo/info.xml`, its own namespace, its own
+GitHub repo, its own CI / release pipeline — with zero runtime dependency on
+OpenBuilt. Given an `Application` record + its companion schemas + sample data, the
+exporter generates a complete nextcloud-app-template-shaped tree on disk and either
+streams it as a ZIP or pushes it to a new GitHub repo. The exported app boots
+Tier-4 (per ADR-024): one bundled `src/manifest.json`, one `<app>_register.json`
+schema bundle, no per-slug endpoint workaround, no nested mount — the exported app
+**is** the top-level app. Closes the loop on the hybrid model committed to in
+`bootstrap-openbuilt`.
+
 ## Requirements
+
+
 ### Requirement: ExportJob schema declaration
 
 The system SHALL declare an `ExportJob` schema in
