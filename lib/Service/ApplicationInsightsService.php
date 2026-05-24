@@ -42,6 +42,12 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-16
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-17
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-18
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-19
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-20
  */
 
 declare(strict_types=1);
@@ -137,6 +143,8 @@ class ApplicationInsightsService
      * @param IUser|null $caller      The authenticated user, or null for unauthenticated.
      *
      * @return array{0: array<string, mixed>, 1: array<string, mixed>}|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-17
      */
     public function requireAuthorisedCaller(
         string $appUuid,
@@ -184,6 +192,10 @@ class ApplicationInsightsService
      * @param IUser|null $caller      The authenticated user, or null for unauthenticated.
      *
      * @return array<string, mixed>|null Insights payload `{kpis, activity}` or null on 404.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-19
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-20
      */
     public function computeInsights(
         string $appUuid,
@@ -250,6 +262,8 @@ class ApplicationInsightsService
      * @param string                    $registerSlug The version's per-version register slug.
      *
      * @return array<int, string> Unique schema IDs (string form — OR stores audit schema column as VARCHAR).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-18
      */
     public function deriveSchemaIds(?array $manifest, string $registerSlug): array
     {
@@ -287,6 +301,8 @@ class ApplicationInsightsService
      * @param string $registerSlug The version's per-version register slug.
      *
      * @return string|null The schema ID, or null when the page does not match.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-18
      */
     private function extractSchemaIdForRegister(mixed $page, string $registerSlug): ?string
     {
@@ -324,6 +340,8 @@ class ApplicationInsightsService
      * @param IUser|null           $caller      The authenticated user.
      *
      * @return bool True when authorised, false otherwise.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-17
      */
     private function isAuthorised(array $application, array $version, ?IUser $caller): bool
     {
@@ -528,6 +546,8 @@ class ApplicationInsightsService
      * @param int                $hours     Window hours.
      *
      * @return int Distinct actor count, or 0 when the aggregation API is unavailable.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-19
      */
     private function safeDistinctActorCount(array $schemaIds, int $hours): int
     {
@@ -565,6 +585,8 @@ class ApplicationInsightsService
      * @param string             $registerSlug The version's register slug.
      *
      * @return int Total object count across the schema-set.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-19
      */
     private function countObjects(array $schemaIds, string $registerSlug): int
     {
@@ -610,6 +632,8 @@ class ApplicationInsightsService
      * @return int File count.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-19
      */
     private function countAttachedFiles(string $registerSlug, array $schemaIds): int
     {
@@ -655,6 +679,8 @@ class ApplicationInsightsService
      * @param int                $hours     Window hours.
      *
      * @return int Audit-event count.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-19
      */
     private function countAuditEvents(array $schemaIds, int $hours): int
     {
@@ -757,6 +783,8 @@ class ApplicationInsightsService
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @psalm-suppress UnusedParam
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-20
      */
     private function buildActivityTimeline(array $schemaIds, int $hours, string $registerSlug): array
     {

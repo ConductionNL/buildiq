@@ -18,6 +18,12 @@
  *
  * @link https://conduction.nl
  *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-37
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-47
+ *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
@@ -83,6 +89,8 @@ class ExportsController extends Controller
      * @param string $applicationSlug Slug of the source Application.
      *
      * @return bool True when the caller is allowed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-47
      */
     private function isAuthorisedForApplication(string $applicationSlug): bool
     {
@@ -210,6 +218,8 @@ class ExportsController extends Controller
      * @param array<string,mixed> $body Decoded body params.
      *
      * @return JSONResponse|null JSONResponse on validation error, null on success.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-37
      */
     private function validateSubmitBody(array $body): ?JSONResponse
     {
@@ -242,6 +252,8 @@ class ExportsController extends Controller
      * @param array<string,mixed> $body Decoded body params.
      *
      * @return JSONResponse|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
      */
     private function validateGithubFields(array $body): ?JSONResponse
     {
@@ -281,6 +293,8 @@ class ExportsController extends Controller
      * @param string $slug Application slug.
      *
      * @return JSONResponse 202 Accepted with `{ uuid }` on success.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -341,6 +355,8 @@ class ExportsController extends Controller
      * @param string $uuid ExportJob UUID.
      *
      * @return Response 200 with the ZIP body, 410 Gone after expiry, 404 unknown.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

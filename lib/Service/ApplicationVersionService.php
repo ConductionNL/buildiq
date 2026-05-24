@@ -34,6 +34,11 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-22
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-23
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-31
  */
 
 declare(strict_types=1);
@@ -145,6 +150,8 @@ class ApplicationVersionService
      * @return string Canonical JSON
      *
      * @throws \JsonException When the structure contains non-encodable values
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-22
      */
     public function canonicaliseManifest(array $manifest): string
     {
@@ -162,6 +169,8 @@ class ApplicationVersionService
      * @return string 64-char lowercase hexadecimal digest
      *
      * @throws \JsonException When the manifest contains non-encodable values
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-22
      */
     public function hashManifest(array $manifest): string
     {
@@ -177,6 +186,8 @@ class ApplicationVersionService
      * @return string The patch-bumped semver
      *
      * @throws RuntimeException When the input is not a recognisable semver
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-22
      */
     public function bumpPatch(string $semver): string
     {
@@ -213,6 +224,8 @@ class ApplicationVersionService
      * @return array<string,mixed> The mutated `$next` array
      *
      * @throws \JsonException When the manifest cannot be canonicalised
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-22
      */
     public function onSave(?array $current, array $next): array
     {
@@ -267,6 +280,8 @@ class ApplicationVersionService
      * @return void
      *
      * @throws RuntimeException When a cycle is detected or the cap is exceeded
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-23
      */
     public function guardNoCycle(string $currentUuid, ?string $proposedTargetUuid): void
     {
@@ -321,6 +336,8 @@ class ApplicationVersionService
      * @return void
      *
      * @throws RuntimeException When the back-reference does not point at the parent
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-31
      */
     public function guardProductionVersionOwnership(string $applicationUuid, string $proposedVersionUuid): void
     {
@@ -385,6 +402,8 @@ class ApplicationVersionService
      *
      * @throws RuntimeException On unknown strategy, missing version, or
      *                          production-version refusal
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
      */
     public function deleteVersion(string $versionUuid, string $strategy): void
     {
@@ -437,6 +456,8 @@ class ApplicationVersionService
      * @return void
      *
      * @throws RuntimeException When the strategy is not recognised
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
      */
     private function assertValidStrategy(string $strategy): void
     {
@@ -460,6 +481,8 @@ class ApplicationVersionService
      * @return void
      *
      * @throws RuntimeException When the row is the parent's productionVersion
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
      */
     private function assertNotProductionVersion(array $versionData, string $versionUuid): void
     {
@@ -500,6 +523,8 @@ class ApplicationVersionService
      * @param string $versionUuid  The owning ApplicationVersion UUID (diagnostics)
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
      */
     private function dropPerVersionRegister(string $registerSlug, string $versionUuid): void
     {
@@ -549,6 +574,8 @@ class ApplicationVersionService
      * @param string $versionUuid  The owning ApplicationVersion UUID (diagnostics)
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
      */
     private function flagRegisterOrphaned(string $registerSlug, string $versionUuid): void
     {

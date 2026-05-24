@@ -26,6 +26,10 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-3
  */
 
 declare(strict_types=1);
@@ -106,6 +110,9 @@ class IconService
      *                                                         stream is null only when
      *                                                         no filesystem fallback
      *                                                         exists (practically never).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-3
      */
     public function getIconStream(string $slug, bool $dark): array
     {
@@ -127,6 +134,8 @@ class IconService
      * @param string $slug The Application slug.
      *
      * @return array<string,mixed>|null Application data array, or null.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-1
      */
     private function fetchApplication(string $slug): ?array
     {
@@ -165,6 +174,8 @@ class IconService
      * @param array<string,mixed>|null $application Application data or null.
      *
      * @return array{stream: resource|null, mimeType: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-2
      */
     private function resolveIconLight(?array $application): array
     {
@@ -195,6 +206,8 @@ class IconService
      * @param array<string,mixed>|null $application Application data or null.
      *
      * @return array{stream: resource|null, mimeType: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-3
      */
     private function resolveIconDark(?array $application): array
     {

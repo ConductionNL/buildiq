@@ -34,6 +34,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-70
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-71
  */
 
 declare(strict_types=1);
@@ -93,6 +96,9 @@ class ManifestResolverService
      * @param IUser|null  $caller      The authenticated user, or null for unauthenticated.
      *
      * @return array<string, mixed>|null The manifest payload, or null → caller maps to 404.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-70
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-71
      */
     public function resolve(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array
     {
@@ -163,6 +169,8 @@ class ManifestResolverService
      * @param string               $versionSlug The version slug (for logging).
      *
      * @return bool True when access is denied; false when access is allowed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-71
      */
     private function checkNonProductionAccess(
         array $application,
@@ -212,6 +220,8 @@ class ManifestResolverService
      * @param string $appSlug The application slug.
      *
      * @return array<string, mixed>|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-70
      */
     private function findApplicationBySlug(string $appSlug): ?array
     {
@@ -255,6 +265,8 @@ class ManifestResolverService
      * @param string               $appSlug     The app slug (for logging).
      *
      * @return array<string, mixed>|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-70
      */
     private function resolveProductionManifest(array $application, string $appSlug): ?array
     {
@@ -306,6 +318,8 @@ class ManifestResolverService
      * @param string               $versionSlug The requested version slug.
      *
      * @return array<string, mixed>|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-70
      */
     private function findVersionBySlug(array $application, string $versionSlug): ?array
     {
@@ -492,6 +506,8 @@ class ManifestResolverService
      * @param IUser|null           $caller      The authenticated user.
      *
      * @return bool True when the caller is an editor or owner; false otherwise.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-71
      */
     private function isCallerAuthorised(array $application, ?IUser $caller): bool
     {

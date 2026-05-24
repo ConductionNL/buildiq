@@ -30,6 +30,11 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-5
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-6
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-7
  */
 
 declare(strict_types=1);
@@ -110,6 +115,8 @@ class AppNavigationService
      * @param INavigationManager $nav The Nextcloud navigation manager.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-4
      */
     public function registerNavEntries(INavigationManager $nav): void
     {
@@ -201,6 +208,9 @@ class AppNavigationService
      * @param IGroupManager       $groupManager The group manager.
      *
      * @return bool True when the entry should be visible.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-6
      */
     public function isVisibleForCurrentUser(
         array $permissions,
@@ -241,6 +251,8 @@ class AppNavigationService
      * @param array<string,mixed> $permissions The Application's permissions block.
      *
      * @return array<mixed> All principals from owners + editors + viewers.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-5
      */
     private function flattenPermissions(array $permissions): array
     {
@@ -270,6 +282,8 @@ class AppNavigationService
      * @param array<string> $userGroups The calling user's group IDs.
      *
      * @return bool True when a group match is found.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-5
      */
     private function principalsMatchGroups(array $principals, array $userGroups): bool
     {
@@ -303,6 +317,9 @@ class AppNavigationService
      * @return array<array<string,mixed>> List of normalised Application arrays.
      *
      * @throws \Throwable When the OR query fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-7
      */
     private function getPublishedApplications(): array
     {

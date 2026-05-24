@@ -27,6 +27,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-10
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-11
  */
 
 declare(strict_types=1);
@@ -64,6 +67,8 @@ class SlugValidator
      * @param string $slug The proposed slug
      *
      * @return array<string,mixed> Empty array on success; error array on failure
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-10
      */
     public function validateAppSlug(string $slug): array
     {
@@ -103,6 +108,8 @@ class SlugValidator
      * @param string $slug The proposed version slug
      *
      * @return array<string,mixed> Empty array on success; error array on failure
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-10
      */
     public function validateVersionSlug(string $slug): array
     {
@@ -142,6 +149,8 @@ class SlugValidator
      * @param array<int,string> $slugs Ordered list of version slugs for one chain
      *
      * @return array<string,mixed> Empty array on success; error array identifying the collision
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-11
      */
     public function validateChainSlugs(array $slugs): array
     {

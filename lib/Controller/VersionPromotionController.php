@@ -28,6 +28,11 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-59
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-64
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-65
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-67
  */
 
 declare(strict_types=1);
@@ -96,6 +101,9 @@ class VersionPromotionController extends Controller
      * @param string $versionUuid Source ApplicationVersion UUID (path param)
      *
      * @return JSONResponse 200 + updated target on success, error envelope otherwise
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-59
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-65
      */
     #[NoAdminRequired]
     public function promote(string $appUuid, string $versionUuid): JSONResponse
@@ -156,6 +164,9 @@ class VersionPromotionController extends Controller
      * @param Throwable $error The thrown exception
      *
      * @return JSONResponse Error envelope with the spec-defined code + status
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-64
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-67
      */
     private function mapExceptionToResponse(Throwable $error): JSONResponse
     {
@@ -219,6 +230,8 @@ class VersionPromotionController extends Controller
      * @param VersionLockedException $error The contention exception
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-64
      */
     private function buildLockedResponse(VersionLockedException $error): JSONResponse
     {
@@ -296,6 +309,8 @@ class VersionPromotionController extends Controller
      * @return void
      *
      * @throws InsufficientPermissionException When the user lacks owner/editor role
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-65
      */
     private function assertEditorOrOwner(array $application, IUser $user): void
     {

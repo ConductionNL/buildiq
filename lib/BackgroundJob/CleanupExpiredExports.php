@@ -17,6 +17,8 @@
  *
  * @link https://conduction.nl
  *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-36
+ *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
@@ -60,6 +62,8 @@ class CleanupExpiredExports extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-36
      */
     protected function run($argument): void
     {

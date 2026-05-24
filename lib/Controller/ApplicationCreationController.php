@@ -25,6 +25,10 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-8
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-12
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-15
  */
 
 declare(strict_types=1);
@@ -78,6 +82,10 @@ class ApplicationCreationController extends Controller
      * Returns 401 when the caller is not authenticated.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-12
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-15
      */
     #[NoAdminRequired]
     public function wizard(): JSONResponse

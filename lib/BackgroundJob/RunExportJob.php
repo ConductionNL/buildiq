@@ -18,6 +18,9 @@
  *
  * @link https://conduction.nl
  *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
+ *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
@@ -68,6 +71,8 @@ class RunExportJob extends QueuedJob
      *                        ['jobUuid' => string].
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
      */
     protected function run($argument): void
     {
@@ -126,6 +131,8 @@ class RunExportJob extends QueuedJob
      * @param string $jobUuid Job UUID.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
      */
     private function executePipeline(string $jobUuid): void
     {
@@ -161,6 +168,8 @@ class RunExportJob extends QueuedJob
      * @param string $zipPath Path to the generated ZIP.
      *
      * @return array{repoUrl?:string,pullRequestUrl?:string}|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
      */
     private function maybePush(string $jobUuid, string $zipPath): ?array
     {

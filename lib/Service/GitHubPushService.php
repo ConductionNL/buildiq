@@ -22,6 +22,8 @@
  *
  * @link https://conduction.nl
  *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
+ *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
@@ -58,6 +60,8 @@ class GitHubPushService
      * @param string $pat     GitHub PAT — method-scoped, never persisted.
      *
      * @return array{repoUrl:string,pullRequestUrl:string} URLs of the created repo + PR.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
      */
     public function push(string $jobUuid, string $treeDir, string $pat): array
     {
@@ -85,6 +89,8 @@ class GitHubPushService
      * @param string $pat GitHub PAT — method-scoped.
      *
      * @return string Default branch name.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
      */
     public function resolveDefaultBranch(string $org, string $pat): string
     {

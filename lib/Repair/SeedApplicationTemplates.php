@@ -25,6 +25,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-54
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-57
  */
 
 declare(strict_types=1);
@@ -101,6 +104,8 @@ class SeedApplicationTemplates implements IRepairStep
      * @param IOutput $output The output interface for progress reporting
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-54
      */
     public function run(IOutput $output): void
     {
@@ -165,6 +170,8 @@ class SeedApplicationTemplates implements IRepairStep
      * @return void
      *
      * @throws RuntimeException When a required field is missing or empty.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-57
      */
     private function validateFixture(array $data, string $slug): void
     {

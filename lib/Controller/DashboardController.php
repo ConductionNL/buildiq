@@ -22,6 +22,8 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-52
  */
 
 declare(strict_types=1);
@@ -72,6 +74,8 @@ class DashboardController extends Controller
      * @NoCSRFRequired
      *
      * @return TemplateResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-52
      */
     public function page(): TemplateResponse
     {
@@ -86,6 +90,8 @@ class DashboardController extends Controller
      * @NoCSRFRequired
      *
      * @return TemplateResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-52
      */
     public function catchAll(): TemplateResponse
     {
@@ -100,6 +106,8 @@ class DashboardController extends Controller
      * Empty array is published for an absent user session (defensive).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-52
      */
     private function publishCurrentUserGroups(): void
     {

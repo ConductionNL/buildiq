@@ -38,6 +38,16 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-59
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-60
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-61
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-62
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-63
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-64
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-66
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-67
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-68
  */
 
 declare(strict_types=1);
@@ -140,6 +150,8 @@ class VersionPromotionService
      *
      * @return string One of {@see self::STRATEGY_MIGRATE_EXISTING_DATA},
      *                {@see self::STRATEGY_START_WITH_SOURCE_DATA}.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-68
      */
     public static function defaultStrategyFor(array $application, array $target): string
     {
@@ -171,6 +183,8 @@ class VersionPromotionService
      * @throws InvalidStrategyException When the strategy is missing or unknown
      * @throws VersionLockedException   When OR's lock is held by another caller
      * @throws PromotionFailedException When the strategy branch fails midway
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-59
      */
     public function promote(array $source, string $strategy): array
     {
@@ -208,6 +222,10 @@ class VersionPromotionService
      * @return array<string,mixed> The updated target row
      *
      * @throws PromotionFailedException On any failure inside the branch
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-60
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-61
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-62
      */
     private function runStrategy(string $strategy, array $source, array $target): array
     {
@@ -241,6 +259,8 @@ class VersionPromotionService
      * @param array<string,mixed> $target Target ApplicationVersion
      *
      * @return array<string,mixed> The updated target row
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-60
      */
     private function runStartWithSourceData(array $source, array $target): array
     {
@@ -260,6 +280,8 @@ class VersionPromotionService
      * @param array<string,mixed> $target Target ApplicationVersion
      *
      * @return array<string,mixed> The updated target row
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-61
      */
     private function runMigrateExistingData(array $source, array $target): array
     {
@@ -276,6 +298,8 @@ class VersionPromotionService
      * @param array<string,mixed> $target Target ApplicationVersion
      *
      * @return array<string,mixed> The updated target row
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-62
      */
     private function runEmptyStart(array $source, array $target): array
     {
@@ -298,6 +322,8 @@ class VersionPromotionService
      * @param array<string,mixed> $target Target ApplicationVersion
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-63
      */
     private function forwardSchemaSetToOR(array $source, array $target): void
     {
@@ -341,6 +367,9 @@ class VersionPromotionService
      * @param array<string,mixed> $target Target ApplicationVersion
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-60
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-62
      */
     private function wipeTargetRegister(array $target): void
     {
@@ -383,6 +412,8 @@ class VersionPromotionService
      * @param array<string,mixed> $target Target ApplicationVersion
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-60
      */
     private function copyRowsFromSource(array $source, array $target): void
     {
@@ -431,6 +462,8 @@ class VersionPromotionService
      * @param array<string,mixed> $target Target ApplicationVersion
      *
      * @return array<string,mixed> The persisted target row
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-66
      */
     private function applyManifestAndSemver(array $source, array $target): array
     {
@@ -465,6 +498,8 @@ class VersionPromotionService
      * @return never
      *
      * @throws PromotionFailedException Always
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-67
      */
     private function handlePromotionFailure(string $targetUuid, string $strategy, Throwable $error): never
     {
@@ -523,6 +558,8 @@ class VersionPromotionService
      * @return void
      *
      * @throws VersionLockedException When OR's lockObject reports contention
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-64
      */
     private function acquireLock(string $targetUuid): void
     {
@@ -566,6 +603,8 @@ class VersionPromotionService
      * @param string $targetUuid UUID of the target row
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-64
      */
     private function releaseLock(string $targetUuid): void
     {
@@ -586,6 +625,8 @@ class VersionPromotionService
      * @param string $targetUuid UUID to look up
      *
      * @return array<string,mixed>|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-64
      */
     private function callGetLockInfo(string $targetUuid): ?array
     {

@@ -33,6 +33,10 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-24
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-47
  */
 
 declare(strict_types=1);
@@ -112,6 +116,8 @@ class ApplicationVersionsController extends Controller
      * @param string $slug Parent Application slug
      *
      * @return JSONResponse Versions array on 200, error envelope on miss
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-24
      */
     #[NoAdminRequired]
     public function index(string $slug): JSONResponse
@@ -184,6 +190,8 @@ class ApplicationVersionsController extends Controller
      * @param string $versionSlug ApplicationVersion slug
      *
      * @return JSONResponse The version on 200, error envelope on miss
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-24
      */
     #[NoAdminRequired]
     public function show(string $slug, string $versionSlug): JSONResponse
@@ -207,6 +215,8 @@ class ApplicationVersionsController extends Controller
      * @param string $slug Parent Application slug
      *
      * @return JSONResponse 201 with the created version, or error envelope
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-24
      */
     #[NoAdminRequired]
     public function create(string $slug): JSONResponse
@@ -272,6 +282,8 @@ class ApplicationVersionsController extends Controller
      * @param string $versionSlug ApplicationVersion slug
      *
      * @return JSONResponse 200 with the updated version, or error envelope
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-24
      */
     #[NoAdminRequired]
     public function update(string $slug, string $versionSlug): JSONResponse
@@ -347,6 +359,8 @@ class ApplicationVersionsController extends Controller
      * @param string $versionSlug ApplicationVersion slug
      *
      * @return JSONResponse 204 on success, error envelope otherwise
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
      */
     #[NoAdminRequired]
     public function destroy(string $slug, string $versionSlug): JSONResponse
@@ -439,6 +453,8 @@ class ApplicationVersionsController extends Controller
      * @param string $versionSlug ApplicationVersion slug
      *
      * @return array<string,mixed>|null Version record or null on miss
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-24
      */
     private function findVersionForApplication(string $slug, string $versionSlug): ?array
     {
@@ -486,6 +502,8 @@ class ApplicationVersionsController extends Controller
      * @param array<int,string> $roles List of role names (`owners`, `editors`, `viewers`)
      *
      * @return JSONResponse|null Null on allow, 401/403/404 envelope on deny
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-47
      */
     private function requireRole(string $slug, array $roles): ?JSONResponse
     {

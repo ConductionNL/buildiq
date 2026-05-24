@@ -18,6 +18,8 @@
  *
  * @link https://conduction.nl
  *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
+ *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
@@ -45,6 +47,8 @@ final class PlaceholderResolver
      *                                      authorName, authorEmail, license.
      *
      * @return array<string,string> Map of search → replace.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
      */
     public function buildMap(array $context): array
     {
@@ -76,6 +80,8 @@ final class PlaceholderResolver
      * @param array<string,string> $map     Placeholder map from buildMap().
      *
      * @return string Resolved content.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
      */
     public function resolve(string $content, array $map): string
     {

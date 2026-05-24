@@ -36,6 +36,14 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-9
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-10
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-11
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-12
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-13
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-14
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-15
  */
 
 declare(strict_types=1);
@@ -121,6 +129,11 @@ class ApplicationCreationService
      *
      * @throws WizardCreationException On validation failure (failedAtStep=validate)
      *                                 or on any mid-flight creation failure (with rollback)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-12
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-14
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-15
      */
     public function createApplication(array $payload): string
     {
@@ -406,6 +419,9 @@ class ApplicationCreationService
      * @return void
      *
      * @throws WizardCreationException With failedAtStep=validate on any failure
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-11
      */
     private function validatePayload(array $payload): void
     {
@@ -504,6 +520,9 @@ class ApplicationCreationService
      * @param array<string,mixed> $payload The wizard POST payload
      *
      * @return array<int,array<string,string>> Version definitions [{name, slug}, ...]
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-11
      */
     public function resolveVersionChain(array $payload): array
     {
@@ -540,6 +559,8 @@ class ApplicationCreationService
      * @param string $slug The slug to check
      *
      * @return bool True when a conflicting row exists
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-10
      */
     private function appSlugExists(string $slug): bool
     {
@@ -584,6 +605,8 @@ class ApplicationCreationService
      * @return void
      *
      * @throws Throwable When register creation or schema seeding fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-13
      */
     private function provisionRegister(
         string $registerSlug,
@@ -638,6 +661,8 @@ class ApplicationCreationService
      * @param string $registerSlug The OR register slug to drop
      *
      * @return bool True on success, false on failure
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-12
      */
     private function deleteRegister(string $registerSlug): bool
     {
@@ -668,6 +693,8 @@ class ApplicationCreationService
      * @param array<int,string>   $orphaned Accumulates resources that could not be cleaned (by ref)
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-12
      */
     private function rollback(array $state, array &$orphaned): void
     {
@@ -719,6 +746,8 @@ class ApplicationCreationService
      * @return array<string,mixed> The parsed manifest blob
      *
      * @throws WizardCreationException When the fixture cannot be read or decoded
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-14
      */
     private function loadDefaultManifest(): array
     {
@@ -761,6 +790,8 @@ class ApplicationCreationService
      * @return array<int,array<string,mixed>> The parsed schema blobs
      *
      * @throws WizardCreationException When the fixture cannot be read or decoded
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-13
      */
     private function loadDefaultSchemas(): array
     {
@@ -807,6 +838,8 @@ class ApplicationCreationService
      * @param string              $registerSlug The per-version register slug
      *
      * @return array<string,mixed> The manifest with the token substituted
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-13
      */
     public function substituteRegisterSlug(array $manifest, string $registerSlug): array
     {
@@ -833,6 +866,8 @@ class ApplicationCreationService
      * @param string              $schemaSlugPrefix Namespaced prefix for schema slugs (e.g. `permit-flow-development-`)
      *
      * @return array<string,mixed> The manifest with tokens substituted
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-14
      */
     public function substituteVersionContext(
         array $manifest,

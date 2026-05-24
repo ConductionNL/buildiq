@@ -19,6 +19,11 @@
  *
  * @link https://conduction.nl
  *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-8
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-42
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-50
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-59
+ *
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  */
@@ -342,6 +347,8 @@ class OpenBuiltToolProvider implements IMcpToolProvider
      * @param array<string, mixed> $args Tool arguments (slug).
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-50
      */
     private function handleGetAppManifest(array $args): array
     {
@@ -396,6 +403,8 @@ class OpenBuiltToolProvider implements IMcpToolProvider
      * @param array<string, mixed> $args Tool arguments (slug, name, description, preset).
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-8
      */
     private function handleCreateApp(array $args): array
     {
@@ -450,6 +459,8 @@ class OpenBuiltToolProvider implements IMcpToolProvider
      * @param array<string, mixed> $args Tool arguments (appSlug, sourceVersionSlug, strategy).
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-59
      */
     private function handlePromoteVersion(array $args): array
     {
@@ -839,6 +850,8 @@ class OpenBuiltToolProvider implements IMcpToolProvider
      * @param array<string, mixed> $args Tool arguments (appSlug, versionSlug, id, label, icon, route, order).
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-42
      */
     private function handleUpsertMenuItem(array $args): array
     {

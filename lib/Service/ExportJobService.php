@@ -18,6 +18,12 @@
  *
  * @link https://conduction.nl
  *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-37
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-38
+ *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
@@ -70,6 +76,8 @@ class ExportJobService
      * @return string Job UUID (UUIDv4).
      *
      * @throws \InvalidArgumentException When required fields are missing.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
      */
     public function queue(
         string $applicationSlug,
@@ -140,6 +148,8 @@ class ExportJobService
      * @param array<string,mixed> $job Sanitised job record.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-37
      */
     public function persistJob(array $job): void
     {
@@ -181,6 +191,8 @@ class ExportJobService
      *
      * @return bool True when the transition fired, false when OR's
      *              lifecycle engine is not available (gap recorded).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-38
      */
     public function transitionJob(
         string $jobUuid,
@@ -241,6 +253,8 @@ class ExportJobService
      *                                     downloadUrl, downloadExpiresAt, …).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-37
      */
     public function mergeJobFields(string $jobUuid, array $fields): void
     {
@@ -287,6 +301,8 @@ class ExportJobService
      * @param string $uuid ExportJob UUID.
      *
      * @return array{path:string,expired:bool}|null Resolution result.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
      */
     public function resolveDownload(string $uuid): ?array
     {
@@ -309,6 +325,8 @@ class ExportJobService
      * @param string $jobUuid Job UUID.
      *
      * @return string|null PAT or null when none was stored.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
      */
     public function fetchPat(string $jobUuid): ?string
     {
@@ -326,6 +344,8 @@ class ExportJobService
      * @param string $jobUuid Job UUID.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
      */
     public function clearPat(string $jobUuid): void
     {
@@ -342,6 +362,8 @@ class ExportJobService
      * @param string $jobUuid Job UUID.
      *
      * @return string Credentials key.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
      */
     public function credentialKey(string $jobUuid): string
     {

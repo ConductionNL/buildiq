@@ -28,6 +28,8 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-30
  */
 
 declare(strict_types=1);
@@ -80,6 +82,8 @@ class PopulateApplicationPermissions implements IRepairStep
      * @param IOutput $output The output interface for progress reporting
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-30
      */
     public function run(IOutput $output): void
     {
@@ -151,6 +155,8 @@ class PopulateApplicationPermissions implements IRepairStep
      * @param array<string, mixed> $application The Application data
      *
      * @return bool True when the Application should be patched
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-30
      */
     private function needsMigration(array $application): bool
     {

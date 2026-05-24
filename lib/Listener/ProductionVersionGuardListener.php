@@ -30,6 +30,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-31
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-32
  */
 
 declare(strict_types=1);
@@ -75,6 +78,9 @@ class ProductionVersionGuardListener implements IEventListener
      * @param Event $event Dispatched event
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-31
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-32
      */
     public function handle(Event $event): void
     {

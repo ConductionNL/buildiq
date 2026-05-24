@@ -21,6 +21,10 @@
  *
  * @link https://conduction.nl
  *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-41
+ *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
@@ -103,6 +107,8 @@ class ExportService
      * @return string Absolute (local) path to the produced ZIP.
      *
      * @throws RuntimeException When packaging fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
      */
     public function generateAppZip(
         string $applicationUuid,
@@ -136,6 +142,8 @@ class ExportService
      * @return string Local path to the ZIP file.
      *
      * @throws RuntimeException When ZIP creation fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
      */
     public function packageZip(string $sourceDir, string $jobUuid): string
     {
@@ -181,6 +189,8 @@ class ExportService
      * @param string $baseDir Directory to walk.
      *
      * @return array<int,string> Sorted relative file paths.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-41
      */
     public function listFilesSorted(string $baseDir): array
     {
@@ -212,6 +222,8 @@ class ExportService
      * @param array<string,mixed> $context Placeholder context.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
      */
     public function resolvePlaceholders(string $rootDir, array $context): void
     {
@@ -272,6 +284,8 @@ class ExportService
      * @param string $dest   Scratch dir.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
      */
     public function copyTemplate(string $source, string $dest): void
     {
@@ -349,6 +363,8 @@ class ExportService
      * @param string $name Subdir name under appdata's openbuilt area.
      *
      * @return string Absolute local path.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
      */
     public function getOrCreateAppDataDir(string $name): string
     {

@@ -29,6 +29,11 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-26
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-27
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-28
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-29
  */
 
 declare(strict_types=1);
@@ -98,6 +103,8 @@ class MigrateToVersionedModel implements IRepairStep
      * @param IOutput $output The output channel for progress reporting
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-26
      */
     public function run(IOutput $output): void
     {
@@ -144,6 +151,8 @@ class MigrateToVersionedModel implements IRepairStep
      *
      * @throws Throwable Propagated by callers — the caller decides whether
      *                   to abort or continue
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-27
      */
     private function isAlreadyVersioned(): bool
     {
@@ -189,6 +198,8 @@ class MigrateToVersionedModel implements IRepairStep
      * Fetch every Application row in the `openbuilt` register.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-26
      */
     private function enumerateApplications(): array
     {
@@ -241,6 +252,9 @@ class MigrateToVersionedModel implements IRepairStep
      * @param IOutput             $output      Output channel for progress
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-28
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-29
      */
     private function migrateOne(array $application, IOutput $output): void
     {
