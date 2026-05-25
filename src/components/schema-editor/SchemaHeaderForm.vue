@@ -77,20 +77,52 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Validate the slug against the lowercase-kebab pattern.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @return {boolean} True when valid.
+		 */
 		slugValid() {
 			return SLUG_PATTERN.test(this.value.slug || '')
 		},
+		/**
+		 * Validate that a non-empty title is present.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @return {boolean} True when valid.
+		 */
 		titleValid() {
 			return !!(this.value.title && this.value.title.trim())
 		},
+		/**
+		 * Validate the version string against semver MAJOR.MINOR.PATCH.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @return {boolean} True when valid.
+		 */
 		versionValid() {
 			return SEMVER_PATTERN.test(this.value.version || '')
 		},
+		/**
+		 * Aggregate validity of the whole header form.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @return {boolean} True when slug, title, and version are all valid.
+		 */
 		allValid() {
 			return this.slugValid && this.titleValid && this.versionValid
 		},
 	},
 	methods: {
+		/**
+		 * Emit an updated header object when a field changes.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @param {string} field Field name.
+		 * @param {*} val New value.
+		 * @return {void}
+		 */
 		onChange(field, val) {
 			this.$emit('input', { ...this.value, [field]: val })
 		},

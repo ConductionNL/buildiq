@@ -75,9 +75,22 @@ export default {
 	},
 	emits: ['update:widgets'],
 	methods: {
+		/**
+		 * Emit the updated widgets array to the parent.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {Array} next The next widgets array.
+		 * @return {void}
+		 */
 		emitWidgets(next) {
 			this.$emit('update:widgets', next)
 		},
+		/**
+		 * Append a new blank widget row.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @return {void}
+		 */
 		addWidget() {
 			const next = this.widgets.slice()
 			next.push({
@@ -89,11 +102,28 @@ export default {
 			})
 			this.emitWidgets(next)
 		},
+		/**
+		 * Update a single field of a widget row.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {number} index Row index.
+		 * @param {string} key Field key.
+		 * @param {*} value New value.
+		 * @return {void}
+		 */
 		updateWidget(index, key, value) {
 			const next = this.widgets.slice()
 			next[index] = { ...next[index], [key]: value }
 			this.emitWidgets(next)
 		},
+		/**
+		 * Update a widget's config JSON, validating it parses.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {number} index Row index.
+		 * @param {string} value Raw JSON string.
+		 * @return {void}
+		 */
 		updateConfig(index, value) {
 			const next = this.widgets.slice()
 			let error = ''
@@ -105,6 +135,13 @@ export default {
 			next[index] = { ...next[index], configJson: value, configError: error }
 			this.emitWidgets(next)
 		},
+		/**
+		 * Remove a widget row by index.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {number} index Row index.
+		 * @return {void}
+		 */
 		removeWidget(index) {
 			const next = this.widgets.slice()
 			next.splice(index, 1)

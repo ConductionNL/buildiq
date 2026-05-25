@@ -33,6 +33,12 @@ export default {
 		aggregations: { type: [Object, Array], default: null },
 	},
 	computed: {
+		/**
+		 * Render the aggregations block as pretty JSON for read-only display.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @return {string} Formatted JSON, or empty string on error.
+		 */
 		formatted() {
 			try {
 				return JSON.stringify(this.aggregations, null, 2)

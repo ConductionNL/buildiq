@@ -33,6 +33,12 @@ export default {
 		calculations: { type: [Object, Array], default: null },
 	},
 	computed: {
+		/**
+		 * Render the calculations block as pretty JSON for read-only display.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @return {string} Formatted JSON, or empty string on error.
+		 */
 		formatted() {
 			try {
 				return JSON.stringify(this.calculations, null, 2)

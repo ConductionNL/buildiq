@@ -57,6 +57,12 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Validate the new-schema slug, title, and semver version.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @return {boolean} True when the form is valid.
+		 */
 		isValid() {
 			return SLUG_PATTERN.test(this.local.slug)
 				&& this.local.title.trim().length > 0
@@ -64,6 +70,13 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * Reset the local form when the dialog opens.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @param {boolean} value Open state.
+		 * @return {void}
+		 */
 		open(value) {
 			if (value) {
 				this.local = { slug: '', title: '', description: '', version: '0.1.0' }
@@ -71,18 +84,44 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Merge partial form input into the local draft.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @param {object} value Partial form values.
+		 * @return {void}
+		 */
 		onInput(value) {
 			this.local = { ...this.local, ...value }
 		},
+		/**
+		 * Confirm only when valid, emitting the new schema payload.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @return {void}
+		 */
 		onConfirm() {
 			if (!this.isValid) {
 				return
 			}
 			this.$emit('confirm', { ...this.local })
 		},
+		/**
+		 * Emit a cancel event.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @return {void}
+		 */
 		onCancel() {
 			this.$emit('cancel')
 		},
+		/**
+		 * Sync the modal open state and emit cancel when closed.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @param {boolean} value Open state.
+		 * @return {void}
+		 */
 		onOpenUpdate(value) {
 			this.$emit('update:open', value)
 			if (!value) {

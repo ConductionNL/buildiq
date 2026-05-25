@@ -51,11 +51,24 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Enable delete only when the typed slug matches the target exactly.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @return {boolean} True when deletion is confirmed.
+		 */
 		canDelete() {
 			return this.typed === this.schemaSlug && this.schemaSlug !== ''
 		},
 	},
 	watch: {
+		/**
+		 * Clear the typed confirmation when the dialog closes.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @param {boolean} value Open state.
+		 * @return {void}
+		 */
 		open(value) {
 			if (!value) {
 				this.typed = ''
@@ -63,6 +76,12 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Confirm deletion only when the confirmation gate is met.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @return {void}
+		 */
 		onConfirm() {
 			if (!this.canDelete) {
 				return
@@ -70,10 +89,23 @@ export default {
 			this.$emit('confirm')
 			this.typed = ''
 		},
+		/**
+		 * Cancel deletion and reset the confirmation input.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @return {void}
+		 */
 		onCancel() {
 			this.typed = ''
 			this.$emit('cancel')
 		},
+		/**
+		 * Sync modal open state and emit cancel when closed.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @param {boolean} value Open state.
+		 * @return {void}
+		 */
 		onOpenUpdate(value) {
 			this.$emit('update:open', value)
 			if (!value) {
