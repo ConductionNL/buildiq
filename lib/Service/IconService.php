@@ -30,6 +30,7 @@
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-1
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-2
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-05-24-app-icon-management-uuid/tasks.md#task-1
  */
 
 declare(strict_types=1);

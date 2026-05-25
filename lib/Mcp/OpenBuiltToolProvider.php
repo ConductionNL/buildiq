@@ -23,6 +23,10 @@
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-42
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-50
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-59
+ * @spec openspec/changes/retrofit-2026-05-24-openbuilt-runtime-mcp/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-openbuilt-runtime-mcp/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-openbuilt-runtime-mcp/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-05-24-openbuilt-runtime-mcp/tasks.md#task-4
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
