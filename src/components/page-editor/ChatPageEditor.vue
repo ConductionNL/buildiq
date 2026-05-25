@@ -106,9 +106,19 @@ export default {
 	},
 	emits: ['update:config'],
 	computed: {
+		/**
+		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		validatedConfigKeys() {
 			return ['conversationSource', 'postUrl', 'schema']
 		},
+		/**
+		 * Observed behaviour of `transportShape` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		transportShape() {
 			if (this.config.postUrl && !this.config.conversationSource) {
 				return 'postUrl'
@@ -117,6 +127,11 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `update` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		update(key, value) {
 			const next = { ...this.config }
 			if (value === '' || value === null) {
@@ -126,6 +141,11 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `setTransportShape` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		setTransportShape(shape) {
 			const next = { ...this.config }
 			if (shape === 'postUrl') {
@@ -135,6 +155,11 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `setTransport` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		setTransport(key, value) {
 			const partner = key === 'postUrl' ? 'conversationSource' : 'postUrl'
 			const next = { ...this.config }

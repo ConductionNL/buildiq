@@ -17,6 +17,11 @@
 import { computed } from 'vue'
 import { useAppManifest } from '@conduction/nextcloud-vue'
 
+/**
+ * Observed behaviour of `useLivePreview` (retrofit annotation).
+ *
+ * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
+ */
 export function useLivePreview() {
 	// Spec #2 adds a second positional `manifestObject` parameter; arity
 	// is the discriminator. Older versions ship as a 1-arg function.

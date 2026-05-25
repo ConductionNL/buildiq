@@ -59,11 +59,21 @@ export default {
 	},
 	emits: ['update:modelValue'],
 	computed: {
+		/**
+		 * Observed behaviour of `localTabs` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		localTabs() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `updateField` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		updateField(index, key, value) {
 			const next = this.localTabs.slice()
 			const current = next[index] || {}
@@ -75,11 +85,21 @@ export default {
 			}
 			this.$emit('update:modelValue', next)
 		},
+		/**
+		 * Observed behaviour of `addTab` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		addTab() {
 			const next = this.localTabs.slice()
 			next.push({ id: '', label: '' })
 			this.$emit('update:modelValue', next)
 		},
+		/**
+		 * Observed behaviour of `removeTab` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		removeTab(index) {
 			const next = this.localTabs.slice()
 			next.splice(index, 1)

@@ -34,6 +34,11 @@ export default {
 	mixins: [applicationContext],
 
 	methods: {
+		/**
+		 * Observed behaviour of `onIconUpdated` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 */
 		onIconUpdated(payload) {
 			// Bubble up so the detail page can refresh the Application record.
 			this.$emit('updated', payload)

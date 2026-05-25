@@ -112,6 +112,7 @@ export default {
 		 * The current user's Nextcloud permission flags, passed to CnAppNav.
 		 *
 		 * @return {Array} Permission identifiers (empty when unavailable).
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		permissions() {
 			return window.OC?.currentUser?.permissions ?? []
@@ -122,6 +123,7 @@ export default {
 		 * "Install OpenRegister" button in the dependency-missing slot.
 		 *
 		 * @return {boolean} True for admins.
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		isAdmin() {
 			try {
@@ -135,6 +137,7 @@ export default {
 		 * Path to the white-on-transparent app icon for the empty state.
 		 *
 		 * @return {string} Image path.
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		appIcon() {
 			return imagePath('openbuilt', 'app-dark.svg')
@@ -144,12 +147,18 @@ export default {
 		 * Deep link to OpenRegister's app-store entry.
 		 *
 		 * @return {string} Settings URL.
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		appStoreUrl() {
 			return generateUrl('/settings/apps/integration/openregister')
 		},
 	},
 
+	/**
+	 * Observed behaviour of `created` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+	 */
 	async created() {
 		// Pinia stores still come up so the legacy views (settings store,
 		// schema designer, etc.) keep working. CnAppRoot doesn't depend on
@@ -169,6 +178,7 @@ export default {
 		 *
 		 * @param {string} key Translation key.
 		 * @return {string} Translated string (or the key on miss).
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		translateForApp(key) {
 			return ncT('openbuilt', key)

@@ -17,6 +17,11 @@ export const useSettingsStore = defineStore('settings', {
 	},
 
 	actions: {
+		/**
+		 * Observed behaviour of `fetchSettings` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
+		 */
 		async fetchSettings() {
 			this.loading = true
 			try {
@@ -38,6 +43,11 @@ export const useSettingsStore = defineStore('settings', {
 			return null
 		},
 
+		/**
+		 * Observed behaviour of `saveSettings` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
+		 */
 		async saveSettings(settings) {
 			this.loading = true
 			try {

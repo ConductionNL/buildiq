@@ -120,14 +120,29 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		validatedConfigKeys() {
 			return ['folder', 'allowedTypes']
 		},
+		/**
+		 * Observed behaviour of `allowedTypes` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		allowedTypes() {
 			return Array.isArray(this.config.allowedTypes) ? this.config.allowedTypes : []
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `update` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		update(key, value) {
 			const next = { ...this.config }
 			if (value === '' || value === null || (Array.isArray(value) && value.length === 0)) {
@@ -137,6 +152,11 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `commitDraft` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		commitDraft() {
 			const value = (this.typeDraft || '').trim()
 			this.typeDraft = ''
@@ -145,6 +165,11 @@ export default {
 			}
 			this.update('allowedTypes', [...this.allowedTypes, value])
 		},
+		/**
+		 * Observed behaviour of `removeType` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		removeType(index) {
 			const next = this.allowedTypes.slice()
 			next.splice(index, 1)

@@ -39,6 +39,7 @@ const PICKER_HEADERS = () => ({
  *   picker filters to the per-app register `openbuilt-{slug}` first.
  * @return {object} - { fetchRegisters, fetchSchemas, fetchSchemaProperties,
  *   resolveAppRegister }.
+ * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
  */
 export function useRegisterPicker(opts = {}) {
 	const appSlug = opts.appSlug || ''

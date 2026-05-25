@@ -235,21 +235,45 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Build the field-type picker options.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @return {Array} Option objects.
+		 */
 		typeOptions() {
 			return SUPPORTED_TYPES.map((value) => ({
 				value,
 				label: this.t('openbuilt', value),
 			}))
 		},
+		/**
+		 * Build the array-items-type picker options.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @return {Array} Option objects.
+		 */
 		itemsTypeOptions() {
 			return ITEMS_TYPES.map((value) => ({
 				value,
 				label: this.t('openbuilt', value),
 			}))
 		},
+		/**
+		 * Build relation target-schema picker options.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @return {Array} Option objects.
+		 */
 		schemaOptions() {
 			return this.schemaSlugs.map((slug) => ({ value: slug, label: slug }))
 		},
+		/**
+		 * Build cardinality picker options (one/many).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @return {Array} Option objects.
+		 */
 		cardinalityOptions() {
 			return CARDINALITIES.map((value) => ({
 				value,
@@ -260,15 +284,44 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Resolve the selected field-type option.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @param {string} type Field type.
+		 * @return {object} Matching option.
+		 */
 		typeOption(type) {
 			return this.typeOptions.find((o) => o.value === type) || this.typeOptions[0]
 		},
+		/**
+		 * Resolve the selected target-schema option.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @param {string} value Schema slug.
+		 * @return {object|null} Matching option.
+		 */
 		schemaOption(value) {
 			return this.schemaOptions.find((o) => o.value === value) || null
 		},
+		/**
+		 * Resolve the selected cardinality option.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @param {string} value Cardinality.
+		 * @return {object} Matching option.
+		 */
 		cardinalityOption(value) {
 			return this.cardinalityOptions.find((o) => o.value === value) || this.cardinalityOptions[0]
 		},
+		/**
+		 * Validate a field name: presence, pattern, and uniqueness.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @param {object} field Field row.
+		 * @param {number} index Row index.
+		 * @return {string} Error message, or empty when valid.
+		 */
 		nameError(field, index) {
 			if (!field.name) {
 				return this.t('openbuilt', 'Name is required.')
@@ -282,6 +335,13 @@ export default {
 			}
 			return ''
 		},
+		/**
+		 * Coerce an input to an integer or null.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @param {*} value Raw input.
+		 * @return {number|null} Parsed integer or null.
+		 */
 		toIntOrNull(value) {
 			if (value === '' || value == null) {
 				return null
@@ -289,6 +349,13 @@ export default {
 			const parsed = parseInt(value, 10)
 			return Number.isFinite(parsed) ? parsed : null
 		},
+		/**
+		 * Coerce an input to a number or null.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @param {*} value Raw input.
+		 * @return {number|null} Parsed number or null.
+		 */
 		toNumberOrNull(value) {
 			if (value === '' || value == null) {
 				return null
@@ -296,9 +363,22 @@ export default {
 			const parsed = Number(value)
 			return Number.isFinite(parsed) ? parsed : null
 		},
+		/**
+		 * Emit the updated fields array to the parent.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @param {Array} next Next fields array.
+		 * @return {void}
+		 */
 		emitFields(next) {
 			this.$emit('update:fields', next)
 		},
+		/**
+		 * Append a new blank field row.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @return {void}
+		 */
 		addField() {
 			const next = this.fields.slice()
 			next.push({
@@ -312,6 +392,15 @@ export default {
 			})
 			this.emitFields(next)
 		},
+		/**
+		 * Update a single field property; resets validation on type change.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @param {number} index Row index.
+		 * @param {string} key Property key.
+		 * @param {*} value New value.
+		 * @return {void}
+		 */
 		updateField(index, key, value) {
 			const next = this.fields.slice()
 			const current = { ...next[index] }
@@ -324,6 +413,15 @@ export default {
 			next[index] = current
 			this.emitFields(next)
 		},
+		/**
+		 * Set or clear a single validation slot on a field.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @param {number} index Row index.
+		 * @param {string} key Validation key.
+		 * @param {*} value New value (empty clears the slot).
+		 * @return {void}
+		 */
 		updateValidation(index, key, value) {
 			const next = this.fields.slice()
 			const current = { ...next[index] }
@@ -337,6 +435,13 @@ export default {
 			next[index] = current
 			this.emitFields(next)
 		},
+		/**
+		 * Move a field up one position.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @param {number} index Row index.
+		 * @return {void}
+		 */
 		moveUp(index) {
 			if (index === 0) {
 				return
@@ -346,6 +451,13 @@ export default {
 			next.splice(index - 1, 0, moved)
 			this.emitFields(next)
 		},
+		/**
+		 * Move a field down one position.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @param {number} index Row index.
+		 * @return {void}
+		 */
 		moveDown(index) {
 			if (index === this.fields.length - 1) {
 				return
@@ -355,11 +467,24 @@ export default {
 			next.splice(index + 1, 0, moved)
 			this.emitFields(next)
 		},
+		/**
+		 * Open the remove-field confirmation dialog.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @param {number} index Row index.
+		 * @return {void}
+		 */
 		requestRemove(index) {
 			this.pendingRemoveIndex = index
 			this.pendingRemoveName = this.fields[index]?.name || this.t('openbuilt', '(unnamed)')
 			this.removeDialogOpen = true
 		},
+		/**
+		 * Confirm removal of the pending field.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @return {void}
+		 */
 		confirmRemove() {
 			if (this.pendingRemoveIndex < 0) {
 				this.removeDialogOpen = false
@@ -370,6 +495,12 @@ export default {
 			this.emitFields(next)
 			this.cancelRemove()
 		},
+		/**
+		 * Cancel the pending field removal and reset state.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @return {void}
+		 */
 		cancelRemove() {
 			this.removeDialogOpen = false
 			this.pendingRemoveIndex = -1

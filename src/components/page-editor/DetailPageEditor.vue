@@ -145,6 +145,11 @@ export default {
 		},
 	},
 	emits: ['update:config'],
+	/**
+	 * Observed behaviour of `setup` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+	 */
 	setup(props) {
 		const picker = useRegisterPicker({ appSlug: props.appSlug })
 		return { picker }
@@ -156,16 +161,36 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		validatedConfigKeys() {
 			return ['register', 'schema', 'sidebar', 'sidebarProps']
 		},
+		/**
+		 * Observed behaviour of `routeParams` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		routeParams() {
 			const matches = this.parentRoute.match(/:([A-Za-z_][A-Za-z0-9_]*)/g) || []
 			return matches.map((m) => m.slice(1))
 		},
+		/**
+		 * Observed behaviour of `routeHasParam` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		routeHasParam() {
 			return this.routeParams.length > 0
 		},
+		/**
+		 * Observed behaviour of `sidebarShape` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		sidebarShape() {
 			const s = this.config.sidebar
 			if (s === undefined) {
@@ -180,6 +205,11 @@ export default {
 	watch: {
 		'config.register': {
 			immediate: true,
+			/**
+			 * Observed behaviour of `handler` (retrofit annotation).
+			 *
+			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+			 */
 			handler(val) {
 				if (val) {
 					this.fetchSchemas(val)
@@ -193,6 +223,11 @@ export default {
 		await this.fetchRegisters()
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `update` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		update(key, value) {
 			const next = { ...this.config }
 			if (value === '' || value === null) {
@@ -205,6 +240,11 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `setSidebarShape` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		setSidebarShape(shape) {
 			const next = { ...this.config }
 			if (shape === 'none') {
@@ -216,12 +256,22 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `updateSidebarKey` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		updateSidebarKey(key, value) {
 			const next = { ...this.config }
 			const current = (typeof next.sidebar === 'object' && next.sidebar) || { enabled: true }
 			next.sidebar = { ...current, [key]: value }
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `updateSidebarPropsTabs` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		updateSidebarPropsTabs(tabs) {
 			const next = { ...this.config }
 			if (!tabs || !tabs.length) {
@@ -238,9 +288,19 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `fetchRegisters` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		async fetchRegisters() {
 			this.registers = await this.picker.fetchRegisters()
 		},
+		/**
+		 * Observed behaviour of `fetchSchemas` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		async fetchSchemas(register) {
 			this.schemas = await this.picker.fetchSchemas(register)
 		},

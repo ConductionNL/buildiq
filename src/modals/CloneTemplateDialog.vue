@@ -53,10 +53,20 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `resolvedTitle` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 */
 		resolvedTitle() {
 			if (!this.template) return ''
 			return t('openbuilt', this.template.title || this.template.slug)
 		},
+		/**
+		 * Observed behaviour of `canSubmit` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 */
 		canSubmit() {
 			return this.localName.trim().length > 0
 				&& /^[a-z0-9]+(-[a-z0-9]+)*$/.test(this.localSlug)
@@ -64,6 +74,11 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * Observed behaviour of `open` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 */
 		open(value) {
 			if (value) {
 				this.localName = ''
@@ -74,10 +89,20 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `onClose` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 */
 		onClose() {
 			if (this.submitting) return
 			this.$emit('close')
 		},
+		/**
+		 * Observed behaviour of `submit` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 */
 		async submit() {
 			if (!this.canSubmit) {
 				this.error = t('openbuilt', 'Provide a name and a kebab-case slug (max 32 chars).')
@@ -92,6 +117,11 @@ export default {
 				this.submitting = false
 			}
 		},
+		/**
+		 * Observed behaviour of `setError` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 */
 		setError(message) {
 			this.error = message
 			this.submitting = false

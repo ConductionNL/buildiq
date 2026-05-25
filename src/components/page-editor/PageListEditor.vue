@@ -131,6 +131,11 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `duplicateIds` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		duplicateIds() {
 			const counts = new Map()
 			for (const p of this.pages) {
@@ -140,6 +145,11 @@ export default {
 			}
 			return Array.from(counts.entries()).filter(([, c]) => c > 1).map(([id]) => id)
 		},
+		/**
+		 * Observed behaviour of `invalidRoutes` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		invalidRoutes() {
 			return this.pages
 				.filter((p) => p && p.route && !ROUTE_PATTERN.test(p.route))
@@ -147,12 +157,27 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `startAdd` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		startAdd() {
 			this.addingType = ''
 		},
+		/**
+		 * Observed behaviour of `cancelAdd` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		cancelAdd() {
 			this.addingType = null
 		},
+		/**
+		 * Observed behaviour of `confirmAdd` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		confirmAdd() {
 			if (!this.addingType) {
 				return
@@ -171,6 +196,11 @@ export default {
 			this.$emit('select', next.length - 1)
 			this.addingType = null
 		},
+		/**
+		 * Observed behaviour of `updateField` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		updateField(index, key, value) {
 			const next = this.pages.slice()
 			const current = { ...next[index] }
@@ -182,6 +212,11 @@ export default {
 			next[index] = current
 			this.$emit('update:pages', next)
 		},
+		/**
+		 * Observed behaviour of `removePage` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		removePage(index) {
 			const next = this.pages.slice()
 			next.splice(index, 1)
@@ -190,9 +225,19 @@ export default {
 				this.$emit('select', -1)
 			}
 		},
+		/**
+		 * Observed behaviour of `onReorder` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		onReorder(newOrder) {
 			this.$emit('update:pages', newOrder)
 		},
+		/**
+		 * Observed behaviour of `hasError` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		hasError(page, index) {
 			if (this.duplicateIds.includes(page && page.id)) {
 				return true

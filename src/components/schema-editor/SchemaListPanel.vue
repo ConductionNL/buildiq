@@ -134,12 +134,26 @@ export default {
 		getSlug(schema) {
 			return schema.slug || (schema['@self'] && schema['@self'].slug) || schema.id || ''
 		},
+		/**
+		 * Count the declared properties on a schema row.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @param {object} schema Schema record.
+		 * @return {number} Property count.
+		 */
 		propertyCount(schema) {
 			if (!schema || !schema.properties) {
 				return 0
 			}
 			return Object.keys(schema.properties).length
 		},
+		/**
+		 * Build a human-readable lifecycle-state-count label.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @param {object} schema Schema record.
+		 * @return {string} Lifecycle label.
+		 */
 		lifecycleLabel(schema) {
 			const lifecycle = schema && schema['x-openregister-lifecycle']
 			if (!lifecycle || !Array.isArray(lifecycle.states) || lifecycle.states.length === 0) {
@@ -147,9 +161,23 @@ export default {
 			}
 			return this.n('openbuilt', '{n} lifecycle state', '{n} lifecycle states', lifecycle.states.length, { n: lifecycle.states.length })
 		},
+		/**
+		 * Emit an open event for the activated schema row.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @param {object} schema Schema record.
+		 * @return {void}
+		 */
 		onOpen(schema) {
 			this.$emit('open', this.getSlug(schema))
 		},
+		/**
+		 * Confirm the add-schema dialog: emit add and surface slug conflicts.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @param {object} payload New schema payload.
+		 * @return {Promise<*>} The add result.
+		 */
 		async onAddConfirm(payload) {
 			this.addSubmitting = true
 			this.addSlugError = ''
@@ -169,15 +197,34 @@ export default {
 				this.addSubmitting = false
 			}
 		},
+		/**
+		 * Open the delete-confirmation dialog for a schema.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @param {object} schema Schema record.
+		 * @return {void}
+		 */
 		requestDelete(schema) {
 			this.pendingDeleteSlug = this.getSlug(schema)
 			this.deleteOpen = true
 		},
+		/**
+		 * Confirm deletion: emit delete and reset the pending state.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @return {void}
+		 */
 		onDeleteConfirm() {
 			this.$emit('delete', this.pendingDeleteSlug)
 			this.deleteOpen = false
 			this.pendingDeleteSlug = ''
 		},
+		/**
+		 * Cancel the pending deletion.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @return {void}
+		 */
 		cancelDelete() {
 			this.deleteOpen = false
 			this.pendingDeleteSlug = ''

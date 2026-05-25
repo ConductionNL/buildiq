@@ -41,6 +41,7 @@ const _slugRegex = new RegExp(SLUG_PATTERN)
  * @param {string} input - The raw name string
  * @return {string} Derived slug (may be empty when input contains only
  *   characters that are stripped by step 4)
+ * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
  */
 export function toKebabCase(input) {
 	if (typeof input !== 'string') return ''
@@ -61,6 +62,7 @@ export function toKebabCase(input) {
  * @param {string} slug - The slug to validate (may be derived or user-typed)
  * @return {{ valid: boolean, message?: string }} Validation result.
  *   When valid is false, message contains a user-facing error string.
+ * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
  */
 export function validateSlug(slug) {
 	if (typeof slug !== 'string' || slug === '') {

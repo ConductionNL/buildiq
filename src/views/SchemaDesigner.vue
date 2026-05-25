@@ -173,11 +173,23 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Resolve the active application slug from the route (seed fallback).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @return {string} App slug.
+		 */
 		appSlug() {
 			// Falls back to the hello-world seed app when reached via the
 			// top-level /schemas shortcut (which carries no :slug param).
 			return this.$route.params.slug || 'hello-world'
 		},
+		/**
+		 * Resolve the active schema id from the route.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @return {string} Schema id.
+		 */
 		schemaId() {
 			return this.$route.params.schemaId || ''
 		},
@@ -186,11 +198,18 @@ export default {
 		 * The underscore-prefix param name is OpenBuilt's system-reserved marker
 		 * to avoid colliding with user-defined `?version=` params.
 		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {string|undefined}
 		 */
 		versionSlug() {
 			return this.$route.query._version || undefined
 		},
+		/**
+		 * Resolve the schemas store bound to the active app/version register.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @return {object} Pinia store instance.
+		 */
 		store() {
 			// Re-creates the binding when appSlug changes; the store
 			// factory re-registers the `schema` type to the per-app
@@ -198,11 +217,23 @@ export default {
 			// REQ-OBVR-007: pass versionSlug so the store targets the correct register.
 			return useSchemasStore(this.appSlug, this.versionSlug)
 		},
+		/**
+		 * List the slugs of the other schemas (relation targets).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @return {Array<string>} Other schema slugs.
+		 */
 		otherSchemaSlugs() {
 			return this.schemas
 				.map((s) => s.slug || (s['@self'] && s['@self'].slug) || s.id)
 				.filter((slug) => slug && slug !== this.schemaId)
 		},
+		/**
+		 * Project the staged schema header fields for the header form.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @return {object} Header value object.
+		 */
 		headerValue() {
 			if (!this.staged) {
 				return { slug: '', title: '', description: '', version: '0.1.0' }
@@ -217,12 +248,24 @@ export default {
 		hasLifecycleStates() {
 			return this.staged && this.staged.states && this.staged.states.length > 0
 		},
+		/**
+		 * Validate that exactly one initial lifecycle state is set.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @return {boolean} True when valid (or no lifecycle states).
+		 */
 		hasInitialLifecycleState() {
 			if (!this.hasLifecycleStates) {
 				return true
 			}
 			return this.staged.states.filter((s) => s.initial).length === 1
 		},
+		/**
+		 * Validate that all staged field names are present and unique.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @return {boolean} True when unique.
+		 */
 		fieldNamesUnique() {
 			if (!this.staged) {
 				return true
@@ -239,6 +282,12 @@ export default {
 			}
 			return true
 		},
+		/**
+		 * Gate Save on dirty-state plus all validation gates.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @return {boolean} True when the staged schema may be saved.
+		 */
 		canSave() {
 			if (!this.staged || this.saving) {
 				return false
@@ -255,6 +304,12 @@ export default {
 			}
 			return this.hasStagedChanges
 		},
+		/**
+		 * Detect whether the staged body differs from the persisted one.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @return {boolean} True when there are unsaved changes.
+		 */
 		hasStagedChanges() {
 			if (!this.staged || !this.persisted) {
 				return false
@@ -265,23 +320,48 @@ export default {
 	},
 	watch: {
 		schemaId: {
+			/**
+			 * Reload schema detail when the route schema id changes.
+			 *
+			 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+			 * @return {void}
+			 */
 			handler() {
 				this.loadDetail()
 			},
 		},
 		appSlug: {
+			/**
+			 * Re-resolve version and refresh the list when the app changes.
+			 *
+			 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+			 * @return {void}
+			 */
 			handler() {
 				this.resolveVersion()
 				this.refreshList()
 			},
 		},
 		versionSlug: {
+			/**
+			 * Re-resolve version and refresh the list when the version changes.
+			 *
+			 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+			 * @return {void}
+			 */
 			handler() {
 				this.resolveVersion()
 				this.refreshList()
 			},
 		},
 	},
+	/**
+	 * On mount: resolve version, load the list, and load detail if a schema
+	 * is selected in the route.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		// REQ-OBVR-004: resolve the active ApplicationVersion via useApplicationVersion.
 		this.resolveVersion()
@@ -300,6 +380,7 @@ export default {
 		 * NOTE: we do NOT call $router.replace() here — that would strip ?_version=
 		 * and break bookmarkability (REQ-OBVR-008). We just read what the URL contains.
 		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {void}
 		 */
 		resolveVersion() {
@@ -325,6 +406,12 @@ export default {
 				}
 			})
 		},
+		/**
+		 * Fetch the schema collection and filter to this app/version register.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @return {Promise<void>}
+		 */
 		async refreshList() {
 			this.loadingList = true
 			try {
@@ -353,6 +440,12 @@ export default {
 				this.loadingList = false
 			}
 		},
+		/**
+		 * Load a single schema's detail and stage it for editing.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @return {Promise<void>}
+		 */
 		async loadDetail() {
 			if (!this.schemaId) {
 				this.staged = null
@@ -382,6 +475,13 @@ export default {
 				this.loadingDetail = false
 			}
 		},
+		/**
+		 * Convert a persisted schema body into the staged editor model.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @param {object} body Persisted schema body.
+		 * @return {object} Staged editor model.
+		 */
 		bodyToStaged(body) {
 			const fields = schemaToFields(body)
 			const lifecycle = body['x-openregister-lifecycle']
@@ -401,6 +501,13 @@ export default {
 				notifications: body['x-openregister-notifications'] || null,
 			}
 		},
+		/**
+		 * Compose a canonical schema body from the staged editor model.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @param {object} staged Staged editor model.
+		 * @return {object} Canonical schema body.
+		 */
 		composeSchemaBody(staged) {
 			const { properties, required, order } = fieldsToSchema(staged.fields)
 			const body = {
@@ -437,6 +544,13 @@ export default {
 			}
 			return body
 		},
+		/**
+		 * Apply a header-form change into the staged model (slug locked).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @param {object} value Header values.
+		 * @return {void}
+		 */
 		onHeaderChange(value) {
 			this.staged = {
 				...this.staged,
@@ -446,21 +560,63 @@ export default {
 				// slug is locked on detail view
 			}
 		},
+		/**
+		 * Apply a fields-editor change into the staged model.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @param {Array} fields Updated fields.
+		 * @return {void}
+		 */
 		onFieldsChange(fields) {
 			this.staged = { ...this.staged, fields }
 		},
+		/**
+		 * Apply a states change into the staged model.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @param {Array} states Updated states.
+		 * @return {void}
+		 */
 		onStatesChange(states) {
 			this.staged = { ...this.staged, states }
 		},
+		/**
+		 * Apply a transitions change into the staged model.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @param {Array} transitions Updated transitions.
+		 * @return {void}
+		 */
 		onTransitionsChange(transitions) {
 			this.staged = { ...this.staged, transitions }
 		},
+		/**
+		 * Apply a relations change into the staged model.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @param {Array} relations Updated relations.
+		 * @return {void}
+		 */
 		onRelationsChange(relations) {
 			this.staged = { ...this.staged, relations }
 		},
+		/**
+		 * Apply a widgets change into the staged model.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @param {Array} widgets Updated widgets.
+		 * @return {void}
+		 */
 		onWidgetsChange(widgets) {
 			this.staged = { ...this.staged, widgets }
 		},
+		/**
+		 * Create a new schema via the store, surfacing duplicate-slug errors.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @param {object} payload New schema payload.
+		 * @return {Promise<void>}
+		 */
 		async addSchema(payload) {
 			const body = {
 				slug: payload.slug,
@@ -493,6 +649,13 @@ export default {
 			))
 			showSuccess(this.t('openbuilt', 'Schema {slug} created.', { slug: newSlug }))
 		},
+		/**
+		 * Navigate to a schema's detail, preserving ?_version=.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @param {string} slug Schema slug.
+		 * @return {void}
+		 */
 		openSchema(slug) {
 			// REQ-OBVR-006: use buildVersionedRoute to forward ?_version= on navigation.
 			this.$router.push(buildVersionedRoute(
@@ -501,6 +664,12 @@ export default {
 				this.versionSlug,
 			))
 		},
+		/**
+		 * Navigate back to the schema list, preserving ?_version=.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @return {void}
+		 */
 		goToList() {
 			// REQ-OBVR-006: use buildVersionedRoute to forward ?_version= on navigation.
 			this.$router.push(buildVersionedRoute(
@@ -509,6 +678,13 @@ export default {
 				this.versionSlug,
 			))
 		},
+		/**
+		 * Delete a schema via the store and refresh the list.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @param {string} slug Schema slug.
+		 * @return {Promise<void>}
+		 */
 		async deleteSchema(slug) {
 			const ok = await this.store.deleteObject(SCHEMA_TYPE, slug)
 			if (!ok) {
@@ -523,6 +699,12 @@ export default {
 				this.goToList()
 			}
 		},
+		/**
+		 * Persist the composed schema body via the store (PUT on existing).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @return {Promise<void>}
+		 */
 		async save() {
 			if (!this.staged || this.saving) {
 				return
@@ -551,12 +733,25 @@ export default {
 				this.saving = false
 			}
 		},
+		/**
+		 * Revert staged edits back to the persisted body.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @return {void}
+		 */
 		discardChanges() {
 			if (this.persisted) {
 				this.staged = this.bodyToStaged(this.persisted)
 				this.saveError = ''
 			}
 		},
+		/**
+		 * Extract a human-readable message from an error/response.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @param {*} e Error.
+		 * @return {string} Message.
+		 */
 		errorMessage(e) {
 			if (!e) {
 				return ''

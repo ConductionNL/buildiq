@@ -152,6 +152,11 @@ export default {
 		CustomPageEditor,
 		StubPageEditor,
 	},
+	/**
+	 * Observed behaviour of `provide` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+	 */
 	provide() {
 		// Sub-editors `inject` this to (a) register their config keys with
 		// the validator's prefix→error map and (b) read back the
@@ -178,6 +183,11 @@ export default {
 		},
 	},
 	emits: ['update:manifest', 'save-and-preview'],
+	/**
+	 * Observed behaviour of `setup` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+	 */
 	setup(props) {
 		const { available: previewAvailable, previewProps } = useLivePreview()
 		const validator = useManifestValidator()
@@ -195,27 +205,62 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `pages` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		pages() {
 			return Array.isArray(this.manifest && this.manifest.pages) ? this.manifest.pages : []
 		},
+		/**
+		 * Observed behaviour of `menu` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		menu() {
 			return Array.isArray(this.manifest && this.manifest.menu) ? this.manifest.menu : []
 		},
+		/**
+		 * Observed behaviour of `selectedPage` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		selectedPage() {
 			if (this.selectedIndex < 0 || this.selectedIndex >= this.pages.length) {
 				return null
 			}
 			return this.pages[this.selectedIndex]
 		},
+		/**
+		 * Observed behaviour of `validatorErrors` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		validatorErrors() {
 			return this.validator.errors.value || []
 		},
+		/**
+		 * Observed behaviour of `canSaveAndPreview` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		canSaveAndPreview() {
 			return !!this.slug && this.validatorErrors.length === 0
 		},
+		/**
+		 * Observed behaviour of `canUndo` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		canUndo() {
 			return !!(this.history && this.history.canUndo.value)
 		},
+		/**
+		 * Observed behaviour of `canRedo` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		canRedo() {
 			return !!(this.history && this.history.canRedo.value)
 		},
@@ -224,6 +269,11 @@ export default {
 		manifest: {
 			deep: true,
 			immediate: true,
+			/**
+			 * Observed behaviour of `handler` (retrofit annotation).
+			 *
+			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+			 */
 			handler(m) {
 				this.validator.validate(m)
 				// Record every accepted manifest state. `push` no-ops on
@@ -235,6 +285,11 @@ export default {
 			},
 		},
 	},
+	/**
+	 * Observed behaviour of `mounted` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+	 */
 	mounted() {
 		document.addEventListener('keydown', this.onKeydown)
 		// REQ-OBVR-004: resolve the active ApplicationVersion on mount.
@@ -264,27 +319,62 @@ export default {
 		document.removeEventListener('keydown', this.onKeydown)
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `subEditorFor` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		subEditorFor(type) {
 			return SUB_EDITOR_MAP[type] || 'StubPageEditor'
 		},
+		/**
+		 * Observed behaviour of `selectPage` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		selectPage(index) {
 			this.selectedIndex = index
 		},
+		/**
+		 * Observed behaviour of `emitManifest` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		emitManifest(next) {
 			this.$emit('update:manifest', next)
 		},
+		/**
+		 * Observed behaviour of `onPagesUpdate` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		onPagesUpdate(pages) {
 			const next = { ...(this.manifest || {}), pages }
 			this.emitManifest(next)
 		},
+		/**
+		 * Observed behaviour of `onMenuUpdate` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		onMenuUpdate(menu) {
 			const next = { ...(this.manifest || {}), menu }
 			this.depthError = false
 			this.emitManifest(next)
 		},
+		/**
+		 * Observed behaviour of `onDepthViolation` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		onDepthViolation() {
 			this.depthError = true
 		},
+		/**
+		 * Observed behaviour of `onConfigUpdate` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		onConfigUpdate(config) {
 			if (this.selectedIndex < 0) {
 				return
@@ -294,10 +384,20 @@ export default {
 			const next = { ...(this.manifest || {}), pages }
 			this.emitManifest(next)
 		},
+		/**
+		 * Observed behaviour of `saveAndPreview` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		saveAndPreview() {
 			this.$emit('save-and-preview')
 		},
 		// --- Undo / redo (OQ-1) -------------------------------------------
+		/**
+		 * Observed behaviour of `undo` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		undo() {
 			if (!this.history) {
 				return
@@ -307,6 +407,11 @@ export default {
 				this.emitManifest(prev)
 			}
 		},
+		/**
+		 * Observed behaviour of `redo` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		redo() {
 			if (!this.history) {
 				return
@@ -316,6 +421,11 @@ export default {
 				this.emitManifest(next)
 			}
 		},
+		/**
+		 * Observed behaviour of `onKeydown` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		onKeydown(event) {
 			if (!event || !(event.ctrlKey || event.metaKey)) {
 				return
@@ -330,24 +440,44 @@ export default {
 			}
 		},
 		// --- Inline validator marks (task 5.5) ----------------------------
+		/**
+		 * Observed behaviour of `configPathPrefix` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		configPathPrefix(configKey) {
 			if (this.selectedIndex < 0) {
 				return ''
 			}
 			return `/pages/${this.selectedIndex}/config/${configKey}`
 		},
+		/**
+		 * Observed behaviour of `registerConfigField` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		registerConfigField(configKey) {
 			const prefix = this.configPathPrefix(configKey)
 			if (prefix && this.validator && typeof this.validator.register === 'function') {
 				this.validator.register(prefix)
 			}
 		},
+		/**
+		 * Observed behaviour of `unregisterConfigField` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		unregisterConfigField(configKey) {
 			const prefix = this.configPathPrefix(configKey)
 			if (prefix && this.validator && typeof this.validator.unregister === 'function') {
 				this.validator.unregister(prefix)
 			}
 		},
+		/**
+		 * Observed behaviour of `configErrorFor` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 */
 		configErrorFor(configKey) {
 			const empty = { hasError: false, message: '' }
 			if (!this.validator || typeof this.validator.errorFor !== 'function') {

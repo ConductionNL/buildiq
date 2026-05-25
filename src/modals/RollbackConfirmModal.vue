@@ -55,10 +55,20 @@ export default {
 	},
 	emits: ['confirm', 'cancel', 'update:open'],
 	computed: {
+		/**
+		 * Observed behaviour of `title` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
+		 */
 		title() {
 			const v = this.version?.version || ''
 			return t('openbuilt', 'Roll back to version {version}?', { version: v })
 		},
+		/**
+		 * Observed behaviour of `formattedPublishedAt` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
+		 */
 		formattedPublishedAt() {
 			if (!this.version?.publishedAt) {
 				return ''
@@ -71,14 +81,29 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `confirm` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
+		 */
 		confirm() {
 			this.$emit('confirm', this.version)
 			this.$emit('update:open', false)
 		},
+		/**
+		 * Observed behaviour of `cancel` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
+		 */
 		cancel() {
 			this.$emit('cancel')
 			this.$emit('update:open', false)
 		},
+		/**
+		 * Observed behaviour of `onUpdateOpen` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
+		 */
 		onUpdateOpen(value) {
 			if (!value) {
 				this.$emit('cancel')

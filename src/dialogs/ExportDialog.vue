@@ -116,15 +116,30 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `versionOptions` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 */
 		versionOptions() {
 			return this.availableVersions
 		},
+		/**
+		 * Observed behaviour of `targetOptions` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 */
 		targetOptions() {
 			return [
 				{ label: this.t('openbuilt', 'ZIP download'), value: 'zip' },
 				{ label: this.t('openbuilt', 'Push to GitHub'), value: 'github' },
 			]
 		},
+		/**
+		 * Observed behaviour of `licenseOptions` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 */
 		licenseOptions() {
 			return [
 				{ label: 'EUPL-1.2', value: 'EUPL-1.2' },
@@ -132,6 +147,11 @@ export default {
 				{ label: 'MIT', value: 'MIT' },
 			]
 		},
+		/**
+		 * Observed behaviour of `visibilityOptions` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 */
 		visibilityOptions() {
 			return [
 				{ label: this.t('openbuilt', 'Private'), value: 'private' },
@@ -140,12 +160,22 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `onClose` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 */
 		onClose() {
 			if (this.submitting) {
 				return
 			}
 			this.$emit('close')
 		},
+		/**
+		 * Observed behaviour of `submit` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 */
 		async submit() {
 			this.submitting = true
 			this.errorMessage = ''

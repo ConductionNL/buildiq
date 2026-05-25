@@ -26,6 +26,11 @@ import { validateManifest } from '@conduction/nextcloud-vue'
 
 const DEBOUNCE_MS = 300
 
+/**
+ * Observed behaviour of `useManifestValidator` (retrofit annotation).
+ *
+ * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
+ */
 export function useManifestValidator() {
 	const errors = ref([])
 	const isValidating = ref(false)

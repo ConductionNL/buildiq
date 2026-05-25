@@ -79,25 +79,50 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Observed behaviour of `versions` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		versions() {
 			return Array.isArray(this.payload.versions) ? this.payload.versions : []
 		},
 
+		/**
+		 * Observed behaviour of `chainDisplay` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		chainDisplay() {
 			if (this.versions.length === 0) return '—'
 			return this.versions.map(v => v.slug || v.name || '?').join(' → ')
 		},
 
+		/**
+		 * Observed behaviour of `productionSlug` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		productionSlug() {
 			if (this.versions.length === 0) return '—'
 			const last = this.versions[this.versions.length - 1]
 			return last.slug || last.name || '—'
 		},
 
+		/**
+		 * Observed behaviour of `iconLightUrl` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		iconLightUrl() {
 			return this.payload.icon ? URL.createObjectURL(this.payload.icon) : null
 		},
 
+		/**
+		 * Observed behaviour of `iconDarkUrl` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		iconDarkUrl() {
 			return this.payload.iconDark ? URL.createObjectURL(this.payload.iconDark) : null
 		},

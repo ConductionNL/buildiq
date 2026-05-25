@@ -75,26 +75,51 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `localColumns` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		localColumns() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
+		/**
+		 * Observed behaviour of `schemaPropertyKeys` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		schemaPropertyKeys() {
 			return Object.keys(this.schemaProperties || {})
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `rowKey` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		rowKey(col) {
 			if (typeof col === 'string') {
 				return col
 			}
 			return (col && (col.key || col.property)) || ''
 		},
+		/**
+		 * Observed behaviour of `rowLabel` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		rowLabel(col) {
 			if (typeof col === 'string') {
 				return ''
 			}
 			return (col && col.label) || ''
 		},
+		/**
+		 * Observed behaviour of `onKeyChange` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		onKeyChange(index, value) {
 			const next = this.localColumns.slice()
 			const existing = next[index]
@@ -106,6 +131,11 @@ export default {
 			}
 			this.$emit('update:modelValue', next)
 		},
+		/**
+		 * Observed behaviour of `onLabelInput` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		onLabelInput(index, value) {
 			const next = this.localColumns.slice()
 			const existing = next[index]
@@ -119,11 +149,21 @@ export default {
 			}
 			this.$emit('update:modelValue', next)
 		},
+		/**
+		 * Observed behaviour of `addColumn` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		addColumn() {
 			const next = this.localColumns.slice()
 			next.push('')
 			this.$emit('update:modelValue', next)
 		},
+		/**
+		 * Observed behaviour of `removeColumn` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		removeColumn(index) {
 			const next = this.localColumns.slice()
 			next.splice(index, 1)

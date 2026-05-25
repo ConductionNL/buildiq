@@ -196,14 +196,32 @@ export default {
 	},
 	emits: ['update:states', 'update:transitions'],
 	computed: {
+		/**
+		 * Count how many states are flagged initial.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @return {number} Initial-state count.
+		 */
 		initialCount() {
 			return this.states.filter((s) => s.initial).length
 		},
+		/**
+		 * Build state picker options from named states.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @return {Array} Option objects.
+		 */
 		stateOptions() {
 			return this.states
 				.filter((s) => s.name)
 				.map((s) => ({ value: s.name, label: s.label || s.name }))
 		},
+		/**
+		 * Build transition-action-type picker options.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @return {Array} Option objects.
+		 */
 		actionOptions() {
 			return ACTION_TYPES.map((value) => ({
 				value,
@@ -212,12 +230,34 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Resolve the selected state option.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @param {string} value State name.
+		 * @return {object|null} Matching option.
+		 */
 		stateOption(value) {
 			return this.stateOptions.find((o) => o.value === value) || null
 		},
+		/**
+		 * Resolve the selected action-type option.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @param {string} value Action type.
+		 * @return {object} Matching option.
+		 */
 		actionOption(value) {
 			return this.actionOptions.find((o) => o.value === value) || this.actionOptions[0]
 		},
+		/**
+		 * Validate a state name: pattern and uniqueness.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @param {object} state State row.
+		 * @param {number} index Row index.
+		 * @return {boolean} True when valid.
+		 */
 		stateNameValid(state, index) {
 			if (!STATE_NAME_PATTERN.test(state.name || '')) {
 				return false
@@ -225,12 +265,32 @@ export default {
 			const duplicate = this.states.some((other, otherIndex) => otherIndex !== index && other.name === state.name)
 			return !duplicate
 		},
+		/**
+		 * Emit the updated states array.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @param {Array} next Next states array.
+		 * @return {void}
+		 */
 		emitStates(next) {
 			this.$emit('update:states', next)
 		},
+		/**
+		 * Emit the updated transitions array.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @param {Array} next Next transitions array.
+		 * @return {void}
+		 */
 		emitTransitions(next) {
 			this.$emit('update:transitions', next)
 		},
+		/**
+		 * Append a new state (first state defaults to initial).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @return {void}
+		 */
 		addState() {
 			const next = this.states.slice()
 			next.push({
@@ -241,20 +301,49 @@ export default {
 			})
 			this.emitStates(next)
 		},
+		/**
+		 * Update a single field of a state row.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @param {number} index Row index.
+		 * @param {string} key Field key.
+		 * @param {*} value New value.
+		 * @return {void}
+		 */
 		updateState(index, key, value) {
 			const next = this.states.slice()
 			next[index] = { ...next[index], [key]: value }
 			this.emitStates(next)
 		},
+		/**
+		 * Mark a single state as the initial one (clears the others).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @param {number} index Row index.
+		 * @return {void}
+		 */
 		setInitial(index) {
 			const next = this.states.map((s, i) => ({ ...s, initial: i === index }))
 			this.emitStates(next)
 		},
+		/**
+		 * Remove a state row by index.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @param {number} index Row index.
+		 * @return {void}
+		 */
 		removeState(index) {
 			const next = this.states.slice()
 			next.splice(index, 1)
 			this.emitStates(next)
 		},
+		/**
+		 * Append a new transition between the first two states.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @return {void}
+		 */
 		addTransition() {
 			const firstState = this.states[0]?.name || ''
 			const secondState = this.states[1]?.name || firstState
@@ -268,16 +357,39 @@ export default {
 			})
 			this.emitTransitions(next)
 		},
+		/**
+		 * Update a single field of a transition row.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @param {number} index Row index.
+		 * @param {string} key Field key.
+		 * @param {*} value New value.
+		 * @return {void}
+		 */
 		updateTransition(index, key, value) {
 			const next = this.transitions.slice()
 			next[index] = { ...next[index], [key]: value }
 			this.emitTransitions(next)
 		},
+		/**
+		 * Remove a transition row by index.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @param {number} index Row index.
+		 * @return {void}
+		 */
 		removeTransition(index) {
 			const next = this.transitions.slice()
 			next.splice(index, 1)
 			this.emitTransitions(next)
 		},
+		/**
+		 * Append a new action to a transition.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @param {number} tIndex Transition index.
+		 * @return {void}
+		 */
 		addAction(tIndex) {
 			const next = this.transitions.slice()
 			const transition = { ...next[tIndex] }
@@ -291,6 +403,16 @@ export default {
 			next[tIndex] = transition
 			this.emitTransitions(next)
 		},
+		/**
+		 * Update a single field of a transition action.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @param {number} tIndex Transition index.
+		 * @param {number} aIndex Action index.
+		 * @param {string} key Field key.
+		 * @param {*} value New value.
+		 * @return {void}
+		 */
 		updateAction(tIndex, aIndex, key, value) {
 			const next = this.transitions.slice()
 			const transition = { ...next[tIndex] }
@@ -300,6 +422,14 @@ export default {
 			next[tIndex] = transition
 			this.emitTransitions(next)
 		},
+		/**
+		 * Remove an action from a transition.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-3
+		 * @param {number} tIndex Transition index.
+		 * @param {number} aIndex Action index.
+		 * @return {void}
+		 */
 		removeAction(tIndex, aIndex) {
 			const next = this.transitions.slice()
 			const transition = { ...next[tIndex] }

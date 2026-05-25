@@ -82,9 +82,21 @@ export default {
 	},
 	emits: ['update:relations'],
 	computed: {
+		/**
+		 * Build target-schema picker options from the available slugs.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @return {Array} Option objects.
+		 */
 		schemaOptions() {
 			return this.schemaSlugs.map((slug) => ({ value: slug, label: slug }))
 		},
+		/**
+		 * Build cardinality picker options (one/many) with translated labels.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @return {Array} Option objects.
+		 */
 		cardinalityOptions() {
 			return CARDINALITIES.map((value) => ({
 				value,
@@ -95,15 +107,42 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Resolve the selected target-schema option for a value.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {string} value Schema slug.
+		 * @return {object|null} The matching option.
+		 */
 		schemaOption(value) {
 			return this.schemaOptions.find((o) => o.value === value) || null
 		},
+		/**
+		 * Resolve the selected cardinality option for a value.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {string} value Cardinality.
+		 * @return {object} The matching option (defaults to first).
+		 */
 		cardinalityOption(value) {
 			return this.cardinalityOptions.find((o) => o.value === value) || this.cardinalityOptions[0]
 		},
+		/**
+		 * Emit the updated relations array to the parent.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {Array} next Next relations array.
+		 * @return {void}
+		 */
 		emitRelations(next) {
 			this.$emit('update:relations', next)
 		},
+		/**
+		 * Append a new blank relation row.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @return {void}
+		 */
 		addRelation() {
 			const next = this.relations.slice()
 			next.push({
@@ -115,11 +154,27 @@ export default {
 			})
 			this.emitRelations(next)
 		},
+		/**
+		 * Update a single field of a relation row.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {number} index Row index.
+		 * @param {string} key Field key.
+		 * @param {*} value New value.
+		 * @return {void}
+		 */
 		updateRelation(index, key, value) {
 			const next = this.relations.slice()
 			next[index] = { ...next[index], [key]: value }
 			this.emitRelations(next)
 		},
+		/**
+		 * Remove a relation row by index.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {number} index Row index.
+		 * @return {void}
+		 */
 		removeRelation(index) {
 			const next = this.relations.slice()
 			next.splice(index, 1)

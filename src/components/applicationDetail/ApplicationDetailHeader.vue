@@ -226,54 +226,124 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `appSlug` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		appSlug() {
 			return (this.application && this.application.slug) || ''
 		},
+		/**
+		 * Observed behaviour of `applicationName` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		applicationName() {
 			return (this.application && this.application.name) || this.appSlug || t('openbuilt', 'Untitled application')
 		},
+		/**
+		 * Observed behaviour of `applicationDescription` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		applicationDescription() {
 			return (this.application && this.application.description) || ''
 		},
+		/**
+		 * Observed behaviour of `applicationStatus` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		applicationStatus() {
 			return (this.application && this.application.status) || t('openbuilt', 'draft')
 		},
+		/**
+		 * Observed behaviour of `iconUrl` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		iconUrl() {
 			if (!this.appSlug) return ''
 			return generateUrl(`/apps/openbuilt/icons/${encodeURIComponent(this.appSlug)}.svg`)
 		},
+		/**
+		 * Observed behaviour of `windowOptions` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		windowOptions() {
 			return WINDOW_OPTIONS
 		},
+		/**
+		 * Observed behaviour of `productionVersionUuid` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		productionVersionUuid() {
 			const pv = this.application && this.application.productionVersion
 			if (!pv) return null
 			if (typeof pv === 'string') return pv
 			return pv.uuid || pv.id || null
 		},
+		/**
+		 * Observed behaviour of `activeVersion` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		activeVersion() {
 			if (!this.selectedVersionUuid) {
 				return this.productionVersion || (this.orderedVersions[0] || null)
 			}
 			return this.orderedVersions.find((v) => v.uuid === this.selectedVersionUuid) || null
 		},
+		/**
+		 * Observed behaviour of `activeVersionUuid` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		activeVersionUuid() {
 			return this.activeVersion ? this.activeVersion.uuid : ''
 		},
+		/**
+		 * Observed behaviour of `activeVersionSlug` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		activeVersionSlug() {
 			return this.activeVersion ? this.activeVersion.slug : ''
 		},
+		/**
+		 * Observed behaviour of `activeManifest` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		activeManifest() {
 			return (this.activeVersion && this.activeVersion.manifest) || {}
 		},
+		/**
+		 * Observed behaviour of `activePages` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		activePages() {
 			const pages = this.activeManifest.pages
 			return Array.isArray(pages) ? pages : []
 		},
+		/**
+		 * Observed behaviour of `activeMenu` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		activeMenu() {
 			const menu = this.activeManifest.menu
 			return Array.isArray(menu) ? menu : []
 		},
+		/**
+		 * Observed behaviour of `activeSchemas` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		activeSchemas() {
 			const seen = new Set()
 			const out = []
@@ -286,16 +356,36 @@ export default {
 			})
 			return out
 		},
+		/**
+		 * Observed behaviour of `schemaCount` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		schemaCount() {
 			return this.activeSchemas.length
 		},
+		/**
+		 * Observed behaviour of `productionVersion` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		productionVersion() {
 			if (!this.productionVersionUuid) return null
 			return this.orderedVersions.find((v) => v.uuid === this.productionVersionUuid) || null
 		},
+		/**
+		 * Observed behaviour of `productionSemver` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		productionSemver() {
 			return (this.productionVersion && this.productionVersion.semver) || ''
 		},
+		/**
+		 * Observed behaviour of `callerRole` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		callerRole() {
 			const permissions = (this.application && this.application.permissions) || {}
 			const uid = this.callerUid
@@ -306,6 +396,11 @@ export default {
 			if (inBucket(permissions.viewers)) return t('openbuilt', 'viewer')
 			return ''
 		},
+		/**
+		 * Observed behaviour of `orderedVersions` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		orderedVersions() {
 			// Order by promotesTo chain — start from versions with no predecessor.
 			const all = Array.isArray(this.versions) ? this.versions.slice() : []
@@ -339,6 +434,11 @@ export default {
 			}
 			return ordered
 		},
+		/**
+		 * Observed behaviour of `visibleVersions` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		visibleVersions() {
 			const uid = this.callerUid
 			const permissions = (this.application && this.application.permissions) || {}
@@ -349,12 +449,27 @@ export default {
 				return isEditorOrOwner
 			})
 		},
+		/**
+		 * Observed behaviour of `filesTooltip` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		filesTooltip() {
 			return t('openbuilt', 'count of OR-attached files across all objects in this version\'s register; storage-bytes aggregation deferred')
 		},
+		/**
+		 * Observed behaviour of `totalActivityEvents` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		totalActivityEvents() {
 			return this.activity.reduce((acc, b) => acc + ((b && Number(b.eventCount)) || 0), 0)
 		},
+		/**
+		 * Observed behaviour of `sparklinePoints` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		sparklinePoints() {
 			if (!this.activity || this.activity.length === 0) return '0,30 100,30'
 			const max = this.activity.reduce((m, b) => Math.max(m, Number(b.eventCount) || 0), 1) || 1
@@ -364,6 +479,11 @@ export default {
 				return `${x.toFixed(2)},${y.toFixed(2)}`
 			}).join(' ')
 		},
+		/**
+		 * Observed behaviour of `banner` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		banner() {
 			if (this.versionNoLongerAccessible) {
 				return {
@@ -376,12 +496,22 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * Observed behaviour of `object` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		object(next) {
 			if (next) {
 				this.application = next
 				this.loadVersions()
 			}
 		},
+		/**
+		 * Observed behaviour of `objectId` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		objectId() {
 			this.refreshApplication()
 		},
@@ -393,13 +523,28 @@ export default {
 			const match = this.orderedVersions.find((v) => v.slug === newSlug)
 			if (match) this.selectedVersionUuid = match.uuid
 		},
+		/**
+		 * Observed behaviour of `activeVersionUuid` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		activeVersionUuid() {
 			this.scheduleInsightsFetch()
 		},
+		/**
+		 * Observed behaviour of `selectedWindow` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 */
 		selectedWindow() {
 			this.scheduleInsightsFetch()
 		},
 	},
+	/**
+	 * Observed behaviour of `mounted` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+	 */
 	mounted() {
 		// CnDetailPage's #header slot doesn't pass the resolved object, so we
 		// fetch the Application by UUID from the route params on mount.
@@ -409,6 +554,11 @@ export default {
 			this.loadVersions()
 		}
 	},
+	/**
+	 * Observed behaviour of `beforeDestroy` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+	 */
 	beforeDestroy() {
 		if (this.insightsDebounce) {
 			clearTimeout(this.insightsDebounce)
@@ -454,6 +604,7 @@ export default {
 		 *
 		 * @param {object} version The version row.
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		selectVersion(version) {
 			if (!version || !version.slug) return
@@ -472,6 +623,7 @@ export default {
 		 * Switch the active version to the production version (banner action).
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		switchToProduction() {
 			const prod = this.productionVersion
@@ -487,6 +639,7 @@ export default {
 		 *
 		 * @param {object} version The version row.
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		onPromoteClick(version) {
 			const opener = (typeof window !== 'undefined' && window.openbuilt && typeof window.openbuilt.openPromoteDialog === 'function')
@@ -507,6 +660,7 @@ export default {
 		 *
 		 * @param {object} application The Application record.
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		onOpenPermissions(application) {
 			this.$emit('open-permissions', application)
@@ -516,6 +670,7 @@ export default {
 		 * Re-load the Application record by `objectId`.
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		async refreshApplication() {
 			const uuid = this.objectId || (this.$route && this.$route.params && this.$route.params.objectId) || ''
@@ -542,6 +697,7 @@ export default {
 		 * existing CRUD endpoint (`/api/applications/{slug}/versions`).
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		async loadVersions() {
 			if (!this.appSlug) return
@@ -581,6 +737,7 @@ export default {
 		 * back-to-back (version, window) changes into one HTTP call.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		scheduleInsightsFetch() {
 			if (this.insightsDebounce) {
@@ -593,6 +750,7 @@ export default {
 		 * Fetch the insights payload for the active (app, version, window).
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		async fetchInsights() {
 			const appUuid = (this.application && (this.application.uuid || this.application.id)) || this.objectId

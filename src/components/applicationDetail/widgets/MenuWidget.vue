@@ -48,6 +48,7 @@ export default {
 		 * Open the page designer with the menu pane focused (REQ-OBADO-010).
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		openEntry() {
 			const route = buildVersionedRoute(

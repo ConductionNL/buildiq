@@ -98,6 +98,8 @@ final class PlaceholderResolver
      * @param string $value Source value.
      *
      * @return string Slug.
+     *
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
      */
     public function slug(string $value): string
     {
@@ -125,6 +127,8 @@ final class PlaceholderResolver
      * @param string $value Source value.
      *
      * @return string PascalCase'd identifier.
+     *
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
      */
     public function pascalCase(string $value): string
     {

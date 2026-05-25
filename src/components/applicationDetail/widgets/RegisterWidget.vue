@@ -63,6 +63,7 @@ export default {
 		 * `openbuilt-{appSlug}-{versionSlug}` (ADR-002 / openbuilt-versioning-model).
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		registerSlug() {
 			return `openbuilt-${this.appSlug}-${this.versionSlug}`
@@ -74,6 +75,7 @@ export default {
 		 * Nextcloud URL, not a Vue Router internal route).
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		openInOpenRegister() {
 			const url = generateUrl(`/apps/openregister/registers/${encodeURIComponent(this.registerSlug)}`)

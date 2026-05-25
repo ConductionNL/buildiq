@@ -67,6 +67,11 @@ export default {
 	emits: ['update:payload'],
 
 	computed: {
+		/**
+		 * Observed behaviour of `presetOptions` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 */
 		presetOptions() {
 			return [
 				{
@@ -108,6 +113,11 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Observed behaviour of `selectPreset` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 */
 		selectPreset(presetId) {
 			const update = { preset: presetId }
 

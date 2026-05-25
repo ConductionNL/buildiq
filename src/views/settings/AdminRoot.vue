@@ -40,6 +40,11 @@ export default {
 			appVersion: loadState('openbuilt', 'version', 'Unknown'),
 		}
 	},
+	/**
+	 * Observed behaviour of `created` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+	 */
 	async created() {
 		await initializeStores()
 		this.storesReady = true

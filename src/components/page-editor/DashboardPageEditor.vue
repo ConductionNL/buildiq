@@ -57,11 +57,21 @@ export default {
 	},
 	emits: ['update:config'],
 	computed: {
+		/**
+		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		validatedConfigKeys() {
 			return ['widgets', 'layout']
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `update` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		update(key, value) {
 			const next = { ...this.config }
 			if (!value || (Array.isArray(value) && value.length === 0)) {

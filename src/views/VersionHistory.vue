@@ -82,6 +82,11 @@ export default {
 	watch: {
 		applicationUuid: {
 			immediate: true,
+			/**
+			 * Observed behaviour of `handler` (retrofit annotation).
+			 *
+			 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+			 */
 			handler(uuid) {
 				if (uuid) {
 					this.refresh()
@@ -92,6 +97,11 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `refresh` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 */
 		async refresh() {
 			if (!this.applicationUuid) {
 				this.versions = []
@@ -122,31 +132,71 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * Observed behaviour of `rowKey` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 */
 		rowKey(row) {
 			return this.rowUuid(row) || JSON.stringify(row).slice(0, 32)
 		},
+		/**
+		 * Observed behaviour of `rowUuid` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 */
 		rowUuid(row) {
 			const self = (row && row['@self']) || {}
 			return self.id || self.uuid || row.uuid || ''
 		},
+		/**
+		 * Observed behaviour of `rowApplicationUuid` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 */
 		rowApplicationUuid(row) {
 			return (row && row.applicationUuid) || ''
 		},
+		/**
+		 * Observed behaviour of `rowVersion` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 */
 		rowVersion(row) {
 			return (row && row.version) || ''
 		},
+		/**
+		 * Observed behaviour of `rowPublishedAt` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 */
 		rowPublishedAt(row) {
 			return (row && row.publishedAt) || ''
 		},
+		/**
+		 * Observed behaviour of `rowPublishedBy` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 */
 		rowPublishedBy(row) {
 			return (row && row.publishedBy) || ''
 		},
+		/**
+		 * Observed behaviour of `rowNotes` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 */
 		rowNotes(row) {
 			return (row && row.notes) || ''
 		},
 		isCurrent(row) {
 			return this.rowUuid(row) === this.currentVersionUuid
 		},
+		/**
+		 * Observed behaviour of `formatDate` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 */
 		formatDate(iso) {
 			if (!iso) {
 				return ''
@@ -157,9 +207,19 @@ export default {
 				return iso
 			}
 		},
+		/**
+		 * Observed behaviour of `compare` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 */
 		compare(row) {
 			this.$emit('compare', { from: 'draft', to: this.rowUuid(row) })
 		},
+		/**
+		 * Observed behaviour of `askRollback` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 */
 		askRollback(row) {
 			this.rollbackTarget = {
 				uuid: this.rowUuid(row),
@@ -169,11 +229,21 @@ export default {
 			}
 			this.rollbackOpen = true
 		},
+		/**
+		 * Observed behaviour of `onRollbackConfirmed` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 */
 		onRollbackConfirmed(version) {
 			this.$emit('rollback', version)
 			this.rollbackOpen = false
 			this.rollbackTarget = null
 		},
+		/**
+		 * Observed behaviour of `onRollbackCancelled` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 */
 		onRollbackCancelled() {
 			this.rollbackOpen = false
 			this.rollbackTarget = null

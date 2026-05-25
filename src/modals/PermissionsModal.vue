@@ -96,6 +96,11 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `groupOptions` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+		 */
 		groupOptions() {
 			return this.availableGroups.map(gid => ({ label: gid, value: gid }))
 		},
@@ -103,12 +108,22 @@ export default {
 	watch: {
 		application: {
 			immediate: true,
+			/**
+			 * Observed behaviour of `handler` (retrofit annotation).
+			 *
+			 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+			 */
 			handler(app) {
 				this.syncFromApplication(app)
 			},
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `syncFromApplication` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+		 */
 		syncFromApplication(app) {
 			const perms = (app && app.permissions) || {}
 			this.ownersModel = (perms.owners || []).map(g => ({ label: g, value: g }))
@@ -117,9 +132,19 @@ export default {
 			this.orphanError = false
 			this.saving = false
 		},
+		/**
+		 * Observed behaviour of `onClose` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+		 */
 		onClose() {
 			this.$emit('update:open', false)
 		},
+		/**
+		 * Observed behaviour of `save` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+		 */
 		async save() {
 			const owners = this.ownersModel.map(o => o.value)
 			const editors = this.editorsModel.map(o => o.value)

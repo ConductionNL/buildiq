@@ -153,6 +153,11 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Observed behaviour of `slugErrors` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		slugErrors() {
 			return this.localVersions.map((row) => {
 				if (!row.name) return t('openbuilt', 'Version name must not be empty.')
@@ -161,6 +166,11 @@ export default {
 			})
 		},
 
+		/**
+		 * Observed behaviour of `duplicateSlugs` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		duplicateSlugs() {
 			const seen = {}
 			const dupes = new Set()
@@ -176,6 +186,11 @@ export default {
 			return dupes
 		},
 
+		/**
+		 * Observed behaviour of `isValid` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		isValid() {
 			if (this.localVersions.length === 0) return false
 			if (this.duplicateSlugs.size > 0) return false
@@ -190,12 +205,22 @@ export default {
 
 		localVersions: {
 			deep: true,
+			/**
+			 * Observed behaviour of `handler` (retrofit annotation).
+			 *
+			 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+			 */
 			handler() {
 				this.emit()
 			},
 		},
 	},
 
+	/**
+	 * Observed behaviour of `mounted` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+	 */
 	mounted() {
 		// Emit initial validity + versions so the parent wizard shell can
 		// enable/disable the Next button before the user makes any change.
@@ -203,6 +228,11 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Observed behaviour of `emit` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		emit() {
 			const clean = this.localVersions.map(({ name, slug }) => ({ name, slug }))
 			this.$emit('update:payload', {
@@ -211,6 +241,11 @@ export default {
 			})
 		},
 
+		/**
+		 * Observed behaviour of `getSlugError` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		getSlugError(index) {
 			if (this.isDuplicate(index)) {
 				return t('openbuilt', `Slug \`${this.localVersions[index].slug}\` is already used in this chain`)
@@ -223,6 +258,11 @@ export default {
 			return this.duplicateSlugs.has(index)
 		},
 
+		/**
+		 * Observed behaviour of `onNameInput` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		onNameInput(index, event) {
 			const name = event.target.value
 			this.localVersions[index].name = name
@@ -233,15 +273,30 @@ export default {
 			this.minRowError = null
 		},
 
+		/**
+		 * Observed behaviour of `onSlugInput` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		onSlugInput(index, event) {
 			this.localVersions[index]._slugManual = true
 			this.localVersions[index].slug = event.target.value
 		},
 
+		/**
+		 * Observed behaviour of `toggleAdvanced` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		toggleAdvanced(index) {
 			this.$set(this.advancedOpen, index, !this.advancedOpen[index])
 		},
 
+		/**
+		 * Observed behaviour of `addRow` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		addRow() {
 			this.localVersions.push({
 				name: '',
@@ -252,6 +307,11 @@ export default {
 			this.minRowError = null
 		},
 
+		/**
+		 * Observed behaviour of `removeRow` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		removeRow(index) {
 			if (this.localVersions.length <= 1) {
 				this.minRowError = t('openbuilt', 'At least one version is required')
@@ -262,26 +322,51 @@ export default {
 			this.minRowError = null
 		},
 
+		/**
+		 * Observed behaviour of `moveUp` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		moveUp(index) {
 			if (index === 0) return
 			const item = this.localVersions.splice(index, 1)[0]
 			this.localVersions.splice(index - 1, 0, item)
 		},
 
+		/**
+		 * Observed behaviour of `moveDown` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		moveDown(index) {
 			if (index >= this.localVersions.length - 1) return
 			const item = this.localVersions.splice(index, 1)[0]
 			this.localVersions.splice(index + 1, 0, item)
 		},
 
+		/**
+		 * Observed behaviour of `onDragStart` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		onDragStart(index) {
 			this.dragFromIndex = index
 		},
 
+		/**
+		 * Observed behaviour of `onDragOver` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		onDragOver(_index) {
 			// Allow drop by calling .prevent in the template
 		},
 
+		/**
+		 * Observed behaviour of `onDrop` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		onDrop(toIndex) {
 			if (this.dragFromIndex === null || this.dragFromIndex === toIndex) return
 			const item = this.localVersions.splice(this.dragFromIndex, 1)[0]
@@ -289,6 +374,11 @@ export default {
 			this.dragFromIndex = null
 		},
 
+		/**
+		 * Observed behaviour of `onDragEnd` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 */
 		onDragEnd() {
 			this.dragFromIndex = null
 		},

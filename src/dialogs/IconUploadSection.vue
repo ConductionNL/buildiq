@@ -135,14 +135,29 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Observed behaviour of `objectUuid` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		objectUuid() {
 			const self = this.application['@self'] || {}
 			return self.id || this.application.uuid || this.application.id || ''
 		},
+		/**
+		 * Observed behaviour of `iconLightUrl` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		iconLightUrl() {
 			if (!this.objectUuid) return null
 			return `/index.php/apps/openbuilt/icons/${this.application.slug}.svg?v=${this.lightNonce}`
 		},
+		/**
+		 * Observed behaviour of `iconDarkUrl` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		iconDarkUrl() {
 			if (!this.objectUuid) return null
 			return `/index.php/apps/openbuilt/icons/${this.application.slug}-dark.svg?v=${this.darkNonce}`
@@ -152,6 +167,11 @@ export default {
 	watch: {
 		application: {
 			immediate: true,
+			/**
+			 * Observed behaviour of `handler` (retrofit annotation).
+			 *
+			 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+			 */
 			handler(app) {
 				this.lightRef = app?.icon?.ref || null
 				this.darkRef = app?.iconDark?.ref || null
@@ -160,13 +180,28 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Observed behaviour of `onLightPreviewError` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		onLightPreviewError(e) {
 			e.target.style.display = 'none'
 		},
+		/**
+		 * Observed behaviour of `onDarkPreviewError` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		onDarkPreviewError(e) {
 			e.target.style.display = 'none'
 		},
 
+		/**
+		 * Observed behaviour of `validateSvgFile` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		validateSvgFile(file) {
 			if (!file) return false
 			if (!file.name.toLowerCase().endsWith('.svg')) {
@@ -175,6 +210,11 @@ export default {
 			return true
 		},
 
+		/**
+		 * Observed behaviour of `onLightFileChange` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		async onLightFileChange(event) {
 			this.lightError = ''
 			const file = event.target.files?.[0]
@@ -186,6 +226,11 @@ export default {
 			await this.uploadIcon(file, 'light')
 		},
 
+		/**
+		 * Observed behaviour of `onDarkFileChange` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		async onDarkFileChange(event) {
 			this.darkError = ''
 			const file = event.target.files?.[0]
@@ -197,6 +242,11 @@ export default {
 			await this.uploadIcon(file, 'dark')
 		},
 
+		/**
+		 * Observed behaviour of `uploadIcon` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		async uploadIcon(file, variant) {
 			if (!this.objectUuid) return
 			this.uploading = true
@@ -246,14 +296,29 @@ export default {
 			}
 		},
 
+		/**
+		 * Observed behaviour of `removeLightIcon` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		async removeLightIcon() {
 			await this.removeIcon('light')
 		},
 
+		/**
+		 * Observed behaviour of `removeDarkIcon` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		async removeDarkIcon() {
 			await this.removeIcon('dark')
 		},
 
+		/**
+		 * Observed behaviour of `removeIcon` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 */
 		async removeIcon(variant) {
 			if (!this.objectUuid) return
 			this.uploading = true
