@@ -137,9 +137,19 @@ export default {
 	},
 	emits: ['update:config'],
 	computed: {
+		/**
+		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		validatedConfigKeys() {
 			return ['submitHandler', 'submitEndpoint', 'submitMethod', 'mode', 'submitLabel', 'successMessage', 'fields', 'initialValue']
 		},
+		/**
+		 * Observed behaviour of `submitShape` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		submitShape() {
 			if (this.config.submitHandler) {
 				return 'handler'
@@ -151,6 +161,11 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `update` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		update(key, value) {
 			const next = { ...this.config }
 			if (value === '' || value === null) {
@@ -160,6 +175,11 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `setSubmitShape` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		setSubmitShape(shape) {
 			const next = { ...this.config }
 			if (shape === 'handler') {
@@ -169,6 +189,11 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `setSubmitHandler` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		setSubmitHandler(value) {
 			const next = { ...this.config }
 			// Exactly-one-of: setting submitHandler clears submitEndpoint.
@@ -180,6 +205,11 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `setSubmitEndpoint` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		setSubmitEndpoint(value) {
 			const next = { ...this.config }
 			delete next.submitHandler

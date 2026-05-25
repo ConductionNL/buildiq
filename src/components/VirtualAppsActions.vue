@@ -45,6 +45,11 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Observed behaviour of `onWizardCreated` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 */
 		onWizardCreated(applicationUuid) {
 			this.showWizard = false
 

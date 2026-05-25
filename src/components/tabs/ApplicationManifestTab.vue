@@ -60,6 +60,11 @@ export default {
 	watch: {
 		obApp: {
 			immediate: true,
+			/**
+			 * Observed behaviour of `handler` (retrofit annotation).
+			 *
+			 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+			 */
 			handler(app) {
 				if (app) {
 					this.manifestText = JSON.stringify(app.manifest || {}, null, 2)
@@ -68,6 +73,11 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `parseAndValidate` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 */
 		parseAndValidate() {
 			let parsed
 			try {
@@ -84,6 +94,11 @@ export default {
 			this.error = ''
 			return parsed
 		},
+		/**
+		 * Observed behaviour of `save` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 */
 		async save() {
 			if (this.obAppRole !== 'editor' && this.obAppRole !== 'owner') {
 				return

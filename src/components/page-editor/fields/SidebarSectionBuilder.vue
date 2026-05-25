@@ -49,26 +49,51 @@ export default {
 	},
 	emits: ['update:modelValue'],
 	computed: {
+		/**
+		 * Observed behaviour of `localSections` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		localSections() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `updateField` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		updateField(index, key, value) {
 			const next = this.localSections.slice()
 			const current = next[index] || {}
 			next[index] = { ...current, [key]: value }
 			this.$emit('update:modelValue', next)
 		},
+		/**
+		 * Observed behaviour of `updateColumns` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		updateColumns(index, value) {
 			const cols = value.split(',').map((s) => s.trim()).filter(Boolean)
 			this.updateField(index, 'columns', cols)
 		},
+		/**
+		 * Observed behaviour of `addSection` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		addSection() {
 			const next = this.localSections.slice()
 			next.push({ id: '', label: '', columns: [] })
 			this.$emit('update:modelValue', next)
 		},
+		/**
+		 * Observed behaviour of `removeSection` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		removeSection(index) {
 			const next = this.localSections.slice()
 			next.splice(index, 1)

@@ -91,6 +91,11 @@ export default {
 		},
 	},
 	emits: ['update:config'],
+	/**
+	 * Observed behaviour of `setup` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+	 */
 	setup() {
 		// When chain spec #2's in-memory preview is wired AND it exposes a
 		// registry list this surfaces it as <datalist> suggestions; until
@@ -105,9 +110,19 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 */
 		validatedConfigKeys() {
 			return ['component', 'props']
 		},
+		/**
+		 * Observed behaviour of `registryKeys` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 */
 		registryKeys() {
 			const reg = this.preview && this.preview.componentRegistry
 			if (Array.isArray(reg)) {
@@ -118,12 +133,22 @@ export default {
 			}
 			return []
 		},
+		/**
+		 * Observed behaviour of `otherKeys` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 */
 		otherKeys() {
 			return Object.keys(this.config || {}).filter((k) => k !== 'component' && k !== 'props')
 		},
 	},
 	watch: {
 		'config.props': {
+			/**
+			 * Observed behaviour of `handler` (retrofit annotation).
+			 *
+			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+			 */
 			handler(val) {
 				const fresh = this.stringifyProps(val)
 				if (fresh !== this.propsDraft) {
@@ -134,6 +159,11 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `stringifyProps` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 */
 		stringifyProps(value) {
 			if (value === undefined || value === null) {
 				return ''
@@ -144,6 +174,11 @@ export default {
 				return ''
 			}
 		},
+		/**
+		 * Observed behaviour of `update` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 */
 		update(key, value) {
 			const next = { ...this.config }
 			if (value === '' || value === null || value === undefined) {
@@ -153,6 +188,11 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `onPropsInput` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 */
 		onPropsInput(value) {
 			this.propsDraft = value
 			const trimmed = (value || '').trim()

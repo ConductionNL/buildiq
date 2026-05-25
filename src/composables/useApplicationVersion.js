@@ -46,6 +46,7 @@ import { generateUrl } from '@nextcloud/router'
  * @param {Array<object>} versions          All ApplicationVersion records for the app.
  * @param {string|null}   productionUuid    UUID of the production ApplicationVersion.
  * @return {object|null} The selected ApplicationVersion or null when the list is empty.
+ * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-4
  */
 export function defaultEditableVersion(versions, productionUuid) {
 	if (!Array.isArray(versions) || versions.length === 0) {
@@ -82,6 +83,7 @@ export function defaultEditableVersion(versions, productionUuid) {
  * @param {string|undefined} versionSlug The version slug (e.g. `staging`), or undefined
  *                                       to trigger the most-upstream-non-production fallback.
  * @return {{ applicationVersion: import('vue').Ref<object|null>, loading: import('vue').Ref<boolean>, error: import('vue').Ref<Error|null> }}
+ * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-4
  */
 export function useApplicationVersion(appSlug, versionSlug) {
 	/** @type {import('vue').Ref<object|null>} */

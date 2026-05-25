@@ -50,6 +50,7 @@ export default {
 		 *
 		 * @param {object} page The manifest page entry.
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		openPage(page) {
 			if (!page || !page.id) {

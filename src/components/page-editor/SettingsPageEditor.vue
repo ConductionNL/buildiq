@@ -143,9 +143,19 @@ export default {
 	},
 	emits: ['update:config'],
 	computed: {
+		/**
+		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		validatedConfigKeys() {
 			return ['saveEndpoint', 'sections', 'tabs']
 		},
+		/**
+		 * Observed behaviour of `layoutShape` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		layoutShape() {
 			// `tabs` wins only when there is no `sections` array so a
 			// half-edited config never silently flips branches.
@@ -154,11 +164,21 @@ export default {
 			}
 			return 'sections'
 		},
+		/**
+		 * Observed behaviour of `tabs` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		tabs() {
 			return Array.isArray(this.config.tabs) ? this.config.tabs : []
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `update` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		update(key, value) {
 			const next = { ...this.config }
 			if (value === '' || value === null || value === undefined
@@ -169,6 +189,11 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `setLayoutShape` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		setLayoutShape(shape) {
 			const next = { ...this.config }
 			if (shape === 'tabs') {
@@ -184,6 +209,11 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `updateTabField` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		updateTabField(index, key, value) {
 			const next = { ...this.config }
 			const tabsArr = (next.tabs || []).slice()
@@ -197,12 +227,22 @@ export default {
 			next.tabs = tabsArr
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `addTab` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		addTab() {
 			const next = { ...this.config }
 			next.tabs = [...(next.tabs || []), { id: '', label: '', sections: [] }]
 			delete next.sections
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `removeTab` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		removeTab(index) {
 			const next = { ...this.config }
 			const tabsArr = (next.tabs || []).slice()

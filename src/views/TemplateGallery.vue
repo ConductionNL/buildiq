@@ -101,12 +101,22 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `categoryOptions` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
+		 */
 		categoryOptions() {
 			return Object.entries(CATEGORY_LABELS).map(([value, label]) => ({
 				id: value,
 				label: t('openbuilt', label),
 			}))
 		},
+		/**
+		 * Observed behaviour of `filteredTemplates` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
+		 */
 		filteredTemplates() {
 			const needle = this.search.trim().toLowerCase()
 			const cat = this.categoryFilter?.id ?? this.categoryFilter ?? null
@@ -128,6 +138,11 @@ export default {
 		this.fetchTemplates()
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `fetchTemplates` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
+		 */
 		async fetchTemplates() {
 			this.loading = true
 			try {
@@ -144,6 +159,11 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * Observed behaviour of `resolveScreenshot` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
+		 */
 		resolveScreenshot(url) {
 			if (!url) {
 				return ''
@@ -153,13 +173,28 @@ export default {
 			}
 			return generateUrl(`/apps/openbuilt/${url}`)
 		},
+		/**
+		 * Observed behaviour of `categoryLabel` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
+		 */
 		categoryLabel(category) {
 			return t('openbuilt', CATEGORY_LABELS[category] || category || '')
 		},
+		/**
+		 * Observed behaviour of `openClone` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
+		 */
 		openClone(template) {
 			this.cloneTarget = template
 			this.cloneOpen = true
 		},
+		/**
+		 * Observed behaviour of `onCloneSubmit` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
+		 */
 		async onCloneSubmit(payload) {
 			const slug = this.cloneTarget?.slug
 			if (!slug) {
@@ -176,6 +211,11 @@ export default {
 				this.$refs.cloneDialog?.setError(message)
 			}
 		},
+		/**
+		 * Observed behaviour of `redirectAfterClone` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
+		 */
 		redirectAfterClone(created) {
 			const slug = created?.slug
 			if (!slug) {

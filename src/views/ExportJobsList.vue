@@ -75,22 +75,47 @@ export default {
 			poller: null,
 		}
 	},
+	/**
+	 * Observed behaviour of `mounted` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+	 */
 	mounted() {
 		this.fetchJobs()
 		this.poller = setInterval(this.fetchJobs, 2000)
 	},
+	/**
+	 * Observed behaviour of `beforeDestroy` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+	 */
 	beforeDestroy() {
 		if (this.poller) {
 			clearInterval(this.poller)
 		}
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `openDialog` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+		 */
 		openDialog() {
 			this.showDialog = true
 		},
+		/**
+		 * Observed behaviour of `onQueued` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+		 */
 		onQueued() {
 			this.fetchJobs()
 		},
+		/**
+		 * Observed behaviour of `fetchJobs` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+		 */
 		async fetchJobs() {
 			// Placeholder: real impl polls OR REST per ADR-022; the controller
 			// deliberately does not expose CRUD on ExportJob.
@@ -105,6 +130,11 @@ export default {
 				// Silent fail; polling will retry.
 			}
 		},
+		/**
+		 * Observed behaviour of `statusLabel` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+		 */
 		statusLabel(status) {
 			const map = {
 				queued: this.t('openbuilt', 'Queued'),

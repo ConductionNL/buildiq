@@ -173,11 +173,21 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `emit` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		emit(menu) {
 			// Re-assign monotonic `order` integers per top-level entry.
 			const next = menu.map((e, i) => ({ ...e, order: i }))
 			this.$emit('update:menu', next)
 		},
+		/**
+		 * Observed behaviour of `updateField` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		updateField(index, key, value) {
 			const next = this.menu.slice()
 			const current = { ...next[index] }
@@ -189,6 +199,11 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+		/**
+		 * Observed behaviour of `updateActionField` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		updateActionField(index, value) {
 			const next = this.menu.slice()
 			const current = { ...next[index] }
@@ -203,16 +218,31 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+		/**
+		 * Observed behaviour of `addEntry` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		addEntry() {
 			const next = this.menu.slice()
 			next.push({ id: '', label: '', target: 'main' })
 			this.emit(next)
 		},
+		/**
+		 * Observed behaviour of `removeEntry` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		removeEntry(index) {
 			const next = this.menu.slice()
 			next.splice(index, 1)
 			this.emit(next)
 		},
+		/**
+		 * Observed behaviour of `addChild` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		addChild(index) {
 			const next = this.menu.slice()
 			const current = { ...next[index] }
@@ -222,6 +252,11 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+		/**
+		 * Observed behaviour of `updateChildField` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		updateChildField(index, cIndex, key, value) {
 			const next = this.menu.slice()
 			const parent = { ...next[index] }
@@ -243,6 +278,11 @@ export default {
 			next[index] = parent
 			this.emit(next)
 		},
+		/**
+		 * Observed behaviour of `removeChild` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		removeChild(index, cIndex) {
 			const next = this.menu.slice()
 			const parent = { ...next[index] }
@@ -256,9 +296,19 @@ export default {
 			next[index] = parent
 			this.emit(next)
 		},
+		/**
+		 * Observed behaviour of `onTopLevelReorder` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		onTopLevelReorder(newOrder) {
 			this.emit(newOrder)
 		},
+		/**
+		 * Observed behaviour of `onChildrenReorder` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		onChildrenReorder(index, newOrder) {
 			const next = this.menu.slice()
 			const parent = { ...next[index] }

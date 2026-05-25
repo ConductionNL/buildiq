@@ -27,6 +27,7 @@ const DEFAULT_LIMIT = 50
  * @param {object} [opts] - options.
  * @param {number} [opts.limit] - max stack depth (default 50).
  * @return {object} { push, undo, redo, reset, canUndo, canRedo, size }
+ * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-4
  */
 export function useManifestHistory(initial = null, opts = {}) {
 	const limit = Math.max(1, opts.limit || DEFAULT_LIMIT)

@@ -47,11 +47,21 @@ export default {
 			successMessage: '',
 		}
 	},
+	/**
+	 * Observed behaviour of `created` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+	 */
 	created() {
 		const settingsStore = useSettingsStore()
 		this.form.register = settingsStore.settings?.register || ''
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `save` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+		 */
 		async save() {
 			this.saving = true
 			this.successMessage = ''

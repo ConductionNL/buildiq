@@ -66,11 +66,21 @@ export default {
 	},
 	emits: ['update:modelValue'],
 	computed: {
+		/**
+		 * Observed behaviour of `localActions` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		localActions() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `updateField` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		updateField(index, key, value) {
 			const next = this.localActions.slice()
 			const current = next[index] || {}
@@ -82,11 +92,21 @@ export default {
 			}
 			this.$emit('update:modelValue', next)
 		},
+		/**
+		 * Observed behaviour of `addAction` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		addAction() {
 			const next = this.localActions.slice()
 			next.push({ id: '', label: '' })
 			this.$emit('update:modelValue', next)
 		},
+		/**
+		 * Observed behaviour of `removeAction` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		removeAction(index) {
 			const next = this.localActions.slice()
 			next.splice(index, 1)

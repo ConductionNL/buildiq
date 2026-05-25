@@ -133,6 +133,11 @@ export default {
 		},
 	},
 	emits: ['update:config'],
+	/**
+	 * Observed behaviour of `setup` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+	 */
 	setup(props) {
 		const picker = useRegisterPicker({ appSlug: props.appSlug })
 		return { picker }
@@ -145,9 +150,19 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		validatedConfigKeys() {
 			return ['register', 'schema', 'source', 'columns']
 		},
+		/**
+		 * Observed behaviour of `sourceShape` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		sourceShape() {
 			// `source` wins only when there is no register binding so a
 			// half-edited config never silently flips branches.
@@ -160,6 +175,11 @@ export default {
 	watch: {
 		'config.register': {
 			immediate: true,
+			/**
+			 * Observed behaviour of `handler` (retrofit annotation).
+			 *
+			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+			 */
 			handler(val) {
 				if (val) {
 					this.fetchSchemas(val)
@@ -170,6 +190,11 @@ export default {
 		},
 		'config.schema': {
 			immediate: true,
+			/**
+			 * Observed behaviour of `handler` (retrofit annotation).
+			 *
+			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+			 */
 			handler(val) {
 				if (val && this.config.register) {
 					this.fetchSchemaProperties(this.config.register, val)
@@ -183,6 +208,11 @@ export default {
 		await this.fetchRegisters()
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `update` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		update(key, value) {
 			const next = { ...this.config }
 			if (value === '' || value === null || (Array.isArray(value) && value.length === 0)) {
@@ -202,6 +232,11 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `setSourceShape` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		setSourceShape(shape) {
 			const next = { ...this.config }
 			if (shape === 'source') {
@@ -212,12 +247,27 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Observed behaviour of `fetchRegisters` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		async fetchRegisters() {
 			this.registers = await this.picker.fetchRegisters()
 		},
+		/**
+		 * Observed behaviour of `fetchSchemas` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		async fetchSchemas(register) {
 			this.schemas = await this.picker.fetchSchemas(register)
 		},
+		/**
+		 * Observed behaviour of `fetchSchemaProperties` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		async fetchSchemaProperties(register, schema) {
 			this.schemaProperties = await this.picker.fetchSchemaProperties(register, schema)
 		},

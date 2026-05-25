@@ -134,12 +134,22 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Observed behaviour of `slugError` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 */
 		slugError() {
 			if (!this.payload.slug) return null
 			const result = validateSlug(this.payload.slug)
 			return result.valid ? null : result.message
 		},
 
+		/**
+		 * Observed behaviour of `isValid` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 */
 		isValid() {
 			return (
 				(this.payload.name || '').trim() !== ''
@@ -156,6 +166,11 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Observed behaviour of `onNameInput` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 */
 		onNameInput(event) {
 			const name = event.target.value
 			const update = { name }
@@ -168,15 +183,30 @@ export default {
 			this.$emit('update:payload', update)
 		},
 
+		/**
+		 * Observed behaviour of `onSlugInput` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 */
 		onSlugInput(event) {
 			this.slugManuallyEdited = true
 			this.$emit('update:payload', { slug: event.target.value })
 		},
 
+		/**
+		 * Observed behaviour of `onDescriptionInput` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 */
 		onDescriptionInput(event) {
 			this.$emit('update:payload', { description: event.target.value })
 		},
 
+		/**
+		 * Observed behaviour of `onIconChange` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 */
 		onIconChange(field, event) {
 			const file = event.target.files?.[0] || null
 			this.$emit('update:payload', { [field]: file })

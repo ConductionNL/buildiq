@@ -48,22 +48,42 @@ export default {
 	},
 	emits: ['update:modelValue'],
 	computed: {
+		/**
+		 * Observed behaviour of `localWidgets` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		localWidgets() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `updateField` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		updateField(index, key, value) {
 			const next = this.localWidgets.slice()
 			const current = next[index] || {}
 			next[index] = { ...current, [key]: value }
 			this.$emit('update:modelValue', next)
 		},
+		/**
+		 * Observed behaviour of `addWidget` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		addWidget() {
 			const next = this.localWidgets.slice()
 			next.push({ id: '', title: '', type: 'custom' })
 			this.$emit('update:modelValue', next)
 		},
+		/**
+		 * Observed behaviour of `removeWidget` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		removeWidget(index) {
 			const next = this.localWidgets.slice()
 			next.splice(index, 1)

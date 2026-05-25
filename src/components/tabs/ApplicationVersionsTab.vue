@@ -36,6 +36,11 @@ export default {
 		return { rollbackError: '' }
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `shortHex` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 */
 		shortHex() {
 			const bytes = new Uint8Array(3)
 			if (globalThis.crypto && globalThis.crypto.getRandomValues) {
@@ -47,6 +52,11 @@ export default {
 			}
 			return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
 		},
+		/**
+		 * Observed behaviour of `onRollback` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 */
 		async onRollback(version) {
 			if (!version || !version.manifest || !this.obApp) {
 				return

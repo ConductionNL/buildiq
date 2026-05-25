@@ -63,15 +63,30 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `fromLabel` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 */
 		fromLabel() {
 			return this.from === 'draft' ? t('openbuilt', 'Current draft') : (this.from.slice(0, 8) + '…')
 		},
+		/**
+		 * Observed behaviour of `toLabel` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 */
 		toLabel() {
 			return this.to === 'draft' ? t('openbuilt', 'Current draft') : (this.to ? this.to.slice(0, 8) + '…' : '—')
 		},
 		hasAnyContent() {
 			return this.fromBlob !== null || this.toBlob !== null
 		},
+		/**
+		 * Observed behaviour of `diffParts` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 */
 		diffParts() {
 			const fromText = this.prettyManifest(this.fromBlob?.manifest)
 			const toText = this.prettyManifest(this.toBlob?.manifest)
@@ -82,22 +97,47 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * Observed behaviour of `from` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 */
 		from() {
 			this.fetch()
 		},
+		/**
+		 * Observed behaviour of `to` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 */
 		to() {
 			this.fetch()
 		},
+		/**
+		 * Observed behaviour of `slug` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 */
 		slug() {
 			this.fetch()
 		},
 	},
+	/**
+	 * Observed behaviour of `mounted` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+	 */
 	mounted() {
 		if (this.slug && this.to) {
 			this.fetch()
 		}
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `fetch` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 */
 		async fetch() {
 			if (!this.slug || !this.to) {
 				return
@@ -119,12 +159,22 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * Observed behaviour of `prettyManifest` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 */
 		prettyManifest(value) {
 			if (value === null || value === undefined) {
 				return ''
 			}
 			return JSON.stringify(value, this.sortReplacer.bind(this), 2)
 		},
+		/**
+		 * Observed behaviour of `sortReplacer` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 */
 		sortReplacer(_key, val) {
 			if (val && typeof val === 'object' && !Array.isArray(val)) {
 				const sorted = {}
@@ -135,6 +185,11 @@ export default {
 			}
 			return val
 		},
+		/**
+		 * Observed behaviour of `partClass` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 */
 		partClass(part) {
 			if (part.added) {
 				return 'manifest-diff__part manifest-diff__part--added'

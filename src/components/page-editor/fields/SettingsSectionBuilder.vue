@@ -163,11 +163,21 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `localSections` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		localSections() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `bodyKind` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		bodyKind(section) {
 			if (section && Array.isArray(section.widgets)) {
 				return 'widgets'
@@ -177,6 +187,11 @@ export default {
 			}
 			return 'fields'
 		},
+		/**
+		 * Observed behaviour of `stringifyProps` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		stringifyProps(value) {
 			if (value === undefined || value === null) {
 				return ''
@@ -187,9 +202,19 @@ export default {
 				return ''
 			}
 		},
+		/**
+		 * Observed behaviour of `emit` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		emit(sections) {
 			this.$emit('update:modelValue', sections)
 		},
+		/**
+		 * Observed behaviour of `updateField` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		updateField(index, key, value) {
 			const next = this.localSections.slice()
 			const current = { ...(next[index] || {}) }
@@ -202,6 +227,11 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+		/**
+		 * Observed behaviour of `setBodyKind` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		setBodyKind(index, kind) {
 			const next = this.localSections.slice()
 			const current = { ...(next[index] || {}) }
@@ -220,6 +250,11 @@ export default {
 			this.$set(this.propsError, index, '')
 			this.emit(next)
 		},
+		/**
+		 * Observed behaviour of `onPropsInput` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		onPropsInput(index, value) {
 			this.$set(this.propsDraft, index, value)
 			const trimmed = (value || '').trim()
@@ -236,6 +271,11 @@ export default {
 				this.$set(this.propsError, index, (e && e.message) || String(e))
 			}
 		},
+		/**
+		 * Observed behaviour of `addWidget` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		addWidget(index) {
 			const next = this.localSections.slice()
 			const current = { ...(next[index] || {}) }
@@ -243,6 +283,11 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+		/**
+		 * Observed behaviour of `updateWidget` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		updateWidget(index, wIndex, key, value) {
 			const next = this.localSections.slice()
 			const current = { ...(next[index] || {}) }
@@ -258,6 +303,11 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+		/**
+		 * Observed behaviour of `onWidgetPropsInput` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		onWidgetPropsInput(index, wIndex, value) {
 			const trimmed = (value || '').trim()
 			if (trimmed === '') {
@@ -271,6 +321,11 @@ export default {
 				// settings validator surfaces the malformed state.
 			}
 		},
+		/**
+		 * Observed behaviour of `removeWidget` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		removeWidget(index, wIndex) {
 			const next = this.localSections.slice()
 			const current = { ...(next[index] || {}) }
@@ -280,11 +335,21 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+		/**
+		 * Observed behaviour of `addSection` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		addSection() {
 			const next = this.localSections.slice()
 			next.push({ title: '', fields: [] })
 			this.emit(next)
 		},
+		/**
+		 * Observed behaviour of `removeSection` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
 		removeSection(index) {
 			const next = this.localSections.slice()
 			next.splice(index, 1)

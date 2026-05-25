@@ -49,6 +49,11 @@ export default {
 	watch: {
 		config: {
 			deep: true,
+			/**
+			 * Observed behaviour of `handler` (retrofit annotation).
+			 *
+			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+			 */
 			handler(val) {
 				try {
 					const fresh = JSON.stringify(val || {}, null, 2)
@@ -62,6 +67,11 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `onInput` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
 		onInput(value) {
 			this.jsonDraft = value
 			try {

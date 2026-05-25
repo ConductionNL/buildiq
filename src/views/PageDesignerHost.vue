@@ -109,6 +109,7 @@ export default {
 		 * The virtual-app slug from the route (/builder/:slug/pages).
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		routeSlug() {
 			return this.$route.params.slug || ''
@@ -119,6 +120,7 @@ export default {
 		 * The underscore-prefix form avoids colliding with user-defined `?version=` params.
 		 *
 		 * @return {string|undefined}
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		versionSlug() {
 			return this.$route.query._version || undefined
@@ -130,6 +132,7 @@ export default {
 		 * identical for both "doesn't exist" and "you can't see it" cases.
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		versionNotFound() {
 			return !this.versionLoading && this.versionError !== null && this.applicationVersion === null
@@ -139,6 +142,7 @@ export default {
 		 * The Application's canonical UUID (OR puts it at @self.id).
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		applicationUuid() {
 			const self = this.application && this.application['@self']
@@ -149,6 +153,7 @@ export default {
 		 * Full-page link into the virtual app, if it has ever been published.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		builderUrl() {
 			if (!this.application) {
@@ -160,15 +165,30 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Observed behaviour of `routeSlug` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 */
 		routeSlug() {
 			this.resolveVersion()
 			this.load()
 		},
+		/**
+		 * Observed behaviour of `versionSlug` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 */
 		versionSlug() {
 			this.resolveVersion()
 		},
 	},
 
+	/**
+	 * Observed behaviour of `created` (retrofit annotation).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+	 */
 	created() {
 		// REQ-OBVR-004: resolve the active ApplicationVersion on created.
 		// NOTE: we do NOT call $router.replace() or $router.push() here — that
@@ -183,6 +203,7 @@ export default {
 		 * (REQ-OBVR-004 / REQ-OBVR-005). Called on created and when slug/versionSlug change.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		resolveVersion() {
 			this.versionError = null
@@ -209,6 +230,7 @@ export default {
 		 * Fetch the Application for the current slug and seed the editor manifest.
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		async load() {
 			this.loading = true
@@ -236,6 +258,7 @@ export default {
 		 *
 		 * @param {object} next The new manifest.
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		onManifestUpdate(next) {
 			this.manifest = next
@@ -245,6 +268,7 @@ export default {
 		 * Persist the edited manifest onto the Application object.
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		async save() {
 			if (!this.application || !this.applicationUuid || this.saving) {

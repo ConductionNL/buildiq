@@ -63,15 +63,30 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Observed behaviour of `canPublish` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 */
 		canPublish() {
 			return !!this.obApp && (this.obApp.status === 'draft' || this.obApp.status === 'published')
 		},
+		/**
+		 * Observed behaviour of `builderUrl` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 */
 		builderUrl() {
 			if (!this.obApp || !(this.obApp.currentVersion || this.obApp.status === 'published')) {
 				return ''
 			}
 			return generateUrl(`/apps/openbuilt/builder/${this.obApp.slug}`)
 		},
+		/**
+		 * Observed behaviour of `availableGroups` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 */
 		availableGroups() {
 			const perms = (this.obApp && this.obApp.permissions) || {}
 			const gids = new Set(getCurrentUserGroups())
@@ -84,6 +99,11 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `publish` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 */
 		async publish() {
 			if (this.obAppRole !== 'owner' || !this.obApp || this.publishing) {
 				return
@@ -107,6 +127,11 @@ export default {
 				this.publishing = false
 			}
 		},
+		/**
+		 * Observed behaviour of `onPermissionsSave` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 */
 		async onPermissionsSave(permissions) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {
 				return

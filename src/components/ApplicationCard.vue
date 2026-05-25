@@ -57,6 +57,11 @@ export default {
 	},
 	emits: ['click', 'select'],
 	computed: {
+		/**
+		 * Observed behaviour of `app` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 */
 		app() {
 			return this.object || this.item || {}
 		},
@@ -70,6 +75,7 @@ export default {
 		 * status badge and version chip stay accurate.
 		 *
 		 * @return {object|null}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		productionVersion() {
 			const pv = this.app.productionVersion
@@ -83,6 +89,7 @@ export default {
 		 * loading / when the application has no production version yet.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		productionSemver() {
 			return (this.productionVersion && this.productionVersion.semver) || '—'
@@ -90,6 +97,11 @@ export default {
 		// CnDetailPage reads :objectId from $route.params, which we set here.
 		// OR returns the canonical id under @self.id; fall back to uuid/id for
 		// objects coming from older mock fixtures or pre-@self responses.
+		/**
+		 * Observed behaviour of `appUuid` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 */
 		appUuid() {
 			const self = this.app['@self'] || {}
 			return self.id || this.app.uuid || this.app.id || ''
@@ -100,11 +112,17 @@ export default {
 		 * sensible default while loading or for brand-new applications.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		statusKey() {
 			const status = this.productionVersion && this.productionVersion.status
 			return ['draft', 'published', 'archived'].includes(status) ? status : 'draft'
 		},
+		/**
+		 * Observed behaviour of `statusLabel` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 */
 		statusLabel() {
 			return {
 				draft: t('openbuilt', 'Draft'),
@@ -112,9 +130,19 @@ export default {
 				archived: t('openbuilt', 'Archived'),
 			}[this.statusKey]
 		},
+		/**
+		 * Observed behaviour of `role` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 */
 		role() {
 			return useRole(this.app, getCurrentUserGroups())
 		},
+		/**
+		 * Observed behaviour of `roleLabel` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 */
 		roleLabel() {
 			return {
 				owner: t('openbuilt', 'Owner'),
@@ -124,9 +152,19 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Observed behaviour of `onIconError` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 */
 		onIconError(e) {
 			e.target.src = '/apps/openbuilt/img/app.svg'
 		},
+		/**
+		 * Observed behaviour of `onCardActivate` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 */
 		onCardActivate(event) {
 			this.$emit('click', event)
 			if (this.$router) {

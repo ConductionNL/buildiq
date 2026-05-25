@@ -171,16 +171,27 @@ export default {
 		/**
 		 * The visual step number (1–4). When not on custom, step 3 is skipped
 		 * so the display stays sequential: 1, 2, [skip 3], 4 → shows as 1/3, 2/3, 3/3.
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
 		 */
 		displayStep() {
 			if (!this.isCustomPreset && this.step === 4) return 3
 			return this.step
 		},
 
+		/**
+		 * Observed behaviour of `visibleStepCount` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
+		 */
 		visibleStepCount() {
 			return this.isCustomPreset ? 4 : 3
 		},
 
+		/**
+		 * Observed behaviour of `currentStepValid` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
+		 */
 		currentStepValid() {
 			if (this.step === 1) return Boolean(this.payload._step1Valid)
 			if (this.step === 2) return Boolean(this.payload._step2Valid)
@@ -188,6 +199,11 @@ export default {
 			return true
 		},
 
+		/**
+		 * Observed behaviour of `allStepsValid` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
+		 */
 		allStepsValid() {
 			const step3ok = !this.isCustomPreset || Boolean(this.payload._step3Valid)
 			return (
@@ -199,6 +215,11 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Observed behaviour of `onModalShowUpdate` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
+		 */
 		onModalShowUpdate(value) {
 			// Proxy NcModal's update:show event to the parent without mutating the prop.
 			if (!value && !this.submitting) {
@@ -207,10 +228,20 @@ export default {
 			}
 		},
 
+		/**
+		 * Observed behaviour of `mergePayload` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
+		 */
 		mergePayload(partial) {
 			this.payload = { ...this.payload, ...partial }
 		},
 
+		/**
+		 * Observed behaviour of `goNext` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
+		 */
 		goNext() {
 			if (this.step === 2 && !this.isCustomPreset) {
 				// Skip step 3 for canned presets.
@@ -220,6 +251,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Observed behaviour of `goBack` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
+		 */
 		goBack() {
 			if (this.step === 4 && !this.isCustomPreset) {
 				// Jump back to step 2 (step 3 was skipped).
@@ -229,6 +265,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Observed behaviour of `onSubmit` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
+		 */
 		async onSubmit() {
 			this.submitting = true
 			this.errorMessage = null
@@ -267,6 +308,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Observed behaviour of `onClose` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
+		 */
 		onClose() {
 			if (!this.submitting) {
 				this.$emit('update:show', false)
@@ -274,6 +320,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Observed behaviour of `resetState` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
+		 */
 		resetState() {
 			this.step = 1
 			this.payload = {

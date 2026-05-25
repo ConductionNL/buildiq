@@ -151,6 +151,7 @@ export default {
 		 * Summary heading rendered above the strategy radio group.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-2
 		 */
 		summaryText() {
 			const sourceName = this.sourceVersion?.name || this.sourceVersion?.slug || '?'
@@ -167,6 +168,7 @@ export default {
 		 * (case-sensitive byte-equal).
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-2
 		 */
 		isDestructiveGateMet() {
 			if (this.selectedStrategy !== 'empty-start') {
@@ -181,6 +183,7 @@ export default {
 		 * i18n'd label for the destructive-confirmation input.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-2
 		 */
 		confirmInputLabel() {
 			return t('openbuilt', 'Type the application slug to confirm')
@@ -190,16 +193,27 @@ export default {
 		 * Hint string under the destructive-confirmation input.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-2
 		 */
 		confirmHelperText() {
 			return t('openbuilt', "Empty start will permanently delete every row in the target's register. Type \"{slug}\" to confirm.", { slug: this.application?.slug || '' })
 		},
 	},
 	watch: {
+		/**
+		 * Observed behaviour of `targetVersion` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-2
+		 */
 		targetVersion() {
 			this.selectedStrategy = this.computeDefaultStrategy()
 			this.typedSlug = ''
 		},
+		/**
+		 * Observed behaviour of `application` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-2
+		 */
 		application() {
 			this.selectedStrategy = this.computeDefaultStrategy()
 		},
@@ -211,6 +225,7 @@ export default {
 		 * Mirrors `VersionPromotionService::defaultStrategyFor()` (PHP).
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-2
 		 */
 		computeDefaultStrategy() {
 			if (!this.targetVersion || !this.application) {
@@ -224,6 +239,7 @@ export default {
 		 * Emit `confirm` with the chosen strategy when the gate is met.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-2
 		 */
 		onConfirm() {
 			if (!this.isDestructiveGateMet) {
@@ -237,6 +253,7 @@ export default {
 		 * Emit `cancel` and let the parent close the dialog.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-2
 		 */
 		onCancel() {
 			this.$emit('cancel')
