@@ -238,6 +238,28 @@
         }
       },
       "ApplicationVersion": {
+        "x-openregister-notifications": {
+          "version-published": {
+            "trigger": { "type": "transition", "action": "published" },
+            "enabled": true,
+            "channels": ["nc-notification"],
+            "recipients": [ { "kind": "object-acl", "permission": "manage" } ],
+            "subject": {
+              "nl": "Versie {{semver}} van {{name}} is gepubliceerd",
+              "en": "Version {{semver}} of {{name}} has been published"
+            }
+          },
+          "version-archived": {
+            "trigger": { "type": "transition", "action": "archived" },
+            "enabled": true,
+            "channels": ["nc-notification"],
+            "recipients": [ { "kind": "object-acl", "permission": "manage" } ],
+            "subject": {
+              "nl": "Versie {{semver}} van {{name}} is gearchiveerd",
+              "en": "Version {{semver}} of {{name}} has been archived"
+            }
+          }
+        },
         "slug": "applicationVersion",
         "icon": "SourceBranchOutline",
         "version": "0.1.0",
@@ -367,6 +389,28 @@
         }
       },
       "exportJob": {
+        "x-openregister-notifications": {
+          "export-succeeded": {
+            "trigger": { "type": "transition", "action": "succeeded" },
+            "enabled": true,
+            "channels": ["nc-notification"],
+            "recipients": [ { "kind": "object-acl", "permission": "manage" } ],
+            "subject": {
+              "nl": "Export geslaagd voor {{applicationVersion}}",
+              "en": "Export succeeded for {{applicationVersion}}"
+            }
+          },
+          "export-failed": {
+            "trigger": { "type": "transition", "action": "failed" },
+            "enabled": true,
+            "channels": ["nc-notification"],
+            "recipients": [ { "kind": "object-acl", "permission": "manage" } ],
+            "subject": {
+              "nl": "Export mislukt voor {{applicationVersion}}: {{errorMessage}}",
+              "en": "Export failed for {{applicationVersion}}: {{errorMessage}}"
+            }
+          }
+        },
         "slug": "export-job",
         "icon": "PackageVariant",
         "version": "0.1.0",
