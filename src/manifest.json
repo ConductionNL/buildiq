@@ -45,7 +45,7 @@
 			"label": "Documentation",
 			"icon": "icon-info",
 			"href": "https://github.com/ConductionNL/openbuilt",
-			"section": "settings",
+			"section": "footer",
 			"order": 90
 		},
 		{
@@ -53,7 +53,7 @@
 			"label": "Features & roadmap",
 			"icon": "icon-toggle",
 			"route": "FeaturesRoadmap",
-			"section": "settings",
+			"section": "footer",
 			"order": 95
 		}
 	],
