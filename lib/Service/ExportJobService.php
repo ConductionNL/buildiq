@@ -374,6 +374,8 @@ class ExportJobService
      * Generate a UUIDv4.
      *
      * @return string UUIDv4.
+     *
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-37
      */
     public function uuid4(): string
     {

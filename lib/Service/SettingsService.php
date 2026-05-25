@@ -86,6 +86,8 @@ class SettingsService
      * fields (openregisters, isAdmin) consumed by the frontend.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
      */
     public function getSettings(): array
     {
@@ -112,6 +114,8 @@ class SettingsService
      * @param array<string,mixed> $data The data to update
      *
      * @return array<string,mixed> The updated settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-2
      */
     public function updateSettings(array $data): array
     {
@@ -132,6 +136,8 @@ class SettingsService
      * reloadConfiguration() to force a re-import.
      *
      * @return array<string,mixed> Result with success flag, message, and version.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
      */
     public function loadConfiguration(): array
     {
@@ -145,6 +151,8 @@ class SettingsService
      * Used by the InitializeSettings repair step and the admin "Reload" action.
      *
      * @return array<string,mixed> Result with success flag, message, and version.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
      */
     public function reloadConfiguration(): array
     {

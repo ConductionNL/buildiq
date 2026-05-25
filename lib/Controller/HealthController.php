@@ -61,6 +61,8 @@ class HealthController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

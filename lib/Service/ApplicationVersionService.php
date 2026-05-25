@@ -746,6 +746,8 @@ class ApplicationVersionService
      * @return string The register's slug, or empty string when unavailable
      *
      * @internal Exposed only to internal callers; not part of the public API.
+     *
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-23
      */
     public function describeRegister(?Register $register): string
     {

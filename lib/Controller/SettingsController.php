@@ -63,6 +63,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -84,6 +86,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-2
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -114,6 +118,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

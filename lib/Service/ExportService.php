@@ -266,6 +266,8 @@ class ExportService
      * @param string $path File path.
      *
      * @return bool True when the file should be copied as-is.
+     *
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
      */
     public function isBinary(string $path): bool
     {
@@ -329,6 +331,8 @@ class ExportService
      * @param string $jobUuid ExportJob UUID.
      *
      * @return string Local path to the scratch dir.
+     *
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
      */
     public function prepareScratchDir(string $jobUuid): string
     {
@@ -399,6 +403,8 @@ class ExportService
      * @param string $dir Directory to remove.
      *
      * @return void
+     *
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
      */
     public function rrmdir(string $dir): void
     {
