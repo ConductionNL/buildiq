@@ -62,7 +62,7 @@ class PreferencesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
-     * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-5
+     * @spec            openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-5
      */
     public function getPreference(string $key): JSONResponse
     {
@@ -102,7 +102,7 @@ class PreferencesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
-     * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-5
+     * @spec            openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-5
      */
     public function setPreference(string $key, string $value=''): JSONResponse
     {
