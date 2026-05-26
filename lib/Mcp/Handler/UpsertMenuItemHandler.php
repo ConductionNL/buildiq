@@ -1,0 +1,187 @@
+<?php
+
+/**
+ * Handler for the openbuilt.upsertMenuItem MCP tool.
+ *
+ * Creates or updates a top-level menu item in the draft manifest of an
+ * ApplicationVersion. If an item with the given id already exists it is
+ * replaced in-place; otherwise the new item is appended.
+ *
+ * @category Service
+ * @package  OCA\OpenBuilt\Mcp\Handler
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenBuilt\Mcp\Handler;
+
+/**
+ * Handles the openbuilt.upsertMenuItem tool invocation.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-42
+ */
+class UpsertMenuItemHandler extends AbstractToolHandler
+{
+    /**
+     * Execute the upsertMenuItem tool.
+     *
+     * @param array<string, mixed> $args Tool arguments (appSlug, versionSlug, id, label, icon, route, order).
+     *
+     * @return array<string, mixed>
+     */
+    public function handle(array $args): array
+    {
+        $validation = $this->validateArgs(args: $args);
+        if (isset($validation['error']) === true) {
+            return $this->errorResult(error: 'invalid_arguments', message: $validation['error']);
+        }
+
+        if ($this->requireAuthenticatedUser() === null) {
+            return $this->errorResult(error: 'forbidden', message: 'You must be signed in to author menu items.');
+        }
+
+        $appSlug     = $validation['appSlug'];
+        $versionSlug = $validation['versionSlug'];
+        $id          = $validation['id'];
+
+        try {
+            $objectService = $this->container->get('OCA\OpenRegister\Service\ObjectService');
+
+            $loaded = $this->loadVersion(objectService: $objectService, appSlug: $appSlug, versionSlug: $versionSlug);
+            if (isset($loaded['error']) === true) {
+                return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
+            }
+
+            $version  = $loaded['version'];
+            $manifest = (array) ($version['manifest'] ?? []);
+            $menu     = (array) ($manifest['menu'] ?? []);
+
+            $newItem = [
+                'id'    => $id,
+                'label' => $validation['label'],
+                'icon'  => $validation['icon'],
+                'route' => $validation['route'],
+                'order' => $validation['order'],
+            ];
+
+            [$menu, $replaced] = $this->upsertMenuItemInList(menu: $menu, itemId: $id, newItem: $newItem);
+
+            $manifest['menu'] = array_values($menu);
+            $saved            = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
+
+            $action = 'created';
+            if ($replaced === true) {
+                $action = 'updated';
+            }
+
+            return [
+                'success'   => true,
+                'action'    => $action,
+                'menuItem'  => $newItem,
+                'menuCount' => count($menu),
+                'version'   => [
+                    'uuid' => $this->extractUuid(item: $saved),
+                    'slug' => (string) ($saved['slug'] ?? $versionSlug),
+                ],
+            ];
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                'OpenBuilt MCP: upsertMenuItem failed',
+                ['appSlug' => $appSlug, 'id' => $id, 'exception' => $e->getMessage()]
+            );
+            return $this->errorResult(error: 'upsert_failed', message: 'Failed to upsert menu item: '.$e->getMessage());
+        }//end try
+
+    }//end handle()
+
+    /**
+     * Validate and extract typed arguments for upsertMenuItem.
+     *
+     * @param array<string, mixed> $args Raw tool arguments.
+     *
+     * @return array{appSlug?: string, versionSlug?: string, id?: string, label?: string, icon?: string, route?: string, order?: int, error?: string}
+     */
+    private function validateArgs(array $args): array
+    {
+        $appSlug     = (string) ($args['appSlug'] ?? '');
+        $versionSlug = (string) ($args['versionSlug'] ?? 'development');
+        $id          = (string) ($args['id'] ?? '');
+        $label       = (string) ($args['label'] ?? '');
+        $icon        = (string) ($args['icon'] ?? '');
+        $route       = (string) ($args['route'] ?? '');
+        $order       = 100;
+        if (isset($args['order']) === true) {
+            $order = (int) $args['order'];
+        }
+
+        if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
+            return ['error' => "Invalid appSlug '{$appSlug}'."];
+        }
+
+        if ($id === '') {
+            return ['error' => 'id is required.'];
+        }
+
+        if ($label === '') {
+            return ['error' => 'label is required.'];
+        }
+
+        if ($route === '') {
+            return ['error' => 'route is required.'];
+        }
+
+        return [
+            'appSlug'     => $appSlug,
+            'versionSlug' => $versionSlug,
+            'id'          => $id,
+            'label'       => $label,
+            'icon'        => $icon,
+            'route'       => $route,
+            'order'       => $order,
+        ];
+
+    }//end validateArgs()
+
+    /**
+     * Upsert a menu item in the menu list by exact id matching.
+     *
+     * Returns the updated menu array and a boolean indicating whether an existing
+     * item was replaced (true) or a new item was appended (false).
+     *
+     * @param array<int, mixed>    $menu    Existing menu list from the manifest.
+     * @param string               $itemId  The menu item id to look up.
+     * @param array<string, mixed> $newItem The menu item definition to insert or replace with.
+     *
+     * @return array{0: array, 1: bool}
+     */
+    private function upsertMenuItemInList(array $menu, string $itemId, array $newItem): array
+    {
+        $replaced = false;
+
+        foreach ($menu as $i => $existing) {
+            if (is_array($existing) === true && (string) ($existing['id'] ?? '') === $itemId) {
+                $menu[$i] = $newItem;
+                $replaced = true;
+                break;
+            }
+        }
+
+        if ($replaced === false) {
+            $menu[] = $newItem;
+        }
+
+        return [$menu, $replaced];
+
+    }//end upsertMenuItemInList()
+}//end class
