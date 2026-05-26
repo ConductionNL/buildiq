@@ -2,6 +2,8 @@
 
 ## Purpose
 
+@e2e exclude pure-backend migration spec — destructive repair step, idempotency guard, logging, and OR API calls verified by PHPUnit; no UI surface in this spec
+
 Ships the one-shot destructive repair step that retires the pre-versioning
 `Application` schema in favour of the two-object `Application` + `ApplicationVersion`
 model introduced by `openbuilt-versioning-model` (ADR-002). Per ADR-002 existing

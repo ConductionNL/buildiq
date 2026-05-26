@@ -19,6 +19,8 @@ state). Save flows through OR REST — no app-local controller for manifest writ
 
 ### Requirement: Menu tree editor with two-level nesting
 
+@e2e exclude visual-editor component spec — drag-reorder, third-level nesting block, and `action` field disabling `route`/`href` are MenuTreeEditor.vue component contracts verified by Vitest unit tests; no independent Playwright-testable URL surface for the menu tree editor in isolation
+
 The system SHALL provide a `MenuTreeEditor.vue` component that
 authors the manifest's `menu[]` array. The editor SHALL support
 drag-reordering of top-level entries and their `children[]`, with a
@@ -59,6 +61,8 @@ disabled-with-tooltip state on those fields.
 
 ### Requirement: Page list editor with uniqueness and route-pattern validation
 
+@e2e exclude visual-editor component spec — duplicate-id inline error marks, disabled Save button on duplication, and page-type-pick-then-sub-editor-mount are PageListEditor.vue component contracts verified by Vitest unit tests; the route to the page designer is covered by the openbuilt-runtime Playwright tests
+
 The system SHALL provide a `PageListEditor.vue` component that
 authors the manifest's `pages[]` array. The editor SHALL support
 adding, removing, and drag-reordering pages, and MUST enforce the
@@ -91,6 +95,8 @@ following invariants before allowing a save:
 
 ### Requirement: Per-page-type config sub-editor for each of the nine canonical types
 
+@e2e exclude visual-editor component spec — type-swap unmounts `IndexPageEditor` and mounts `DashboardPageEditor`, resets config block, and side-panel validator — are sub-editor component-swap contracts verified by Vitest unit tests; no independent Playwright-testable URL surface for sub-editor type changes in isolation
+
 The system SHALL ship one Vue sub-editor component per canonical page
 type declared in the
 `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`
@@ -118,6 +124,8 @@ whose name matches the selected page's `type` field.
   canonical schema
 
 ### Requirement: Index-page sub-editor: register, schema, columns, actions
+
+@e2e exclude visual-editor component spec — `@self.*` metadata column picker, `ActionBuilder.vue` action list, sidebar/cardComponent sub-blocks, and string-shorthand vs typed-column lossless round-trip are IndexPageEditor.vue component contracts verified by Vitest unit tests; no independent Playwright-testable URL surface
 
 `IndexPageEditor.vue` SHALL author the index-type `config` block per
 the canonical schema. It SHALL expose:
@@ -150,6 +158,8 @@ the canonical schema. It SHALL expose:
 
 ### Requirement: Detail-page sub-editor: sidebar tabs and route param schema
 
+@e2e exclude visual-editor component spec — `SidebarTabBuilder.vue` tab list overriding built-in sidebar tabs, exactly-one-of `widgets[]`/`component` validator, and route-param-schema auto-derive from route string are DetailPageEditor.vue component contracts verified by Vitest unit tests; no independent Playwright-testable URL surface
+
 `DetailPageEditor.vue` SHALL author the detail-type `config` block. It
 SHALL expose:
 
@@ -177,6 +187,8 @@ SHALL expose:
   `widgets[]` OR `component`
 
 ### Requirement: Form-page sub-editor with exactly-one-of submit handling
+
+@e2e exclude visual-editor component spec — `submitHandler`/`submitEndpoint` exactly-one-of mutual-clear, `submitMethod` closed-enum validation from raw JSON, `FormFieldBuilder.vue` field list are FormPageEditor.vue component contracts verified by Vitest unit tests; no independent Playwright-testable URL surface
 
 `FormPageEditor.vue` SHALL author the form-type `config` block. It
 SHALL expose:
@@ -216,6 +228,8 @@ SHALL expose:
 
 ### Requirement: Custom-page sub-editor reads the customComponents registry
 
+@e2e exclude visual-editor component spec — registry-backed picker from live-preview `customComponents` prop keys, free-text fallback warning when in-memory loader is absent, and free-form JSON config editor are CustomPageEditor.vue component contracts verified by Vitest unit tests; no independent Playwright-testable URL surface
+
 `CustomPageEditor.vue` SHALL surface a **component-name picker**
 populated from the consuming app's `customComponents` registry —
 specifically, the keys of the `customComponents` prop passed to the
@@ -247,6 +261,8 @@ expects".
 - **AND** the value writes through to `pages[].component` unchanged
 
 ### Requirement: Live-preview pane mounts a sandboxed CnAppRoot when available
+
+@e2e exclude mixed spec — sandboxed `CnAppRoot` re-mount on in-flight manifest change (in-memory `useAppManifest` overload from chain spec #2) requires chain spec #2 (`nextcloud-vue-in-memory-manifest`) not yet shipped; fallback "Save & open preview" button is covered by the openbuilt-page-designer Playwright tests
 
 The Page Designer SHALL provide an optional right-hand pane that
 mounts a **sandboxed** `CnAppRoot` instance configured from the
@@ -288,6 +304,8 @@ The sandboxed `CnAppRoot` SHALL:
 
 ### Requirement: Save flow PUTs the manifest via OpenRegister REST
 
+@e2e exclude mixed spec — Save PUT to OR REST and dirty-indicator clear require editing manifest content and intercepting network requests; the OR REST write contract is verified by Newman; the Save-blocked-by-validator scenario requires injecting a validation error which is a Vitest unit test contract
+
 The Page Designer's Save action SHALL serialise the in-flight
 manifest, validate it via
 `@conduction/nextcloud-vue`'s `validateManifest` export, and PUT the
@@ -318,6 +336,8 @@ manifest writes (ADR-022).
 
 ### Requirement: Raw JSON fallback tab preserves the spec-1 textarea
 
+@e2e exclude mixed spec — tab-switch shared in-flight manifest state and dirty-indicator persistence across tabs are controlled-component state contracts verified by Vitest unit tests; the Design/Raw JSON tab UI is covered by the openbuilt-runtime Playwright tests (REQ-OBR-005)
+
 The Application edit view SHALL retain the textarea-based JSON
 manifest editor shipped by spec #1 (`bootstrap-openbuilt`) as a
 secondary tab labelled "Raw JSON". The Design tab (the new
@@ -346,6 +366,8 @@ saving.
   until the JSON is valid again
 
 ### Requirement: Debounced validator surface decorates editor panes inline
+
+@e2e exclude visual-editor component spec — JSON-path-to-inline-field-mark mapping (`pages[1].config.columns[0]` → second page row + column-selector highlight), click-to-focus link, and 300ms debounce coalescing are `useManifestValidator.js` composable contracts verified by Vitest unit tests; no independent Playwright-testable URL surface for inline error path injection
 
 The system SHALL provide `useManifestValidator.js`, a composable
 that wraps `validateManifest` from `@conduction/nextcloud-vue` and

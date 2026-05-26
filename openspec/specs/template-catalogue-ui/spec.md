@@ -19,6 +19,8 @@ half of the `openbuilt-template-catalogue` backend capability.
 
 ### Requirement: Gallery fetches, filters and resolves template screenshots
 
+@e2e exclude retrofit component-contract spec — `categoryOptions`, `categoryLabel`, `filteredTemplates`, `resolveScreenshot`, `openClone`, `onCloneSubmit`, `redirectAfterClone` are component-state contracts verified by Vitest unit tests; gallery filter and clone-redirect integration are covered by the openbuilt-template-catalogue Playwright tests
+
 `TemplateGallery` SHALL fetch the available templates (`fetchTemplates`),
 expose category filter options and the current filtered set
 (`categoryOptions`, `categoryLabel`, `filteredTemplates`), resolve each
@@ -37,6 +39,8 @@ modal (`openClone`), and redirect after a successful clone
 - **THEN** the gallery opens the clone dialog seeded with that template
 
 ### Requirement: Clone dialog validates, submits and redirects
+
+@e2e exclude retrofit component-contract spec — `resolvedTitle`, `canSubmit`, `submit`, `setError`, `onClose` are dialog-component contracts verified by Vitest unit tests; clone-dialog open/submit/redirect integration is covered by the openbuilt-template-catalogue Playwright tests
 
 `CloneTemplateDialog` SHALL open seeded from a template (`open`,
 `resolvedTitle`), gate submission on a valid target (`canSubmit`), submit the

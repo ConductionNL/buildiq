@@ -2,6 +2,8 @@
 
 ## Purpose
 
+@e2e exclude mixed spec — ExportJob schema/lifecycle, ZIP/GitHub pipeline, async background-job, and idempotency all verified by Newman/PHPUnit; UI export dialog and jobs-list behavior covered by exporter-ui spec Playwright tests
+
 Ships the graduation path that turns a published OpenBuilt virtual app into a
 standalone Nextcloud app — its own `appinfo/info.xml`, its own namespace, its own
 GitHub repo, its own CI / release pipeline — with zero runtime dependency on

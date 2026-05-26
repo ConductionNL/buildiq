@@ -19,6 +19,8 @@ object-change audit trail.
 
 ### Requirement: Permissions field shape and default on creation
 
+@e2e exclude pure-backend OR-REST default-permissions contract — verified by Newman REST tests; no Playwright-testable UI surface for schema-field defaults on creation
+
 The system SHALL extend the `Application` schema with an optional
 `permissions` property of shape
 `{ owners: string[], editors: string[], viewers: string[] }` where
@@ -51,6 +53,8 @@ Application is never created in an unreachable "no owner" state.
 - **AND** the user is recorded as the actor in the OR audit trail
 
 ### Requirement: Manifest endpoint enforces role membership
+
+@e2e exclude backend manifest-403 contract — already covered by rbac-403.spec.ts (REQ-OBR-006c equivalent); this requirement's three scenarios duplicate that coverage
 
 The system SHALL augment
 `GET /index.php/apps/openbuilt/api/applications/{slug}/manifest` so
@@ -94,6 +98,8 @@ manifest payload — deny-by-default per ADR-005.
   `name`, `description`, or any manifest content
 
 ### Requirement: Application list filters out unauthorised entries
+
+@e2e exclude backend list-filter: already covered by rbac-403.spec.ts (verifies non-member sees empty list); this requirement's single scenario duplicates that coverage
 
 The OpenBuilt shell's Application list view SHALL display only
 Applications on which the caller has at least one role
@@ -168,6 +174,8 @@ SHALL consume the same `useRole(application)` composable.
   tooltip explaining "owner role required")
 
 ### Requirement: Transfer-ownership flow
+
+@e2e exclude backend permissions-PUT + orphan-guard contract — verified by Newman REST tests; transfer-ownership UI dialog is a future spec feature not yet exercisable in isolation via Playwright
 
 The system SHALL support an owner replacing the `permissions.owners`
 list of an Application. The transfer SHALL be a single declarative
@@ -246,6 +254,8 @@ exercised so the action is reviewable.
   naming the actor, the slug, and the timestamp
 
 ### Requirement: Permission changes are recorded in the OR audit trail
+
+@e2e exclude pure-backend audit-trail contract — OR native object-change events are verified by Newman; audit trail panel UI is owner-gated and tested by the application-detail-ui spec Playwright tests
 
 The system SHALL record every change to an Application's `permissions` property in OpenRegister's standard per-object audit trail, regardless of whether the change is made through the OpenBuilt frontend permissions panel, the textarea editor, OR REST directly, or the transfer-ownership flow. The audit
 entry SHALL be the OR-native object-change event (no app-local

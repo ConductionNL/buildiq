@@ -2,6 +2,8 @@
 
 ## Purpose
 
+@e2e exclude pure-backend spec — snapshot retirement, OR time-travel rollback, and diff endpoint contracts verified by Newman/PHPUnit; no independent UI surface (UI rollback/diff surface covered by version-routing-ui Playwright tests)
+
 Retires the append-only snapshot model originally proposed by `openbuilt-versioning`
 and re-roots version history on OR's object-time-travel directly against each
 `ApplicationVersion` row. Defines the diff endpoint contract that lets the OpenBuilt

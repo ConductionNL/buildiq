@@ -57,6 +57,8 @@ Selecting any preset other than `custom` SHALL skip step 3 and jump straight to 
 
 ### Requirement: Preset shapes
 
+@e2e exclude pure-backend OR-object-chain contract — version chain wiring (`promotesTo`, `productionVersion`), ApplicationVersion slug existence, and register provisioning are all OR REST + PHPUnit contracts; no independent Playwright-testable UI surface beyond the wizard step coverage in REQ-OBWIZ-002
+
 Each preset SHALL produce a deterministic version chain when reviewed and submitted:
 
 | Preset | Chain (upstream → downstream) | Production pointer |
@@ -141,6 +143,8 @@ The slug pattern (enforced both client-side and server-side) SHALL be `^(?!_)[a-
 
 ### Requirement: No duplicate version slugs within a chain
 
+@e2e exclude server-side endpoint contract — `422 Unprocessable Entity` response shape and "different apps can share `production`" coexistence are OR REST + Newman contracts; client-side duplicate-slug inline error UI is covered by the creation-wizard-ui Vitest tests
+
 Within a single app's chain, two `ApplicationVersion` rows SHALL NOT share a slug. The
 wizard SHALL enforce this client-side as the admin types (inline error on the duplicating
 row) and server-side at the `/api/applications/wizard` endpoint (the endpoint rejects the
@@ -173,6 +177,8 @@ rows).
 - **AND** `openbuilt-app-a-production` and `openbuilt-app-b-production` registers coexist
 
 ### Requirement: Atomic creation with full rollback on failure
+
+@e2e exclude pure-backend atomicity + rollback contract — validation-failure 422, register-provisioning rollback, and partial-rollback orphan-report are backend sequencing contracts verified by Newman/PHPUnit; no Playwright-testable UI surface for backend rollback internals
 
 The wizard's backend endpoint SHALL provision the full chain atomically by sequencing:
 (1) validate payload, (2) create `Application`, (3) for each version create
@@ -220,6 +226,8 @@ so the admin can resolve manually.
 
 ### Requirement: Per-version registers + seed schema set
 
+@e2e exclude pure-backend OR register-provisioning contract — register naming, seed-schema installation, and zero-object initial state are verified by Newman REST tests against the OR register API; no Playwright-testable UI surface
+
 For each `ApplicationVersion` row created by the wizard, a corresponding OR register SHALL
 be provisioned with the name `openbuilt-{appSlug}-{versionSlug}`. Each freshly-provisioned
 register SHALL have the default schema set (the single `hello-message` schema from
@@ -236,6 +244,8 @@ register SHALL have the default schema set (the single `hello-message` schema fr
 - **AND** each register has zero objects
 
 ### Requirement: Initial manifest, semver, status per version
+
+@e2e exclude pure-backend OR object-field contract — `manifest`, `semver: 0.1.0`, `status: draft`, and register-name substitution in manifest pages are ApplicationVersion field defaults verified by Newman REST tests; no Playwright-testable UI surface
 
 Each freshly-created `ApplicationVersion` row SHALL carry:
 - `manifest` — copy of `lib/Resources/wizard/default-manifest.json` with the per-version
@@ -257,6 +267,8 @@ Each freshly-created `ApplicationVersion` row SHALL carry:
 
 ### Requirement: Caller becomes sole owner
 
+@e2e exclude pure-backend permissions-default contract — `permissions.owners = ["user:<uid>"]` and empty `editors`/`viewers` on creation are OR REST field defaults verified by Newman; no Playwright-testable UI surface for permission field values set during creation
+
 The wizard endpoint SHALL set the new Application's `permissions.owners` to a single-element
 array containing the calling user's UID (in `user:<uid>` form). `permissions.editors` and
 `permissions.viewers` SHALL be empty arrays. The admin grants further roles via the
@@ -272,6 +284,8 @@ permissions editor post-creation.
 - **AND** `permissions.viewers` is `[]`
 
 ### Requirement: No install-time auto-seed
+
+@e2e exclude pure-backend repair-step contract — `SeedHelloWorld` returning without creating records and the empty Applications index on fresh install are repair-step + PHPUnit contracts; testing "no records exist" requires a clean install state not reproducible in the shared admin-authenticated dev env
 
 The openbuilt app SHALL NOT create any virtual app at install / upgrade time. After
 `occ maintenance:repair`, the Virtual apps index SHALL be empty for a fresh install.

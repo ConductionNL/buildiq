@@ -26,6 +26,8 @@ This capability is observed behaviour of the `PageDesigner`,
 
 ### Requirement: Controlled designer orchestrates pages, menu, undo/redo and save
 
+@e2e exclude retrofit component-contract spec — `subEditorFor`, `selectedPage`, `undo`/`redo`/`canUndo`/`canRedo` history, `emitManifest`, `onPagesUpdate`, `canSaveAndPreview`, `onKeydown` are controlled-component contracts verified by Vitest unit tests; the designer route is covered by the openbuilt-page-designer Playwright tests
+
 The `PageDesigner` view SHALL expose the manifest's `pages` and `menu` as
 computed surfaces, dispatch the centre pane to a sub-editor by page type
 (`subEditorFor`, `selectedPage`, `selectPage`), maintain an undo/redo history
@@ -47,6 +49,8 @@ every page/menu/config change (`emitManifest`, `onPagesUpdate`, `onMenuUpdate`,
 
 ### Requirement: Route hosts resolve slug plus version and persist the manifest
 
+@e2e exclude retrofit component-contract spec — `routeSlug`, `resolveVersion`, `versionNotFound`, `manifestOptions`, `placeholderManifest`, `cacheKey`, `onManifestUpdate`, `save` are host-component lifecycle contracts verified by Vitest unit tests; slug+version resolution and 404 path are covered by the openbuilt-page-designer Playwright tests
+
 `PageDesignerHost` and `BuilderHost` SHALL resolve the route slug
 (`routeSlug`, `slug`, `appId`, `appUuid`, `applicationUuid`) and the active
 version from `?_version=` (`resolveVersion`, `versionSlug`), load the
@@ -67,6 +71,8 @@ A builder deep-link URL SHALL be derived (`builderUrl`).
 - **THEN** the host PUTs it to OpenRegister and reflects the saved state
 
 ### Requirement: Per-page-type config sub-editors emit validated slices
+
+@e2e exclude retrofit component-contract spec — `validatedConfigKeys`, `fetchRegisters`, `fetchSchemas`, `fetchSchemaProperties`, `sidebarShape`, `submitShape`, `sourceShape`, `setSubmitHandler`, `setSubmitEndpoint` are sub-editor emit contracts verified by Vitest unit tests; type-specific sub-editor mounting is covered by the openbuilt-page-designer Playwright tests
 
 Each sub-editor SHALL bind its slice of `page.config`, emit an `update`
 upward on edit, and expose a validated-key set. The sub-editors are
@@ -95,6 +101,8 @@ SHALL manage their transport/submit/source shape (`submitShape`, `sourceShape`,
 - **THEN** it fetches the register, schema, and property option lists
 
 ### Requirement: Reusable field builders edit list-shaped config
+
+@e2e exclude retrofit component-contract spec — `addColumn`/`removeColumn`, `addAction`/`removeAction`, `moveUp`/`moveDown`, `onReorder`, `updateField`, `duplicateIds`, `invalidRoutes`, `hasError` are field-builder emit contracts verified by Vitest unit tests; add/reorder/duplicate-id validation is covered by the openbuilt-page-designer Playwright tests
 
 Each field builder SHALL expose a local working copy of its list, support
 add/remove/reorder of rows, edit per-row fields, and emit the updated list
@@ -128,6 +136,8 @@ editor SHALL validate uniqueness and route patterns (`duplicateIds`,
 - **THEN** the page-list editor flags the error and blocks confirmation
 
 ### Requirement: Inline validation surface and config-field registration
+
+@e2e exclude retrofit component-contract spec — `registerConfigField`, `unregisterConfigField`, `configPathPrefix`, `configErrorFor`, `validatorErrors`, `onDepthViolation`, `registryKeys`, `stringifyProps` are provide/inject validator contracts verified by Vitest unit tests; inline validation surface is covered by the openbuilt-page-designer Playwright tests
 
 `PageDesigner` SHALL provide a `pageEditorValidator` to descendant sub-editors
 (`provide`), let fields register/unregister for validation

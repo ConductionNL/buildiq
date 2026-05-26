@@ -2,6 +2,8 @@
 
 ## Purpose
 
+@e2e exclude mixed spec — INavigationManager registration, RBAC visibility closure, per-request re-evaluation and group-wildcard filtering are PHP boot-time contracts verified by PHPUnit/Newman; published app top-bar appearance requires a published app + boot-cycle which is not reproducible in isolation in Playwright without a lifecycle trigger that is itself part of the app; scenarios tested by playwright UI are covered in the openbuilt-runtime spec tests
+
 Makes every published OpenBuilt virtual app a first-class Nextcloud navigation citizen
 by registering a per-app top-bar entry under `INavigationManager` on each request boot,
 visibility-gated by the Application's `permissions` RBAC block (with a `group:*` wildcard
