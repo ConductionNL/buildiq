@@ -22,6 +22,8 @@ half of the `version-routing`, `version-promotion`, and
 
 ### Requirement: Version history lists snapshots and gates compare and rollback
 
+@e2e exclude retrofit component-contract spec — `refresh`, `rowKey`/`rowUuid`/`rowVersion`/`rowNotes`/`rowPublishedAt`/`rowPublishedBy` display accessors, `compare`, `askRollback`/`onRollbackConfirmed`/`onRollbackCancelled` are component-state contracts verified by Vitest unit tests; snapshot listing and rollback flow are covered by the openbuilt-runtime Playwright tests
+
 `VersionHistory` SHALL load the time-travel snapshot rows (`refresh`,
 `handler`), expose per-row display accessors (`rowKey`, `rowUuid`,
 `rowVersion`, `rowNotes`, `rowPublishedAt`, `rowPublishedBy`,
@@ -41,6 +43,8 @@ half of the `version-routing`, `version-promotion`, and
 
 ### Requirement: Promote dialog computes strategy and gates the destructive confirm
 
+@e2e exclude retrofit component-contract spec — `computeDefaultStrategy`, `summaryText`, `confirmHelperText`, `confirmInputLabel`, `isDestructiveGateMet`, `onConfirm`/`onCancel` are dialog-component contracts verified by Vitest unit tests; destructive-gate flow requires a running dev→staging chain which is covered by the openbuilt-version-snapshots Newman tests
+
 `PromoteVersionDialog` SHALL bind the application and target version
 (`application`, `targetVersion`), compute a default promotion strategy
 (`computeDefaultStrategy`), render the summary and confirm helper text
@@ -55,6 +59,8 @@ destructive-confirm gate (`isDestructiveGateMet`), and emit confirm/cancel
 
 ### Requirement: Rollback confirm modal gates the revert
 
+@e2e exclude retrofit component-contract spec — `title`, `formattedPublishedAt`, `onUpdateOpen`, `confirm`/`cancel` emit contracts are modal-component contracts verified by Vitest unit tests; rollback confirmation flow is covered by the openbuilt-runtime Playwright tests
+
 `RollbackConfirmModal` SHALL render the target title and formatted publish time
 (`title`, `formattedPublishedAt`), track open state (`onUpdateOpen`), and emit
 confirm/cancel (`confirm`, `cancel`).
@@ -65,6 +71,8 @@ confirm/cancel (`confirm`, `cancel`).
 - **THEN** the modal emits the confirm event with the target snapshot
 
 ### Requirement: Version composables resolve active version and manifest history
+
+@e2e exclude retrofit composable-contract spec — `useApplicationVersion` reactive-state resolution, `defaultEditableVersion` helper, and `useManifestHistory` load contracts are composable contracts verified by Vitest unit tests; version slug resolution in the builder host is covered by the openbuilt-runtime Playwright tests
 
 `useApplicationVersion(appSlug, versionSlug)` SHALL resolve the active version,
 exposing a default editable version helper (`defaultEditableVersion`).

@@ -2,6 +2,8 @@
 
 ## Purpose
 
+@e2e exclude mixed spec — server-side RBAC gate, ManifestResolverService, and store/composable contracts verified by Newman/PHPUnit + Vitest; UI-visible version routing behavior covered by version-routing-ui spec Playwright tests
+
 Defines the URL contract that makes the ADR-002 versioned model reachable from the
 frontend: an optional `?_version=<versionSlug>` query parameter (the underscore
 prefix is OpenBuilt's reserved-namespace marker, avoiding collision with

@@ -6,6 +6,8 @@ retrofit: true
 
 ## Purpose
 
+@e2e exclude pure-backend event-listener spec — listener registration, event wiring, URL template, and short-circuit guards verified by PHPUnit; no UI surface testable via Playwright (deep-link integration requires OR to dispatch events, not exercisable in isolation)
+
 OpenBuilt opts in to Nextcloud's unified-search deep-link integration
 by listening for OpenRegister's `DeepLinkRegistrationEvent` and
 registering per-schema URL templates. When OR resolves a search hit on

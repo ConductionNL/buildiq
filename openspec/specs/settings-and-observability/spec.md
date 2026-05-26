@@ -104,6 +104,8 @@ return its result, rejecting unauthenticated callers with HTTP 401.
 
 ### REQ-OBS-004: Repair step bootstraps configuration on install/upgrade
 
+@e2e exclude pure-backend repair-step: PHPUnit tests verify IRepairStep invokes reloadConfiguration(); no Playwright-testable UI surface for OCC install/upgrade hooks
+
 The `InitializeSettings` repair step SHALL run during app
 install/upgrade, calling `SettingsService::reloadConfiguration()` to
 force-import the bundled register configuration so a freshly installed

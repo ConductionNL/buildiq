@@ -20,6 +20,8 @@ file storage is introduced.
 
 ### Requirement: Icon fields on Application schema (top-level)
 
+@e2e exclude pure-backend OR schema validation contract — verified by Newman REST tests; no Playwright-testable UI surface for schema validation
+
 The `Application` schema in `lib/Settings/openbuilt_register.json` SHALL declare two optional
 top-level properties — `icon` and `iconDark` — as siblings to `slug`, `name`, `manifest`,
 `version`, and `permissions`. Each SHALL be an object of shape `{ "ref": "<filename>" }` where
@@ -53,6 +55,8 @@ any upstream coupling with `@conduction/nextcloud-vue`.
 - **THEN** OR returns a 4xx validation error indicating `icon.ref` is required
 
 ### Requirement: Icon-serving endpoint (light)
+
+@e2e exclude pure-backend REST endpoint — icon serving, fallback chain, cache headers, and 401 rejection verified by Newman; no separate UI surface beyond the <img> covered by applicationCard.spec.ts
 
 The system SHALL expose `GET /index.php/apps/openbuilt/icons/{slug}.svg` backed by
 `IconController::iconLight`. The endpoint SHALL:
@@ -89,6 +93,8 @@ The system SHALL expose `GET /index.php/apps/openbuilt/icons/{slug}.svg` backed 
 - **THEN** the response is `401`
 
 ### Requirement: Icon-serving endpoint (dark)
+
+@e2e exclude pure-backend REST endpoint — dark-icon serving, 4-step fallback chain, and cache headers verified by Newman; no separate UI surface
 
 The system SHALL expose `GET /index.php/apps/openbuilt/icons/{slug}-dark.svg` backed by
 `IconController::iconDark`. The endpoint SHALL apply the following fallback chain in order:
@@ -163,6 +169,8 @@ goes through OR's existing files-attached-to-object endpoint (ADR-001).
 - **THEN** the uploader displays an inline error message and does not submit the file to OR
 
 ### Requirement: Application UUID resolution for icon attachment lookup
+
+@e2e exclude pure-backend PHP service unit: extractUuid fallback chain is a single-class function verified by PHPUnit; no UI surface
 
 `IconService` SHALL derive the OR object UUID it uses for icon
 attachment lookups (`FileService::getFile`) from a normalised

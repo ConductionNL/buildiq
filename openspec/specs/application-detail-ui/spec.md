@@ -23,6 +23,8 @@ capabilities.
 
 ### Requirement: Detail header cockpit renders versions, KPIs, activity and refresh
 
+@e2e exclude retrofit component-contract spec — scenarios describe Vue composable/computed-property contracts (`loadVersions`, `fetchInsights`, `sparklinePoints`, etc.) verified by Vitest unit tests; end-to-end UI behaviour of the cockpit is covered by the application-detail-overview Playwright tests
+
 `ApplicationDetailHeader` SHALL bind the application object
 (`object`, `objectId`, `appSlug`, `applicationName`, `applicationDescription`,
 `applicationStatus`, `iconUrl`, `banner`), resolve and order the version chain
@@ -50,6 +52,8 @@ clean up timers on `beforeDestroy`/`mounted`.
 
 ### Requirement: Overview widgets render rows with deep-links and inline actions
 
+@e2e exclude retrofit component-contract spec — scenarios describe widget action-emit contracts (`openInOpenRegister`, `addSchema`, `openPage`, `openEntry`) verified by Vitest unit tests; deep-link navigation covered by application-detail-overview Playwright tests
+
 The overview widgets SHALL each render their domain rows: `RegisterWidget`
 read-only with an "Open in OpenRegister" deep-link (`registerSlug`,
 `openInOpenRegister`); `SchemasWidget` with deep-link, count formatting, and an
@@ -70,6 +74,8 @@ navigate to the corresponding editor.
 
 ### Requirement: Application card tile surfaces status, version and role
 
+@e2e exclude retrofit component-contract spec — card navigation is covered by the openbuilt-runtime Playwright tests (`application-list-renders-for-admin`, `hello-world-card-navigates-to-detail`); the card's role/status label contracts are Vitest-tested
+
 `ApplicationCard` SHALL bind the application (`app`, `appUuid`), expose the
 production version and semver (`productionVersion`, `productionSemver`), expose
 status and role labels (`statusKey`, `statusLabel`, `role`, `roleLabel`),
@@ -82,6 +88,8 @@ detail route on activation (`onCardActivate`).
 - **THEN** the index navigates to that application's detail route
 
 ### Requirement: Action bar and tabs drive publish, permissions, manifest, versions, icon
+
+@e2e exclude retrofit component-contract spec — `canPublish`, `publish`, `parseAndValidate`, `onRollback`, `onIconUpdated`, `onWizardCreated` are composable-level contracts verified by Vitest; publish + manifest-save integration is covered by the openbuilt-runtime Playwright tests
 
 `ApplicationDetailActions` SHALL gate and trigger publish
 (`canPublish`, `publish`, `builderUrl`), resolve the available groups
@@ -103,6 +111,8 @@ to wizard completion (`onWizardCreated`).
 - **THEN** the tab validates the JSON before persisting
 
 ### Requirement: Manifest diff viewer and app shell
+
+@e2e exclude retrofit component-contract spec — `diffParts`, `sortReplacer`, `prettyManifest`, `appIcon`, `isAdmin`, `permissions`, `translateForApp` are composable/computed contracts verified by Vitest; diff rendering and app-shell init are covered by the openbuilt-runtime Playwright tests
 
 `ManifestDiff` SHALL fetch both manifests (`fetch`, `from`, `to`, `slug`),
 compute a deterministic diff (`diffParts`, `partClass`, `sortReplacer`,

@@ -2,6 +2,8 @@
 
 ## Purpose
 
+@e2e exclude pure-backend schema/lifecycle/CRUD spec — all scenarios are OR REST contracts and service-layer logic verified by Newman/PHPUnit; no UI surface in this spec
+
 Defines the `ApplicationVersion` schema and its lifecycle — the deployable runtime
 half of ADR-002's two-object versioning model (`Application` logical + N
 `ApplicationVersion` deployable). Each version owns its own per-version OR register

@@ -29,6 +29,8 @@ icon / no-Live-chip refinement.
 
 ### Requirement: Manifest endpoint per virtual-app slug
 
+@e2e exclude pure-backend REST endpoint — manifest fetch, 404 for unknown slug, and auth posture verified by Newman/manifest-endpoint.spec.ts; no separate UI surface
+
 The system SHALL expose
 `GET /index.php/apps/openbuilt/api/applications/{slug}/manifest`
 backed by `ApplicationsController::getManifest`. The endpoint SHALL
@@ -443,6 +445,8 @@ the diff view is opened.
 
 ### Requirement: Manifest endpoint returns 403 for unauthorised callers
 
+@e2e exclude backend manifest-403 endpoint — already covered by rbac-403.spec.ts (the canonical Playwright test for this gate)
+
 `ApplicationsController::getManifest` SHALL be extended with a
 permissions check that runs after the organisation-scope resolution
 and before any branch that returns the manifest payload. The check
@@ -569,6 +573,8 @@ disambiguate from `REQ-OBR-008a` (VersionHistory panel, from
 
 ### Requirement: Caller's group set is provided via initial state
 
+@e2e exclude pure-backend PHP IInitialState contract — loadState value verified by PHPUnit; no Playwright-accessible surface to assert server-side initial state injection
+
 The OpenBuilt PHP layer SHALL provide the caller's Nextcloud group
 IDs to the frontend via
 `IInitialState::provideInitialState('openbuilt',
@@ -599,6 +605,8 @@ disambiguate from `REQ-OBR-009a` (Rollback action, from
   groups
 
 ### Requirement: ApplicationCard renders icon and omits redundant Live chip
+
+@e2e exclude already covered — all four scenarios verified by applicationCard.spec.ts; adding duplicate tags would double-count the same test
 
 `ApplicationCard.vue` SHALL render the Application's icon in front of the app title using an
 `<img>` element whose `src` is the URL of the icon-serving light endpoint
@@ -638,6 +646,8 @@ Live chip produces duplicate signalling. The `ob-app-card__chip--live` CSS rule 
   VirtualAppDetail is unaffected
 
 ### Requirement: MCP tool-provider contract
+
+@e2e exclude pure-backend PHP IMcpToolProvider unit — getAppId, getTools, invokeTool dispatch, and unknown-tool error envelope verified by PHPUnit; no Playwright-testable UI surface
 
 The OpenBuilt MCP surface SHALL be implemented by a class
 (`OCA\OpenBuilt\Mcp\OpenBuiltToolProvider`) that implements
@@ -680,6 +690,8 @@ tool ids.
   message: ... }` and `message` lists the available tool ids
 
 ### Requirement: Auth-gated dispatch with arg validation
+
+@e2e exclude pure-backend PHP MCP arg-validation unit — unauthenticated rejection, limit/statusFilter clamping, and isAdmin helper verified by PHPUnit; no Playwright-testable UI surface
 
 Every MCP tool exposed by this provider SHALL require an authenticated
 Nextcloud session. The provider SHALL resolve the active user via
@@ -732,6 +744,8 @@ existing `SlugValidator` service. TODO: collapse onto `SlugValidator`
 in a follow-up so the pattern lives in exactly one place.
 
 ### Requirement: Application resolution and uniform response mapping
+
+@e2e exclude pure-backend PHP MCP resolution helpers — slug resolution, not_found/inconsistent_state envelopes, deepLink builder, extractUuid fallback verified by PHPUnit; no Playwright-testable UI surface
 
 Tools that operate on a single virtual app SHALL resolve the supplied
 slug to an `Application` object via the `built-app-route` index in the
@@ -789,6 +803,8 @@ order (`extractUuid`).
 - **THEN** the returned UUID is `'abc-123'`
 
 ### Requirement: Draft-version manifest mutation isolation
+
+@e2e exclude pure-backend PHP MCP authoring-tool isolation — versionSlug defaulting, loadVersion/saveVersionManifest contracts verified by PHPUnit; no Playwright-testable UI surface
 
 Authoring tools that mutate a virtual app
 (`openbuilt.upsertSchema`, `openbuilt.upsertPage`,

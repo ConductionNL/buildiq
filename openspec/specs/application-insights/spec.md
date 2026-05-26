@@ -2,6 +2,8 @@
 
 ## Purpose
 
+@e2e exclude pure-backend API/aggregation spec — all scenarios are REST endpoint contracts and service-layer aggregation logic verified by Newman/PHPUnit; no UI surface in this spec
+
 Exposes the version-scoped insights endpoint that powers the KPI grid and the
 activity-graph card on the Application detail page. Returns four KPI scalars
 (active users, object count, files count, audit-event count) plus an event-bucketed

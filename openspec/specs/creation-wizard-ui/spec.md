@@ -20,6 +20,8 @@ half of the `application-creation-wizard` backend capability.
 
 ### Requirement: Wizard host sequences steps, gates navigation, merges payload and submits
 
+@e2e exclude retrofit component-contract spec — `displayStep`, `currentStepValid`, `allStepsValid`, `mergePayload`, `resetState`, `onSubmit` are component-state contracts verified by Vitest unit tests; wizard open/submit integration is covered by the application-creation-wizard Playwright tests
+
 `CreateApplicationWizard` SHALL track the current step (`displayStep`,
 `visibleStepCount`), gate forward navigation on per-step validity
 (`currentStepValid`, `allStepsValid`, `goNext`, `goBack`), merge each step's
@@ -39,6 +41,8 @@ submit the atomic provisioning call (`onSubmit`).
 
 ### Requirement: Basics and preset steps validate identity and select a starter
 
+@e2e exclude retrofit component-contract spec — `isValid`, `slugError`, `onNameInput`, `onSlugInput`, `presetOptions`, `selectPreset` are per-step component contracts verified by Vitest unit tests; the integrated slug-validation and preset-selection flows are covered by the application-creation-wizard Playwright tests
+
 `Step1Basics` SHALL validate the name, slug, and description
 (`isValid`, `onNameInput`, `onSlugInput`, `slugError`, `onDescriptionInput`,
 `onIconChange`), deriving a slug error when the kebab pattern fails.
@@ -56,6 +60,8 @@ submit the atomic provisioning call (`onSubmit`).
 - **THEN** the preset step records the selection for the payload
 
 ### Requirement: Custom step authors the schema rows with reorder and slug validation
+
+@e2e exclude retrofit component-contract spec — `addRow`, `removeRow`, `moveUp`, `moveDown`, `onDragStart`, `onDrop`, `slugErrors`, `duplicateSlugs` are step-component contracts verified by Vitest unit tests; custom-chain composition end-to-end is covered by the application-creation-wizard Playwright tests
 
 `Step3Custom` SHALL let the user add/remove/reorder schema rows
 (`addRow`, `removeRow`, `moveUp`, `moveDown`, `onDragStart`, `onDragOver`,
@@ -76,6 +82,8 @@ correctness (`slugErrors`, `duplicateSlugs`, `isValid`), toggle advanced options
 - **THEN** the custom step flags the duplicates and marks itself invalid
 
 ### Requirement: Review step previews and icon upload validates SVGs
+
+@e2e exclude retrofit component-contract spec — `chainDisplay`, `iconLightUrl`, `validateSvgFile`, `uploadIcon`, `onLightPreviewError` are review-step and icon-upload component contracts verified by Vitest unit tests; SVG-rejection and review-step rendering are covered by the application-creation-wizard Playwright tests
 
 `Step4Review` SHALL render the read-only summary: chain display, light/dark
 icon previews, production slug, and version list (`chainDisplay`,

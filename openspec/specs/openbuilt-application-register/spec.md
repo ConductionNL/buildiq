@@ -2,6 +2,8 @@
 
 ## Purpose
 
+@e2e exclude pure-backend schema/data spec — all scenarios are OR REST + repair-step contracts verified by Newman/PHPUnit; no UI surface in this spec
+
 Declares the OR-backed registry that stores every virtual app's `Application`
 record (logical half of the ADR-002 two-object versioning model — `productionVersion`
 pointer, no manifest, no status), plus the `BuiltAppRoute` slug index that powers

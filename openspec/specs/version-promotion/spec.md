@@ -2,6 +2,8 @@
 
 ## Purpose
 
+@e2e exclude mixed spec — backend promotion endpoint + strategy logic verified by Newman/PHPUnit; UI dialog scenarios (PromoteVersionDialog) covered by version-routing-ui spec Playwright tests
+
 Lands the promotion flow that moves a manifest + schema set + (optionally) data
 from a source `ApplicationVersion` to its single downstream `promotesTo`
 neighbour, completing the chain mechanics that `openbuilt-versioning-model`
