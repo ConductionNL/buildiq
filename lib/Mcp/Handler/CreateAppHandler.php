@@ -54,8 +54,11 @@ class CreateAppHandler extends AbstractToolHandler
             return $this->errorResult(error: 'invalid_arguments', message: $argError);
         }
 
-        if ($this->requireAuthenticatedUser() === null) {
-            return $this->errorResult(error: 'forbidden', message: 'You must be signed in to create a virtual app.');
+        // Creating an app requires NC admin privileges (same policy as schema
+        // creation — the app author controls a new register + schemas).
+        $adminError = $this->requireAdminUser();
+        if ($adminError !== null) {
+            return $adminError;
         }
 
         try {

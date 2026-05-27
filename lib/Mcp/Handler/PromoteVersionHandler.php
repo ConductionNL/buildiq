@@ -49,13 +49,16 @@ class PromoteVersionHandler extends AbstractToolHandler
             return $this->errorResult(error: 'invalid_arguments', message: $validation['error']);
         }
 
-        if ($this->requireAuthenticatedUser() === null) {
-            return $this->errorResult(error: 'forbidden', message: 'You must be signed in to promote a virtual app version.');
-        }
-
         $appSlug           = $validation['appSlug'];
         $sourceVersionSlug = $validation['sourceVersionSlug'];
         $strategy          = $validation['strategy'];
+
+        // Spec REQ-OBVP-007 — NC admins are NOT auto-granted; caller must hold
+        // an explicit owners or editors entry on the Application.
+        $rbacError = $this->requireWriteRole(appSlug: $appSlug, allowAdminBypass: false);
+        if ($rbacError !== null) {
+            return $rbacError;
+        }
 
         try {
             $objectService = $this->container->get('OCA\OpenRegister\Service\ObjectService');

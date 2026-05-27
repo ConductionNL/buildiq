@@ -48,13 +48,14 @@ class UpsertPageHandler extends AbstractToolHandler
             return $this->errorResult(error: 'invalid_arguments', message: $validation['error']);
         }
 
-        if ($this->requireAuthenticatedUser() === null) {
-            return $this->errorResult(error: 'forbidden', message: 'You must be signed in to author pages.');
-        }
-
         $appSlug     = $validation['appSlug'];
         $versionSlug = $validation['versionSlug'];
         $pageId      = $validation['pageId'];
+
+        $rbacError = $this->requireWriteRole(appSlug: $appSlug);
+        if ($rbacError !== null) {
+            return $rbacError;
+        }
 
         try {
             $objectService = $this->container->get('OCA\OpenRegister\Service\ObjectService');
