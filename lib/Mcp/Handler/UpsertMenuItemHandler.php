@@ -155,23 +155,28 @@ class UpsertMenuItemHandler extends AbstractToolHandler
     }//end validateArgs()
 
     /**
-     * Upsert a menu item in the menu list by exact id matching.
+     * Upsert a menu item in the menu list using case-insensitive id matching.
+     *
+     * Uses the same case-insensitive strategy as UpsertPageHandler so that an
+     * LLM can reliably target an existing item regardless of case variations
+     * (issue #166 — earlier code used strict equality which diverged from pages).
      *
      * Returns the updated menu array and a boolean indicating whether an existing
      * item was replaced (true) or a new item was appended (false).
      *
      * @param array<int, mixed>    $menu    Existing menu list from the manifest.
-     * @param string               $itemId  The menu item id to look up.
+     * @param string               $itemId  The menu item id to look up (case-insensitive).
      * @param array<string, mixed> $newItem The menu item definition to insert or replace with.
      *
      * @return array{0: array, 1: bool}
      */
     private function upsertMenuItemInList(array $menu, string $itemId, array $newItem): array
     {
-        $replaced = false;
+        $replaced  = false;
+        $itemIdLc = strtolower($itemId);
 
         foreach ($menu as $i => $existing) {
-            if (is_array($existing) === true && (string) ($existing['id'] ?? '') === $itemId) {
+            if (is_array($existing) === true && strtolower((string) ($existing['id'] ?? '')) === $itemIdLc) {
                 $menu[$i] = $newItem;
                 $replaced = true;
                 break;

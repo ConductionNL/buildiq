@@ -178,14 +178,34 @@ class ApplicationCreationService
             $appData = $this->normaliseObject(object: $created);
             $state['applicationUuid'] = (string) ($appData['id'] ?? $appData['uuid'] ?? '');
         } catch (Throwable $e) {
+            // Detect TOCTOU duplicate-slug races: two concurrent createApp calls both
+            // passed appSlugExists() then both tried saveObject — the second one will
+            // receive a unique-constraint violation (issue #163).
+            $errorMsg = $e->getMessage();
+            $isSlugConflict = (
+                str_contains($errorMsg, 'Duplicate')
+                || str_contains($errorMsg, 'duplicate')
+                || str_contains($errorMsg, 'unique constraint')
+                || str_contains($errorMsg, 'UNIQUE')
+            );
+            if ($isSlugConflict === true) {
+                throw new WizardCreationException(
+                    errorCode: 'app_slug_conflict',
+                    failedAtStep: 'validate',
+                    message: sprintf('An Application with slug "%s" already exists.', $appSlug),
+                    rollbackStatus: 'none',
+                    previous: $e
+                );
+            }
+
             $this->logger->error(
-                'OpenBuilt: wizard create-application failed for slug '.$appSlug.': '.$e->getMessage(),
+                'OpenBuilt: wizard create-application failed for slug '.$appSlug.': '.$errorMsg,
                 ['exception' => $e]
             );
             throw new WizardCreationException(
                 errorCode: 'wizard_rollback',
                 failedAtStep: 'create-application',
-                message: $e->getMessage(),
+                message: $errorMsg,
                 rollbackStatus: 'complete',
                 previous: $e
             );
@@ -565,6 +585,9 @@ class ApplicationCreationService
     private function appSlugExists(string $slug): bool
     {
         try {
+            // Pin _multitenancy: false throughout so all three calls operate in
+            // the same scope and a slug taken in one org cannot appear free to
+            // another (issue #163 — cross-org multitenancy flag mismatch).
             $registerId = $this->registerMapper->find(
                 ApplicationVersionService::REGISTER_SLUG,
                 _multitenancy: false
@@ -577,8 +600,9 @@ class ApplicationCreationService
             $rows = $this->objectService->searchObjects(
                 query: [
                     '@self' => [
-                        'register' => $registerId,
-                        'schema'   => $schemaId,
+                        'register'      => $registerId,
+                        'schema'        => $schemaId,
+                        '_multitenancy' => false,
                     ],
                     'slug'  => $slug,
                 ]
@@ -587,6 +611,9 @@ class ApplicationCreationService
             return is_array($rows) === true && $rows !== [];
         } catch (Throwable $e) {
             // If we cannot query, assume no conflict — OR will reject on create if there is one.
+            // The createApplication caller also handles any duplicate-slug exception from saveObject
+            // so a pre-check failure is safe to ignore here (issue #163 TOCTOU: a narrow window
+            // remains but is handled by the catch in createApplication).
             $this->logger->debug(
                 'OpenBuilt: appSlugExists check failed for slug '.$slug.': '.$e->getMessage()
             );
