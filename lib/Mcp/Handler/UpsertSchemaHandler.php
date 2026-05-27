@@ -77,20 +77,29 @@ class UpsertSchemaHandler extends AbstractToolHandler
 
             if ($existing !== null) {
                 $schema = $schemaMapper->updateFromArray($existing->getId(), $blob);
-                $action = 'updated';
-            } else {
-                $schema = $schemaMapper->createFromArray($blob);
-                $action = 'created';
-                $this->attachSchemaToRegister(
-                    registerMapper: $registerMapper,
-                    registerSlug: $registerSlug,
-                    schemaId: $schema->getId()
-                );
+                return [
+                    'success' => true,
+                    'action'  => 'updated',
+                    'schema'  => [
+                        'id'        => $schema->getId(),
+                        'slug'      => $namespacedSlug,
+                        'shortSlug' => $rawSlug,
+                        'title'     => $title,
+                        'register'  => $registerSlug,
+                    ],
+                ];
             }
+
+            $schema = $schemaMapper->createFromArray($blob);
+            $this->attachSchemaToRegister(
+                registerMapper: $registerMapper,
+                registerSlug: $registerSlug,
+                schemaId: $schema->getId()
+            );
 
             return [
                 'success' => true,
-                'action'  => $action,
+                'action'  => 'created',
                 'schema'  => [
                     'id'        => $schema->getId(),
                     'slug'      => $namespacedSlug,

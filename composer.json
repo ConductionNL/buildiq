@@ -46,7 +46,7 @@
 		"phpcs": "./vendor/bin/phpcs --standard=phpcs.xml",
 		"phpcs:fix": "./vendor/bin/phpcbf --standard=phpcs.xml",
 		"phpcs:output": "./vendor/bin/phpcs --standard=phpcs.xml --report=json lib/ 2>/dev/null | tail -1 > phpcs-output.json",
-		"phpmd": "phpmd lib text phpmd.xml || echo 'PHPMD not installed, skipping...'",
+		"phpmd": "./vendor/bin/phpmd lib text phpmd.xml --exclude '*/Resources/template/*' --baseline-file phpmd.baseline.xml || echo 'PHPMD not installed, skipping...'",
 		"phpmetrics": "./vendor/bin/phpmetrics --report-html=phpmetrics lib/",
 		"psalm": "./vendor/bin/psalm --threads=1 --no-cache || echo 'Psalm not installed, skipping...'",
 		"phpstan": "./vendor/bin/phpstan analyse --memory-limit=1G || echo 'PHPStan not installed, skipping...'",
