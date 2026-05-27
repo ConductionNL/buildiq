@@ -41,6 +41,7 @@ use OCA\OpenBuilt\Service\ApplicationCreationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -88,6 +89,7 @@ class ApplicationCreationController extends Controller
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-15
      */
     #[NoAdminRequired]
+    #[UserRateLimit(limit: 10, period: 3600)]
     public function wizard(): JSONResponse
     {
         // Require authentication.

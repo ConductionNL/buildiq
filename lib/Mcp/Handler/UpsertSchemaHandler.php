@@ -79,6 +79,17 @@ class UpsertSchemaHandler extends AbstractToolHandler
             $existing = $this->findExistingSchema(schemaMapper: $schemaMapper, namespacedSlug: $namespacedSlug);
 
             if ($existing !== null) {
+                // Ownership guard: verify the found schema belongs to the expected
+                // per-version register before allowing an update (issue #168).
+                $ownershipError = $this->verifySchemaOwnership(
+                    registerMapper: $registerMapper,
+                    registerSlug: $registerSlug,
+                    schemaId: $existing->getId()
+                );
+                if ($ownershipError !== null) {
+                    return $ownershipError;
+                }
+
                 $schema = $schemaMapper->updateFromArray($existing->getId(), $blob);
                 return [
                     'success' => true,
@@ -116,7 +127,7 @@ class UpsertSchemaHandler extends AbstractToolHandler
                 'OpenBuilt MCP: upsertSchema failed',
                 ['appSlug' => $appSlug, 'slug' => $rawSlug, 'exception' => $e->getMessage()]
             );
-            return $this->errorResult(error: 'upsert_failed', message: 'Failed to upsert schema: '.$e->getMessage());
+            return $this->errorResult(error: 'upsert_failed', message: 'Failed to upsert schema.');
         }//end try
 
     }//end handle()
@@ -238,6 +249,53 @@ class UpsertSchemaHandler extends AbstractToolHandler
         return null;
 
     }//end findExistingSchema()
+
+    /**
+     * Verify that the found schema belongs to the expected per-version register.
+     *
+     * Guards against a slug-collision attack where an attacker tricks the handler
+     * into overwriting a schema that belongs to a different application or version
+     * (issue #168 — UpsertSchemaHandler register ownership check).
+     *
+     * Returns a forbidden error envelope if the schema is not owned by the given
+     * register, null on success.
+     *
+     * @param object $registerMapper OR RegisterMapper instance.
+     * @param string $registerSlug   Expected per-version register slug.
+     * @param int    $schemaId       ID of the schema to verify.
+     *
+     * @return array{isError: true, error: string, message: string}|null Null on allow.
+     */
+    private function verifySchemaOwnership(object $registerMapper, string $registerSlug, int $schemaId): ?array
+    {
+        try {
+            $register = $registerMapper->find($registerSlug, _multitenancy: false);
+            $schemas  = $register->getSchemas();
+            if (is_array($schemas) === false || in_array(needle: $schemaId, haystack: $schemas, strict: true) === false) {
+                $this->logger->warning(
+                    'OpenBuilt MCP: upsertSchema ownership check failed',
+                    ['register' => $registerSlug, 'schemaId' => $schemaId]
+                );
+                return $this->errorResult(
+                    error: 'forbidden',
+                    message: "Schema does not belong to register '{$registerSlug}'. Update denied."
+                );
+            }
+        } catch (\Throwable $e) {
+            // Register not found: also deny (schema cannot belong to it).
+            $this->logger->warning(
+                'OpenBuilt MCP: upsertSchema register not found during ownership check',
+                ['register' => $registerSlug, 'exception' => $e->getMessage()]
+            );
+            return $this->errorResult(
+                error: 'forbidden',
+                message: "Register '{$registerSlug}' not found. Update denied."
+            );
+        }
+
+        return null;
+
+    }//end verifySchemaOwnership()
 
     /**
      * Attach a newly created schema to its per-version register.

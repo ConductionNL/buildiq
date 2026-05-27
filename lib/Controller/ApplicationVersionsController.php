@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -219,6 +220,7 @@ class ApplicationVersionsController extends Controller
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-24
      */
     #[NoAdminRequired]
+    #[UserRateLimit(limit: 20, period: 60)]
     public function create(string $slug): JSONResponse
     {
         $authError = $this->requireRole(slug: $slug, roles: self::WRITE_ROLES);
@@ -286,6 +288,7 @@ class ApplicationVersionsController extends Controller
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-24
      */
     #[NoAdminRequired]
+    #[UserRateLimit(limit: 60, period: 60)]
     public function update(string $slug, string $versionSlug): JSONResponse
     {
         $authError = $this->requireRole(slug: $slug, roles: self::WRITE_ROLES);
@@ -363,6 +366,7 @@ class ApplicationVersionsController extends Controller
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
      */
     #[NoAdminRequired]
+    #[UserRateLimit(limit: 10, period: 60)]
     public function destroy(string $slug, string $versionSlug): JSONResponse
     {
         $authError = $this->requireRole(slug: $slug, roles: self::WRITE_ROLES);

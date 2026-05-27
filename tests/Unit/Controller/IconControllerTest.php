@@ -4,7 +4,8 @@
  * Unit tests for IconController.
  *
  * Covers REQ-OBICON-002 / REQ-OBICON-003: correct Content-Type and
- * Cache-Control headers on the light and dark icon endpoints.
+ * Cache-Control headers on the light and dark icon endpoints, plus
+ * the XSS-mitigation headers added in issue #164.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -105,7 +106,8 @@ class IconControllerTest extends TestCase
     // -------------------------------------------------------------------------
 
     /**
-     * iconLight returns 200, Content-Type: image/svg+xml, Cache-Control: public, max-age=60.
+     * iconLight returns 200 with correct Content-Type, Cache-Control, CSP, and
+     * X-Content-Type-Options headers (issue #164 XSS mitigation).
      *
      * @return void
      */
@@ -132,7 +134,11 @@ class IconControllerTest extends TestCase
         $headers = $headersProp->getValue($response);
 
         $this->assertSame('image/svg+xml', $headers['Content-Type']);
-        $this->assertSame('public, max-age=60', $headers['Cache-Control']);
+        // Cache must be private to prevent cross-user icon leakage (#164).
+        $this->assertSame('private, max-age=60', $headers['Cache-Control']);
+        // XSS mitigation headers (#164).
+        $this->assertSame("default-src 'none'", $headers['Content-Security-Policy']);
+        $this->assertSame('nosniff', $headers['X-Content-Type-Options']);
 
         fclose($stream);
     }//end testIconLightReturnsCorrectHeaders()
@@ -142,7 +148,8 @@ class IconControllerTest extends TestCase
     // -------------------------------------------------------------------------
 
     /**
-     * iconDark returns 200, Content-Type: image/svg+xml, Cache-Control: public, max-age=60.
+     * iconDark returns 200 with correct Content-Type, Cache-Control, CSP, and
+     * X-Content-Type-Options headers (issue #164 XSS mitigation).
      *
      * @return void
      */
@@ -169,7 +176,11 @@ class IconControllerTest extends TestCase
         $headers = $headersProp->getValue($response);
 
         $this->assertSame('image/svg+xml', $headers['Content-Type']);
-        $this->assertSame('public, max-age=60', $headers['Cache-Control']);
+        // Cache must be private to prevent cross-user icon leakage (#164).
+        $this->assertSame('private, max-age=60', $headers['Cache-Control']);
+        // XSS mitigation headers (#164).
+        $this->assertSame("default-src 'none'", $headers['Content-Security-Policy']);
+        $this->assertSame('nosniff', $headers['X-Content-Type-Options']);
 
         fclose($stream);
     }//end testIconDarkReturnsCorrectHeaders()

@@ -13,7 +13,11 @@
  * Both methods:
  *   - Require any valid NC session (#[NoAdminRequired]).
  *   - Set Content-Type: image/svg+xml.
- *   - Set Cache-Control: public, max-age=60 (design.md Decision 7).
+ *   - Set Content-Security-Policy: default-src 'none' to neutralise
+ *     any scripts/resources embedded in user-supplied SVG payloads (#164).
+ *   - Set X-Content-Type-Options: nosniff (#164).
+ *   - Set Cache-Control: private, max-age=60 (private per #164 — icons
+ *     are personalised to the caller's app access, not globally cacheable).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -57,9 +61,18 @@ class IconController extends Controller
     /**
      * Cache-Control header value applied to every successful icon response.
      *
-     * 60-second public TTL per design.md Decision 7.
+     * Private (not publicly cacheable) to prevent cross-user icon leakage,
+     * with a 60-second revalidation window (design.md Decision 7, updated
+     * by security fix #164).
      */
-    private const CACHE_CONTROL = 'public, max-age=60';
+    private const CACHE_CONTROL = 'private, max-age=60';
+
+    /**
+     * Content-Security-Policy applied to SVG responses to neutralise any
+     * scripts or external resource loads embedded in user-supplied SVG
+     * content (issue #164 — SVG XSS mitigation).
+     */
+    private const SVG_CSP = "default-src 'none'";
 
     /**
      * Constructor.
@@ -144,6 +157,12 @@ class IconController extends Controller
      * Session guard is enforced by the calling public method before this is
      * invoked, per ADR-005 / hydra gate-7 (design.md Decision 6).
      *
+     * Security headers applied to every SVG response (issue #164):
+     *   - Content-Security-Policy: default-src 'none'  → neutralises embedded
+     *     scripts / external resources in user-supplied SVG payloads.
+     *   - X-Content-Type-Options: nosniff              → prevents MIME-sniffing.
+     *   - Cache-Control: private, max-age=60            → no shared-cache leakage.
+     *
      * @param string $slug The Application slug.
      * @param bool   $dark True for the dark fallback chain.
      *
@@ -178,6 +197,9 @@ class IconController extends Controller
         $response->setStatus(Http::STATUS_OK);
         $response->addHeader('Content-Type', $mimeType);
         $response->addHeader('Cache-Control', self::CACHE_CONTROL);
+        // XSS mitigation: neutralise scripts/external resources in SVG payloads.
+        $response->addHeader('Content-Security-Policy', self::SVG_CSP);
+        $response->addHeader('X-Content-Type-Options', 'nosniff');
 
         return $response;
     }//end buildIconResponse()
