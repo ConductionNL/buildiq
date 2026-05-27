@@ -376,32 +376,78 @@ abstract class AbstractToolHandler
     }//end loadVersion()
 
     /**
-     * Save an ApplicationVersion with a new manifest.
+     * Save an ApplicationVersion with a new manifest, protected by an OR
+     * object lock to serialise concurrent manifest mutations (issue #159).
+     *
+     * The lock is acquired before the read-modify-write cycle. If OR returns
+     * a contention error (another agent holds the lock), a
+     * RuntimeException with code 409 is thrown so callers can return an
+     * `isError` envelope without retrying blindly.
      *
      * @param object               $objectService OpenRegister ObjectService instance.
      * @param array<string, mixed> $version       The existing ApplicationVersion as an associative array.
      * @param array<string, mixed> $manifest      The new manifest blob to write onto the version.
      *
      * @return array<string, mixed>
+     *
+     * @throws \RuntimeException (code 409) when the version is locked by another writer.
      */
     protected function saveVersionManifest(object $objectService, array $version, array $manifest): array
     {
         $versionUuid = $this->extractUuid(item: $version);
-        $payload     = $version;
-        $payload['manifest'] = $manifest;
 
-        // Drop OR-internal `@self` / metadata keys that some readers tack on so
-        // saveObject treats the input as a clean property bag.
-        unset($payload['@self'], $payload['id'], $payload['uuid']);
+        // Acquire an OR optimistic lock before the write to prevent last-writer-
+        // wins data loss when two concurrent MCP agents mutate the same version.
+        $locked = false;
+        if (method_exists($objectService, 'lockObject') === true) {
+            try {
+                $objectService->lockObject(
+                    identifier: $versionUuid,
+                    process: 'openbuilt.mcp-manifest-edit',
+                    duration: 30
+                );
+                $locked = true;
+            } catch (\Throwable $lockError) {
+                $this->logger->warning(
+                    'OpenBuilt MCP: manifest lock contention on version '.$versionUuid,
+                    ['exception' => $lockError->getMessage()]
+                );
+                throw new \RuntimeException(
+                    'Version '.$versionUuid.' is currently locked by another writer. Retry after a moment.',
+                    409,
+                    $lockError
+                );
+            }
+        }
 
-        $saved = $objectService->saveObject(
-            object: $payload,
-            register: self::REGISTER_SLUG,
-            schema: 'applicationVersion',
-            uuid: $versionUuid,
-        );
+        try {
+            $payload             = $version;
+            $payload['manifest'] = $manifest;
 
-        return $this->toArray(item: $saved);
+            // Drop OR-internal `@self` / metadata keys that some readers tack on so
+            // saveObject treats the input as a clean property bag.
+            unset($payload['@self'], $payload['id'], $payload['uuid']);
+
+            $saved = $objectService->saveObject(
+                object: $payload,
+                register: self::REGISTER_SLUG,
+                schema: 'applicationVersion',
+                uuid: $versionUuid,
+            );
+
+            return $this->toArray(item: $saved);
+        } finally {
+            if ($locked === true && method_exists($objectService, 'unlockObject') === true) {
+                try {
+                    $objectService->unlockObject(identifier: $versionUuid);
+                } catch (\Throwable $unlockError) {
+                    $this->logger->warning(
+                        'OpenBuilt MCP: failed to release manifest lock on '.$versionUuid,
+                        ['exception' => $unlockError->getMessage()]
+                    );
+                }
+            }
+        }
 
     }//end saveVersionManifest()
 }//end class

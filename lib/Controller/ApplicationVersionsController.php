@@ -335,12 +335,44 @@ class ApplicationVersionsController extends Controller
 
             $payload = $this->versionService->onSave(current: $current, next: $payload);
 
-            $updated = $this->objectService->saveObject(
-                object: $payload,
-                register: ApplicationVersionService::REGISTER_SLUG,
-                schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
-                uuid: $currentUuid
-            );
+            // Acquire an optimistic lock before the read-modify-write to prevent
+            // concurrent UI / MCP writes silently losing each other's changes (issue #159).
+            $locked = false;
+            if (method_exists($this->objectService, 'lockObject') === true && $currentUuid !== '') {
+                try {
+                    $this->objectService->lockObject(
+                        identifier: $currentUuid,
+                        process: 'openbuilt.controller-update',
+                        duration: 15
+                    );
+                    $locked = true;
+                } catch (Throwable $lockError) {
+                    return $this->errorResponse(
+                        code: 'version_locked',
+                        detail: 'Version '.$versionSlug.' is currently locked by another writer. Retry after a moment.',
+                        status: Http::STATUS_CONFLICT
+                    );
+                }
+            }
+
+            try {
+                $updated = $this->objectService->saveObject(
+                    object: $payload,
+                    register: ApplicationVersionService::REGISTER_SLUG,
+                    schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+                    uuid: $currentUuid
+                );
+            } finally {
+                if ($locked === true && method_exists($this->objectService, 'unlockObject') === true) {
+                    try {
+                        $this->objectService->unlockObject(identifier: $currentUuid);
+                    } catch (Throwable $unlockErr) {
+                        $this->logger->warning(
+                            'OpenBuilt: failed to release update lock on '.$currentUuid.': '.$unlockErr->getMessage()
+                        );
+                    }
+                }
+            }
 
             return new JSONResponse(
                 data: $this->normaliseObject(object: $updated),
