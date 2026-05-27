@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUser;
@@ -106,6 +107,7 @@ class VersionPromotionController extends Controller
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-65
      */
     #[NoAdminRequired]
+    #[UserRateLimit(limit: 5, period: 60)]
     public function promote(string $appUuid, string $versionUuid): JSONResponse
     {
         $user = $this->userSession->getUser();

@@ -32,6 +32,8 @@ namespace OCA\OpenBuilt\Controller;
 
 use OCA\OpenBuilt\AppInfo\Application;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IGroupManager;
@@ -70,13 +72,12 @@ class DashboardController extends Controller
      * `ApplicationEditor` list filter can derive per-Application roles
      * without DOM data-attribute reads (REQ-OBR-009, ADR-004 hard rule).
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @return TemplateResponse
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-52
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function page(): TemplateResponse
     {
         $this->publishCurrentUserGroups();
@@ -86,13 +87,12 @@ class DashboardController extends Controller
     /**
      * Serve the SPA for deep links (Vue history mode). Delegates to {@see page()}.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @return TemplateResponse
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-52
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function catchAll(): TemplateResponse
     {
         return $this->page();
