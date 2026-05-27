@@ -440,6 +440,33 @@ namespace OCA\OpenRegister\Service {
             }
         }
     }
+
+    if (class_exists(FileService::class, autoload: false) === false) {
+        /**
+         * Stub FileService — `getFile` call surface used by IconService.
+         *
+         * The real OR FileService wraps Nextcloud Files and returns an
+         * OCP\Files\File node.  Tests mock `getFile()` to return a mock
+         * File node or to throw, so only the method signature needs to
+         * match here.
+         */
+        class FileService
+        {
+            /**
+             * Retrieve a file attached to an object.
+             *
+             * @param string $object   UUID of the owning object.
+             * @param string $file     File name / path to retrieve.
+             *
+             * @return \OCP\Files\File The file node.
+             */
+            public function getFile(string $object, string $file): \OCP\Files\File
+            {
+                // Stub — tests mock this method; real implementation is in OR.
+                throw new \RuntimeException('FileService::getFile stub — must be mocked in tests.');
+            }
+        }
+    }
 }
 
 namespace OCA\OpenRegister\Event {

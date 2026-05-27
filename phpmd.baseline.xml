@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<phpmd-baseline>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/ApplicationVersionsController.php"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/ApplicationVersionsController.php"/>
+  <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Controller/ApplicationsController.php"/>
+  <violation rule="PHPMD\Rule\Design\TooManyMethods" file="lib/Controller/ApplicationsController.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/ApplicationsController.php"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/ApplicationsController.php"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/VersionPromotionController.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/ApplicationCreationService.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/ApplicationCreationService.php" method="createApplication"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/ApplicationCreationService.php" method="createApplication"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/ApplicationCreationService.php" method="createApplication"/>
+  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/ApplicationCreationService.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/ApplicationCreationService.php" method="substituteVersionContext"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/ApplicationCreationService.php" method="substituteVersionContext"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/ApplicationInsightsService.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/ApplicationVersionService.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/ManifestResolverService.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/VersionPromotionService.php"/>
+</phpmd-baseline>

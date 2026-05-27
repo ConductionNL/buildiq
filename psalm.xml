@@ -12,6 +12,18 @@
         <directory name="lib" />
         <ignoreFiles>
             <directory name="vendor" />
+            <!--
+                lib/Resources/template/ is a shipped scaffold — a copy of the
+                nextcloud-app-template skeleton that gets dropped into new apps.
+                It has its own composer vendor tree (not installed here), its own
+                tests/bootstrap.php that requires Nextcloud's lib/base.php (not
+                present in CI), and its own phpcs-custom-sniffs that depend on
+                PHP_CodeSniffer being installed in that subtree. None of those
+                files are part of the openbuilt runtime; scanning them produces
+                MissingFile + UndefinedClass + UndefinedFunction noise against
+                missing neighbours, not real openbuilt bugs.
+            -->
+            <directory name="lib/Resources/template" />
         </ignoreFiles>
     </projectFiles>
     <stubs>
@@ -60,7 +72,18 @@
                 <referencedClass name="OCP\Notification\IManager"/>
                 <referencedClass name="OCP\Share\IManager"/>
                 <!-- OpenRegister cross-app classes (loaded dynamically) -->
+                <!--
+                    These classes live in the sibling `openregister` app and are
+                    only available at Nextcloud runtime. In CI the app is not on
+                    the autoload path, so Psalm reports UndefinedClass. Unit tests
+                    load stubs from tests/stubs/openregister-stubs.php; at
+                    runtime the real classes are present. Suppress here to keep
+                    CI green without masking real openbuilt bugs.
+                -->
                 <referencedClass name="OCA\OpenRegister\Db\ObjectEntity"/>
+                <referencedClass name="OCA\OpenRegister\Db\Register"/>
+                <referencedClass name="OCA\OpenRegister\Db\AuditTrailMapper"/>
+                <referencedClass name="OCA\OpenRegister\Db\AuditTrail"/>
                 <referencedClass name="OCA\OpenRegister\Db\RegisterMapper"/>
                 <referencedClass name="OCA\OpenRegister\Db\SchemaMapper"/>
                 <referencedClass name="OCA\OpenRegister\Event\DeepLinkRegistrationEvent"/>
@@ -85,6 +108,7 @@
                 <referencedClass name="OCP\Migration\IRepairStep"/>
                 <!-- Nextcloud server internals -->
                 <referencedClass name="OC"/>
+                <referencedClass name="OC_App"/>
                 <!-- GuzzleHttp (loaded via composer at runtime) -->
                 <referencedClass name="GuzzleHttp\Client"/>
                 <referencedClass name="GuzzleHttp\Exception\GuzzleException"/>
