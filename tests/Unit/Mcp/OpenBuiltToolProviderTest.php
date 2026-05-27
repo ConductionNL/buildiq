@@ -4,8 +4,8 @@
  * Unit tests for OpenBuiltToolProvider.
  *
  * Covers: getAppId, getTools catalogue shape, invokeTool dispatch of an
- * unknown tool id (no throw), argument validation, and the unauthenticated
- * forbidden path.
+ * unknown tool id (no throw), argument validation, the unauthenticated
+ * forbidden path, and the per-Application RBAC gate on write tools.
  *
  * @category Test
  * @package  OCA\OpenBuilt\Tests\Unit\Mcp
@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuilt\Tests\Unit\Mcp;
 
 use OCA\OpenBuilt\Mcp\OpenBuiltToolProvider;
+use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -274,5 +275,374 @@ class OpenBuiltToolProviderTest extends TestCase
         $this->assertSame('internal_error', $result['error']);
 
     }//end testAuthenticatedUserIsResolved()
+
+    // -------------------------------------------------------------------------
+    // C1 + C2: RBAC gate tests for write tools
+    // -------------------------------------------------------------------------
+
+    /**
+     * createApp returns forbidden when caller is not an NC admin (C2/C1 policy).
+     *
+     * @return void
+     */
+    public function testCreateAppForbiddenForNonAdmin(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('bob');
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->with('bob')->willReturn(false);
+
+        $this->container->expects($this->never())->method('get');
+
+        $result = $this->provider->invokeTool('openbuilt.createApp', [
+            'slug' => 'my-app',
+            'name' => 'My App',
+        ]);
+
+        $this->assertTrue($result['isError']);
+        $this->assertSame('forbidden', $result['error']);
+
+    }//end testCreateAppForbiddenForNonAdmin()
+
+    /**
+     * createApp returns forbidden when unauthenticated.
+     *
+     * @return void
+     */
+    public function testCreateAppForbiddenWhenUnauthenticated(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+        $this->container->expects($this->never())->method('get');
+
+        $result = $this->provider->invokeTool('openbuilt.createApp', [
+            'slug' => 'my-app',
+            'name' => 'My App',
+        ]);
+
+        $this->assertTrue($result['isError']);
+        $this->assertSame('forbidden', $result['error']);
+
+    }//end testCreateAppForbiddenWhenUnauthenticated()
+
+    /**
+     * upsertSchema returns forbidden for non-admin (C2 gate).
+     *
+     * @return void
+     */
+    public function testUpsertSchemaForbiddenForNonAdmin(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('bob');
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->with('bob')->willReturn(false);
+
+        $this->container->expects($this->never())->method('get');
+
+        $result = $this->provider->invokeTool('openbuilt.upsertSchema', [
+            'appSlug'    => 'my-app',
+            'slug'       => 'my-schema',
+            'title'      => 'My Schema',
+            'properties' => ['name' => ['type' => 'string']],
+        ]);
+
+        $this->assertTrue($result['isError']);
+        $this->assertSame('forbidden', $result['error']);
+
+    }//end testUpsertSchemaForbiddenForNonAdmin()
+
+    /**
+     * upsertSchema returns forbidden when unauthenticated (C2 gate).
+     *
+     * @return void
+     */
+    public function testUpsertSchemaForbiddenWhenUnauthenticated(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+        $this->container->expects($this->never())->method('get');
+
+        $result = $this->provider->invokeTool('openbuilt.upsertSchema', [
+            'appSlug'    => 'my-app',
+            'slug'       => 'my-schema',
+            'title'      => 'My Schema',
+            'properties' => ['name' => ['type' => 'string']],
+        ]);
+
+        $this->assertTrue($result['isError']);
+        $this->assertSame('forbidden', $result['error']);
+
+    }//end testUpsertSchemaForbiddenWhenUnauthenticated()
+
+    /**
+     * upsertPage returns forbidden when caller has no owners/editors role (C1 gate).
+     *
+     * The ObjectService is wired to return the app without the caller in any role bucket.
+     *
+     * @return void
+     */
+    public function testUpsertPageForbiddenForNonOwner(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('bob');
+        $this->userSession->method('getUser')->willReturn($user);
+
+        // Not an admin.
+        $this->groupManager->method('isAdmin')->with('bob')->willReturn(false);
+        // No group memberships.
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+
+        // App exists but bob is not an owner/editor.
+        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+        $objectService->method('searchObjectsBySlug')->willReturn([
+            ['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:alice'], 'editors' => []]],
+        ]);
+
+        $this->container->method('get')
+            ->with('OCA\OpenRegister\Service\ObjectService')
+            ->willReturn($objectService);
+
+        $result = $this->provider->invokeTool('openbuilt.upsertPage', [
+            'appSlug' => 'my-app',
+            'pageId'  => 'home',
+            'title'   => 'Home',
+            'type'    => 'dashboard',
+            'route'   => '/home',
+        ]);
+
+        $this->assertTrue($result['isError']);
+        $this->assertSame('forbidden', $result['error']);
+
+    }//end testUpsertPageForbiddenForNonOwner()
+
+    /**
+     * upsertPage proceeds past the RBAC gate when caller is in owners (C1 fix).
+     *
+     * The ObjectService returns the app with alice in owners; a second call
+     * (loadVersion) returns not_found, proving the gate was passed and business
+     * logic was reached.
+     *
+     * @return void
+     */
+    public function testUpsertPageAllowedForOwner(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $this->groupManager->method('isAdmin')->with('alice')->willReturn(false);
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+
+        $callCount     = 0;
+        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+        $objectService->method('searchObjectsBySlug')
+            ->willReturnCallback(function () use (&$callCount) {
+                $callCount++;
+                if ($callCount === 1) {
+                    // RBAC lookup — app found, alice is an owner.
+                    return [['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:alice'], 'editors' => []]]];
+                }
+
+                // loadVersion lookup — app found again, version not found.
+                if ($callCount === 2) {
+                    return [['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'name' => 'My App', 'permissions' => ['owners' => ['user:alice']]]];
+                }
+
+                return [];
+            });
+
+        $this->container->method('get')
+            ->with('OCA\OpenRegister\Service\ObjectService')
+            ->willReturn($objectService);
+
+        $result = $this->provider->invokeTool('openbuilt.upsertPage', [
+            'appSlug' => 'my-app',
+            'pageId'  => 'home',
+            'title'   => 'Home',
+            'type'    => 'dashboard',
+            'route'   => '/home',
+        ]);
+
+        // Gate passed; business logic returned not_found (no version), not forbidden.
+        $this->assertTrue($result['isError']);
+        $this->assertNotSame('forbidden', $result['error'], 'Owner should pass RBAC gate');
+        $this->assertSame('not_found', $result['error']);
+
+    }//end testUpsertPageAllowedForOwner()
+
+    /**
+     * addWidget returns forbidden for a non-owner (C1 gate).
+     *
+     * @return void
+     */
+    public function testAddWidgetForbiddenForNonOwner(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('bob');
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $this->groupManager->method('isAdmin')->with('bob')->willReturn(false);
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+
+        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+        $objectService->method('searchObjectsBySlug')->willReturn([
+            ['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:alice'], 'editors' => []]],
+        ]);
+
+        $this->container->method('get')
+            ->with('OCA\OpenRegister\Service\ObjectService')
+            ->willReturn($objectService);
+
+        $result = $this->provider->invokeTool('openbuilt.addWidget', [
+            'appSlug'    => 'my-app',
+            'pageId'     => 'home',
+            'widgetType' => 'stat-counter',
+        ]);
+
+        $this->assertTrue($result['isError']);
+        $this->assertSame('forbidden', $result['error']);
+
+    }//end testAddWidgetForbiddenForNonOwner()
+
+    /**
+     * upsertMenuItem returns forbidden for a non-owner (C1 gate).
+     *
+     * @return void
+     */
+    public function testUpsertMenuItemForbiddenForNonOwner(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('bob');
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $this->groupManager->method('isAdmin')->with('bob')->willReturn(false);
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+
+        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+        $objectService->method('searchObjectsBySlug')->willReturn([
+            ['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:alice'], 'editors' => []]],
+        ]);
+
+        $this->container->method('get')
+            ->with('OCA\OpenRegister\Service\ObjectService')
+            ->willReturn($objectService);
+
+        $result = $this->provider->invokeTool('openbuilt.upsertMenuItem', [
+            'appSlug' => 'my-app',
+            'id'      => 'nav-home',
+            'label'   => 'Home',
+            'route'   => '/home',
+        ]);
+
+        $this->assertTrue($result['isError']);
+        $this->assertSame('forbidden', $result['error']);
+
+    }//end testUpsertMenuItemForbiddenForNonOwner()
+
+    /**
+     * promoteVersion returns forbidden for a non-owner even when caller is NC admin
+     * (spec REQ-OBVP-007 — no admin bypass for promotion).
+     *
+     * @return void
+     */
+    public function testPromoteVersionForbiddenForAdminWithoutExplicitRole(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('admin-user');
+        $this->userSession->method('getUser')->willReturn($user);
+
+        // Caller IS an NC admin but has no explicit role entry.
+        $this->groupManager->method('isAdmin')->with('admin-user')->willReturn(true);
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+
+        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+        $objectService->method('searchObjectsBySlug')->willReturn([
+            ['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:alice'], 'editors' => []]],
+        ]);
+
+        $this->container->method('get')
+            ->with('OCA\OpenRegister\Service\ObjectService')
+            ->willReturn($objectService);
+
+        $result = $this->provider->invokeTool('openbuilt.promoteVersion', [
+            'appSlug'           => 'my-app',
+            'sourceVersionSlug' => 'development',
+        ]);
+
+        $this->assertTrue($result['isError']);
+        $this->assertSame('forbidden', $result['error']);
+
+    }//end testPromoteVersionForbiddenForAdminWithoutExplicitRole()
+
+    /**
+     * promoteVersion allows a caller with an explicit owners entry (no admin bypass
+     * needed; the gate is per-Application RBAC — spec REQ-OBVP-007).
+     *
+     * After the RBAC gate passes, loadVersion returns not_found (no version data
+     * wired), confirming the gate was cleared.
+     *
+     * @return void
+     */
+    public function testPromoteVersionAllowedForExplicitOwner(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($user);
+
+        // isAdmin is NOT called for promoteVersion (allowAdminBypass=false).
+        $this->groupManager->method('isAdmin')->willReturn(false);
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+
+        $callCount     = 0;
+        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+        $objectService->method('searchObjectsBySlug')
+            ->willReturnCallback(function () use (&$callCount) {
+                $callCount++;
+                if ($callCount === 1) {
+                    // RBAC lookup — alice is an owner.
+                    return [['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:alice']]]];
+                }
+
+                // loadVersion: app found, version not found.
+                if ($callCount === 2) {
+                    return [['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'name' => 'My App']];
+                }
+
+                return [];
+            });
+
+        $this->container->method('get')
+            ->with('OCA\OpenRegister\Service\ObjectService')
+            ->willReturn($objectService);
+
+        $result = $this->provider->invokeTool('openbuilt.promoteVersion', [
+            'appSlug'           => 'my-app',
+            'sourceVersionSlug' => 'development',
+        ]);
+
+        // Gate passed; no version found → not_found, NOT forbidden.
+        $this->assertTrue($result['isError']);
+        $this->assertNotSame('forbidden', $result['error'], 'Explicit owner must pass RBAC gate');
+        $this->assertSame('not_found', $result['error']);
+
+    }//end testPromoteVersionAllowedForExplicitOwner()
+
+    /**
+     * promoteVersion returns forbidden when unauthenticated.
+     *
+     * @return void
+     */
+    public function testPromoteVersionForbiddenWhenUnauthenticated(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+        $this->container->expects($this->never())->method('get');
+
+        $result = $this->provider->invokeTool('openbuilt.promoteVersion', [
+            'appSlug'           => 'my-app',
+            'sourceVersionSlug' => 'development',
+        ]);
+
+        $this->assertTrue($result['isError']);
+        $this->assertSame('forbidden', $result['error']);
+
+    }//end testPromoteVersionForbiddenWhenUnauthenticated()
 
 }//end class

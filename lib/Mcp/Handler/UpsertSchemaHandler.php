@@ -46,8 +46,11 @@ class UpsertSchemaHandler extends AbstractToolHandler
             return $this->errorResult(error: 'invalid_arguments', message: $validation['error']);
         }
 
-        if ($this->requireAuthenticatedUser() === null) {
-            return $this->errorResult(error: 'forbidden', message: 'You must be signed in to author schemas.');
+        // Schema creation/update mirrors OR's admin-only SchemasController gate
+        // (OR #1949/#1957/#1959 — default-secure checkSchemaManagePermission).
+        $adminError = $this->requireAdminUser();
+        if ($adminError !== null) {
+            return $adminError;
         }
 
         $appSlug        = $validation['appSlug'];

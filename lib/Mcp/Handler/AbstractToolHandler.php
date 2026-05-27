@@ -4,8 +4,8 @@
  * Abstract base class for OpenBuilt MCP tool handlers.
  *
  * Provides the shared utilities (slug validation, auth check, error envelope,
- * toArray/extractUuid coercion, deep-link builder) that every concrete handler
- * needs, eliminating duplication across the handler family.
+ * toArray/extractUuid coercion, deep-link builder, per-Application RBAC) that
+ * every concrete handler needs, eliminating duplication across the handler family.
  *
  * @category Service
  * @package  OCA\OpenBuilt\Mcp\Handler
@@ -26,6 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuilt\Mcp\Handler;
 
+use OCP\IGroupManager;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -41,16 +43,25 @@ abstract class AbstractToolHandler
     protected const REGISTER_SLUG = 'openbuilt';
 
     /**
+     * Roles that grant write access to an Application.
+     *
+     * @var array<int, string>
+     */
+    private const WRITE_ROLES = ['owners', 'editors'];
+
+    /**
      * Constructor.
      *
-     * @param IUserSession       $userSession User session used to resolve the current authenticated user.
-     * @param ContainerInterface $container   DI container used to resolve OpenRegister services lazily.
-     * @param LoggerInterface    $logger      PSR logger used for non-fatal warnings and error logging.
+     * @param IUserSession       $userSession  User session used to resolve the current authenticated user.
+     * @param ContainerInterface $container    DI container used to resolve OpenRegister services lazily.
+     * @param LoggerInterface    $logger       PSR logger used for non-fatal warnings and error logging.
+     * @param IGroupManager      $groupManager Group manager used for admin and group membership checks.
      */
     public function __construct(
         protected readonly IUserSession $userSession,
         protected readonly ContainerInterface $container,
         protected readonly LoggerInterface $logger,
+        protected readonly IGroupManager $groupManager,
     ) {
     }//end __construct()
 
@@ -97,6 +108,149 @@ abstract class AbstractToolHandler
         return $uid;
 
     }//end requireAuthenticatedUser()
+
+    /**
+     * Check whether the current user is an NC admin.
+     *
+     * Returns a forbidden error envelope when the user is not signed in or is not
+     * an admin. Returns null on success.
+     *
+     * @return array{isError: true, error: string, message: string}|null Null on allow.
+     */
+    protected function requireAdminUser(): ?array
+    {
+        $uid = $this->requireAuthenticatedUser();
+        if ($uid === null) {
+            return $this->errorResult(error: 'forbidden', message: 'You must be signed in.');
+        }
+
+        if ($this->groupManager->isAdmin($uid) === false) {
+            return $this->errorResult(
+                error: 'forbidden',
+                message: 'This operation requires Nextcloud admin privileges.'
+            );
+        }
+
+        return null;
+
+    }//end requireAdminUser()
+
+    /**
+     * Verify the current user holds an owners or editors role on the Application
+     * identified by $appSlug.
+     *
+     * When $allowAdminBypass is true (the default) NC admins pass without needing
+     * an explicit role entry. Set it to false for promotion (spec REQ-OBVP-007).
+     *
+     * Returns a forbidden/not_found error envelope on denial, null on allow.
+     *
+     * @param string $appSlug          Slug of the target Application.
+     * @param bool   $allowAdminBypass Whether NC admin group membership grants access.
+     *
+     * @return array{isError: true, error: string, message: string}|null Null on allow.
+     */
+    protected function requireWriteRole(string $appSlug, bool $allowAdminBypass=true): ?array
+    {
+        $uid = $this->requireAuthenticatedUser();
+        if ($uid === null) {
+            return $this->errorResult(error: 'forbidden', message: 'You must be signed in.');
+        }
+
+        $objectService = $this->container->get('OCA\OpenRegister\Service\ObjectService');
+        $apps          = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'application', ['slug' => $appSlug]);
+        if (is_array($apps) === false || $apps === []) {
+            return $this->errorResult(error: 'not_found', message: "No virtual app found for slug '{$appSlug}'.");
+        }
+
+        $app = $this->toArray(item: $apps[0]);
+
+        if ($allowAdminBypass === true && $this->groupManager->isAdmin($uid) === true) {
+            $this->logger->info(
+                'OpenBuilt MCP: rbac.admin_bypass',
+                ['actor' => $uid, 'appSlug' => $appSlug]
+            );
+            return null;
+        }
+
+        if ($this->callerHasWriteRole(app: $app, uid: $uid) === true) {
+            return null;
+        }
+
+        return $this->errorResult(
+            error: 'forbidden',
+            message: "You do not have owner or editor access to application '{$appSlug}'."
+        );
+
+    }//end requireWriteRole()
+
+    /**
+     * Check whether $uid holds any WRITE_ROLES entry on the Application.
+     *
+     * Also checks group membership via IGroupManager.
+     *
+     * @param array<string, mixed> $app Application data.
+     * @param string               $uid Caller's user ID.
+     *
+     * @return bool
+     */
+    private function callerHasWriteRole(array $app, string $uid): bool
+    {
+        $permissions = ($app['permissions'] ?? []);
+        if (is_array($permissions) === false) {
+            return false;
+        }
+
+        $userSet  = [];
+        $groupSet = [];
+
+        foreach (self::WRITE_ROLES as $role) {
+            $bucket = ($permissions[$role] ?? []);
+            if (is_array($bucket) === false) {
+                continue;
+            }
+
+            foreach ($bucket as $principal) {
+                if (is_string($principal) === false || $principal === '') {
+                    continue;
+                }
+
+                if (str_starts_with($principal, 'user:') === true) {
+                    $pUid = substr($principal, 5);
+                    if ($pUid !== '') {
+                        $userSet[$pUid] = true;
+                    }
+
+                    continue;
+                }
+
+                $gid = $principal;
+                if (str_starts_with($principal, 'group:') === true) {
+                    $gid = substr($principal, 6);
+                }
+
+                if ($gid !== '') {
+                    $groupSet[$gid] = true;
+                }
+            }//end foreach
+        }//end foreach
+
+        if (isset($userSet[$uid]) === true) {
+            return true;
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user instanceof IUser) {
+            $userGroups = $this->groupManager->getUserGroups($user);
+            foreach ($userGroups as $group) {
+                if (isset($groupSet[$group->getGID()]) === true) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+
+    }//end callerHasWriteRole()
 
     /**
      * Validate that a candidate string matches the OpenBuilt slug shape.

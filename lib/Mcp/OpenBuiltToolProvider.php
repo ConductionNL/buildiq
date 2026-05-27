@@ -313,7 +313,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
      */
     private function makeHandler(string $class): \OCA\OpenBuilt\Mcp\Handler\AbstractToolHandler
     {
-        return new $class($this->userSession, $this->container, $this->logger);
+        return new $class($this->userSession, $this->container, $this->logger, $this->groupManager);
 
     }//end makeHandler()
 }//end class
