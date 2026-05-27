@@ -43,8 +43,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuilt\Controller;
 
+use DateTimeImmutable;
+use DateTimeInterface;
 use OCA\OpenBuilt\AppInfo\Application;
 use OCA\OpenBuilt\Service\ApplicationVersionService;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -84,16 +88,23 @@ class ApplicationVersionsController extends Controller
     private const READ_ROLES = ['owners', 'editors', 'viewers'];
 
     /**
+     * Audit-event identifier emitted to the OR audit trail when an admin
+     * bypasses the per-Application permissions check (REQ-OBRBAC-006).
+     */
+    private const EVENT_ADMIN_BYPASS = 'rbac.admin_bypass';
+
+    /**
      * Constructor.
      *
-     * @param IRequest                  $request        The current HTTP request
-     * @param LoggerInterface           $logger         PSR logger for diagnostics
-     * @param ObjectService             $objectService  OpenRegister object service
-     * @param RegisterMapper            $registerMapper Resolves register slugs
-     * @param SchemaMapper              $schemaMapper   Resolves schema slugs
-     * @param IUserSession              $userSession    Current Nextcloud user session
-     * @param IGroupManager             $groupManager   Group membership resolver
-     * @param ApplicationVersionService $versionService Owner of the imperative logic
+     * @param IRequest                  $request          The current HTTP request
+     * @param LoggerInterface           $logger           PSR logger for diagnostics
+     * @param ObjectService             $objectService    OpenRegister object service
+     * @param RegisterMapper            $registerMapper   Resolves register slugs
+     * @param SchemaMapper              $schemaMapper     Resolves schema slugs
+     * @param IUserSession              $userSession      Current Nextcloud user session
+     * @param IGroupManager             $groupManager     Group membership resolver
+     * @param ApplicationVersionService $versionService   Owner of the imperative logic
+     * @param AuditTrailMapper|null     $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
      *
      * @return void
      */
@@ -106,6 +117,7 @@ class ApplicationVersionsController extends Controller
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
         private readonly ApplicationVersionService $versionService,
+        private readonly ?AuditTrailMapper $auditTrailMapper=null,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
     }//end __construct()
@@ -495,8 +507,9 @@ class ApplicationVersionsController extends Controller
     /**
      * Verify the current user has any of the named roles on the parent Application.
      *
-     * Admin callers pass via the bypass (see ApplicationsController for the
-     * audited variant — this controller's bypass surfaces only in the logs).
+     * Admin callers pass via an audited bypass that writes both to the OR
+     * per-object audit trail (REQ-OBRBAC-006, issue #162) and to the PSR log
+     * so the permission-history panel shows version-level admin operations.
      *
      * @param string            $slug  Parent Application slug
      * @param array<int,string> $roles List of role names (`owners`, `editors`, `viewers`)
@@ -522,10 +535,7 @@ class ApplicationVersionsController extends Controller
         }
 
         if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === true) {
-            $this->logger->info(
-                'OpenBuilt: rbac.admin_bypass on ApplicationVersions endpoint',
-                ['actor' => $user->getUID(), 'slug' => $slug, 'roles' => $roles]
-            );
+            $this->recordAdminBypass(applicationData: $application, slug: $slug, actor: $user->getUID());
             return null;
         }
 
@@ -543,6 +553,73 @@ class ApplicationVersionsController extends Controller
             status: Http::STATUS_FORBIDDEN
         );
     }//end requireRole()
+
+    /**
+     * Record an admin-bypass event in the OR audit trail and the PSR log.
+     *
+     * Mirrors ApplicationsController::recordAdminBypass so that version-level
+     * admin bypasses surface in the permission-history panel (REQ-OBRBAC-006,
+     * issue #162). Falls back to PSR-only when the audit mapper is unavailable.
+     *
+     * @param array<string,mixed> $applicationData The Application data (for the entity lookup)
+     * @param string              $slug            The slug used in the audit envelope
+     * @param string              $actor           The bypassing user's UID
+     *
+     * @return void
+     */
+    private function recordAdminBypass(array $applicationData, string $slug, string $actor): void
+    {
+        $timestamp = (new DateTimeImmutable())->format(DateTimeInterface::ATOM);
+        $context   = [
+            'event'     => self::EVENT_ADMIN_BYPASS,
+            'actor'     => $actor,
+            'slug'      => $slug,
+            'timestamp' => $timestamp,
+            'surface'   => 'ApplicationVersionsController',
+        ];
+
+        if ($this->auditTrailMapper !== null) {
+            try {
+                // Attempt to find the Application entity for the audit-trail key.
+                $appEntity = null;
+                try {
+                    $registerId = $this->registerMapper->find(
+                        ApplicationVersionService::REGISTER_SLUG,
+                        _multitenancy: false
+                    )->getId();
+                    $schemaId   = $this->schemaMapper->find(
+                        ApplicationVersionService::APPLICATION_SCHEMA,
+                        _multitenancy: false
+                    )->getId();
+                    $rows       = $this->objectService->searchObjects(
+                        query: ['@self' => ['register' => $registerId, 'schema' => $schemaId], 'slug' => $slug]
+                    );
+                    if (is_array($rows) === true && $rows !== [] && $rows[0] instanceof ObjectEntity) {
+                        $appEntity = $rows[0];
+                    }
+                } catch (Throwable $_e) {
+                    // Entity lookup failure must not abort the bypass audit.
+                }
+
+                if ($appEntity instanceof ObjectEntity) {
+                    $this->auditTrailMapper->createAuditTrailEntry(
+                        object: $appEntity,
+                        action: self::EVENT_ADMIN_BYPASS,
+                        context: $context
+                    );
+                    $this->logger->info('OpenBuilt: rbac.admin_bypass exercised', $context);
+                    return;
+                }
+            } catch (Throwable $e) {
+                $this->logger->error(
+                    'OpenBuilt: failed to record admin bypass in OR audit trail; falling back to PSR log',
+                    array_merge($context, ['exception' => $e->getMessage()])
+                );
+            }//end try
+        }//end if
+
+        $this->logger->info('OpenBuilt: rbac.admin_bypass exercised', $context);
+    }//end recordAdminBypass()
 
     /**
      * Flatten the named role buckets into user / group principal lists.

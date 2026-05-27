@@ -79,8 +79,8 @@ class CreateAppHandler extends AbstractToolHandler
                 'sources' => [$this->sourceDescriptor(uuid: $appUuid, slug: $slug, label: $name)],
             ];
         } catch (\Throwable $e) {
-            $this->logger->error('OpenBuilt MCP: createApp failed', ['slug' => $slug, 'exception' => $e->getMessage()]);
-            return $this->errorResult(error: 'create_failed', message: 'Failed to create virtual app: '.$e->getMessage());
+            $this->logger->error('OpenBuilt MCP: createApp failed', ['slug' => $slug, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return $this->errorResult(error: 'create_failed', message: 'Failed to create virtual app. See server logs for details.');
         }//end try
 
     }//end handle()

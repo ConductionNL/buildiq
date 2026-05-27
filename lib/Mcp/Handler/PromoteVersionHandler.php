@@ -95,9 +95,9 @@ class PromoteVersionHandler extends AbstractToolHandler
         } catch (\Throwable $e) {
             $this->logger->error(
                 'OpenBuilt MCP: promoteVersion failed',
-                ['appSlug' => $appSlug, 'source' => $sourceVersionSlug, 'exception' => $e->getMessage()]
+                ['appSlug' => $appSlug, 'source' => $sourceVersionSlug, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
             );
-            return $this->errorResult(error: 'promote_failed', message: 'Failed to promote version: '.$e->getMessage());
+            return $this->errorResult(error: 'promote_failed', message: 'Failed to promote version. See server logs for details.');
         }//end try
 
     }//end handle()

@@ -8,9 +8,11 @@
  *
  * Endpoint: POST /apps/openbuilt/api/applications/wizard
  *
- * The endpoint is `#[NoAdminRequired]` — any authenticated Nextcloud user
- * may create a virtual app; the wizard service sets the caller as the sole
- * owner in the new Application's `permissions.owners` (REQ-OBWIZ-010).
+ * The endpoint carries `#[NoAdminRequired]` so NC's middleware accepts the
+ * request, but the controller gate (issue #157) restricts it to NC admins:
+ * app creation provisions an OR Register, mirroring OR's admin-only
+ * RegistersController gate (OR #1949). The wizard service sets the caller as
+ * the sole owner in the new Application's `permissions.owners` (REQ-OBWIZ-010).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -42,6 +44,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -61,6 +64,7 @@ class ApplicationCreationController extends Controller
      * @param LoggerInterface            $logger          PSR logger for diagnostics
      * @param ApplicationCreationService $creationService Atomic creation orchestrator
      * @param IUserSession               $userSession     Current Nextcloud user session
+     * @param IGroupManager              $groupManager    Group membership resolver
      *
      * @return void
      */
@@ -69,6 +73,7 @@ class ApplicationCreationController extends Controller
         private readonly LoggerInterface $logger,
         private readonly ApplicationCreationService $creationService,
         private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
     }//end __construct()
@@ -77,6 +82,7 @@ class ApplicationCreationController extends Controller
      * Execute the wizard payload and return the newly-created Application UUID.
      *
      * Returns 201 `{ "applicationUuid": "<uuid>" }` on success.
+     * Returns 403 when the caller is not an NC admin (issue #157).
      * Returns 422 when the payload fails server-side validation.
      * Returns 500 with rollback details when creation fails mid-flight.
      * Returns 401 when the caller is not authenticated.
@@ -91,10 +97,22 @@ class ApplicationCreationController extends Controller
     public function wizard(): JSONResponse
     {
         // Require authentication.
-        if ($this->userSession->getUser() === null) {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
             return new JSONResponse(
                 data: ['error' => 'unauthenticated'],
                 statusCode: Http::STATUS_UNAUTHORIZED
+            );
+        }
+
+        // Creating a virtual app provisions an OR Register, which mirrors the
+        // admin-only gate on OR's RegistersController (OR #1949). Non-admin
+        // users who have been denied register-create rights in OR must not be
+        // able to regain that privilege via openbuilt (issue #157).
+        if ($this->groupManager->isAdmin($user->getUID()) === false) {
+            return new JSONResponse(
+                data: ['error' => 'forbidden', 'message' => 'Creating virtual apps requires Nextcloud admin privileges.'],
+                statusCode: Http::STATUS_FORBIDDEN
             );
         }
 
