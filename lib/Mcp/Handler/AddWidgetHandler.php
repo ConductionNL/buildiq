@@ -31,6 +31,33 @@ namespace OCA\OpenBuilt\Mcp\Handler;
  */
 class AddWidgetHandler extends AbstractToolHandler
 {
+
+    /**
+     * Allowed widget type identifiers (issue #167 — widgetType allow-list).
+     *
+     * Callers may only reference widget types that exist in the OpenBuilt
+     * widget registry. Unknown types are rejected at input time so invalid
+     * manifests never reach OR storage.
+     *
+     * @var array<int, string>
+     */
+    private const ALLOWED_WIDGET_TYPES = [
+        'stat-counter',
+        'data-table',
+        'chart-bar',
+        'chart-line',
+        'chart-pie',
+        'kanban-board',
+        'timeline',
+        'markdown',
+        'iframe',
+        'form-embed',
+        'object-list',
+        'object-detail',
+        'calendar',
+        'map',
+    ];
+
     /**
      * Execute the addWidget tool.
      *
@@ -132,6 +159,12 @@ class AddWidgetHandler extends AbstractToolHandler
 
         if ($widgetType === '') {
             return ['error' => 'widgetType is required.'];
+        }
+
+        // Validate widgetType against the known widget registry (issue #167).
+        if (in_array(needle: $widgetType, haystack: self::ALLOWED_WIDGET_TYPES, strict: true) === false) {
+            $allowed = implode(', ', self::ALLOWED_WIDGET_TYPES);
+            return ['error' => "Unknown widgetType '{$widgetType}'. Allowed types: {$allowed}."];
         }
 
         if (is_array($widgetConfig) === false) {

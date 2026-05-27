@@ -142,6 +142,11 @@ class UpsertMenuItemHandler extends AbstractToolHandler
             return ['error' => 'route is required.'];
         }
 
+        // Validate route to a safe path pattern (issue #167 — route injection guard).
+        if ($this->isValidRoute(route: $route) === false) {
+            return ['error' => "Invalid route '{$route}'. Routes must start with '/' and contain only alphanumeric characters, hyphens, underscores, dots, and forward slashes."];
+        }
+
         return [
             'appSlug'     => $appSlug,
             'versionSlug' => $versionSlug,
@@ -153,6 +158,28 @@ class UpsertMenuItemHandler extends AbstractToolHandler
         ];
 
     }//end validateArgs()
+
+    /**
+     * Validate a route value against a safe path pattern.
+     *
+     * Accepts paths that start with '/' and consist only of alphanumeric
+     * characters, hyphens, underscores, dots, forward slashes, and route
+     * parameter placeholders (:param or {param}). Rejects javascript: URIs,
+     * protocol-relative paths, and other injection vectors (issue #167).
+     *
+     * @param string $route The candidate route string.
+     *
+     * @return bool
+     */
+    private function isValidRoute(string $route): bool
+    {
+        if (strlen($route) > 256) {
+            return false;
+        }
+
+        return (bool) preg_match('#^/[a-zA-Z0-9/_\-\.:\{\}]*$#', $route);
+
+    }//end isValidRoute()
 
     /**
      * Upsert a menu item in the menu list using case-insensitive id matching.
