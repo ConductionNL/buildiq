@@ -41,6 +41,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -59,6 +60,7 @@ class ExportsController extends Controller
      * @param IUserSession       $userSession      Current user session.
      * @param ContainerInterface $container        Container for optional OR services.
      * @param LoggerInterface    $logger           Logger.
+     * @param IGroupManager      $groupManager     Group membership resolver (RBAC, issue #158).
      */
     public function __construct(
         IRequest $request,
@@ -66,6 +68,7 @@ class ExportsController extends Controller
         private IUserSession $userSession,
         private ContainerInterface $container,
         private LoggerInterface $logger,
+        private IGroupManager $groupManager,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
     }//end __construct()
@@ -75,16 +78,15 @@ class ExportsController extends Controller
      *
      * IDOR / ADR-005 Rule 3 guard: `#[NoAdminRequired]` makes the route
      * reachable to any authenticated user; we MUST then prove the caller
-     * has at least viewer permission on the specific Application before
-     * acting on it (otherwise any authed user can export anyone's
-     * application by guessing its slug).
+     * holds at least viewer permission on the specific Application before
+     * acting on it (otherwise any authed user can export anyone's app by
+     * guessing its slug — issue #158).
      *
-     * The openbuilt-rbac contract from spec-#7 (when present) is the
-     * authoritative check. Until it's merged we use a thin in-controller
-     * fallback that requires the caller to be authenticated (which
-     * `#[NoAdminRequired]` already enforces) AND the OR record to exist.
-     * The fallback is conservative: it errs on the side of forbidding
-     * access when the source record is missing.
+     * Checks (in order):
+     *   1. Caller is authenticated.
+     *   2. Application exists in OR.
+     *   3. Caller's UID appears in owners|editors|viewers, OR caller is an
+     *      NC admin (same bypass policy as ApplicationsController).
      *
      * @param string $applicationSlug Slug of the source Application.
      *
@@ -99,74 +101,71 @@ class ExportsController extends Controller
             return false;
         }
 
-        // Preferred: delegate to spec-#7's RBAC contract when its class is
-        // present in the container. The method name is the documented
-        // surface from the openbuilt-rbac change.
-        $rbacClass = 'OCA\\OpenBuilt\\Service\\RbacService';
-        if ($this->container->has($rbacClass) === true) {
-            try {
-                $rbac = $this->container->get($rbacClass);
-                if (method_exists($rbac, 'canViewApplication') === true) {
-                    return (bool) $rbac->canViewApplication($user->getUID(), $applicationSlug);
-                }
-            } catch (\Throwable $e) {
-                $this->logger->debug('OpenBuilt export: RBAC delegate failed, falling back: '.$e->getMessage());
-            }
-        }
-
-        // Fallback: the source Application MUST exist in OR.
-        return $this->fallbackAuthoriseViaOrLookup(applicationSlug: $applicationSlug);
-    }//end isAuthorisedForApplication()
-
-    /**
-     * Fallback IDOR guard: verify the Application slug resolves in OR.
-     *
-     * Openbuilt#36: pass `register: 'openbuilt'` + `schema: 'application'`
-     * explicitly so OR resolves the slug against the right table.
-     *
-     * @param string $applicationSlug Slug of the source Application.
-     *
-     * @return bool True when the Application exists (slug resolves).
-     */
-    private function fallbackAuthoriseViaOrLookup(string $applicationSlug): bool
-    {
         try {
             if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
                 return false;
             }
 
             $service = $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
-            if (method_exists($service, 'find') === false) {
+            if (method_exists($service, 'searchObjectsBySlug') === false) {
                 return false;
             }
 
-            try {
-                $found = $service->find(
-                    $applicationSlug,
-                    [],
-                    false,
-                    'openbuilt',
-                    'application'
-                );
-                return $found !== null;
-            } catch (\Throwable $findError) {
-                // OR throws `Multiple objects found` when >=1 row shares the slug.
-                // The slug resolving means the Application exists — authorise.
-                if (str_contains($findError->getMessage(), 'Multiple objects found') === true) {
-                    return true;
+            $apps = $service->searchObjectsBySlug('openbuilt', 'application', ['slug' => $applicationSlug]);
+            if (is_array($apps) === false || $apps === []) {
+                return false;
+            }
+
+            $app         = $apps[0];
+            $permissions = (is_array($app) === true) ? ($app['permissions'] ?? []) : [];
+            if (is_array($permissions) === false) {
+                $permissions = [];
+            }
+
+            $uid = $user->getUID();
+
+            // Check all three role buckets: owners, editors, viewers.
+            foreach (['owners', 'editors', 'viewers'] as $role) {
+                $bucket = ($permissions[$role] ?? []);
+                if (is_array($bucket) === false) {
+                    continue;
                 }
 
-                $this->logger->debug('OpenBuilt export: authz fallback find() threw: '.$findError->getMessage());
-                return false;
-            }//end try
+                foreach ($bucket as $principal) {
+                    if (is_string($principal) === false || $principal === '') {
+                        continue;
+                    }
+
+                    if (str_starts_with($principal, 'user:') === true) {
+                        if (substr($principal, 5) === $uid) {
+                            return true;
+                        }
+
+                        continue;
+                    }
+
+                    // Back-compat / group: prefix.
+                    $gid = str_starts_with($principal, 'group:') === true ? substr($principal, 6) : $principal;
+                    if ($gid !== '' && $this->groupManager->isInGroup($uid, $gid) === true) {
+                        return true;
+                    }
+                }//end foreach
+            }//end foreach
+
+            // NC admin bypass — same policy as ApplicationsController (REQ-OBRBAC-006).
+            return $this->groupManager->isInGroup($uid, 'admin') === true;
         } catch (\Throwable $e) {
-            $this->logger->debug('OpenBuilt export: authz fallback lookup failed: '.$e->getMessage());
+            $this->logger->debug('OpenBuilt export: authz lookup failed: '.$e->getMessage());
             return false;
         }//end try
-    }//end fallbackAuthoriseViaOrLookup()
+    }//end isAuthorisedForApplication()
 
     /**
      * Authorize the caller for an ExportJob UUID.
+     *
+     * Looks up the ExportJob record and verifies the `submittedBy` field
+     * matches the calling user's UID, or the caller is an NC admin.
+     * Existence alone is not sufficient authorisation (IDOR, issue #158).
      *
      * @param string $jobUuid ExportJob UUID.
      *
@@ -179,6 +178,13 @@ class ExportsController extends Controller
             return false;
         }
 
+        $uid = $user->getUID();
+
+        // NC admin bypass.
+        if ($this->groupManager->isInGroup($uid, 'admin') === true) {
+            return true;
+        }
+
         try {
             if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
                 return false;
@@ -189,23 +195,15 @@ class ExportsController extends Controller
                 return false;
             }
 
-            // Positional call: $service is untyped at this point.
             $found = $service->find($jobUuid);
             if ($found === null) {
                 return false;
             }
 
-            // Delegate to RBAC if available; otherwise existence + auth is
-            // sufficient (OR REST already exposes job records by UUID).
-            $rbacClass = 'OCA\\OpenBuilt\\Service\\RbacService';
-            if ($this->container->has($rbacClass) === true) {
-                $rbac = $this->container->get($rbacClass);
-                if (method_exists($rbac, 'canViewExportJob') === true) {
-                    return (bool) $rbac->canViewExportJob($user->getUID(), $jobUuid);
-                }
-            }
-
-            return true;
+            // Verify the job was submitted by this user.
+            $job = is_array($found) === true ? $found : ((method_exists($found, 'jsonSerialize') === true) ? (array) $found->jsonSerialize() : (array) $found);
+            $submittedBy = (string) ($job['submittedBy'] ?? ($job['@self']['owner'] ?? ''));
+            return $submittedBy === $uid;
         } catch (\Throwable $e) {
             $this->logger->debug('OpenBuilt export: job authz lookup failed: '.$e->getMessage());
             return false;

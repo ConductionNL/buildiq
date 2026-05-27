@@ -32,6 +32,7 @@ use OCA\OpenBuilt\Service\ExportJobService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -74,6 +75,13 @@ final class ExportsControllerTest extends TestCase
     private ContainerInterface&MockObject $container;
 
     /**
+     * GroupManager mock — drives the admin-bypass and group-membership checks.
+     *
+     * @var IGroupManager&MockObject
+     */
+    private IGroupManager&MockObject $groupManager;
+
+    /**
      * Build the dependency mocks shared across every test.
      *
      * @return void
@@ -85,6 +93,9 @@ final class ExportsControllerTest extends TestCase
         $this->exportJobService = $this->createMock(ExportJobService::class);
         $this->userSession      = $this->createMock(IUserSession::class);
         $this->container        = $this->createMock(ContainerInterface::class);
+        $this->groupManager     = $this->createMock(IGroupManager::class);
+        // Non-admin by default.
+        $this->groupManager->method('isInGroup')->willReturn(false);
     }//end setUp()
 
     /**
@@ -110,22 +121,51 @@ final class ExportsControllerTest extends TestCase
             $this->exportJobService,
             $this->userSession,
             $this->container,
-            new NullLogger()
+            new NullLogger(),
+            $this->groupManager,
         );
     }//end buildController()
 
     /**
-     * Stub the container so the fallback authorization path returns
-     * "authorised" — i.e. ObjectService::find() yields a non-null record.
+     * Stub the container so the RBAC authorization path returns "authorised"
+     * — ObjectService::searchObjectsBySlug returns the app with alice as owner,
+     * and ::find returns the export job owned by alice (issue #158).
      *
      * @return void
      */
     private function stubAuthorisedFallback(): void
     {
         $objectService = new class () {
-            public function find(string $id)
+            /**
+             * @param string              $register Register slug.
+             * @param string              $schema   Schema slug.
+             * @param array<string,mixed> $query    Search parameters.
+             *
+             * @return array<int, array<string, mixed>>
+             */
+            public function searchObjectsBySlug(string $register, string $schema, array $query): array
             {
-                return ['uuid' => $id];
+                return [
+                    [
+                        'uuid'        => 'app-uuid-1',
+                        'slug'        => $query['slug'] ?? 'hello-world',
+                        'permissions' => [
+                            'owners'  => ['user:alice'],
+                            'editors' => [],
+                            'viewers' => [],
+                        ],
+                    ],
+                ];
+            }
+
+            /**
+             * @param string $id UUID to look up.
+             *
+             * @return array<string, mixed>
+             */
+            public function find(string $id): array
+            {
+                return ['uuid' => $id, 'submittedBy' => 'alice'];
             }
         };
 

@@ -212,6 +212,14 @@ class ApplicationsController extends Controller
                 );
             }
 
+            // Strip the `permissions` block (and any other owning-user PII) from
+            // the public manifest response (issue #165). The caller's own role was
+            // already verified by requirePermission above; they do not need the
+            // full owners/editors/viewers roster to render the app.
+            if (is_array($manifest) === true) {
+                unset($manifest['permissions']);
+            }
+
             // Return the manifest UNWRAPPED — useAppManifest expects the bare object.
             return new JSONResponse(data: $manifest, statusCode: Http::STATUS_OK);
         } catch (Throwable $e) {

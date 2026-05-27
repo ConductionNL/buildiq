@@ -35,6 +35,7 @@ use OCA\OpenBuilt\Exception\WizardCreationException;
 use OCA\OpenBuilt\Service\ApplicationCreationService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -69,6 +70,11 @@ class ApplicationCreationControllerTest extends TestCase
     private IUserSession&MockObject $userSession;
 
     /**
+     * @var IGroupManager&MockObject
+     */
+    private IGroupManager&MockObject $groupManager;
+
+    /**
      * Controller under test.
      */
     private ApplicationCreationController $controller;
@@ -86,12 +92,14 @@ class ApplicationCreationControllerTest extends TestCase
         $this->logger          = $this->createMock(LoggerInterface::class);
         $this->creationService = $this->createMock(ApplicationCreationService::class);
         $this->userSession     = $this->createMock(IUserSession::class);
+        $this->groupManager    = $this->createMock(IGroupManager::class);
 
         $this->controller = new ApplicationCreationController(
             request: $this->request,
             logger: $this->logger,
             creationService: $this->creationService,
             userSession: $this->userSession,
+            groupManager: $this->groupManager,
         );
 
         // Default: request returns basic params.
@@ -103,7 +111,10 @@ class ApplicationCreationControllerTest extends TestCase
     }//end setUp()
 
     /**
-     * Configure the user session to return an authenticated 'admin' user.
+     * Configure the user session to return an authenticated NC-admin user.
+     *
+     * Also wires groupManager::isAdmin to return true so the new admin gate
+     * in wizard() allows the request (issue #157).
      *
      * PHPUnit 10 does not allow re-configuring a mock method that was already
      * stubbed in setUp(). Each test must call this helper explicitly when it
@@ -116,6 +127,7 @@ class ApplicationCreationControllerTest extends TestCase
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
     }//end authenticateAsAdmin()
 
     // -------------------------------------------------------------------------
@@ -266,26 +278,30 @@ class ApplicationCreationControllerTest extends TestCase
     }//end wizardReturns500WithOrphanedResourcesOnRollbackPartial()
 
     // -------------------------------------------------------------------------
-    // NoAdminRequired: non-admin succeeds
+    // 403 Non-admin forbidden (issue #157)
     // -------------------------------------------------------------------------
 
     /**
+     * Creating a virtual app provisions an OR Register, which is an
+     * admin-only operation (OR #1949). Non-admin authenticated users
+     * must receive 403 (issue #157).
+     *
      * @test
      *
      * @return void
      */
-    public function wizardAllowsNonAdminAuthenticatedUserOnValidPayload(): void
+    public function wizardReturns403ForNonAdminAuthenticatedUser(): void
     {
         $nonAdminUser = $this->createMock(IUser::class);
         $nonAdminUser->method('getUID')->willReturn('regular-user');
         $this->userSession->method('getUser')->willReturn($nonAdminUser);
+        $this->groupManager->method('isAdmin')->with('regular-user')->willReturn(false);
 
-        $this->creationService->method('createApplication')
-            ->willReturn('app-uuid-002');
+        $this->creationService->expects($this->never())->method('createApplication');
 
         $response = $this->controller->wizard();
 
-        self::assertSame(Http::STATUS_CREATED, $response->getStatus());
-        self::assertSame('app-uuid-002', $response->getData()['applicationUuid']);
-    }//end wizardAllowsNonAdminAuthenticatedUserOnValidPayload()
+        self::assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+        self::assertSame('forbidden', $response->getData()['error']);
+    }//end wizardReturns403ForNonAdminAuthenticatedUser()
 }//end class

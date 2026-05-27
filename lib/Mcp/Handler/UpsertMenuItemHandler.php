@@ -99,9 +99,9 @@ class UpsertMenuItemHandler extends AbstractToolHandler
         } catch (\Throwable $e) {
             $this->logger->error(
                 'OpenBuilt MCP: upsertMenuItem failed',
-                ['appSlug' => $appSlug, 'id' => $id, 'exception' => $e->getMessage()]
+                ['appSlug' => $appSlug, 'id' => $id, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
             );
-            return $this->errorResult(error: 'upsert_failed', message: 'Failed to upsert menu item: '.$e->getMessage());
+            return $this->errorResult(error: 'upsert_failed', message: 'Failed to upsert menu item. See server logs for details.');
         }//end try
 
     }//end handle()

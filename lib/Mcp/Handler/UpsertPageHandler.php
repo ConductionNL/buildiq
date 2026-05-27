@@ -100,9 +100,9 @@ class UpsertPageHandler extends AbstractToolHandler
         } catch (\Throwable $e) {
             $this->logger->error(
                 'OpenBuilt MCP: upsertPage failed',
-                ['appSlug' => $appSlug, 'pageId' => $pageId, 'exception' => $e->getMessage()]
+                ['appSlug' => $appSlug, 'pageId' => $pageId, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
             );
-            return $this->errorResult(error: 'upsert_failed', message: 'Failed to upsert page: '.$e->getMessage());
+            return $this->errorResult(error: 'upsert_failed', message: 'Failed to upsert page. See server logs for details.');
         }//end try
 
     }//end handle()

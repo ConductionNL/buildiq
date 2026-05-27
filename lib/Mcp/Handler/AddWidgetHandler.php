@@ -100,9 +100,9 @@ class AddWidgetHandler extends AbstractToolHandler
         } catch (\Throwable $e) {
             $this->logger->error(
                 'OpenBuilt MCP: addWidget failed',
-                ['appSlug' => $appSlug, 'pageId' => $pageId, 'exception' => $e->getMessage()]
+                ['appSlug' => $appSlug, 'pageId' => $pageId, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
             );
-            return $this->errorResult(error: 'add_failed', message: 'Failed to add widget: '.$e->getMessage());
+            return $this->errorResult(error: 'add_failed', message: 'Failed to add widget. See server logs for details.');
         }//end try
 
     }//end handle()
