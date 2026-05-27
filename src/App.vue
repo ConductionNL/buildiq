@@ -1,21 +1,22 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!--
- OpenBuilt app shell. Mounts CnAppRoot with the bundled manifest and the
- customComponents registry; CnAppRoot handles the OpenRegister dependency
+ OpenBuilt app shell. Mounts CnAppRoot with the bundled manifest and the v2
+ kind-tagged registry (ADR-036); CnAppRoot handles the OpenRegister dependency
  check, renders CnAppNav from manifest.menu, and routes <router-view> pages
  through CnPageRenderer. The #dependency-missing slot keeps OpenBuilt's
  original "OpenRegister is required" empty state.
 
  @adr ADR-024 (app manifest) — OpenBuilt is now Tier-1+ (its own shell is
  manifest-driven, like the virtual apps it builds).
+ @adr ADR-036 (v2 registry) — all consumer components are registered via the
+ `registry` prop; the deprecated `customComponents` prop is no longer used.
 -->
 <template>
 	<CnAppRoot
 		app-id="openbuilt"
 		:manifest="manifest"
-		:custom-components="customComponents"
-		:page-types="pageTypes"
 		:registry="registry"
+		:page-types="pageTypes"
 		:translate="translateForApp"
 		:permissions="permissions">
 		<template #dependency-missing>
@@ -74,12 +75,16 @@ export default {
 			required: true,
 		},
 		/**
-		 * Registry of consumer-injected components used by `type: "custom"`
-		 * pages (`page.component`) and other manifest slot overrides.
+		 * V2 kind-tagged registry (ADR-036) — map of registry key →
+		 * `{ kind: "page", component }`. CnPageRenderer resolves every
+		 * manifest-referenced component name (type:"custom" pages,
+		 * cardComponent, headerComponent, actionsComponent,
+		 * sidebarTabs[].component) against the `kind: "page"` entries here.
+		 * Replaces the deprecated `customComponents` prop.
 		 *
 		 * @type {object}
 		 */
-		customComponents: {
+		registry: {
 			type: Object,
 			default: () => ({}),
 		},
@@ -92,18 +97,6 @@ export default {
 		pageTypes: {
 			type: Object,
 			default: null,
-		},
-		/**
-		 * v2 component registry — map of registry key → `{ kind, component, ...metadata }`.
-		 * Passed to CnAppRoot which validates kinds at mounted() time and provides the
-		 * map to descendants via `cnRegistry`. Resolves type:"custom" page components,
-		 * modals, and future widget/form-field/cell-renderer entries.
-		 *
-		 * @type {object}
-		 */
-		registry: {
-			type: Object,
-			default: () => ({}),
 		},
 	},
 

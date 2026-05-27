@@ -13,7 +13,6 @@ import {
 import pinia from './pinia.js'
 import App from './App.vue'
 import bundledManifest from './manifest.json'
-import customComponents from './customComponents.js'
 import registry from './registry.js'
 
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages).
@@ -93,15 +92,12 @@ const router = new VueRouter({
 
 tryLoadTranslations()
 
-// Pass shallow copies of the registry maps — the lib exports
-// `defaultPageTypes` (and consumers' `customComponents`) as frozen module
-// objects in some bundle shapes, and Vue.extend() mutates component
-// definitions to attach `_Ctor`. Cloning yields extensible objects without
-// changing the values the lib resolves at render time.
+// Pass shallow copies of the registry maps — the lib exports `defaultPageTypes`
+// (and consumers' `registry`) as frozen module objects in some bundle shapes,
+// and Vue.extend() mutates component definitions to attach `_Ctor`. Cloning
+// yields extensible objects without changing the values the lib resolves at
+// render time.
 const pageTypesProp = { ...defaultPageTypes }
-const customComponentsProp = { ...customComponents }
-// Shallow-clone the v2 registry for the same reason — Vue.extend() attaches
-// `_Ctor` to component definitions, so the entries need to be extensible.
 const registryProp = { ...registry }
 
 // Create the Vue instance — this installs Pinia and sets it active, so the
@@ -114,9 +110,8 @@ new Vue({
 	render: h => h(App, {
 		props: {
 			manifest: bundledManifest,
-			customComponents: customComponentsProp,
-			pageTypes: pageTypesProp,
 			registry: registryProp,
+			pageTypes: pageTypesProp,
 		},
 	}),
 }).$mount('#content')

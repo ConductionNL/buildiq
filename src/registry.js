@@ -1,30 +1,70 @@
-// SPDX-License-Identifier: EUPL-1.2
-//
-// v2 component registry for OpenBuilt — passed as the `registry` prop on
-// CnAppRoot. Each entry declares its `kind` so CnAppRoot can validate and
-// dispatch components correctly (REQ-MVR-002).
-//
-// Recognised kinds (RegistryKindError.js):
-//   widget       — renderable in page slots (body, sidebar, tab:*, section:*)
-//   modal        — openable via cnOpenModal(key, props)
-//   page         — full custom page component (for type:"custom" pages)
-//   form-field   — field type injected into CnFormPage
-//   cell-renderer — column formatter in CnIndexPage tables
-//
-// All `type: "custom"` pages in manifest.json reference their component via
-// `pages[].component`; those components are registered here as kind: "page".
-//
-// Custom tabs on VirtualAppDetail (ApplicationManifestTab, ApplicationVersionsTab,
-// ApplicationDiffTab, ApplicationIconTab) are referenced via
-// config.sidebarTabs[].component — those remain resolved through
-// customComponents (carry-forward prop) until a dedicated "sidebar-tab" kind
-// lands in the lib. They are NOT in this registry.
-//
-// Custom cards and header/actions components are resolved via customComponents
-// too — they are pass-through component references in config.cardComponent,
-// pages[].headerComponent, and pages[].actionsComponent.
-//
-// See ADR-024 (app manifest) and ADR-036 (manifest v2).
+/**
+ * OpenBuilt v2 component registry (ADR-036).
+ *
+ * Kind-tagged map passed as the `registry` prop to CnAppRoot. CnPageRenderer
+ * resolves every manifest-referenced component name (type:"custom" pages,
+ * cardComponent, headerComponent, actionsComponent, sidebarTabs[].component)
+ * against this map. Only entries with `kind === "page"` are used for page and
+ * slot-override dispatch — the `kind` field is the discriminator CnPageRenderer
+ * keys on (see `resolveCustomComponent` in CnPageRenderer.vue). Future entry
+ * kinds (`"modal"`, `"widget"`, `"form-field"`, `"cell-renderer"`) will be
+ * added here as the library ships support for them.
+ *
+ * Replace the deprecated `customComponents` prop: all components previously
+ * passed through `customComponents` are now registered here with
+ * `kind: "page"` so CnPageRenderer resolves them through a single v2 path and
+ * CnAppRoot stops emitting the "customComponents is deprecated" console warning.
+ *
+ * Resolution order at runtime (CnPageRenderer):
+ *   1. Built-in page types          (CnIndexPage, CnDetailPage, CnDashboardPage, …)
+ *   2. Built-in widget types        (data, metadata, audit-trail, version-info, …)
+ *   3. registry (this file)         ← all consumer-injected components (ADR-036)
+ *
+ * See ADR-024 (app manifest) and ADR-036 (manifest v2 kind-tagged registry).
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ */
+
+// ── Virtual apps — index card ─────────────────────────────────────────────────
+
+// VirtualApps index card — name, status pill, version, "live" marker, caller's
+// role; click navigates to VirtualAppDetail.
+import ApplicationCard from './components/ApplicationCard.vue'
+
+// ── Virtual apps — detail sidebar tabs ───────────────────────────────────────
+
+// VirtualAppDetail sidebar tab: raw-JSON manifest editor (the visual designer
+// lives at /builder/:slug/pages).
+import ApplicationManifestTab from './components/tabs/ApplicationManifestTab.vue'
+
+// VirtualAppDetail sidebar tab: version history + rollback.
+import ApplicationVersionsTab from './components/tabs/ApplicationVersionsTab.vue'
+
+// VirtualAppDetail sidebar tab: manifest diff between versions.
+import ApplicationDiffTab from './components/tabs/ApplicationDiffTab.vue'
+
+// VirtualAppDetail sidebar tab: icon upload and preview.
+import ApplicationIconTab from './components/tabs/ApplicationIconTab.vue'
+
+// ── Virtual apps — actions components ────────────────────────────────────────
+
+// VirtualApps index actions bar — "Add application" button that opens the
+// four-step CreateApplicationWizard (openbuilt-app-creation-wizard).
+import VirtualAppsActions from './components/VirtualAppsActions.vue'
+
+// VirtualAppDetail actions bar — Publish (OR lifecycle transition), Manage
+// permissions (PermissionsModal, ADR-004 modal isolation), Design pages, Open
+// virtual app.
+import ApplicationDetailActions from './components/ApplicationDetailActions.vue'
+
+// ── Virtual apps — detail header ──────────────────────────────────────────────
+
+// VirtualAppDetail headerComponent (openbuilt-app-detail-overview
+// REQ-OBADO-001 / REQ-OBADO-011) — purpose-built maintainer dashboard
+// replacing the generic main-area data widget. Owns hero strip + version pill
+// tabs + window toggle + KPI grid + activity chart + structural widgets.
+import ApplicationDetailHeader from './components/applicationDetail/ApplicationDetailHeader.vue'
 
 // ── Custom page components (kind: "page") ────────────────────────────────────
 
@@ -32,48 +72,49 @@
 // placement. Handles both /schemas (shortcut) and /builder/:slug/schemas[/:id].
 import SchemaDesignerView from './views/SchemaDesigner.vue'
 
-// Template gallery — browse seeded ApplicationTemplate records and clone
-// one into a new virtual app (openbuilt-templates-marketplace).
-
-// Visual manifest page designer — three-pane editor that reads and writes
-// a virtual app's manifest via PATCH (REQ-OBPD-003).
+// Visual manifest page designer — three-pane editor that reads and writes a
+// virtual app's manifest via PATCH (REQ-OBPD-003).
 import PageDesignerView from './views/PageDesignerHost.vue'
-
-// Export-jobs status list — Phase-2 "export to real Nextcloud app" runs.
 
 // Virtual-app host — nested CnAppRoot rendering a virtual app's own manifest.
 import BuilderHostView from './views/BuilderHost.vue'
 
-// Features & Roadmap page — wrapper around CnFeaturesAndRoadmapView.
+// ── Helper ───────────────────────────────────────────────────────────────────
 
-// ── Widget components (kind: "widget") ───────────────────────────────────────
-
-// (No consumer-registered widget kinds in the initial v2 migration.
-//  The dashboard stats-block widgets use the lib's built-in "stats-block"
-//  widget key and do not need a registry entry here.)
-
-// ── Modal components (kind: "modal") ─────────────────────────────────────────
-
-// (No modal entries for the initial v2 migration.
-//  The CreateApplicationWizard and PermissionsModal are opened imperatively
-//  by VirtualAppsActions / ApplicationDetailActions components rather than
-//  via cnOpenModal(); they will be registered here when those components
-//  are refactored to use the modal registry pattern.)
+/**
+ * Wrap a Vue component into the v2 registry shape required by CnAppRoot's
+ * `registry` prop (`kind: "page"` is the discriminator CnPageRenderer keys
+ * page and slot-override dispatch off).
+ *
+ * @param {object} component Vue component options.
+ *
+ * @return {object} A `{ kind: "page", component }` registry entry.
+ */
+function page(component) {
+	return { kind: 'page', component }
+}
 
 // ── Registry export ──────────────────────────────────────────────────────────
 
 export default {
+	// VirtualApps index card component.
+	ApplicationCard: page(ApplicationCard),
+
+	// VirtualAppDetail sidebar tabs.
+	ApplicationManifestTab: page(ApplicationManifestTab),
+	ApplicationVersionsTab: page(ApplicationVersionsTab),
+	ApplicationDiffTab: page(ApplicationDiffTab),
+	ApplicationIconTab: page(ApplicationIconTab),
+
+	// Actions bar components.
+	VirtualAppsActions: page(VirtualAppsActions),
+	ApplicationDetailActions: page(ApplicationDetailActions),
+
+	// Header component for the maintainer dashboard (detail page override).
+	ApplicationDetailHeader: page(ApplicationDetailHeader),
+
 	// Custom page components — resolved by CnPageRenderer for type:"custom" pages.
-	SchemaDesignerView: {
-		kind: 'page',
-		component: SchemaDesignerView,
-	},
-	PageDesignerView: {
-		kind: 'page',
-		component: PageDesignerView,
-	},
-	BuilderHostView: {
-		kind: 'page',
-		component: BuilderHostView,
-	},
+	SchemaDesignerView: page(SchemaDesignerView),
+	PageDesignerView: page(PageDesignerView),
+	BuilderHostView: page(BuilderHostView),
 }
