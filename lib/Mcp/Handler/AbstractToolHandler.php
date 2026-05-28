@@ -33,6 +33,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Abstract base for all OpenBuilt MCP tool handler classes.
@@ -355,8 +356,8 @@ abstract class AbstractToolHandler
      * Returns an `invalid_arguments` error envelope when a cap would be exceeded;
      * null when all caps are satisfied.
      *
-     * @param array<string, mixed> $manifest  The NEW manifest after the proposed write.
-     * @param int|null             $pageIdx   Index of the page being written to (widgets cap).
+     * @param array<string, mixed> $manifest The NEW manifest after the proposed write.
+     * @param int|null             $pageIdx  Index of the page being written to (widgets cap).
      *
      * @return array{isError: true, error: string, message: string}|null Null on pass.
      */
@@ -554,7 +555,7 @@ abstract class AbstractToolHandler
                 'OpenBuilt MCP: manifest lock contention on version '.$versionUuid,
                 ['exception' => $lockError->getMessage()]
             );
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Version '.$versionUuid.' is currently locked by another writer. Retry after a moment.',
                 409,
                 $lockError

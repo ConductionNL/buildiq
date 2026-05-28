@@ -261,11 +261,13 @@ export default {
 	gap: 12px;
 	padding: 12px;
 }
+
 .settings-page-editor__title {
 	margin: 0;
 	font-size: 16px;
 	font-weight: 600;
 }
+
 .settings-page-editor__fieldset {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
@@ -274,17 +276,20 @@ export default {
 	flex-direction: column;
 	gap: 6px;
 }
+
 .settings-page-editor__fieldset legend {
 	padding: 0 6px;
 	font-weight: 600;
 	font-size: 13px;
 }
+
 .settings-page-editor__group-row {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 	font-size: 13px;
 }
+
 .settings-page-editor__group-row input {
 	padding: 4px 6px;
 	border: 1px solid var(--color-border);
@@ -292,16 +297,19 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .settings-page-editor__shape {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
 }
+
 .settings-page-editor__inline {
 	display: inline-flex;
 	gap: 6px;
 	align-items: center;
 }
+
 .settings-page-editor__tab {
 	display: flex;
 	flex-direction: column;
@@ -311,11 +319,13 @@ export default {
 	border-radius: var(--border-radius);
 	background: var(--color-background-hover);
 }
+
 .settings-page-editor__tab-head {
 	display: flex;
 	gap: 6px;
 	align-items: center;
 }
+
 .settings-page-editor__field {
 	flex: 1 1 auto;
 	padding: 4px 6px;
@@ -324,9 +334,11 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .settings-page-editor__field--narrow {
 	flex: 0 0 130px;
 }
+
 .settings-page-editor__remove {
 	background: transparent;
 	border: 1px solid var(--color-border);
@@ -335,6 +347,7 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .settings-page-editor__add {
 	align-self: flex-start;
 	background: var(--color-primary-element-light);
@@ -344,6 +357,7 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .settings-page-editor__hint {
 	margin: 0;
 	font-size: 12px;

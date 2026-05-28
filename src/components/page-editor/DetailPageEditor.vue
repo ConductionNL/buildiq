@@ -315,22 +315,26 @@ export default {
 	gap: 12px;
 	padding: 12px;
 }
+
 .detail-page-editor__title {
 	margin: 0;
 	font-size: 16px;
 	font-weight: 600;
 }
+
 .detail-page-editor__group {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
 }
+
 .detail-page-editor__group label {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 	font-size: 13px;
 }
+
 .detail-page-editor__group select {
 	padding: 4px 6px;
 	border: 1px solid var(--color-border);
@@ -338,39 +342,46 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .detail-page-editor__fieldset {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
 	padding: 8px;
 }
+
 .detail-page-editor__fieldset legend {
 	padding: 0 6px;
 	font-weight: 600;
 	font-size: 13px;
 }
+
 .detail-page-editor__inline {
 	display: inline-flex;
 	gap: 6px;
 	align-items: center;
 	margin-right: 12px;
 }
+
 .detail-page-editor__sidebar-shape {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
 	margin-bottom: 8px;
 }
+
 .detail-page-editor__sidebar-object {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
 }
+
 .detail-page-editor__warn {
 	margin: 0;
 	font-size: 12px;
 	color: var(--color-warning, var(--color-text-maxcontrast));
 	font-style: italic;
 }
+
 .detail-page-editor__note {
 	margin: 0;
 	font-size: 12px;

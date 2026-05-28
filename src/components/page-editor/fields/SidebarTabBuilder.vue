@@ -115,11 +115,13 @@ export default {
 	flex-direction: column;
 	gap: 6px;
 }
+
 .sidebar-tab-builder__row {
 	display: flex;
 	gap: 6px;
 	align-items: center;
 }
+
 .sidebar-tab-builder__field {
 	flex: 1 1 auto;
 	padding: 4px 6px;
@@ -128,9 +130,11 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .sidebar-tab-builder__field--narrow {
 	flex: 0 0 100px;
 }
+
 .sidebar-tab-builder__remove {
 	background: transparent;
 	border: 1px solid var(--color-border);
@@ -139,6 +143,7 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .sidebar-tab-builder__add {
 	align-self: flex-start;
 	background: var(--color-primary-element-light);
@@ -148,6 +153,7 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .sidebar-tab-builder__hint {
 	margin: 0;
 	font-size: 12px;

@@ -365,6 +365,7 @@ export default {
 	flex-direction: column;
 	gap: 10px;
 }
+
 .settings-section-builder__section {
 	display: flex;
 	flex-direction: column;
@@ -374,22 +375,26 @@ export default {
 	border-radius: var(--border-radius);
 	background: var(--color-background-hover);
 }
+
 .settings-section-builder__head {
 	display: flex;
 	gap: 6px;
 	align-items: center;
 }
+
 .settings-section-builder__kind {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
 }
+
 .settings-section-builder__inline {
 	display: inline-flex;
 	gap: 4px;
 	align-items: center;
 	font-size: 13px;
 }
+
 .settings-section-builder__body {
 	display: flex;
 	flex-direction: column;
@@ -397,17 +402,20 @@ export default {
 	padding-left: 8px;
 	border-left: 2px solid var(--color-border);
 }
+
 .settings-section-builder__row {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 	font-size: 13px;
 }
+
 .settings-section-builder__widget {
 	display: flex;
 	gap: 6px;
 	align-items: center;
 }
+
 .settings-section-builder__field {
 	flex: 1 1 auto;
 	padding: 4px 6px;
@@ -416,9 +424,11 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .settings-section-builder__field--narrow {
 	flex: 0 0 140px;
 }
+
 .settings-section-builder__textarea {
 	min-height: 90px;
 	font-family: monospace;
@@ -429,11 +439,13 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .settings-section-builder__error {
 	margin: 0;
 	color: var(--color-error);
 	font-size: 12px;
 }
+
 .settings-section-builder__remove {
 	background: transparent;
 	border: 1px solid var(--color-border);
@@ -442,6 +454,7 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .settings-section-builder__add {
 	align-self: flex-start;
 	background: var(--color-primary-element-light);

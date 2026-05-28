@@ -92,16 +92,19 @@ export default {
 	gap: 12px;
 	padding: 12px;
 }
+
 .dashboard-page-editor__title {
 	margin: 0;
 	font-size: 16px;
 	font-weight: 600;
 }
+
 .dashboard-page-editor__fieldset {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
 	padding: 8px;
 }
+
 .dashboard-page-editor__fieldset legend {
 	padding: 0 6px;
 	font-weight: 600;

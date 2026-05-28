@@ -131,12 +131,14 @@ export default {
 	flex-direction: column;
 	gap: 6px;
 }
+
 .layout-item-builder__row {
 	display: flex;
 	gap: 6px;
 	align-items: center;
 	flex-wrap: wrap;
 }
+
 .layout-item-builder__field {
 	flex: 1 1 160px;
 	padding: 4px 6px;
@@ -145,11 +147,13 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .layout-item-builder__pair {
 	display: inline-flex;
 	gap: 4px;
 	align-items: center;
 }
+
 .layout-item-builder__num {
 	width: 64px;
 	padding: 4px 6px;
@@ -158,6 +162,7 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .layout-item-builder__remove {
 	background: transparent;
 	border: 1px solid var(--color-border);
@@ -166,6 +171,7 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .layout-item-builder__add {
 	align-self: flex-start;
 	background: var(--color-primary-element-light);

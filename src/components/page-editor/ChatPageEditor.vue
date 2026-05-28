@@ -182,11 +182,13 @@ export default {
 	gap: 12px;
 	padding: 12px;
 }
+
 .chat-page-editor__title {
 	margin: 0;
 	font-size: 16px;
 	font-weight: 600;
 }
+
 .chat-page-editor__fieldset {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
@@ -195,27 +197,32 @@ export default {
 	flex-direction: column;
 	gap: 6px;
 }
+
 .chat-page-editor__fieldset legend {
 	padding: 0 6px;
 	font-weight: 600;
 	font-size: 13px;
 }
+
 .chat-page-editor__shape {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
 }
+
 .chat-page-editor__inline {
 	display: inline-flex;
 	gap: 6px;
 	align-items: center;
 }
+
 .chat-page-editor__group-row {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 	font-size: 13px;
 }
+
 .chat-page-editor__group-row input {
 	padding: 4px 6px;
 	border: 1px solid var(--color-border);
@@ -223,6 +230,7 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .chat-page-editor__hint {
 	margin: 0;
 	font-size: 12px;

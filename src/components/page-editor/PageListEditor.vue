@@ -261,16 +261,19 @@ export default {
 	border-radius: var(--border-radius);
 	background: var(--color-main-background);
 }
+
 .page-list-editor__header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
+
 .page-list-editor__header h4 {
 	margin: 0;
 	font-size: 14px;
 	font-weight: 600;
 }
+
 .page-list-editor__add,
 .page-list-editor__add-row button {
 	background: var(--color-primary-element-light);
@@ -280,11 +283,13 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .page-list-editor__add-row {
 	display: flex;
 	gap: 6px;
 	align-items: center;
 }
+
 .page-list-editor__select {
 	flex: 1 1 auto;
 	padding: 4px 6px;
@@ -293,11 +298,13 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .page-list-editor__list {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 }
+
 .page-list-editor__row {
 	display: flex;
 	gap: 6px;
@@ -306,20 +313,25 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .page-list-editor__row:hover {
 	background: var(--color-background-hover);
 }
+
 .page-list-editor__row--selected {
 	background: var(--color-primary-element-light);
 }
+
 .page-list-editor__row--error {
 	outline: 1px solid var(--color-error);
 }
+
 .page-list-editor__drag-handle {
 	cursor: grab;
 	color: var(--color-text-maxcontrast);
 	user-select: none;
 }
+
 .page-list-editor__field {
 	flex: 1 1 auto;
 	padding: 4px 6px;
@@ -328,6 +340,7 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .page-list-editor__type-tag {
 	flex: 0 0 auto;
 	padding: 2px 6px;
@@ -336,6 +349,7 @@ export default {
 	font-size: 11px;
 	color: var(--color-text-maxcontrast);
 }
+
 .page-list-editor__remove {
 	background: transparent;
 	border: 1px solid var(--color-border);
@@ -344,11 +358,13 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .page-list-editor__empty {
 	margin: 0;
 	font-size: 13px;
 	color: var(--color-text-maxcontrast);
 }
+
 .page-list-editor__error {
 	margin: 0;
 	color: var(--color-error);

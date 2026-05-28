@@ -99,11 +99,13 @@ export default {
 	flex-direction: column;
 	gap: 6px;
 }
+
 .widget-builder__row {
 	display: flex;
 	gap: 6px;
 	align-items: center;
 }
+
 .widget-builder__field {
 	flex: 1 1 auto;
 	padding: 4px 6px;
@@ -112,9 +114,11 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .widget-builder__field--narrow {
 	flex: 0 0 130px;
 }
+
 .widget-builder__remove {
 	background: transparent;
 	border: 1px solid var(--color-border);
@@ -123,6 +127,7 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .widget-builder__add {
 	align-self: flex-start;
 	background: var(--color-primary-element-light);

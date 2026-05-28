@@ -46,6 +46,7 @@ export default {
 	color: var(--color-error);
 	line-height: 1.3;
 }
+
 .inline-field-mark__dot {
 	font-size: 12px;
 }

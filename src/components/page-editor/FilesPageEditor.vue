@@ -186,11 +186,13 @@ export default {
 	gap: 12px;
 	padding: 12px;
 }
+
 .files-page-editor__title {
 	margin: 0;
 	font-size: 16px;
 	font-weight: 600;
 }
+
 .files-page-editor__fieldset {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
@@ -199,17 +201,20 @@ export default {
 	flex-direction: column;
 	gap: 6px;
 }
+
 .files-page-editor__fieldset legend {
 	padding: 0 6px;
 	font-weight: 600;
 	font-size: 13px;
 }
+
 .files-page-editor__group-row {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 	font-size: 13px;
 }
+
 .files-page-editor__group-row input {
 	padding: 4px 6px;
 	border: 1px solid var(--color-border);
@@ -217,6 +222,7 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .files-page-editor__tags {
 	display: flex;
 	flex-wrap: wrap;
@@ -227,6 +233,7 @@ export default {
 	border-radius: var(--border-radius);
 	background: var(--color-main-background);
 }
+
 .files-page-editor__tag {
 	display: inline-flex;
 	align-items: center;
@@ -236,6 +243,7 @@ export default {
 	background: var(--color-primary-element-light);
 	font-size: 12px;
 }
+
 .files-page-editor__tag-remove {
 	background: transparent;
 	border: none;
@@ -244,6 +252,7 @@ export default {
 	font-size: 11px;
 	line-height: 1;
 }
+
 .files-page-editor__tag-input {
 	flex: 1 1 160px;
 	min-width: 120px;
@@ -253,6 +262,7 @@ export default {
 	font-size: 13px;
 	outline: none;
 }
+
 .files-page-editor__hint {
 	margin: 0;
 	font-size: 12px;

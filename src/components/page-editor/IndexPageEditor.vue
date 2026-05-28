@@ -279,22 +279,26 @@ export default {
 	gap: 12px;
 	padding: 12px;
 }
+
 .index-page-editor__title {
 	margin: 0;
 	font-size: 16px;
 	font-weight: 600;
 }
+
 .index-page-editor__group {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
 }
+
 .index-page-editor__group label {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 	font-size: 13px;
 }
+
 .index-page-editor__group input,
 .index-page-editor__group select {
 	padding: 4px 6px;
@@ -303,16 +307,19 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .index-page-editor__fieldset {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
 	padding: 8px;
 }
+
 .index-page-editor__fieldset legend {
 	padding: 0 6px;
 	font-weight: 600;
 	font-size: 13px;
 }
+
 .index-page-editor__inline {
 	display: inline-flex;
 	gap: 6px;

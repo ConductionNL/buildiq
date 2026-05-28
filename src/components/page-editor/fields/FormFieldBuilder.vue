@@ -126,12 +126,14 @@ export default {
 	flex-direction: column;
 	gap: 6px;
 }
+
 .form-field-builder__row {
 	display: flex;
 	gap: 6px;
 	align-items: center;
 	flex-wrap: wrap;
 }
+
 .form-field-builder__field {
 	flex: 1 1 120px;
 	padding: 4px 6px;
@@ -140,14 +142,17 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .form-field-builder__field--narrow {
 	flex: 0 0 110px;
 }
+
 .form-field-builder__inline {
 	display: inline-flex;
 	gap: 4px;
 	align-items: center;
 }
+
 .form-field-builder__remove {
 	background: transparent;
 	border: 1px solid var(--color-border);
@@ -156,6 +161,7 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .form-field-builder__add {
 	align-self: flex-start;
 	background: var(--color-primary-element-light);

@@ -402,11 +402,19 @@ class ExportJobService
 
             if (method_exists($object, 'getObject') === true) {
                 $data = $object->getObject() ?? [];
-                return is_array($data) === true ? $data : null;
+                if (is_array($data) === true) {
+                    return $data;
+                }
+
+                return null;
             }
 
             // Some OR versions return the array directly.
-            return is_array($object) === true ? $object : null;
+            if (is_array($object) === true) {
+                return $object;
+            }
+
+            return null;
         } catch (\Throwable $e) {
             $this->logger->warning(
                 'OpenBuilt ExportJobService: loadJob failed for job '.$jobUuid.': '.$e->getMessage()
