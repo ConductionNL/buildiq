@@ -30,6 +30,7 @@ namespace OCA\OpenBuilt\Tests\Unit\Controller;
 
 use OCA\OpenBuilt\Controller\ApplicationsController;
 use OCA\OpenBuilt\Service\ManifestResolverService;
+use OCA\OpenBuilt\Service\PermissionResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -112,6 +113,8 @@ class ApplicationsControllerDiffTest extends TestCase
         $groupManager->method('getUserGroups')->willReturn([]);
         $groupManager->method('isInGroup')->willReturn(false);
 
+        $permissionResolver = new PermissionResolver($groupManager, $this->logger);
+
         $this->controller = new ApplicationsController(
             request: $request,
             logger: $this->logger,
@@ -121,6 +124,7 @@ class ApplicationsControllerDiffTest extends TestCase
             userSession: $userSession,
             groupManager: $groupManager,
             manifestResolver: $this->createMock(ManifestResolverService::class),
+            permissionResolver: $permissionResolver,
         );
     }//end setUp()
 

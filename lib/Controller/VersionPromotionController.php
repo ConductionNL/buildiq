@@ -41,6 +41,7 @@ namespace OCA\OpenBuilt\Controller;
 
 use OCA\OpenBuilt\AppInfo\Application;
 use OCA\OpenBuilt\Exception\InsufficientPermissionException;
+use OCA\OpenBuilt\Service\PermissionResolver;
 use OCA\OpenBuilt\Exception\InvalidStrategyException;
 use OCA\OpenBuilt\Exception\NoPromoteTargetException;
 use OCA\OpenBuilt\Exception\PromotionFailedException;
@@ -73,11 +74,12 @@ class VersionPromotionController extends Controller
     /**
      * Constructor.
      *
-     * @param IRequest                $request          The current HTTP request
-     * @param LoggerInterface         $logger           PSR logger
-     * @param ObjectService           $objectService    OR object surface (load source + parent)
-     * @param IUserSession            $userSession      Current NC user session
-     * @param VersionPromotionService $promotionService Imperative promotion flow owner
+     * @param IRequest                $request            The current HTTP request
+     * @param LoggerInterface         $logger             PSR logger
+     * @param ObjectService           $objectService      OR object surface (load source + parent)
+     * @param IUserSession            $userSession        Current NC user session
+     * @param VersionPromotionService $promotionService   Imperative promotion flow owner
+     * @param PermissionResolver      $permissionResolver Shared permission-grammar resolver (H1 fix)
      *
      * @return void
      */
@@ -87,6 +89,7 @@ class VersionPromotionController extends Controller
         private readonly ObjectService $objectService,
         private readonly IUserSession $userSession,
         private readonly VersionPromotionService $promotionService,
+        private readonly PermissionResolver $permissionResolver,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
     }//end __construct()
@@ -323,26 +326,23 @@ class VersionPromotionController extends Controller
             );
         }
 
-        $uid = $user->getUID();
-        foreach (self::WRITE_ROLES as $role) {
-            $bucket = ($permissions[$role] ?? []);
-            if (is_array($bucket) === false) {
-                continue;
-            }
+        // Use PermissionResolver for consistent grammar (H1 fix).
+        // NC admin bypass is NOT applied here (spec REQ-OBVP-007 — allowAdminBypass:false).
+        $userGroups = $this->permissionResolver->resolveUserGroups($user);
+        $allowed    = $this->permissionResolver->matchesCaller(
+            permissions: $permissions,
+            caller: $user,
+            userGroups: $userGroups,
+            allowAdminBypass: false,
+            roles: self::WRITE_ROLES
+        );
 
-            foreach ($bucket as $principal) {
-                if (is_string($principal) === false) {
-                    continue;
-                }
-
-                if ($principal === 'user:'.$uid || $principal === $uid) {
-                    return;
-                }
-            }
+        if ($allowed === true) {
+            return;
         }
 
         throw new InsufficientPermissionException(
-            message: 'User '.$uid.' is not an owner or editor on Application '
+            message: 'User '.$user->getUID().' is not an owner or editor on Application '
                 .(string) ($application['slug'] ?? ($application['id'] ?? '?'))
         );
     }//end assertEditorOrOwner()

@@ -144,7 +144,10 @@ class UpsertMenuItemHandler extends AbstractToolHandler
 
         // Validate route to a safe path pattern (issue #167 — route injection guard).
         if ($this->isValidRoute(route: $route) === false) {
-            return ['error' => "Invalid route '{$route}'. Routes must start with '/' and contain only alphanumeric characters, hyphens, underscores, dots, and forward slashes."];
+            return [
+                'error' => "Invalid route '{$route}'. "
+                ."Routes must start with '/' and contain only safe path characters.",
+            ];
         }
 
         return [
@@ -177,7 +180,9 @@ class UpsertMenuItemHandler extends AbstractToolHandler
             return false;
         }
 
-        return (bool) preg_match('#^/[a-zA-Z0-9/_\-\.:\{\}]*$#', $route);
+        // Require the character after the leading '/' to be non-slash so that
+        // protocol-relative URLs (//host/path) are rejected.
+        return (bool) preg_match('#^/([a-zA-Z0-9_\-\.:\{][a-zA-Z0-9/_\-\.:\{\}]*)?$#', $route);
 
     }//end isValidRoute()
 
@@ -199,7 +204,7 @@ class UpsertMenuItemHandler extends AbstractToolHandler
      */
     private function upsertMenuItemInList(array $menu, string $itemId, array $newItem): array
     {
-        $replaced  = false;
+        $replaced = false;
         $itemIdLc = strtolower($itemId);
 
         foreach ($menu as $i => $existing) {

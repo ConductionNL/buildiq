@@ -52,6 +52,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenBuilt\AppInfo\Application;
 use OCA\OpenBuilt\Service\ManifestResolverService;
+use OCA\OpenBuilt\Service\PermissionResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -89,15 +90,16 @@ class ApplicationsController extends Controller
     /**
      * Constructor.
      *
-     * @param IRequest                $request          The current HTTP request
-     * @param LoggerInterface         $logger           PSR logger for diagnostics
-     * @param ObjectService           $objectService    OpenRegister object service (hard dep via info.xml)
-     * @param RegisterMapper          $registerMapper   Resolves slugs/UUIDs to numeric register IDs
-     * @param SchemaMapper            $schemaMapper     Resolves slugs/UUIDs to numeric schema IDs
-     * @param IUserSession            $userSession      Current Nextcloud user session
-     * @param IGroupManager           $groupManager     Group membership resolver
-     * @param ManifestResolverService $manifestResolver Version-aware manifest resolver (REQ-OBVR-002)
-     * @param AuditTrailMapper|null   $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
+     * @param IRequest                $request            The current HTTP request
+     * @param LoggerInterface         $logger             PSR logger for diagnostics
+     * @param ObjectService           $objectService      OpenRegister object service (hard dep via info.xml)
+     * @param RegisterMapper          $registerMapper     Resolves slugs/UUIDs to numeric register IDs
+     * @param SchemaMapper            $schemaMapper       Resolves slugs/UUIDs to numeric schema IDs
+     * @param IUserSession            $userSession        Current Nextcloud user session
+     * @param IGroupManager           $groupManager       Group membership resolver
+     * @param ManifestResolverService $manifestResolver   Version-aware manifest resolver (REQ-OBVR-002)
+     * @param PermissionResolver      $permissionResolver Shared permission-grammar resolver (H1/H2 fix)
+     * @param AuditTrailMapper|null   $auditTrailMapper   Optional OR audit-trail writer (null until OR loaded)
      *
      * @return void
      */
@@ -110,6 +112,7 @@ class ApplicationsController extends Controller
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
         private readonly ManifestResolverService $manifestResolver,
+        private readonly PermissionResolver $permissionResolver,
         private readonly ?AuditTrailMapper $auditTrailMapper=null,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
@@ -564,7 +567,7 @@ class ApplicationsController extends Controller
                 $results = [];
             }
 
-            $userGroups = $this->getUserGroupIds(user: $user);
+            $userGroups = $this->permissionResolver->resolveUserGroups($user);
             $isAdmin    = $this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP);
 
             [$filtered, $adminBypassUsed] = $this->filterApplicationsByRole(
@@ -622,15 +625,27 @@ class ApplicationsController extends Controller
         $filtered        = [];
         $adminBypassUsed = false;
 
+        $caller = $this->userSession->getUser();
+        if ($caller === null) {
+            return [[], false];
+        }
+
         foreach ($results as $entry) {
             $app = $this->normaliseObject(object: $entry);
             if ($app === []) {
                 continue;
             }
 
-            $authorised = $this->collectAuthorisedGroups(application: $app);
-            $hasRole    = in_array($uid, $authorised['users'], true)
-                || count(array_intersect($userGroups, $authorised['groups'])) > 0;
+            $permissions = ($app['permissions'] ?? []);
+
+            // Check all three roles (owners + editors + viewers) for list visibility.
+            $hasRole = $this->permissionResolver->matchesCaller(
+                permissions: $permissions,
+                caller: $caller,
+                userGroups: $userGroups,
+                allowAdminBypass: false,
+                roles: ['owners', 'editors', 'viewers']
+            );
 
             if ($hasRole === true) {
                 $filtered[] = $app;
@@ -686,19 +701,19 @@ class ApplicationsController extends Controller
             );
         }
 
-        $userGroups = $this->getUserGroupIds(user: $user);
-        $authorised = $this->collectAuthorisedGroups(application: $applicationArray);
+        $userGroups  = $this->permissionResolver->resolveUserGroups($user);
+        $permissions = ($applicationArray['permissions'] ?? []);
 
-        // Match the caller against the user-UID bucket first (exact UID
-        // match), then against the group-GID bucket (intersection with
-        // caller's groups). Either match grants access; both buckets are
-        // independent so a username and a same-named group don't clash
-        // (openbuilt#37).
-        if (in_array($user->getUID(), $authorised['users'], true) === true) {
-            return null;
-        }
+        // Check all three roles (any role grants read access to the manifest).
+        $hasRole = $this->permissionResolver->matchesCaller(
+            permissions: $permissions,
+            caller: $user,
+            userGroups: $userGroups,
+            allowAdminBypass: false,
+            roles: ['owners', 'editors', 'viewers']
+        );
 
-        if (count(array_intersect($userGroups, $authorised['groups'])) > 0) {
+        if ($hasRole === true) {
             return null;
         }
 
@@ -773,119 +788,6 @@ class ApplicationsController extends Controller
             $context
         );
     }//end recordAdminBypass()
-
-    /**
-     * Return the given user's Nextcloud group ID list.
-     *
-     * @param IUser $user The Nextcloud user
-     *
-     * @return array<int, string>
-     */
-    private function getUserGroupIds(IUser $user): array
-    {
-        $groups = $this->groupManager->getUserGroups($user);
-        $ids    = [];
-        foreach ($groups as $group) {
-            $ids[] = $group->getGID();
-        }
-
-        return $ids;
-    }//end getUserGroupIds()
-
-    /**
-     * Flatten `permissions.owners ∪ editors ∪ viewers` into separate
-     * user-UID and group-GID buckets.
-     *
-     * Per REQ-OBRBAC-002 the three role buckets union into the "any role"
-     * set the manifest endpoint checks against. Per openbuilt#37 the
-     * principal type is encoded in the string itself rather than living
-     * in a single shared namespace where a username and a group GID can
-     * coincidentally clash (the seeded `owners: ["admin"]` matched
-     * everyone in the `admin` group, not just the `admin` user).
-     *
-     * Recognised prefixes:
-     *   - `user:<uid>`   — match if the caller's UID equals `<uid>`.
-     *   - `group:<gid>`  — match if any of the caller's group GIDs equals `<gid>`.
-     *   - `<value>`      — back-compat: treated as a group GID, same as
-     *                      `group:<value>`. The seeded `owners: ["admin"]`
-     *                      keeps working under this fallback. Apps that
-     *                      want to grant access to a specific user MUST
-     *                      use the `user:` prefix to disambiguate.
-     *
-     * @param array<string, mixed> $application The Application data
-     *
-     * @return array{users: array<int, string>, groups: array<int, string>}
-     *   Two deduplicated lists; `users` are UID values the caller's UID
-     *   should be compared against; `groups` are GID values the caller's
-     *   group memberships should be intersected with.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-47
-     */
-    private function collectAuthorisedGroups(array $application): array
-    {
-        $permissions = ($application['permissions'] ?? []);
-        if (is_array($permissions) === false) {
-            return ['users' => [], 'groups' => []];
-        }
-
-        $userSet  = [];
-        $groupSet = [];
-        foreach (['owners', 'editors', 'viewers'] as $role) {
-            $bucket = ($permissions[$role] ?? []);
-            if (is_array($bucket) === false) {
-                continue;
-            }
-
-            foreach ($bucket as $principal) {
-                $this->classifyPrincipal(
-                    principal: $principal,
-                    userSet: $userSet,
-                    groupSet: $groupSet
-                );
-            }//end foreach
-        }//end foreach
-
-        return [
-            'users'  => array_keys($userSet),
-            'groups' => array_keys($groupSet),
-        ];
-    }//end collectAuthorisedGroups()
-
-    /**
-     * Classify a single permissions principal into the UID or GID accumulator sets.
-     *
-     * Modifies $userSet and $groupSet by reference.
-     *
-     * @param mixed               $principal The raw principal value from the permissions bucket.
-     * @param array<string, bool> $userSet   Accumulator for user UIDs (keyed, deduped).
-     * @param array<string, bool> $groupSet  Accumulator for group GIDs (keyed, deduped).
-     *
-     * @return void
-     */
-    private function classifyPrincipal(mixed $principal, array &$userSet, array &$groupSet): void
-    {
-        if (is_string($principal) === false || $principal === '') {
-            return;
-        }
-
-        if (str_starts_with($principal, 'user:') === true) {
-            $uid = substr($principal, 5);
-            if ($uid !== '') {
-                $userSet[$uid] = true;
-            }
-
-            return;
-        }
-
-        $gid = $principal;
-        if (str_starts_with($principal, 'group:') === true) {
-            $gid = substr($principal, 6);
-        }
-
-        if ($gid !== '') {
-            $groupSet[$gid] = true;
-        }
-    }//end classifyPrincipal()
 
     /**
      * Clone an Application from a template.
