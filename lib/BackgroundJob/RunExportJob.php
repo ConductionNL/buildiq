@@ -136,19 +136,41 @@ class RunExportJob extends QueuedJob
      */
     private function executePipeline(string $jobUuid): void
     {
+        // Load the queued ExportJob record so we have the real application
+        // identity — uuid, version slug, and slug (= appId). The job was
+        // persisted by ExportJobService::queue() before this background job
+        // was dispatched, so it must exist in OR.
+        $job = $this->exportJobService->loadJob(jobUuid: $jobUuid);
+        if ($job === null) {
+            throw new \RuntimeException(
+                sprintf('OpenBuilt RunExportJob: could not load ExportJob record for UUID %s', $jobUuid)
+            );
+        }
+
+        $applicationUuid    = (string) ($job['applicationUuid'] ?? '');
+        $applicationVersion = (string) ($job['applicationVersion'] ?? '0.1.0');
+        $applicationSlug    = (string) ($job['applicationSlug'] ?? 'exported-app');
+        $license            = (string) ($job['license'] ?? 'EUPL-1.2');
+
+        if ($applicationUuid === '') {
+            throw new \RuntimeException(
+                sprintf('OpenBuilt RunExportJob: ExportJob %s has an empty applicationUuid', $jobUuid)
+            );
+        }
+
         $context = [
-            'appId'        => 'exported-app',
-            'appNamespace' => 'ExportedApp',
-            'appName'      => 'Exported App',
-            'appVersion'   => '0.1.0',
+            'appId'        => $applicationSlug,
+            'appNamespace' => $this->slugToNamespace(slug: $applicationSlug),
+            'appName'      => $this->slugToLabel(slug: $applicationSlug),
+            'appVersion'   => $applicationVersion,
             'authorName'   => 'OpenBuilt Citizen Developer',
             'authorEmail'  => 'dev@conduction.nl',
-            'license'      => 'EUPL-1.2',
+            'license'      => $license,
         ];
 
         $zipPath = $this->exportService->generateAppZip(
-            applicationUuid: $jobUuid,
-            versionSlug: '0.1.0',
+            applicationUuid: $applicationUuid,
+            versionSlug: $applicationVersion,
             context: $context,
             jobUuid: $jobUuid
         );
@@ -160,6 +182,34 @@ class RunExportJob extends QueuedJob
         $this->exportJobService->transitionJob(jobUuid: $jobUuid, action: 'succeed', extraFields: $extra);
         $this->logger->info('OpenBuilt export succeeded', ['jobUuid' => $jobUuid]);
     }//end executePipeline()
+
+    /**
+     * Convert a kebab-case app slug to a PascalCase PHP namespace segment.
+     *
+     * E.g. `my-virtual-app` → `MyVirtualApp`.
+     *
+     * @param string $slug The application slug.
+     *
+     * @return string PascalCase namespace.
+     */
+    private function slugToNamespace(string $slug): string
+    {
+        return str_replace(' ', '', ucwords(str_replace('-', ' ', $slug)));
+    }//end slugToNamespace()
+
+    /**
+     * Convert a kebab-case app slug to a human-readable label.
+     *
+     * E.g. `my-virtual-app` → `My Virtual App`.
+     *
+     * @param string $slug The application slug.
+     *
+     * @return string Human-readable label.
+     */
+    private function slugToLabel(string $slug): string
+    {
+        return ucwords(str_replace('-', ' ', $slug));
+    }//end slugToLabel()
 
     /**
      * Fetch the PAT once and push to GitHub if one was supplied.

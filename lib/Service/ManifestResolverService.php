@@ -43,6 +43,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuilt\Service;
 
+use OCA\OpenBuilt\Service\ApplicationVersionService;
 use OCA\OpenBuilt\Service\PermissionResolver;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -342,7 +343,7 @@ class ManifestResolverService
             }
 
             $registerId = $this->registerMapper->find('openbuilt', _multitenancy: false)->getId();
-            $schemaId   = $this->schemaMapper->find('application-version', _multitenancy: false)->getId();
+            $schemaId   = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_VERSION_SCHEMA, _multitenancy: false)->getId();
 
             // Two-step: filter ApplicationVersions by parent application UUID + slug.
             // OR compound-filter note: OR's searchObjects supports direct property
@@ -397,7 +398,7 @@ class ManifestResolverService
     {
         try {
             $registerId = $this->registerMapper->find('openbuilt', _multitenancy: false)->getId();
-            $schemaId   = $this->schemaMapper->find('application-version', _multitenancy: false)->getId();
+            $schemaId   = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_VERSION_SCHEMA, _multitenancy: false)->getId();
 
             $allVersions = $this->objectService->searchObjects(
                 query: [
@@ -441,7 +442,7 @@ class ManifestResolverService
             $version = $this->objectService->find(
                 id: $uuid,
                 register: 'openbuilt',
-                schema: 'application-version'
+                schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
             );
 
             if ($version === null) {

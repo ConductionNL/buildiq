@@ -34,6 +34,7 @@ namespace OCA\OpenBuilt\Tests\Unit\Service;
 use OCA\OpenBuilt\Service\ApplicationInsightsService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -58,6 +59,11 @@ class ApplicationInsightsServiceTest extends TestCase
     private AuditTrailMapper&MockObject $auditTrailMapper;
 
     /**
+     * @var SchemaMapper&MockObject
+     */
+    private SchemaMapper&MockObject $schemaMapper;
+
+    /**
      * @var LoggerInterface&MockObject
      */
     private LoggerInterface&MockObject $logger;
@@ -78,11 +84,13 @@ class ApplicationInsightsServiceTest extends TestCase
 
         $this->objectService    = $this->createMock(ObjectService::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+        $this->schemaMapper     = $this->createMock(SchemaMapper::class);
         $this->logger           = $this->createMock(LoggerInterface::class);
 
         $this->service = new ApplicationInsightsService(
             objectService: $this->objectService,
             auditTrailMapper: $this->auditTrailMapper,
+            schemaMapper: $this->schemaMapper,
             logger: $this->logger,
         );
     }//end setUp()

@@ -120,6 +120,23 @@ final class RunExportJobTest extends TestCase
     }//end buildJob()
 
     /**
+     * Standard ExportJob fixture returned by the loadJob mock.
+     *
+     * @param string $applicationUuid Optional application UUID override.
+     *
+     * @return array<string,mixed>
+     */
+    private function jobFixture(string $applicationUuid='app-uuid-test'): array
+    {
+        return [
+            'applicationUuid'    => $applicationUuid,
+            'applicationVersion' => '1.0.0',
+            'applicationSlug'    => 'test-app',
+            'license'            => 'EUPL-1.2',
+        ];
+    }//end jobFixture()
+
+    /**
      * Happy path: the job transitions queued → running → succeeded via
      * the declarative TransitionEngine (proxied through ExportJobService).
      *
@@ -131,6 +148,8 @@ final class RunExportJobTest extends TestCase
     public function testRunTransitionsThroughRunningToSucceeded(): void
     {
         $jobUuid = 'job-success-uuid';
+
+        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
 
         $this->exportJobService
             ->expects(self::exactly(2))
@@ -177,6 +196,8 @@ final class RunExportJobTest extends TestCase
     {
         $jobUuid = 'job-fail-uuid';
 
+        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
+
         $this->exportService
             ->method('generateAppZip')
             ->willThrowException(new \RuntimeException('disk full'));
@@ -217,6 +238,7 @@ final class RunExportJobTest extends TestCase
     public function testClearPatAlwaysCalledOnSuccess(): void
     {
         $jobUuid = 'pat-cleanup-success';
+        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
         $this->exportService->method('generateAppZip')->willReturn('/tmp/x.zip');
         $this->exportJobService->method('fetchPat')->willReturn(null);
         $this->exportJobService->method('transitionJob')->willReturn(true);
@@ -242,6 +264,7 @@ final class RunExportJobTest extends TestCase
     {
         $jobUuid = 'pat-cleanup-failure';
 
+        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
         $this->exportService
             ->method('generateAppZip')
             ->willThrowException(new \RuntimeException('boom'));
@@ -268,6 +291,8 @@ final class RunExportJobTest extends TestCase
     public function testRerunWithSameParamsProducesEquivalentInvocations(): void
     {
         $jobUuid = 'idempotent-rerun-uuid';
+
+        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture('app-uuid-idempotent'));
 
         $captured = [];
         $this->exportService
@@ -332,6 +357,7 @@ final class RunExportJobTest extends TestCase
             }
         };
 
+        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
         $this->exportService->method('generateAppZip')->willReturn('/tmp/out.zip');
         $this->exportJobService->method('fetchPat')->willReturn($pat);
         $this->exportJobService->method('transitionJob')->willReturn(true);

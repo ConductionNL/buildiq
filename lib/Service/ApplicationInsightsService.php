@@ -56,6 +56,7 @@ namespace OCA\OpenBuilt\Service;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
@@ -115,6 +116,7 @@ class ApplicationInsightsService
      *
      * @param ObjectService    $objectService    OR object surface
      * @param AuditTrailMapper $auditTrailMapper Audit-trail aggregations (chart + actors + counts)
+     * @param SchemaMapper     $schemaMapper     Schema slug-to-integer-ID resolver
      * @param LoggerInterface  $logger           PSR logger
      *
      * @return void
@@ -122,6 +124,7 @@ class ApplicationInsightsService
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
@@ -223,8 +226,9 @@ class ApplicationInsightsService
             $versionSlug  = (string) ($version['slug'] ?? '');
             $registerSlug = sprintf('openbuilt-%s-%s', $appSlug, $versionSlug);
 
-            $manifest  = $this->extractManifest(version: $version);
-            $schemaIds = $this->deriveSchemaIds(manifest: $manifest, registerSlug: $registerSlug);
+            $manifest    = $this->extractManifest(version: $version);
+            $schemaSlugs = $this->deriveSchemaIds(manifest: $manifest, registerSlug: $registerSlug);
+            $schemaIds   = $this->resolveSchemaSlugsToIntIds(schemaSlugs: $schemaSlugs);
 
             $hours = self::WINDOW_HOURS[$window];
 
@@ -288,6 +292,38 @@ class ApplicationInsightsService
 
         return array_keys($schemaIds);
     }//end deriveSchemaIds()
+
+    /**
+     * Resolve an array of schema slugs to their integer database IDs via
+     * SchemaMapper::find(). Slugs that cannot be resolved (not found, OR
+     * not available) are silently skipped so a single bad slug in the
+     * manifest does not zero-out all KPIs.
+     *
+     * @param array<int, string> $schemaSlugs Schema slugs from the manifest.
+     *
+     * @return array<int, int> Integer schema IDs suitable for AuditTrailMapper queries.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-18
+     */
+    private function resolveSchemaSlugsToIntIds(array $schemaSlugs): array
+    {
+        $intIds = [];
+        foreach ($schemaSlugs as $slug) {
+            try {
+                $intId = $this->schemaMapper->find($slug, _multitenancy: false)->getId();
+                if ($intId !== null) {
+                    $intIds[] = (int) $intId;
+                }
+            } catch (Throwable $e) {
+                $this->logger->debug(
+                    'OpenBuilt: could not resolve schema slug "{slug}" to integer ID: {message}',
+                    ['slug' => $slug, 'message' => $e->getMessage()]
+                );
+            }
+        }//end foreach
+
+        return array_values(array_unique($intIds));
+    }//end resolveSchemaSlugsToIntIds()
 
     /**
      * Extract a schema ID from a manifest page entry IF the entry's
@@ -542,8 +578,8 @@ class ApplicationInsightsService
      * that has not yet landed the `openregister-distinct-actor-aggregation`
      * change.
      *
-     * @param array<int, string> $schemaIds Unique schema IDs.
-     * @param int                $hours     Window hours.
+     * @param array<int, int> $schemaIds Integer schema IDs.
+     * @param int             $hours     Window hours.
      *
      * @return int Distinct actor count, or 0 when the aggregation API is unavailable.
      *
@@ -564,7 +600,7 @@ class ApplicationInsightsService
         }
 
         try {
-            return (int) $this->auditTrailMapper->getDistinctActorCount(array_map('intval', $schemaIds), $hours);
+            return (int) $this->auditTrailMapper->getDistinctActorCount($schemaIds, $hours);
         } catch (Throwable $e) {
             $this->logger->warning(
                 'OpenBuilt: getDistinctActorCount failed: {message}',
@@ -581,8 +617,8 @@ class ApplicationInsightsService
      * Per OR's ObjectService::count() signature, we pass register +
      * schema via the config array. Schema-set may be empty (returns 0).
      *
-     * @param array<int, string> $schemaIds    Unique schema IDs (strings — coerced as needed).
-     * @param string             $registerSlug The version's register slug.
+     * @param array<int, int> $schemaIds    Integer schema IDs.
+     * @param string          $registerSlug The version's register slug.
      *
      * @return int Total object count across the schema-set.
      *
@@ -626,8 +662,8 @@ class ApplicationInsightsService
      *
      * Returns 0 when the schema-set is empty.
      *
-     * @param string             $registerSlug The version's register slug (reserved for future use).
-     * @param array<int, string> $schemaIds    Unique schema IDs.
+     * @param string          $registerSlug The version's register slug (reserved for future use).
+     * @param array<int, int> $schemaIds    Integer schema IDs.
      *
      * @return int File count.
      *
@@ -646,7 +682,7 @@ class ApplicationInsightsService
         }
 
         try {
-            $stats = $this->auditTrailMapper->getStatisticsGroupedBySchema(array_map('intval', $schemaIds));
+            $stats = $this->auditTrailMapper->getStatisticsGroupedBySchema($schemaIds);
 
             $total = 0;
             foreach ($stats as $row) {
@@ -675,8 +711,8 @@ class ApplicationInsightsService
      * `countByRegisterAndWindow` is unavailable on the OR floor (today
      * it is unavailable; this method becomes a one-liner when it lands).
      *
-     * @param array<int, string> $schemaIds Unique schema IDs.
-     * @param int                $hours     Window hours.
+     * @param array<int, int> $schemaIds Integer schema IDs.
+     * @param int             $hours     Window hours.
      *
      * @return int Audit-event count.
      *
@@ -690,7 +726,7 @@ class ApplicationInsightsService
 
         if (method_exists($this->auditTrailMapper, 'countByRegisterAndWindow') === true) {
             try {
-                return (int) $this->auditTrailMapper->countByRegisterAndWindow(array_map('intval', $schemaIds), $hours);
+                return (int) $this->auditTrailMapper->countByRegisterAndWindow($schemaIds, $hours);
             } catch (Throwable $e) {
                 $this->logger->debug(
                     'OpenBuilt: countByRegisterAndWindow failed: {message}',
@@ -711,7 +747,7 @@ class ApplicationInsightsService
                     from: $from,
                     till: $till,
                     registerId: null,
-                    schemaId: (int) $schemaId
+                    schemaId: $schemaId
                 );
                 $total += $this->sumChartSeries(chart: $chart);
             }
@@ -774,9 +810,9 @@ class ApplicationInsightsService
      *
      * Returns an empty array when the schema-set is empty.
      *
-     * @param array<int, string> $schemaIds    Unique schema IDs.
-     * @param int                $hours        Window hours.
-     * @param string             $registerSlug The register slug (reserved for future use).
+     * @param array<int, int> $schemaIds    Integer schema IDs.
+     * @param int             $hours        Window hours.
+     * @param string          $registerSlug The register slug (reserved for future use).
      *
      * @return array<int, array{timestamp: string, eventCount: int}>
      *
@@ -802,7 +838,7 @@ class ApplicationInsightsService
                     $from,
                     $till,
                     null,
-                    (int) $schemaId
+                    $schemaId
                 );
 
                 $this->mergeChartIntoBuckets(chart: $chart, buckets: $merged);
