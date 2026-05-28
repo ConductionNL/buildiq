@@ -39,11 +39,13 @@ declare(strict_types=1);
 namespace OCA\OpenBuilt\Tests\Unit\Service;
 
 use OCA\OpenBuilt\Service\ManifestResolverService;
+use OCA\OpenBuilt\Service\PermissionResolver;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\IGroupManager;
 use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -110,11 +112,16 @@ class ManifestResolverServiceTest extends TestCase
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->schemaMapper->method('find')->willReturn($schema);
 
+        $groupManager       = $this->createMock(IGroupManager::class);
+        $groupManager->method('getUserGroups')->willReturn([]);
+        $permissionResolver = new PermissionResolver($groupManager, $this->createMock(LoggerInterface::class));
+
         $this->service = new ManifestResolverService(
             objectService: $this->objectService,
             registerMapper: $this->registerMapper,
             schemaMapper: $this->schemaMapper,
             logger: $this->logger,
+            permissionResolver: $permissionResolver,
         );
     }//end setUp()
 

@@ -43,6 +43,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuilt\Service;
 
+use OCA\OpenBuilt\Service\PermissionResolver;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -59,10 +60,11 @@ class ManifestResolverService
     /**
      * Constructor.
      *
-     * @param ObjectService   $objectService  OpenRegister object service (ADR-022)
-     * @param RegisterMapper  $registerMapper Register slug-to-ID resolver
-     * @param SchemaMapper    $schemaMapper   Schema slug-to-ID resolver
-     * @param LoggerInterface $logger         PSR logger for diagnostics
+     * @param ObjectService      $objectService      OpenRegister object service (ADR-022)
+     * @param RegisterMapper     $registerMapper     Register slug-to-ID resolver
+     * @param SchemaMapper       $schemaMapper       Schema slug-to-ID resolver
+     * @param LoggerInterface    $logger             PSR logger for diagnostics
+     * @param PermissionResolver $permissionResolver Shared principal-grammar resolver (H1/H2 fix)
      *
      * @return void
      */
@@ -71,6 +73,7 @@ class ManifestResolverService
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger,
+        private readonly PermissionResolver $permissionResolver,
     ) {
     }//end __construct()
 
@@ -520,52 +523,20 @@ class ManifestResolverService
             return false;
         }
 
-        $callerUid = $caller->getUID();
+        // Use PermissionResolver for consistent grammar (H1/H2 fix).
+        // Group membership is resolved here via IGroupManager so ManifestResolverService
+        // now honours group: entries for non-production version access, matching the
+        // behaviour of the HTTP endpoint (bucketContainsUid previously only matched user: entries).
+        $userGroups = $this->permissionResolver->resolveUserGroups($caller);
 
-        foreach (['owners', 'editors'] as $role) {
-            $bucket = ($permissions[$role] ?? []);
-            if (is_array($bucket) === false) {
-                continue;
-            }
-
-            if ($this->bucketContainsUid(bucket: $bucket, callerUid: $callerUid) === true) {
-                return true;
-            }
-        }//end foreach
-
-        return false;
+        return $this->permissionResolver->matchesCaller(
+            permissions: $permissions,
+            caller: $caller,
+            userGroups: $userGroups,
+            allowAdminBypass: false,
+            roles: ['owners', 'editors']
+        );
     }//end isCallerAuthorised()
-
-    /**
-     * Check whether a permissions bucket (owners or editors) contains the caller UID.
-     *
-     * Only the `user:<uid>` prefix grants individual-user access (canonical form per
-     * REQ-OBRBAC-002). Back-compat: unqualified values are group GIDs, not user UIDs —
-     * they are intentionally NOT matched here (this method is for UID checks only).
-     *
-     * @param array<int, mixed> $bucket    The bucket array from permissions.owners or permissions.editors.
-     * @param string            $callerUid The calling user's UID.
-     *
-     * @return bool True when the caller UID is found in the bucket.
-     */
-    private function bucketContainsUid(array $bucket, string $callerUid): bool
-    {
-        foreach ($bucket as $principal) {
-            if (is_string($principal) === false || $principal === '') {
-                continue;
-            }
-
-            // Support `user:<uid>` prefix (canonical form per REQ-OBRBAC-002).
-            if (str_starts_with($principal, 'user:') === true) {
-                $uid = substr($principal, 5);
-                if ($uid === $callerUid) {
-                    return true;
-                }
-            }
-        }//end foreach
-
-        return false;
-    }//end bucketContainsUid()
 
     /**
      * Coerce an OR result entry (ObjectEntity or array) to a plain associative array.

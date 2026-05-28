@@ -26,6 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuilt\Mcp\Handler;
 
+use OCA\OpenBuilt\Service\PermissionResolver;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -52,16 +54,18 @@ abstract class AbstractToolHandler
     /**
      * Constructor.
      *
-     * @param IUserSession       $userSession  User session used to resolve the current authenticated user.
-     * @param ContainerInterface $container    DI container used to resolve OpenRegister services lazily.
-     * @param LoggerInterface    $logger       PSR logger used for non-fatal warnings and error logging.
-     * @param IGroupManager      $groupManager Group manager used for admin and group membership checks.
+     * @param IUserSession       $userSession        User session used to resolve the current authenticated user.
+     * @param ContainerInterface $container          DI container used to resolve OpenRegister services lazily.
+     * @param LoggerInterface    $logger             PSR logger used for non-fatal warnings and error logging.
+     * @param IGroupManager      $groupManager       Group manager used for admin and group membership checks.
+     * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (H1 fix).
      */
     public function __construct(
         protected readonly IUserSession $userSession,
         protected readonly ContainerInterface $container,
         protected readonly LoggerInterface $logger,
         protected readonly IGroupManager $groupManager,
+        protected readonly ?PermissionResolver $permissionResolver=null,
     ) {
     }//end __construct()
 
@@ -164,15 +168,14 @@ abstract class AbstractToolHandler
 
         $app = $this->toArray(item: $apps[0]);
 
-        if ($allowAdminBypass === true && $this->groupManager->isAdmin($uid) === true) {
-            $this->logger->info(
-                'OpenBuilt MCP: rbac.admin_bypass',
-                ['actor' => $uid, 'appSlug' => $appSlug]
-            );
-            return null;
-        }
+        if ($this->callerHasWriteRole(app: $app, uid: $uid, allowAdminBypass: $allowAdminBypass) === true) {
+            if ($allowAdminBypass === true && $this->groupManager->isAdmin($uid) === true) {
+                $this->logger->info(
+                    'OpenBuilt MCP: rbac.admin_bypass',
+                    ['actor' => $uid, 'appSlug' => $appSlug]
+                );
+            }
 
-        if ($this->callerHasWriteRole(app: $app, uid: $uid) === true) {
             return null;
         }
 
@@ -184,22 +187,43 @@ abstract class AbstractToolHandler
     }//end requireWriteRole()
 
     /**
-     * Check whether $uid holds any WRITE_ROLES entry on the Application.
+     * Check whether the session caller holds any WRITE_ROLES entry on the Application.
      *
-     * Also checks group membership via IGroupManager.
+     * Delegates to PermissionResolver when available (H1 fix — unified grammar);
+     * falls back to the inline implementation for backward-compatibility in tests
+     * that construct handlers without the resolver.
      *
-     * @param array<string, mixed> $app Application data.
-     * @param string               $uid Caller's user ID.
+     * @param array<string, mixed> $app              Application data.
+     * @param string               $uid              Caller's user ID.
+     * @param bool                 $allowAdminBypass Whether NC admin bypass applies.
      *
      * @return bool
      */
-    private function callerHasWriteRole(array $app, string $uid): bool
+    private function callerHasWriteRole(array $app, string $uid, bool $allowAdminBypass=true): bool
     {
+        $caller = $this->userSession->getUser();
+        if ($caller === null) {
+            return false;
+        }
+
         $permissions = ($app['permissions'] ?? []);
         if (is_array($permissions) === false) {
             return false;
         }
 
+        if ($this->permissionResolver !== null) {
+            $userGroups = $this->permissionResolver->resolveUserGroups($caller);
+            return $this->permissionResolver->matchesCaller(
+                permissions: $permissions,
+                caller: $caller,
+                userGroups: $userGroups,
+                allowAdminBypass: $allowAdminBypass,
+                roles: self::WRITE_ROLES
+            );
+        }
+
+        // Inline fallback (no resolver injected — used by tests that pre-date
+        // the resolver injection).
         $userSet  = [];
         $groupSet = [];
 
@@ -238,13 +262,14 @@ abstract class AbstractToolHandler
             return true;
         }
 
-        $user = $this->userSession->getUser();
-        if ($user instanceof IUser) {
-            $userGroups = $this->groupManager->getUserGroups($user);
-            foreach ($userGroups as $group) {
-                if (isset($groupSet[$group->getGID()]) === true) {
-                    return true;
-                }
+        if ($allowAdminBypass === true && $this->groupManager->isAdmin($uid) === true) {
+            return true;
+        }
+
+        $userGroups = $this->groupManager->getUserGroups($caller);
+        foreach ($userGroups as $group) {
+            if ($group instanceof IUser === false && isset($groupSet[$group->getGID()]) === true) {
+                return true;
             }
         }
 
@@ -384,44 +409,49 @@ abstract class AbstractToolHandler
      * RuntimeException with code 409 is thrown so callers can return an
      * `isError` envelope without retrying blindly.
      *
-     * @param object               $objectService OpenRegister ObjectService instance.
+     * H3: The `method_exists` guard that previously silently skipped locking
+     * when ObjectService lacked `lockObject` has been removed. OR has shipped
+     * `lockObject` since the concurrency-fix release; failing loudly (503) is
+     * safer than silently allowing last-writer-wins data loss.
+     *
+     * @param ObjectService        $objectService OpenRegister ObjectService instance.
      * @param array<string, mixed> $version       The existing ApplicationVersion as an associative array.
      * @param array<string, mixed> $manifest      The new manifest blob to write onto the version.
      *
      * @return array<string, mixed>
      *
      * @throws \RuntimeException (code 409) when the version is locked by another writer.
+     * @throws \RuntimeException (code 503) when the ObjectService does not provide lockObject.
      */
-    protected function saveVersionManifest(object $objectService, array $version, array $manifest): array
+    protected function saveVersionManifest(ObjectService $objectService, array $version, array $manifest): array
     {
         $versionUuid = $this->extractUuid(item: $version);
 
         // Acquire an OR optimistic lock before the write to prevent last-writer-
         // wins data loss when two concurrent MCP agents mutate the same version.
+        // H3: guard removed — fail loudly (503) rather than silently skip locking.
         $locked = false;
-        if (method_exists($objectService, 'lockObject') === true) {
-            try {
-                $objectService->lockObject(
-                    identifier: $versionUuid,
-                    process: 'openbuilt.mcp-manifest-edit',
-                    duration: 30
-                );
-                $locked = true;
-            } catch (\Throwable $lockError) {
-                $this->logger->warning(
-                    'OpenBuilt MCP: manifest lock contention on version '.$versionUuid,
-                    ['exception' => $lockError->getMessage()]
-                );
-                throw new \RuntimeException(
-                    'Version '.$versionUuid.' is currently locked by another writer. Retry after a moment.',
-                    409,
-                    $lockError
-                );
-            }
+        try {
+            $objectService->lockObject(
+                identifier: $versionUuid,
+                process: 'openbuilt.mcp-manifest-edit',
+                duration: 30
+            );
+            $locked = true;
+        } catch (\Throwable $lockError) {
+            $this->logger->warning(
+                'OpenBuilt MCP: manifest lock contention on version '.$versionUuid,
+                ['exception' => $lockError->getMessage()]
+            );
+            throw new \RuntimeException(
+                'Version '.$versionUuid.' is currently locked by another writer. Retry after a moment.',
+                409,
+                $lockError
+            );
         }
 
         try {
-            $payload             = $version;
+            $payload = $version;
             $payload['manifest'] = $manifest;
 
             // Drop OR-internal `@self` / metadata keys that some readers tack on so
@@ -437,7 +467,7 @@ abstract class AbstractToolHandler
 
             return $this->toArray(item: $saved);
         } finally {
-            if ($locked === true && method_exists($objectService, 'unlockObject') === true) {
+            if ($locked === true) {
                 try {
                     $objectService->unlockObject(identifier: $versionUuid);
                 } catch (\Throwable $unlockError) {
@@ -447,7 +477,7 @@ abstract class AbstractToolHandler
                     );
                 }
             }
-        }
+        }//end try
 
     }//end saveVersionManifest()
 }//end class

@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuilt\Mcp;
 
+use OCA\OpenBuilt\Service\PermissionResolver;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -220,16 +221,18 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     /**
      * Constructor.
      *
-     * @param IUserSession       $userSession  User session used to resolve the current authenticated user.
-     * @param IGroupManager      $groupManager Group manager used for admin checks.
-     * @param ContainerInterface $container    DI container used to resolve OpenRegister and OpenBuilt services lazily.
-     * @param LoggerInterface    $logger       PSR logger used for non-fatal warnings and error logging.
+     * @param IUserSession       $userSession        User session used to resolve the current authenticated user.
+     * @param IGroupManager      $groupManager       Group manager used for admin checks.
+     * @param ContainerInterface $container          DI container used to resolve OpenRegister and OpenBuilt services lazily.
+     * @param LoggerInterface    $logger             PSR logger used for non-fatal warnings and error logging.
+     * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (H1 fix).
      */
     public function __construct(
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
         private readonly ContainerInterface $container,
         private readonly LoggerInterface $logger,
+        private readonly ?PermissionResolver $permissionResolver=null,
     ) {
     }//end __construct()
 
@@ -313,7 +316,13 @@ class OpenBuiltToolProvider implements IMcpToolProvider
      */
     private function makeHandler(string $class): \OCA\OpenBuilt\Mcp\Handler\AbstractToolHandler
     {
-        return new $class($this->userSession, $this->container, $this->logger, $this->groupManager);
+        return new $class(
+            $this->userSession,
+            $this->container,
+            $this->logger,
+            $this->groupManager,
+            $this->permissionResolver,
+        );
 
     }//end makeHandler()
 }//end class

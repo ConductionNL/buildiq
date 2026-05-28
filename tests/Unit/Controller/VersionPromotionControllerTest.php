@@ -27,6 +27,7 @@ namespace OCA\OpenBuilt\Tests\Unit\Controller;
 
 use OCA\OpenBuilt\Controller\VersionPromotionController;
 use OCA\OpenBuilt\Exception\InvalidStrategyException;
+use OCA\OpenBuilt\Service\PermissionResolver;
 use OCA\OpenBuilt\Exception\NoPromoteTargetException;
 use OCA\OpenBuilt\Exception\PromotionFailedException;
 use OCA\OpenBuilt\Exception\VersionLockedException;
@@ -34,6 +35,7 @@ use OCA\OpenBuilt\Service\VersionPromotionService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -91,12 +93,17 @@ class VersionPromotionControllerTest extends TestCase
         $this->userSession      = $this->createMock(IUserSession::class);
         $this->promotionService = $this->createMock(VersionPromotionService::class);
 
+        $groupManager       = $this->createMock(IGroupManager::class);
+        $groupManager->method('getUserGroups')->willReturn([]);
+        $permissionResolver = new PermissionResolver($groupManager, $this->createMock(LoggerInterface::class));
+
         $this->controller = new VersionPromotionController(
             request: $this->request,
             logger: $this->logger,
             objectService: $this->objectService,
             userSession: $this->userSession,
             promotionService: $this->promotionService,
+            permissionResolver: $permissionResolver,
         );
     }//end setUp()
 

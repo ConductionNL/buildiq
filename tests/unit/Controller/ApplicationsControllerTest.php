@@ -24,6 +24,7 @@ namespace OCA\OpenBuilt\Tests\Unit\Controller;
 
 use OCA\OpenBuilt\Controller\ApplicationsController;
 use OCA\OpenBuilt\Service\ManifestResolverService;
+use OCA\OpenBuilt\Service\PermissionResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -145,6 +146,8 @@ class ApplicationsControllerTest extends TestCase
             }
         );
 
+        $permissionResolver = new PermissionResolver($this->groupManager, $this->createMock(\Psr\Log\LoggerInterface::class));
+
         return new ApplicationsController(
             request: $request,
             logger: $this->logger,
@@ -154,6 +157,7 @@ class ApplicationsControllerTest extends TestCase
             userSession: $this->userSession,
             groupManager: $this->groupManager,
             manifestResolver: $this->createMock(ManifestResolverService::class),
+            permissionResolver: $permissionResolver,
             auditTrailMapper: $this->auditTrailMapper,
         );
     }//end buildController()
