@@ -79,6 +79,16 @@ class UpsertMenuItemHandler extends AbstractToolHandler
             [$menu, $replaced] = $this->upsertMenuItemInList(menu: $menu, itemId: $id, newItem: $newItem);
 
             $manifest['menu'] = array_values($menu);
+
+            // H4: enforce menu-per-manifest (30) and total manifest size (256 KB).
+            // Cap is applied after upsert so updates to existing items always pass.
+            if ($replaced === false) {
+                $capError = $this->checkManifestCaps(manifest: $manifest);
+                if ($capError !== null) {
+                    return $capError;
+                }
+            }
+
             $saved            = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
 
             $action = 'created';

@@ -108,6 +108,13 @@ class AddWidgetHandler extends AbstractToolHandler
             );
 
             $manifest['pages'] = array_values($pages);
+
+            // H4: enforce widgets-per-page (50) and total manifest size (256 KB).
+            $capError = $this->checkManifestCaps(manifest: $manifest, pageIdx: $foundIdx);
+            if ($capError !== null) {
+                return $capError;
+            }
+
             $saved = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
 
             $pageConfig  = (array) ($pages[$foundIdx]['config'] ?? []);

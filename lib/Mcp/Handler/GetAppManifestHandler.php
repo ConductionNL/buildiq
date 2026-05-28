@@ -62,10 +62,21 @@ class GetAppManifestHandler extends AbstractToolHandler
             }
 
             $application = $resolved['application'];
-            $manifest    = ($application['manifest'] ?? null);
+
+            // C2 fix: per-app RBAC gate — caller must hold at least one role.
+            $rbacError = $this->requireAnyRoleOnApp(app: $application);
+            if ($rbacError !== null) {
+                return $rbacError;
+            }
+
+            $manifest = ($application['manifest'] ?? null);
             if (is_array(value: $manifest) === false) {
                 return $this->errorResult(error: 'no_manifest', message: 'Application has no manifest.');
             }
+
+            // C2 fix: strip the permissions roster before returning to the caller.
+            // The internal access-control block MUST NOT leak to MCP consumers.
+            unset($manifest['permissions']);
 
             $name = (string) ($application['name'] ?? $slug);
             return [

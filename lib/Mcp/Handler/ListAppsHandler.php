@@ -66,14 +66,27 @@ class ListAppsHandler extends AbstractToolHandler
                 $rawApps = [];
             }
 
+            // C1 fix: filter to apps the caller has at least one role on before
+            // applying the count cap, so the cap is against authorised results only.
+            $rawApps = array_values(
+                array_filter(
+                    $rawApps,
+                    function (mixed $raw): bool {
+                        $app = $this->toArray(item: $raw);
+                        return $this->requireAnyRoleOnApp(app: $app) === null;
+                    }
+                )
+            );
+
             $rawApps = array_slice(array: $rawApps, offset: 0, length: min($validation['limit'], self::ITEMS_CAP));
 
             $apps    = [];
             $sources = [];
             foreach ($rawApps as $raw) {
-                $app       = $this->mapApplication(raw: $raw);
-                $apps[]    = $app;
-                $sources[] = $this->sourceDescriptor(uuid: $app['uuid'], slug: $app['slug'], label: $app['name']);
+                $app    = $this->toArray(item: $raw);
+                $mapped = $this->mapApplication(raw: $app);
+                $apps[]    = $mapped;
+                $sources[] = $this->sourceDescriptor(uuid: $mapped['uuid'], slug: $mapped['slug'], label: $mapped['name']);
             }
 
             return ['success' => true, 'apps' => $apps, 'sources' => $sources];

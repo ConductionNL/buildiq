@@ -187,6 +187,55 @@ abstract class AbstractToolHandler
     }//end requireWriteRole()
 
     /**
+     * Verify the current user holds ANY role (owner, editor, or viewer) on the Application.
+     *
+     * Used for read-level MCP tools (C1/C2 fix). NC admin bypass is NOT applied here
+     * — read access still requires an explicit role entry.
+     *
+     * Returns null on allow; forbidden/not_found error envelope on denial.
+     *
+     * @param array<string, mixed> $app Application data array.
+     *
+     * @return array{isError: true, error: string, message: string}|null Null on allow.
+     */
+    protected function requireAnyRoleOnApp(array $app): ?array
+    {
+        $uid    = $this->requireAuthenticatedUser();
+        $caller = $this->userSession->getUser();
+        if ($uid === null || $caller === null) {
+            return $this->errorResult(error: 'forbidden', message: 'You must be signed in.');
+        }
+
+        $permissions = ($app['permissions'] ?? []);
+        if (is_array($permissions) === false) {
+            $permissions = [];
+        }
+
+        if ($this->permissionResolver !== null) {
+            $userGroups = $this->permissionResolver->resolveUserGroups($caller);
+            $hasRole    = $this->permissionResolver->matchesCaller(
+                permissions: $permissions,
+                caller: $caller,
+                userGroups: $userGroups,
+                allowAdminBypass: true,
+                roles: ['owners', 'editors', 'viewers']
+            );
+        } else {
+            $hasRole = $this->callerHasWriteRole(app: $app, uid: $uid, allowAdminBypass: true);
+        }
+
+        if ($hasRole === true) {
+            return null;
+        }
+
+        return $this->errorResult(
+            error: 'forbidden',
+            message: 'You do not have access to this application.'
+        );
+
+    }//end requireAnyRoleOnApp()
+
+    /**
      * Check whether the session caller holds any WRITE_ROLES entry on the Application.
      *
      * Delegates to PermissionResolver when available (H1 fix — unified grammar);
@@ -293,6 +342,68 @@ abstract class AbstractToolHandler
         return (bool) preg_match('/^[a-z0-9][a-z0-9-]*[a-z0-9]$/', $candidate);
 
     }//end isValidSlug()
+
+    /**
+     * Check manifest-size growth caps before a write.
+     *
+     * Enforces H4 caps:
+     *   - max 256 KB total manifest JSON size
+     *   - max 100 pages per manifest
+     *   - max 30 menu items per manifest
+     *   - max 50 widgets per page (pass $pageIdx for page-scoped check)
+     *
+     * Returns an `invalid_arguments` error envelope when a cap would be exceeded;
+     * null when all caps are satisfied.
+     *
+     * @param array<string, mixed> $manifest  The NEW manifest after the proposed write.
+     * @param int|null             $pageIdx   Index of the page being written to (widgets cap).
+     *
+     * @return array{isError: true, error: string, message: string}|null Null on pass.
+     */
+    protected function checkManifestCaps(array $manifest, ?int $pageIdx=null): ?array
+    {
+        // 256 KB total size cap.
+        $json = json_encode($manifest);
+        if ($json !== false && strlen($json) > 256 * 1024) {
+            return $this->errorResult(
+                error: 'invalid_arguments',
+                message: 'Manifest exceeds maximum size of 256 KB.'
+            );
+        }
+
+        // 100 pages per manifest.
+        $pages = (array) ($manifest['pages'] ?? []);
+        if (count($pages) > 100) {
+            return $this->errorResult(
+                error: 'invalid_arguments',
+                message: 'Manifest exceeds maximum of 100 pages.'
+            );
+        }
+
+        // 30 menu items per manifest.
+        $menu = (array) ($manifest['menu'] ?? []);
+        if (count($menu) > 30) {
+            return $this->errorResult(
+                error: 'invalid_arguments',
+                message: 'Manifest exceeds maximum of 30 menu items.'
+            );
+        }
+
+        // 50 widgets per page (only when a specific page is being written).
+        if ($pageIdx !== null && isset($pages[$pageIdx]) === true) {
+            $pageConfig = (array) ($pages[$pageIdx]['config'] ?? []);
+            $widgets    = (array) ($pageConfig['widgets'] ?? []);
+            if (count($widgets) > 50) {
+                return $this->errorResult(
+                    error: 'invalid_arguments',
+                    message: 'Page exceeds maximum of 50 widgets.'
+                );
+            }
+        }
+
+        return null;
+
+    }//end checkManifestCaps()
 
     /**
      * Build a Nextcloud deep link into the OpenBuilt builder for the given application slug.
