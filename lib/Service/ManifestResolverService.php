@@ -229,6 +229,15 @@ class ManifestResolverService
     private function findApplicationBySlug(string $appSlug): ?array
     {
         try {
+            // Spec decision (L2): _multitenancy: false is used throughout
+            // ManifestResolverService so that all register/schema/object lookups
+            // operate in the global (non-tenant-isolated) scope.  OpenBuilt ships
+            // virtual apps as a shared-instance service — each Application is owned
+            // and accessed by specific NC users, but the Application objects themselves
+            // are not partitioned by tenant/organisation.  Cross-tenant slug
+            // uniqueness depends on this flag being consistently false across every
+            // lookup in this service.  Changing it to true would silo Applications
+            // per org and break the shared-registry model.
             $registerId = $this->registerMapper->find('openbuilt', _multitenancy: false)->getId();
             $schemaId   = $this->schemaMapper->find('application', _multitenancy: false)->getId();
 

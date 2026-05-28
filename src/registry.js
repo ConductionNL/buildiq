@@ -79,12 +79,14 @@ import PageDesignerView from './views/PageDesignerHost.vue'
 // Virtual-app host — nested CnAppRoot rendering a virtual app's own manifest.
 import BuilderHostView from './views/BuilderHost.vue'
 
-// ── Helper ───────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 /**
  * Wrap a Vue component into the v2 registry shape required by CnAppRoot's
- * `registry` prop (`kind: "page"` is the discriminator CnPageRenderer keys
- * page and slot-override dispatch off).
+ * `registry` prop.
+ *
+ * `kind: "page"` is the discriminator CnPageRenderer keys page and
+ * slot-override dispatch off (ADR-036 `resolveCustomComponent`).
  *
  * @param {object} component Vue component options.
  *
@@ -94,24 +96,71 @@ function page(component) {
 	return { kind: 'page', component }
 }
 
+/**
+ * Wrap a sidebar tab component into the v2 registry shape.
+ *
+ * Sidebar tab components are resolved via the slot-override path of
+ * `resolveCustomComponent` which accepts any `kind` value as long as a
+ * `component` field is present (ADR-036 kind-agnostic slot resolver).
+ * Using `kind: "tab"` instead of the generic `"page"` makes the manifest's
+ * intent explicit and avoids false-positive page-dispatch matches (M4 fix).
+ *
+ * @param {object} component Vue component options.
+ *
+ * @return {object} A `{ kind: "tab", component }` registry entry.
+ */
+function tab(component) {
+	return { kind: 'tab', component }
+}
+
+/**
+ * Wrap a page header component into the v2 registry shape.
+ *
+ * Header components are resolved via the slot-override path which accepts any
+ * `kind` (ADR-036 kind-agnostic slot resolver). Using `kind: "header"` makes
+ * the intent clear and prevents accidental page-dispatch (M4 fix).
+ *
+ * @param {object} component Vue component options.
+ *
+ * @return {object} A `{ kind: "header", component }` registry entry.
+ */
+function header(component) {
+	return { kind: 'header', component }
+}
+
+/**
+ * Wrap an actions-bar component into the v2 registry shape.
+ *
+ * Actions components are resolved via the slot-override path which accepts any
+ * `kind` (ADR-036 kind-agnostic slot resolver). Using `kind: "actions"` makes
+ * the intent clear and prevents accidental page-dispatch (M4 fix).
+ *
+ * @param {object} component Vue component options.
+ *
+ * @return {object} A `{ kind: "actions", component }` registry entry.
+ */
+function actions(component) {
+	return { kind: 'actions', component }
+}
+
 // ── Registry export ──────────────────────────────────────────────────────────
 
 export default {
-	// VirtualApps index card component.
+	// VirtualApps index card component (kind "page" — resolved as a card slot).
 	ApplicationCard: page(ApplicationCard),
 
-	// VirtualAppDetail sidebar tabs.
-	ApplicationManifestTab: page(ApplicationManifestTab),
-	ApplicationVersionsTab: page(ApplicationVersionsTab),
-	ApplicationDiffTab: page(ApplicationDiffTab),
-	ApplicationIconTab: page(ApplicationIconTab),
+	// VirtualAppDetail sidebar tabs (kind "tab" — resolved via slot-override path).
+	ApplicationManifestTab: tab(ApplicationManifestTab),
+	ApplicationVersionsTab: tab(ApplicationVersionsTab),
+	ApplicationDiffTab: tab(ApplicationDiffTab),
+	ApplicationIconTab: tab(ApplicationIconTab),
 
-	// Actions bar components.
-	VirtualAppsActions: page(VirtualAppsActions),
-	ApplicationDetailActions: page(ApplicationDetailActions),
+	// Actions bar components (kind "actions" — resolved via slot-override path).
+	VirtualAppsActions: actions(VirtualAppsActions),
+	ApplicationDetailActions: actions(ApplicationDetailActions),
 
-	// Header component for the maintainer dashboard (detail page override).
-	ApplicationDetailHeader: page(ApplicationDetailHeader),
+	// Header component for the maintainer dashboard (kind "header" — slot-override).
+	ApplicationDetailHeader: header(ApplicationDetailHeader),
 
 	// Custom page components — resolved by CnPageRenderer for type:"custom" pages.
 	SchemaDesignerView: page(SchemaDesignerView),

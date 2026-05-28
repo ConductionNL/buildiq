@@ -137,142 +137,111 @@ class ApplicationCreationService
      */
     public function createApplication(array $payload): string
     {
-        // ---- Step 1: Validate -----------------------------------------------
-        $this->validatePayload(payload: $payload);
+        // M2: Acquire a per-slug advisory lock before the slug-uniqueness check so
+        // the check and the saveObject are atomic with respect to concurrent callers
+        // for the same slug (issue #163 — TOCTOU).  The lock key is intentionally
+        // NOT an object UUID (no application exists yet) so we prefix with "slug:"
+        // to avoid colliding with real object locks in the OR lock table.
+        $appSlug = (string) ($payload['slug'] ?? '');
+        $lockKey = 'createApp:'.$appSlug;
+        $locked  = false;
 
-        $appSlug     = (string) ($payload['slug'] ?? '');
-        $appName     = (string) ($payload['name'] ?? '');
-        $description = (string) ($payload['description'] ?? '');
-        $versions    = $this->resolveVersionChain(payload: $payload);
-
-        // ---- State tracker for rollback -------------------------------------
-        // Indexed by version slug.
-        $state = [
-            'applicationUuid' => null,
-            'versionUuids'    => [],
-            'registerSlugs'   => [],
-            'versionPayloads' => [],
-        ];
-
-        // ---- Step 2: Create Application -------------------------------------
-        $caller      = $this->resolveCallerUid();
-        $permissions = [
-            'owners'  => ['user:'.$caller],
-            'editors' => [],
-            'viewers' => [],
-        ];
-
-        $applicationPayload = [
-            'slug'        => $appSlug,
-            'name'        => $appName,
-            'description' => $description,
-            'permissions' => $permissions,
-        ];
+        if ($appSlug !== '') {
+            try {
+                $this->objectService->lockObject(
+                    identifier: $lockKey,
+                    process: 'openbuilt.createApplication',
+                    duration: 10
+                );
+                $locked = true;
+            } catch (Throwable $lockError) {
+                throw new WizardCreationException(
+                    errorCode: 'app_slug_conflict',
+                    failedAtStep: 'validate',
+                    message: sprintf(
+                        'An Application with slug "%s" is being created by another request.',
+                        $appSlug
+                    ),
+                    rollbackStatus: 'none',
+                    previous: $lockError
+                );
+            }
+        }//end if
 
         try {
-            $created = $this->objectService->saveObject(
+            // ---- Step 1: Validate -----------------------------------------------
+            $this->validatePayload(payload: $payload);
+            $appName     = (string) ($payload['name'] ?? '');
+            $description = (string) ($payload['description'] ?? '');
+            $versions    = $this->resolveVersionChain(payload: $payload);
+
+            // ---- State tracker for rollback -------------------------------------
+            // Indexed by version slug.
+            $state = [
+                'applicationUuid' => null,
+                'versionUuids'    => [],
+                'registerSlugs'   => [],
+                'versionPayloads' => [],
+            ];
+
+            // ---- Step 2: Create Application -------------------------------------
+            $caller      = $this->resolveCallerUid();
+            $permissions = [
+                'owners'  => ['user:'.$caller],
+                'editors' => [],
+                'viewers' => [],
+            ];
+
+            $applicationPayload = [
+                'slug'        => $appSlug,
+                'name'        => $appName,
+                'description' => $description,
+                'permissions' => $permissions,
+            ];
+
+            try {
+                $created = $this->objectService->saveObject(
                 object: $applicationPayload,
                 register: ApplicationVersionService::REGISTER_SLUG,
                 schema: ApplicationVersionService::APPLICATION_SCHEMA
-            );
-            $appData = $this->normaliseObject(object: $created);
-            $state['applicationUuid'] = (string) ($appData['id'] ?? $appData['uuid'] ?? '');
-        } catch (Throwable $e) {
-            // Detect TOCTOU duplicate-slug races: two concurrent createApp calls both
-            // passed appSlugExists() then both tried saveObject — the second one will
-            // receive a unique-constraint violation (issue #163).
-            $errorMsg       = $e->getMessage();
-            $isSlugConflict = (
+                );
+                $appData = $this->normaliseObject(object: $created);
+                $state['applicationUuid'] = (string) ($appData['id'] ?? $appData['uuid'] ?? '');
+            } catch (Throwable $e) {
+                // Detect TOCTOU duplicate-slug races: two concurrent createApp calls both
+                // passed appSlugExists() then both tried saveObject — the second one will
+                // receive a unique-constraint violation (issue #163).
+                $errorMsg       = $e->getMessage();
+                $isSlugConflict = (
                 str_contains($errorMsg, 'Duplicate')
                 || str_contains($errorMsg, 'duplicate')
                 || str_contains($errorMsg, 'unique constraint')
                 || str_contains($errorMsg, 'UNIQUE')
-            );
-            if ($isSlugConflict === true) {
-                throw new WizardCreationException(
+                );
+                if ($isSlugConflict === true) {
+                    throw new WizardCreationException(
                     errorCode: 'app_slug_conflict',
                     failedAtStep: 'validate',
                     message: sprintf('An Application with slug "%s" already exists.', $appSlug),
                     rollbackStatus: 'none',
                     previous: $e
-                );
-            }
+                    );
+                }
 
-            $this->logger->error(
+                $this->logger->error(
                 'OpenBuilt: wizard create-application failed for slug '.$appSlug.': '.$errorMsg,
                 ['exception' => $e]
-            );
-            throw new WizardCreationException(
+                );
+                throw new WizardCreationException(
                 errorCode: 'wizard_rollback',
                 failedAtStep: 'create-application',
                 message: $errorMsg,
                 rollbackStatus: 'complete',
                 previous: $e
-            );
-        }//end try
-
-        if ($state['applicationUuid'] === '') {
-            $orphaned = [];
-            $this->rollback(state: $state, orphaned: $orphaned);
-            $status = 'complete';
-            if ($orphaned !== []) {
-                $status = 'partial';
-            }
-
-            throw new WizardCreationException(
-                errorCode: 'wizard_rollback',
-                failedAtStep: 'create-application',
-                message: 'Application record was not assigned a UUID by OR.',
-                rollbackStatus: $status,
-                orphanedResources: $orphaned
-            );
-        }
-
-        // ---- Step 3: Create ApplicationVersions + provision registers -------
-        $defaultManifest = $this->loadDefaultManifest();
-        $defaultSchemas  = $this->loadDefaultSchemas();
-
-        foreach ($versions as $versionDef) {
-            $versionSlug  = (string) ($versionDef['slug'] ?? '');
-            $versionName  = (string) ($versionDef['name'] ?? '');
-            $registerSlug = 'openbuilt-'.$appSlug.'-'.$versionSlug;
-
-            // 3a: Create ApplicationVersion
-            $versionManifest = $this->substituteVersionContext(
-                manifest: $defaultManifest,
-                registerSlug: $registerSlug,
-                schemaSlugPrefix: $appSlug.'-'.$versionSlug.'-'
-            );
-
-            $versionPayload = [
-                'name'        => $versionName,
-                'slug'        => $versionSlug,
-                'manifest'    => $versionManifest,
-                'register'    => $registerSlug,
-                'semver'      => self::INITIAL_SEMVER,
-                'status'      => 'draft',
-                'application' => $state['applicationUuid'],
-            ];
-
-            try {
-                $createdVersion = $this->objectService->saveObject(
-                    object: $versionPayload,
-                    register: ApplicationVersionService::REGISTER_SLUG,
-                    schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
                 );
-                $versionData    = $this->normaliseObject(object: $createdVersion);
-                $versionUuid    = (string) ($versionData['id'] ?? $versionData['uuid'] ?? '');
-                $state['versionUuids'][$versionSlug]  = $versionUuid;
-                $state['registerSlugs'][$versionSlug] = $registerSlug;
-                // Keep the full payload so we can do the chain-wiring patch
-                // below without OR rejecting a partial payload against the
-                // schema's `required[]` validator (issue #71).
-                $state['versionPayloads'][$versionSlug] = $versionPayload;
-            } catch (Throwable $e) {
-                $this->logger->error(
-                    'OpenBuilt: wizard create-version failed for '.$versionSlug.': '.$e->getMessage(),
-                    ['exception' => $e]
-                );
+            }//end try
+
+            if ($state['applicationUuid'] === '') {
                 $orphaned = [];
                 $this->rollback(state: $state, orphaned: $orphaned);
                 $status = 'complete';
@@ -281,80 +250,190 @@ class ApplicationCreationService
                 }
 
                 throw new WizardCreationException(
+                errorCode: 'wizard_rollback',
+                failedAtStep: 'create-application',
+                message: 'Application record was not assigned a UUID by OR.',
+                rollbackStatus: $status,
+                orphanedResources: $orphaned
+                );
+            }
+
+            // ---- Step 3: Create ApplicationVersions + provision registers -------
+            $defaultManifest = $this->loadDefaultManifest();
+            $defaultSchemas  = $this->loadDefaultSchemas();
+
+            foreach ($versions as $versionDef) {
+                $versionSlug  = (string) ($versionDef['slug'] ?? '');
+                $versionName  = (string) ($versionDef['name'] ?? '');
+                $registerSlug = 'openbuilt-'.$appSlug.'-'.$versionSlug;
+
+                // 3a: Create ApplicationVersion
+                $versionManifest = $this->substituteVersionContext(
+                manifest: $defaultManifest,
+                registerSlug: $registerSlug,
+                schemaSlugPrefix: $appSlug.'-'.$versionSlug.'-'
+                );
+
+                $versionPayload = [
+                    'name'        => $versionName,
+                    'slug'        => $versionSlug,
+                    'manifest'    => $versionManifest,
+                    'register'    => $registerSlug,
+                    'semver'      => self::INITIAL_SEMVER,
+                    'status'      => 'draft',
+                    'application' => $state['applicationUuid'],
+                ];
+
+                try {
+                    $createdVersion = $this->objectService->saveObject(
+                    object: $versionPayload,
+                    register: ApplicationVersionService::REGISTER_SLUG,
+                    schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+                    );
+                    $versionData    = $this->normaliseObject(object: $createdVersion);
+                    $versionUuid    = (string) ($versionData['id'] ?? $versionData['uuid'] ?? '');
+                    $state['versionUuids'][$versionSlug]  = $versionUuid;
+                    $state['registerSlugs'][$versionSlug] = $registerSlug;
+                    // Keep the full payload so we can do the chain-wiring patch
+                    // below without OR rejecting a partial payload against the
+                    // schema's `required[]` validator (issue #71).
+                    $state['versionPayloads'][$versionSlug] = $versionPayload;
+                } catch (Throwable $e) {
+                    $this->logger->error(
+                    'OpenBuilt: wizard create-version failed for '.$versionSlug.': '.$e->getMessage(),
+                    ['exception' => $e]
+                    );
+                    $orphaned = [];
+                    $this->rollback(state: $state, orphaned: $orphaned);
+                    $status = 'complete';
+                    if ($orphaned !== []) {
+                        $status = 'partial';
+                    }
+
+                    throw new WizardCreationException(
                     errorCode: 'wizard_rollback',
                     failedAtStep: 'create-version-'.$versionSlug,
                     message: $e->getMessage(),
                     rollbackStatus: $status,
                     orphanedResources: $orphaned,
                     previous: $e
-                );
-            }//end try
+                    );
+                }//end try
 
-            // 3b: Provision per-version register
-            try {
-                $this->provisionRegister(
+                // 3b: Provision per-version register
+                try {
+                    $this->provisionRegister(
                     registerSlug: $registerSlug,
                     appSlug: $appSlug,
                     versionSlug: $versionSlug,
                     defaultSchemas: $defaultSchemas
-                );
-            } catch (Throwable $e) {
-                $this->logger->error(
+                    );
+                } catch (Throwable $e) {
+                    $this->logger->error(
                     'OpenBuilt: wizard register-provision failed for '.$registerSlug.': '.$e->getMessage(),
                     ['exception' => $e]
-                );
-                $orphaned = [];
-                $this->rollback(state: $state, orphaned: $orphaned);
-                $status = 'complete';
-                if ($orphaned !== []) {
-                    $status = 'partial';
-                }
+                    );
+                    $orphaned = [];
+                    $this->rollback(state: $state, orphaned: $orphaned);
+                    $status = 'complete';
+                    if ($orphaned !== []) {
+                        $status = 'partial';
+                    }
 
-                throw new WizardCreationException(
+                    throw new WizardCreationException(
                     errorCode: 'wizard_rollback',
                     failedAtStep: 'register-provision-'.$versionSlug,
                     message: $e->getMessage(),
                     rollbackStatus: $status,
                     orphanedResources: $orphaned,
                     previous: $e
-                );
-            }//end try
-        }//end foreach
+                    );
+                }//end try
+            }//end foreach
 
-        // ---- Step 4: Wire promotesTo chain ----------------------------------
-        $versionSlugs = array_column($versions, 'slug');
-        $lastIdx      = count($versionSlugs) - 1;
+            // ---- Step 4: Wire promotesTo chain ----------------------------------
+            $versionSlugs = array_column($versions, 'slug');
+            $lastIdx      = count($versionSlugs) - 1;
 
-        for ($i = 0; $i < $lastIdx; $i++) {
-            $currentSlug = $versionSlugs[$i];
-            $nextSlug    = $versionSlugs[$i + 1];
+            for ($i = 0; $i < $lastIdx; $i++) {
+                $currentSlug = $versionSlugs[$i];
+                $nextSlug    = $versionSlugs[$i + 1];
 
-            $currentUuid = (string) ($state['versionUuids'][$currentSlug] ?? '');
-            $nextUuid    = (string) ($state['versionUuids'][$nextSlug] ?? '');
+                $currentUuid = (string) ($state['versionUuids'][$currentSlug] ?? '');
+                $nextUuid    = (string) ($state['versionUuids'][$nextSlug] ?? '');
 
-            if ($currentUuid === '' || $nextUuid === '') {
-                continue;
-            }
+                if ($currentUuid === '' || $nextUuid === '') {
+                    continue;
+                }
 
-            try {
-                // OR's saveObject runs full-schema validation against `required[]`
-                // even when a UUID is passed (no separate PATCH semantics for an
-                // ApplicationVersion in this OR floor). Merge `promotesTo` into
-                // the full payload we kept from the create step so the validator
-                // sees all required fields.
-                $fullPayload = ($state['versionPayloads'][$currentSlug] ?? []);
-                $fullPayload['promotesTo'] = $nextUuid;
+                try {
+                    // OR's saveObject runs full-schema validation against `required[]`
+                    // even when a UUID is passed (no separate PATCH semantics for an
+                    // ApplicationVersion in this OR floor). Merge `promotesTo` into
+                    // the full payload we kept from the create step so the validator
+                    // sees all required fields.
+                    $fullPayload = ($state['versionPayloads'][$currentSlug] ?? []);
+                    $fullPayload['promotesTo'] = $nextUuid;
 
-                $this->objectService->saveObject(
+                    $this->objectService->saveObject(
                     object: $fullPayload,
                     register: ApplicationVersionService::REGISTER_SLUG,
                     schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
                     uuid: $currentUuid
+                    );
+                } catch (Throwable $e) {
+                    $this->logger->error(
+                    'OpenBuilt: wizard chain-wiring failed for '.$currentSlug.' → '.$nextSlug.': '.$e->getMessage(),
+                    ['exception' => $e]
+                    );
+                    $orphaned = [];
+                    $this->rollback(state: $state, orphaned: $orphaned);
+                    $status = 'complete';
+                    if ($orphaned !== []) {
+                        $status = 'partial';
+                    }
+
+                    throw new WizardCreationException(
+                    errorCode: 'wizard_rollback',
+                    failedAtStep: 'wire-chain-'.$currentSlug.'-to-'.$nextSlug,
+                    message: $e->getMessage(),
+                    rollbackStatus: $status,
+                    orphanedResources: $orphaned,
+                    previous: $e
+                    );
+                }//end try
+            }//end for
+
+            // ---- Step 5: Set productionVersion on Application -------------------
+            $terminalSlug = $versionSlugs[$lastIdx];
+            $terminalUuid = (string) ($state['versionUuids'][$terminalSlug] ?? '');
+
+            try {
+                // OR runs full-schema validation on saveObject even with UUID set;
+                // build a full Application payload with the productionVersion field
+                // patched, mirroring the chain-wiring fix above (issue #71).
+                $applicationFullPayload = [
+                    'slug'              => $appSlug,
+                    'name'              => $appName,
+                    'description'       => $description,
+                    'permissions'       => [
+                        'owners'  => ['user:'.$this->resolveCallerUid()],
+                        'editors' => [],
+                        'viewers' => [],
+                    ],
+                    'productionVersion' => $terminalUuid,
+                ];
+
+                $this->objectService->saveObject(
+                object: $applicationFullPayload,
+                register: ApplicationVersionService::REGISTER_SLUG,
+                schema: ApplicationVersionService::APPLICATION_SCHEMA,
+                uuid: $state['applicationUuid']
                 );
             } catch (Throwable $e) {
                 $this->logger->error(
-                    'OpenBuilt: wizard chain-wiring failed for '.$currentSlug.' → '.$nextSlug.': '.$e->getMessage(),
-                    ['exception' => $e]
+                'OpenBuilt: wizard set-productionVersion failed: '.$e->getMessage(),
+                ['exception' => $e]
                 );
                 $orphaned = [];
                 $this->rollback(state: $state, orphaned: $orphaned);
@@ -364,71 +443,36 @@ class ApplicationCreationService
                 }
 
                 throw new WizardCreationException(
-                    errorCode: 'wizard_rollback',
-                    failedAtStep: 'wire-chain-'.$currentSlug.'-to-'.$nextSlug,
-                    message: $e->getMessage(),
-                    rollbackStatus: $status,
-                    orphanedResources: $orphaned,
-                    previous: $e
-                );
-            }//end try
-        }//end for
-
-        // ---- Step 5: Set productionVersion on Application -------------------
-        $terminalSlug = $versionSlugs[$lastIdx];
-        $terminalUuid = (string) ($state['versionUuids'][$terminalSlug] ?? '');
-
-        try {
-            // OR runs full-schema validation on saveObject even with UUID set;
-            // build a full Application payload with the productionVersion field
-            // patched, mirroring the chain-wiring fix above (issue #71).
-            $applicationFullPayload = [
-                'slug'              => $appSlug,
-                'name'              => $appName,
-                'description'       => $description,
-                'permissions'       => [
-                    'owners'  => ['user:'.$this->resolveCallerUid()],
-                    'editors' => [],
-                    'viewers' => [],
-                ],
-                'productionVersion' => $terminalUuid,
-            ];
-
-            $this->objectService->saveObject(
-                object: $applicationFullPayload,
-                register: ApplicationVersionService::REGISTER_SLUG,
-                schema: ApplicationVersionService::APPLICATION_SCHEMA,
-                uuid: $state['applicationUuid']
-            );
-        } catch (Throwable $e) {
-            $this->logger->error(
-                'OpenBuilt: wizard set-productionVersion failed: '.$e->getMessage(),
-                ['exception' => $e]
-            );
-            $orphaned = [];
-            $this->rollback(state: $state, orphaned: $orphaned);
-            $status = 'complete';
-            if ($orphaned !== []) {
-                $status = 'partial';
-            }
-
-            throw new WizardCreationException(
                 errorCode: 'wizard_rollback',
                 failedAtStep: 'set-production-version',
                 message: $e->getMessage(),
                 rollbackStatus: $status,
                 orphanedResources: $orphaned,
                 previous: $e
-            );
-        }//end try
+                );
+            }//end try
 
-        $versionCount = count($versions);
-        $this->logger->info(
+            $versionCount = count($versions);
+            $this->logger->info(
             'OpenBuilt: wizard successfully created Application '.$appSlug
             .' (uuid: '.$state['applicationUuid'].') with '.$versionCount.' version(s).'
-        );
+            );
 
-        return $state['applicationUuid'];
+            return $state['applicationUuid'];
+        } finally {
+            // M2: Release the per-slug advisory lock regardless of outcome.
+            if ($locked === true) {
+                try {
+                    $this->objectService->unlockObject(identifier: $lockKey);
+                } catch (Throwable $unlockError) {
+                    $this->logger->warning(
+                        'OpenBuilt: failed to release slug lock '.$lockKey,
+                        ['exception' => $unlockError->getMessage()]
+                    );
+                }
+            }
+        }//end try
+
     }//end createApplication()
 
     /**
@@ -610,14 +654,17 @@ class ApplicationCreationService
 
             return is_array($rows) === true && $rows !== [];
         } catch (Throwable $e) {
-            // If we cannot query, assume no conflict — OR will reject on create if there is one.
-            // The createApplication caller also handles any duplicate-slug exception from saveObject
-            // so a pre-check failure is safe to ignore here (issue #163 TOCTOU: a narrow window
-            // remains but is handled by the catch in createApplication).
-            $this->logger->debug(
-                'OpenBuilt: appSlugExists check failed for slug '.$slug.': '.$e->getMessage()
+            // M3: Re-throw on driver error so a failing uniqueness check does NOT
+            // silently fall open.  A broken OR/DB connection must never be treated as
+            // "no conflict" — callers must get a clear error rather than a potential
+            // duplicate-creation.
+            throw new WizardCreationException(
+                errorCode: 'slug_check_failed',
+                failedAtStep: 'validate',
+                message: 'Could not verify slug uniqueness: '.$e->getMessage(),
+                rollbackStatus: 'none',
+                previous: $e
             );
-            return false;
         }//end try
     }//end appSlugExists()
 
