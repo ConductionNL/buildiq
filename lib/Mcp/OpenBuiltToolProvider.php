@@ -295,19 +295,6 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     }//end invokeTool()
 
     /**
-     * Check whether the given user id belongs to the admin group.
-     *
-     * @param string $userId User id to check.
-     *
-     * @return bool
-     */
-    public function isAdmin(string $userId): bool
-    {
-        return $this->groupManager->isAdmin($userId);
-
-    }//end isAdmin()
-
-    /**
      * Instantiate a handler class, injecting the shared collaborators.
      *
      * @param class-string $class Fully qualified handler class name.
