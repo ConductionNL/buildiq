@@ -371,6 +371,51 @@ class ExportJobService
     }//end credentialKey()
 
     /**
+     * Load an ExportJob record from OR by its UUID.
+     *
+     * Returns the job data as an array, or null when the record cannot be
+     * found (OR unavailable, or unknown UUID). Callers should treat null
+     * as a fatal-for-this-run condition.
+     *
+     * @param string $jobUuid ExportJob UUID.
+     *
+     * @return array<string, mixed>|null Job data, or null on failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
+     */
+    public function loadJob(string $jobUuid): ?array
+    {
+        try {
+            if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
+                return null;
+            }
+
+            $service = $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
+            if (method_exists($service, 'find') === false) {
+                return null;
+            }
+
+            $object = $service->find($jobUuid);
+            if ($object === null) {
+                return null;
+            }
+
+            if (method_exists($object, 'getObject') === true) {
+                $data = $object->getObject() ?? [];
+                return is_array($data) === true ? $data : null;
+            }
+
+            // Some OR versions return the array directly.
+            return is_array($object) === true ? $object : null;
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                'OpenBuilt ExportJobService: loadJob failed for job '.$jobUuid.': '.$e->getMessage()
+            );
+            return null;
+        }//end try
+    }//end loadJob()
+
+    /**
      * Generate a UUIDv4.
      *
      * @return string UUIDv4.

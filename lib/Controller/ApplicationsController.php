@@ -51,6 +51,7 @@ namespace OCA\OpenBuilt\Controller;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenBuilt\AppInfo\Application;
+use OCA\OpenBuilt\Service\ApplicationVersionService;
 use OCA\OpenBuilt\Service\ManifestResolverService;
 use OCA\OpenBuilt\Service\PermissionResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -416,7 +417,7 @@ class ApplicationsController extends Controller
         $version = $this->objectService->find(
             id: $token,
             register: 'openbuilt',
-            schema: 'application-version'
+            schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
         );
 
         if ($version === null) {
@@ -1059,6 +1060,15 @@ class ApplicationsController extends Controller
                     'templateOrigin' => [
                         'slug'    => (string) ($template['slug'] ?? $templateSlug),
                         'version' => (string) ($template['version'] ?? ''),
+                    ],
+                    // Grant the creating user full ownership so PermissionResolver
+                    // grants them access to read/edit/delete their own clone
+                    // (REQ-OBP-008). Without this block, matchesCaller returns false
+                    // on empty permissions and the user is immediately 403'd.
+                    'permissions'    => [
+                        'owners'  => ['user:'.$ownerUid],
+                        'editors' => [],
+                        'viewers' => [],
                     ],
                 ],
                 register: $ctx['register'],
