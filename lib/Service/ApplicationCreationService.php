@@ -181,7 +181,7 @@ class ApplicationCreationService
             // Detect TOCTOU duplicate-slug races: two concurrent createApp calls both
             // passed appSlugExists() then both tried saveObject — the second one will
             // receive a unique-constraint violation (issue #163).
-            $errorMsg = $e->getMessage();
+            $errorMsg       = $e->getMessage();
             $isSlugConflict = (
                 str_contains($errorMsg, 'Duplicate')
                 || str_contains($errorMsg, 'duplicate')

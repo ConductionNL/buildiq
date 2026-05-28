@@ -80,6 +80,16 @@ class UpsertPageHandler extends AbstractToolHandler
             [$pages, $replaced] = $this->upsertPageInList(pages: $pages, pageId: $pageId, newPage: $newPage);
 
             $manifest['pages'] = array_values($pages);
+
+            // H4: enforce pages-per-manifest (100) and total manifest size (256 KB).
+            // Cap is applied after upsert so updates to existing pages always pass.
+            if ($replaced === false) {
+                $capError = $this->checkManifestCaps(manifest: $manifest);
+                if ($capError !== null) {
+                    return $capError;
+                }
+            }
+
             $saved = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
 
             $action = 'created';

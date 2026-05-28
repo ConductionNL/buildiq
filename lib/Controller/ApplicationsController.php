@@ -648,6 +648,20 @@ class ApplicationsController extends Controller
             );
 
             if ($hasRole === true) {
+                // L1: strip the internal permissions roster for callers who are
+                // viewers-only (not owner/editor). Owners and editors need the
+                // permissions block to manage the app; viewers do not.
+                $hasWriteRole = $this->permissionResolver->matchesCaller(
+                    permissions: $permissions,
+                    caller: $caller,
+                    userGroups: $userGroups,
+                    allowAdminBypass: false,
+                    roles: ['owners', 'editors']
+                );
+                if ($hasWriteRole === false) {
+                    unset($app['permissions']);
+                }
+
                 $filtered[] = $app;
                 continue;
             }

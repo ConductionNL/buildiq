@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuilt\Tests\Unit\Service;
 
 use OCA\OpenBuilt\Service\PermissionResolver;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -359,6 +360,128 @@ class PrincipalMatcherTest extends TestCase
     // These instantiate the provider with a real PermissionResolver so the
     // integration path is exercised without a container.
     // -------------------------------------------------------------------------
+
+    /**
+     * getAppManifest: caller with no role in permissions is denied (C2 RBAC gate).
+     *
+     * The RBAC gate on getAppManifest must return a forbidden result when the
+     * authenticated caller holds no role entry in the application's permissions
+     * block (owners/editors/viewers all empty for that user).
+     *
+     * @return void
+     */
+    public function testGetAppManifestRbacDeniesNoRole(): void
+    {
+        $caller = $this->mockUser('mallory');
+        $this->userSession->method('getUser')->willReturn($caller);
+        $this->groupManager->method('isAdmin')->willReturn(false);
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+
+        // Application whose permissions block does not include 'mallory'.
+        $applicationData = [
+            'uuid'        => 'app-uuid-1234',
+            'name'        => 'Test App',
+            'slug'        => 'test-app',
+            'permissions' => [
+                'owners'  => ['user:alice'],
+                'editors' => [],
+                'viewers' => [],
+            ],
+            'manifest'    => ['pages' => []],
+        ];
+
+        $applicationEntity = $this->createMock(ObjectEntity::class);
+        $applicationEntity->method('jsonSerialize')->willReturn($applicationData);
+
+        // Route result pointing at the application.
+        $routeObject = [
+            'slug'            => 'test-app',
+            'applicationUuid' => 'app-uuid-1234',
+        ];
+
+        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+        $objectService->method('searchObjectsBySlug')->willReturn([$routeObject]);
+        $objectService->method('find')->willReturn($applicationEntity);
+
+        $container = $this->createMock(\Psr\Container\ContainerInterface::class);
+        $container->method('get')->willReturn($objectService);
+
+        $provider = new \OCA\OpenBuilt\Mcp\OpenBuiltToolProvider(
+            $this->userSession,
+            $this->groupManager,
+            $container,
+            $this->logger,
+            $this->resolver,
+        );
+
+        $result = $provider->invokeTool('openbuilt.getAppManifest', ['slug' => 'test-app']);
+
+        // Caller has no role — RBAC must deny with forbidden.
+        self::assertTrue($result['isError'] ?? false);
+        self::assertSame('forbidden', $result['error'] ?? '');
+
+    }//end testGetAppManifestRbacDeniesNoRole()
+
+    /**
+     * getAppManifest: caller with viewer role is granted access and
+     * permissions block is stripped from the returned manifest (C2 leak fix).
+     *
+     * @return void
+     */
+    public function testGetAppManifestRbacGrantsViewerAndStripsPermissions(): void
+    {
+        $caller = $this->mockUser('viewer-user');
+        $this->userSession->method('getUser')->willReturn($caller);
+        $this->groupManager->method('isAdmin')->willReturn(false);
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+
+        $applicationData = [
+            'uuid'        => 'app-uuid-5678',
+            'name'        => 'My App',
+            'slug'        => 'my-app',
+            'permissions' => [
+                'owners'  => ['user:alice'],
+                'editors' => [],
+                'viewers' => ['user:viewer-user'],
+            ],
+            'manifest'    => [
+                'pages'       => [],
+                'permissions' => ['owners' => ['user:alice']],
+            ],
+        ];
+
+        $applicationEntity = $this->createMock(ObjectEntity::class);
+        $applicationEntity->method('jsonSerialize')->willReturn($applicationData);
+
+        $routeObject = [
+            'slug'            => 'my-app',
+            'applicationUuid' => 'app-uuid-5678',
+        ];
+
+        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+        $objectService->method('searchObjectsBySlug')->willReturn([$routeObject]);
+        $objectService->method('find')->willReturn($applicationEntity);
+
+        $container = $this->createMock(\Psr\Container\ContainerInterface::class);
+        $container->method('get')->willReturn($objectService);
+
+        $provider = new \OCA\OpenBuilt\Mcp\OpenBuiltToolProvider(
+            $this->userSession,
+            $this->groupManager,
+            $container,
+            $this->logger,
+            $this->resolver,
+        );
+
+        $result = $provider->invokeTool('openbuilt.getAppManifest', ['slug' => 'my-app']);
+
+        // Viewer is allowed.
+        self::assertFalse($result['isError'] ?? false);
+        self::assertTrue($result['success'] ?? false);
+        // permissions block must be stripped from manifest.
+        self::assertArrayNotHasKey('permissions', $result['manifest'] ?? []);
+
+    }//end testGetAppManifestRbacGrantsViewerAndStripsPermissions()
 
     /**
      * listApps: a caller with only viewers access passes the auth gate
