@@ -26,6 +26,7 @@ use OCA\OpenBuilt\Controller\SettingsController;
 use OCA\OpenBuilt\Service\SettingsService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -67,6 +68,13 @@ class SettingsControllerTest extends TestCase
     private IUserSession&MockObject $userSession;
 
     /**
+     * Mock group manager.
+     *
+     * @var IGroupManager&MockObject
+     */
+    private IGroupManager&MockObject $groupManager;
+
+    /**
      * Set up test fixtures.
      *
      * @return void
@@ -78,15 +86,20 @@ class SettingsControllerTest extends TestCase
         $this->request         = $this->createMock(IRequest::class);
         $this->settingsService = $this->createMock(SettingsService::class);
         $this->userSession     = $this->createMock(IUserSession::class);
+        $this->groupManager    = $this->createMock(IGroupManager::class);
 
-        // Default: authenticated user.
+        // Default: authenticated admin user.
         $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('admin-user');
         $this->userSession->method('getUser')->willReturn($user);
+        // Default: user IS in the admin group.
+        $this->groupManager->method('isInGroup')->willReturn(true);
 
         $this->controller = new SettingsController(
             $this->request,
             $this->settingsService,
             $this->userSession,
+            $this->groupManager,
         );
 
     }//end setUp()
@@ -180,6 +193,7 @@ class SettingsControllerTest extends TestCase
             $this->request,
             $this->settingsService,
             $unauthSession,
+            $this->groupManager,
         );
 
         $this->settingsService->expects($this->never())->method('getSettings');
@@ -189,4 +203,54 @@ class SettingsControllerTest extends TestCase
         self::assertSame(Http::STATUS_UNAUTHORIZED, $result->getStatus());
 
     }//end testIndexReturns401WhenNoSession()
+
+    /**
+     * H6 guard: non-admin caller on create() must receive 403.
+     *
+     * @return void
+     */
+    public function testCreateReturns403WhenCallerIsNotAdmin(): void
+    {
+        $nonAdminGroupManager = $this->createMock(IGroupManager::class);
+        $nonAdminGroupManager->method('isInGroup')->willReturn(false);
+
+        $controller = new SettingsController(
+            $this->request,
+            $this->settingsService,
+            $this->userSession,
+            $nonAdminGroupManager,
+        );
+
+        $this->settingsService->expects($this->never())->method('updateSettings');
+
+        $result = $controller->create();
+
+        self::assertSame(Http::STATUS_FORBIDDEN, $result->getStatus());
+
+    }//end testCreateReturns403WhenCallerIsNotAdmin()
+
+    /**
+     * H6 guard: non-admin caller on load() must receive 403.
+     *
+     * @return void
+     */
+    public function testLoadReturns403WhenCallerIsNotAdmin(): void
+    {
+        $nonAdminGroupManager = $this->createMock(IGroupManager::class);
+        $nonAdminGroupManager->method('isInGroup')->willReturn(false);
+
+        $controller = new SettingsController(
+            $this->request,
+            $this->settingsService,
+            $this->userSession,
+            $nonAdminGroupManager,
+        );
+
+        $this->settingsService->expects($this->never())->method('reloadConfiguration');
+
+        $result = $controller->load();
+
+        self::assertSame(Http::STATUS_FORBIDDEN, $result->getStatus());
+
+    }//end testLoadReturns403WhenCallerIsNotAdmin()
 }//end class

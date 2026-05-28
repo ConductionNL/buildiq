@@ -102,16 +102,18 @@ class ApplicationsControllerDiffTest extends TestCase
         $schemaMapper = $this->createMock(SchemaMapper::class);
         $schemaMapper->method('find')->willReturn($schemaEntity);
 
-        // diffVersions() does not exercise RBAC, but the controller constructor
-        // requires the IUserSession + IGroupManager dependencies introduced by
-        // the openbuilt-rbac change — provide permissive mocks.
+        // diffVersions() now enforces RBAC (C5 fix). Use an admin user so the
+        // admin-bypass path grants access for tests that cover diff logic.
+        // A dedicated deny test (testDiffVersionsReturns403WhenCallerHasNoRole)
+        // exercises the non-admin / no-permissions path separately.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('diff-tester');
         $userSession = $this->createMock(IUserSession::class);
         $userSession->method('getUser')->willReturn($user);
         $groupManager = $this->createMock(IGroupManager::class);
         $groupManager->method('getUserGroups')->willReturn([]);
-        $groupManager->method('isInGroup')->willReturn(false);
+        // Admin user: isInGroup('diff-tester', 'admin') → true.
+        $groupManager->method('isInGroup')->willReturn(true);
 
         $permissionResolver = new PermissionResolver($groupManager, $this->logger);
 
@@ -302,4 +304,88 @@ class ApplicationsControllerDiffTest extends TestCase
         $data = $result->getData();
         self::assertSame('not_found', $data['error']);
     }//end testDiffVersionsReturns404WhenSlugUnknown()
+
+    /**
+     * C5 RBAC gate: a non-admin caller with no role on the Application must
+     * receive 403, not the manifest diff data.
+     *
+     * @return void
+     */
+    public function testDiffVersionsReturns403WhenCallerHasNoRole(): void
+    {
+        // Build a controller where the caller is NOT in the admin group and has
+        // no entry in the Application's permissions block.
+        $request = $this->createMock(IRequest::class);
+
+        $registerEntity = $this->getMockBuilder(Register::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['getId'])
+            ->getMock();
+        $registerEntity->method('getId')->willReturn(926);
+        $registerMapper = $this->createMock(RegisterMapper::class);
+        $registerMapper->method('find')->willReturn($registerEntity);
+
+        $schemaEntity = $this->getMockBuilder(Schema::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['getId'])
+            ->getMock();
+        $schemaEntity->method('getId')->willReturn(1635);
+        $schemaMapper = $this->createMock(SchemaMapper::class);
+        $schemaMapper->method('find')->willReturn($schemaEntity);
+
+        $outsider = $this->createMock(IUser::class);
+        $outsider->method('getUID')->willReturn('outsider');
+        $outsiderSession = $this->createMock(IUserSession::class);
+        $outsiderSession->method('getUser')->willReturn($outsider);
+
+        $noAdminGroupManager = $this->createMock(IGroupManager::class);
+        $noAdminGroupManager->method('getUserGroups')->willReturn([]);
+        // outsider is NOT an admin.
+        $noAdminGroupManager->method('isInGroup')->willReturn(false);
+
+        $objectService = $this->createMock(ObjectService::class);
+
+        $route       = ['applicationUuid' => 'app-uuid-1'];
+        $application = [
+            '@self'      => ['id' => 'app-uuid-1'],
+            'manifest'   => ['version' => '1.0.0'],
+            'version'    => '1.0.0',
+            'permissions' => [
+                'owners'  => ['user:owner-only'],
+                'editors' => [],
+                'viewers' => [],
+            ],
+        ];
+        $objectService->method('searchObjects')->willReturn([$route]);
+        $objectService->method('find')
+            ->willReturnCallback(function (...$args) use ($application) {
+                $id = $args['id'] ?? $args[0];
+                if ($id === 'app-uuid-1') {
+                    $entity = $this->createMock(ObjectEntity::class);
+                    $entity->method('jsonSerialize')->willReturn($application);
+                    return $entity;
+                }
+                return null;
+            });
+
+        $noAdminPermissionResolver = new PermissionResolver($noAdminGroupManager, $this->createMock(LoggerInterface::class));
+
+        $controller = new ApplicationsController(
+            request: $request,
+            logger: $this->createMock(LoggerInterface::class),
+            objectService: $objectService,
+            registerMapper: $registerMapper,
+            schemaMapper: $schemaMapper,
+            userSession: $outsiderSession,
+            groupManager: $noAdminGroupManager,
+            manifestResolver: $this->createMock(ManifestResolverService::class),
+            permissionResolver: $noAdminPermissionResolver,
+        );
+
+        $result = $controller->diffVersions(slug: 'hello-world', from: 'draft', to: 'draft');
+
+        self::assertSame(Http::STATUS_FORBIDDEN, $result->getStatus());
+        $data = $result->getData();
+        self::assertSame('openbuilt.rbac.no_role', $data['code']);
+    }//end testDiffVersionsReturns403WhenCallerHasNoRole()
 }//end class

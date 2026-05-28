@@ -31,6 +31,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 
@@ -40,11 +41,17 @@ use OCP\IUserSession;
 class SettingsController extends Controller
 {
     /**
+     * Nextcloud admin group identifier used as the admin-check anchor (H6).
+     */
+    private const ADMIN_GROUP = 'admin';
+
+    /**
      * Constructor for the SettingsController.
      *
      * @param IRequest        $request         The request object.
      * @param SettingsService $settingsService The settings service.
      * @param IUserSession    $userSession     Current user session.
+     * @param IGroupManager   $groupManager    Group membership resolver for admin guard.
      *
      * @return void
      */
@@ -52,6 +59,7 @@ class SettingsController extends Controller
         IRequest $request,
         private SettingsService $settingsService,
         private IUserSession $userSession,
+        private IGroupManager $groupManager,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
     }//end __construct()
@@ -82,6 +90,9 @@ class SettingsController extends Controller
     /**
      * Update settings with provided data.
      *
+     * Admin-only: writing OpenBuilt configuration affects all users on the
+     * instance; non-admin callers receive 403 (H6 guard).
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
@@ -93,8 +104,13 @@ class SettingsController extends Controller
     #[NoCSRFRequired]
     public function create(): JSONResponse
     {
-        if ($this->userSession->getUser() === null) {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
             return new JSONResponse(['error' => 'Unauthenticated.'], Http::STATUS_UNAUTHORIZED);
+        }
+
+        if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === false) {
+            return new JSONResponse(['error' => 'Forbidden.'], Http::STATUS_FORBIDDEN);
         }
 
         $data   = $this->request->getParams();
@@ -114,6 +130,9 @@ class SettingsController extends Controller
      * Forces a fresh import regardless of version, auto-configuring
      * all schema and register IDs from the import result.
      *
+     * Admin-only: reloading configuration re-provisions registers and schemas
+     * instance-wide; non-admin callers receive 403 (H6 guard).
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
@@ -125,8 +144,13 @@ class SettingsController extends Controller
     #[NoCSRFRequired]
     public function load(): JSONResponse
     {
-        if ($this->userSession->getUser() === null) {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
             return new JSONResponse(['error' => 'Unauthenticated.'], Http::STATUS_UNAUTHORIZED);
+        }
+
+        if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === false) {
+            return new JSONResponse(['error' => 'Forbidden.'], Http::STATUS_FORBIDDEN);
         }
 
         $result = $this->settingsService->reloadConfiguration();

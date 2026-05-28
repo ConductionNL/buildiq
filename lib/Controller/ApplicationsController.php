@@ -359,6 +359,24 @@ class ApplicationsController extends Controller
 
             $applicationArray = $this->normaliseObject(object: $application);
 
+            // RBAC enforcement (C5 / REQ-OBRBAC-002): deny-by-default before
+            // returning any manifest data. Mirrors the identical gate in getManifest().
+            // Both `from` and `to` blobs come from this Application, so a single
+            // requirePermission call on the resolved Application is sufficient.
+            $applicationEntity = null;
+            if ($application instanceof ObjectEntity) {
+                $applicationEntity = $application;
+            }
+
+            $denial = $this->requirePermission(
+                application: $applicationEntity,
+                applicationArray: $applicationArray,
+                slug: $slug
+            );
+            if ($denial !== null) {
+                return $denial;
+            }
+
             $fromBlob = $this->resolveVersionBlob(token: $from, application: $applicationArray, applicationUuid: $applicationUuid);
             if ($fromBlob === null) {
                 return new JSONResponse(
