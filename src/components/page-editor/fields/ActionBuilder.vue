@@ -122,11 +122,13 @@ export default {
 	flex-direction: column;
 	gap: 6px;
 }
+
 .action-builder__row {
 	display: flex;
 	gap: 6px;
 	align-items: center;
 }
+
 .action-builder__field {
 	flex: 1 1 auto;
 	padding: 4px 6px;
@@ -135,9 +137,11 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .action-builder__field--narrow {
 	flex: 0 0 110px;
 }
+
 .action-builder__remove {
 	background: transparent;
 	border: 1px solid var(--color-border);
@@ -146,6 +150,7 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .action-builder__add {
 	align-self: flex-start;
 	background: var(--color-primary-element-light);

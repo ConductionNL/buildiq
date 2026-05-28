@@ -109,11 +109,13 @@ export default {
 	flex-direction: column;
 	gap: 6px;
 }
+
 .sidebar-section-builder__row {
 	display: flex;
 	gap: 6px;
 	align-items: center;
 }
+
 .sidebar-section-builder__field {
 	flex: 1 1 auto;
 	padding: 4px 6px;
@@ -122,6 +124,7 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .sidebar-section-builder__remove {
 	background: transparent;
 	border: 1px solid var(--color-border);
@@ -130,6 +133,7 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .sidebar-section-builder__add {
 	align-self: flex-start;
 	background: var(--color-primary-element-light);

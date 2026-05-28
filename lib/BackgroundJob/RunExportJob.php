@@ -35,6 +35,7 @@ use OCA\OpenBuilt\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Background job that runs a single ExportJob to completion.
@@ -142,7 +143,7 @@ class RunExportJob extends QueuedJob
         // was dispatched, so it must exist in OR.
         $job = $this->exportJobService->loadJob(jobUuid: $jobUuid);
         if ($job === null) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 sprintf('OpenBuilt RunExportJob: could not load ExportJob record for UUID %s', $jobUuid)
             );
         }
@@ -153,7 +154,7 @@ class RunExportJob extends QueuedJob
         $license            = (string) ($job['license'] ?? 'EUPL-1.2');
 
         if ($applicationUuid === '') {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 sprintf('OpenBuilt RunExportJob: ExportJob %s has an empty applicationUuid', $jobUuid)
             );
         }

@@ -83,8 +83,8 @@ class ListAppsHandler extends AbstractToolHandler
             $apps    = [];
             $sources = [];
             foreach ($rawApps as $raw) {
-                $app    = $this->toArray(item: $raw);
-                $mapped = $this->mapApplication(raw: $app);
+                $app       = $this->toArray(item: $raw);
+                $mapped    = $this->mapApplication(raw: $app);
                 $apps[]    = $mapped;
                 $sources[] = $this->sourceDescriptor(uuid: $mapped['uuid'], slug: $mapped['slug'], label: $mapped['name']);
             }

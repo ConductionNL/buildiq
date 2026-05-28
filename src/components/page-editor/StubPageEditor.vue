@@ -93,16 +93,19 @@ export default {
 	gap: 8px;
 	padding: 12px;
 }
+
 .stub-page-editor h3 {
 	margin: 0;
 	font-size: 16px;
 	font-weight: 600;
 }
+
 .stub-page-editor__placeholder {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 }
+
 .stub-page-editor__textarea {
 	min-height: 240px;
 	font-family: monospace;
@@ -113,6 +116,7 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .stub-page-editor__error {
 	margin: 0;
 	color: var(--color-error);

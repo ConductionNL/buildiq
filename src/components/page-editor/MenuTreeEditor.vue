@@ -330,16 +330,19 @@ export default {
 	border-radius: var(--border-radius);
 	background: var(--color-main-background);
 }
+
 .menu-tree-editor__header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
+
 .menu-tree-editor__header h4 {
 	margin: 0;
 	font-size: 14px;
 	font-weight: 600;
 }
+
 .menu-tree-editor__add {
 	background: var(--color-primary-element-light);
 	border: 1px solid var(--color-border);
@@ -348,11 +351,13 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .menu-tree-editor__list {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
+
 .menu-tree-editor__entry {
 	display: flex;
 	flex-direction: column;
@@ -361,23 +366,27 @@ export default {
 	border: 1px dashed var(--color-border);
 	border-radius: var(--border-radius);
 }
+
 .menu-tree-editor__row {
 	display: flex;
 	gap: 6px;
 	align-items: center;
 	flex-wrap: wrap;
 }
+
 .menu-tree-editor__row--child {
 	margin-left: 28px;
 	padding: 4px;
 	background: var(--color-background-hover);
 	border-radius: var(--border-radius);
 }
+
 .menu-tree-editor__drag-handle {
 	cursor: grab;
 	color: var(--color-text-maxcontrast);
 	user-select: none;
 }
+
 .menu-tree-editor__field {
 	flex: 1 1 110px;
 	padding: 4px 6px;
@@ -386,13 +395,16 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .menu-tree-editor__field--narrow {
 	flex: 0 0 100px;
 }
+
 .menu-tree-editor__field[disabled] {
 	background: var(--color-background-dark);
 	color: var(--color-text-maxcontrast);
 }
+
 .menu-tree-editor__icon-btn {
 	background: transparent;
 	border: 1px solid var(--color-border);
@@ -401,9 +413,11 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .menu-tree-editor__icon-btn--remove {
 	color: var(--color-error, var(--color-main-text));
 }
+
 .menu-tree-editor__note {
 	margin: 0;
 	margin-left: 28px;
@@ -411,16 +425,19 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-style: italic;
 }
+
 .menu-tree-editor__children {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 }
+
 .menu-tree-editor__empty {
 	margin: 0;
 	font-size: 13px;
 	color: var(--color-text-maxcontrast);
 }
+
 .menu-tree-editor__error {
 	margin: 0;
 	color: var(--color-error);

@@ -89,7 +89,7 @@ class UpsertMenuItemHandler extends AbstractToolHandler
                 }
             }
 
-            $saved            = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
+            $saved = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
 
             $action = 'created';
             if ($replaced === true) {

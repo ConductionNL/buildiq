@@ -573,7 +573,6 @@ class ApplicationsController extends Controller
 
             [$filtered, $adminBypassUsed] = $this->filterApplicationsByRole(
                 results: $results,
-                uid: $user->getUID(),
                 userGroups: $userGroups,
                 isAdmin: $isAdmin
             );
@@ -609,7 +608,6 @@ class ApplicationsController extends Controller
      * Returns a two-element tuple: [filteredApps, adminBypassUsed].
      *
      * @param array<mixed>  $results    Raw OR search result entries.
-     * @param string        $uid        Caller's UID.
      * @param array<string> $userGroups Caller's group IDs.
      * @param bool          $isAdmin    Whether the caller is in the Nextcloud admin group.
      *
@@ -619,7 +617,6 @@ class ApplicationsController extends Controller
      */
     private function filterApplicationsByRole(
         array $results,
-        string $uid,
         array $userGroups,
         bool $isAdmin
     ): array {

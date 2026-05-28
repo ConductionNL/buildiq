@@ -179,11 +179,13 @@ export default {
 	flex-direction: column;
 	gap: 6px;
 }
+
 .column-builder__row {
 	display: flex;
 	gap: 6px;
 	align-items: center;
 }
+
 .column-builder__key,
 .column-builder__label {
 	flex: 1 1 auto;
@@ -193,6 +195,7 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .column-builder__remove {
 	background: transparent;
 	border: 1px solid var(--color-border);
@@ -201,6 +204,7 @@ export default {
 	border-radius: var(--border-radius);
 	cursor: pointer;
 }
+
 .column-builder__add {
 	align-self: flex-start;
 	background: var(--color-primary-element-light);

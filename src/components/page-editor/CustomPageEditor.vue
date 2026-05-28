@@ -220,11 +220,13 @@ export default {
 	gap: 12px;
 	padding: 12px;
 }
+
 .custom-page-editor__title {
 	margin: 0;
 	font-size: 16px;
 	font-weight: 600;
 }
+
 .custom-page-editor__fieldset {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
@@ -233,17 +235,20 @@ export default {
 	flex-direction: column;
 	gap: 6px;
 }
+
 .custom-page-editor__fieldset legend {
 	padding: 0 6px;
 	font-weight: 600;
 	font-size: 13px;
 }
+
 .custom-page-editor__group-row {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 	font-size: 13px;
 }
+
 .custom-page-editor__group-row input {
 	padding: 4px 6px;
 	border: 1px solid var(--color-border);
@@ -251,6 +256,7 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .custom-page-editor__textarea {
 	min-height: 160px;
 	font-family: monospace;
@@ -261,11 +267,13 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .custom-page-editor__error {
 	margin: 0;
 	color: var(--color-error);
 	font-size: 12px;
 }
+
 .custom-page-editor__hint,
 .custom-page-editor__other {
 	margin: 0;

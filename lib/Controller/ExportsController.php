@@ -116,8 +116,13 @@ class ExportsController extends Controller
                 return false;
             }
 
-            $app         = $apps[0];
-            $permissions = (is_array($app) === true) ? ($app['permissions'] ?? []) : [];
+            $app = $apps[0];
+            if (is_array($app) === true) {
+                $permissions = ($app['permissions'] ?? []);
+            } else {
+                $permissions = [];
+            }
+
             if (is_array($permissions) === false) {
                 $permissions = [];
             }
@@ -145,7 +150,12 @@ class ExportsController extends Controller
                     }
 
                     // Back-compat / group: prefix.
-                    $gid = str_starts_with($principal, 'group:') === true ? substr($principal, 6) : $principal;
+                    if (str_starts_with($principal, 'group:') === true) {
+                        $gid = substr($principal, 6);
+                    } else {
+                        $gid = $principal;
+                    }
+
                     if ($gid !== '' && $this->groupManager->isInGroup($uid, $gid) === true) {
                         return true;
                     }
@@ -201,7 +211,14 @@ class ExportsController extends Controller
             }
 
             // Verify the job was submitted by this user.
-            $job = is_array($found) === true ? $found : ((method_exists($found, 'jsonSerialize') === true) ? (array) $found->jsonSerialize() : (array) $found);
+            if (is_array($found) === true) {
+                $job = $found;
+            } else if (method_exists($found, 'jsonSerialize') === true) {
+                $job = (array) $found->jsonSerialize();
+            } else {
+                $job = (array) $found;
+            }
+
             $submittedBy = (string) ($job['submittedBy'] ?? ($job['@self']['owner'] ?? ''));
             return $submittedBy === $uid;
         } catch (\Throwable $e) {

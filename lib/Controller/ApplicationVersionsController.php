@@ -571,7 +571,7 @@ class ApplicationVersionsController extends Controller
         }
 
         if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === true) {
-            $this->recordAdminBypass(applicationData: $application, slug: $slug, actor: $user->getUID());
+            $this->recordAdminBypass(slug: $slug, actor: $user->getUID());
             return null;
         }
 
@@ -597,13 +597,12 @@ class ApplicationVersionsController extends Controller
      * admin bypasses surface in the permission-history panel (REQ-OBRBAC-006,
      * issue #162). Falls back to PSR-only when the audit mapper is unavailable.
      *
-     * @param array<string,mixed> $applicationData The Application data (for the entity lookup)
-     * @param string              $slug            The slug used in the audit envelope
-     * @param string              $actor           The bypassing user's UID
+     * @param string $slug  The slug used in the audit envelope
+     * @param string $actor The bypassing user's UID
      *
      * @return void
      */
-    private function recordAdminBypass(array $applicationData, string $slug, string $actor): void
+    private function recordAdminBypass(string $slug, string $actor): void
     {
         $timestamp = (new DateTimeImmutable())->format(DateTimeInterface::ATOM);
         $context   = [

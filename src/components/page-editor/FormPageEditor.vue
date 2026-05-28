@@ -231,11 +231,13 @@ export default {
 	gap: 12px;
 	padding: 12px;
 }
+
 .form-page-editor__title {
 	margin: 0;
 	font-size: 16px;
 	font-weight: 600;
 }
+
 .form-page-editor__fieldset {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
@@ -244,21 +246,25 @@ export default {
 	flex-direction: column;
 	gap: 6px;
 }
+
 .form-page-editor__fieldset legend {
 	padding: 0 6px;
 	font-weight: 600;
 	font-size: 13px;
 }
+
 .form-page-editor__submit-shape {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
 }
+
 .form-page-editor__inline {
 	display: inline-flex;
 	gap: 6px;
 	align-items: center;
 }
+
 .form-page-editor__input,
 .form-page-editor__group-row input,
 .form-page-editor__group-row select {
@@ -268,6 +274,7 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .form-page-editor__group-row {
 	display: flex;
 	flex-direction: column;

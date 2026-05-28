@@ -102,7 +102,7 @@ class UpsertSchemaHandler extends AbstractToolHandler
                         'register'  => $registerSlug,
                     ],
                 ];
-            }
+            }//end if
 
             $schema = $schemaMapper->createFromArray($blob);
             $this->attachSchemaToRegister(
@@ -291,7 +291,7 @@ class UpsertSchemaHandler extends AbstractToolHandler
                 error: 'forbidden',
                 message: "Register '{$registerSlug}' not found. Update denied."
             );
-        }
+        }//end try
 
         return null;
 
