@@ -60,7 +60,7 @@ const config = createConfig({
              plus the standard node_modules bucket. */
           exclude: ['**/node_modules/**', 'src/**'],
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/ConductionNL/openbuilt/tree/main/docs/',
+          editUrl: 'https://codeberg.org/Conduction/openbuilt/src/branch/main/docs/',
         },
         blog: false,
         theme: {
@@ -86,8 +86,8 @@ const config = createConfig({
         label: 'Documentation',
       },
       {
-        href: 'https://github.com/ConductionNL/openbuilt',
-        label: 'GitHub',
+        href: 'https://codeberg.org/Conduction/openbuilt',
+        label: 'Codeberg',
         position: 'right',
       },
       { type: 'localeDropdown', position: 'right' },
