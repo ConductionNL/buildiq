@@ -9,16 +9,16 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ConductionNL/nextcloud-app-template/releases"><img src="https://img.shields.io/github/v/release/ConductionNL/nextcloud-app-template" alt="Latest release"></a>
-  <a href="https://github.com/ConductionNL/nextcloud-app-template/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
-  <a href="https://github.com/ConductionNL/nextcloud-app-template/actions"><img src="https://img.shields.io/github/actions/workflow/status/ConductionNL/nextcloud-app-template/code-quality.yml?label=quality" alt="Code quality"></a>
+  <a href="https://codeberg.org/Conduction/nextcloud-app-template/releases"><img src="https://img.shields.io/github/v/release/ConductionNL/nextcloud-app-template" alt="Latest release"></a>
+  <a href="https://codeberg.org/Conduction/nextcloud-app-template/src/branch/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
+  <a href="https://codeberg.org/Conduction/nextcloud-app-template/actions"><img src="https://img.shields.io/github/actions/workflow/status/ConductionNL/nextcloud-app-template/code-quality.yml?label=quality" alt="Code quality"></a>
 </p>
 
 ---
 
 A starting point for building Nextcloud apps following ConductionNL conventions.
 
-> **Pre-wired for [OpenRegister](https://github.com/ConductionNL/openregister)** — all data is stored as OpenRegister objects. If your app needs OpenRegister, install it first. If not, remove the dependency from `appinfo/info.xml` and `openspec/app-config.json`.
+> **Pre-wired for [OpenRegister](https://codeberg.org/Conduction/openregister)** — all data is stored as OpenRegister objects. If your app needs OpenRegister, install it first. If not, remove the dependency from `appinfo/info.xml` and `openspec/app-config.json`.
 
 ## Screenshots
 
@@ -97,7 +97,7 @@ app-template/
 | Nextcloud | 28 – 33 |
 | PHP | 8.1+ |
 | Node.js | 20+ |
-| [OpenRegister](https://github.com/ConductionNL/openregister) | latest |
+| [OpenRegister](https://codeberg.org/Conduction/openregister) | latest |
 
 ## Installation
 
@@ -113,7 +113,7 @@ app-template/
 
 ```bash
 cd /var/www/html/custom_apps
-git clone https://github.com/ConductionNL/nextcloud-app-template.git app-template
+git clone https://codeberg.org/Conduction/nextcloud-app-template.git app-template
 cd app-template
 npm install && npm run build
 php occ app:enable app-template
@@ -200,7 +200,7 @@ docker exec nextcloud php occ app:enable app-template
 
 ## Related Apps
 
-- **[OpenRegister](https://github.com/ConductionNL/openregister)** — Object storage layer (required dependency)
+- **[OpenRegister](https://codeberg.org/Conduction/openregister)** — Object storage layer (required dependency)
 
 _Add related apps here as integrations are built._
 

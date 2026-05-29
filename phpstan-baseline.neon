@@ -1,11 +1,11 @@
 # PHPStan baseline — captures architectural debt that exists at the time of the
 # canonical-root-config sync (Phase 2 fleet rollout). Tracked in
-# https://github.com/ConductionNL/openbuilt/issues/126 — fix and remove entries
+# https://codeberg.org/Conduction/openbuild/issues/126 — fix and remove entries
 # as work lands.
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Constant OCA\\\\OpenBuilt\\\\Repair\\\\MigrateToVersionedModel\\:\\:VERSIONED_SCHEMA is unused\\.$#"
+			message: "#^Constant OCA\\\\OpenBuild\\\\Repair\\\\MigrateToVersionedModel\\:\\:VERSIONED_SCHEMA is unused\\.$#"
 			count: 1
 			path: lib/Repair/MigrateToVersionedModel.php
 

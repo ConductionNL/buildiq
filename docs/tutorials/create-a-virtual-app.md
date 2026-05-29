@@ -1,12 +1,12 @@
 # Tutorial: Create a virtual app
 
-> **Audience**: OpenBuilt admins creating their first virtual app on a fresh install or alongside existing apps.
-> **Prereqs**: OpenBuilt + OpenRegister installed and enabled. Signed in as a Nextcloud user (admin or otherwise).
+> **Audience**: OpenBuild admins creating their first virtual app on a fresh install or alongside existing apps.
+> **Prereqs**: OpenBuild + OpenRegister installed and enabled. Signed in as a Nextcloud user (admin or otherwise).
 > **Outcome**: A new virtual app named **Test App** with a `development → production` linear version chain, both versions seeded with an empty register and the default `hello-message` schema. Caller becomes the app's sole owner.
 
 ## 1. Open the wizard
 
-Navigate to **Virtual apps** in the OpenBuilt sidebar and click **Add application** (the blue secondary button in the actions bar).
+Navigate to **Virtual apps** in the OpenBuild sidebar and click **Add application** (the blue secondary button in the actions bar).
 
 The wizard opens on Step 1 — *App basics*.
 
@@ -19,7 +19,7 @@ The dialog header shows a three-step indicator (1 → 2 → 3). Step 3 in this p
 Fill in:
 
 - **Name** (required) — the human-readable display label. e.g. *Test App*.
-- **Slug** — auto-derived from the name in `kebab-case`. Click the **Advanced** link if you want to override it manually (must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$`; leading underscores are reserved for openbuilt system use).
+- **Slug** — auto-derived from the name in `kebab-case`. Click the **Advanced** link if you want to override it manually (must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$`; leading underscores are reserved for openbuild system use).
 - **Description** (optional) — long-form text describing what the app does.
 - **App icon** (optional, both light + dark) — upload SVGs that will appear in the Nextcloud top bar once the app is published.
 
@@ -52,7 +52,7 @@ The Review screen shows everything the wizard is about to provision:
 
 - **Name** and **slug** from step 1.
 - **Version chain** in arrow form (`development → production`).
-- **Production version** callout naming which version end users will see at the canonical `/apps/openbuilt/{slug}` URL.
+- **Production version** callout naming which version end users will see at the canonical `/apps/openbuild/{slug}` URL.
 
 ![Wizard step 3, review and create](./img/wizard-step3-review.png)
 
@@ -60,11 +60,11 @@ Click **Create** to submit. The backend then runs atomically:
 
 1. Validate the whole payload.
 2. Create the `Application` record (caller becomes `owners` per RBAC).
-3. For each version in chain order: create the `ApplicationVersion` record + provision the per-version register `openbuilt-{appSlug}-{versionSlug}` + install the default schema set with version-namespaced slugs.
+3. For each version in chain order: create the `ApplicationVersion` record + provision the per-version register `openbuild-{appSlug}-{versionSlug}` + install the default schema set with version-namespaced slugs.
 4. Wire each non-terminal version's `promotesTo` to the next downstream version's UUID.
 5. Set `Application.productionVersion` to the terminal version's UUID.
 
-On any failure, all already-created objects roll back in reverse creation order. On success, the wizard closes and you land on the new app's detail page at `/apps/openbuilt/applications/<uuid>`.
+On any failure, all already-created objects roll back in reverse creation order. On success, the wizard closes and you land on the new app's detail page at `/apps/openbuild/applications/<uuid>`.
 
 ![Application detail page after wizard create](./img/app-detail-after-create.png)
 
@@ -72,7 +72,7 @@ The detail page renders:
 - The hero with status badge and **window toggle** (7d / 30d / 90d)
 - Four KPI cards: **Active users**, **Object count**, **Files**, **Audit events** — all at 0 for a fresh app
 - The **activity placeholder** ("No activity in the selected window") until the audit trail accumulates events
-- The **Register** widget showing the production version's per-version OR register (`openbuilt-{appSlug}-production`) with `Schemas`, `Objects`, and `Files` counts
+- The **Register** widget showing the production version's per-version OR register (`openbuild-{appSlug}-production`) with `Schemas`, `Objects`, and `Files` counts
 - The **Schemas** widget listing the seeded `{appSlug}-production-hello-message` schema (or "No schemas yet in this version" until the wizard's schema seed runs)
 - The **+ Add schema** affordance to start designing
 - Returning to **Virtual apps** confirms the new app appears in the index card grid:
@@ -83,7 +83,7 @@ The detail page renders:
 
 - One `Application` record with your slug.
 - Two `ApplicationVersion` records (`development`, `production`) chained linearly.
-- Two per-version OR registers (`openbuilt-test-app-development`, `openbuilt-test-app-production`).
+- Two per-version OR registers (`openbuild-test-app-development`, `openbuild-test-app-production`).
 - Each register seeded with the `hello-message` schema (namespaced as `test-app-development-hello-message` and `test-app-production-hello-message` to satisfy OR's org-wide schema-slug uniqueness constraint).
 
 ## What's next
@@ -95,7 +95,7 @@ The detail page renders:
 ## Troubleshooting
 
 - **"Add Item" button instead of "Add application"** — the manifest's `actionsComponent` must sit at page top-level (sibling to `id`/`route`/`type`/`title`), not nested inside `config`. The default CnIndexPage Add button is independent; suppress it with `config.showAdd: false` if needed.
-- **`[object Object]` in OR API URLs** — your local nc-vue version pre-dates the positional-arg fix in `CnIndexPage.registerObjectType`. Update nc-vue or copy the fix from `feature/openbuilt-version-routing` / this branch.
+- **`[object Object]` in OR API URLs** — your local nc-vue version pre-dates the positional-arg fix in `CnIndexPage.registerObjectType`. Update nc-vue or copy the fix from `feature/openbuild-version-routing` / this branch.
 - **Schema uniqueness violation on create** — the org-wide schema-slug constraint requires per-app namespacing of seed schema slugs. The wizard applies `{appSlug}-{versionSlug}-` as a prefix; if you fork the wizard's seed list, keep the namespacing pattern.
-- **Hello World apps don't disappear after upgrade** — the green-field migration step's idempotency check is too eager. See [issue #69](https://github.com/ConductionNL/openbuilt/issues/69).
-- **Icons return 404 from `/apps/openbuilt/icons/{slug}.svg`** — see [issue #68](https://github.com/ConductionNL/openbuilt/issues/68).
+- **Hello World apps don't disappear after upgrade** — the green-field migration step's idempotency check is too eager. See [issue #69](https://codeberg.org/Conduction/openbuild/issues/69).
+- **Icons return 404 from `/apps/openbuild/icons/{slug}.svg`** — see [issue #68](https://codeberg.org/Conduction/openbuild/issues/68).

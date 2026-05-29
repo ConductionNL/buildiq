@@ -1,16 +1,16 @@
 ## Context
 
-This is spec #8 in the 9-spec OpenBuilt chain (per ADR-032), depending
+This is spec #8 in the 9-spec OpenBuild chain (per ADR-032), depending
 on:
 
-- **`bootstrap-openbuilt`** (#1) — provides the `openbuilt` register
+- **`bootstrap-openbuild`** (#1) — provides the `openbuild` register
   namespace, `Application` + `BuiltAppRoute` schemas, the
   nested-`CnAppRoot` runtime, and the canonical `SeedHelloWorld.php`
   pattern this spec replicates.
-- **`openbuilt-page-editor`** (#5) — provides the visual page-level
+- **`openbuild-page-editor`** (#5) — provides the visual page-level
   editor that the clone flow redirects into for customisation
   (REQ-OBTC-006).
-- **`openbuilt-schema-editor`** (#4) — provides the visual schema
+- **`openbuild-schema-editor`** (#4) — provides the visual schema
   editor a user reaches by navigating from the cloned Application to
   a cloned companion schema. Not strictly required by the clone flow
   itself, but the gallery experience is incomplete without the schema
@@ -34,7 +34,7 @@ The user-stories that motivate the four seeded templates live in
 
 US-5 ("client intake app that prefills from BRP via OpenConnector") is
 explicitly **not** seeded in this spec because it requires a working
-OpenConnector source binding that the OpenBuilt manifest does not yet
+OpenConnector source binding that the OpenBuild manifest does not yet
 express in v1.4.x — that template lands in a follow-up once the
 manifest gains OpenConnector binding metadata.
 
@@ -42,13 +42,13 @@ manifest gains OpenConnector binding metadata.
 
 **Goals**
 
-- Ship the `ApplicationTemplate` OR schema in the existing `openbuilt`
+- Ship the `ApplicationTemplate` OR schema in the existing `openbuild`
   register namespace.
 - Seed four Conduction-curated templates via a new
   `SeedApplicationTemplates.php` repair step that follows the
   `SeedHelloWorld.php` idempotent guard pattern.
 - Ship a gallery view (`TemplateGallery.vue`) reachable from the
-  OpenBuilt left-nav and from the empty-state of the Application list.
+  OpenBuild left-nav and from the empty-state of the Application list.
 - Ship a clone action (`createFromTemplate`) that lands the user
   inside the page editor with a fully editable, namespaced copy of the
   template's manifest + companion schemas.
@@ -63,7 +63,7 @@ manifest gains OpenConnector binding metadata.
   require a migration.
 - Publishing an existing Application as a template (the inverse
   flow). Deferred to a follow-up issue
-  (`#openbuilt-template-publishing`).
+  (`#openbuild-template-publishing`).
 - Template versioning / upgrade-from-template. Clones are one-shot
   snapshots (REQ-OBTC-007).
 - Files-API screenshot uploads. Screenshots ship as static assets in
@@ -85,7 +85,7 @@ read them directly off disk. That is tempting because (a) the seed
 data is conceptually "fixtures", (b) it skips a schema declaration,
 and (c) the gallery becomes a static asset.
 
-We reject it because OpenBuilt's whole architectural commitment is
+We reject it because OpenBuild's whole architectural commitment is
 ADR-022: **consume OpenRegister, do not invent app-local stores**.
 Treating templates as files would create a second source of truth
 that does not get RBAC, audit, GraphQL, MCP, CloudEvents, or any of
@@ -124,16 +124,16 @@ mirrors the pattern `SeedHelloWorld.php` uses for its
 **Decision**: templates live per-organisation, scoped via OR's
 standard `organisation` field. The four Conduction-curated templates
 ship with `isSeeded: true` and are seeded into each organisation that
-installs OpenBuilt.
+installs OpenBuild.
 
 **Why this matters**: the alternative is a single "global" Conduction
 namespace that every org reads from. That sounds simpler but has two
 problems:
 
-1. **Cross-org isolation** — when chain spec #7 (`openbuilt-rbac`)
+1. **Cross-org isolation** — when chain spec #7 (`openbuild-rbac`)
    lands per-built-app permissions, the global namespace becomes a
    special case that has to be threaded through every RBAC check.
-   Per-org isolation matches every other OR record in OpenBuilt and
+   Per-org isolation matches every other OR record in OpenBuild and
    uses no special-case code.
 2. **Future org-local templates** — the community-submission follow-up
    (deferred) will want org-local templates that admins can curate
@@ -148,16 +148,16 @@ their org. Backend deletion via OR REST is still governed by OR's
 standard RBAC and is intentionally not blocked at the schema level —
 this is a UI affordance, not an authorisation rule.
 
-**Operational consequence**: when an org installs OpenBuilt, the seed
+**Operational consequence**: when an org installs OpenBuild, the seed
 step iterates over every existing organisation in the system and
 seeds the four curated templates into each. Newly-created
-organisations get seeded on their next OpenBuilt repair-step run
+organisations get seeded on their next OpenBuild repair-step run
 (typically the next deploy). The repair step's idempotency guard
 (per-slug existence check, per-org scope) keeps this safe.
 
 **Alternatives considered**
 
-- *Single global org "openbuilt" hosting the curated templates*.
+- *Single global org "openbuild" hosting the curated templates*.
   Rejected per the RBAC and migration arguments above.
 - *Per-user templates, not per-org*. Rejected — collaboration breaks
   if Alice's templates are invisible to her colleague Bob in the same
@@ -197,7 +197,7 @@ proportion to the benefit. Document it in the
   because it makes "clone twice" a confusing UX.
 - *UUID-suffix the cloned schemas*. Rejected for the readability hit.
 - *Per-application sub-namespace in OR (e.g. register
-  `openbuilt-{app-slug}`)*. Rejected because it explodes the register
+  `openbuild-{app-slug}`)*. Rejected because it explodes the register
   namespace count (one per virtual app) without a clear benefit, and
   chain spec #1's `BuiltAppRoute` already gives us the per-app
   routing layer.
@@ -206,11 +206,11 @@ proportion to the benefit. Document it in the
 
 **Decision**: the four seeded templates' screenshots ship as PNGs in
 `img/templates/{slug}.png`, served via Nextcloud's standard
-`apps/openbuilt/img/templates/{slug}.png` static-asset path.
+`apps/openbuild/img/templates/{slug}.png` static-asset path.
 `screenshotUrl` on a seeded template stores a relative path
 (`img/templates/permit-tracker.png`); the gallery resolves it via
-Nextcloud's `OC.imagePath('openbuilt', 'templates/permit-tracker.png')`
-or the Vue-side equivalent (`generateUrl('/apps/openbuilt/img/...')`).
+Nextcloud's `OC.imagePath('openbuild', 'templates/permit-tracker.png')`
+or the Vue-side equivalent (`generateUrl('/apps/openbuild/img/...')`).
 
 **Why this matters**: putting screenshots in the repo for the seeded
 four is **free** — they're tracked binaries no different to icons —
@@ -294,8 +294,8 @@ The code surface this spec ships:
 
 If, during apply, the controller method exceeds ~50 LOC or the SFC
 exceeds ~200 LOC and grows real business logic, this spec MUST be
-split into a chain — `openbuilt-template-schema` (config only) +
-`openbuilt-template-clone` (code only). The thin-glue threshold is a
+split into a chain — `openbuild-template-schema` (config only) +
+`openbuild-template-clone` (code only). The thin-glue threshold is a
 review gate, not a deferral; the apply agent should call it out
 loudly if breached.
 
@@ -345,13 +345,13 @@ controller as one method; that's it.
 ## Risks / Trade-offs
 
 - **Risk — Schema-clone permission interaction with chain spec #7
-  (`openbuilt-rbac`)**. When per-built-app RBAC lands (#7), cloning
+  (`openbuild-rbac`)**. When per-built-app RBAC lands (#7), cloning
   a template needs to grant the calling user ownership of the new
   Application + the cloned companion schemas. **Mitigation**: the
   `createFromTemplate` controller method SHALL set the calling user
   as the owner of the new Application (via OR's standard ownership
   metadata) and add the user's group to the permissions of the cloned
-  companion schemas. Tested via Newman in `tests/api/openbuilt-templates.postman_collection.json`.
+  companion schemas. Tested via Newman in `tests/api/openbuild-templates.postman_collection.json`.
   If chain #7 changes the permissions vocabulary after this spec
   lands, the clone method needs a one-line update.
 
@@ -404,19 +404,19 @@ modified.
 2. CI runs PHPUnit + Newman + Playwright. The canonical green-light
    signals are:
    - Newman asserts the four seeded templates are GET-able from
-     `/index.php/apps/openregister/api/objects/openbuilt/applicationtemplate`.
+     `/index.php/apps/openregister/api/objects/openbuild/applicationtemplate`.
    - Playwright walks the gallery → clone → page-editor flow and
      asserts the cloned Application's first page renders.
 3. Merge into `development`. The migration runs on next deploy via
    the new repair step; the `ApplicationTemplate` schema appears in
-   the existing `openbuilt` register, and the four seeded templates
+   the existing `openbuild` register, and the four seeded templates
    appear per-org.
-4. **Rollback** — disable the `openbuilt` app via `occ app:disable
-   openbuilt`. The seeded `ApplicationTemplate` records remain in OR
+4. **Rollback** — disable the `openbuild` app via `occ app:disable
+   openbuild`. The seeded `ApplicationTemplate` records remain in OR
    (harmless). To fully rollback, delete the four
    `isSeeded:true` templates via OR's admin UI per org. The new
    schema in the register stays; no other Conduction app reads from
-   `openbuilt/applicationtemplate` so it is inert.
+   `openbuild/applicationtemplate` so it is inert.
 
 ## Seed Data
 
@@ -431,14 +431,14 @@ it to OR.
 ### Template 1 — `permit-tracker` (US-1)
 
 - `category: government-services`
-- `title: openbuilt.templates.permit-tracker.title` (en: "Permit
+- `title: openbuild.templates.permit-tracker.title` (en: "Permit
   Tracker", nl: "Vergunningvolger")
-- `useCase: openbuilt.templates.permit-tracker.useCase` (en:
+- `useCase: openbuild.templates.permit-tracker.useCase` (en:
   "Municipal building-permit workflow", nl: "Werkproces voor
   gemeentelijke bouwvergunningen")
 - `screenshotUrl: img/templates/permit-tracker.png`
 - `sourceUrl:
-  https://github.com/ConductionNL/concurrentie-analyse/blob/main/app-builder/README.md#user-stories`
+  https://codeberg.org/Conduction/concurrentie-analyse/src/branch/main/app-builder/README.md#user-stories`
 - `manifest`:
   - `version: 1.0.0`, `dependencies: ["openregister"]`
   - Menu items: `Applications` (index), `Submit` (form).
@@ -454,9 +454,9 @@ it to OR.
 ### Template 2 — `stakeholder-consultation` (US-2)
 
 - `category: citizen-engagement`
-- `title: openbuilt.templates.stakeholder-consultation.title` (en:
+- `title: openbuild.templates.stakeholder-consultation.title` (en:
   "Stakeholder Consultation", nl: "Stakeholderconsultatie")
-- `useCase: openbuilt.templates.stakeholder-consultation.useCase` (en:
+- `useCase: openbuild.templates.stakeholder-consultation.useCase` (en:
   "Gather structured input on policy proposals", nl: "Gestructureerde
   inbreng verzamelen op beleidsvoorstellen")
 - `screenshotUrl: img/templates/stakeholder-consultation.png`
@@ -474,9 +474,9 @@ it to OR.
 ### Template 3 — `employee-onboarding` (US-4)
 
 - `category: internal-operations`
-- `title: openbuilt.templates.employee-onboarding.title` (en:
+- `title: openbuild.templates.employee-onboarding.title` (en:
   "Employee Onboarding", nl: "Medewerker-onboarding")
-- `useCase: openbuilt.templates.employee-onboarding.useCase` (en:
+- `useCase: openbuild.templates.employee-onboarding.useCase` (en:
   "Guided onboarding with checklist, documents, and approval", nl:
   "Begeleide onboarding met checklist, documenten en goedkeuring")
 - `screenshotUrl: img/templates/employee-onboarding.png`
@@ -493,9 +493,9 @@ it to OR.
 ### Template 4 — `incident-reporter` (US-3)
 
 - `category: field-work`
-- `title: openbuilt.templates.incident-reporter.title` (en: "Incident
+- `title: openbuild.templates.incident-reporter.title` (en: "Incident
   Reporter", nl: "Incidentmelder")
-- `useCase: openbuilt.templates.incident-reporter.useCase` (en:
+- `useCase: openbuild.templates.incident-reporter.useCase` (en:
   "Field incident intake for safety regions", nl: "Veldmeldingen voor
   veiligheidsregio's")
 - `screenshotUrl: img/templates/incident-reporter.png`
@@ -522,7 +522,7 @@ writing it to OR (REQ-OBTC-009).
 - **OQ-1 — Screenshot generation source**. Should the four seeded
   screenshots be (a) hand-drawn mockups, (b) actual screenshots of a
   rendered seeded template, or (c) AI-generated illustrations? They
-  block on (b) only if the apply agent has a running OpenBuilt with
+  block on (b) only if the apply agent has a running OpenBuild with
   the four templates cloned. *Provisional decision*: ship (a) hand-
   drawn / simple Figma exports as PNGs for v1. The apply tasks
   reference a placeholder image; the design-team follow-up replaces
@@ -546,9 +546,9 @@ writing it to OR (REQ-OBTC-009).
 - **OQ-4 — i18n storage convention for seeded template strings**.
   Store the four `title` / `description` / `useCase` strings as
   literal English with Dutch in `l10n/nl.json` (matching chain #1's
-  `openbuilt.helloworld.*` pattern), or store i18n keys directly in
+  `openbuild.helloworld.*` pattern), or store i18n keys directly in
   the seeded record? *Provisional decision*: store i18n keys
-  (`openbuilt.templates.permit-tracker.title`) in the seeded record
+  (`openbuild.templates.permit-tracker.title`) in the seeded record
   and resolve them via Nextcloud's i18n at gallery-render time. This
   matches how the seeded manifest's `menu[].label` already works in
   chain #1.
@@ -558,6 +558,6 @@ writing it to OR (REQ-OBTC-009).
   present". How is "not present" detected at runtime — feature flag,
   route existence, capability registration? *Provisional decision*:
   feature-detect via `router.resolve('/applications/:slug/edit').matched.length`
-  on the OpenBuilt frontend; if the page-editor route is registered,
+  on the OpenBuild frontend; if the page-editor route is registered,
   redirect there, else fall back to the textarea editor. Re-confirm
   with the apply agent of chain #5 when both specs land.

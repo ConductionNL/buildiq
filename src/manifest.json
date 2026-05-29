@@ -44,7 +44,7 @@
 			"id": "Documentation",
 			"label": "Documentation",
 			"icon": "icon-info",
-			"href": "https://github.com/ConductionNL/openbuilt",
+			"href": "https://codeberg.org/Conduction/openbuild",
 			"section": "footer",
 			"order": 90
 		},
@@ -82,7 +82,7 @@
 						"showTitle": true
 					},
 					"dataSource": {
-						"register": "openbuilt",
+						"register": "openbuild",
 						"schema": "application",
 						"aggregate": "count"
 					}
@@ -104,7 +104,7 @@
 						"showTitle": true
 					},
 					"dataSource": {
-						"register": "openbuilt",
+						"register": "openbuild",
 						"schema": "built-app-route",
 						"aggregate": "count"
 					}
@@ -126,7 +126,7 @@
 						"showTitle": true
 					},
 					"dataSource": {
-						"register": "openbuilt",
+						"register": "openbuild",
 						"schema": "application-template",
 						"aggregate": "count"
 					}
@@ -148,7 +148,7 @@
 						"showTitle": true
 					},
 					"dataSource": {
-						"register": "openbuilt",
+						"register": "openbuild",
 						"schema": "application-version",
 						"aggregate": "count"
 					}
@@ -162,7 +162,7 @@
 			"title": "Virtual apps",
 			"actionsComponent": "VirtualAppsActions",
 			"config": {
-				"register": "openbuilt",
+				"register": "openbuild",
 				"schema": "application",
 				"viewMode": "cards",
 				"columns": [
@@ -199,7 +199,7 @@
 			"headerComponent": "ApplicationDetailHeader",
 			"actionsComponent": "ApplicationDetailActions",
 			"config": {
-				"register": "openbuilt",
+				"register": "openbuild",
 				"schema": "application",
 				"sidebarTabs": [
 					{
@@ -250,7 +250,7 @@
 			"type": "index",
 			"title": "Schemas",
 			"config": {
-				"register": "openbuilt",
+				"register": "openbuild",
 				"schema": "application",
 				"viewMode": "table",
 				"sidebar": {
@@ -258,7 +258,7 @@
 					"showMetadata": true
 				}
 			},
-			"_note": "Top-level schemas overview \u2014 uses the openbuilt register's `application` schema as the listing source; per-app drill-down lives under /builder/:slug/schemas."
+			"_note": "Top-level schemas overview \u2014 uses the openbuild register's `application` schema as the listing source; per-app drill-down lives under /builder/:slug/schemas."
 		},
 		{
 			"id": "Templates",
@@ -266,7 +266,7 @@
 			"type": "index",
 			"title": "Templates",
 			"config": {
-				"register": "openbuilt",
+				"register": "openbuild",
 				"schema": "application-template",
 				"viewMode": "cards",
 				"sidebar": {
@@ -281,7 +281,7 @@
 			"type": "index",
 			"title": "Schemas",
 			"config": {
-				"register": "openbuilt",
+				"register": "openbuild",
 				"schema": "application",
 				"viewMode": "cards",
 				"sidebar": {
@@ -297,7 +297,7 @@
 			"type": "detail",
 			"title": "Schema",
 			"config": {
-				"register": "openbuilt",
+				"register": "openbuild",
 				"schema": "application",
 				"sidebar": {
 					"enabled": true,
@@ -314,7 +314,7 @@
 			"type": "detail",
 			"title": "Page designer",
 			"config": {
-				"register": "openbuilt",
+				"register": "openbuild",
 				"schema": "application",
 				"sidebar": {
 					"enabled": true,
@@ -331,7 +331,7 @@
 			"type": "index",
 			"title": "Exports",
 			"config": {
-				"register": "openbuilt",
+				"register": "openbuild",
 				"schema": "export-job",
 				"viewMode": "table",
 				"sidebar": {
@@ -346,7 +346,7 @@
 			"type": "custom",
 			"title": "Virtual app",
 			"component": "BuilderHostView",
-			"_note": "Virtual-app host that mounts a nested CnAppRoot rendering the virtual app's own manifest from GET /api/applications/{slug}/manifest. This is a meta-app-shell (app inside app) pattern that no standard page type supports. It is the core runtime surface of openbuilt and will always require a custom host component."
+			"_note": "Virtual-app host that mounts a nested CnAppRoot rendering the virtual app's own manifest from GET /api/applications/{slug}/manifest. This is a meta-app-shell (app inside app) pattern that no standard page type supports. It is the core runtime surface of openbuild and will always require a custom host component."
 		},
 		{
 			"id": "FeaturesRoadmap",
@@ -354,7 +354,7 @@
 			"type": "roadmap",
 			"title": "Features & roadmap",
 			"config": {
-				"documentationUrl": "https://openbuilt.conduction.nl"
+				"documentationUrl": "https://openbuild.conduction.nl"
 			}
 		}
 	]

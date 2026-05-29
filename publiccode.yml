@@ -1,7 +1,7 @@
 publiccodeYmlVersion: "0.4"
 
-name: OpenBuilt
-url: "https://github.com/ConductionNL/openbuilt"
+name: OpenBuild
+url: "https://codeberg.org/Conduction/openbuild"
 softwareVersion: "0.3.7"
 releaseDate: "2026-05-26"
 developmentStatus: beta
@@ -19,10 +19,10 @@ description:
     shortDescription: >
       Construction project management and built environment administration for Nextcloud.
     longDescription: >
-      OpenBuilt is a project management and administration application for the built
+      OpenBuild is a project management and administration application for the built
       environment, built on Nextcloud and Open Register. It supports construction
       project management, permit tracking, and built-environment administration for
-      municipalities and construction organisations. OpenBuilt integrates with Dutch
+      municipalities and construction organisations. OpenBuild integrates with Dutch
       government standards and open data sources for the built environment.
     features:
       - Construction project management
@@ -34,10 +34,10 @@ description:
     shortDescription: >
       Bouwprojectbeheer en omgevingsadministratie voor Nextcloud.
     longDescription: >
-      OpenBuilt is een projectbeheers- en administratietoepassing voor de gebouwde
+      OpenBuild is een projectbeheers- en administratietoepassing voor de gebouwde
       omgeving, gebouwd op Nextcloud en Open Register. Het ondersteunt bouwprojectbeheer,
       vergunningenbewaking en omgevingsadministratie voor gemeenten en bouworganisaties.
-      OpenBuilt integreert met Nederlandse overheidsstandaarden en open databronnen
+      OpenBuild integreert met Nederlandse overheidsstandaarden en open databronnen
       voor de gebouwde omgeving.
     features:
       - Bouwprojectbeheer

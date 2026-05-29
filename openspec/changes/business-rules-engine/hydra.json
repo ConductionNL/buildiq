@@ -1,8 +1,8 @@
 {
   "spec_slug": "business-rules-engine",
   "title": "Business Rules Engine",
-  "app": "openbuilt",
-  "repo": "https://github.com/ConductionNL/openbuilt",
+  "app": "openbuild",
+  "repo": "https://codeberg.org/Conduction/openbuild",
   "depends_on": [],
-  "issue": "https://github.com/ConductionNL/openbuilt/issues/129"
+  "issue": "https://codeberg.org/Conduction/openbuild/issues/129"
 }

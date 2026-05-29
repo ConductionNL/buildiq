@@ -1,5 +1,5 @@
 /**
- * OpenBuilt landing page.
+ * OpenBuild landing page.
  *
  * Composes the brand <DetailHero> + <WidgetShelf> from
  * @conduction/docusaurus-preset/components.
@@ -21,7 +21,7 @@ import {
 /* Builder glyph: a stylised stack of blocks being assembled — the
    citizen developer composing an app from registers, connectors,
    workflows, and documents. */
-const OPENBUILT_ICON = (
+const OPENBUILD_ICON = (
   <svg viewBox="0 0 24 24">
     <path d="M4 7l8-4 8 4-8 4-8-4zm0 5l8 4 8-4M4 17l8 4 8-4" />
   </svg>
@@ -232,27 +232,27 @@ const WIDGETS = [
 export default function Home() {
   return (
     <Layout
-      title="OpenBuilt, no-code app builder inside Nextcloud"
+      title="OpenBuild, no-code app builder inside Nextcloud"
       description="Citizen-developer app builder for Nextcloud. Compose apps from registers, connectors, workflows, and documents without writing code."
     >
       <main className="marketing-page">
         <DetailHero
           background="cobalt"
-          appId="openbuilt"
+          appId="openbuild"
           status={{ label: 'Beta', color: 'var(--c-orange-knvb)' }}
           version="v0.x"
           locales="NL · EN"
-          title="OpenBuilt"
+          title="OpenBuild"
           tagline={TAGLINE}
           primaryCta={{
             label: 'View on GitHub',
-            href: 'https://github.com/ConductionNL/openbuilt',
+            href: 'https://codeberg.org/Conduction/openbuild',
             tone: 'orange',
           }}
           secondaryCta={{ label: 'Read the docs', href: '/docs/intro' }}
           iconColor="var(--c-orange-knvb)"
-          icon={OPENBUILT_ICON}
-          illustration={<AppMock app="openbuilt" />}
+          icon={OPENBUILD_ICON}
+          illustration={<AppMock app="openbuild" />}
         />
 
         <WidgetShelf
