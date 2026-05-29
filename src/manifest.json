@@ -165,6 +165,7 @@
 				"register": "openbuild",
 				"schema": "application",
 				"viewMode": "cards",
+				"cardComponent": "ApplicationCard",
 				"columns": [
 					"name",
 					"status",
@@ -176,20 +177,7 @@
 					"enabled": true,
 					"showMetadata": true
 				}
-			},
-			"widgets": [
-				{
-					"widgetKey": "card-grid",
-					"slot": "body",
-					"gridX": 0,
-					"gridY": 0,
-					"gridWidth": 12,
-					"gridHeight": 4,
-					"props": {
-						"component": "ApplicationCard"
-					}
-				}
-			]
+			}
 		},
 		{
 			"id": "VirtualAppDetail",
