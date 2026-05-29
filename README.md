@@ -16,7 +16,7 @@
 
 ---
 
-OpenBuild is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Conduction ecosystem (OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, MyDash dashboards) through a visual interface, without scaffolding PHP for each new app.
+OpenBuild is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Conduction ecosystem (OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, LaunchPad dashboards) through a visual interface, without scaffolding PHP for each new app.
 
 Per [ADR-024](../hydra/openspec/architecture/adr-024-app-manifest.md) each built app is rendered at runtime by mounting `CnAppRoot` with the app's manifest, which lives as a JSON blob in OpenBuild's own OpenRegister namespace. Per [ADR-031](../hydra/openspec/architecture/adr-031-schema-declarative-business-logic.md) behaviour (state machines, aggregations, calculations, notifications) is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in OpenBuild's register, rendered inside the OpenBuild shell at `/apps/openbuild/builder/{slug}`); a Phase-2 export generates a real Nextcloud app from a virtual app.
 
@@ -191,7 +191,7 @@ npm run stylelint       # CSS linting
 - **[OpenConnector](https://codeberg.org/Conduction/openconnector)** — API / iPaaS integration (consumed by built apps via manifest)
 - **[Procest](https://codeberg.org/Conduction/procest)** — Process / case management (consumed via workflow attachments)
 - **[Docudesk](https://codeberg.org/Conduction/docudesk)** — Document generation (consumed via template attachments)
-- **[MyDash](https://codeberg.org/Conduction/mydash)** — Dashboards (consumed via widget embeds)
+- **[LaunchPad](https://codeberg.org/Conduction/launchpad)** — Dashboards (consumed via widget embeds)
 - **[NL Design](https://codeberg.org/Conduction/nldesign)** — Government theming (CSS variable inheritance)
 
 ## Support

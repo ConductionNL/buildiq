@@ -26,9 +26,9 @@ describe('CustomPageEditor', () => {
 
 	it('component free-text propagates and clears on empty', async () => {
 		const wrapper = mountEditor({})
-		wrapper.vm.update('component', 'MyDashboard')
+		wrapper.vm.update('component', 'LaunchPadboard')
 		await wrapper.vm.$nextTick()
-		expect(wrapper.emitted('update:config')[0][0].component).toBe('MyDashboard')
+		expect(wrapper.emitted('update:config')[0][0].component).toBe('LaunchPadboard')
 		wrapper.vm.update('component', '')
 		await wrapper.vm.$nextTick()
 		expect(wrapper.emitted('update:config')[1][0]).not.toHaveProperty('component')

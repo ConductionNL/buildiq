@@ -4,7 +4,7 @@ context: |
   Project: OpenBuild
   Repo: ConductionNL/openbuild
   Type: Nextcloud App (PHP backend + Vue 2 frontend) — citizen-developer app builder
-  Description: OpenBuild is a citizen-developer app builder for Nextcloud. It composes apps from the Conduction ecosystem (OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, MyDash dashboards) without scaffolding PHP for each new app. Built apps are virtual — stored as records in OpenBuild's own register — and rendered at runtime by mounting CnAppRoot with the app's manifest (ADR-024). Phase-2 export generates a real Nextcloud app from a virtual app.
+  Description: OpenBuild is a citizen-developer app builder for Nextcloud. It composes apps from the Conduction ecosystem (OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, LaunchPad dashboards) without scaffolding PHP for each new app. Built apps are virtual — stored as records in OpenBuild's own register — and rendered at runtime by mounting CnAppRoot with the app's manifest (ADR-024). Phase-2 export generates a real Nextcloud app from a virtual app.
   Key components: Application register, manifest editor, virtual-app host (nested CnAppRoot), schema editor, page editor
   Database: PostgreSQL (via OpenRegister's ObjectService — Application + BuiltAppRoute schemas live in OpenBuild's own register namespace)
   Mount path: /var/www/html/custom_apps/openbuild

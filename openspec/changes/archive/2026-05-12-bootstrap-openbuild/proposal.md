@@ -18,7 +18,7 @@ chain:
 OpenBuild is the citizen-developer app builder for the Conduction stack: it
 lets non-technical users compose apps from OpenRegister schemas,
 OpenConnector APIs, Procest workflows, Docudesk documents, NL Design
-themes, and MyDash dashboards without scaffolding PHP for each new app.
+themes, and LaunchPad dashboards without scaffolding PHP for each new app.
 ADR-024 explicitly anticipated this surface — `CnAppRoot`,
 `CnAppNav`, `CnPageRenderer` and `useAppManifest` already exist in
 `@conduction/nextcloud-vue`, and the canonical schema at

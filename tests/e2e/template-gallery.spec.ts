@@ -17,7 +17,7 @@
  * NOTE: Playwright infrastructure is not yet wired into openbuild's package
  * scripts. This file is the canonical e2e coverage for the spec and will
  * run once the cohort-wide Playwright bootstrap lands (mirroring the same
- * deferred-bootstrap pattern used by mydash).
+ * deferred-bootstrap pattern used by launchpad).
  */
 
 import { test, expect } from '@playwright/test'

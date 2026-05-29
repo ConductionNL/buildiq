@@ -344,7 +344,7 @@ thin-glue PHP check** plus **one thin-glue Vue composable**:
 - **Risk** — *Admin-bypass volume hides genuine admin abuse.* If
   admins routinely use the bypass for non-incident work, the audit
   trail becomes noise. → Mitigation: a dashboard widget in
-  MyDash (out of scope here, tracked as a roadmap item) can
+  LaunchPad (out of scope here, tracked as a roadmap item) can
   surface bypass volume per admin per week.
 - **Trade-off** — *No per-page permissions.* Acceptable for v1;
   every virtual app is small enough that Application-level RBAC is

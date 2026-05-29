@@ -30,7 +30,7 @@
 					type="text"
 					:value="config.component || ''"
 					list="custom-page-editor-component-suggestions"
-					:placeholder="t('openbuild', 'e.g. MyDashboard')"
+					:placeholder="t('openbuild', 'e.g. LaunchPadboard')"
 					:aria-invalid="isInvalid('component')"
 					@input="update('component', $event.target.value)">
 				<datalist id="custom-page-editor-component-suggestions">

@@ -2,7 +2,7 @@
 
 ## Overview
 
-OpenBuild is a citizen-developer app builder for Nextcloud. It composes apps from the Conduction ecosystem (OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, MyDash dashboards) without scaffolding PHP for each new app.
+OpenBuild is a citizen-developer app builder for Nextcloud. It composes apps from the Conduction ecosystem (OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, LaunchPad dashboards) without scaffolding PHP for each new app.
 
 Per ADR-024 each built app is rendered at runtime by mounting `CnAppRoot` with the app's manifest, which lives as a JSON blob in OpenBuild's own OpenRegister namespace. Per ADR-031 behaviour (state machines, aggregations, calculations, notifications) is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in OpenBuild's register, rendered inside the OpenBuild shell at `/apps/openbuild/{slug}`); a Phase-2 export generates a real Nextcloud app from a virtual app.
 

@@ -79,6 +79,18 @@ import PageDesignerView from './views/PageDesignerHost.vue'
 // Virtual-app host — nested CnAppRoot rendering a virtual app's own manifest.
 import BuilderHostView from './views/BuilderHost.vue'
 
+// ── Dashboard widgets (kind: "widget") ───────────────────────────────────────
+//
+// These widgetKeys are referenced by the dashboard manifest (slot "body" /
+// "sidebar") but are NOT part of CnWidgetGrid's built-in registry
+// (object-table, form-renderer, map-viewer, card-grid, data, metadata,
+// integration), so the consuming app must register them. CnWidgetGrid resolves
+// a widgetKey against this registry before falling back to its built-ins.
+//   - stats-block: count KPI card; reads the manifest `dataSource` block
+//     ({ register, schema, aggregate: "count" }) and renders CnStatsBlock.
+//   - audit-trail: recent audit entries for the object (detail sidebar).
+import { CnStatsBlockWidget, CnAuditTrailCard } from '@conduction/nextcloud-vue'
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /**
@@ -94,6 +106,31 @@ import BuilderHostView from './views/BuilderHost.vue'
  */
 function page(component) {
 	return { kind: 'page', component }
+}
+
+/**
+ * Wrap a dashboard widget component into the v2 registry shape.
+ *
+ * CnWidgetGrid resolves a manifest `widgetKey` against this registry (then its
+ * built-ins) and renders `entry.component`. `kind: "widget"` carries the
+ * editor metadata fields CnAppRoot's registry validator expects
+ * (defaultSize / minSize / maxSize / allowedSlots / propsSchema).
+ *
+ * @param {object} component Vue component options.
+ * @param {string[]} allowedSlots Manifest slots this widget may be placed in.
+ *
+ * @return {object} A `{ kind: "widget", component, … }` registry entry.
+ */
+function widget(component, allowedSlots) {
+	return {
+		kind: 'widget',
+		component,
+		defaultSize: { w: 3, h: 2 },
+		minSize: { w: 1, h: 1 },
+		maxSize: { w: 12, h: 8 },
+		allowedSlots,
+		propsSchema: {},
+	}
 }
 
 /**
@@ -166,4 +203,8 @@ export default {
 	SchemaDesignerView: page(SchemaDesignerView),
 	PageDesignerView: page(PageDesignerView),
 	BuilderHostView: page(BuilderHostView),
+
+	// Dashboard widgets — resolved by CnWidgetGrid by manifest widgetKey.
+	'stats-block': widget(CnStatsBlockWidget, ['body']),
+	'audit-trail': widget(CnAuditTrailCard, ['sidebar', 'body']),
 }

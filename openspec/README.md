@@ -1,6 +1,6 @@
 # OpenBuild — OpenSpec
 
-This folder contains feature specifications, architectural decisions, and implementation specs for **OpenBuild** — a citizen-developer app builder for Nextcloud that composes apps from OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, and MyDash dashboards without scaffolding PHP for each new app. Built apps are rendered at runtime via `CnAppRoot` from manifests stored in OpenBuild's own register (ADR-024 + ADR-031).
+This folder contains feature specifications, architectural decisions, and implementation specs for **OpenBuild** — a citizen-developer app builder for Nextcloud that composes apps from OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, and LaunchPad dashboards without scaffolding PHP for each new app. Built apps are rendered at runtime via `CnAppRoot` from manifests stored in OpenBuild's own register (ADR-024 + ADR-031).
 
 ## Structure
 

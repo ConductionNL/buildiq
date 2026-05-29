@@ -121,7 +121,7 @@ THEN registreert het systeem: tijdstip, gebruiker, oude/nieuwe versie, wijziging
 - **openbuild runtime**: consumeert runtime-API voor live evaluatie
 - **openregister**: opslag van RuleSet/DecisionTable/etc als register-objecten
 - **n8n-nextcloud**: rule-actie `start-workflow` triggert n8n-flow
-- **mydash**: rule-uitvoeringsmetrics (calls/sec, faalpercentage)
+- **launchpad**: rule-uitvoeringsmetrics (calls/sec, faalpercentage)
 - **decidesk**: besluiten over rule-wijziging-impact bij major-versie-bumps
 - **docudesk**: opslag van rule-documentatie + impact-rapporten
 
