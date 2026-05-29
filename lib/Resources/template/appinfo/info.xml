@@ -39,17 +39,17 @@ Vrij en open source onder de EUPL-1.2-licentie.
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>AppTemplate</namespace>
     <documentation>
-        <user>https://github.com/ConductionNL/nextcloud-app-template</user>
-        <admin>https://github.com/ConductionNL/nextcloud-app-template</admin>
-        <developer>https://github.com/ConductionNL/nextcloud-app-template</developer>
+        <user>https://codeberg.org/Conduction/nextcloud-app-template</user>
+        <admin>https://codeberg.org/Conduction/nextcloud-app-template</admin>
+        <developer>https://codeberg.org/Conduction/nextcloud-app-template</developer>
     </documentation>
     <category>tools</category>
-    <website>https://github.com/ConductionNL/nextcloud-app-template</website>
-    <discussion>https://github.com/ConductionNL/nextcloud-app-template/discussions</discussion>
-    <bugs>https://github.com/ConductionNL/nextcloud-app-template/issues</bugs>
-    <repository>https://github.com/ConductionNL/nextcloud-app-template</repository>
+    <website>https://codeberg.org/Conduction/nextcloud-app-template</website>
+    <discussion>https://codeberg.org/Conduction/nextcloud-app-template/discussions</discussion>
+    <bugs>https://codeberg.org/Conduction/nextcloud-app-template/issues</bugs>
+    <repository>https://codeberg.org/Conduction/nextcloud-app-template</repository>
 
-    <screenshot>https://raw.githubusercontent.com/ConductionNL/nextcloud-app-template/main/img/app-store.svg</screenshot>
+    <screenshot>https://codeberg.org/Conduction/nextcloud-app-template/raw/branch/main/img/app-store.svg</screenshot>
 
     <dependencies>
         <nextcloud min-version="28" max-version="34"/>

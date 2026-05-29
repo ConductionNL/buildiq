@@ -27,17 +27,17 @@ Vrij en open source onder de EUPL-1.2-licentie.
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenBuilt</namespace>
     <documentation>
-        <user>https://github.com/ConductionNL/openbuilt</user>
-        <admin>https://github.com/ConductionNL/openbuilt</admin>
-        <developer>https://github.com/ConductionNL/openbuilt</developer>
+        <user>https://codeberg.org/Conduction/openbuilt</user>
+        <admin>https://codeberg.org/Conduction/openbuilt</admin>
+        <developer>https://codeberg.org/Conduction/openbuilt</developer>
     </documentation>
     <category>tools</category>
-    <website>https://github.com/ConductionNL/openbuilt</website>
-    <discussion>https://github.com/ConductionNL/openbuilt/discussions</discussion>
-    <bugs>https://github.com/ConductionNL/openbuilt/issues</bugs>
-    <repository>https://github.com/ConductionNL/openbuilt</repository>
+    <website>https://codeberg.org/Conduction/openbuilt</website>
+    <discussion>https://codeberg.org/Conduction/openbuilt/discussions</discussion>
+    <bugs>https://codeberg.org/Conduction/openbuilt/issues</bugs>
+    <repository>https://codeberg.org/Conduction/openbuilt</repository>
 
-    <screenshot>https://raw.githubusercontent.com/ConductionNL/openbuilt/main/img/app-store.svg</screenshot>
+    <screenshot>https://codeberg.org/Conduction/openbuilt/raw/branch/main/img/app-store.svg</screenshot>
 
     <dependencies>
         <nextcloud min-version="28" max-version="34"/>
