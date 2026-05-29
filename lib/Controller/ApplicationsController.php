@@ -803,8 +803,12 @@ class ApplicationsController extends Controller
                 );
                 return;
             } catch (Throwable $e) {
-                $this->logger->error(
-                    'OpenBuilt: failed to record admin bypass in OR audit trail; falling back to PSR log',
+                // WF3: audit-trail write failure is a COMPLIANCE gap, not a
+                // routine warning. Emit at CRITICAL so ops alerting picks it up.
+                // Per REQ-OBRBAC-007 the OR audit trail is the system of record
+                // for admin-bypass events; silent fallback defeats forensic review.
+                $this->logger->critical(
+                    'OpenBuilt: failed to record admin bypass in OR audit trail — COMPLIANCE GAP; bypass event lost from system of record',
                     array_merge($context, ['exception' => $e->getMessage()])
                 );
             }//end try
@@ -878,11 +882,14 @@ class ApplicationsController extends Controller
             );
         }
 
+        // WF1 fix: check slug uniqueness org-wide (no owner filter) to prevent
+        // squatting — two users picking the same slug would let the first
+        // publisher win the BuiltAppRoute insert and the second receive an opaque
+        // clone_failed error on publish. Rejection here is early and explicit.
         $existing = $this->lookupOne(
             registerId: $ctx['register'],
             schemaId: $ctx['applicationSchema'],
-            slug: $newSlug,
-            owner: $ownerUid
+            slug: $newSlug
         );
         if ($existing !== null) {
             return $this->errorResponse(

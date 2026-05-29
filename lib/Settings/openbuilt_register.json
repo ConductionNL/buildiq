@@ -20,6 +20,12 @@
         "version": "0.2.0",
         "title": "Application",
         "description": "A virtual app built with OpenBuilt. Per ADR-002 the Application carries identity (slug, name, description, permissions) plus a productionVersion relation to the ApplicationVersion currently exposed at the canonical URL. Manifest, semver, and lifecycle now live on ApplicationVersion.",
+        "authorization": {
+          "_note": "Wave-12 SB1: blocks unauthenticated OR-API writes. create=admin-only (no owner bypass on create). update/delete=admin + object-owner (OR PermissionHandler owner bypass applies). LIMITATION: per-Application role rows (owners/editors/viewers in `permissions`) are richer than schema-level group ACLs — a non-admin owner can still mutate their own Application via OR API, and the editors/viewers roles cannot be expressed at schema level. Tracked in https://codeberg.org/Conduction/openbuild/issues/1 for a future per-application RBAC engine improvement.",
+          "create": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
         "type": "object",
         "required": [
           "slug",
@@ -110,6 +116,11 @@
         "version": "0.1.0",
         "title": "Application Template",
         "description": "A pre-baked starter pack for building an Application from a recognisable use case — manifest plus companion schemas. Seeded Conduction-curated templates carry isSeeded: true. Per the hybrid register model this schema is shared across the `openbuilt` register; cloned user schemas land in a per-app `openbuilt-{slug}` register.",
+        "authorization": {
+          "create": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
         "type": "object",
         "required": [
           "slug",
@@ -196,6 +207,11 @@
         "version": "0.1.0",
         "title": "Built App Route",
         "description": "Index from slug → applicationUuid. Maintained by the Application lifecycle (upserted on publish, deleted on archive). Used by the runtime to resolve /builder/{slug} → manifest in a single OR lookup. Per ADR-022 this is an explicit flattened index rather than scanning the Application collection.",
+        "authorization": {
+          "create": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
         "type": "object",
         "required": [
           "slug",
@@ -222,6 +238,11 @@
         "version": "0.1.0",
         "title": "Hello Message",
         "description": "Seed schema for the canonical hello-world virtual app. Three sample messages are seeded on install so the install is testable out of the box.",
+        "authorization": {
+          "create": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
         "type": "object",
         "required": [
           "title"
@@ -265,6 +286,11 @@
         "version": "0.1.0",
         "title": "Application Version",
         "description": "A deployable runtime for an Application (ADR-002). Each ApplicationVersion owns its own per-version OpenRegister register so production and test data are physically isolated. The admin-defined linear promotion chain reads via the optional `promotesTo` relation. Lifecycle (draft → published → archived) is per-version; the `draft → published` transition upserts the BuiltAppRoute slug index.",
+        "authorization": {
+          "create": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
         "type": "object",
         "required": [
           "name",
@@ -416,6 +442,11 @@
         "version": "0.1.0",
         "title": "Export Job",
         "description": "Asynchronous pipeline that turns a published Application into a standalone Nextcloud app — delivered as a ZIP download or pushed to GitHub. Lifecycle is declarative per ADR-031; the file-generation surface is an ADR-031 §Exceptions(3) imperative path.",
+        "authorization": {
+          "create": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
         "type": "object",
         "required": [
           "applicationUuid",

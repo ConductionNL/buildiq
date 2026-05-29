@@ -5,11 +5,11 @@
  *
  * Covers the six branch-coverage cases mandated by tasks.md 1.3 / 4.1:
  *   - 404 unknown templateSlug
- *   - 4xx slug-collision within the same owner
+ *   - 4xx slug-collision (global: any existing Application with same slug, regardless of owner)
  *   - success → 201 + Application + per-app register + companion schemas
  *   - manifest schema-refs rewritten with new-slug prefix
  *   - owner field tagged with authenticated UID
- *   - cross-user collision allowed (different owners can use same slug)
+ *   - cross-user slug collision: second user is ALSO rejected (WF1 fix — global uniqueness)
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -337,15 +337,18 @@ class CreateFromTemplateTest extends TestCase
     }//end testReturns404WhenTemplateSlugUnknown()
 
     /**
-     * Test 2 — Same-user slug collision → 4xx + slug_collision error envelope.
+     * Test 2 — Slug collision (any owner) → 4xx + slug_collision error envelope.
+     *
+     * WF1 fix: the collision check is now org-wide (no owner filter). Any existing
+     * Application with the same slug, regardless of who owns it, blocks the clone.
      *
      * The lookup sequence for createFromTemplate is:
      *   1. lookupOne(templateSchema, slug=templateSlug) — template exists
-     *   2. lookupOne(applicationSchema, slug=newSlug, owner=alice) — existing app collides
+     *   2. lookupOne(applicationSchema, slug=newSlug)   — existing app collides (global)
      *
      * @return void
      */
-    public function testReturns4xxOnSlugCollisionForSameOwner(): void
+    public function testReturns4xxOnSlugCollision(): void
     {
         $this->authenticateAs('alice');
         $this->withRequestParams(['name' => 'My permits', 'slug' => 'my-permits']);
@@ -353,7 +356,7 @@ class CreateFromTemplateTest extends TestCase
         $this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls(
             // 1) template found
             [$this->templateRecord(self::TEMPLATE_SLUG)],
-            // 2) existing application with the same slug owned by alice
+            // 2) existing application with the same slug (owned by anyone)
             [['slug' => 'my-permits', 'owner' => 'alice']]
         );
 
@@ -363,7 +366,7 @@ class CreateFromTemplateTest extends TestCase
         self::assertLessThan(500, $result->getStatus());
         $body = $result->getData();
         self::assertSame('slug_collision', $body['error']);
-    }//end testReturns4xxOnSlugCollisionForSameOwner()
+    }//end testReturns4xxOnSlugCollision()
 
     /**
      * Test 3 — Success: 201 + Application + per-app register + companion schema with prefix.
@@ -479,40 +482,31 @@ class CreateFromTemplateTest extends TestCase
     }//end testOwnerFieldSetToAuthenticatedUid()
 
     /**
-     * Test 6 — Cross-user slug usage is allowed: when the slug-collision lookup is
-     * scoped to the caller, two different owners can each clone an Application with
-     * the same slug. The controller's lookupOne for slug collision is scoped by `owner`.
+     * Test 6 — Cross-user slug collision is now REJECTED (WF1 fix).
+     *
+     * With the global slug uniqueness check in place, a second user attempting
+     * to clone a template with a slug already taken by another user receives
+     * slug_collision, preventing slug-squatting and routing conflicts.
      *
      * @return void
      */
-    public function testDifferentOwnersCanCloneSameSlug(): void
+    public function testCrossUserSlugCollisionIsRejected(): void
     {
         $this->authenticateAs('carol');
         $this->withRequestParams(['name' => 'My permits', 'slug' => 'my-permits']);
 
-        // Sequence: template found, then the owner-scoped collision lookup returns []
-        // (carol has no app with this slug — even though bob does, that's filtered
-        // out by the owner filter).
+        // Sequence: template found, then the global collision lookup finds bob's app.
         $this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls(
             [$this->templateRecord(self::TEMPLATE_SLUG)],
-            []
-        );
-
-        $this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(9999));
-
-        $savedPayload = null;
-        $this->objectService->method('saveObject')->willReturnCallback(
-            function (array $object) use (&$savedPayload): ObjectEntity {
-                $savedPayload = $object;
-                return $this->savedEntity(['uuid' => 'new-uuid-4']);
-            }
+            // Global check: 'my-permits' is already taken by bob.
+            [['slug' => 'my-permits', 'owner' => 'bob']]
         );
 
         $result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
 
-        self::assertSame(Http::STATUS_CREATED, $result->getStatus());
-        self::assertIsArray($savedPayload);
-        self::assertSame('carol', $savedPayload['owner'] ?? null);
-        self::assertSame('my-permits', $savedPayload['slug'] ?? null);
-    }//end testDifferentOwnersCanCloneSameSlug()
+        self::assertGreaterThanOrEqual(400, $result->getStatus());
+        self::assertLessThan(500, $result->getStatus());
+        $body = $result->getData();
+        self::assertSame('slug_collision', $body['error'], 'Cross-user slug squatting must be rejected');
+    }//end testCrossUserSlugCollisionIsRejected()
 }//end class

@@ -75,6 +75,27 @@ class ApplicationVersionsController extends Controller
     private const ADMIN_GROUP = 'admin';
 
     /**
+     * WF2: explicit allowlist of fields the caller may mutate via PUT.
+     *
+     * Any key sent by the client that is NOT in this list is silently
+     * dropped before the array_merge, preventing future schema additions
+     * (e.g. `lifecycleOverride`) from becoming unintended write channels.
+     * Immutable fields (`application`, `id`, `uuid`, `@self`) are
+     * enforced separately below the merge.
+     *
+     * @var array<int,string>
+     */
+    private const MUTABLE_FIELDS = [
+        'name',
+        'slug',
+        'manifest',
+        'register',
+        'semver',
+        'status',
+        'promotesTo',
+    ];
+
+    /**
      * Roles that grant write access to ApplicationVersion rows.
      *
      * @var array<int,string>
@@ -315,7 +336,12 @@ class ApplicationVersionsController extends Controller
             }
 
             $currentUuid = (string) ($current['id'] ?? $current['uuid'] ?? '');
-            $payload     = array_merge($current, $this->collectPayload());
+
+            // WF2: strip caller input to the explicit MUTABLE_FIELDS allowlist
+            // before merging, so new schema properties added in future cannot
+            // become unintended write channels via implicit array_merge.
+            $clientInput = array_intersect_key($this->collectPayload(), array_flip(self::MUTABLE_FIELDS));
+            $payload     = array_merge($current, $clientInput);
             unset($payload['@self']);
 
             // Preserve immutable fields.
@@ -646,8 +672,12 @@ class ApplicationVersionsController extends Controller
                     return;
                 }
             } catch (Throwable $e) {
-                $this->logger->error(
-                    'OpenBuilt: failed to record admin bypass in OR audit trail; falling back to PSR log',
+                // WF3: audit-trail write failure is a COMPLIANCE gap, not a
+                // routine warning. Emit at CRITICAL so ops alerting picks it up.
+                // Per REQ-OBRBAC-007 the OR audit trail is the system of record
+                // for admin-bypass events; silent fallback defeats forensic review.
+                $this->logger->critical(
+                    'OpenBuilt: failed to record admin bypass in OR audit trail — COMPLIANCE GAP; bypass event lost from system of record',
                     array_merge($context, ['exception' => $e->getMessage()])
                 );
             }//end try
