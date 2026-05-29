@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://codeberg.org/Conduction/nextcloud-app-template/releases"><img src="https://img.shields.io/github/v/release/ConductionNL/nextcloud-app-template" alt="Latest release"></a>
+  <a href="https://codeberg.org/Conduction/nextcloud-app-template/releases"><img src="https://img.shields.io/gitea/v/release/Conduction/nextcloud-app-template?gitea_url=https%3A%2F%2Fcodeberg.org" alt="Latest release"></a>
   <a href="https://codeberg.org/Conduction/nextcloud-app-template/src/branch/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
-  <a href="https://codeberg.org/Conduction/nextcloud-app-template/actions"><img src="https://img.shields.io/github/actions/workflow/status/ConductionNL/nextcloud-app-template/code-quality.yml?label=quality" alt="Code quality"></a>
+  <a href="https://ci.codeberg.org/repos/Conduction/nextcloud-app-template"><img src="https://ci.codeberg.org/api/badges/Conduction/nextcloud-app-template/status.svg" alt="Code quality"></a>
 </p>
 
 ---
