@@ -1,13 +1,13 @@
 <?php
 
 /**
- * Handler for the openbuilt.promoteVersion MCP tool.
+ * Handler for the openbuild.promoteVersion MCP tool.
  *
  * Promotes a virtual app from one version (e.g. development) to its downstream
  * target (e.g. production) using the configured strategy.
  *
  * @category Service
- * @package  OCA\OpenBuilt\Mcp\Handler
+ * @package  OCA\OpenBuild\Mcp\Handler
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,12 +23,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Mcp\Handler;
+namespace OCA\OpenBuild\Mcp\Handler;
 
 /**
- * Handles the openbuilt.promoteVersion tool invocation.
+ * Handles the openbuild.promoteVersion tool invocation.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-59
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
  */
 class PromoteVersionHandler extends AbstractToolHandler
 {
@@ -76,7 +76,7 @@ class PromoteVersionHandler extends AbstractToolHandler
                 );
             }
 
-            $promotionService = $this->container->get('OCA\OpenBuilt\Service\VersionPromotionService');
+            $promotionService = $this->container->get('OCA\OpenBuild\Service\VersionPromotionService');
             $updatedTarget    = $promotionService->promote($source, $strategy);
             $targetUuid       = $this->extractUuid(item: $updatedTarget);
 
@@ -94,7 +94,7 @@ class PromoteVersionHandler extends AbstractToolHandler
             ];
         } catch (\Throwable $e) {
             $this->logger->error(
-                'OpenBuilt MCP: promoteVersion failed',
+                'OpenBuild MCP: promoteVersion failed',
                 ['appSlug' => $appSlug, 'source' => $sourceVersionSlug, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
             );
             return $this->errorResult(error: 'promote_failed', message: 'Failed to promote version. See server logs for details.');

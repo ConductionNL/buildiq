@@ -12,7 +12,7 @@ vi.mock('@nextcloud/initial-state', () => ({
 const t = (app, str) => str
 
 /**
- * Spec A (openbuilt-nextcloud-nav) removed the top-level `status` and
+ * Spec A (openbuild-nextcloud-nav) removed the top-level `status` and
  * `version` fields from Application; they now live on ApplicationVersion.
  * The card resolves these via the Application's `productionVersion` relation
  * object (a nested ApplicationVersion), which OR returns inline when the

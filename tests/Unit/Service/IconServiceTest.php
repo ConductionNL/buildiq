@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Service
+ * @package  OCA\OpenBuild\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,9 +23,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Service;
+namespace OCA\OpenBuild\Tests\Unit\Service;
 
-use OCA\OpenBuilt\Service\IconService;
+use OCA\OpenBuild\Service\IconService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Files\File;

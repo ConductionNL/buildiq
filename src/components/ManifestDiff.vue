@@ -11,20 +11,20 @@
 <template>
 	<div class="manifest-diff">
 		<header class="manifest-diff__header">
-			<h3>{{ t('openbuilt', 'Manifest diff') }}</h3>
+			<h3>{{ t('openbuild', 'Manifest diff') }}</h3>
 			<small class="manifest-diff__pair">
-				{{ t('openbuilt', 'From') }}: <code>{{ fromLabel }}</code>
-				→ {{ t('openbuilt', 'To') }}: <code>{{ toLabel }}</code>
+				{{ t('openbuild', 'From') }}: <code>{{ fromLabel }}</code>
+				→ {{ t('openbuild', 'To') }}: <code>{{ toLabel }}</code>
 			</small>
 		</header>
 		<p v-if="loading" class="manifest-diff__loading">
-			{{ t('openbuilt', 'Loading diff…') }}
+			{{ t('openbuild', 'Loading diff…') }}
 		</p>
 		<p v-else-if="error" class="manifest-diff__error">
 			{{ error }}
 		</p>
 		<p v-else-if="!hasAnyContent" class="manifest-diff__empty">
-			{{ t('openbuilt', 'Nothing to diff — publish the app first.') }}
+			{{ t('openbuild', 'Nothing to diff — publish the app first.') }}
 		</p>
 		<pre v-else class="manifest-diff__pane"><span
 			v-for="(part, idx) in diffParts"
@@ -69,7 +69,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		fromLabel() {
-			return this.from === 'draft' ? t('openbuilt', 'Current draft') : (this.from.slice(0, 8) + '…')
+			return this.from === 'draft' ? t('openbuild', 'Current draft') : (this.from.slice(0, 8) + '…')
 		},
 		/**
 		 * Observed behaviour of `toLabel` (retrofit annotation).
@@ -77,7 +77,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		toLabel() {
-			return this.to === 'draft' ? t('openbuilt', 'Current draft') : (this.to ? this.to.slice(0, 8) + '…' : '—')
+			return this.to === 'draft' ? t('openbuild', 'Current draft') : (this.to ? this.to.slice(0, 8) + '…' : '—')
 		},
 		hasAnyContent() {
 			return this.fromBlob !== null || this.toBlob !== null
@@ -145,7 +145,7 @@ export default {
 			this.loading = true
 			this.error = ''
 			try {
-				const url = generateUrl(`/apps/openbuilt/api/applications/${this.slug}/versions/diff`)
+				const url = generateUrl(`/apps/openbuild/api/applications/${this.slug}/versions/diff`)
 				const { data } = await axios.get(url, {
 					params: { from: this.from, to: this.to },
 				})

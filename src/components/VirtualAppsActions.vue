@@ -10,14 +10,14 @@
   - to /applications/{applicationUuid} so they land on the detail page of
   - the newly-created app.
   -
-  - spec: openbuilt-app-creation-wizard REQ-OBWIZ-001
+  - spec: openbuild-app-creation-wizard REQ-OBWIZ-001
   -->
 <template>
 	<div class="ob-va-actions">
 		<NcButton
 			type="primary"
 			@click="showWizard = true">
-			{{ t('openbuilt', 'Add application') }}
+			{{ t('openbuild', 'Add application') }}
 		</NcButton>
 
 		<CreateApplicationWizard

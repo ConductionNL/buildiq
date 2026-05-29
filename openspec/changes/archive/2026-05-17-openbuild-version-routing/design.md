@@ -1,8 +1,8 @@
 ## Context
 
-`openbuilt-versioning-model` (spec C / ADR-002) splits the application model into
+`openbuild-versioning-model` (spec C / ADR-002) splits the application model into
 `Application` (logical) + `ApplicationVersion` (deployable runtime), with each version
-owning its own OR register named `openbuilt-{appSlug}-{versionSlug}`. However, spec C
+owning its own OR register named `openbuild-{appSlug}-{versionSlug}`. However, spec C
 ships no URL contract for reaching anything other than the production version — the
 existing `GET /api/applications/{slug}/manifest` endpoint resolves to
 `Application.productionVersion`'s manifest unconditionally, and the builder paths
@@ -33,10 +33,10 @@ thread it through the composable and store layers.
 
 **Non-Goals:**
 
-- The version-switcher UI on the detail page — `openbuilt-app-detail-overview` (spec B)
+- The version-switcher UI on the detail page — `openbuild-app-detail-overview` (spec B)
   owns it; this spec only defines the URL contract the switcher will emit.
-- The promotion endpoint — `openbuilt-version-promotion` (spec D).
-- The creation wizard — `openbuilt-app-creation-wizard` (spec F).
+- The promotion endpoint — `openbuild-version-promotion` (spec D).
+- The creation wizard — `openbuild-app-creation-wizard` (spec F).
 - Backwards-compatibility redirects for old `/builder/{slug}/…` paths without
   `?_version=` — the default rule (most-upstream-non-production fallback) covers this
   transparently; no redirect, no deprecation warning.
@@ -48,9 +48,9 @@ thread it through the composable and store layers.
 
 ### Decision 1 — Query parameter name: `?_version=<versionSlug>` (underscore-prefix mandatory)
 
-The parameter name is `_version`, not `version`. The leading underscore is OpenBuilt's
+The parameter name is `_version`, not `version`. The leading underscore is OpenBuild's
 "namespace marker" for system-reserved query params. Citizen developers building
-virtual apps with OpenBuilt can freely add `?version=...` query params to their own
+virtual apps with OpenBuild can freely add `?version=...` query params to their own
 virtual apps' routes without risk of collision with the platform's version-switching
 mechanism. Without the prefix, a virtual app's user-defined `?version=` would be
 silently interpreted by the manifest endpoint as a version-switch request, producing a
@@ -173,7 +173,7 @@ Per ADR-001, every register-shipping change documents its seed data. **This spec
 no register changes and writes no seed data.** Version routing operates entirely on
 existing `Application` and `ApplicationVersion` records provisioned by spec C and (for
 new installs) by the creation wizard (spec F). No `lib/Repair/*` files are added by
-this spec. No entries are added to `lib/Settings/openbuilt_register.json`. No seed
+this spec. No entries are added to `lib/Settings/openbuild_register.json`. No seed
 objects are written at install time.
 
 This is explicit and intentional: routing is a behaviour over existing data, not a

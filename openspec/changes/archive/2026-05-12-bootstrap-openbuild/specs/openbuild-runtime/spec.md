@@ -3,7 +3,7 @@
 ### Requirement: REQ-OBR-001 Manifest endpoint per virtual-app slug
 
 The system SHALL expose
-`GET /index.php/apps/openbuilt/api/applications/{slug}/manifest`
+`GET /index.php/apps/openbuild/api/applications/{slug}/manifest`
 backed by `ApplicationsController::getManifest`. The endpoint SHALL
 resolve `{slug}` to an `Application` via the `BuiltAppRoute` index,
 return the stored `manifest` JSON blob with `Content-Type:
@@ -16,7 +16,7 @@ treats it as authenticated-user-readable.
 #### Scenario: Endpoint returns the stored manifest
 
 - **WHEN** an authenticated user requests
-  `/index.php/apps/openbuilt/api/applications/hello-world/manifest`
+  `/index.php/apps/openbuild/api/applications/hello-world/manifest`
 - **AND** a published `Application` with `slug: hello-world` exists
   in their organisation
 - **THEN** the response is `200 application/json` and the body is the
@@ -28,25 +28,25 @@ treats it as authenticated-user-readable.
   that has no matching `BuiltAppRoute`
 - **THEN** the response is `404` with a JSON error body
 
-### Requirement: REQ-OBR-002 OpenBuilt shell mounts a nested CnAppRoot per virtual app
+### Requirement: REQ-OBR-002 OpenBuild shell mounts a nested CnAppRoot per virtual app
 
-The OpenBuilt frontend SHALL register a route `/builder/:slug/*` whose
+The OpenBuild frontend SHALL register a route `/builder/:slug/*` whose
 view (`BuilderHost.vue`) mounts a **nested** `CnAppRoot` instance.
-The nested mount SHALL be supplied with `appId = openbuilt-{slug}`
+The nested mount SHALL be supplied with `appId = openbuild-{slug}`
 and a `bundledManifest` value, so that
 `useAppManifest(appId, bundledManifest)` deep-merges the per-slug
 endpoint response over the bundled placeholder and renders the virtual
-app inside the OpenBuilt shell. The outer OpenBuilt shell's
+app inside the OpenBuild shell. The outer OpenBuild shell's
 `CnAppNav`, header, and chrome SHALL remain visible; the inner
-`CnAppRoot` SHALL render only into the OpenBuilt page area.
+`CnAppRoot` SHALL render only into the OpenBuild page area.
 
 #### Scenario: Navigating into a virtual app renders its manifest pages
 
 - **WHEN** an authenticated user navigates to
-  `/index.php/apps/openbuilt/builder/hello-world`
-- **THEN** the outer OpenBuilt shell stays mounted
+  `/index.php/apps/openbuild/builder/hello-world`
+- **THEN** the outer OpenBuild shell stays mounted
 - **AND** a nested `CnAppRoot` mounts inside the page area with
-  `appId = openbuilt-hello-world`
+  `appId = openbuild-hello-world`
 - **AND** the index page declared in the `hello-world` manifest
   renders
 
@@ -55,14 +55,14 @@ app inside the OpenBuilt shell. The outer OpenBuilt shell's
 For routes matching `/builder/:slug/*`, the system SHALL forward the
 path segments after `/{slug}` to the **inner** manifest's vue-router
 so that detail, form, and dashboard pages inside the virtual app
-resolve correctly. The outer OpenBuilt router SHALL treat everything
+resolve correctly. The outer OpenBuild router SHALL treat everything
 after `/{slug}/` as opaque to the inner router; the inner router
 MUST match its own routes against that suffix.
 
 #### Scenario: Detail route inside a virtual app resolves
 
 - **WHEN** an authenticated user navigates to
-  `/index.php/apps/openbuilt/builder/hello-world/messages/00000000-0000-0000-0000-000000000000`
+  `/index.php/apps/openbuild/builder/hello-world/messages/00000000-0000-0000-0000-000000000000`
 - **THEN** the inner `CnAppRoot`'s router matches its `detail` page
   for the `hello-message` schema
 - **AND** the detail page renders for the requested object id
@@ -72,16 +72,16 @@ MUST match its own routes against that suffix.
 The repair step SHALL seed a single Application with `slug:
 hello-world`, `status: published`, a `manifest` declaring at least
 one `type: index`, one `type: detail`, and one `type: form` page over
-a seeded `hello-message` schema in the OpenBuilt register, plus three
+a seeded `hello-message` schema in the OpenBuild register, plus three
 sample `hello-message` objects. The seed SHALL be idempotent (safe to
 re-run) and SHALL only run when no `Application` with `slug:
 hello-world` exists in the system organisation scope.
 
 #### Scenario: Fresh install renders the seeded virtual app
 
-- **WHEN** the OpenBuilt app is installed on a fresh Nextcloud
+- **WHEN** the OpenBuild app is installed on a fresh Nextcloud
 - **AND** an administrator navigates to
-  `/index.php/apps/openbuilt/builder/hello-world`
+  `/index.php/apps/openbuild/builder/hello-world`
 - **THEN** the seeded index page lists the three sample
   `hello-message` objects
 - **AND** opening one of them renders the seeded detail page
@@ -96,7 +96,7 @@ hello-world` exists in the system organisation scope.
 
 ### Requirement: REQ-OBR-005 Textarea manifest editor saves to the Application object
 
-The OpenBuilt shell SHALL render a JSON `<textarea>`-based editor for
+The OpenBuild shell SHALL render a JSON `<textarea>`-based editor for
 the `manifest` field of an `Application` object. The editor SHALL:
 (a) load the current `manifest` blob from OR via the standard OR REST
 API; (b) validate the edited blob client-side using

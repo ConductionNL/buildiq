@@ -1,17 +1,17 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuilt Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Playwright end-to-end spec for the OpenBuilt schema designer
- * (spec #4 — openbuilt-schema-editor). Marks parts of cross-spec
+ * Playwright end-to-end spec for the OpenBuild schema designer
+ * (spec #4 — openbuild-schema-editor). Marks parts of cross-spec
  * journey #2 (create-virtual-app → design-schema → edit-page →
  * publish-version-1).
  *
  * Flow under test:
  *   1. Log in as admin (NC_ADMIN_USER / NC_ADMIN_PASS env vars).
- *   2. Open the OpenBuilt app and create a virtual application
+ *   2. Open the OpenBuild app and create a virtual application
  *      (slug `pw-hello`, title "PW Hello"). The smoke spec from
- *      bootstrap-openbuilt already exercises this part; we re-use
+ *      bootstrap-openbuild already exercises this part; we re-use
  *      the same UX to land on the application page.
  *   3. Navigate to that virtual app's Schemas tab —
  *      /builder/pw-hello/schemas.
@@ -26,7 +26,7 @@
  *      confirmation. The schema row should disappear from the list.
  *
  * Runs against a live Nextcloud at NC_BASE_URL (default
- * http://localhost:8080) with the OpenBuilt app installed AND chain
+ * http://localhost:8080) with the OpenBuild app installed AND chain
  * spec #3 (openregister-runtime-schema-api) deployed. Until chain #3
  * lands, the schema CRUD calls return 404 and the test will fail at
  * step 4 — this is the expected gating behaviour documented in spec
@@ -47,7 +47,7 @@ const ADMIN_PASS = process.env.NC_ADMIN_PASS ?? 'admin'
 const APP_SLUG = 'pw-hello'
 const SCHEMA_SLUG = 'message'
 
-test.describe('OpenBuilt Schema Designer — end-to-end (REQ-OBSD-001..008)', () => {
+test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', () => {
 	test.beforeEach(async ({ page }) => {
 		// Session is established by globalSetup (tests/e2e/global-setup.ts)
 		// which writes storageState that every spec inherits via the
@@ -61,13 +61,13 @@ test.describe('OpenBuilt Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 	})
 
 	test('create virtual app → add schema → add 2 fields → save → edit → delete', async ({ page }) => {
-		// Step 1 — open the OpenBuilt app at the Applications page.
-		await page.goto(`${BASE_URL}/apps/openbuilt/applications`, {
+		// Step 1 — open the OpenBuild app at the Applications page.
+		await page.goto(`${BASE_URL}/apps/openbuild/applications`, {
 			waitUntil: 'domcontentloaded',
 		})
 
 		// Step 2 — create the virtual app via the existing manifest editor
-		// (bootstrap-openbuilt spec covers UX). We do this via the
+		// (bootstrap-openbuild spec covers UX). We do this via the
 		// application editor's primary action; if the app already exists
 		// from a previous run, the test continues idempotently.
 		const addAppButton = page.getByRole('button', { name: /add application/i })
@@ -80,12 +80,12 @@ test.describe('OpenBuilt Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 		}
 
 		// Step 3 — navigate to the Schema Designer for this virtual app.
-		await page.goto(`${BASE_URL}/apps/openbuilt/builder/${APP_SLUG}/schemas`, {
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas`, {
 			waitUntil: 'domcontentloaded',
 		})
 
 		// Wait for the panel to render — either the empty state or a row list.
-		const panel = page.locator('.openbuilt-schema-list')
+		const panel = page.locator('.openbuild-schema-list')
 		await expect(panel).toBeVisible({ timeout: 10_000 })
 
 		// Step 4 — add a schema named `message`.
@@ -124,12 +124,12 @@ test.describe('OpenBuilt Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 
 		// Back to the list — the row should reflect the new title.
 		await page.getByRole('button', { name: /back to schemas/i }).click()
-		await expect(page.locator('.openbuilt-schema-list__rows')).toContainText('Message v2')
+		await expect(page.locator('.openbuild-schema-list__rows')).toContainText('Message v2')
 
 		// Step 7 — delete the schema via the per-row action; confirm in
 		// the dialog (REQ-OBSD-008).
 		const row = page
-			.locator('.openbuilt-schema-list__row')
+			.locator('.openbuild-schema-list__row')
 			.filter({ hasText: SCHEMA_SLUG })
 		await row.getByRole('button', { name: /delete/i }).click()
 		// Confirm dialog asks for explicit confirmation.
@@ -140,7 +140,7 @@ test.describe('OpenBuilt Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 
 		// Row disappears from the list.
 		await expect(
-			page.locator('.openbuilt-schema-list__row').filter({ hasText: SCHEMA_SLUG }),
+			page.locator('.openbuild-schema-list__row').filter({ hasText: SCHEMA_SLUG }),
 		).toHaveCount(0, { timeout: 10_000 })
 	})
 })

@@ -1,12 +1,12 @@
-# openbuilt-exporter Specification
+# openbuild-exporter Specification
 
 ## Purpose
-TBD - created by archiving change openbuilt-export-to-real-app. Update Purpose after archive.
+TBD - created by archiving change openbuild-export-to-real-app. Update Purpose after archive.
 ## Requirements
 ### Requirement: ExportJob schema declaration
 
 The system SHALL declare an `ExportJob` schema in
-`lib/Settings/openbuilt_register.json` (OpenAPI 3.0.0) carrying the
+`lib/Settings/openbuild_register.json` (OpenAPI 3.0.0) carrying the
 properties `uuid`, `applicationUuid` (UUID-format, required),
 `applicationVersion` (semver-pattern, required), `target`
 (enum `zip|github`, required), `status` (enum
@@ -50,7 +50,7 @@ re-entry; `failed → queued` permitted only via explicit retry).
 The export pipeline SHALL operate on a **specific published version**
 of an Application — never on the in-flight draft. The frontend dialog
 SHALL default the version field to the Application's current
-`published` version (per `openbuilt-versioning`). The system SHALL
+`published` version (per `openbuild-versioning`). The system SHALL
 reject an export request whose `applicationVersion` does not match any
 known published version of the referenced Application.
 
@@ -93,7 +93,7 @@ SHALL include at minimum:
 - `lib/AppInfo/Application.php` with the new namespace.
 - `lib/Settings/<newapp>_register.json` carrying the companion
   schemas referenced by the manifest, slug-prefixed where the
-  source uses the shared `openbuilt` namespace.
+  source uses the shared `openbuild` namespace.
 - `lib/Repair/InitializeSettings.php` invoking
   `ConfigurationService::importFromApp()` against the new
   register.
@@ -138,24 +138,24 @@ SHALL include at minimum:
 The exporter SHALL emit a `lib/Settings/<newapp>_register.json`
 declaring a fresh OR register namespace named after the exported
 appId, and SHALL relocate every companion schema referenced by the
-source manifest from OpenBuilt's `openbuilt` namespace into that
+source manifest from OpenBuild's `openbuild` namespace into that
 new namespace. The exporter SHALL rewrite every
 `config.register` / `config.schema` reference inside the embedded
 `src/manifest.json` so the exported app reads from its own
-register, not from `openbuilt`. The exporter SHALL NOT copy the
+register, not from `openbuild`. The exporter SHALL NOT copy the
 `Application`, `BuiltAppRoute`, or `ExportJob` schemas into the
-new register (those are OpenBuilt's internal machinery).
+new register (those are OpenBuild's internal machinery).
 
 #### Scenario: Manifest references rewritten to the new namespace
 
 - **WHEN** the source manifest references
-  `{ register: "openbuilt", schema: "hello-message" }` on a page
+  `{ register: "openbuild", schema: "hello-message" }` on a page
   config
 - **THEN** the exported `src/manifest.json` references
   `{ register: "hello-world", schema: "hello-message" }` (assuming
   exported appId `hello-world`).
 
-#### Scenario: OpenBuilt internals excluded from the exported register
+#### Scenario: OpenBuild internals excluded from the exported register
 
 - **WHEN** the exporter writes
   `lib/Settings/<newapp>_register.json`
@@ -170,13 +170,13 @@ new register (those are OpenBuilt's internal machinery).
 The exported `src/manifest.json` SHALL be the **sole** manifest
 source for the exported app — there SHALL NOT be a per-slug manifest
 endpoint, an `options.fetcher` redirect, or any other runtime
-indirection (the workaround documented in bootstrap-openbuilt
+indirection (the workaround documented in bootstrap-openbuild
 Decision 4 collapses for the exported app because it owns exactly
 one manifest). The generated `src/main.js` SHALL call
 `useAppManifest('<newapp>', bundledManifest)` with the bundled blob
 directly. The exported app SHALL NOT mount a nested `CnAppRoot` —
 its `CnAppRoot` is the top-level mount (the nested-mount
-arrangement of bootstrap-openbuilt Decision 5 collapses for the
+arrangement of bootstrap-openbuild Decision 5 collapses for the
 same reason).
 
 #### Scenario: Generated main.js mounts CnAppRoot at top level
@@ -199,9 +199,9 @@ same reason).
 When the user selects target `zip`, the system SHALL produce a
 single `.zip` file containing the full exported tree, store it in
 Nextcloud's app-data area under
-`appdata_<instance>/openbuilt/exports/<jobUuid>/`, set the
+`appdata_<instance>/openbuild/exports/<jobUuid>/`, set the
 ExportJob's `downloadUrl` to
-`/index.php/apps/openbuilt/api/exports/{uuid}/download`, set
+`/index.php/apps/openbuild/api/exports/{uuid}/download`, set
 `downloadExpiresAt` to 24 hours after job completion, and transition
 the job to `succeeded`. After expiry, the download endpoint SHALL
 return 410 Gone and the archive SHALL be purged by a daily
@@ -235,8 +235,8 @@ When the user selects target `github`, the system SHALL:
 3. Open a pull request from `bootstrap` to the repo's default
    branch (`development` if the org's standard ruleset prescribes
    it, otherwise `main`) with a placeholder title
-   `"chore: bootstrap from OpenBuilt"` and a body linking back to
-   the source OpenBuilt Application.
+   `"chore: bootstrap from OpenBuild"` and a body linking back to
+   the source OpenBuild Application.
 4. Populate the ExportJob's `downloadUrl` field with the resulting
    PR URL.
 
@@ -308,7 +308,7 @@ until terminal state.
 The system SHALL ensure that re-exporting the same Application version with the same
 `includeSeedData` flag produces a byte-equivalent ZIP archive.
 The exporter SHALL NOT embed creation timestamps, random UUIDs, or
-the running OpenBuilt instance's identity into any text file
+the running OpenBuild instance's identity into any text file
 committed to the exported tree. The PHP `composer.json` and JS
 `package.json` SHALL pin dependency versions identically across
 runs.
@@ -360,28 +360,28 @@ identity to remain idempotent across re-installs.
 
 ---
 
-### Requirement: Exported app boots standalone with zero OpenBuilt dependency
+### Requirement: Exported app boots standalone with zero OpenBuild dependency
 
 The system SHALL ensure that the exported app, when installed in a Nextcloud
-instance that does NOT have OpenBuilt installed, boots to a working
+instance that does NOT have OpenBuild installed, boots to a working
 `CnAppRoot`-rendered surface using only its bundled
 `src/manifest.json` + companion register + standard Conduction
 runtime dependencies. The exported `composer.json`,
 `package.json`, and `appinfo/info.xml` SHALL NOT reference
-`openbuilt` as a dependency, peer dependency, or required app.
+`openbuild` as a dependency, peer dependency, or required app.
 
-#### Scenario: Exported app installs without OpenBuilt
+#### Scenario: Exported app installs without OpenBuild
 
 - **WHEN** the exported app is enabled on a Nextcloud instance
-  that has OpenRegister installed but NOT OpenBuilt
+  that has OpenRegister installed but NOT OpenBuild
 - **THEN** the app's top-bar entry appears, navigating to it
   renders the manifest-driven index page, and no error logs
-  reference a missing `openbuilt` dependency.
+  reference a missing `openbuild` dependency.
 
-#### Scenario: No openbuilt string in exported dependency files
+#### Scenario: No openbuild string in exported dependency files
 
 - **WHEN** the exported `composer.json`, `package.json`, and
   `appinfo/info.xml` are inspected
-- **THEN** none of them contains the substring `openbuilt`
+- **THEN** none of them contains the substring `openbuild`
   (case-insensitive) as a dependency reference.
 

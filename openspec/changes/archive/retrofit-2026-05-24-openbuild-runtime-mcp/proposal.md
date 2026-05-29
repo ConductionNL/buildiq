@@ -1,27 +1,27 @@
-# Retrofit — openbuilt-runtime (MCP surface)
+# Retrofit — openbuild-runtime (MCP surface)
 
-Describes observed behaviour of 16 methods under `lib/Mcp/OpenBuiltToolProvider.php`
-as 4 new REQs added to the `openbuilt-runtime` capability. Code already exists —
+Describes observed behaviour of 16 methods under `lib/Mcp/OpenBuildToolProvider.php`
+as 4 new REQs added to the `openbuild-runtime` capability. Code already exists —
 this change retroactively specifies it.
 
 ## Affected code units
 
-- lib/Mcp/OpenBuiltToolProvider.php::getAppId
-- lib/Mcp/OpenBuiltToolProvider.php::getTools
-- lib/Mcp/OpenBuiltToolProvider.php::invokeTool
-- lib/Mcp/OpenBuiltToolProvider.php::errorResult
-- lib/Mcp/OpenBuiltToolProvider.php::requireAuthenticatedUser
-- lib/Mcp/OpenBuiltToolProvider.php::isAdmin
-- lib/Mcp/OpenBuiltToolProvider.php::validateListAppsArgs
-- lib/Mcp/OpenBuiltToolProvider.php::isValidSlug
-- lib/Mcp/OpenBuiltToolProvider.php::resolveApplicationBySlug
-- lib/Mcp/OpenBuiltToolProvider.php::mapApplication
-- lib/Mcp/OpenBuiltToolProvider.php::sourceDescriptor
-- lib/Mcp/OpenBuiltToolProvider.php::buildDeepLink
-- lib/Mcp/OpenBuiltToolProvider.php::toArray
-- lib/Mcp/OpenBuiltToolProvider.php::extractUuid
-- lib/Mcp/OpenBuiltToolProvider.php::loadVersion
-- lib/Mcp/OpenBuiltToolProvider.php::saveVersionManifest
+- lib/Mcp/OpenBuildToolProvider.php::getAppId
+- lib/Mcp/OpenBuildToolProvider.php::getTools
+- lib/Mcp/OpenBuildToolProvider.php::invokeTool
+- lib/Mcp/OpenBuildToolProvider.php::errorResult
+- lib/Mcp/OpenBuildToolProvider.php::requireAuthenticatedUser
+- lib/Mcp/OpenBuildToolProvider.php::isAdmin
+- lib/Mcp/OpenBuildToolProvider.php::validateListAppsArgs
+- lib/Mcp/OpenBuildToolProvider.php::isValidSlug
+- lib/Mcp/OpenBuildToolProvider.php::resolveApplicationBySlug
+- lib/Mcp/OpenBuildToolProvider.php::mapApplication
+- lib/Mcp/OpenBuildToolProvider.php::sourceDescriptor
+- lib/Mcp/OpenBuildToolProvider.php::buildDeepLink
+- lib/Mcp/OpenBuildToolProvider.php::toArray
+- lib/Mcp/OpenBuildToolProvider.php::extractUuid
+- lib/Mcp/OpenBuildToolProvider.php::loadVersion
+- lib/Mcp/OpenBuildToolProvider.php::saveVersionManifest
 
 ## Approach
 

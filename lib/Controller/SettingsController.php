@@ -1,15 +1,15 @@
 <?php
 
 /**
- * OpenBuilt Settings Controller
+ * OpenBuild Settings Controller
  *
- * Controller for managing OpenBuilt application settings.
+ * Controller for managing OpenBuild application settings.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuilt\Controller
+ * @package  OCA\OpenBuild\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,10 +22,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Controller;
+namespace OCA\OpenBuild\Controller;
 
-use OCA\OpenBuilt\AppInfo\Application;
-use OCA\OpenBuilt\Service\SettingsService;
+use OCA\OpenBuild\AppInfo\Application;
+use OCA\OpenBuild\Service\SettingsService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -36,7 +36,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 
 /**
- * Controller for managing OpenBuilt application settings.
+ * Controller for managing OpenBuild application settings.
  */
 class SettingsController extends Controller
 {
@@ -90,7 +90,7 @@ class SettingsController extends Controller
     /**
      * Update settings with provided data.
      *
-     * Admin-only: writing OpenBuilt configuration affects all users on the
+     * Admin-only: writing OpenBuild configuration affects all users on the
      * instance; non-admin callers receive 403 (H6 guard).
      *
      * @NoAdminRequired
@@ -125,7 +125,7 @@ class SettingsController extends Controller
     }//end create()
 
     /**
-     * Re-import the configuration from openbuilt_register.json.
+     * Re-import the configuration from openbuild_register.json.
      *
      * Forces a fresh import regardless of version, auto-configuring
      * all schema and register IDs from the import result.

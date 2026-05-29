@@ -7,14 +7,14 @@
 <template>
 	<div class="index-page-editor">
 		<h3 class="index-page-editor__title">
-			{{ t('openbuilt', 'Index page') }}
+			{{ t('openbuild', 'Index page') }}
 		</h3>
 		<div class="index-page-editor__group">
 			<label>
-				{{ t('openbuilt', 'Register') }}
+				{{ t('openbuild', 'Register') }}
 				<select :value="config.register || ''" :aria-invalid="isInvalid('register')" @change="update('register', $event.target.value)">
 					<option value="">
-						{{ t('openbuilt', '— select register —') }}
+						{{ t('openbuild', '— select register —') }}
 					</option>
 					<option v-for="r in registers" :key="r.slug || r.id" :value="r.slug">
 						{{ r.title || r.slug }}
@@ -23,14 +23,14 @@
 				<InlineFieldMark :error="markFor('register')" />
 			</label>
 			<label>
-				{{ t('openbuilt', 'Schema') }}
+				{{ t('openbuild', 'Schema') }}
 				<select
 					:value="config.schema || ''"
 					:disabled="!config.register"
 					:aria-invalid="isInvalid('schema')"
 					@change="update('schema', $event.target.value)">
 					<option value="">
-						{{ t('openbuilt', '— select schema —') }}
+						{{ t('openbuild', '— select schema —') }}
 					</option>
 					<option v-for="s in schemas" :key="s.slug || s.id" :value="s.slug">
 						{{ s.title || s.slug }}
@@ -39,11 +39,11 @@
 				<InlineFieldMark :error="markFor('schema')" />
 			</label>
 			<label>
-				{{ t('openbuilt', 'Card component (optional)') }}
+				{{ t('openbuild', 'Card component (optional)') }}
 				<input
 					type="text"
 					:value="config.cardComponent || ''"
-					:placeholder="t('openbuilt', 'customComponents key')"
+					:placeholder="t('openbuild', 'customComponents key')"
 					:aria-invalid="isInvalid('cardComponent')"
 					@input="update('cardComponent', $event.target.value)">
 				<InlineFieldMark :error="markFor('cardComponent')" />
@@ -51,7 +51,7 @@
 		</div>
 
 		<fieldset class="index-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Columns') }}</legend>
+			<legend>{{ t('openbuild', 'Columns') }}</legend>
 			<ColumnBuilder
 				:model-value="config.columns || []"
 				:schema-properties="schemaProperties"
@@ -60,7 +60,7 @@
 		</fieldset>
 
 		<fieldset class="index-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Actions') }}</legend>
+			<legend>{{ t('openbuild', 'Actions') }}</legend>
 			<ActionBuilder
 				:model-value="config.actions || []"
 				@update:modelValue="update('actions', $event)" />
@@ -68,13 +68,13 @@
 		</fieldset>
 
 		<fieldset class="index-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Sidebar') }}</legend>
+			<legend>{{ t('openbuild', 'Sidebar') }}</legend>
 			<label class="index-page-editor__inline">
 				<input
 					type="checkbox"
 					:checked="sidebarEnabled"
 					@change="onSidebarToggle($event.target.checked)">
-				{{ t('openbuilt', 'Enabled') }}
+				{{ t('openbuild', 'Enabled') }}
 			</label>
 			<InlineFieldMark :error="markFor('sidebar')" />
 			<SidebarSectionBuilder
@@ -108,7 +108,7 @@ export default {
 			default: () => ({}),
 		},
 		// Current Application slug. Drives the hybrid register model so the
-		// register picker hoists `openbuilt-{slug}` to the top of the list.
+		// register picker hoists `openbuild-{slug}` to the top of the list.
 		appSlug: {
 			type: String,
 			default: '',

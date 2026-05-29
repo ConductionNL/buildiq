@@ -17,19 +17,19 @@
 			type="primary"
 			:disabled="!canPublish || publishing"
 			@click="publish">
-			{{ publishing ? t('openbuilt', 'Publishing…') : t('openbuilt', 'Publish') }}
+			{{ publishing ? t('openbuild', 'Publishing…') : t('openbuild', 'Publish') }}
 		</NcButton>
 		<NcButton
 			v-if="obAppRole === 'owner'"
 			:disabled="!obApp"
 			@click="permissionsOpen = true">
-			{{ t('openbuilt', 'Manage permissions') }}
+			{{ t('openbuild', 'Manage permissions') }}
 		</NcButton>
 		<NcButton v-if="obApp && obApp.slug" :to="{ name: 'PageDesigner', params: { slug: obApp.slug } }">
-			{{ t('openbuilt', 'Design pages') }}
+			{{ t('openbuild', 'Design pages') }}
 		</NcButton>
 		<NcButton v-if="builderUrl" :href="builderUrl">
-			{{ t('openbuilt', 'Open virtual app') }}
+			{{ t('openbuild', 'Open virtual app') }}
 		</NcButton>
 		<span v-if="toast" class="ob-detail-actions__toast">{{ toast }}</span>
 		<span v-if="error" class="ob-detail-actions__error">{{ error }}</span>
@@ -80,7 +80,7 @@ export default {
 			if (!this.obApp || !(this.obApp.currentVersion || this.obApp.status === 'published')) {
 				return ''
 			}
-			return generateUrl(`/apps/openbuilt/builder/${this.obApp.slug}`)
+			return generateUrl(`/apps/openbuild/builder/${this.obApp.slug}`)
 		},
 		/**
 		 * Observed behaviour of `availableGroups` (retrofit annotation).
@@ -116,13 +116,13 @@ export default {
 				// which ApplicationVersionSnapshotListener consumes to snapshot the
 				// manifest into ApplicationVersion and bump currentVersion + create
 				// the BuiltAppRoute.
-				const url = generateUrl(`/apps/openregister/api/objects/openbuilt/application/${this.obAppUuid}/transition/publish`)
+				const url = generateUrl(`/apps/openregister/api/objects/openbuild/application/${this.obAppUuid}/transition/publish`)
 				const { data } = await axios.post(url, {})
 				await this.obLoadApp()
 				const v = (data && (data.currentVersion || data.uuid)) || (this.obApp && this.obApp.currentVersion) || ''
-				this.toast = t('openbuilt', 'Published version {uuid}', { uuid: v ? String(v).slice(0, 8) + '…' : '' })
+				this.toast = t('openbuild', 'Published version {uuid}', { uuid: v ? String(v).slice(0, 8) + '…' : '' })
 			} catch (e) {
-				this.error = `${t('openbuilt', 'Publish failed')}: ${e.message || e}`
+				this.error = `${t('openbuild', 'Publish failed')}: ${e.message || e}`
 			} finally {
 				this.publishing = false
 			}
@@ -141,7 +141,7 @@ export default {
 				await this.obPatchApp({ permissions })
 				this.permissionsOpen = false
 			} catch (e) {
-				this.error = `${t('openbuilt', 'Failed to save permissions')}: ${e.message || e}`
+				this.error = `${t('openbuild', 'Failed to save permissions')}: ${e.message || e}`
 			}
 		},
 	},

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for VersionPromotionService (spec openbuilt-version-promotion).
+ * Unit tests for VersionPromotionService (spec openbuild-version-promotion).
  *
  * Covers REQ-OBVP-001 (target resolution + strategy validation),
  * REQ-OBVP-002 (start-with-source-data), REQ-OBVP-003
@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Service
+ * @package  OCA\OpenBuild\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,13 +27,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Service;
+namespace OCA\OpenBuild\Tests\Unit\Service;
 
-use OCA\OpenBuilt\Exception\InvalidStrategyException;
-use OCA\OpenBuilt\Exception\NoPromoteTargetException;
-use OCA\OpenBuilt\Exception\PromotionFailedException;
-use OCA\OpenBuilt\Exception\VersionLockedException;
-use OCA\OpenBuilt\Service\VersionPromotionService;
+use OCA\OpenBuild\Exception\InvalidStrategyException;
+use OCA\OpenBuild\Exception\NoPromoteTargetException;
+use OCA\OpenBuild\Exception\PromotionFailedException;
+use OCA\OpenBuild\Exception\VersionLockedException;
+use OCA\OpenBuild\Service\VersionPromotionService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -198,13 +198,13 @@ class VersionPromotionServiceTest extends TestCase
     {
         $source = [
             'id'         => 'u-src',
-            'register'   => 'openbuilt-app-staging',
+            'register'   => 'openbuild-app-staging',
             'manifest'   => ['version' => '1.0.0'],
             'semver'     => '1.0.0',
             'promotesTo' => 'u-tgt',
         ];
 
-        $targetEntity = $this->buildObjectEntity(uuid: 'u-tgt', payload: ['id' => 'u-tgt', 'register' => 'openbuilt-app-production']);
+        $targetEntity = $this->buildObjectEntity(uuid: 'u-tgt', payload: ['id' => 'u-tgt', 'register' => 'openbuild-app-production']);
 
         $this->objectService
             ->method('find')
@@ -227,7 +227,7 @@ class VersionPromotionServiceTest extends TestCase
     {
         $source = [
             'id'         => 'u-src',
-            'register'   => 'openbuilt-app-staging',
+            'register'   => 'openbuild-app-staging',
             'manifest'   => ['version' => '1.5.0', 'pages' => []],
             'semver'     => '1.5.0',
             'promotesTo' => 'u-tgt',
@@ -235,7 +235,7 @@ class VersionPromotionServiceTest extends TestCase
 
         $target = [
             'id'       => 'u-tgt',
-            'register' => 'openbuilt-app-production',
+            'register' => 'openbuild-app-production',
             'manifest' => ['version' => '1.0.0'],
             'semver'   => '1.0.0',
         ];
@@ -248,12 +248,12 @@ class VersionPromotionServiceTest extends TestCase
 
         $this->registerMapper
             ->method('find')
-            ->willReturn($this->buildRegister(id: 1, slug: 'openbuilt-app-staging', schemas: ['s1', 's2']));
+            ->willReturn($this->buildRegister(id: 1, slug: 'openbuild-app-staging', schemas: ['s1', 's2']));
 
         $this->objectService
             ->expects(self::once())
             ->method('lockObject')
-            ->with('u-tgt', 'openbuilt.version-promotion', 60);
+            ->with('u-tgt', 'openbuild.version-promotion', 60);
 
         // RegisterMapper::update should be invoked for the schema-set forwarding.
         $this->registerMapper
@@ -265,7 +265,7 @@ class VersionPromotionServiceTest extends TestCase
             uuid: 'u-tgt',
             payload: [
                 'id'       => 'u-tgt',
-                'register' => 'openbuilt-app-production',
+                'register' => 'openbuild-app-production',
                 'manifest' => ['version' => '1.5.0', 'pages' => []],
                 'semver'   => '1.5.0',
                 'status'   => 'published',
@@ -312,7 +312,7 @@ class VersionPromotionServiceTest extends TestCase
     {
         $source = [
             'id'         => 'u-src',
-            'register'   => 'openbuilt-app-staging',
+            'register'   => 'openbuild-app-staging',
             'manifest'   => ['version' => '1.5.0'],
             'semver'     => '1.5.0',
             'promotesTo' => 'u-tgt',
@@ -320,7 +320,7 @@ class VersionPromotionServiceTest extends TestCase
 
         $target = [
             'id'       => 'u-tgt',
-            'register' => 'openbuilt-app-production',
+            'register' => 'openbuild-app-production',
             'manifest' => ['version' => '1.0.0'],
             'semver'   => '1.0.0',
             'status'   => 'published',
@@ -336,7 +336,7 @@ class VersionPromotionServiceTest extends TestCase
 
         $this->registerMapper
             ->method('find')
-            ->willReturn($this->buildRegister(id: 1, slug: 'openbuilt-app-staging', schemas: ['s1']));
+            ->willReturn($this->buildRegister(id: 1, slug: 'openbuild-app-staging', schemas: ['s1']));
 
         // First saveObject call is the strategy step — fail. The on-failure
         // flow then calls saveObject AGAIN to write the archived flip.
@@ -344,7 +344,7 @@ class VersionPromotionServiceTest extends TestCase
             uuid: 'u-tgt',
             payload: [
                 'id'       => 'u-tgt',
-                'register' => 'openbuilt-app-production',
+                'register' => 'openbuild-app-production',
                 'status'   => 'archived',
             ]
         );
@@ -400,7 +400,7 @@ class VersionPromotionServiceTest extends TestCase
     {
         $source = [
             'id'         => 'u-src',
-            'register'   => 'openbuilt-app-staging',
+            'register'   => 'openbuild-app-staging',
             'manifest'   => ['version' => '1.5.0', 'pages' => []],
             'semver'     => '1.5.0',
             'status'     => 'published',
@@ -409,7 +409,7 @@ class VersionPromotionServiceTest extends TestCase
 
         $target = [
             'id'       => 'u-tgt',
-            'register' => 'openbuilt-app-production',
+            'register' => 'openbuild-app-production',
             'manifest' => ['version' => '1.0.0'],
             'semver'   => '1.0.0',
             'status'   => 'published',
@@ -420,13 +420,13 @@ class VersionPromotionServiceTest extends TestCase
         $this->objectService->method('find')->willReturn($targetEntity);
         $this->registerMapper
             ->method('find')
-            ->willReturn($this->buildRegister(id: 1, slug: 'openbuilt-app-staging', schemas: ['s1']));
+            ->willReturn($this->buildRegister(id: 1, slug: 'openbuild-app-staging', schemas: ['s1']));
 
         $savedArchived = $this->buildObjectEntity(
             uuid: 'u-tgt',
             payload: [
                 'id'       => 'u-tgt',
-                'register' => 'openbuilt-app-production',
+                'register' => 'openbuild-app-production',
                 'status'   => 'archived',
             ]
         );
@@ -472,7 +472,7 @@ class VersionPromotionServiceTest extends TestCase
             // The in-memory source payload is untouched.
             self::assertSame('1.5.0', $source['semver']);
             self::assertSame('published', $source['status']);
-            self::assertSame('openbuilt-app-staging', $source['register']);
+            self::assertSame('openbuild-app-staging', $source['register']);
             throw $e;
         }
     }//end testPromoteFailureLeavesSourceUnmodified()
@@ -486,7 +486,7 @@ class VersionPromotionServiceTest extends TestCase
     {
         $source = [
             'id'         => 'u-src',
-            'register'   => 'openbuilt-app-staging',
+            'register'   => 'openbuild-app-staging',
             'manifest'   => ['version' => '2.0.0'],
             'semver'     => '2.0.0',
             'promotesTo' => 'u-tgt',
@@ -494,7 +494,7 @@ class VersionPromotionServiceTest extends TestCase
 
         $target = [
             'id'       => 'u-tgt',
-            'register' => 'openbuilt-app-production',
+            'register' => 'openbuild-app-production',
             'manifest' => ['version' => '1.0.0'],
             'semver'   => '1.0.0',
         ];
@@ -502,7 +502,7 @@ class VersionPromotionServiceTest extends TestCase
         $targetEntity = $this->buildObjectEntity(uuid: 'u-tgt', payload: $target);
         $this->objectService->method('find')->willReturn($targetEntity);
 
-        $register = $this->buildRegister(id: 7, slug: 'openbuilt-app-staging', schemas: ['s1']);
+        $register = $this->buildRegister(id: 7, slug: 'openbuild-app-staging', schemas: ['s1']);
         $this->registerMapper->method('find')->willReturn($register);
 
         // wipeTargetRegister: searchObjects returns target rows; deleteObject called per row.
@@ -535,7 +535,7 @@ class VersionPromotionServiceTest extends TestCase
             uuid: 'u-tgt',
             payload: [
                 'id'       => 'u-tgt',
-                'register' => 'openbuilt-app-production',
+                'register' => 'openbuild-app-production',
                 'manifest' => ['version' => '2.0.0'],
                 'semver'   => '2.0.0',
                 'status'   => 'published',
@@ -564,7 +564,7 @@ class VersionPromotionServiceTest extends TestCase
     {
         $source = [
             'id'         => 'u-src',
-            'register'   => 'openbuilt-app-staging',
+            'register'   => 'openbuild-app-staging',
             'manifest'   => ['version' => '2.0.0'],
             'semver'     => '2.0.0',
             'promotesTo' => 'u-tgt',
@@ -572,7 +572,7 @@ class VersionPromotionServiceTest extends TestCase
 
         $target = [
             'id'       => 'u-tgt',
-            'register' => 'openbuilt-app-production',
+            'register' => 'openbuild-app-production',
             'manifest' => ['version' => '1.0.0'],
             'semver'   => '1.0.0',
         ];
@@ -580,7 +580,7 @@ class VersionPromotionServiceTest extends TestCase
         $targetEntity = $this->buildObjectEntity(uuid: 'u-tgt', payload: $target);
         $this->objectService->method('find')->willReturn($targetEntity);
 
-        $register = $this->buildRegister(id: 7, slug: 'openbuilt-app-staging', schemas: ['s1']);
+        $register = $this->buildRegister(id: 7, slug: 'openbuild-app-staging', schemas: ['s1']);
         $this->registerMapper->method('find')->willReturn($register);
 
         $targetRow1 = $this->buildObjectEntity(uuid: 'r-tgt-1', payload: ['id' => 'r-tgt-1']);
@@ -600,7 +600,7 @@ class VersionPromotionServiceTest extends TestCase
             uuid: 'u-tgt',
             payload: [
                 'id'       => 'u-tgt',
-                'register' => 'openbuilt-app-production',
+                'register' => 'openbuild-app-production',
                 'manifest' => ['version' => '2.0.0'],
                 'semver'   => '2.0.0',
                 'status'   => 'published',

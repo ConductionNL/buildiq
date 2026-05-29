@@ -1,11 +1,11 @@
 ---
 kind: code
-depends_on: ["openbuilt-versioning-model"]
+depends_on: ["openbuild-versioning-model"]
 ---
 
 ## Why
 
-The foundation spec `openbuilt-versioning-model` (spec C) ships the two-object
+The foundation spec `openbuild-versioning-model` (spec C) ships the two-object
 versioning model (`Application` + `ApplicationVersion`) and per-version registers,
 but defines no URL contract for reaching a specific version. Without version-aware
 routing, CnAppRoot always serves the same (production) manifest regardless of which
@@ -35,7 +35,7 @@ builder paths, with server-side RBAC so end users always see only production.
 - **View-level reads** in `SchemaDesignerView`, `PageDesignerView`, `BuilderHostView`,
   and `PageDesignerHostView` each read `$route.query._version` and pass it down.
 - **`schemas.js` store** accepts an optional `versionSlug` and routes the register name
-  accordingly: `openbuilt-{appSlug}-{versionSlug}` (from spec C's register naming
+  accordingly: `openbuild-{appSlug}-{versionSlug}` (from spec C's register naming
   convention).
 - **Tests**: new PHPUnit tests for the manifest RBAC gate; new Playwright e2e test for
   bookmarkability (reload preserves `?_version`), 404 for unauthorised callers on
@@ -52,7 +52,7 @@ builder paths, with server-side RBAC so end users always see only production.
 
 ### Modified Capabilities
 
-_(none — the manifest endpoint is owned by the existing `openbuilt-application-register`
+_(none — the manifest endpoint is owned by the existing `openbuild-application-register`
 capability; this spec adds a query-param contract that is purely additive and does not
 change any existing requirement in that spec)_
 
@@ -75,6 +75,6 @@ change any existing requirement in that spec)_
 - **New tests**: `tests/Unit/Controller/ManifestControllerTest.php` (modify or new),
   `tests/e2e/version-routing.spec.ts` (new)
 - **OpenRegister dependency**: relies on the `Application` + `ApplicationVersion` schemas
-  delivered by `openbuilt-versioning-model`
+  delivered by `openbuild-versioning-model`
 - **ADR dependencies**: ADR-002 (versioned deployment model), ADR-022 (consume OR
   abstractions), ADR-024 (manifest), ADR-031 (declarative vs imperative)

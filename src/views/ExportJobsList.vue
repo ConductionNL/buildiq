@@ -2,18 +2,18 @@
 <template>
 	<section class="export-jobs">
 		<header class="export-jobs__header">
-			<h2>{{ t('openbuilt', 'Export application') }}</h2>
+			<h2>{{ t('openbuild', 'Export application') }}</h2>
 			<NcButton v-if="applicationSlug" type="primary" @click="openDialog">
-				{{ t('openbuilt', 'Start export') }}
+				{{ t('openbuild', 'Start export') }}
 			</NcButton>
 		</header>
 
 		<table v-if="jobs.length" class="export-jobs__table">
 			<thead>
 				<tr>
-					<th>{{ t('openbuilt', 'Version') }}</th>
-					<th>{{ t('openbuilt', 'Target') }}</th>
-					<th>{{ t('openbuilt', 'Status') }}</th>
+					<th>{{ t('openbuild', 'Version') }}</th>
+					<th>{{ t('openbuild', 'Target') }}</th>
+					<th>{{ t('openbuild', 'Status') }}</th>
 					<th />
 				</tr>
 			</thead>
@@ -26,12 +26,12 @@
 						<NcButton
 							v-if="job.status === 'succeeded' && job.target === 'zip' && job.downloadUrl"
 							:href="job.downloadUrl">
-							{{ t('openbuilt', 'Download ZIP') }}
+							{{ t('openbuild', 'Download ZIP') }}
 						</NcButton>
 						<NcButton
 							v-else-if="job.status === 'succeeded' && job.target === 'github' && job.githubPullRequestUrl"
 							:href="job.githubPullRequestUrl">
-							{{ t('openbuilt', 'View pull request') }}
+							{{ t('openbuild', 'View pull request') }}
 						</NcButton>
 						<span v-else-if="job.status === 'failed'" class="export-jobs__error">
 							{{ job.errorMessage }}
@@ -41,7 +41,7 @@
 			</tbody>
 		</table>
 		<p v-else>
-			{{ t('openbuilt', 'No exports yet.') }}
+			{{ t('openbuild', 'No exports yet.') }}
 		</p>
 
 		<ExportDialog
@@ -120,7 +120,7 @@ export default {
 			// Placeholder: real impl polls OR REST per ADR-022; the controller
 			// deliberately does not expose CRUD on ExportJob.
 			try {
-				const response = await fetch('/index.php/apps/openregister/api/objects/openbuilt/exportJob?filter[applicationSlug]=' + encodeURIComponent(this.applicationSlug))
+				const response = await fetch('/index.php/apps/openregister/api/objects/openbuild/exportJob?filter[applicationSlug]=' + encodeURIComponent(this.applicationSlug))
 				if (!response.ok) {
 					return
 				}
@@ -137,10 +137,10 @@ export default {
 		 */
 		statusLabel(status) {
 			const map = {
-				queued: this.t('openbuilt', 'Queued'),
-				running: this.t('openbuilt', 'Running'),
-				succeeded: this.t('openbuilt', 'Succeeded'),
-				failed: this.t('openbuilt', 'Failed'),
+				queued: this.t('openbuild', 'Queued'),
+				running: this.t('openbuild', 'Running'),
+				succeeded: this.t('openbuild', 'Succeeded'),
+				failed: this.t('openbuild', 'Failed'),
 			}
 			return map[status] || status
 		},

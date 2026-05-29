@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenBuilt ApplicationCreationController
+ * OpenBuild ApplicationCreationController
  *
  * Single-endpoint controller for the app-creation wizard
- * (spec `openbuilt-app-creation-wizard`, REQ-OBWIZ-001 / REQ-OBWIZ-007).
+ * (spec `openbuild-app-creation-wizard`, REQ-OBWIZ-001 / REQ-OBWIZ-007).
  *
- * Endpoint: POST /apps/openbuilt/api/applications/wizard
+ * Endpoint: POST /apps/openbuild/api/applications/wizard
  *
  * The endpoint carries `#[NoAdminRequired]` so NC's middleware accepts the
  * request, but the controller gate (issue #157) restricts it to NC admins:
@@ -18,7 +18,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuilt\Controller
+ * @package  OCA\OpenBuild\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,18 +28,18 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-8
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-12
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-15
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Controller;
+namespace OCA\OpenBuild\Controller;
 
-use OCA\OpenBuilt\AppInfo\Application;
-use OCA\OpenBuilt\Exception\WizardCreationException;
-use OCA\OpenBuilt\Service\ApplicationCreationService;
+use OCA\OpenBuild\AppInfo\Application;
+use OCA\OpenBuild\Exception\WizardCreationException;
+use OCA\OpenBuild\Service\ApplicationCreationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -90,9 +90,9 @@ class ApplicationCreationController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-12
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-15
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 10, period: 3600)]
@@ -110,7 +110,7 @@ class ApplicationCreationController extends Controller
         // Creating a virtual app provisions an OR Register, which mirrors the
         // admin-only gate on OR's RegistersController (OR #1949). Non-admin
         // users who have been denied register-create rights in OR must not be
-        // able to regain that privilege via openbuilt (issue #157).
+        // able to regain that privilege via openbuild (issue #157).
         if ($this->groupManager->isAdmin($user->getUID()) === false) {
             return new JSONResponse(
                 data: ['error' => 'forbidden', 'message' => 'Creating virtual apps requires Nextcloud admin privileges.'],
@@ -150,7 +150,7 @@ class ApplicationCreationController extends Controller
             return new JSONResponse(data: $body, statusCode: $httpStatus);
         } catch (Throwable $e) {
             $this->logger->error(
-                'OpenBuilt: ApplicationCreationController::wizard unhandled exception: '.$e->getMessage(),
+                'OpenBuild: ApplicationCreationController::wizard unhandled exception: '.$e->getMessage(),
                 ['exception' => $e]
             );
 

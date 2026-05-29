@@ -1,4 +1,4 @@
-# openbuilt-application-register Specification
+# openbuild-application-register Specification
 
 ## Purpose
 
@@ -19,7 +19,7 @@ scoping via OR's standard `organisation` field (ADR-022). Lifecycle relocates to
 ### Requirement: Application schema registered in OpenRegister
 
 The system SHALL declare an `Application` schema in
-`lib/Settings/openbuilt_register.json` under the `openbuilt` register namespace.
+`lib/Settings/openbuild_register.json` under the `openbuild` register namespace.
 Under the versioned model (ADR-002) the Application schema SHALL define the following
 top-level properties: `uuid` (string, UUID-format), `slug` (string, kebab-case
 pattern), `name` (string, required), `description` (string, optional), `permissions`
@@ -37,16 +37,16 @@ existing repair step.
 
 #### Scenario: Schema is available after install
 
-- **WHEN** the OpenBuilt app is installed and its repair step runs
-- **THEN** OpenRegister exposes the `openbuilt` register containing the
+- **WHEN** the OpenBuild app is installed and its repair step runs
+- **THEN** OpenRegister exposes the `openbuild` register containing the
   `Application` schema with the versioned-model property set above
 - **AND** the schema's properties match the declaration in
-  `lib/Settings/openbuilt_register.json`
+  `lib/Settings/openbuild_register.json`
 
 #### Scenario: Application object is created via OR REST
 
 - **WHEN** a client POSTs a payload to OR's REST endpoint for the
-  `openbuilt/application` namespace with valid `slug`, `name`, and `permissions`
+  `openbuild/application` namespace with valid `slug`, `name`, and `permissions`
 - **THEN** OR persists the object, returns 201, and the returned object carries an
   OR-assigned `uuid` and the submitted fields
 - **AND** the returned object has no `manifest`, `version`, `status`, or
@@ -65,8 +65,8 @@ The `Application` schema SHALL additionally declare two optional top-level prope
 `icon` and `iconDark` — each of shape `{ "ref": "<filename>" }` referencing an OR-attached
 SVG file on the Application record (per ADR-001). These properties live as siblings to
 `slug`, `name`, `manifest`, `version`, and `permissions` on the `application` schema in
-`lib/Settings/openbuilt_register.json`. They are deliberately outside the `manifest` object
-because they are openbuilt-side admin metadata about the virtual app, not part of the
+`lib/Settings/openbuild_register.json`. They are deliberately outside the `manifest` object
+because they are openbuild-side admin metadata about the virtual app, not part of the
 manifest blob the citizen developer designs and the runtime serves to `CnAppRoot` — so this
 spec does not touch `app-manifest.schema.json` and carries no upstream coupling.
 
@@ -93,12 +93,12 @@ spec does not touch `app-manifest.schema.json` and carries no upstream coupling.
 - **WHEN** a client saves an Application whose `manifest` blob contains an `icon` key
   (e.g. `"manifest": { "version": "1.0.0", "menu": [...], "pages": [...], "icon": {...} }`)
 - **THEN** OR accepts the save (the manifest's `additionalProperties` posture is opaque to
-  this spec), but the openbuilt icon-serving endpoint and nav-entry rendering SHALL ignore
+  this spec), but the openbuild icon-serving endpoint and nav-entry rendering SHALL ignore
   the value — only the top-level `icon` / `iconDark` fields drive icon resolution
 
 #### Scenario: Application object is created via OR REST (unchanged from prior revision)
 
-- **WHEN** a client POSTs a payload to OR's REST endpoint for the `openbuilt/application`
+- **WHEN** a client POSTs a payload to OR's REST endpoint for the `openbuild/application`
   namespace with a valid `manifest`, `slug`, `name`, `version`, and `status: draft`
 - **THEN** OR persists the object, returns 201, and the returned object carries an OR-assigned
   `uuid` and the submitted fields
@@ -119,7 +119,7 @@ in v1 of this change. No `ApplicationLifecycleService` SHALL be written.
 
 #### Scenario: Application has no status state machine
 
-- **WHEN** the OpenBuilt repair step runs and imports the Application schema
+- **WHEN** the OpenBuild repair step runs and imports the Application schema
 - **THEN** the imported schema does not expose a `status` enum
 - **AND** the imported schema's `x-openregister-lifecycle` carries no `states` or
   `transitions` block
@@ -127,7 +127,7 @@ in v1 of this change. No `ApplicationLifecycleService` SHALL be written.
 ### Requirement: BuiltAppRoute index for slug lookup
 
 The system SHALL declare a `BuiltAppRoute` schema in
-`lib/Settings/openbuilt_register.json` with properties `slug` (string, required,
+`lib/Settings/openbuild_register.json` with properties `slug` (string, required,
 kebab-case pattern) and `applicationUuid` (string, UUID-format, required). The `slug`
 property SHALL be unique within an organisation. The `BuiltAppRoute` row SHALL be
 created or updated by the `on_transition` action that fires when an
@@ -171,7 +171,7 @@ authorization layer (ADR-022 — no app-local RBAC duplication).
 
 ### Requirement: Application schema carries a permissions block
 
-The system SHALL extend the `Application` schema in `lib/Settings/openbuilt_register.json` with an optional `permissions` property of shape:
+The system SHALL extend the `Application` schema in `lib/Settings/openbuild_register.json` with an optional `permissions` property of shape:
 
 ```json
 {
@@ -196,7 +196,7 @@ Application) remain schema-valid; a migration step (see
 REQ-OBA-007) populates a default value for every existing
 Application on apply. New Applications created after this spec
 lands carry `permissions` from the moment of creation by virtue of
-REQ-OBRBAC-001 in the `openbuilt-rbac` capability. The OpenBuilt
+REQ-OBRBAC-001 in the `openbuild-rbac` capability. The OpenBuild
 repair step that imports the register configuration SHALL update
 the schema in place idempotently via
 `ConfigurationService::importFromApp()` (memory rule). No new
@@ -205,9 +205,9 @@ addition to `Application` per ADR-031 (no service class).
 
 #### Scenario: Schema declares the permissions property after install
 
-- **WHEN** the OpenBuilt app is installed (or upgraded) and its
+- **WHEN** the OpenBuild app is installed (or upgraded) and its
   repair step runs
-- **THEN** the `Application` schema in the `openbuilt` register
+- **THEN** the `Application` schema in the `openbuild` register
   exposes the `permissions` property with the shape above
 - **AND** the property is omittable (legacy Application objects
   without it remain schema-valid)
@@ -229,7 +229,7 @@ addition to `Application` per ADR-031 (no service class).
 
 ### Requirement: Migration populates permissions for pre-existing Applications
 
-The OpenBuilt repair step SHALL include an idempotent migration
+The OpenBuild repair step SHALL include an idempotent migration
 that, for every existing `Application` object whose `permissions`
 property is missing or null, populates `permissions.owners` with the
 system organisation's `admin` group, and sets `editors` and
@@ -276,7 +276,7 @@ SHALL be rejected with a 422 response.
 
 #### Scenario: Schema declares productionVersion as an optional relation
 
-- **WHEN** the OpenBuilt repair step runs and imports the Application schema
+- **WHEN** the OpenBuild repair step runs and imports the Application schema
 - **THEN** the imported schema exposes `productionVersion` as a relation property
   referencing `applicationVersion`
 - **AND** the property is omittable

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuilt RunExportJob unit tests
+ * OpenBuild RunExportJob unit tests
  *
  * Covers the most security-critical surface in spec #9: the lifecycle
  * transitions through TransitionEngine, the ALWAYS-clear-PAT contract
@@ -9,7 +9,7 @@
  * idempotency guarantee for re-runs of the same job.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\BackgroundJob
+ * @package  OCA\OpenBuild\Tests\Unit\BackgroundJob
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,12 +25,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\BackgroundJob;
+namespace OCA\OpenBuild\Tests\Unit\BackgroundJob;
 
-use OCA\OpenBuilt\BackgroundJob\RunExportJob;
-use OCA\OpenBuilt\Service\ExportJobService;
-use OCA\OpenBuilt\Service\ExportService;
-use OCA\OpenBuilt\Service\GitHubPushService;
+use OCA\OpenBuild\BackgroundJob\RunExportJob;
+use OCA\OpenBuild\Service\ExportJobService;
+use OCA\OpenBuild\Service\ExportService;
+use OCA\OpenBuild\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -174,7 +174,7 @@ final class RunExportJobTest extends TestCase
         $this->exportService
             ->expects(self::once())
             ->method('generateAppZip')
-            ->willReturn('/tmp/openbuilt-exports/'.$jobUuid.'.zip');
+            ->willReturn('/tmp/openbuild-exports/'.$jobUuid.'.zip');
 
         // GitHub push must NOT fire when no PAT is present (ZIP-only).
         $this->githubPushService->expects(self::never())->method('push');

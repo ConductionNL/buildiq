@@ -1,15 +1,15 @@
 ## 1. Schema + lifecycle (declarative — ADR-031)
 
-- [ ] 1.1 **Declare `ExportJob` schema in `lib/Settings/openbuilt_register.json`**
+- [ ] 1.1 **Declare `ExportJob` schema in `lib/Settings/openbuild_register.json`**
   - spec_ref: REQ-OBEX-001
-  - files: `lib/Settings/openbuilt_register.json`
+  - files: `lib/Settings/openbuild_register.json`
   - acceptance_criteria: Schema declares `uuid`, `applicationUuid` (UUID-format, required), `applicationVersion` (semver pattern, required), `target` (enum `zip|github`, required), `status` (enum `queued|running|succeeded|failed`, default `queued`, required), `githubOrg`, `githubRepo`, `githubVisibility` (enum `public|private`), `includeSeedData` (boolean, default false), `downloadUrl`, `downloadExpiresAt` (date-time), `errorMessage`, `log` (array of strings). Validates against OpenAPI 3.0.0.
   - Implement: declarative — no PHP service class.
   - Test: integration test creates an ExportJob via OR REST, asserts schema validation rejects an invalid `target`.
 
 - [ ] 1.2 **Add `x-openregister-lifecycle` to the `ExportJob` schema**
   - spec_ref: REQ-OBEX-001
-  - files: `lib/Settings/openbuilt_register.json` (NOT a new PHP service)
+  - files: `lib/Settings/openbuild_register.json` (NOT a new PHP service)
   - acceptance_criteria: Declares states `queued`, `running`, `succeeded`, `failed` and transitions `queued → running`, `running → succeeded`, `running → failed`. No terminal re-entry. Each transition emits an OR audit event. No `ExportJobLifecycleService.php` / `ExportJobStateMachine.php` file is created. Schema carries `x-openregister-lifecycle-exception` annotation pointing at design.md Decision 7 documenting the imperative file-generation surface.
   - Implement: declarative schema patch only.
   - Test: integration test attempts `succeeded → running`, asserts a 4xx error.
@@ -18,7 +18,7 @@
 
 - [ ] 2.1 **Snapshot `nextcloud-app-template/` into `lib/Resources/template/`**
   - spec_ref: REQ-OBEX-003
-  - files: `lib/Resources/template/**` (every file from the upstream `apps-extra/nextcloud-app-template/` working tree at OpenBuilt's release-cut commit), `lib/Resources/template/.snapshot-meta.json` (records the source commit SHA + ISO timestamp of the snapshot for reproducibility).
+  - files: `lib/Resources/template/**` (every file from the upstream `apps-extra/nextcloud-app-template/` working tree at OpenBuild's release-cut commit), `lib/Resources/template/.snapshot-meta.json` (records the source commit SHA + ISO timestamp of the snapshot for reproducibility).
   - acceptance_criteria: Snapshot contains the full template tree minus `node_modules/`, `vendor/`, `.git/`. Placeholder tokens (`{{appId}}`, `{{appNamespace}}`, `{{appName}}`, `{{appDescription}}`, `{{appVersion}}`, `{{authorName}}`, `{{authorEmail}}`, `{{license}}`) are present in every file the exporter will populate. The snapshot's path manifest is dumped to `lib/Resources/template/.path-manifest.txt` to support the byte-equivalence test below.
   - Implement: one-off `cp -r` then `rm -rf` of vendored / generated dirs; commit. Do NOT scripted-edit files inside the snapshot (memory rule).
   - Test: a unit test asserts `.path-manifest.txt` matches the actual file list under `lib/Resources/template/`.
@@ -26,28 +26,28 @@
 - [ ] 2.2 **Document the resnapshot procedure in `docs/releasing.md`**
   - spec_ref: REQ-OBEX-003
   - files: `docs/releasing.md`
-  - acceptance_criteria: Section "Refreshing the embedded template snapshot" describes when to resnapshot (on meaningful upstream template churn) and how (cp + path-manifest regen + bump OpenBuilt minor version + Changelog entry).
+  - acceptance_criteria: Section "Refreshing the embedded template snapshot" describes when to resnapshot (on meaningful upstream template churn) and how (cp + path-manifest regen + bump OpenBuild minor version + Changelog entry).
 
 ## 3. Exporter service (code — ADR-031 §Exceptions)
 
 - [ ] 3.1 **Implement `lib/Service/ExportService.php`**
   - spec_ref: REQ-OBEX-003, REQ-OBEX-004, REQ-OBEX-005, REQ-OBEX-006, REQ-OBEX-008, REQ-OBEX-009
   - files: `lib/Service/ExportService.php`, `lib/Service/PlaceholderResolver.php` (split out for testability)
-  - acceptance_criteria: `ExportService::run(ExportJob $job): void` orchestrates: load source Application by `applicationUuid` + `applicationVersion`; load companion schemas from the `openbuilt` namespace as referenced by the manifest; copy `lib/Resources/template/` into a scratch dir under `appdata_<instance>/openbuilt/work/<jobUuid>/`; resolve placeholders via `PlaceholderResolver` (no scripted sed/awk — read each text file via `\OCP\Files`, resolve tokens, write back); emit `lib/Settings/<newapp>_register.json` with companion schemas rewritten into the new namespace; emit `src/manifest.json` with `config.register` references rewritten; emit `appinfo/info.xml` carrying navigation entries derived from the manifest's `menu`. SPDX-License-Identifier + SPDX-FileCopyrightText live INSIDE the file's main docblock (memory rule). Tier-4 mount in `src/main.js` uses `useAppManifest('<newapp>', bundledManifest)` directly; no per-slug fetcher.
+  - acceptance_criteria: `ExportService::run(ExportJob $job): void` orchestrates: load source Application by `applicationUuid` + `applicationVersion`; load companion schemas from the `openbuild` namespace as referenced by the manifest; copy `lib/Resources/template/` into a scratch dir under `appdata_<instance>/openbuild/work/<jobUuid>/`; resolve placeholders via `PlaceholderResolver` (no scripted sed/awk — read each text file via `\OCP\Files`, resolve tokens, write back); emit `lib/Settings/<newapp>_register.json` with companion schemas rewritten into the new namespace; emit `src/manifest.json` with `config.register` references rewritten; emit `appinfo/info.xml` carrying navigation entries derived from the manifest's `menu`. SPDX-License-Identifier + SPDX-FileCopyrightText live INSIDE the file's main docblock (memory rule). Tier-4 mount in `src/main.js` uses `useAppManifest('<newapp>', bundledManifest)` directly; no per-slug fetcher.
   - Implement: PHP service class; standard Conduction docblock + EUPL-1.2 (or user-chosen license — Decision 6).
   - Test: PHPUnit on `PlaceholderResolver` covers token replacement + idempotency (re-running resolution on an already-resolved file is a no-op). Integration test on `ExportService::run` with the seeded `hello-world` Application asserts the produced tree matches the path manifest from task 2.1.
 
-- [ ] 3.2 **Verify exported app boots standalone (no OpenBuilt dependency)**
+- [ ] 3.2 **Verify exported app boots standalone (no OpenBuild dependency)**
   - spec_ref: REQ-OBEX-010
   - files: `tests/Integration/ExporterStandaloneTest.php`
-  - acceptance_criteria: Integration test scans the produced tree's `composer.json`, `package.json`, and `appinfo/info.xml` and asserts none contains the substring `openbuilt` (case-insensitive). Asserts `src/main.js` calls `useAppManifest('<newapp>', bundledManifest)` and does NOT contain an `options.fetcher` redirect. Asserts `appinfo/routes.php` contains NO `getManifest` mapping.
+  - acceptance_criteria: Integration test scans the produced tree's `composer.json`, `package.json`, and `appinfo/info.xml` and asserts none contains the substring `openbuild` (case-insensitive). Asserts `src/main.js` calls `useAppManifest('<newapp>', bundledManifest)` and does NOT contain an `options.fetcher` redirect. Asserts `appinfo/routes.php` contains NO `getManifest` mapping.
 
 ## 4. ZIP delivery target
 
 - [ ] 4.1 **Implement ZIP packaging in `ExportService::packageZip`**
   - spec_ref: REQ-OBEX-006
   - files: `lib/Service/ExportService.php`
-  - acceptance_criteria: Uses PHP's `ZipArchive`; outputs to `appdata_<instance>/openbuilt/exports/<jobUuid>/export.zip`; sets ExportJob `downloadUrl = /index.php/apps/openbuilt/api/exports/<jobUuid>/download`, `downloadExpiresAt = now() + 24h`. ZIP entries SHALL use a fixed timestamp (`2026-01-01T00:00:00Z`, or the upstream PHP-ZipArchive deterministic mode) to keep re-exports byte-equivalent (REQ-OBEX-008).
+  - acceptance_criteria: Uses PHP's `ZipArchive`; outputs to `appdata_<instance>/openbuild/exports/<jobUuid>/export.zip`; sets ExportJob `downloadUrl = /index.php/apps/openbuild/api/exports/<jobUuid>/download`, `downloadExpiresAt = now() + 24h`. ZIP entries SHALL use a fixed timestamp (`2026-01-01T00:00:00Z`, or the upstream PHP-ZipArchive deterministic mode) to keep re-exports byte-equivalent (REQ-OBEX-008).
   - Implement: deterministic ZipArchive flags.
   - Test: PHPUnit runs the export twice on the same version, asserts byte equality (or, if PHP's ZipArchive can't be made fully byte-deterministic, asserts identical SHA-256 across all unzipped files — see REQ-OBEX-008 scenario).
 
@@ -82,7 +82,7 @@
 - [ ] 5.3 **Wire GitHub PAT through `ICredentialsManager`**
   - spec_ref: REQ-OBEX-007 (security checklist in design.md Decision 3)
   - files: `lib/Service/ExportService.php`, `lib/Controller/ExportsController.php`
-  - acceptance_criteria: Controller's POST endpoint accepts `githubPat` in the request body when `target=github`, immediately stores it via `ICredentialsManager` under key `openbuilt.export.<jobUuid>.pat`, and removes the PAT from the in-memory request payload before any logging / audit emission. Background job fetches the PAT once at the GitHub phase, passes it to `GitHubPushService` methods, and deletes the credential record on terminal state (succeeded or failed). The ExportJob's `log` array SHALL NOT contain the PAT (assert in a Newman test below).
+  - acceptance_criteria: Controller's POST endpoint accepts `githubPat` in the request body when `target=github`, immediately stores it via `ICredentialsManager` under key `openbuild.export.<jobUuid>.pat`, and removes the PAT from the in-memory request payload before any logging / audit emission. Background job fetches the PAT once at the GitHub phase, passes it to `GitHubPushService` methods, and deletes the credential record on terminal state (succeeded or failed). The ExportJob's `log` array SHALL NOT contain the PAT (assert in a Newman test below).
   - Implement: standard `ICredentialsManager` calls.
   - Test: Newman test posts an export with a known PAT pattern, polls to terminal state, then GETs the ExportJob via OR REST and asserts the PAT pattern appears in NO field of the returned object (especially `log` and `errorMessage`).
 
@@ -98,7 +98,7 @@
 - [ ] 6.2 **Implement `POST /api/applications/{slug}/exports` endpoint**
   - spec_ref: REQ-OBEX-002, REQ-OBEX-009
   - files: `lib/Controller/ExportsController.php`, `appinfo/routes.php`
-  - acceptance_criteria: `submit(string $slug, array $body): JSONResponse` validates `target`, `applicationVersion` (must resolve to a published version per openbuilt-versioning — else 422), `includeSeedData` (boolean), GitHub fields (when `target=github`), stores PAT via `ICredentialsManager` if needed, creates the ExportJob in OR (status `queued`), returns 202 Accepted with `{ uuid }`. Responds in <500ms. `#[NoAdminRequired]`. SPDX-in-docblock.
+  - acceptance_criteria: `submit(string $slug, array $body): JSONResponse` validates `target`, `applicationVersion` (must resolve to a published version per openbuild-versioning — else 422), `includeSeedData` (boolean), GitHub fields (when `target=github`), stores PAT via `ICredentialsManager` if needed, creates the ExportJob in OR (status `queued`), returns 202 Accepted with `{ uuid }`. Responds in <500ms. `#[NoAdminRequired]`. SPDX-in-docblock.
   - Implement: ~50 LOC controller method.
   - Test: PHPUnit + Newman cover 202 (happy path), 422 (unknown version), 422 (draft version), 422 (missing org for `target=github`).
 
@@ -133,7 +133,7 @@
 - [ ] 8.1 **Build `src/views/ExportDialog.vue`**
   - spec_ref: REQ-OBEX-002, REQ-OBEX-006, REQ-OBEX-007, REQ-OBEX-009
   - files: `src/views/ExportDialog.vue`, `src/dialogs/` (per modal-isolation gate — modal lives in its own SFC)
-  - acceptance_criteria: NcDialog wrapping the form: NcSelect (version, defaults to current published — REQ-OBEX-002), NcSelect (target = zip|github), NcSelect (license, defaults to EUPL-1.2 — Decision 6), NcCheckbox (includeSeedData), conditional fields for GitHub (org, repo, visibility, PAT — `<input type="password">`, never displayed back). Every NcSelect carries `inputLabel` (nc-input-labels gate). On submit, POSTs to `/api/applications/{slug}/exports`, then closes and returns the ExportJob UUID. Token scope guidance copy is visible when `target=github` is selected (i18n key `openbuilt.export.github.scopeHint`).
+  - acceptance_criteria: NcDialog wrapping the form: NcSelect (version, defaults to current published — REQ-OBEX-002), NcSelect (target = zip|github), NcSelect (license, defaults to EUPL-1.2 — Decision 6), NcCheckbox (includeSeedData), conditional fields for GitHub (org, repo, visibility, PAT — `<input type="password">`, never displayed back). Every NcSelect carries `inputLabel` (nc-input-labels gate). On submit, POSTs to `/api/applications/{slug}/exports`, then closes and returns the ExportJob UUID. Token scope guidance copy is visible when `target=github` is selected (i18n key `openbuild.export.github.scopeHint`).
   - Implement: Options API; no custom Pinia store layered over `useObjectStore` (memory rule: use `createObjectStore`).
   - Test: Playwright opens the dialog, fills it, submits, asserts the network POST went through with the expected body (no PAT in the URL, only in the POST body over TLS-internal Nextcloud channel).
 
@@ -146,7 +146,7 @@
 
 - [ ] 8.3 **Wire the "Export" action into the Application detail view**
   - spec_ref: REQ-OBEX-002
-  - files: `src/views/ApplicationDetail.vue` (or its sibling, depending on bootstrap-openbuilt's final layout)
+  - files: `src/views/ApplicationDetail.vue` (or its sibling, depending on bootstrap-openbuild's final layout)
   - acceptance_criteria: An "Export" button in the detail toolbar opens `ExportDialog.vue` (lazy-imported per the modal-isolation gate). Listed alongside the existing edit / publish actions; respects the Application's lifecycle state — disabled when `status != published`.
 
 ## 9. Documentation + i18n
@@ -156,11 +156,11 @@
   - files: `docs/export-pipeline.md`
   - acceptance_criteria: Describes the ZIP + GitHub flows end-to-end, the embedded template snapshot, the PAT-handling contract, OQ-2's default-branch heuristic, OQ-3's scratch-dir layout, and the user-facing "what to do next" steps after a successful GitHub export (review the PR, run `composer install` + `npm install` locally, etc.).
 
-- [ ] 9.2 **i18n keys (ADR-005, ADR-007)** — add English + Dutch translations for every new dialog string in `l10n/en.json` + `l10n/nl.json`: `openbuilt.export.title`, `openbuilt.export.version.label`, `openbuilt.export.target.label`, `openbuilt.export.license.label`, `openbuilt.export.github.org.label`, `openbuilt.export.github.repo.label`, `openbuilt.export.github.visibility.label`, `openbuilt.export.github.pat.label`, `openbuilt.export.github.scopeHint`, `openbuilt.export.includeSeedData.label`, `openbuilt.export.submit`, `openbuilt.export.cancel`, `openbuilt.export.status.queued|running|succeeded|failed`, `openbuilt.export.download.button`, `openbuilt.export.viewPR.button`, `openbuilt.export.error.unknownVersion`, `openbuilt.export.error.draftVersion`, `openbuilt.export.error.repoExists`, `openbuilt.export.error.authFailed`.
+- [ ] 9.2 **i18n keys (ADR-005, ADR-007)** — add English + Dutch translations for every new dialog string in `l10n/en.json` + `l10n/nl.json`: `openbuild.export.title`, `openbuild.export.version.label`, `openbuild.export.target.label`, `openbuild.export.license.label`, `openbuild.export.github.org.label`, `openbuild.export.github.repo.label`, `openbuild.export.github.visibility.label`, `openbuild.export.github.pat.label`, `openbuild.export.github.scopeHint`, `openbuild.export.includeSeedData.label`, `openbuild.export.submit`, `openbuild.export.cancel`, `openbuild.export.status.queued|running|succeeded|failed`, `openbuild.export.download.button`, `openbuild.export.viewPR.button`, `openbuild.export.error.unknownVersion`, `openbuild.export.error.draftVersion`, `openbuild.export.error.repoExists`, `openbuild.export.error.authFailed`.
 
 - [ ] 9.3 **NL Design (ADR-010)** — confirm new dialog uses Nextcloud CSS variables only; no hardcoded colours.
 
-- [ ] 9.4 **Update `openspec/app-config.json`** to list `openbuilt-exporter` under capabilities.
+- [ ] 9.4 **Update `openspec/app-config.json`** to list `openbuild-exporter` under capabilities.
 
 ## 10. Hydra mechanical gates (pre-merge)
 

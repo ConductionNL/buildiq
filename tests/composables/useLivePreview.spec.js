@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuilt Contributors
+ * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest spec for `useLivePreview` composable.
@@ -70,7 +70,7 @@ describe('useLivePreview — chain spec #2 overload available', () => {
 		const lp = useLivePreview()
 		const props = lp.previewProps('hello-world', { pages: [{ id: 'home' }] })
 		expect(props).not.toBeNull()
-		expect(props.appId).toBe('openbuilt-preview-hello-world')
+		expect(props.appId).toBe('openbuild-preview-hello-world')
 		expect(props.manifest).toEqual({ pages: [{ id: 'home' }] })
 		expect(typeof props.key).toBe('string')
 	})

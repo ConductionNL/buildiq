@@ -1,11 +1,11 @@
 ## 0. Pre-flight checks
 
-- [ ] 0.1 Run `npm ls vuedraggable` in the openbuilt app directory. If `vuedraggable` is
+- [ ] 0.1 Run `npm ls vuedraggable` in the openbuild app directory. If `vuedraggable` is
       present transitively via `@nextcloud/vue` or `@conduction/nextcloud-vue`, plan to
       import it directly (no extra dep). If absent, add `vuedraggable@^2.x` as a
       direct `devDependency` (Decision 2 in design.md).
 - [ ] 0.2 Verify the Pinia application-version store (from spec #3
-      `openbuilt-versioning-model`) exposes the currently selected
+      `openbuild-versioning-model`) exposes the currently selected
       `ApplicationVersion.uuid` and `ApplicationVersion.manifest`. The designer's
       save path (REQ-OBPD-009) and in-flight state both read from this store.
 - [ ] 0.3 Confirm `validateManifest` is exported from the installed version of
@@ -29,7 +29,7 @@
       `useAppManifest.length >= 2`. Expose:
       - `available: Ref<boolean>`.
       - `previewProps(slug, manifest, hash): object` — returns the prop bag for the
-        sandboxed `CnAppRoot` (`appId: "openbuilt-preview-{slug}"`, `manifest`,
+        sandboxed `CnAppRoot` (`appId: "openbuild-preview-{slug}"`, `manifest`,
         `:key = hash`).
       Falls back to the "save & reload" affordance when `available` is false.
       Implements REQ-OBPD-008 fallback logic.
@@ -77,7 +77,7 @@
       Implements REQ-OBPD-002.
 - [ ] 3.2 `MenuTreeEditor.vue` — drag-reorder top-level + child entries using nested
       `vuedraggable` lists; depth-2 cap (refuse third-level drop zone with i18n error
-      `openbuilt.page-designer.menu.error.nesting-depth`); i18n-key `label` binding;
+      `openbuild.page-designer.menu.error.nesting-depth`); i18n-key `label` binding;
       `target` enum (`main` | `settings`, default `main`); `action` enum
       (`user-settings`, optional); disable `route` + `href` inputs with tooltip when
       `action` is set and clear their values from the manifest output.
@@ -170,8 +170,8 @@ Each sub-editor:
 - [ ] 6.1 Add `l10n/en.json` entries for every designer pane label, button,
       placeholder, validation message, and empty state introduced by this spec.
       Required keys include at minimum:
-      - `openbuilt.page-designer.menu.error.nesting-depth`
-      - `openbuilt.page-designer.preview.unavailable`
+      - `openbuild.page-designer.menu.error.nesting-depth`
+      - `openbuild.page-designer.preview.unavailable`
       - Labels for all nine page types in the type picker
       - "Add page", "Remove page", "Add menu entry", "Save", "Design", "Raw JSON"
       - All inline error messages for duplicate id, invalid route, invalid submitMethod
@@ -227,14 +227,14 @@ Each sub-editor:
 
 ## 8. Deduplication check
 
-- [ ] 8.1 Confirm no existing `openbuilt` controller or service duplicates the
+- [ ] 8.1 Confirm no existing `openbuild` controller or service duplicates the
       manifest-write path (`grep -r "manifest" src/Controller lib/Service`). The
       designer MUST continue to write through OR REST; no new PHP service is required
       (ADR-022). Document findings (even if "no overlap found").
 
 ## 9. Documentation and chain coordination
 
-- [ ] 9.1 Update the openbuilt app README with a short "Visual designer" section that
+- [ ] 9.1 Update the openbuild app README with a short "Visual designer" section that
       points to the Design tab as the default editor and notes the Raw JSON tab as the
       integrator fallback.
 - [ ] 9.2 File follow-on issues for the deferred items:

@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: EUPL-1.2
 //
-// Structural checks for OpenBuilt's own app manifest (ADR-024 Tier-1+):
-// every menu entry routes to a real page, every custom page resolves a
-// real customComponents entry, and the registry carries no dead entries.
+// Structural checks for OpenBuild's own app manifest (ADR-024 Tier-1+):
+// every menu entry routes to a real page, every referenced component resolves
+// to a real registry entry, and the registry carries no dead entries.
 // Catches the easy ways a manifest edit silently blanks a nav item or a
-// route.
+// route. (The component map moved from customComponents.js to the kind-tagged
+// registry.js per ADR-036; the keys are the same component names.)
 
 import { describe, it, expect } from 'vitest'
 import manifest from '../../src/manifest.json'
-import customComponents from '../../src/customComponents.js'
+import registry from '../../src/registry.js'
 
 describe('src/manifest.json', () => {
 	it('declares a version and the OpenRegister dependency', () => {
@@ -65,20 +66,44 @@ describe('src/manifest.json', () => {
 					refs.add(tab.component)
 				}
 			}
+			// v2 pages may name slot-override components via `slots`
+			// (e.g. `slots: { default: "SchemaDesignerView" }`).
+			if (page.slots && typeof page.slots === 'object') {
+				for (const slotComponent of Object.values(page.slots)) {
+					if (typeof slotComponent === 'string') {
+						refs.add(slotComponent)
+					}
+				}
+			}
+			// v2 manifest widgets reference registry components either directly
+			// (`widget.component`) or via `widget.props.component` (e.g. the
+			// card-grid widget naming the per-row card). Scan both page-level
+			// `widgets[]` (v2) and `config.widgets[]` (dashboard) arrays.
+			const widgetArrays = [page.widgets, cfg.widgets]
+			for (const widgets of widgetArrays) {
+				for (const widget of widgets || []) {
+					if (typeof widget.component === 'string') {
+						refs.add(widget.component)
+					}
+					if (widget.props && typeof widget.props.component === 'string') {
+						refs.add(widget.props.component)
+					}
+				}
+			}
 		}
 		return refs
 	}
 
 	it('every component the manifest references resolves to a registered component', () => {
 		for (const name of referencedComponents()) {
-			expect(customComponents, `manifest references "${name}"`).toHaveProperty(name)
+			expect(registry, `manifest references "${name}"`).toHaveProperty(name)
 		}
 	})
 
-	it('has no unused customComponents entries', () => {
+	it('has no unused registry entries', () => {
 		const referenced = referencedComponents()
-		for (const name of Object.keys(customComponents)) {
-			expect(referenced, `customComponents.${name} is unreferenced`).toContain(name)
+		for (const name of Object.keys(registry)) {
+			expect(referenced, `registry.${name} is unreferenced`).toContain(name)
 		}
 	})
 })

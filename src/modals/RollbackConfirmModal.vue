@@ -14,21 +14,21 @@
 		@update:open="onUpdateOpen">
 		<template #default>
 			<p class="rollback-confirm__body">
-				{{ t('openbuilt', 'Rolling back copies this snapshot\'s manifest onto the current draft. Existing history is preserved (append-only).') }}
+				{{ t('openbuild', 'Rolling back copies this snapshot\'s manifest onto the current draft. Existing history is preserved (append-only).') }}
 			</p>
 			<dl v-if="version" class="rollback-confirm__meta">
-				<dt>{{ t('openbuilt', 'Version') }}</dt>
+				<dt>{{ t('openbuild', 'Version') }}</dt>
 				<dd>{{ version.version }}</dd>
-				<dt>{{ t('openbuilt', 'Published') }}</dt>
+				<dt>{{ t('openbuild', 'Published') }}</dt>
 				<dd>{{ formattedPublishedAt }}</dd>
 			</dl>
 		</template>
 		<template #actions>
 			<NcButton type="tertiary" @click="cancel">
-				{{ t('openbuilt', 'Cancel') }}
+				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
 			<NcButton type="primary" @click="confirm">
-				{{ t('openbuilt', 'Roll back') }}
+				{{ t('openbuild', 'Roll back') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -62,7 +62,7 @@ export default {
 		 */
 		title() {
 			const v = this.version?.version || ''
-			return t('openbuilt', 'Roll back to version {version}?', { version: v })
+			return t('openbuild', 'Roll back to version {version}?', { version: v })
 		},
 		/**
 		 * Observed behaviour of `formattedPublishedAt` (retrofit annotation).

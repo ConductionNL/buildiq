@@ -6,14 +6,14 @@ retrofit: true
 
 ## Purpose
 
-The template-catalogue UI is OpenBuilt's starter-template gallery.
+The template-catalogue UI is OpenBuild's starter-template gallery.
 `TemplateGallery` fetches `ApplicationTemplate` records, filters by category,
 resolves per-template screenshots, and opens the clone dialog;
 `CloneTemplateDialog` validates the clone target, submits, and redirects to the
 new application.
 
 This capability is observed behaviour of those components. It is the frontend
-half of the `openbuilt-template-catalogue` backend capability.
+half of the `openbuild-template-catalogue` backend capability.
 
 ## ADDED Requirements
 

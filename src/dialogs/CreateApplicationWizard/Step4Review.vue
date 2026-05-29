@@ -6,41 +6,41 @@
   Read-only summary of all wizard settings before submission.
   Displays the app name + slug + description, the version chain in arrow form,
   and a callout identifying the production version (terminal row).
-  spec: openbuilt-app-creation-wizard REQ-OBWIZ-002
+  spec: openbuild-app-creation-wizard REQ-OBWIZ-002
 -->
 <template>
 	<div class="wizard-step4">
 		<h3 class="wizard-step4__heading">
-			{{ t('openbuilt', 'Review and create') }}
+			{{ t('openbuild', 'Review and create') }}
 		</h3>
 		<p class="wizard-step4__description">
-			{{ t('openbuilt', 'Review the settings below. Clicking Create will provision your app, all version registers, and seed them with the default schema.') }}
+			{{ t('openbuild', 'Review the settings below. Clicking Create will provision your app, all version registers, and seed them with the default schema.') }}
 		</p>
 
 		<dl class="wizard-step4__summary">
 			<div class="wizard-step4__row">
-				<dt>{{ t('openbuilt', 'Name') }}</dt>
+				<dt>{{ t('openbuild', 'Name') }}</dt>
 				<dd>{{ payload.name || '—' }}</dd>
 			</div>
 			<div class="wizard-step4__row">
-				<dt>{{ t('openbuilt', 'Slug') }}</dt>
+				<dt>{{ t('openbuild', 'Slug') }}</dt>
 				<dd><code>{{ payload.slug || '—' }}</code></dd>
 			</div>
 			<div v-if="payload.description" class="wizard-step4__row">
-				<dt>{{ t('openbuilt', 'Description') }}</dt>
+				<dt>{{ t('openbuild', 'Description') }}</dt>
 				<dd>{{ payload.description }}</dd>
 			</div>
 		</dl>
 
 		<div class="wizard-step4__chain-section">
 			<h4 class="wizard-step4__subheading">
-				{{ t('openbuilt', 'Version chain') }}
+				{{ t('openbuild', 'Version chain') }}
 			</h4>
 			<p class="wizard-step4__chain">
 				{{ chainDisplay }}
 			</p>
 			<p class="wizard-step4__production-callout">
-				{{ t('openbuilt', 'Production version:') }}
+				{{ t('openbuild', 'Production version:') }}
 				<code>{{ productionSlug }}</code>
 			</p>
 		</div>
@@ -48,16 +48,16 @@
 		<!-- Icon previews when uploaded -->
 		<div v-if="payload.icon || payload.iconDark" class="wizard-step4__icons">
 			<h4 class="wizard-step4__subheading">
-				{{ t('openbuilt', 'Icons') }}
+				{{ t('openbuild', 'Icons') }}
 			</h4>
 			<div class="wizard-step4__icon-previews">
 				<figure v-if="iconLightUrl" class="wizard-step4__icon-preview">
-					<img :src="iconLightUrl" :alt="t('openbuilt', 'Light icon preview')" class="wizard-step4__icon-img">
-					<figcaption>{{ t('openbuilt', 'Light') }}</figcaption>
+					<img :src="iconLightUrl" :alt="t('openbuild', 'Light icon preview')" class="wizard-step4__icon-img">
+					<figcaption>{{ t('openbuild', 'Light') }}</figcaption>
 				</figure>
 				<figure v-if="iconDarkUrl" class="wizard-step4__icon-preview wizard-step4__icon-preview--dark">
-					<img :src="iconDarkUrl" :alt="t('openbuilt', 'Dark icon preview')" class="wizard-step4__icon-img">
-					<figcaption>{{ t('openbuilt', 'Dark') }}</figcaption>
+					<img :src="iconDarkUrl" :alt="t('openbuild', 'Dark icon preview')" class="wizard-step4__icon-img">
+					<figcaption>{{ t('openbuild', 'Dark') }}</figcaption>
 				</figure>
 			</div>
 		</div>

@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 
 /**
  * Playwright e2e — Application detail / maintainer dashboard
- * (spec openbuilt-app-detail-overview, REQ-OBADO-001..012 + REQ-OBAI-001..006).
+ * (spec openbuild-app-detail-overview, REQ-OBADO-001..012 + REQ-OBAI-001..006).
  *
  * Covers:
  *   - REQ-OBADO-001 — six-row layout renders (hero, pills, window, KPIs,
@@ -20,14 +20,14 @@ import { test, expect } from '@playwright/test'
  *   - Nextcloud reachable at PLAYWRIGHT_BASE_URL with admin:admin auth
  *   - The hello-world virtual app + a multi-version chain seeded
  *     (development → staging → production) — when not present the tests
- *     skip gracefully via `OPENBUILT_E2E_LIVE` guard so the suite parses
+ *     skip gracefully via `OPENBUILD_E2E_LIVE` guard so the suite parses
  *     cleanly without a live container.
  */
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const ADMIN = { user: process.env.NC_ADMIN_USER ?? 'admin', pass: process.env.NC_ADMIN_PASSWORD ?? 'admin' }
 const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'hello-world'
-const LIVE = process.env.OPENBUILT_E2E_LIVE === '1'
+const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
 
 async function loginAs(page: import('@playwright/test').Page, user: string, pass: string): Promise<void> {
 	await page.goto(`${BASE}/index.php/login`)
@@ -44,20 +44,20 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 	test.use({ storageState: { cookies: [], origins: [] } })
 
 	test.beforeEach(async ({ page }) => {
-		test.skip(!LIVE, 'OPENBUILT_E2E_LIVE not set — set =1 to run against a seeded container')
+		test.skip(!LIVE, 'OPENBUILD_E2E_LIVE not set — set =1 to run against a seeded container')
 		await loginAs(page, ADMIN.user, ADMIN.pass)
 	})
 
 	test('renders the six stacked rows when the hello-world app is opened', async ({ page }) => {
 		const appUuidRes = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuilt/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
 		test.skip(!appUuidRes.ok(), 'hello-world Application not found')
 		const apps = (await appUuidRes.json()).results || []
 		test.skip(apps.length === 0, 'hello-world Application not seeded')
 
 		const objectId = apps[0].uuid || apps[0].id
-		await page.goto(`${BASE}/apps/openbuilt/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header', { timeout: 15_000 })
 
 		// REQ-OBADO-001 — hero, controls, KPIs, activity, widgets all present.
@@ -70,14 +70,14 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 
 	test('pill strip carries production-asterisk marker (REQ-OBADO-002)', async ({ page }) => {
 		const appUuidRes = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuilt/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
 		test.skip(!appUuidRes.ok(), 'app lookup failed')
 		const apps = (await appUuidRes.json()).results || []
 		test.skip(apps.length === 0, 'app not seeded')
 
 		const objectId = apps[0].uuid || apps[0].id
-		await page.goto(`${BASE}/apps/openbuilt/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__pill', { timeout: 15_000 })
 
 		const pills = page.locator('.ob-detail-header__pill')
@@ -90,14 +90,14 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 
 	test('window toggle change reloads the insights payload (REQ-OBADO-003)', async ({ page }) => {
 		const appUuidRes = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuilt/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
 		test.skip(!appUuidRes.ok(), 'app lookup failed')
 		const apps = (await appUuidRes.json()).results || []
 		test.skip(apps.length === 0, 'app not seeded')
 
 		const objectId = apps[0].uuid || apps[0].id
-		await page.goto(`${BASE}/apps/openbuilt/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__window-btn', { timeout: 15_000 })
 
 		// Click 30d and assert the URL fragment / network call reflects the change.
@@ -113,14 +113,14 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 
 	test('Promote affordance does not appear on the terminal production pill (REQ-OBADO-012)', async ({ page }) => {
 		const appUuidRes = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuilt/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
 		test.skip(!appUuidRes.ok(), 'app lookup failed')
 		const apps = (await appUuidRes.json()).results || []
 		test.skip(apps.length === 0, 'app not seeded')
 
 		const objectId = apps[0].uuid || apps[0].id
-		await page.goto(`${BASE}/apps/openbuilt/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__pill', { timeout: 15_000 })
 
 		const pills = page.locator('.ob-detail-header__pill-group')
@@ -137,7 +137,7 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 
 	async function loadFirstApp(page: import('@playwright/test').Page): Promise<string | null> {
 		const lookup = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuilt/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		if (!lookup.ok()) return null
@@ -150,11 +150,11 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		const objectId = await loadFirstApp(page)
 		test.skip(!objectId, 'hello-world app not seeded')
 
-		await page.goto(`${BASE}/apps/openbuilt/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__pill', { timeout: 15_000 })
 
 		const pillTexts = await page.locator('.ob-detail-header__pill').allTextContents()
-		// The viewer-blackout assertion is exercised by openbuilt-rbac;
+		// The viewer-blackout assertion is exercised by openbuild-rbac;
 		// this case asserts the contract that the admin/owner sees ALL
 		// pills AND the production pill carries the `*` marker.
 		const hasProductionMarker = pillTexts.some((t) => t.includes('*'))
@@ -165,7 +165,7 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		const objectId = await loadFirstApp(page)
 		test.skip(!objectId, 'hello-world app not seeded')
 
-		await page.goto(`${BASE}/apps/openbuilt/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__pill', { timeout: 15_000 })
 
 		const pillCount = await page.locator('.ob-detail-header__pill').count()
@@ -188,7 +188,7 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		const objectId = await loadFirstApp(page)
 		test.skip(!objectId, 'hello-world app not seeded')
 
-		await page.goto(`${BASE}/apps/openbuilt/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__pill', { timeout: 15_000 })
 
 		// Click first non-production pill to populate ?_version=.
@@ -229,7 +229,7 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		const objectId = await loadFirstApp(page)
 		test.skip(!objectId, 'hello-world app not seeded')
 
-		await page.goto(`${BASE}/apps/openbuilt/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__activity, .ob-detail-header__activity-empty', { timeout: 15_000 })
 
 		// EITHER the chart container is present (non-empty activity[]) OR the
@@ -247,9 +247,9 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 
 test.describe('Application insights — endpoint surface', () => {
 	test('invalid window enum returns 400 with the spec-defined body', async ({ request }) => {
-		test.skip(!LIVE, 'OPENBUILT_E2E_LIVE not set')
+		test.skip(!LIVE, 'OPENBUILD_E2E_LIVE not set')
 		const res = await request.get(
-			`${BASE}/index.php/apps/openbuilt/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/insights?window=24h`,
+			`${BASE}/index.php/apps/openbuild/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/insights?window=24h`,
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		expect(res.status()).toBe(400)
@@ -259,9 +259,9 @@ test.describe('Application insights — endpoint surface', () => {
 	})
 
 	test('unknown appUuid returns 404 without the public cache header', async ({ request }) => {
-		test.skip(!LIVE, 'OPENBUILT_E2E_LIVE not set')
+		test.skip(!LIVE, 'OPENBUILD_E2E_LIVE not set')
 		const res = await request.get(
-			`${BASE}/index.php/apps/openbuilt/api/applications/ffffffff-ffff-ffff-ffff-ffffffffffff/versions/00000000-0000-0000-0000-000000000002/insights?window=7d`,
+			`${BASE}/index.php/apps/openbuild/api/applications/ffffffff-ffff-ffff-ffff-ffffffffffff/versions/00000000-0000-0000-0000-000000000002/insights?window=7d`,
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		expect(res.status()).toBe(404)

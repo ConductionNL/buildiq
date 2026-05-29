@@ -4,7 +4,7 @@
  *
  * Vitest unit tests for src/dialogs/CreateApplicationWizard/Step3Custom.vue.
  *
- * Covers spec openbuilt-app-creation-wizard task 6.4:
+ * Covers spec openbuild-app-creation-wizard task 6.4:
  *   - seeds 1 Production row when payload.versions is empty
  *   - seeds rows from payload.versions when present
  *   - name input auto-derives slug via toKebabCase

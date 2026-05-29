@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 //
-// Router helpers for OpenBuilt version-aware navigation.
+// Router helpers for OpenBuild version-aware navigation.
 //
 // `buildVersionedRoute` (REQ-OBVR-006 / design.md Decision 6):
 // A pure helper that constructs a Vue Router route-location object, forwarding
@@ -23,7 +23,7 @@
 //   // Without a version — produces { name, params, query: {} }
 //   this.$router.push(buildVersionedRoute('SchemaDesignerList', { slug }, undefined))
 //
-// NOTE on the `_version` param name: the leading underscore is OpenBuilt's
+// NOTE on the `_version` param name: the leading underscore is OpenBuild's
 // system-reserved namespace marker for query params. It prevents collision with
 // user-defined `?version=` params that citizen developers may add to their own
 // virtual apps' routes. See design.md Decision 1.

@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "openbuilt-rbac-collection",
-		"name": "OpenBuilt RBAC — REQ-OBRBAC-002..007",
-		"description": "Newman integration suite for the openbuilt-rbac OpenSpec change. Exercises the manifest-endpoint security boundary (403 before 404 disambiguation, viewer/editor/owner read paths, audited admin bypass, transfer-ownership, list-endpoint IDOR closure) over real HTTP against a live Nextcloud instance with the `openbuilt` app enabled. The collection is self-contained: a Setup folder provisions a fresh seed Application, two test users, and a viewer/editor group; a Teardown folder removes every artefact so the suite is idempotent. Reuses the `admin/admin` credentials from the dev compose (memory rule).",
+		"_postman_id": "openbuild-rbac-collection",
+		"name": "OpenBuild RBAC — REQ-OBRBAC-002..007",
+		"description": "Newman integration suite for the openbuild-rbac OpenSpec change. Exercises the manifest-endpoint security boundary (403 before 404 disambiguation, viewer/editor/owner read paths, audited admin bypass, transfer-ownership, list-endpoint IDOR closure) over real HTTP against a live Nextcloud instance with the `openbuild` app enabled. The collection is self-contained: a Setup folder provisions a fresh seed Application, two test users, and a viewer/editor group; a Teardown folder removes every artefact so the suite is idempotent. Reuses the `admin/admin` credentials from the dev compose (memory rule).",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -22,8 +22,8 @@
 		{ "key": "editor_password", "value": "RbacEditor-1!", "type": "string" },
 		{ "key": "outsider_user", "value": "rbac-outsider", "type": "string" },
 		{ "key": "outsider_password", "value": "RbacOutsider-1!", "type": "string" },
-		{ "key": "viewer_group", "value": "openbuilt-rbac-viewers", "type": "string" },
-		{ "key": "editor_group", "value": "openbuilt-rbac-editors", "type": "string" },
+		{ "key": "viewer_group", "value": "openbuild-rbac-viewers", "type": "string" },
+		{ "key": "editor_group", "value": "openbuild-rbac-editors", "type": "string" },
 		{ "key": "test_slug", "value": "hello-world", "type": "string" },
 		{ "key": "absent_slug", "value": "this-slug-definitely-does-not-exist", "type": "string" },
 		{ "key": "application_uuid", "value": "", "type": "string" }
@@ -301,9 +301,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application?filter[slug]={{test_slug}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?filter[slug]={{test_slug}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application"],
 							"query": [
 								{ "key": "filter[slug]", "value": "{{test_slug}}" }
 							]
@@ -345,9 +345,9 @@
 							"raw": "{\"permissions\":{\"owners\":[\"admin\"],\"editors\":[\"{{editor_group}}\"],\"viewers\":[\"{{viewer_group}}\"]}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{application_uuid}}"]
 						}
 					},
 					"event": [
@@ -386,9 +386,9 @@
 							{ "key": "Accept", "value": "application/json" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications",
+							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openbuilt", "api", "applications"]
+							"path": ["index.php", "apps", "openbuild", "api", "applications"]
 						}
 					},
 					"event": [
@@ -425,9 +425,9 @@
 							{ "key": "Accept", "value": "application/json" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications",
+							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openbuilt", "api", "applications"]
+							"path": ["index.php", "apps", "openbuild", "api", "applications"]
 						}
 					},
 					"event": [
@@ -464,9 +464,9 @@
 							{ "key": "Accept", "value": "application/json" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications",
+							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openbuilt", "api", "applications"]
+							"path": ["index.php", "apps", "openbuild", "api", "applications"]
 						}
 					},
 					"event": [
@@ -509,9 +509,9 @@
 							{ "key": "Accept", "value": "application/json" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/manifest",
+							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/manifest",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openbuilt", "api", "applications", "{{test_slug}}", "manifest"]
+							"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "manifest"]
 						}
 					},
 					"event": [
@@ -523,10 +523,10 @@
 									"pm.test('Outsider on existing slug gets 403 (not 404)', function () {",
 									"    pm.response.to.have.status(403);",
 									"});",
-									"pm.test('Error envelope carries the fixed code openbuilt.rbac.no_role', function () {",
+									"pm.test('Error envelope carries the fixed code openbuild.rbac.no_role', function () {",
 									"    const body = pm.response.json();",
 									"    pm.expect(body).to.have.property('error');",
-									"    pm.expect(body.code).to.equal('openbuilt.rbac.no_role');",
+									"    pm.expect(body.code).to.equal('openbuild.rbac.no_role');",
 									"});"
 								]
 							}
@@ -549,9 +549,9 @@
 							{ "key": "Accept", "value": "application/json" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/manifest",
+							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/manifest",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openbuilt", "api", "applications", "{{test_slug}}", "manifest"]
+							"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "manifest"]
 						}
 					},
 					"event": [
@@ -583,9 +583,9 @@
 							{ "key": "Accept", "value": "application/json" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/manifest",
+							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/manifest",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openbuilt", "api", "applications", "{{test_slug}}", "manifest"]
+							"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "manifest"]
 						}
 					},
 					"event": [
@@ -611,9 +611,9 @@
 							{ "key": "Accept", "value": "application/json" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{application_uuid}}/audit-trails",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}/audit-trails",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{application_uuid}}", "audit-trails"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{application_uuid}}", "audit-trails"]
 						}
 					},
 					"event": [
@@ -657,9 +657,9 @@
 							"raw": "{\"permissions\":{\"owners\":[\"{{editor_group}}\"],\"editors\":[],\"viewers\":[\"{{viewer_group}}\"]}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{application_uuid}}"]
 						}
 					},
 					"event": [
@@ -692,9 +692,9 @@
 							{ "key": "Accept", "value": "application/json" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/manifest",
+							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/manifest",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openbuilt", "api", "applications", "{{test_slug}}", "manifest"]
+							"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "manifest"]
 						}
 					},
 					"event": [
@@ -723,9 +723,9 @@
 							"raw": "{\"permissions\":{\"owners\":[\"admin\"],\"editors\":[\"{{editor_group}}\"],\"viewers\":[\"{{viewer_group}}\"]}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{application_uuid}}"]
 						}
 					},
 					"event": [

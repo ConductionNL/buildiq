@@ -1,4 +1,4 @@
-# Retrofit — annotate openbuilt against existing specs
+# Retrofit — annotate openbuild against existing specs
 
 Retroactive annotation of 142 methods across 27 files against 71 REQs in 16 capabilities. No code logic changes. No spec deltas (all REQs already exist in `openspec/specs/`).
 

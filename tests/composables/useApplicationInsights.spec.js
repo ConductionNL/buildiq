@@ -4,7 +4,7 @@
  *
  * Vitest spec for the `useApplicationInsights` composable.
  *
- * Spec: openbuilt-app-detail-overview / application-insights
+ * Spec: openbuild-app-detail-overview / application-insights
  * (REQ-OBAI-001, REQ-OBAI-002 — surface behaviour from the frontend).
  */
 

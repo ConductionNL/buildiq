@@ -14,30 +14,30 @@
   - { properties, required } before Save.
   -->
 <template>
-	<section class="openbuilt-field-editor">
-		<header class="openbuilt-field-editor__header">
-			<h3>{{ t('openbuilt', 'Fields') }}</h3>
+	<section class="openbuild-field-editor">
+		<header class="openbuild-field-editor__header">
+			<h3>{{ t('openbuild', 'Fields') }}</h3>
 			<NcButton @click="addField">
 				<template #icon>
 					<PlusIcon :size="20" />
 				</template>
-				{{ t('openbuilt', 'Add field') }}
+				{{ t('openbuild', 'Add field') }}
 			</NcButton>
 		</header>
 
-		<p v-if="fields.length === 0" class="openbuilt-field-editor__empty">
-			{{ t('openbuilt', 'No fields yet. Add the first property to your schema.') }}
+		<p v-if="fields.length === 0" class="openbuild-field-editor__empty">
+			{{ t('openbuild', 'No fields yet. Add the first property to your schema.') }}
 		</p>
 
-		<ul v-else class="openbuilt-field-editor__rows">
+		<ul v-else class="openbuild-field-editor__rows">
 			<li
 				v-for="(field, index) in fields"
 				:key="field._key"
-				class="openbuilt-field-editor__row">
-				<div class="openbuilt-field-editor__handle">
+				class="openbuild-field-editor__row">
+				<div class="openbuild-field-editor__handle">
 					<NcButton
 						type="tertiary"
-						:aria-label="t('openbuilt', 'Move up')"
+						:aria-label="t('openbuild', 'Move up')"
 						:disabled="index === 0"
 						@click="moveUp(index)">
 						<template #icon>
@@ -46,7 +46,7 @@
 					</NcButton>
 					<NcButton
 						type="tertiary"
-						:aria-label="t('openbuilt', 'Move down')"
+						:aria-label="t('openbuild', 'Move down')"
 						:disabled="index === fields.length - 1"
 						@click="moveDown(index)">
 						<template #icon>
@@ -55,16 +55,16 @@
 					</NcButton>
 				</div>
 
-				<div class="openbuilt-field-editor__row-grid">
+				<div class="openbuild-field-editor__row-grid">
 					<NcTextField
 						:value="field.name"
-						:label="t('openbuilt', 'Name')"
+						:label="t('openbuild', 'Name')"
 						:error="!!nameError(field, index)"
 						:helper-text="nameError(field, index)"
 						@update:value="updateField(index, 'name', $event)" />
 
 					<NcSelect
-						:input-label="t('openbuilt', 'Type')"
+						:input-label="t('openbuild', 'Type')"
 						:value="typeOption(field.type)"
 						:options="typeOptions"
 						:clearable="false"
@@ -76,34 +76,34 @@
 						:checked="!!field.required"
 						type="switch"
 						@update:checked="updateField(index, 'required', $event)">
-						{{ t('openbuilt', 'Required') }}
+						{{ t('openbuild', 'Required') }}
 					</NcCheckboxRadioSwitch>
 
 					<NcTextField
 						:value="field.description || ''"
-						:label="t('openbuilt', 'Description')"
+						:label="t('openbuild', 'Description')"
 						@update:value="updateField(index, 'description', $event)" />
 				</div>
 
-				<div class="openbuilt-field-editor__validation">
+				<div class="openbuild-field-editor__validation">
 					<!-- string -->
 					<template v-if="field.type === 'string'">
 						<NcTextField
 							:value="field.validation.format || ''"
-							:label="t('openbuilt', 'Format (optional)')"
+							:label="t('openbuild', 'Format (optional)')"
 							:placeholder="'email, uri, date, …'"
 							@update:value="updateValidation(index, 'format', $event)" />
 						<NcTextField
 							:value="field.validation.pattern || ''"
-							:label="t('openbuilt', 'Pattern (regex, optional)')"
+							:label="t('openbuild', 'Pattern (regex, optional)')"
 							@update:value="updateValidation(index, 'pattern', $event)" />
 						<NcTextField
 							:value="field.validation.minLength != null ? String(field.validation.minLength) : ''"
-							:label="t('openbuilt', 'Min length')"
+							:label="t('openbuild', 'Min length')"
 							@update:value="updateValidation(index, 'minLength', toIntOrNull($event))" />
 						<NcTextField
 							:value="field.validation.maxLength != null ? String(field.validation.maxLength) : ''"
-							:label="t('openbuilt', 'Max length')"
+							:label="t('openbuild', 'Max length')"
 							@update:value="updateValidation(index, 'maxLength', toIntOrNull($event))" />
 					</template>
 
@@ -111,22 +111,22 @@
 					<template v-else-if="field.type === 'number' || field.type === 'integer'">
 						<NcTextField
 							:value="field.validation.minimum != null ? String(field.validation.minimum) : ''"
-							:label="t('openbuilt', 'Minimum')"
+							:label="t('openbuild', 'Minimum')"
 							@update:value="updateValidation(index, 'minimum', toNumberOrNull($event))" />
 						<NcTextField
 							:value="field.validation.maximum != null ? String(field.validation.maximum) : ''"
-							:label="t('openbuilt', 'Maximum')"
+							:label="t('openbuild', 'Maximum')"
 							@update:value="updateValidation(index, 'maximum', toNumberOrNull($event))" />
 						<NcTextField
 							:value="field.validation.multipleOf != null ? String(field.validation.multipleOf) : ''"
-							:label="t('openbuilt', 'Multiple of')"
+							:label="t('openbuild', 'Multiple of')"
 							@update:value="updateValidation(index, 'multipleOf', toNumberOrNull($event))" />
 					</template>
 
 					<!-- array -->
 					<template v-else-if="field.type === 'array'">
 						<NcSelect
-							:input-label="t('openbuilt', 'Items type')"
+							:input-label="t('openbuild', 'Items type')"
 							:value="typeOption(field.validation.itemsType || 'string')"
 							:options="itemsTypeOptions"
 							:clearable="false"
@@ -135,18 +135,18 @@
 							@input="updateValidation(index, 'itemsType', $event ? $event.value : 'string')" />
 						<NcTextField
 							:value="field.validation.minItems != null ? String(field.validation.minItems) : ''"
-							:label="t('openbuilt', 'Min items')"
+							:label="t('openbuild', 'Min items')"
 							@update:value="updateValidation(index, 'minItems', toIntOrNull($event))" />
 						<NcTextField
 							:value="field.validation.maxItems != null ? String(field.validation.maxItems) : ''"
-							:label="t('openbuilt', 'Max items')"
+							:label="t('openbuild', 'Max items')"
 							@update:value="updateValidation(index, 'maxItems', toIntOrNull($event))" />
 					</template>
 
 					<!-- relation -->
 					<template v-else-if="field.type === 'relation'">
 						<NcSelect
-							:input-label="t('openbuilt', 'Target schema')"
+							:input-label="t('openbuild', 'Target schema')"
 							:value="schemaOption(field.validation.target)"
 							:options="schemaOptions"
 							:clearable="false"
@@ -154,7 +154,7 @@
 							track-by="value"
 							@input="updateValidation(index, 'target', $event ? $event.value : '')" />
 						<NcSelect
-							:input-label="t('openbuilt', 'Cardinality')"
+							:input-label="t('openbuild', 'Cardinality')"
 							:value="cardinalityOption(field.validation.cardinality || 'one')"
 							:options="cardinalityOptions"
 							:clearable="false"
@@ -163,17 +163,17 @@
 							@input="updateValidation(index, 'cardinality', $event ? $event.value : 'one')" />
 						<NcTextField
 							:value="field.validation.inverseOf || ''"
-							:label="t('openbuilt', 'Inverse-of property (optional)')"
+							:label="t('openbuild', 'Inverse-of property (optional)')"
 							@update:value="updateValidation(index, 'inverseOf', $event)" />
 					</template>
 				</div>
 
-				<div class="openbuilt-field-editor__actions">
+				<div class="openbuild-field-editor__actions">
 					<NcButton type="error" @click="requestRemove(index)">
 						<template #icon>
 							<DeleteIcon :size="20" />
 						</template>
-						{{ t('openbuilt', 'Remove field') }}
+						{{ t('openbuild', 'Remove field') }}
 					</NcButton>
 				</div>
 			</li>
@@ -244,7 +244,7 @@ export default {
 		typeOptions() {
 			return SUPPORTED_TYPES.map((value) => ({
 				value,
-				label: this.t('openbuilt', value),
+				label: this.t('openbuild', value),
 			}))
 		},
 		/**
@@ -256,7 +256,7 @@ export default {
 		itemsTypeOptions() {
 			return ITEMS_TYPES.map((value) => ({
 				value,
-				label: this.t('openbuilt', value),
+				label: this.t('openbuild', value),
 			}))
 		},
 		/**
@@ -278,8 +278,8 @@ export default {
 			return CARDINALITIES.map((value) => ({
 				value,
 				label: value === 'one'
-					? this.t('openbuilt', 'One')
-					: this.t('openbuilt', 'Many'),
+					? this.t('openbuild', 'One')
+					: this.t('openbuild', 'Many'),
 			}))
 		},
 	},
@@ -324,14 +324,14 @@ export default {
 		 */
 		nameError(field, index) {
 			if (!field.name) {
-				return this.t('openbuilt', 'Name is required.')
+				return this.t('openbuild', 'Name is required.')
 			}
 			if (!FIELD_NAME_PATTERN.test(field.name)) {
-				return this.t('openbuilt', 'Name must start with a letter and use letters, digits, underscores, or hyphens only.')
+				return this.t('openbuild', 'Name must start with a letter and use letters, digits, underscores, or hyphens only.')
 			}
 			const duplicate = this.fields.some((other, otherIndex) => otherIndex !== index && other.name === field.name)
 			if (duplicate) {
-				return this.t('openbuilt', 'Name must be unique within the schema.')
+				return this.t('openbuild', 'Name must be unique within the schema.')
 			}
 			return ''
 		},
@@ -476,7 +476,7 @@ export default {
 		 */
 		requestRemove(index) {
 			this.pendingRemoveIndex = index
-			this.pendingRemoveName = this.fields[index]?.name || this.t('openbuilt', '(unnamed)')
+			this.pendingRemoveName = this.fields[index]?.name || this.t('openbuild', '(unnamed)')
 			this.removeDialogOpen = true
 		},
 		/**
@@ -655,30 +655,30 @@ function propertyFromField(field) {
 </script>
 
 <style scoped>
-.openbuilt-field-editor {
+.openbuild-field-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
 
-.openbuilt-field-editor__header {
+.openbuild-field-editor__header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
 
-.openbuilt-field-editor__header h3 {
+.openbuild-field-editor__header h3 {
 	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
 }
 
-.openbuilt-field-editor__empty {
+.openbuild-field-editor__empty {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 }
 
-.openbuilt-field-editor__rows {
+.openbuild-field-editor__rows {
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -687,7 +687,7 @@ function propertyFromField(field) {
 	gap: 8px;
 }
 
-.openbuilt-field-editor__row {
+.openbuild-field-editor__row {
 	display: grid;
 	grid-template-columns: auto 1fr;
 	gap: 8px;
@@ -697,26 +697,26 @@ function propertyFromField(field) {
 	background: var(--color-main-background);
 }
 
-.openbuilt-field-editor__handle {
+.openbuild-field-editor__handle {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 }
 
-.openbuilt-field-editor__row-grid {
+.openbuild-field-editor__row-grid {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 8px;
 }
 
-.openbuilt-field-editor__validation {
+.openbuild-field-editor__validation {
 	grid-column: 2;
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 8px;
 }
 
-.openbuilt-field-editor__actions {
+.openbuild-field-editor__actions {
 	grid-column: 2;
 	display: flex;
 	justify-content: flex-end;

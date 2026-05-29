@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenBuilt ApplicationInsightsController
+ * OpenBuild ApplicationInsightsController
  *
  * REST surface for the maintainer-dashboard insights endpoint described
- * in `openbuilt-app-detail-overview` / capability `application-insights`:
+ * in `openbuild-app-detail-overview` / capability `application-insights`:
  *
- *   GET /index.php/apps/openbuilt/api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d
+ *   GET /index.php/apps/openbuild/api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d
  *
  * Returns `{kpis, activity}` for a single ApplicationVersion (REQ-OBAI-001).
  * Successful responses carry `Cache-Control: public, max-age=60`
@@ -19,7 +19,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuilt\Controller
+ * @package  OCA\OpenBuild\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,17 +29,17 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-16
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-17
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-21
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-21
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Controller;
+namespace OCA\OpenBuild\Controller;
 
-use OCA\OpenBuilt\AppInfo\Application;
-use OCA\OpenBuilt\Service\ApplicationInsightsService;
+use OCA\OpenBuild\AppInfo\Application;
+use OCA\OpenBuild\Service\ApplicationInsightsService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -86,9 +86,9 @@ class ApplicationInsightsController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-16
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-17
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-21
      */
     #[NoAdminRequired]
     public function getInsights(string $appUuid, string $versionUuid): JSONResponse

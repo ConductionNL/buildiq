@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuilt ApplicationVersionsController
+ * OpenBuild ApplicationVersionsController
  *
  * REST surface for the versioned-app model (ADR-002 / spec
  * `application-versions`). Exposes CRUD over ApplicationVersion rows
@@ -24,7 +24,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuilt\Controller
+ * @package  OCA\OpenBuild\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -34,19 +34,19 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-24
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-47
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Controller;
+namespace OCA\OpenBuild\Controller;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenBuilt\AppInfo\Application;
-use OCA\OpenBuilt\Service\ApplicationVersionService;
+use OCA\OpenBuild\AppInfo\Application;
+use OCA\OpenBuild\Service\ApplicationVersionService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -151,7 +151,7 @@ class ApplicationVersionsController extends Controller
      *
      * @return JSONResponse Versions array on 200, error envelope on miss
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
      */
     #[NoAdminRequired]
     public function index(string $slug): JSONResponse
@@ -210,7 +210,7 @@ class ApplicationVersionsController extends Controller
             return new JSONResponse(data: $normalised, statusCode: Http::STATUS_OK);
         } catch (Throwable $e) {
             $this->logger->error(
-                'OpenBuilt: ApplicationVersionsController::index failed for slug '.$slug.': '.$e->getMessage(),
+                'OpenBuild: ApplicationVersionsController::index failed for slug '.$slug.': '.$e->getMessage(),
                 ['exception' => $e]
             );
             return $this->errorResponse(code: 'internal_error', detail: 'Failed to load versions');
@@ -225,7 +225,7 @@ class ApplicationVersionsController extends Controller
      *
      * @return JSONResponse The version on 200, error envelope on miss
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
      */
     #[NoAdminRequired]
     public function show(string $slug, string $versionSlug): JSONResponse
@@ -250,7 +250,7 @@ class ApplicationVersionsController extends Controller
      *
      * @return JSONResponse 201 with the created version, or error envelope
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 20, period: 60)]
@@ -299,7 +299,7 @@ class ApplicationVersionsController extends Controller
             );
         } catch (Throwable $e) {
             $this->logger->error(
-                'OpenBuilt: ApplicationVersionsController::create failed for slug '.$slug.': '.$e->getMessage(),
+                'OpenBuild: ApplicationVersionsController::create failed for slug '.$slug.': '.$e->getMessage(),
                 ['exception' => $e]
             );
             return $this->errorResponse(
@@ -318,7 +318,7 @@ class ApplicationVersionsController extends Controller
      *
      * @return JSONResponse 200 with the updated version, or error envelope
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 60, period: 60)]
@@ -371,7 +371,7 @@ class ApplicationVersionsController extends Controller
                 try {
                     $this->objectService->lockObject(
                         identifier: $currentUuid,
-                        process: 'openbuilt.controller-update',
+                        process: 'openbuild.controller-update',
                         duration: 15
                     );
                     $locked = true;
@@ -397,7 +397,7 @@ class ApplicationVersionsController extends Controller
                         $this->objectService->unlockObject(identifier: $currentUuid);
                     } catch (Throwable $unlockErr) {
                         $this->logger->warning(
-                            'OpenBuilt: failed to release update lock on '.$currentUuid.': '.$unlockErr->getMessage()
+                            'OpenBuild: failed to release update lock on '.$currentUuid.': '.$unlockErr->getMessage()
                         );
                     }
                 }
@@ -409,7 +409,7 @@ class ApplicationVersionsController extends Controller
             );
         } catch (Throwable $e) {
             $this->logger->error(
-                'OpenBuilt: ApplicationVersionsController::update failed for slug '.$slug.'/'.$versionSlug.': '.$e->getMessage(),
+                'OpenBuild: ApplicationVersionsController::update failed for slug '.$slug.'/'.$versionSlug.': '.$e->getMessage(),
                 ['exception' => $e]
             );
             return $this->errorResponse(
@@ -433,7 +433,7 @@ class ApplicationVersionsController extends Controller
      *
      * @return JSONResponse 204 on success, error envelope otherwise
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 10, period: 60)]
@@ -466,7 +466,7 @@ class ApplicationVersionsController extends Controller
             return new JSONResponse(data: [], statusCode: Http::STATUS_NO_CONTENT);
         } catch (Throwable $e) {
             $this->logger->info(
-                'OpenBuilt: ApplicationVersionsController::destroy refused for slug '.$slug.'/'.$versionSlug.': '.$e->getMessage()
+                'OpenBuild: ApplicationVersionsController::destroy refused for slug '.$slug.'/'.$versionSlug.': '.$e->getMessage()
             );
 
             $message = $e->getMessage();
@@ -528,7 +528,7 @@ class ApplicationVersionsController extends Controller
      *
      * @return array<string,mixed>|null Version record or null on miss
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
      */
     private function findVersionForApplication(string $slug, string $versionSlug): ?array
     {
@@ -578,7 +578,7 @@ class ApplicationVersionsController extends Controller
      *
      * @return JSONResponse|null Null on allow, 401/403/404 envelope on deny
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-47
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
      */
     private function requireRole(string $slug, array $roles): ?JSONResponse
     {
@@ -611,7 +611,7 @@ class ApplicationVersionsController extends Controller
         }
 
         return $this->errorResponse(
-            code: 'openbuilt.rbac.no_role',
+            code: 'openbuild.rbac.no_role',
             status: Http::STATUS_FORBIDDEN
         );
     }//end requireRole()
@@ -668,7 +668,7 @@ class ApplicationVersionsController extends Controller
                         action: self::EVENT_ADMIN_BYPASS,
                         context: $context
                     );
-                    $this->logger->info('OpenBuilt: rbac.admin_bypass exercised', $context);
+                    $this->logger->info('OpenBuild: rbac.admin_bypass exercised', $context);
                     return;
                 }
             } catch (Throwable $e) {
@@ -677,13 +677,13 @@ class ApplicationVersionsController extends Controller
                 // Per REQ-OBRBAC-007 the OR audit trail is the system of record
                 // for admin-bypass events; silent fallback defeats forensic review.
                 $this->logger->critical(
-                    'OpenBuilt: failed to record admin bypass in OR audit trail — COMPLIANCE GAP; bypass event lost from system of record',
+                    'OpenBuild: failed to record admin bypass in OR audit trail — COMPLIANCE GAP; bypass event lost from system of record',
                     array_merge($context, ['exception' => $e->getMessage()])
                 );
             }//end try
         }//end if
 
-        $this->logger->info('OpenBuilt: rbac.admin_bypass exercised', $context);
+        $this->logger->info('OpenBuild: rbac.admin_bypass exercised', $context);
     }//end recordAdminBypass()
 
     /**

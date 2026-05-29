@@ -1,15 +1,15 @@
 <?php
 
 /**
- * OpenBuilt SlugValidator
+ * OpenBuild SlugValidator
  *
  * Single source of truth for the slug pattern used across Application and
  * ApplicationVersion records. The pattern constant is mirrored on the
  * client side in `src/utils/slugPattern.js`.
  *
- * Per spec `openbuilt-app-creation-wizard` (REQ-OBWIZ-005, REQ-OBWIZ-006):
+ * Per spec `openbuild-app-creation-wizard` (REQ-OBWIZ-005, REQ-OBWIZ-006):
  *   - Slugs must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` (min 2 chars).
- *   - Leading underscores are explicitly rejected (reserved for openbuilt
+ *   - Leading underscores are explicitly rejected (reserved for openbuild
  *     system use by the `?_version=` URL convention from spec E).
  *   - Within a single app's chain, two ApplicationVersion rows may NOT share
  *     a slug.
@@ -18,7 +18,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuilt\Service
+ * @package  OCA\OpenBuild\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,13 +28,13 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-10
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-11
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Service;
+namespace OCA\OpenBuild\Service;
 
 /**
  * Validates slugs for Application and ApplicationVersion objects.
@@ -68,7 +68,7 @@ class SlugValidator
      *
      * @return array<string,mixed> Empty array on success; error array on failure
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
      */
     public function validateAppSlug(string $slug): array
     {
@@ -83,7 +83,7 @@ class SlugValidator
             if (str_starts_with($slug, '_') === true) {
                 return [
                     'code'    => 'slug_leading_underscore',
-                    'message' => 'Version slugs cannot start with `_` (reserved for openbuilt system use).',
+                    'message' => 'Version slugs cannot start with `_` (reserved for openbuild system use).',
                 ];
             }
 
@@ -109,7 +109,7 @@ class SlugValidator
      *
      * @return array<string,mixed> Empty array on success; error array on failure
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
      */
     public function validateVersionSlug(string $slug): array
     {
@@ -123,7 +123,7 @@ class SlugValidator
         if (str_starts_with($slug, '_') === true) {
             return [
                 'code'    => 'slug_leading_underscore',
-                'message' => 'Version slugs cannot start with `_` (reserved for openbuilt system use).',
+                'message' => 'Version slugs cannot start with `_` (reserved for openbuild system use).',
             ];
         }
 
@@ -150,7 +150,7 @@ class SlugValidator
      *
      * @return array<string,mixed> Empty array on success; error array identifying the collision
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-11
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
      */
     public function validateChainSlugs(array $slugs): array
     {

@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuilt Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest unit tests for `FieldEditor.vue` (REQ-OBSD-003).
@@ -206,7 +206,7 @@ describe('FieldEditor', () => {
 			propsData: { fields: [], schemaSlugs: [] },
 			stubs,
 		})
-		expect(wrapper.find('.openbuilt-field-editor__empty').exists()).toBe(true)
+		expect(wrapper.find('.openbuild-field-editor__empty').exists()).toBe(true)
 	})
 
 	describe('schemaToFields / fieldsToSchema round-trip', () => {

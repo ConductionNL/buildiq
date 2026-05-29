@@ -6,7 +6,7 @@ description: Point a page at an existing OpenRegister register, or pull data fro
 
 # Connect a register or connector
 
-A virtual app does not have to own its data. OpenBuilt pages can read from any OpenRegister register on the same Nextcloud, or from any **OpenConnector** source (HTTP API, database, file feed) the admin has wired up.
+A virtual app does not have to own its data. OpenBuild pages can read from any OpenRegister register on the same Nextcloud, or from any **OpenConnector** source (HTTP API, database, file feed) the admin has wired up.
 
 ## Goal
 
@@ -19,7 +19,7 @@ By the end you will have re-pointed one of your pages at a different register (o
 
 ## Steps
 
-1. Open the page designer at `/apps/openbuilt/builder/\<slug\>/pages` and pick the *index* page you want to re-point.
+1. Open the page designer at `/apps/openbuild/builder/\<slug\>/pages` and pick the *index* page you want to re-point.
 
    ![Page designer with the page selected](/screenshots/tutorials/user/05-connect-data-01.png)
 
@@ -27,7 +27,7 @@ By the end you will have re-pointed one of your pages at a different register (o
 
    ![Data source — register mode](/screenshots/tutorials/user/05-connect-data-02.png)
 
-3. To switch registers, pick a different **Register** and **Schema** from the dropdowns. The preview reloads against the new register; if the schema's columns do not match the columns the page was showing, OpenBuilt highlights the mismatch.
+3. To switch registers, pick a different **Register** and **Schema** from the dropdowns. The preview reloads against the new register; if the schema's columns do not match the columns the page was showing, OpenBuild highlights the mismatch.
 
    ![Switched register](/screenshots/tutorials/user/05-connect-data-03.png)
 

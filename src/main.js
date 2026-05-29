@@ -31,7 +31,7 @@ try {
 	registerTranslations()
 } catch (e) {
 	// eslint-disable-next-line no-console
-	console.warn('[openbuilt] registerTranslations failed; lib strings fall back to English source', e)
+	console.warn('[openbuild] registerTranslations failed; lib strings fall back to English source', e)
 }
 
 // Fire-and-forget translation load. `@nextcloud/l10n`'s loadTranslations()
@@ -41,7 +41,7 @@ try {
 // back to their source on miss.
 function tryLoadTranslations() {
 	try {
-		const result = loadTranslations('openbuilt', () => {})
+		const result = loadTranslations('openbuild', () => {})
 		if (result && typeof result.then === 'function') {
 			result.then(() => {}, () => {})
 		}
@@ -86,7 +86,7 @@ function routesFromManifest(manifest) {
 
 const router = new VueRouter({
 	mode: 'history',
-	base: generateUrl('/apps/openbuilt'),
+	base: generateUrl('/apps/openbuild'),
 	routes: routesFromManifest(bundledManifest),
 })
 

@@ -7,25 +7,25 @@
 <template>
 	<section class="page-list-editor">
 		<header class="page-list-editor__header">
-			<h4>{{ t('openbuilt', 'Pages') }}</h4>
+			<h4>{{ t('openbuild', 'Pages') }}</h4>
 			<button type="button" class="page-list-editor__add" @click="startAdd">
-				+ {{ t('openbuilt', 'Add page') }}
+				+ {{ t('openbuild', 'Add page') }}
 			</button>
 		</header>
 		<div v-if="addingType !== null" class="page-list-editor__add-row">
 			<select v-model="addingType" class="page-list-editor__select">
 				<option value="">
-					{{ t('openbuilt', '— select page type —') }}
+					{{ t('openbuild', '— select page type —') }}
 				</option>
 				<option v-for="type in PAGE_TYPES" :key="type" :value="type">
 					{{ type }}
 				</option>
 			</select>
 			<button type="button" :disabled="!addingType" @click="confirmAdd">
-				{{ t('openbuilt', 'Confirm') }}
+				{{ t('openbuild', 'Confirm') }}
 			</button>
 			<button type="button" @click="cancelAdd">
-				{{ t('openbuilt', 'Cancel') }}
+				{{ t('openbuild', 'Cancel') }}
 			</button>
 		</div>
 		<Draggable
@@ -42,41 +42,41 @@
 					'page-list-editor__row--error': hasError(page, index),
 				}"
 				@click="$emit('select', index)">
-				<span class="page-list-editor__drag-handle" :title="t('openbuilt', 'Drag to reorder')">
+				<span class="page-list-editor__drag-handle" :title="t('openbuild', 'Drag to reorder')">
 					⠿
 				</span>
 				<input
 					:value="page.id || ''"
 					type="text"
 					class="page-list-editor__field"
-					:placeholder="t('openbuilt', 'page id')"
+					:placeholder="t('openbuild', 'page id')"
 					@click.stop
 					@input="updateField(index, 'id', $event.target.value)">
 				<input
 					:value="page.route || ''"
 					type="text"
 					class="page-list-editor__field"
-					:placeholder="t('openbuilt', '/route/:param')"
+					:placeholder="t('openbuild', '/route/:param')"
 					@click.stop
 					@input="updateField(index, 'route', $event.target.value)">
 				<span class="page-list-editor__type-tag">{{ page.type }}</span>
 				<button
 					type="button"
 					class="page-list-editor__remove"
-					:title="t('openbuilt', 'Remove page')"
+					:title="t('openbuild', 'Remove page')"
 					@click.stop="removePage(index)">
 					✕
 				</button>
 			</div>
 		</Draggable>
 		<p v-if="!pages.length" class="page-list-editor__empty">
-			{{ t('openbuilt', 'No pages yet. Click "Add page" to start.') }}
+			{{ t('openbuild', 'No pages yet. Click "Add page" to start.') }}
 		</p>
 		<p v-if="duplicateIds.length" class="page-list-editor__error" role="alert">
-			{{ t('openbuilt', 'Duplicate page ids:') }} {{ duplicateIds.join(', ') }}
+			{{ t('openbuild', 'Duplicate page ids:') }} {{ duplicateIds.join(', ') }}
 		</p>
 		<p v-if="invalidRoutes.length" class="page-list-editor__error" role="alert">
-			{{ t('openbuilt', 'Invalid route(s):') }} {{ invalidRoutes.join(', ') }}
+			{{ t('openbuild', 'Invalid route(s):') }} {{ invalidRoutes.join(', ') }}
 		</p>
 	</section>
 </template>

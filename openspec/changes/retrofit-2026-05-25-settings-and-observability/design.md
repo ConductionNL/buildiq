@@ -1,7 +1,7 @@
 # Design — settings-and-observability (retrofit)
 
 Retrofit change. Tasks describe retroactive annotation, not new
-implementation work. The code already exists and ships in OpenBuilt;
+implementation work. The code already exists and ships in OpenBuild;
 this change records the observed behaviour of the settings surface and
 the liveness/metrics probes as numbered REQs so gate-16 spec-coverage
 can trace each method to a requirement.

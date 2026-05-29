@@ -3,7 +3,7 @@
 ### Requirement: REQ-OBAI-001 Insights endpoint returns KPIs and activity timeline for a version
 
 The system SHALL expose
-`GET /index.php/apps/openbuilt/api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d`,
+`GET /index.php/apps/openbuild/api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d`,
 returning a single JSON payload containing four KPI scalars and an activity
 timeline scoped to the named ApplicationVersion's per-version register.
 
@@ -39,7 +39,7 @@ The response SHALL carry the header `Cache-Control: public, max-age=60`.
 #### Scenario: Valid call returns kpis + activity payload
 
 - **GIVEN** an Application `<nil>` with an ApplicationVersion `<nil>` whose register
-  is `openbuilt-hello-world-production`
+  is `openbuild-hello-world-production`
 - **AND** the caller is in `permissions.viewers` on the Application
 - **WHEN** the caller GETs
   `/api/applications/<nil>/versions/<nil>/insights?window=7d`
@@ -76,10 +76,10 @@ The response SHALL carry the header `Cache-Control: public, max-age=60`.
   `/api/applications/<nil>/versions/<nil>/insights?window=7d`
 - **THEN** the response is `404 Not Found`
 
-### Requirement: REQ-OBAI-002 Auth gate mirrors openbuilt-version-routing
+### Requirement: REQ-OBAI-002 Auth gate mirrors openbuild-version-routing
 
 The endpoint SHALL apply the same RBAC gate as
-`openbuilt-version-routing` REQ-OBVR-003:
+`openbuild-version-routing` REQ-OBVR-003:
 
 - If the resolved version's UUID equals `Application.productionVersion.uuid`, the
   caller MUST be in `permissions.viewers` ∪ `permissions.editors` ∪
@@ -88,7 +88,7 @@ The endpoint SHALL apply the same RBAC gate as
 - Otherwise (non-production version), the caller MUST be in `permissions.editors` ∪
   `permissions.owners`. Failure → `404`.
 - Nextcloud admins are NOT auto-granted (same policy as
-  `openbuilt-version-routing`).
+  `openbuild-version-routing`).
 
 The controller SHALL carry `#[NoAdminRequired]`. The RBAC check SHALL live inside
 the service layer (`ApplicationInsightsService`), not the controller, so the gate is
@@ -122,7 +122,7 @@ testable in isolation and mirrors the shape of `ManifestResolverService`.
 - **AND** the requested version is `staging`
 - **WHEN** the caller GETs the insights endpoint with `window=7d`
 - **THEN** the response is `404 Not Found`
-  _(admins are not auto-granted — same policy as openbuilt-version-routing)_
+  _(admins are not auto-granted — same policy as openbuild-version-routing)_
 
 ### Requirement: REQ-OBAI-003 Schema-set walk over the version's manifest.pages[].config
 
@@ -135,7 +135,7 @@ server-side and unique-ing the resulting schema IDs. The walk SHALL:
    `config.schema`. Collect `(registerSlug, schemaId)` tuples; skip entries with
    missing or null values.
 3. Filter to tuples where `registerSlug` equals
-   `openbuilt-{appSlug}-{versionSlug}` (the version's own per-version register).
+   `openbuild-{appSlug}-{versionSlug}` (the version's own per-version register).
    Tuples referencing other registers SHALL be ignored — the insights endpoint
    scopes to the version's own register only.
 4. Unique by schema ID.
@@ -147,9 +147,9 @@ call. An empty schema-set is a valid input — all four KPIs return `0` and
 #### Scenario: Walk derives unique schema IDs from manifest.pages
 
 - **GIVEN** a manifest with three page entries:
-  `[{config:{register:"openbuilt-hello-world-production", schema:"<nil>"}},
-   {config:{register:"openbuilt-hello-world-production", schema:"<nil>"}},
-   {config:{register:"openbuilt-hello-world-production", schema:"<nil>"}}]`
+  `[{config:{register:"openbuild-hello-world-production", schema:"<nil>"}},
+   {config:{register:"openbuild-hello-world-production", schema:"<nil>"}},
+   {config:{register:"openbuild-hello-world-production", schema:"<nil>"}}]`
   (the same schema referenced twice plus a distinct one)
 - **WHEN** the service walks the manifest
 - **THEN** the resulting schema-set contains two unique schema IDs

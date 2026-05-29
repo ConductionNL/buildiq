@@ -11,7 +11,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Service
+ * @package  OCA\OpenBuild\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,9 +24,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Service;
+namespace OCA\OpenBuild\Tests\Unit\Service;
 
-use OCA\OpenBuilt\Service\AppNavigationService;
+use OCA\OpenBuild\Service\AppNavigationService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -441,9 +441,9 @@ class AppNavigationServiceTest extends TestCase
 
         $entry = ($registeredClosures[0])();
 
-        $this->assertSame('openbuilt-app-hello-world', $entry['id']);
+        $this->assertSame('openbuild-app-hello-world', $entry['id']);
         $this->assertSame('Hello World', $entry['name']);
-        $this->assertStringContainsString('/apps/openbuilt/hello-world', $entry['href']);
+        $this->assertStringContainsString('/apps/openbuild/hello-world', $entry['href']);
         $this->assertArrayHasKey('order', $entry);
         $this->assertArrayHasKey('enabled', $entry);
     }//end testRegisteredClosureReturnsExpectedShape()

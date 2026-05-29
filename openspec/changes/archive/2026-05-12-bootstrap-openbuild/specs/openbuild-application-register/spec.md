@@ -3,7 +3,7 @@
 ### Requirement: REQ-OBA-001 Application schema registered in OpenRegister
 
 The system SHALL declare an `Application` schema in
-`lib/Settings/openbuilt_register.json` under the `openbuilt` register
+`lib/Settings/openbuild_register.json` under the `openbuild` register
 namespace. The schema SHALL define properties `uuid` (string,
 UUID-format), `slug` (string, kebab-case pattern), `name` (string,
 required), `description` (string, optional), `manifest` (object,
@@ -14,16 +14,16 @@ OpenRegister at app install / post-migration time via a repair step.
 
 #### Scenario: Schema is available after install
 
-- **WHEN** the OpenBuilt app is installed and its repair step runs
-- **THEN** OpenRegister exposes the `openbuilt` register containing
+- **WHEN** the OpenBuild app is installed and its repair step runs
+- **THEN** OpenRegister exposes the `openbuild` register containing
   the `Application` schema
 - **AND** the schema's properties match the declaration in
-  `lib/Settings/openbuilt_register.json`
+  `lib/Settings/openbuild_register.json`
 
 #### Scenario: Application object is created via OR REST
 
 - **WHEN** a client POSTs a payload to OR's REST endpoint for the
-  `openbuilt/application` namespace with a valid `manifest`, `slug`,
+  `openbuild/application` namespace with a valid `manifest`, `slug`,
   `name`, `version`, and `status: draft`
 - **THEN** OR persists the object, returns 201, and the returned
   object carries an OR-assigned `uuid` and the submitted fields
@@ -59,7 +59,7 @@ via the `validateManifest` utility re-exported from
 
 The `Application` schema SHALL declare its state machine via
 `x-openregister-lifecycle` in
-`lib/Settings/openbuilt_register.json`. The lifecycle SHALL define
+`lib/Settings/openbuild_register.json`. The lifecycle SHALL define
 three states (`draft`, `published`, `archived`) and the allowed
 transitions: `draft → published`, `published → archived`,
 `archived → draft` (re-open for editing). No service class (e.g.
@@ -86,7 +86,7 @@ transition SHALL be recorded in OR's audit trail.
 ### Requirement: REQ-OBA-004 BuiltAppRoute index for slug lookup
 
 The system SHALL declare a `BuiltAppRoute` schema in
-`lib/Settings/openbuilt_register.json` with properties `slug` (string,
+`lib/Settings/openbuild_register.json` with properties `slug` (string,
 required, kebab-case pattern) and `applicationUuid` (string,
 UUID-format, required). The `slug` property SHALL be unique within an
 organisation. The repair step SHALL create or maintain a

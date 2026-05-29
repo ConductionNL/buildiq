@@ -12,7 +12,7 @@ groups as
 If the two sets do not intersect — and the caller is not exercising
 the audited admin bypass declared in REQ-OBRBAC-006 — the controller
 SHALL respond `403 Forbidden` with a JSON body of shape
-`{ "error": "forbidden", "code": "openbuilt.rbac.no_role" }`. The
+`{ "error": "forbidden", "code": "openbuild.rbac.no_role" }`. The
 existing 404 branch (slug not found) is preserved; the 403 branch
 SHALL be ordered before the manifest-body emission and SHALL NOT
 leak any Application metadata (no name, no description, no manifest
@@ -22,7 +22,7 @@ service class — per ADR-022 §Exceptions(1).
 #### Scenario: Caller without a role gets 403 (not 200, not 404)
 
 - **WHEN** an authenticated user requests
-  `/index.php/apps/openbuilt/api/applications/hello-world/manifest`
+  `/index.php/apps/openbuild/api/applications/hello-world/manifest`
 - **AND** the Application exists in the user's organisation but no
   group the user belongs to appears in its `permissions`
 - **THEN** the response is `403`
@@ -40,7 +40,7 @@ service class — per ADR-022 §Exceptions(1).
 
 ### Requirement: REQ-OBR-007 Application list view filters by caller's roles
 
-The system SHALL ensure the frontend Application list (the entry view of the OpenBuilt shell, currently `ApplicationEditor.vue`'s list mode) renders only Applications on which the caller has at least one role.
+The system SHALL ensure the frontend Application list (the entry view of the OpenBuild shell, currently `ApplicationEditor.vue`'s list mode) renders only Applications on which the caller has at least one role.
 
 The list view SHALL prefer OR-side filtering: if the Application
 schema declares an `x-openregister-authorization` rule that
@@ -49,14 +49,14 @@ the pre-filtered set and the frontend renders it directly.
 
 If the declarative path is not available, the frontend SHALL filter
 in JS using the caller's group set, which is provided to the
-frontend via `IInitialState::provideInitialState('openbuilt',
+frontend via `IInitialState::provideInitialState('openbuild',
 'currentUserGroups', [...])` consumed by `loadState` (per ADR-004 —
 no `document.getElementById().dataset` reads).
 
 #### Scenario: User sees only authorised applications
 
 - **WHEN** user `bob` (in groups `team-alpha`, `qa-shared`) opens
-  the OpenBuilt shell
+  the OpenBuild shell
 - **AND** the organisation contains Applications A (`permissions.owners
   = ["team-alpha"]`), B (`permissions.editors = ["other-team"]`),
   and C (`permissions.viewers = ["qa-shared"]`)
@@ -66,14 +66,14 @@ no `document.getElementById().dataset` reads).
 #### Scenario: Empty list when user has no roles
 
 - **WHEN** an authenticated user with no role on any Application in
-  their organisation opens the OpenBuilt shell
+  their organisation opens the OpenBuild shell
 - **THEN** the Application list is empty
 - **AND** the empty-state UI explains "No applications available —
   ask an owner to grant you access"
 
 ### Requirement: REQ-OBR-008 Editor UIs gate destructive actions per role
 
-The system SHALL gate role-restricted actions in the OpenBuilt editor views (currently the textarea editor `ApplicationEditor.vue`; the visual editors arriving in chain specs #5 and #6 when they land) via a shared `useRole(application)` composable that returns the caller's effective role (`owner | editor | viewer | none`). The
+The system SHALL gate role-restricted actions in the OpenBuild editor views (currently the textarea editor `ApplicationEditor.vue`; the visual editors arriving in chain specs #5 and #6 when they land) via a shared `useRole(application)` composable that returns the caller's effective role (`owner | editor | viewer | none`). The
 mapping in REQ-OBRBAC-004 is the canonical source. UI controls
 SHALL be:
 
@@ -107,13 +107,13 @@ list; REQ-OBR-006 ensures direct-URL access returns 403).
 
 ### Requirement: REQ-OBR-009 Caller's group set is provided via initial state
 
-The OpenBuilt PHP layer SHALL provide the caller's Nextcloud group
+The OpenBuild PHP layer SHALL provide the caller's Nextcloud group
 IDs to the frontend via
-`IInitialState::provideInitialState('openbuilt',
+`IInitialState::provideInitialState('openbuild',
 'currentUserGroups', string[])`, written from the relevant
 controller's `index` action (or a dedicated `InitialStateProvider`
 service registered in `lib/AppInfo/Application.php`). The frontend
-SHALL consume this value through `loadState('openbuilt',
+SHALL consume this value through `loadState('openbuild',
 'currentUserGroups')` from `@nextcloud/initial-state`. The
 frontend SHALL NOT read group membership from any DOM
 data-attribute, fetch endpoint, or `document.getElementById`
@@ -122,9 +122,9 @@ pattern (ADR-004 hard rule; enforced by the
 
 #### Scenario: Frontend sees the caller's groups
 
-- **WHEN** the OpenBuilt shell boots for user `bob` (in groups
+- **WHEN** the OpenBuild shell boots for user `bob` (in groups
   `team-alpha`, `qa-shared`)
-- **THEN** `loadState('openbuilt', 'currentUserGroups')` returns
+- **THEN** `loadState('openbuild', 'currentUserGroups')` returns
   `["team-alpha", "qa-shared"]`
 - **AND** no DOM data-attribute access is needed to obtain the
   groups

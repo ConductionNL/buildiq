@@ -6,7 +6,7 @@ retrofit: true
 
 ## Purpose
 
-The Application detail UI is OpenBuilt's maintainer cockpit. The
+The Application detail UI is OpenBuild's maintainer cockpit. The
 `ApplicationDetailHeader` (registered as the detail-route `headerComponent`)
 renders version pills, a four-card KPI grid, an activity sparkline, and the
 stacked overview widgets (register / schemas / groups / pages / menu). The

@@ -9,16 +9,16 @@
   - `x-openregister-notifications` block + a "coming in v1.1" message.
   -->
 <template>
-	<section class="openbuilt-notification-editor">
-		<header class="openbuilt-notification-editor__header">
-			<h3>{{ t('openbuilt', 'Notifications') }}</h3>
+	<section class="openbuild-notification-editor">
+		<header class="openbuild-notification-editor__header">
+			<h3>{{ t('openbuild', 'Notifications') }}</h3>
 		</header>
 		<NcNoteCard type="info">
-			{{ t('openbuilt', 'The notification editor ships in v1.1 (see design Decision 7). Existing notifications declared on this schema are shown read-only below.') }}
+			{{ t('openbuild', 'The notification editor ships in v1.1 (see design Decision 7). Existing notifications declared on this schema are shown read-only below.') }}
 		</NcNoteCard>
-		<pre v-if="notifications" class="openbuilt-notification-editor__readonly">{{ formatted }}</pre>
-		<p v-else class="openbuilt-notification-editor__empty">
-			{{ t('openbuilt', 'No notifications declared on this schema.') }}
+		<pre v-if="notifications" class="openbuild-notification-editor__readonly">{{ formatted }}</pre>
+		<p v-else class="openbuild-notification-editor__empty">
+			{{ t('openbuild', 'No notifications declared on this schema.') }}
 		</p>
 	</section>
 </template>
@@ -51,19 +51,19 @@ export default {
 </script>
 
 <style scoped>
-.openbuilt-notification-editor {
+.openbuild-notification-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
 
-.openbuilt-notification-editor__header h3 {
+.openbuild-notification-editor__header h3 {
 	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
 }
 
-.openbuilt-notification-editor__readonly {
+.openbuild-notification-editor__readonly {
 	margin: 0;
 	padding: 8px;
 	background: var(--color-background-dark);
@@ -73,7 +73,7 @@ export default {
 	overflow: auto;
 }
 
-.openbuilt-notification-editor__empty {
+.openbuild-notification-editor__empty {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 }

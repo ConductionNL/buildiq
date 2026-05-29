@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuilt VersionLockedException
+ * OpenBuild VersionLockedException
  *
  * Thrown when OR's object-lock acquisition on the target ApplicationVersion
  * row fails because another caller already holds the lock (spec
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Exception
- * @package  OCA\OpenBuilt\Exception
+ * @package  OCA\OpenBuild\Exception
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Exception;
+namespace OCA\OpenBuild\Exception;
 
 use Throwable;
 

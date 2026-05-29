@@ -1,17 +1,17 @@
 ---
 kind: code
-depends_on: [bootstrap-openbuilt]
+depends_on: [bootstrap-openbuild]
 chain:
-  - bootstrap-openbuilt
-  - openbuilt-page-editor   # THIS spec
+  - bootstrap-openbuild
+  - openbuild-page-editor   # THIS spec
 ---
 
 ## Why
 
-Spec #1 (`bootstrap-openbuilt`) shipped a textarea-based JSON manifest
+Spec #1 (`bootstrap-openbuild`) shipped a textarea-based JSON manifest
 editor as the integrator-only entry point for authoring a virtual
 app. That textarea proves the runtime contract but is unusable for
-the citizen-developer audience OpenBuilt actually targets: hand-typing
+the citizen-developer audience OpenBuild actually targets: hand-typing
 a manifest means knowing the canonical
 `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json` (v1.4.0)
 by heart, including its closed 9-type page enum, the per-type config
@@ -21,8 +21,8 @@ sub-shapes, the menu/permission/route grammar, and the `$ref`'d
 missing piece between "we can store and render a manifest" and "a
 non-technical user can build one".
 
-This is spec #5 of the 9-spec OpenBuilt chain. It is **purely a
-frontend code change** inside the existing `openbuilt` Nextcloud app —
+This is spec #5 of the 9-spec OpenBuild chain. It is **purely a
+frontend code change** inside the existing `openbuild` Nextcloud app —
 no new schemas, no new backend controllers, no new register
 namespaces. The editor reads/writes the same `Application.manifest`
 JSON blob the textarea already reads/writes (via OR REST per ADR-022),
@@ -99,7 +99,7 @@ just through a graphical UI instead of a raw text area.
 
 #### New Capabilities
 
-- `openbuilt-page-designer`: The visual manifest / page designer that
+- `openbuild-page-designer`: The visual manifest / page designer that
   produces output validating against
   `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`.
   Owns the menu-tree editor, page-list editor, per-page-type
@@ -111,7 +111,7 @@ just through a graphical UI instead of a raw text area.
 
 #### Modified Capabilities
 
-- `openbuilt-runtime`: The editor swap. The Application edit view
+- `openbuild-runtime`: The editor swap. The Application edit view
   registered by spec #1 (`ApplicationEditor.vue` — single-textarea)
   is reshaped into a tabbed editor with a "Design" tab (the new
   `PageDesigner.vue`) as default and a "Raw JSON" tab (the existing

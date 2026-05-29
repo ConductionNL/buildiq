@@ -49,12 +49,12 @@ Pills whose version the caller is NOT authorised to access SHALL be HIDDEN from 
 strip. The visibility rule SHALL match the backend RBAC gate:
 
 - The production version SHALL be visible to any authenticated caller (the
-  production-is-public policy from `openbuilt-version-routing` REQ-OBVR-001).
+  production-is-public policy from `openbuild-version-routing` REQ-OBVR-001).
 - Non-production versions SHALL be visible only to callers listed in
   `Application.permissions.editors` ∪ `Application.permissions.owners`.
 
 Clicking a pill SHALL update the URL's `?_version=<versionSlug>` query parameter via
-the `buildVersionedRoute` helper from `openbuilt-version-routing`. The hero strip,
+the `buildVersionedRoute` helper from `openbuild-version-routing`. The hero strip,
 KPI grid, activity-graph card, and structural-widget grid SHALL re-scope to the
 newly-selected version on the same render cycle.
 
@@ -169,7 +169,7 @@ than an empty chart frame.
 The `RegisterWidget.vue` component SHALL render a card with:
 
 - The register name
-- The register slug `openbuilt-{appSlug}-{versionSlug}`
+- The register slug `openbuild-{appSlug}-{versionSlug}`
 - The schema count
 - The object count
 - The files count
@@ -184,7 +184,7 @@ No inline create. No row click action.
 - **GIVEN** an Application `hello-world` with the `production` version selected
 - **WHEN** the user clicks "Open in OpenRegister" on the Register card
 - **THEN** the browser navigates to
-  `/apps/openregister/registers/openbuilt-hello-world-production`
+  `/apps/openregister/registers/openbuild-hello-world-production`
 
 ### Requirement: REQ-OBADO-007 Schemas widget renders rows with deep-link and inline "+ Add schema"
 
@@ -299,10 +299,10 @@ The manifest update SHALL validate against the canonical manifest schema at
 Each pill whose corresponding ApplicationVersion has a `promotesTo` target SHALL
 render a small "Promote" affordance (icon button or trailing chevron) on the pill.
 Clicking SHALL invoke the promotion dialog registered by
-`openbuilt-version-promotion`. This spec does NOT define the dialog itself — it
+`openbuild-version-promotion`. This spec does NOT define the dialog itself — it
 defines only the trigger surface.
 
-If no promotion dialog is registered (e.g. `openbuilt-version-promotion` not yet
+If no promotion dialog is registered (e.g. `openbuild-version-promotion` not yet
 applied), the button SHALL render but click SHALL log a deferred notice and no-op.
 
 #### Scenario: Promote button renders on non-terminal pills
@@ -316,6 +316,6 @@ applied), the button SHALL render but click SHALL log a deferred notice and no-o
 
 #### Scenario: Promote click invokes the registered dialog
 
-- **GIVEN** the promotion dialog from `openbuilt-version-promotion` is registered
+- **GIVEN** the promotion dialog from `openbuild-version-promotion` is registered
 - **WHEN** the user clicks Promote on the `staging` pill
 - **THEN** the dialog opens, pre-targeted at the `staging` version

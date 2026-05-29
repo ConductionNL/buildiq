@@ -18,7 +18,7 @@
 		class="inline-field-mark"
 		role="alert">
 		<span class="inline-field-mark__dot" aria-hidden="true">⚠</span>
-		<span class="inline-field-mark__text">{{ error.message || t('openbuilt', 'This field has a validation error.') }}</span>
+		<span class="inline-field-mark__text">{{ error.message || t('openbuild', 'This field has a validation error.') }}</span>
 	</span>
 </template>
 

@@ -2,33 +2,33 @@
 <template>
 	<div class="template-gallery">
 		<header class="template-gallery__header">
-			<h1>{{ t('openbuilt', 'Template gallery') }}</h1>
+			<h1>{{ t('openbuild', 'Template gallery') }}</h1>
 			<p class="template-gallery__subtitle">
-				{{ t('openbuilt', 'Start from a recognisable use case. Every template clones into an editable draft application.') }}
+				{{ t('openbuild', 'Start from a recognisable use case. Every template clones into an editable draft application.') }}
 			</p>
 		</header>
 
 		<div class="template-gallery__filters">
 			<NcTextField
 				:value="search"
-				:label="t('openbuilt', 'Search templates')"
-				:placeholder="t('openbuilt', 'Search by name, use case, or description')"
+				:label="t('openbuild', 'Search templates')"
+				:placeholder="t('openbuild', 'Search by name, use case, or description')"
 				@update:value="search = $event" />
 			<NcSelect
 				v-model="categoryFilter"
-				:input-label="t('openbuilt', 'Category')"
+				:input-label="t('openbuild', 'Category')"
 				:options="categoryOptions"
-				:placeholder="t('openbuilt', 'All categories')"
+				:placeholder="t('openbuild', 'All categories')"
 				:clearable="true" />
 		</div>
 
 		<div v-if="loading" class="template-gallery__loading">
 			<NcLoadingIcon :size="32" />
-			<span>{{ t('openbuilt', 'Loading templates…') }}</span>
+			<span>{{ t('openbuild', 'Loading templates…') }}</span>
 		</div>
 
 		<div v-else-if="filteredTemplates.length === 0" class="template-gallery__empty">
-			<NcEmptyContent :name="t('openbuilt', 'No templates match your filters')" />
+			<NcEmptyContent :name="t('openbuild', 'No templates match your filters')" />
 		</div>
 
 		<ul v-else class="template-gallery__grid">
@@ -52,7 +52,7 @@
 				</div>
 				<div class="template-card__actions">
 					<NcButton type="primary" @click="openClone(tpl)">
-						{{ t('openbuilt', 'Use this template') }}
+						{{ t('openbuild', 'Use this template') }}
 					</NcButton>
 				</div>
 			</li>
@@ -109,7 +109,7 @@ export default {
 		categoryOptions() {
 			return Object.entries(CATEGORY_LABELS).map(([value, label]) => ({
 				id: value,
-				label: t('openbuilt', label),
+				label: t('openbuild', label),
 			}))
 		},
 		/**
@@ -147,8 +147,8 @@ export default {
 			this.loading = true
 			try {
 				// Read templates directly from OpenRegister by register+schema slug.
-				// Per hybrid register model: ApplicationTemplate lives in the shared `openbuilt` register.
-				const url = generateUrl('/apps/openregister/api/objects/openbuilt/application-template')
+				// Per hybrid register model: ApplicationTemplate lives in the shared `openbuild` register.
+				const url = generateUrl('/apps/openregister/api/objects/openbuild/application-template')
 				const resp = await axios.get(url)
 				const data = resp.data
 				this.templates = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
@@ -171,7 +171,7 @@ export default {
 			if (url.startsWith('http') || url.startsWith('/')) {
 				return url
 			}
-			return generateUrl(`/apps/openbuilt/${url}`)
+			return generateUrl(`/apps/openbuild/${url}`)
 		},
 		/**
 		 * Observed behaviour of `categoryLabel` (retrofit annotation).
@@ -179,7 +179,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
 		 */
 		categoryLabel(category) {
-			return t('openbuilt', CATEGORY_LABELS[category] || category || '')
+			return t('openbuild', CATEGORY_LABELS[category] || category || '')
 		},
 		/**
 		 * Observed behaviour of `openClone` (retrofit annotation).
@@ -201,13 +201,13 @@ export default {
 				return
 			}
 			try {
-				const url = generateUrl(`/apps/openbuilt/api/applications/from-template/${encodeURIComponent(slug)}`)
+				const url = generateUrl(`/apps/openbuild/api/applications/from-template/${encodeURIComponent(slug)}`)
 				const resp = await axios.post(url, payload)
 				this.cloneOpen = false
 				this.redirectAfterClone(resp.data)
 			} catch (e) {
 				const data = e?.response?.data
-				const message = data?.detail || data?.error || e?.message || t('openbuilt', 'Clone failed.')
+				const message = data?.detail || data?.error || e?.message || t('openbuild', 'Clone failed.')
 				this.$refs.cloneDialog?.setError(message)
 			}
 		},

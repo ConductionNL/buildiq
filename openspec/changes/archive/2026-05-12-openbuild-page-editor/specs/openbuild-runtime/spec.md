@@ -2,14 +2,14 @@
 
 ### Requirement: REQ-OBR-005 Textarea manifest editor saves to the Application object
 
-The OpenBuilt shell SHALL render a **tabbed Application editor** for
+The OpenBuild shell SHALL render a **tabbed Application editor** for
 the `manifest` field of an `Application` object, composed of two
 sibling tabs sharing one in-flight manifest state:
 
 1. **"Design"** (default tab) — mounts the visual `PageDesigner.vue`
-   shipped by the `openbuilt-page-designer` capability. The designer
+   shipped by the `openbuild-page-designer` capability. The designer
    authors the manifest through structured per-page-type sub-editors
-   and a menu-tree editor; see the `openbuilt-page-designer`
+   and a menu-tree editor; see the `openbuild-page-designer`
    capability spec for its full requirements.
 2. **"Raw JSON"** — the original JSON `<textarea>`-based editor (the
    integrator-only fallback path).

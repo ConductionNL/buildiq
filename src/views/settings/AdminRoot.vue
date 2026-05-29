@@ -1,17 +1,17 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <template>
-	<div class="openbuilt-admin">
+	<div class="openbuild-admin">
 		<CnVersionInfoCard
-			:app-name="'OpenBuilt'"
+			:app-name="'OpenBuild'"
 			:app-version="appVersion"
 			:is-up-to-date="true"
 			:show-update-button="true"
-			:title="t('openbuilt', 'Version Information')"
-			:description="t('openbuilt', 'Information about the current OpenBuilt installation')">
+			:title="t('openbuild', 'Version Information')"
+			:description="t('openbuild', 'Information about the current OpenBuild installation')">
 			<template #footer>
 				<div class="cn-support-info">
-					<h4>{{ t('openbuilt', 'Support') }}</h4>
-					<p>{{ t('openbuilt', 'For support, contact us at') }} <a href="mailto:support@conduction.nl">support@conduction.nl</a></p>
+					<h4>{{ t('openbuild', 'Support') }}</h4>
+					<p>{{ t('openbuild', 'For support, contact us at') }} <a href="mailto:support@conduction.nl">support@conduction.nl</a></p>
 				</div>
 			</template>
 		</CnVersionInfoCard>
@@ -37,7 +37,7 @@ export default {
 			storesReady: false,
 			// ADR-004 + hydra-gate-initial-state: server data flows via
 			// IInitialState + loadState, never via DOM data-* attributes.
-			appVersion: loadState('openbuilt', 'version', 'Unknown'),
+			appVersion: loadState('openbuild', 'version', 'Unknown'),
 		}
 	},
 	/**
@@ -53,7 +53,7 @@ export default {
 </script>
 
 <style scoped>
-.openbuilt-admin {
+.openbuild-admin {
 	max-width: 900px;
 }
 </style>

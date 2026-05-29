@@ -56,7 +56,7 @@
 
 		<!-- 2 + 3. Version pills and window toggle row -->
 		<section class="ob-detail-header__controls">
-			<div class="ob-detail-header__pills" role="tablist" :aria-label="t('openbuilt', 'Version selection')">
+			<div class="ob-detail-header__pills" role="tablist" :aria-label="t('openbuild', 'Version selection')">
 				<div
 					v-for="version in visibleVersions"
 					:key="version.uuid"
@@ -73,7 +73,7 @@
 					<button
 						v-if="hasPromoteTarget(version)"
 						class="ob-detail-header__pill-promote"
-						:aria-label="t('openbuilt', 'Promote {name}', { name: version.name || version.slug })"
+						:aria-label="t('openbuild', 'Promote {name}', { name: version.name || version.slug })"
 						type="button"
 						@click.stop="onPromoteClick(version)">
 						›
@@ -83,7 +83,7 @@
 			<div
 				class="ob-detail-header__window-toggle"
 				role="radiogroup"
-				:aria-label="t('openbuilt', 'Insights window')">
+				:aria-label="t('openbuild', 'Insights window')">
 				<button
 					v-for="opt in windowOptions"
 					:key="opt"
@@ -101,20 +101,20 @@
 		<section class="ob-detail-header__kpis">
 			<CnCard
 				class="ob-detail-header__kpi"
-				:title="t('openbuilt', 'Active users')"
+				:title="t('openbuild', 'Active users')"
 				:description="String(kpis.activeUsers)" />
 			<CnCard
 				class="ob-detail-header__kpi"
-				:title="t('openbuilt', 'Object count')"
+				:title="t('openbuild', 'Object count')"
 				:description="String(kpis.objectCount)" />
 			<CnCard
 				class="ob-detail-header__kpi ob-detail-header__kpi--files"
-				:title="t('openbuilt', 'Files')"
+				:title="t('openbuild', 'Files')"
 				:description="String(kpis.filesCount)"
 				:title-tooltip="filesTooltip" />
 			<CnCard
 				class="ob-detail-header__kpi"
-				:title="t('openbuilt', 'Audit events')"
+				:title="t('openbuild', 'Audit events')"
 				:description="String(kpis.auditEventCount)" />
 		</section>
 
@@ -122,14 +122,14 @@
 		<section class="ob-detail-header__activity">
 			<div v-if="activity && activity.length > 0" class="ob-detail-header__activity-card">
 				<header class="ob-detail-header__activity-header">
-					<h3>{{ t('openbuilt', 'Activity ({window})', { window: selectedWindow }) }}</h3>
+					<h3>{{ t('openbuild', 'Activity ({window})', { window: selectedWindow }) }}</h3>
 				</header>
 				<svg
 					class="ob-detail-header__activity-chart"
 					viewBox="0 0 100 30"
 					preserveAspectRatio="none"
 					role="img"
-					:aria-label="t('openbuilt', 'Activity sparkline')">
+					:aria-label="t('openbuild', 'Activity sparkline')">
 					<polyline
 						:points="sparklinePoints"
 						fill="none"
@@ -137,11 +137,11 @@
 						stroke-width="0.5" />
 				</svg>
 				<p class="ob-detail-header__activity-summary">
-					{{ t('openbuilt', '{count} buckets, {sum} total events', { count: activity.length, sum: totalActivityEvents }) }}
+					{{ t('openbuild', '{count} buckets, {sum} total events', { count: activity.length, sum: totalActivityEvents }) }}
 				</p>
 			</div>
 			<p v-else class="ob-detail-header__activity-empty">
-				{{ t('openbuilt', 'No activity in the selected window') }}
+				{{ t('openbuild', 'No activity in the selected window') }}
 			</p>
 		</section>
 
@@ -240,7 +240,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		applicationName() {
-			return (this.application && this.application.name) || this.appSlug || t('openbuilt', 'Untitled application')
+			return (this.application && this.application.name) || this.appSlug || t('openbuild', 'Untitled application')
 		},
 		/**
 		 * Observed behaviour of `applicationDescription` (retrofit annotation).
@@ -256,7 +256,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		applicationStatus() {
-			return (this.application && this.application.status) || t('openbuilt', 'draft')
+			return (this.application && this.application.status) || t('openbuild', 'draft')
 		},
 		/**
 		 * Observed behaviour of `iconUrl` (retrofit annotation).
@@ -265,7 +265,7 @@ export default {
 		 */
 		iconUrl() {
 			if (!this.appSlug) return ''
-			return generateUrl(`/apps/openbuilt/icons/${encodeURIComponent(this.appSlug)}.svg`)
+			return generateUrl(`/apps/openbuild/icons/${encodeURIComponent(this.appSlug)}.svg`)
 		},
 		/**
 		 * Observed behaviour of `windowOptions` (retrofit annotation).
@@ -391,9 +391,9 @@ export default {
 			const uid = this.callerUid
 			if (!uid) return ''
 			const inBucket = (bucket) => Array.isArray(bucket) && bucket.some((p) => p === `user:${uid}` || p === uid)
-			if (inBucket(permissions.owners)) return t('openbuilt', 'owner')
-			if (inBucket(permissions.editors)) return t('openbuilt', 'editor')
-			if (inBucket(permissions.viewers)) return t('openbuilt', 'viewer')
+			if (inBucket(permissions.owners)) return t('openbuild', 'owner')
+			if (inBucket(permissions.editors)) return t('openbuild', 'editor')
+			if (inBucket(permissions.viewers)) return t('openbuild', 'viewer')
 			return ''
 		},
 		/**
@@ -455,7 +455,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		filesTooltip() {
-			return t('openbuilt', 'count of OR-attached files across all objects in this version\'s register; storage-bytes aggregation deferred')
+			return t('openbuild', 'count of OR-attached files across all objects in this version\'s register; storage-bytes aggregation deferred')
 		},
 		/**
 		 * Observed behaviour of `totalActivityEvents` (retrofit annotation).
@@ -487,8 +487,8 @@ export default {
 		banner() {
 			if (this.versionNoLongerAccessible) {
 				return {
-					message: t('openbuilt', 'This version is no longer accessible. Switch to production?'),
-					actionLabel: t('openbuilt', 'Switch to production'),
+					message: t('openbuild', 'This version is no longer accessible. Switch to production?'),
+					actionLabel: t('openbuild', 'Switch to production'),
 					action: () => this.switchToProduction(),
 				}
 			}
@@ -642,15 +642,15 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		onPromoteClick(version) {
-			const opener = (typeof window !== 'undefined' && window.openbuilt && typeof window.openbuilt.openPromoteDialog === 'function')
-				? window.openbuilt.openPromoteDialog
+			const opener = (typeof window !== 'undefined' && window.openbuild && typeof window.openbuild.openPromoteDialog === 'function')
+				? window.openbuild.openPromoteDialog
 				: null
 			if (opener) {
 				opener({ sourceVersion: version, application: this.application })
 				return
 			}
 			if (typeof console !== 'undefined' && typeof console.debug === 'function') {
-				console.debug('openbuilt: promote dialog not registered — deferred')
+				console.debug('openbuild: promote dialog not registered — deferred')
 			}
 			this.$emit('promote', { sourceVersion: version, application: this.application })
 		},
@@ -676,7 +676,7 @@ export default {
 			const uuid = this.objectId || (this.$route && this.$route.params && this.$route.params.objectId) || ''
 			if (!uuid) return
 			try {
-				const url = generateUrl(`/apps/openregister/api/objects/openbuilt/application/${encodeURIComponent(uuid)}`)
+				const url = generateUrl(`/apps/openregister/api/objects/openbuild/application/${encodeURIComponent(uuid)}`)
 				const { data } = await axios.get(url)
 				// Keep user-visible fields from `data` and stash OR's internal
 				// metadata block separately. The previous merge spread `@self`
@@ -702,7 +702,7 @@ export default {
 		async loadVersions() {
 			if (!this.appSlug) return
 			try {
-				const url = generateUrl(`/apps/openbuilt/api/applications/${encodeURIComponent(this.appSlug)}/versions`)
+				const url = generateUrl(`/apps/openbuild/api/applications/${encodeURIComponent(this.appSlug)}/versions`)
 				const { data } = await axios.get(url)
 				const list = Array.isArray(data)
 					? data
@@ -760,7 +760,7 @@ export default {
 			this.versionNoLongerAccessible = false
 			try {
 				const url = generateUrl(
-					`/apps/openbuilt/api/applications/${encodeURIComponent(appUuid)}/versions/${encodeURIComponent(this.activeVersionUuid)}/insights`,
+					`/apps/openbuild/api/applications/${encodeURIComponent(appUuid)}/versions/${encodeURIComponent(this.activeVersionUuid)}/insights`,
 				)
 				const { data } = await axios.get(url, { params: { window: this.selectedWindow } })
 				if (data && typeof data === 'object') {

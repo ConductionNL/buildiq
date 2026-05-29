@@ -22,13 +22,13 @@
 			<div class="ob-app-card__head">
 				<img
 					class="ob-app-card__icon"
-					:src="`/index.php/apps/openbuilt/icons/${app.slug}.svg`"
+					:src="`/index.php/apps/openbuild/icons/${app.slug}.svg`"
 					:alt="app.name || app.slug"
 					width="20"
 					height="20"
 					@error="onIconError">
 				<h3 class="ob-app-card__title">
-					{{ app.name || app.slug || t('openbuilt', 'Untitled app') }}
+					{{ app.name || app.slug || t('openbuild', 'Untitled app') }}
 				</h3>
 				<span class="ob-app-card__badge" :class="`ob-app-card__badge--${statusKey}`">{{ statusLabel }}</span>
 			</div>
@@ -36,7 +36,7 @@
 				{{ app.description }}
 			</p>
 			<div class="ob-app-card__meta">
-				<span class="ob-app-card__chip">{{ t('openbuilt', 'Version') }} {{ productionSemver }}</span>
+				<span class="ob-app-card__chip">{{ t('openbuild', 'Version') }} {{ productionSemver }}</span>
 				<span v-if="role !== 'none'" class="ob-app-card__chip">{{ roleLabel }}</span>
 				<span class="ob-app-card__chip ob-app-card__chip--muted">/{{ app.slug }}</span>
 			</div>
@@ -125,9 +125,9 @@ export default {
 		 */
 		statusLabel() {
 			return {
-				draft: t('openbuilt', 'Draft'),
-				published: t('openbuilt', 'Published'),
-				archived: t('openbuilt', 'Archived'),
+				draft: t('openbuild', 'Draft'),
+				published: t('openbuild', 'Published'),
+				archived: t('openbuild', 'Archived'),
 			}[this.statusKey]
 		},
 		/**
@@ -145,9 +145,9 @@ export default {
 		 */
 		roleLabel() {
 			return {
-				owner: t('openbuilt', 'Owner'),
-				editor: t('openbuilt', 'Editor'),
-				viewer: t('openbuilt', 'Viewer'),
+				owner: t('openbuild', 'Owner'),
+				editor: t('openbuild', 'Editor'),
+				viewer: t('openbuild', 'Viewer'),
 			}[this.role] || ''
 		},
 	},
@@ -158,7 +158,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		onIconError(e) {
-			e.target.src = '/apps/openbuilt/img/app.svg'
+			e.target.src = '/apps/openbuild/img/app.svg'
 		},
 		/**
 		 * Observed behaviour of `onCardActivate` (retrofit annotation).

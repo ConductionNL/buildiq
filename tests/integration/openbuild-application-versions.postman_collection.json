@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "openbuilt-application-versions-collection",
-		"name": "OpenBuilt — Application Versions CRUD (spec C)",
-		"description": "Newman integration suite for the openbuilt-versioning-model OpenSpec change\n(spec C, REQ-OBV-101 – REQ-OBV-108). Exercises the five ApplicationVersion\nendpoints registered in appinfo/routes.php:\n\n  GET  /api/applications/{slug}/versions\n  POST /api/applications/{slug}/versions\n  GET  /api/applications/{slug}/versions/{versionSlug}\n  PUT  /api/applications/{slug}/versions/{versionSlug}\n  DELETE /api/applications/{slug}/versions/{versionSlug}?strategy=\n\nEach folder asserts: HTTP status, response shape (semver, name, manifest,\nstatus, application relation), and basic 401 RBAC (unauthenticated request).\n\nThe suite is self-contained: it creates, reads, updates, and destroys a\ntest ApplicationVersion against the seeded hello-world Application so it\ndoes not leave state behind.",
+		"_postman_id": "openbuild-application-versions-collection",
+		"name": "OpenBuild — Application Versions CRUD (spec C)",
+		"description": "Newman integration suite for the openbuild-versioning-model OpenSpec change\n(spec C, REQ-OBV-101 – REQ-OBV-108). Exercises the five ApplicationVersion\nendpoints registered in appinfo/routes.php:\n\n  GET  /api/applications/{slug}/versions\n  POST /api/applications/{slug}/versions\n  GET  /api/applications/{slug}/versions/{versionSlug}\n  PUT  /api/applications/{slug}/versions/{versionSlug}\n  DELETE /api/applications/{slug}/versions/{versionSlug}?strategy=\n\nEach folder asserts: HTTP status, response shape (semver, name, manifest,\nstatus, application relation), and basic 401 RBAC (unauthenticated request).\n\nThe suite is self-contained: it creates, reads, updates, and destroys a\ntest ApplicationVersion against the seeded hello-world Application so it\ndoes not leave state behind.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -33,7 +33,7 @@
 							{ "key": "Accept",        "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions"
 					},
 					"event": [
 						{
@@ -69,7 +69,7 @@
 						"header": [
 							{ "key": "Accept", "value": "application/json" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions"
 					},
 					"event": [
 						{
@@ -96,9 +96,9 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Newman Test Version\",\n  \"slug\": \"newman-test-v1\",\n  \"manifest\": {\n    \"version\": \"0.1.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuilt\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuilt-hello-world-newman-test-v1\",\n  \"semver\": \"0.1.0\",\n  \"status\": \"draft\"\n}"
+							"raw": "{\n  \"name\": \"Newman Test Version\",\n  \"slug\": \"newman-test-v1\",\n  \"manifest\": {\n    \"version\": \"0.1.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuild\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuild-hello-world-newman-test-v1\",\n  \"semver\": \"0.1.0\",\n  \"status\": \"draft\"\n}"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions"
 					},
 					"event": [
 						{
@@ -148,9 +148,9 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"name\": \"x\", \"slug\": \"x\", \"manifest\": {}, \"register\": \"openbuilt-hello-world-x\", \"semver\": \"0.1.0\"}"
+							"raw": "{\"name\": \"x\", \"slug\": \"x\", \"manifest\": {}, \"register\": \"openbuild-hello-world-x\", \"semver\": \"0.1.0\"}"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions"
 					},
 					"event": [
 						{
@@ -174,7 +174,7 @@
 							{ "key": "Accept",        "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/{{version_slug}}"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{version_slug}}"
 					},
 					"event": [
 						{
@@ -214,7 +214,7 @@
 						"header": [
 							{ "key": "Accept", "value": "application/json" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/{{version_slug}}"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{version_slug}}"
 					},
 					"event": [
 						{
@@ -241,9 +241,9 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Newman Test Version (updated)\",\n  \"slug\": \"newman-test-v1\",\n  \"manifest\": {\n    \"version\": \"0.1.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home Updated\",\n        \"config\": { \"register\": \"openbuilt\", \"schema\": \"hello-message\", \"columns\": [\"title\", \"body\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuilt-hello-world-newman-test-v1\",\n  \"semver\": \"0.1.0\",\n  \"status\": \"draft\"\n}"
+							"raw": "{\n  \"name\": \"Newman Test Version (updated)\",\n  \"slug\": \"newman-test-v1\",\n  \"manifest\": {\n    \"version\": \"0.1.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home Updated\",\n        \"config\": { \"register\": \"openbuild\", \"schema\": \"hello-message\", \"columns\": [\"title\", \"body\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuild-hello-world-newman-test-v1\",\n  \"semver\": \"0.1.0\",\n  \"status\": \"draft\"\n}"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/{{version_slug}}"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{version_slug}}"
 					},
 					"event": [
 						{
@@ -280,7 +280,7 @@
 							"mode": "raw",
 							"raw": "{\"name\": \"x\"}"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/{{version_slug}}"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{version_slug}}"
 					},
 					"event": [
 						{
@@ -305,9 +305,9 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/{{version_slug}}?strategy=delete-now",
+							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{version_slug}}?strategy=delete-now",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openbuilt", "api", "applications", "{{test_slug}}", "versions", "{{version_slug}}"],
+							"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "versions", "{{version_slug}}"],
 							"query": [{ "key": "strategy", "value": "delete-now" }]
 						}
 					},
@@ -333,7 +333,7 @@
 							{ "key": "Accept",        "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/non-existent-version"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/non-existent-version"
 					},
 					"event": [
 						{
@@ -362,9 +362,9 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/{{production_version_slug}}?strategy=delete-now",
+							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{production_version_slug}}?strategy=delete-now",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openbuilt", "api", "applications", "{{test_slug}}", "versions", "{{production_version_slug}}"],
+							"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "versions", "{{production_version_slug}}"],
 							"query": [{ "key": "strategy", "value": "delete-now" }]
 						}
 					},

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuilt ExportJobService unit tests
+ * OpenBuild ExportJobService unit tests
  *
  * Covers the PAT-handling surface (ICredentialsManager wiring), queue
  * semantics (ZIP vs. GitHub targets), and the credential-key format.
@@ -9,7 +9,7 @@
  * either leak into the OR record or fail to clear on terminal state.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Service
+ * @package  OCA\OpenBuild\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,10 +25,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Service;
+namespace OCA\OpenBuild\Tests\Unit\Service;
 
-use OCA\OpenBuilt\AppInfo\Application;
-use OCA\OpenBuilt\Service\ExportJobService;
+use OCA\OpenBuild\AppInfo\Application;
+use OCA\OpenBuild\Service\ExportJobService;
 use OCP\BackgroundJob\IJobList;
 use OCP\Security\ICredentialsManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -119,7 +119,7 @@ final class ExportJobServiceTest extends TestCase
             ->method('store')
             ->with(
                 self::equalTo(Application::APP_ID),
-                self::matchesRegularExpression('/^openbuilt\.export\.[0-9a-f-]+\.pat$/'),
+                self::matchesRegularExpression('/^openbuild\.export\.[0-9a-f-]+\.pat$/'),
                 self::equalTo('ghp_super_secret_pat')
             );
 
@@ -218,7 +218,7 @@ final class ExportJobServiceTest extends TestCase
 
     /**
      * credentialKey() yields the documented deterministic format —
-     * `openbuilt.export.<uuid>.pat`. Tests both the prefix and the
+     * `openbuild.export.<uuid>.pat`. Tests both the prefix and the
      * suffix so a regression in either is caught.
      *
      * The format is a security boundary: a change here would orphan
@@ -230,10 +230,10 @@ final class ExportJobServiceTest extends TestCase
     public function testCredentialKeyFormatIsDeterministic(): void
     {
         $key = $this->service->credentialKey('abc-123-def-456');
-        self::assertSame('openbuilt.export.abc-123-def-456.pat', $key);
+        self::assertSame('openbuild.export.abc-123-def-456.pat', $key);
 
         // Empty UUID still produces a stable shape (no string concat bugs).
         $emptyKey = $this->service->credentialKey('');
-        self::assertSame('openbuilt.export..pat', $emptyKey);
+        self::assertSame('openbuild.export..pat', $emptyKey);
     }//end testCredentialKeyFormatIsDeterministic()
 }//end class

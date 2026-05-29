@@ -1,6 +1,6 @@
 ## Context
 
-OpenBuilt's spec #1 (`bootstrap-openbuilt`) committed to a **hybrid**
+OpenBuild's spec #1 (`bootstrap-openbuild`) committed to a **hybrid**
 architecture: virtual apps now, exportable to real Nextcloud apps later.
 Specs #2-#8 fleshed out the runtime, schema editor, page editor,
 versioning, RBAC, and templates marketplace. This is the final spec in
@@ -49,13 +49,13 @@ forked dialect and breaks the "graduate to a real app" promise.
   manifest, top-level `<CnAppRoot>` mount, no nested arrangement,
   no per-slug endpoint.
 - Honour ADR-022 strictly — the exported app's companion schemas
-  live in OR under the new app's own namespace, not OpenBuilt's.
+  live in OR under the new app's own namespace, not OpenBuild's.
 - Re-exports of the same version are byte-equivalent (no clock
   drift, no random tokens, no embedded instance identity).
 
 **Non-Goals:**
 
-- **Re-import** of an exported app back into OpenBuilt as a virtual
+- **Re-import** of an exported app back into OpenBuild as a virtual
   app. Tracked as Open Question OQ-1 below; defer to a follow-on
   spec.
 - **Sync** between an exported app and its source virtual app. A
@@ -72,7 +72,7 @@ forked dialect and breaks the "graduate to a real app" promise.
 - **Org-level OAuth for GitHub** — Decision 3 below picks
   user-supplied PAT as the v1 auth path; app-level OAuth is
   deferred.
-- **Live re-render of the exported app inside OpenBuilt** — once
+- **Live re-render of the exported app inside OpenBuild** — once
   exported, the user works in the new repo via standard developer
   tooling.
 
@@ -82,7 +82,7 @@ forked dialect and breaks the "graduate to a real app" promise.
 
 The exporter SHALL ship a **check-in copy** of
 `nextcloud-app-template/` under `lib/Resources/template/`, snapshotted
-at OpenBuilt's build time. The exporter SHALL NOT clone or fetch
+at OpenBuild's build time. The exporter SHALL NOT clone or fetch
 `nextcloud-app-template` at export time.
 
 **Rationale**: Reproducibility. If the exporter pulled the template
@@ -93,7 +93,7 @@ also means the exporter has no network dependency for the ZIP path
 (the GitHub path obviously still does for the push).
 
 **Refresh procedure**: when `nextcloud-app-template` ships a
-meaningful update, OpenBuilt cuts a new minor release that
+meaningful update, OpenBuild cuts a new minor release that
 re-snapshots the template into `lib/Resources/template/`. This is a
 standard Conduction release cadence step; document it in
 `docs/releasing.md` (task 7.3 below).
@@ -174,14 +174,14 @@ terminal state means no PAT survives past one export run.
 The exported app's companion schemas SHALL live in
 `lib/Settings/<newapp>_register.json` declaring a fresh OR register
 namespace named identically to the exported `appId`. The exporter
-SHALL **rewrite** every `config.register: "openbuilt"` reference
+SHALL **rewrite** every `config.register: "openbuild"` reference
 inside `src/manifest.json` to `config.register: "<newapp>"`. Schema
 names themselves are preserved verbatim — only the register
 namespace changes.
 
 **Rationale**: ADR-022 — apps own their own register namespace.
-Letting the exported app continue to reach into `openbuilt`'s
-namespace would create a runtime dependency on OpenBuilt being
+Letting the exported app continue to reach into `openbuild`'s
+namespace would create a runtime dependency on OpenBuild being
 installed, defeating the whole point of graduation. The marketplace
 spec (chain #8) already uses the same slug-prefix discipline when
 cloning a template into a fresh Application; the exporter reuses
@@ -189,8 +189,8 @@ that pattern.
 
 **Alternatives considered**:
 
-- *Keep schemas in the `openbuilt` namespace.* Rejected — creates
-  a runtime dependency on OpenBuilt; violates the standalone-boot
+- *Keep schemas in the `openbuild` namespace.* Rejected — creates
+  a runtime dependency on OpenBuild; violates the standalone-boot
   requirement.
 - *Always slug-prefix schema names (e.g.,
   `hello-world.hello-message`).* Rejected — over-engineers for a
@@ -223,7 +223,7 @@ re-do.
 ### Decision 6 — License default: EUPL-1.2, user-overridable
 
 The exported `LICENSE` file SHALL default to EUPL-1.2 (Conduction
-standard, matches OpenBuilt itself, matches the embedded template
+standard, matches OpenBuild itself, matches the embedded template
 snapshot). The Export dialog SHALL surface a license picker with the
 Conduction-approved set (EUPL-1.2 [default], MIT, Apache-2.0). The
 chosen license SHALL be written into both `LICENSE` and the
@@ -331,7 +331,7 @@ PATs.
   API, PR creation) is stable; the lib has covered it for years.
   If a future feature needs a newer endpoint, swap to direct cURL
   in `GitHubPushService` — no architectural change.
-- **Trade-off** — *Embedded template snapshot bloats the OpenBuilt
+- **Trade-off** — *Embedded template snapshot bloats the OpenBuild
   app's install size by ~200 files.* → Acceptable. The template
   is small (single-digit MB); the reproducibility benefit
   outweighs the disk cost.
@@ -348,7 +348,7 @@ PATs.
 This is a purely additive spec. Deployment steps:
 
 1. Land the change on a feature branch from `development` (already
-   set up: `feature/spec-openbuilt-export-to-real-app`).
+   set up: `feature/spec-openbuild-export-to-real-app`).
 2. CI runs PHPUnit + Newman + Playwright. The Newman suite covers
    the controller's 202-on-submit + the ExportJob CRUD via OR REST.
    Playwright covers the dialog flow against a mocked exporter
@@ -361,10 +361,10 @@ This is a purely additive spec. Deployment steps:
    unaffected.
 4. **Rollback** — disable the new endpoints by removing the
    `<background-jobs>` registration and the two routes; or
-   `occ app:disable openbuilt` rolls back the whole shell. ExportJob
+   `occ app:disable openbuild` rolls back the whole shell. ExportJob
    records remain in the database (harmless; no other Conduction
    app reads them). To fully rollback, additionally remove the
-   `ExportJob` schema from the `openbuilt` register namespace via
+   `ExportJob` schema from the `openbuild` register namespace via
    OR's admin UI.
 
 ## Open Questions
@@ -372,10 +372,10 @@ This is a purely additive spec. Deployment steps:
 - **OQ-1 — Re-import path for exported apps.** Should an exported
   app be re-importable as a virtual Application (the inverse of
   graduation)? Use cases: a graduated team wants to share their
-  manifest back to the OpenBuilt marketplace; or a graduated team
+  manifest back to the OpenBuild marketplace; or a graduated team
   wants to revert to virtual hosting to drop their ops burden.
   *Provisional decision*: defer to a follow-on spec
-  (`openbuilt-import-from-app`). Track here as out of scope; the
+  (`openbuild-import-from-app`). Track here as out of scope; the
   reverse direction has subtleties (what about hand-coded PHP
   added to the graduated app? merge strategy?) that deserve their
   own spec.
@@ -392,7 +392,7 @@ This is a purely additive spec. Deployment steps:
 - **OQ-3 — Storage of the in-flight exported tree.** During the
   background job's run, the partially-emitted tree needs to live
   somewhere on disk. *Provisional decision*: use Nextcloud's
-  `IAppDataFactory` under `appdata_<instance>/openbuilt/work/<jobUuid>/`.
+  `IAppDataFactory` under `appdata_<instance>/openbuild/work/<jobUuid>/`.
   Clean up on terminal state. Confirm during apply that the
   scratch area survives a Nextcloud worker restart mid-export
   (it should; `IAppDataFactory` is durable storage).
@@ -405,7 +405,7 @@ This is a purely additive spec. Deployment steps:
   cross-user concern.
 - **OQ-5 — Composer/npm dependency-version drift.** The embedded
   template's `composer.json` / `package.json` pin versions at
-  OpenBuilt's snapshot time. A graduated app installed months
+  OpenBuild's snapshot time. A graduated app installed months
   later may want updated deps. *Provisional decision*: out of
   scope for the exporter — the graduated maintainer runs
   `composer update` / `npm update` after checkout. Document in

@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "openbuilt-collection",
-		"name": "OpenBuilt Integration Tests",
-		"description": "Newman/Postman integration test collection for the OpenBuilt Nextcloud app.\n\nCovers:\n  - the public per-slug manifest endpoint (200 hello-world + 404 unknown);\n  - CRUD round-trip on Application objects via OpenRegister's REST API (POST/GET/PUT/DELETE);\n  - the manifest after a publish transition.\n\nAssumes the SeedHelloWorld repair step has run on a fresh install and the openbuilt + openregister apps are enabled. Run via the runner pattern documented in tests/integration/README.md.",
+		"_postman_id": "openbuild-collection",
+		"name": "OpenBuild Integration Tests",
+		"description": "Newman/Postman integration test collection for the OpenBuild Nextcloud app.\n\nCovers:\n  - the public per-slug manifest endpoint (200 hello-world + 404 unknown);\n  - CRUD round-trip on Application objects via OpenRegister's REST API (POST/GET/PUT/DELETE);\n  - the manifest after a publish transition.\n\nAssumes the SeedHelloWorld repair step has run on a fresh install and the openbuild + openregister apps are enabled. Run via the runner pattern documented in tests/integration/README.md.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -30,7 +30,7 @@
 							{ "key": "Accept", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/hello-world/manifest",
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/hello-world/manifest",
 						"description": "Public manifest read for the seeded hello-world virtual app."
 					},
 					"event": [
@@ -73,7 +73,7 @@
 							{ "key": "Accept", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/no-such-slug/manifest",
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/no-such-slug/manifest",
 						"description": "Manifest lookup for a slug with no BuiltAppRoute must 404 with the not_found error code."
 					},
 					"event": [
@@ -101,15 +101,15 @@
 			"name": "OpenRegister-backed Application CRUD",
 			"item": [
 				{
-					"name": "GET /openregister/objects/openbuilt/application lists hello-world",
+					"name": "GET /openregister/objects/openbuild/application lists hello-world",
 					"request": {
 						"method": "GET",
 						"header": [
 							{ "key": "Accept", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application",
-						"description": "After SeedHelloWorld runs, the openbuilt/application register lists at least one object with slug='hello-world'."
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application",
+						"description": "After SeedHelloWorld runs, the openbuild/application register lists at least one object with slug='hello-world'."
 					},
 					"event": [
 						{
@@ -151,7 +151,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"name\": \"Newman Round-trip\",\n  \"description\": \"Synthetic Application created by the Newman CRUD round-trip\"\n}"
 						},
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application",
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application",
 						"description": "Create a synthetic Application object via OR REST. Per ADR-002 (versioned-app model) the `manifest`/`version`/`status` fields live on ApplicationVersion now, NOT the Application itself."
 					},
 					"event": [
@@ -186,7 +186,7 @@
 							{ "key": "Accept", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{created_uuid}}",
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{created_uuid}}",
 						"description": "Read-back asserts the POST landed on disk and the uuid resolves. Versioned model: no manifest at this layer; verified separately on the version record below."
 					},
 					"event": [
@@ -218,10 +218,10 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Newman Round-trip v1\",\n  \"slug\": \"production\",\n  \"manifest\": {\n    \"version\": \"1.0.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuilt\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuilt-newman-roundtrip-production\",\n  \"semver\": \"1.0.0\",\n  \"status\": \"draft\",\n  \"application\": \"{{created_uuid}}\"\n}"
+							"raw": "{\n  \"name\": \"Newman Round-trip v1\",\n  \"slug\": \"production\",\n  \"manifest\": {\n    \"version\": \"1.0.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuild\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuild-newman-roundtrip-production\",\n  \"semver\": \"1.0.0\",\n  \"status\": \"draft\",\n  \"application\": \"{{created_uuid}}\"\n}"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/newman-roundtrip/versions",
-						"description": "Per ADR-002, the manifest + status + semver live on ApplicationVersion. POST against the version-aware OpenBuilt endpoint so the parent-relation guard runs."
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/newman-roundtrip/versions",
+						"description": "Per ADR-002, the manifest + status + semver live on ApplicationVersion. POST against the version-aware OpenBuild endpoint so the parent-relation guard runs."
 					},
 					"event": [
 						{
@@ -259,7 +259,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"name\": \"Newman Round-trip\",\n  \"description\": \"Synthetic Application created by the Newman CRUD round-trip\",\n  \"productionVersion\": \"{{created_version_uuid}}\"\n}"
 						},
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{created_uuid}}",
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{created_uuid}}",
 						"description": "ADR-002: the application's `productionVersion` field carries the UUID of the version that should be served as the live manifest."
 					},
 					"event": [
@@ -319,7 +319,7 @@
 							{ "key": "Accept", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/newman-roundtrip/manifest",
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/newman-roundtrip/manifest",
 						"description": "After the publish transition + productionVersion pointer set, ManifestResolverService should resolve the slug to the version's manifest."
 					},
 					"event": [
@@ -352,7 +352,7 @@
 							{ "key": "Accept", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/newman-roundtrip/versions/production?strategy=hard",
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/newman-roundtrip/versions/production?strategy=hard",
 						"description": "Drop the version + its per-version register first so the parent Application can be safely deleted."
 					},
 					"event": [
@@ -377,7 +377,7 @@
 							{ "key": "Accept", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{created_uuid}}",
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{created_uuid}}",
 						"description": "Tear down the round-trip Application so re-runs stay idempotent. OR returns 200 or 204."
 					},
 					"event": [

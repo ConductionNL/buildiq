@@ -1,17 +1,17 @@
 <?php
 
 /**
- * OpenBuilt Export Service
+ * OpenBuild Export Service
  *
  * Imperative exporter that produces a standalone Nextcloud-app tree from a
  * published Application record. ADR-031 §Exceptions(3) acceptable code path —
  * file generation and ZIP packaging are OS-bound side effects.
  *
  * The ExportJob lifecycle itself remains declarative (see x-openregister-lifecycle
- * in lib/Settings/openbuilt_register.json).
+ * in lib/Settings/openbuild_register.json).
  *
  * @category Service
- * @package  OCA\OpenBuilt\Service
+ * @package  OCA\OpenBuild\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,9 +21,9 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-41
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-41
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -31,7 +31,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Service;
+namespace OCA\OpenBuild\Service;
 
 use FilesystemIterator;
 use OCP\Files\IAppData;
@@ -43,7 +43,7 @@ use RuntimeException;
 use ZipArchive;
 
 /**
- * Generates a real Nextcloud-app tree from an OpenBuilt Application + ZIPs it.
+ * Generates a real Nextcloud-app tree from an OpenBuild Application + ZIPs it.
  *
  * Public surface:
  *
@@ -108,7 +108,7 @@ class ExportService
      *
      * @throws RuntimeException When packaging fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
      */
     public function generateAppZip(
         string $applicationUuid,
@@ -122,7 +122,7 @@ class ExportService
 
         // Audit-trail entry names only the source — never the PAT, never secret values.
         $this->logger->info(
-            'OpenBuilt export: built tree',
+            'OpenBuild export: built tree',
             [
                 'applicationUuid'    => $applicationUuid,
                 'applicationVersion' => $versionSlug,
@@ -143,7 +143,7 @@ class ExportService
      *
      * @throws RuntimeException When ZIP creation fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
      */
     public function packageZip(string $sourceDir, string $jobUuid): string
     {
@@ -190,7 +190,7 @@ class ExportService
      *
      * @return array<int,string> Sorted relative file paths.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-41
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-41
      */
     public function listFilesSorted(string $baseDir): array
     {
@@ -223,7 +223,7 @@ class ExportService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
      */
     public function resolvePlaceholders(string $rootDir, array $context): void
     {
@@ -267,7 +267,7 @@ class ExportService
      *
      * @return bool True when the file should be copied as-is.
      *
-     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
      */
     public function isBinary(string $path): bool
     {
@@ -280,14 +280,14 @@ class ExportService
      * Copy the embedded template snapshot into the scratch directory.
      *
      * Skips the snapshot-meta + path-manifest helper files; they are
-     * artefacts of OpenBuilt, not of the produced app.
+     * artefacts of OpenBuild, not of the produced app.
      *
      * @param string $source Snapshot dir.
      * @param string $dest   Scratch dir.
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-40
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
      */
     public function copyTemplate(string $source, string $dest): void
     {
@@ -332,7 +332,7 @@ class ExportService
      *
      * @return string Local path to the scratch dir.
      *
-     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
      */
     public function prepareScratchDir(string $jobUuid): string
     {
@@ -358,23 +358,23 @@ class ExportService
      * flagged by PHPStan.
      *
      * We therefore stage on a deterministic local path under
-     * sys_get_temp_dir()/openbuilt-{name}, and additionally pin the IAppData
+     * sys_get_temp_dir()/openbuild-{name}, and additionally pin the IAppData
      * folder existence so the surrounding Nextcloud bookkeeping (quotas,
      * audit, cleanup) is informed of our use. This satisfies the
      * security/cleanup contract (CleanupExpiredExports purges by job UUID)
      * while remaining ISimpleFolder-safe.
      *
-     * @param string $name Subdir name under appdata's openbuilt area.
+     * @param string $name Subdir name under appdata's openbuild area.
      *
      * @return string Absolute local path.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
      */
     public function getOrCreateAppDataDir(string $name): string
     {
         // Best-effort: make sure the IAppData folder exists so any
         // surrounding bookkeeping (quota, cleanup, audit) is aware of the
-        // openbuilt namespace. We do NOT rely on it for local-path access —
+        // openbuild namespace. We do NOT rely on it for local-path access —
         // ISimpleFolder is storage-opaque by design.
         try {
             try {
@@ -384,12 +384,12 @@ class ExportService
             }
         } catch (\Throwable $e) {
             $this->logger->debug(
-                'OpenBuilt export: IAppData folder hint failed (continuing on local temp)',
+                'OpenBuild export: IAppData folder hint failed (continuing on local temp)',
                 ['name' => $name, 'reason' => $e->getMessage()]
             );
         }//end try
 
-        $local = sys_get_temp_dir().'/openbuilt-'.$name;
+        $local = sys_get_temp_dir().'/openbuild-'.$name;
         if (is_dir($local) === false) {
             mkdir($local, 0o755, true);
         }
@@ -404,7 +404,7 @@ class ExportService
      *
      * @return void
      *
-     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
      */
     public function rrmdir(string $dir): void
     {

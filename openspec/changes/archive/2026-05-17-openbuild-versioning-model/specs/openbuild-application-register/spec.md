@@ -3,7 +3,7 @@
 ### Requirement: REQ-OBA-001 Application schema registered in OpenRegister
 
 The system SHALL declare an `Application` schema in
-`lib/Settings/openbuilt_register.json` under the `openbuilt` register namespace.
+`lib/Settings/openbuild_register.json` under the `openbuild` register namespace.
 Under the versioned model (ADR-002) the Application schema SHALL define the following
 top-level properties: `uuid` (string, UUID-format), `slug` (string, kebab-case
 pattern), `name` (string, required), `description` (string, optional), `permissions`
@@ -19,16 +19,16 @@ existing repair step.
 
 #### Scenario: Schema is available after install
 
-- **WHEN** the OpenBuilt app is installed and its repair step runs
-- **THEN** OpenRegister exposes the `openbuilt` register containing the
+- **WHEN** the OpenBuild app is installed and its repair step runs
+- **THEN** OpenRegister exposes the `openbuild` register containing the
   `Application` schema with the versioned-model property set above
 - **AND** the schema's properties match the declaration in
-  `lib/Settings/openbuilt_register.json`
+  `lib/Settings/openbuild_register.json`
 
 #### Scenario: Application object is created via OR REST
 
 - **WHEN** a client POSTs a payload to OR's REST endpoint for the
-  `openbuilt/application` namespace with valid `slug`, `name`, and `permissions`
+  `openbuild/application` namespace with valid `slug`, `name`, and `permissions`
 - **THEN** OR persists the object, returns 201, and the returned object carries an
   OR-assigned `uuid` and the submitted fields
 - **AND** the returned object has no `manifest`, `version`, `status`, or
@@ -48,7 +48,7 @@ in v1 of this change. No `ApplicationLifecycleService` SHALL be written.
 
 #### Scenario: Application has no status state machine
 
-- **WHEN** the OpenBuilt repair step runs and imports the Application schema
+- **WHEN** the OpenBuild repair step runs and imports the Application schema
 - **THEN** the imported schema does not expose a `status` enum
 - **AND** the imported schema's `x-openregister-lifecycle` carries no `states` or
   `transitions` block
@@ -56,7 +56,7 @@ in v1 of this change. No `ApplicationLifecycleService` SHALL be written.
 ### Requirement: REQ-OBA-004 BuiltAppRoute index for slug lookup
 
 The system SHALL declare a `BuiltAppRoute` schema in
-`lib/Settings/openbuilt_register.json` with properties `slug` (string, required,
+`lib/Settings/openbuild_register.json` with properties `slug` (string, required,
 kebab-case pattern) and `applicationUuid` (string, UUID-format, required). The `slug`
 property SHALL be unique within an organisation. The `BuiltAppRoute` row SHALL be
 created or updated by the `on_transition` action that fires when an
@@ -97,7 +97,7 @@ SHALL be rejected with a 422 response.
 
 #### Scenario: Schema declares productionVersion as an optional relation
 
-- **WHEN** the OpenBuilt repair step runs and imports the Application schema
+- **WHEN** the OpenBuild repair step runs and imports the Application schema
 - **THEN** the imported schema exposes `productionVersion` as a relation property
   referencing `applicationVersion`
 - **AND** the property is omittable

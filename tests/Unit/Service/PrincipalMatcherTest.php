@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Service
+ * @package  OCA\OpenBuild\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,9 +23,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Service;
+namespace OCA\OpenBuild\Tests\Unit\Service;
 
-use OCA\OpenBuilt\Service\PermissionResolver;
+use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -406,7 +406,7 @@ class PrincipalMatcherTest extends TestCase
         $container = $this->createMock(\Psr\Container\ContainerInterface::class);
         $container->method('get')->willReturn($objectService);
 
-        $provider = new \OCA\OpenBuilt\Mcp\OpenBuiltToolProvider(
+        $provider = new \OCA\OpenBuild\Mcp\OpenBuildToolProvider(
             $this->userSession,
             $this->groupManager,
             $container,
@@ -414,7 +414,7 @@ class PrincipalMatcherTest extends TestCase
             $this->resolver,
         );
 
-        $result = $provider->invokeTool('openbuilt.getAppManifest', ['slug' => 'test-app']);
+        $result = $provider->invokeTool('openbuild.getAppManifest', ['slug' => 'test-app']);
 
         // Caller has no role — RBAC must deny with forbidden.
         self::assertTrue($result['isError'] ?? false);
@@ -465,7 +465,7 @@ class PrincipalMatcherTest extends TestCase
         $container = $this->createMock(\Psr\Container\ContainerInterface::class);
         $container->method('get')->willReturn($objectService);
 
-        $provider = new \OCA\OpenBuilt\Mcp\OpenBuiltToolProvider(
+        $provider = new \OCA\OpenBuild\Mcp\OpenBuildToolProvider(
             $this->userSession,
             $this->groupManager,
             $container,
@@ -473,7 +473,7 @@ class PrincipalMatcherTest extends TestCase
             $this->resolver,
         );
 
-        $result = $provider->invokeTool('openbuilt.getAppManifest', ['slug' => 'my-app']);
+        $result = $provider->invokeTool('openbuild.getAppManifest', ['slug' => 'my-app']);
 
         // Viewer is allowed.
         self::assertFalse($result['isError'] ?? false);
@@ -503,7 +503,7 @@ class PrincipalMatcherTest extends TestCase
         $objectService->method('searchObjectsBySlug')->willReturn([]);
         $container->method('get')->willReturn($objectService);
 
-        $provider = new \OCA\OpenBuilt\Mcp\OpenBuiltToolProvider(
+        $provider = new \OCA\OpenBuild\Mcp\OpenBuildToolProvider(
             $this->userSession,
             $this->groupManager,
             $container,
@@ -511,7 +511,7 @@ class PrincipalMatcherTest extends TestCase
             $this->resolver,
         );
 
-        $result = $provider->invokeTool('openbuilt.listApps', []);
+        $result = $provider->invokeTool('openbuild.listApps', []);
 
         // Gate passed — returns success (empty list, not forbidden).
         self::assertFalse($result['isError'] ?? false);

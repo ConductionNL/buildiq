@@ -1,8 +1,8 @@
 ## 1. Schema register patch — top-level icon fields on Application
 
-- [x] 1.1 **Patch `application` schema in `lib/Settings/openbuilt_register.json`**
+- [x] 1.1 **Patch `application` schema in `lib/Settings/openbuild_register.json`**
   - spec_ref: REQ-OBICON-001, REQ-OBA-002 (modified)
-  - files: `lib/Settings/openbuilt_register.json`
+  - files: `lib/Settings/openbuild_register.json`
   - Add two optional **top-level** properties under
     `components.schemas.Application.properties` (sibling to `slug`, `name`, `manifest`,
     `version`, `permissions` — NOT inside `manifest`):
@@ -19,7 +19,7 @@
 - [x] 1.2 **Re-import schema on upgrade via existing `InitializeSettings` repair step**
   - spec_ref: REQ-OBICON-001
   - files: `lib/Repair/InitializeSettings.php` (verify it calls
-    `ConfigurationService::importFromApp('openbuilt')` — no change needed if already correct)
+    `ConfigurationService::importFromApp('openbuild')` — no change needed if already correct)
   - acceptance_criteria: Running `occ maintenance:repair` after the patch causes the updated
     top-level `icon` / `iconDark` schema properties to be visible via the OR schema API.
 
@@ -30,7 +30,7 @@
   - files: `lib/Service/IconService.php` (NEW)
   - Methods:
     - `getIconStream(string $slug, bool $dark): array{ stream: resource|null, mimeType: string }` — implements the fallback chain documented in design.md Decision 2.
-    - Reads attached files from OR via `ObjectService` (or the OR files-attached-to-object endpoint); on OR failure falls back to the filesystem icons at `OC::$SERVERROOT . "/custom_apps/openbuilt/img/app{$suffix}.svg"`.
+    - Reads attached files from OR via `ObjectService` (or the OR files-attached-to-object endpoint); on OR failure falls back to the filesystem icons at `OC::$SERVERROOT . "/custom_apps/openbuild/img/app{$suffix}.svg"`.
   - Must carry SPDX + EUPL-1.2 docblock per project standards.
   - acceptance_criteria: PHPUnit: mock ObjectService to return a stream; assert correct bytes returned. Mock ObjectService to throw; assert fallback stream returned. `composer check:strict` passes.
 
@@ -61,7 +61,7 @@
   - Responsibilities:
     - `registerNavEntries(INavigationManager $nav): void` — queries OR for all `status == published` Applications; for each, calls `$nav->add()` with a closure factory.
     - Gating closure: resolves the session user's UID + group memberships via `IUserSession` + `IGroupManager`; checks `group:*` sentinel first; then intersects uid/group principal sets; falls through to NC-admin bypass last.
-    - Order: `1000 + (abs(crc32($slug)) % 1000)` — deterministic, alpha-spread, after openbuilt's own static entry.
+    - Order: `1000 + (abs(crc32($slug)) % 1000)` — deterministic, alpha-spread, after openbuild's own static entry.
   - acceptance_criteria: PHPUnit: mock ObjectService to return one published + one draft Application; assert only the published entry is registered; assert gating closure returns `true` for matching user and `false` for non-matching user; `composer check:strict` passes.
 
 - [x] 3.2 **Wire `AppNavigationService` inside `Application::boot()`**
@@ -87,21 +87,21 @@
     ```html
     <img
       class="ob-app-card__icon"
-      :src="`/index.php/apps/openbuilt/icons/${app.slug}.svg`"
+      :src="`/index.php/apps/openbuild/icons/${app.slug}.svg`"
       :alt="app.name || app.slug"
       width="20"
       height="20"
       @error="onIconError"
     />
     ```
-  - Add `onIconError(e)` method: `e.target.src = '/apps/openbuilt/img/app.svg'`.
+  - Add `onIconError(e)` method: `e.target.src = '/apps/openbuild/img/app.svg'`.
   - Add `.ob-app-card__icon { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }` to `<style scoped>`.
   - acceptance_criteria: Playwright: navigating to the virtual-apps index shows `<img>` elements with the icon endpoint src on each card.
 
 - [x] 4.2 **Remove the redundant Live chip from `ApplicationCard.vue`**
   - spec_ref: REQ-OBR-007
   - files: `src/components/ApplicationCard.vue`
-  - Remove line 30: `<span v-if="app.currentVersion" class="ob-app-card__chip ob-app-card__chip--live">{{ t('openbuilt', 'Live') }}</span>`
+  - Remove line 30: `<span v-if="app.currentVersion" class="ob-app-card__chip ob-app-card__chip--live">{{ t('openbuild', 'Live') }}</span>`
   - Remove the `.ob-app-card__chip--live` CSS rule.
   - acceptance_criteria: No element with class `ob-app-card__chip--live` or text "Live" appears on any ApplicationCard; existing badge, version, role, and slug chips are unaffected.
 
@@ -119,7 +119,7 @@
 
 ## 6. Seed data — Hello World icons
 
-- [x] 6.1 **Extend `SeedHelloWorld` to attach demo SVG icons to the seeded Application** _(obsolete: SeedHelloWorld retired by openbuilt-versioning-model — see ../openbuilt-versioning-model)_
+- [x] 6.1 **Extend `SeedHelloWorld` to attach demo SVG icons to the seeded Application** _(obsolete: SeedHelloWorld retired by openbuild-versioning-model — see ../openbuild-versioning-model)_
   - spec_ref: design.md §Seed Data
   - files: `lib/Repair/SeedHelloWorld.php`
   - After `seedApplicationAndRoute()` returns a non-null UUID, call a new private method
@@ -133,7 +133,7 @@
     Application record with two attached files (`app-icon.svg`, `app-icon-dark.svg`); the
     icon-serving endpoint returns SVG bytes for `GET /icons/hello-world.svg`.
 
-- [x] 6.2 **Patch the Hello World manifest seed data with `icon` and `iconDark` refs** _(obsolete: SeedHelloWorld retired by openbuilt-versioning-model — see ../openbuilt-versioning-model)_
+- [x] 6.2 **Patch the Hello World manifest seed data with `icon` and `iconDark` refs** _(obsolete: SeedHelloWorld retired by openbuild-versioning-model — see ../openbuild-versioning-model)_
   - spec_ref: design.md §Seed Data, REQ-OBICON-001
   - files: `lib/Repair/SeedHelloWorld.php` (`buildHelloWorldManifest()` method)
   - Add `'icon' => ['ref' => 'app-icon.svg']` and `'iconDark' => ['ref' => 'app-icon-dark.svg']`
@@ -159,4 +159,4 @@
   - files: `tests/e2e/iconUpload.spec.ts` (NEW)
 
 - [x] 7.6 **Newman: icon endpoints reachable** — `GET /icons/hello-world.svg` and `GET /icons/hello-world-dark.svg` return 200 with `Content-Type: image/svg+xml`; unauthenticated request returns 401.
-  - files: add to existing Newman collection or `tests/newman/openbuilt.postman_collection.json`
+  - files: add to existing Newman collection or `tests/newman/openbuild.postman_collection.json`

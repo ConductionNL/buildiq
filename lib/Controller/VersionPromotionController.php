@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenBuilt VersionPromotionController
+ * OpenBuild VersionPromotionController
  *
  * REST surface for the manual promotion flow described in
- * `openbuilt-version-promotion` / ADR-002. Exposes a single endpoint:
+ * `openbuild-version-promotion` / ADR-002. Exposes a single endpoint:
  *
- *   POST /index.php/apps/openbuilt/api/applications/{appUuid}/versions/{versionUuid}/promote
+ *   POST /index.php/apps/openbuild/api/applications/{appUuid}/versions/{versionUuid}/promote
  *
  * Body: `{ "strategy": "start-with-source-data" | "migrate-existing-data" |
  *          "empty-start", "confirmAppSlug": "<slug>" }`.
@@ -19,7 +19,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuilt\Controller
+ * @package  OCA\OpenBuild\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,24 +29,24 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-59
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-64
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-65
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-67
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Controller;
+namespace OCA\OpenBuild\Controller;
 
-use OCA\OpenBuilt\AppInfo\Application;
-use OCA\OpenBuilt\Exception\InsufficientPermissionException;
-use OCA\OpenBuilt\Service\PermissionResolver;
-use OCA\OpenBuilt\Exception\InvalidStrategyException;
-use OCA\OpenBuilt\Exception\NoPromoteTargetException;
-use OCA\OpenBuilt\Exception\PromotionFailedException;
-use OCA\OpenBuilt\Exception\VersionLockedException;
-use OCA\OpenBuilt\Service\VersionPromotionService;
+use OCA\OpenBuild\AppInfo\Application;
+use OCA\OpenBuild\Exception\InsufficientPermissionException;
+use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\OpenBuild\Exception\InvalidStrategyException;
+use OCA\OpenBuild\Exception\NoPromoteTargetException;
+use OCA\OpenBuild\Exception\PromotionFailedException;
+use OCA\OpenBuild\Exception\VersionLockedException;
+use OCA\OpenBuild\Service\VersionPromotionService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -106,8 +106,8 @@ class VersionPromotionController extends Controller
      *
      * @return JSONResponse 200 + updated target on success, error envelope otherwise
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-59
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-65
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 5, period: 60)]
@@ -170,13 +170,13 @@ class VersionPromotionController extends Controller
      *
      * @return JSONResponse Error envelope with the spec-defined code + status
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-64
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-67
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
      */
     private function mapExceptionToResponse(Throwable $error): JSONResponse
     {
         if ($error instanceof NoPromoteTargetException) {
-            $this->logger->info('OpenBuilt: promote rejected (no target): '.$error->getMessage());
+            $this->logger->info('OpenBuild: promote rejected (no target): '.$error->getMessage());
             return $this->errorResponse(
                 code: $error->getErrorCode(),
                 detail: $error->getMessage(),
@@ -185,7 +185,7 @@ class VersionPromotionController extends Controller
         }
 
         if ($error instanceof InvalidStrategyException) {
-            $this->logger->info('OpenBuilt: promote rejected (invalid strategy): '.$error->getMessage());
+            $this->logger->info('OpenBuild: promote rejected (invalid strategy): '.$error->getMessage());
             return $this->errorResponse(
                 code: $error->getErrorCode(),
                 detail: $error->getMessage(),
@@ -198,7 +198,7 @@ class VersionPromotionController extends Controller
         }
 
         if ($error instanceof InsufficientPermissionException) {
-            $this->logger->info('OpenBuilt: promote rejected (rbac): '.$error->getMessage());
+            $this->logger->info('OpenBuild: promote rejected (rbac): '.$error->getMessage());
             return $this->errorResponse(
                 code: $error->getErrorCode(),
                 detail: $error->getMessage(),
@@ -207,7 +207,7 @@ class VersionPromotionController extends Controller
         }
 
         if ($error instanceof PromotionFailedException) {
-            $this->logger->error('OpenBuilt: promotion failed (500): '.$error->getMessage(), ['exception' => $error]);
+            $this->logger->error('OpenBuild: promotion failed (500): '.$error->getMessage(), ['exception' => $error]);
             return new JSONResponse(
                 data: [
                     'error'    => $error->getErrorCode(),
@@ -219,7 +219,7 @@ class VersionPromotionController extends Controller
         }
 
         $this->logger->error(
-            'OpenBuilt: VersionPromotionController::promote unexpected failure: '.$error->getMessage(),
+            'OpenBuild: VersionPromotionController::promote unexpected failure: '.$error->getMessage(),
             ['exception' => $error]
         );
         return $this->errorResponse(
@@ -236,11 +236,11 @@ class VersionPromotionController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-64
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
      */
     private function buildLockedResponse(VersionLockedException $error): JSONResponse
     {
-        $this->logger->info('OpenBuilt: promote rejected (locked): '.$error->getMessage());
+        $this->logger->info('OpenBuild: promote rejected (locked): '.$error->getMessage());
         $body = [
             'error'  => $error->getErrorCode(),
             'detail' => $error->getMessage(),
@@ -315,7 +315,7 @@ class VersionPromotionController extends Controller
      *
      * @throws InsufficientPermissionException When the user lacks owner/editor role
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-65
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
      */
     private function assertEditorOrOwner(array $application, IUser $user): void
     {

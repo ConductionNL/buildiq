@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuilt Health Controller
+ * OpenBuild Health Controller
  *
  * Lightweight liveness / readiness endpoint for container orchestrators
  * and load-balancer health probes.  Returns `{"status":"ok"}` on 200.
@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuilt\Controller
+ * @package  OCA\OpenBuild\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,9 +23,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Controller;
+namespace OCA\OpenBuild\Controller;
 
-use OCA\OpenBuilt\AppInfo\Application;
+use OCA\OpenBuild\AppInfo\Application;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;

@@ -2,13 +2,13 @@
 
 ## Purpose
 
-@e2e exclude mixed spec — INavigationManager registration, RBAC visibility closure, per-request re-evaluation and group-wildcard filtering are PHP boot-time contracts verified by PHPUnit/Newman; published app top-bar appearance requires a published app + boot-cycle which is not reproducible in isolation in Playwright without a lifecycle trigger that is itself part of the app; scenarios tested by playwright UI are covered in the openbuilt-runtime spec tests
+@e2e exclude mixed spec — INavigationManager registration, RBAC visibility closure, per-request re-evaluation and group-wildcard filtering are PHP boot-time contracts verified by PHPUnit/Newman; published app top-bar appearance requires a published app + boot-cycle which is not reproducible in isolation in Playwright without a lifecycle trigger that is itself part of the app; scenarios tested by playwright UI are covered in the openbuild-runtime spec tests
 
-Makes every published OpenBuilt virtual app a first-class Nextcloud navigation citizen
+Makes every published OpenBuild virtual app a first-class Nextcloud navigation citizen
 by registering a per-app top-bar entry under `INavigationManager` on each request boot,
 visibility-gated by the Application's `permissions` RBAC block (with a `group:*` wildcard
 for universal visibility), and read live from OR with no writeback or cached nav-entry
-table. Closes the gap that previously forced users to enter the OpenBuilt shell, find
+table. Closes the gap that previously forced users to enter the OpenBuild shell, find
 the app, and click through to reach a published virtual app.
 
 ## Requirements
@@ -19,12 +19,12 @@ The system SHALL register one `INavigationManager` entry per published Applicati
 `Application::boot()` using `INavigationManager::add()` with a closure factory. Each entry
 SHALL carry:
 
-- **id**: `openbuilt-app-{slug}` (e.g. `openbuilt-app-hello-world`).
+- **id**: `openbuild-app-{slug}` (e.g. `openbuild-app-hello-world`).
 - **name**: the Application's `name` field value.
-- **href**: `/apps/openbuilt/{slug}` (the virtual-app runtime URL).
-- **icon**: the URL produced by `IURLGenerator::linkToRouteAbsolute('openbuilt.icon.iconLight',
+- **href**: `/apps/openbuild/{slug}` (the virtual-app runtime URL).
+- **icon**: the URL produced by `IURLGenerator::linkToRouteAbsolute('openbuild.icon.iconLight',
   ['slug' => $slug])` — pointing at the icon-serving endpoint (REQ-OBICON-002).
-- **order**: numeric value placing entries after openbuilt's own static entry, sorted
+- **order**: numeric value placing entries after openbuild's own static entry, sorted
   alpha-ascending by `name` within the virtual-app group.
 
 The entries SHALL be registered by `AppNavigationService`, which is lazily resolved from the
@@ -37,17 +37,17 @@ DI container inside the `boot()` method.
 - **WHEN** the Nextcloud request cycle boots after an Application is transitioned to `published`
 - **AND** the signed-in user satisfies the visibility predicate for that Application
 - **THEN** `INavigationManager::getAll()` includes an entry with
-  `id = "openbuilt-app-{slug}"`, `href = "/apps/openbuilt/{slug}"`, and the app's name
+  `id = "openbuild-app-{slug}"`, `href = "/apps/openbuild/{slug}"`, and the app's name
 
 #### Scenario: Draft app does not appear in the top bar
 
 - **WHEN** an Application has `status: draft`
-- **THEN** no nav entry with `id = "openbuilt-app-{slug}"` appears for any user
+- **THEN** no nav entry with `id = "openbuild-app-{slug}"` appears for any user
 
 #### Scenario: Archived app does not appear in the top bar
 
 - **WHEN** an Application has `status: archived`
-- **THEN** no nav entry with `id = "openbuilt-app-{slug}"` appears for any user
+- **THEN** no nav entry with `id = "openbuild-app-{slug}"` appears for any user
 
 ### Requirement: Nav entry gated by permissions RBAC
 

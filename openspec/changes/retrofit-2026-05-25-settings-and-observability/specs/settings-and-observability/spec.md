@@ -6,11 +6,11 @@ retrofit: true
 
 ## Purpose
 
-OpenBuilt exposes a small administrative surface that lets the frontend
+OpenBuild exposes a small administrative surface that lets the frontend
 read and write app-level configuration (the OpenRegister register key),
 discover whether OpenRegister is installed, and learn whether the
 current user is an admin. The same surface re-imports the bundled
-`openbuilt_register.json` configuration into OpenRegister — both
+`openbuild_register.json` configuration into OpenRegister — both
 lazily (idempotent first-boot import) and forcibly (admin "Reload"
 action / repair step). Two lightweight probe endpoints expose liveness
 and a placeholder metrics payload for container orchestrators and
@@ -26,7 +26,7 @@ This capability is observed behaviour of the `SettingsService`,
 
 `SettingsService::getSettings()` SHALL return a flat array containing
 every key in `CONFIG_KEYS` (currently `register`), read from
-`IAppConfig` for the `openbuilt` app with an empty-string default,
+`IAppConfig` for the `openbuild` app with an empty-string default,
 merged with two computed metadata fields: `openregisters` (true when
 the `openregister` app is installed, via
 `isOpenRegisterAvailable()`) and `isAdmin` (true when a user is signed
@@ -58,8 +58,8 @@ rejecting unauthenticated callers with HTTP 401.
 
 #### Scenario: Persist a known key
 
-- **WHEN** an authenticated caller POSTs `{"register":"openbuilt"}`
-- **THEN** the `register` app-config value is set to `openbuilt`
+- **WHEN** an authenticated caller POSTs `{"register":"openbuild"}`
+- **THEN** the `register` app-config value is set to `openbuild`
 - **AND** the response echoes `success:true` and the updated config
 
 #### Scenario: Unknown key ignored
@@ -70,7 +70,7 @@ rejecting unauthenticated callers with HTTP 401.
 ### REQ-OBS-003: Configuration import is idempotent and force-reloadable
 
 `SettingsService::loadConfiguration()` SHALL import the bundled
-`lib/Settings/openbuilt_register.json` into OpenRegister via
+`lib/Settings/openbuild_register.json` into OpenRegister via
 `ConfigurationService::importFromApp` with `force: false`, relying on
 OR to short-circuit an already-imported configuration.
 `reloadConfiguration()` SHALL perform the same import with
@@ -107,14 +107,14 @@ return its result, rejecting unauthenticated callers with HTTP 401.
 The `InitializeSettings` repair step SHALL run during app
 install/upgrade, calling `SettingsService::reloadConfiguration()` to
 force-import the bundled register configuration so a freshly installed
-OpenBuilt has its registers and schemas provisioned without a manual
+OpenBuild has its registers and schemas provisioned without a manual
 admin action. `getName()` SHALL return a human-readable step name and
 `run(IOutput $output)` SHALL execute the import and surface its outcome
 through the repair output / logger.
 
 #### Scenario: Install triggers import
 
-- **WHEN** the OpenBuilt app is installed or upgraded
+- **WHEN** the OpenBuild app is installed or upgraded
 - **THEN** the `InitializeSettings` repair step runs
   `reloadConfiguration()` to provision registers
 

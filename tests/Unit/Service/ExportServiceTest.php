@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Service;
+namespace OCA\OpenBuild\Tests\Unit\Service;
 
-use OCA\OpenBuilt\Service\ExportService;
-use OCA\OpenBuilt\Service\PlaceholderResolver;
+use OCA\OpenBuild\Service\ExportService;
+use OCA\OpenBuild\Service\PlaceholderResolver;
 use OCP\Files\IAppData;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -21,7 +21,7 @@ final class ExportServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->tmpDir = sys_get_temp_dir().'/openbuilt-exportservice-test-'.uniqid();
+        $this->tmpDir = sys_get_temp_dir().'/openbuild-exportservice-test-'.uniqid();
         mkdir($this->tmpDir, 0o755, true);
     }//end setUp()
 

@@ -1,14 +1,14 @@
 <?php
 
 /**
- * Handler for the openbuilt.addWidget MCP tool.
+ * Handler for the openbuild.addWidget MCP tool.
  *
  * Appends a widget to a page's config.widgets array in the draft manifest of
  * an ApplicationVersion. Uses case-insensitive page-id matching (same rationale
  * as UpsertPageHandler).
  *
  * @category Service
- * @package  OCA\OpenBuilt\Mcp\Handler
+ * @package  OCA\OpenBuild\Mcp\Handler
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,10 +24,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Mcp\Handler;
+namespace OCA\OpenBuild\Mcp\Handler;
 
 /**
- * Handles the openbuilt.addWidget tool invocation.
+ * Handles the openbuild.addWidget tool invocation.
  */
 class AddWidgetHandler extends AbstractToolHandler
 {
@@ -35,7 +35,7 @@ class AddWidgetHandler extends AbstractToolHandler
     /**
      * Allowed widget type identifiers (issue #167 — widgetType allow-list).
      *
-     * Callers may only reference widget types that exist in the OpenBuilt
+     * Callers may only reference widget types that exist in the OpenBuild
      * widget registry. Unknown types are rejected at input time so invalid
      * manifests never reach OR storage.
      *
@@ -133,7 +133,7 @@ class AddWidgetHandler extends AbstractToolHandler
             ];
         } catch (\Throwable $e) {
             $this->logger->error(
-                'OpenBuilt MCP: addWidget failed',
+                'OpenBuild MCP: addWidget failed',
                 ['appSlug' => $appSlug, 'pageId' => $pageId, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
             );
             return $this->errorResult(error: 'add_failed', message: 'Failed to add widget. See server logs for details.');

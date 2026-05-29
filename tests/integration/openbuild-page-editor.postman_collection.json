@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "openbuilt-page-editor-collection",
-		"name": "OpenBuilt Page Editor Integration",
-		"description": "Newman/Postman coverage for openspec change `openbuilt-page-editor` (task 7 — integration). Drives the OR REST Application endpoint plus the openbuilt manifest endpoint to verify the editor's save flow round-trips correctly, the manifest endpoint reflects mutations, and invalid manifests are rejected with a 4xx. Designed to be idempotent: the final teardown step restores the hello-world manifest captured in the first request.",
+		"_postman_id": "openbuild-page-editor-collection",
+		"name": "OpenBuild Page Editor Integration",
+		"description": "Newman/Postman coverage for openspec change `openbuild-page-editor` (task 7 — integration). Drives the OR REST Application endpoint plus the openbuild manifest endpoint to verify the editor's save flow round-trips correctly, the manifest endpoint reflects mutations, and invalid manifests are rejected with a 4xx. Designed to be idempotent: the final teardown step restores the hello-world manifest captured in the first request.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -27,9 +27,9 @@
 					{ "key": "Accept", "value": "application/json" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application?_filter[slug]=hello-world&_limit=1",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?_filter[slug]=hello-world&_limit=1",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application"],
 					"query": [
 						{ "key": "_filter[slug]", "value": "hello-world" },
 						{ "key": "_limit", "value": "1" }
@@ -74,9 +74,9 @@
 					{ "key": "Accept", "value": "application/json" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{app_uuid}}",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{app_uuid}}",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{app_uuid}}"]
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{app_uuid}}"]
 				},
 				"body": {
 					"mode": "raw",
@@ -98,7 +98,7 @@
 							"    id: 'newman-added',",
 							"    type: 'index',",
 							"    route: '/newman-added',",
-							"    config: { register: 'openbuilt', schema: 'hello-message' }",
+							"    config: { register: 'openbuild', schema: 'hello-message' }",
 							"});",
 							"pm.collectionVariables.set('mutated_body', JSON.stringify(mutated));"
 						]
@@ -131,11 +131,11 @@
 					{ "key": "Accept", "value": "application/json" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/hello-world/manifest",
+					"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/hello-world/manifest",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openbuilt", "api", "applications", "hello-world", "manifest"]
+					"path": ["index.php", "apps", "openbuild", "api", "applications", "hello-world", "manifest"]
 				},
-				"description": "Cross-check that the openbuilt manifest endpoint serves the mutated manifest the runtime reads. Confirms the save flow + caching layer (if any) propagate correctly."
+				"description": "Cross-check that the openbuild manifest endpoint serves the mutated manifest the runtime reads. Confirms the save flow + caching layer (if any) propagate correctly."
 			},
 			"event": [
 				{
@@ -165,9 +165,9 @@
 					{ "key": "Accept", "value": "application/json" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{app_uuid}}",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{app_uuid}}",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{app_uuid}}"]
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{app_uuid}}"]
 				},
 				"body": {
 					"mode": "raw",
@@ -212,9 +212,9 @@
 					{ "key": "Accept", "value": "application/json" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{app_uuid}}",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{app_uuid}}",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{app_uuid}}"]
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{app_uuid}}"]
 				},
 				"body": {
 					"mode": "raw",

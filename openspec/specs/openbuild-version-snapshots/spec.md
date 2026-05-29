@@ -1,12 +1,12 @@
-# openbuilt-version-snapshots Specification
+# openbuild-version-snapshots Specification
 
 ## Purpose
 
 @e2e exclude pure-backend spec — snapshot retirement, OR time-travel rollback, and diff endpoint contracts verified by Newman/PHPUnit; no independent UI surface (UI rollback/diff surface covered by version-routing-ui Playwright tests)
 
-Retires the append-only snapshot model originally proposed by `openbuilt-versioning`
+Retires the append-only snapshot model originally proposed by `openbuild-versioning`
 and re-roots version history on OR's object-time-travel directly against each
-`ApplicationVersion` row. Defines the diff endpoint contract that lets the OpenBuilt
+`ApplicationVersion` row. Defines the diff endpoint contract that lets the OpenBuild
 shell compare two `ApplicationVersion` rows (or two historical states of the same row)
 in a single round-trip, so the rollback and compare flows in
 `application-detail-overview` have an authoritative server-side source.
@@ -44,7 +44,7 @@ else.
 
 #### Scenario: No snapshot listener subscribed
 
-- **WHEN** the OpenBuilt app boots
+- **WHEN** the OpenBuild app boots
 - **THEN** no `ApplicationVersionSnapshotListener` (or successor) is registered as
   an event listener for `ObjectLifecycleTransitionedEvent`
 
@@ -76,7 +76,7 @@ the restored `manifest` differs from the immediately-prior saved state.
 ### Requirement: Diff endpoint returns two manifest blobs in one call
 
 The system SHALL expose
-`GET /index.php/apps/openbuilt/api/applications/{slug}/versions/diff?from={fromRef}&to={toRef}`
+`GET /index.php/apps/openbuild/api/applications/{slug}/versions/diff?from={fromRef}&to={toRef}`
 
 **ID:** REQ-OBV-005
 

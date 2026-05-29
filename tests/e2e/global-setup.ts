@@ -9,7 +9,7 @@
  * `loginAsAdmin` helpers are no longer required.
  *
  * Before this hook existed, specs without an explicit form-login step
- * (applicationCard, builder-host, bootstrap-openbuilt, …) landed on
+ * (applicationCard, builder-host, bootstrap-openbuild, …) landed on
  * `/login` and every locator timed out. Nextcloud's session is cookie-
  * based; basic auth alone doesn't satisfy the SPA's auth check.
  *

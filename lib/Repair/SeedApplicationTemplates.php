@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenBuilt Seed Application Templates Repair Step
+ * OpenBuild Seed Application Templates Repair Step
  *
  * Idempotent repair step that seeds the four Conduction-curated
  * ApplicationTemplate records on install. Modelled on the canonical
- * SeedHelloWorld.php pattern from chain spec #1 (bootstrap-openbuilt).
+ * SeedHelloWorld.php pattern from chain spec #1 (bootstrap-openbuild).
  *
  * Loads four JSON fixtures from lib/Settings/templates/ and writes them
  * into OpenRegister via the standard ObjectService. Per-slug existence
@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Repair
- * @package  OCA\OpenBuilt\Repair
+ * @package  OCA\OpenBuild\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,13 +26,13 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-54
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-57
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-54
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-57
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Repair;
+namespace OCA\OpenBuild\Repair;
 
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
@@ -95,7 +95,7 @@ class SeedApplicationTemplates implements IRepairStep
      */
     public function getName(): string
     {
-        return 'Seed Conduction-curated OpenBuilt ApplicationTemplate records';
+        return 'Seed Conduction-curated OpenBuild ApplicationTemplate records';
     }//end getName()
 
     /**
@@ -105,13 +105,13 @@ class SeedApplicationTemplates implements IRepairStep
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-54
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-54
      */
     public function run(IOutput $output): void
     {
         $output->info('Seeding ApplicationTemplate records...');
 
-        $fixturesDir = $this->appManager->getAppPath('openbuilt').'/lib/Settings/templates';
+        $fixturesDir = $this->appManager->getAppPath('openbuild').'/lib/Settings/templates';
         if (is_dir($fixturesDir) === false) {
             $output->warning('Template fixtures directory missing: '.$fixturesDir);
             return;
@@ -140,14 +140,14 @@ class SeedApplicationTemplates implements IRepairStep
             try {
                 $this->objectService->saveObject(
                     object: $data,
-                    register: 'openbuilt',
+                    register: 'openbuild',
                     schema: 'application-template'
                 );
                 $output->info('Seeded ApplicationTemplate: '.$slug);
                 ++$seeded;
             } catch (Throwable $e) {
                 $this->logger->error(
-                    'OpenBuilt: failed to seed template',
+                    'OpenBuild: failed to seed template',
                     ['slug' => $slug, 'exception' => $e->getMessage()]
                 );
                 throw new RuntimeException(
@@ -158,7 +158,7 @@ class SeedApplicationTemplates implements IRepairStep
             }
         }//end foreach
 
-        $output->info('OpenBuilt template seeding complete. New: '.$seeded);
+        $output->info('OpenBuild template seeding complete. New: '.$seeded);
     }//end run()
 
     /**
@@ -171,7 +171,7 @@ class SeedApplicationTemplates implements IRepairStep
      *
      * @throws RuntimeException When a required field is missing or empty.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-57
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-57
      */
     private function validateFixture(array $data, string $slug): void
     {
@@ -210,7 +210,7 @@ class SeedApplicationTemplates implements IRepairStep
             $results = $this->objectService->findAll(
                 config: [
                     'filters' => [
-                        'register' => 'openbuilt',
+                        'register' => 'openbuild',
                         'schema'   => 'application-template',
                         'slug'     => $slug,
                     ],
@@ -239,7 +239,7 @@ class SeedApplicationTemplates implements IRepairStep
             return null;
         } catch (Throwable $e) {
             $this->logger->warning(
-                'OpenBuilt: template lookup failed — treating as absent',
+                'OpenBuild: template lookup failed — treating as absent',
                 ['slug' => $slug, 'exception' => $e->getMessage()]
             );
             return null;

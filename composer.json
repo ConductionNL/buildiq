@@ -1,5 +1,5 @@
 {
-	"name": "conductionnl/openbuilt",
+	"name": "conductionnl/openbuild",
 	"description": "Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.",
 	"license": "EUPL-1.2",
 	"authors": [
@@ -11,7 +11,7 @@
 	],
 	"autoload": {
 		"psr-4": {
-			"OCA\\OpenBuilt\\": "lib/"
+			"OCA\\OpenBuild\\": "lib/"
 		},
 		"exclude-from-classmap": [
 			"lib/Resources/template/"

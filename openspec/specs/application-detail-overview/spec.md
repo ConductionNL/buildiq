@@ -68,12 +68,12 @@ Pills whose version the caller is NOT authorised to access SHALL be HIDDEN from 
 strip. The visibility rule SHALL match the backend RBAC gate:
 
 - The production version SHALL be visible to any authenticated caller (the
-  production-is-public policy from `openbuilt-version-routing` REQ-OBVR-001).
+  production-is-public policy from `openbuild-version-routing` REQ-OBVR-001).
 - Non-production versions SHALL be visible only to callers listed in
   `Application.permissions.editors` ∪ `Application.permissions.owners`.
 
 Clicking a pill SHALL update the URL's `?_version=<versionSlug>` query parameter via
-the `buildVersionedRoute` helper from `openbuilt-version-routing`. The hero strip,
+the `buildVersionedRoute` helper from `openbuild-version-routing`. The hero strip,
 KPI grid, activity-graph card, and structural-widget grid SHALL re-scope to the
 newly-selected version on the same render cycle.
 
@@ -171,7 +171,7 @@ selected version's register.
 
 ### Requirement: Activity-graph card renders the timeline from the insights response
 
-@e2e exclude data-dependent spec — asserting chart data points from `activity[]` and empty-state text requires a controlled insights endpoint stub; no Playwright-testable UI surface for specific activity values without network mocking; structural rendering covered by the openbuilt-runtime Playwright tests
+@e2e exclude data-dependent spec — asserting chart data points from `activity[]` and empty-state text requires a controlled insights endpoint stub; no Playwright-testable UI surface for specific activity values without network mocking; structural rendering covered by the openbuild-runtime Playwright tests
 
 The activity-graph card SHALL render an event timeline using the
 `activity[]` array from the insights response (REQ-OBAI-001). Each array entry has
@@ -202,7 +202,7 @@ than an empty chart frame.
 The `RegisterWidget.vue` component SHALL render a card with:
 
 - The register name
-- The register slug `openbuilt-{appSlug}-{versionSlug}`
+- The register slug `openbuild-{appSlug}-{versionSlug}`
 - The schema count
 - The object count
 - The files count
@@ -219,11 +219,11 @@ No inline create. No row click action.
 - **GIVEN** an Application `hello-world` with the `production` version selected
 - **WHEN** the user clicks "Open in OpenRegister" on the Register card
 - **THEN** the browser navigates to
-  `/apps/openregister/registers/openbuilt-hello-world-production`
+  `/apps/openregister/registers/openbuild-hello-world-production`
 
 ### Requirement: Schemas widget renders rows with deep-link and inline "+ Add schema"
 
-@e2e exclude mixed spec — row-click deep-link to `/builder/{slug}/schemas/{schemaId}?_version={versionSlug}` requires a specific schema UUID in the URL and the `?_version=staging` query parameter in the source state; the `+ Add schema` no-op logged-notice scenario requires inspecting console output; deep-link navigation is covered by the openbuilt-schema-designer Playwright tests
+@e2e exclude mixed spec — row-click deep-link to `/builder/{slug}/schemas/{schemaId}?_version={versionSlug}` requires a specific schema UUID in the URL and the `?_version=staging` query parameter in the source state; the `+ Add schema` no-op logged-notice scenario requires inspecting console output; deep-link navigation is covered by the openbuild-schema-designer Playwright tests
 
 The `SchemasWidget.vue` component SHALL render a card listing the schemas in the
 selected version's register. Each row SHALL display the schema name, its object
@@ -324,7 +324,7 @@ order, and section. Row click SHALL navigate to
 
 ### Requirement: Manifest config: add headerComponent, drop Overview sidebar tab
 
-@e2e exclude pure-backend manifest.json edit contract — `src/manifest.json` `headerComponent` field and absent `overview` sidebarTab are source-file content contracts verified by CI manifest-validation lint; no Playwright-testable UI surface beyond the detail page rendering covered by the openbuilt-runtime Playwright tests
+@e2e exclude pure-backend manifest.json edit contract — `src/manifest.json` `headerComponent` field and absent `overview` sidebarTab are source-file content contracts verified by CI manifest-validation lint; no Playwright-testable UI surface beyond the detail page rendering covered by the openbuild-runtime Playwright tests
 
 The system SHALL update `src/manifest.json`'s `VirtualAppDetail` page entry to:
 
@@ -351,15 +351,15 @@ The manifest update SHALL validate against the canonical manifest schema at
 
 ### Requirement: Pill strip renders a Promote button on each non-terminal pill
 
-@e2e exclude mixed spec — Promote button on non-terminal pills requires a multi-version app with `promotesTo` wiring, which is not in the hello-world single-version dev fixture; promote-click dialog invocation requires the `openbuilt-version-promotion` chain spec to be applied; covered by version-routing-ui Vitest + Newman tests
+@e2e exclude mixed spec — Promote button on non-terminal pills requires a multi-version app with `promotesTo` wiring, which is not in the hello-world single-version dev fixture; promote-click dialog invocation requires the `openbuild-version-promotion` chain spec to be applied; covered by version-routing-ui Vitest + Newman tests
 
 Each pill whose corresponding ApplicationVersion has a `promotesTo` target SHALL
 render a small "Promote" affordance (icon button or trailing chevron) on the pill.
 Clicking SHALL invoke the promotion dialog registered by
-`openbuilt-version-promotion`. This spec does NOT define the dialog itself — it
+`openbuild-version-promotion`. This spec does NOT define the dialog itself — it
 defines only the trigger surface.
 
-If no promotion dialog is registered (e.g. `openbuilt-version-promotion` not yet
+If no promotion dialog is registered (e.g. `openbuild-version-promotion` not yet
 applied), the button SHALL render but click SHALL log a deferred notice and no-op.
 
 **ID:** REQ-OBADO-012
@@ -375,6 +375,6 @@ applied), the button SHALL render but click SHALL log a deferred notice and no-o
 
 #### Scenario: Promote click invokes the registered dialog
 
-- **GIVEN** the promotion dialog from `openbuilt-version-promotion` is registered
+- **GIVEN** the promotion dialog from `openbuild-version-promotion` is registered
 - **WHEN** the user clicks Promote on the `staging` pill
 - **THEN** the dialog opens, pre-targeted at the `staging` version

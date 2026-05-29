@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenBuilt Populate Application Permissions Repair Step
+ * OpenBuild Populate Application Permissions Repair Step
  *
  * Idempotent migration that populates the `permissions` block on every
  * existing Application whose `permissions` is missing or empty.
- * Per design.md "Migration Plan" of openbuilt-rbac, the default is
+ * Per design.md "Migration Plan" of openbuild-rbac, the default is
  * `{ owners: ['admin'], editors: [], viewers: [] }`. The migration
  * skips any Application whose `permissions.owners` is already
  * non-empty (idempotent re-runs).
@@ -19,7 +19,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Repair
- * @package  OCA\OpenBuilt\Repair
+ * @package  OCA\OpenBuild\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,12 +29,12 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-30
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Repair;
+namespace OCA\OpenBuild\Repair;
 
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Migration\IOutput;
@@ -73,7 +73,7 @@ class PopulateApplicationPermissions implements IRepairStep
      */
     public function getName(): string
     {
-        return 'Populate permissions on pre-existing OpenBuilt Applications';
+        return 'Populate permissions on pre-existing OpenBuild Applications';
     }//end getName()
 
     /**
@@ -83,7 +83,7 @@ class PopulateApplicationPermissions implements IRepairStep
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-30
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
      */
     public function run(IOutput $output): void
     {
@@ -93,7 +93,7 @@ class PopulateApplicationPermissions implements IRepairStep
             $applications = $this->objectService->findAll(
                 config: [
                     'filters' => [
-                        'register' => 'openbuilt',
+                        'register' => 'openbuild',
                         'schema'   => 'application',
                     ],
                     'limit'   => 1000,
@@ -126,7 +126,7 @@ class PopulateApplicationPermissions implements IRepairStep
 
                 $this->objectService->saveObject(
                     object: $applicationArray,
-                    register: 'openbuilt',
+                    register: 'openbuild',
                     schema: 'application'
                 );
                 $patched++;
@@ -134,13 +134,13 @@ class PopulateApplicationPermissions implements IRepairStep
 
             $output->info('Permissions populated on '.$patched.' Application(s).');
             $this->logger->info(
-                'OpenBuilt: PopulateApplicationPermissions completed',
+                'OpenBuild: PopulateApplicationPermissions completed',
                 ['patched' => $patched]
             );
         } catch (\Throwable $e) {
             $output->warning('Could not populate permissions: '.$e->getMessage());
             $this->logger->error(
-                'OpenBuilt: PopulateApplicationPermissions failed',
+                'OpenBuild: PopulateApplicationPermissions failed',
                 ['exception' => $e->getMessage()]
             );
         }//end try
@@ -156,7 +156,7 @@ class PopulateApplicationPermissions implements IRepairStep
      *
      * @return bool True when the Application should be patched
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-30
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
      */
     private function needsMigration(array $application): bool
     {

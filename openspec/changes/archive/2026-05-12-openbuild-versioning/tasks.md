@@ -1,22 +1,22 @@
-## 1. Implementation Tasks — openbuilt-version-snapshots
+## 1. Implementation Tasks — openbuild-version-snapshots
 
-- [ ] 1.1 **Declare `ApplicationVersion` schema in `lib/Settings/openbuilt_register.json`**
+- [ ] 1.1 **Declare `ApplicationVersion` schema in `lib/Settings/openbuild_register.json`**
   - spec_ref: REQ-OBV-001
-  - files: `lib/Settings/openbuilt_register.json`
-  - acceptance_criteria: Schema declares `uuid` (UUID-format), `applicationUuid` (UUID-format, required), `version` (semver pattern, required), `manifest` (object, required — references the canonical app-manifest schema), `publishedAt` (ISO 8601 date-time, required), `publishedBy` (string, required), `notes` (string, optional). Validates against OpenAPI 3.0.0. Lives in the `openbuilt` register namespace alongside `Application` and `BuiltAppRoute`.
+  - files: `lib/Settings/openbuild_register.json`
+  - acceptance_criteria: Schema declares `uuid` (UUID-format), `applicationUuid` (UUID-format, required), `version` (semver pattern, required), `manifest` (object, required — references the canonical app-manifest schema), `publishedAt` (ISO 8601 date-time, required), `publishedBy` (string, required), `notes` (string, optional). Validates against OpenAPI 3.0.0. Lives in the `openbuild` register namespace alongside `Application` and `BuiltAppRoute`.
   - Implement: declarative — no PHP service class.
   - Test: integration test creates an `ApplicationVersion` row via OR REST, asserts validation rejects a payload missing `applicationUuid`.
 
 - [ ] 1.2 **Extend the `Application` schema with `currentVersion`**
   - spec_ref: REQ-OBA-006, REQ-OBV-006
-  - files: `lib/Settings/openbuilt_register.json`
+  - files: `lib/Settings/openbuild_register.json`
   - acceptance_criteria: `Application` schema gains a `currentVersion` property (string, UUID-format, optional). Existing seeded Applications from spec #1 remain valid (no required-field upgrade).
   - Implement: declarative schema patch — no PHP migration code.
   - Test: integration test loads the seeded `hello-world` Application post-upgrade and asserts it still parses; asserts `currentVersion` field is present and absent / null.
 
 - [ ] 1.3 **Declare the snapshot-on-publish action on the Application schema (declarative path)**
   - spec_ref: REQ-OBV-002, REQ-OBA-007
-  - files: `lib/Settings/openbuilt_register.json` (NOT a new PHP service class)
+  - files: `lib/Settings/openbuild_register.json` (NOT a new PHP service class)
   - acceptance_criteria: `x-openregister-lifecycle.on_transition` action on the `draft → published` edge declares: (a) create a sibling `ApplicationVersion` record copying `manifest`, `version`, and metadata; (b) update Application's `currentVersion`; (c) reset Application's `status` to `draft` per design.md Decision 3.
   - Implement: declarative-first per ADR-031. NO `VersioningService` / `SnapshotService` / `ApplicationVersionManager` class.
   - Test: integration test publishes a draft Application, asserts a fresh `ApplicationVersion` row exists with byte-equal manifest and correct metadata, asserts `currentVersion` points at it, asserts Application status is `draft` post-action.
@@ -24,7 +24,7 @@
 - [ ] 1.4 **Fall back to a single listener PHP class IF the declarative path is unavailable (ADR-031 §Exceptions(1))**
   - spec_ref: REQ-OBV-002, REQ-OBA-007
   - files: `lib/Listener/ApplicationVersionSnapshotListener.php` (ONLY if task 1.3's declarative path proves engine-unsupported)
-  - acceptance_criteria: Single listener subscribed to OR's `ObjectLifecycleTransitionedEvent`; same observable behaviour as task 1.3; carries SPDX + EUPL-1.2 docblock; no broader business logic. Recorded in `hydra.json` under `decisions[]` with rationale. OR-side issue filed referencing bootstrap-openbuilt's OQ-1.
+  - acceptance_criteria: Single listener subscribed to OR's `ObjectLifecycleTransitionedEvent`; same observable behaviour as task 1.3; carries SPDX + EUPL-1.2 docblock; no broader business logic. Recorded in `hydra.json` under `decisions[]` with rationale. OR-side issue filed referencing bootstrap-openbuild's OQ-1.
   - Implement: only if necessary; thin-glue exception per ADR-032.
   - Test: integration test parity with task 1.3 — same publish flow, same assertions, listener path is exercised.
 
@@ -42,16 +42,16 @@
   - Implement: single method, no service class.
   - Test: PHPUnit asserts 200 with both blobs for valid UUIDs, 404 for unknown UUID, organisation-scope enforcement.
 
-## 2. Implementation Tasks — openbuilt-application-register (modifications)
+## 2. Implementation Tasks — openbuild-application-register (modifications)
 
 - [ ] 2.1 **Confirm `currentVersion` is wired by the same lifecycle action as the snapshot**
   - spec_ref: REQ-OBA-006, REQ-OBA-007
-  - files: `lib/Settings/openbuilt_register.json` (re-uses the action declared in task 1.3)
+  - files: `lib/Settings/openbuild_register.json` (re-uses the action declared in task 1.3)
   - acceptance_criteria: The single `on_transition` action (or its listener fallback) writes BOTH the new `ApplicationVersion` row AND the Application's `currentVersion` in one logical step. No separate hook / action / listener for `currentVersion` upkeep.
   - Implement: declarative — covered by tasks 1.3 / 1.4.
   - Test: integration test publishes twice and asserts `currentVersion` updates to the second row's `uuid`; asserts the first row remains intact.
 
-## 3. Implementation Tasks — openbuilt-runtime (modifications)
+## 3. Implementation Tasks — openbuild-runtime (modifications)
 
 - [ ] 3.1 **Add Publish action and status badge to `ApplicationEditor.vue`**
   - spec_ref: REQ-OBR-006, REQ-OBR-007
@@ -93,7 +93,7 @@
 - [ ] 4.1 **Extend `SeedHelloWorld.php` to seed one `ApplicationVersion` and set Application.currentVersion**
   - spec_ref: design.md Seed Data section
   - files: `lib/Repair/SeedHelloWorld.php`
-  - acceptance_criteria: Seeds one `ApplicationVersion` row for the seeded `hello-world` Application: `applicationUuid` = the Application's UUID, `version` = `1.0.0`, `manifest` = byte-equal copy, `publishedAt` = install timestamp, `publishedBy` = `system`, `notes` = "Seeded by OpenBuilt install — initial published version". Sets the Application's `currentVersion` to the new row's UUID. Idempotent: re-running the repair on a seeded install does NOT create a duplicate `ApplicationVersion`. No scripting — edit via PHP only (memory rule).
+  - acceptance_criteria: Seeds one `ApplicationVersion` row for the seeded `hello-world` Application: `applicationUuid` = the Application's UUID, `version` = `1.0.0`, `manifest` = byte-equal copy, `publishedAt` = install timestamp, `publishedBy` = `system`, `notes` = "Seeded by OpenBuild install — initial published version". Sets the Application's `currentVersion` to the new row's UUID. Idempotent: re-running the repair on a seeded install does NOT create a duplicate `ApplicationVersion`. No scripting — edit via PHP only (memory rule).
   - Implement: extend the existing repair step; guard on existing-row check.
   - Test: PHPUnit runs the repair step twice, asserts exactly one `ApplicationVersion` exists for `hello-world`; asserts `currentVersion` is set.
 
@@ -113,18 +113,18 @@
 
 - [ ] 6.1 **PHPUnit** — `tests/Unit/Controller/ApplicationsControllerTest.php::diffVersions` covers 200 + 404 + organisation scoping + `draft` literal handling for `from` / `to`.
 - [ ] 6.2 **PHPUnit** — `tests/Integration/ApplicationVersioningTest.php` walks `draft → published → rollback → republish` and asserts: snapshot created on first publish, `currentVersion` updated, manifest preserved byte-equal, rollback restores manifest without history rewrite, republish creates a fresh row.
-- [ ] 6.3 **Newman** — `tests/api/openbuilt.postman_collection.json` adds requests for the diff endpoint (200 + 404), reading `ApplicationVersion` rows by `applicationUuid` filter, and posting a manual `ApplicationVersion` (smoke test for the schema declaration).
+- [ ] 6.3 **Newman** — `tests/api/openbuild.postman_collection.json` adds requests for the diff endpoint (200 + 404), reading `ApplicationVersion` rows by `applicationUuid` filter, and posting a manual `ApplicationVersion` (smoke test for the schema declaration).
 - [ ] 6.4 **Playwright** — `tests/e2e/versioning.spec.ts` covers: navigate to a draft Application, edit and Publish, assert the new history row appears; rollback to the previous row, assert the textarea reflects the restored manifest; open the diff view and assert the visualisation renders without console errors.
 
 ## 7. Documentation (ADR-009, ADR-010)
 
-- [ ] 7.1 Extend `docs/openbuilt-runtime.md` with a "Versioning" section covering the snapshot-on-publish flow, rollback semantics (audit-clean per Decision 3), and the diff view's UX contract.
+- [ ] 7.1 Extend `docs/openbuild-runtime.md` with a "Versioning" section covering the snapshot-on-publish flow, rollback semantics (audit-clean per Decision 3), and the diff view's UX contract.
 - [ ] 7.2 Add a "How to safely iterate on a published app" walkthrough to `docs/integrator-guide.md` — covers draft / publish / rollback cycle.
 - [ ] 7.3 NL Design (ADR-010) — confirm the new status badge, diff tokens, and version-history panel use Nextcloud CSS variables only; document any new variables added.
-- [ ] 7.4 Update `openspec/app-config.json` to list `openbuilt-version-snapshots` under capabilities.
+- [ ] 7.4 Update `openspec/app-config.json` to list `openbuild-version-snapshots` under capabilities.
 
 ## 8. i18n (ADR-005, ADR-007)
 
-- [ ] 8.1 Add English translations in `l10n/en.json` for new keys: `openbuilt.editor.publish`, `openbuilt.editor.publishing`, `openbuilt.editor.status.draft|published|archived`, `openbuilt.editor.draftModified`, `openbuilt.versionHistory.title`, `openbuilt.versionHistory.empty`, `openbuilt.versionHistory.rollback`, `openbuilt.versionHistory.compare`, `openbuilt.rollback.confirm.title`, `openbuilt.rollback.confirm.body`, `openbuilt.rollback.confirm.confirm`, `openbuilt.rollback.confirm.cancel`, `openbuilt.diff.title`, `openbuilt.diff.empty`.
+- [ ] 8.1 Add English translations in `l10n/en.json` for new keys: `openbuild.editor.publish`, `openbuild.editor.publishing`, `openbuild.editor.status.draft|published|archived`, `openbuild.editor.draftModified`, `openbuild.versionHistory.title`, `openbuild.versionHistory.empty`, `openbuild.versionHistory.rollback`, `openbuild.versionHistory.compare`, `openbuild.rollback.confirm.title`, `openbuild.rollback.confirm.body`, `openbuild.rollback.confirm.confirm`, `openbuild.rollback.confirm.cancel`, `openbuild.diff.title`, `openbuild.diff.empty`.
 - [ ] 8.2 Add Dutch translations for the same keys in `l10n/nl.json` (memory rule: Dutch + English minimum).
-- [ ] 8.3 Confirm no hardcoded UI strings in the new SFCs — every label runs through `t('openbuilt', '<key>')`.
+- [ ] 8.3 Confirm no hardcoded UI strings in the new SFCs — every label runs through `t('openbuild', '<key>')`.

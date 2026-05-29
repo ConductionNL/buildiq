@@ -1,6 +1,6 @@
 ## Context
 
-OpenBuilt spec #1 (`bootstrap-openbuilt`) shipped a JSON textarea as
+OpenBuild spec #1 (`bootstrap-openbuild`) shipped a JSON textarea as
 the only path to author a virtual app's manifest. The textarea
 proves the runtime contract (load → validate → save → render via a
 nested `CnAppRoot`) but is unusable for citizen developers — the
@@ -16,7 +16,7 @@ This spec replaces the textarea-as-only-editor with a tabbed view
 whose default tab is a visual designer. The textarea persists as the
 "Raw JSON" fallback tab for integrators and for the corner cases the
 visual designer cannot express (yet). Everything ships in the
-existing `openbuilt` Nextcloud app's frontend — no new backend code,
+existing `openbuild` Nextcloud app's frontend — no new backend code,
 no new schemas, no new register namespaces. Manifest CRUD continues
 to flow through OR REST per ADR-022.
 
@@ -51,16 +51,16 @@ fallback.
 
 **Non-Goals (deferred to chain or out of scope)**
 
-- Versioning / draft / publish UX (chain spec #6 `openbuilt-versioning`).
+- Versioning / draft / publish UX (chain spec #6 `openbuild-versioning`).
 - Per-built-app permission management surface (chain spec #7
-  `openbuilt-rbac`).
+  `openbuild-rbac`).
 - Starter-template gallery (chain spec #8
-  `openbuilt-templates-marketplace`).
+  `openbuild-templates-marketplace`).
 - Real-app export of the manifest to a `src/manifest.json` file in a
   target Nextcloud-app repo (chain spec #9
-  `openbuilt-export-to-real-app`).
+  `openbuild-export-to-real-app`).
 - Editing the underlying schemas a page binds to (that is the
-  `openbuilt-schema-editor` spec #4 — this spec only *picks* from
+  `openbuild-schema-editor` spec #4 — this spec only *picks* from
   the registers/schemas OR already exposes).
 - Real-time multi-user collaborative editing (see Open Questions).
 - Undo / redo within a single editing session (see Open Questions).
@@ -181,8 +181,8 @@ The right-hand pane mounts `<CnAppRoot :appId="preview-{slug}"
 :manifest="inflightManifest" :key="manifestHash" />`. Each manifest
 edit re-renders the preview after the debounced validator pass
 clears (no flickering on invalid in-flight states). The sandbox
-`appId = openbuilt-preview-{slug}` so it does not collide with the
-production-mounted `openbuilt-{slug}`.
+`appId = openbuild-preview-{slug}` so it does not collide with the
+production-mounted `openbuild-{slug}`.
 
 **Behaviour when spec #2 is unavailable:**
 `useLivePreview.js` feature-detects the overload by inspecting
@@ -191,7 +191,7 @@ parameter). When the overload is missing, the right-hand pane
 collapses to a button that (a) saves the current manifest via the
 spec-1 REST path and (b) opens `/builder/:slug` in a new browser
 tab. An i18n note
-(`openbuilt.page-designer.preview.unavailable`) explains the
+(`openbuild.page-designer.preview.unavailable`) explains the
 limitation. The fallback is intentionally one composable deep so
 the rewrite when spec #2 lands is small.
 
@@ -256,16 +256,16 @@ to a Web Worker in a follow-on spec, but for the v1 surface area
 
 The canonical schema's `type: custom` page renders against a key in
 the consuming app's `customComponents` registry. The registry is
-**not** OpenBuilt's concern in this spec — registry composition is
+**not** OpenBuild's concern in this spec — registry composition is
 how a builder configures *what* custom components a virtual app has
 access to, and configuring that registry needs its own surface
 (deferred to a follow-on spec; the candidates are a new
-`openbuilt-custom-components-registry` capability or folding it into
+`openbuild-custom-components-registry` capability or folding it into
 the marketplace spec #8).
 
 For this spec, `CustomPageEditor.vue` reads the registry **only at
 runtime** from the sandboxed `CnAppRoot`'s injected `customComponents`
-prop (which today is whatever the OpenBuilt host app passes —
+prop (which today is whatever the OpenBuild host app passes —
 typically an empty `{}` until a future spec wires in component
 discovery). When the live-preview pane is active, the picker is a
 dropdown over the registry's keys. When the preview pane is
@@ -296,7 +296,7 @@ designer that mirrors the Raw JSON tab.
 ### Declarative-vs-imperative call-out (ADR-031)
 
 The Page Designer's output **is** the manifest blob. The manifest
-itself is the canonical declarative artefact for the OpenBuilt
+itself is the canonical declarative artefact for the OpenBuild
 ecosystem (it declares pages, menus, routes, sidebars, widgets,
 form fields — *what* the app is, not *how* it runs). This spec
 introduces **no service class**: no `PageBuilderService`, no
@@ -366,7 +366,7 @@ review under ADR-031 in isolation.
 ## Migration Plan
 
 This spec ships a frontend-only change inside the existing
-`openbuilt` Nextcloud app. There is no database migration, no
+`openbuild` Nextcloud app. There is no database migration, no
 schema change, no API change. Deployment steps:
 
 1. Land the change on a feature branch from `development`.
@@ -420,7 +420,7 @@ schema change, no API change. Deployment steps:
   warning when the saved key does not resolve in the running
   catalogue; a registry-backed picker is a fit-and-finish
   improvement that needs its own design pass on how to expose the
-  catalogue to the editor without coupling OpenBuilt to every
+  catalogue to the editor without coupling OpenBuild to every
   consuming app's i18n loader.
 - **OQ-4 — Default page type on "Add page".** When the user clicks
   "Add page", do we pre-select a page type (e.g. `index`) or

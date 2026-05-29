@@ -6,19 +6,19 @@ retrofit: true
 
 ## Purpose
 
-The exporter UI graduates a published OpenBuilt virtual app into a standalone
+The exporter UI graduates a published OpenBuild virtual app into a standalone
 Nextcloud app. `ExportDialog` collects the export target, visibility, license,
 and version, then submits the export job; `ExportJobsList` lists the jobs, polls
 for status, and labels each.
 
 This capability is observed behaviour of those components. It is the frontend
-half of the `openbuilt-exporter` backend capability.
+half of the `openbuild-exporter` backend capability.
 
 ## Requirements
 
 ### Requirement: Export dialog collects options and submits the job
 
-@e2e exclude retrofit component-contract spec — `targetOptions`, `visibilityOptions`, `licenseOptions`, `versionOptions`, `submit`, `onClose` are dialog-component contracts verified by Vitest unit tests; export-dialog open/submit integration requires a published app + export backend which is covered by the openbuilt-exporter Newman tests
+@e2e exclude retrofit component-contract spec — `targetOptions`, `visibilityOptions`, `licenseOptions`, `versionOptions`, `submit`, `onClose` are dialog-component contracts verified by Vitest unit tests; export-dialog open/submit integration requires a published app + export backend which is covered by the openbuild-exporter Newman tests
 
 `ExportDialog` SHALL expose the target, visibility, license, and version option
 lists (`targetOptions`, `visibilityOptions`, `licenseOptions`,
@@ -31,7 +31,7 @@ lists (`targetOptions`, `visibilityOptions`, `licenseOptions`,
 
 ### Requirement: Export jobs list fetches, polls and labels job status
 
-@e2e exclude retrofit component-contract spec — `fetchJobs`, `statusLabel`, `onQueued`, poll-cleanup-on-`beforeDestroy` are component lifecycle contracts verified by Vitest unit tests; job-status polling requires a running async export job backend which is covered by the openbuilt-exporter Newman tests
+@e2e exclude retrofit component-contract spec — `fetchJobs`, `statusLabel`, `onQueued`, poll-cleanup-on-`beforeDestroy` are component lifecycle contracts verified by Vitest unit tests; job-status polling requires a running async export job backend which is covered by the openbuild-exporter Newman tests
 
 `ExportJobsList` SHALL fetch the export jobs (`fetchJobs`) on `mounted`, poll
 for status updates, clean up the poll on `beforeDestroy`, label each job's

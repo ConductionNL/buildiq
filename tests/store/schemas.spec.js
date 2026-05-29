@@ -4,9 +4,9 @@
  *
  * Vitest spec for `schemas.js` store helpers.
  *
- * Covers spec `openbuilt-version-routing` REQ-OBVR-007 and tasks.md §6.5:
- *  - `registerSlugForApp(appSlug)` → `openbuilt-{appSlug}` (legacy, no versionSlug)
- *  - `registerSlugForApp(appSlug, versionSlug)` → `openbuilt-{appSlug}-{versionSlug}` (per-version register)
+ * Covers spec `openbuild-version-routing` REQ-OBVR-007 and tasks.md §6.5:
+ *  - `registerSlugForApp(appSlug)` → `openbuild-{appSlug}` (legacy, no versionSlug)
+ *  - `registerSlugForApp(appSlug, versionSlug)` → `openbuild-{appSlug}-{versionSlug}` (per-version register)
  *  - `useSchemasStore` registers to the correct per-version register namespace
  */
 
@@ -30,28 +30,28 @@ describe('registerSlugForApp — register slug construction (REQ-OBVR-007)', () 
 		registerSlugForApp = mod.registerSlugForApp
 	})
 
-	it('returns openbuilt-{appSlug} when no versionSlug is provided (legacy)', () => {
-		expect(registerSlugForApp('hello-world')).toBe('openbuilt-hello-world')
+	it('returns openbuild-{appSlug} when no versionSlug is provided (legacy)', () => {
+		expect(registerSlugForApp('hello-world')).toBe('openbuild-hello-world')
 	})
 
-	it('returns openbuilt-{appSlug} when versionSlug is undefined', () => {
-		expect(registerSlugForApp('hello-world', undefined)).toBe('openbuilt-hello-world')
+	it('returns openbuild-{appSlug} when versionSlug is undefined', () => {
+		expect(registerSlugForApp('hello-world', undefined)).toBe('openbuild-hello-world')
 	})
 
-	it('returns openbuilt-{appSlug} when versionSlug is empty string', () => {
-		expect(registerSlugForApp('hello-world', '')).toBe('openbuilt-hello-world')
+	it('returns openbuild-{appSlug} when versionSlug is empty string', () => {
+		expect(registerSlugForApp('hello-world', '')).toBe('openbuild-hello-world')
 	})
 
-	it('returns openbuilt-{appSlug}-{versionSlug} when versionSlug is provided (spec C)', () => {
-		expect(registerSlugForApp('hello-world', 'staging')).toBe('openbuilt-hello-world-staging')
+	it('returns openbuild-{appSlug}-{versionSlug} when versionSlug is provided (spec C)', () => {
+		expect(registerSlugForApp('hello-world', 'staging')).toBe('openbuild-hello-world-staging')
 	})
 
 	it('handles multi-segment slugs correctly', () => {
-		expect(registerSlugForApp('my-complex-app', 'v2-beta')).toBe('openbuilt-my-complex-app-v2-beta')
+		expect(registerSlugForApp('my-complex-app', 'v2-beta')).toBe('openbuild-my-complex-app-v2-beta')
 	})
 
 	it('handles production version slug', () => {
-		expect(registerSlugForApp('my-app', 'production')).toBe('openbuilt-my-app-production')
+		expect(registerSlugForApp('my-app', 'production')).toBe('openbuild-my-app-production')
 	})
 })
 
@@ -77,7 +77,7 @@ describe('useSchemasStore — re-registers when register changes', () => {
 			'schema',
 			'schemas',
 			'api',
-			{ registerSlug: 'openbuilt-hello-world-staging' },
+			{ registerSlug: 'openbuild-hello-world-staging' },
 		)
 	})
 
@@ -102,7 +102,7 @@ describe('useSchemasStore — re-registers when register changes', () => {
 			'schema',
 			'schemas',
 			'api',
-			{ registerSlug: 'openbuilt-hello-world' },
+			{ registerSlug: 'openbuild-hello-world' },
 		)
 	})
 
@@ -128,11 +128,11 @@ describe('useSchemasStore — re-registers when register changes', () => {
 			'schema',
 			'schemas',
 			'api',
-			{ registerSlug: 'openbuilt-hello-world-staging' },
+			{ registerSlug: 'openbuild-hello-world-staging' },
 		)
 
 		// Simulate version change — objectTypeRegistry now has the old register recorded
-		fakeStore.objectTypeRegistry.schema = { slugs: { registerSlug: 'openbuilt-hello-world-staging' } }
+		fakeStore.objectTypeRegistry.schema = { slugs: { registerSlug: 'openbuild-hello-world-staging' } }
 
 		// Second call with different version — should re-register
 		useSchemasStore('hello-world', 'production')
@@ -141,7 +141,7 @@ describe('useSchemasStore — re-registers when register changes', () => {
 			'schema',
 			'schemas',
 			'api',
-			{ registerSlug: 'openbuilt-hello-world-production' },
+			{ registerSlug: 'openbuild-hello-world-production' },
 		)
 	})
 })

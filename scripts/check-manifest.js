@@ -3,15 +3,15 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 /**
- * check-manifest — validate openbuilt manifests against the canonical
+ * check-manifest — validate openbuild manifests against the canonical
  * @conduction/nextcloud-vue ADR-024 schema.
  *
- * Implements openbuilt#10 task 4.3 — "Run npm run check:manifest on the
+ * Implements openbuild#10 task 4.3 — "Run npm run check:manifest on the
  * seeded hello-world manifest blob in tests; passes against the canonical
  * schema pinned in package.json."
  *
  * Defaults to validating:
- *   - src/manifest.json (the OpenBuilt shell manifest)
+ *   - src/manifest.json (the OpenBuild shell manifest)
  *   - lib/Resources/wizard/default-manifest.json (the wizard seed)
  *
  * Pass alternate paths as CLI args. The wizard seed carries the literal
@@ -27,10 +27,27 @@ const fs = require('node:fs')
 const path = require('node:path')
 const Ajv = require('ajv/dist/2020').default
 
-const SCHEMA_PATH = path.resolve(
+const SCHEMA_DIR = path.resolve(
 	__dirname,
-	'../node_modules/@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json',
+	'../node_modules/@conduction/nextcloud-vue/src/schemas',
 )
+const SCHEMA_V1_PATH = path.join(SCHEMA_DIR, 'app-manifest.schema.json')
+const SCHEMA_V2_PATH = path.join(SCHEMA_DIR, 'app-manifest-v2.schema.json')
+
+/**
+ * Pick the schema version a manifest declares via its `$schema` URL. A manifest
+ * whose `$schema` references `app-manifest-v2` is validated against the v2
+ * schema; everything else (including manifests with no `$schema`) defaults to
+ * v1. This keeps the v2 shell manifest and the v1 wizard seed each validated
+ * against the contract they actually target.
+ *
+ * @param {object} manifest The parsed manifest payload.
+ * @returns {'v1'|'v2'} The schema version to validate against.
+ */
+function schemaVersionFor(manifest) {
+	const ref = manifest && typeof manifest.$schema === 'string' ? manifest.$schema : ''
+	return ref.includes('app-manifest-v2') ? 'v2' : 'v1'
+}
 
 const DEFAULT_TARGETS = [
 	'src/manifest.json',
@@ -57,7 +74,7 @@ function substituteTokens(manifest) {
 			if (!page || typeof page !== 'object' || !page.config) return page
 			const config = { ...page.config }
 			if (config.register === '{registerSlug}') {
-				config.register = 'openbuilt-validator-placeholder'
+				config.register = 'openbuild-validator-placeholder'
 			}
 			return { ...page, config }
 		}),
@@ -69,9 +86,11 @@ function main() {
 	const targets = args.length > 0 ? args : DEFAULT_TARGETS
 	const repoRoot = path.resolve(__dirname, '..')
 
-	const schema = loadJson(SCHEMA_PATH)
 	const ajv = new Ajv({ allErrors: true, strict: false })
-	const validate = ajv.compile(schema)
+	const validators = {
+		v1: ajv.compile(loadJson(SCHEMA_V1_PATH)),
+		v2: ajv.compile(loadJson(SCHEMA_V2_PATH)),
+	}
 
 	let allPassed = true
 	for (const target of targets) {
@@ -91,14 +110,16 @@ function main() {
 		}
 
 		const candidate = substituteTokens(manifest)
+		const version = schemaVersionFor(manifest)
+		const validate = validators[version]
 		const valid = validate(candidate)
 		if (valid) {
-			console.log(`PASS ${target}`)
+			console.log(`PASS ${target} (${version})`)
 			continue
 		}
 
 		allPassed = false
-		console.error(`FAIL ${target}`)
+		console.error(`FAIL ${target} (${version})`)
 		for (const err of validate.errors || []) {
 			console.error(`  ${err.instancePath || '(root)'} ${err.message}`)
 		}

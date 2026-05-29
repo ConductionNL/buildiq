@@ -11,8 +11,8 @@ The `Application` schema SHALL additionally declare two optional top-level prope
 `icon` and `iconDark` — each of shape `{ "ref": "<filename>" }` referencing an OR-attached
 SVG file on the Application record (per ADR-001). These properties live as siblings to
 `slug`, `name`, `manifest`, `version`, and `permissions` on the `application` schema in
-`lib/Settings/openbuilt_register.json`. They are deliberately outside the `manifest` object
-because they are openbuilt-side admin metadata about the virtual app, not part of the
+`lib/Settings/openbuild_register.json`. They are deliberately outside the `manifest` object
+because they are openbuild-side admin metadata about the virtual app, not part of the
 manifest blob the citizen developer designs and the runtime serves to `CnAppRoot` — so this
 spec does not touch `app-manifest.schema.json` and carries no upstream coupling.
 
@@ -39,12 +39,12 @@ spec does not touch `app-manifest.schema.json` and carries no upstream coupling.
 - **WHEN** a client saves an Application whose `manifest` blob contains an `icon` key
   (e.g. `"manifest": { "version": "1.0.0", "menu": [...], "pages": [...], "icon": {...} }`)
 - **THEN** OR accepts the save (the manifest's `additionalProperties` posture is opaque to
-  this spec), but the openbuilt icon-serving endpoint and nav-entry rendering SHALL ignore
+  this spec), but the openbuild icon-serving endpoint and nav-entry rendering SHALL ignore
   the value — only the top-level `icon` / `iconDark` fields drive icon resolution
 
 #### Scenario: Application object is created via OR REST (unchanged from prior revision)
 
-- **WHEN** a client POSTs a payload to OR's REST endpoint for the `openbuilt/application`
+- **WHEN** a client POSTs a payload to OR's REST endpoint for the `openbuild/application`
   namespace with a valid `manifest`, `slug`, `name`, `version`, and `status: draft`
 - **THEN** OR persists the object, returns 201, and the returned object carries an OR-assigned
   `uuid` and the submitted fields

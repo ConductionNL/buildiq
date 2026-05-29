@@ -1,14 +1,14 @@
 ---
 kind: mixed
-depends_on: [bootstrap-openbuilt]
+depends_on: [bootstrap-openbuild]
 chain:
-  - bootstrap-openbuilt
-  - openbuilt-versioning   # THIS spec
+  - bootstrap-openbuild
+  - openbuild-versioning   # THIS spec
 ---
 
 ## Why
 
-Spec #1 (`bootstrap-openbuilt`) declared the `Application` lifecycle
+Spec #1 (`bootstrap-openbuild`) declared the `Application` lifecycle
 (`draft → published → archived`) via `x-openregister-lifecycle`, but it
 did **not** ship the snapshot mechanism that makes that lifecycle
 useful in practice. A citizen developer who publishes a virtual app
@@ -20,7 +20,7 @@ today has no way to:
 3. inspect what changed between two points in time.
 
 Without versioned snapshots and a draft-staging UX, the publish
-button is effectively a one-way door — exactly the friction OpenBuilt
+button is effectively a one-way door — exactly the friction OpenBuild
 must remove for non-developers to trust it as their authoring surface.
 
 This spec ships the missing pieces:
@@ -28,22 +28,22 @@ This spec ships the missing pieces:
 - a new declarative `ApplicationVersion` schema that snapshots an
   Application's manifest at each publish,
 - a draft / published indicator and a "Publish" action in the
-  OpenBuilt shell,
+  OpenBuild shell,
 - a version-history panel and a "Roll back to version N" action,
 - a side-by-side diff view between any two manifest snapshots
   (current draft vs published is the default pairing).
 
 Per ADR-031 the snapshot data model and the snapshot-on-publish
 action are declarative; the diff and version-history UI are
-unavoidably code. The split is the same pattern bootstrap-openbuilt
+unavoidably code. The split is the same pattern bootstrap-openbuild
 applied and OQ-1 below tracks the same OR-engine-capability question
 (`on_transition` action support) that OQ-1 in the bootstrap design
 already filed against OpenRegister.
 
 ## What Changes
 
-- **NEW** OpenRegister schema `openbuilt/application-version`
-  declared in `lib/Settings/openbuilt_register.json` with properties:
+- **NEW** OpenRegister schema `openbuild/application-version`
+  declared in `lib/Settings/openbuild_register.json` with properties:
   - `uuid` (string, UUID-format)
   - `applicationUuid` (string, UUID-format, required — points at the
     parent Application)
@@ -61,12 +61,12 @@ already filed against OpenRegister.
   object on a state transition, fall back to a single
   `ApplicationVersionSnapshotListener` PHP class subscribed to OR's
   `ObjectLifecycleTransitionedEvent` — ADR-031 §Exceptions(1), same
-  OQ-1 pattern bootstrap-openbuilt already documented.
+  OQ-1 pattern bootstrap-openbuild already documented.
 - **NEW** `currentVersion` field on the `Application` schema (string,
   UUID-format, optional) — points at the most recent
   `ApplicationVersion` row, kept in sync by the same lifecycle action
   / listener.
-- **NEW** Draft-vs-published indicator in the OpenBuilt shell's
+- **NEW** Draft-vs-published indicator in the OpenBuild shell's
   Application list and `ApplicationEditor.vue` header.
 - **NEW** "Publish" action button in `ApplicationEditor.vue` that
   triggers the Application's `draft → published` lifecycle transition
@@ -96,7 +96,7 @@ already filed against OpenRegister.
 
 #### New Capabilities
 
-- `openbuilt-version-snapshots`: The OR-backed `ApplicationVersion`
+- `openbuild-version-snapshots`: The OR-backed `ApplicationVersion`
   schema, the declarative snapshot-on-publish action (or its
   ADR-031-exception listener), and the version-history /
   rollback / diff UI. Owns the "I can see what changed and undo a
@@ -104,17 +104,17 @@ already filed against OpenRegister.
 
 #### Modified Capabilities
 
-- `openbuilt-application-register` — ADDED Requirements: the
+- `openbuild-application-register` — ADDED Requirements: the
   `Application` schema gains a `currentVersion` field and the
   `draft → published` transition gains a snapshot action.
-- `openbuilt-runtime` — ADDED Requirements: the Application editor
+- `openbuild-runtime` — ADDED Requirements: the Application editor
   exposes a Publish action and a draft-vs-published badge; the
   shell mounts the new `VersionHistory.vue` panel and
   `ManifestDiff.vue` component.
 
 ## Impact
 
-- **New code** — `lib/Settings/openbuilt_register.json` (schema
+- **New code** — `lib/Settings/openbuild_register.json` (schema
   patch — declarative), `src/views/VersionHistory.vue`,
   `src/components/ManifestDiff.vue`, modifications to
   `src/views/ApplicationEditor.vue`, a thin diff endpoint method on
@@ -122,12 +122,12 @@ already filed against OpenRegister.
   If OR's `on_transition` action cannot create a sibling object,
   one additional file `lib/Listener/ApplicationVersionSnapshotListener.php`
   (ADR-031 exception, mirrors the BuiltAppRouteSyncListener
-  pattern from bootstrap-openbuilt).
+  pattern from bootstrap-openbuild).
 - **External dependency** — `jsdiff` (or equivalent client-side
   diff lib) added to `package.json` — chosen per design.md
   Decision 5. No server-side PHP diff lib introduced.
 - **OpenRegister** — adds one schema (`application-version`) and
-  one lifecycle action declaration to the existing OpenBuilt
+  one lifecycle action declaration to the existing OpenBuild
   register namespace.
 - **No breaking changes** — additive only. Existing Applications
   carry no `ApplicationVersion` rows until they next publish; the

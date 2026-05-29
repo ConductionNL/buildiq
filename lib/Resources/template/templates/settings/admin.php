@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuilt app-template admin settings view template.
+ * OpenBuild app-template admin settings view template.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.

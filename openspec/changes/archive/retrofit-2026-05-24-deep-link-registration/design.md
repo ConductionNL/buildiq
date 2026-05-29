@@ -7,15 +7,15 @@
 
 `lib/Listener/DeepLinkRegistrationListener.php` (and its companion
 wiring in `lib/AppInfo/Application.php::register`) implement
-OpenBuilt's hook into OpenRegister's unified-search deep-link surface.
+OpenBuild's hook into OpenRegister's unified-search deep-link surface.
 The 2026-05-24 coverage scan dropped these into Bucket 2b
-(`deep-link-registration`) because no existing openbuilt capability
+(`deep-link-registration`) because no existing openbuild capability
 spec names this listener or the event it consumes.
 
 ## Decisions
 
 - **New capability, not extend.** The closest existing spec is
-  `openbuilt-runtime`, but that's a runtime/serving capability — the
+  `openbuild-runtime`, but that's a runtime/serving capability — the
   listener is a search-integration capability, not a runtime mount.
   ADR-019 is the closest org-wide concept, but it does not specify
   per-app listener wiring. So this is a brand-new app-local capability.
@@ -32,13 +32,13 @@ spec names this listener or the event it consumes.
   rather than silently spec'ing the placeholder as production
   behaviour.
 - **No hard OR dependency.** The wiring is "if OR is installed and
-  dispatches the event, OpenBuilt responds". REQ-OBDL-001's scenario
+  dispatches the event, OpenBuild responds". REQ-OBDL-001's scenario
   pins this as an observable invariant — the app must not crash when
   OR is absent.
 
 ## Out of scope
 
-- Replacing the placeholder `example` schema with real OpenBuilt
+- Replacing the placeholder `example` schema with real OpenBuild
   schemas (`application`, `application-version`, `built-app-route`) —
   separate PR, will extend REQ-OBDL-002 with additional scenarios.
 - ADR-019 integration-registry surface — orthogonal.

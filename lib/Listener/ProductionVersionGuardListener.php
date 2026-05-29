@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuilt ProductionVersionGuardListener
+ * OpenBuild ProductionVersionGuardListener
  *
  * Listens for OpenRegister's `ObjectSavingEvent` on Application rows and
  * rejects saves whose `productionVersion` relation points at an
@@ -21,7 +21,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Listener
- * @package  OCA\OpenBuilt\Listener
+ * @package  OCA\OpenBuild\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,15 +31,15 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-31
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-32
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-32
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Listener;
+namespace OCA\OpenBuild\Listener;
 
-use OCA\OpenBuilt\Service\ApplicationVersionService;
+use OCA\OpenBuild\Service\ApplicationVersionService;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCP\EventDispatcher\Event;
@@ -79,8 +79,8 @@ class ProductionVersionGuardListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-31
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-32
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-32
      */
     public function handle(Event $event): void
     {
@@ -126,14 +126,14 @@ class ProductionVersionGuardListener implements IEventListener
                 $event->setErrors(
                         [
                             'status'  => 422,
-                            'code'    => 'openbuilt.production_version.back_reference_mismatch',
+                            'code'    => 'openbuild.production_version.back_reference_mismatch',
                             'message' => $e->getMessage(),
                         ]
                         );
             }
 
             $this->logger->info(
-                message: 'OpenBuilt: blocked Application save — productionVersion guard rejected the change.',
+                message: 'OpenBuild: blocked Application save — productionVersion guard rejected the change.',
                 context: [
                     'applicationUuid'   => $applicationUuid,
                     'productionVersion' => $proposedVersion,

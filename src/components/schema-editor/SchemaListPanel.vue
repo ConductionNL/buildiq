@@ -8,52 +8,52 @@
   - DeleteSchemaDialog modal (REQ-OBSD-008).
   -->
 <template>
-	<div class="openbuilt-schema-list">
-		<header class="openbuilt-schema-list__header">
-			<h2>{{ t('openbuilt', 'Schemas') }}</h2>
+	<div class="openbuild-schema-list">
+		<header class="openbuild-schema-list__header">
+			<h2>{{ t('openbuild', 'Schemas') }}</h2>
 			<NcButton type="primary" @click="addOpen = true">
 				<template #icon>
 					<PlusIcon :size="20" />
 				</template>
-				{{ t('openbuilt', 'Add schema') }}
+				{{ t('openbuild', 'Add schema') }}
 			</NcButton>
 		</header>
 
-		<div v-if="loading" class="openbuilt-schema-list__loading">
+		<div v-if="loading" class="openbuild-schema-list__loading">
 			<NcLoadingIcon :size="32" />
 		</div>
 
-		<div v-else-if="schemas.length === 0" class="openbuilt-schema-list__empty">
+		<div v-else-if="schemas.length === 0" class="openbuild-schema-list__empty">
 			<NcEmptyContent
-				:name="t('openbuilt', 'No schemas yet')"
-				:description="t('openbuilt', 'Add your first schema to start designing the data model for this app.')">
+				:name="t('openbuild', 'No schemas yet')"
+				:description="t('openbuild', 'Add your first schema to start designing the data model for this app.')">
 				<template #icon>
 					<DatabaseIcon :size="64" />
 				</template>
 				<template #action>
 					<NcButton type="primary" @click="addOpen = true">
-						{{ t('openbuilt', 'Add schema') }}
+						{{ t('openbuild', 'Add schema') }}
 					</NcButton>
 				</template>
 			</NcEmptyContent>
 		</div>
 
-		<ul v-else class="openbuilt-schema-list__rows">
+		<ul v-else class="openbuild-schema-list__rows">
 			<li
 				v-for="schema in schemas"
 				:key="getSlug(schema)"
-				class="openbuilt-schema-list__row">
+				class="openbuild-schema-list__row">
 				<button
 					type="button"
-					class="openbuilt-schema-list__row-main"
+					class="openbuild-schema-list__row-main"
 					@click="onOpen(schema)">
-					<span class="openbuilt-schema-list__row-title">
+					<span class="openbuild-schema-list__row-title">
 						{{ schema.title || getSlug(schema) }}
 					</span>
-					<span class="openbuilt-schema-list__row-meta">
+					<span class="openbuild-schema-list__row-meta">
 						<code>{{ getSlug(schema) }}</code>
-						<span>{{ t('openbuilt', 'v{version}', { version: schema.version || '—' }) }}</span>
-						<span>{{ n('openbuilt', '{n} property', '{n} properties', propertyCount(schema), { n: propertyCount(schema) }) }}</span>
+						<span>{{ t('openbuild', 'v{version}', { version: schema.version || '—' }) }}</span>
+						<span>{{ n('openbuild', '{n} property', '{n} properties', propertyCount(schema), { n: propertyCount(schema) }) }}</span>
 						<span>{{ lifecycleLabel(schema) }}</span>
 					</span>
 				</button>
@@ -62,13 +62,13 @@
 						<template #icon>
 							<PencilIcon :size="20" />
 						</template>
-						{{ t('openbuilt', 'Open') }}
+						{{ t('openbuild', 'Open') }}
 					</NcActionButton>
 					<NcActionButton @click="requestDelete(schema)">
 						<template #icon>
 							<DeleteIcon :size="20" />
 						</template>
-						{{ t('openbuilt', 'Delete') }}
+						{{ t('openbuild', 'Delete') }}
 					</NcActionButton>
 				</NcActions>
 			</li>
@@ -157,9 +157,9 @@ export default {
 		lifecycleLabel(schema) {
 			const lifecycle = schema && schema['x-openregister-lifecycle']
 			if (!lifecycle || !Array.isArray(lifecycle.states) || lifecycle.states.length === 0) {
-				return this.t('openbuilt', 'No lifecycle')
+				return this.t('openbuild', 'No lifecycle')
 			}
-			return this.n('openbuilt', '{n} lifecycle state', '{n} lifecycle states', lifecycle.states.length, { n: lifecycle.states.length })
+			return this.n('openbuild', '{n} lifecycle state', '{n} lifecycle states', lifecycle.states.length, { n: lifecycle.states.length })
 		},
 		/**
 		 * Emit an open event for the activated schema row.
@@ -189,9 +189,9 @@ export default {
 				return result
 			} catch (e) {
 				if (e && e.status === 409) {
-					this.addSlugError = this.t('openbuilt', 'A schema with this slug already exists in this app.')
+					this.addSlugError = this.t('openbuild', 'A schema with this slug already exists in this app.')
 				} else {
-					this.addSlugError = (e && e.message) || this.t('openbuilt', 'Failed to add schema.')
+					this.addSlugError = (e && e.message) || this.t('openbuild', 'Failed to add schema.')
 				}
 			} finally {
 				this.addSubmitting = false
@@ -234,33 +234,33 @@ export default {
 </script>
 
 <style scoped>
-.openbuilt-schema-list {
+.openbuild-schema-list {
 	display: flex;
 	flex-direction: column;
 	padding: 16px;
 	gap: 16px;
 }
 
-.openbuilt-schema-list__header {
+.openbuild-schema-list__header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
 
-.openbuilt-schema-list__header h2 {
+.openbuild-schema-list__header h2 {
 	margin: 0;
 	font-size: 22px;
 	font-weight: 600;
 }
 
-.openbuilt-schema-list__loading,
-.openbuilt-schema-list__empty {
+.openbuild-schema-list__loading,
+.openbuild-schema-list__empty {
 	display: flex;
 	justify-content: center;
 	padding: 32px 0;
 }
 
-.openbuilt-schema-list__rows {
+.openbuild-schema-list__rows {
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -269,7 +269,7 @@ export default {
 	gap: 4px;
 }
 
-.openbuilt-schema-list__row {
+.openbuild-schema-list__row {
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -279,7 +279,7 @@ export default {
 	background: var(--color-main-background);
 }
 
-.openbuilt-schema-list__row-main {
+.openbuild-schema-list__row-main {
 	flex: 1 1 auto;
 	display: flex;
 	flex-direction: column;
@@ -294,23 +294,23 @@ export default {
 	font: inherit;
 }
 
-.openbuilt-schema-list__row-main:hover .openbuilt-schema-list__row-title {
+.openbuild-schema-list__row-main:hover .openbuild-schema-list__row-title {
 	color: var(--color-primary-element);
 }
 
-.openbuilt-schema-list__row-title {
+.openbuild-schema-list__row-title {
 	font-size: 15px;
 	font-weight: 600;
 }
 
-.openbuilt-schema-list__row-meta {
+.openbuild-schema-list__row-meta {
 	display: flex;
 	gap: 12px;
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
 }
 
-.openbuilt-schema-list__row-meta code {
+.openbuild-schema-list__row-meta code {
 	font-family: monospace;
 }
 </style>

@@ -2,11 +2,11 @@
 kind: config
 ---
 
-# OpenBuilt — schema-declared notifications
+# OpenBuild — schema-declared notifications
 
 ## Why
 
-OpenBuilt is a low-code app builder for citizen developers. The two
+OpenBuild is a low-code app builder for citizen developers. The two
 moments a builder most needs to hear about are **export jobs finishing**
 (success or failure — the export pipeline runs async and can fail on
 GitHub auth, validation, or packaging) and **version lifecycle changes**
@@ -17,17 +17,17 @@ The OpenRegister notification engine (shipped in the `openregister`
 change `notification-schema-rules-and-userconfig-prefs`, archived
 2026-05-26) consumes a top-level `x-openregister-notifications` key on a
 schema in the register JSON and dispatches `nc-notification` (and other)
-channels on the configured trigger. Declaring these rules on OpenBuilt's
+channels on the configured trigger. Declaring these rules on OpenBuild's
 `exportJob` and `ApplicationVersion` schemas gives builders timely
 feedback with no per-app notification code.
 
 This is a configuration change: it adds annotations to
-`lib/Settings/openbuilt_register.json`. No PHP/Vue changes.
+`lib/Settings/openbuild_register.json`. No PHP/Vue changes.
 
 ## What Changes
 
 Add `x-openregister-notifications` to two schemas in
-`lib/Settings/openbuilt_register.json`.
+`lib/Settings/openbuild_register.json`.
 
 ### `exportJob` — export pipeline outcome
 
@@ -106,7 +106,7 @@ Recipients use `object-acl` (no structured owner field on the schema).
 
 ## Impact
 
-- Affected file: `lib/Settings/openbuilt_register.json` (two schemas
+- Affected file: `lib/Settings/openbuild_register.json` (two schemas
   gain a `x-openregister-notifications` key).
 - No PHP, Vue, route, or migration changes.
 - Runtime dependency on the OpenRegister notification engine
@@ -118,7 +118,7 @@ Recipients use `object-acl` (no structured owner field on the schema).
 
 - **Export pipeline must write transition actions.** The `transition`
   trigger fires on a named lifecycle action, not on a raw `status`
-  field write. The OpenBuilt export pipeline currently sets
+  field write. The OpenBuild export pipeline currently sets
   `exportJob.status` directly; for `export-succeeded` / `export-failed`
   to fire, the pipeline must drive status through OpenRegister
   transition actions named `succeeded` and `failed` (and the

@@ -4,7 +4,7 @@
 
 ### Requirement: Export job outcome notifications
 
-The OpenBuilt `exportJob` schema SHALL declare `x-openregister-notifications`
+The OpenBuild `exportJob` schema SHALL declare `x-openregister-notifications`
 rules that notify the job's manage-ACL holders when an export job
 transitions to `succeeded` or `failed`, with bilingual (nl/en) subjects.
 
@@ -20,7 +20,7 @@ transitions to `succeeded` or `failed`, with bilingual (nl/en) subjects.
 
 ### Requirement: Application version lifecycle notifications
 
-The OpenBuilt `ApplicationVersion` schema SHALL declare
+The OpenBuild `ApplicationVersion` schema SHALL declare
 `x-openregister-notifications` rules that notify the version's manage-ACL
 holders when it transitions to `published` or `archived`, with bilingual
 (nl/en) subjects.

@@ -4,7 +4,7 @@
  *
  * Vitest unit tests for src/dialogs/CreateApplicationWizard/Step2Preset.vue.
  *
- * Covers spec openbuilt-app-creation-wizard task 6.3:
+ * Covers spec openbuild-app-creation-wizard task 6.3:
  *   - renders 4 preset cards
  *   - clicking single emits preset + 1-item versions array
  *   - clicking dev-prod emits preset + 2-item versions array

@@ -8,50 +8,50 @@
   - field is a typed input.
   -->
 <template>
-	<section class="openbuilt-lifecycle-editor">
-		<header class="openbuilt-lifecycle-editor__header">
-			<h3>{{ t('openbuilt', 'Lifecycle') }}</h3>
-			<p class="openbuilt-lifecycle-editor__hint">
-				{{ t('openbuilt', 'Declare states and transitions. Every action is a typed declarative record per ADR-031 — no free-text code.') }}
+	<section class="openbuild-lifecycle-editor">
+		<header class="openbuild-lifecycle-editor__header">
+			<h3>{{ t('openbuild', 'Lifecycle') }}</h3>
+			<p class="openbuild-lifecycle-editor__hint">
+				{{ t('openbuild', 'Declare states and transitions. Every action is a typed declarative record per ADR-031 — no free-text code.') }}
 			</p>
 		</header>
 
 		<!-- States -->
-		<div class="openbuilt-lifecycle-editor__section">
-			<div class="openbuilt-lifecycle-editor__section-header">
-				<h4>{{ t('openbuilt', 'States') }}</h4>
+		<div class="openbuild-lifecycle-editor__section">
+			<div class="openbuild-lifecycle-editor__section-header">
+				<h4>{{ t('openbuild', 'States') }}</h4>
 				<NcButton @click="addState">
 					<template #icon>
 						<PlusIcon :size="20" />
 					</template>
-					{{ t('openbuilt', 'Add state') }}
+					{{ t('openbuild', 'Add state') }}
 				</NcButton>
 			</div>
-			<p v-if="states.length === 0" class="openbuilt-lifecycle-editor__empty">
-				{{ t('openbuilt', 'No states yet.') }}
+			<p v-if="states.length === 0" class="openbuild-lifecycle-editor__empty">
+				{{ t('openbuild', 'No states yet.') }}
 			</p>
-			<ul v-else class="openbuilt-lifecycle-editor__list">
+			<ul v-else class="openbuild-lifecycle-editor__list">
 				<li
 					v-for="(state, sIndex) in states"
 					:key="state._key"
-					class="openbuilt-lifecycle-editor__state-row">
+					class="openbuild-lifecycle-editor__state-row">
 					<NcCheckboxRadioSwitch
 						type="radio"
 						:checked="state.initial"
 						:value="state._key"
 						name="lifecycle-initial-state"
 						@update:checked="setInitial(sIndex)">
-						{{ t('openbuilt', 'Initial') }}
+						{{ t('openbuild', 'Initial') }}
 					</NcCheckboxRadioSwitch>
 					<NcTextField
 						:value="state.name"
-						:label="t('openbuilt', 'State slug')"
+						:label="t('openbuild', 'State slug')"
 						:error="!stateNameValid(state, sIndex)"
-						:helper-text="!stateNameValid(state, sIndex) ? t('openbuilt', 'State slug must be kebab-case and unique.') : ''"
+						:helper-text="!stateNameValid(state, sIndex) ? t('openbuild', 'State slug must be kebab-case and unique.') : ''"
 						@update:value="updateState(sIndex, 'name', $event)" />
 					<NcTextField
 						:value="state.label"
-						:label="t('openbuilt', 'Label')"
+						:label="t('openbuild', 'Label')"
 						@update:value="updateState(sIndex, 'label', $event)" />
 					<NcButton type="error" @click="removeState(sIndex)">
 						<template #icon>
@@ -60,33 +60,33 @@
 					</NcButton>
 				</li>
 			</ul>
-			<p v-if="states.length > 0 && initialCount !== 1" class="openbuilt-lifecycle-editor__error">
-				{{ t('openbuilt', 'Exactly one initial state is required.') }}
+			<p v-if="states.length > 0 && initialCount !== 1" class="openbuild-lifecycle-editor__error">
+				{{ t('openbuild', 'Exactly one initial state is required.') }}
 			</p>
 		</div>
 
 		<!-- Transitions -->
-		<div class="openbuilt-lifecycle-editor__section">
-			<div class="openbuilt-lifecycle-editor__section-header">
-				<h4>{{ t('openbuilt', 'Transitions') }}</h4>
+		<div class="openbuild-lifecycle-editor__section">
+			<div class="openbuild-lifecycle-editor__section-header">
+				<h4>{{ t('openbuild', 'Transitions') }}</h4>
 				<NcButton :disabled="states.length < 2" @click="addTransition">
 					<template #icon>
 						<PlusIcon :size="20" />
 					</template>
-					{{ t('openbuilt', 'Add transition') }}
+					{{ t('openbuild', 'Add transition') }}
 				</NcButton>
 			</div>
-			<p v-if="transitions.length === 0" class="openbuilt-lifecycle-editor__empty">
-				{{ t('openbuilt', 'No transitions yet.') }}
+			<p v-if="transitions.length === 0" class="openbuild-lifecycle-editor__empty">
+				{{ t('openbuild', 'No transitions yet.') }}
 			</p>
-			<ul v-else class="openbuilt-lifecycle-editor__list">
+			<ul v-else class="openbuild-lifecycle-editor__list">
 				<li
 					v-for="(transition, tIndex) in transitions"
 					:key="transition._key"
-					class="openbuilt-lifecycle-editor__transition-row">
-					<div class="openbuilt-lifecycle-editor__transition-grid">
+					class="openbuild-lifecycle-editor__transition-row">
+					<div class="openbuild-lifecycle-editor__transition-grid">
 						<NcSelect
-							:input-label="t('openbuilt', 'From')"
+							:input-label="t('openbuild', 'From')"
 							:value="stateOption(transition.from)"
 							:options="stateOptions"
 							:clearable="false"
@@ -94,7 +94,7 @@
 							track-by="value"
 							@input="updateTransition(tIndex, 'from', $event ? $event.value : '')" />
 						<NcSelect
-							:input-label="t('openbuilt', 'To')"
+							:input-label="t('openbuild', 'To')"
 							:value="stateOption(transition.to)"
 							:options="stateOptions"
 							:clearable="false"
@@ -103,7 +103,7 @@
 							@input="updateTransition(tIndex, 'to', $event ? $event.value : '')" />
 						<NcTextField
 							:value="transition.label || ''"
-							:label="t('openbuilt', 'Label (optional)')"
+							:label="t('openbuild', 'Label (optional)')"
 							@update:value="updateTransition(tIndex, 'label', $event)" />
 						<NcButton type="error" @click="removeTransition(tIndex)">
 							<template #icon>
@@ -113,26 +113,26 @@
 					</div>
 
 					<!-- Actions for this transition -->
-					<div class="openbuilt-lifecycle-editor__actions-block">
-						<div class="openbuilt-lifecycle-editor__section-header">
-							<h5>{{ t('openbuilt', 'On-transition actions') }}</h5>
+					<div class="openbuild-lifecycle-editor__actions-block">
+						<div class="openbuild-lifecycle-editor__section-header">
+							<h5>{{ t('openbuild', 'On-transition actions') }}</h5>
 							<NcButton @click="addAction(tIndex)">
 								<template #icon>
 									<PlusIcon :size="18" />
 								</template>
-								{{ t('openbuilt', 'Add action') }}
+								{{ t('openbuild', 'Add action') }}
 							</NcButton>
 						</div>
-						<p v-if="!transition.actions || transition.actions.length === 0" class="openbuilt-lifecycle-editor__empty">
-							{{ t('openbuilt', 'No actions on this transition.') }}
+						<p v-if="!transition.actions || transition.actions.length === 0" class="openbuild-lifecycle-editor__empty">
+							{{ t('openbuild', 'No actions on this transition.') }}
 						</p>
-						<ul v-else class="openbuilt-lifecycle-editor__list">
+						<ul v-else class="openbuild-lifecycle-editor__list">
 							<li
 								v-for="(action, aIndex) in transition.actions"
 								:key="action._key"
-								class="openbuilt-lifecycle-editor__action-row">
+								class="openbuild-lifecycle-editor__action-row">
 								<NcSelect
-									:input-label="t('openbuilt', 'Action type')"
+									:input-label="t('openbuild', 'Action type')"
 									:value="actionOption(action.type)"
 									:options="actionOptions"
 									:clearable="false"
@@ -141,8 +141,8 @@
 									@input="updateAction(tIndex, aIndex, 'type', $event ? $event.value : 'audit-event-emit')" />
 								<NcTextField
 									:value="action.payload || ''"
-									:label="t('openbuilt', 'Payload key (declarative)')"
-									:placeholder="t('openbuilt', 'e.g. event name, template slug')"
+									:label="t('openbuild', 'Payload key (declarative)')"
+									:placeholder="t('openbuild', 'e.g. event name, template slug')"
 									@update:value="updateAction(tIndex, aIndex, 'payload', $event)" />
 								<NcButton type="error" @click="removeAction(tIndex, aIndex)">
 									<template #icon>
@@ -225,7 +225,7 @@ export default {
 		actionOptions() {
 			return ACTION_TYPES.map((value) => ({
 				value,
-				label: this.t('openbuilt', value),
+				label: this.t('openbuild', value),
 			}))
 		},
 	},
@@ -517,46 +517,46 @@ export function editorToLifecycle(states, transitions) {
 </script>
 
 <style scoped>
-.openbuilt-lifecycle-editor {
+.openbuild-lifecycle-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
 }
 
-.openbuilt-lifecycle-editor__header h3 {
+.openbuild-lifecycle-editor__header h3 {
 	margin: 0 0 4px;
 	font-size: 18px;
 	font-weight: 600;
 }
 
-.openbuilt-lifecycle-editor__hint {
+.openbuild-lifecycle-editor__hint {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 }
 
-.openbuilt-lifecycle-editor__section {
+.openbuild-lifecycle-editor__section {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
 	padding: 12px;
 	background: var(--color-main-background);
 }
 
-.openbuilt-lifecycle-editor__section-header {
+.openbuild-lifecycle-editor__section-header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	margin-bottom: 8px;
 }
 
-.openbuilt-lifecycle-editor__section-header h4,
-.openbuilt-lifecycle-editor__section-header h5 {
+.openbuild-lifecycle-editor__section-header h4,
+.openbuild-lifecycle-editor__section-header h5 {
 	margin: 0;
 	font-size: 15px;
 	font-weight: 600;
 }
 
-.openbuilt-lifecycle-editor__list {
+.openbuild-lifecycle-editor__list {
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -565,15 +565,15 @@ export function editorToLifecycle(states, transitions) {
 	gap: 8px;
 }
 
-.openbuilt-lifecycle-editor__state-row,
-.openbuilt-lifecycle-editor__action-row {
+.openbuild-lifecycle-editor__state-row,
+.openbuild-lifecycle-editor__action-row {
 	display: grid;
 	grid-template-columns: auto 1fr 1fr auto;
 	gap: 8px;
 	align-items: center;
 }
 
-.openbuilt-lifecycle-editor__transition-row {
+.openbuild-lifecycle-editor__transition-row {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
@@ -582,23 +582,23 @@ export function editorToLifecycle(states, transitions) {
 	border-radius: var(--border-radius);
 }
 
-.openbuilt-lifecycle-editor__transition-grid {
+.openbuild-lifecycle-editor__transition-grid {
 	display: grid;
 	grid-template-columns: 1fr 1fr 1fr auto;
 	gap: 8px;
 }
 
-.openbuilt-lifecycle-editor__actions-block {
+.openbuild-lifecycle-editor__actions-block {
 	padding-left: 12px;
 	border-left: 2px solid var(--color-border);
 }
 
-.openbuilt-lifecycle-editor__empty {
+.openbuild-lifecycle-editor__empty {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 }
 
-.openbuilt-lifecycle-editor__error {
+.openbuild-lifecycle-editor__error {
 	margin: 4px 0 0;
 	color: var(--color-error);
 	font-size: 13px;

@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "openbuilt-version-promotion-collection",
-		"name": "OpenBuilt — Version Promotion (spec D)",
-		"description": "Newman integration suite for the openbuilt-version-promotion OpenSpec change\n(spec D, REQ-OBVP-001 – REQ-OBVP-011). Exercises the promotion endpoint:\n\n  POST /api/applications/{appUuid}/versions/{versionUuid}/promote\n\nCovers spec D tasks 8.1–8.8:\n  8.2  Happy path: start-with-source-data\n  8.3  422 no_promote_target\n  8.4  400 invalid_strategy\n  8.5  409 lock-contention (TODO — skip until OR lock API stable)\n  8.6  403 insufficient_permission (viewer + non-member)\n  8.7  500 on-failure / target archived (TODO — requires bad schema staging)\n  8.8  CI run\n\nNOTE: requests 8.5 and 8.7 are written as skippable (pm.test.skip) because\nthey require live environment setup that cannot be fully automated in a\nstateless Newman run against a fresh container.",
+		"_postman_id": "openbuild-version-promotion-collection",
+		"name": "OpenBuild — Version Promotion (spec D)",
+		"description": "Newman integration suite for the openbuild-version-promotion OpenSpec change\n(spec D, REQ-OBVP-001 – REQ-OBVP-011). Exercises the promotion endpoint:\n\n  POST /api/applications/{appUuid}/versions/{versionUuid}/promote\n\nCovers spec D tasks 8.1–8.8:\n  8.2  Happy path: start-with-source-data\n  8.3  422 no_promote_target\n  8.4  400 invalid_strategy\n  8.5  409 lock-contention (TODO — skip until OR lock API stable)\n  8.6  403 insufficient_permission (viewer + non-member)\n  8.7  500 on-failure / target archived (TODO — requires bad schema staging)\n  8.8  CI run\n\nNOTE: requests 8.5 and 8.7 are written as skippable (pm.test.skip) because\nthey require live environment setup that cannot be fully automated in a\nstateless Newman run against a fresh container.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -38,7 +38,7 @@
 							"mode": "raw",
 							"raw": "{ \"strategy\": \"start-with-source-data\" }"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/promote"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/promote"
 					},
 					"event": [
 						{
@@ -74,7 +74,7 @@
 							"mode": "raw",
 							"raw": "{ \"strategy\": \"unknown-mode\" }"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/promote"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/promote"
 					},
 					"event": [
 						{
@@ -110,7 +110,7 @@
 							"mode": "raw",
 							"raw": "{ \"strategy\": \"start-with-source-data\" }"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_uuid}}/versions/{{source_uuid}}/promote"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_uuid}}/versions/{{source_uuid}}/promote"
 					},
 					"event": [
 						{
@@ -150,7 +150,7 @@
 							"mode": "raw",
 							"raw": "{ \"strategy\": \"start-with-source-data\" }"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/promote"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/promote"
 					},
 					"event": [
 						{
@@ -187,7 +187,7 @@
 							"mode": "raw",
 							"raw": "{ \"strategy\": \"start-with-source-data\" }"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_uuid}}/versions/{{source_uuid}}/promote"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_uuid}}/versions/{{source_uuid}}/promote"
 					},
 					"event": [
 						{
@@ -223,7 +223,7 @@
 							"mode": "raw",
 							"raw": "{ \"strategy\": \"start-with-source-data\" }"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_uuid}}/versions/{{source_uuid}}/promote"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_uuid}}/versions/{{source_uuid}}/promote"
 					},
 					"event": [
 						{
@@ -262,7 +262,7 @@
 							"mode": "raw",
 							"raw": "{ \"strategy\": \"start-with-source-data\" }"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{app_uuid}}/versions/{{source_uuid}}/promote"
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_uuid}}/versions/{{source_uuid}}/promote"
 					},
 					"event": [
 						{

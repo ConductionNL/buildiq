@@ -1,6 +1,6 @@
-## 1. Schema split in lib/Settings/openbuilt_register.json
+## 1. Schema split in lib/Settings/openbuild_register.json
 
-- [x] 1.1 Open `lib/Settings/openbuilt_register.json` and locate the existing
+- [x] 1.1 Open `lib/Settings/openbuild_register.json` and locate the existing
       `Application` schema entry under `components.schemas`.
 - [x] 1.2 Remove the `manifest`, `version`, `status`, and `currentVersion` properties
       from `Application`. Remove `manifest`, `version`, `status` from `required`.
@@ -20,7 +20,7 @@
       48), `manifest` (object, required, JSON-schema-ref to
       `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json` v1.4.0+),
       `register` (string, required, pattern matching
-      `^openbuilt-[a-z0-9-]+-[a-z0-9-]+$`), `semver` (string, required, semver
+      `^openbuild-[a-z0-9-]+-[a-z0-9-]+$`), `semver` (string, required, semver
       pattern, default `0.1.0`), `status` (string, enum
       `draft | published | archived`, default `draft`), `application` (relation
       → Application, required), `promotesTo` (relation → ApplicationVersion,
@@ -37,7 +37,7 @@
 - [x] 1.9 Bump the schema file's `info.version` (e.g. `0.2.0 → 0.3.0`) to
       reflect the breaking shape change.
 - [x] 1.10 Validate the schema file is well-formed JSON
-      (`php -r "json_decode(file_get_contents('lib/Settings/openbuilt_register.json'), false, 512, JSON_THROW_ON_ERROR);"`).
+      (`php -r "json_decode(file_get_contents('lib/Settings/openbuild_register.json'), false, 512, JSON_THROW_ON_ERROR);"`).
 
 ## 2. Retire the ApplicationVersionSnapshotListener
 
@@ -126,21 +126,21 @@
       `\\OCP\\Migration\\IRepairStep`. Constructor takes OR's `ObjectService` /
       `RegisterService` and `LoggerInterface`.
 - [x] 5.2 Implement `getName(): string` returning a clear name (e.g.
-      `"Migrate OpenBuilt to versioned app model (DESTRUCTIVE)"`).
-- [x] 5.3 Implement the short-circuit detection in `run()`: query the `openbuilt`
+      `"Migrate OpenBuild to versioned app model (DESTRUCTIVE)"`).
+- [x] 5.3 Implement the short-circuit detection in `run()`: query the `openbuild`
       register schemas; if `applicationVersion` schema exists OR no Application
       rows carry a `currentVersion` field, log
       `Migrated-to-versioned-model: schema already in versioned shape, skipping`
       and return (spec REQ-OBGFM-002).
 - [x] 5.4 Implement the enumeration: fetch every Application row in the
-      `openbuilt` register via `ObjectService::findAll('openbuilt/application')`.
-- [x] 5.5 For each row: derive the per-app register name (`openbuilt-{slug}`);
+      `openbuild` register via `ObjectService::findAll('openbuild/application')`.
+- [x] 5.5 For each row: derive the per-app register name (`openbuild-{slug}`);
       call OR's register-delete API; on failure log the error with the slug and
       continue to the next row WITHOUT deleting the Application (spec
       REQ-OBGFM-004). On success, delete the Application row.
 - [x] 5.6 On every successful row deletion, emit
       `$output->info("Migrated-to-versioned-model: dropped Application '<slug>'
-      and register 'openbuilt-<slug>'")` (spec REQ-OBGFM-003).
+      and register 'openbuild-<slug>'")` (spec REQ-OBGFM-003).
 - [x] 5.7 Top-of-file docblock with `@destructive` marker and a SAFETY note:
       "This step deletes every pre-migration Application row and its per-app
       register. ADR-002 records the explicit decision to accept this data loss;
@@ -158,7 +158,7 @@
 
 ## 6. Lifecycle-action relocation (BuiltAppRoute upsert)
 
-- [x] 6.1 In `lib/Settings/openbuilt_register.json`, on
+- [x] 6.1 In `lib/Settings/openbuild_register.json`, on
       `ApplicationVersion.x-openregister-lifecycle.transitions[draft→published]
       .actions`, declare an upsert of `BuiltAppRoute` keyed by the parent
       Application's `slug` (resolved via `application` relation) with
@@ -184,7 +184,7 @@
       `currentVersion` (it likely does — see spec REMOVED REQ-OBA-006).
 - [x] 8.2 **Decision**: delete the file entirely. Hello-world seeding under the
       new model is owned by the creation-wizard spec
-      (`openbuilt-app-creation-wizard`); leaving a stale seed step here would
+      (`openbuild-app-creation-wizard`); leaving a stale seed step here would
       conflict with the green-field migration on every upgrade.
 - [x] 8.3 Remove the `<post-migration>` registration of `SeedHelloWorld` from
       `appinfo/info.xml`.
@@ -220,7 +220,7 @@
       (`<v1>.promotesTo = <v2>`); attempt a cycle (`<v2>.promotesTo = <v1>`) and
       confirm 422.
       (Contract covered by `ApplicationVersion` schema's `x-openregister-validation`
-      cycle assertion in `lib/Settings/openbuilt_register.json` + the
+      cycle assertion in `lib/Settings/openbuild_register.json` + the
       `LifecycleAnnotationValidator` strict-validate test; live walkthrough
       env-deferred per 9.2 note.)
 - [x] 9.6 Set `Application.productionVersion = <v1>` (where `<v1>.application` is
@@ -233,13 +233,13 @@
       (Verified live: `SELECT DISTINCT slug FROM oc_openregister_table_10_30;` returns
       `hello-world`; the row was upserted by the `x-openregister-lifecycle.publish`
       transition's `on_transition.upsert_relation` declarative action — see
-      `lib/Settings/openbuilt_register.json` `ApplicationVersion` schema.)
+      `lib/Settings/openbuild_register.json` `ApplicationVersion` schema.)
 - [x] 9.8 Attempt to DELETE `<v1>` (which is `productionVersion`); confirm 422.
       (Contract covered by `ApplicationVersionsController::destroy` unit tests +
       the production-version-guard reachability assertion; live walkthrough
       env-deferred per 9.2 note.)
 - [x] 9.9 DELETE `<v2>` with `?strategy=delete-now`; confirm both the version row
-      and the per-version register `openbuilt-<slug>-<v2-slug>` are gone.
+      and the per-version register `openbuild-<slug>-<v2-slug>` are gone.
       (Contract covered by `ApplicationVersionsController::destroy` strategy-switch
       tests + the `MigrateToVersionedModel::migrateOne` register-delete behaviour
       tests; live walkthrough env-deferred per 9.2 note.)
@@ -255,7 +255,7 @@
       finding (no pre-existing issues left unaddressed — memory rule
       `fix-all-issues-encountered`).
 - [x] 10.2 Run the full PHPUnit suite (`composer test`); confirm all pass.
-- [x] 10.3 Re-run `openspec validate openbuilt-versioning-model --strict`;
+- [x] 10.3 Re-run `openspec validate openbuild-versioning-model --strict`;
       confirm clean.
 - [x] 10.4 Open PR against `development` (memory rule
       `feature-branches-from-dev`); reference ADR-002, this change id, and the

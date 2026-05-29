@@ -6,32 +6,32 @@
   - namespace schemas (no free-text slug); cardinality is a fixed enum.
   -->
 <template>
-	<section class="openbuilt-relation-editor">
-		<header class="openbuilt-relation-editor__header">
-			<h3>{{ t('openbuilt', 'Relations') }}</h3>
+	<section class="openbuild-relation-editor">
+		<header class="openbuild-relation-editor__header">
+			<h3>{{ t('openbuild', 'Relations') }}</h3>
 			<NcButton @click="addRelation">
 				<template #icon>
 					<PlusIcon :size="20" />
 				</template>
-				{{ t('openbuilt', 'Add relation') }}
+				{{ t('openbuild', 'Add relation') }}
 			</NcButton>
 		</header>
 
-		<p v-if="relations.length === 0" class="openbuilt-relation-editor__empty">
-			{{ t('openbuilt', 'No relations yet.') }}
+		<p v-if="relations.length === 0" class="openbuild-relation-editor__empty">
+			{{ t('openbuild', 'No relations yet.') }}
 		</p>
 
-		<ul v-else class="openbuilt-relation-editor__rows">
+		<ul v-else class="openbuild-relation-editor__rows">
 			<li
 				v-for="(relation, index) in relations"
 				:key="relation._key"
-				class="openbuilt-relation-editor__row">
+				class="openbuild-relation-editor__row">
 				<NcTextField
 					:value="relation.name"
-					:label="t('openbuilt', 'Relation name')"
+					:label="t('openbuild', 'Relation name')"
 					@update:value="updateRelation(index, 'name', $event)" />
 				<NcSelect
-					:input-label="t('openbuilt', 'Target schema')"
+					:input-label="t('openbuild', 'Target schema')"
 					:value="schemaOption(relation.target)"
 					:options="schemaOptions"
 					:clearable="false"
@@ -39,7 +39,7 @@
 					track-by="value"
 					@input="updateRelation(index, 'target', $event ? $event.value : '')" />
 				<NcSelect
-					:input-label="t('openbuilt', 'Cardinality')"
+					:input-label="t('openbuild', 'Cardinality')"
 					:value="cardinalityOption(relation.cardinality)"
 					:options="cardinalityOptions"
 					:clearable="false"
@@ -48,7 +48,7 @@
 					@input="updateRelation(index, 'cardinality', $event ? $event.value : 'one')" />
 				<NcTextField
 					:value="relation.inverseOf || ''"
-					:label="t('openbuilt', 'Inverse-of (optional)')"
+					:label="t('openbuild', 'Inverse-of (optional)')"
 					@update:value="updateRelation(index, 'inverseOf', $event)" />
 				<NcButton type="error" @click="removeRelation(index)">
 					<template #icon>
@@ -101,8 +101,8 @@ export default {
 			return CARDINALITIES.map((value) => ({
 				value,
 				label: value === 'one'
-					? this.t('openbuilt', 'One')
-					: this.t('openbuilt', 'Many'),
+					? this.t('openbuild', 'One')
+					: this.t('openbuild', 'Many'),
 			}))
 		},
 	},
@@ -225,30 +225,30 @@ export function editorToRelations(relations) {
 </script>
 
 <style scoped>
-.openbuilt-relation-editor {
+.openbuild-relation-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
 
-.openbuilt-relation-editor__header {
+.openbuild-relation-editor__header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
 
-.openbuilt-relation-editor__header h3 {
+.openbuild-relation-editor__header h3 {
 	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
 }
 
-.openbuilt-relation-editor__empty {
+.openbuild-relation-editor__empty {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 }
 
-.openbuilt-relation-editor__rows {
+.openbuild-relation-editor__rows {
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -257,7 +257,7 @@ export function editorToRelations(relations) {
 	gap: 8px;
 }
 
-.openbuilt-relation-editor__row {
+.openbuild-relation-editor__row {
 	display: grid;
 	grid-template-columns: 1fr 1fr 1fr 1fr auto;
 	gap: 8px;

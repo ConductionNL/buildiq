@@ -1,9 +1,9 @@
 ---
 sidebar_position: 1
-description: Get started with OpenBuilt, the no-code app builder inside Nextcloud. Compose apps from OpenRegister schemas, OpenConnector flows, and Pipelinq.
+description: Get started with OpenBuild, the no-code app builder inside Nextcloud. Compose apps from OpenRegister schemas, OpenConnector flows, and Pipelinq.
 ---
 
-# OpenBuilt
+# OpenBuild
 
 Citizen-developer app builder for Nextcloud. Compose a working app from typed
 registers, connectors, workflows, and document templates — design schemas and
@@ -27,11 +27,11 @@ export it. No code, no second platform.
 
 ## Getting started
 
-Install OpenBuilt from the Nextcloud app store or enable it in your Nextcloud
+Install OpenBuild from the Nextcloud app store or enable it in your Nextcloud
 admin settings. Then open the app, pick a template, and start composing.
 
 For the step-by-step walkthroughs, see the **Tutorials** in the sidebar — the
 **User guide** covers building an app, the **Admin guide** covers RBAC,
-the template catalogue, and OpenBuilt settings. The `integrator-guide`,
-`openbuilt-rbac`, and `openbuilt-runtime` reference pages cover the deeper
+the template catalogue, and OpenBuild settings. The `integrator-guide`,
+`openbuild-rbac`, and `openbuild-runtime` reference pages cover the deeper
 mechanics.

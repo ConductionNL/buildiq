@@ -2,8 +2,8 @@
 
 The Application detail page at `/applications/:objectId` is today rendered by a
 generic `CnDetailPage` that just shows the raw record as a data widget. With the
-versioning chain (`openbuilt-versioning-model`), the `?_version=` routing contract
-(`openbuilt-version-routing`), and promotion (`openbuilt-version-promotion`) all in
+versioning chain (`openbuild-versioning-model`), the `?_version=` routing contract
+(`openbuild-version-routing`), and promotion (`openbuild-version-promotion`) all in
 place, the page becomes the natural maintainer cockpit — but only if the main area
 renders that information. This spec swaps the generic main area for a purpose-built
 dashboard composed of a hero strip, version pill tabs, a window toggle, a KPI grid,
@@ -34,7 +34,7 @@ aggregations that fan across schemas are imperative work, not schema-declarative
 - Ship a single backend endpoint
   `GET /api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d`
   returning `{kpis, activity}` with the four KPIs and the chart payload. Auth gate
-  mirrors `openbuilt-version-routing` (viewer-or-better for production, editor-or-better
+  mirrors `openbuild-version-routing` (viewer-or-better for production, editor-or-better
   for non-production, 404 — not 403 — on failure). `Cache-Control: public, max-age=60`.
 - Make each structural widget deep-link into the matching builder path with the
   active `?_version=` preserved.
@@ -43,9 +43,9 @@ aggregations that fan across schemas are imperative work, not schema-declarative
 
 **Non-Goals:**
 
-- The version-switcher's writing to the URL — `openbuilt-version-routing` already
+- The version-switcher's writing to the URL — `openbuild-version-routing` already
   owns `buildVersionedRoute` and `useApplicationVersion`; this spec consumes them.
-- The promotion dialog itself — `openbuilt-version-promotion` owns it. This spec
+- The promotion dialog itself — `openbuild-version-promotion` owns it. This spec
   wires the Promote button on each non-terminal pill, but the click delegates to the
   dialog shipped by spec D.
 - The `getDistinctActorCount` mapper aggregation — a separate OR-side change
@@ -89,12 +89,12 @@ The pill strip renders one pill per `ApplicationVersion` in `Application.version
 ordered by the `promotesTo` chain (most-upstream first). The pill whose UUID matches
 `Application.productionVersion.uuid` is marked with a leading asterisk in its label
 (e.g. `* production`). Pills whose version the caller is NOT authorised to access
-under `openbuilt-version-routing`'s RBAC gate are HIDDEN from the strip — they do
+under `openbuild-version-routing`'s RBAC gate are HIDDEN from the strip — they do
 not render at all. Production is always visible to viewer-or-better callers.
 
 **Why hide rather than disable:** a disabled pill leaks the existence of a version
 the caller has no business knowing about (an `internal-staging` branch, say). Hiding
-it matches the `openbuilt-version-routing` gate's "404 not 403" policy — the surface
+it matches the `openbuild-version-routing` gate's "404 not 403" policy — the surface
 behaves as if the version did not exist for non-authorised callers.
 
 **Why mark with an asterisk rather than a coloured badge:** the asterisk is
@@ -111,8 +111,8 @@ matches by coincidence but breaks for chains like `feature-branch` → `qa` → 
 ### Decision 3 — KPI scope: strictly per-selected version
 
 All four KPI cards plus the activity-graph card scope to the currently-selected
-version's per-version register (`openbuilt-{appSlug}-{versionSlug}`, per
-`openbuilt-versioning-model`). Switching versions via the pill strip reloads
+version's per-version register (`openbuild-{appSlug}-{versionSlug}`, per
+`openbuild-versioning-model`). Switching versions via the pill strip reloads
 everything. The page does NOT show cross-version aggregates ("total objects across
 all versions") in v1.
 
@@ -166,7 +166,7 @@ is not designed for. Three buckets cover the maintainer's actual question
 
 Five small Vue components under `src/components/applicationDetail/widgets/`:
 
-- **`RegisterWidget.vue`** — name, slug (`openbuilt-{appSlug}-{versionSlug}`),
+- **`RegisterWidget.vue`** — name, slug (`openbuild-{appSlug}-{versionSlug}`),
   schema count, object count, files count. "Open in OpenRegister" button deep-links
   to `/apps/openregister/registers/{registerSlug}`. Info-only on this page; no
   inline create.
@@ -227,7 +227,7 @@ GET /api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90
 }
 ```
 
-**Auth gate (mirrors `openbuilt-version-routing` REQ-OBVR-003):**
+**Auth gate (mirrors `openbuild-version-routing` REQ-OBVR-003):**
 
 - If the resolved version's UUID matches `Application.productionVersion.uuid`:
   viewer-or-better on the Application is required (`permissions.viewers` ∪
@@ -284,7 +284,7 @@ The frontend filters the pill strip using the same `permissions.{viewers,editors
 arrays the backend uses. Specifically:
 
 - Production version: visible to any caller who is in `viewers ∪ editors ∪ owners`,
-  OR (per `openbuilt-version-routing`'s production-is-public policy) to any
+  OR (per `openbuild-version-routing`'s production-is-public policy) to any
   authenticated caller. Defaulting to the latter avoids a permission lookup for the
   common case.
 - Non-production version: visible only to callers in `editors ∪ owners`.
@@ -319,12 +319,12 @@ it into something else is out of scope — this spec ships a removal, not a repl
 | Pill-tab rendering + version selection          | **Declarative in spirit, imperative in implementation** | The pill strip is derived from `Application.versions` (a manifest-shaped relation). The rendering is Vue (only practical option). No business logic — pure projection. |
 | KPI rendering                                   | **Declarative**        | KPI values are passed to four presentational `CnCard` instances (no `CnKpiGrid` dependency — locked decision to avoid coupling this spec to a specific nc-vue component). Each card renders; it does not compute. No imperative branching inside the card. |
 | Structural widget rendering                     | **Declarative**        | Each widget receives its data slice as a prop and renders a list. Click handlers emit nav events; the router consumes them. No business logic.                                                  |
-| Auth gate on the insights endpoint              | **Imperative**         | RBAC enforcement is a cross-cutting concern owned by a service, not a schema rule. Same shape as the `openbuilt-version-routing` RBAC gate (mirrored, not duplicated logic).                    |
+| Auth gate on the insights endpoint              | **Imperative**         | RBAC enforcement is a cross-cutting concern owned by a service, not a schema rule. Same shape as the `openbuild-version-routing` RBAC gate (mirrored, not duplicated logic).                    |
 
 ### Decision 12 — Seed data
 
 No new seed data. The page reads existing Application + ApplicationVersion records,
-which are created by the wizard (`openbuilt-app-creation-wizard`, spec F) or
+which are created by the wizard (`openbuild-app-creation-wizard`, spec F) or
 existing fixtures. No seed-data file is added to `lib/Settings/`.
 
 ## Risks / Trade-offs

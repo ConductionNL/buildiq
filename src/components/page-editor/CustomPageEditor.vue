@@ -19,18 +19,18 @@
 <template>
 	<div class="custom-page-editor">
 		<h3 class="custom-page-editor__title">
-			{{ t('openbuilt', 'Custom page') }}
+			{{ t('openbuild', 'Custom page') }}
 		</h3>
 
 		<fieldset class="custom-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Component') }}</legend>
+			<legend>{{ t('openbuild', 'Component') }}</legend>
 			<label class="custom-page-editor__group-row">
-				{{ t('openbuilt', 'customComponents registry key') }}
+				{{ t('openbuild', 'customComponents registry key') }}
 				<input
 					type="text"
 					:value="config.component || ''"
 					list="custom-page-editor-component-suggestions"
-					:placeholder="t('openbuilt', 'e.g. MyDashboard')"
+					:placeholder="t('openbuild', 'e.g. MyDashboard')"
 					:aria-invalid="isInvalid('component')"
 					@input="update('component', $event.target.value)">
 				<datalist id="custom-page-editor-component-suggestions">
@@ -39,12 +39,12 @@
 				<InlineFieldMark :error="markFor('component')" />
 			</label>
 			<p v-if="!registryKeys.length" class="custom-page-editor__hint">
-				{{ t('openbuilt', 'The component must be registered in the consuming app’s customComponents map. The key is resolved at render time, so it is entered free-form here.') }}
+				{{ t('openbuild', 'The component must be registered in the consuming app’s customComponents map. The key is resolved at render time, so it is entered free-form here.') }}
 			</p>
 		</fieldset>
 
 		<fieldset class="custom-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Props (JSON, optional)') }}</legend>
+			<legend>{{ t('openbuild', 'Props (JSON, optional)') }}</legend>
 			<textarea
 				class="custom-page-editor__textarea"
 				spellcheck="false"
@@ -58,7 +58,7 @@
 		</fieldset>
 
 		<p v-if="otherKeys.length" class="custom-page-editor__other">
-			{{ t('openbuilt', 'Other config keys preserved on save:') }} {{ otherKeys.join(', ') }}
+			{{ t('openbuild', 'Other config keys preserved on save:') }} {{ otherKeys.join(', ') }}
 		</p>
 	</div>
 </template>

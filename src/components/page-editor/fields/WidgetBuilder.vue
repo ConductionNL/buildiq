@@ -9,30 +9,30 @@
 				:value="widget.id || ''"
 				type="text"
 				class="widget-builder__field"
-				:placeholder="t('openbuilt', 'Widget id')"
+				:placeholder="t('openbuild', 'Widget id')"
 				@input="updateField(index, 'id', $event.target.value)">
 			<input
 				:value="widget.title || ''"
 				type="text"
 				class="widget-builder__field"
-				:placeholder="t('openbuilt', 'Title')"
+				:placeholder="t('openbuild', 'Title')"
 				@input="updateField(index, 'title', $event.target.value)">
 			<input
 				:value="widget.type || ''"
 				type="text"
 				class="widget-builder__field widget-builder__field--narrow"
-				:placeholder="t('openbuilt', 'Type')"
+				:placeholder="t('openbuild', 'Type')"
 				@input="updateField(index, 'type', $event.target.value)">
 			<button
 				type="button"
 				class="widget-builder__remove"
-				:title="t('openbuilt', 'Remove widget')"
+				:title="t('openbuild', 'Remove widget')"
 				@click="removeWidget(index)">
 				✕
 			</button>
 		</div>
 		<button type="button" class="widget-builder__add" @click="addWidget">
-			+ {{ t('openbuilt', 'Add widget') }}
+			+ {{ t('openbuild', 'Add widget') }}
 		</button>
 	</div>
 </template>

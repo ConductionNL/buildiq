@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for ApplicationsController::diffVersions (spec #6 openbuilt-versioning).
+ * Unit tests for ApplicationsController::diffVersions (spec #6 openbuild-versioning).
  *
  * Pins the three contract points called out in design.md §Diff endpoint:
  *   - 200 returns `{ from, to }` with manifest + version + publishedAt for both
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Controller
+ * @package  OCA\OpenBuild\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,11 +26,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Controller;
+namespace OCA\OpenBuild\Tests\Unit\Controller;
 
-use OCA\OpenBuilt\Controller\ApplicationsController;
-use OCA\OpenBuilt\Service\ManifestResolverService;
-use OCA\OpenBuilt\Service\PermissionResolver;
+use OCA\OpenBuild\Controller\ApplicationsController;
+use OCA\OpenBuild\Service\ManifestResolverService;
+use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -386,6 +386,6 @@ class ApplicationsControllerDiffTest extends TestCase
 
         self::assertSame(Http::STATUS_FORBIDDEN, $result->getStatus());
         $data = $result->getData();
-        self::assertSame('openbuilt.rbac.no_role', $data['code']);
+        self::assertSame('openbuild.rbac.no_role', $data['code']);
     }//end testDiffVersionsReturns403WhenCallerHasNoRole()
 }//end class

@@ -69,7 +69,7 @@ export default {
 					status: 'draft',
 				})
 			} catch (e) {
-				this.rollbackError = `${t('openbuilt', 'Rollback failed')}: ${e.message || e}`
+				this.rollbackError = `${t('openbuild', 'Rollback failed')}: ${e.message || e}`
 			}
 		},
 	},

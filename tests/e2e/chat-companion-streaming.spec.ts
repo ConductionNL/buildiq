@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test'
  * Playwright e2e — AI Chat Companion + streaming (spec: ai-chat-companion-streaming).
  *
  * Validates the user-visible flow:
- *   1. FAB renders on /apps/openbuilt/ (gated on /api/chat/health 200)
+ *   1. FAB renders on /apps/openbuild/ (gated on /api/chat/health 200)
  *   2. Clicking the FAB opens the chat panel with the input ready
  *   3. Submitting a message renders the user bubble immediately
  *   4. While the response is in flight the Thinking indicator
@@ -23,7 +23,7 @@ import { test, expect } from '@playwright/test'
  *
  * Preconditions:
  *   - Nextcloud reachable at PLAYWRIGHT_BASE_URL (default localhost:8080)
- *   - openbuilt enabled, openregister enabled
+ *   - openbuild enabled, openregister enabled
  *   - /api/chat/health returns 200 (LLM provider configured —
  *     Ollama on the dev box) OR 503 (test skipped per spec)
  *   - Authenticated browser context from global-setup
@@ -31,8 +31,8 @@ import { test, expect } from '@playwright/test'
 test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-companion-streaming)', () => {
 
 	test.beforeEach(async ({ page }) => {
-		await page.goto('/apps/openbuilt/')
-		// The OpenBuilt SPA hydrates async; wait for the FAB or for the
+		await page.goto('/apps/openbuild/')
+		// The OpenBuild SPA hydrates async; wait for the FAB or for the
 		// health probe to surface a no_provider deployment.
 		await page.waitForLoadState('networkidle')
 	})
@@ -42,7 +42,7 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
 		test.skip(health.status() === 503, 'No LLM provider configured — chat companion intentionally hidden')
 
 		const fab = page.locator('[data-testid="cn-ai-fab"]')
-		await expect(fab, 'FAB must be visible on /apps/openbuilt/').toBeVisible({ timeout: 10_000 })
+		await expect(fab, 'FAB must be visible on /apps/openbuild/').toBeVisible({ timeout: 10_000 })
 		await expect(fab).toHaveAttribute('aria-label', /chat/i)
 	})
 

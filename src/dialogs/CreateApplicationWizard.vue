@@ -9,16 +9,16 @@
   Step 3: Custom   — only shown when preset === 'custom'; admin-defined chain
   Step 4: Review   — read-only summary + Create button
 
-  On Create: POSTs to /apps/openbuilt/api/applications/wizard.
+  On Create: POSTs to /apps/openbuild/api/applications/wizard.
   On success: emits `created(applicationUuid)` so the parent can navigate.
 
-  spec: openbuilt-app-creation-wizard REQ-OBWIZ-001 through REQ-OBWIZ-010
+  spec: openbuild-app-creation-wizard REQ-OBWIZ-001 through REQ-OBWIZ-010
   ADR-004: NcModal must live in its own file. No inline NcModal in parent.
 -->
 <template>
 	<NcModal
 		:show="show"
-		:name="t('openbuilt', 'Create application')"
+		:name="t('openbuild', 'Create application')"
 		:can-close="!submitting"
 		size="normal"
 		@update:show="onModalShowUpdate"
@@ -60,7 +60,7 @@
 		<div v-if="errorMessage" class="wizard__error-banner" role="alert">
 			<p>{{ errorMessage }}</p>
 			<details v-if="orphanedResources.length > 0">
-				<summary>{{ t('openbuilt', 'Orphaned resources that need manual cleanup:') }}</summary>
+				<summary>{{ t('openbuild', 'Orphaned resources that need manual cleanup:') }}</summary>
 				<ul>
 					<li v-for="r in orphanedResources" :key="r">
 						<code>{{ r }}</code>
@@ -76,7 +76,7 @@
 				type="tertiary"
 				:disabled="submitting"
 				@click="goBack">
-				{{ t('openbuilt', 'Back') }}
+				{{ t('openbuild', 'Back') }}
 			</NcButton>
 			<span class="wizard__footer-spacer" />
 			<NcButton
@@ -84,7 +84,7 @@
 				type="primary"
 				:disabled="!currentStepValid"
 				@click="goNext">
-				{{ t('openbuilt', 'Next') }}
+				{{ t('openbuild', 'Next') }}
 			</NcButton>
 
 			<NcButton
@@ -95,7 +95,7 @@
 				<template #icon>
 					<span v-if="submitting" class="wizard__spinner" aria-hidden="true" />
 				</template>
-				{{ submitting ? t('openbuilt', 'Creating…') : t('openbuilt', 'Create') }}
+				{{ submitting ? t('openbuild', 'Creating…') : t('openbuild', 'Create') }}
 			</NcButton>
 		</div>
 	</NcModal>
@@ -284,7 +284,7 @@ export default {
 			}
 
 			try {
-				const url = generateUrl('/apps/openbuilt/api/applications/wizard')
+				const url = generateUrl('/apps/openbuild/api/applications/wizard')
 				const { data, status } = await axios.post(url, body)
 
 				if (status === 201 && data.applicationUuid) {
@@ -292,14 +292,14 @@ export default {
 					this.$emit('update:show', false)
 					this.resetState()
 				} else {
-					this.errorMessage = data.message || t('openbuilt', 'An unexpected error occurred.')
+					this.errorMessage = data.message || t('openbuild', 'An unexpected error occurred.')
 					if (data.orphanedResources) {
 						this.orphanedResources = data.orphanedResources
 					}
 				}
 			} catch (err) {
 				const data = err.response?.data || {}
-				this.errorMessage = data.message || err.message || t('openbuilt', 'Failed to create the application.')
+				this.errorMessage = data.message || err.message || t('openbuild', 'Failed to create the application.')
 				if (data.orphanedResources) {
 					this.orphanedResources = data.orphanedResources
 				}

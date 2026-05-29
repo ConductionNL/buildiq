@@ -6,7 +6,7 @@ retrofit: true
 
 ## Purpose
 
-The Schema Designer is OpenBuilt's visual editor for authoring an
+The Schema Designer is OpenBuild's visual editor for authoring an
 Application version's OpenRegister schemas: their header (slug, title,
 description, version), property fields, lifecycle state machine,
 relations, widgets, and derived-value blocks (aggregations,
@@ -24,7 +24,7 @@ dialogs, and the `schemas` store.
 
 ### REQ-OBSDUI-001: Schema list panel and create/delete gating
 
-@e2e exclude retrofit component-contract spec — `AddSchemaDialog` slug/title validation, `DeleteSchemaDialog` confirmation gate, `DeleteFieldDialog` field-removal guard, and `registerSlugForApp` store resolution are component-internal contracts verified by Vitest unit tests; schema list navigation and open/delete flows are covered by the openbuilt-schema-designer Playwright tests
+@e2e exclude retrofit component-contract spec — `AddSchemaDialog` slug/title validation, `DeleteSchemaDialog` confirmation gate, `DeleteFieldDialog` field-removal guard, and `registerSlugForApp` store resolution are component-internal contracts verified by Vitest unit tests; schema list navigation and open/delete flows are covered by the openbuild-schema-designer Playwright tests
 
 The `SchemaListPanel` SHALL render the version's schemas with a
 property count and lifecycle label per row, emit an open event when a
@@ -49,7 +49,7 @@ slug for a given application (`registerSlugForApp`).
 
 ### REQ-OBSDUI-002: Field editor authors typed properties
 
-@e2e exclude retrofit component-contract spec — `toIntOrNull`, `toNumberOrNull`, `nameError`, field-array emit, and remove-guard request/confirm/cancel flow are component-internal contracts verified by Vitest unit tests; field-editor interactions are covered by the openbuilt-schema-designer Playwright tests
+@e2e exclude retrofit component-contract spec — `toIntOrNull`, `toNumberOrNull`, `nameError`, field-array emit, and remove-guard request/confirm/cancel flow are component-internal contracts verified by Vitest unit tests; field-editor interactions are covered by the openbuild-schema-designer Playwright tests
 
 `FieldEditor` SHALL let the user add, remove, reorder (move up/down),
 and edit schema fields, exposing type and cardinality option lists,
@@ -71,7 +71,7 @@ flow.
 
 ### REQ-OBSDUI-003: Lifecycle editor authors the state machine
 
-@e2e exclude retrofit component-contract spec — `stateNameValid`, `initialCount`, `setInitial`, state/transition emit contracts are component-internal contracts verified by Vitest unit tests; lifecycle editor rendering is covered by the openbuilt-schema-designer Playwright tests
+@e2e exclude retrofit component-contract spec — `stateNameValid`, `initialCount`, `setInitial`, state/transition emit contracts are component-internal contracts verified by Vitest unit tests; lifecycle editor rendering is covered by the openbuild-schema-designer Playwright tests
 
 `LifecycleEditor` SHALL let the user add/remove/edit states,
 transitions, and per-transition actions, expose action/state option
@@ -88,7 +88,7 @@ state via `setInitial`, and emit updated states and transitions upward.
 
 ### REQ-OBSDUI-004: Relations, widgets, and derived-value editors
 
-@e2e exclude retrofit component-contract spec — relation-array emit, widget JSON-config validation per-row, and `AggregationEditor`/`CalculationEditor`/`NotificationEditor` human-readable render are component-internal contracts verified by Vitest unit tests; relations/widgets rendering is covered by the openbuilt-schema-designer Playwright tests
+@e2e exclude retrofit component-contract spec — relation-array emit, widget JSON-config validation per-row, and `AggregationEditor`/`CalculationEditor`/`NotificationEditor` human-readable render are component-internal contracts verified by Vitest unit tests; relations/widgets rendering is covered by the openbuild-schema-designer Playwright tests
 
 `RelationEditor` SHALL author schema relations (add/remove/update with
 cardinality and target-schema option lists, emitting the relations
@@ -110,7 +110,7 @@ of their respective derived-value blocks.
 
 ### REQ-OBSDUI-005: Designer stages, validates, and persists schema edits
 
-@e2e exclude retrofit component-contract spec — `composeSchemaBody`, `bodyToStaged`, `canSave` gate (`hasStagedChanges`, `fieldNamesUnique`, `hasInitialLifecycleState`), `onFieldsChange`/`onStatesChange`/`onTransitionsChange` change handlers, and discard/add/delete list mutations are staged-state contracts verified by Vitest unit tests; save/validation integration is covered by the openbuilt-schema-designer Playwright tests
+@e2e exclude retrofit component-contract spec — `composeSchemaBody`, `bodyToStaged`, `canSave` gate (`hasStagedChanges`, `fieldNamesUnique`, `hasInitialLifecycleState`), `onFieldsChange`/`onStatesChange`/`onTransitionsChange` change handlers, and discard/add/delete list mutations are staged-state contracts verified by Vitest unit tests; save/validation integration is covered by the openbuild-schema-designer Playwright tests
 
 The `SchemaDesigner` view SHALL resolve the active ApplicationVersion,
 load the schema list and a selected schema's detail, stage edits in

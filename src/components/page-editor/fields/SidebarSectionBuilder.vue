@@ -10,30 +10,30 @@
 				:value="section.id || ''"
 				type="text"
 				class="sidebar-section-builder__field"
-				:placeholder="t('openbuilt', 'Section id')"
+				:placeholder="t('openbuild', 'Section id')"
 				@input="updateField(index, 'id', $event.target.value)">
 			<input
 				:value="section.label || ''"
 				type="text"
 				class="sidebar-section-builder__field"
-				:placeholder="t('openbuilt', 'Label')"
+				:placeholder="t('openbuild', 'Label')"
 				@input="updateField(index, 'label', $event.target.value)">
 			<input
 				:value="(section.columns || []).join(',')"
 				type="text"
 				class="sidebar-section-builder__field"
-				:placeholder="t('openbuilt', 'Columns (comma-separated)')"
+				:placeholder="t('openbuild', 'Columns (comma-separated)')"
 				@input="updateColumns(index, $event.target.value)">
 			<button
 				type="button"
 				class="sidebar-section-builder__remove"
-				:title="t('openbuilt', 'Remove section')"
+				:title="t('openbuild', 'Remove section')"
 				@click="removeSection(index)">
 				✕
 			</button>
 		</div>
 		<button type="button" class="sidebar-section-builder__add" @click="addSection">
-			+ {{ t('openbuilt', 'Add section') }}
+			+ {{ t('openbuild', 'Add section') }}
 		</button>
 	</div>
 </template>

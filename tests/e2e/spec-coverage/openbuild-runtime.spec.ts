@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 /**
- * E2E coverage for openbuilt-runtime spec — UI scenarios.
+ * E2E coverage for openbuild-runtime spec — UI scenarios.
  *
  * Covers:
  *   REQ-OBR-002: CnAppRoot mount inside BuilderHost
@@ -26,53 +26,53 @@
 import { test, expect } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const LIVE = process.env.OPENBUILT_E2E_LIVE === '1'
+const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
 
-// @e2e openbuilt-runtime::navigating-into-a-virtual-app-renders-its-manifest-pages
+// @e2e openbuild-runtime::navigating-into-a-virtual-app-renders-its-manifest-pages
 test('REQ-OBR-002 — builder route mounts CnAppRoot for hello-world', async ({ page }) => {
-	// @e2e openbuilt-runtime::navigating-into-a-virtual-app-renders-its-manifest-pages
-	await page.goto(`${BASE}/apps/openbuilt/builder/hello-world`)
-	// The outer OpenBuilt shell stays mounted (nav sidebar present)
+	// @e2e openbuild-runtime::navigating-into-a-virtual-app-renders-its-manifest-pages
+	await page.goto(`${BASE}/apps/openbuild/builder/hello-world`)
+	// The outer OpenBuild shell stays mounted (nav sidebar present)
 	await expect(page.locator('nav').first()).toBeVisible({ timeout: 15_000 })
-	// The URL must be under openbuilt
-	expect(page.url()).toContain('openbuilt')
+	// The URL must be under openbuild
+	expect(page.url()).toContain('openbuild')
 	// A CnAppRoot or the virtual app content area must be present (no white screen)
 	await expect(page.locator('main').first().first()).toBeVisible({ timeout: 10_000 })
 })
 
-// @e2e openbuilt-runtime::detail-route-inside-a-virtual-app-resolves
+// @e2e openbuild-runtime::detail-route-inside-a-virtual-app-resolves
 test('REQ-OBR-003 — detail path after slug does not crash the outer shell', async ({ page }) => {
-	// @e2e openbuilt-runtime::detail-route-inside-a-virtual-app-resolves
-	await page.goto(`${BASE}/apps/openbuilt/builder/hello-world/messages/00000000-0000-0000-0000-000000000000`)
+	// @e2e openbuild-runtime::detail-route-inside-a-virtual-app-resolves
+	await page.goto(`${BASE}/apps/openbuild/builder/hello-world/messages/00000000-0000-0000-0000-000000000000`)
 	await expect(page.locator('main').first().first()).toBeVisible({ timeout: 15_000 })
 	// Page must not show a fatal JS crash
 	const errorIndicators = page.locator('.critical-error, [data-error="fatal"]')
 	expect(await errorIndicators.count()).toBe(0)
 })
 
-// @e2e openbuilt-runtime::fresh-install-renders-the-seeded-virtual-app
+// @e2e openbuild-runtime::fresh-install-renders-the-seeded-virtual-app
 test('REQ-OBR-004 — hello-world builder renders content (seeded app)', async ({ page }) => {
-	// @e2e openbuilt-runtime::fresh-install-renders-the-seeded-virtual-app
-	await page.goto(`${BASE}/apps/openbuilt/builder/hello-world`)
+	// @e2e openbuild-runtime::fresh-install-renders-the-seeded-virtual-app
+	await page.goto(`${BASE}/apps/openbuild/builder/hello-world`)
 	await expect(page.locator('main').first().first()).toBeVisible({ timeout: 15_000 })
 	// The hello-world seeded app should show the index page; at minimum the shell loads
-	await expect(page).toHaveTitle(/openbuilt/i)
+	await expect(page).toHaveTitle(/openbuild/i)
 })
 
-// @e2e openbuilt-runtime::re-running-the-repair-step-is-idempotent
+// @e2e openbuild-runtime::re-running-the-repair-step-is-idempotent
 test('REQ-OBR-004 — applications list contains hello-world (seed idempotent)', async ({ page }) => {
-	// @e2e openbuilt-runtime::re-running-the-repair-step-is-idempotent
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::re-running-the-repair-step-is-idempotent
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main').first().first()).toBeVisible({ timeout: 15_000 })
 	// At least one card should be present (hello-world or another seeded app)
 	const cards = page.getByRole('link', { name: /Hello World/i })
 	await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 })
 
-// @e2e openbuilt-runtime::invalid-edit-is-blocked-before-save
+// @e2e openbuild-runtime::invalid-edit-is-blocked-before-save
 test('REQ-OBR-005 — application editor renders Design and Raw JSON tabs', async ({ page }) => {
-	// @e2e openbuilt-runtime::invalid-edit-is-blocked-before-save
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::invalid-edit-is-blocked-before-save
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -92,10 +92,10 @@ test('REQ-OBR-005 — application editor renders Design and Raw JSON tabs', asyn
 	}
 })
 
-// @e2e openbuilt-runtime::valid-edit-persists-and-reloads
+// @e2e openbuild-runtime::valid-edit-persists-and-reloads
 test('REQ-OBR-005 — manifest editor is reachable from the detail page', async ({ page }) => {
-	// @e2e openbuilt-runtime::valid-edit-persists-and-reloads
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::valid-edit-persists-and-reloads
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -104,10 +104,10 @@ test('REQ-OBR-005 — manifest editor is reachable from the detail page', async 
 	await expect(page.locator('main').first()).toBeVisible({ timeout: 10_000 })
 })
 
-// @e2e openbuilt-runtime::default-tab-is-design
+// @e2e openbuild-runtime::default-tab-is-design
 test('REQ-OBR-005 — Design tab is default (or editor opens on load)', async ({ page }) => {
-	// @e2e openbuilt-runtime::default-tab-is-design
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::default-tab-is-design
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -120,10 +120,10 @@ test('REQ-OBR-005 — Design tab is default (or editor opens on load)', async ({
 	}
 })
 
-// @e2e openbuilt-runtime::unsaved-edits-survive-a-tab-switch
+// @e2e openbuild-runtime::unsaved-edits-survive-a-tab-switch
 test('REQ-OBR-005 — tab switching does not crash the editor', async ({ page }) => {
-	// @e2e openbuilt-runtime::unsaved-edits-survive-a-tab-switch
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::unsaved-edits-survive-a-tab-switch
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -139,27 +139,27 @@ test('REQ-OBR-005 — tab switching does not crash the editor', async ({ page })
 	}
 })
 
-// @e2e openbuilt-runtime::schema-list-route-renders-the-designer-not-the-virtual-app
+// @e2e openbuild-runtime::schema-list-route-renders-the-designer-not-the-virtual-app
 test('REQ-OBR-006a — /builder/:slug/schemas route renders SchemaDesigner', async ({ page }) => {
-	// @e2e openbuilt-runtime::schema-list-route-renders-the-designer-not-the-virtual-app
-	await page.goto(`${BASE}/apps/openbuilt/builder/hello-world/schemas`)
+	// @e2e openbuild-runtime::schema-list-route-renders-the-designer-not-the-virtual-app
+	await page.goto(`${BASE}/apps/openbuild/builder/hello-world/schemas`)
 	await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 	// Page should not be a plain 404 or white screen
-	await expect(page).toHaveTitle(/openbuilt/i)
+	await expect(page).toHaveTitle(/openbuild/i)
 })
 
-// @e2e openbuilt-runtime::virtual-app-preview-route-still-mounts-the-nested-cnapproot
+// @e2e openbuild-runtime::virtual-app-preview-route-still-mounts-the-nested-cnapproot
 test('REQ-OBR-006a — /builder/:slug route mounts the virtual app (not schemas)', async ({ page }) => {
-	// @e2e openbuilt-runtime::virtual-app-preview-route-still-mounts-the-nested-cnapproot
-	await page.goto(`${BASE}/apps/openbuilt/builder/hello-world`)
+	// @e2e openbuild-runtime::virtual-app-preview-route-still-mounts-the-nested-cnapproot
+	await page.goto(`${BASE}/apps/openbuild/builder/hello-world`)
 	await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
-	await expect(page).toHaveTitle(/openbuilt/i)
+	await expect(page).toHaveTitle(/openbuild/i)
 })
 
-// @e2e openbuilt-runtime::schemas-entry-appears-in-the-builder-context
+// @e2e openbuild-runtime::schemas-entry-appears-in-the-builder-context
 test('REQ-OBR-007a — Schemas menu entry is visible in builder context', async ({ page }) => {
-	// @e2e openbuilt-runtime::schemas-entry-appears-in-the-builder-context
-	await page.goto(`${BASE}/apps/openbuilt/builder/hello-world`)
+	// @e2e openbuild-runtime::schemas-entry-appears-in-the-builder-context
+	await page.goto(`${BASE}/apps/openbuild/builder/hello-world`)
 	await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 
 	// The outer shell's nav should include a Schemas entry
@@ -169,11 +169,11 @@ test('REQ-OBR-007a — Schemas menu entry is visible in builder context', async 
 	}
 })
 
-// @e2e openbuilt-runtime::successful-publish-creates-a-snapshot
+// @e2e openbuild-runtime::successful-publish-creates-a-snapshot
 test('REQ-OBR-006b — Publish action button is reachable for owner', async ({ page }) => {
-	// @e2e openbuilt-runtime::successful-publish-creates-a-snapshot
-	test.skip(!LIVE, 'Requires live dev env — set OPENBUILT_E2E_LIVE=1')
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::successful-publish-creates-a-snapshot
+	test.skip(!LIVE, 'Requires live dev env — set OPENBUILD_E2E_LIVE=1')
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -188,11 +188,11 @@ test('REQ-OBR-006b — Publish action button is reachable for owner', async ({ p
 	}
 })
 
-// @e2e openbuilt-runtime::validation-blocks-publish
+// @e2e openbuild-runtime::validation-blocks-publish
 test('REQ-OBR-006b — Publish with invalid manifest shows validation error', async ({ page }) => {
-	// @e2e openbuilt-runtime::validation-blocks-publish
+	// @e2e openbuild-runtime::validation-blocks-publish
 	// Navigate to editor and verify the validation surface exists
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -200,10 +200,10 @@ test('REQ-OBR-006b — Publish with invalid manifest shows validation error', as
 	await expect(page.locator('main').first()).toBeVisible({ timeout: 10_000 })
 })
 
-// @e2e openbuilt-runtime::newly-published-application-shows-published-badge
+// @e2e openbuild-runtime::newly-published-application-shows-published-badge
 test('REQ-OBR-007b — ApplicationCard shows a status badge (draft/published/archived)', async ({ page }) => {
-	// @e2e openbuilt-runtime::newly-published-application-shows-published-badge
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::newly-published-application-shows-published-badge
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 
@@ -217,10 +217,10 @@ test('REQ-OBR-007b — ApplicationCard shows a status badge (draft/published/arc
 	}
 })
 
-// @e2e openbuilt-runtime::edited-draft-shows-modified-indicator
+// @e2e openbuild-runtime::edited-draft-shows-modified-indicator
 test('REQ-OBR-007b — detail page shows status indicator', async ({ page }) => {
-	// @e2e openbuilt-runtime::edited-draft-shows-modified-indicator
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::edited-draft-shows-modified-indicator
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -228,10 +228,10 @@ test('REQ-OBR-007b — detail page shows status indicator', async ({ page }) => 
 	await expect(page.locator('main').first()).toBeVisible({ timeout: 10_000 })
 })
 
-// @e2e openbuilt-runtime::history-panel-renders-snapshots
+// @e2e openbuild-runtime::history-panel-renders-snapshots
 test('REQ-OBR-008a — VersionHistory panel renders in the detail page', async ({ page }) => {
-	// @e2e openbuilt-runtime::history-panel-renders-snapshots
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::history-panel-renders-snapshots
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -247,10 +247,10 @@ test('REQ-OBR-008a — VersionHistory panel renders in the detail page', async (
 	}
 })
 
-// @e2e openbuilt-runtime::history-panel-is-empty-for-a-never-published-application
+// @e2e openbuild-runtime::history-panel-is-empty-for-a-never-published-application
 test('REQ-OBR-008a — detail page loads without error for draft app', async ({ page }) => {
-	// @e2e openbuilt-runtime::history-panel-is-empty-for-a-never-published-application
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::history-panel-is-empty-for-a-never-published-application
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -258,11 +258,11 @@ test('REQ-OBR-008a — detail page loads without error for draft app', async ({ 
 	await expect(page.locator('main').first()).toBeVisible({ timeout: 10_000 })
 })
 
-// @e2e openbuilt-runtime::rollback-restores-manifest-and-stays-in-draft
+// @e2e openbuild-runtime::rollback-restores-manifest-and-stays-in-draft
 test('REQ-OBR-009a — rollback action is accessible from the versions tab', async ({ page }) => {
-	// @e2e openbuilt-runtime::rollback-restores-manifest-and-stays-in-draft
-	test.skip(!LIVE, 'Requires live env with published version history — set OPENBUILT_E2E_LIVE=1')
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::rollback-restores-manifest-and-stays-in-draft
+	test.skip(!LIVE, 'Requires live env with published version history — set OPENBUILD_E2E_LIVE=1')
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -270,10 +270,10 @@ test('REQ-OBR-009a — rollback action is accessible from the versions tab', asy
 	await expect(page.locator('main').first()).toBeVisible({ timeout: 10_000 })
 })
 
-// @e2e openbuilt-runtime::cancelling-the-confirmation-aborts-the-rollback
+// @e2e openbuild-runtime::cancelling-the-confirmation-aborts-the-rollback
 test('REQ-OBR-009a — detail page renders without crash (rollback cancel baseline)', async ({ page }) => {
-	// @e2e openbuilt-runtime::cancelling-the-confirmation-aborts-the-rollback
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::cancelling-the-confirmation-aborts-the-rollback
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -281,10 +281,10 @@ test('REQ-OBR-009a — detail page renders without crash (rollback cancel baseli
 	await expect(page.locator('main').first()).toBeVisible({ timeout: 10_000 })
 })
 
-// @e2e openbuilt-runtime::default-diff-shows-current-draft-vs-latest-published
+// @e2e openbuild-runtime::default-diff-shows-current-draft-vs-latest-published
 test('REQ-OBR-010 — Diff view is accessible from the detail page', async ({ page }) => {
-	// @e2e openbuilt-runtime::default-diff-shows-current-draft-vs-latest-published
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::default-diff-shows-current-draft-vs-latest-published
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -299,10 +299,10 @@ test('REQ-OBR-010 — Diff view is accessible from the detail page', async ({ pa
 	}
 })
 
-// @e2e openbuilt-runtime::arbitrary-snapshot-pair-can-be-diffed
+// @e2e openbuild-runtime::arbitrary-snapshot-pair-can-be-diffed
 test('REQ-OBR-010 — ManifestDiff renders without crash', async ({ page }) => {
-	// @e2e openbuilt-runtime::arbitrary-snapshot-pair-can-be-diffed
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::arbitrary-snapshot-pair-can-be-diffed
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -310,21 +310,21 @@ test('REQ-OBR-010 — ManifestDiff renders without crash', async ({ page }) => {
 	await expect(page.locator('main').first()).toBeVisible({ timeout: 10_000 })
 })
 
-// @e2e openbuilt-runtime::caller-without-a-role-gets-403-not-200-not-404
+// @e2e openbuild-runtime::caller-without-a-role-gets-403-not-200-not-404
 test('REQ-OBR-006c — manifest endpoint 403 for no-role user', async ({ request }) => {
-	// @e2e openbuilt-runtime::caller-without-a-role-gets-403-not-200-not-404
+	// @e2e openbuild-runtime::caller-without-a-role-gets-403-not-200-not-404
 	// The manifest endpoint for hello-world: admin has owner access so gets 200
-	const res = await request.get('/index.php/apps/openbuilt/api/applications/hello-world/manifest', {
+	const res = await request.get('/index.php/apps/openbuild/api/applications/hello-world/manifest', {
 		headers: { 'OCS-APIRequest': 'true' },
 	})
 	// Admin has owner access → 200
 	expect(res.status()).toBe(200)
 })
 
-// @e2e openbuilt-runtime::caller-in-any-role-gets-200
+// @e2e openbuild-runtime::caller-in-any-role-gets-200
 test('REQ-OBR-006c — admin (owner role) gets 200 from manifest endpoint', async ({ request }) => {
-	// @e2e openbuilt-runtime::caller-in-any-role-gets-200
-	const res = await request.get('/index.php/apps/openbuilt/api/applications/hello-world/manifest', {
+	// @e2e openbuild-runtime::caller-in-any-role-gets-200
+	const res = await request.get('/index.php/apps/openbuild/api/applications/hello-world/manifest', {
 		headers: { 'OCS-APIRequest': 'true' },
 	})
 	expect(res.status()).toBe(200)
@@ -332,29 +332,29 @@ test('REQ-OBR-006c — admin (owner role) gets 200 from manifest endpoint', asyn
 	expect(body).toHaveProperty('pages')
 })
 
-// @e2e openbuilt-runtime::user-sees-only-authorised-applications
+// @e2e openbuild-runtime::user-sees-only-authorised-applications
 test('REQ-OBR-007c — applications list shows apps for admin (role filter working)', async ({ page }) => {
-	// @e2e openbuilt-runtime::user-sees-only-authorised-applications
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::user-sees-only-authorised-applications
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main').first().first()).toBeVisible({ timeout: 15_000 })
 	// Admin sees their apps — at least the list loads (cards use role="link" div, not <a>)
 	const cards = page.getByRole('link', { name: /Hello World/i })
 	await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 })
 
-// @e2e openbuilt-runtime::empty-list-when-user-has-no-roles
+// @e2e openbuild-runtime::empty-list-when-user-has-no-roles
 test('REQ-OBR-007c — applications list renders empty state gracefully', async ({ page }) => {
-	// @e2e openbuilt-runtime::empty-list-when-user-has-no-roles
+	// @e2e openbuild-runtime::empty-list-when-user-has-no-roles
 	// Admin has roles on all apps so list is non-empty; empty-state rendering is
 	// verified structurally by checking the list container renders
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 })
 
-// @e2e openbuilt-runtime::editor-sees-save-but-not-publish
+// @e2e openbuild-runtime::editor-sees-save-but-not-publish
 test('REQ-OBR-008b — detail page renders editor controls for admin (owner role)', async ({ page }) => {
-	// @e2e openbuilt-runtime::editor-sees-save-but-not-publish
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::editor-sees-save-but-not-publish
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -362,14 +362,14 @@ test('REQ-OBR-008b — detail page renders editor controls for admin (owner role
 	await expect(page.locator('main').first()).toBeVisible({ timeout: 10_000 })
 })
 
-// @e2e openbuilt-runtime::owner-sees-all-controls
+// @e2e openbuild-runtime::owner-sees-all-controls
 test('REQ-OBR-008b — owner (admin) detail page renders without crash', async ({ page }) => {
-	// @e2e openbuilt-runtime::owner-sees-all-controls
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	// @e2e openbuild-runtime::owner-sees-all-controls
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
 	await page.waitForURL(/\/applications\//, { timeout: 15_000 })
 	await expect(page.locator('main').first()).toBeVisible({ timeout: 10_000 })
-	await expect(page).toHaveTitle(/openbuilt/i)
+	await expect(page).toHaveTitle(/openbuild/i)
 })

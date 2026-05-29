@@ -16,17 +16,17 @@
 <template>
 	<div class="files-page-editor">
 		<h3 class="files-page-editor__title">
-			{{ t('openbuilt', 'Files page') }}
+			{{ t('openbuild', 'Files page') }}
 		</h3>
 
 		<fieldset class="files-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Root folder') }}</legend>
+			<legend>{{ t('openbuild', 'Root folder') }}</legend>
 			<label class="files-page-editor__group-row">
-				{{ t('openbuilt', 'Folder path') }}
+				{{ t('openbuild', 'Folder path') }}
 				<input
 					type="text"
 					:value="config.folder || ''"
-					:placeholder="t('openbuilt', 'e.g. /Documents or Attachments')"
+					:placeholder="t('openbuild', 'e.g. /Documents or Attachments')"
 					:aria-invalid="isInvalid('folder')"
 					@input="update('folder', $event.target.value)">
 				<InlineFieldMark :error="markFor('folder')" />
@@ -34,14 +34,14 @@
 		</fieldset>
 
 		<fieldset class="files-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Allowed types (optional)') }}</legend>
+			<legend>{{ t('openbuild', 'Allowed types (optional)') }}</legend>
 			<div class="files-page-editor__tags">
 				<span v-for="(typ, index) in allowedTypes" :key="index" class="files-page-editor__tag">
 					{{ typ }}
 					<button
 						type="button"
 						class="files-page-editor__tag-remove"
-						:title="t('openbuilt', 'Remove type')"
+						:title="t('openbuild', 'Remove type')"
 						@click="removeType(index)">
 						✕
 					</button>
@@ -52,7 +52,7 @@
 					type="text"
 					class="files-page-editor__tag-input"
 					list="files-page-editor-type-suggestions"
-					:placeholder="t('openbuilt', 'Add type, press Enter')"
+					:placeholder="t('openbuild', 'Add type, press Enter')"
 					:aria-invalid="isInvalid('allowedTypes')"
 					@keydown.enter.prevent="commitDraft"
 					@keydown.,.prevent="commitDraft"
@@ -63,7 +63,7 @@
 			</div>
 			<InlineFieldMark :error="markFor('allowedTypes')" />
 			<p class="files-page-editor__hint">
-				{{ t('openbuilt', 'MIME types (image/png) or extensions (.pdf). Leave empty to allow everything.') }}
+				{{ t('openbuild', 'MIME types (image/png) or extensions (.pdf). Leave empty to allow everything.') }}
 			</p>
 		</fieldset>
 	</div>

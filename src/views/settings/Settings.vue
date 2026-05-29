@@ -1,16 +1,16 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <template>
 	<CnSettingsSection
-		:name="t('openbuilt', 'Configuration')"
-		:description="t('openbuilt', 'Configure the app settings')">
+		:name="t('openbuild', 'Configuration')"
+		:description="t('openbuild', 'Configure the app settings')">
 		<form @submit.prevent="save">
 			<div class="form-group">
-				<label for="register">{{ t('openbuilt', 'Register') }}</label>
+				<label for="register">{{ t('openbuild', 'Register') }}</label>
 				<input
 					id="register"
 					v-model="form.register"
 					type="text"
-					:placeholder="t('openbuilt', 'OpenRegister register ID')">
+					:placeholder="t('openbuild', 'OpenRegister register ID')">
 			</div>
 
 			<div v-if="successMessage" class="success-message">
@@ -21,7 +21,7 @@
 				type="primary"
 				native-type="submit"
 				:disabled="saving">
-				{{ saving ? t('openbuilt', 'Saving...') : t('openbuilt', 'Save') }}
+				{{ saving ? t('openbuild', 'Saving...') : t('openbuild', 'Save') }}
 			</NcButton>
 		</form>
 	</CnSettingsSection>
@@ -68,7 +68,7 @@ export default {
 			const settingsStore = useSettingsStore()
 			const result = await settingsStore.saveSettings(this.form)
 			if (result) {
-				this.successMessage = t('openbuilt', 'Settings saved successfully')
+				this.successMessage = t('openbuild', 'Settings saved successfully')
 			}
 			this.saving = false
 		},

@@ -1,15 +1,15 @@
 <?php
 
 /**
- * OpenBuilt Application
+ * OpenBuild Application
  *
- * Main application class for the OpenBuilt Nextcloud app.
+ * Main application class for the OpenBuild Nextcloud app.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category AppInfo
- * @package  OCA\OpenBuilt\AppInfo
+ * @package  OCA\OpenBuild\AppInfo
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,12 +22,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\AppInfo;
+namespace OCA\OpenBuild\AppInfo;
 
-use OCA\OpenBuilt\Listener\ProductionVersionGuardListener;
-use OCA\OpenBuilt\Listener\DeepLinkRegistrationListener;
-use OCA\OpenBuilt\Mcp\OpenBuiltToolProvider;
-use OCA\OpenBuilt\Service\AppNavigationService;
+use OCA\OpenBuild\Listener\ProductionVersionGuardListener;
+use OCA\OpenBuild\Listener\DeepLinkRegistrationListener;
+use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
+use OCA\OpenBuild\Service\AppNavigationService;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
@@ -38,11 +38,11 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\INavigationManager;
 
 /**
- * Main application class for the OpenBuilt Nextcloud app.
+ * Main application class for the OpenBuild Nextcloud app.
  */
 class Application extends App implements IBootstrap
 {
-    public const APP_ID = 'openbuilt';
+    public const APP_ID = 'openbuild';
 
     /**
      * Constructor for the Application class.
@@ -78,7 +78,7 @@ class Application extends App implements IBootstrap
         // been removed in favour of an explicit `productionVersion` relation
         // set by the admin. Object time-travel on the ApplicationVersion row
         // captures audit history. The corresponding spec retirement lives
-        // in openbuilt-versioning-model/specs/openbuilt-version-snapshots.
+        // in openbuild-versioning-model/specs/openbuild-version-snapshots.
         // Cross-row integrity guard: on every Application save (create or
         // update), verify that `productionVersion` (when set) points at an
         // ApplicationVersion whose `application` relation refers back to
@@ -93,14 +93,14 @@ class Application extends App implements IBootstrap
             listener: ProductionVersionGuardListener::class
         );
 
-        // Register OpenBuiltToolProvider as the MCP tool provider for the AI Chat Companion.
-        // The alias key 'OCA\OpenRegister\Mcp\IMcpToolProvider::openbuilt' is the format
+        // Register OpenBuildToolProvider as the MCP tool provider for the AI Chat Companion.
+        // The alias key 'OCA\OpenRegister\Mcp\IMcpToolProvider::openbuild' is the format
         // that OR's McpToolsService enumerates to discover per-app providers (hydra ADR-035).
         // The interface ships in openregister PR #1466 (ai-chat-companion-orchestrator);
-        // until then OpenBuilt implements the test stub at tests/Stubs/Mcp/IMcpToolProvider.php.
+        // until then OpenBuild implements the test stub at tests/Stubs/Mcp/IMcpToolProvider.php.
         $context->registerServiceAlias(
-            'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::openbuilt',
-            OpenBuiltToolProvider::class
+            'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::openbuild',
+            OpenBuildToolProvider::class
         );
 
         // Repair steps (InitializeSettings + MigrateToVersionedModel + …) are declared in info.xml.
@@ -110,7 +110,7 @@ class Application extends App implements IBootstrap
      * Boot the application.
      *
      * Registers per-published-app top-bar navigation entries via
-     * AppNavigationService (REQ-OBNAV-001 / openbuilt-nextcloud-nav).
+     * AppNavigationService (REQ-OBNAV-001 / openbuild-nextcloud-nav).
      * Lazily resolved from the DI container to avoid instantiating the
      * service tree when OR is not installed.
      *

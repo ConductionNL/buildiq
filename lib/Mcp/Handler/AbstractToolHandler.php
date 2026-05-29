@@ -1,14 +1,14 @@
 <?php
 
 /**
- * Abstract base class for OpenBuilt MCP tool handlers.
+ * Abstract base class for OpenBuild MCP tool handlers.
  *
  * Provides the shared utilities (slug validation, auth check, error envelope,
  * toArray/extractUuid coercion, deep-link builder, per-Application RBAC) that
  * every concrete handler needs, eliminating duplication across the handler family.
  *
  * @category Service
- * @package  OCA\OpenBuilt\Mcp\Handler
+ * @package  OCA\OpenBuild\Mcp\Handler
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,9 +24,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Mcp\Handler;
+namespace OCA\OpenBuild\Mcp\Handler;
 
-use OCA\OpenBuilt\Service\PermissionResolver;
+use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -36,14 +36,14 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
- * Abstract base for all OpenBuilt MCP tool handler classes.
+ * Abstract base for all OpenBuild MCP tool handler classes.
  *
  * Concrete handlers extend this and implement handle(array $args): array.
  */
 abstract class AbstractToolHandler
 {
 
-    protected const REGISTER_SLUG = 'openbuilt';
+    protected const REGISTER_SLUG = 'openbuild';
 
     /**
      * Roles that grant write access to an Application.
@@ -172,7 +172,7 @@ abstract class AbstractToolHandler
         if ($this->callerHasWriteRole(app: $app, uid: $uid, allowAdminBypass: $allowAdminBypass) === true) {
             if ($allowAdminBypass === true && $this->groupManager->isAdmin($uid) === true) {
                 $this->logger->info(
-                    'OpenBuilt MCP: rbac.admin_bypass',
+                    'OpenBuild MCP: rbac.admin_bypass',
                     ['actor' => $uid, 'appSlug' => $appSlug]
                 );
             }
@@ -328,7 +328,7 @@ abstract class AbstractToolHandler
     }//end callerHasWriteRole()
 
     /**
-     * Validate that a candidate string matches the OpenBuilt slug shape.
+     * Validate that a candidate string matches the OpenBuild slug shape.
      *
      * @param string $candidate Candidate slug to validate.
      *
@@ -407,7 +407,7 @@ abstract class AbstractToolHandler
     }//end checkManifestCaps()
 
     /**
-     * Build a Nextcloud deep link into the OpenBuilt builder for the given application slug.
+     * Build a Nextcloud deep link into the OpenBuild builder for the given application slug.
      *
      * @param string $slug Application slug (empty falls back to the app root).
      *
@@ -416,15 +416,15 @@ abstract class AbstractToolHandler
     protected function buildDeepLink(string $slug): string
     {
         if ($slug === '') {
-            return '/apps/openbuilt';
+            return '/apps/openbuild';
         }
 
-        return "/apps/openbuilt/builder/{$slug}";
+        return "/apps/openbuild/builder/{$slug}";
 
     }//end buildDeepLink()
 
     /**
-     * Build an MCP "source" descriptor pointing at the OpenBuilt app deep link.
+     * Build an MCP "source" descriptor pointing at the OpenBuild app deep link.
      *
      * @param string $uuid  Application UUID.
      * @param string $slug  Application slug used to build the deep link.
@@ -434,7 +434,7 @@ abstract class AbstractToolHandler
      */
     protected function sourceDescriptor(string $uuid, string $slug, string $label): array
     {
-        return ['type' => 'openbuilt.application', 'uuid' => $uuid, 'url' => $this->buildDeepLink(slug: $slug), 'label' => $label];
+        return ['type' => 'openbuild.application', 'uuid' => $uuid, 'url' => $this->buildDeepLink(slug: $slug), 'label' => $label];
 
     }//end sourceDescriptor()
 
@@ -546,13 +546,13 @@ abstract class AbstractToolHandler
         try {
             $objectService->lockObject(
                 identifier: $versionUuid,
-                process: 'openbuilt.mcp-manifest-edit',
+                process: 'openbuild.mcp-manifest-edit',
                 duration: 30
             );
             $locked = true;
         } catch (\Throwable $lockError) {
             $this->logger->warning(
-                'OpenBuilt MCP: manifest lock contention on version '.$versionUuid,
+                'OpenBuild MCP: manifest lock contention on version '.$versionUuid,
                 ['exception' => $lockError->getMessage()]
             );
             throw new RuntimeException(
@@ -584,7 +584,7 @@ abstract class AbstractToolHandler
                     $objectService->unlockObject(identifier: $versionUuid);
                 } catch (\Throwable $unlockError) {
                     $this->logger->warning(
-                        'OpenBuilt MCP: failed to release manifest lock on '.$versionUuid,
+                        'OpenBuild MCP: failed to release manifest lock on '.$versionUuid,
                         ['exception' => $unlockError->getMessage()]
                     );
                 }

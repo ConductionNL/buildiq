@@ -7,7 +7,7 @@ the `VersionHistory` view, the `PromoteVersionDialog`, the
 default helper) — as 4 new REQs.
 
 Code already exists (it implements the `version-routing`, `version-promotion`,
-and `openbuilt-version-snapshots` backend capabilities). This change
+and `openbuild-version-snapshots` backend capabilities). This change
 retroactively specifies the frontend behaviour so gate-16 spec-coverage can
 trace each method.
 

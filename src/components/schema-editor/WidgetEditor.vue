@@ -8,41 +8,41 @@
   - free-text; `config` is captured as raw JSON (read-only in v1).
   -->
 <template>
-	<section class="openbuilt-widget-editor">
-		<header class="openbuilt-widget-editor__header">
-			<h3>{{ t('openbuilt', 'Widgets') }}</h3>
+	<section class="openbuild-widget-editor">
+		<header class="openbuild-widget-editor__header">
+			<h3>{{ t('openbuild', 'Widgets') }}</h3>
 			<NcButton @click="addWidget">
 				<template #icon>
 					<PlusIcon :size="20" />
 				</template>
-				{{ t('openbuilt', 'Add widget') }}
+				{{ t('openbuild', 'Add widget') }}
 			</NcButton>
 		</header>
 
 		<NcNoteCard type="warning">
-			{{ t('openbuilt', 'No widget catalogue registered yet — widget IDs are free-text. The page editor (chain spec #5) will narrow this to a picker once it ships.') }}
+			{{ t('openbuild', 'No widget catalogue registered yet — widget IDs are free-text. The page editor (chain spec #5) will narrow this to a picker once it ships.') }}
 		</NcNoteCard>
 
-		<p v-if="widgets.length === 0" class="openbuilt-widget-editor__empty">
-			{{ t('openbuilt', 'No widgets yet.') }}
+		<p v-if="widgets.length === 0" class="openbuild-widget-editor__empty">
+			{{ t('openbuild', 'No widgets yet.') }}
 		</p>
 
-		<ul v-else class="openbuilt-widget-editor__rows">
+		<ul v-else class="openbuild-widget-editor__rows">
 			<li
 				v-for="(widget, index) in widgets"
 				:key="widget._key"
-				class="openbuilt-widget-editor__row">
+				class="openbuild-widget-editor__row">
 				<NcTextField
 					:value="widget.slot"
-					:label="t('openbuilt', 'Slot')"
+					:label="t('openbuild', 'Slot')"
 					@update:value="updateWidget(index, 'slot', $event)" />
 				<NcTextField
 					:value="widget.widget"
-					:label="t('openbuilt', 'Widget id')"
+					:label="t('openbuild', 'Widget id')"
 					@update:value="updateWidget(index, 'widget', $event)" />
 				<NcTextField
 					:value="widget.configJson"
-					:label="t('openbuilt', 'Config (JSON)')"
+					:label="t('openbuild', 'Config (JSON)')"
 					:error="!!widget.configError"
 					:helper-text="widget.configError"
 					@update:value="updateConfig(index, $event)" />
@@ -130,7 +130,7 @@ export default {
 			try {
 				JSON.parse(value || '{}')
 			} catch (e) {
-				error = this.t('openbuilt', 'Config must be valid JSON.')
+				error = this.t('openbuild', 'Config must be valid JSON.')
 			}
 			next[index] = { ...next[index], configJson: value, configError: error }
 			this.emitWidgets(next)
@@ -198,30 +198,30 @@ export function editorToWidgets(widgets) {
 </script>
 
 <style scoped>
-.openbuilt-widget-editor {
+.openbuild-widget-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
 
-.openbuilt-widget-editor__header {
+.openbuild-widget-editor__header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
 
-.openbuilt-widget-editor__header h3 {
+.openbuild-widget-editor__header h3 {
 	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
 }
 
-.openbuilt-widget-editor__empty {
+.openbuild-widget-editor__empty {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 }
 
-.openbuilt-widget-editor__rows {
+.openbuild-widget-editor__rows {
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -230,7 +230,7 @@ export function editorToWidgets(widgets) {
 	gap: 8px;
 }
 
-.openbuilt-widget-editor__row {
+.openbuild-widget-editor__row {
 	display: grid;
 	grid-template-columns: 1fr 1fr 2fr auto;
 	gap: 8px;

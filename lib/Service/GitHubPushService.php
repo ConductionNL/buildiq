@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuilt GitHub Push Service
+ * OpenBuild GitHub Push Service
  *
  * Pushes the generated app tree to a new GitHub repository and opens a
  * placeholder pull request. The PAT is method-scoped — never persisted on
@@ -12,7 +12,7 @@
  * once `knplabs/github-api` is on the lockfile.
  *
  * @category Service
- * @package  OCA\OpenBuilt\Service
+ * @package  OCA\OpenBuild\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -30,7 +30,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Service;
+namespace OCA\OpenBuild\Service;
 
 use Psr\Log\LoggerInterface;
 
@@ -61,13 +61,13 @@ class GitHubPushService
      *
      * @return array{repoUrl:string,pullRequestUrl:string} URLs of the created repo + PR.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
      */
     public function push(string $jobUuid, string $treeDir, string $pat): array
     {
         // Audit log names only the job + tree — never the PAT.
         $this->logger->info(
-            'OpenBuilt GitHub push (stub): would push tree to repo',
+            'OpenBuild GitHub push (stub): would push tree to repo',
             ['jobUuid' => $jobUuid, 'treeDir' => $treeDir]
         );
 
@@ -90,7 +90,7 @@ class GitHubPushService
      *
      * @return string Default branch name.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
      */
     public function resolveDefaultBranch(string $org, string $pat): string
     {

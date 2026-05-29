@@ -3,7 +3,7 @@
 /**
  * Unit tests for SlugValidator.
  *
- * Covers spec `openbuilt-app-creation-wizard` REQ-OBWIZ-005 and
+ * Covers spec `openbuild-app-creation-wizard` REQ-OBWIZ-005 and
  * REQ-OBWIZ-006:
  *   - Valid app + version slugs
  *   - Leading-underscore rejection
@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Service
+ * @package  OCA\OpenBuild\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,9 +29,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Service;
+namespace OCA\OpenBuild\Tests\Unit\Service;
 
-use OCA\OpenBuilt\Service\SlugValidator;
+use OCA\OpenBuild\Service\SlugValidator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -161,7 +161,7 @@ class SlugValidatorTest extends TestCase
     {
         $result = $this->validator->validateVersionSlug('_internal');
         self::assertSame('slug_leading_underscore', $result['code']);
-        self::assertStringContainsString('reserved for openbuilt system use', $result['message']);
+        self::assertStringContainsString('reserved for openbuild system use', $result['message']);
     }//end leadingUnderscoreVersionSlugIsRejected()
 
     /**

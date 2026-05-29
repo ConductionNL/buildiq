@@ -19,11 +19,11 @@
 <template>
 	<div class="logs-page-editor">
 		<h3 class="logs-page-editor__title">
-			{{ t('openbuilt', 'Logs page') }}
+			{{ t('openbuild', 'Logs page') }}
 		</h3>
 
 		<fieldset class="logs-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Data source') }}</legend>
+			<legend>{{ t('openbuild', 'Data source') }}</legend>
 			<div class="logs-page-editor__shape">
 				<label class="logs-page-editor__inline">
 					<input
@@ -31,7 +31,7 @@
 						:checked="sourceShape === 'register'"
 						value="register"
 						@change="setSourceShape('register')">
-					{{ t('openbuilt', 'Register + schema') }}
+					{{ t('openbuild', 'Register + schema') }}
 				</label>
 				<label class="logs-page-editor__inline">
 					<input
@@ -39,19 +39,19 @@
 						:checked="sourceShape === 'source'"
 						value="source"
 						@change="setSourceShape('source')">
-					{{ t('openbuilt', 'Source (URL or registry key)') }}
+					{{ t('openbuild', 'Source (URL or registry key)') }}
 				</label>
 			</div>
 
 			<div v-if="sourceShape === 'register'" class="logs-page-editor__group">
 				<label>
-					{{ t('openbuilt', 'Register') }}
+					{{ t('openbuild', 'Register') }}
 					<select
 						:value="config.register || ''"
 						:aria-invalid="isInvalid('register')"
 						@change="update('register', $event.target.value)">
 						<option value="">
-							{{ t('openbuilt', '— select register —') }}
+							{{ t('openbuild', '— select register —') }}
 						</option>
 						<option v-for="r in registers" :key="r.slug || r.id" :value="r.slug">
 							{{ r.title || r.slug }}
@@ -60,14 +60,14 @@
 					<InlineFieldMark :error="markFor('register')" />
 				</label>
 				<label>
-					{{ t('openbuilt', 'Schema') }}
+					{{ t('openbuild', 'Schema') }}
 					<select
 						:value="config.schema || ''"
 						:disabled="!config.register"
 						:aria-invalid="isInvalid('schema')"
 						@change="update('schema', $event.target.value)">
 						<option value="">
-							{{ t('openbuilt', '— select schema —') }}
+							{{ t('openbuild', '— select schema —') }}
 						</option>
 						<option v-for="s in schemas" :key="s.slug || s.id" :value="s.slug">
 							{{ s.title || s.slug }}
@@ -78,23 +78,23 @@
 			</div>
 			<div v-else class="logs-page-editor__group">
 				<label>
-					{{ t('openbuilt', 'Source') }}
+					{{ t('openbuild', 'Source') }}
 					<input
 						type="text"
 						:value="config.source || ''"
-						:placeholder="t('openbuilt', '/api/objects/:slug/audit or a customComponents key')"
+						:placeholder="t('openbuild', '/api/objects/:slug/audit or a customComponents key')"
 						:aria-invalid="isInvalid('source')"
 						@input="update('source', $event.target.value)">
 					<InlineFieldMark :error="markFor('source')" />
 				</label>
 			</div>
 			<p class="logs-page-editor__hint">
-				{{ t('openbuilt', 'Exactly one of (register + schema) or source must be set.') }}
+				{{ t('openbuild', 'Exactly one of (register + schema) or source must be set.') }}
 			</p>
 		</fieldset>
 
 		<fieldset class="logs-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Columns') }}</legend>
+			<legend>{{ t('openbuild', 'Columns') }}</legend>
 			<ColumnBuilder
 				:model-value="config.columns || []"
 				:schema-properties="schemaProperties"

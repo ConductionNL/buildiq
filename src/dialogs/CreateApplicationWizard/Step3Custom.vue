@@ -5,15 +5,15 @@
   Step 3 — Custom chain composer
   Add-row list with drag-to-reorder and keyboard ↑/↓ accessible buttons.
   Only shown when preset === 'custom'.
-  spec: openbuilt-app-creation-wizard REQ-OBWIZ-004, REQ-OBWIZ-005, REQ-OBWIZ-006
+  spec: openbuild-app-creation-wizard REQ-OBWIZ-004, REQ-OBWIZ-005, REQ-OBWIZ-006
 -->
 <template>
 	<div class="wizard-step3">
 		<h3 class="wizard-step3__heading">
-			{{ t('openbuilt', 'Define your version chain') }}
+			{{ t('openbuild', 'Define your version chain') }}
 		</h3>
 		<p class="wizard-step3__description">
-			{{ t('openbuilt', 'Versions are ordered top-to-bottom: upstream (e.g. Development) at top, downstream (e.g. Production) at bottom.') }}
+			{{ t('openbuild', 'Versions are ordered top-to-bottom: upstream (e.g. Development) at top, downstream (e.g. Production) at bottom.') }}
 		</p>
 
 		<ul class="wizard-step3__rows" aria-label="Version chain rows">
@@ -36,7 +36,7 @@
 						class="wizard-step3__input"
 						type="text"
 						:value="row.name"
-						:placeholder="t('openbuilt', 'Version name (e.g. Production)')"
+						:placeholder="t('openbuild', 'Version name (e.g. Production)')"
 						autocomplete="off"
 						@input="onNameInput(index, $event)">
 				</div>
@@ -55,7 +55,7 @@
 						type="button"
 						class="wizard-step3__advanced-toggle"
 						@click="toggleAdvanced(index)">
-						{{ advancedOpen[index] ? t('openbuilt', 'Hide') : t('openbuilt', 'Advanced') }}
+						{{ advancedOpen[index] ? t('openbuild', 'Hide') : t('openbuild', 'Advanced') }}
 					</button>
 				</div>
 
@@ -66,7 +66,7 @@
 						:class="{ 'wizard-step3__input--error': getSlugError(index) }"
 						type="text"
 						:value="row.slug"
-						:placeholder="t('openbuilt', 'kebab-case-slug')"
+						:placeholder="t('openbuild', 'kebab-case-slug')"
 						autocomplete="off"
 						@input="onSlugInput(index, $event)">
 					<p v-if="getSlugError(index)" class="wizard-step3__error-msg" role="alert">
@@ -80,8 +80,8 @@
 						type="button"
 						class="wizard-step3__btn-icon"
 						:disabled="index === 0"
-						:aria-label="t('openbuilt', 'Move version up')"
-						:title="t('openbuilt', 'Move up')"
+						:aria-label="t('openbuild', 'Move version up')"
+						:title="t('openbuild', 'Move up')"
 						@click="moveUp(index)">
 						↑
 					</button>
@@ -89,16 +89,16 @@
 						type="button"
 						class="wizard-step3__btn-icon"
 						:disabled="index === localVersions.length - 1"
-						:aria-label="t('openbuilt', 'Move version down')"
-						:title="t('openbuilt', 'Move down')"
+						:aria-label="t('openbuild', 'Move version down')"
+						:title="t('openbuild', 'Move down')"
 						@click="moveDown(index)">
 						↓
 					</button>
 					<button
 						type="button"
 						class="wizard-step3__btn-icon wizard-step3__btn-remove"
-						:aria-label="t('openbuilt', 'Remove version')"
-						:title="t('openbuilt', 'Remove')"
+						:aria-label="t('openbuild', 'Remove version')"
+						:title="t('openbuild', 'Remove')"
 						@click="removeRow(index)">
 						×
 					</button>
@@ -111,7 +111,7 @@
 		</p>
 
 		<button type="button" class="wizard-step3__add-btn" @click="addRow">
-			+ {{ t('openbuilt', 'Add version') }}
+			+ {{ t('openbuild', 'Add version') }}
 		</button>
 	</div>
 </template>
@@ -160,7 +160,7 @@ export default {
 		 */
 		slugErrors() {
 			return this.localVersions.map((row) => {
-				if (!row.name) return t('openbuilt', 'Version name must not be empty.')
+				if (!row.name) return t('openbuild', 'Version name must not be empty.')
 				const result = validateSlug(row.slug)
 				return result.valid ? null : result.message
 			})
@@ -248,7 +248,7 @@ export default {
 		 */
 		getSlugError(index) {
 			if (this.isDuplicate(index)) {
-				return t('openbuilt', `Slug \`${this.localVersions[index].slug}\` is already used in this chain`)
+				return t('openbuild', `Slug \`${this.localVersions[index].slug}\` is already used in this chain`)
 			}
 
 			return this.slugErrors[index] || null
@@ -314,7 +314,7 @@ export default {
 		 */
 		removeRow(index) {
 			if (this.localVersions.length <= 1) {
-				this.minRowError = t('openbuilt', 'At least one version is required')
+				this.minRowError = t('openbuild', 'At least one version is required')
 				return
 			}
 

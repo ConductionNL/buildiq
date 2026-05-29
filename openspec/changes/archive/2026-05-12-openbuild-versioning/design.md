@@ -1,7 +1,7 @@
 ## Context
 
-This is spec #6 of the OpenBuilt 9-spec chain (ADR-032). Spec #1
-(`bootstrap-openbuilt`) declared the Application lifecycle
+This is spec #6 of the OpenBuild 9-spec chain (ADR-032). Spec #1
+(`bootstrap-openbuild`) declared the Application lifecycle
 (`draft → published → archived`) via `x-openregister-lifecycle` and
 the foundational schemas; THIS spec ships the **version snapshot
 mechanism** and the **draft / publish / rollback UX** that make the
@@ -11,11 +11,11 @@ The architectural commitment from ADR-031 holds: the snapshot data
 model (`ApplicationVersion`) and the snapshot-on-publish action are
 **declarative** OpenRegister metadata. The UI surface — the Publish
 button, the version-history panel, the rollback modal, the diff
-component — is unavoidably code. The split mirrors bootstrap-openbuilt
+component — is unavoidably code. The split mirrors bootstrap-openbuild
 (declarative lifecycle + thin-glue PHP + Vue UI) and applies ADR-032's
 thin-glue exception for `kind: mixed`.
 
-The runtime workaround documented in bootstrap-openbuilt's Decision 4
+The runtime workaround documented in bootstrap-openbuild's Decision 4
 (`options.fetcher` redirect for `useAppManifest`) is **not** affected
 by this spec — versioning operates on the stored manifest blob in OR,
 not on the runtime loader path.
@@ -28,7 +28,7 @@ not on the runtime loader path.
   snapshot-on-publish action declared as `x-openregister-lifecycle.on_transition`
   metadata (or, per ADR-031 §Exceptions(1), as a single PHP listener
   if OR's engine lacks the hook — same OQ-1 fallback as
-  bootstrap-openbuilt).
+  bootstrap-openbuild).
 - Extend the Application schema with a `currentVersion` reference,
   kept in sync by the same lifecycle action.
 - Ship the draft-vs-published indicator, the Publish action,
@@ -92,7 +92,7 @@ that creates a sibling object (and updates the parent), the spec MAY
 fall back to a single PHP listener
 `lib/Listener/ApplicationVersionSnapshotListener.php` subscribed to
 OR's `ObjectLifecycleTransitionedEvent`. This is identical in pattern
-to bootstrap-openbuilt's `BuiltAppRouteSyncListener` exception (its
+to bootstrap-openbuild's `BuiltAppRouteSyncListener` exception (its
 OQ-1) and is permitted by ADR-031 §Exceptions(1). The implementer
 SHALL:
 
@@ -100,7 +100,7 @@ SHALL:
   test that the action fires;
 - only on demonstrated engine gap, ship the listener;
 - if the listener path is taken, file an OR-side issue requesting
-  the missing hook (referencing this spec and bootstrap-openbuilt's
+  the missing hook (referencing this spec and bootstrap-openbuild's
   OQ-1) so the listener can be removed when the engine catches up;
 - record the chosen path in this change's `hydra.json` under
   `decisions[]` for self-learning.
@@ -172,7 +172,7 @@ the editor into a modal experience.
 ### Decision 4 — Retention policy: keep all versions in v1
 
 `ApplicationVersion` rows SHALL NOT be auto-deleted, trimmed, or
-expired by OpenBuilt in v1. Retention is unlimited.
+expired by OpenBuild in v1. Retention is unlimited.
 
 Rationale:
 
@@ -219,7 +219,7 @@ diffing, so cosmetic key-order shuffles don't produce noise hunks.
 
 | Candidate behaviour | Path |
 |---|---|
-| `ApplicationVersion` schema definition | **Declarative** — JSON in `lib/Settings/openbuilt_register.json`. No PHP class. |
+| `ApplicationVersion` schema definition | **Declarative** — JSON in `lib/Settings/openbuild_register.json`. No PHP class. |
 | Snapshot-on-publish action | **Declarative** — `x-openregister-lifecycle.on_transition` action on the Application schema. ADR-031 §Exceptions(1) fallback to a single listener PHP class only if the engine gap is demonstrated. |
 | `currentVersion` upkeep | **Declarative** — same action / listener as the snapshot. |
 | Rollback (copy snapshot → draft manifest) | **Imperative — frontend** — initiated by the integrator's click; PUT against OR REST. No new server action needed because the manifest field is just an OR object property; the rollback is a normal write. |
@@ -279,8 +279,8 @@ without removing review surface.
 If, during apply, the code surface significantly exceeds these
 estimates (e.g. the diff component balloons past ~200 LOC because
 the JSON pretty-printer turns out gnarly), this spec MUST be split
-into `openbuilt-versioning-schemas` (config only) +
-`openbuilt-versioning-ui` (code only). At that point this design
+into `openbuild-versioning-schemas` (config only) +
+`openbuild-versioning-ui` (code only). At that point this design
 document becomes the parent record for the split.
 
 **Alternatives considered**
@@ -296,7 +296,7 @@ document becomes the parent record for the split.
 
 - **Risk — declarative `on_transition` action may not support
   sibling-object create.** Same OR-engine-gap question as
-  bootstrap-openbuilt's OQ-1. Mitigation: Decision 2 documents the
+  bootstrap-openbuild's OQ-1. Mitigation: Decision 2 documents the
   ADR-031 §Exceptions(1) listener fallback; integration tests assert
   the observed behaviour in either path.
 - **Risk — full-blob snapshots grow storage faster than expected.**
@@ -334,7 +334,7 @@ foundational schemas and runtime. Deployment steps:
    the existing repair step (which now picks up the
    `ApplicationVersion` schema declaration and the new lifecycle
    action / `currentVersion` field on Application).
-4. **Rollback** — disable the OpenBuilt versioning surface by
+4. **Rollback** — disable the OpenBuild versioning surface by
    reverting this change's deltas. Existing `ApplicationVersion`
    rows are harmless (no other Conduction app reads from them) and
    can be removed via OR's admin UI if a clean uninstall is wanted.
@@ -352,7 +352,7 @@ manifest, so that the version-history panel is non-empty on a fresh
 install and the diff view has something to render in the
 walkthrough.
 
-**Seeded `ApplicationVersion`** (in the `openbuilt/application-version`
+**Seeded `ApplicationVersion`** (in the `openbuild/application-version`
 namespace):
 
 - `applicationUuid`: UUID of the seeded `hello-world` Application
@@ -361,7 +361,7 @@ namespace):
   manifest at install time (byte-equal)
 - `publishedAt`: install timestamp
 - `publishedBy`: `system` (or the repair-step actor)
-- `notes`: `Seeded by OpenBuilt install — initial published version`
+- `notes`: `Seeded by OpenBuild install — initial published version`
 
 The repair step (`SeedHelloWorld.php` from spec #1) SHALL be
 extended to also set the Application's `currentVersion` to the
@@ -373,7 +373,7 @@ create a duplicate row).
 
 - **OQ-1 — `on_transition.create_relation` (or sibling-object create)
   action support in OR's lifecycle engine.** Same question
-  bootstrap-openbuilt's OQ-1 raised. If yes by apply time, ship
+  bootstrap-openbuild's OQ-1 raised. If yes by apply time, ship
   declarative; if no, ship the listener and file the OR-side issue.
   *Provisional decision*: try declarative first, fall back to the
   listener per Decision 2.

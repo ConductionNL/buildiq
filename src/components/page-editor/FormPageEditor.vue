@@ -8,11 +8,11 @@
 <template>
 	<div class="form-page-editor">
 		<h3 class="form-page-editor__title">
-			{{ t('openbuilt', 'Form page') }}
+			{{ t('openbuild', 'Form page') }}
 		</h3>
 
 		<fieldset class="form-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Submit') }}</legend>
+			<legend>{{ t('openbuild', 'Submit') }}</legend>
 			<div class="form-page-editor__submit-shape">
 				<label class="form-page-editor__inline">
 					<input
@@ -20,7 +20,7 @@
 						:checked="submitShape === 'handler'"
 						value="handler"
 						@change="setSubmitShape('handler')">
-					{{ t('openbuilt', 'submitHandler (registry key)') }}
+					{{ t('openbuild', 'submitHandler (registry key)') }}
 				</label>
 				<label class="form-page-editor__inline">
 					<input
@@ -28,7 +28,7 @@
 						:checked="submitShape === 'endpoint'"
 						value="endpoint"
 						@change="setSubmitShape('endpoint')">
-					{{ t('openbuilt', 'submitEndpoint (URL)') }}
+					{{ t('openbuild', 'submitEndpoint (URL)') }}
 				</label>
 			</div>
 			<input
@@ -36,7 +36,7 @@
 				type="text"
 				class="form-page-editor__input"
 				:value="config.submitHandler || ''"
-				:placeholder="t('openbuilt', 'customComponents registry key')"
+				:placeholder="t('openbuild', 'customComponents registry key')"
 				:aria-invalid="isInvalid('submitHandler')"
 				@input="setSubmitHandler($event.target.value)">
 			<input
@@ -44,12 +44,12 @@
 				type="text"
 				class="form-page-editor__input"
 				:value="config.submitEndpoint || ''"
-				:placeholder="t('openbuilt', '/api/objects/:slug/...')"
+				:placeholder="t('openbuild', '/api/objects/:slug/...')"
 				:aria-invalid="isInvalid('submitEndpoint')"
 				@input="setSubmitEndpoint($event.target.value)">
 			<InlineFieldMark :error="markFor(submitShape === 'endpoint' ? 'submitEndpoint' : 'submitHandler')" />
 			<label class="form-page-editor__group-row">
-				{{ t('openbuilt', 'Method') }}
+				{{ t('openbuild', 'Method') }}
 				<select
 					:value="config.submitMethod || 'POST'"
 					@change="update('submitMethod', $event.target.value)">
@@ -65,7 +65,7 @@
 				</select>
 			</label>
 			<label class="form-page-editor__group-row">
-				{{ t('openbuilt', 'Mode') }}
+				{{ t('openbuild', 'Mode') }}
 				<select
 					:value="config.mode || 'public'"
 					@change="update('mode', $event.target.value)">
@@ -81,25 +81,25 @@
 				</select>
 			</label>
 			<label class="form-page-editor__group-row">
-				{{ t('openbuilt', 'Submit label (optional)') }}
+				{{ t('openbuild', 'Submit label (optional)') }}
 				<input
 					type="text"
 					:value="config.submitLabel || ''"
-					:placeholder="t('openbuilt', 'i18n key')"
+					:placeholder="t('openbuild', 'i18n key')"
 					@input="update('submitLabel', $event.target.value)">
 			</label>
 			<label class="form-page-editor__group-row">
-				{{ t('openbuilt', 'Success message (optional)') }}
+				{{ t('openbuild', 'Success message (optional)') }}
 				<input
 					type="text"
 					:value="config.successMessage || ''"
-					:placeholder="t('openbuilt', 'i18n key')"
+					:placeholder="t('openbuild', 'i18n key')"
 					@input="update('successMessage', $event.target.value)">
 			</label>
 		</fieldset>
 
 		<fieldset class="form-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Fields') }}</legend>
+			<legend>{{ t('openbuild', 'Fields') }}</legend>
 			<FormFieldBuilder
 				:model-value="config.fields || []"
 				@update:modelValue="update('fields', $event)" />

@@ -18,17 +18,17 @@ const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 
 /** Navigate to the applications list and return the URL of the first Hello World card. */
 async function getFirstAppDetailUrl(page: Page): Promise<string> {
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	const href = await card.getAttribute('href')
-	return href ? (href.startsWith('http') ? href : `${BASE}${href}`) : `${BASE}/apps/openbuilt/applications`
+	return href ? (href.startsWith('http') ? href : `${BASE}${href}`) : `${BASE}/apps/openbuild/applications`
 }
 
 // @e2e app-icon-management::user-uploads-a-light-icon
 test('REQ-OBICON-004 — detail page exposes icon upload section', async ({ page }) => {
 	// @e2e app-icon-management::user-uploads-a-light-icon
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -60,7 +60,7 @@ test('REQ-OBICON-004 — detail page exposes icon upload section', async ({ page
 // @e2e app-icon-management::user-removes-the-dark-icon
 test('REQ-OBICON-004 — icon tab/section is accessible on the detail page', async ({ page }) => {
 	// @e2e app-icon-management::user-removes-the-dark-icon
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -90,7 +90,7 @@ test('REQ-OBICON-004 — icon tab/section is accessible on the detail page', asy
 // @e2e app-icon-management::non-svg-file-is-rejected-client-side
 test('REQ-OBICON-004 — non-SVG upload is rejected (icon section validation)', async ({ page }) => {
 	// @e2e app-icon-management::non-svg-file-is-rejected-client-side
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()

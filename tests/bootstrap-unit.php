@@ -15,21 +15,21 @@ $autoloader = require __DIR__ . '/../vendor/autoload.php';
 $autoloader->addPsr4('OCP\\', __DIR__ . '/../vendor/nextcloud/ocp/OCP/');
 $autoloader->addPsr4('NCU\\', __DIR__ . '/../vendor/nextcloud/ocp/NCU/');
 
-// Re-pin the OpenBuilt PSR-4 prefix to the LOCAL lib/. The vendor/ dir
+// Re-pin the OpenBuild PSR-4 prefix to the LOCAL lib/. The vendor/ dir
 // may be symlinked from a sibling checkout (e.g. running in a git worktree)
 // where the optimized classmap points at a stale baseDir. We rebuild the
-// classmap entries for every OCA\OpenBuilt class so they resolve against
+// classmap entries for every OCA\OpenBuild class so they resolve against
 // the worktree-local lib/ directory.
-$openBuiltLib = realpath(__DIR__ . '/../lib');
-$autoloader->setPsr4('OCA\\OpenBuilt\\', [$openBuiltLib]);
-$rii = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($openBuiltLib));
+$openBuildLib = realpath(__DIR__ . '/../lib');
+$autoloader->setPsr4('OCA\\OpenBuild\\', [$openBuildLib]);
+$rii = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($openBuildLib));
 $classMap = [];
 foreach ($rii as $file) {
     if ($file->isFile() === false || $file->getExtension() !== 'php') {
         continue;
     }
-    $relative = substr($file->getPathname(), strlen($openBuiltLib) + 1);
-    $classMap['OCA\\OpenBuilt\\' . str_replace(['/', '.php'], ['\\', ''], $relative)] = $file->getPathname();
+    $relative = substr($file->getPathname(), strlen($openBuildLib) + 1);
+    $classMap['OCA\\OpenBuild\\' . str_replace(['/', '.php'], ['\\', ''], $relative)] = $file->getPathname();
 }
 $autoloader->addClassMap($classMap);
 
@@ -63,7 +63,7 @@ require_once __DIR__ . '/Stubs/Mcp/IMcpToolProvider.php';
 // the docker container), boot it so functional tests can talk to OC.
 // In a stripped CI environment we skip — unit tests don't need it.
 if (file_exists(__DIR__ . '/../../../lib/base.php') === true
-    && getenv('OPENBUILT_SKIP_NC_BOOTSTRAP') === false
+    && getenv('OPENBUILD_SKIP_NC_BOOTSTRAP') === false
 ) {
     require_once __DIR__ . '/../../../lib/base.php';
 

@@ -4,7 +4,7 @@
  * OpenRegister test stubs.
  *
  * Provides minimal class declarations for the OpenRegister types that
- * OpenBuilt's controllers, services, repair steps and listeners reference
+ * OpenBuild's controllers, services, repair steps and listeners reference
  * by hard-typed constructor parameters or return types. These stubs are
  * only declared when the real OpenRegister sources are NOT present on the
  * autoload path (e.g. CI runs the out-of-container unit suite without the
@@ -207,7 +207,7 @@ namespace OCA\OpenRegister\Db {
     if (class_exists(AuditTrailMapper::class, autoload: false) === false) {
         /**
          * Stub AuditTrailMapper — call surface covering the methods used by
-         * OpenBuilt services. `getDistinctActorCount` is the new aggregation
+         * OpenBuild services. `getDistinctActorCount` is the new aggregation
          * delivered by `openregister-distinct-actor-aggregation`; declaring
          * it here lets the unit tests mock it before the OR floor lands.
          */

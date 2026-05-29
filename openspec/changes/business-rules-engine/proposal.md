@@ -7,7 +7,7 @@ chain:
 
 ## Why
 
-OpenBuilt's page-designer and form-builder enable citizen-developers to create custom applications without coding, but they lack a structured way to model business rules separate from UI logic. Currently, validation rules, workflow routing logic, automatic calculations, and conditional field visibility are scattered across:
+OpenBuild's page-designer and form-builder enable citizen-developers to create custom applications without coding, but they lack a structured way to model business rules separate from UI logic. Currently, validation rules, workflow routing logic, automatic calculations, and conditional field visibility are scattered across:
 
 - Hardcoded IF-conditions in Vue templates
 - Validation logic embedded in form definitions
@@ -25,7 +25,7 @@ The engine provides: (a) visual editors for both paradigms, (b) per-tenant deplo
 
 ## What Changes
 
-- **NEW** Five OpenRegister schemas in `lib/Settings/openbuilt-rules_register.json`:
+- **NEW** Five OpenRegister schemas in `lib/Settings/openbuild-rules_register.json`:
   - `RuleSet` — container with versioning, status (draft/test/active/archived), ownership, activation dates
   - `DecisionTable` — DMN-based multi-condition mapper with input/output columns, hit policies, cell expressions
   - `ConditionActionRule` — condition-driven action chains with priority/salience and action sequencing
@@ -63,19 +63,19 @@ The engine provides: (a) visual editors for both paradigms, (b) per-tenant deplo
 
 #### New Capabilities
 
-- `openbuilt-rule-engine`: The complete rule evaluation framework. Owns the five schemas (RuleSet, DecisionTable, ConditionActionRule, RuleExecutionLog, TestCase) via `lib/Settings/openbuilt-rules_register.json`, the runtime evaluation engine (RuleEngineService, DecisionTableEvaluator, ConditionActionExecutor), the visual editors (DecisionTableEditor, ConditionActionRuleEditor, RuleSetTestSandbox), the RulesController with the `/evaluate` and `/test-all` endpoints, the versioning service, the impact-analysis service, and the cleanup job. Honours ADR-031 (schemas are declarative; evaluation logic is PHP code, documented as exception per ADR-031 §Exceptions).
+- `openbuild-rule-engine`: The complete rule evaluation framework. Owns the five schemas (RuleSet, DecisionTable, ConditionActionRule, RuleExecutionLog, TestCase) via `lib/Settings/openbuild-rules_register.json`, the runtime evaluation engine (RuleEngineService, DecisionTableEvaluator, ConditionActionExecutor), the visual editors (DecisionTableEditor, ConditionActionRuleEditor, RuleSetTestSandbox), the RulesController with the `/evaluate` and `/test-all` endpoints, the versioning service, the impact-analysis service, and the cleanup job. Honours ADR-031 (schemas are declarative; evaluation logic is PHP code, documented as exception per ADR-031 §Exceptions).
 
 #### Modified Capabilities
 
-- `openbuilt-page-designer`: form-builder's field validation and conditional-visibility bindings now resolve through the runtime API to a RuleSet. No API breakage — the designer continues to support inline expressions; RuleSet reference is optional.
+- `openbuild-page-designer`: form-builder's field validation and conditional-visibility bindings now resolve through the runtime API to a RuleSet. No API breakage — the designer continues to support inline expressions; RuleSet reference is optional.
 
-- `openbuilt-runtime`: when evaluating form-validation or routing logic at runtime, checks whether a RuleSet is referenced; if present, calls the rule-engine API. Fallback to inline expressions if no RuleSet.
+- `openbuild-runtime`: when evaluating form-validation or routing logic at runtime, checks whether a RuleSet is referenced; if present, calls the rule-engine API. Fallback to inline expressions if no RuleSet.
 
 ## Impact
 
 - **New code**: ~2,500 LOC across RuleEngineService, DecisionTableEvaluator, ConditionActionExecutor, RuleSetVersioningService, RuleImpactAnalysisService, RulesController, the visual editors (DecisionTableEditor.vue ~300 LOC, ConditionActionRuleEditor.vue ~250 LOC, RuleSetTestSandbox.vue ~350 LOC, RuleSetsPage.vue ~400 LOC), and the cleanup job.
 
-- **Schema patch** — `lib/Settings/openbuilt-rules_register.json` declares the five schemas (RuleSet, DecisionTable, ConditionActionRule, RuleExecutionLog, TestCase) with `x-openregister-lifecycle` on RuleSet for status transitions and `x-openregister-notifications` for rule-change alerts.
+- **Schema patch** — `lib/Settings/openbuild-rules_register.json` declares the five schemas (RuleSet, DecisionTable, ConditionActionRule, RuleExecutionLog, TestCase) with `x-openregister-lifecycle` on RuleSet for status transitions and `x-openregister-notifications` for rule-change alerts.
 
 - **External dependency** — none. FEEL-expression parsing uses a lightweight subset (range operators `..`, list membership `in`, comparison operators) implemented in PHP.
 

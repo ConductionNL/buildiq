@@ -1,54 +1,54 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <template>
 	<NcDialog
-		:name="t('openbuilt', 'Export application')"
+		:name="t('openbuild', 'Export application')"
 		:can-close="!submitting"
 		size="normal"
 		@closing="onClose">
 		<form class="export-dialog" @submit.prevent="submit">
 			<NcSelect
 				v-model="form.version"
-				:input-label="t('openbuilt', 'Version')"
+				:input-label="t('openbuild', 'Version')"
 				:options="versionOptions"
 				:disabled="submitting" />
 			<NcSelect
 				v-model="form.target"
-				:input-label="t('openbuilt', 'Target')"
+				:input-label="t('openbuild', 'Target')"
 				:options="targetOptions"
 				:disabled="submitting" />
 			<NcSelect
 				v-model="form.license"
-				:input-label="t('openbuilt', 'License')"
+				:input-label="t('openbuild', 'License')"
 				:options="licenseOptions"
 				:disabled="submitting" />
 			<NcCheckboxRadioSwitch
 				v-model="form.includeSeedData"
 				:disabled="submitting">
-				{{ t('openbuilt', 'Include seed data') }}
+				{{ t('openbuild', 'Include seed data') }}
 			</NcCheckboxRadioSwitch>
 
 			<template v-if="form.target && form.target.value === 'github'">
 				<NcTextField
 					v-model="form.githubOrg"
-					:label="t('openbuilt', 'GitHub organisation')"
+					:label="t('openbuild', 'GitHub organisation')"
 					:disabled="submitting" />
 				<NcTextField
 					v-model="form.githubRepo"
-					:label="t('openbuilt', 'Repository name')"
+					:label="t('openbuild', 'Repository name')"
 					:disabled="submitting" />
 				<NcSelect
 					v-model="form.githubVisibility"
-					:input-label="t('openbuilt', 'Visibility')"
+					:input-label="t('openbuild', 'Visibility')"
 					:options="visibilityOptions"
 					:disabled="submitting" />
 				<NcTextField
 					v-model="form.githubPat"
 					type="password"
 					autocomplete="off"
-					:label="t('openbuilt', 'GitHub personal access token')"
+					:label="t('openbuild', 'GitHub personal access token')"
 					:disabled="submitting" />
 				<p class="export-dialog__scope-hint">
-					{{ t('openbuilt', 'The token needs the `repo` scope. It is sent once over your Nextcloud session, stored encrypted via the credentials manager, and deleted automatically when the export finishes.') }}
+					{{ t('openbuild', 'The token needs the `repo` scope. It is sent once over your Nextcloud session, stored encrypted via the credentials manager, and deleted automatically when the export finishes.') }}
 				</p>
 			</template>
 
@@ -59,10 +59,10 @@
 
 		<template #actions>
 			<NcButton :disabled="submitting" @click="onClose">
-				{{ t('openbuilt', 'Cancel') }}
+				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
 			<NcButton type="primary" :disabled="submitting" @click="submit">
-				{{ t('openbuilt', 'Start export') }}
+				{{ t('openbuild', 'Start export') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -105,12 +105,12 @@ export default {
 			errorMessage: '',
 			form: {
 				version: this.availableVersions[0] || { label: '0.1.0', value: '0.1.0' },
-				target: { label: this.t('openbuilt', 'ZIP download'), value: 'zip' },
+				target: { label: this.t('openbuild', 'ZIP download'), value: 'zip' },
 				license: { label: 'EUPL-1.2', value: 'EUPL-1.2' },
 				includeSeedData: false,
 				githubOrg: '',
 				githubRepo: '',
-				githubVisibility: { label: this.t('openbuilt', 'Private'), value: 'private' },
+				githubVisibility: { label: this.t('openbuild', 'Private'), value: 'private' },
 				githubPat: '',
 			},
 		}
@@ -131,8 +131,8 @@ export default {
 		 */
 		targetOptions() {
 			return [
-				{ label: this.t('openbuilt', 'ZIP download'), value: 'zip' },
-				{ label: this.t('openbuilt', 'Push to GitHub'), value: 'github' },
+				{ label: this.t('openbuild', 'ZIP download'), value: 'zip' },
+				{ label: this.t('openbuild', 'Push to GitHub'), value: 'github' },
 			]
 		},
 		/**
@@ -154,8 +154,8 @@ export default {
 		 */
 		visibilityOptions() {
 			return [
-				{ label: this.t('openbuilt', 'Private'), value: 'private' },
-				{ label: this.t('openbuilt', 'Public'), value: 'public' },
+				{ label: this.t('openbuild', 'Private'), value: 'private' },
+				{ label: this.t('openbuild', 'Public'), value: 'public' },
 			]
 		},
 	},
@@ -192,13 +192,13 @@ export default {
 					payload.githubVisibility = this.form.githubVisibility.value
 					payload.githubPat = this.form.githubPat
 				}
-				const url = generateUrl(`/apps/openbuilt/api/applications/${encodeURIComponent(this.applicationSlug)}/exports`)
+				const url = generateUrl(`/apps/openbuild/api/applications/${encodeURIComponent(this.applicationSlug)}/exports`)
 				const response = await axios.post(url, payload)
 				this.$emit('queued', response.data.uuid)
 				this.$emit('close')
 			} catch (err) {
 				this.errorMessage = err?.response?.data?.error
-					|| this.t('openbuilt', 'GitHub authentication failed. Please check the token scope and try again.')
+					|| this.t('openbuild', 'GitHub authentication failed. Please check the token scope and try again.')
 			} finally {
 				this.submitting = false
 			}

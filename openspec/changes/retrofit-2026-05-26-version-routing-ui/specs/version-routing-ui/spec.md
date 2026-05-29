@@ -6,7 +6,7 @@ retrofit: true
 
 ## Purpose
 
-The version-routing UI exposes OpenBuilt's two-object version model to the
+The version-routing UI exposes OpenBuild's two-object version model to the
 maintainer: `VersionHistory` lists OR object-time-travel snapshots with compare
 + rollback, `PromoteVersionDialog` moves a manifest/schema/data set to a
 downstream version with a computed default strategy and a destructive-confirm
@@ -16,7 +16,7 @@ load history.
 
 This capability is observed behaviour of those components. It is the frontend
 half of the `version-routing`, `version-promotion`, and
-`openbuilt-version-snapshots` backend capabilities.
+`openbuild-version-snapshots` backend capabilities.
 
 ## ADDED Requirements
 

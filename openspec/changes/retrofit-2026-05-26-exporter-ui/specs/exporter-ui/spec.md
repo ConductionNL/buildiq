@@ -6,13 +6,13 @@ retrofit: true
 
 ## Purpose
 
-The exporter UI graduates a published OpenBuilt virtual app into a standalone
+The exporter UI graduates a published OpenBuild virtual app into a standalone
 Nextcloud app. `ExportDialog` collects the export target, visibility, license,
 and version, then submits the export job; `ExportJobsList` lists the jobs, polls
 for status, and labels each.
 
 This capability is observed behaviour of those components. It is the frontend
-half of the `openbuilt-exporter` backend capability.
+half of the `openbuild-exporter` backend capability.
 
 ## ADDED Requirements
 

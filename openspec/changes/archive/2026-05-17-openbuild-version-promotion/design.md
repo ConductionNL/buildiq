@@ -1,6 +1,6 @@
 ## Context
 
-Foundation spec `openbuilt-versioning-model` (spec C) lands the two-object versioning
+Foundation spec `openbuild-versioning-model` (spec C) lands the two-object versioning
 model (`Application` + `ApplicationVersion`), the `promotesTo` linear chain, the
 per-version register, the cycle / back-reference guards, and the deletion endpoint with
 its strategy switch. ADR-002 calls out that promotion is **manual for v1**, that the
@@ -15,16 +15,16 @@ between three data strategies at promotion time:
 
 This spec ships the dialog + the backend endpoint that together realise that flow.
 Per ADR-002 §Decision and the locked prompt decisions, schema-diff handling is **deferred
-to OR's schema-import / register-merge API** — openbuilt forwards the source's schema set
+to OR's schema-import / register-merge API** — openbuild forwards the source's schema set
 and trusts OR's breaking-change handling. Concurrency relies on **OR object locking** on
-the target ApplicationVersion row — no openbuilt-side lock table. Permission relies on
+the target ApplicationVersion row — no openbuild-side lock table. Permission relies on
 the existing `permissions.{owners,editors}` resolution on the parent Application —
 Nextcloud admins are NOT auto-granted (deliberate constraint).
 
 The call sites for the dialog are deferred: this spec ships
 `src/dialogs/PromoteVersionDialog.vue` as a reusable component; the actual "Promote"
 button on the version switcher / detail page lives in spec B
-(`openbuilt-app-detail-overview`).
+(`openbuild-app-detail-overview`).
 
 ## Goals / Non-Goals
 
@@ -45,7 +45,7 @@ button on the version switcher / detail page lives in spec B
   with the captured error payload. **Atomic-ish** — we do not roll back data because the
   source register is untouched and the target is recoverable by re-promotion.
 - Forward the source's schema set to OR's schema-import / register-merge API for the
-  target register **without** an openbuilt-side dry-run or diff UI.
+  target register **without** an openbuild-side dry-run or diff UI.
 - Replace the target's `semver` with the source's `semver` at promotion time.
 - Ship `PromoteVersionDialog.vue` (`<NcDialog>` per ADR-004 modal-isolation rule)
   with: target name + register name labels, three-strategy radio (default per
@@ -60,7 +60,7 @@ button on the version switcher / detail page lives in spec B
 - OR's schema-import / register-merge implementation — openregister-side.
 - Multi-target promotion (DAG fan-out) — ADR-002 roadmap item, not v1.
 - Auto-promotion (cron, event triggers) — ADR-002 roadmap item, not v1.
-- Openbuilt-side schema diff / dry-run UI — deferred to OR per Decision 4.
+- Openbuild-side schema diff / dry-run UI — deferred to OR per Decision 4.
 - The post-promotion upstream-source minor-bump — owned by spec C's existing semver
   auto-bump rule.
 - Audit-trail aggregation across promotions — OR object time-travel handles it for
@@ -145,7 +145,7 @@ default).
 ### Decision 4 — Schema diff handling: DEFER to OR
 
 The promotion endpoint forwards the source's schema set to OR's schema-import /
-register-merge API for the target register. **No openbuilt-side diff dialog, no
+register-merge API for the target register. **No openbuild-side diff dialog, no
 dry-run, no breaking-change preflight.** Breaking schema changes are expected to have
 been authored upstream during the source version's dev cycle, and the admin is expected
 to have used OR's own UI / messaging to validate them at edit time. The promotion
@@ -154,7 +154,7 @@ column-level data migration, a "breaking change, abort" response, or anything in
 between).
 
 **Why:** spec D's surface area is bounded — we ship the strategy switch and the dialog,
-not a parallel schema-management UI. Duplicating OR's schema-change tooling in openbuilt
+not a parallel schema-management UI. Duplicating OR's schema-change tooling in openbuild
 would invite drift between the two; placing schema validation at the **edit** time
 (when the admin is in OR's UI) is the right point in the lifecycle.
 
@@ -164,7 +164,7 @@ set; OR's own breaking-change handling drives the outcome." The endpoint surface
 response to the caller — success → continue the strategy step; failure → bubble up
 as a `500` with OR's payload preserved.
 
-**Alternatives considered:** Pre-flight diff in openbuilt — rejected on scope and on
+**Alternatives considered:** Pre-flight diff in openbuild — rejected on scope and on
 DRY (OR already owns this). Block promotion on detected breaking changes — rejected
 (the admin's intent expressed by clicking Promote is precisely "I accept the migration
 outcome"; blocking adds friction without adding safety).
@@ -176,12 +176,12 @@ ApplicationVersion row before doing any work. The lock is released in a `finally
 block. If the lock is already held by another caller, the endpoint returns
 `409 Conflict` with body `{code: "version_locked", lockedBy: "<uid>", expiresAt:
 "<ISO-8601>"}`. The lock holder identification (`lockedBy`) and TTL (`expiresAt`) come
-from OR's lock metadata — openbuilt does not maintain its own lock model.
+from OR's lock metadata — openbuild does not maintain its own lock model.
 
 **Why imperative + leaning on OR:** the lock is a cross-system concurrency primitive,
 not business logic. ADR-022 mandates consuming OR abstractions; the lock is one of them.
 
-**Alternatives considered:** An openbuilt-side lock table — rejected (duplicates OR's
+**Alternatives considered:** An openbuild-side lock table — rejected (duplicates OR's
 existing primitive and adds a second source of truth). A pessimistic transaction on
 the underlying DB — rejected (operations span multiple registers, so DB-level
 transactionality is insufficient).
@@ -316,7 +316,7 @@ spec ships no register changes and writes no seed data.** Promotion is an admin 
 fired at runtime; nothing is seeded at install time.
 
 - No `lib/Repair/*` files are added.
-- No entries are added to `lib/Settings/openbuilt_register.json` (the
+- No entries are added to `lib/Settings/openbuild_register.json` (the
   `ApplicationVersion` schema is owned by spec C, unchanged here).
 - No seed objects are written by this spec.
 
@@ -331,7 +331,7 @@ Per ADR-031, every business-logic site is classified.
 | --- | --- | --- | --- |
 | Data-copy / schema-import / wipe at promotion time | Declare three `on_transition` actions on ApplicationVersion lifecycle | **Imperative** (`VersionPromotionService::promote()`) | ADR-031 §Exceptions: cross-register operations + conditional strategy-branching are outside OR's lifecycle vocabulary (single-row transitions firing deterministic side effects). The three strategies share scaffolding (lock acquisition, schema-import, manifest write, semver replace) but diverge on data treatment — the diverging branches are a natural switch in service code, not a declarative table. |
 | Default strategy rule (chain-position-based) | Calc field on ApplicationVersion or on Application | **Imperative** (pure-function helper in PHP, mirrored in JS) | The rule is pure-function and trivially unit-testable. Expressing it declaratively would require OR to expose a cross-row read (target's parent Application's `productionVersion`) inside a calc context declared on the version row — heavier than a static helper and not a current OR capability. The helper IS pure, so the imperative shape carries no hidden state. |
-| OR object lock acquisition + release | n/a — locking is a cross-system primitive | **Out of scope** (lean on OR) | Locking is an OR-side concept; openbuilt is just a caller. No declarative-vs-imperative decision applies here per ADR-022 (consume OR abstractions). |
+| OR object lock acquisition + release | n/a — locking is a cross-system primitive | **Out of scope** (lean on OR) | Locking is an OR-side concept; openbuild is just a caller. No declarative-vs-imperative decision applies here per ADR-022 (consume OR abstractions). |
 | On-failure target.status flip | `on_save` / `on_transition` action with conditional firing | **Imperative** (try/catch + explicit status write inside the service) | The "flip on failure" decision needs to fire from inside a catch block scoped to the strategy step, not from an OR lifecycle hook that has no visibility into the surrounding try/catch frame. ADR-031 §Exceptions covers this as cross-cutting failure handling. |
 | Semver copy from source to target | Calc field on target.semver | **Imperative** (explicit write in service before manifest save) | The copy is a one-shot side effect of a specific action (promotion), not a continuously-derived field. Calc fields are for continuously-derived values. |
 | Permission resolution (owner/editor on Application) | Declarative `x-openregister-authorization` on the endpoint | **Declarative** at the contract level (RBAC block on Application owned by spec C / ADR-005) | The auth check is consumed by the controller; the controller calls an already-existing helper that reads `permissions.{owners,editors}` declaratively. No new imperative auth code in this spec. |
@@ -346,7 +346,7 @@ Per ADR-031, every business-logic site is classified.
 - **Risk: Concurrent promote requests on the same target version race on the OR lock
   acquisition.** → Mitigation: OR's lock primitive is the single source of truth; the
   second caller deterministically gets `409 Conflict` with `lockedBy` + `expiresAt` so
-  the UI can communicate the contention. No openbuilt-side locking.
+  the UI can communicate the contention. No openbuild-side locking.
 - **Risk: `empty-start` is irreversible — once the target's rows are wiped, the admin
   cannot recover them.** → Mitigation: the destructive-confirmation gate in the dialog
   (type the app slug) raises the friction. The dialog's inline description for
@@ -355,7 +355,7 @@ Per ADR-031, every business-logic site is classified.
   source still has the desired data shape; otherwise OR object time-travel on the
   target's previous state is the last-resort recovery.
 - **Risk: Schema breaking changes propagate to production via `migrate-existing-data`
-  without admin awareness, because openbuilt does not pre-flight the diff.** →
+  without admin awareness, because openbuild does not pre-flight the diff.** →
   Mitigation: ADR-002 records the decision — schema validation belongs at edit time,
   inside OR's UI. OR's schema-import / register-merge surfaces breaking-change warnings
   / failures at promotion time; the admin sees those in the endpoint's response and

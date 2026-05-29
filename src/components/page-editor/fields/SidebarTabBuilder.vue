@@ -11,39 +11,39 @@
 				:value="tab.id || ''"
 				type="text"
 				class="sidebar-tab-builder__field"
-				:placeholder="t('openbuilt', 'Tab id')"
+				:placeholder="t('openbuild', 'Tab id')"
 				@input="updateField(index, 'id', $event.target.value)">
 			<input
 				:value="tab.label || ''"
 				type="text"
 				class="sidebar-tab-builder__field"
-				:placeholder="t('openbuilt', 'Label (i18n key)')"
+				:placeholder="t('openbuild', 'Label (i18n key)')"
 				@input="updateField(index, 'label', $event.target.value)">
 			<input
 				:value="tab.icon || ''"
 				type="text"
 				class="sidebar-tab-builder__field sidebar-tab-builder__field--narrow"
-				:placeholder="t('openbuilt', 'Icon')"
+				:placeholder="t('openbuild', 'Icon')"
 				@input="updateField(index, 'icon', $event.target.value)">
 			<input
 				:value="tab.component || ''"
 				type="text"
 				class="sidebar-tab-builder__field"
-				:placeholder="t('openbuilt', 'Component (registry key)')"
+				:placeholder="t('openbuild', 'Component (registry key)')"
 				@input="updateField(index, 'component', $event.target.value)">
 			<button
 				type="button"
 				class="sidebar-tab-builder__remove"
-				:title="t('openbuilt', 'Remove tab')"
+				:title="t('openbuild', 'Remove tab')"
 				@click="removeTab(index)">
 				✕
 			</button>
 		</div>
 		<button type="button" class="sidebar-tab-builder__add" @click="addTab">
-			+ {{ t('openbuilt', 'Add tab') }}
+			+ {{ t('openbuild', 'Add tab') }}
 		</button>
 		<p class="sidebar-tab-builder__hint">
-			{{ t('openbuilt', 'Each tab declares either a list of widgets OR a component (mutually exclusive).') }}
+			{{ t('openbuild', 'Each tab declares either a list of widgets OR a component (mutually exclusive).') }}
 		</p>
 	</div>
 </template>

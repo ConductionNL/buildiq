@@ -1,10 +1,10 @@
-## 1. Implementation Tasks — openbuilt-template-catalogue
+## 1. Implementation Tasks — openbuild-template-catalogue
 
-- [ ] 1.1 **Declare `ApplicationTemplate` schema in `lib/Settings/openbuilt_register.json`**
+- [ ] 1.1 **Declare `ApplicationTemplate` schema in `lib/Settings/openbuild_register.json`**
   - spec_ref: REQ-OBTC-001
-  - files: `lib/Settings/openbuilt_register.json`
+  - files: `lib/Settings/openbuild_register.json`
   - acceptance_criteria: Schema declares `uuid`, `slug` (kebab-case pattern, unique per organisation), `title` (required), `description` (required), `useCase` (required), `category` (enum government-services|internal-operations|citizen-engagement|field-work, required), `screenshotUrl` (URI, optional), `manifest` (object, required, references the canonical app-manifest schema), `companionSchemas` (array of objects, optional), `isSeeded` (boolean, required, default false), `sourceUrl` (URI, optional), `version` (semver pattern, required). Validates against OpenAPI 3.0.0. Multi-tenant scoping inherited from OR's `organisation` field — no app-local RBAC introduced (ADR-022).
-  - Implement: declarative — append a new entry to the existing `openbuilt_register.json`. No PHP service class.
+  - Implement: declarative — append a new entry to the existing `openbuild_register.json`. No PHP service class.
   - Test: integration test creates an `ApplicationTemplate` via OR REST; assert schema-validation rejects a record missing `manifest`; assert slug-uniqueness rejects a duplicate slug in the same organisation.
 
 - [ ] 1.2 **Add the new route to `appinfo/routes.php`** (ADR-016)
@@ -28,10 +28,10 @@
   - Implement: SFC ~120 LOC, mostly template + simple computed filtering.
   - Test: Playwright opens the gallery, asserts the four seeded templates render, applies the `government-services` filter and asserts only `permit-tracker` is visible, clicks "Use this template" on `permit-tracker`, fills in `name: "My permits" / slug: "my-permits"`, asserts the post-clone redirect lands on the editor surface, and asserts the seeded record renders no Edit/Delete controls.
 
-- [ ] 1.5 **Add the "Templates" entry to the OpenBuilt left-nav** and the empty-state CTA on the Application list
+- [ ] 1.5 **Add the "Templates" entry to the OpenBuild left-nav** and the empty-state CTA on the Application list
   - spec_ref: REQ-OBTC-003
   - files: `src/views/BuilderShell.vue` (left-nav extension), `src/views/ApplicationList.vue` (empty-state CTA — file may already exist from chain #1)
-  - acceptance_criteria: A new left-nav entry `openbuilt.templates.menu.label` (i18n) routes to `/templates`. The empty-state of the Application list renders a "Create from template" CTA that routes to `/templates`. Nextcloud CSS variables only.
+  - acceptance_criteria: A new left-nav entry `openbuild.templates.menu.label` (i18n) routes to `/templates`. The empty-state of the Application list renders a "Create from template" CTA that routes to `/templates`. Nextcloud CSS variables only.
   - Implement: small template-only edits to the existing shell files; ~10 LOC each.
   - Test: Playwright asserts the left-nav entry is visible and clickable, and the empty-state CTA appears when no Applications exist in the caller's org.
 
@@ -40,7 +40,7 @@
 - [ ] 2.1 **Author the four template manifest fixtures** under `lib/Settings/templates/`
   - spec_ref: REQ-OBTC-002, REQ-OBTC-009
   - files: `lib/Settings/templates/permit-tracker.json`, `lib/Settings/templates/stakeholder-consultation.json`, `lib/Settings/templates/employee-onboarding.json`, `lib/Settings/templates/incident-reporter.json`
-  - acceptance_criteria: Each fixture is a full `ApplicationTemplate` JSON record (matching the schema declared in 1.1) including its `manifest` blob and its `companionSchemas` array as described in design.md "Seed Data". Each `manifest` validates against the canonical app-manifest schema pinned in `package.json` (ADR-024). All user-visible strings (`title`, `description`, `useCase`, manifest `menu[].label`, manifest page `title`) use i18n keys under `openbuilt.templates.{slug}.*` (OQ-4).
+  - acceptance_criteria: Each fixture is a full `ApplicationTemplate` JSON record (matching the schema declared in 1.1) including its `manifest` blob and its `companionSchemas` array as described in design.md "Seed Data". Each `manifest` validates against the canonical app-manifest schema pinned in `package.json` (ADR-024). All user-visible strings (`title`, `description`, `useCase`, manifest `menu[].label`, manifest page `title`) use i18n keys under `openbuild.templates.{slug}.*` (OQ-4).
   - Implement: hand-authored JSON; no scripting / sed / awk / python to generate.
   - Test: `npm run check:manifest` over each fixture; integration test asserts every fixture validates without warnings.
 
@@ -63,7 +63,7 @@
 - [ ] 3.1 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) — all green; fix any pre-existing issues in touched files (memory rule).
 - [ ] 3.2 Run `npm run lint` / ESLint flat config — clean on the new SFC.
 - [ ] 3.3 Run `npm run check:manifest` (ADR-024) on the four seeded fixtures — all four validate against the canonical schema pinned in `package.json`.
-- [ ] 3.4 Visually verify on a fresh `docker compose up` that `/index.php/apps/openbuilt/templates` renders the four seeded templates, that "Use this template" on `permit-tracker` lands on a draft Application in the editor surface, and that the cloned companion schema is namespaced as `{new-app-slug}-permit-application`.
+- [ ] 3.4 Visually verify on a fresh `docker compose up` that `/index.php/apps/openbuild/templates` renders the four seeded templates, that "Use this template" on `permit-tracker` lands on a draft Application in the editor surface, and that the cloned companion schema is namespaced as `{new-app-slug}-permit-application`.
 - [ ] 3.5 Confirm no `TemplateCatalogueService.php` / `TemplateService.php` / `TemplateCloneService.php` exists under `lib/Service/` — ADR-031 review gate.
 - [ ] 3.6 Confirm the `createFromTemplate` method is ≤30 LOC and the seed step ≤80 LOC — ADR-032 thin-glue threshold (design.md Decision 6). If exceeded, this spec needs to be split per the design rule; raise it loudly during apply.
 
@@ -71,18 +71,18 @@
 
 - [ ] 4.1 **PHPUnit** — `tests/Unit/Controller/ApplicationsControllerTest.php` extended to cover `createFromTemplate` (success → 201 + cloned objects exist with prefixed schemas; slug-collision → 4xx, no writes; cross-org → 4xx, no writes; manifest schema-reference rewrite walker covers nested page-config `schema` fields).
 - [ ] 4.2 **PHPUnit** — `tests/Integration/TemplateSeedTest.php` runs `SeedApplicationTemplates` twice, asserts four templates per organisation each time; corrupts a fixture and asserts loud failure (REQ-OBTC-009).
-- [ ] 4.3 **Newman** — `tests/api/openbuilt-templates.postman_collection.json` covers `POST /api/applications/from-template/{slug}` (201 + 4xx slug-collision + 4xx cross-org) plus standard OR-REST CRUD on `ApplicationTemplate` (200 list, 404 unknown).
-- [ ] 4.4 **Playwright** — `tests/e2e/template-gallery.spec.ts` opens the OpenBuilt shell, navigates to `/templates`, asserts four template cards render, filters to `government-services`, asserts only `permit-tracker` is visible, clicks "Use this template", completes the slug prompt, asserts the post-clone redirect, and asserts the cloned Application's first page renders with the cloned companion schema's data.
+- [ ] 4.3 **Newman** — `tests/api/openbuild-templates.postman_collection.json` covers `POST /api/applications/from-template/{slug}` (201 + 4xx slug-collision + 4xx cross-org) plus standard OR-REST CRUD on `ApplicationTemplate` (200 list, 404 unknown).
+- [ ] 4.4 **Playwright** — `tests/e2e/template-gallery.spec.ts` opens the OpenBuild shell, navigates to `/templates`, asserts four template cards render, filters to `government-services`, asserts only `permit-tracker` is visible, clicks "Use this template", completes the slug prompt, asserts the post-clone redirect, and asserts the cloned Application's first page renders with the cloned companion schema's data.
 
 ## 5. Documentation (ADR-009, ADR-010)
 
-- [ ] 5.1 Add `docs/openbuilt-templates.md` describing the gallery, the clone semantics, the slug-prefix convention for cloned companion schemas (Decision 3), and the one-shot snapshot behaviour (Decision 5 / REQ-OBTC-007).
+- [ ] 5.1 Add `docs/openbuild-templates.md` describing the gallery, the clone semantics, the slug-prefix convention for cloned companion schemas (Decision 3), and the one-shot snapshot behaviour (Decision 5 / REQ-OBTC-007).
 - [ ] 5.2 Update `docs/integrator-guide.md` with a "Cloning from a template" walkthrough that links to the gallery and explains where the cloned schemas live.
 - [ ] 5.3 NL Design (ADR-010) — confirm the gallery uses Nextcloud CSS variables only; document any new variables added.
-- [ ] 5.4 Update `openspec/app-config.json` to list `openbuilt-template-catalogue` under capabilities.
+- [ ] 5.4 Update `openspec/app-config.json` to list `openbuild-template-catalogue` under capabilities.
 
 ## 6. i18n (ADR-005, ADR-007)
 
-- [ ] 6.1 Add English translations in `l10n/en.json` for `openbuilt.templates.menu.label`, `openbuilt.templates.gallery.title`, `openbuilt.templates.filter.category`, `openbuilt.templates.filter.search`, `openbuilt.templates.action.use`, `openbuilt.templates.action.useThis`, `openbuilt.templates.empty.cta`, the four template `title` / `description` / `useCase` keys (`openbuilt.templates.{slug}.title|description|useCase`), every manifest `menu[].label`, and every manifest page `title` in the four seeded manifests.
+- [ ] 6.1 Add English translations in `l10n/en.json` for `openbuild.templates.menu.label`, `openbuild.templates.gallery.title`, `openbuild.templates.filter.category`, `openbuild.templates.filter.search`, `openbuild.templates.action.use`, `openbuild.templates.action.useThis`, `openbuild.templates.empty.cta`, the four template `title` / `description` / `useCase` keys (`openbuild.templates.{slug}.title|description|useCase`), every manifest `menu[].label`, and every manifest page `title` in the four seeded manifests.
 - [ ] 6.2 Add Dutch translations for the same keys in `l10n/nl.json` so the gallery and the seeded templates are bilingual on install (per the project-wide nl/en minimum).
 - [ ] 6.3 Confirm the four seeded manifests use translation keys for every user-visible string (per ADR-024 §6).

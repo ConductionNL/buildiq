@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for ApplicationInsightsService (spec openbuilt-app-detail-overview /
+ * Unit tests for ApplicationInsightsService (spec openbuild-app-detail-overview /
  * capability application-insights, REQ-OBAI-001..006).
  *
  * Covers:
@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Service
+ * @package  OCA\OpenBuild\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,9 +29,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Service;
+namespace OCA\OpenBuild\Tests\Unit\Service;
 
-use OCA\OpenBuilt\Service\ApplicationInsightsService;
+use OCA\OpenBuild\Service\ApplicationInsightsService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -323,16 +323,16 @@ class ApplicationInsightsServiceTest extends TestCase
     {
         $manifest = [
             'pages' => [
-                ['config' => ['register' => 'openbuilt-hello-world-production', 'schema' => '101']],
-                ['config' => ['register' => 'openbuilt-hello-world-production', 'schema' => '101']], // dupe
-                ['config' => ['register' => 'openbuilt-hello-world-production', 'schema' => '202']],
+                ['config' => ['register' => 'openbuild-hello-world-production', 'schema' => '101']],
+                ['config' => ['register' => 'openbuild-hello-world-production', 'schema' => '101']], // dupe
+                ['config' => ['register' => 'openbuild-hello-world-production', 'schema' => '202']],
                 ['config' => ['register' => 'some-other-register', 'schema' => '303']], // ignored
-                ['config' => ['register' => 'openbuilt-hello-world-production', 'schema' => '']], // skipped
+                ['config' => ['register' => 'openbuild-hello-world-production', 'schema' => '']], // skipped
                 ['unknown' => 'shape'],
             ],
         ];
 
-        $ids = $this->service->deriveSchemaIds($manifest, 'openbuilt-hello-world-production');
+        $ids = $this->service->deriveSchemaIds($manifest, 'openbuild-hello-world-production');
         // array_keys() upcasts numeric-string keys to int; cast back to compare.
         $stringIds = array_map(static fn (mixed $v) => (string) $v, $ids);
         sort($stringIds);
@@ -347,8 +347,8 @@ class ApplicationInsightsServiceTest extends TestCase
      */
     public function testDeriveSchemaIdsHandlesNullManifest(): void
     {
-        self::assertSame([], $this->service->deriveSchemaIds(null, 'openbuilt-x-y'));
-        self::assertSame([], $this->service->deriveSchemaIds([], 'openbuilt-x-y'));
+        self::assertSame([], $this->service->deriveSchemaIds(null, 'openbuild-x-y'));
+        self::assertSame([], $this->service->deriveSchemaIds([], 'openbuild-x-y'));
     }//end testDeriveSchemaIdsHandlesNullManifest()
 
     /**

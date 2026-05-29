@@ -1,8 +1,8 @@
 ## Context
 
-`bootstrap-openbuilt` (spec #1 of the 9-spec OpenBuilt chain)
+`bootstrap-openbuild` (spec #1 of the 9-spec OpenBuild chain)
 **explicitly deferred** per-virtual-app RBAC. Its design.md Open
-Question OQ-2 — "Permission key for the OpenBuilt top-bar entry" —
+Question OQ-2 — "Permission key for the OpenBuild top-bar entry" —
 landed with the provisional decision "auth-only; let admins narrow
 via NC's group restrictions; per-built-app RBAC lands in chain spec
 #7". This is that spec.
@@ -12,10 +12,10 @@ shares full access to every virtual app: list, open, edit the
 manifest, publish, archive, and (when chain spec #6's versioning
 arrives) roll back. That is not a posture you ship past the
 single-integrator phase. Once
-`openbuilt-page-editor` (chain spec #5),
-`openbuilt-versioning` (chain spec #6),
-`openbuilt-templates-marketplace` (chain spec #8), and
-`openbuilt-export-to-real-app` (chain spec #9) start chaining
+`openbuild-page-editor` (chain spec #5),
+`openbuild-versioning` (chain spec #6),
+`openbuild-templates-marketplace` (chain spec #8), and
+`openbuild-export-to-real-app` (chain spec #9) start chaining
 destructive actions, the absence of a real authority gradient
 becomes an active liability — both as a workflow hazard (someone
 publishes the wrong draft) and as a security gap (cross-team
@@ -36,7 +36,7 @@ admin-bypass).
 **Goals**
 
 - Add a `permissions` block to the `Application` schema in
-  `lib/Settings/openbuilt_register.json` carrying three Nextcloud
+  `lib/Settings/openbuild_register.json` carrying three Nextcloud
   group-ID arrays (`owners`, `editors`, `viewers`). Default on
   creation: creator's primary group → `owners`; the other two
   empty. Idempotent migration populates existing
@@ -56,7 +56,7 @@ admin-bypass).
   action matrix documented in REQ-OBRBAC-004.
 - Support a transfer-ownership flow that is just an
   `permissions.owners` write — no dedicated endpoint or service.
-- Declare a global `openbuilt.use` group-permission on the
+- Declare a global `openbuild.use` group-permission on the
   `<navigations>` entry, default unrestricted, admin-grantable
   through Nextcloud's standard mechanism. Closes spec #1's OQ-2.
 - Surface a "Permission history" panel to `owner`-role holders
@@ -105,7 +105,7 @@ rule shape would be approximately:
 
 **If OR's authorization vocabulary already supports
 `groupIn: <permissions-pointer>` semantics**, we declare the rule
-in `lib/Settings/openbuilt_register.json` and the manifest
+in `lib/Settings/openbuild_register.json` and the manifest
 endpoint's check becomes redundant (OR rejects the read before we
 get to the controller). We still ship the in-controller check as a
 **defence-in-depth belt-and-braces**, per ADR-005.
@@ -116,7 +116,7 @@ the documented ADR-022 §Exceptions(1) thin glue. We file an
 OR-side issue requesting the
 `groupIn-pointer` authorization extension and link it from this
 spec's tasks.md. The frontend list filter falls back to JS-side
-filtering using `loadState('openbuilt', 'currentUserGroups')`.
+filtering using `loadState('openbuild', 'currentUserGroups')`.
 
 The choice is **observed during apply**, not pre-decided here; both
 paths satisfy every requirement REQ-OBRBAC-002 / REQ-OBR-006 /
@@ -126,7 +126,7 @@ self-learning.
 
 **Alternatives considered**
 
-- *Write `OpenBuiltAuthorizationService` and route all reads
+- *Write `OpenBuildAuthorizationService` and route all reads
   through it*. Rejected. ADR-031 forbids authorization service
   classes; ADR-022 forbids wrapping OR's REST endpoints. The thin
   in-controller check on the one PHP endpoint we already own
@@ -174,7 +174,7 @@ Permissions store Nextcloud `gid` strings directly. Resolution at
 check time uses `IGroupManager::getUserGroups($user)` →
 `array_intersect($userGids, $applicationAuthorisedGids)`. No
 app-local group abstraction, no caching layer beyond what Nextcloud
-already provides, no `OpenBuiltGroupService`.
+already provides, no `OpenBuildGroupService`.
 
 The trade-off: the permissions block is tied to whatever
 Nextcloud's group model expresses today. If a future Conduction
@@ -185,21 +185,21 @@ model now.
 
 **Alternatives considered**
 
-- *Build an `OpenBuiltTeam` abstraction over Nextcloud groups for
+- *Build an `OpenBuildTeam` abstraction over Nextcloud groups for
   forward compatibility*. Rejected. YAGNI per ADR-031, and adds a
   new schema (forbidden by this spec's non-goals).
 - *Use Nextcloud Circles instead of Groups*. Rejected. Circles
   aren't a baseline assumption across Conduction's target deploys;
   Groups are.
 
-### Decision 4 — `openbuilt.use` mechanism: Nextcloud's existing navigation permission
+### Decision 4 — `openbuild.use` mechanism: Nextcloud's existing navigation permission
 
 We answer spec #1's OQ-2 by leaning on Nextcloud's
 **already-existing**
 `<navigations>/<permission>` mechanism in `appinfo/info.xml`. No
 new admin-settings page is shipped by this spec. An administrator
 configures the entry via Nextcloud's standard "Admin → Apps →
-OpenBuilt → Restrict to groups" UI.
+OpenBuild → Restrict to groups" UI.
 
 Default: no restriction → entry visible to every authenticated
 user. This preserves spec #1's auth-only posture for installs that
@@ -207,13 +207,13 @@ never touch the setting.
 
 Important: this permission gates **only the navigation entry**. It
 does not (and must not) replace the per-Application `permissions`
-enforced server-side. A user who has `openbuilt.use` but no role on
+enforced server-side. A user who has `openbuild.use` but no role on
 any Application sees an empty list, not an error — REQ-OBR-007's
 empty-state UI handles this.
 
 **Upstream schema gap (logged 2026-05-11)** — We tried shipping
-`<permission>openbuilt.use</permission>` as a child of `<navigation>`
-and verified via `occ app:enable openbuilt --force` (Nextcloud 32-dev)
+`<permission>openbuild.use</permission>` as a child of `<navigation>`
+and verified via `occ app:enable openbuild --force` (Nextcloud 32-dev)
 that the upstream `apps/info.xsd` schema rejects the element
 ("appinfo file cannot be read"). Tracking issue filed at
 [nextcloud/server#60310](https://github.com/nextcloud/server/issues/60310).
@@ -221,7 +221,7 @@ that the upstream `apps/info.xsd` schema rejects the element
 Until the upstream schema accepts the element, REQ-OBRBAC-006's
 navigation gate ships in **fallback mode** only: operators restrict
 top-bar visibility via the app-level group restriction
-(`occ app:enable openbuilt --groups <group>`), which is coarser
+(`occ app:enable openbuild --groups <group>`), which is coarser
 (restricts the whole app, not just the entry) but available today.
 The per-Application server-side RBAC enforced by
 `ApplicationsController::getManifest` + `::listMine` is the
@@ -232,12 +232,12 @@ re-add the `<permission>` element and amend this decision.
 **Alternatives considered**
 
 - *Ship a new `Settings/AdminSettings.php` and a Vue admin page
-  to manage `openbuilt.use`*. Rejected. Net-new infrastructure for
+  to manage `openbuild.use`*. Rejected. Net-new infrastructure for
   a setting Nextcloud already exposes through its standard apps
   panel. Violates "ride the OS" — ADR-022 in spirit.
 - *Skip the navigation permission entirely; rely only on
   per-Application `permissions`*. Rejected. Useful as a coarse
-  on/off for organisations that want to disable OpenBuilt
+  on/off for organisations that want to disable OpenBuild
   visibility for non-builder users without revoking individual
   Application roles. Cheap to ship via the existing mechanism.
 
@@ -305,17 +305,17 @@ thin-glue PHP check** plus **one thin-glue Vue composable**:
 
 | Behaviour | Path |
 |---|---|
-| `permissions` shape on Application | **Declarative** — JSON Schema in `lib/Settings/openbuilt_register.json` |
+| `permissions` shape on Application | **Declarative** — JSON Schema in `lib/Settings/openbuild_register.json` |
 | Default-on-creation | **Inline** — computed once in the seed / write path using `IGroupManager`; no service class |
 | Read enforcement (manifest endpoint) | **Thin glue** — single `if (!intersect) { return 403 }` in `ApplicationsController::getManifest`; ADR-022 §Exceptions(1). Promotes to OR-declarative if `x-openregister-authorization` supports `groupIn-pointer` semantics. |
 | List filtering | **Declarative-preferred** — `x-openregister-authorization` if available; otherwise thin JS filter consuming `loadState` |
 | Editor action gating | **Thin glue** — `useRole(application)` composable in `src/composables/useRole.js`, ~15 LOC, returns `'owner' | 'editor' | 'viewer' | 'none'` |
 | Transfer ownership | **Declarative** — it's a `permissions.owners` PUT; no dedicated endpoint |
 | Audit trail | **Inherited** — OR's existing per-object audit per ADR-022; the panel is a read view, not a write |
-| `openbuilt.use` navigation gate | **Declarative** — `<navigations><permission>openbuilt.use</permission></navigations>` in `appinfo/info.xml` |
+| `openbuild.use` navigation gate | **Declarative** — `<navigations><permission>openbuild.use</permission></navigations>` in `appinfo/info.xml` |
 
 **Anti-patterns explicitly avoided.** This spec ships **no**:
-- `OpenBuiltAuthorizationService.php` / `RbacService.php` /
+- `OpenBuildAuthorizationService.php` / `RbacService.php` /
   `PermissionService.php`. The check is in the controller.
 - Custom role names or a role registry. Three fixed roles.
 - Per-page or per-field permission engine.
@@ -335,7 +335,7 @@ thin-glue PHP check** plus **one thin-glue Vue composable**:
 - **Risk** — *Group renames silently break permissions.* If a
   Nextcloud admin renames a group, every Application whose
   `permissions` array references the old `gid` loses or gains
-  rows without an audit signal scoped to OpenBuilt. → Mitigation:
+  rows without an audit signal scoped to OpenBuild. → Mitigation:
   Nextcloud's group rename emits an `IGroupManager` event we
   consume in a thin one-method listener (only if needed during
   apply; provisional decision is to not ship the listener in this
@@ -361,7 +361,7 @@ thin-glue PHP check** plus **one thin-glue Vue composable**:
 
 This change extends the `Application` schema and adds enforcement to
 the existing manifest endpoint. The migration runs as part of the
-existing OpenBuilt repair-steps pipeline:
+existing OpenBuild repair-steps pipeline:
 
 1. The schema-update repair step (already in place from spec #1 via
    `ConfigurationService::importFromApp()`) re-imports the register
@@ -417,7 +417,7 @@ pipeline, not a separate seed.
   `IGroupManager` emit a stable rename event we can hook? If
   yes, do we ship a one-method listener in this spec or punt to a
   follow-up? *Provisional decision*: punt. Document the operational
-  caveat in `docs/openbuilt-rbac.md` and revisit if a customer
+  caveat in `docs/openbuild-rbac.md` and revisit if a customer
   reports renamed-group breakage.
 - **OQ-3 — Admin-bypass scope.** Should the audited admin bypass
   also cover OR REST direct access to the Application object, or
@@ -433,14 +433,14 @@ pipeline, not a separate seed.
   admin-only after the upgrade is conservative and matches the
   "ACTION REQUIRED" deployment note. Operators who want the demo
   publicly visible can grant it explicitly.
-- **OQ-5 — Per-page RBAC follow-up.** If `openbuilt-page-editor`
+- **OQ-5 — Per-page RBAC follow-up.** If `openbuild-page-editor`
   (chain spec #5) introduces per-page review workflows, those
   workflows may need a `reviewer` role. *Provisional decision*:
   defer to chain spec #5. This spec's role table is the v1
   contract; spec #5 extends it if needed.
 - **OQ-6 — Permission-history retention.** OR's audit trail
-  retention is configurable per register. Should OpenBuilt set a
-  minimum retention (e.g. 1 year) for the `openbuilt` register so
+  retention is configurable per register. Should OpenBuild set a
+  minimum retention (e.g. 1 year) for the `openbuild` register so
   permission history is always queryable for the standard audit
   window? *Provisional decision*: defer to deployment guidance;
   Conduction's compliance baseline (ISO 27001) likely already

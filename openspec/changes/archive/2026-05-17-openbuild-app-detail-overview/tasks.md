@@ -21,7 +21,7 @@
         require viewer-or-better; otherwise require editor-or-better. Failure → `null`.
         Nextcloud admin role is NOT a bypass.
       - Step 4: walk `version.manifest.pages[]` per REQ-OBAI-003. Unique-by-schemaId,
-        filter to tuples where `registerSlug === openbuilt-{appSlug}-{versionSlug}`.
+        filter to tuples where `registerSlug === openbuild-{appSlug}-{versionSlug}`.
       - Step 5: fan out the four KPI calls per REQ-OBAI-004:
         - `activeUsers` = `auditTrailMapper->getDistinctActorCount($schemaIds, $hours)`
         - `objectCount` = sum of `objectService->countObjects($schemaId)` over the schema-set
@@ -64,7 +64,7 @@
       component). Props: `objectId` (Application UUID from the route param).
 - [x] 3.2 Read `$route.query._version` for the active version slug. If absent, fall
       back to the production version's slug (via the `useApplicationVersion` composable
-      from `openbuilt-version-routing`).
+      from `openbuild-version-routing`).
 - [x] 3.3 Render the hero strip (REQ-OBADO-001): icon from
       `Application.icon` (per ADR-001), name, description, status badge, caller role
       badge, production version semver.
@@ -75,7 +75,7 @@
       - Production version: visible to any authenticated caller.
       - Non-production: visible only to callers in `permissions.editors ∪ permissions.owners`.
       Click handler updates `?_version=` via the `buildVersionedRoute` helper from
-      `openbuilt-version-routing`.
+      `openbuild-version-routing`.
 - [x] 3.5 Render the window toggle (REQ-OBADO-003): three buttons `7d` / `30d` / `90d`,
       default `7d`. Local component state. Right-align on the same row as the pill strip.
 - [x] 3.6 Create `src/composables/useApplicationInsights.js` — wraps the insights
@@ -105,10 +105,10 @@
 - [x] 4.1 Create `src/components/applicationDetail/widgets/RegisterWidget.vue`.
       Props: `appSlug`, `versionSlug`, `kpis` (object with `schemaCount`, `objectCount`,
       `filesCount`).
-- [x] 4.2 Render the register name, slug (`openbuilt-{appSlug}-{versionSlug}`), schema
+- [x] 4.2 Render the register name, slug (`openbuild-{appSlug}-{versionSlug}`), schema
       count, object count, files count.
 - [x] 4.3 "Open in OpenRegister" button — clicking navigates the browser to
-      `/apps/openregister/registers/openbuilt-{appSlug}-{versionSlug}` (REQ-OBADO-006).
+      `/apps/openregister/registers/openbuild-{appSlug}-{versionSlug}` (REQ-OBADO-006).
       Use `window.location` (top-level Nextcloud URL, not a Vue Router route).
 
 ## 5. SchemasWidget.vue — schemas list with deep-link rows and inline "+ Add"
@@ -162,7 +162,7 @@
 - [x] 9.2 Hide the Promote affordance on the production pill (it is the terminal
       node).
 - [x] 9.3 Click handler:
-      - Check whether the promotion dialog from `openbuilt-version-promotion` is
+      - Check whether the promotion dialog from `openbuild-version-promotion` is
         registered (pattern verified at apply time).
       - If present, open it pre-targeted at the pill's version.
       - If absent, emit a `debug` log entry and no-op.
@@ -225,7 +225,7 @@
 ## 14. Playwright e2e — application-detail-overview
 
 - [x] 14.1 Create `tests/e2e/application-detail-overview.spec.ts`. Use the existing
-      fixtures from `openbuilt-versioning-model` (`hello-world` Application with
+      fixtures from `openbuild-versioning-model` (`hello-world` Application with
       `development → staging → production` chain).
 - [x] 14.2 Test: page renders all six rows in DOM order (REQ-OBADO-001).
 - [x] 14.3 Test: pill strip renders chain order with production starred
@@ -234,7 +234,7 @@
       session — only the `* production` pill should render).
       (test wired at `tests/e2e/applicationDetailOverview.spec.ts` — `REQ-OBADO-002 (14.4)`
       asserts the production-asterisk marker is present; viewer-blackout assertion
-      is exercised by the openbuilt-rbac spec's outsider walk.)
+      is exercised by the openbuild-rbac spec's outsider walk.)
 - [x] 14.5 Test: pill click updates `?_version=` and reloads dependent rows
       (REQ-OBADO-002). Assert the network request for the insights endpoint fires
       with the new versionUuid and that KPI values re-render.
@@ -244,7 +244,7 @@
       and Files count do not change (REQ-OBADO-003).
 - [x] 14.7 Test: structural widget deep-links land on the correct paths with the
       active `?_version=` preserved (REQ-OBADO-007 / REQ-OBADO-009 / REQ-OBADO-010):
-      - Register card "Open in OpenRegister" → `/apps/openregister/registers/openbuilt-hello-world-{slug}`
+      - Register card "Open in OpenRegister" → `/apps/openregister/registers/openbuild-hello-world-{slug}`
       - Schemas card row → `/builder/hello-world/schemas/{id}?_version={slug}`
       - Pages card row → `/builder/hello-world/pages?_version={slug}&pageId={id}`
       - Menu card row → `/builder/hello-world/pages?_version={slug}&focus=menu`
@@ -282,4 +282,4 @@
         `inputLabel`.
       - Modal isolation: any new modal (e.g. for the Promote dialog wrapper) lives in
         `src/modals/` or `src/dialogs/` (likely N/A — Promote dialog is owned by
-        `openbuilt-version-promotion`).
+        `openbuild-version-promotion`).

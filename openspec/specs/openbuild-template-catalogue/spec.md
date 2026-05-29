@@ -1,8 +1,8 @@
-# openbuilt-template-catalogue Specification
+# openbuild-template-catalogue Specification
 
 ## Purpose
 
-Ships the starter-template gallery that turns OpenBuilt's competitor-parity
+Ships the starter-template gallery that turns OpenBuild's competitor-parity
 "day-one templates" promise into a working surface. Declares an `ApplicationTemplate`
 schema, seeds four Conduction-curated templates (permit-tracker,
 stakeholder-consultation, employee-onboarding, incident-reporter) via an idempotent
@@ -21,7 +21,7 @@ content are fully i18n'd (nl/en minimum).
 @e2e exclude pure-backend schema-validation contract — OR schema-validation rejection of missing `manifest` field and slug-uniqueness enforcement are OR REST + Newman contracts; no Playwright-testable UI surface for schema-level validation responses
 
 The system SHALL declare an `ApplicationTemplate` schema in
-`lib/Settings/openbuilt_register.json` under the existing `openbuilt`
+`lib/Settings/openbuild_register.json` under the existing `openbuild`
 register namespace established by chain spec #1. The schema SHALL
 declare the following properties:
 
@@ -112,9 +112,9 @@ guarded by per-template `slug` existence checks (matching the
 
 #### Scenario: Fresh install seeds four templates
 
-- **WHEN** the OpenBuilt app is installed on a fresh Nextcloud
+- **WHEN** the OpenBuild app is installed on a fresh Nextcloud
 - **THEN** four `ApplicationTemplate` records exist in the
-  `openbuilt` register with `isSeeded: true`
+  `openbuild` register with `isSeeded: true`
 - **AND** their slugs are `permit-tracker`, `stakeholder-consultation`,
   `employee-onboarding`, and `incident-reporter`
 
@@ -127,7 +127,7 @@ guarded by per-template `slug` existence checks (matching the
 
 ### Requirement: Gallery view lists templates with filter and detail
 
-The OpenBuilt frontend SHALL register a Vue route `/templates` whose
+The OpenBuild frontend SHALL register a Vue route `/templates` whose
 view (`src/views/TemplateGallery.vue`) lists every
 `ApplicationTemplate` visible to the caller via OR REST. The gallery
 SHALL:
@@ -137,7 +137,7 @@ SHALL:
 - Provide filter controls for `category` and a free-text search over
   `title` + `useCase` + `description`
 - Surface a "Use this template" action per card
-- Be reachable from a top-level OpenBuilt left-nav entry and from a
+- Be reachable from a top-level OpenBuild left-nav entry and from a
   "Create from template" CTA on the empty-state of the Application
   list
 
@@ -149,14 +149,14 @@ CSS variables only (per ADR-010 — no hardcoded colours).
 
 #### Scenario: Filtering by category narrows the gallery
 
-- **WHEN** a user opens `/index.php/apps/openbuilt/templates` and
+- **WHEN** a user opens `/index.php/apps/openbuild/templates` and
   selects the `government-services` category filter
 - **THEN** the gallery shows only the `permit-tracker` template
 - **AND** the three other seeded templates are hidden from view
 
 #### Scenario: Empty Application list surfaces the gallery CTA
 
-- **WHEN** a user with no Applications navigates to the OpenBuilt
+- **WHEN** a user with no Applications navigates to the OpenBuild
   shell home
 - **THEN** the empty-state of the Application list shows a "Create
   from template" CTA
@@ -167,7 +167,7 @@ CSS variables only (per ADR-010 — no hardcoded colours).
 @e2e exclude mixed spec — `POST /api/applications/from-template/{templateSlug}` response 201 with UUID, `templateOrigin.slug/version` fields, slug-collision 4xx, and companion schema namespace are backend OR REST + controller contracts verified by Newman; UI clone flow is covered by the template-catalogue-ui Vitest tests + the template-catalogue Playwright tests
 
 The system SHALL expose `POST
-/index.php/apps/openbuilt/api/applications/from-template/{templateSlug}`
+/index.php/apps/openbuild/api/applications/from-template/{templateSlug}`
 backed by `ApplicationsController::createFromTemplate`. The endpoint
 SHALL accept a JSON body with at least `{ name: string, slug: string
 }` for the new Application. On success, it SHALL:
@@ -196,7 +196,7 @@ state-machine or "template service" class is introduced (ADR-031).
 
 - **WHEN** an authenticated user POSTs `{ name: "My permits", slug:
   "my-permits" }` to
-  `/index.php/apps/openbuilt/api/applications/from-template/permit-tracker`
+  `/index.php/apps/openbuild/api/applications/from-template/permit-tracker`
 - **THEN** the response is 201 with the new Application's UUID
 - **AND** a new `Application` record exists in OR with `slug:
   my-permits`, `status: draft`, and a `manifest` equal to the
@@ -247,7 +247,7 @@ template's companion schemas untouched.
 
 After a successful template clone, the frontend SHALL redirect the
 user to the page editor view (from chain spec #5,
-`openbuilt-page-editor`) for the new Application, opened on the
+`openbuild-page-editor`) for the new Application, opened on the
 manifest's first page. The redirect SHALL preserve the new
 Application's slug in the URL so the editor loads against the right
 record.
@@ -298,7 +298,7 @@ and is explicitly deferred to a future versioning spec.
 
 The system SHALL present Conduction-shipped templates (records with
 `isSeeded: true`) as read-only in the gallery and SHALL NOT expose UI
-controls to edit or delete `isSeeded: true` records via the OpenBuilt
+controls to edit or delete `isSeeded: true` records via the OpenBuild
 frontend in this spec. Backend deletion via OR REST remains
 governed by OR's standard RBAC; this requirement only constrains the
 UI surface to prevent accidental damage to the curated catalogue
@@ -349,7 +349,7 @@ in REQ-OBTC-005.
 The system SHALL ensure every user-visible string in the gallery view
 (gallery section title, filter labels, category labels, "Use this
 template" button label, empty-state copy) uses i18n keys under the
-`openbuilt.templates.*` namespace. Every seeded template's `title`,
+`openbuild.templates.*` namespace. Every seeded template's `title`,
 `description`, `useCase`, and `category` SHALL be stored either as
 i18n keys (preferred) or as English strings with Dutch translations
 shipped in `l10n/nl.json` so the gallery is bilingual on install
@@ -360,6 +360,6 @@ shipped in `l10n/nl.json` so the gallery is bilingual on install
 #### Scenario: Dutch user sees Dutch gallery copy
 
 - **WHEN** an authenticated Dutch-locale user opens
-  `/index.php/apps/openbuilt/templates`
+  `/index.php/apps/openbuild/templates`
 - **THEN** the page title, filter labels, and the four seeded
   template descriptions render in Dutch

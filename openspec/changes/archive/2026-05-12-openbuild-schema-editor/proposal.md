@@ -2,14 +2,14 @@
 kind: code
 depends_on: [openregister-runtime-schema-api]
 chain:
-  - bootstrap-openbuilt              # foundation
+  - bootstrap-openbuild              # foundation
   - openregister-runtime-schema-api  # blocker: provides runtime schema CRUD
-  - openbuilt-schema-editor          # THIS spec
+  - openbuild-schema-editor          # THIS spec
 ---
 
 ## Why
 
-OpenBuilt's foundational spec (`bootstrap-openbuilt`) ships a single
+OpenBuild's foundational spec (`bootstrap-openbuild`) ships a single
 JSON `<textarea>` for editing an Application's manifest blob. That is
 deliberately "integrator-only" UX — citizen developers cannot hand-author
 JSON, and the `lib/Settings/{app}_register.json` pattern locks the
@@ -22,7 +22,7 @@ relations, widgets) through a guided UI — and persists every change
 to OR's runtime schema CRUD endpoints (chain spec #3,
 `openregister-runtime-schema-api`).
 
-This spec is **spec #4 of the 9-spec OpenBuilt chain** (ADR-032). It is
+This spec is **spec #4 of the 9-spec OpenBuild chain** (ADR-032). It is
 the first spec in the chain that gives an end user direct authoring
 power over the data model of their virtual app, replacing the
 textarea-as-fallback editing pattern of spec #1 with a structured UI.
@@ -38,7 +38,7 @@ but its **output** — the schemas it writes — is declarative
 - **NEW** Vue view `src/views/SchemaDesigner.vue` — the top-level
   schema list + designer surface, mounted at
   `/builder/:slug/schemas` and `/builder/:slug/schemas/:schemaId`
-  inside a virtual app's OpenBuilt route tree.
+  inside a virtual app's OpenBuild route tree.
 - **NEW** sub-component family under `src/components/schema-editor/`:
   - `SchemaListPanel.vue` — lists schemas in the current virtual app's
     OR register namespace, with add / rename / delete actions.
@@ -70,7 +70,7 @@ but its **output** — the schemas it writes — is declarative
 - **MODIFIED** `src/views/BuilderHost.vue` — gains a `Schemas` menu
   entry pointing into the designer for the current virtual app.
   Behaviour change is purely additive; the nested-CnAppRoot mount
-  contract from `bootstrap-openbuilt` is unchanged.
+  contract from `bootstrap-openbuild` is unchanged.
 
 The designer reads / writes via chain spec #3's runtime schema CRUD
 endpoints. Until chain spec #3 lands, this spec's apply phase is
@@ -81,7 +81,7 @@ unblock parallel review.
 
 ### New Capabilities
 
-- `openbuilt-schema-designer`: The visual schema authoring surface.
+- `openbuild-schema-designer`: The visual schema authoring surface.
   Owns the SchemaDesigner view, the field / lifecycle / aggregation /
   calculation / notification / relation / widget sub-editors, and the
   designer-scoped Pinia store layer. The designer is the canonical UI
@@ -91,7 +91,7 @@ unblock parallel review.
 
 ### Modified Capabilities
 
-- `openbuilt-runtime`: Adds the schema-designer routes to the OpenBuilt
+- `openbuild-runtime`: Adds the schema-designer routes to the OpenBuild
   router and a `Schemas` menu entry to `BuilderHost.vue`. No change to
   the nested-CnAppRoot mount contract or the manifest endpoint.
 
@@ -111,7 +111,7 @@ unblock parallel review.
 - **No new PHP** — this spec is `kind: code` and purely frontend. No
   controllers, no services, no repair steps.
 - **No breaking changes** — this is additive on top of
-  `bootstrap-openbuilt`.
+  `bootstrap-openbuild`.
 - **Foundational ADRs honoured** — ADR-022 (consume OR abstractions),
   ADR-024 (manifest renderer), ADR-031 (declarative output;
   `x-openregister-*` JSON, never imperative state-machine services),

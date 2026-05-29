@@ -4,7 +4,7 @@
  *
  * Vitest spec for `buildVersionedRoute` helper.
  *
- * Covers spec `openbuilt-version-routing` REQ-OBVR-006 and tasks.md §4.2:
+ * Covers spec `openbuild-version-routing` REQ-OBVR-006 and tasks.md §4.2:
  *  - version present → query contains _version
  *  - version absent (undefined, empty string) → query is empty
  *  - arbitrary params are forwarded verbatim

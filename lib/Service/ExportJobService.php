@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenBuilt Export Job Service
+ * OpenBuild Export Job Service
  *
  * Orchestration helper between the HTTP controller and the OR-backed
  * ExportJob record + the imperative ExportService pipeline. Persists the
  * GitHub PAT via ICredentialsManager (Decision 3) and never logs it.
  *
  * @category Service
- * @package  OCA\OpenBuilt\Service
+ * @package  OCA\OpenBuild\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,11 +18,11 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-37
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-38
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -30,9 +30,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Service;
+namespace OCA\OpenBuild\Service;
 
-use OCA\OpenBuilt\AppInfo\Application;
+use OCA\OpenBuild\AppInfo\Application;
 use OCP\BackgroundJob\IJobList;
 use OCP\Security\ICredentialsManager;
 use Psr\Container\ContainerInterface;
@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
  */
 class ExportJobService
 {
-    private const PAT_CREDENTIAL_PREFIX = 'openbuilt.export.';
+    private const PAT_CREDENTIAL_PREFIX = 'openbuild.export.';
     private const PAT_CREDENTIAL_SUFFIX = '.pat';
 
     /**
@@ -66,7 +66,7 @@ class ExportJobService
      * Create an ExportJob record in OR and schedule the background job.
      *
      * The PAT (when supplied) is stored under
-     * `openbuilt.export.<jobUuid>.pat` and stripped from the in-memory payload
+     * `openbuild.export.<jobUuid>.pat` and stripped from the in-memory payload
      * before any logging.
      *
      * @param string              $applicationSlug Source Application slug.
@@ -77,7 +77,7 @@ class ExportJobService
      *
      * @throws \InvalidArgumentException When required fields are missing.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
      */
     public function queue(
         string $applicationSlug,
@@ -128,7 +128,7 @@ class ExportJobService
 
         $this->persistJob(job: $job);
         $this->jobList->add(
-            \OCA\OpenBuilt\BackgroundJob\RunExportJob::class,
+            \OCA\OpenBuild\BackgroundJob\RunExportJob::class,
             ['jobUuid' => $jobUuid]
         );
 
@@ -149,13 +149,13 @@ class ExportJobService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-37
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
      */
     public function persistJob(array $job): void
     {
         try {
             if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
-                $this->logger->info('OpenBuilt export job persisted (logger fallback): '.$job['uuid']);
+                $this->logger->info('OpenBuild export job persisted (logger fallback): '.$job['uuid']);
                 return;
             }
 
@@ -192,7 +192,7 @@ class ExportJobService
      * @return bool True when the transition fired, false when OR's
      *              lifecycle engine is not available (gap recorded).
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-38
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
      */
     public function transitionJob(
         string $jobUuid,
@@ -207,7 +207,7 @@ class ExportJobService
             // honour it. Surface this so the issue is visible — never
             // silently write status directly.
             $this->logger->warning(
-                'OpenBuilt export: OR TransitionEngine unavailable — '
+                'OpenBuild export: OR TransitionEngine unavailable — '
                 .'lifecycle transition "'.$action.'" SKIPPED on job '.$jobUuid.'. '
                 .'Bump OpenRegister to >= the build that ships '
                 .'OCA\\OpenRegister\\Service\\Lifecycle\\TransitionEngine.'
@@ -219,7 +219,7 @@ class ExportJobService
             $engine = $this->container->get($engineClass);
             if (method_exists($engine, 'transition') === false) {
                 $this->logger->warning(
-                    'OpenBuilt export: OR TransitionEngine present but '
+                    'OpenBuild export: OR TransitionEngine present but '
                     .'transition() method missing — likely API drift.'
                 );
                 return false;
@@ -238,7 +238,7 @@ class ExportJobService
             return true;
         } catch (\Throwable $e) {
             $this->logger->error(
-                'OpenBuilt export: lifecycle transition "'.$action.'" failed on job '
+                'OpenBuild export: lifecycle transition "'.$action.'" failed on job '
                 .$jobUuid.': '.$e->getMessage()
             );
             return false;
@@ -254,7 +254,7 @@ class ExportJobService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-37
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
      */
     public function mergeJobFields(string $jobUuid, array $fields): void
     {
@@ -290,7 +290,7 @@ class ExportJobService
             }
         } catch (\Throwable $e) {
             $this->logger->warning(
-                'OpenBuilt export: mergeJobFields failed on job '.$jobUuid.': '.$e->getMessage()
+                'OpenBuild export: mergeJobFields failed on job '.$jobUuid.': '.$e->getMessage()
             );
         }//end try
     }//end mergeJobFields()
@@ -302,12 +302,12 @@ class ExportJobService
      *
      * @return array{path:string,expired:bool}|null Resolution result.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
      */
     public function resolveDownload(string $uuid): ?array
     {
         // Look for the ZIP in the deterministic location.
-        $candidate = sys_get_temp_dir().'/openbuilt-exports/'.$uuid.'.zip';
+        $candidate = sys_get_temp_dir().'/openbuild-exports/'.$uuid.'.zip';
         if (file_exists($candidate) === false) {
             return null;
         }
@@ -326,7 +326,7 @@ class ExportJobService
      *
      * @return string|null PAT or null when none was stored.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
      */
     public function fetchPat(string $jobUuid): ?string
     {
@@ -345,7 +345,7 @@ class ExportJobService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
      */
     public function clearPat(string $jobUuid): void
     {
@@ -363,7 +363,7 @@ class ExportJobService
      *
      * @return string Credentials key.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
      */
     public function credentialKey(string $jobUuid): string
     {
@@ -381,7 +381,7 @@ class ExportJobService
      *
      * @return array<string, mixed>|null Job data, or null on failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
      */
     public function loadJob(string $jobUuid): ?array
     {
@@ -417,7 +417,7 @@ class ExportJobService
             return null;
         } catch (\Throwable $e) {
             $this->logger->warning(
-                'OpenBuilt ExportJobService: loadJob failed for job '.$jobUuid.': '.$e->getMessage()
+                'OpenBuild ExportJobService: loadJob failed for job '.$jobUuid.': '.$e->getMessage()
             );
             return null;
         }//end try
@@ -428,7 +428,7 @@ class ExportJobService
      *
      * @return string UUIDv4.
      *
-     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-37
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
      */
     public function uuid4(): string
     {

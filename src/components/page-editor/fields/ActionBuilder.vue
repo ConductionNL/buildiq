@@ -10,26 +10,26 @@
 				:value="act.id || ''"
 				type="text"
 				class="action-builder__field"
-				:placeholder="t('openbuilt', 'Action id (e.g. edit)')"
+				:placeholder="t('openbuild', 'Action id (e.g. edit)')"
 				@input="updateField(index, 'id', $event.target.value)">
 			<input
 				:value="act.label || ''"
 				type="text"
 				class="action-builder__field"
-				:placeholder="t('openbuilt', 'Label (i18n key)')"
+				:placeholder="t('openbuild', 'Label (i18n key)')"
 				@input="updateField(index, 'label', $event.target.value)">
 			<input
 				:value="act.icon || ''"
 				type="text"
 				class="action-builder__field action-builder__field--narrow"
-				:placeholder="t('openbuilt', 'Icon')"
+				:placeholder="t('openbuild', 'Icon')"
 				@input="updateField(index, 'icon', $event.target.value)">
 			<select
 				:value="act.target || ''"
 				class="action-builder__field action-builder__field--narrow"
 				@change="updateField(index, 'target', $event.target.value)">
 				<option value="">
-					{{ t('openbuilt', '— target —') }}
+					{{ t('openbuild', '— target —') }}
 				</option>
 				<option value="navigate">
 					navigate
@@ -44,13 +44,13 @@
 			<button
 				type="button"
 				class="action-builder__remove"
-				:title="t('openbuilt', 'Remove action')"
+				:title="t('openbuild', 'Remove action')"
 				@click="removeAction(index)">
 				✕
 			</button>
 		</div>
 		<button type="button" class="action-builder__add" @click="addAction">
-			+ {{ t('openbuilt', 'Add action') }}
+			+ {{ t('openbuild', 'Add action') }}
 		</button>
 	</div>
 </template>

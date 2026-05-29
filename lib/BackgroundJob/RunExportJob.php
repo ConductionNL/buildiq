@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenBuilt RunExportJob background job
+ * OpenBuild RunExportJob background job
  *
  * Picks up a queued ExportJob and walks it through running →
  * succeeded|failed. Honours the no-auto-retry rule (memory: crashes →
  * needs-input).
  *
  * @category BackgroundJob
- * @package  OCA\OpenBuilt\BackgroundJob
+ * @package  OCA\OpenBuild\BackgroundJob
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,8 +18,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -27,11 +27,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\BackgroundJob;
+namespace OCA\OpenBuild\BackgroundJob;
 
-use OCA\OpenBuilt\Service\ExportJobService;
-use OCA\OpenBuilt\Service\ExportService;
-use OCA\OpenBuilt\Service\GitHubPushService;
+use OCA\OpenBuild\Service\ExportJobService;
+use OCA\OpenBuild\Service\ExportService;
+use OCA\OpenBuild\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -73,13 +73,13 @@ class RunExportJob extends QueuedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
      */
     protected function run($argument): void
     {
         $jobUuid = $this->extractJobUuid(argument: $argument);
         if ($jobUuid === '') {
-            $this->logger->error('OpenBuilt RunExportJob: missing jobUuid argument');
+            $this->logger->error('OpenBuild RunExportJob: missing jobUuid argument');
             return;
         }
 
@@ -95,7 +95,7 @@ class RunExportJob extends QueuedJob
             // an errorMessage onto the record, and leave it for the user
             // (memory: crashes → needs-input).
             $this->logger->error(
-                'OpenBuilt export failed',
+                'OpenBuild export failed',
                 ['jobUuid' => $jobUuid, 'error' => $e->getMessage()]
             );
             $this->exportJobService->transitionJob(
@@ -133,7 +133,7 @@ class RunExportJob extends QueuedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
      */
     private function executePipeline(string $jobUuid): void
     {
@@ -144,7 +144,7 @@ class RunExportJob extends QueuedJob
         $job = $this->exportJobService->loadJob(jobUuid: $jobUuid);
         if ($job === null) {
             throw new RuntimeException(
-                sprintf('OpenBuilt RunExportJob: could not load ExportJob record for UUID %s', $jobUuid)
+                sprintf('OpenBuild RunExportJob: could not load ExportJob record for UUID %s', $jobUuid)
             );
         }
 
@@ -155,7 +155,7 @@ class RunExportJob extends QueuedJob
 
         if ($applicationUuid === '') {
             throw new RuntimeException(
-                sprintf('OpenBuilt RunExportJob: ExportJob %s has an empty applicationUuid', $jobUuid)
+                sprintf('OpenBuild RunExportJob: ExportJob %s has an empty applicationUuid', $jobUuid)
             );
         }
 
@@ -164,7 +164,7 @@ class RunExportJob extends QueuedJob
             'appNamespace' => $this->slugToNamespace(slug: $applicationSlug),
             'appName'      => $this->slugToLabel(slug: $applicationSlug),
             'appVersion'   => $applicationVersion,
-            'authorName'   => 'OpenBuilt Citizen Developer',
+            'authorName'   => 'OpenBuild Citizen Developer',
             'authorEmail'  => 'dev@conduction.nl',
             'license'      => $license,
         ];
@@ -181,7 +181,7 @@ class RunExportJob extends QueuedJob
         $extra = $this->buildSuccessFields(jobUuid: $jobUuid, pushResult: $pushResult);
 
         $this->exportJobService->transitionJob(jobUuid: $jobUuid, action: 'succeed', extraFields: $extra);
-        $this->logger->info('OpenBuilt export succeeded', ['jobUuid' => $jobUuid]);
+        $this->logger->info('OpenBuild export succeeded', ['jobUuid' => $jobUuid]);
     }//end executePipeline()
 
     /**
@@ -220,7 +220,7 @@ class RunExportJob extends QueuedJob
      *
      * @return array{repoUrl?:string,pullRequestUrl?:string}|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
      */
     private function maybePush(string $jobUuid, string $zipPath): ?array
     {
@@ -247,7 +247,7 @@ class RunExportJob extends QueuedJob
     private function buildSuccessFields(string $jobUuid, ?array $pushResult): array
     {
         $extra = [
-            'downloadUrl' => '/index.php/apps/openbuilt/api/exports/'.$jobUuid.'/download',
+            'downloadUrl' => '/index.php/apps/openbuild/api/exports/'.$jobUuid.'/download',
         ];
 
         if (is_array($pushResult) === false) {

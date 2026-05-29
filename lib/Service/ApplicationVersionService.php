@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenBuilt ApplicationVersionService
+ * OpenBuild ApplicationVersionService
  *
  * Owns the imperative business logic for the versioned-app model
- * (ADR-002 / openbuilt-versioning-model):
+ * (ADR-002 / openbuild-versioning-model):
  *
  *   - Semver auto-bump on manifest content change (SHA-256 hash diff
  *     over the canonicalised manifest; ADR-031 §Exceptions(2) — stateful
@@ -25,7 +25,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuilt\Service
+ * @package  OCA\OpenBuild\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -35,15 +35,15 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-22
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-23
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-31
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-23
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Service;
+namespace OCA\OpenBuild\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -60,14 +60,14 @@ use Throwable;
  * Note: this service intentionally owns only the surface that ADR-031's
  * declarative-vs-imperative table classifies as imperative. Lifecycle
  * transitions, route upserts on publish, and the same-row promotesTo
- * self-loop check are declared in `lib/Settings/openbuilt_register.json`.
+ * self-loop check are declared in `lib/Settings/openbuild_register.json`.
  */
 class ApplicationVersionService
 {
     /**
      * Shared register that hosts both Application and ApplicationVersion.
      */
-    public const REGISTER_SLUG = 'openbuilt';
+    public const REGISTER_SLUG = 'openbuild';
 
     /**
      * Schema slug of the parent Application object.
@@ -151,7 +151,7 @@ class ApplicationVersionService
      *
      * @throws \JsonException When the structure contains non-encodable values
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
      */
     public function canonicaliseManifest(array $manifest): string
     {
@@ -170,7 +170,7 @@ class ApplicationVersionService
      *
      * @throws \JsonException When the manifest contains non-encodable values
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
      */
     public function hashManifest(array $manifest): string
     {
@@ -187,7 +187,7 @@ class ApplicationVersionService
      *
      * @throws RuntimeException When the input is not a recognisable semver
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
      */
     public function bumpPatch(string $semver): string
     {
@@ -225,7 +225,7 @@ class ApplicationVersionService
      *
      * @throws \JsonException When the manifest cannot be canonicalised
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
      */
     public function onSave(?array $current, array $next): array
     {
@@ -281,7 +281,7 @@ class ApplicationVersionService
      *
      * @throws RuntimeException When a cycle is detected or the cap is exceeded
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-23
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-23
      */
     public function guardNoCycle(string $currentUuid, ?string $proposedTargetUuid): void
     {
@@ -337,7 +337,7 @@ class ApplicationVersionService
      *
      * @throws RuntimeException When the back-reference does not point at the parent
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-31
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
      */
     public function guardProductionVersionOwnership(string $applicationUuid, string $proposedVersionUuid): void
     {
@@ -403,7 +403,7 @@ class ApplicationVersionService
      * @throws RuntimeException On unknown strategy, missing version, or
      *                          production-version refusal
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
      */
     public function deleteVersion(string $versionUuid, string $strategy): void
     {
@@ -437,7 +437,7 @@ class ApplicationVersionService
                 // No-op on the register — admin retains the data.
                 $this->logger->info(
                     sprintf(
-                        'OpenBuilt: keep-register strategy on ApplicationVersion %s — register %s left untouched.',
+                        'OpenBuild: keep-register strategy on ApplicationVersion %s — register %s left untouched.',
                         $versionUuid,
                         $registerSlug
                     )
@@ -457,7 +457,7 @@ class ApplicationVersionService
      *
      * @throws RuntimeException When the strategy is not recognised
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
      */
     private function assertValidStrategy(string $strategy): void
     {
@@ -482,7 +482,7 @@ class ApplicationVersionService
      *
      * @throws RuntimeException When the row is the parent's productionVersion
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
      */
     private function assertNotProductionVersion(array $versionData, string $versionUuid): void
     {
@@ -524,14 +524,14 @@ class ApplicationVersionService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
      */
     private function dropPerVersionRegister(string $registerSlug, string $versionUuid): void
     {
         if ($registerSlug === '') {
             $this->logger->warning(
                 sprintf(
-                    'OpenBuilt: ApplicationVersion %s has no register slug; nothing to drop.',
+                    'OpenBuild: ApplicationVersion %s has no register slug; nothing to drop.',
                     $versionUuid
                 )
             );
@@ -543,7 +543,7 @@ class ApplicationVersionService
         } catch (Throwable $e) {
             $this->logger->warning(
                 sprintf(
-                    'OpenBuilt: register %s not found while deleting ApplicationVersion %s (%s) — continuing.',
+                    'OpenBuild: register %s not found while deleting ApplicationVersion %s (%s) — continuing.',
                     $registerSlug,
                     $versionUuid,
                     $e->getMessage()
@@ -555,7 +555,7 @@ class ApplicationVersionService
         $this->registerService->delete(register: $register);
         $this->logger->info(
             sprintf(
-                'OpenBuilt: dropped per-version register %s for ApplicationVersion %s.',
+                'OpenBuild: dropped per-version register %s for ApplicationVersion %s.',
                 $registerSlug,
                 $versionUuid
             )
@@ -575,14 +575,14 @@ class ApplicationVersionService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-25
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
      */
     private function flagRegisterOrphaned(string $registerSlug, string $versionUuid): void
     {
         if ($registerSlug === '') {
             $this->logger->warning(
                 sprintf(
-                    'OpenBuilt: ApplicationVersion %s has no register slug; nothing to orphan-flag.',
+                    'OpenBuild: ApplicationVersion %s has no register slug; nothing to orphan-flag.',
                     $versionUuid
                 )
             );
@@ -594,7 +594,7 @@ class ApplicationVersionService
         } catch (Throwable $e) {
             $this->logger->warning(
                 sprintf(
-                    'OpenBuilt: register %s not found while orphan-flagging for ApplicationVersion %s (%s).',
+                    'OpenBuild: register %s not found while orphan-flagging for ApplicationVersion %s (%s).',
                     $registerSlug,
                     $versionUuid,
                     $e->getMessage()
@@ -618,7 +618,7 @@ class ApplicationVersionService
             $this->registerMapper->update($register);
             $this->logger->info(
                 sprintf(
-                    'OpenBuilt: orphan-flagged register %s for ApplicationVersion %s at %s.',
+                    'OpenBuild: orphan-flagged register %s for ApplicationVersion %s at %s.',
                     $registerSlug,
                     $versionUuid,
                     $metadata['orphanedAt']
@@ -629,7 +629,7 @@ class ApplicationVersionService
 
         $this->logger->warning(
             sprintf(
-                'OpenBuilt: Register entity for %s has no setMetadata; falling back to PSR-logged orphan event for %s.',
+                'OpenBuild: Register entity for %s has no setMetadata; falling back to PSR-logged orphan event for %s.',
                 $registerSlug,
                 $versionUuid
             )
@@ -656,7 +656,7 @@ class ApplicationVersionService
             );
         } catch (Throwable $e) {
             $this->logger->debug(
-                sprintf('OpenBuilt: cycle-check lookup for %s failed (%s) — treating as terminal.', $versionUuid, $e->getMessage())
+                sprintf('OpenBuild: cycle-check lookup for %s failed (%s) — treating as terminal.', $versionUuid, $e->getMessage())
             );
             return null;
         }
@@ -747,7 +747,7 @@ class ApplicationVersionService
      *
      * @internal Exposed only to internal callers; not part of the public API.
      *
-     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-23
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-23
      */
     public function describeRegister(?Register $register): string
     {

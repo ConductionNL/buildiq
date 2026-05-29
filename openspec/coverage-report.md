@@ -1,4 +1,4 @@
-# Coverage Report — openbuilt
+# Coverage Report — openbuild
 
 Generated: 2026-05-24 00:00 UTC
 Branch: development
@@ -10,18 +10,18 @@ Scanner: opsx-coverage-scan v1
 |---|---|---|
 | annotated | 0 | — (no `@spec openspec/changes/` tags in the tree) |
 | plumbing | 29 | — (never tagged) |
-| 1 — REQ matched | 185 | `/opsx-annotate openbuilt` |
-| 2a — existing capability, no REQ | 17 (2 clusters) | `/opsx-reverse-spec openbuilt --extend <cap>` |
-| 2b — no capability owner | 1 (1 cluster) | `/opsx-reverse-spec openbuilt --cluster deep-link-registration` |
+| 1 — REQ matched | 185 | `/opsx-annotate openbuild` |
+| 2a — existing capability, no REQ | 17 (2 clusters) | `/opsx-reverse-spec openbuild --extend <cap>` |
+| 2b — no capability owner | 1 (1 cluster) | `/opsx-reverse-spec openbuild --cluster deep-link-registration` |
 | 3a — REQ broken (code removed) | 0 | — |
 | 3b — REQ never implemented (or out-of-scope here) | 22 | Mark deferred or confirm frontend coverage |
 | 4 — ADR conformance | 12 findings across 4 rules | Follow-up issue |
 
-## Bucket 1 — Ready to annotate (via ghost change `retrofit-2026-05-24-annotate-openbuilt`)
+## Bucket 1 — Ready to annotate (via ghost change `retrofit-2026-05-24-annotate-openbuild`)
 
-Note: the suggested annotation tag is `@spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-N` where the ghost change's tasks.md will carry one task per (capability, REQ) pair.
+Note: the suggested annotation tag is `@spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-N` where the ghost change's tasks.md will carry one task per (capability, REQ) pair.
 
-### capability: openbuilt-runtime
+### capability: openbuild-runtime
 
 | File | Method | REQ | Confidence | Signal |
 |---|---|---|---|---|
@@ -30,7 +30,7 @@ Note: the suggested annotation tag is `@spec openspec/changes/retrofit-2026-05-2
 | lib/Controller/DashboardController.php | page | REQ-OBR-009 | 0.90 | file docblock cites REQ-OBR-009 |
 | lib/Controller/DashboardController.php | catchAll | REQ-OBR-009 | 0.80 | SPA fall-through twin |
 | lib/Controller/DashboardController.php | publishCurrentUserGroups | REQ-OBR-009 | 0.95 | name = REQ verb |
-| lib/Mcp/OpenBuiltToolProvider.php | handleGetAppManifest | REQ-OBR-001 | 0.80 | MCP equivalent |
+| lib/Mcp/OpenBuildToolProvider.php | handleGetAppManifest | REQ-OBR-001 | 0.80 | MCP equivalent |
 
 ### capability: version-routing
 
@@ -47,14 +47,14 @@ Note: the suggested annotation tag is `@spec openspec/changes/retrofit-2026-05-2
 | lib/Service/ManifestResolverService.php | isCallerAuthorised | REQ-OBVR-003 | 0.80 | Pass B inherit |
 | lib/Service/ManifestResolverService.php | bucketContainsUid | REQ-OBVR-003 | 0.70 NEEDS-REVIEW | Pass B inherit |
 
-### capability: openbuilt-version-snapshots
+### capability: openbuild-version-snapshots
 
 | File | Method | REQ | Confidence | Signal |
 |---|---|---|---|---|
 | lib/Controller/ApplicationsController.php | diffVersions | REQ-OBV-005 | 0.95 | routes.php + file docblock |
 | lib/Controller/ApplicationsController.php | resolveVersionBlob | REQ-OBV-005 | 0.80 | Pass B inherit |
 
-### capability: openbuilt-rbac
+### capability: openbuild-rbac
 
 | File | Method | REQ | Confidence | Signal |
 |---|---|---|---|---|
@@ -71,9 +71,9 @@ Note: the suggested annotation tag is `@spec openspec/changes/retrofit-2026-05-2
 | lib/Controller/ApplicationVersionsController.php | getUserGroupIds | REQ-OBRBAC-002 | 0.70 NEEDS-REVIEW | Pass B inherit |
 | lib/Controller/ExportsController.php | isAuthorisedForApplication | REQ-OBRBAC-002 | 0.80 | ADR-005 IDOR guard |
 | lib/Controller/ExportsController.php | fallbackAuthoriseViaOrLookup | REQ-OBRBAC-002 | 0.70 NEEDS-REVIEW | Pass B inherit |
-| lib/Mcp/OpenBuiltToolProvider.php | handleListApps | REQ-OBRBAC-003 | 0.70 NEEDS-REVIEW | MCP equivalent of listMine |
+| lib/Mcp/OpenBuildToolProvider.php | handleListApps | REQ-OBRBAC-003 | 0.70 NEEDS-REVIEW | MCP equivalent of listMine |
 
-### capability: openbuilt-template-catalogue
+### capability: openbuild-template-catalogue
 
 | File | Method | REQ | Confidence | Signal |
 |---|---|---|---|---|
@@ -118,7 +118,7 @@ Note: the suggested annotation tag is `@spec openspec/changes/retrofit-2026-05-2
 | lib/Service/ApplicationVersionService.php | flagRegisterOrphaned | REQ-OBV-108 | 0.80 | orphan-grace strategy |
 | lib/Service/ApplicationVersionService.php | resolveNextPromotesTo | REQ-OBV-108 | 0.75 NEEDS-REVIEW | Pass B inherit |
 
-### capability: openbuilt-application-register
+### capability: openbuild-application-register
 
 | File | Method | REQ | Confidence | Signal |
 |---|---|---|---|---|
@@ -150,7 +150,7 @@ Note: the suggested annotation tag is `@spec openspec/changes/retrofit-2026-05-2
 | lib/Service/SlugValidator.php | validateAppSlug | REQ-OBWIZ-005 | 0.95 | file docblock |
 | lib/Service/SlugValidator.php | validateVersionSlug | REQ-OBWIZ-005 | 0.95 | file docblock |
 | lib/Service/SlugValidator.php | validateChainSlugs | REQ-OBWIZ-006 | 0.95 | file docblock |
-| lib/Mcp/OpenBuiltToolProvider.php | handleCreateApp | REQ-OBWIZ-001 | 0.80 | MCP surface |
+| lib/Mcp/OpenBuildToolProvider.php | handleCreateApp | REQ-OBWIZ-001 | 0.80 | MCP surface |
 
 ### capability: application-insights
 
@@ -196,7 +196,7 @@ Note: the suggested annotation tag is `@spec openspec/changes/retrofit-2026-05-2
 | lib/Service/VersionPromotionService.php | acquireLock | REQ-OBVP-006 | 0.95 | OR object lock |
 | lib/Service/VersionPromotionService.php | releaseLock | REQ-OBVP-006 | 0.90 | Pass B inherit |
 | lib/Service/VersionPromotionService.php | callGetLockInfo | REQ-OBVP-006 | 0.80 | Pass B inherit |
-| lib/Mcp/OpenBuiltToolProvider.php | handlePromoteVersion | REQ-OBVP-001 | 0.80 | MCP surface |
+| lib/Mcp/OpenBuildToolProvider.php | handlePromoteVersion | REQ-OBVP-001 | 0.80 | MCP surface |
 
 ### capability: app-icon-management
 
@@ -223,7 +223,7 @@ Note: the suggested annotation tag is `@spec openspec/changes/retrofit-2026-05-2
 | lib/Service/AppNavigationService.php | principalsMatchGroups | REQ-OBNAV-002 | 0.80 | Pass B inherit |
 | lib/Service/AppNavigationService.php | getPublishedApplications | REQ-OBNAV-001 / 004 | 0.85 | per-request fetch |
 
-### capability: openbuilt-exporter
+### capability: openbuild-exporter
 
 | File | Method | REQ (by title) | Confidence | Signal |
 |---|---|---|---|---|
@@ -272,25 +272,25 @@ Note: the suggested annotation tag is `@spec openspec/changes/retrofit-2026-05-2
 | lib/Repair/MigrateToVersionedModel.php | enumerateApplications | REQ-OBGFM-001 | 0.80 | Pass B inherit |
 | lib/Repair/MigrateToVersionedModel.php | migrateOne | REQ-OBGFM-003 / 004 | 0.85 | per-app log + register-delete |
 
-### capability: openbuilt-schema-designer / openbuilt-page-designer (MCP surface)
+### capability: openbuild-schema-designer / openbuild-page-designer (MCP surface)
 
 | File | Method | REQ | Confidence | Signal |
 |---|---|---|---|---|
-| lib/Mcp/OpenBuiltToolProvider.php | handleUpsertSchema | REQ-OBSD-006 | 0.75 NEEDS-REVIEW | MCP surface for schema save |
-| lib/Mcp/OpenBuiltToolProvider.php | handleUpsertPage | REQ-OBPD-009 | 0.75 NEEDS-REVIEW | MCP surface for page save |
-| lib/Mcp/OpenBuiltToolProvider.php | handleAddWidget | REQ-OBPD-004 | 0.70 NEEDS-REVIEW | widget add path |
-| lib/Mcp/OpenBuiltToolProvider.php | handleUpsertMenuItem | REQ-OBPD-001 | 0.80 | menu-tree editor |
+| lib/Mcp/OpenBuildToolProvider.php | handleUpsertSchema | REQ-OBSD-006 | 0.75 NEEDS-REVIEW | MCP surface for schema save |
+| lib/Mcp/OpenBuildToolProvider.php | handleUpsertPage | REQ-OBPD-009 | 0.75 NEEDS-REVIEW | MCP surface for page save |
+| lib/Mcp/OpenBuildToolProvider.php | handleAddWidget | REQ-OBPD-004 | 0.70 NEEDS-REVIEW | widget add path |
+| lib/Mcp/OpenBuildToolProvider.php | handleUpsertMenuItem | REQ-OBPD-001 | 0.80 | menu-tree editor |
 
 ## Bucket 2a — Existing capability, no REQ (reverse-spec --extend)
 
-### cluster: openbuilt-runtime (16 methods)
+### cluster: openbuild-runtime (16 methods)
 
-The MCP tool provider exposes the OpenBuilt authoring surface to LLMs (per ADR-019 integration registry). None of the openbuilt-runtime REQs mention an MCP tool surface — they describe the HTTP / Vue runtime. Recommend `/opsx-reverse-spec openbuilt --extend openbuilt-runtime` to add 1–2 REQs covering "MCP tool surface exposing CRUD + promotion + manifest mutations".
+The MCP tool provider exposes the OpenBuild authoring surface to LLMs (per ADR-019 integration registry). None of the openbuild-runtime REQs mention an MCP tool surface — they describe the HTTP / Vue runtime. Recommend `/opsx-reverse-spec openbuild --extend openbuild-runtime` to add 1–2 REQs covering "MCP tool surface exposing CRUD + promotion + manifest mutations".
 
-- lib/Mcp/OpenBuiltToolProvider.php::getAppId / getTools / invokeTool — MCP catalogue + dispatcher
-- lib/Mcp/OpenBuiltToolProvider.php::loadVersion / saveVersionManifest — internal version IO
-- lib/Mcp/OpenBuiltToolProvider.php::validateListAppsArgs / resolveApplicationBySlug / mapApplication / sourceDescriptor / errorResult — MCP-internal plumbing
-- lib/Mcp/OpenBuiltToolProvider.php::requireAuthenticatedUser / isAdmin / isValidSlug / buildDeepLink / toArray / extractUuid — guards + helpers
+- lib/Mcp/OpenBuildToolProvider.php::getAppId / getTools / invokeTool — MCP catalogue + dispatcher
+- lib/Mcp/OpenBuildToolProvider.php::loadVersion / saveVersionManifest — internal version IO
+- lib/Mcp/OpenBuildToolProvider.php::validateListAppsArgs / resolveApplicationBySlug / mapApplication / sourceDescriptor / errorResult — MCP-internal plumbing
+- lib/Mcp/OpenBuildToolProvider.php::requireAuthenticatedUser / isAdmin / isValidSlug / buildDeepLink / toArray / extractUuid — guards + helpers
 
 ### cluster: app-icon-management (1 method)
 
@@ -300,41 +300,41 @@ The MCP tool provider exposes the OpenBuilt authoring surface to LLMs (per ADR-0
 
 ### cluster: deep-link-registration (1 method)
 
-- lib/Listener/DeepLinkRegistrationListener.php::handle — observed: registers OpenBuilt deep-link URL patterns with OpenRegister's search provider on the `DeepLinkRegistrationEvent`. No openbuilt spec covers integration-registry / deep-link patterns. Closest concept is ADR-019, but no REQ names this concrete surface.
+- lib/Listener/DeepLinkRegistrationListener.php::handle — observed: registers OpenBuild deep-link URL patterns with OpenRegister's search provider on the `DeepLinkRegistrationEvent`. No openbuild spec covers integration-registry / deep-link patterns. Closest concept is ADR-019, but no REQ names this concrete surface.
 
-Recommended: `/opsx-reverse-spec openbuilt --cluster deep-link-registration` to author a small spec (1–2 REQs) for the deep-link contract.
+Recommended: `/opsx-reverse-spec openbuild --cluster deep-link-registration` to author a small spec (1–2 REQs) for the deep-link contract.
 
 ## Bucket 3 — Surfaced for human triage
 
 ### 3a — possibly broken (0)
 
-None. The reverse-pass keyword scan against `/tmp/removed-lines-openbuilt.txt` (5,249 lines) did not surface any REQ whose keywords appear ≥ 2 times in removed lines with strong specificity. Code historically removed (e.g. SeedHelloWorld) is intentionally superseded.
+None. The reverse-pass keyword scan against `/tmp/removed-lines-openbuild.txt` (5,249 lines) did not surface any REQ whose keywords appear ≥ 2 times in removed lines with strong specificity. Code historically removed (e.g. SeedHelloWorld) is intentionally superseded.
 
 ### 3b — never implemented OR out-of-scope (22)
 
 The current pass is PHP-only. Many "unimplemented" REQs are in fact frontend implementations — listed here for visibility, but they are NOT genuinely missing.
 
 Genuinely declarative / no PHP method expected:
-- openbuilt-application-register REQ-OBA-001, REQ-OBA-002, REQ-OBA-003, REQ-OBA-004, REQ-OBA-005, REQ-OBA-006 — schema / lifecycle declarations in `lib/Settings/openbuilt_register.json`
+- openbuild-application-register REQ-OBA-001, REQ-OBA-002, REQ-OBA-003, REQ-OBA-004, REQ-OBA-005, REQ-OBA-006 — schema / lifecycle declarations in `lib/Settings/openbuild_register.json`
 - application-versions REQ-OBV-101, REQ-OBV-102, REQ-OBV-106 — schema declarations + OR-side lifecycle
-- openbuilt-rbac REQ-OBRBAC-001 — declarative schema (PopulateApplicationPermissions covers migration only)
+- openbuild-rbac REQ-OBRBAC-001 — declarative schema (PopulateApplicationPermissions covers migration only)
 
 Frontend implementations (out of scope for this pass):
-- openbuilt-runtime REQ-OBR-002, 003, 005, 007 (Schemas menu), 008 (VersionHistory.vue), 009 (Rollback), 010 (ManifestDiff.vue), 013 (ApplicationCard)
-- openbuilt-page-designer REQ-OBPD-001 through REQ-OBPD-011
-- openbuilt-schema-designer REQ-OBSD-001 through REQ-OBSD-008
+- openbuild-runtime REQ-OBR-002, 003, 005, 007 (Schemas menu), 008 (VersionHistory.vue), 009 (Rollback), 010 (ManifestDiff.vue), 013 (ApplicationCard)
+- openbuild-page-designer REQ-OBPD-001 through REQ-OBPD-011
+- openbuild-schema-designer REQ-OBSD-001 through REQ-OBSD-008
 - application-detail-overview REQ-OBADO-001 through REQ-OBADO-012
 - version-routing REQ-OBVR-004 through REQ-OBVR-009
-- openbuilt-version-snapshots REQ-OBV-002 (lifecycle), REQ-OBV-003 (rollback frontend)
-- openbuilt-template-catalogue REQ-OBTC-001, 003, 006, 007, 008, 010
-- openbuilt-rbac REQ-OBRBAC-004 (useRole composable)
-- openbuilt-runtime REQ-OBR-007 (draft-published indicator)
+- openbuild-version-snapshots REQ-OBV-002 (lifecycle), REQ-OBV-003 (rollback frontend)
+- openbuild-template-catalogue REQ-OBTC-001, 003, 006, 007, 008, 010
+- openbuild-rbac REQ-OBRBAC-004 (useRole composable)
+- openbuild-runtime REQ-OBR-007 (draft-published indicator)
 
 Possibly absent / superseded:
-- openbuilt-runtime REQ-OBR-004 — seeded hello-world Application. Superseded by green-field-migration + the creation wizard; no SeedHelloWorld repair step in the live tree.
-- openbuilt-runtime REQ-OBR-006 (Application editor exposes a Publish action) — frontend; if not in src/views, treat as missing.
-- openbuilt-rbac REQ-OBRBAC-005 (Transfer-ownership flow) — no PHP controller endpoint found; verify whether frontend PUTs directly via OR REST.
-- openbuilt-rbac REQ-OBRBAC-006 (Global `openbuilt.use` nav-entry permission) — the `group:*` sentinel handling lives in AppNavigationService (REQ-OBNAV-003); standalone REQ-OBRBAC-006 wording is not separately implemented. Likely the same concern under two REQ headings.
+- openbuild-runtime REQ-OBR-004 — seeded hello-world Application. Superseded by green-field-migration + the creation wizard; no SeedHelloWorld repair step in the live tree.
+- openbuild-runtime REQ-OBR-006 (Application editor exposes a Publish action) — frontend; if not in src/views, treat as missing.
+- openbuild-rbac REQ-OBRBAC-005 (Transfer-ownership flow) — no PHP controller endpoint found; verify whether frontend PUTs directly via OR REST.
+- openbuild-rbac REQ-OBRBAC-006 (Global `openbuild.use` nav-entry permission) — the `group:*` sentinel handling lives in AppNavigationService (REQ-OBNAV-003); standalone REQ-OBRBAC-006 wording is not separately implemented. Likely the same concern under two REQ headings.
 
 ## Bucket 4 — ADR conformance findings
 
@@ -375,24 +375,24 @@ Every spec file's `## Purpose` section reads "TBD - created by archiving change 
 - openspec/specs/application-insights/spec.md
 - openspec/specs/application-versions/spec.md
 - openspec/specs/green-field-migration/spec.md
-- openspec/specs/openbuilt-application-register/spec.md
-- openspec/specs/openbuilt-exporter/spec.md
-- openspec/specs/openbuilt-page-designer/spec.md
-- openspec/specs/openbuilt-rbac/spec.md
-- openspec/specs/openbuilt-runtime/spec.md
-- openspec/specs/openbuilt-schema-designer/spec.md
-- openspec/specs/openbuilt-template-catalogue/spec.md
-- openspec/specs/openbuilt-version-snapshots/spec.md
+- openspec/specs/openbuild-application-register/spec.md
+- openspec/specs/openbuild-exporter/spec.md
+- openspec/specs/openbuild-page-designer/spec.md
+- openspec/specs/openbuild-rbac/spec.md
+- openspec/specs/openbuild-runtime/spec.md
+- openspec/specs/openbuild-schema-designer/spec.md
+- openspec/specs/openbuild-template-catalogue/spec.md
+- openspec/specs/openbuild-version-snapshots/spec.md
 - openspec/specs/version-promotion/spec.md
 - openspec/specs/version-routing/spec.md
 
 ## Notes for the human reviewer
 
-- **Spec heading format mismatch.** The skill's documented REQ-ID pattern is `[A-Z]{2,4}-[0-9]+[a-z]*` (e.g. `REQ-001`, `ZRC-005b`). openbuilt specs use `### Requirement: REQ-OBxxx-NNN <Title>` (ID embedded in colon-prefixed title), and `openbuilt-exporter` specs use `### Requirement: <Title>` only (no REQ-ID). Both work as REQ headings but the annotate skill needs to handle title-only form (use `cap#title-slug` as a stable identifier).
-- **Duplicate REQ-IDs in openbuilt-runtime.** REQ-OBR-006, REQ-OBR-007, REQ-OBR-008, REQ-OBR-009 each appear two or three times in the spec — each archived change reused the same numeric prefix and the archive merge concatenated without de-duping. The JSON annotates the clones with capability-prefix suffixes (e.g. `REQ-OBR-006(rbac-clone)`); a real fix is to renumber + redirect.
-- **Frontend (src/) is not classified.** ~88 Vue/JS files implement large parts of openbuilt-page-designer, openbuilt-schema-designer, application-detail-overview, openbuilt-rbac (useRole), version-routing client helpers, and most of openbuilt-runtime. Bucket 3b is inflated by this — the next pass should add JS/Vue support to the scanner or run a separate frontend pass.
+- **Spec heading format mismatch.** The skill's documented REQ-ID pattern is `[A-Z]{2,4}-[0-9]+[a-z]*` (e.g. `REQ-001`, `ZRC-005b`). openbuild specs use `### Requirement: REQ-OBxxx-NNN <Title>` (ID embedded in colon-prefixed title), and `openbuild-exporter` specs use `### Requirement: <Title>` only (no REQ-ID). Both work as REQ headings but the annotate skill needs to handle title-only form (use `cap#title-slug` as a stable identifier).
+- **Duplicate REQ-IDs in openbuild-runtime.** REQ-OBR-006, REQ-OBR-007, REQ-OBR-008, REQ-OBR-009 each appear two or three times in the spec — each archived change reused the same numeric prefix and the archive merge concatenated without de-duping. The JSON annotates the clones with capability-prefix suffixes (e.g. `REQ-OBR-006(rbac-clone)`); a real fix is to renumber + redirect.
+- **Frontend (src/) is not classified.** ~88 Vue/JS files implement large parts of openbuild-page-designer, openbuild-schema-designer, application-detail-overview, openbuild-rbac (useRole), version-routing client helpers, and most of openbuild-runtime. Bucket 3b is inflated by this — the next pass should add JS/Vue support to the scanner or run a separate frontend pass.
 - **High overall confidence.** Because controllers + services already cite REQ IDs in their file docblocks, ~75% of Bucket 1 lands at ≥ 0.85 confidence. The 0.70–0.80 NEEDS-REVIEW entries are almost all private helpers inherited via Pass B; they're usually safe to annotate but worth a human eyeball.
-- **Bucket 1 size (185 methods).** Above the skill's 150-method threshold. Recommend running `/opsx-annotate openbuilt --capability <cap>` one capability at a time when that flag lands; otherwise the annotate ghost change PR will be very wide.
+- **Bucket 1 size (185 methods).** Above the skill's 150-method threshold. Recommend running `/opsx-annotate openbuild --capability <cap>` one capability at a time when that flag lands; otherwise the annotate ghost change PR will be very wide.
 - **GitHub push is a stub.** The exporter looks complete in shape, but the GitHub-target branch will not push live in this build. The wire-protocol contract is locked; the lockfile bump + live HTTP wiring is a real follow-up PR.
-- **SeedHelloWorld is gone.** The openbuilt-runtime REQ-OBR-004 (seeded hello-world Application) was superseded by green-field-migration + the creation wizard. Either deprecate the REQ or rewrite it to describe SeedApplicationTemplates' role.
-- **Reverse-pass cache.** `/tmp/removed-lines-openbuilt.txt` written; 5,249 lines covering full git history of lib/ + src/. No Bucket 3a hits — no REQs found with strong evidence of historical implementation followed by removal.
+- **SeedHelloWorld is gone.** The openbuild-runtime REQ-OBR-004 (seeded hello-world Application) was superseded by green-field-migration + the creation wizard. Either deprecate the REQ or rewrite it to describe SeedApplicationTemplates' role.
+- **Reverse-pass cache.** `/tmp/removed-lines-openbuild.txt` written; 5,249 lines covering full git history of lib/ + src/. No Bucket 3a hits — no REQs found with strong evidence of historical implementation followed by removal.

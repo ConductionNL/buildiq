@@ -1,8 +1,8 @@
 ## 1. Schema + lifecycle (declarative — ADR-031)
 
-- [ ] 1.1 **Declare `ExportJob` schema in `lib/Settings/openbuilt_register.json`**
+- [ ] 1.1 **Declare `ExportJob` schema in `lib/Settings/openbuild_register.json`**
   - spec_ref: REQ-OBEX-001
-  - files: `lib/Settings/openbuilt_register.json`
+  - files: `lib/Settings/openbuild_register.json`
   - acceptance_criteria: Schema declares `uuid`, `applicationUuid` (UUID-format,
     required), `applicationVersion` (semver-pattern, required), `target`
     (enum `zip|github`, required), `status` (enum `queued|running|succeeded|failed`,
@@ -16,7 +16,7 @@
 
 - [ ] 1.2 **Add `x-openregister-lifecycle` to the `ExportJob` schema**
   - spec_ref: REQ-OBEX-001
-  - files: `lib/Settings/openbuilt_register.json` (NOT a new PHP service)
+  - files: `lib/Settings/openbuild_register.json` (NOT a new PHP service)
   - acceptance_criteria: Declares states `queued`, `running`, `succeeded`, `failed`
     and transitions `queued → running`, `running → succeeded`, `running → failed`. No
     terminal re-entry. Each transition emits an OR audit event. No
@@ -31,7 +31,7 @@
 - [ ] 2.1 **Snapshot `nextcloud-app-template/` into `lib/Resources/template/`**
   - spec_ref: REQ-OBEX-003
   - files: `lib/Resources/template/**` (full template tree from
-    `apps-extra/nextcloud-app-template/` at OpenBuilt's release-cut commit, minus
+    `apps-extra/nextcloud-app-template/` at OpenBuild's release-cut commit, minus
     `node_modules/`, `vendor/`, `.git/`),
     `lib/Resources/template/.snapshot-meta.json` (source commit SHA + ISO timestamp),
     `lib/Resources/template/.path-manifest.txt` (sorted list of every file path in
@@ -50,7 +50,7 @@
   - files: `docs/releasing.md`
   - acceptance_criteria: Section "Refreshing the embedded template snapshot" describes
     when to resnapshot (on meaningful upstream template churn) and how (`cp` +
-    path-manifest regen + bump OpenBuilt minor version + Changelog entry).
+    path-manifest regen + bump OpenBuild minor version + Changelog entry).
 
 ## 3. PlaceholderResolver service
 
@@ -75,9 +75,9 @@
   - files: `lib/Service/ExportService.php`
   - acceptance_criteria: `ExportService::run(ExportJob $job): void` orchestrates:
     load source Application by `applicationUuid` + `applicationVersion`; load companion
-    schemas from the `openbuilt` namespace as referenced by the manifest; copy
+    schemas from the `openbuild` namespace as referenced by the manifest; copy
     `lib/Resources/template/` into scratch dir under
-    `appdata_<instance>/openbuilt/work/<jobUuid>/`; resolve placeholders via
+    `appdata_<instance>/openbuild/work/<jobUuid>/`; resolve placeholders via
     `PlaceholderResolver` (no `sed`/`awk`); emit `lib/Settings/<newapp>_register.json`
     with companion schemas rewritten into the new namespace (excluding `Application`,
     `BuiltAppRoute`, `ExportJob`); emit `src/manifest.json` with `config.register`
@@ -93,7 +93,7 @@
   - files: `tests/Integration/ExporterStandaloneTest.php`
   - acceptance_criteria: Integration test scans the produced tree's `composer.json`,
     `package.json`, and `appinfo/info.xml` and asserts none contains the substring
-    `openbuilt` (case-insensitive) as a dependency reference. Asserts `src/main.js`
+    `openbuild` (case-insensitive) as a dependency reference. Asserts `src/main.js`
     calls `useAppManifest('<newapp>', bundledManifest)` and does NOT contain an
     `options.fetcher` redirect. Asserts `appinfo/routes.php` contains NO
     `getManifest` route mapping.
@@ -104,8 +104,8 @@
   - spec_ref: REQ-OBEX-006, REQ-OBEX-008
   - files: `lib/Service/ExportService.php`
   - acceptance_criteria: Uses PHP's `ZipArchive`; outputs to
-    `appdata_<instance>/openbuilt/exports/<jobUuid>/export.zip`; sets ExportJob
-    `downloadUrl = /index.php/apps/openbuilt/api/exports/<jobUuid>/download`,
+    `appdata_<instance>/openbuild/exports/<jobUuid>/export.zip`; sets ExportJob
+    `downloadUrl = /index.php/apps/openbuild/api/exports/<jobUuid>/download`,
     `downloadExpiresAt = now() + 24h`. ZIP entries SHALL use a fixed timestamp
     (`2026-01-01T00:00:00Z`, or PHP ZipArchive deterministic mode) to keep re-exports
     byte-equivalent (REQ-OBEX-008).
@@ -164,7 +164,7 @@
   - files: `lib/Service/ExportService.php`, `lib/Controller/ExportsController.php`
   - acceptance_criteria: Controller's POST endpoint accepts `githubPat` in the request
     body when `target=github`, immediately stores it via `ICredentialsManager` under
-    key `openbuilt.export.<jobUuid>.pat`, and removes the PAT from the in-memory
+    key `openbuild.export.<jobUuid>.pat`, and removes the PAT from the in-memory
     request payload before any logging / audit emission. Background job fetches the PAT
     once at the GitHub phase, passes it to `GitHubPushService` methods, and deletes the
     credential record on terminal state (succeeded or failed). The ExportJob's `log`
@@ -191,7 +191,7 @@
   - files: `lib/Controller/ExportsController.php`, `appinfo/routes.php`
   - acceptance_criteria: `submit(string $slug, array $body): JSONResponse` validates
     `target`, `applicationVersion` (must resolve to a published version per
-    openbuilt-versioning — else 422), `includeSeedData` (boolean), and GitHub fields
+    openbuild-versioning — else 422), `includeSeedData` (boolean), and GitHub fields
     (when `target=github`); stores PAT via `ICredentialsManager` if needed; creates
     the ExportJob in OR (status `queued`); returns 202 Accepted with `{ uuid }`.
     Responds in <500ms. Annotated `#[NoAdminRequired]`. SPDX-in-docblock.
@@ -259,7 +259,7 @@
       `NcSelect` visibility (public/private; `inputLabel` required), PAT
       (`<input type="password">`; never displayed back).
     - Token-scope guidance copy visible when `target=github` (i18n key
-      `openbuilt.export.github.scopeHint`).
+      `openbuild.export.github.scopeHint`).
     On submit: POST to `/api/applications/{slug}/exports`; close dialog; return the
     ExportJob UUID. Options API; no custom Pinia store over `createObjectStore`.
   - Test: Playwright opens the dialog, fills all fields, submits, asserts the POST body
@@ -297,33 +297,33 @@
 
 - [ ] 10.2 **i18n keys (ADR-007)** — add English + Dutch translations in
       `l10n/en.json` + `l10n/nl.json`:
-      `openbuilt.export.title`,
-      `openbuilt.export.version.label`,
-      `openbuilt.export.target.label`,
-      `openbuilt.export.license.label`,
-      `openbuilt.export.github.org.label`,
-      `openbuilt.export.github.repo.label`,
-      `openbuilt.export.github.visibility.label`,
-      `openbuilt.export.github.pat.label`,
-      `openbuilt.export.github.scopeHint`,
-      `openbuilt.export.includeSeedData.label`,
-      `openbuilt.export.submit`,
-      `openbuilt.export.cancel`,
-      `openbuilt.export.status.queued`,
-      `openbuilt.export.status.running`,
-      `openbuilt.export.status.succeeded`,
-      `openbuilt.export.status.failed`,
-      `openbuilt.export.download.button`,
-      `openbuilt.export.viewPR.button`,
-      `openbuilt.export.error.unknownVersion`,
-      `openbuilt.export.error.draftVersion`,
-      `openbuilt.export.error.repoExists`,
-      `openbuilt.export.error.authFailed`.
+      `openbuild.export.title`,
+      `openbuild.export.version.label`,
+      `openbuild.export.target.label`,
+      `openbuild.export.license.label`,
+      `openbuild.export.github.org.label`,
+      `openbuild.export.github.repo.label`,
+      `openbuild.export.github.visibility.label`,
+      `openbuild.export.github.pat.label`,
+      `openbuild.export.github.scopeHint`,
+      `openbuild.export.includeSeedData.label`,
+      `openbuild.export.submit`,
+      `openbuild.export.cancel`,
+      `openbuild.export.status.queued`,
+      `openbuild.export.status.running`,
+      `openbuild.export.status.succeeded`,
+      `openbuild.export.status.failed`,
+      `openbuild.export.download.button`,
+      `openbuild.export.viewPR.button`,
+      `openbuild.export.error.unknownVersion`,
+      `openbuild.export.error.draftVersion`,
+      `openbuild.export.error.repoExists`,
+      `openbuild.export.error.authFailed`.
 
 - [ ] 10.3 **NL Design (ADR-010)** — confirm new dialog uses Nextcloud CSS variables
       only; no hardcoded colours.
 
-- [ ] 10.4 **Update `openspec/app-config.json`** — add `"openbuilt-exporter"` to the
+- [ ] 10.4 **Update `openspec/app-config.json`** — add `"openbuild-exporter"` to the
       `capabilities` array.
 
 ## 11. Hydra mechanical gates (pre-merge)

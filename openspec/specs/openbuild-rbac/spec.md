@@ -1,8 +1,8 @@
-# openbuilt-rbac Specification
+# openbuild-rbac Specification
 
 ## Purpose
 
-Closes the per-built-app RBAC gap left open by `bootstrap-openbuilt`'s "auth-only"
+Closes the per-built-app RBAC gap left open by `bootstrap-openbuild`'s "auth-only"
 posture. Introduces a per-virtual-app role model (`owner | editor | viewer`)
 declaratively stored on the Application schema's `permissions` block keyed by
 Nextcloud group IDs, layered on top of OR's existing organisation scoping
@@ -11,7 +11,7 @@ the Application list (declarative OR filter preferred, frontend fallback via
 `loadState`), the editor UIs (role → action mapping consumed via a single
 `useRole(application)` composable), a no-orphan transfer-ownership flow (direct
 declarative `permissions` PUT — no transfer service), the audited admin bypass,
-and the global `openbuilt.use` nav-entry permission grantable through Nextcloud's
+and the global `openbuild.use` nav-entry permission grantable through Nextcloud's
 standard admin UI. Every permission change writes through OR's native
 object-change audit trail.
 
@@ -57,7 +57,7 @@ Application is never created in an unreachable "no owner" state.
 @e2e exclude backend manifest-403 contract — already covered by rbac-403.spec.ts (REQ-OBR-006c equivalent); this requirement's three scenarios duplicate that coverage
 
 The system SHALL augment
-`GET /index.php/apps/openbuilt/api/applications/{slug}/manifest` so
+`GET /index.php/apps/openbuild/api/applications/{slug}/manifest` so
 that, after the existing organisation-scope check passes and the
 Application is resolved, the controller SHALL verify the caller is a
 member of at least one group present in
@@ -101,7 +101,7 @@ manifest payload — deny-by-default per ADR-005.
 
 @e2e exclude backend list-filter: already covered by rbac-403.spec.ts (verifies non-member sees empty list); this requirement's single scenario duplicates that coverage
 
-The OpenBuilt shell's Application list view SHALL display only
+The OpenBuild shell's Application list view SHALL display only
 Applications on which the caller has at least one role
 (`owner | editor | viewer`). The filter SHALL be applied in this
 order of preference:
@@ -124,7 +124,7 @@ Applications do not appear in the list.
 
 #### Scenario: List omits Applications without any role
 
-- **WHEN** user `bob` opens the OpenBuilt Application list
+- **WHEN** user `bob` opens the OpenBuild Application list
 - **AND** the organisation contains 10 Applications, of which 3 grant
   `bob`'s group at least one role
 - **THEN** the rendered list shows exactly 3 entries
@@ -133,7 +133,7 @@ Applications do not appear in the list.
 
 ### Requirement: Role-to-action mapping in editor UIs
 
-The system SHALL gate destructive and write actions in the OpenBuilt
+The system SHALL gate destructive and write actions in the OpenBuild
 editor UIs according to the following role → action mapping. Buttons
 or controls that would trigger a forbidden action SHALL be hidden
 (`v-if`) for `viewer` and rendered disabled (`:disabled="true"`) for
@@ -207,10 +207,10 @@ empty `permissions.owners` array, preventing accidental orphaning.
 - **THEN** the system returns a `4xx` error citing the orphan-check
 - **AND** the Application's `permissions` is unchanged
 
-### Requirement: Global `openbuilt.use` navigation-entry permission
+### Requirement: Global `openbuild.use` navigation-entry permission
 
 The system SHALL extend `appinfo/info.xml` to declare an
-`openbuilt.use` group-permission on the `<navigations>` entry. The
+`openbuild.use` group-permission on the `<navigations>` entry. The
 permission SHALL be:
 
 - **Default** — no group restriction (the entry is visible to every
@@ -218,12 +218,12 @@ permission SHALL be:
   documented in its OQ-2).
 - **Admin-grantable** — through Nextcloud's standard
   `<navigations>/<permission>` mechanism, an administrator MAY
-  restrict the OpenBuilt top-bar entry to one or more Nextcloud
+  restrict the OpenBuild top-bar entry to one or more Nextcloud
   groups via the Nextcloud admin UI.
 - **Independent** — the permission gates only the **navigation
   entry**. It does not replace the per-Application `permissions`
   enforced by REQ-OBRBAC-002 / REQ-OBRBAC-003 / REQ-OBRBAC-004; a
-  user with `openbuilt.use` who has no role on any Application sees
+  user with `openbuild.use` who has no role on any Application sees
   an empty list, not an error.
 
 **ID:** REQ-OBRBAC-006
@@ -237,11 +237,11 @@ exercised so the action is reviewable.
 
 #### Scenario: Admin restricts the navigation entry to one group
 
-- **WHEN** an administrator restricts the OpenBuilt navigation entry
+- **WHEN** an administrator restricts the OpenBuild navigation entry
   to the group `digital-team` via Nextcloud's admin UI
 - **AND** a user outside `digital-team` logs in
-- **THEN** the OpenBuilt top-bar entry is not visible to that user
-- **AND** the user cannot reach the OpenBuilt shell via direct URL
+- **THEN** the OpenBuild top-bar entry is not visible to that user
+- **AND** the user cannot reach the OpenBuild shell via direct URL
   (Nextcloud's existing navigation-permission middleware blocks it)
 
 #### Scenario: Admin bypass is audited
@@ -257,11 +257,11 @@ exercised so the action is reviewable.
 
 @e2e exclude pure-backend audit-trail contract — OR native object-change events are verified by Newman; audit trail panel UI is owner-gated and tested by the application-detail-ui spec Playwright tests
 
-The system SHALL record every change to an Application's `permissions` property in OpenRegister's standard per-object audit trail, regardless of whether the change is made through the OpenBuilt frontend permissions panel, the textarea editor, OR REST directly, or the transfer-ownership flow. The audit
+The system SHALL record every change to an Application's `permissions` property in OpenRegister's standard per-object audit trail, regardless of whether the change is made through the OpenBuild frontend permissions panel, the textarea editor, OR REST directly, or the transfer-ownership flow. The audit
 entry SHALL be the OR-native object-change event (no app-local
 audit duplication); it SHALL carry the before / after `permissions`
 values, the actor's UID, and the timestamp, leveraging OR's existing
-change-tracking per ADR-022. The OpenBuilt editor SHALL expose this
+change-tracking per ADR-022. The OpenBuild editor SHALL expose this
 audit trail in a "Permission history" panel visible to `owner` role
 holders only.
 

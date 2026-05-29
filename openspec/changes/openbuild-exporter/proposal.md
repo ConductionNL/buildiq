@@ -1,40 +1,40 @@
 ---
 kind: code
-depends_on: ["bootstrap-openbuilt", "openbuilt-versioning"]
+depends_on: ["bootstrap-openbuild", "openbuild-versioning"]
 chain:
-  - bootstrap-openbuilt
-  - openbuilt-versioning
-  - openbuilt-exporter   # THIS spec — graduation path
+  - bootstrap-openbuild
+  - openbuild-versioning
+  - openbuild-exporter   # THIS spec — graduation path
 ---
 
 ## Why
 
-OpenBuilt's founding commitment (spec #1, `bootstrap-openbuilt`) promised a **hybrid**
+OpenBuild's founding commitment (spec #1, `bootstrap-openbuild`) promised a **hybrid**
 architecture: virtual apps first, exportable to real Nextcloud apps later. Specs across
 the chain fleshed out the runtime, versioning model, RBAC, schema and page editors, and
 templates marketplace. This change ships the "exportable later" half and closes the loop
 on that hybrid commitment.
 
-Citizen developers prototype inside OpenBuilt's nested `CnAppRoot` host. As a built app
+Citizen developers prototype inside OpenBuild's nested `CnAppRoot` host. As a built app
 accumulates real users, operational ownership, or a need to ship offline or on a
 different stack, it must **graduate** to a standalone Nextcloud app — its own
 `appinfo/info.xml`, its own register namespace, its own GitHub repo, its own CI /
-release pipeline — without depending on OpenBuilt at runtime.
+release pipeline — without depending on OpenBuild at runtime.
 
 This spec ships that graduation path. Given a **published** `Application` record, its
-companion schemas, and (optionally) its sample data, OpenBuilt generates a complete
+companion schemas, and (optionally) its sample data, OpenBuild generates a complete
 `nextcloud-app-template`-shaped tree and either streams it as a ZIP to the user's
 browser or pushes it to a new GitHub repo under an org of the user's choice. The
 exported app boots Tier-4 (ADR-024): one bundled `src/manifest.json`, one
 `<app>_register.json` schema bundle under the new app's own OR namespace (ADR-022),
-no per-slug endpoint workaround (Decision 4 of bootstrap-openbuilt collapses because
+no per-slug endpoint workaround (Decision 4 of bootstrap-openbuild collapses because
 the exported app owns exactly one manifest), no nested `<CnAppRoot>` mount.
 
 The result closes the loop on the 9-spec chain's foundational commitment.
 
 ## What Changes
 
-- **NEW** `ExportJob` schema in `lib/Settings/openbuilt_register.json` declaring
+- **NEW** `ExportJob` schema in `lib/Settings/openbuild_register.json` declaring
   `{ uuid, applicationUuid, applicationVersion, target (zip|github), status
   (queued|running|succeeded|failed), githubOrg, githubRepo, githubVisibility,
   includeSeedData, downloadUrl, downloadExpiresAt, errorMessage, log }` with
@@ -68,7 +68,7 @@ The result closes the loop on the 9-spec chain's foundational commitment.
   Nextcloud's `ICredentialsManager` keyed by ExportJob UUID; credential deleted on
   terminal state.
 - **NEW** **embedded template snapshot** under `lib/Resources/template/` — a checked-in
-  copy of the `nextcloud-app-template/` baseline at OpenBuilt's build time, so exports
+  copy of the `nextcloud-app-template/` baseline at OpenBuild's build time, so exports
   are reproducible across upstream template churn.
 - **NEW** Frontend Export dialog `src/dialogs/ExportDialog.vue` (standalone `<NcDialog>`
   per ADR-004 modal-isolation rule):
@@ -90,7 +90,7 @@ The result closes the loop on the 9-spec chain's foundational commitment.
 
 #### New Capabilities
 
-- `openbuilt-exporter`: The export pipeline that turns a published virtual Application
+- `openbuild-exporter`: The export pipeline that turns a published virtual Application
   into a real standalone Nextcloud app and delivers it as a ZIP download or a GitHub
   repo push + placeholder PR. Owns the `ExportJob` schema (declarative lifecycle per
   ADR-031), `ExportService` (imperative tree generation, the documented ADR-031
@@ -104,8 +104,8 @@ The result closes the loop on the 9-spec chain's foundational commitment.
 
 #### Modified Capabilities
 
-None. This change is purely additive. The `openbuilt-application-register` and
-`openbuilt-runtime` capabilities are consumed but not modified.
+None. This change is purely additive. The `openbuild-application-register` and
+`openbuild-runtime` capabilities are consumed but not modified.
 
 ## Impact
 
@@ -117,23 +117,23 @@ None. This change is purely additive. The `openbuilt-application-register` and
   `lib/BackgroundJob/RunExportJob.php`,
   `lib/BackgroundJob/CleanupExpiredExports.php`,
   `lib/Resources/template/**` (~200 files snapshotted from `nextcloud-app-template`
-  at OpenBuilt's build time),
+  at OpenBuild's build time),
   `src/dialogs/ExportDialog.vue`,
   `src/views/ExportJobsList.vue`,
   `src/store/exports.js`,
   `appinfo/routes.php` (two new routes),
   `appinfo/info.xml` (`<background-jobs>` registration for both background jobs).
-- **Schema patch** — `lib/Settings/openbuilt_register.json` adds the `ExportJob`
+- **Schema patch** — `lib/Settings/openbuild_register.json` adds the `ExportJob`
   schema with `x-openregister-lifecycle`.
 - **External dependency** — `knplabs/github-api` via Composer. GitHub PAT storage
   uses Nextcloud's built-in `ICredentialsManager` — no new dependency.
 - **OpenRegister** — uses OR's existing REST + lifecycle engine; no OR changes required.
 - **Exported app** — when installed in Nextcloud, runs entirely standalone with no
-  OpenBuilt dependency. Companion schemas live in the exported app's own register
+  OpenBuild dependency. Companion schemas live in the exported app's own register
   namespace (`<newapp>`). Tier-4 mount uses the bundled `src/manifest.json` directly
   via `useAppManifest(appId, bundledManifest)` — no per-slug endpoint workaround.
 - **No breaking changes** — purely additive. Existing virtual apps continue to render
-  through the bootstrap-openbuilt host unaffected.
+  through the bootstrap-openbuild host unaffected.
 - **Foundational ADRs honoured** — ADR-022 (new app gets its own OR register),
   ADR-024 (exported app is a canonical Tier-4 manifest consumer), ADR-031 (ExportJob
   lifecycle declarative; exporter service is the documented code exception), ADR-032

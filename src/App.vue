@@ -1,19 +1,19 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!--
- OpenBuilt app shell. Mounts CnAppRoot with the bundled manifest and the v2
+ OpenBuild app shell. Mounts CnAppRoot with the bundled manifest and the v2
  kind-tagged registry (ADR-036); CnAppRoot handles the OpenRegister dependency
  check, renders CnAppNav from manifest.menu, and routes <router-view> pages
- through CnPageRenderer. The #dependency-missing slot keeps OpenBuilt's
+ through CnPageRenderer. The #dependency-missing slot keeps OpenBuild's
  original "OpenRegister is required" empty state.
 
- @adr ADR-024 (app manifest) — OpenBuilt is now Tier-1+ (its own shell is
+ @adr ADR-024 (app manifest) — OpenBuild is now Tier-1+ (its own shell is
  manifest-driven, like the virtual apps it builds).
  @adr ADR-036 (v2 registry) — all consumer components are registered via the
  `registry` prop; the deprecated `customComponents` prop is no longer used.
 -->
 <template>
 	<CnAppRoot
-		app-id="openbuilt"
+		app-id="openbuild"
 		:manifest="manifest"
 		:registry="registry"
 		:page-types="pageTypes"
@@ -22,8 +22,8 @@
 		<template #dependency-missing>
 			<NcAppContent class="open-register-missing">
 				<NcEmptyContent
-					:name="t('openbuilt', 'OpenRegister is required')"
-					:description="t('openbuilt', 'This app needs OpenRegister to store and manage data. Please install OpenRegister from the app store to get started.')">
+					:name="t('openbuild', 'OpenRegister is required')"
+					:description="t('openbuild', 'This app needs OpenRegister to store and manage data. Please install OpenRegister from the app store to get started.')">
 					<template #icon>
 						<img :src="appIcon"
 							alt=""
@@ -35,7 +35,7 @@
 							v-if="isAdmin"
 							type="primary"
 							:href="appStoreUrl">
-							{{ t('openbuilt', 'Install OpenRegister') }}
+							{{ t('openbuild', 'Install OpenRegister') }}
 						</NcButton>
 					</template>
 				</NcEmptyContent>
@@ -133,7 +133,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		appIcon() {
-			return imagePath('openbuilt', 'app-dark.svg')
+			return imagePath('openbuild', 'app-dark.svg')
 		},
 
 		/**
@@ -160,7 +160,7 @@ export default {
 			await initializeStores()
 		} catch (e) {
 			// eslint-disable-next-line no-console
-			console.error('openbuilt: initializeStores() failed', e)
+			console.error('openbuild: initializeStores() failed', e)
 		}
 	},
 
@@ -174,7 +174,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		translateForApp(key) {
-			return ncT('openbuilt', key)
+			return ncT('openbuild', key)
 		},
 	},
 }

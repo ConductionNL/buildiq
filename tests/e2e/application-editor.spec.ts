@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 /**
  * E2E — the textarea-based ApplicationEditor (REQ-OBR-005).
  *
- * Logs in as admin, opens /index.php/apps/openbuilt/applications, edits the
+ * Logs in as admin, opens /index.php/apps/openbuild/applications, edits the
  * hello-world manifest in the JSON textarea, saves, and asserts the manifest
  * endpoint reflects the change. Round-trips through OR's REST API (no
  * app-local CRUD wrapper, per ADR-022).
@@ -18,12 +18,12 @@ import { test, expect } from '@playwright/test'
  */
 test.describe('ApplicationEditor — textarea round-trip', () => {
 	test('loads, edits hello-world manifest, saves successfully', async ({ page, request }) => {
-		await page.goto('/apps/openbuilt/applications')
+		await page.goto('/apps/openbuild/applications')
 
 		// The editor lists Applications down the left rail and selects the
 		// first one (hello-world) on mount. The textarea binds to the
 		// manifest JSON.
-		const textarea = page.locator('textarea.openbuilt-editor__textarea, .openbuilt-editor textarea').first()
+		const textarea = page.locator('textarea.openbuild-editor__textarea, .openbuild-editor textarea').first()
 		await expect(textarea, 'editor textarea must be visible after mount').toBeVisible({ timeout: 15_000 })
 
 		// The textarea must contain a JSON blob with version/menu/pages.
@@ -45,7 +45,7 @@ test.describe('ApplicationEditor — textarea round-trip', () => {
 		// validateManifest may reject if the placeholder is anything but a
 		// strict JSON object; the test asserts that NO error banner appears
 		// after the save round-trips.
-		const errorBanner = page.locator('.openbuilt-editor__error')
+		const errorBanner = page.locator('.openbuild-editor__error')
 		await expect(
 			errorBanner,
 			'no validation error banner expected on a benign version bump',
@@ -54,7 +54,7 @@ test.describe('ApplicationEditor — textarea round-trip', () => {
 		// Final assertion — the public manifest endpoint reflects the new version.
 		// (Hits the API directly so we don't depend on the SPA refresh path.)
 		await page.waitForTimeout(1_000)
-		const response = await request.get('/index.php/apps/openbuilt/api/applications/hello-world/manifest')
+		const response = await request.get('/index.php/apps/openbuild/api/applications/hello-world/manifest')
 		expect(response.status()).toBe(200)
 		const body = await response.json()
 		expect(body.version, 'manifest endpoint must reflect the bumped version').toBe('1.0.1')

@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuilt Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest unit tests for `SchemaListPanel.vue` (REQ-OBSD-001 +
@@ -82,7 +82,7 @@ describe('SchemaListPanel', () => {
 			propsData: { schemas: [], loading: false },
 			stubs,
 		})
-		const empty = wrapper.find('.openbuilt-schema-list__empty')
+		const empty = wrapper.find('.openbuild-schema-list__empty')
 		expect(empty.exists()).toBe(true)
 		// The empty-state NcEmptyContent surfaces the no-schemas-yet copy.
 		expect(empty.text()).toContain('No schemas yet')
@@ -105,7 +105,7 @@ describe('SchemaListPanel', () => {
 			},
 			stubs,
 		})
-		const rows = wrapper.findAll('.openbuilt-schema-list__row')
+		const rows = wrapper.findAll('.openbuild-schema-list__row')
 		expect(rows).toHaveLength(2)
 		expect(rows.at(0).text()).toContain('hello-message')
 		expect(rows.at(0).text()).toContain('Hello message')
@@ -119,7 +119,7 @@ describe('SchemaListPanel', () => {
 			propsData: { schemas: [makeSchema()], loading: false },
 			stubs,
 		})
-		await wrapper.find('.openbuilt-schema-list__row-main').trigger('click')
+		await wrapper.find('.openbuild-schema-list__row-main').trigger('click')
 		const events = wrapper.emitted('open')
 		expect(events).toBeTruthy()
 		expect(events[0]).toEqual(['hello-message'])
@@ -199,9 +199,9 @@ describe('SchemaListPanel', () => {
 			propsData: { schemas: [], loading: true },
 			stubs,
 		})
-		expect(wrapper.find('.openbuilt-schema-list__loading').exists()).toBe(true)
+		expect(wrapper.find('.openbuild-schema-list__loading').exists()).toBe(true)
 		// Loading branch should suppress the empty-state.
-		expect(wrapper.find('.openbuilt-schema-list__empty').exists()).toBe(false)
+		expect(wrapper.find('.openbuild-schema-list__empty').exists()).toBe(false)
 	})
 })
 

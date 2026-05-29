@@ -3,10 +3,10 @@
 //
 // useRole — pure derivation of the caller's effective role on an Application.
 // Per REQ-OBR-008 / REQ-OBRBAC-004 this is the SINGLE source of truth for
-// role-keyed UI gating across all OpenBuilt editor surfaces (textarea editor
+// role-keyed UI gating across all OpenBuild editor surfaces (textarea editor
 // today; visual editors from chain specs #5 / #6 when they land).
 //
-// The user's group list is read from `loadState('openbuilt',
+// The user's group list is read from `loadState('openbuild',
 // 'currentUserGroups')` per ADR-004 hard rule (`gate-initial-state`). No DOM
 // data-attribute reads.
 //
@@ -40,7 +40,7 @@ import { loadState } from '@nextcloud/initial-state'
  */
 export function getCurrentUserGroups() {
 	try {
-		const groups = loadState('openbuilt', 'currentUserGroups')
+		const groups = loadState('openbuild', 'currentUserGroups')
 		return Array.isArray(groups) ? groups : []
 	} catch (e) {
 		// loadState throws when the state was not provided server-side

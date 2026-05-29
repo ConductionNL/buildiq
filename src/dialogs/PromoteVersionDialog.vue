@@ -2,13 +2,13 @@
 <!-- SPDX-FileCopyrightText: 2026 Conduction B.V. -->
 <template>
 	<NcDialog
-		:name="t('openbuilt', 'Promote version')"
+		:name="t('openbuild', 'Promote version')"
 		:can-close="true"
 		size="normal"
 		@closing="onCancel">
 		<!-- No-target state -->
 		<div v-if="!targetVersion" class="promote-dialog promote-dialog--no-target">
-			<p>{{ t('openbuilt', 'This version has no downstream target. Set a "Promotes to" relation to enable promotion.') }}</p>
+			<p>{{ t('openbuild', 'This version has no downstream target. Set a "Promotes to" relation to enable promotion.') }}</p>
 		</div>
 
 		<!-- Form state -->
@@ -16,14 +16,14 @@
 			<header class="promote-dialog__header">
 				<h3>{{ summaryText }}</h3>
 				<p class="promote-dialog__registers">
-					<span>{{ t('openbuilt', 'Source register:') }} <code>{{ sourceVersion.register }}</code></span>
-					<span>{{ t('openbuilt', 'Target register:') }} <code>{{ targetVersion.register }}</code></span>
+					<span>{{ t('openbuild', 'Source register:') }} <code>{{ sourceVersion.register }}</code></span>
+					<span>{{ t('openbuild', 'Target register:') }} <code>{{ targetVersion.register }}</code></span>
 				</p>
 			</header>
 
 			<fieldset class="promote-dialog__strategies">
 				<legend class="promote-dialog__strategies-legend">
-					{{ t('openbuilt', 'Data strategy') }}
+					{{ t('openbuild', 'Data strategy') }}
 				</legend>
 
 				<NcCheckboxRadioSwitch
@@ -31,9 +31,9 @@
 					value="start-with-source-data"
 					name="promote-strategy"
 					type="radio">
-					<strong>{{ t('openbuilt', 'Start target with source data') }}</strong>
+					<strong>{{ t('openbuild', 'Start target with source data') }}</strong>
 					<span class="promote-dialog__strategy-description">
-						{{ t('openbuilt', "Replace the target version's rows with copies of the source's rows. Useful when the test data is the new shape of production data.") }}
+						{{ t('openbuild', "Replace the target version's rows with copies of the source's rows. Useful when the test data is the new shape of production data.") }}
 					</span>
 				</NcCheckboxRadioSwitch>
 
@@ -42,9 +42,9 @@
 					value="migrate-existing-data"
 					name="promote-strategy"
 					type="radio">
-					<strong>{{ t('openbuilt', "Migrate target's existing data") }}</strong>
+					<strong>{{ t('openbuild', "Migrate target's existing data") }}</strong>
 					<span class="promote-dialog__strategy-description">
-						{{ t('openbuilt', "Keep the target version's existing rows and apply the source's schema set. OpenRegister handles column-level migration for breaking changes.") }}
+						{{ t('openbuild', "Keep the target version's existing rows and apply the source's schema set. OpenRegister handles column-level migration for breaking changes.") }}
 					</span>
 				</NcCheckboxRadioSwitch>
 
@@ -53,9 +53,9 @@
 					value="empty-start"
 					name="promote-strategy"
 					type="radio">
-					<strong>{{ t('openbuilt', 'Empty start (destructive)') }}</strong>
+					<strong>{{ t('openbuild', 'Empty start (destructive)') }}</strong>
 					<span class="promote-dialog__strategy-description promote-dialog__strategy-description--destructive">
-						{{ t('openbuilt', "Drop every row in the target's register and install the source's schema set without copying data. This cannot be undone.") }}
+						{{ t('openbuild', "Drop every row in the target's register and install the source's schema set without copying data. This cannot be undone.") }}
 					</span>
 				</NcCheckboxRadioSwitch>
 			</fieldset>
@@ -73,14 +73,14 @@
 		<!-- Actions slot — always at NcDialog level -->
 		<template #actions>
 			<NcButton type="tertiary" @click="onCancel">
-				{{ t('openbuilt', 'Cancel') }}
+				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				v-if="targetVersion"
 				type="primary"
 				:disabled="!isDestructiveGateMet"
 				@click="onConfirm">
-				{{ t('openbuilt', 'Promote') }}
+				{{ t('openbuild', 'Promote') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -101,7 +101,7 @@ import { defaultStrategyFor } from './promoteVersionDefaults.js'
  * (spec REQ-OBVP-010, ADR-004 modal-isolation rule). The dialog is a
  * pure presentation component — it does NOT call the backend itself.
  * The parent surface (delivered by sibling spec
- * `openbuilt-app-detail-overview`) listens to the emitted events and
+ * `openbuild-app-detail-overview`) listens to the emitted events and
  * performs the network call.
  *
  * Props:
@@ -156,7 +156,7 @@ export default {
 		summaryText() {
 			const sourceName = this.sourceVersion?.name || this.sourceVersion?.slug || '?'
 			const targetName = this.targetVersion?.name || this.targetVersion?.slug || '?'
-			return t('openbuilt', 'Promote {source} to {target}', { source: sourceName, target: targetName })
+			return t('openbuild', 'Promote {source} to {target}', { source: sourceName, target: targetName })
 		},
 
 		/**
@@ -186,7 +186,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-2
 		 */
 		confirmInputLabel() {
-			return t('openbuilt', 'Type the application slug to confirm')
+			return t('openbuild', 'Type the application slug to confirm')
 		},
 
 		/**
@@ -196,7 +196,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-2
 		 */
 		confirmHelperText() {
-			return t('openbuilt', "Empty start will permanently delete every row in the target's register. Type \"{slug}\" to confirm.", { slug: this.application?.slug || '' })
+			return t('openbuild', "Empty start will permanently delete every row in the target's register. Type \"{slug}\" to confirm.", { slug: this.application?.slug || '' })
 		},
 	},
 	watch: {

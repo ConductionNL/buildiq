@@ -8,7 +8,7 @@
   prop in, update:manifest / save-and-preview events out) so it can also
   be embedded as a tab in ApplicationEditor later.
 
-  Version routing (spec `openbuilt-version-routing` REQ-OBVR-004):
+  Version routing (spec `openbuild-version-routing` REQ-OBVR-004):
   Reads `?_version=<versionSlug>` from `$route.query._version`. The
   useApplicationVersion composable resolves the active version. On 404
   (unknown or unauthorised version), the "version not found" UI state is
@@ -20,24 +20,24 @@
 	<div class="page-designer-host">
 		<header class="page-designer-host__header">
 			<div class="page-designer-host__title">
-				<h2>{{ application ? application.name : t('openbuilt', 'Page designer') }}</h2>
+				<h2>{{ application ? application.name : t('openbuild', 'Page designer') }}</h2>
 				<p v-if="application" class="page-designer-host__subtitle">
-					{{ t('openbuilt', 'Design the pages and menu of this virtual app, then publish from Virtual apps.') }}
+					{{ t('openbuild', 'Design the pages and menu of this virtual app, then publish from Virtual apps.') }}
 				</p>
 			</div>
 			<div class="page-designer-host__actions">
 				<router-link class="page-designer-host__link" :to="{ name: 'VirtualApps' }">
-					{{ t('openbuilt', 'Back to Virtual apps') }}
+					{{ t('openbuild', 'Back to Virtual apps') }}
 				</router-link>
 				<a v-if="builderUrl" class="page-designer-host__link" :href="builderUrl">
-					{{ t('openbuilt', 'Open virtual app') }}
+					{{ t('openbuild', 'Open virtual app') }}
 				</a>
 				<NcButton
 					v-if="application"
 					type="primary"
 					:disabled="saving"
 					@click="save">
-					{{ saving ? t('openbuilt', 'Saving…') : t('openbuilt', 'Save pages') }}
+					{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save pages') }}
 				</NcButton>
 			</div>
 		</header>
@@ -52,15 +52,15 @@
 		<!-- REQ-OBVR-009: version-not-found state — identical for both "doesn't exist" and "you can't see it" -->
 		<NcEmptyContent
 			v-if="versionNotFound"
-			:name="t('openbuilt', 'Version not found')"
-			:description="t('openbuilt', 'The requested version does not exist or you do not have access to it.')" />
+			:name="t('openbuild', 'Version not found')"
+			:description="t('openbuild', 'The requested version does not exist or you do not have access to it.')" />
 		<div v-else-if="loading" class="page-designer-host__loading">
 			<NcLoadingIcon :size="44" />
 		</div>
 		<NcEmptyContent
 			v-else-if="!application"
-			:name="t('openbuilt', 'No virtual app found')"
-			:description="t('openbuilt', 'No virtual app exists for the slug {slug}.', { slug: routeSlug })" />
+			:name="t('openbuild', 'No virtual app found')"
+			:description="t('openbuild', 'No virtual app exists for the slug {slug}.', { slug: routeSlug })" />
 		<PageDesigner
 			v-else
 			:manifest="manifest"
@@ -160,7 +160,7 @@ export default {
 				return ''
 			}
 			const published = this.application.currentVersion || this.application.status === 'published'
-			return published ? generateUrl(`/apps/openbuilt/builder/${this.application.slug}`) : ''
+			return published ? generateUrl(`/apps/openbuild/builder/${this.application.slug}`) : ''
 		},
 	},
 
@@ -237,7 +237,7 @@ export default {
 			this.error = ''
 			this.toast = ''
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuilt/application')
+				const url = generateUrl('/apps/openregister/api/objects/openbuild/application')
 				const { data } = await axios.get(url, { params: { _limit: 100 } })
 				const apps = (data && data.results) ? data.results : (Array.isArray(data) ? data : [])
 				const app = apps.find(a => a && a.slug === this.routeSlug) || null
@@ -247,7 +247,7 @@ export default {
 					: { ...EMPTY_MANIFEST }
 			} catch (e) {
 				this.application = null
-				this.error = t('openbuilt', 'Failed to load the virtual app: {error}', { error: (e && e.message) || String(e) })
+				this.error = t('openbuild', 'Failed to load the virtual app: {error}', { error: (e && e.message) || String(e) })
 			} finally {
 				this.loading = false
 			}
@@ -278,14 +278,14 @@ export default {
 			this.error = ''
 			this.toast = ''
 			try {
-				const url = generateUrl(`/apps/openregister/api/objects/openbuilt/application/${this.applicationUuid}`)
+				const url = generateUrl(`/apps/openregister/api/objects/openbuild/application/${this.applicationUuid}`)
 				const { data } = await axios.put(url, { ...this.application, manifest: this.manifest })
 				if (data && typeof data === 'object') {
 					this.application = data
 				}
-				this.toast = t('openbuilt', 'Pages saved.')
+				this.toast = t('openbuild', 'Pages saved.')
 			} catch (e) {
-				this.error = t('openbuilt', 'Failed to save: {error}', { error: (e && e.message) || String(e) })
+				this.error = t('openbuild', 'Failed to save: {error}', { error: (e && e.message) || String(e) })
 			} finally {
 				this.saving = false
 			}

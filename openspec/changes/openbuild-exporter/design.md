@@ -1,6 +1,6 @@
 ## Context
 
-OpenBuilt's spec #1 (`bootstrap-openbuilt`) committed to a **hybrid** architecture:
+OpenBuild's spec #1 (`bootstrap-openbuild`) committed to a **hybrid** architecture:
 virtual apps now, exportable to real Nextcloud apps later. The chain specs built out
 the runtime, versioning model, RBAC, schema and page editors, and a templates
 marketplace. This is the graduation spec — it ships the "exportable later" half.
@@ -38,14 +38,14 @@ promise.
 - Honour ADR-024 Tier-4 strictly in the exported app — bundled manifest, top-level
   `<CnAppRoot>` mount, no nested arrangement, no per-slug endpoint.
 - Honour ADR-022 strictly — the exported app's companion schemas live in OR under the
-  new app's own namespace, not OpenBuilt's.
+  new app's own namespace, not OpenBuild's.
 - Re-exports of the same version are byte-equivalent (no clock drift, no random tokens,
   no embedded instance identity).
 
 **Non-Goals:**
 
-- **Re-import** of an exported app back into OpenBuilt as a virtual app. Tracked as
-  Open Question OQ-1; defer to `openbuilt-import-from-app`.
+- **Re-import** of an exported app back into OpenBuild as a virtual app. Tracked as
+  Open Question OQ-1; defer to `openbuild-import-from-app`.
 - **Sync** between an exported app and its source virtual app. A graduated app is
   independent — diverging changes are the graduated app's business. Re-exports
   overwrite; they do not merge.
@@ -54,7 +54,7 @@ promise.
 - **Cross-repo dependency rewriting** — OpenConnector source URLs are copied verbatim.
 - **Org-level OAuth for GitHub** — user-supplied PAT is the v1 auth path; app-level
   OAuth is deferred.
-- **Live re-render of the exported app inside OpenBuilt** — once exported, the user
+- **Live re-render of the exported app inside OpenBuild** — once exported, the user
   works in the new repo via standard developer tooling.
 
 ## Decisions
@@ -62,7 +62,7 @@ promise.
 ### Decision 1 — Template source: embedded snapshot, not live reference
 
 The exporter SHALL ship a **checked-in copy** of `nextcloud-app-template/` under
-`lib/Resources/template/`, snapshotted at OpenBuilt's build time. The exporter SHALL
+`lib/Resources/template/`, snapshotted at OpenBuild's build time. The exporter SHALL
 NOT clone or fetch `nextcloud-app-template` at export time.
 
 **Rationale**: Reproducibility. If the exporter pulled the template live, an upstream
@@ -71,7 +71,7 @@ diverging archives, breaking the byte-equivalence requirement. Embedding the sna
 also means the exporter has no network dependency for the ZIP path.
 
 **Refresh procedure**: when `nextcloud-app-template` ships a meaningful update,
-OpenBuilt cuts a new minor release that re-snapshots the template into
+OpenBuild cuts a new minor release that re-snapshots the template into
 `lib/Resources/template/`. Document in `docs/releasing.md`.
 
 **Alternatives considered**:
@@ -100,7 +100,7 @@ WebSocket push for completion* — deferred; OR REST polling is the established 
 
 The frontend dialog SHALL collect the GitHub PAT in a password input and transmit it
 over the standard authenticated Nextcloud REST channel. The backend SHALL store it via
-`OCP\Security\ICredentialsManager` keyed by `openbuilt.export.<jobUuid>.pat`. The
+`OCP\Security\ICredentialsManager` keyed by `openbuild.export.<jobUuid>.pat`. The
 background job SHALL fetch the PAT once at the start of the GitHub phase and delete the
 credential record on terminal state (succeeded or failed).
 
@@ -123,15 +123,15 @@ weight; same defer.
 The exported app's companion schemas SHALL live in
 `lib/Settings/<newapp>_register.json` declaring a fresh OR register namespace named
 identically to the exported `appId`. The exporter SHALL **rewrite** every
-`config.register: "openbuilt"` reference inside `src/manifest.json` to
+`config.register: "openbuild"` reference inside `src/manifest.json` to
 `config.register: "<newapp>"`. Schema names themselves are preserved verbatim — only
 the register namespace changes.
 
 **Rationale**: ADR-022 — apps own their own register namespace. Letting the exported app
-continue to reach into `openbuilt`'s namespace would create a runtime dependency on
-OpenBuilt, defeating graduation.
+continue to reach into `openbuild`'s namespace would create a runtime dependency on
+OpenBuild, defeating graduation.
 
-**Alternatives considered**: *Keep schemas in the `openbuilt` namespace* — rejected;
+**Alternatives considered**: *Keep schemas in the `openbuild` namespace* — rejected;
 violates standalone-boot requirement. *Always slug-prefix schema names* — rejected;
 over-engineers a collision case that namespace separation already prevents.
 
@@ -192,7 +192,7 @@ repos, pushing partial trees, or leaking PATs.
 ### Seed Data
 
 Every schema-shipping change documents its seed data per ADR-031 conventions.
-This change adds the `ExportJob` schema to `lib/Settings/openbuilt_register.json`.
+This change adds the `ExportJob` schema to `lib/Settings/openbuild_register.json`.
 No `ExportJob` seed records are seeded at install time — export jobs are created at
 runtime by user action, not by a repair step.
 
@@ -208,7 +208,7 @@ municipality context (for reference during testing and QA):
     "target": "zip",
     "status": "succeeded",
     "includeSeedData": false,
-    "downloadUrl": "/index.php/apps/openbuilt/api/exports/a1b2c3d4-0001-0000-0000-000000000001/download",
+    "downloadUrl": "/index.php/apps/openbuild/api/exports/a1b2c3d4-0001-0000-0000-000000000001/download",
     "downloadExpiresAt": "2026-05-21T10:00:00Z",
     "log": ["template-copy", "placeholder-replacement", "manifest-bundling", "schema-emission", "archive-or-push", "complete"]
   },
@@ -299,7 +299,7 @@ are runtime-created artifacts, not install-time data.
 - **OQ-1 — Re-import path for exported apps.** Should an exported app be re-importable
   as a virtual Application? Use cases: a graduated team wants to share their manifest
   back to the marketplace, or revert to virtual hosting to drop ops burden. *Provisional
-  decision*: defer to `openbuilt-import-from-app`. Subtleties around hand-coded PHP
+  decision*: defer to `openbuild-import-from-app`. Subtleties around hand-coded PHP
   and merge strategy deserve their own spec.
 - **OQ-2 — GitHub default branch detection.** The placeholder PR needs to target the
   receiving repo's default branch. For a brand-new repo created by the exporter, the
@@ -311,7 +311,7 @@ are runtime-created artifacts, not install-time data.
 - **OQ-3 — Storage of the in-flight exported tree.** During the background job's run,
   the partially-emitted tree needs to live on disk. *Provisional decision*: use
   Nextcloud's `IAppDataFactory` under
-  `appdata_<instance>/openbuilt/work/<jobUuid>/`. Clean up on terminal state. Confirm
+  `appdata_<instance>/openbuild/work/<jobUuid>/`. Clean up on terminal state. Confirm
   during apply that the scratch area survives a Nextcloud worker restart mid-export.
 - **OQ-4 — Multi-export concurrency.** If two users export from the same Application
   version simultaneously, do their jobs block each other? *Provisional decision*: no —
@@ -319,6 +319,6 @@ are runtime-created artifacts, not install-time data.
   by construction. The only shared resource is the GitHub API quota, which is per-PAT
   (per-user) and not a cross-user concern.
 - **OQ-5 — Composer/npm dependency-version drift.** The embedded template's lockfiles
-  pin versions at OpenBuilt's snapshot time. *Provisional decision*: out of scope for
+  pin versions at OpenBuild's snapshot time. *Provisional decision*: out of scope for
   the exporter — the graduated maintainer runs `composer update` / `npm update` after
   checkout. Document in the placeholder PR body.

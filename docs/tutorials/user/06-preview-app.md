@@ -19,7 +19,7 @@ By the end you will have opened your virtual app in the builder host, clicked th
 
 ## Steps
 
-1. From the page designer, click **Save & open preview**. Alternatively, from a virtual app's detail page click **Open virtual app**, or hit `/apps/openbuilt/builder/\<slug\>` directly.
+1. From the page designer, click **Save & open preview**. Alternatively, from a virtual app's detail page click **Open virtual app**, or hit `/apps/openbuild/builder/\<slug\>` directly.
 
    ![Builder host — index page](/screenshots/tutorials/user/06-preview-app-01.png)
 

@@ -1,6 +1,6 @@
 ## Context
 
-OpenBuilt spec #1 (`bootstrap-openbuilt`) shipped a JSON textarea as the only path to
+OpenBuild spec #1 (`bootstrap-openbuild`) shipped a JSON textarea as the only path to
 author a virtual app's manifest. The textarea proves the runtime contract (load →
 validate → save → render via a nested `CnAppRoot`) but is unusable for citizen
 developers — the canonical
@@ -13,17 +13,17 @@ sub-shapes (`column` / `action` / `widgetDef` / `layoutItem` / `formField` /
 This spec replaces the textarea-as-only-editor with a tabbed view whose default tab is a
 visual designer. The textarea persists as the "Raw JSON" fallback tab for integrators and
 for the corner cases the visual designer cannot express (yet). Everything ships in the
-existing `openbuilt` Nextcloud app's frontend — no new backend code, no new schemas, no
+existing `openbuild` Nextcloud app's frontend — no new backend code, no new schemas, no
 new register namespaces. Manifest CRUD continues to flow through OR REST per ADR-022.
 
-**ADR-002 context** — spec #3 (`openbuilt-versioning-model`) split the data model into
+**ADR-002 context** — spec #3 (`openbuild-versioning-model`) split the data model into
 `Application` (logical, slug/name/RBAC/icon) and `ApplicationVersion` (deployable
 runtime, manifest/semver/register/promotesTo). The `manifest` JSON blob now lives on
 `ApplicationVersion`, not on `Application`. The save path for this editor therefore
-targets `PUT /api/objects/openbuilt/applicationVersion/{uuid}`. The editor always
+targets `PUT /api/objects/openbuild/applicationVersion/{uuid}`. The editor always
 operates on the currently-selected version (determined by `?version=<versionSlug>` query
 param from the version-switcher, or the production version when no param is present,
-matching the routing contract from spec `openbuilt-version-routing`).
+matching the routing contract from spec `openbuild-version-routing`).
 
 The chain dependency on `nextcloud-vue-in-memory-manifest` (chain spec #2) shapes the
 design of the live-preview pane: that spec adds the
@@ -51,13 +51,13 @@ shipped when this editor lands, and provides a degraded "save & reload" preview 
 
 **Non-Goals (deferred to chain or out of scope)**
 
-- Versioning / draft / publish UX (covered by spec #3 `openbuilt-versioning-model` and
-  spec `openbuilt-version-promotion`).
-- Per-built-app permission management surface (chain spec #7 `openbuilt-rbac`).
-- Starter-template gallery (chain spec #8 `openbuilt-templates-marketplace`).
+- Versioning / draft / publish UX (covered by spec #3 `openbuild-versioning-model` and
+  spec `openbuild-version-promotion`).
+- Per-built-app permission management surface (chain spec #7 `openbuild-rbac`).
+- Starter-template gallery (chain spec #8 `openbuild-templates-marketplace`).
 - Real-app export of the manifest to a `src/manifest.json` file in a target
-  Nextcloud-app repo (chain spec #9 `openbuilt-export-to-real-app`).
-- Editing the underlying schemas a page binds to (that is the `openbuilt-schema-editor`
+  Nextcloud-app repo (chain spec #9 `openbuild-export-to-real-app`).
+- Editing the underlying schemas a page binds to (that is the `openbuild-schema-editor`
   spec #4 — this spec only *picks* from the registers/schemas OR already exposes).
 - Real-time multi-user collaborative editing (see Open Questions).
 - Undo / redo within a single editing session (see Open Questions).
@@ -132,16 +132,16 @@ The right-hand pane is a **sandboxed `CnAppRoot`** mount that renders the in-fli
 (`nextcloud-vue-in-memory-manifest`) ships in `@conduction/nextcloud-vue`.
 
 **Behaviour when spec #2 is available:** The right-hand pane mounts
-`<CnAppRoot :appId="openbuilt-preview-{slug}" :manifest="inflightManifest"
-:key="manifestHash" />`. The sandbox `appId = openbuilt-preview-{slug}` so it does not
-collide with the production-mounted `openbuilt-{appSlug}-{versionSlug}`.
+`<CnAppRoot :appId="openbuild-preview-{slug}" :manifest="inflightManifest"
+:key="manifestHash" />`. The sandbox `appId = openbuild-preview-{slug}` so it does not
+collide with the production-mounted `openbuild-{appSlug}-{versionSlug}`.
 
 **Behaviour when spec #2 is unavailable:** `useLivePreview.js` feature-detects the
 overload by inspecting `useAppManifest.length` (arity: spec #2 adds a second positional
 parameter). When the overload is missing, the right-hand pane collapses to a button that
 (a) saves the current manifest via the spec-1 REST path and (b) opens `/builder/:slug`
 in a new browser tab. An i18n note
-(`openbuilt.page-designer.preview.unavailable`) explains the limitation.
+(`openbuild.page-designer.preview.unavailable`) explains the limitation.
 
 ### Decision 4 — Validation surface: side panel plus inline marks, debounced 300ms
 
@@ -177,14 +177,14 @@ component expects" — we cannot structure-edit something we don't know the shap
 The spec #1 textarea editor saved to `Application.manifest`. Under the versioning model
 (spec #3 / ADR-002), `manifest` now lives on `ApplicationVersion`. The designer's save
 action therefore PUTs to
-`/api/objects/openbuilt/applicationVersion/{uuid}` — same REST mechanism, different
+`/api/objects/openbuild/applicationVersion/{uuid}` — same REST mechanism, different
 object. The editor reads the current `ApplicationVersion.uuid` from the Pinia store
 (seeded by the version-switcher on view load). No new controller is required (ADR-022).
 
 ### Declarative-vs-imperative call-out (ADR-031)
 
 The Page Designer's output **is** the manifest blob. The manifest itself is the
-canonical declarative artefact for the OpenBuilt ecosystem. This spec introduces **no
+canonical declarative artefact for the OpenBuild ecosystem. This spec introduces **no
 service class**: no `PageBuilderService`, no `ManifestComposerService`, no
 `PageTypeRegistry`. The per-page-type sub-editors are dumb-form components that
 read/write the matching `pages[].config` sub-shape. The save path is a single PUT to
@@ -197,7 +197,7 @@ services are leveraged rather than duplicated:
 
 | Abstraction | How consumed |
 |---|---|
-| **OR REST (Objects API)** | `PUT /api/objects/openbuilt/applicationVersion/{uuid}` — existing path, no new controller (ADR-022) |
+| **OR REST (Objects API)** | `PUT /api/objects/openbuild/applicationVersion/{uuid}` — existing path, no new controller (ADR-022) |
 | **`validateManifest`** | Imported from `@conduction/nextcloud-vue`; `useManifestValidator.js` is a thin debounced wrapper |
 | **`CnAppRoot`** | Sandboxed in the preview pane with in-memory manifest overload (chain spec #2) |
 | **`useAppManifest`** | Feature-detected from `@conduction/nextcloud-vue`; in-memory overload path |
@@ -211,12 +211,12 @@ validation, or file-management logic is introduced.
 ## Seed Data
 
 This change introduces **no new OpenRegister schemas** and **no schema modifications**.
-It is a purely frontend addition to the existing `openbuilt` Nextcloud app. Per the
+It is a purely frontend addition to the existing `openbuild` Nextcloud app. Per the
 Seed Data rules in ADR-001 (data layer), seed data is not required for changes that only
 modify frontend components.
 
 The existing `hello-world` ApplicationVersion seed (shipped by the creation wizard,
-spec `openbuilt-app-creation-wizard`) provides the sample manifest data needed to
+spec `openbuild-app-creation-wizard`) provides the sample manifest data needed to
 exercise the designer during QA and Playwright tests.
 
 ## Risks / Trade-offs
@@ -244,7 +244,7 @@ exercise the designer during QA and Playwright tests.
 
 ## Migration Plan
 
-This spec ships a frontend-only change inside the existing `openbuilt` Nextcloud app.
+This spec ships a frontend-only change inside the existing `openbuild` Nextcloud app.
 There is no database migration, no schema change, no API change. Deployment steps:
 
 1. Land the change on a feature branch from `development`.

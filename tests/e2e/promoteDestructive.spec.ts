@@ -18,7 +18,7 @@ import { test, expect } from '@playwright/test'
  * Call-site dependency:
  *   PromoteVersionDialog is a standalone modal (ADR-004 modal-isolation) that
  *   requires a call site in the Application detail page (spec B /
- *   openbuilt-app-detail-overview). Since spec B has not shipped yet, this
+ *   openbuild-app-detail-overview). Since spec B has not shipped yet, this
  *   test file is written in a describe.skip block for the e2e tests that need
  *   a live call site, so the file lands in the repo and tracks the gap.
  *
@@ -26,7 +26,7 @@ import { test, expect } from '@playwright/test'
  *   cover the gate logic in isolation (no live NC needed).
  *
  * To activate these tests:
- *   1. Merge spec B (openbuilt-app-detail-overview) which adds a "Promote"
+ *   1. Merge spec B (openbuild-app-detail-overview) which adds a "Promote"
  *      button / action in the ApplicationVersion list.
  *   2. Remove the describe.skip wrapper and replace the TODO_PROMOTE_BUTTON
  *      selector with the actual trigger selector.
@@ -46,7 +46,7 @@ async function loginAs(page: import('@playwright/test').Page, user: string, pass
 // ---------------------------------------------------------------------------
 // Tests that require a live call site — SKIPPED until spec B ships
 // ---------------------------------------------------------------------------
-test.describe.skip('PromoteVersionDialog — e2e with live call site (pending spec B / openbuilt-app-detail-overview)', () => {
+test.describe.skip('PromoteVersionDialog — e2e with live call site (pending spec B / openbuild-app-detail-overview)', () => {
 
 	// TODO: Replace this selector with the actual Promote button once spec B
 	// wires the dialog into the ApplicationVersion list in the detail page.
@@ -60,7 +60,7 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 
 	test('5.1 — empty-start: Confirm is disabled until exact slug is typed', async ({ page }) => {
 		// Navigate to the detail page for hello-world.
-		await page.goto(`${BASE}/index.php/apps/openbuilt/builder/${TEST_SLUG}`)
+		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`)
 		await page.waitForLoadState('networkidle', { timeout: 20_000 })
 
 		// Open the Promote dialog (call site added by spec B).
@@ -98,7 +98,7 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 	})
 
 	test('5.2 — start-with-source-data: Confirm is enabled by default', async ({ page }) => {
-		await page.goto(`${BASE}/index.php/apps/openbuilt/builder/${TEST_SLUG}`)
+		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`)
 		await page.waitForLoadState('networkidle', { timeout: 20_000 })
 
 		const promoteBtn = page.locator(TODO_PROMOTE_BUTTON_SELECTOR).first()
@@ -118,7 +118,7 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 	})
 
 	test('5.2 — migrate-existing-data: Confirm is enabled by default', async ({ page }) => {
-		await page.goto(`${BASE}/index.php/apps/openbuilt/builder/${TEST_SLUG}`)
+		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`)
 		await page.waitForLoadState('networkidle', { timeout: 20_000 })
 
 		const promoteBtn = page.locator(TODO_PROMOTE_BUTTON_SELECTOR).first()

@@ -4,32 +4,32 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * End-to-end smoke test for the bootstrap-openbuilt change.
+ * End-to-end smoke test for the bootstrap-openbuild change.
  *
- * Boots the seeded hello-world virtual app inside the OpenBuilt shell
- * at /index.php/apps/openbuilt/builder/hello-world and asserts the
+ * Boots the seeded hello-world virtual app inside the OpenBuild shell
+ * at /index.php/apps/openbuild/builder/hello-world and asserts the
  * canonical index page renders the three sample HelloMessage objects
  * created by the SeedHelloWorld repair step.
  *
  * Preconditions (one-time setup):
  *  - Docker stack up (`bash clean-env.sh` or `/clean-env` skill).
- *  - OpenBuilt app enabled (`docker exec nextcloud php occ app:enable openbuilt`).
+ *  - OpenBuild app enabled (`docker exec nextcloud php occ app:enable openbuild`).
  *  - Playwright browsers installed (`npx playwright install --with-deps`).
  */
-test.describe('bootstrap-openbuilt hello-world', () => {
+test.describe('bootstrap-openbuild hello-world', () => {
 	test('renders the three seeded hello-message objects on the index page', async ({ page }) => {
-		await page.goto('/apps/openbuilt/builder/hello-world')
+		await page.goto('/apps/openbuild/builder/hello-world')
 
 		// The SPA needs a moment to fetch the manifest and resolve the index page.
 		// The hello-world manifest's index page lists `hello-message` objects with
 		// the title, body and @self.created columns.
-		await expect(page).toHaveURL(/\/index\.php\/apps\/openbuilt\/builder\/hello-world/)
+		await expect(page).toHaveURL(/\/index\.php\/apps\/openbuild\/builder\/hello-world/)
 
 		// Seed bodies — anchored on the canonical strings written by
 		// SeedHelloWorld::buildSampleMessages(). At minimum the page must
 		// render the three known titles before the smoke test passes.
 		const expectedTitles = [
-			'Welcome to OpenBuilt',
+			'Welcome to OpenBuild',
 			'Edit me',
 			'Built from a manifest',
 		]
@@ -43,7 +43,7 @@ test.describe('bootstrap-openbuilt hello-world', () => {
 	})
 
 	test('returns the seeded manifest from the public endpoint', async ({ request }) => {
-		const response = await request.get('/index.php/apps/openbuilt/api/applications/hello-world/manifest')
+		const response = await request.get('/index.php/apps/openbuild/api/applications/hello-world/manifest')
 		expect(response.status(), 'manifest endpoint must return 200 for the seeded slug').toBe(200)
 
 		const body = await response.json()

@@ -6,6 +6,6 @@
   "link": {
     "type": "generated-index",
     "title": "Admin guide",
-    "description": "Org-wide OpenBuilt administration — controlling who can build (RBAC), curating the template catalogue, and managing OpenBuilt settings."
+    "description": "Org-wide OpenBuild administration — controlling who can build (RBAC), curating the template catalogue, and managing OpenBuild settings."
   }
 }

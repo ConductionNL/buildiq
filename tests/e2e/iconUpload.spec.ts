@@ -14,7 +14,7 @@ import { test, expect } from '@playwright/test'
  *     - remove button clears the preview
  *
  * Preconditions:
- *   - Nextcloud reachable with openbuilt enabled (admin:admin).
+ *   - Nextcloud reachable with openbuild enabled (admin:admin).
  *   - SeedHelloWorld repair step has produced the hello-world virtual app.
  *   - The Application detail page includes an "Icon" tab / section wired to
  *     IconUploadSection.vue (spec A task 5.1 — src/dialogs/IconUploadSection.vue).
@@ -46,11 +46,11 @@ test.describe('Icon upload on Application detail page (spec A task 7.5)', () => 
 		// Land on the Virtual apps index — the ApplicationCards live at
 		// `/applications`, not at the app root (which redirects to the
 		// Dashboard widget page).
-		await page.goto('/apps/openbuilt/applications')
+		await page.goto('/apps/openbuild/applications')
 		await expect(page.locator('.ob-app-card, [data-testid*="app-card"]').first()).toBeVisible({ timeout: 15_000 })
 
 		// Navigate to the hello-world detail page. The card links to
-		// /builder/hello-world or /apps/openbuilt#/applications/{uuid}.
+		// /builder/hello-world or /apps/openbuild#/applications/{uuid}.
 		// We use the ApplicationCard click as the nav trigger.
 		const helloCard = page.locator(`[data-slug="${HELLO_WORLD_SLUG}"]`).first()
 			.or(page.locator('.ob-app-card').first())
@@ -87,7 +87,7 @@ test.describe('Icon upload on Application detail page (spec A task 7.5)', () => 
 		// Land on the Virtual apps index — the ApplicationCards live at
 		// `/applications`, not at the app root (which redirects to the
 		// Dashboard widget page).
-		await page.goto('/apps/openbuilt/applications')
+		await page.goto('/apps/openbuild/applications')
 		await expect(page.locator('.ob-app-card, [data-testid*="app-card"]').first()).toBeVisible({ timeout: 15_000 })
 
 		// Open the hello-world detail.
@@ -135,7 +135,7 @@ test.describe('Icon upload on Application detail page (spec A task 7.5)', () => 
 		// IconUploadSection.vue (spec A task 5.1 sub-task). The button
 		// must clear the Application's icon.ref and reset the preview src.
 		// Enable once the remove-button affordance is deployed.
-		await page.goto('/apps/openbuilt')
+		await page.goto('/apps/openbuild')
 		const helloCard = page.locator('.ob-app-card').first()
 		await helloCard.click()
 		const removeBtn = page.getByRole('button', { name: /remove.*icon|clear.*icon/i }).first()

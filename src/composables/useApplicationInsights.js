@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 //
-// useApplicationInsights — wraps GET /apps/openbuilt/api/applications/{appUuid}
+// useApplicationInsights — wraps GET /apps/openbuild/api/applications/{appUuid}
 //   /versions/{versionUuid}/insights?window=… and exposes a reactive
 //   `{ kpis, activity, loading, error, versionNoLongerAccessible, refresh }`
 //   surface for the maintainer-dashboard header.
@@ -15,7 +15,7 @@
 //     render a banner without crashing.
 //   - On other errors sets `error` and clears the data.
 //
-// Spec: openbuilt-app-detail-overview / capability application-insights
+// Spec: openbuild-app-detail-overview / capability application-insights
 // (REQ-OBAI-001, REQ-OBAI-002, REQ-OBAI-006).
 
 import { ref, watch } from 'vue'
@@ -80,7 +80,7 @@ export function useApplicationInsights(appUuidRef, versionUuidRef, windowRef) {
 
 		try {
 			const url = generateUrl(
-				`/apps/openbuilt/api/applications/${encodeURIComponent(appUuid)}/versions/${encodeURIComponent(versionUuid)}/insights`,
+				`/apps/openbuild/api/applications/${encodeURIComponent(appUuid)}/versions/${encodeURIComponent(versionUuid)}/insights`,
 			)
 			const { data } = await axios.get(url, { params: { window: win } })
 			if (data && typeof data === 'object') {

@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Controller
+ * @package  OCA\OpenBuild\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,11 +28,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Controller;
+namespace OCA\OpenBuild\Tests\Unit\Controller;
 
-use OCA\OpenBuilt\Controller\ApplicationsController;
-use OCA\OpenBuilt\Service\ManifestResolverService;
-use OCA\OpenBuilt\Service\PermissionResolver;
+use OCA\OpenBuild\Controller\ApplicationsController;
+use OCA\OpenBuild\Service\ManifestResolverService;
+use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -161,7 +161,7 @@ class CreateFromTemplateTest extends TestCase
             ->addMethods(['getId', 'getSlug'])
             ->getMock();
         $this->perAppRegister->method('getId')->willReturn(2001);
-        $this->perAppRegister->method('getSlug')->willReturn('openbuilt-my-permits');
+        $this->perAppRegister->method('getSlug')->willReturn('openbuild-my-permits');
         $this->perAppRegister->method('getSchemas')->willReturn([]);
         $this->perAppRegister->method('setSchemas')->willReturn($this->perAppRegister);
 
@@ -170,7 +170,7 @@ class CreateFromTemplateTest extends TestCase
         $this->registerMapper->method('find')->willReturnCallback(
             function (...$args) use ($registerEntity): Register {
                 $slug = (string) ($args['id'] ?? $args[0]);
-                if ($slug === 'openbuilt') {
+                if ($slug === 'openbuild') {
                     return $registerEntity;
                 }
                 throw new \RuntimeException('register not found: '.$slug);
@@ -404,7 +404,7 @@ class CreateFromTemplateTest extends TestCase
         $body = $result->getData();
         self::assertSame('new-uuid-1', $body['uuid']);
         self::assertSame('my-permits', $body['slug']);
-        self::assertSame('openbuilt-my-permits', $body['register']);
+        self::assertSame('openbuild-my-permits', $body['register']);
         self::assertSame([7777], $body['companionSchemas']);
     }//end testSuccessCreatesApplicationAndPerAppArtifacts()
 

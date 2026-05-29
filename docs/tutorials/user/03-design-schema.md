@@ -6,7 +6,7 @@ description: Define the data shape behind a virtual app — properties, types, r
 
 # Design a schema
 
-A schema is the data shape behind everything OpenBuilt stores: the columns in a list, the fields on a form, the body of an API response. OpenBuilt uses standard OpenRegister schemas, so anything you build here is reachable via OpenRegister's API the moment you save.
+A schema is the data shape behind everything OpenBuild stores: the columns in a list, the fields on a form, the body of an API response. OpenBuild uses standard OpenRegister schemas, so anything you build here is reachable via OpenRegister's API the moment you save.
 
 ## Goal
 
@@ -19,7 +19,7 @@ By the end you will have added at least one new property to a schema in your vir
 
 ## Steps
 
-1. Open **Virtual apps**, click your app, and from the detail page click **Open builder → Schemas**, or jump straight to `/apps/openbuilt/builder/\<slug\>/schemas`.
+1. Open **Virtual apps**, click your app, and from the detail page click **Open builder → Schemas**, or jump straight to `/apps/openbuild/builder/\<slug\>/schemas`.
 
    ![Schema designer empty state](/screenshots/tutorials/user/03-design-schema-01.png)
 
@@ -31,7 +31,7 @@ By the end you will have added at least one new property to a schema in your vir
 
    ![Add property dialog](/screenshots/tutorials/user/03-design-schema-03.png)
 
-4. For references, pick the target schema from the **References** dropdown. OpenBuilt stores references as `@self.id` links and the UI renders them as picker fields in the page designer.
+4. For references, pick the target schema from the **References** dropdown. OpenBuild stores references as `@self.id` links and the UI renders them as picker fields in the page designer.
 
    ![Reference property](/screenshots/tutorials/user/03-design-schema-04.png)
 

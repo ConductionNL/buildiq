@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * Playwright e2e — Version routing (spec E, openbuilt-version-routing).
+ * Playwright e2e — Version routing (spec E, openbuild-version-routing).
  *
  * Covers spec E task 9.1 – 9.3 (the three REQUIRED e2e scenarios):
  *
@@ -58,7 +58,7 @@ test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008
 	test('navigating to /builder/{slug}/schemas?_version=staging preserves the param after reload', async ({ page }) => {
 		// Check whether a "staging" version is accessible — if not, skip.
 		const manifestCheck = await page.request.get(
-			`${BASE}/index.php/apps/openbuilt/api/applications/${TEST_SLUG}/versions/${STAGING_VERSION}`,
+			`${BASE}/index.php/apps/openbuild/api/applications/${TEST_SLUG}/versions/${STAGING_VERSION}`,
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		if (manifestCheck.status() !== 200) {
@@ -66,7 +66,7 @@ test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008
 			return
 		}
 
-		const targetUrl = `${BASE}/index.php/apps/openbuilt/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`
+		const targetUrl = `${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`
 		await page.goto(targetUrl)
 		await page.waitForLoadState('networkidle', { timeout: 20_000 })
 
@@ -124,7 +124,7 @@ test.describe('9.2 Unauthorised access to non-production version shows 404 UI (R
 		// The viewer is not in permissions.editors — they cannot see non-production
 		// versions. ManifestResolverService returns null → 404 JSON.
 		const manifestResp = await page.request.get(
-			`${BASE}/index.php/apps/openbuilt/api/applications/${TEST_SLUG}/manifest?_version=${STAGING_VERSION}`,
+			`${BASE}/index.php/apps/openbuild/api/applications/${TEST_SLUG}/manifest?_version=${STAGING_VERSION}`,
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		).catch(() => null)
 
@@ -142,7 +142,7 @@ test.describe('9.2 Unauthorised access to non-production version shows 404 UI (R
 		}
 
 		// Navigate to the builder with the staging version.
-		await page.goto(`${BASE}/apps/openbuilt/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`)
+		await page.goto(`${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`)
 		await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {})
 
 		// The view must show a "not found" UI — no schema list, no stack trace,
@@ -184,11 +184,11 @@ test.describe('9.3 Default version resolution — most-upstream-non-production f
 		// Check that all three exist before proceeding.
 		const [devResp, stagingResp] = await Promise.all([
 			page.request.get(
-				`${BASE}/index.php/apps/openbuilt/api/applications/${TEST_SLUG}/versions/development`,
+				`${BASE}/index.php/apps/openbuild/api/applications/${TEST_SLUG}/versions/development`,
 				{ headers: { 'OCS-APIRequest': 'true' } },
 			).catch(() => null),
 			page.request.get(
-				`${BASE}/index.php/apps/openbuilt/api/applications/${TEST_SLUG}/versions/staging`,
+				`${BASE}/index.php/apps/openbuild/api/applications/${TEST_SLUG}/versions/staging`,
 				{ headers: { 'OCS-APIRequest': 'true' } },
 			).catch(() => null),
 		])
@@ -200,7 +200,7 @@ test.describe('9.3 Default version resolution — most-upstream-non-production f
 		}
 
 		// Navigate to the builder root (no ?_version=).
-		await page.goto(`${BASE}/apps/openbuilt/builder/${TEST_SLUG}`)
+		await page.goto(`${BASE}/apps/openbuild/builder/${TEST_SLUG}`)
 		await page.waitForLoadState('networkidle', { timeout: 20_000 })
 
 		// The composable (useApplicationVersion) should resolve "development"

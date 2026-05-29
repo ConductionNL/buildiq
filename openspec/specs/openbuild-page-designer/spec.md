@@ -1,9 +1,9 @@
-# openbuilt-page-designer Specification
+# openbuild-page-designer Specification
 
 ## Purpose
 
 Ships the visual Page Designer that replaces the textarea-only manifest editor
-from `bootstrap-openbuilt`, giving citizen developers a structured UI for
+from `bootstrap-openbuild`, giving citizen developers a structured UI for
 authoring `manifest.menu[]` and `manifest.pages[]`. Provides one sub-editor per
 canonical page type (`index | detail | dashboard | logs | settings | chat | files |
 form | custom`), each authoring only its own `pages[].config` sub-shape per the
@@ -48,7 +48,7 @@ disabled-with-tooltip state on those fields.
 - **WHEN** the user attempts to add a child entry inside a
   `menu[].children[].children[]` slot
 - **THEN** the editor refuses the action with the i18n message
-  `openbuilt.page-designer.menu.error.nesting-depth`
+  `openbuild.page-designer.menu.error.nesting-depth`
 - **AND** the manifest remains unchanged
 
 #### Scenario: Action field disables route and href
@@ -61,7 +61,7 @@ disabled-with-tooltip state on those fields.
 
 ### Requirement: Page list editor with uniqueness and route-pattern validation
 
-@e2e exclude visual-editor component spec — duplicate-id inline error marks, disabled Save button on duplication, and page-type-pick-then-sub-editor-mount are PageListEditor.vue component contracts verified by Vitest unit tests; the route to the page designer is covered by the openbuilt-runtime Playwright tests
+@e2e exclude visual-editor component spec — duplicate-id inline error marks, disabled Save button on duplication, and page-type-pick-then-sub-editor-mount are PageListEditor.vue component contracts verified by Vitest unit tests; the route to the page designer is covered by the openbuild-runtime Playwright tests
 
 The system SHALL provide a `PageListEditor.vue` component that
 authors the manifest's `pages[]` array. The editor SHALL support
@@ -150,7 +150,7 @@ the canonical schema. It SHALL expose:
 #### Scenario: Column picker offers @self.* metadata fields
 
 - **WHEN** the user opens the column-selector dropdown for an index
-  page bound to `register: openbuilt, schema: hello-message`
+  page bound to `register: openbuild, schema: hello-message`
 - **THEN** the dropdown lists each `hello-message` property AND the
   six `@self.*` metadata entries
 - **AND** selecting `@self.created` adds the column to `columns[]` in
@@ -262,7 +262,7 @@ expects".
 
 ### Requirement: Live-preview pane mounts a sandboxed CnAppRoot when available
 
-@e2e exclude mixed spec — sandboxed `CnAppRoot` re-mount on in-flight manifest change (in-memory `useAppManifest` overload from chain spec #2) requires chain spec #2 (`nextcloud-vue-in-memory-manifest`) not yet shipped; fallback "Save & open preview" button is covered by the openbuilt-page-designer Playwright tests
+@e2e exclude mixed spec — sandboxed `CnAppRoot` re-mount on in-flight manifest change (in-memory `useAppManifest` overload from chain spec #2) requires chain spec #2 (`nextcloud-vue-in-memory-manifest`) not yet shipped; fallback "Save & open preview" button is covered by the openbuild-page-designer Playwright tests
 
 The Page Designer SHALL provide an optional right-hand pane that
 mounts a **sandboxed** `CnAppRoot` instance configured from the
@@ -279,7 +279,7 @@ manifest, with an inline i18n note explaining the limitation.
 
 The sandboxed `CnAppRoot` SHALL:
 
-- Use a unique `appId` of `openbuilt-preview-{slug}` so its state
+- Use a unique `appId` of `openbuild-preview-{slug}` so its state
   does not collide with the production-mounted virtual app.
 - Receive the manifest as an in-memory object (no fetch).
 - Re-mount via a `:key` bound to the manifest's content hash, so any
@@ -297,7 +297,7 @@ The sandboxed `CnAppRoot` SHALL:
 
 - **WHEN** chain spec #2's in-memory manifest loader is NOT detected
 - **THEN** the right-hand pane displays a "Save & open preview" button
-- **AND** an i18n note (`openbuilt.page-designer.preview.unavailable`)
+- **AND** an i18n note (`openbuild.page-designer.preview.unavailable`)
   explains the limitation
 - **AND** clicking the button saves the manifest and opens
   `/builder/:slug` in a new tab
@@ -310,9 +310,9 @@ The Page Designer's Save action SHALL serialise the in-flight
 manifest, validate it via
 `@conduction/nextcloud-vue`'s `validateManifest` export, and PUT the
 updated `Application` object via OpenRegister's existing REST API at
-`/index.php/apps/openregister/api/objects/openbuilt/application/{uuid}`
+`/index.php/apps/openregister/api/objects/openbuild/application/{uuid}`
 — the same path the spec #1 textarea editor already uses. The
-designer MUST NOT introduce a new openbuilt-side controller for
+designer MUST NOT introduce a new openbuild-side controller for
 manifest writes (ADR-022).
 
 **ID:** REQ-OBPD-009
@@ -321,7 +321,7 @@ manifest writes (ADR-022).
 
 - **WHEN** the user clicks Save with a valid manifest
 - **THEN** the editor sends a PUT to OR's
-  `/api/objects/openbuilt/application/{uuid}` endpoint with the full
+  `/api/objects/openbuild/application/{uuid}` endpoint with the full
   Application body and the updated `manifest` field
 - **AND** the response is `200`
 - **AND** the editor's "dirty" indicator clears
@@ -336,10 +336,10 @@ manifest writes (ADR-022).
 
 ### Requirement: Raw JSON fallback tab preserves the spec-1 textarea
 
-@e2e exclude mixed spec — tab-switch shared in-flight manifest state and dirty-indicator persistence across tabs are controlled-component state contracts verified by Vitest unit tests; the Design/Raw JSON tab UI is covered by the openbuilt-runtime Playwright tests (REQ-OBR-005)
+@e2e exclude mixed spec — tab-switch shared in-flight manifest state and dirty-indicator persistence across tabs are controlled-component state contracts verified by Vitest unit tests; the Design/Raw JSON tab UI is covered by the openbuild-runtime Playwright tests (REQ-OBR-005)
 
 The Application edit view SHALL retain the textarea-based JSON
-manifest editor shipped by spec #1 (`bootstrap-openbuilt`) as a
+manifest editor shipped by spec #1 (`bootstrap-openbuild`) as a
 secondary tab labelled "Raw JSON". The Design tab (the new
 `PageDesigner.vue`) SHALL be the default tab on view load. The two
 tabs SHALL share the same in-flight manifest state, so edits made in

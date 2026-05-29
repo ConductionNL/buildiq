@@ -3,11 +3,11 @@
   -
   - BuilderHost mounts a NESTED CnAppRoot for the virtual app addressed by
   - the :slug param. Per design.md Decision 4/5, this preserves the
-  - OpenBuilt outer chrome and forwards path segments after the slug to
+  - OpenBuild outer chrome and forwards path segments after the slug to
   - the inner router. The :key="slug" prop forces a clean remount when
   - the user navigates between virtual apps.
   -
-  - Version routing (spec `openbuilt-version-routing` REQ-OBVR-004):
+  - Version routing (spec `openbuild-version-routing` REQ-OBVR-004):
   - Reads `?_version=<versionSlug>` from `$route.query._version` (the
   - underscore-prefix form to avoid colliding with user-defined `?version=`
   - params). The CnAppRoot endpoint URL includes the `_version` param when
@@ -22,14 +22,14 @@
   - skeleton; the real manifest arrives from the backend merge.
   -->
 <template>
-	<div class="openbuilt-builder-host" data-testid="openbuilt-builder-host">
+	<div class="openbuild-builder-host" data-testid="openbuild-builder-host">
 		<!-- REQ-OBVR-009: show version-not-found when useApplicationVersion resolved to 404 -->
 		<div
 			v-if="versionNotFound"
-			class="openbuilt-builder-host__version-not-found"
+			class="openbuild-builder-host__version-not-found"
 			role="alert"
 			aria-live="polite">
-			{{ t('openbuilt', 'Version not found') }}
+			{{ t('openbuild', 'Version not found') }}
 		</div>
 		<CnAppRoot
 			v-else
@@ -85,7 +85,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		appId() {
-			return `openbuilt-${this.slug}`
+			return `openbuild-${this.slug}`
 		},
 		/**
 		 * Cache key forces CnAppRoot remount when slug OR version changes.
@@ -124,7 +124,7 @@ export default {
 		manifestOptions() {
 			// Forward `?_version=` to the manifest endpoint so the server resolves
 			// the correct ApplicationVersion manifest (REQ-OBVR-001).
-			const endpoint = generateUrl(`/apps/openbuilt/api/applications/${this.slug}/manifest`)
+			const endpoint = generateUrl(`/apps/openbuild/api/applications/${this.slug}/manifest`)
 			return {
 				endpoint: this.versionSlug
 					? `${endpoint}?_version=${encodeURIComponent(this.versionSlug)}`
@@ -193,7 +193,7 @@ export default {
 </script>
 
 <style scoped>
-.openbuilt-builder-host {
+.openbuild-builder-host {
 	display: flex;
 	flex-direction: column;
 	flex: 1 1 auto;

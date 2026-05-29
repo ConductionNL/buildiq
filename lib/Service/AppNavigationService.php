@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuilt App Navigation Service
+ * OpenBuild App Navigation Service
  *
  * Registers per-app top-bar navigation entries for every published Application
  * in `Application::boot()` via INavigationManager::add().
@@ -21,7 +21,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuilt\Service
+ * @package  OCA\OpenBuild\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,15 +31,15 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-4
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-5
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-6
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-7
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-6
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-7
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Service;
+namespace OCA\OpenBuild\Service;
 
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
@@ -60,7 +60,7 @@ class AppNavigationService
     /**
      * Register slug that hosts Application objects.
      */
-    private const REGISTER_SLUG = 'openbuilt';
+    private const REGISTER_SLUG = 'openbuild';
 
     /**
      * Schema slug for Application objects.
@@ -116,7 +116,7 @@ class AppNavigationService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
      */
     public function registerNavEntries(INavigationManager $nav): void
     {
@@ -147,12 +147,12 @@ class AppNavigationService
             }
 
             $iconUrl = $this->urlGenerator->linkToRouteAbsolute(
-                'openbuilt.icon.iconLight',
+                'openbuild.icon.iconLight',
                 ['slug' => $slug]
             );
 
-            $appUrl  = '/apps/openbuilt/'.$slug;
-            $entryId = 'openbuilt-app-'.$slug;
+            $appUrl  = '/apps/openbuild/'.$slug;
+            $entryId = 'openbuild-app-'.$slug;
             $order   = 1000 + (abs(crc32($slug)) % 1000);
 
             // Capture variables for the closure — PHP closures close over
@@ -209,8 +209,8 @@ class AppNavigationService
      *
      * @return bool True when the entry should be visible.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-5
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-6
      */
     public function isVisibleForCurrentUser(
         array $permissions,
@@ -252,7 +252,7 @@ class AppNavigationService
      *
      * @return array<mixed> All principals from owners + editors + viewers.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
      */
     private function flattenPermissions(array $permissions): array
     {
@@ -283,7 +283,7 @@ class AppNavigationService
      *
      * @return bool True when a group match is found.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
      */
     private function principalsMatchGroups(array $principals, array $userGroups): bool
     {
@@ -318,8 +318,8 @@ class AppNavigationService
      *
      * @throws \Throwable When the OR query fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-4
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-7
      */
     private function getPublishedApplications(): array
     {

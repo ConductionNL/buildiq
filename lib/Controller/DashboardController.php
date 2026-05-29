@@ -1,9 +1,9 @@
 <?php
 
 /**
- * OpenBuilt Dashboard Controller
+ * OpenBuild Dashboard Controller
  *
- * Controller for the main OpenBuilt dashboard page. Also publishes
+ * Controller for the main OpenBuild dashboard page. Also publishes
  * the caller's Nextcloud group IDs to the frontend via
  * `IInitialState` (REQ-OBR-009) so the editor can derive per-Application
  * roles client-side without DOM data-attribute reads (ADR-004 hard rule
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuilt\Controller
+ * @package  OCA\OpenBuild\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,14 +23,14 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-52
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Controller;
+namespace OCA\OpenBuild\Controller;
 
-use OCA\OpenBuilt\AppInfo\Application;
+use OCA\OpenBuild\AppInfo\Application;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -41,7 +41,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 
 /**
- * Controller for the main OpenBuilt dashboard page.
+ * Controller for the main OpenBuild dashboard page.
  */
 class DashboardController extends Controller
 {
@@ -67,14 +67,14 @@ class DashboardController extends Controller
     /**
      * Render the main dashboard page.
      *
-     * Publishes `openbuilt.currentUserGroups` to IInitialState so the
+     * Publishes `openbuild.currentUserGroups` to IInitialState so the
      * frontend's `useRole(application)` composable and the
      * `ApplicationEditor` list filter can derive per-Application roles
      * without DOM data-attribute reads (REQ-OBR-009, ADR-004 hard rule).
      *
      * @return TemplateResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-52
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -89,7 +89,7 @@ class DashboardController extends Controller
      *
      * @return TemplateResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-52
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -101,13 +101,13 @@ class DashboardController extends Controller
     /**
      * Publish the caller's group IDs via IInitialState.
      *
-     * Per REQ-OBR-009 the frontend consumes `loadState('openbuilt',
+     * Per REQ-OBR-009 the frontend consumes `loadState('openbuild',
      * 'currentUserGroups')` to drive per-Application role derivation.
      * Empty array is published for an absent user session (defensive).
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-52
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
      */
     private function publishCurrentUserGroups(): void
     {

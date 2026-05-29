@@ -9,7 +9,7 @@
 				:value="item.widgetId || ''"
 				type="text"
 				class="layout-item-builder__field"
-				:placeholder="t('openbuilt', 'widget id')"
+				:placeholder="t('openbuild', 'widget id')"
 				@input="updateField(index, 'widgetId', $event.target.value)">
 			<label class="layout-item-builder__pair">
 				X
@@ -50,13 +50,13 @@
 			<button
 				type="button"
 				class="layout-item-builder__remove"
-				:title="t('openbuilt', 'Remove layout item')"
+				:title="t('openbuild', 'Remove layout item')"
 				@click="removeItem(index)">
 				✕
 			</button>
 		</div>
 		<button type="button" class="layout-item-builder__add" @click="addItem">
-			+ {{ t('openbuilt', 'Add layout item') }}
+			+ {{ t('openbuild', 'Add layout item') }}
 		</button>
 	</div>
 </template>

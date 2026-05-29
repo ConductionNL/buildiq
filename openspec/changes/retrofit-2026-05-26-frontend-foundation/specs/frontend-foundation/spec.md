@@ -6,7 +6,7 @@ retrofit: true
 
 ## Purpose
 
-OpenBuilt's shared frontend foundation: cross-view composables (insights, live
+OpenBuild's shared frontend foundation: cross-view composables (insights, live
 preview, manifest validation, register picking, RBAC role resolution), the
 object/settings Vuex stores, the slug utilities, the `PermissionsModal`, the
 settings views, and the backend per-user `PreferencesController`. These pieces

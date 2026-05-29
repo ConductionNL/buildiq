@@ -42,7 +42,7 @@ export function useLivePreview() {
 		}
 		const key = manifestHash(inflightManifest)
 		return {
-			appId: `openbuilt-preview-${slug}`,
+			appId: `openbuild-preview-${slug}`,
 			manifest: inflightManifest,
 			key,
 		}

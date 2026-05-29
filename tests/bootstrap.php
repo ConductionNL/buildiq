@@ -55,7 +55,7 @@ if (!defined('OC_CONSOLE')) {
 
         if (class_exists(\OC_App::class)) {
             \OC_App::loadApps();
-            \OC_App::loadApp('openbuilt');
+            \OC_App::loadApp('openbuild');
         }
 
         if (class_exists(\OC_Hook::class)) {

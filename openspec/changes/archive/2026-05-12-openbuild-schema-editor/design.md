@@ -1,9 +1,9 @@
 ## Context
 
-`bootstrap-openbuilt` (chain #1) ships a JSON `<textarea>` for editing
+`bootstrap-openbuild` (chain #1) ships a JSON `<textarea>` for editing
 a virtual app's manifest blob and seeds a `hello-world` Application
 over a static `hello-message` schema declared in
-`lib/Settings/openbuilt_register.json`. The "static schema file"
+`lib/Settings/openbuild_register.json`. The "static schema file"
 pattern is unworkable for citizen developers: it requires a backend
 deploy to evolve the data model, and the JSON-textarea editor offers
 no help shaping `properties`, validation, or `x-openregister-*`
@@ -33,26 +33,26 @@ UI.
   canonical authoring surface for declarative behaviour.
 - Round-trip every change through OR's runtime schema CRUD endpoints
   (chain #3) — no app-local DB writes, no PHP, no per-schema
-  controllers in OpenBuilt.
+  controllers in OpenBuild.
 - Use the workspace's canonical store pattern (`createObjectStore` —
   see memory rule "Store pattern guidance") rather than ship a bespoke
   Pinia store.
 
 **Non-Goals (deferred to chain)**
 
-- Visual page / manifest designer (chain #5 — `openbuilt-page-editor`).
+- Visual page / manifest designer (chain #5 — `openbuild-page-editor`).
   The widget editor in this spec produces the metadata the page
   editor *consumes*, but the page editor itself is out of scope.
 - Schema versioning, draft / publish, snapshot / rollback (chain #6 —
-  `openbuilt-versioning`). The version field captured on the schema
+  `openbuild-versioning`). The version field captured on the schema
   is a free-edit semver string for v1 of the editor.
-- Per-built-app RBAC on schema authoring (chain #7 — `openbuilt-rbac`).
+- Per-built-app RBAC on schema authoring (chain #7 — `openbuild-rbac`).
   Authoring rights inherit from OR's organisation scoping until #7
   lands.
 - Marketplace import of canned schemas (chain #8 —
-  `openbuilt-templates-marketplace`).
+  `openbuild-templates-marketplace`).
 - Code generation from a designed schema (chain #9 —
-  `openbuilt-export-to-real-app`). The Phase-2 export reads the same
+  `openbuild-export-to-real-app`). The Phase-2 export reads the same
   declarative JSON the designer writes; no extra surface is required
   here.
 - Undo / redo. See Decision 4.
@@ -163,7 +163,7 @@ Live **validation** runs continuously (REQ-OBSD-006). Live
 
 The first version of the designer ships with explicit Save and a
 "Discard staged edits" button on the SchemaDesigner view, but no
-in-memory undo / redo stack. Chain spec #6 (`openbuilt-versioning`)
+in-memory undo / redo stack. Chain spec #6 (`openbuild-versioning`)
 will ship the snapshot-based version history that subsumes the undo
 problem: every Save is a snapshot; "undo" becomes "revert to
 snapshot N-1". Shipping an in-memory undo stack now would create a
@@ -214,9 +214,9 @@ runtime behaviour. Any match is a review-block.
   only field editing in v1.* See Decision 7 — that is exactly what
   the phased delivery does.
 
-### Decision 6 — Designer routes live on the outer OpenBuilt router
+### Decision 6 — Designer routes live on the outer OpenBuild router
 
-The schema designer's routes register under the OpenBuilt **outer**
+The schema designer's routes register under the OpenBuild **outer**
 router, not the nested CnAppRoot's inner router. The Schemas surface
 authors the data model OF a virtual app, not content WITHIN it; it's
 a meta-tool. Mounting it inside the inner router would force every
@@ -262,7 +262,7 @@ apply phase can land v1 cleanly first.
 
 - *Ship everything in one PR.* Rejected; risk of half-implemented DSL
   in the apply window.
-- *Defer v1.1 to a separate spec (`openbuilt-schema-editor-advanced`).*
+- *Defer v1.1 to a separate spec (`openbuild-schema-editor-advanced`).*
   Could work, but the REQs are conceptually one capability; splitting
   the spec doubles the chain size for no review benefit. Phased
   tasks within one spec is the cheaper organisation.
@@ -304,9 +304,9 @@ apply phase can land v1 cleanly first.
 
 ## Migration Plan
 
-This spec is additive on top of `bootstrap-openbuilt`. No production
-data exists in the OpenBuilt namespace yet at the time of apply
-(chain spec #1 is on a PR; OpenBuilt is unreleased), so there is no
+This spec is additive on top of `bootstrap-openbuild`. No production
+data exists in the OpenBuild namespace yet at the time of apply
+(chain spec #1 is on a PR; OpenBuild is unreleased), so there is no
 migration work.
 
 Deployment steps:
@@ -318,7 +318,7 @@ Deployment steps:
 3. CI runs PHPUnit (irrelevant — no PHP shipped), ESLint, Playwright
    (designer happy-path + ADR-031 grep gate).
 4. Merge into `development`. The designer becomes reachable at
-   `/index.php/apps/openbuilt/builder/hello-world/schemas` on the
+   `/index.php/apps/openbuild/builder/hello-world/schemas` on the
    next deploy.
 5. **Rollback** — revert the merge commit. The designer disappears;
    schemas already authored via the designer stay in OR (they are
@@ -329,17 +329,17 @@ Deployment steps:
 
 - **OQ-1 — Declarative DSL package source.** Is the
   calculation / aggregation / notification DSL parser published as an
-  npm package that both OR and OpenBuilt consume, or does each side
+  npm package that both OR and OpenBuild consume, or does each side
   re-implement? *Provisional decision*: chain #3 to publish
-  `@openregister/declarative-dsl`; OpenBuilt consumes. If chain #3
+  `@openregister/declarative-dsl`; OpenBuild consumes. If chain #3
   hasn't extracted it yet, the v1.1 task on this spec covers the
   extraction and v1 ships only field + lifecycle + relation +
   widget editors as documented in Decision 7.
 - **OQ-2 — Default register namespace per virtual app.** Does each
   virtual app get its own OR register (one register per slug), or do
-  all virtual apps share the `openbuilt` register with a
+  all virtual apps share the `openbuild` register with a
   `applicationUuid` field on every object? *Provisional decision*:
-  one register per slug, named `openbuilt-{slug}`. Cleaner deletion
+  one register per slug, named `openbuild-{slug}`. Cleaner deletion
   semantics on archive, simpler RBAC story for chain #7. Verify with
   OR before apply.
 - **OQ-3 — Widget id catalogue source.** `WidgetEditor.vue` picks
@@ -356,7 +356,7 @@ Deployment steps:
   This is a v1.1 task because it requires the designer to load
   related schemas at Save time.
 - **OQ-5 — Permission model for accessing the designer.** Should the
-  Schemas menu entry require an `openbuilt.schema.edit` permission
+  Schemas menu entry require an `openbuild.schema.edit` permission
   key now, or wait for chain #7's per-built-app RBAC? *Provisional
   decision*: wait for chain #7; in v1 anyone with read access to the
   Application object can edit its schemas. Document this clearly in

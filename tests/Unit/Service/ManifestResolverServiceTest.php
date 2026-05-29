@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for ManifestResolverService (spec openbuilt-version-routing).
+ * Unit tests for ManifestResolverService (spec openbuild-version-routing).
  *
  * Covers REQ-OBVR-001 through REQ-OBVR-009:
  *  - REQ-OBVR-001 / REQ-OBVR-002: resolve() returns productionVersion manifest
@@ -23,7 +23,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Service
+ * @package  OCA\OpenBuild\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -36,10 +36,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Service;
+namespace OCA\OpenBuild\Tests\Unit\Service;
 
-use OCA\OpenBuilt\Service\ManifestResolverService;
-use OCA\OpenBuilt\Service\PermissionResolver;
+use OCA\OpenBuild\Service\ManifestResolverService;
+use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;

@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Controller
+ * @package  OCA\OpenBuild\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,11 +20,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Controller;
+namespace OCA\OpenBuild\Tests\Unit\Controller;
 
-use OCA\OpenBuilt\Controller\ApplicationsController;
-use OCA\OpenBuilt\Service\ManifestResolverService;
-use OCA\OpenBuilt\Service\PermissionResolver;
+use OCA\OpenBuild\Controller\ApplicationsController;
+use OCA\OpenBuild\Service\ManifestResolverService;
+use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Tests for ApplicationsController::getManifest, including the RBAC
- * permissions check introduced by the openbuilt-rbac change.
+ * permissions check introduced by the openbuild-rbac change.
  */
 class ApplicationsControllerTest extends TestCase
 {
@@ -255,7 +255,7 @@ class ApplicationsControllerTest extends TestCase
         self::assertSame(Http::STATUS_FORBIDDEN, $result->getStatus());
         $data = $result->getData();
         self::assertSame('forbidden', $data['error']);
-        self::assertSame('openbuilt.rbac.no_role', $data['code']);
+        self::assertSame('openbuild.rbac.no_role', $data['code']);
         // The 403 body MUST NOT leak any manifest payload (REQ-OBRBAC-002).
         self::assertArrayNotHasKey('manifest', $data);
         self::assertArrayNotHasKey('pages', $data);

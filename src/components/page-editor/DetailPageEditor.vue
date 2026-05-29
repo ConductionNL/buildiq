@@ -7,14 +7,14 @@
 <template>
 	<div class="detail-page-editor">
 		<h3 class="detail-page-editor__title">
-			{{ t('openbuilt', 'Detail page') }}
+			{{ t('openbuild', 'Detail page') }}
 		</h3>
 		<div class="detail-page-editor__group">
 			<label>
-				{{ t('openbuilt', 'Register') }}
+				{{ t('openbuild', 'Register') }}
 				<select :value="config.register || ''" :aria-invalid="isInvalid('register')" @change="update('register', $event.target.value)">
 					<option value="">
-						{{ t('openbuilt', '— select register —') }}
+						{{ t('openbuild', '— select register —') }}
 					</option>
 					<option v-for="r in registers" :key="r.slug || r.id" :value="r.slug">
 						{{ r.title || r.slug }}
@@ -23,14 +23,14 @@
 				<InlineFieldMark :error="markFor('register')" />
 			</label>
 			<label>
-				{{ t('openbuilt', 'Schema') }}
+				{{ t('openbuild', 'Schema') }}
 				<select
 					:value="config.schema || ''"
 					:disabled="!config.register"
 					:aria-invalid="isInvalid('schema')"
 					@change="update('schema', $event.target.value)">
 					<option value="">
-						{{ t('openbuilt', '— select schema —') }}
+						{{ t('openbuild', '— select schema —') }}
 					</option>
 					<option v-for="s in schemas" :key="s.slug || s.id" :value="s.slug">
 						{{ s.title || s.slug }}
@@ -41,14 +41,14 @@
 		</div>
 
 		<p v-if="!routeHasParam" class="detail-page-editor__warn" role="alert">
-			{{ t('openbuilt', 'The parent page route has no :param segment — detail pages typically need one (e.g. /messages/:id).') }}
+			{{ t('openbuild', 'The parent page route has no :param segment — detail pages typically need one (e.g. /messages/:id).') }}
 		</p>
 		<p v-else class="detail-page-editor__note">
-			{{ t('openbuilt', 'Route params detected:') }} {{ routeParams.join(', ') }}
+			{{ t('openbuild', 'Route params detected:') }} {{ routeParams.join(', ') }}
 		</p>
 
 		<fieldset class="detail-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Sidebar') }}</legend>
+			<legend>{{ t('openbuild', 'Sidebar') }}</legend>
 			<div class="detail-page-editor__sidebar-shape">
 				<label class="detail-page-editor__inline">
 					<input
@@ -56,7 +56,7 @@
 						:checked="sidebarShape === 'object'"
 						value="object"
 						@change="setSidebarShape('object')">
-					{{ t('openbuilt', 'Object form (preferred)') }}
+					{{ t('openbuild', 'Object form (preferred)') }}
 				</label>
 				<label class="detail-page-editor__inline">
 					<input
@@ -64,7 +64,7 @@
 						:checked="sidebarShape === 'boolean'"
 						value="boolean"
 						@change="setSidebarShape('boolean')">
-					{{ t('openbuilt', 'Boolean form (legacy)') }}
+					{{ t('openbuild', 'Boolean form (legacy)') }}
 				</label>
 				<label class="detail-page-editor__inline">
 					<input
@@ -72,7 +72,7 @@
 						:checked="sidebarShape === 'none'"
 						value="none"
 						@change="setSidebarShape('none')">
-					{{ t('openbuilt', 'Not set') }}
+					{{ t('openbuild', 'Not set') }}
 				</label>
 			</div>
 			<label v-if="sidebarShape === 'boolean'" class="detail-page-editor__inline">
@@ -80,7 +80,7 @@
 					type="checkbox"
 					:checked="config.sidebar === true"
 					@change="update('sidebar', $event.target.checked)">
-				{{ t('openbuilt', 'Sidebar enabled') }}
+				{{ t('openbuild', 'Sidebar enabled') }}
 			</label>
 			<div v-else-if="sidebarShape === 'object'" class="detail-page-editor__sidebar-object">
 				<label class="detail-page-editor__inline">
@@ -88,14 +88,14 @@
 						type="checkbox"
 						:checked="(config.sidebar || {}).enabled !== false"
 						@change="updateSidebarKey('enabled', $event.target.checked)">
-					{{ t('openbuilt', 'Enabled') }}
+					{{ t('openbuild', 'Enabled') }}
 				</label>
 				<label class="detail-page-editor__inline">
 					<input
 						type="checkbox"
 						:checked="(config.sidebar || {}).show !== false"
 						@change="updateSidebarKey('show', $event.target.checked)">
-					{{ t('openbuilt', 'Show') }}
+					{{ t('openbuild', 'Show') }}
 				</label>
 				<SidebarTabBuilder
 					:model-value="(config.sidebar && config.sidebar.tabs) || []"
@@ -105,7 +105,7 @@
 		</fieldset>
 
 		<fieldset class="detail-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'sidebarProps.tabs (alternate path)') }}</legend>
+			<legend>{{ t('openbuild', 'sidebarProps.tabs (alternate path)') }}</legend>
 			<SidebarTabBuilder
 				:model-value="(config.sidebarProps && config.sidebarProps.tabs) || []"
 				@update:modelValue="updateSidebarPropsTabs($event)" />
@@ -134,7 +134,7 @@ export default {
 			default: '',
 		},
 		// Current Application slug. Drives the hybrid register model so the
-		// register picker hoists `openbuilt-{slug}` to the top of the list.
+		// register picker hoists `openbuild-{slug}` to the top of the list.
 		appSlug: {
 			type: String,
 			default: '',

@@ -1,6 +1,6 @@
 # Retrofit — frontend-foundation
 
-Describes observed behaviour of OpenBuilt's shared frontend foundation and the
+Describes observed behaviour of OpenBuild's shared frontend foundation and the
 per-user preferences endpoint — the composables
 (`useApplicationInsights`, `useLivePreview`, `useManifestValidator`,
 `useRegisterPicker`, `useRole`), the Vuex/object stores

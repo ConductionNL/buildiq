@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuilt Metrics Controller
+ * OpenBuild Metrics Controller
  *
  * Exposes a minimal Prometheus-compatible metrics endpoint.  Currently
  * returns an empty metric set; future phases will add counters and gauges
@@ -11,7 +11,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuilt\Controller
+ * @package  OCA\OpenBuild\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,9 +24,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Controller;
+namespace OCA\OpenBuild\Controller;
 
-use OCA\OpenBuilt\AppInfo\Application;
+use OCA\OpenBuild\AppInfo\Application;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -36,7 +36,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 
 /**
- * Serves Prometheus-compatible metrics for the OpenBuilt app.
+ * Serves Prometheus-compatible metrics for the OpenBuild app.
  */
 class MetricsController extends Controller
 {

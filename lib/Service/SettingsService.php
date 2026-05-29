@@ -1,15 +1,15 @@
 <?php
 
 /**
- * OpenBuilt Settings Service
+ * OpenBuild Settings Service
  *
- * Service for managing OpenBuilt application configuration and settings.
+ * Service for managing OpenBuild application configuration and settings.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuilt\Service
+ * @package  OCA\OpenBuild\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,9 +22,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Service;
+namespace OCA\OpenBuild\Service;
 
-use OCA\OpenBuilt\AppInfo\Application;
+use OCA\OpenBuild\AppInfo\Application;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -33,7 +33,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Service for managing OpenBuilt application configuration and settings.
+ * Service for managing OpenBuild application configuration and settings.
  */
 class SettingsService
 {
@@ -129,7 +129,7 @@ class SettingsService
     }//end updateSettings()
 
     /**
-     * Load configuration from openbuilt_register.json via OpenRegister.
+     * Load configuration from openbuild_register.json via OpenRegister.
      *
      * Idempotent — relies on OR's ConfigurationService::importFromApp to
      * detect already-imported state and short-circuit. Call
@@ -145,7 +145,7 @@ class SettingsService
     }//end loadConfiguration()
 
     /**
-     * Force a re-import of openbuilt_register.json via OpenRegister, ignoring
+     * Force a re-import of openbuild_register.json via OpenRegister, ignoring
      * any cached or already-imported state.
      *
      * Used by the InitializeSettings repair step and the admin "Reload" action.
@@ -170,25 +170,25 @@ class SettingsService
     private function doLoadConfiguration(bool $force): array
     {
         if ($this->isOpenRegisterAvailable() === false) {
-            $this->logger->warning('OpenBuilt: OpenRegister not available, skipping register initialization');
+            $this->logger->warning('OpenBuild: OpenRegister not available, skipping register initialization');
             return [
                 'success' => false,
                 'message' => 'OpenRegister is not installed or enabled.',
             ];
         }
 
-        $configPath = __DIR__.'/../Settings/openbuilt_register.json';
+        $configPath = __DIR__.'/../Settings/openbuild_register.json';
         if (file_exists($configPath) === false) {
-            $this->logger->error('OpenBuilt: openbuilt_register.json not found at '.$configPath);
+            $this->logger->error('OpenBuild: openbuild_register.json not found at '.$configPath);
             return [
                 'success' => false,
-                'message' => 'Configuration file openbuilt_register.json not found.',
+                'message' => 'Configuration file openbuild_register.json not found.',
             ];
         }
 
         $configContent = file_get_contents($configPath);
         if ($configContent === false) {
-            $this->logger->error('OpenBuilt: failed to read openbuilt_register.json');
+            $this->logger->error('OpenBuild: failed to read openbuild_register.json');
             return [
                 'success' => false,
                 'message' => 'Failed to read configuration file.',
@@ -197,7 +197,7 @@ class SettingsService
 
         $configData = json_decode($configContent, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->logger->error('OpenBuilt: failed to parse openbuilt_register.json: '.json_last_error_msg());
+            $this->logger->error('OpenBuild: failed to parse openbuild_register.json: '.json_last_error_msg());
             return [
                 'success' => false,
                 'message' => 'Failed to parse configuration file: '.json_last_error_msg(),
@@ -216,7 +216,7 @@ class SettingsService
             );
 
             if (empty($result) === false) {
-                $this->logger->info('OpenBuilt: register configuration imported successfully');
+                $this->logger->info('OpenBuild: register configuration imported successfully');
                 return [
                     'success' => true,
                     'message' => 'Configuration imported successfully.',
@@ -230,7 +230,7 @@ class SettingsService
             ];
         } catch (\Throwable $e) {
             $this->logger->error(
-                'OpenBuilt: configuration import failed',
+                'OpenBuild: configuration import failed',
                 ['exception' => $e->getMessage()]
             );
             return [

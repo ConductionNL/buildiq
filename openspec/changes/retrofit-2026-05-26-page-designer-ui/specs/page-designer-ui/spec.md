@@ -6,7 +6,7 @@ retrofit: true
 
 ## Purpose
 
-The Page Designer is OpenBuilt's three-pane visual editor for an Application
+The Page Designer is OpenBuild's three-pane visual editor for an Application
 version's manifest. The `PageDesigner` view is a controlled component (manifest
 prop in, `update:manifest` / `save-and-preview` events out) that orchestrates a
 page list, a menu tree, a per-page-type config sub-editor, undo/redo history,
@@ -20,7 +20,7 @@ layout items, widgets, sidebar tabs/sections).
 This capability is observed behaviour of the `PageDesigner`,
 `PageDesignerHost`, `BuilderHost`, the `page-editor/*` sub-editors, and the
 `page-editor/fields/*` builders. It is the frontend half of the
-`openbuilt-page-designer` backend capability.
+`openbuild-page-designer` backend capability.
 
 ## ADDED Requirements
 

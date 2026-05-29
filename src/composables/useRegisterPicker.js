@@ -5,11 +5,11 @@
  *
  * Hybrid register model (per design.md + locked decision 3):
  *  - The page editor consumes Application records from the SHARED
- *    `openbuilt` register (one record per virtual app).
+ *    `openbuild` register (one record per virtual app).
  *  - The manifest each Application produces references schemas living
- *    in the PER-APP register `openbuilt-{slug}`. So when the user picks
+ *    in the PER-APP register `openbuild-{slug}`. So when the user picks
  *    a schema for a page binding, this composable shows the registers
- *    available to that per-app namespace — i.e. `openbuilt-{slug}` plus
+ *    available to that per-app namespace — i.e. `openbuild-{slug}` plus
  *    any other registers the user explicitly references.
  *
  * Why a composable and not raw axios in each sub-editor:
@@ -36,7 +36,7 @@ const PICKER_HEADERS = () => ({
  *
  * @param {object} [opts] - Options.
  * @param {string} [opts.appSlug] - Current Application slug. When set, the
- *   picker filters to the per-app register `openbuilt-{slug}` first.
+ *   picker filters to the per-app register `openbuild-{slug}` first.
  * @return {object} - { fetchRegisters, fetchSchemas, fetchSchemaProperties,
  *   resolveAppRegister }.
  * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
@@ -46,12 +46,12 @@ export function useRegisterPicker(opts = {}) {
 
 	/**
 	 * Resolve the per-app register slug for the current Application.
-	 * Returns `openbuilt-{slug}` when slug is set, falls back to ''.
+	 * Returns `openbuild-{slug}` when slug is set, falls back to ''.
 	 *
 	 * @return {string} - the per-app register slug or empty string.
 	 */
 	function resolveAppRegister() {
-		return appSlug ? `openbuilt-${appSlug}` : ''
+		return appSlug ? `openbuild-${appSlug}` : ''
 	}
 
 	/**

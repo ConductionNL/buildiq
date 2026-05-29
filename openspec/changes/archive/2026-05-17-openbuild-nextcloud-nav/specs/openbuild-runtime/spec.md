@@ -4,7 +4,7 @@
 
 `ApplicationCard.vue` SHALL render the Application's icon in front of the app title using an
 `<img>` element whose `src` is the URL of the icon-serving light endpoint
-(`/index.php/apps/openbuilt/icons/{slug}.svg`). The image SHALL carry a descriptive `alt`
+(`/index.php/apps/openbuild/icons/{slug}.svg`). The image SHALL carry a descriptive `alt`
 attribute (the app's name). The component SHALL omit the `Live` chip that was previously
 conditionally rendered on `app.currentVersion` (line 30 of the original file); the
 lifecycle-status pill (line 23) already communicates "Published" state to the user and the
@@ -16,13 +16,13 @@ Live chip produces duplicate signalling. The `ob-app-card__chip--live` CSS rule 
 - **WHEN** a user views the virtual apps index and a published Application has an icon
   registered at the icon endpoint
 - **THEN** each ApplicationCard renders an `<img>` element with
-  `src="/index.php/apps/openbuilt/icons/{slug}.svg"` before the app name heading
+  `src="/index.php/apps/openbuild/icons/{slug}.svg"` before the app name heading
 
 #### Scenario: Card icon falls back gracefully when endpoint returns an error
 
 - **WHEN** the icon endpoint returns a non-200 response (e.g. slug not found)
 - **THEN** the `<img>` element's `@error` handler replaces the src with a transparent 1×1
-  placeholder or the OpenBuilt default icon path, so no broken-image icon appears in the card
+  placeholder or the OpenBuild default icon path, so no broken-image icon appears in the card
 
 #### Scenario: Live chip is absent from all ApplicationCards
 

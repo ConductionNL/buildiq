@@ -3,7 +3,7 @@
 /**
  * Unit tests for ApplicationCreationController.
  *
- * Covers spec `openbuilt-app-creation-wizard` REQ-OBWIZ-001, REQ-OBWIZ-007:
+ * Covers spec `openbuild-app-creation-wizard` REQ-OBWIZ-001, REQ-OBWIZ-007:
  *   - 201 on success with applicationUuid in body
  *   - 422 on validation failure (failedAtStep=validate)
  *   - 500 on rollback-complete failure
@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Controller
+ * @package  OCA\OpenBuild\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,11 +28,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Controller;
+namespace OCA\OpenBuild\Tests\Unit\Controller;
 
-use OCA\OpenBuilt\Controller\ApplicationCreationController;
-use OCA\OpenBuilt\Exception\WizardCreationException;
-use OCA\OpenBuilt\Service\ApplicationCreationService;
+use OCA\OpenBuild\Controller\ApplicationCreationController;
+use OCA\OpenBuild\Exception\WizardCreationException;
+use OCA\OpenBuild\Service\ApplicationCreationService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\IGroupManager;
@@ -266,7 +266,7 @@ class ApplicationCreationControllerTest extends TestCase
                 failedAtStep: 'register-provision-staging',
                 message: 'Register creation failed.',
                 rollbackStatus: 'partial',
-                orphanedResources: ['openbuilt-test-app-development'],
+                orphanedResources: ['openbuild-test-app-development'],
             ));
 
         $response = $this->controller->wizard();
@@ -274,7 +274,7 @@ class ApplicationCreationControllerTest extends TestCase
         self::assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
         $data = $response->getData();
         self::assertSame('partial', $data['rollbackStatus']);
-        self::assertSame(['openbuilt-test-app-development'], $data['orphanedResources']);
+        self::assertSame(['openbuild-test-app-development'], $data['orphanedResources']);
     }//end wizardReturns500WithOrphanedResourcesOnRollbackPartial()
 
     // -------------------------------------------------------------------------

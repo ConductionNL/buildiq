@@ -8,7 +8,7 @@
 	<div class="ob-menu-widget">
 		<header class="ob-menu-widget__header">
 			<h3 class="ob-menu-widget__title">
-				{{ t('openbuilt', 'Menu') }}
+				{{ t('openbuild', 'Menu') }}
 			</h3>
 		</header>
 		<ul v-if="menu && menu.length > 0" class="ob-menu-widget__list">
@@ -24,11 +24,11 @@
 				<span class="ob-menu-widget__row-label">{{ entry.label || entry.id || '—' }}</span>
 				<span class="ob-menu-widget__row-route"><code>{{ entry.route || '—' }}</code></span>
 				<span class="ob-menu-widget__row-order">{{ entry.order != null ? entry.order : '—' }}</span>
-				<span class="ob-menu-widget__row-section">{{ entry.section || t('openbuilt', 'main') }}</span>
+				<span class="ob-menu-widget__row-section">{{ entry.section || t('openbuild', 'main') }}</span>
 			</li>
 		</ul>
 		<p v-else class="ob-menu-widget__empty">
-			{{ t('openbuilt', 'No menu entries configured.') }}
+			{{ t('openbuild', 'No menu entries configured.') }}
 		</p>
 	</div>
 </template>

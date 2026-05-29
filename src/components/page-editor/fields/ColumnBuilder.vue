@@ -13,14 +13,14 @@
 				class="column-builder__key"
 				@change="onKeyChange(index, $event.target.value)">
 				<option value="">
-					{{ t('openbuilt', '— select column —') }}
+					{{ t('openbuild', '— select column —') }}
 				</option>
-				<optgroup :label="t('openbuilt', 'Schema properties')">
+				<optgroup :label="t('openbuild', 'Schema properties')">
 					<option v-for="key in schemaPropertyKeys" :key="key" :value="key">
 						{{ key }}
 					</option>
 				</optgroup>
-				<optgroup :label="t('openbuilt', 'Metadata (@self.*)')">
+				<optgroup :label="t('openbuild', 'Metadata (@self.*)')">
 					<option v-for="key in SELF_VIRTUAL_KEYS" :key="key" :value="key">
 						{{ key }}
 					</option>
@@ -30,18 +30,18 @@
 				:value="rowLabel(col)"
 				type="text"
 				class="column-builder__label"
-				:placeholder="t('openbuilt', 'Label (i18n key)')"
+				:placeholder="t('openbuild', 'Label (i18n key)')"
 				@input="onLabelInput(index, $event.target.value)">
 			<button
 				type="button"
 				class="column-builder__remove"
-				:title="t('openbuilt', 'Remove column')"
+				:title="t('openbuild', 'Remove column')"
 				@click="removeColumn(index)">
 				✕
 			</button>
 		</div>
 		<button type="button" class="column-builder__add" @click="addColumn">
-			+ {{ t('openbuilt', 'Add column') }}
+			+ {{ t('openbuild', 'Add column') }}
 		</button>
 	</div>
 </template>

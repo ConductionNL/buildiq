@@ -1,6 +1,6 @@
 ---
 kind: code
-depends_on: ["openbuilt-nextcloud-nav", "openbuilt-versioning-model", "openbuilt-version-promotion", "openbuilt-version-routing", "openregister-distinct-actor-aggregation"]
+depends_on: ["openbuild-nextcloud-nav", "openbuild-versioning-model", "openbuild-version-promotion", "openbuild-version-routing", "openregister-distinct-actor-aggregation"]
 ---
 
 ## Why
@@ -9,8 +9,8 @@ The current Application detail page at `/applications/:objectId` is a generic
 `CnDetailPage` rendering a stock data widget over the Application record. For a
 maintainer it is effectively useless: it shows no version chain, no usage signal,
 no quick path to the schemas / pages / menu / groups that compose the app. Now that
-`openbuilt-versioning-model` (spec C) ships the version chain, `openbuilt-version-routing`
-(spec C-routing) ships the `?_version=` contract, and `openbuilt-version-promotion`
+`openbuild-versioning-model` (spec C) ships the version chain, `openbuild-version-routing`
+(spec C-routing) ships the `?_version=` contract, and `openbuild-version-promotion`
 (spec D) ships promotion, the detail page is the natural cockpit — but only if it
 renders that information. This spec replaces the generic detail with a
 purpose-built maintainer dashboard: hero strip, version pill tabs, KPI grid,
@@ -34,11 +34,11 @@ existing builder views.
 - **New backend endpoint** `GET /api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d`
   returns a single `{kpis, activity}` payload. Auth: viewer-or-better on the
   Application for production; editor-or-better on non-production (mirrors the
-  `openbuilt-version-routing` 404 gate). HTTP cache: `Cache-Control: public, max-age=60`.
+  `openbuild-version-routing` 404 gate). HTTP cache: `Cache-Control: public, max-age=60`.
 - **New frontend component** `ApplicationDetailHeader.vue` registered as the
   `headerComponent` of the `VirtualAppDetail` page entry in `src/manifest.json`.
   Reads `?_version=` via Vue Router; pill clicks update the URL via the existing
-  `buildVersionedRoute` helper from `openbuilt-version-routing`.
+  `buildVersionedRoute` helper from `openbuild-version-routing`.
 - **Five small structural widget components** under `src/components/applicationDetail/widgets/`
   (Register / Schemas / Groups / Pages / Menu) — each renders one card and emits
   navigation events that resolve to the deep-link path documented in `application-detail-overview/spec.md`.

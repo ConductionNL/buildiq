@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenBuilt Icon Controller
+ * OpenBuild Icon Controller
  *
  * Thin controller that serves per-application SVG icons backed by
  * IconService's fallback chain (ADR-001, design.md Decision 2).
  *
  * Endpoints:
- *   GET /apps/openbuilt/icons/{slug}.svg      → iconLight
- *   GET /apps/openbuilt/icons/{slug}-dark.svg → iconDark
+ *   GET /apps/openbuild/icons/{slug}.svg      → iconLight
+ *   GET /apps/openbuild/icons/{slug}-dark.svg → iconDark
  *
  * Both methods:
  *   - Require any valid NC session (#[NoAdminRequired]).
@@ -23,7 +23,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuilt\Controller
+ * @package  OCA\OpenBuild\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -33,16 +33,16 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Controller;
+namespace OCA\OpenBuild\Controller;
 
-use OCA\OpenBuilt\AppInfo\Application;
-use OCA\OpenBuilt\Service\IconService;
+use OCA\OpenBuild\AppInfo\Application;
+use OCA\OpenBuild\Service\IconService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -106,7 +106,7 @@ class IconController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -134,7 +134,7 @@ class IconController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -168,8 +168,8 @@ class IconController extends Controller
      *
      * @return Response
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
      */
     private function buildIconResponse(string $slug, bool $dark): Response
     {

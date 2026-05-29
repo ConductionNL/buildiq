@@ -6,7 +6,7 @@ retrofit: true
 
 ## Purpose
 
-The Application detail UI is OpenBuilt's maintainer cockpit. The
+The Application detail UI is OpenBuild's maintainer cockpit. The
 `ApplicationDetailHeader` (registered as the detail-route `headerComponent`)
 renders version pills, a four-card KPI grid, an activity sparkline, and the
 stacked overview widgets (register / schemas / groups / pages / menu). The
@@ -74,7 +74,7 @@ navigate to the corresponding editor.
 
 ### Requirement: Application card tile surfaces status, version and role
 
-@e2e exclude retrofit component-contract spec — card navigation is covered by the openbuilt-runtime Playwright tests (`application-list-renders-for-admin`, `hello-world-card-navigates-to-detail`); the card's role/status label contracts are Vitest-tested
+@e2e exclude retrofit component-contract spec — card navigation is covered by the openbuild-runtime Playwright tests (`application-list-renders-for-admin`, `hello-world-card-navigates-to-detail`); the card's role/status label contracts are Vitest-tested
 
 `ApplicationCard` SHALL bind the application (`app`, `appUuid`), expose the
 production version and semver (`productionVersion`, `productionSemver`), expose
@@ -89,7 +89,7 @@ detail route on activation (`onCardActivate`).
 
 ### Requirement: Action bar and tabs drive publish, permissions, manifest, versions, icon
 
-@e2e exclude retrofit component-contract spec — `canPublish`, `publish`, `parseAndValidate`, `onRollback`, `onIconUpdated`, `onWizardCreated` are composable-level contracts verified by Vitest; publish + manifest-save integration is covered by the openbuilt-runtime Playwright tests
+@e2e exclude retrofit component-contract spec — `canPublish`, `publish`, `parseAndValidate`, `onRollback`, `onIconUpdated`, `onWizardCreated` are composable-level contracts verified by Vitest; publish + manifest-save integration is covered by the openbuild-runtime Playwright tests
 
 `ApplicationDetailActions` SHALL gate and trigger publish
 (`canPublish`, `publish`, `builderUrl`), resolve the available groups
@@ -112,7 +112,7 @@ to wizard completion (`onWizardCreated`).
 
 ### Requirement: Manifest diff viewer and app shell
 
-@e2e exclude retrofit component-contract spec — `diffParts`, `sortReplacer`, `prettyManifest`, `appIcon`, `isAdmin`, `permissions`, `translateForApp` are composable/computed contracts verified by Vitest; diff rendering and app-shell init are covered by the openbuilt-runtime Playwright tests
+@e2e exclude retrofit component-contract spec — `diffParts`, `sortReplacer`, `prettyManifest`, `appIcon`, `isAdmin`, `permissions`, `translateForApp` are composable/computed contracts verified by Vitest; diff rendering and app-shell init are covered by the openbuild-runtime Playwright tests
 
 `ManifestDiff` SHALL fetch both manifests (`fetch`, `from`, `to`, `slug`),
 compute a deterministic diff (`diffParts`, `partClass`, `sortReplacer`,

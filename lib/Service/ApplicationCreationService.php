@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenBuilt ApplicationCreationService
+ * OpenBuild ApplicationCreationService
  *
  * Owns the atomic creation flow for the `POST /api/applications/wizard`
- * endpoint (spec `openbuilt-app-creation-wizard`, REQ-OBWIZ-007 through
+ * endpoint (spec `openbuild-app-creation-wizard`, REQ-OBWIZ-007 through
  * REQ-OBWIZ-010).
  *
  * Flow per Decision 7 of the design:
@@ -27,7 +27,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuilt\Service
+ * @package  OCA\OpenBuild\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -37,20 +37,20 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-9
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-10
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-11
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-12
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-13
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-14
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-15
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Service;
+namespace OCA\OpenBuild\Service;
 
-use OCA\OpenBuilt\Exception\WizardCreationException;
+use OCA\OpenBuild\Exception\WizardCreationException;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -130,10 +130,10 @@ class ApplicationCreationService
      * @throws WizardCreationException On validation failure (failedAtStep=validate)
      *                                 or on any mid-flight creation failure (with rollback)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-12
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-13
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-14
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-15
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
      */
     public function createApplication(array $payload): string
     {
@@ -150,7 +150,7 @@ class ApplicationCreationService
             try {
                 $this->objectService->lockObject(
                     identifier: $lockKey,
-                    process: 'openbuilt.createApplication',
+                    process: 'openbuild.createApplication',
                     duration: 10
                 );
                 $locked = true;
@@ -229,7 +229,7 @@ class ApplicationCreationService
                 }
 
                 $this->logger->error(
-                'OpenBuilt: wizard create-application failed for slug '.$appSlug.': '.$errorMsg,
+                'OpenBuild: wizard create-application failed for slug '.$appSlug.': '.$errorMsg,
                 ['exception' => $e]
                 );
                 throw new WizardCreationException(
@@ -265,7 +265,7 @@ class ApplicationCreationService
             foreach ($versions as $versionDef) {
                 $versionSlug  = (string) ($versionDef['slug'] ?? '');
                 $versionName  = (string) ($versionDef['name'] ?? '');
-                $registerSlug = 'openbuilt-'.$appSlug.'-'.$versionSlug;
+                $registerSlug = 'openbuild-'.$appSlug.'-'.$versionSlug;
 
                 // 3a: Create ApplicationVersion
                 $versionManifest = $this->substituteVersionContext(
@@ -300,7 +300,7 @@ class ApplicationCreationService
                     $state['versionPayloads'][$versionSlug] = $versionPayload;
                 } catch (Throwable $e) {
                     $this->logger->error(
-                    'OpenBuilt: wizard create-version failed for '.$versionSlug.': '.$e->getMessage(),
+                    'OpenBuild: wizard create-version failed for '.$versionSlug.': '.$e->getMessage(),
                     ['exception' => $e]
                     );
                     $orphaned = [];
@@ -330,7 +330,7 @@ class ApplicationCreationService
                     );
                 } catch (Throwable $e) {
                     $this->logger->error(
-                    'OpenBuilt: wizard register-provision failed for '.$registerSlug.': '.$e->getMessage(),
+                    'OpenBuild: wizard register-provision failed for '.$registerSlug.': '.$e->getMessage(),
                     ['exception' => $e]
                     );
                     $orphaned = [];
@@ -383,7 +383,7 @@ class ApplicationCreationService
                     );
                 } catch (Throwable $e) {
                     $this->logger->error(
-                    'OpenBuilt: wizard chain-wiring failed for '.$currentSlug.' → '.$nextSlug.': '.$e->getMessage(),
+                    'OpenBuild: wizard chain-wiring failed for '.$currentSlug.' → '.$nextSlug.': '.$e->getMessage(),
                     ['exception' => $e]
                     );
                     $orphaned = [];
@@ -432,7 +432,7 @@ class ApplicationCreationService
                 );
             } catch (Throwable $e) {
                 $this->logger->error(
-                'OpenBuilt: wizard set-productionVersion failed: '.$e->getMessage(),
+                'OpenBuild: wizard set-productionVersion failed: '.$e->getMessage(),
                 ['exception' => $e]
                 );
                 $orphaned = [];
@@ -454,7 +454,7 @@ class ApplicationCreationService
 
             $versionCount = count($versions);
             $this->logger->info(
-            'OpenBuilt: wizard successfully created Application '.$appSlug
+            'OpenBuild: wizard successfully created Application '.$appSlug
             .' (uuid: '.$state['applicationUuid'].') with '.$versionCount.' version(s).'
             );
 
@@ -466,7 +466,7 @@ class ApplicationCreationService
                     $this->objectService->unlockObject(identifier: $lockKey);
                 } catch (Throwable $unlockError) {
                     $this->logger->warning(
-                        'OpenBuilt: failed to release slug lock '.$lockKey,
+                        'OpenBuild: failed to release slug lock '.$lockKey,
                         ['exception' => $unlockError->getMessage()]
                     );
                 }
@@ -484,8 +484,8 @@ class ApplicationCreationService
      *
      * @throws WizardCreationException With failedAtStep=validate on any failure
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-10
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-11
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
      */
     private function validatePayload(array $payload): void
     {
@@ -585,8 +585,8 @@ class ApplicationCreationService
      *
      * @return array<int,array<string,string>> Version definitions [{name, slug}, ...]
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-9
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-11
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
      */
     public function resolveVersionChain(array $payload): array
     {
@@ -624,7 +624,7 @@ class ApplicationCreationService
      *
      * @return bool True when a conflicting row exists
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
      */
     private function appSlugExists(string $slug): bool
     {
@@ -680,7 +680,7 @@ class ApplicationCreationService
      *
      * @throws Throwable When register creation or schema seeding fails
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
      */
     private function provisionRegister(
         string $registerSlug,
@@ -691,8 +691,8 @@ class ApplicationCreationService
         $register = $this->registerMapper->createFromArray(
             [
                 'slug'        => $registerSlug,
-                'title'       => 'OpenBuilt — '.$appSlug.' ('.$versionSlug.')',
-                'description' => 'Per-version schema namespace for OpenBuilt app `'.$appSlug.'` version `'.$versionSlug.'`.',
+                'title'       => 'OpenBuild — '.$appSlug.' ('.$versionSlug.')',
+                'description' => 'Per-version schema namespace for OpenBuild app `'.$appSlug.'` version `'.$versionSlug.'`.',
                 'version'     => '0.1.0',
                 'schemas'     => [],
             ]
@@ -701,7 +701,7 @@ class ApplicationCreationService
         // Seed the default schema set into the freshly-provisioned register.
         // Schema slugs are unique per organisation, so namespace each seed slug
         // with the app+version prefix to avoid colliding with the same seed
-        // already installed in another register (e.g. the global `openbuilt`
+        // already installed in another register (e.g. the global `openbuild`
         // register or another wizard-provisioned app's register).
         $slugPrefix = $appSlug.'-'.$versionSlug.'-';
         $createdIds = [];
@@ -736,7 +736,7 @@ class ApplicationCreationService
      *
      * @return bool True on success, false on failure
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-12
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
      */
     private function deleteRegister(string $registerSlug): bool
     {
@@ -746,7 +746,7 @@ class ApplicationCreationService
             return true;
         } catch (Throwable $e) {
             $this->logger->error(
-                'OpenBuilt: wizard rollback failed to delete register '.$registerSlug.': '.$e->getMessage(),
+                'OpenBuild: wizard rollback failed to delete register '.$registerSlug.': '.$e->getMessage(),
                 ['exception' => $e]
             );
             return false;
@@ -768,7 +768,7 @@ class ApplicationCreationService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-12
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
      */
     private function rollback(array $state, array &$orphaned): void
     {
@@ -792,7 +792,7 @@ class ApplicationCreationService
                 $this->objectService->deleteObject(uuid: $uuid);
             } catch (Throwable $e) {
                 $this->logger->error(
-                    'OpenBuilt: wizard rollback failed to delete ApplicationVersion '.$uuid.': '.$e->getMessage(),
+                    'OpenBuild: wizard rollback failed to delete ApplicationVersion '.$uuid.': '.$e->getMessage(),
                     ['exception' => $e]
                 );
                 $orphaned[] = 'version:'.$uuid;
@@ -806,7 +806,7 @@ class ApplicationCreationService
                 $this->objectService->deleteObject(uuid: $applicationUuid);
             } catch (Throwable $e) {
                 $this->logger->error(
-                    'OpenBuilt: wizard rollback failed to delete Application '.$applicationUuid.': '.$e->getMessage(),
+                    'OpenBuild: wizard rollback failed to delete Application '.$applicationUuid.': '.$e->getMessage(),
                     ['exception' => $e]
                 );
                 $orphaned[] = 'application:'.$applicationUuid;
@@ -821,7 +821,7 @@ class ApplicationCreationService
      *
      * @throws WizardCreationException When the fixture cannot be read or decoded
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-14
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
      */
     private function loadDefaultManifest(): array
     {
@@ -865,7 +865,7 @@ class ApplicationCreationService
      *
      * @throws WizardCreationException When the fixture cannot be read or decoded
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
      */
     private function loadDefaultSchemas(): array
     {
@@ -913,7 +913,7 @@ class ApplicationCreationService
      *
      * @return array<string,mixed> The manifest with the token substituted
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
      */
     public function substituteRegisterSlug(array $manifest, string $registerSlug): array
     {
@@ -931,7 +931,7 @@ class ApplicationCreationService
      * token in `register` and rewrites every non-empty `config.schema`
      * to the namespaced seed slug `{schemaSlugPrefix}{originalSchemaSlug}`
      * so the manifest references the actual per-version schemas created
-     * by {@see provisionRegister()} (openbuilt#75 — without this the
+     * by {@see provisionRegister()} (openbuild#75 — without this the
      * KPI / insights cards aggregated against a non-existent schema and
      * leaked the same numbers across all tiers).
      *
@@ -941,7 +941,7 @@ class ApplicationCreationService
      *
      * @return array<string,mixed> The manifest with tokens substituted
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-14
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
      */
     public function substituteVersionContext(
         array $manifest,

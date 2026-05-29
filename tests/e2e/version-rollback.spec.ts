@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * Playwright end-to-end test for the openbuilt-versioning publish + rollback
+ * Playwright end-to-end test for the openbuild-versioning publish + rollback
  * cycle. Walks an admin user through:
  *
  *   1. login → open the hello-world Application editor
@@ -15,10 +15,10 @@
  *
  * Pre-conditions assumed by this spec:
  *   - Nextcloud reachable at NC_BASE_URL (default http://localhost:8080) with
- *     openbuilt enabled.
+ *     openbuild enabled.
  *   - SeedHelloWorld repair step has produced the hello-world Application
  *     AND its initial v1.0.0 ApplicationVersion (per tests/integration/
- *     openbuilt-versioning.postman_collection.json Setup step).
+ *     openbuild-versioning.postman_collection.json Setup step).
  *   - admin/admin credentials (dev compose memory rule).
  *
  * Running:
@@ -55,7 +55,7 @@ async function loginAs(page: Page, user: string, pass: string): Promise<void> {
 	}
 }
 
-test.describe('openbuilt-versioning — publish + rollback (REQ-OBV-005 / REQ-OBR-009)', () => {
+test.describe('openbuild-versioning — publish + rollback (REQ-OBV-005 / REQ-OBR-009)', () => {
 	test.use({ storageState: { cookies: [], origins: [] } })
 
 	test.beforeEach(async ({ page }) => {
@@ -63,8 +63,8 @@ test.describe('openbuilt-versioning — publish + rollback (REQ-OBV-005 / REQ-OB
 	})
 
 	test('publish a manifest edit then roll back to v1.0.0 — history grows append-only', async ({ page }) => {
-		// Step 1 — open the openbuilt shell + navigate to the hello-world editor.
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuilt/applications`)
+		// Step 1 — open the openbuild shell + navigate to the hello-world editor.
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications`)
 		// The list-page renders an entry per Application. Click the seeded
 		// row's edit affordance — accept either a [data-slug] anchor or the
 		// rendered slug text.

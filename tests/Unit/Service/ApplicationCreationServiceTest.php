@@ -3,7 +3,7 @@
 /**
  * Unit tests for ApplicationCreationService.
  *
- * Covers spec `openbuilt-app-creation-wizard` REQ-OBWIZ-007 through
+ * Covers spec `openbuild-app-creation-wizard` REQ-OBWIZ-007 through
  * REQ-OBWIZ-010:
  *   - Success paths for each of the four presets
  *   - Validation failure returns WizardCreationException with failedAtStep=validate
@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Service
+ * @package  OCA\OpenBuild\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -30,11 +30,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Service;
+namespace OCA\OpenBuild\Tests\Unit\Service;
 
-use OCA\OpenBuilt\Exception\WizardCreationException;
-use OCA\OpenBuilt\Service\ApplicationCreationService;
-use OCA\OpenBuilt\Service\SlugValidator;
+use OCA\OpenBuild\Exception\WizardCreationException;
+use OCA\OpenBuild\Service\ApplicationCreationService;
+use OCA\OpenBuild\Service\SlugValidator;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -147,9 +147,9 @@ class ApplicationCreationServiceTest extends TestCase
             ],
         ];
 
-        $result = $this->service->substituteRegisterSlug(manifest: $manifest, registerSlug: 'openbuilt-my-app-production');
+        $result = $this->service->substituteRegisterSlug(manifest: $manifest, registerSlug: 'openbuild-my-app-production');
 
-        self::assertSame('openbuilt-my-app-production', $result['pages'][1]['config']['register']);
+        self::assertSame('openbuild-my-app-production', $result['pages'][1]['config']['register']);
     }//end substituteRegisterSlugReplacesTokenInPagesConfig()
 
     /**
@@ -165,7 +165,7 @@ class ApplicationCreationServiceTest extends TestCase
             ],
         ];
 
-        $result = $this->service->substituteRegisterSlug(manifest: $manifest, registerSlug: 'openbuilt-my-app-production');
+        $result = $this->service->substituteRegisterSlug(manifest: $manifest, registerSlug: 'openbuild-my-app-production');
 
         // Field without the placeholder token must remain unchanged.
         self::assertSame('some-other-register', $result['pages'][0]['config']['register']);
@@ -174,7 +174,7 @@ class ApplicationCreationServiceTest extends TestCase
     /**
      * substituteVersionContext rewrites both register AND schema.
      *
-     * openbuilt#75 — without this the KPI / insights cards aggregate
+     * openbuild#75 — without this the KPI / insights cards aggregate
      * against `hello-message` (the un-namespaced template slug), which
      * doesn't exist in the per-version register, so counts leak the
      * same numbers across all tiers.
@@ -194,11 +194,11 @@ class ApplicationCreationServiceTest extends TestCase
 
         $result = $this->service->substituteVersionContext(
             manifest: $manifest,
-            registerSlug: 'openbuilt-permit-flow-development',
+            registerSlug: 'openbuild-permit-flow-development',
             schemaSlugPrefix: 'permit-flow-development-'
         );
 
-        self::assertSame('openbuilt-permit-flow-development', $result['pages'][1]['config']['register']);
+        self::assertSame('openbuild-permit-flow-development', $result['pages'][1]['config']['register']);
         self::assertSame('permit-flow-development-hello-message', $result['pages'][1]['config']['schema']);
     }//end substituteVersionContextNamespacesSchemaSlugAlongsideRegister()
 
@@ -217,7 +217,7 @@ class ApplicationCreationServiceTest extends TestCase
                 [
                     'id'     => 'Messages',
                     'config' => [
-                        'register' => 'openbuilt-permit-flow-development',
+                        'register' => 'openbuild-permit-flow-development',
                         'schema'   => 'permit-flow-development-hello-message',
                     ],
                 ],
@@ -226,7 +226,7 @@ class ApplicationCreationServiceTest extends TestCase
 
         $result = $this->service->substituteVersionContext(
             manifest: $manifest,
-            registerSlug: 'openbuilt-permit-flow-development',
+            registerSlug: 'openbuild-permit-flow-development',
             schemaSlugPrefix: 'permit-flow-development-'
         );
 
@@ -252,7 +252,7 @@ class ApplicationCreationServiceTest extends TestCase
 
         $result = $this->service->substituteVersionContext(
             manifest: $manifest,
-            registerSlug: 'openbuilt-my-app-production',
+            registerSlug: 'openbuild-my-app-production',
             schemaSlugPrefix: ''
         );
 

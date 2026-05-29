@@ -1,18 +1,18 @@
 <?php
 
 /**
- * OpenBuilt Applications Controller
+ * OpenBuild Applications Controller
  *
  * Serves the per-virtual-app manifest endpoint, the RBAC-filtered list
  * endpoint used by the editor (REQ-OBRBAC-002 / REQ-OBR-007), the
- * manifest-diff endpoint (openbuilt-versioning REQ-OBV-005) and the
- * clone-from-template action (openbuilt-templates-marketplace
+ * manifest-diff endpoint (openbuild-versioning REQ-OBV-005) and the
+ * clone-from-template action (openbuild-templates-marketplace
  * REQ-OBTC-004 / REQ-OBTC-005). Per design.md Decision 6 this is the
  * single app-local HTTP surface; `listMine` exists because OR's
  * schema-level read rule is a coarse group-ACL (not a row-level filter on
  * the Application's `permissions` block) so the list MUST be filtered
  * server-side here, and `createFromTemplate` is the thin-glue clone action
- * (ADR-032) that provisions a per-app `openbuilt-{slug}` register and
+ * (ADR-032) that provisions a per-app `openbuild-{slug}` register and
  * deep-copies the template's companion schemas into it (hybrid register
  * model).
  *
@@ -20,7 +20,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuilt\Controller
+ * @package  OCA\OpenBuild\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -30,30 +30,30 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-45
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-46
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-47
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-48
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-49
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-50
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-51
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-55
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-56
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-58
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-69
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-70
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-45
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-46
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-48
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-49
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-51
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-69
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Controller;
+namespace OCA\OpenBuild\Controller;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenBuilt\AppInfo\Application;
-use OCA\OpenBuilt\Service\ApplicationVersionService;
-use OCA\OpenBuilt\Service\ManifestResolverService;
-use OCA\OpenBuilt\Service\PermissionResolver;
+use OCA\OpenBuild\AppInfo\Application;
+use OCA\OpenBuild\Service\ApplicationVersionService;
+use OCA\OpenBuild\Service\ManifestResolverService;
+use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -72,13 +72,13 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Controller for the OpenBuilt manifest, list, diff and clone-from-template endpoints.
+ * Controller for the OpenBuild manifest, list, diff and clone-from-template endpoints.
  */
 class ApplicationsController extends Controller
 {
     /**
      * Nextcloud admin group identifier used as the bypass anchor and the
-     * fallback owner per design.md Decision 5 of openbuilt-rbac.
+     * fallback owner per design.md Decision 5 of openbuild-rbac.
      */
     private const ADMIN_GROUP = 'admin';
 
@@ -126,11 +126,11 @@ class ApplicationsController extends Controller
      * manifest. The manifest is returned UNWRAPPED (no OR envelope) so
      * useAppManifest in @conduction/nextcloud-vue consumes it directly.
      *
-     * Version routing (spec `openbuilt-version-routing` REQ-OBVR-001):
+     * Version routing (spec `openbuild-version-routing` REQ-OBVR-001):
      * ---------------------------------------------------------------
      * An optional `?_version=<versionSlug>` query parameter selects a specific
      * ApplicationVersion. The underscore-prefix form (`_version`, not `version`)
-     * is OpenBuilt's system-reserved namespace marker — it prevents collision
+     * is OpenBuild's system-reserved namespace marker — it prevents collision
      * with user-defined `?version=` params that citizen developers may add to
      * their virtual apps' routes.
      *
@@ -154,8 +154,8 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse The manifest blob, or a 404 envelope when not found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-50
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-51
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-51
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -209,7 +209,7 @@ class ApplicationsController extends Controller
             $manifest = ($applicationArray['manifest'] ?? null);
 
             if ($manifest === null) {
-                $this->logger->warning('OpenBuilt: Application '.$applicationUuid.' has no manifest property');
+                $this->logger->warning('OpenBuild: Application '.$applicationUuid.' has no manifest property');
                 return new JSONResponse(
                     data: ['error' => 'no_manifest', 'message' => 'Application has no manifest'],
                     statusCode: Http::STATUS_NOT_FOUND
@@ -232,7 +232,7 @@ class ApplicationsController extends Controller
             // without needing the request timestamp. Per MWest review on PR #2.
             $correlationId = bin2hex(random_bytes(8));
             $this->logger->error(
-                'OpenBuilt: getManifest failed for slug '.$slug.': '.$e->getMessage(),
+                'OpenBuild: getManifest failed for slug '.$slug.': '.$e->getMessage(),
                 ['exception' => $e, 'correlationId' => $correlationId, 'slug' => $slug]
             );
             return new JSONResponse(
@@ -258,8 +258,8 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse 200 with manifest, or 404 when not found / not authorised.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-69
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-70
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-69
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
      */
     private function resolveVersionedManifestResponse(string $slug, string $versionSlug): JSONResponse
     {
@@ -303,7 +303,7 @@ class ApplicationsController extends Controller
      * and the resolveVersionBlob() check on `applicationUuid` rejects snapshots
      * that do not belong to this Application. Mirrors getManifest()'s pattern.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-58
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -314,7 +314,7 @@ class ApplicationsController extends Controller
         }
 
         try {
-            $registerId  = $this->registerMapper->find('openbuilt', _multitenancy: false)->getId();
+            $registerId  = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
             $routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
 
             $routeResults = $this->objectService->searchObjects(
@@ -346,7 +346,7 @@ class ApplicationsController extends Controller
 
             $application = $this->objectService->find(
                 id: $applicationUuid,
-                register: 'openbuilt',
+                register: 'openbuild',
                 schema: 'application'
             );
 
@@ -398,7 +398,7 @@ class ApplicationsController extends Controller
                 statusCode: Http::STATUS_OK
             );
         } catch (\Throwable $e) {
-            $this->logger->error('OpenBuilt: diffVersions failed for slug '.$slug.': '.$e->getMessage(), ['exception' => $e]);
+            $this->logger->error('OpenBuild: diffVersions failed for slug '.$slug.': '.$e->getMessage(), ['exception' => $e]);
             return new JSONResponse(
                 data: ['error' => 'internal_error', 'message' => 'Failed to resolve diff'],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
@@ -420,7 +420,7 @@ class ApplicationsController extends Controller
      *
      * @return array<string, mixed>|null Blob or null if the version is missing.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-58
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
      */
     private function resolveVersionBlob(string $token, array $application, string $applicationUuid): ?array
     {
@@ -434,7 +434,7 @@ class ApplicationsController extends Controller
 
         $version = $this->objectService->find(
             id: $token,
-            register: 'openbuilt',
+            register: 'openbuild',
             schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
         );
 
@@ -468,7 +468,7 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse|array{0: ObjectEntity|array<string, mixed>, 1: array<string, mixed>, 2: string}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-50
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
      */
     private function resolveApplicationBySlug(string $slug): JSONResponse|array
     {
@@ -477,7 +477,7 @@ class ApplicationsController extends Controller
         // applied at this layer (verified during smoke-test 2026-05-11).
         // _multitenancy=false bypasses the org filter on the LOOKUP only —
         // object-level multitenancy is still enforced via searchObjects below.
-        $registerId  = $this->registerMapper->find('openbuilt', _multitenancy: false)->getId();
+        $registerId  = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
         $routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
 
         // Step 1 — resolve slug → applicationUuid via the BuiltAppRoute index.
@@ -492,7 +492,7 @@ class ApplicationsController extends Controller
         );
 
         if (empty($routeResults) === true) {
-            $this->logger->debug('OpenBuilt: no BuiltAppRoute found for slug='.$slug);
+            $this->logger->debug('OpenBuild: no BuiltAppRoute found for slug='.$slug);
             return new JSONResponse(
                 data: ['error' => 'not_found', 'message' => 'No published virtual app found for slug '.$slug],
                 statusCode: Http::STATUS_NOT_FOUND
@@ -504,7 +504,7 @@ class ApplicationsController extends Controller
         $applicationUuid = ($route['applicationUuid'] ?? null);
 
         if ($applicationUuid === null) {
-            $this->logger->warning('OpenBuilt: BuiltAppRoute for slug '.$slug.' is missing applicationUuid');
+            $this->logger->warning('OpenBuild: BuiltAppRoute for slug '.$slug.' is missing applicationUuid');
             return new JSONResponse(
                 data: ['error' => 'inconsistent_state', 'message' => 'Route exists but has no applicationUuid'],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
@@ -514,12 +514,12 @@ class ApplicationsController extends Controller
         // Step 2 — load the Application object.
         $application = $this->objectService->find(
             id: $applicationUuid,
-            register: 'openbuilt',
+            register: 'openbuild',
             schema: 'application'
         );
 
         if ($application === null) {
-            $this->logger->warning('OpenBuilt: Application '.$applicationUuid.' (for slug '.$slug.') not found');
+            $this->logger->warning('OpenBuild: Application '.$applicationUuid.' (for slug '.$slug.') not found');
             return new JSONResponse(
                 data: ['error' => 'inconsistent_state', 'message' => 'Route points to an Application that does not exist'],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
@@ -549,9 +549,9 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse The filtered Application list
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-46
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-47
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-48
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-46
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-48
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -561,15 +561,15 @@ class ApplicationsController extends Controller
             $user = $this->userSession->getUser();
             if ($user === null) {
                 return new JSONResponse(
-                    data: ['error' => 'forbidden', 'code' => 'openbuilt.rbac.no_role'],
+                    data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
                     statusCode: Http::STATUS_FORBIDDEN
                 );
             }
 
-            $registerId = $this->registerMapper->find('openbuilt', _multitenancy: false)->getId();
+            $registerId = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
             $appSchema  = $this->schemaMapper->find('application', _multitenancy: false)->getId();
 
-            // Fetch all Applications scoped to the openbuilt register +
+            // Fetch all Applications scoped to the openbuild register +
             // application schema. OR's multitenancy + RBAC still applies;
             // the per-Application filter below is the load-bearing
             // authorization boundary.
@@ -597,7 +597,7 @@ class ApplicationsController extends Controller
 
             if ($adminBypassUsed === true) {
                 $this->logger->info(
-                    'OpenBuilt: rbac.admin_bypass exercised on Application list',
+                    'OpenBuild: rbac.admin_bypass exercised on Application list',
                     [
                         'actor'     => $user->getUID(),
                         'event'     => self::EVENT_ADMIN_BYPASS.'.list',
@@ -610,7 +610,7 @@ class ApplicationsController extends Controller
             return new JSONResponse(data: $filtered, statusCode: Http::STATUS_OK);
         } catch (Throwable $e) {
             $this->logger->error(
-                'OpenBuilt: listMine failed: '.$e->getMessage(),
+                'OpenBuild: listMine failed: '.$e->getMessage(),
                 ['exception' => $e]
             );
             return new JSONResponse(
@@ -631,7 +631,7 @@ class ApplicationsController extends Controller
      *
      * @return array{0: array<array<string,mixed>>, 1: bool} [filtered list, adminBypassUsed].
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-48
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-48
      */
     private function filterApplicationsByRole(
         array $results,
@@ -697,7 +697,7 @@ class ApplicationsController extends Controller
      * Computes the caller's group set and intersects with the Application's
      * `permissions.owners ∪ permissions.editors ∪ permissions.viewers`.
      * Returns null when the caller has any role, or a `JSONResponse` 403
-     * with the fixed `openbuilt.rbac.no_role` error envelope otherwise.
+     * with the fixed `openbuild.rbac.no_role` error envelope otherwise.
      *
      * Admin bypass per design.md Decision 5: a caller in the Nextcloud
      * `admin` group always passes; the bypass is recorded as a
@@ -712,8 +712,8 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse|null Null on allow, 403 JSONResponse on deny
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-45
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-47
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-45
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
      */
     private function requirePermission(
         ?ObjectEntity $application,
@@ -726,7 +726,7 @@ class ApplicationsController extends Controller
             // route — Nextcloud's framework rejects them earlier. Treat as
             // forbidden defensively (ADR-005 deny-by-default).
             return new JSONResponse(
-                data: ['error' => 'forbidden', 'code' => 'openbuilt.rbac.no_role'],
+                data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
                 statusCode: Http::STATUS_FORBIDDEN
             );
         }
@@ -753,7 +753,7 @@ class ApplicationsController extends Controller
         }
 
         return new JSONResponse(
-            data: ['error' => 'forbidden', 'code' => 'openbuilt.rbac.no_role'],
+            data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
             statusCode: Http::STATUS_FORBIDDEN
         );
     }//end requirePermission()
@@ -774,7 +774,7 @@ class ApplicationsController extends Controller
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-49
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-49
      */
     private function recordAdminBypass(?ObjectEntity $application, string $slug, string $actor): void
     {
@@ -798,7 +798,7 @@ class ApplicationsController extends Controller
                 // audit trail is the system of record, the PSR log is the
                 // operational tap.
                 $this->logger->info(
-                    'OpenBuilt: rbac.admin_bypass exercised',
+                    'OpenBuild: rbac.admin_bypass exercised',
                     $context
                 );
                 return;
@@ -808,7 +808,7 @@ class ApplicationsController extends Controller
                 // Per REQ-OBRBAC-007 the OR audit trail is the system of record
                 // for admin-bypass events; silent fallback defeats forensic review.
                 $this->logger->critical(
-                    'OpenBuilt: failed to record admin bypass in OR audit trail — COMPLIANCE GAP; bypass event lost from system of record',
+                    'OpenBuild: failed to record admin bypass in OR audit trail — COMPLIANCE GAP; bypass event lost from system of record',
                     array_merge($context, ['exception' => $e->getMessage()])
                 );
             }//end try
@@ -818,7 +818,7 @@ class ApplicationsController extends Controller
         // entity (defensive). Emit to PSR logger at info level so the
         // event still surfaces somewhere reviewable.
         $this->logger->info(
-            'OpenBuilt: rbac.admin_bypass exercised',
+            'OpenBuild: rbac.admin_bypass exercised',
             $context
         );
     }//end recordAdminBypass()
@@ -827,18 +827,18 @@ class ApplicationsController extends Controller
      * Clone an Application from a template.
      *
      * Reads the ApplicationTemplate identified by $templateSlug, creates a
-     * per-app `openbuilt-{newSlug}` register, deep-copies its companion JSON
+     * per-app `openbuild-{newSlug}` register, deep-copies its companion JSON
      * schemas into that per-app register (REQ-OBTC-005 / hybrid register
      * model), rewrites manifest schema refs to the new slug, and creates a
-     * new Application record in the shared `openbuilt` register, tagged
+     * new Application record in the shared `openbuild` register, tagged
      * with the caller's UID (multi-user isolation).
      *
      * @param string $templateSlug The source template slug
      *
      * @return JSONResponse The new application's uuid + slug, or an error envelope
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-55
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-56
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     #[NoAdminRequired]
     public function createFromTemplate(string $templateSlug): JSONResponse
@@ -863,7 +863,7 @@ class ApplicationsController extends Controller
         if ($ctx === null) {
             return $this->errorResponse(
                 code: 'not_configured',
-                detail: 'OpenBuilt register/schemas not initialised',
+                detail: 'OpenBuild register/schemas not initialised',
                 status: Http::STATUS_SERVICE_UNAVAILABLE
             );
         }
@@ -968,13 +968,13 @@ class ApplicationsController extends Controller
     {
         try {
             return [
-                'register'          => $this->registerMapper->find('openbuilt', _multitenancy: false)->getId(),
+                'register'          => $this->registerMapper->find('openbuild', _multitenancy: false)->getId(),
                 'templateSchema'    => $this->schemaMapper->find('application-template', _multitenancy: false)->getId(),
                 'applicationSchema' => $this->schemaMapper->find('application', _multitenancy: false)->getId(),
             ];
         } catch (Throwable $e) {
             $this->logger->error(
-                'OpenBuilt: register/schema resolution failed',
+                'OpenBuild: register/schema resolution failed',
                 ['exception' => $e->getMessage()]
             );
             return null;
@@ -989,7 +989,7 @@ class ApplicationsController extends Controller
      *
      * @return array<string,mixed>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-56
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     private function buildClonedManifest(array $template, array $rewriteMap): array
     {
@@ -1017,7 +1017,7 @@ class ApplicationsController extends Controller
      *
      * @return array{register:\OCA\OpenRegister\Db\Register,schemaIds:array<int,int>}|array{error:array<string,mixed>,status:int}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-56
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     private function provisionPerAppArtifacts(
         string $newSlug,
@@ -1036,7 +1036,7 @@ class ApplicationsController extends Controller
             return ['register' => $register, 'schemaIds' => $schemaIds];
         } catch (Throwable $e) {
             $this->logger->error(
-                'OpenBuilt: companion-schema clone failed',
+                'OpenBuild: companion-schema clone failed',
                 ['exception' => $e->getMessage()]
             );
             return [
@@ -1059,7 +1059,7 @@ class ApplicationsController extends Controller
      *
      * @return array{uuid:string|null}|array{error:array<string,mixed>,status:int}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-55
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
      */
     private function persistApplication(
         string $name,
@@ -1097,7 +1097,7 @@ class ApplicationsController extends Controller
                 schema: $ctx['applicationSchema']
             );
         } catch (Throwable $e) {
-            $this->logger->error('OpenBuilt: application save failed', ['exception' => $e->getMessage()]);
+            $this->logger->error('OpenBuild: application save failed', ['exception' => $e->getMessage()]);
             return [
                 'error'  => ['error' => 'clone_failed', 'detail' => $e->getMessage()],
                 'status' => Http::STATUS_INTERNAL_SERVER_ERROR,
@@ -1145,7 +1145,7 @@ class ApplicationsController extends Controller
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-56
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     private function extractCompanionSchemas(array $template): array
     {
@@ -1170,7 +1170,7 @@ class ApplicationsController extends Controller
      *
      * @return array<string,string>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-56
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     private function buildRewriteMap(array $companions, string $newSlug): array
     {
@@ -1184,7 +1184,7 @@ class ApplicationsController extends Controller
     }//end buildRewriteMap()
 
     /**
-     * Provision (or fetch existing) the per-app register `openbuilt-{newSlug}`.
+     * Provision (or fetch existing) the per-app register `openbuild-{newSlug}`.
      *
      * Per the hybrid register model, each cloned app gets its own register so
      * companion schemas don't collide across apps.
@@ -1194,7 +1194,7 @@ class ApplicationsController extends Controller
      *
      * @return \OCA\OpenRegister\Db\Register
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-56
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     private function provisionPerAppRegister(string $newSlug, string $ownerUid): \OCA\OpenRegister\Db\Register
     {
@@ -1203,11 +1203,11 @@ class ApplicationsController extends Controller
         // template+slug would otherwise share a register. The first
         // attempt at scoping always namespaced by owner, but that
         // breaks every existing single-tenant install (their existing
-        // registers are still at `openbuilt-{slug}`). So we keep the
+        // registers are still at `openbuild-{slug}`). So we keep the
         // legacy un-namespaced slug AS LONG AS the existing register
         // belongs to the caller; otherwise fall back to the
         // owner-namespaced form.
-        $legacyRegisterSlug = 'openbuilt-'.$newSlug;
+        $legacyRegisterSlug = 'openbuild-'.$newSlug;
 
         try {
             $existing = $this->registerMapper->find($legacyRegisterSlug, _multitenancy: false);
@@ -1219,7 +1219,7 @@ class ApplicationsController extends Controller
 
             // Different user owns the org-wide slug — namespace ours.
             return $this->findOrCreateRegister(
-                slug: 'openbuilt-'.$ownerUid.'-'.$newSlug,
+                slug: 'openbuild-'.$ownerUid.'-'.$newSlug,
                 appSlug: $newSlug,
                 ownerUid: $ownerUid,
             );
@@ -1257,8 +1257,8 @@ class ApplicationsController extends Controller
         return $this->registerMapper->createFromArray(
             [
                 'slug'        => $slug,
-                'title'       => 'OpenBuilt — '.$appSlug,
-                'description' => 'Per-app schema namespace for OpenBuilt app `'.$appSlug.'` (owner: '.$ownerUid.').',
+                'title'       => 'OpenBuild — '.$appSlug,
+                'description' => 'Per-app schema namespace for OpenBuild app `'.$appSlug.'` (owner: '.$ownerUid.').',
                 'version'     => '0.1.0',
                 'schemas'     => [],
             ]
@@ -1309,7 +1309,7 @@ class ApplicationsController extends Controller
      *
      * @return array<int,int> List of created schema IDs
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-56
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     private function cloneCompanionSchemas(
         array $companions,
@@ -1352,7 +1352,7 @@ class ApplicationsController extends Controller
      *
      * @return mixed The rewritten node
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-56
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     private function rewriteSchemaRefs(mixed $node, array $map): mixed
     {
@@ -1420,7 +1420,7 @@ class ApplicationsController extends Controller
 
             return $this->normaliseObject(object: $results[0]);
         } catch (Throwable $e) {
-            $this->logger->warning('OpenBuilt: lookup failed', ['exception' => $e->getMessage()]);
+            $this->logger->warning('OpenBuild: lookup failed', ['exception' => $e->getMessage()]);
             return null;
         }//end try
     }//end lookupOne()

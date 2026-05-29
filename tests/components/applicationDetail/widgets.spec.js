@@ -15,7 +15,7 @@ const router = { push: vi.fn() }
 const route = { name: 'VirtualAppDetail', params: {}, query: {} }
 
 /**
- * Spec: openbuilt-app-detail-overview / application-detail-overview
+ * Spec: openbuild-app-detail-overview / application-detail-overview
  * REQ-OBADO-006 through REQ-OBADO-010.
  *
  * Each widget is a small presentational card with a deep-link click handler.
@@ -29,7 +29,7 @@ describe('applicationDetail widgets', () => {
 			mocks: { t },
 		})
 		const text = wrapper.text()
-		expect(text).toContain('openbuilt-hello-world-production')
+		expect(text).toContain('openbuild-hello-world-production')
 		expect(text).toContain('Register')
 	})
 

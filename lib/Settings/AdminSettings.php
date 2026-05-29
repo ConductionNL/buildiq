@@ -1,15 +1,15 @@
 <?php
 
 /**
- * OpenBuilt Admin Settings
+ * OpenBuild Admin Settings
  *
- * Provides the admin settings form for the OpenBuilt application.
+ * Provides the admin settings form for the OpenBuild application.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Settings
- * @package  OCA\OpenBuilt\Settings
+ * @package  OCA\OpenBuild\Settings
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,16 +22,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Settings;
+namespace OCA\OpenBuild\Settings;
 
-use OCA\OpenBuilt\AppInfo\Application;
+use OCA\OpenBuild\AppInfo\Application;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\Settings\ISettings;
 
 /**
- * Provides the admin settings form for the OpenBuilt application.
+ * Provides the admin settings form for the OpenBuild application.
  */
 class AdminSettings implements ISettings
 {
@@ -74,7 +74,7 @@ class AdminSettings implements ISettings
      */
     public function getSection(): string
     {
-        return 'openbuilt';
+        return 'openbuild';
     }//end getSection()
 
     /**

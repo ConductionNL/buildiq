@@ -1,14 +1,14 @@
 <?php
 
 /**
- * Unit tests for OpenBuiltToolProvider.
+ * Unit tests for OpenBuildToolProvider.
  *
  * Covers: getAppId, getTools catalogue shape, invokeTool dispatch of an
  * unknown tool id (no throw), argument validation, the unauthenticated
  * forbidden path, and the per-Application RBAC gate on write tools.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Mcp
+ * @package  OCA\OpenBuild\Tests\Unit\Mcp
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,9 +21,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Mcp;
+namespace OCA\OpenBuild\Tests\Unit\Mcp;
 
-use OCA\OpenBuilt\Mcp\OpenBuiltToolProvider;
+use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -34,21 +34,21 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Unit test suite for OpenBuiltToolProvider.
+ * Unit test suite for OpenBuildToolProvider.
  *
  * Every test runs in isolation with mocked services. The stub at
  * tests/Stubs/Mcp/IMcpToolProvider.php satisfies the interface declaration
  * when the openregister runtime (PR #1466) is absent.
  */
-class OpenBuiltToolProviderTest extends TestCase
+class OpenBuildToolProviderTest extends TestCase
 {
 
     /**
      * Provider under test.
      *
-     * @var OpenBuiltToolProvider
+     * @var OpenBuildToolProvider
      */
-    private OpenBuiltToolProvider $provider;
+    private OpenBuildToolProvider $provider;
 
     /**
      * Mock IUserSession.
@@ -90,7 +90,7 @@ class OpenBuiltToolProviderTest extends TestCase
         $this->container    = $this->createMock(ContainerInterface::class);
         $this->logger       = $this->createMock(LoggerInterface::class);
 
-        $this->provider = new OpenBuiltToolProvider(
+        $this->provider = new OpenBuildToolProvider(
             $this->userSession,
             $this->groupManager,
             $this->container,
@@ -100,18 +100,18 @@ class OpenBuiltToolProviderTest extends TestCase
     }//end setUp()
 
     /**
-     * getAppId() returns "openbuilt".
+     * getAppId() returns "openbuild".
      *
      * @return void
      */
-    public function testGetAppIdReturnsOpenbuilt(): void
+    public function testGetAppIdReturnsOpenbuild(): void
     {
-        $this->assertSame('openbuilt', $this->provider->getAppId());
+        $this->assertSame('openbuild', $this->provider->getAppId());
 
-    }//end testGetAppIdReturnsOpenbuilt()
+    }//end testGetAppIdReturnsOpenbuild()
 
     /**
-     * getTools() returns four well-formed descriptors with openbuilt.* ids.
+     * getTools() returns four well-formed descriptors with openbuild.* ids.
      *
      * @return void
      */
@@ -127,14 +127,14 @@ class OpenBuiltToolProviderTest extends TestCase
         $this->assertCount(8, $tools);
 
         $ids = array_column($tools, 'id');
-        $this->assertContains('openbuilt.listApps', $ids);
-        $this->assertContains('openbuilt.getAppManifest', $ids);
-        $this->assertContains('openbuilt.createApp', $ids);
-        $this->assertContains('openbuilt.promoteVersion', $ids);
-        $this->assertContains('openbuilt.upsertSchema', $ids);
-        $this->assertContains('openbuilt.upsertPage', $ids);
-        $this->assertContains('openbuilt.addWidget', $ids);
-        $this->assertContains('openbuilt.upsertMenuItem', $ids);
+        $this->assertContains('openbuild.listApps', $ids);
+        $this->assertContains('openbuild.getAppManifest', $ids);
+        $this->assertContains('openbuild.createApp', $ids);
+        $this->assertContains('openbuild.promoteVersion', $ids);
+        $this->assertContains('openbuild.upsertSchema', $ids);
+        $this->assertContains('openbuild.upsertPage', $ids);
+        $this->assertContains('openbuild.addWidget', $ids);
+        $this->assertContains('openbuild.upsertMenuItem', $ids);
 
         foreach ($tools as $tool) {
             $this->assertArrayHasKey('id', $tool);
@@ -143,7 +143,7 @@ class OpenBuiltToolProviderTest extends TestCase
             $this->assertArrayHasKey('inputSchema', $tool);
 
             $this->assertIsString($tool['id']);
-            $this->assertStringStartsWith('openbuilt.', $tool['id']);
+            $this->assertStringStartsWith('openbuild.', $tool['id']);
             $this->assertIsString($tool['name']);
             $this->assertNotSame('', $tool['name']);
             $this->assertIsString($tool['description']);
@@ -166,13 +166,13 @@ class OpenBuiltToolProviderTest extends TestCase
      */
     public function testInvokeUnknownToolReturnsErrorArray(): void
     {
-        $result = $this->provider->invokeTool('openbuilt.bogus', []);
+        $result = $this->provider->invokeTool('openbuild.bogus', []);
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('isError', $result);
         $this->assertTrue($result['isError']);
         $this->assertSame('unknown_tool', $result['error']);
-        $this->assertStringContainsString('openbuilt.listApps', $result['message']);
+        $this->assertStringContainsString('openbuild.listApps', $result['message']);
 
     }//end testInvokeUnknownToolReturnsErrorArray()
 
@@ -185,7 +185,7 @@ class OpenBuiltToolProviderTest extends TestCase
     {
         $this->container->expects($this->never())->method('get');
 
-        $result = $this->provider->invokeTool('openbuilt.listApps', ['limit' => 999]);
+        $result = $this->provider->invokeTool('openbuild.listApps', ['limit' => 999]);
 
         $this->assertTrue($result['isError']);
         $this->assertSame('invalid_arguments', $result['error']);
@@ -202,7 +202,7 @@ class OpenBuiltToolProviderTest extends TestCase
         $this->userSession->method('getUser')->willReturn(null);
         $this->container->expects($this->never())->method('get');
 
-        $result = $this->provider->invokeTool('openbuilt.listApps', []);
+        $result = $this->provider->invokeTool('openbuild.listApps', []);
 
         $this->assertTrue($result['isError']);
         $this->assertSame('forbidden', $result['error']);
@@ -216,7 +216,7 @@ class OpenBuiltToolProviderTest extends TestCase
      */
     public function testGetAppManifestRejectsMissingSlug(): void
     {
-        $result = $this->provider->invokeTool('openbuilt.getAppManifest', []);
+        $result = $this->provider->invokeTool('openbuild.getAppManifest', []);
 
         $this->assertTrue($result['isError']);
         $this->assertSame('invalid_arguments', $result['error']);
@@ -230,7 +230,7 @@ class OpenBuiltToolProviderTest extends TestCase
      */
     public function testGetAppManifestRejectsBadSlug(): void
     {
-        $result = $this->provider->invokeTool('openbuilt.getAppManifest', ['slug' => 'Not A Slug']);
+        $result = $this->provider->invokeTool('openbuild.getAppManifest', ['slug' => 'Not A Slug']);
 
         $this->assertTrue($result['isError']);
         $this->assertSame('invalid_arguments', $result['error']);
@@ -247,7 +247,7 @@ class OpenBuiltToolProviderTest extends TestCase
         $this->userSession->method('getUser')->willReturn(null);
         $this->container->expects($this->never())->method('get');
 
-        $result = $this->provider->invokeTool('openbuilt.getAppManifest', ['slug' => 'hello-world']);
+        $result = $this->provider->invokeTool('openbuild.getAppManifest', ['slug' => 'hello-world']);
 
         $this->assertTrue($result['isError']);
         $this->assertSame('forbidden', $result['error']);
@@ -269,7 +269,7 @@ class OpenBuiltToolProviderTest extends TestCase
         // proving the auth gate passed and business logic was reached.
         $this->container->method('get')->willThrowException(new \RuntimeException('no ObjectService in test'));
 
-        $result = $this->provider->invokeTool('openbuilt.listApps', []);
+        $result = $this->provider->invokeTool('openbuild.listApps', []);
 
         $this->assertTrue($result['isError']);
         $this->assertSame('internal_error', $result['error']);
@@ -294,7 +294,7 @@ class OpenBuiltToolProviderTest extends TestCase
 
         $this->container->expects($this->never())->method('get');
 
-        $result = $this->provider->invokeTool('openbuilt.createApp', [
+        $result = $this->provider->invokeTool('openbuild.createApp', [
             'slug' => 'my-app',
             'name' => 'My App',
         ]);
@@ -314,7 +314,7 @@ class OpenBuiltToolProviderTest extends TestCase
         $this->userSession->method('getUser')->willReturn(null);
         $this->container->expects($this->never())->method('get');
 
-        $result = $this->provider->invokeTool('openbuilt.createApp', [
+        $result = $this->provider->invokeTool('openbuild.createApp', [
             'slug' => 'my-app',
             'name' => 'My App',
         ]);
@@ -338,7 +338,7 @@ class OpenBuiltToolProviderTest extends TestCase
 
         $this->container->expects($this->never())->method('get');
 
-        $result = $this->provider->invokeTool('openbuilt.upsertSchema', [
+        $result = $this->provider->invokeTool('openbuild.upsertSchema', [
             'appSlug'    => 'my-app',
             'slug'       => 'my-schema',
             'title'      => 'My Schema',
@@ -360,7 +360,7 @@ class OpenBuiltToolProviderTest extends TestCase
         $this->userSession->method('getUser')->willReturn(null);
         $this->container->expects($this->never())->method('get');
 
-        $result = $this->provider->invokeTool('openbuilt.upsertSchema', [
+        $result = $this->provider->invokeTool('openbuild.upsertSchema', [
             'appSlug'    => 'my-app',
             'slug'       => 'my-schema',
             'title'      => 'My Schema',
@@ -400,7 +400,7 @@ class OpenBuiltToolProviderTest extends TestCase
             ->with('OCA\OpenRegister\Service\ObjectService')
             ->willReturn($objectService);
 
-        $result = $this->provider->invokeTool('openbuilt.upsertPage', [
+        $result = $this->provider->invokeTool('openbuild.upsertPage', [
             'appSlug' => 'my-app',
             'pageId'  => 'home',
             'title'   => 'Home',
@@ -453,7 +453,7 @@ class OpenBuiltToolProviderTest extends TestCase
             ->with('OCA\OpenRegister\Service\ObjectService')
             ->willReturn($objectService);
 
-        $result = $this->provider->invokeTool('openbuilt.upsertPage', [
+        $result = $this->provider->invokeTool('openbuild.upsertPage', [
             'appSlug' => 'my-app',
             'pageId'  => 'home',
             'title'   => 'Home',
@@ -491,7 +491,7 @@ class OpenBuiltToolProviderTest extends TestCase
             ->with('OCA\OpenRegister\Service\ObjectService')
             ->willReturn($objectService);
 
-        $result = $this->provider->invokeTool('openbuilt.addWidget', [
+        $result = $this->provider->invokeTool('openbuild.addWidget', [
             'appSlug'    => 'my-app',
             'pageId'     => 'home',
             'widgetType' => 'stat-counter',
@@ -525,7 +525,7 @@ class OpenBuiltToolProviderTest extends TestCase
             ->with('OCA\OpenRegister\Service\ObjectService')
             ->willReturn($objectService);
 
-        $result = $this->provider->invokeTool('openbuilt.upsertMenuItem', [
+        $result = $this->provider->invokeTool('openbuild.upsertMenuItem', [
             'appSlug' => 'my-app',
             'id'      => 'nav-home',
             'label'   => 'Home',
@@ -562,7 +562,7 @@ class OpenBuiltToolProviderTest extends TestCase
             ->with('OCA\OpenRegister\Service\ObjectService')
             ->willReturn($objectService);
 
-        $result = $this->provider->invokeTool('openbuilt.promoteVersion', [
+        $result = $this->provider->invokeTool('openbuild.promoteVersion', [
             'appSlug'           => 'my-app',
             'sourceVersionSlug' => 'development',
         ]);
@@ -613,7 +613,7 @@ class OpenBuiltToolProviderTest extends TestCase
             ->with('OCA\OpenRegister\Service\ObjectService')
             ->willReturn($objectService);
 
-        $result = $this->provider->invokeTool('openbuilt.promoteVersion', [
+        $result = $this->provider->invokeTool('openbuild.promoteVersion', [
             'appSlug'           => 'my-app',
             'sourceVersionSlug' => 'development',
         ]);
@@ -635,7 +635,7 @@ class OpenBuiltToolProviderTest extends TestCase
         $this->userSession->method('getUser')->willReturn(null);
         $this->container->expects($this->never())->method('get');
 
-        $result = $this->provider->invokeTool('openbuilt.promoteVersion', [
+        $result = $this->provider->invokeTool('openbuild.promoteVersion', [
             'appSlug'           => 'my-app',
             'sourceVersionSlug' => 'development',
         ]);

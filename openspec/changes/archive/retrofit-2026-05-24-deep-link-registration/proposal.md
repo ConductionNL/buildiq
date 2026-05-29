@@ -13,7 +13,7 @@ specifies it.
 ## Approach
 
 - New capability (`--cluster`) rather than `--extend`: the existing
-  openbuilt specs (runtime, RBAC, exporter, versioning, etc.) all
+  openbuild specs (runtime, RBAC, exporter, versioning, etc.) all
   describe authoring or runtime serving of virtual apps. None covers
   the listener that hooks OpenRegister's unified-search deep-link
   registration event. ADR-019 (integration registry) is the closest

@@ -7,13 +7,13 @@
 <template>
 	<section class="menu-tree-editor">
 		<header class="menu-tree-editor__header">
-			<h4>{{ t('openbuilt', 'Menu') }}</h4>
+			<h4>{{ t('openbuild', 'Menu') }}</h4>
 			<button type="button" class="menu-tree-editor__add" @click="addEntry()">
-				+ {{ t('openbuilt', 'Add menu entry') }}
+				+ {{ t('openbuild', 'Add menu entry') }}
 			</button>
 		</header>
 		<p v-if="depthError" class="menu-tree-editor__error" role="alert">
-			{{ t('openbuilt', 'Maximum nesting depth is two levels.') }}
+			{{ t('openbuild', 'Maximum nesting depth is two levels.') }}
 		</p>
 		<Draggable
 			:value="menu"
@@ -25,39 +25,39 @@
 				:key="entry.id || `entry-${index}`"
 				class="menu-tree-editor__entry">
 				<div class="menu-tree-editor__row">
-					<span class="menu-tree-editor__drag-handle" :title="t('openbuilt', 'Drag to reorder')">
+					<span class="menu-tree-editor__drag-handle" :title="t('openbuild', 'Drag to reorder')">
 						⠿
 					</span>
 					<input
 						:value="entry.id || ''"
 						type="text"
 						class="menu-tree-editor__field"
-						:placeholder="t('openbuilt', 'id (e.g. inbox)')"
+						:placeholder="t('openbuild', 'id (e.g. inbox)')"
 						@input="updateField(index, 'id', $event.target.value)">
 					<input
 						:value="entry.label || ''"
 						type="text"
 						class="menu-tree-editor__field"
-						:placeholder="t('openbuilt', 'label (i18n key)')"
+						:placeholder="t('openbuild', 'label (i18n key)')"
 						@input="updateField(index, 'label', $event.target.value)">
 					<input
 						:value="entry.icon || ''"
 						type="text"
 						class="menu-tree-editor__field menu-tree-editor__field--narrow"
-						:placeholder="t('openbuilt', 'icon')"
+						:placeholder="t('openbuild', 'icon')"
 						@input="updateField(index, 'icon', $event.target.value)">
 					<input
 						:value="entry.route || ''"
 						type="text"
 						class="menu-tree-editor__field"
-						:placeholder="t('openbuilt', 'route name')"
+						:placeholder="t('openbuild', 'route name')"
 						:disabled="!!entry.action"
 						@input="updateField(index, 'route', $event.target.value)">
 					<input
 						:value="entry.href || ''"
 						type="text"
 						class="menu-tree-editor__field"
-						:placeholder="t('openbuilt', 'href URL')"
+						:placeholder="t('openbuild', 'href URL')"
 						:disabled="!!entry.action"
 						@input="updateField(index, 'href', $event.target.value)">
 					<select
@@ -76,7 +76,7 @@
 						class="menu-tree-editor__field menu-tree-editor__field--narrow"
 						@change="updateActionField(index, $event.target.value)">
 						<option value="">
-							{{ t('openbuilt', '— action —') }}
+							{{ t('openbuild', '— action —') }}
 						</option>
 						<option value="user-settings">
 							user-settings
@@ -85,20 +85,20 @@
 					<button
 						type="button"
 						class="menu-tree-editor__icon-btn"
-						:title="t('openbuilt', 'Add child')"
+						:title="t('openbuild', 'Add child')"
 						@click="addChild(index)">
 						⤵
 					</button>
 					<button
 						type="button"
 						class="menu-tree-editor__icon-btn menu-tree-editor__icon-btn--remove"
-						:title="t('openbuilt', 'Remove entry')"
+						:title="t('openbuild', 'Remove entry')"
 						@click="removeEntry(index)">
 						✕
 					</button>
 				</div>
 				<p v-if="entry.action" class="menu-tree-editor__note">
-					{{ t('openbuilt', 'Route and href are ignored when an action is set.') }}
+					{{ t('openbuild', 'Route and href are ignored when an action is set.') }}
 				</p>
 				<Draggable
 					v-if="entry.children && entry.children.length"
@@ -117,30 +117,30 @@
 							:value="child.id || ''"
 							type="text"
 							class="menu-tree-editor__field"
-							:placeholder="t('openbuilt', 'child id')"
+							:placeholder="t('openbuild', 'child id')"
 							@input="updateChildField(index, cIndex, 'id', $event.target.value)">
 						<input
 							:value="child.label || ''"
 							type="text"
 							class="menu-tree-editor__field"
-							:placeholder="t('openbuilt', 'label (i18n key)')"
+							:placeholder="t('openbuild', 'label (i18n key)')"
 							@input="updateChildField(index, cIndex, 'label', $event.target.value)">
 						<input
 							:value="child.icon || ''"
 							type="text"
 							class="menu-tree-editor__field menu-tree-editor__field--narrow"
-							:placeholder="t('openbuilt', 'icon')"
+							:placeholder="t('openbuild', 'icon')"
 							@input="updateChildField(index, cIndex, 'icon', $event.target.value)">
 						<input
 							:value="child.route || ''"
 							type="text"
 							class="menu-tree-editor__field"
-							:placeholder="t('openbuilt', 'route name')"
+							:placeholder="t('openbuild', 'route name')"
 							@input="updateChildField(index, cIndex, 'route', $event.target.value)">
 						<button
 							type="button"
 							class="menu-tree-editor__icon-btn menu-tree-editor__icon-btn--remove"
-							:title="t('openbuilt', 'Remove child')"
+							:title="t('openbuild', 'Remove child')"
 							@click="removeChild(index, cIndex)">
 							✕
 						</button>
@@ -149,7 +149,7 @@
 			</div>
 		</Draggable>
 		<p v-if="!menu.length" class="menu-tree-editor__empty">
-			{{ t('openbuilt', 'No menu entries yet. Click "Add menu entry" to start.') }}
+			{{ t('openbuild', 'No menu entries yet. Click "Add menu entry" to start.') }}
 		</p>
 	</section>
 </template>

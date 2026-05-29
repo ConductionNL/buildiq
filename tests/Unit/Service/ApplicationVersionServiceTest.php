@@ -12,7 +12,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Service
+ * @package  OCA\OpenBuild\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,9 +25,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Service;
+namespace OCA\OpenBuild\Tests\Unit\Service;
 
-use OCA\OpenBuilt\Service\ApplicationVersionService;
+use OCA\OpenBuild\Service\ApplicationVersionService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -324,7 +324,7 @@ class ApplicationVersionServiceTest extends TestCase
      */
     public function testDeleteVersionRefusesProductionVersion(): void
     {
-        $version = $this->mockVersion(application: 'uuid-app', register: 'openbuilt-foo-prod', uuid: 'uuid-v');
+        $version = $this->mockVersion(application: 'uuid-app', register: 'openbuild-foo-prod', uuid: 'uuid-v');
         $application = $this->mockApplication(productionVersion: 'uuid-v');
 
         $this->objectService->method('find')
@@ -351,7 +351,7 @@ class ApplicationVersionServiceTest extends TestCase
      */
     public function testDeleteVersionDeleteNowDropsRegister(): void
     {
-        $version     = $this->mockVersion(application: 'uuid-app', register: 'openbuilt-foo-staging', uuid: 'uuid-v');
+        $version     = $this->mockVersion(application: 'uuid-app', register: 'openbuild-foo-staging', uuid: 'uuid-v');
         $application = $this->mockApplication(productionVersion: 'uuid-prod');
 
         $this->objectService->method('find')
@@ -366,7 +366,7 @@ class ApplicationVersionServiceTest extends TestCase
         $register = $this->getMockBuilder(Register::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $this->registerMapper->method('find')->with('openbuilt-foo-staging')->willReturn($register);
+        $this->registerMapper->method('find')->with('openbuild-foo-staging')->willReturn($register);
 
         $this->registerService->expects(self::once())->method('delete')->with($register);
         $this->objectService->expects(self::once())->method('deleteObject')->with('uuid-v');
@@ -384,7 +384,7 @@ class ApplicationVersionServiceTest extends TestCase
      */
     public function testDeleteVersionKeepRegisterDoesNotDropRegister(): void
     {
-        $version     = $this->mockVersion(application: 'uuid-app', register: 'openbuilt-foo-staging', uuid: 'uuid-v');
+        $version     = $this->mockVersion(application: 'uuid-app', register: 'openbuild-foo-staging', uuid: 'uuid-v');
         $application = $this->mockApplication(productionVersion: 'uuid-prod');
 
         $this->objectService->method('find')

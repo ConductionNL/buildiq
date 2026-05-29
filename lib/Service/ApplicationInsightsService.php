@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenBuilt ApplicationInsightsService
+ * OpenBuild ApplicationInsightsService
  *
  * Computes the four KPI scalars + activity timeline rendered by the
  * Application detail-page maintainer dashboard (spec
- * `openbuilt-app-detail-overview`, capability `application-insights`).
+ * `openbuild-app-detail-overview`, capability `application-insights`).
  *
  * Responsibilities:
  *   - Resolve the Application + ApplicationVersion records (IDOR-safe).
@@ -15,7 +15,7 @@
  *     auto-granted.
  *   - Walk `manifest.pages[].config.{register,schema}` to derive the
  *     schema-set scoped to the version's per-version register
- *     (`openbuilt-{appSlug}-{versionSlug}`).
+ *     (`openbuild-{appSlug}-{versionSlug}`).
  *   - Fan out four KPI calls + one chart call to OpenRegister mappers /
  *     services and assemble the response payload.
  *
@@ -33,7 +33,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuilt\Service
+ * @package  OCA\OpenBuild\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -43,16 +43,16 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-16
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-17
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-18
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-19
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-20
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Service;
+namespace OCA\OpenBuild\Service;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -106,7 +106,7 @@ class ApplicationInsightsService
      *
      * @var string
      */
-    private const REGISTER_SLUG = 'openbuilt';
+    private const REGISTER_SLUG = 'openbuild';
 
     /**
      * Constructor.
@@ -147,7 +147,7 @@ class ApplicationInsightsService
      *
      * @return array{0: array<string, mixed>, 1: array<string, mixed>}|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-17
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
      */
     public function requireAuthorisedCaller(
         string $appUuid,
@@ -196,9 +196,9 @@ class ApplicationInsightsService
      *
      * @return array<string, mixed>|null Insights payload `{kpis, activity}` or null on 404.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-16
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-19
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
      */
     public function computeInsights(
         string $appUuid,
@@ -224,7 +224,7 @@ class ApplicationInsightsService
 
             $appSlug      = (string) ($application['slug'] ?? '');
             $versionSlug  = (string) ($version['slug'] ?? '');
-            $registerSlug = sprintf('openbuilt-%s-%s', $appSlug, $versionSlug);
+            $registerSlug = sprintf('openbuild-%s-%s', $appSlug, $versionSlug);
 
             $manifest    = $this->extractManifest(version: $version);
             $schemaSlugs = $this->deriveSchemaIds(manifest: $manifest, registerSlug: $registerSlug);
@@ -247,7 +247,7 @@ class ApplicationInsightsService
             ];
         } catch (Throwable $e) {
             $this->logger->error(
-                'OpenBuilt: ApplicationInsightsService::computeInsights failed: {message}',
+                'OpenBuild: ApplicationInsightsService::computeInsights failed: {message}',
                 ['message' => $e->getMessage(), 'exception' => $e]
             );
             return null;
@@ -267,7 +267,7 @@ class ApplicationInsightsService
      *
      * @return array<int, string> Unique schema IDs (string form — OR stores audit schema column as VARCHAR).
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-18
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
      */
     public function deriveSchemaIds(?array $manifest, string $registerSlug): array
     {
@@ -303,7 +303,7 @@ class ApplicationInsightsService
      *
      * @return array<int, int> Integer schema IDs suitable for AuditTrailMapper queries.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-18
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
      */
     private function resolveSchemaSlugsToIntIds(array $schemaSlugs): array
     {
@@ -316,7 +316,7 @@ class ApplicationInsightsService
                 }
             } catch (Throwable $e) {
                 $this->logger->debug(
-                    'OpenBuilt: could not resolve schema slug "{slug}" to integer ID: {message}',
+                    'OpenBuild: could not resolve schema slug "{slug}" to integer ID: {message}',
                     ['slug' => $slug, 'message' => $e->getMessage()]
                 );
             }
@@ -338,7 +338,7 @@ class ApplicationInsightsService
      *
      * @return string|null The schema ID, or null when the page does not match.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-18
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
      */
     private function extractSchemaIdForRegister(mixed $page, string $registerSlug): ?string
     {
@@ -377,7 +377,7 @@ class ApplicationInsightsService
      *
      * @return bool True when authorised, false otherwise.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-17
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
      */
     private function isAuthorised(array $application, array $version, ?IUser $caller): bool
     {
@@ -468,7 +468,7 @@ class ApplicationInsightsService
             return $this->normaliseObject(object: $entity);
         } catch (Throwable $e) {
             $this->logger->debug(
-                'OpenBuilt: ApplicationInsightsService::loadApplication failed for uuid={uuid}: {message}',
+                'OpenBuild: ApplicationInsightsService::loadApplication failed for uuid={uuid}: {message}',
                 ['uuid' => $uuid, 'message' => $e->getMessage()]
             );
             return null;
@@ -498,7 +498,7 @@ class ApplicationInsightsService
             return $this->normaliseObject(object: $entity);
         } catch (Throwable $e) {
             $this->logger->debug(
-                'OpenBuilt: ApplicationInsightsService::loadVersion failed for uuid={uuid}: {message}',
+                'OpenBuild: ApplicationInsightsService::loadVersion failed for uuid={uuid}: {message}',
                 ['uuid' => $uuid, 'message' => $e->getMessage()]
             );
             return null;
@@ -583,7 +583,7 @@ class ApplicationInsightsService
      *
      * @return int Distinct actor count, or 0 when the aggregation API is unavailable.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-19
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
      */
     private function safeDistinctActorCount(array $schemaIds, int $hours): int
     {
@@ -593,7 +593,7 @@ class ApplicationInsightsService
 
         if (method_exists($this->auditTrailMapper, 'getDistinctActorCount') === false) {
             $this->logger->debug(
-                'OpenBuilt: getDistinctActorCount not available on AuditTrailMapper — '
+                'OpenBuild: getDistinctActorCount not available on AuditTrailMapper — '
                 .'degrade to 0 (depends on openregister-distinct-actor-aggregation)'
             );
             return 0;
@@ -603,7 +603,7 @@ class ApplicationInsightsService
             return (int) $this->auditTrailMapper->getDistinctActorCount($schemaIds, $hours);
         } catch (Throwable $e) {
             $this->logger->warning(
-                'OpenBuilt: getDistinctActorCount failed: {message}',
+                'OpenBuild: getDistinctActorCount failed: {message}',
                 ['message' => $e->getMessage()]
             );
             return 0;
@@ -622,7 +622,7 @@ class ApplicationInsightsService
      *
      * @return int Total object count across the schema-set.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-19
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
      */
     private function countObjects(array $schemaIds, string $registerSlug): int
     {
@@ -640,7 +640,7 @@ class ApplicationInsightsService
             } catch (Throwable $e) {
                 // Per-schema failure should not kill the aggregate — log and continue.
                 $this->logger->debug(
-                    'OpenBuilt: count for schema={schemaId} on register={register} failed: {message}',
+                    'OpenBuild: count for schema={schemaId} on register={register} failed: {message}',
                     ['schemaId' => $schemaId, 'register' => $registerSlug, 'message' => $e->getMessage()]
                 );
                 continue;
@@ -669,7 +669,7 @@ class ApplicationInsightsService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-19
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
      */
     private function countAttachedFiles(string $registerSlug, array $schemaIds): int
     {
@@ -696,7 +696,7 @@ class ApplicationInsightsService
             return $total;
         } catch (Throwable $e) {
             $this->logger->debug(
-                'OpenBuilt: countAttachedFiles fallback failed: {message}',
+                'OpenBuild: countAttachedFiles fallback failed: {message}',
                 ['message' => $e->getMessage()]
             );
             return 0;
@@ -716,7 +716,7 @@ class ApplicationInsightsService
      *
      * @return int Audit-event count.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-19
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
      */
     private function countAuditEvents(array $schemaIds, int $hours): int
     {
@@ -729,7 +729,7 @@ class ApplicationInsightsService
                 return (int) $this->auditTrailMapper->countByRegisterAndWindow($schemaIds, $hours);
             } catch (Throwable $e) {
                 $this->logger->debug(
-                    'OpenBuilt: countByRegisterAndWindow failed: {message}',
+                    'OpenBuild: countByRegisterAndWindow failed: {message}',
                     ['message' => $e->getMessage()]
                 );
                 return 0;
@@ -755,7 +755,7 @@ class ApplicationInsightsService
             return $total;
         } catch (Throwable $e) {
             $this->logger->debug(
-                'OpenBuilt: audit-event fallback failed: {message}',
+                'OpenBuild: audit-event fallback failed: {message}',
                 ['message' => $e->getMessage()]
             );
             return 0;
@@ -820,7 +820,7 @@ class ApplicationInsightsService
      *
      * @psalm-suppress UnusedParam
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
      */
     private function buildActivityTimeline(array $schemaIds, int $hours, string $registerSlug): array
     {
@@ -857,7 +857,7 @@ class ApplicationInsightsService
             return $timeline;
         } catch (Throwable $e) {
             $this->logger->debug(
-                'OpenBuilt: buildActivityTimeline failed: {message}',
+                'OpenBuild: buildActivityTimeline failed: {message}',
                 ['message' => $e->getMessage()]
             );
             return [];

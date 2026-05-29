@@ -1,13 +1,13 @@
 <?php
 
 /**
- * Sanity tests for the OpenBuilt namespace / Application class.
+ * Sanity tests for the OpenBuild namespace / Application class.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit
+ * @package  OCA\OpenBuild\Tests\Unit
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit;
+namespace OCA\OpenBuild\Tests\Unit;
 
-use OCA\OpenBuilt\AppInfo\Application;
+use OCA\OpenBuild\AppInfo\Application;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
  * APP_ID constant is intact — both invariants other tests (and the route
  * registration) depend on.
  */
-class OpenBuiltTest extends TestCase
+class OpenBuildTest extends TestCase
 {
 
     /**
@@ -42,12 +42,12 @@ class OpenBuiltTest extends TestCase
      */
     public function testAppIdConstantMatchesNextcloudSlug(): void
     {
-        self::assertSame(expected: 'openbuilt', actual: Application::APP_ID);
+        self::assertSame(expected: 'openbuild', actual: Application::APP_ID);
 
     }//end testAppIdConstantMatchesNextcloudSlug()
 
     /**
-     * The PSR-4 prefix `OCA\OpenBuilt\` must resolve to the worktree's lib/
+     * The PSR-4 prefix `OCA\OpenBuild\` must resolve to the worktree's lib/
      * directory. This protects against autoload regressions where a stale
      * sibling checkout's `vendor/composer/autoload_classmap.php` masks the
      * local sources (the exact failure mode hit during this branch's

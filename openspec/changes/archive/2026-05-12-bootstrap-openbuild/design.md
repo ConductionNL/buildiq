@@ -1,6 +1,6 @@
 ## Context
 
-OpenBuilt is the citizen-developer app builder spec #1 of a 9-spec
+OpenBuild is the citizen-developer app builder spec #1 of a 9-spec
 chain (per ADR-032). The Conduction stack already has the pieces a
 builder needs:
 
@@ -26,9 +26,9 @@ chain (visual schema editor #4, page editor #5, versioning #6, RBAC
 against.
 
 The architectural commitment is that **every built app is a record
-in OpenBuilt's OR namespace**, not a file on disk. Phase 1 (this
+in OpenBuild's OR namespace**, not a file on disk. Phase 1 (this
 spec + chain specs #2-#8) renders these as "virtual" apps inside the
-OpenBuilt shell via a nested `CnAppRoot` mount. Phase 2 (chain spec
+OpenBuild shell via a nested `CnAppRoot` mount. Phase 2 (chain spec
 #9) generates a real Nextcloud app from a virtual one by writing
 `src/manifest.json` and a register JSON file to a target repo.
 
@@ -36,10 +36,10 @@ OpenBuilt shell via a nested `CnAppRoot` mount. Phase 2 (chain spec
 
 **Goals**
 
-- Stand up the `openbuilt` Nextcloud app skeleton with a single
+- Stand up the `openbuild` Nextcloud app skeleton with a single
   top-bar entry (already declared in `appinfo/info.xml`).
 - Declare two OR schemas — `Application` and `BuiltAppRoute` — in
-  `lib/Settings/openbuilt_register.json`, including the
+  `lib/Settings/openbuild_register.json`, including the
   `x-openregister-lifecycle` block that drives the
   `draft → published → archived` state machine.
 - Ship a single PHP controller method — `ApplicationsController::getManifest` —
@@ -57,22 +57,22 @@ OpenBuilt shell via a nested `CnAppRoot` mount. Phase 2 (chain spec
 
 **Non-Goals (deferred to chain)**
 
-- Visual schema designer (chain spec #4 / `openbuilt-schema-editor`).
+- Visual schema designer (chain spec #4 / `openbuild-schema-editor`).
 - Visual page / manifest designer (chain spec #5 /
-  `openbuilt-page-editor`).
+  `openbuild-page-editor`).
 - Runtime schema-creation API in OR (chain spec #3 /
   `openregister-runtime-schema-api`). The two schemas declared by
-  this spec are static JSON in `lib/Settings/openbuilt_register.json`.
+  this spec are static JSON in `lib/Settings/openbuild_register.json`.
 - Draft / publish UX, version snapshots, rollback (chain spec #6 /
-  `openbuilt-versioning`). The lifecycle states exist on the schema;
+  `openbuild-versioning`). The lifecycle states exist on the schema;
   the UI to exercise them is minimal here.
-- Per-built-app RBAC (chain spec #7 / `openbuilt-rbac`). All
+- Per-built-app RBAC (chain spec #7 / `openbuild-rbac`). All
   read/write authorisation in this spec uses OR's existing
   organisation-scoped authorization.
 - Marketplace / starter templates (chain spec #8 /
-  `openbuilt-templates-marketplace`).
+  `openbuild-templates-marketplace`).
 - Export-to-real-app code generator (chain spec #9 /
-  `openbuilt-export-to-real-app`).
+  `openbuild-export-to-real-app`).
 - Nested-nested mounts (a virtual app embedding another virtual
   app). Out of scope; revisit if a use case surfaces.
 
@@ -81,7 +81,7 @@ OpenBuilt shell via a nested `CnAppRoot` mount. Phase 2 (chain spec
 ### Decision 1 — Mixed-spec rationale (ADR-032)
 
 This spec is declared `kind: mixed` per ADR-032 because it touches
-**both** declarative JSON (the `lib/Settings/openbuilt_register.json`
+**both** declarative JSON (the `lib/Settings/openbuild_register.json`
 schema declarations, including `x-openregister-lifecycle`) and code
 (the `ApplicationsController::getManifest` method + the
 `BuilderHost.vue` nested-mount glue). ADR-032 normally rejects
@@ -95,7 +95,7 @@ The code surface this spec ships qualifies for the exception:
   looks up the slug → Application via OR's existing ObjectService
   and returns the stored `manifest` blob. ~15 LOC.
 - **File 2: `src/views/BuilderHost.vue`** — mounts a nested
-  `CnAppRoot` with `appId = openbuilt-{slug}` and a bundled-placeholder
+  `CnAppRoot` with `appId = openbuild-{slug}` and a bundled-placeholder
   manifest, forwarding `$route.params.pathMatch` to the inner router.
   ~20 LOC of `<script>` glue (most of the file is template; the
   template itself is ~5 LOC of `<CnAppRoot>`).
@@ -109,8 +109,8 @@ The code surface this spec ships qualifies for the exception:
 
 If, during apply, the implementer finds that the controller +
 `BuilderHost.vue` glue exceeds ~50 LOC combined, this spec MUST be
-split into a chain — `bootstrap-openbuilt-schemas` (config only) +
-`bootstrap-openbuilt-host` (code only). At that point this design.md
+split into a chain — `bootstrap-openbuild-schemas` (config only) +
+`bootstrap-openbuild-host` (code only). At that point this design.md
 becomes the parent record for the split.
 
 **Alternatives considered**
@@ -131,7 +131,7 @@ becomes the parent record for the split.
 The Application lifecycle (`draft → published → archived`) is the
 canonical declarative behaviour for this spec. Per ADR-031, it
 SHALL be declared as `x-openregister-lifecycle` metadata in
-`lib/Settings/openbuilt_register.json` — **not** as a PHP service
+`lib/Settings/openbuild_register.json` — **not** as a PHP service
 class.
 
 | Candidate behaviour | Path |
@@ -188,16 +188,16 @@ repo) will add that overload.
 
 Until spec #2 lands, this spec uses a workaround:
 
-1. Each virtual app gets a unique `appId = openbuilt-{slug}`.
+1. Each virtual app gets a unique `appId = openbuild-{slug}`.
 2. The bundled-manifest argument is a placeholder skeleton
    `{ version: '0.0.0', menu: [], pages: [] }` shipped in
    `src/manifests/placeholder.json`.
 3. The library's backend-merge call lands on
-   `/index.php/apps/openbuilt-{slug}/api/manifest` by default. We
+   `/index.php/apps/openbuild-{slug}/api/manifest` by default. We
    intercept this in `BuilderHost.vue` by passing
    `options.fetcher` (a documented `useAppManifest` option) that
    redirects the call to the real endpoint
-   `/index.php/apps/openbuilt/api/applications/{slug}/manifest`.
+   `/index.php/apps/openbuild/api/applications/{slug}/manifest`.
 4. The library validates the merged result via `validateManifest`
    (re-exported from `@conduction/nextcloud-vue`) and mounts
    `CnAppRoot` against it.
@@ -222,9 +222,9 @@ depending on it.
 
 ### Decision 5 — Nested mount, not router replacement
 
-The OpenBuilt outer shell keeps its own `CnAppNav` + chrome; the
+The OpenBuild outer shell keeps its own `CnAppNav` + chrome; the
 virtual app mounts a **nested** `CnAppRoot` inside the page area.
-This preserves the OpenBuilt navigation entry, lets the user
+This preserves the OpenBuild navigation entry, lets the user
 exit a virtual app via the outer breadcrumb, and aligns with how
 opencatalogi mounts a per-catalog detail surface inside its
 top-level shell.
@@ -240,12 +240,12 @@ top-level shell.
 
 ### Decision 6 — Frontend uses OR REST directly for CRUD
 
-Per ADR-022, OpenBuilt does **not** wrap OR's REST API in app-local
+Per ADR-022, OpenBuild does **not** wrap OR's REST API in app-local
 controllers. The textarea editor reads / writes Application objects
-via OR's REST (`/index.php/apps/openregister/api/objects/openbuilt/application/...`).
+via OR's REST (`/index.php/apps/openregister/api/objects/openbuild/application/...`).
 The single exception is `getManifest`, which serves the manifest
 blob unwrapped (without OR's envelope metadata) so that
-`useAppManifest` consumes it cleanly. This keeps the OpenBuilt
+`useAppManifest` consumes it cleanly. This keeps the OpenBuild
 backend almost empty and lets every OR improvement (audit, RBAC,
 GraphQL) flow through without per-app wrapper changes.
 
@@ -273,26 +273,26 @@ GraphQL) flow through without per-app wrapper changes.
 - **Trade-off** — *Textarea-only manifest editing is brutal UX.*
   Acceptable for spec #1; the visual editors are chain specs #4 / #5.
   Document the textarea editor as "integrator-only" in the in-app
-  help string (i18n key `openbuilt.editor.help`).
+  help string (i18n key `openbuild.editor.help`).
 
 ## Migration Plan
 
-This is the foundational spec. Nothing depends on OpenBuilt yet, so
+This is the foundational spec. Nothing depends on OpenBuild yet, so
 there is no production data to migrate. Deployment steps:
 
 1. Land the change on a feature branch from `development`.
 2. CI runs PHPUnit + Newman + Playwright. The seeded `hello-world`
    integration test is the canonical green-light signal.
 3. Merge into `development`. The migration runs on next deploy via
-   the repair step; the `openbuilt` register + `Application` +
+   the repair step; the `openbuild` register + `Application` +
    `BuiltAppRoute` schemas + the seeded `hello-world` Application
    appear on every install.
-4. **Rollback** — disable the `openbuilt` app via `occ app:disable
-   openbuilt`. The OR objects remain in the database (no harm; they
-   are no longer reachable through the openbuilt UI). To fully
-   rollback, additionally remove the `openbuilt` register namespace
+4. **Rollback** — disable the `openbuild` app via `occ app:disable
+   openbuild`. The OR objects remain in the database (no harm; they
+   are no longer reachable through the openbuild UI). To fully
+   rollback, additionally remove the `openbuild` register namespace
    via OR's admin UI. No other Conduction app reads from the
-   `openbuilt` register at this point in the chain, so removal is
+   `openbuild` register at this point in the chain, so removal is
    safe.
 
 ## Seed Data
@@ -301,19 +301,19 @@ Per ADR-001, every schema-introducing change ships seed data.
 
 **Hello World Application** (slug `hello-world`):
 
-- One `Application` object in the `openbuilt/application` namespace
+- One `Application` object in the `openbuild/application` namespace
   with `status: published`, `version: 0.1.0`, `name: "Hello World"`,
   and a `manifest` blob declaring:
   - `version: 1.0.0`, `dependencies: ["openregister"]`
-  - One menu item `{ id: "Messages", label: "openbuilt.helloworld.menu.messages", icon: "icon-comment", route: "Messages" }`
+  - One menu item `{ id: "Messages", label: "openbuild.helloworld.menu.messages", icon: "icon-comment", route: "Messages" }`
   - Three pages:
-    - `{ id: "Messages", route: "/", type: "index", title: "openbuilt.helloworld.title.messages", config: { register: "openbuilt", schema: "hello-message", columns: ["title", "body", "@self.created"] } }`
-    - `{ id: "MessageDetail", route: "/messages/:id", type: "detail", title: "openbuilt.helloworld.title.message", config: { register: "openbuilt", schema: "hello-message" } }`
-    - `{ id: "MessageCreate", route: "/messages/new", type: "form", title: "openbuilt.helloworld.title.create", config: { register: "openbuilt", schema: "hello-message", mode: "create", submitEndpoint: "/index.php/apps/openregister/api/objects/openbuilt/hello-message" } }`
+    - `{ id: "Messages", route: "/", type: "index", title: "openbuild.helloworld.title.messages", config: { register: "openbuild", schema: "hello-message", columns: ["title", "body", "@self.created"] } }`
+    - `{ id: "MessageDetail", route: "/messages/:id", type: "detail", title: "openbuild.helloworld.title.message", config: { register: "openbuild", schema: "hello-message" } }`
+    - `{ id: "MessageCreate", route: "/messages/new", type: "form", title: "openbuild.helloworld.title.create", config: { register: "openbuild", schema: "hello-message", mode: "create", submitEndpoint: "/index.php/apps/openregister/api/objects/openbuild/hello-message" } }`
 - One `BuiltAppRoute` object with `slug: hello-world`,
   `applicationUuid: <uuid of the Application above>`.
 
-**Companion `hello-message` schema** (in the `openbuilt` register
+**Companion `hello-message` schema** (in the `openbuild` register
 namespace, alongside `Application` and `BuiltAppRoute`):
 
 - Properties: `uuid` (string, UUID-format), `title` (string,
@@ -321,12 +321,12 @@ namespace, alongside `Application` and `BuiltAppRoute`):
 
 **Sample `hello-message` objects** (three, seeded):
 
-- `{ title: "Welcome to OpenBuilt", body: "This message is rendered by your first virtual app." }`
-- `{ title: "Edit me", body: "Open the OpenBuilt shell and edit the hello-world manifest to change what you see here." }`
+- `{ title: "Welcome to OpenBuild", body: "This message is rendered by your first virtual app." }`
+- `{ title: "Edit me", body: "Open the OpenBuild shell and edit the hello-world manifest to change what you see here." }`
 - `{ title: "Built from a manifest", body: "Everything you see came from a JSON blob stored in OpenRegister." }`
 
 The apply agent SHALL generate
-`lib/Settings/openbuilt_register.json` entries from this section and
+`lib/Settings/openbuild_register.json` entries from this section and
 ship the seed objects via `lib/Repair/SeedHelloWorld.php`. The
 repair step SHALL guard on existing-slug to stay idempotent.
 
@@ -341,8 +341,8 @@ repair step SHALL guard on existing-slug to stay idempotent.
   the hook. *Provisional decision*: ship the listener if the apply
   phase finds the hook missing; either path keeps the public
   behaviour identical from the user's perspective.
-- **OQ-2 — Permission key for the OpenBuilt top-bar entry.** Should
-  the OpenBuilt navigation entry require an `openbuilt.use`
+- **OQ-2 — Permission key for the OpenBuild top-bar entry.** Should
+  the OpenBuild navigation entry require an `openbuild.use`
   permission, or is mere authentication enough at this stage? Chain
   spec #7 (RBAC) will land per-built-app permissions; for spec #1 we
   ship with auth-only and let admins narrow via NC's group
@@ -352,15 +352,15 @@ repair step SHALL guard on existing-slug to stay idempotent.
   to the canonical app-manifest schema (v1.5.x, v1.6.x …) would break
   the seeded manifest, do we re-seed at install or surface a
   validation warning? *Provisional decision*: surface a validation
-  warning in the OpenBuilt shell ("seeded hello-world manifest is on
+  warning in the OpenBuild shell ("seeded hello-world manifest is on
   schema v1.4.0; current canonical is vX.Y.Z — re-seed?") and let
   the admin opt in. Avoids silent data overwrite.
-- **OQ-4 — App identifier reserved prefix `openbuilt-{slug}`.** Are
+- **OQ-4 — App identifier reserved prefix `openbuild-{slug}`.** Are
   there NC-level constraints on the `appId` string a virtual app
   uses (e.g. length limits, reserved prefixes, conflicts with the
   app-status capability lookup)? *Provisional decision*: enforce the
-  `openbuilt-` prefix and a kebab-case slug max-length of 48
+  `openbuild-` prefix and a kebab-case slug max-length of 48
   characters so the total fits comfortably under typical NC appId
-  caps. Verify during apply that `useAppStatus(openbuilt-{slug})`
+  caps. Verify during apply that `useAppStatus(openbuild-{slug})`
   degrades gracefully when no such NC app is installed (it should
   return `{ installed: false }`, not throw).

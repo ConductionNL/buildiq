@@ -1,15 +1,15 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "OpenBuilt Register",
+    "title": "OpenBuild Register",
     "description": "Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.",
     "version": "0.3.0"
   },
   "x-openregister": {
     "type": "application",
-    "app": "openbuilt",
+    "app": "openbuild",
     "openregister": "^v0.2.10",
-    "description": "OpenBuilt register namespace. Hosts the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue (spec #8), and the seed `hello-message` schema for the canonical hello-world virtual app. Per ADR-002 the Application schema is the logical app (slug/name/permissions + productionVersion relation); ApplicationVersion carries the manifest, register reference, semver, and lifecycle."
+    "description": "OpenBuild register namespace. Hosts the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue (spec #8), and the seed `hello-message` schema for the canonical hello-world virtual app. Per ADR-002 the Application schema is the logical app (slug/name/permissions + productionVersion relation); ApplicationVersion carries the manifest, register reference, semver, and lifecycle."
   },
   "paths": {},
   "components": {
@@ -19,7 +19,7 @@
         "icon": "AppsBoxOutline",
         "version": "0.2.0",
         "title": "Application",
-        "description": "A virtual app built with OpenBuilt. Per ADR-002 the Application carries identity (slug, name, description, permissions) plus a productionVersion relation to the ApplicationVersion currently exposed at the canonical URL. Manifest, semver, and lifecycle now live on ApplicationVersion.",
+        "description": "A virtual app built with OpenBuild. Per ADR-002 the Application carries identity (slug, name, description, permissions) plus a productionVersion relation to the ApplicationVersion currently exposed at the canonical URL. Manifest, semver, and lifecycle now live on ApplicationVersion.",
         "authorization": {
           "_note": "Wave-12 SB1: blocks unauthenticated OR-API writes. create=admin-only (no owner bypass on create). update/delete=admin + object-owner (OR PermissionHandler owner bypass applies). LIMITATION: per-Application role rows (owners/editors/viewers in `permissions`) are richer than schema-level group ACLs — a non-admin owner can still mutate their own Application via OR API, and the editors/viewers roles cannot be expressed at schema level. Tracked in https://codeberg.org/Conduction/openbuild/issues/1 for a future per-application RBAC engine improvement.",
           "create": ["admin"],
@@ -37,11 +37,11 @@
             "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
             "minLength": 2,
             "maxLength": 48,
-            "description": "Kebab-case slug; uniquely identifies the virtual app within its organisation. Drives the runtime path /builder/{slug}/*. Max 48 chars so the synthetic appId `openbuilt-{slug}` fits NC appId caps (per design.md OQ-4)."
+            "description": "Kebab-case slug; uniquely identifies the virtual app within its organisation. Drives the runtime path /builder/{slug}/*. Max 48 chars so the synthetic appId `openbuild-{slug}` fits NC appId caps (per design.md OQ-4)."
           },
           "name": {
             "type": "string",
-            "description": "Human-readable name displayed in the OpenBuilt shell."
+            "description": "Human-readable name displayed in the OpenBuild shell."
           },
           "description": {
             "type": "string",
@@ -50,9 +50,9 @@
           "productionVersion": {
             "type": "string",
             "format": "uuid",
-            "description": "Relation → ApplicationVersion currently exposed at the canonical /apps/openbuilt/{slug} URL. Set explicitly by the admin (creation wizard, detail-page version switcher), not derived from chain terminality. The referenced ApplicationVersion's `application` relation MUST point back at this Application — enforced server-side by ApplicationVersionService::guardProductionVersionOwnership() (ADR-031 §Exceptions(1) cross-row guard).",
+            "description": "Relation → ApplicationVersion currently exposed at the canonical /apps/openbuild/{slug} URL. Set explicitly by the admin (creation wizard, detail-page version switcher), not derived from chain terminality. The referenced ApplicationVersion's `application` relation MUST point back at this Application — enforced server-side by ApplicationVersionService::guardProductionVersionOwnership() (ADR-031 §Exceptions(1) cross-row guard).",
             "x-openregister-relation": {
-              "target": "openbuilt/applicationVersion",
+              "target": "openbuild/applicationVersion",
               "type": "many-to-one"
             }
           },
@@ -82,7 +82,7 @@
           },
           "permissions": {
             "type": "object",
-            "description": "Per-Application RBAC block per REQ-OBRBAC-001 (openbuilt-rbac). Each entry is a principal — either a Nextcloud user UID (prefix `user:<uid>`) or a Nextcloud group GID (prefix `group:<gid>` OR bare value, kept for back-compat). The caller is granted access when their UID matches a `user:` entry in any role OR when their group memberships intersect a `group:`/bare entry in any role. Bare strings continue to mean GID for backwards compatibility with pre-#37 manifests. owners gate destructive actions (publish, archive, delete, transfer, permissions edit); editors gate save; viewers gate read.",
+            "description": "Per-Application RBAC block per REQ-OBRBAC-001 (openbuild-rbac). Each entry is a principal — either a Nextcloud user UID (prefix `user:<uid>`) or a Nextcloud group GID (prefix `group:<gid>` OR bare value, kept for back-compat). The caller is granted access when their UID matches a `user:` entry in any role OR when their group memberships intersect a `group:`/bare entry in any role. Bare strings continue to mean GID for backwards compatibility with pre-#37 manifests. owners gate destructive actions (publish, archive, delete, transfer, permissions edit); editors gate save; viewers gate read.",
             "properties": {
               "owners": {
                 "type": "array",
@@ -115,7 +115,7 @@
         "icon": "ViewGridOutline",
         "version": "0.1.0",
         "title": "Application Template",
-        "description": "A pre-baked starter pack for building an Application from a recognisable use case — manifest plus companion schemas. Seeded Conduction-curated templates carry isSeeded: true. Per the hybrid register model this schema is shared across the `openbuilt` register; cloned user schemas land in a per-app `openbuilt-{slug}` register.",
+        "description": "A pre-baked starter pack for building an Application from a recognisable use case — manifest plus companion schemas. Seeded Conduction-curated templates carry isSeeded: true. Per the hybrid register model this schema is shared across the `openbuild` register; cloned user schemas land in a per-app `openbuild-{slug}` register.",
         "authorization": {
           "create": ["admin"],
           "update": ["admin"],
@@ -178,7 +178,7 @@
           },
           "companionSchemas": {
             "type": "array",
-            "description": "JSON-schema blobs to be cloned alongside the manifest into the user's per-app register (openbuilt-{slug}).",
+            "description": "JSON-schema blobs to be cloned alongside the manifest into the user's per-app register (openbuild-{slug}).",
             "items": {
               "type": "object",
               "additionalProperties": true
@@ -320,8 +320,8 @@
           },
           "register": {
             "type": "string",
-            "pattern": "^openbuilt-[a-z0-9][a-z0-9-]*[a-z0-9]$",
-            "description": "Per-version OpenRegister register name carrying this version's schemas and objects. Convention: `openbuilt-{appSlug}-{versionSlug}` (e.g. `openbuilt-hello-world-production`). Actual provisioning is owned by the creation-wizard capability (sibling spec)."
+            "pattern": "^openbuild-[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "description": "Per-version OpenRegister register name carrying this version's schemas and objects. Convention: `openbuild-{appSlug}-{versionSlug}` (e.g. `openbuild-hello-world-production`). Actual provisioning is owned by the creation-wizard capability (sibling spec)."
           },
           "semver": {
             "type": "string",
@@ -344,7 +344,7 @@
             "format": "uuid",
             "description": "Relation → parent Application (required). Real first-class OR relation, not a UUID string (ADR-002 §Decision).",
             "x-openregister-relation": {
-              "target": "openbuilt/application",
+              "target": "openbuild/application",
               "type": "many-to-one"
             }
           },
@@ -353,7 +353,7 @@
             "format": "uuid",
             "description": "Optional relation → next ApplicationVersion in the linear promotion chain. Terminal versions have `promotesTo: null`. Cycle detection is enforced server-side by ApplicationVersionService::guardNoCycle() (ADR-031 §Exceptions(1) cross-row).",
             "x-openregister-relation": {
-              "target": "openbuilt/applicationVersion",
+              "target": "openbuild/applicationVersion",
               "type": "many-to-one"
             }
           }
@@ -374,7 +374,7 @@
           "initial": "draft",
           "states": {
             "draft": {
-              "description": "Editable working version, not exposed at the canonical `/apps/openbuilt/{slug}` URL unless this version is the parent Application's productionVersion."
+              "description": "Editable working version, not exposed at the canonical `/apps/openbuild/{slug}` URL unless this version is the parent Application's productionVersion."
             },
             "published": {
               "description": "Reachable through routing — eligible to be the parent Application's productionVersion. The on_transition action upserts the corresponding BuiltAppRoute keyed by the parent Application's slug."
@@ -390,7 +390,7 @@
               "description": "Mark this version as ready to be the parent Application's productionVersion. Relocated from Application schema per ADR-002 — published-ness is per-version now.",
               "on_transition": {
                 "upsert_relation": {
-                  "schema": "openbuilt/built-app-route",
+                  "schema": "openbuild/built-app-route",
                   "match": {
                     "slug": "@self.application.slug"
                   },
@@ -558,7 +558,7 @@
           }
         },
         "x-openregister-lifecycle-exception": {
-          "reference": "openspec/changes/openbuilt-export-to-real-app/design.md#decision-7",
+          "reference": "openspec/changes/openbuild-export-to-real-app/design.md#decision-7",
           "rationale": "File generation, ZIP packaging, and GitHub API calls are imperative by nature. ADR-031 §Exceptions(3) allows code for OS-bound side effects. The lifecycle itself remains declarative."
         }
       }

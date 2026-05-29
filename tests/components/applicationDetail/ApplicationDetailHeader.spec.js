@@ -29,7 +29,7 @@ const router = { push: vi.fn(), replace: vi.fn().mockResolvedValue(undefined) }
 const route = { name: 'VirtualAppDetail', params: { objectId: 'app-uuid' }, query: {} }
 
 /**
- * Spec: openbuilt-app-detail-overview / application-detail-overview
+ * Spec: openbuild-app-detail-overview / application-detail-overview
  * REQ-OBADO-001 (six rows), REQ-OBADO-002 (pill ordering), REQ-OBADO-003 (window toggle).
  *
  * Mount-only assertions — the integration behaviour (HTTP fan-out, real

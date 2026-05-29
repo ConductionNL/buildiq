@@ -7,12 +7,12 @@
   -
   - Delegates all upload/remove logic to IconUploadSection (ADR-004 modal
   - isolation: section component owns file I/O, tab owns the context supply).
-  - REQ-OBICON-004 / openbuilt-nextcloud-nav.
+  - REQ-OBICON-004 / openbuild-nextcloud-nav.
   -->
 <template>
 	<div class="ob-icon-tab">
 		<NcNoteCard v-if="!obApp" type="info">
-			{{ t('openbuilt', 'Loading application…') }}
+			{{ t('openbuild', 'Loading application…') }}
 		</NcNoteCard>
 		<IconUploadSection
 			v-else

@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "openbuilt-icon-endpoints-collection",
-		"name": "OpenBuilt — Icon Endpoints (spec A)",
-		"description": "Newman integration suite for the openbuilt-nextcloud-nav OpenSpec change\n(spec A, REQ-OBICON-002 / REQ-OBICON-003). Exercises the two icon-serving\nendpoints registered in appinfo/routes.php:\n\n  GET /icons/{slug}.svg       → IconController::iconLight\n  GET /icons/{slug}-dark.svg  → IconController::iconDark\n\nCovers spec A task 7.6:\n  - GET /icons/hello-world.svg returns 200 + Content-Type: image/svg+xml\n  - GET /icons/hello-world-dark.svg returns 200 + Content-Type: image/svg+xml\n  - Unauthenticated request returns 401 (or 403)\n\nPresupposes the seeded hello-world Application with attached SVG icons\n(SeedHelloWorld repair step, or OR-uploaded attachments).",
+		"_postman_id": "openbuild-icon-endpoints-collection",
+		"name": "OpenBuild — Icon Endpoints (spec A)",
+		"description": "Newman integration suite for the openbuild-nextcloud-nav OpenSpec change\n(spec A, REQ-OBICON-002 / REQ-OBICON-003). Exercises the two icon-serving\nendpoints registered in appinfo/routes.php:\n\n  GET /icons/{slug}.svg       → IconController::iconLight\n  GET /icons/{slug}-dark.svg  → IconController::iconDark\n\nCovers spec A task 7.6:\n  - GET /icons/hello-world.svg returns 200 + Content-Type: image/svg+xml\n  - GET /icons/hello-world-dark.svg returns 200 + Content-Type: image/svg+xml\n  - Unauthenticated request returns 401 (or 403)\n\nPresupposes the seeded hello-world Application with attached SVG icons\n(SeedHelloWorld repair step, or OR-uploaded attachments).",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -30,7 +30,7 @@
 						"header": [
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuilt/icons/{{test_slug}}.svg"
+						"url": "{{base_url}}/index.php/apps/openbuild/icons/{{test_slug}}.svg"
 					},
 					"event": [
 						{
@@ -62,7 +62,7 @@
 						"header": [
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuilt/icons/{{test_slug}}-dark.svg"
+						"url": "{{base_url}}/index.php/apps/openbuild/icons/{{test_slug}}-dark.svg"
 					},
 					"event": [
 						{
@@ -91,7 +91,7 @@
 						"auth": { "type": "noauth" },
 						"method": "GET",
 						"header": [],
-						"url": "{{base_url}}/index.php/apps/openbuilt/icons/{{test_slug}}.svg"
+						"url": "{{base_url}}/index.php/apps/openbuild/icons/{{test_slug}}.svg"
 					},
 					"event": [
 						{

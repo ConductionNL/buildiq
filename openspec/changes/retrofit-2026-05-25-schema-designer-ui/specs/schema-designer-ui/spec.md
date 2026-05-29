@@ -6,7 +6,7 @@ retrofit: true
 
 ## Purpose
 
-The Schema Designer is OpenBuilt's visual editor for authoring an
+The Schema Designer is OpenBuild's visual editor for authoring an
 Application version's OpenRegister schemas: their header (slug, title,
 description, version), property fields, lifecycle state machine,
 relations, widgets, and derived-value blocks (aggregations,

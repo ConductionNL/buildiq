@@ -8,27 +8,27 @@
   -->
 <template>
 	<NcDialog
-		:name="t('openbuilt', 'Delete schema')"
+		:name="t('openbuild', 'Delete schema')"
 		:open="open"
 		size="small"
 		@update:open="onOpenUpdate">
-		<p class="openbuilt-delete-schema-dialog__warning">
-			{{ t('openbuilt', 'You are about to delete the schema {slug}. All objects of this schema may be affected. Type the schema slug below to confirm.', { slug: schemaSlug }) }}
+		<p class="openbuild-delete-schema-dialog__warning">
+			{{ t('openbuild', 'You are about to delete the schema {slug}. All objects of this schema may be affected. Type the schema slug below to confirm.', { slug: schemaSlug }) }}
 		</p>
 		<NcTextField
 			:value="typed"
-			:label="t('openbuilt', 'Type the slug to confirm')"
+			:label="t('openbuild', 'Type the slug to confirm')"
 			:placeholder="schemaSlug"
 			@update:value="typed = $event" />
 		<template #actions>
 			<NcButton @click="onCancel">
-				{{ t('openbuilt', 'Cancel') }}
+				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				type="error"
 				:disabled="!canDelete"
 				@click="onConfirm">
-				{{ t('openbuilt', 'Delete schema') }}
+				{{ t('openbuild', 'Delete schema') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -118,7 +118,7 @@ export default {
 </script>
 
 <style scoped>
-.openbuilt-delete-schema-dialog__warning {
+.openbuild-delete-schema-dialog__warning {
 	margin: 0 0 12px;
 	line-height: 1.5;
 	color: var(--color-text-maxcontrast);

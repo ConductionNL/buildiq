@@ -1,6 +1,6 @@
 {
     "translations": {
-        "OpenBuilt settings": "OpenBuilt settings",
+        "OpenBuild settings": "OpenBuild settings",
         "Configure the app settings": "Configure the app settings",
         "Configuration": "Configuration",
         "Completed": "Completed",
@@ -31,7 +31,7 @@
         "This app needs OpenRegister to store and manage data. Please install OpenRegister from the app store to get started.": "This app needs OpenRegister to store and manage data. Please install OpenRegister from the app store to get started.",
         "User settings will appear here in a future update.": "User settings will appear here in a future update.",
         "Version Information": "Version Information",
-        "Information about the current OpenBuilt installation": "Information about the current OpenBuilt installation",
+        "Information about the current OpenBuild installation": "Information about the current OpenBuild installation",
         "Support": "Support",
         "For support, contact us at": "For support, contact us at",
 
@@ -39,7 +39,7 @@
         "No virtual apps yet — seed `hello-world` should appear after install.": "No virtual apps yet — seed `hello-world` should appear after install.",
         "Status": "Status",
         "Version": "Version",
-        "Integrator-only editor: edit the raw JSON manifest below. The visual editor lives in a follow-on release (openbuilt-page-editor).": "Integrator-only editor: edit the raw JSON manifest below. The visual editor lives in a follow-on release (openbuilt-page-editor).",
+        "Integrator-only editor: edit the raw JSON manifest below. The visual editor lives in a follow-on release (openbuild-page-editor).": "Integrator-only editor: edit the raw JSON manifest below. The visual editor lives in a follow-on release (openbuild-page-editor).",
         "Paste or edit the JSON manifest here. See @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json for the canonical schema.": "Paste or edit the JSON manifest here. See @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json for the canonical schema.",
         "Invalid manifest": "Invalid manifest",
         "Open virtual app": "Open virtual app",

@@ -2,14 +2,14 @@
 
 ### Requirement: REQ-OBICON-001 Icon fields on Application schema (top-level)
 
-The `Application` schema in `lib/Settings/openbuilt_register.json` SHALL declare two optional
+The `Application` schema in `lib/Settings/openbuild_register.json` SHALL declare two optional
 top-level properties — `icon` and `iconDark` — as siblings to `slug`, `name`, `manifest`,
 `version`, and `permissions`. Each SHALL be an object of shape `{ "ref": "<filename>" }` where
 `<filename>` is the name of an SVG file attached to the Application record via OpenRegister's
 files-attached-to-object mechanism (ADR-001). Both fields SHALL be optional; omitting them
 SHALL NOT cause schema validation failure.
 
-Icons live outside the `manifest` object deliberately: they are openbuilt-side admin
+Icons live outside the `manifest` object deliberately: they are openbuild-side admin
 metadata, not part of the manifest the citizen developer designs and the runtime serves
 to `CnAppRoot`. This keeps the change orthogonal to `app-manifest.schema.json` and avoids
 any upstream coupling with `@conduction/nextcloud-vue`.
@@ -34,7 +34,7 @@ any upstream coupling with `@conduction/nextcloud-vue`.
 
 ### Requirement: REQ-OBICON-002 Icon-serving endpoint (light)
 
-The system SHALL expose `GET /index.php/apps/openbuilt/icons/{slug}.svg` backed by
+The system SHALL expose `GET /index.php/apps/openbuild/icons/{slug}.svg` backed by
 `IconController::iconLight`. The endpoint SHALL:
 
 1. Look up the published Application by slug via OR's ObjectService.
@@ -42,7 +42,7 @@ The system SHALL expose `GET /index.php/apps/openbuilt/icons/{slug}.svg` backed 
    fetch the corresponding attached file from OR and return its bytes with
    `Content-Type: image/svg+xml`.
 3. If the icon ref is absent or the attached file cannot be retrieved, fall back to
-   OpenBuilt's own `/img/app.svg` filesystem asset.
+   OpenBuild's own `/img/app.svg` filesystem asset.
 4. Set `Cache-Control: public, max-age=60` on every successful response.
 5. Require any valid NC session (`#[NoAdminRequired]`); return `401` when no session exists.
 
@@ -59,7 +59,7 @@ The system SHALL expose `GET /index.php/apps/openbuilt/icons/{slug}.svg` backed 
 - **WHEN** an authenticated user requests `/icons/no-icon-app.svg`
 - **AND** the no-icon-app Application has no `icon` field
 - **THEN** the response is `200 image/svg+xml` and the body is the contents of
-  OpenBuilt's `/img/app.svg`
+  OpenBuild's `/img/app.svg`
 
 #### Scenario: Unauthenticated request is rejected
 
@@ -68,13 +68,13 @@ The system SHALL expose `GET /index.php/apps/openbuilt/icons/{slug}.svg` backed 
 
 ### Requirement: REQ-OBICON-003 Icon-serving endpoint (dark)
 
-The system SHALL expose `GET /index.php/apps/openbuilt/icons/{slug}-dark.svg` backed by
+The system SHALL expose `GET /index.php/apps/openbuild/icons/{slug}-dark.svg` backed by
 `IconController::iconDark`. The endpoint SHALL apply the following fallback chain in order:
 
 1. `iconDark.ref` (top-level on the Application) → attached file on the Application record.
 2. `icon.ref` (top-level on the Application) → attached file on the Application record.
-3. OpenBuilt's own `/img/app-dark.svg` filesystem asset.
-4. OpenBuilt's own `/img/app.svg` filesystem asset (final fallback).
+3. OpenBuild's own `/img/app-dark.svg` filesystem asset.
+4. OpenBuild's own `/img/app.svg` filesystem asset (final fallback).
 
 Cache and auth posture SHALL be identical to REQ-OBICON-002.
 
@@ -97,7 +97,7 @@ Cache and auth posture SHALL be identical to REQ-OBICON-002.
 - **WHEN** an authenticated user requests `/icons/no-icon-app-dark.svg`
 - **AND** the Application has neither `icon` nor `iconDark`
 - **THEN** the response is `200 image/svg+xml` containing the contents of
-  OpenBuilt's `/img/app-dark.svg`
+  OpenBuild's `/img/app-dark.svg`
 
 ### Requirement: REQ-OBICON-004 Icon section on Application detail page
 
@@ -114,7 +114,7 @@ The Application detail page SHALL include an **Icon** section exposing:
 - A remove button for each slot that detaches the file from OR and clears the corresponding
   top-level ref.
 
-The section SHALL NOT introduce a new openbuilt-side file-storage mechanism; all file I/O
+The section SHALL NOT introduce a new openbuild-side file-storage mechanism; all file I/O
 goes through OR's existing files-attached-to-object endpoint (ADR-001).
 
 #### Scenario: User uploads a light icon

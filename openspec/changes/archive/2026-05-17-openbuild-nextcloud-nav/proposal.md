@@ -5,8 +5,8 @@ depends_on: []
 
 ## Why
 
-Published OpenBuilt virtual apps are invisible in the Nextcloud top bar — users must navigate
-into the OpenBuilt shell, find the app, and click through to reach it, instead of reaching
+Published OpenBuild virtual apps are invisible in the Nextcloud top bar — users must navigate
+into the OpenBuild shell, find the app, and click through to reach it, instead of reaching
 it directly from the global navigation. Adding a per-app top-bar entry (gated by the existing
 `permissions` RBAC block) makes virtual apps first-class citizens of the Nextcloud navigation
 surface and lets an operator brand each entry with a per-app SVG icon stored per ADR-001.
@@ -21,8 +21,8 @@ surface and lets an operator brand each entry with a per-app SVG icon stored per
   not part of the manifest blob the citizen developer designs and the runtime serves to
   `CnAppRoot`. This keeps the change orthogonal to `@conduction/nextcloud-vue`'s app-manifest
   schema (no upstream patch required).
-- **NEW** Icon-serving endpoints `GET /apps/openbuilt/icons/{slug}.svg` and
-  `GET /apps/openbuilt/icons/{slug}-dark.svg` — thin controller backed by a service that reads
+- **NEW** Icon-serving endpoints `GET /apps/openbuild/icons/{slug}.svg` and
+  `GET /apps/openbuild/icons/{slug}-dark.svg` — thin controller backed by a service that reads
   the attached SVG from OR, falls back through `iconDark → icon → /img/app-dark.svg →
   /img/app.svg` for the dark variant and `icon → /img/app.svg` for the light variant.
   60-second HTTP cache. Any signed-in user may fetch.
@@ -52,9 +52,9 @@ surface and lets an operator brand each entry with a per-app SVG icon stored per
 
 ### Modified Capabilities
 
-- `openbuilt-application-register`: Schema patch — adds `icon` and `iconDark` as optional
+- `openbuild-application-register`: Schema patch — adds `icon` and `iconDark` as optional
   top-level properties on the `Application` schema (sibling to `manifest`, not inside it).
-- `openbuilt-runtime`: `ApplicationCard.vue` gains an icon and loses the redundant Live chip.
+- `openbuild-runtime`: `ApplicationCard.vue` gains an icon and loses the redundant Live chip.
 
 ## Impact
 
@@ -62,7 +62,7 @@ surface and lets an operator brand each entry with a per-app SVG icon stored per
   `lib/Service/AppNavigationService.php`.
 - **Modified PHP** — `lib/AppInfo/Application.php` (`boot()` wired), `appinfo/routes.php`
   (two icon routes registered).
-- **Modified JSON** — `lib/Settings/openbuilt_register.json` (two top-level fields added to
+- **Modified JSON** — `lib/Settings/openbuild_register.json` (two top-level fields added to
   the `application` schema).
 - **Modified Vue** — `src/components/ApplicationCard.vue` (icon + Live chip removal);
   detail-page icon section added via existing tab/section extension points.

@@ -2,19 +2,19 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Playwright end-to-end test for the OpenBuilt template gallery and
+ * Playwright end-to-end test for the OpenBuild template gallery and
  * clone-from-template flow (REQ-OBTC-003, REQ-OBTC-004, REQ-OBTC-006,
  * REQ-OBTC-008).
  *
  * Scenario:
  *   1. Log in as admin via /login.
- *   2. Navigate to /apps/openbuilt/templates.
+ *   2. Navigate to /apps/openbuild/templates.
  *   3. Assert the four seeded template cards render.
  *   4. Click "Use this template" on a card.
  *   5. Fill the clone dialog with a new name + slug.
  *   6. Submit; assert the navigation lands on the page editor for the new app.
  *
- * NOTE: Playwright infrastructure is not yet wired into openbuilt's package
+ * NOTE: Playwright infrastructure is not yet wired into openbuild's package
  * scripts. This file is the canonical e2e coverage for the spec and will
  * run once the cohort-wide Playwright bootstrap lands (mirroring the same
  * deferred-bootstrap pattern used by mydash).
@@ -34,11 +34,11 @@ void ADMIN_USER
 void ADMIN_PASS
 void NEXTCLOUD_URL
 
-test.describe('OpenBuilt template gallery', () => {
+test.describe('OpenBuild template gallery', () => {
 
 	test('lists the four seeded templates and clones one into a draft application', async ({ page }) => {
 		// 1. Navigate to the gallery.
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuilt/templates`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/templates`)
 
 		// 2. Wait for the gallery shell to render.
 		await expect(page.locator('.template-gallery')).toBeVisible({ timeout: 15_000 })
@@ -84,7 +84,7 @@ test.describe('OpenBuilt template gallery', () => {
 	})
 
 	test('filter by category narrows to government-services only', async ({ page }) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuilt/templates`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/templates`)
 		await expect(page.locator('.template-gallery')).toBeVisible({ timeout: 15_000 })
 		await expect(page.locator('.template-card')).toHaveCount(4, { timeout: 15_000 })
 

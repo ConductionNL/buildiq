@@ -1,13 +1,13 @@
 <?php
 
 /**
- * Handler for the openbuilt.upsertSchema MCP tool.
+ * Handler for the openbuild.upsertSchema MCP tool.
  *
  * Creates or updates a JSON Schema in the given app version's per-version OR
  * register. The slug is automatically namespaced with appSlug+versionSlug.
  *
  * @category Service
- * @package  OCA\OpenBuilt\Mcp\Handler
+ * @package  OCA\OpenBuild\Mcp\Handler
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,12 +23,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Mcp\Handler;
+namespace OCA\OpenBuild\Mcp\Handler;
 
 /**
- * Handles the openbuilt.upsertSchema tool invocation.
+ * Handles the openbuild.upsertSchema tool invocation.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-8
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
  */
 class UpsertSchemaHandler extends AbstractToolHandler
 {
@@ -61,7 +61,7 @@ class UpsertSchemaHandler extends AbstractToolHandler
         $properties     = $validation['properties'];
         $required       = $validation['required'];
         $namespacedSlug = $appSlug.'-'.$versionSlug.'-'.$rawSlug;
-        $registerSlug   = 'openbuilt-'.$appSlug.'-'.$versionSlug;
+        $registerSlug   = 'openbuild-'.$appSlug.'-'.$versionSlug;
 
         try {
             $schemaMapper   = $this->container->get('OCA\OpenRegister\Db\SchemaMapper');
@@ -124,7 +124,7 @@ class UpsertSchemaHandler extends AbstractToolHandler
             ];
         } catch (\Throwable $e) {
             $this->logger->error(
-                'OpenBuilt MCP: upsertSchema failed',
+                'OpenBuild MCP: upsertSchema failed',
                 ['appSlug' => $appSlug, 'slug' => $rawSlug, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
             );
             return $this->errorResult(error: 'upsert_failed', message: 'Failed to upsert schema. See server logs for details.');
@@ -273,7 +273,7 @@ class UpsertSchemaHandler extends AbstractToolHandler
             $schemas  = $register->getSchemas();
             if (is_array($schemas) === false || in_array(needle: $schemaId, haystack: $schemas, strict: true) === false) {
                 $this->logger->warning(
-                    'OpenBuilt MCP: upsertSchema ownership check failed',
+                    'OpenBuild MCP: upsertSchema ownership check failed',
                     ['register' => $registerSlug, 'schemaId' => $schemaId]
                 );
                 return $this->errorResult(
@@ -284,7 +284,7 @@ class UpsertSchemaHandler extends AbstractToolHandler
         } catch (\Throwable $e) {
             // Register not found: also deny (schema cannot belong to it).
             $this->logger->warning(
-                'OpenBuilt MCP: upsertSchema register not found during ownership check',
+                'OpenBuild MCP: upsertSchema register not found during ownership check',
                 ['register' => $registerSlug, 'exception' => $e->getMessage()]
             );
             return $this->errorResult(
@@ -321,7 +321,7 @@ class UpsertSchemaHandler extends AbstractToolHandler
             $registerMapper->update($register);
         } catch (\Throwable $e) {
             $this->logger->warning(
-                'OpenBuilt MCP: upsertSchema attach-to-register failed',
+                'OpenBuild MCP: upsertSchema attach-to-register failed',
                 ['register' => $registerSlug, 'exception' => $e->getMessage()]
             );
         }

@@ -6,18 +6,18 @@
   Four radio-card options: single, dev-prod, dev-staging-prod, custom.
   Selecting a canned preset pre-populates payload.versions with the hardcoded chain.
   Selecting custom marks the selection so the wizard shell shows step 3.
-  spec: openbuilt-app-creation-wizard REQ-OBWIZ-002, REQ-OBWIZ-003
+  spec: openbuild-app-creation-wizard REQ-OBWIZ-002, REQ-OBWIZ-003
 -->
 <template>
 	<div class="wizard-step2">
 		<h3 class="wizard-step2__heading">
-			{{ t('openbuilt', 'Choose a version preset') }}
+			{{ t('openbuild', 'Choose a version preset') }}
 		</h3>
 		<p class="wizard-step2__description">
-			{{ t('openbuilt', 'Select how many deployment versions your app will have. You can always add more versions later.') }}
+			{{ t('openbuild', 'Select how many deployment versions your app will have. You can always add more versions later.') }}
 		</p>
 
-		<div class="wizard-step2__presets" role="radiogroup" :aria-label="t('openbuilt', 'Version presets')">
+		<div class="wizard-step2__presets" role="radiogroup" :aria-label="t('openbuild', 'Version presets')">
 			<button
 				v-for="option in presetOptions"
 				:key="option.id"
@@ -76,27 +76,27 @@ export default {
 			return [
 				{
 					id: 'single',
-					label: t('openbuilt', 'Single'),
+					label: t('openbuild', 'Single'),
 					chain: 'production',
-					description: t('openbuilt', 'One version only. Best for simple apps without a staging environment.'),
+					description: t('openbuild', 'One version only. Best for simple apps without a staging environment.'),
 				},
 				{
 					id: 'dev-prod',
-					label: t('openbuilt', 'Development + Production'),
+					label: t('openbuild', 'Development + Production'),
 					chain: 'development → production',
-					description: t('openbuilt', 'A safe playground for changes before they go live.'),
+					description: t('openbuild', 'A safe playground for changes before they go live.'),
 				},
 				{
 					id: 'dev-staging-prod',
-					label: t('openbuilt', 'Development + Staging + Production'),
+					label: t('openbuild', 'Development + Staging + Production'),
 					chain: 'development → staging → production',
-					description: t('openbuilt', 'Classic three-tier pipeline for larger teams.'),
+					description: t('openbuild', 'Classic three-tier pipeline for larger teams.'),
 				},
 				{
 					id: 'custom',
-					label: t('openbuilt', 'Custom'),
-					chain: t('openbuilt', 'Define your own chain'),
-					description: t('openbuilt', 'Name and order your versions however your team works.'),
+					label: t('openbuild', 'Custom'),
+					chain: t('openbuild', 'Define your own chain'),
+					description: t('openbuild', 'Name and order your versions however your team works.'),
 				},
 			]
 		},

@@ -5,25 +5,25 @@
   Step 1 — Basics
   Collects the Application name, slug (auto-derived, editable via Advanced toggle),
   description, and optional light/dark icon uploads.
-  spec: openbuilt-app-creation-wizard REQ-OBWIZ-002, REQ-OBWIZ-005
+  spec: openbuild-app-creation-wizard REQ-OBWIZ-002, REQ-OBWIZ-005
 -->
 <template>
 	<div class="wizard-step1">
 		<h3 class="wizard-step1__heading">
-			{{ t('openbuilt', 'App basics') }}
+			{{ t('openbuild', 'App basics') }}
 		</h3>
 
 		<!-- Name input -->
 		<div class="wizard-step1__field">
 			<label class="wizard-step1__label" for="wizard-app-name">
-				{{ t('openbuilt', 'Name') }} <span aria-hidden="true">*</span>
+				{{ t('openbuild', 'Name') }} <span aria-hidden="true">*</span>
 			</label>
 			<input
 				id="wizard-app-name"
 				class="wizard-step1__input"
 				type="text"
 				:value="payload.name"
-				:placeholder="t('openbuilt', 'e.g. My Permit Tracker')"
+				:placeholder="t('openbuild', 'e.g. My Permit Tracker')"
 				autocomplete="off"
 				@input="onNameInput">
 		</div>
@@ -32,7 +32,7 @@
 		<div class="wizard-step1__field wizard-step1__field--slug">
 			<div class="wizard-step1__slug-row">
 				<span class="wizard-step1__slug-label">
-					{{ t('openbuilt', 'Slug') }}:
+					{{ t('openbuild', 'Slug') }}:
 				</span>
 				<code class="wizard-step1__slug-chip" :class="{ 'wizard-step1__slug-chip--error': slugError }">
 					{{ payload.slug || '—' }}
@@ -41,7 +41,7 @@
 					type="button"
 					class="wizard-step1__advanced-toggle"
 					@click="showAdvanced = !showAdvanced">
-					{{ showAdvanced ? t('openbuilt', 'Hide') : t('openbuilt', 'Advanced') }}
+					{{ showAdvanced ? t('openbuild', 'Hide') : t('openbuild', 'Advanced') }}
 				</button>
 			</div>
 
@@ -52,7 +52,7 @@
 					:class="{ 'wizard-step1__input--error': slugError }"
 					type="text"
 					:value="payload.slug"
-					:placeholder="t('openbuilt', 'kebab-case-slug')"
+					:placeholder="t('openbuild', 'kebab-case-slug')"
 					autocomplete="off"
 					@input="onSlugInput">
 				<p v-if="slugError" class="wizard-step1__error-msg" role="alert">
@@ -64,13 +64,13 @@
 		<!-- Description textarea -->
 		<div class="wizard-step1__field">
 			<label class="wizard-step1__label" for="wizard-app-description">
-				{{ t('openbuilt', 'Description') }}
+				{{ t('openbuild', 'Description') }}
 			</label>
 			<textarea
 				id="wizard-app-description"
 				class="wizard-step1__textarea"
 				:value="payload.description"
-				:placeholder="t('openbuilt', 'Optional: describe what this app does')"
+				:placeholder="t('openbuild', 'Optional: describe what this app does')"
 				rows="3"
 				@input="onDescriptionInput" />
 		</div>
@@ -78,12 +78,12 @@
 		<!-- Icon uploads (optional) -->
 		<div class="wizard-step1__field">
 			<p class="wizard-step1__label">
-				{{ t('openbuilt', 'App icon (optional)') }}
+				{{ t('openbuild', 'App icon (optional)') }}
 			</p>
 			<div class="wizard-step1__icons">
 				<div class="wizard-step1__icon-slot">
 					<label for="wizard-icon-light" class="wizard-step1__file-label">
-						{{ t('openbuilt', 'Light icon (SVG)') }}
+						{{ t('openbuild', 'Light icon (SVG)') }}
 					</label>
 					<input
 						id="wizard-icon-light"
@@ -94,7 +94,7 @@
 				</div>
 				<div class="wizard-step1__icon-slot">
 					<label for="wizard-icon-dark" class="wizard-step1__file-label">
-						{{ t('openbuilt', 'Dark icon (SVG)') }}
+						{{ t('openbuild', 'Dark icon (SVG)') }}
 					</label>
 					<input
 						id="wizard-icon-dark"

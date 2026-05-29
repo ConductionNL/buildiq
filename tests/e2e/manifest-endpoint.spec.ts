@@ -18,7 +18,7 @@ import { test, expect } from '@playwright/test'
  */
 test.describe('Manifest endpoint — canonical shape', () => {
 	test('GET /api/applications/hello-world/manifest returns the seeded manifest', async ({ request }) => {
-		const response = await request.get('/index.php/apps/openbuilt/api/applications/hello-world/manifest')
+		const response = await request.get('/index.php/apps/openbuild/api/applications/hello-world/manifest')
 
 		expect(response.status(), 'manifest endpoint must return 200 for the seeded slug').toBe(200)
 
@@ -52,7 +52,7 @@ test.describe('Manifest endpoint — canonical shape', () => {
 	})
 
 	test('GET /api/applications/no-such-slug/manifest returns 404 with not_found', async ({ request }) => {
-		const response = await request.get('/index.php/apps/openbuilt/api/applications/no-such-slug/manifest')
+		const response = await request.get('/index.php/apps/openbuild/api/applications/no-such-slug/manifest')
 
 		expect(response.status(), 'unknown slug must 404').toBe(404)
 

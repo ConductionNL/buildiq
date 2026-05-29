@@ -14,7 +14,7 @@ webpackConfig.stats = {
 	modules: false,
 }
 
-const appId = 'openbuilt'
+const appId = 'openbuild'
 webpackConfig.entry = {
 	main: {
 		import: path.join(__dirname, 'src', 'main.js'),
@@ -26,9 +26,31 @@ webpackConfig.entry = {
 	},
 }
 
-// Use local source when available (monorepo dev), otherwise fall back to npm package
+// Use local source when available (monorepo dev), otherwise fall back to npm
+// package. A local checkout is only used when its version satisfies this app's
+// declared @conduction/nextcloud-vue range — otherwise a STALE local checkout
+// (e.g. beta.7 when the app needs ^beta.101) would be silently bundled instead
+// of the resolved node_modules package, producing wrong/broken builds.
 const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
-const useLocalLib = fs.existsSync(localLib)
+const localLibPkg = path.resolve(__dirname, '../nextcloud-vue/package.json')
+let useLocalLib = fs.existsSync(localLib)
+if (useLocalLib && fs.existsSync(localLibPkg)) {
+	try {
+		const semver = require('semver')
+		const required = require('./package.json').dependencies['@conduction/nextcloud-vue']
+		const localVersion = require(localLibPkg).version
+		if (!semver.satisfies(localVersion, required, { includePrerelease: true })) {
+			// eslint-disable-next-line no-console
+			console.warn(
+				`[webpack] Ignoring local ../nextcloud-vue (v${localVersion}); it does not satisfy `
+				+ `the required range "${required}". Building against node_modules instead.`,
+			)
+			useLocalLib = false
+		}
+	} catch (e) {
+		// semver unavailable or package read failed — keep the existsSync default.
+	}
+}
 
 webpackConfig.resolve = {
 	extensions: ['.vue', '.js'],

@@ -2,7 +2,7 @@
 
 ### Requirement: REQ-OBA-006 Application schema carries a permissions block
 
-The system SHALL extend the `Application` schema in `lib/Settings/openbuilt_register.json` with an optional `permissions` property of shape:
+The system SHALL extend the `Application` schema in `lib/Settings/openbuild_register.json` with an optional `permissions` property of shape:
 
 ```json
 {
@@ -25,7 +25,7 @@ Application) remain schema-valid; a migration step (see
 REQ-OBA-007) populates a default value for every existing
 Application on apply. New Applications created after this spec
 lands carry `permissions` from the moment of creation by virtue of
-REQ-OBRBAC-001 in the `openbuilt-rbac` capability. The OpenBuilt
+REQ-OBRBAC-001 in the `openbuild-rbac` capability. The OpenBuild
 repair step that imports the register configuration SHALL update
 the schema in place idempotently via
 `ConfigurationService::importFromApp()` (memory rule). No new
@@ -34,9 +34,9 @@ addition to `Application` per ADR-031 (no service class).
 
 #### Scenario: Schema declares the permissions property after install
 
-- **WHEN** the OpenBuilt app is installed (or upgraded) and its
+- **WHEN** the OpenBuild app is installed (or upgraded) and its
   repair step runs
-- **THEN** the `Application` schema in the `openbuilt` register
+- **THEN** the `Application` schema in the `openbuild` register
   exposes the `permissions` property with the shape above
 - **AND** the property is omittable (legacy Application objects
   without it remain schema-valid)
@@ -58,7 +58,7 @@ addition to `Application` per ADR-031 (no service class).
 
 ### Requirement: REQ-OBA-007 Migration populates permissions for pre-existing Applications
 
-The OpenBuilt repair step SHALL include an idempotent migration
+The OpenBuild repair step SHALL include an idempotent migration
 that, for every existing `Application` object whose `permissions`
 property is missing or null, populates `permissions.owners` with the
 system organisation's `admin` group, and sets `editors` and

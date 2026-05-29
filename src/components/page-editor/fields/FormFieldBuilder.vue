@@ -11,13 +11,13 @@
 				:value="field.key || ''"
 				type="text"
 				class="form-field-builder__field"
-				:placeholder="t('openbuilt', 'Key')"
+				:placeholder="t('openbuild', 'Key')"
 				@input="updateField(index, 'key', $event.target.value)">
 			<input
 				:value="field.label || ''"
 				type="text"
 				class="form-field-builder__field"
-				:placeholder="t('openbuilt', 'Label')"
+				:placeholder="t('openbuild', 'Label')"
 				@input="updateField(index, 'label', $event.target.value)">
 			<select
 				:value="field.type || 'string'"
@@ -32,24 +32,24 @@
 					type="checkbox"
 					:checked="!!field.required"
 					@change="updateField(index, 'required', $event.target.checked)">
-				{{ t('openbuilt', 'Required') }}
+				{{ t('openbuild', 'Required') }}
 			</label>
 			<input
 				:value="field.pattern || ''"
 				type="text"
 				class="form-field-builder__field form-field-builder__field--narrow"
-				:placeholder="t('openbuilt', 'Pattern')"
+				:placeholder="t('openbuild', 'Pattern')"
 				@input="updateField(index, 'pattern', $event.target.value)">
 			<button
 				type="button"
 				class="form-field-builder__remove"
-				:title="t('openbuilt', 'Remove field')"
+				:title="t('openbuild', 'Remove field')"
 				@click="removeField(index)">
 				✕
 			</button>
 		</div>
 		<button type="button" class="form-field-builder__add" @click="addField">
-			+ {{ t('openbuilt', 'Add field') }}
+			+ {{ t('openbuild', 'Add field') }}
 		</button>
 	</div>
 </template>

@@ -15,7 +15,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { useRole, getCurrentUserGroups } from '../composables/useRole.js'
 
-const OR_OBJECTS = '/apps/openregister/api/objects/openbuilt/application'
+const OR_OBJECTS = '/apps/openregister/api/objects/openbuild/application'
 
 export default {
 	props: {
@@ -57,7 +57,7 @@ export default {
 			}
 			const uuid = this.obAppUuid
 			if (!uuid) {
-				this.obAppError = t('openbuilt', 'No application selected.')
+				this.obAppError = t('openbuild', 'No application selected.')
 				return
 			}
 			this.obAppLoading = true
@@ -65,7 +65,7 @@ export default {
 				const { data } = await axios.get(generateUrl(`${OR_OBJECTS}/${uuid}`))
 				this.obApp = (data && data.results) ? data.results : (data && data['@self'] ? data : data)
 			} catch (e) {
-				this.obAppError = `${t('openbuilt', 'Failed to load application')}: ${e.message || e}`
+				this.obAppError = `${t('openbuild', 'Failed to load application')}: ${e.message || e}`
 			} finally {
 				this.obAppLoading = false
 			}

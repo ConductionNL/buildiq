@@ -1,6 +1,6 @@
 ## Context
 
-Spec `openbuilt-versioning-model` (ADR-002) restructures a virtual app into a logical `Application` plus N `ApplicationVersion` rows linked in a linear chain, each with its own per-version OR register. This spec ships the **only** user-facing path that produces a complete, valid app in that model: a four-step wizard replacing the legacy "Add Application" single-form dialog. There is no install-time seed and no fallback flow — every new virtual app is created here.
+Spec `openbuild-versioning-model` (ADR-002) restructures a virtual app into a logical `Application` plus N `ApplicationVersion` rows linked in a linear chain, each with its own per-version OR register. This spec ships the **only** user-facing path that produces a complete, valid app in that model: a four-step wizard replacing the legacy "Add Application" single-form dialog. There is no install-time seed and no fallback flow — every new virtual app is created here.
 
 ## Goals / Non-Goals
 
@@ -9,7 +9,7 @@ Spec `openbuilt-versioning-model` (ADR-002) restructures a virtual app into a lo
 - Replace the existing index-page "Add Application" entry point with a guided four-step wizard.
 - Provision the full chain (Application + N versions + N registers + linear `promotesTo` chain + `productionVersion` pointer) in one atomic backend call.
 - Support four presets — `single`, `dev-prod`, `dev-staging-prod`, `custom` — covering the common shapes and a fully admin-defined option.
-- Enforce slug discipline: kebab-case pattern, no leading underscore (system-reserved per `openbuilt-version-routing`), no duplicate version slugs within the same app's chain.
+- Enforce slug discipline: kebab-case pattern, no leading underscore (system-reserved per `openbuild-version-routing`), no duplicate version slugs within the same app's chain.
 - Roll back cleanly when any step of the atomic creation fails — no orphaned Application rows, no orphaned ApplicationVersion rows, no orphaned per-version registers.
 
 **Non-Goals:**
@@ -18,7 +18,7 @@ Spec `openbuilt-versioning-model` (ADR-002) restructures a virtual app into a lo
 - Template marketplace integration. A wizard step "Start from template" is a roadmap follow-up.
 - Cloning data from one app's register into a newly-provisioned app's register. Every wizard-provisioned register starts empty of objects (but seeded with the default schema set per Decision 8).
 - Editing or evolving an existing app's chain. Adding / removing / reordering versions on an already-created app is owned by a follow-up flow on the detail page; this wizard is creation-only.
-- Per-version icon assignment at creation time. The Application icon (per `openbuilt-nextcloud-nav` / ADR-001) lives on the Application record and applies across all versions; the wizard collects an optional icon upload in step 1, but icon editing post-creation is the icon-section flow from spec A.
+- Per-version icon assignment at creation time. The Application icon (per `openbuild-nextcloud-nav` / ADR-001) lives on the Application record and applies across all versions; the wizard collects an optional icon upload in step 1, but icon editing post-creation is the icon-section flow from spec A.
 
 ## Decisions
 
@@ -28,7 +28,7 @@ The wizard is opened from the same button that currently opens the single-form A
 
 ### Decision 2 — Four-step shape
 
-- **Step 1 — Basics.** App name, slug (auto-derived from name, editable via an Advanced toggle), description, optional icon upload (light + dark, per `openbuilt-nextcloud-nav`). All fields validated client-side as the admin types.
+- **Step 1 — Basics.** App name, slug (auto-derived from name, editable via an Advanced toggle), description, optional icon upload (light + dark, per `openbuild-nextcloud-nav`). All fields validated client-side as the admin types.
 - **Step 2 — Preset.** Four radio-card options: `Single`, `Development + Production`, `Development + Staging + Production`, `Custom`. Selecting `Custom` reveals step 3; selecting any of the first three skips straight to step 4.
 - **Step 3 — Custom chain.** Add-row list with name + auto-derived slug. Drag-to-reorder. Top-to-bottom = upstream-to-downstream in the chain. Minimum 1 row; no maximum. Default content when entering: one row named `Production`.
 - **Step 4 — Review.** Read-only summary: app name + slug + description, the version chain in arrow form (`development → staging → production`), confirmation of which version becomes the production pointer (always the terminal/bottom-most). A single `Create` button triggers the backend call.
@@ -50,11 +50,11 @@ Slug for the **app** (step 1): auto-derived from name via `toKebabCase` — lowe
 
 Slug for each **version** (step 3 custom rows; preset rows have hardcoded slugs from Decision 3): same `toKebabCase` rule, same Advanced toggle per row.
 
-Pattern enforced both client- and server-side: `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$`. The negative lookahead `(?!_)` rejects leading underscores; the rest is the existing openbuilt slug pattern from `lib/Settings/openbuilt_register.json`.
+Pattern enforced both client- and server-side: `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$`. The negative lookahead `(?!_)` rejects leading underscores; the rest is the existing openbuild slug pattern from `lib/Settings/openbuild_register.json`.
 
 ### Decision 5 — Underscore-leading rejection
 
-Slugs starting with `_` are rejected. Reason: the `?_version=` underscore convention from `openbuilt-version-routing` reserves the `_*` namespace for openbuilt system use. Letting an admin name a version `_foo` would let them collide with future system identifiers. Documented in the user-facing error message: "Version slugs cannot start with `_` (reserved for openbuilt system use)."
+Slugs starting with `_` are rejected. Reason: the `?_version=` underscore convention from `openbuild-version-routing` reserves the `_*` namespace for openbuild system use. Letting an admin name a version `_foo` would let them collide with future system identifiers. Documented in the user-facing error message: "Version slugs cannot start with `_` (reserved for openbuild system use)."
 
 ### Decision 6 — No-duplicate-slugs-within-chain rule
 
@@ -64,11 +64,11 @@ Within a single app's chain, two versions cannot share a slug. Enforced client-s
 
 The wizard endpoint runs:
 
-1. **Validate the whole payload** (all names, slugs, chain shape, app slug uniqueness across openbuilt). If any check fails, return `422` before creating anything.
+1. **Validate the whole payload** (all names, slugs, chain shape, app slug uniqueness across openbuild). If any check fails, return `422` before creating anything.
 2. **Create the Application record** with its name + slug + description + permissions (caller becomes owner). Capture its UUID.
 3. **For each version in chain order:**
    - Create the `ApplicationVersion` record with `application` set to the Application's UUID, status `draft`, semver `0.1.0`, manifest set to the default Hello-World manifest (Decision 8).
-   - Provision the per-version OR register `openbuilt-{appSlug}-{versionSlug}` and seed its schema set (Decision 8).
+   - Provision the per-version OR register `openbuild-{appSlug}-{versionSlug}` and seed its schema set (Decision 8).
 4. **Wire the chain** — for each non-terminal version, set `promotesTo` to the next downstream version's UUID.
 5. **Set `Application.productionVersion`** to the terminal version's UUID.
 
@@ -113,9 +113,9 @@ The wizard IS the seeding entry point — every virtual app in the system starts
     ]
   }
   ```
-  The `register` field at `pages[1].config.register` is computed per-version at wizard-creation time as `openbuilt-{appSlug}-{versionSlug}`.
+  The `register` field at `pages[1].config.register` is computed per-version at wizard-creation time as `openbuild-{appSlug}-{versionSlug}`.
 
-- **`lib/Resources/wizard/default-schemas.json`** — the seed schema set installed into each freshly-provisioned per-version register. Single schema `hello-message` with `id` + `body` (string) properties. Conduction cobalt `#4376FC` color usage is reserved for the icon (see `openbuilt-nextcloud-nav`); the manifest itself carries no color.
+- **`lib/Resources/wizard/default-schemas.json`** — the seed schema set installed into each freshly-provisioned per-version register. Single schema `hello-message` with `id` + `body` (string) properties. Conduction cobalt `#4376FC` color usage is reserved for the icon (see `openbuild-nextcloud-nav`); the manifest itself carries no color.
 
 These two fixtures are the only "data" this spec ships. They are part of `Impact` and tracked by `tasks.md`.
 
@@ -125,7 +125,7 @@ These two fixtures are the only "data" this spec ships. They are part of `Impact
 |---------|--------------|-------------|----------|
 | Atomic creation + reverse-order rollback | OR doesn't expose a multi-row + multi-register transaction surface | `ApplicationCreationService` | **Imperative** under §Exceptions (cross-system glue + multi-step orchestration). The rollback logic is a pure-function ordered list of reverse-delete calls. |
 | Slug auto-derivation from name (toKebabCase) | n/a | Pure function, both client-side (Vue) and server-side (PHP) | **Imperative** in both (small pure function, no metadata vocabulary applies). |
-| Slug pattern + leading-underscore rejection | Extends the existing JSON-schema `pattern` field on `ApplicationVersion.slug` to `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` | n/a | **Declarative** — patch the schema in `lib/Settings/openbuilt_register.json` (already touched by spec C). Server-side enforcement comes for free from OR's schema validation. |
+| Slug pattern + leading-underscore rejection | Extends the existing JSON-schema `pattern` field on `ApplicationVersion.slug` to `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` | n/a | **Declarative** — patch the schema in `lib/Settings/openbuild_register.json` (already touched by spec C). Server-side enforcement comes for free from OR's schema validation. |
 | No-duplicate-slugs-within-chain | OR's per-row validation cannot reach across rows | `ApplicationCreationService` pre-save guard + client-side reactive computed | **Imperative** under §Exceptions (cross-row guard). |
 | Caller-becomes-owner | n/a | `ApplicationCreationService` reads `IUserSession` and writes `permissions.owners = [caller-uid]` | **Imperative** (cross-system glue: identity → schema field). |
 
@@ -133,11 +133,11 @@ All §Exceptions are pre-existing carve-outs in ADR-031 (cross-row guards, cross
 
 ## Risks / Trade-offs
 
-- **Rollback partial failure.** If the wizard fails at step 3.b (register-provision) and the rollback then fails to delete the previously-created register, the admin sees a `wizard_rollback` error with `rollback_partial`. The orphaned register lingers until manual cleanup via OR's register admin UI. Mitigation: the failure message tells the admin exactly which register was orphaned (`"openbuilt-{appSlug}-{versionSlug}"`); a follow-up `occ openbuilt:cleanup-orphans` command (spec C tasks already note an orphan-prune background job) catches stragglers.
+- **Rollback partial failure.** If the wizard fails at step 3.b (register-provision) and the rollback then fails to delete the previously-created register, the admin sees a `wizard_rollback` error with `rollback_partial`. The orphaned register lingers until manual cleanup via OR's register admin UI. Mitigation: the failure message tells the admin exactly which register was orphaned (`"openbuild-{appSlug}-{versionSlug}"`); a follow-up `occ openbuild:cleanup-orphans` command (spec C tasks already note an orphan-prune background job) catches stragglers.
 - **No transaction across OR registers.** OR's storage layer commits per-row; spanning N rows + N register provisions in a single transaction is not exposed. Mitigation: the wizard sequences operations carefully (Application first, versions in order, registers per version) so partial state on failure has a deterministic shape that the rollback understands.
 - **Client-side validation drift.** Slug pattern enforcement happens twice (Vue and PHP). If one is updated without the other (e.g. a future change relaxes the pattern), users can hit confusing errors. Mitigation: keep the pattern as a single string constant exported from `src/utils/slugPattern.js` and mirrored in `lib/Service/SlugValidator.php`; a CI gate (already wired by existing PHPCS / ESLint config) catches drift.
 - **Drag-to-reorder accessibility.** The custom-chain composer relies on drag handles. Keyboard-only users need an alternative. Mitigation: each row exposes `↑` / `↓` buttons for keyboard reorder; the drag handle is purely additive.
-- **Race condition on app slug uniqueness.** Two admins create apps with the same slug in the same second. The server-side validator queries OR for an existing app with the slug, but the slot between "check" and "create" is non-atomic. Mitigation: rely on OR's unique-index enforcement on `application.slug` (existing in `lib/Settings/openbuilt_register.json`) to reject the duplicate; the wizard endpoint catches the OR constraint violation and returns 409.
+- **Race condition on app slug uniqueness.** Two admins create apps with the same slug in the same second. The server-side validator queries OR for an existing app with the slug, but the slot between "check" and "create" is non-atomic. Mitigation: rely on OR's unique-index enforcement on `application.slug` (existing in `lib/Settings/openbuild_register.json`) to reject the duplicate; the wizard endpoint catches the OR constraint violation and returns 409.
 
 ## Migration Plan
 

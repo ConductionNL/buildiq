@@ -1,6 +1,6 @@
 ## Context
 
-OpenBuilt currently registers a single static top-bar entry for the builder shell via
+OpenBuild currently registers a single static top-bar entry for the builder shell via
 `appinfo/info.xml`. Published virtual apps are invisible in the Nextcloud navigation until a
 user manually navigates into the shell. This spec adds per-app dynamic nav entries, the icon
 pipeline that backs them, and the small UX improvements (icon in `ApplicationCard`, removal of
@@ -23,7 +23,7 @@ endpoint that the app already depends on (per ADR-001).
   detail-page tab hooks).
 - Patch the `Application` schema with optional top-level `icon` and `iconDark` fields
   (`{ ref: "<filename>" }`), sibling to `slug`, `name`, `manifest`, and `permissions` in
-  `lib/Settings/openbuilt_register.json`. Icons are admin-side metadata about the virtual
+  `lib/Settings/openbuild_register.json`. Icons are admin-side metadata about the virtual
   app, not part of the manifest blob the citizen developer designs.
 - Render the icon in `ApplicationCard.vue` and remove the duplicate Live chip.
 - Seed demo icon files on the Hello World Application.
@@ -43,7 +43,7 @@ endpoint that the app already depends on (per ADR-001).
 ## Mixed-spec rationale
 
 The proposal declares `kind: code`. This is a code-dominant change. The only configuration
-touch is a small schema patch in `lib/Settings/openbuilt_register.json` adding two top-level
+touch is a small schema patch in `lib/Settings/openbuild_register.json` adding two top-level
 properties to the `application` schema (≤15 LOC in the JSON file). The patch is tightly
 coupled to the PHP icon-service code introduced by this spec and has no standalone value.
 The bounded config touch satisfies ADR-032's thin-glue exception for mixed specs written as
@@ -103,12 +103,12 @@ was considered for this spec.
 
 ### Decision 2 — Fallback chain direction
 
-For the light icon: `icon.ref` → `/img/app.svg` (OpenBuilt's own branding icon).
+For the light icon: `icon.ref` → `/img/app.svg` (OpenBuild's own branding icon).
 For the dark icon: `iconDark.ref` → `icon.ref` → `/img/app-dark.svg` →
 `/img/app.svg`.
 
 Rationale: an app that uploads only a light icon still gets a reasonable dark-mode fallback
-via openbuilt's own dark icon. An app that uploads neither gets the OpenBuilt branding icon —
+via openbuild's own dark icon. An app that uploads neither gets the OpenBuild branding icon —
 visually consistent for "not yet customised" apps.
 
 ### Decision 3 — Nav entry registration location: `Application::boot()`
@@ -133,11 +133,11 @@ compatible; the `permissions` block can express the full principal-set in one fi
 The icon upload UI is added as a new tab on the Application detail page via the existing tab
 mechanism in `SchemaDesigner.vue` (or the equivalent detail-page extension point). No new top-
 level view is created. The uploader calls OR's standard files-attached-to-object endpoint
-directly from the frontend; no new openbuilt-side upload endpoint is needed.
+directly from the frontend; no new openbuild-side upload endpoint is needed.
 
 ### Decision 6 — Icon endpoint access: any signed-in user
 
-`GET /apps/openbuilt/icons/{slug}.svg` is accessible to any authenticated NC user. The
+`GET /apps/openbuild/icons/{slug}.svg` is accessible to any authenticated NC user. The
 nav-entry visibility check is the gate for "should this user see the nav entry"; once they can
 see the entry and click it, their browser fetches the icon. Restricting the icon endpoint to
 RBAC-eligible users would break icon rendering for users who are eligible but whose group
@@ -205,7 +205,7 @@ The repair step patches the seeded Application's **top-level** fields to:
 No schema migration is needed. `icon` and `iconDark` as top-level Application properties
 are optional; all existing Application records are valid after the JSON patch. The schema is
 patched via the existing `InitializeSettings` repair step which calls
-`ConfigurationService::importFromApp('openbuilt')` — this is a re-import that is safe to
+`ConfigurationService::importFromApp('openbuild')` — this is a re-import that is safe to
 re-run against an installed instance.
 
 No database column changes. No route renaming. The `ApplicationCard.vue` Live chip removal is
@@ -220,4 +220,4 @@ time, not stored.
 None at spec-write time. Earlier OQ-1 (upstream `nextcloud-vue/src/schemas/app-manifest.schema.json`
 coupling) was resolved by moving `icon` and `iconDark` to top-level Application fields
 instead of putting them inside the manifest object — see Mixed-spec rationale and the
-spec for `openbuilt-application-register` for the locked decision.
+spec for `openbuild-application-register` for the locked decision.

@@ -13,7 +13,7 @@ import { test, expect } from '@playwright/test'
  *     top-level Application.status / Application.version fields.
  *
  * Preconditions:
- *   - Nextcloud reachable with openbuilt enabled.
+ *   - Nextcloud reachable with openbuild enabled.
  *   - SeedHelloWorld repair step has produced the hello-world virtual app.
  *   - Playwright auth via httpCredentials (admin:admin) in playwright.config.ts.
  *
@@ -26,7 +26,7 @@ import { test, expect } from '@playwright/test'
 test.describe('ApplicationCard — icon + productionVersion fields (spec A / spec C)', () => {
 
 	test('index page renders ApplicationCards with icon <img> elements', async ({ page }) => {
-		await page.goto('/apps/openbuilt/applications')
+		await page.goto('/apps/openbuild/applications')
 
 		// Wait for the SPA to hydrate and the Applications list to appear.
 		// The list renders one card per Application. The seeded hello-world
@@ -37,7 +37,7 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 		).toBeVisible({ timeout: 15_000 })
 
 		// Each card must contain an <img> from the icon-serving endpoint.
-		// icon src pattern: /index.php/apps/openbuilt/icons/{slug}.svg
+		// icon src pattern: /index.php/apps/openbuild/icons/{slug}.svg
 		const firstCard = page.locator('.ob-app-card').first()
 		const icon = firstCard.locator('img.ob-app-card__icon')
 		await expect(icon, 'icon <img> must be visible on ApplicationCard').toBeVisible({ timeout: 10_000 })
@@ -46,7 +46,7 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 	})
 
 	test('hello-world ApplicationCard shows a status badge (not raw "Live" chip)', async ({ page }) => {
-		await page.goto('/apps/openbuilt/applications')
+		await page.goto('/apps/openbuild/applications')
 
 		// Wait for at least the seeded hello-world card.
 		await expect(
@@ -66,7 +66,7 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 	})
 
 	test('hello-world ApplicationCard status badge is one of the known values', async ({ page }) => {
-		await page.goto('/apps/openbuilt/applications')
+		await page.goto('/apps/openbuild/applications')
 
 		// Find the card for hello-world specifically.
 		const helloCard = page.locator('[data-slug="hello-world"], .ob-app-card').first()
@@ -85,7 +85,7 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 	})
 
 	test('hello-world ApplicationCard version chip shows semver or — placeholder', async ({ page }) => {
-		await page.goto('/apps/openbuilt/applications')
+		await page.goto('/apps/openbuild/applications')
 
 		const helloCard = page.locator('[data-slug="hello-world"], .ob-app-card').first()
 		await expect(helloCard).toBeVisible({ timeout: 15_000 })

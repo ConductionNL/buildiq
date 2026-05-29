@@ -8,41 +8,41 @@
   - with the merged form value; parent owns validation + persistence.
   -->
 <template>
-	<form class="openbuilt-schema-header-form" @submit.prevent>
-		<div class="openbuilt-schema-header-form__row">
+	<form class="openbuild-schema-header-form" @submit.prevent>
+		<div class="openbuild-schema-header-form__row">
 			<NcTextField
 				:value="value.slug"
-				:label="t('openbuilt', 'Schema slug')"
-				:placeholder="t('openbuilt', 'kebab-case, e.g. customer')"
+				:label="t('openbuild', 'Schema slug')"
+				:placeholder="t('openbuild', 'kebab-case, e.g. customer')"
 				:disabled="lockedSlug"
 				:error="!!slugError || (touched.slug && !slugValid)"
-				:helper-text="slugError || (touched.slug && !slugValid ? t('openbuilt', 'Slug must be kebab-case (lowercase letters, digits, hyphens) and start with a letter.') : '')"
+				:helper-text="slugError || (touched.slug && !slugValid ? t('openbuild', 'Slug must be kebab-case (lowercase letters, digits, hyphens) and start with a letter.') : '')"
 				@update:value="onChange('slug', $event)"
 				@blur="touched.slug = true" />
 		</div>
-		<div class="openbuilt-schema-header-form__row">
+		<div class="openbuild-schema-header-form__row">
 			<NcTextField
 				:value="value.title"
-				:label="t('openbuilt', 'Title')"
+				:label="t('openbuild', 'Title')"
 				:error="touched.title && !titleValid"
-				:helper-text="touched.title && !titleValid ? t('openbuilt', 'Title is required.') : ''"
+				:helper-text="touched.title && !titleValid ? t('openbuild', 'Title is required.') : ''"
 				@update:value="onChange('title', $event)"
 				@blur="touched.title = true" />
 		</div>
-		<div class="openbuilt-schema-header-form__row">
+		<div class="openbuild-schema-header-form__row">
 			<NcTextField
 				:value="value.description || ''"
-				:label="t('openbuilt', 'Description')"
-				:placeholder="t('openbuilt', 'Optional')"
+				:label="t('openbuild', 'Description')"
+				:placeholder="t('openbuild', 'Optional')"
 				@update:value="onChange('description', $event)" />
 		</div>
-		<div class="openbuilt-schema-header-form__row">
+		<div class="openbuild-schema-header-form__row">
 			<NcTextField
 				:value="value.version"
-				:label="t('openbuilt', 'Version (semver)')"
+				:label="t('openbuild', 'Version (semver)')"
 				:placeholder="'0.1.0'"
 				:error="touched.version && !versionValid"
-				:helper-text="touched.version && !versionValid ? t('openbuilt', 'Version must follow semver MAJOR.MINOR.PATCH.') : ''"
+				:helper-text="touched.version && !versionValid ? t('openbuild', 'Version must follow semver MAJOR.MINOR.PATCH.') : ''"
 				@update:value="onChange('version', $event)"
 				@blur="touched.version = true" />
 		</div>
@@ -131,13 +131,13 @@ export default {
 </script>
 
 <style scoped>
-.openbuilt-schema-header-form {
+.openbuild-schema-header-form {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
 
-.openbuilt-schema-header-form__row {
+.openbuild-schema-header-form__row {
 	display: flex;
 	flex-direction: column;
 }

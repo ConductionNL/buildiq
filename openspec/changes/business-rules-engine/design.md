@@ -7,7 +7,7 @@ The two paradigms serve complementary use-cases:
 - **Decision tables** excel at multi-factor mapping (e.g., "If applicant age ≥ 18 AND monthly income ≥ €2,000 AND credit score ≥ 600, grant loan"). A table with three input columns and one output column captures this decision logic in one place, auto-documents the business rules, and scales to dozens of conditions without nested IF-trees.
 - **Condition-action chains** excel at sequential triggers (e.g., "If invoice total > €5,000, send notification to manager, then start approval workflow"). Order matters; conditions cascade; a rule may have multiple actions.
 
-OpenBuilt already ships the openregister-integration backbone (multitenancy, versioning, audit trail, webhooks). The rules engine plugs into that, treating RuleSets as first-class OpenRegister objects, versioned and deployed per-tenant without app redeploy.
+OpenBuild already ships the openregister-integration backbone (multitenancy, versioning, audit trail, webhooks). The rules engine plugs into that, treating RuleSets as first-class OpenRegister objects, versioned and deployed per-tenant without app redeploy.
 
 ## Goals / Non-Goals
 
@@ -187,7 +187,7 @@ Three RuleSet examples with realistic Dutch business scenarios:
 ```json
 {
   "@self": {
-    "register": "openbuilt-rules",
+    "register": "openbuild-rules",
     "schema": "RuleSet",
     "slug": "loan-eligibility"
   },
@@ -195,7 +195,7 @@ Three RuleSet examples with realistic Dutch business scenarios:
   "beschrijving": "Multi-factor lending decision based on age, income, and credit score",
   "versie": "1.0.0",
   "status": "active",
-  "eigenaarApp": "openbuilt-lending",
+  "eigenaarApp": "openbuild-lending",
   "geactiveerdOp": "2026-05-22T10:00:00Z",
   "ingangsdatum": "2026-05-22",
   "einddatum": null
@@ -207,7 +207,7 @@ Companion DecisionTable:
 ```json
 {
   "@self": {
-    "register": "openbuilt-rules",
+    "register": "openbuild-rules",
     "schema": "DecisionTable",
     "slug": "loan-eligibility-table"
   },
@@ -264,7 +264,7 @@ Companion DecisionTable:
 ```json
 {
   "@self": {
-    "register": "openbuilt-rules",
+    "register": "openbuild-rules",
     "schema": "RuleSet",
     "slug": "invoice-routing"
   },
@@ -272,7 +272,7 @@ Companion DecisionTable:
   "beschrijving": "Route invoices to approvers based on amount and department",
   "versie": "1.0.0",
   "status": "active",
-  "eigenaarApp": "openbuilt-invoicing",
+  "eigenaarApp": "openbuild-invoicing",
   "geactiveerdOp": "2026-05-22T11:00:00Z",
   "ingangsdatum": "2026-05-22",
   "einddatum": null
@@ -284,7 +284,7 @@ Companion ConditionActionRule:
 ```json
 {
   "@self": {
-    "register": "openbuilt-rules",
+    "register": "openbuild-rules",
     "schema": "ConditionActionRule",
     "slug": "invoice-routing-rule-1"
   },
@@ -319,7 +319,7 @@ Companion ConditionActionRule:
 ```json
 {
   "@self": {
-    "register": "openbuilt-rules",
+    "register": "openbuild-rules",
     "schema": "RuleSet",
     "slug": "complaint-escalation"
   },
@@ -327,7 +327,7 @@ Companion ConditionActionRule:
   "beschrijving": "Auto-escalate complaints based on severity and age",
   "versie": "2.1.0",
   "status": "active",
-  "eigenaarApp": "openbuilt-complaints",
+  "eigenaarApp": "openbuild-complaints",
   "geactiveerdOp": "2026-05-15T14:30:00Z",
   "ingangsdatum": "2026-05-15",
   "einddatum": null
@@ -339,7 +339,7 @@ Companion ConditionActionRule:
 ```json
 {
   "@self": {
-    "register": "openbuilt-rules",
+    "register": "openbuild-rules",
     "schema": "ConditionActionRule",
     "slug": "complaint-escalation-rule-1"
   },
@@ -374,7 +374,7 @@ Companion ConditionActionRule:
 ```json
 {
   "@self": {
-    "register": "openbuilt-rules",
+    "register": "openbuild-rules",
     "schema": "TestCase",
     "slug": "loan-eligibility-test-1"
   },

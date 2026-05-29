@@ -12,47 +12,47 @@
   -->
 <template>
 	<NcDialog
-		:name="t('openbuilt', 'Permissions')"
+		:name="t('openbuild', 'Permissions')"
 		:open="open"
 		size="normal"
 		@update:open="onClose">
-		<div class="openbuilt-permissions-modal">
-			<p class="openbuilt-permissions-modal__help">
-				{{ t('openbuilt', 'Configure which Nextcloud groups can view, edit, or own this virtual app. Members of any of these groups will see the app in their list; only owners may publish, archive, delete, transfer ownership, or change these permissions.') }}
+		<div class="openbuild-permissions-modal">
+			<p class="openbuild-permissions-modal__help">
+				{{ t('openbuild', 'Configure which Nextcloud groups can view, edit, or own this virtual app. Members of any of these groups will see the app in their list; only owners may publish, archive, delete, transfer ownership, or change these permissions.') }}
 			</p>
 
 			<NcSelect
 				v-model="ownersModel"
 				:options="groupOptions"
 				:multiple="true"
-				:input-label="t('openbuilt', 'Owners (full control)')"
+				:input-label="t('openbuild', 'Owners (full control)')"
 				label="label"
 				track-by="value" />
 			<NcSelect
 				v-model="editorsModel"
 				:options="groupOptions"
 				:multiple="true"
-				:input-label="t('openbuilt', 'Editors (can save drafts)')"
+				:input-label="t('openbuild', 'Editors (can save drafts)')"
 				label="label"
 				track-by="value" />
 			<NcSelect
 				v-model="viewersModel"
 				:options="groupOptions"
 				:multiple="true"
-				:input-label="t('openbuilt', 'Viewers (read-only)')"
+				:input-label="t('openbuild', 'Viewers (read-only)')"
 				label="label"
 				track-by="value" />
 
-			<div v-if="orphanError" class="openbuilt-permissions-modal__error">
-				{{ t('openbuilt', 'At least one owner group is required — saving with no owners would orphan this application.') }}
+			<div v-if="orphanError" class="openbuild-permissions-modal__error">
+				{{ t('openbuild', 'At least one owner group is required — saving with no owners would orphan this application.') }}
 			</div>
 
-			<div class="openbuilt-permissions-modal__actions">
+			<div class="openbuild-permissions-modal__actions">
 				<NcButton type="tertiary" @click="onClose">
-					{{ t('openbuilt', 'Cancel') }}
+					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
 				<NcButton type="primary" :disabled="saving" @click="save">
-					{{ saving ? t('openbuilt', 'Saving permissions…') : t('openbuilt', 'Save permissions') }}
+					{{ saving ? t('openbuild', 'Saving permissions…') : t('openbuild', 'Save permissions') }}
 				</NcButton>
 			</div>
 		</div>
@@ -167,24 +167,24 @@ export default {
 </script>
 
 <style scoped>
-.openbuilt-permissions-modal {
+.openbuild-permissions-modal {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
 	padding: 8px 0;
 }
 
-.openbuilt-permissions-modal__help {
+.openbuild-permissions-modal__help {
 	font-size: 13px;
 	color: var(--color-text-maxcontrast, #888);
 }
 
-.openbuilt-permissions-modal__error {
+.openbuild-permissions-modal__error {
 	color: var(--color-error, #d63f3f);
 	font-size: 13px;
 }
 
-.openbuilt-permissions-modal__actions {
+.openbuild-permissions-modal__actions {
 	display: flex;
 	gap: 8px;
 	justify-content: flex-end;

@@ -11,17 +11,17 @@
 <template>
 	<div class="ob-manifest-tab">
 		<p class="ob-manifest-tab__help">
-			{{ t('openbuilt', 'Integrator-only editor: edit the raw JSON manifest below. For a visual editor open "Design pages".') }}
+			{{ t('openbuild', 'Integrator-only editor: edit the raw JSON manifest below. For a visual editor open "Design pages".') }}
 		</p>
 		<textarea
 			v-model="manifestText"
 			class="ob-manifest-tab__textarea"
-			data-testid="openbuilt-editor-textarea"
+			data-testid="openbuild-editor-textarea"
 			spellcheck="false"
 			:readonly="obAppRole === 'viewer' || obAppRole === 'none'"
-			:placeholder="t('openbuilt', 'Paste or edit the JSON manifest here.')" />
+			:placeholder="t('openbuild', 'Paste or edit the JSON manifest here.')" />
 		<div v-if="error" class="ob-manifest-tab__error">
-			{{ t('openbuilt', 'Invalid manifest') }}: {{ error }}
+			{{ t('openbuild', 'Invalid manifest') }}: {{ error }}
 		</div>
 		<div v-if="obAppError" class="ob-manifest-tab__error">
 			{{ obAppError }}
@@ -31,9 +31,9 @@
 				v-if="obAppRole === 'editor' || obAppRole === 'owner'"
 				type="primary"
 				:disabled="!obApp || saving"
-				data-testid="openbuilt-editor-save"
+				data-testid="openbuild-editor-save"
 				@click="save">
-				{{ saving ? t('openbuilt', 'Saving…') : t('openbuilt', 'Save') }}
+				{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
 			</NcButton>
 			<span v-if="savedToast" class="ob-manifest-tab__toast">{{ savedToast }}</span>
 		</div>
@@ -83,7 +83,7 @@ export default {
 			try {
 				parsed = JSON.parse(this.manifestText)
 			} catch (e) {
-				this.error = `${t('openbuilt', 'JSON parse error')}: ${e.message}`
+				this.error = `${t('openbuild', 'JSON parse error')}: ${e.message}`
 				return null
 			}
 			const result = validateManifest ? validateManifest(parsed) : { valid: true, errors: [] }
@@ -111,9 +111,9 @@ export default {
 			this.savedToast = ''
 			try {
 				await this.obPatchApp({ manifest: parsed })
-				this.savedToast = t('openbuilt', 'Saved')
+				this.savedToast = t('openbuild', 'Saved')
 			} catch (e) {
-				this.error = `${t('openbuilt', 'Save failed')}: ${e.message || e}`
+				this.error = `${t('openbuild', 'Save failed')}: ${e.message || e}`
 			} finally {
 				this.saving = false
 			}

@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "openbuilt-versioning-collection",
-		"name": "OpenBuilt Versioning — REQ-OBV-001..005",
-		"description": "Newman integration suite for the openbuilt-versioning OpenSpec change. Exercises the snapshot-on-publish listener, the version-list filter, the diff endpoint, and the rollback (re-publish on prior manifest) flow. The collection is self-contained: it locates the seeded hello-world Application by slug, captures its UUID + current ApplicationVersion UUID into collection variables, then drives the lifecycle through publish → diff → rollback → republish. Teardown PUTs the original manifest back so the suite is idempotent.",
+		"_postman_id": "openbuild-versioning-collection",
+		"name": "OpenBuild Versioning — REQ-OBV-001..005",
+		"description": "Newman integration suite for the openbuild-versioning OpenSpec change. Exercises the snapshot-on-publish listener, the version-list filter, the diff endpoint, and the rollback (re-publish on prior manifest) flow. The collection is self-contained: it locates the seeded hello-world Application by slug, captures its UUID + current ApplicationVersion UUID into collection variables, then drives the lifecycle through publish → diff → rollback → republish. Teardown PUTs the original manifest back so the suite is idempotent.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -52,9 +52,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application?filter[slug]={{test_slug}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?filter[slug]={{test_slug}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application"],
 							"query": [{ "key": "filter[slug]", "value": "{{test_slug}}" }]
 						}
 					},
@@ -84,9 +84,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application-version?filter[applicationUuid]={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?filter[applicationUuid]={{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application-version"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application-version"],
 							"query": [{ "key": "filter[applicationUuid]", "value": "{{application_uuid}}" }]
 						}
 					},
@@ -125,12 +125,12 @@
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"version\":\"1.1.0\",\"status\":\"published\",\"manifest\":{\"version\":\"1.1.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuilt.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuilt.helloworld.title.messages\",\"config\":{\"register\":\"openbuilt\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}},{\"id\":\"About\",\"route\":\"/about\",\"type\":\"detail\",\"title\":\"openbuilt.helloworld.title.about\",\"config\":{\"register\":\"openbuilt\",\"schema\":\"hello-message\"}}]}}"
+							"raw": "{\"version\":\"1.1.0\",\"status\":\"published\",\"manifest\":{\"version\":\"1.1.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuild.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuild.helloworld.title.messages\",\"config\":{\"register\":\"openbuild\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}},{\"id\":\"About\",\"route\":\"/about\",\"type\":\"detail\",\"title\":\"openbuild.helloworld.title.about\",\"config\":{\"register\":\"openbuild\",\"schema\":\"hello-message\"}}]}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{application_uuid}}"]
 						}
 					},
 					"event": [
@@ -152,9 +152,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application-version?filter[applicationUuid]={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?filter[applicationUuid]={{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application-version"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application-version"],
 							"query": [{ "key": "filter[applicationUuid]", "value": "{{application_uuid}}" }]
 						}
 					},
@@ -195,9 +195,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/{{test_slug}}/versions/diff?from={{v1_uuid}}&to={{v2_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/diff?from={{v1_uuid}}&to={{v2_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openbuilt", "api", "applications", "{{test_slug}}", "versions", "diff"],
+							"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "versions", "diff"],
 							"query": [
 								{ "key": "from", "value": "{{v1_uuid}}" },
 								{ "key": "to", "value": "{{v2_uuid}}" }
@@ -242,12 +242,12 @@
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"version\":\"1.0.0-rb1\",\"status\":\"published\",\"manifest\":{\"version\":\"1.0.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuilt.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuilt.helloworld.title.messages\",\"config\":{\"register\":\"openbuilt\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}}]}}"
+							"raw": "{\"version\":\"1.0.0-rb1\",\"status\":\"published\",\"manifest\":{\"version\":\"1.0.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuild.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuild.helloworld.title.messages\",\"config\":{\"register\":\"openbuild\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}}]}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{application_uuid}}"]
 						}
 					},
 					"event": [
@@ -269,9 +269,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application-version?filter[applicationUuid]={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?filter[applicationUuid]={{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application-version"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application-version"],
 							"query": [{ "key": "filter[applicationUuid]", "value": "{{application_uuid}}" }]
 						}
 					},
@@ -310,12 +310,12 @@
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"version\":\"1.0.0\",\"status\":\"published\",\"manifest\":{\"version\":\"1.0.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuilt.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuilt.helloworld.title.messages\",\"config\":{\"register\":\"openbuilt\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}}]}}"
+							"raw": "{\"version\":\"1.0.0\",\"status\":\"published\",\"manifest\":{\"version\":\"1.0.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuild.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuild.helloworld.title.messages\",\"config\":{\"register\":\"openbuild\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}}]}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{application_uuid}}"]
 						}
 					},
 					"event": [

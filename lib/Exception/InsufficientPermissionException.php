@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuilt InsufficientPermissionException
+ * OpenBuild InsufficientPermissionException
  *
  * Thrown when the caller lacks owner-or-editor role on the parent
  * Application (spec REQ-OBVP-007 — 403 / `code:
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Exception
- * @package  OCA\OpenBuilt\Exception
+ * @package  OCA\OpenBuild\Exception
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Exception;
+namespace OCA\OpenBuild\Exception;
 
 use Throwable;
 

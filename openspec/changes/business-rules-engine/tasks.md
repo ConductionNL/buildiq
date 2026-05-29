@@ -2,21 +2,21 @@
 
 - [ ] 1.1 **Declare RuleSet, DecisionTable, ConditionActionRule, RuleExecutionLog, TestCase schemas in register**
   - spec_ref: REQ-BRE-001, REQ-BRE-002, REQ-BRE-003, REQ-BRE-004, REQ-BRE-009
-  - files: `lib/Settings/openbuilt-rules_register.json`
+  - files: `lib/Settings/openbuild-rules_register.json`
   - acceptance_criteria: Register declares all five schemas (RuleSet, DecisionTable, ConditionActionRule, RuleExecutionLog, TestCase) with correct OpenAPI 3.0.0 properties, types, required flags, and defaults. All schemas validate against OpenAPI spec. No custom Entity or Mapper classes created.
   - implement: Declarative schema only (no PHP service classes).
   - test: PHPUnit integration test creates a RuleSet object via OR REST; asserts schema validation rejects invalid `status` (unknown enum value).
 
 - [ ] 1.2 **Add x-openregister-lifecycle to RuleSet schema**
   - spec_ref: REQ-BRE-001, REQ-BRE-005
-  - files: `lib/Settings/openbuilt-rules_register.json` (NOT a new PHP service)
+  - files: `lib/Settings/openbuild-rules_register.json` (NOT a new PHP service)
   - acceptance_criteria: RuleSet declares states `draft`, `test`, `active`, `archived` and transitions `draft ↔ test`, `test → active`, `active → archived` (no backward transitions except draft ↔ test). Each transition emits OR audit event. No custom `RuleSetLifecycleService` class created.
   - implement: Declarative lifecycle patch only.
   - test: Integration test attempts `active → draft`; asserts 4xx error.
 
 - [ ] 1.3 **Add x-openregister-notifications to RuleSet for change alerts**
   - spec_ref: REQ-BRE-010
-  - files: `lib/Settings/openbuilt-rules_register.json`
+  - files: `lib/Settings/openbuild-rules_register.json`
   - acceptance_criteria: When a RuleSet transitions to `active`, an OR notification is dispatched to configured recipients (app owners). The notification includes RuleSet name, previous version, new version, and change summary.
   - implement: Declarative notification handler in register (no custom NotificationService for this).
   - test: Integration test creates RuleSet, transitions to active; asserts notification sent.
@@ -194,7 +194,7 @@
     - "Transition" button: changes status (draft→test, test→active, active→archived) with confirmation
     - "Export" button: exports RuleSet as JSON
     - Toolbar: "New RuleSet" to create a new one (form with name, description, initial rule type)
-  - Fetch RuleSets via OR REST: `GET /api/openregister/rulesets?register=openbuilt-rules` (or equivalent OR query)
+  - Fetch RuleSets via OR REST: `GET /api/openregister/rulesets?register=openbuild-rules` (or equivalent OR query)
   - implement: Vue 2.7 SFC; uses CnDataTable, CnActionBar, CnDetailPage or CnListView pattern.
   - test: Browser test: list RuleSets, create new, edit, transition to test, run tests, transition to active.
 
@@ -202,7 +202,7 @@
 
 - [ ] 12.1 **Modify page-designer field-validation UI to reference RuleSets**
   - spec_ref: REQ-BRE-001
-  - files: `src/components/FormFieldValidator.vue` or similar (page-designer modification, not openbuilt-rules)
+  - files: `src/components/FormFieldValidator.vue` or similar (page-designer modification, not openbuild-rules)
   - acceptance_criteria: Form field's validation section adds an optional "Use rule set" checkbox. If enabled, shows a dropdown listing available RuleSets (fetched from `/api/rules` endpoint). Selecting a RuleSet auto-disables inline-validation editor (since rules are externalized). Saving the form field stores the rule-set reference.
   - implement: Vue 2.7 enhancement to existing form-field validator UI.
   - test: Browser test in page-designer: edit field, toggle "Use rule set" checkbox, select a RuleSet, assert inline validator hidden.
@@ -219,13 +219,13 @@
 - [ ] 13.1 **Create lib/Repair/InitializeRulesRegister.php**
   - spec_ref: REQ-BRE-001
   - files: `lib/Repair/InitializeRulesRegister.php`
-  - acceptance_criteria: Repair step (called from `appinfo/info.xml` `<repair-steps>`) that invokes `ConfigurationService::importFromApp()` to load the `lib/Settings/openbuilt-rules_register.json` schema bundle on app install or update.
+  - acceptance_criteria: Repair step (called from `appinfo/info.xml` `<repair-steps>`) that invokes `ConfigurationService::importFromApp()` to load the `lib/Settings/openbuild-rules_register.json` schema bundle on app install or update.
   - implement: Standard Conduction repair-step class.
   - test: Integration test: fresh app install, assert register schemas imported and queryable via OR REST.
 
 - [ ] 13.2 **Seed sample RuleSets in register for dev/test**
   - spec_ref: REQ-BRE-001
-  - files: `lib/Settings/openbuilt-rules_register.json` (extend schema file)
+  - files: `lib/Settings/openbuild-rules_register.json` (extend schema file)
   - acceptance_criteria: Register file includes `components.objects[]` (seed data) with 3–5 example RuleSet+DecisionTable/ConditionActionRule+TestCase objects (loan-eligibility, invoice-routing, complaint-escalation per design.md). Use `@self` envelope. Seed objects are idempotent (re-import with `force: false` skips duplicates).
   - implement: JSON seed objects in register file.
   - test: Fresh app install, assert example RuleSets present via OR REST query.
@@ -282,7 +282,7 @@
 
 - [ ] 16.3 **Audit ADR-031 compliance (schema-declarative preferred)**
   - spec_ref: REQ-BRE-001
-  - files: `lib/Settings/openbuilt-rules_register.json`, `lib/Service/*Service.php`
+  - files: `lib/Settings/openbuild-rules_register.json`, `lib/Service/*Service.php`
   - acceptance_criteria: RuleSet lifecycle is declarative (x-openregister-lifecycle). Rule evaluation logic (RuleEngineService) is code (justified exception: FEEL parsing is domain-specific). No unnecessary custom service classes (e.g., no RuleSetLifecycleService, RuleNotificationService).
   - implement: Code review checklist.
 

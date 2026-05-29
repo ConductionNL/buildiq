@@ -27,7 +27,7 @@
  * Backend-only requirements (REQ-OBWIZ-003/007/008/009/010/011)
  * are annotated @e2e exclude in the spec.
  *
- * Note: Most tests guard on OPENBUILT_E2E_LIVE because they require
+ * Note: Most tests guard on OPENBUILD_E2E_LIVE because they require
  * the wizard to be built and mounted. The wizard open test can run
  * against the applications list page without live state.
  */
@@ -35,16 +35,16 @@
 import { test, expect } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const LIVE = process.env.OPENBUILT_E2E_LIVE === '1'
+const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
 
 // @e2e application-creation-wizard::clicking-add-application-opens-the-wizard
 test('REQ-OBWIZ-001 — applications page renders and Add Application button is present', async ({ page }) => {
 	// @e2e application-creation-wizard::clicking-add-application-opens-the-wizard
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main'), 'main content must load').toBeVisible({ timeout: 15_000 })
 
 	// The page must not be a white screen
-	await expect(page).toHaveTitle(/openbuilt/i)
+	await expect(page).toHaveTitle(/openbuild/i)
 
 	// Admin should see an "Add Application" or similar CTA
 	// (exact label may vary; test confirms the page loads without error)
@@ -69,9 +69,9 @@ test('REQ-OBWIZ-001 — applications page renders and Add Application button is 
 // @e2e application-creation-wizard::selecting-a-canned-preset-skips-the-custom-step
 test('REQ-OBWIZ-002 — wizard preset step skips custom chain composer for canned presets', async ({ page }) => {
 	// @e2e application-creation-wizard::selecting-a-canned-preset-skips-the-custom-step
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILT_E2E_LIVE=1')
+	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
 
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
 	// Open the wizard
@@ -108,9 +108,9 @@ test('REQ-OBWIZ-002 — wizard preset step skips custom chain composer for canne
 // @e2e application-creation-wizard::selecting-custom-shows-the-custom-chain-composer
 test('REQ-OBWIZ-002 — selecting Custom preset shows the custom-chain composer in step 3', async ({ page }) => {
 	// @e2e application-creation-wizard::selecting-custom-shows-the-custom-chain-composer
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILT_E2E_LIVE=1')
+	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
 
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
 	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
@@ -141,9 +141,9 @@ test('REQ-OBWIZ-002 — selecting Custom preset shows the custom-chain composer 
 // @e2e application-creation-wizard::back-navigation-preserves-state
 test('REQ-OBWIZ-002 — back navigation in wizard preserves previously entered state', async ({ page }) => {
 	// @e2e application-creation-wizard::back-navigation-preserves-state
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILT_E2E_LIVE=1')
+	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
 
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
 	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
@@ -171,9 +171,9 @@ test('REQ-OBWIZ-002 — back navigation in wizard preserves previously entered s
 // @e2e application-creation-wizard::admin-composes-a-3-version-chain-by-adding-rows
 test('REQ-OBWIZ-004 — custom chain composer allows adding and reordering version rows', async ({ page }) => {
 	// @e2e application-creation-wizard::admin-composes-a-3-version-chain-by-adding-rows
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILT_E2E_LIVE=1')
+	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
 
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
 	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
@@ -208,9 +208,9 @@ test('REQ-OBWIZ-004 — custom chain composer allows adding and reordering versi
 // @e2e application-creation-wizard::composer-cannot-have-zero-rows
 test('REQ-OBWIZ-004 — custom chain composer enforces minimum one version row', async ({ page }) => {
 	// @e2e application-creation-wizard::composer-cannot-have-zero-rows
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILT_E2E_LIVE=1')
+	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
 
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
 	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
@@ -250,9 +250,9 @@ test('REQ-OBWIZ-004 — custom chain composer enforces minimum one version row',
 // @e2e application-creation-wizard::slug-auto-derives-from-app-name
 test('REQ-OBWIZ-005 — app name input auto-derives a kebab-case slug', async ({ page }) => {
 	// @e2e application-creation-wizard::slug-auto-derives-from-app-name
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILT_E2E_LIVE=1')
+	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
 
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
 	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
@@ -281,9 +281,9 @@ test('REQ-OBWIZ-005 — app name input auto-derives a kebab-case slug', async ({
 // @e2e application-creation-wizard::leading-underscore-slug-is-rejected
 test('REQ-OBWIZ-005 — leading-underscore slug shows inline error and disables Next', async ({ page }) => {
 	// @e2e application-creation-wizard::leading-underscore-slug-is-rejected
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILT_E2E_LIVE=1')
+	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
 
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
 	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
@@ -312,9 +312,9 @@ test('REQ-OBWIZ-005 — leading-underscore slug shows inline error and disables 
 // @e2e application-creation-wizard::slug-with-invalid-characters-is-rejected
 test('REQ-OBWIZ-005 — slug with invalid characters shows inline validation error', async ({ page }) => {
 	// @e2e application-creation-wizard::slug-with-invalid-characters-is-rejected
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILT_E2E_LIVE=1')
+	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
 
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
 	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
@@ -339,9 +339,9 @@ test('REQ-OBWIZ-005 — slug with invalid characters shows inline validation err
 // @e2e application-creation-wizard::client-side-duplicate-slug-error
 test('REQ-OBWIZ-006 — duplicate version slugs in custom chain shows inline error', async ({ page }) => {
 	// @e2e application-creation-wizard::client-side-duplicate-slug-error
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILT_E2E_LIVE=1')
+	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
 
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
 	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()

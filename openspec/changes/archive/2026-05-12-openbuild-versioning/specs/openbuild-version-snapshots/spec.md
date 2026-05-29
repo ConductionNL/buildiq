@@ -3,7 +3,7 @@
 ### Requirement: REQ-OBV-001 ApplicationVersion schema declared in OpenRegister
 
 The system SHALL declare an `ApplicationVersion` schema in
-`lib/Settings/openbuilt_register.json` under the `openbuilt` register
+`lib/Settings/openbuild_register.json` under the `openbuild` register
 namespace. The schema SHALL define properties `uuid` (string,
 UUID-format), `applicationUuid` (string, UUID-format, required —
 foreign reference to the parent Application), `version` (string,
@@ -19,19 +19,19 @@ REST API per ADR-022.
 
 #### Scenario: Schema is available after install
 
-- **WHEN** the OpenBuilt app's repair step runs against an install
+- **WHEN** the OpenBuild app's repair step runs against an install
   that already has the `Application` schema from spec #1
-- **THEN** OpenRegister exposes the `openbuilt/application-version`
+- **THEN** OpenRegister exposes the `openbuild/application-version`
   schema with the declared properties
 - **AND** the schema appears in OR's standard schema listing for the
-  `openbuilt` register namespace
+  `openbuild` register namespace
 
 #### Scenario: ApplicationVersion row is created via OR REST
 
 - **WHEN** a client POSTs a valid payload (carrying
   `applicationUuid`, `version`, `manifest`, `publishedAt`,
   `publishedBy`) to OR's REST endpoint for the
-  `openbuilt/application-version` namespace
+  `openbuild/application-version` namespace
 - **THEN** OR persists the object, returns 201, and the returned
   object carries an OR-assigned `uuid` and the submitted fields
 
@@ -123,7 +123,7 @@ per Application.
 ### Requirement: REQ-OBV-005 Diff endpoint returns two manifest blobs in one call
 
 The system SHALL expose
-`GET /index.php/apps/openbuilt/api/applications/{slug}/versions/diff?from={uuidA}&to={uuidB}`
+`GET /index.php/apps/openbuild/api/applications/{slug}/versions/diff?from={uuidA}&to={uuidB}`
 backed by `ApplicationsController::diffVersions`. The endpoint
 SHALL resolve `{slug}` to an Application via the `BuiltAppRoute`
 index (spec #1), look up both referenced `ApplicationVersion` rows

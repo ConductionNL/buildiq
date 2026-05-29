@@ -4,7 +4,7 @@
 /**
  * E2E — four-step App Creation Wizard.
  *
- * Covers spec openbuilt-app-creation-wizard tasks 8.5 + 8.6.
+ * Covers spec openbuild-app-creation-wizard tasks 8.5 + 8.6.
  *
  *   Task 8.5 (preset happy paths):
  *     - `single`: name "Hello World", slug auto-derives to `hello-world-pw-single`,
@@ -22,12 +22,12 @@
  *
  * Pre-conditions:
  *   - Docker stack running at PLAYWRIGHT_BASE_URL (default: http://localhost:8080).
- *   - OpenBuilt app enabled; `openbuilt` register + schemas present (SeedHelloWorld).
+ *   - OpenBuild app enabled; `openbuild` register + schemas present (SeedHelloWorld).
  *   - Nextcloud admin user: NC_ADMIN_USER / NC_ADMIN_PASSWORD (default: admin/admin).
  *   - Tests that actually POST to the wizard will leave state in OR; they are
- *     skip-guarded on the `OPENBUILT_E2E_LIVE` env variable so CI dry-runs pass.
+ *     skip-guarded on the `OPENBUILD_E2E_LIVE` env variable so CI dry-runs pass.
  *
- * When OPENBUILT_E2E_LIVE is not set to "1", all tests that require a running dev
+ * When OPENBUILD_E2E_LIVE is not set to "1", all tests that require a running dev
  * environment are skipped with an explanatory message. The spec still parses cleanly
  * for `playwright test --list`.
  */
@@ -44,21 +44,21 @@ const ADMIN_PASS = process.env.NC_ADMIN_PASSWORD ?? 'admin'
 
 /**
  * Whether a live dev environment is available.
- * Set OPENBUILT_E2E_LIVE=1 to run tests that require a provisioned OR backend.
+ * Set OPENBUILD_E2E_LIVE=1 to run tests that require a provisioned OR backend.
  */
-const LIVE = process.env.OPENBUILT_E2E_LIVE === '1'
+const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Navigate to the OpenBuilt app as admin.
+ * Navigate to the OpenBuild app as admin.
  *
  * @param page Playwright page.
  */
 async function goToApps(page: Page): Promise<void> {
-	await page.goto(`${BASE_URL}/index.php/apps/openbuilt/applications`)
+	await page.goto(`${BASE_URL}/index.php/apps/openbuild/applications`)
 	// Wait for the app to mount; the actions bar must be visible.
 	await page.waitForSelector('.ob-va-actions, [data-cy="ob-actions"]', { timeout: 20_000 })
 }
@@ -124,7 +124,7 @@ async function clickCreate(page: Page): Promise<string> {
 test.describe('Wizard — preset happy paths (task 8.5)', () => {
 
 	test('single preset: name → slug auto-derives, Create lands on detail page', async ({ page }) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILT_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
 
 		await goToApps(page)
 		await openWizard(page)
@@ -156,7 +156,7 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 	})
 
 	test('dev-prod preset: chain shows development → production', async ({ page }) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILT_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
 
 		await goToApps(page)
 		await openWizard(page)
@@ -183,7 +183,7 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 	})
 
 	test('dev-staging-prod preset: chain shows development → staging → production', async ({ page }) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILT_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
 
 		await goToApps(page)
 		await openWizard(page)
@@ -208,7 +208,7 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 	})
 
 	test('custom preset: builds alpha → beta → main chain and creates successfully', async ({ page }) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILT_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
 
 		await goToApps(page)
 		await openWizard(page)
@@ -281,7 +281,7 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 test.describe('Wizard — validation errors (task 8.6)', () => {
 
 	test('leading-underscore version slug shows inline error and disables Create', async ({ page }) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILT_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
 
 		await goToApps(page)
 		await openWizard(page)
@@ -313,7 +313,7 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 	})
 
 	test('duplicate version slug shows inline error and disables Create', async ({ page }) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILT_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
 
 		await goToApps(page)
 		await openWizard(page)
@@ -353,7 +353,7 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 	})
 
 	test('empty version name shows inline error and disables Next', async ({ page }) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILT_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
 
 		await goToApps(page)
 		await openWizard(page)
@@ -379,7 +379,7 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 	})
 
 	test('slug already in use shows server-side error; admin can edit and retry', async ({ page }) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILT_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
 
 		// This test requires `hello-world` to already exist (seeded by SeedHelloWorld).
 		await goToApps(page)

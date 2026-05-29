@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuilt Contributors
+ * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest spec for StubPageEditor — the deferred-type fallback editor used
@@ -7,7 +7,7 @@
  * the config block via a raw-JSON textarea so externally-authored
  * manifests are never blanked by the placeholder UI.
  *
- * Covers (openbuilt#9 task 7.1):
+ * Covers (openbuild#9 task 7.1):
  *  - renders the supplied title + message strings
  *  - the textarea seed reflects the incoming config (stable JSON form)
  *  - typing valid JSON emits an `update:config` with the parsed payload

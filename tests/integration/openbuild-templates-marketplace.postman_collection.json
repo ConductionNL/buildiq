@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "openbuilt-templates-marketplace",
-		"name": "OpenBuilt Templates Marketplace",
-		"description": "Newman/Postman integration tests for the openbuilt-templates-marketplace spec. Covers REQ-OBTC-003 (list seeded templates), REQ-OBTC-004 (createFromTemplate happy path + 4xx slug-collision), REQ-OBTC-009 (cross-user slug reuse).",
+		"_postman_id": "openbuild-templates-marketplace",
+		"name": "OpenBuild Templates Marketplace",
+		"description": "Newman/Postman integration tests for the openbuild-templates-marketplace spec. Covers REQ-OBTC-003 (list seeded templates), REQ-OBTC-004 (createFromTemplate happy path + 4xx slug-collision), REQ-OBTC-009 (cross-user slug reuse).",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -32,9 +32,9 @@
 					{ "key": "OCS-APIRequest", "value": "true" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuilt/application-template",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-template",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuilt", "application-template"]
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application-template"]
 				},
 				"description": "Read the seeded ApplicationTemplate records directly from OpenRegister (REQ-OBTC-003)."
 			},
@@ -76,9 +76,9 @@
 					"raw": "{\n  \"name\": \"Newman permits\",\n  \"slug\": \"{{clone_slug}}\"\n}"
 				},
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/from-template/{{template_slug}}",
+					"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/from-template/{{template_slug}}",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openbuilt", "api", "applications", "from-template", "{{template_slug}}"]
+					"path": ["index.php", "apps", "openbuild", "api", "applications", "from-template", "{{template_slug}}"]
 				},
 				"description": "Clone the `permit-tracker` template into a fresh draft Application (REQ-OBTC-004)."
 			},
@@ -115,9 +115,9 @@
 					"raw": "{\n  \"name\": \"Newman permits (dup)\",\n  \"slug\": \"{{clone_slug}}\"\n}"
 				},
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/from-template/{{template_slug}}",
+					"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/from-template/{{template_slug}}",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openbuilt", "api", "applications", "from-template", "{{template_slug}}"]
+					"path": ["index.php", "apps", "openbuild", "api", "applications", "from-template", "{{template_slug}}"]
 				},
 				"description": "Re-clone with the same slug as the same user — slug collision returns 409 (REQ-OBTC-004 slug-uniqueness)."
 			},
@@ -161,9 +161,9 @@
 					"raw": "{\n  \"name\": \"Tester permits\",\n  \"slug\": \"{{clone_slug}}\"\n}"
 				},
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openbuilt/api/applications/from-template/{{template_slug}}",
+					"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/from-template/{{template_slug}}",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openbuilt", "api", "applications", "from-template", "{{template_slug}}"]
+					"path": ["index.php", "apps", "openbuild", "api", "applications", "from-template", "{{template_slug}}"]
 				},
 				"description": "Same slug, different user — multi-user isolation lets the clone succeed (REQ-OBTC-004 owner-scoped uniqueness)."
 			},

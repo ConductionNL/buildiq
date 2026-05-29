@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenBuilt Exports Controller
+ * OpenBuild Exports Controller
  *
  * Thin controller: queues an ExportJob and streams the resulting ZIP.
  * Standard CRUD on ExportJob (list/get for polling) goes through OR REST
  * per ADR-022 — this controller deliberately omits those.
  *
  * @category Controller
- * @package  OCA\OpenBuilt\Controller
+ * @package  OCA\OpenBuild\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,11 +18,11 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-37
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-47
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -30,10 +30,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Controller;
+namespace OCA\OpenBuild\Controller;
 
-use OCA\OpenBuilt\AppInfo\Application;
-use OCA\OpenBuilt\Service\ExportJobService;
+use OCA\OpenBuild\AppInfo\Application;
+use OCA\OpenBuild\Service\ExportJobService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -48,7 +48,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Controller for the OpenBuilt export pipeline.
+ * Controller for the OpenBuild export pipeline.
  */
 class ExportsController extends Controller
 {
@@ -92,7 +92,7 @@ class ExportsController extends Controller
      *
      * @return bool True when the caller is allowed.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-47
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
      */
     private function isAuthorisedForApplication(string $applicationSlug): bool
     {
@@ -111,7 +111,7 @@ class ExportsController extends Controller
                 return false;
             }
 
-            $apps = $service->searchObjectsBySlug('openbuilt', 'application', ['slug' => $applicationSlug]);
+            $apps = $service->searchObjectsBySlug('openbuild', 'application', ['slug' => $applicationSlug]);
             if (is_array($apps) === false || $apps === []) {
                 return false;
             }
@@ -165,7 +165,7 @@ class ExportsController extends Controller
             // NC admin bypass — same policy as ApplicationsController (REQ-OBRBAC-006).
             return $this->groupManager->isInGroup($uid, 'admin') === true;
         } catch (\Throwable $e) {
-            $this->logger->debug('OpenBuilt export: authz lookup failed: '.$e->getMessage());
+            $this->logger->debug('OpenBuild export: authz lookup failed: '.$e->getMessage());
             return false;
         }//end try
     }//end isAuthorisedForApplication()
@@ -222,7 +222,7 @@ class ExportsController extends Controller
             $submittedBy = (string) ($job['submittedBy'] ?? ($job['@self']['owner'] ?? ''));
             return $submittedBy === $uid;
         } catch (\Throwable $e) {
-            $this->logger->debug('OpenBuilt export: job authz lookup failed: '.$e->getMessage());
+            $this->logger->debug('OpenBuild export: job authz lookup failed: '.$e->getMessage());
             return false;
         }//end try
     }//end isAuthorisedForJob()
@@ -234,7 +234,7 @@ class ExportsController extends Controller
      *
      * @return JSONResponse|null JSONResponse on validation error, null on success.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-37
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
      */
     private function validateSubmitBody(array $body): ?JSONResponse
     {
@@ -268,7 +268,7 @@ class ExportsController extends Controller
      *
      * @return JSONResponse|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-34
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
      */
     private function validateGithubFields(array $body): ?JSONResponse
     {
@@ -309,7 +309,7 @@ class ExportsController extends Controller
      *
      * @return JSONResponse 202 Accepted with `{ uuid }` on success.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-33
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -351,7 +351,7 @@ class ExportsController extends Controller
                 Http::STATUS_UNPROCESSABLE_ENTITY
             );
         } catch (\Throwable $e) {
-            $this->logger->error('OpenBuilt export submit failed: '.$e->getMessage());
+            $this->logger->error('OpenBuild export submit failed: '.$e->getMessage());
             return new JSONResponse(
                 ['error' => 'Internal error queueing export.'],
                 Http::STATUS_INTERNAL_SERVER_ERROR
@@ -371,7 +371,7 @@ class ExportsController extends Controller
      *
      * @return Response 200 with the ZIP body, 410 Gone after expiry, 404 unknown.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-35
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

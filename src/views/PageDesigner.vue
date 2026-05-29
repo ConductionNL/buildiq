@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!--
-  - PageDesigner — three-pane visual designer for OpenBuilt application
+  - PageDesigner — three-pane visual designer for OpenBuild application
   - manifests. Toolbar: undo / redo (OQ-1) + the save-and-preview action.
   - Left: page list + menu tree. Centre: per-page-type sub-editor
   - dispatched by `page.type` (the sub-editors paint inline validator
@@ -17,17 +17,17 @@
 					type="button"
 					class="page-designer__tool-btn"
 					:disabled="!canUndo"
-					:title="t('openbuilt', 'Undo (Ctrl+Z)')"
+					:title="t('openbuild', 'Undo (Ctrl+Z)')"
 					@click="undo">
-					↶ {{ t('openbuilt', 'Undo') }}
+					↶ {{ t('openbuild', 'Undo') }}
 				</button>
 				<button
 					type="button"
 					class="page-designer__tool-btn"
 					:disabled="!canRedo"
-					:title="t('openbuilt', 'Redo (Ctrl+Shift+Z / Ctrl+Y)')"
+					:title="t('openbuild', 'Redo (Ctrl+Shift+Z / Ctrl+Y)')"
 					@click="redo">
-					↷ {{ t('openbuilt', 'Redo') }}
+					↷ {{ t('openbuild', 'Redo') }}
 				</button>
 			</div>
 			<div class="page-designer__toolbar-group">
@@ -36,7 +36,7 @@
 					class="page-designer__tool-btn page-designer__tool-btn--primary"
 					:disabled="!canSaveAndPreview"
 					@click="saveAndPreview">
-					{{ t('openbuilt', 'Save & open preview') }}
+					{{ t('openbuild', 'Save & open preview') }}
 				</button>
 			</div>
 		</header>
@@ -65,29 +65,29 @@
 						@update:config="onConfigUpdate" />
 				</div>
 				<div v-else class="page-designer__empty">
-					<p>{{ t('openbuilt', 'Select a page on the left, or add one to start designing.') }}</p>
+					<p>{{ t('openbuild', 'Select a page on the left, or add one to start designing.') }}</p>
 				</div>
 			</section>
 
 			<aside class="page-designer__right">
 				<!-- TODO(chain-spec-2): live preview pane requires in-memory useAppManifest -->
 				<div v-if="!previewAvailable" class="page-designer__preview-fallback">
-					<h4>{{ t('openbuilt', 'Live preview') }}</h4>
+					<h4>{{ t('openbuild', 'Live preview') }}</h4>
 					<p class="page-designer__preview-message">
-						{{ t('openbuilt', 'openbuilt.page-designer.preview.unavailable — chain spec #2 not yet installed. Save and open the built app to preview your changes.') }}
+						{{ t('openbuild', 'openbuild.page-designer.preview.unavailable — chain spec #2 not yet installed. Save and open the built app to preview your changes.') }}
 					</p>
 					<button
 						type="button"
 						class="page-designer__preview-btn"
 						:disabled="!canSaveAndPreview"
 						@click="saveAndPreview">
-						{{ t('openbuilt', 'Save & open preview') }}
+						{{ t('openbuild', 'Save & open preview') }}
 					</button>
 				</div>
 				<div class="page-designer__errors">
-					<h4>{{ t('openbuilt', 'Validation') }}</h4>
+					<h4>{{ t('openbuild', 'Validation') }}</h4>
 					<p v-if="depthError" class="page-designer__error-row" role="alert">
-						{{ t('openbuilt', 'openbuilt.page-designer.menu.error.nesting-depth — menu depth limited to two levels.') }}
+						{{ t('openbuild', 'openbuild.page-designer.menu.error.nesting-depth — menu depth limited to two levels.') }}
 					</p>
 					<ul v-if="validatorErrors.length" class="page-designer__error-list">
 						<li v-for="(err, i) in validatorErrors" :key="i" class="page-designer__error-row">
@@ -95,7 +95,7 @@
 						</li>
 					</ul>
 					<p v-else-if="!depthError" class="page-designer__ok">
-						{{ t('openbuilt', 'No validation errors.') }}
+						{{ t('openbuild', 'No validation errors.') }}
 					</p>
 				</div>
 			</aside>

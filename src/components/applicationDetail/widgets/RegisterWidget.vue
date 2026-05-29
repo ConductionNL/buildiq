@@ -2,20 +2,20 @@
 <!-- SPDX-FileCopyrightText: 2026 Conduction B.V. -->
 <!--
 	RegisterWidget — read-only card with an "Open in OpenRegister" deep-link.
-	REQ-OBADO-006 (openbuilt-app-detail-overview / application-detail-overview).
+	REQ-OBADO-006 (openbuild-app-detail-overview / application-detail-overview).
 
 	The Register widget shows the version's per-version register identity
 	(name + slug) and its three counts (schema / object / file). The
 	primary action navigates to the OpenRegister registry detail page
 	via a top-level Nextcloud URL — not a Vue Router internal route —
-	because OpenRegister is a sibling app, not part of OpenBuilt's
+	because OpenRegister is a sibling app, not part of OpenBuild's
 	router.
 -->
 <template>
 	<div class="ob-register-widget">
 		<header class="ob-register-widget__header">
 			<h3 class="ob-register-widget__title">
-				{{ t('openbuilt', 'Register') }}
+				{{ t('openbuild', 'Register') }}
 			</h3>
 			<p class="ob-register-widget__slug">
 				<code>{{ registerSlug }}</code>
@@ -23,21 +23,21 @@
 		</header>
 		<dl class="ob-register-widget__stats">
 			<div class="ob-register-widget__stat">
-				<dt>{{ t('openbuilt', 'Schemas') }}</dt>
+				<dt>{{ t('openbuild', 'Schemas') }}</dt>
 				<dd>{{ schemaCount }}</dd>
 			</div>
 			<div class="ob-register-widget__stat">
-				<dt>{{ t('openbuilt', 'Objects') }}</dt>
+				<dt>{{ t('openbuild', 'Objects') }}</dt>
 				<dd>{{ objectCount }}</dd>
 			</div>
 			<div class="ob-register-widget__stat">
-				<dt>{{ t('openbuilt', 'Files') }}</dt>
+				<dt>{{ t('openbuild', 'Files') }}</dt>
 				<dd>{{ filesCount }}</dd>
 			</div>
 		</dl>
 		<footer class="ob-register-widget__footer">
 			<NcButton type="primary" @click="openInOpenRegister">
-				{{ t('openbuilt', 'Open in OpenRegister') }}
+				{{ t('openbuild', 'Open in OpenRegister') }}
 			</NcButton>
 		</footer>
 	</div>
@@ -60,13 +60,13 @@ export default {
 	computed: {
 		/**
 		 * Per-version register slug — convention
-		 * `openbuilt-{appSlug}-{versionSlug}` (ADR-002 / openbuilt-versioning-model).
+		 * `openbuild-{appSlug}-{versionSlug}` (ADR-002 / openbuild-versioning-model).
 		 *
 		 * @return {string}
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		registerSlug() {
-			return `openbuilt-${this.appSlug}-${this.versionSlug}`
+			return `openbuild-${this.appSlug}-${this.versionSlug}`
 		},
 	},
 	methods: {

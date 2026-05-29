@@ -1,9 +1,9 @@
-# Apply Notes — openbuilt-app-detail-overview
+# Apply Notes — openbuild-app-detail-overview
 
 Applied: 2026-05-16
 
-Branch: `feature/openbuilt-app-detail-overview` (off
-`feature/openbuilt-app-creation-wizard`, which chains C → A → D → E →
+Branch: `feature/openbuild-app-detail-overview` (off
+`feature/openbuild-app-creation-wizard`, which chains C → A → D → E →
 harness → F).
 
 ## OpenRegister floor dependency — `getDistinctActorCount`
@@ -101,7 +101,7 @@ apexcharts wrapper without changing the data contract.
 ## Inline "+ Add schema" deferred
 
 The Schemas widget's "+ Add schema" button looks for a global registry
-hook (`window.openbuilt?.openAddSchemaDialog`). The current build does
+hook (`window.openbuild?.openAddSchemaDialog`). The current build does
 NOT register one — the existing create-schema dialog
 (`src/modals/AddSchemaDialog.vue`) is opened from the SchemaDesigner
 view, not from a globally-callable hook. The widget emits an
@@ -179,9 +179,9 @@ All 14 gates green:
 
 The Playwright destructive-confirmation gate (`tests/e2e/promoteDestructive.spec.ts`)
 has a `test.describe.skip(...)` wrapper that says "pending spec B /
-openbuilt-app-detail-overview". This spec adds the Promote affordance
+openbuild-app-detail-overview". This spec adds the Promote affordance
 on the version pills, but the click handler delegates to a global
-opener (`window.openbuilt?.openPromoteDialog`) that is NOT wired in
+opener (`window.openbuild?.openPromoteDialog`) that is NOT wired in
 this PR — the affordance is a trigger surface, not the dialog wiring
 itself. Leaving the skip wrapper is correct; a follow-on PR can wire
 the global opener and lift the skip in one move.

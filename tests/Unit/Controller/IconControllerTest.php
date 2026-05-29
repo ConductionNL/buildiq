@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Controller
+ * @package  OCA\OpenBuild\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,10 +23,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Controller;
+namespace OCA\OpenBuild\Tests\Unit\Controller;
 
-use OCA\OpenBuilt\Controller\IconController;
-use OCA\OpenBuilt\Service\IconService;
+use OCA\OpenBuild\Controller\IconController;
+use OCA\OpenBuild\Service\IconService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\StreamResponse;
 use OCP\IRequest;

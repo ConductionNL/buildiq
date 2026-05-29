@@ -60,10 +60,10 @@
       Use Vue 2.7 Composition API (`ref`, `watch`, `onMounted` or reactive
       equivalents). Do NOT use Vue 3 `setup()` syntax if the project targets Vue 2.7.
 - [x] 3.3 When `versionSlug` is a non-empty string: call
-      `GET /apps/openbuilt/api/applications/{appSlug}/versions/{versionSlug}` (spec C
+      `GET /apps/openbuild/api/applications/{appSlug}/versions/{versionSlug}` (spec C
       endpoint). On 200 set `applicationVersion.value`; on error set `error.value`.
 - [x] 3.4 When `versionSlug` is `undefined` or empty: call
-      `GET /apps/openbuilt/api/applications/{appSlug}/versions` (list). Apply the
+      `GET /apps/openbuild/api/applications/{appSlug}/versions` (list). Apply the
       most-upstream-non-production fallback rule:
       ```js
       const upstream = versions.filter(v => !versions.some(u => u.promotesTo === v.uuid))
@@ -124,7 +124,7 @@
 ## 6. `schemas.js` store — accept `versionSlug`, compute register name
 
 - [x] 6.1 Open `src/stores/schemas.js`. Locate all OR calls that reference a
-      register name (search for `openbuilt-` string literals or any register-name
+      register name (search for `openbuild-` string literals or any register-name
       variable).
 - [x] 6.2 Add `versionSlug: null` to the store's initial state (Pinia `state()` or
       Options API `data`).
@@ -133,12 +133,12 @@
       value with:
       ```js
       const register = this.versionSlug
-        ? `openbuilt-${this.appSlug}-${this.versionSlug}`
+        ? `openbuild-${this.appSlug}-${this.versionSlug}`
         : this.productionRegisterName   // fallback: resolved from Application.productionVersion.register
       ```
 - [x] 6.5 Write a unit test in `src/stores/__tests__/schemas.spec.js` asserting:
       with `versionSlug = 'staging'`, the OR call targets
-      `openbuilt-hello-world-staging`; with no `versionSlug`, the OR call targets
+      `openbuild-hello-world-staging`; with no `versionSlug`, the OR call targets
       the production register (REQ-OBVR-007 scenarios).
 
 ## 7. PHPUnit tests — ManifestResolverService + ManifestController
@@ -170,12 +170,12 @@
       `tests/integration/version-routing.postman_collection.json`).
 - [x] 8.2 Happy path — no `?_version=` as non-member: assert 200 + production manifest.
 - [x] 8.3 Happy path — `?_version=production` as authorised admin: assert 200 + production manifest.
-- [x] 8.4 `?_version=development` as authorised admin/owner: assert 200 or 404 (depending on dev-version presence). Viewer-blackout assertion deferred to the openbuilt-rbac e2e suite which provisions the rbac-outsider user.
+- [x] 8.4 `?_version=development` as authorised admin/owner: assert 200 or 404 (depending on dev-version presence). Viewer-blackout assertion deferred to the openbuild-rbac e2e suite which provisions the rbac-outsider user.
 - [x] 8.5 `?_version=nonexistent`: assert 404.
 - [x] 8.6 GET manifest of unknown app slug: assert 404 (baseline coverage for REQ-OBVR-001).
-- [x] 8.7 Newman collection lives at `tests/integration/openbuilt-version-routing.postman_collection.json` and is wired into the run-multiple-collections runner.
+- [x] 8.7 Newman collection lives at `tests/integration/openbuild-version-routing.postman_collection.json` and is wired into the run-multiple-collections runner.
 - [x] 8.8 Verified locally: 9/9 assertions passing
-      (`npx newman run tests/integration/openbuilt-version-routing.postman_collection.json`).
+      (`npx newman run tests/integration/openbuild-version-routing.postman_collection.json`).
 
 ## 9. Playwright e2e tests — `tests/e2e/version-routing.spec.ts`
 
@@ -211,7 +211,7 @@ The three scenarios below are REQUIRED per the locked prompt constraints.
       - Wait for `networkidle`.
       - Assert the view's active version is `development` (not `staging` or `production`).
         This can be asserted via: URL does NOT contain `?_version=`, but the schemas
-        store targets `openbuilt-hello-world-development` (check a visible schema that
+        store targets `openbuild-hello-world-development` (check a visible schema that
         only exists in the development register), OR the composable's resolved version
         slug is exposed in a data attribute.
       _(REQ-OBVR-004 Scenario 2, REQ-OBVR-005 Scenario 2)_
@@ -237,9 +237,9 @@ The three scenarios below are REQUIRED per the locked prompt constraints.
         not `false`/exception/empty-array (no silent fail-open).
       - `hydra-gate-spdx`: SPDX header present in docblock on `ManifestResolverService`.
       - `hydra-gate-forbidden-patterns`: no `var_dump`, `die`, etc.
-- [x] 10.5 Run `openspec validate openbuilt-version-routing --strict`; confirm clean.
+- [x] 10.5 Run `openspec validate openbuild-version-routing --strict`; confirm clean.
 - [x] 10.6 Open PR against `development` (memory rule `feature-branches-from-dev`);
-      reference ADR-002, the foundation change `openbuilt-versioning-model`, sibling
-      spec `openbuilt-version-promotion`, and the downstream changes
-      `openbuilt-app-detail-overview` and `openbuilt-app-creation-wizard` in the
+      reference ADR-002, the foundation change `openbuild-versioning-model`, sibling
+      spec `openbuild-version-promotion`, and the downstream changes
+      `openbuild-app-detail-overview` and `openbuild-app-creation-wizard` in the
       description so reviewers can trace the chain delivery wave.

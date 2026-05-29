@@ -20,7 +20,7 @@ every save.
 ### Requirement: ApplicationVersion schema declared in OpenRegister
 
 The system SHALL declare an `ApplicationVersion` schema in
-`lib/Settings/openbuilt_register.json` under the `openbuilt` register namespace
+`lib/Settings/openbuild_register.json` under the `openbuild` register namespace
 (Schema.org analogue: `SoftwareApplication`). The schema SHALL define properties:
 
 - `name` (string, required) — human-readable display label set by the admin
@@ -31,7 +31,7 @@ The system SHALL declare an `ApplicationVersion` schema in
   `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json` v1.4.0+.
 - `register` (string, required) — name of the per-version OR register that holds
   this version's schemas and objects. Convention:
-  `openbuilt-{appSlug}-{versionSlug}` (e.g. `openbuilt-hello-world-production`).
+  `openbuild-{appSlug}-{versionSlug}` (e.g. `openbuild-hello-world-production`).
   Actual register provisioning is out of scope for this spec and owned by the
   creation-wizard capability.
 - `semver` (string, required, pattern
@@ -51,17 +51,17 @@ via `ConfigurationService::importFromApp()` in the existing repair step.
 
 #### Scenario: Schema is available after install
 
-- **WHEN** the OpenBuilt repair step runs on a fresh install
-- **THEN** OpenRegister exposes the `openbuilt/applicationVersion` schema with the
+- **WHEN** the OpenBuild repair step runs on a fresh install
+- **THEN** OpenRegister exposes the `openbuild/applicationVersion` schema with the
   declared properties
-- **AND** the schema appears in OR's standard schema listing for the `openbuilt`
+- **AND** the schema appears in OR's standard schema listing for the `openbuild`
   register namespace
 
 #### Scenario: ApplicationVersion row is created via OR REST
 
 - **WHEN** a client POSTs a payload (carrying `name`, `slug`, `manifest`, `register`,
   `semver`, `status`, and an `application` relation) to OR's REST endpoint for the
-  `openbuilt/applicationVersion` namespace
+  `openbuild/applicationVersion` namespace
 - **THEN** OR persists the object, returns 201, and the returned object carries an
   OR-assigned `uuid` and the submitted fields
 
@@ -210,7 +210,7 @@ transitions (`draft → published`, `published → archived`, `archived → draf
 `on_transition` action on the `draft → published` edge SHALL upsert a
 `BuiltAppRoute` row keyed by the parent Application's `slug` and pointing at the
 parent Application's `uuid`. This action is **relocated** from the Application
-schema (chain spec `openbuilt-application-register` REQ-OBA-004) — published-ness
+schema (chain spec `openbuild-application-register` REQ-OBA-004) — published-ness
 is per-version under the new model.
 
 **ID:** REQ-OBV-106
@@ -235,7 +235,7 @@ is per-version under the new model.
 ### Requirement: ApplicationVersion CRUD endpoints
 
 The system SHALL expose `ApplicationVersionsController` at
-`/index.php/apps/openbuilt/api/applications/{slug}/versions` with the following
+`/index.php/apps/openbuild/api/applications/{slug}/versions` with the following
 methods:
 
 - `GET /` — list ApplicationVersions for the named Application (filtered by the
@@ -297,10 +297,10 @@ Strategy-branching logic lives in
 
 #### Scenario: delete-now drops the register and the version row
 
-- **GIVEN** an ApplicationVersion `V` whose `register` is `openbuilt-<slug>-staging`
+- **GIVEN** an ApplicationVersion `V` whose `register` is `openbuild-<slug>-staging`
   and at least one object inside that register
 - **WHEN** an authenticated owner sends `DELETE …/versions/staging?strategy=delete-now`
-- **THEN** the per-version register `openbuilt-<slug>-staging` no longer exists
+- **THEN** the per-version register `openbuild-<slug>-staging` no longer exists
 - **AND** the ApplicationVersion row `V` no longer exists
 - **AND** the response is `204`
 

@@ -5,9 +5,9 @@
 Replaces the legacy single-form "Add Application" dialog with a four-step wizard
 that provisions the full ADR-002 chain in one atomic backend call: an `Application`
 row + N `ApplicationVersion` rows + N per-version registers (named
-`openbuilt-{appSlug}-{versionSlug}`), each pre-seeded with the default `hello-message`
+`openbuild-{appSlug}-{versionSlug}`), each pre-seeded with the default `hello-message`
 schema and the default manifest. Supports `single | dev-prod | dev-staging-prod |
-custom` presets, enforces unique slugs per chain (leading-`_` reserved for openbuilt
+custom` presets, enforces unique slugs per chain (leading-`_` reserved for openbuild
 system use), provides full rollback on any provisioning failure, sets the caller as
 sole owner, and retires install-time auto-seed (`SeedHelloWorld` does not return) —
 fresh installs are empty until the admin runs the wizard.
@@ -118,7 +118,7 @@ row.
 
 The wizard SHALL auto-derive slugs from names client-side via a `toKebabCase` function: lowercase the input, replace spaces with `-`, strip characters outside `[a-z0-9-]`, collapse double `--`, trim leading/trailing `-`. The derived slug SHALL be displayed as an editable chip with an `Advanced` toggle that reveals the slug input.
 
-The slug pattern (enforced both client-side and server-side) SHALL be `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$`. Leading underscores SHALL be rejected with the user-facing message: "Version slugs cannot start with `_` (reserved for openbuilt system use)."
+The slug pattern (enforced both client-side and server-side) SHALL be `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$`. Leading underscores SHALL be rejected with the user-facing message: "Version slugs cannot start with `_` (reserved for openbuild system use)."
 
 **ID:** REQ-OBWIZ-005
 
@@ -131,7 +131,7 @@ The slug pattern (enforced both client-side and server-side) SHALL be `^(?!_)[a-
 
 - **WHEN** the admin opens the Advanced toggle and types `_internal` as a version slug
 - **THEN** an inline error appears: "Version slugs cannot start with `_` (reserved for
-  openbuilt system use)"
+  openbuild system use)"
 - **AND** the wizard's Next / Create button is disabled until the slug is corrected
 
 #### Scenario: Slug with invalid characters is rejected
@@ -174,7 +174,7 @@ rows).
 - **WHEN** Application `app-a` already exists with a version `production`
 - **AND** the admin creates Application `app-b` with a version also named `production`
 - **THEN** the wizard accepts the payload and creates `app-b`'s `production` version without error
-- **AND** `openbuilt-app-a-production` and `openbuilt-app-b-production` registers coexist
+- **AND** `openbuild-app-a-production` and `openbuild-app-b-production` registers coexist
 
 ### Requirement: Atomic creation with full rollback on failure
 
@@ -182,7 +182,7 @@ rows).
 
 The wizard's backend endpoint SHALL provision the full chain atomically by sequencing:
 (1) validate payload, (2) create `Application`, (3) for each version create
-`ApplicationVersion` + provision per-version register `openbuilt-{appSlug}-{versionSlug}`,
+`ApplicationVersion` + provision per-version register `openbuild-{appSlug}-{versionSlug}`,
 (4) wire each non-terminal version's `promotesTo` to the next downstream UUID, (5) set
 `Application.productionVersion` to the terminal version's UUID.
 
@@ -221,7 +221,7 @@ so the admin can resolve manually.
 - **WHEN** the same register-provisioning failure occurs as in the previous scenario
 - **AND** the rollback's first-register-delete call also fails (e.g. OR is unreachable)
 - **THEN** the endpoint returns `500` with `rollbackStatus: "partial"`,
-  `orphanedResources: ["openbuilt-<slug>-development"]`
+  `orphanedResources: ["openbuild-<slug>-development"]`
 - **AND** the message body advises the admin to remove the orphaned register manually
 
 ### Requirement: Per-version registers + seed schema set
@@ -229,7 +229,7 @@ so the admin can resolve manually.
 @e2e exclude pure-backend OR register-provisioning contract — register naming, seed-schema installation, and zero-object initial state are verified by Newman REST tests against the OR register API; no Playwright-testable UI surface
 
 For each `ApplicationVersion` row created by the wizard, a corresponding OR register SHALL
-be provisioned with the name `openbuilt-{appSlug}-{versionSlug}`. Each freshly-provisioned
+be provisioned with the name `openbuild-{appSlug}-{versionSlug}`. Each freshly-provisioned
 register SHALL have the default schema set (the single `hello-message` schema from
 `lib/Resources/wizard/default-schemas.json`) installed and zero objects in it.
 
@@ -238,8 +238,8 @@ register SHALL have the default schema set (the single `hello-message` schema fr
 #### Scenario: Each version gets its own register with the seed schema
 
 - **WHEN** the wizard successfully creates an app `helloworld` with preset `dev-prod`
-- **THEN** OR has two new registers: `openbuilt-helloworld-development` and
-  `openbuilt-helloworld-production`
+- **THEN** OR has two new registers: `openbuild-helloworld-development` and
+  `openbuild-helloworld-production`
 - **AND** each register has exactly one schema named `hello-message`
 - **AND** each register has zero objects
 
@@ -249,7 +249,7 @@ register SHALL have the default schema set (the single `hello-message` schema fr
 
 Each freshly-created `ApplicationVersion` row SHALL carry:
 - `manifest` — copy of `lib/Resources/wizard/default-manifest.json` with the per-version
-  register name (`openbuilt-{appSlug}-{versionSlug}`) substituted into the `pages[*].config.register`
+  register name (`openbuild-{appSlug}-{versionSlug}`) substituted into the `pages[*].config.register`
   fields.
 - `semver` — `0.1.0`.
 - `status` — `draft`.
@@ -261,7 +261,7 @@ Each freshly-created `ApplicationVersion` row SHALL carry:
 
 - **WHEN** the wizard creates an app with preset `single` and slug `hello-world`
 - **THEN** the resulting `ApplicationVersion` has `manifest.pages[1].config.register` set to
-  `openbuilt-hello-world-production`
+  `openbuild-hello-world-production`
 - **AND** the version's `semver` is `0.1.0`
 - **AND** the version's `status` is `draft`
 
@@ -287,14 +287,14 @@ permissions editor post-creation.
 
 @e2e exclude pure-backend repair-step contract — `SeedHelloWorld` returning without creating records and the empty Applications index on fresh install are repair-step + PHPUnit contracts; testing "no records exist" requires a clean install state not reproducible in the shared admin-authenticated dev env
 
-The openbuilt app SHALL NOT create any virtual app at install / upgrade time. After
+The openbuild app SHALL NOT create any virtual app at install / upgrade time. After
 `occ maintenance:repair`, the Virtual apps index SHALL be empty for a fresh install.
 
 **ID:** REQ-OBWIZ-011
 
 #### Scenario: Fresh install has no virtual apps until admin creates one
 
-- **WHEN** openbuilt is installed on a fresh Nextcloud (no prior virtual apps)
+- **WHEN** openbuild is installed on a fresh Nextcloud (no prior virtual apps)
 - **AND** `occ maintenance:repair` has run
 - **THEN** the Virtual apps index page shows the empty state
 - **AND** the Add Application button (opening the wizard) is the only call-to-action

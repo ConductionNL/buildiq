@@ -1,6 +1,6 @@
 ## Context
 
-OpenBuilt's current model (chain spec `openbuilt-application-register` + `openbuilt-version-snapshots`)
+OpenBuild's current model (chain spec `openbuild-application-register` + `openbuild-version-snapshots`)
 stores manifest, version, status, and `currentVersion` on a single `Application` OR row, and
 relies on a PHP listener (`ApplicationVersionSnapshotListener`) to writeback `currentVersion`
 after each publish. ADR-002 retires that model in favour of two related objects: `Application`
@@ -13,7 +13,7 @@ specs depend on it.
 
 **Goals:**
 
-- Land the two-object schema in `lib/Settings/openbuilt_register.json` exactly as ADR-002
+- Land the two-object schema in `lib/Settings/openbuild_register.json` exactly as ADR-002
   specifies (no field renames, no shape divergence).
 - Retire the snapshot writeback listener and the `currentVersion` field — one less
   denormalised cache, one less imperative event handler.
@@ -30,11 +30,11 @@ specs depend on it.
 
 **Non-Goals (covered by sibling specs):**
 
-- Promotion flow (data-copy / migrate / empty-start) — `openbuilt-version-promotion`
-- `?version=<slug>` URL routing and admin-only gate — `openbuilt-version-routing`
+- Promotion flow (data-copy / migrate / empty-start) — `openbuild-version-promotion`
+- `?version=<slug>` URL routing and admin-only gate — `openbuild-version-routing`
 - App-creation wizard (provisioning Application + N ApplicationVersions + N registers +
-  Hello World seed at install time) — `openbuilt-app-creation-wizard`
-- Detail-page version switcher UI — `openbuilt-app-detail-overview`
+  Hello World seed at install time) — `openbuild-app-creation-wizard`
+- Detail-page version switcher UI — `openbuild-app-detail-overview`
 - Distinct-actor audit-trail aggregation — separate openregister-side change
 - DAG / branching `promotesTo` arrays — ADR-002 roadmap item, not in v1
 - CI/CD auto-promotion (cron, event triggers) — ADR-002 roadmap item, not in v1
@@ -44,13 +44,13 @@ specs depend on it.
 ### Decision 1 — Two-object schema split (Application + ApplicationVersion)
 
 Implemented as two top-level entries under `components.schemas` in
-`lib/Settings/openbuilt_register.json`:
+`lib/Settings/openbuild_register.json`:
 
 - `Application` (modified): `slug`, `name`, `description`, `permissions`,
   `productionVersion` (relation → ApplicationVersion). Removed: `manifest`, `version`,
   `status`, `currentVersion`.
 - `ApplicationVersion` (new): `name`, `slug`, `manifest`, `register` (string —
-  per-version OR register name; convention `openbuilt-{appSlug}-{versionSlug}`), `semver`,
+  per-version OR register name; convention `openbuild-{appSlug}-{versionSlug}`), `semver`,
   `status` (`draft | published | archived`), `application` (relation → Application),
   `promotesTo` (optional relation → ApplicationVersion).
 
@@ -132,7 +132,7 @@ loops on chain walks would brick promotion UX). Encode a `chainDepth` field
 
 The existing `on_transition` action that upserts `BuiltAppRoute(slug, applicationUuid)`
 when an Application goes `draft → published` (from chain spec
-`openbuilt-application-register` REQ-OBA-004) moves from `Application`'s lifecycle to
+`openbuild-application-register` REQ-OBA-004) moves from `Application`'s lifecycle to
 `ApplicationVersion`'s lifecycle. Published-ness is per-version now. The route record's
 `applicationUuid` continues to point at the parent Application (the routing spec layers
 `?version=<slug>` on top of the route resolution).
@@ -157,19 +157,19 @@ can't reach the target ApplicationVersion to verify back-reference.
 every app install / upgrade. Logic:
 
 1. Detect versioned shape — short-circuit `return` if the `applicationVersion` schema
-   already exists in the `openbuilt` register OR if no pre-migration `Application` row
+   already exists in the `openbuild` register OR if no pre-migration `Application` row
    has a `currentVersion` field. Idempotency requirement: re-running on a clean install
    is a no-op.
-2. Enumerate every `Application` row in the `openbuilt` register via
-   `ObjectService::findAll('openbuilt/application')`.
+2. Enumerate every `Application` row in the `openbuild` register via
+   `ObjectService::findAll('openbuild/application')`.
 3. For each row, derive the per-app register name (current convention is
-   `openbuilt-{slug}`).
+   `openbuild-{slug}`).
 4. Call OR's register-delete API to drop the per-app register entirely (this also drops
    every object inside it).
 5. Delete the Application row itself.
 6. Log one line per deletion via the `$output->info()` channel:
    `Migrated-to-versioned-model: dropped Application '<slug>' and register
-   'openbuilt-<slug>'`.
+   'openbuild-<slug>'`.
 
 The step is registered in `appinfo/info.xml` under `<repair-steps><post-migration>`.
 ADR-002 accepts the data loss (existing installs hold only test data; the new wizard
@@ -177,7 +177,7 @@ re-seeds Hello World).
 
 **Alternatives considered:** Migrate-in-place (copy the manifest to a fresh
 ApplicationVersion(name="production", slug="production"), rename the register from
-`openbuilt-{slug}` to `openbuilt-{slug}-production`, set `Application.productionVersion`)
+`openbuild-{slug}` to `openbuild-{slug}-production`, set `Application.productionVersion`)
 — **rejected** per the locked decision: ADR-002 explicitly chose green-field because the
 implementation cost and edge-case surface (register-rename idempotency, partial-failure
 recovery, missing `BuiltAppRoute` patches, schema-drift across versions) is not worth
@@ -185,7 +185,7 @@ preserving test data. The greenfield migration is two safe DB operations per row
 
 ### Decision 9 — Version-deletion endpoint with strategy param
 
-`DELETE /apps/openbuilt/api/applications/{slug}/versions/{versionSlug}?strategy=…`
+`DELETE /apps/openbuild/api/applications/{slug}/versions/{versionSlug}?strategy=…`
 accepts one of three strategy values:
 
 - `delete-now` — drop the per-version register (and all rows inside it) immediately, then
@@ -216,7 +216,7 @@ repair step writes.
 **This spec writes no seed data.** The previous seed (`lib/Repair/SeedHelloWorld.php`,
 which created the canonical `hello-world` virtual app) is wiped by the green-field
 migration along with every other pre-migration Application row. The new wizard
-(`openbuilt-app-creation-wizard`) owns Hello World seeding under the new model —
+(`openbuild-app-creation-wizard`) owns Hello World seeding under the new model —
 specifically, it provisions an `Application(slug=hello-world)` + one or more
 `ApplicationVersion` rows + their per-version registers at install time, then runs the
 hello-world manifest into the production version's register.
@@ -274,7 +274,7 @@ Per ADR-031, every business-logic site is classified.
 
 ## Migration Plan
 
-1. Apply `proposal.md` schema deltas to `lib/Settings/openbuilt_register.json` (split
+1. Apply `proposal.md` schema deltas to `lib/Settings/openbuild_register.json` (split
    Application, add ApplicationVersion).
 2. Add `lib/Repair/MigrateToVersionedModel.php`. Register in `appinfo/info.xml` as a
    post-migration step. Step is **destructive** but idempotent (short-circuits when
@@ -287,7 +287,7 @@ Per ADR-031, every business-logic site is classified.
 5. Delete `lib/Repair/SeedHelloWorld.php` (default decision per task #11). Adjust its
    `<repair-steps>` registration in `appinfo/info.xml`.
 6. Run repair on a dev install. Confirm the log line `Migrated-to-versioned-model:
-   dropped Application '<slug>' and register 'openbuilt-<slug>'` fires for every test
+   dropped Application '<slug>' and register 'openbuild-<slug>'` fires for every test
    row. Confirm the second run is a no-op (short-circuit).
 
 **Rollback:** the green-field migration is destructive and one-way. Rollback means

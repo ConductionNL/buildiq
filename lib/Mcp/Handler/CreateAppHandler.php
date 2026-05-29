@@ -1,13 +1,13 @@
 <?php
 
 /**
- * Handler for the openbuilt.createApp MCP tool.
+ * Handler for the openbuild.createApp MCP tool.
  *
- * Creates a new OpenBuilt virtual app with an initial draft ApplicationVersion.
+ * Creates a new OpenBuild virtual app with an initial draft ApplicationVersion.
  * Preset determines the version chain: "single", "dev-prod" or "dev-staging-prod".
  *
  * @category Service
- * @package  OCA\OpenBuilt\Mcp\Handler
+ * @package  OCA\OpenBuild\Mcp\Handler
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,12 +23,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Mcp\Handler;
+namespace OCA\OpenBuild\Mcp\Handler;
 
 /**
- * Handles the openbuilt.createApp tool invocation.
+ * Handles the openbuild.createApp tool invocation.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-8
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
  */
 class CreateAppHandler extends AbstractToolHandler
 {
@@ -62,7 +62,7 @@ class CreateAppHandler extends AbstractToolHandler
         }
 
         try {
-            $creationService = $this->container->get('OCA\OpenBuilt\Service\ApplicationCreationService');
+            $creationService = $this->container->get('OCA\OpenBuild\Service\ApplicationCreationService');
             $appUuid         = $creationService->createApplication(
                     [
                         'slug'        => $slug,
@@ -80,7 +80,7 @@ class CreateAppHandler extends AbstractToolHandler
             ];
         } catch (\Throwable $e) {
             $this->logger->error(
-                'OpenBuilt MCP: createApp failed',
+                'OpenBuild MCP: createApp failed',
                 ['slug' => $slug, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
             );
             return $this->errorResult(error: 'create_failed', message: 'Failed to create virtual app. See server logs for details.');

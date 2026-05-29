@@ -10,13 +10,13 @@
 <template>
 	<div class="version-history">
 		<header class="version-history__header">
-			<h3>{{ t('openbuilt', 'Version history') }}</h3>
+			<h3>{{ t('openbuild', 'Version history') }}</h3>
 		</header>
 		<p v-if="loading" class="version-history__empty">
-			{{ t('openbuilt', 'Loading…') }}
+			{{ t('openbuild', 'Loading…') }}
 		</p>
 		<p v-else-if="!versions.length" class="version-history__empty">
-			{{ t('openbuilt', 'No versions yet — publish this app to create the first snapshot.') }}
+			{{ t('openbuild', 'No versions yet — publish this app to create the first snapshot.') }}
 		</p>
 		<ul v-else class="version-history__list">
 			<li
@@ -27,15 +27,15 @@
 				<div class="version-history__row-main">
 					<strong>{{ rowVersion(row) }}</strong>
 					<span class="version-history__when">{{ formatDate(rowPublishedAt(row)) }}</span>
-					<small class="version-history__by">{{ t('openbuilt', 'By') }}: {{ rowPublishedBy(row) }}</small>
+					<small class="version-history__by">{{ t('openbuild', 'By') }}: {{ rowPublishedBy(row) }}</small>
 					<small v-if="rowNotes(row)" class="version-history__notes">{{ rowNotes(row) }}</small>
 				</div>
 				<div class="version-history__actions">
 					<button class="version-history__btn" @click="compare(row)">
-						{{ t('openbuilt', 'Compare with current draft') }}
+						{{ t('openbuild', 'Compare with current draft') }}
 					</button>
 					<button class="version-history__btn version-history__btn--danger" @click="askRollback(row)">
-						{{ t('openbuilt', 'Roll back to this version') }}
+						{{ t('openbuild', 'Roll back to this version') }}
 					</button>
 				</div>
 			</li>
@@ -109,7 +109,7 @@ export default {
 			}
 			this.loading = true
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuilt/application-version')
+				const url = generateUrl('/apps/openregister/api/objects/openbuild/application-version')
 				const { data } = await axios.get(url, {
 					params: {
 						applicationUuid: this.applicationUuid,

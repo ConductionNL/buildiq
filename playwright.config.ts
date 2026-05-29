@@ -4,10 +4,10 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Playwright config for OpenBuilt e2e tests.
+ * Playwright config for OpenBuild e2e tests.
  *
  * Targets the local Nextcloud Docker stack at http://localhost:8080
- * (see `.github/docker-compose.yml`). Tests assume the OpenBuilt app
+ * (see `.github/docker-compose.yml`). Tests assume the OpenBuild app
  * is enabled and the SeedHelloWorld repair step has populated the
  * canonical hello-world virtual app.
  *

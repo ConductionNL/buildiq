@@ -3,7 +3,7 @@
 
 use OCP\Util;
 
-$appId = OCA\OpenBuilt\AppInfo\Application::APP_ID;
+$appId = OCA\OpenBuild\AppInfo\Application::APP_ID;
 Util::addScript($appId, $appId . '-main');
 ?>
 <div id="content"></div>

@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenBuilt Cleanup Expired Exports
+ * OpenBuild Cleanup Expired Exports
  *
  * Daily background job that purges expired ZIP archives from app-data while
  * preserving the ExportJob audit trail.
  *
  * @category BackgroundJob
- * @package  OCA\OpenBuilt\BackgroundJob
+ * @package  OCA\OpenBuild\BackgroundJob
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-36
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-36
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\BackgroundJob;
+namespace OCA\OpenBuild\BackgroundJob;
 
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -63,13 +63,13 @@ class CleanupExpiredExports extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-36
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-36
      */
     protected function run($argument): void
     {
         unset($argument);
 
-        $exportsRoot = sys_get_temp_dir().'/openbuilt-exports';
+        $exportsRoot = sys_get_temp_dir().'/openbuild-exports';
         if (is_dir($exportsRoot) === false) {
             return;
         }
@@ -95,7 +95,7 @@ class CleanupExpiredExports extends TimedJob
         }
 
         if ($purged > 0) {
-            $this->logger->info('OpenBuilt cleanup: purged '.$purged.' expired export archive(s)');
+            $this->logger->info('OpenBuild cleanup: purged '.$purged.' expired export archive(s)');
         }
     }//end run()
 }//end class

@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuilt Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest unit tests for `SchemaDesigner.vue` (REQ-OBSD-001 ..
@@ -53,8 +53,8 @@ const dialogMocks = vi.hoisted(() => {
 vi.mock('../../src/store/schemas.js', () => {
 	return {
 		useSchemasStore: () => storeMocks,
-		registerSlugForApp: (appSlug) => `openbuilt-${appSlug}`,
-		STORE_ID: 'openbuilt-schemas',
+		registerSlugForApp: (appSlug) => `openbuild-${appSlug}`,
+		STORE_ID: 'openbuild-schemas',
 	}
 })
 

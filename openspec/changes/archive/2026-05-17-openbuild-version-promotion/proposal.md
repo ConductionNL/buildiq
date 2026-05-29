@@ -1,11 +1,11 @@
 ---
 kind: code
-depends_on: ["openbuilt-versioning-model"]
+depends_on: ["openbuild-versioning-model"]
 ---
 
 ## Why
 
-ADR-002 and the foundation spec `openbuilt-versioning-model` (spec C) define the two-object
+ADR-002 and the foundation spec `openbuild-versioning-model` (spec C) define the two-object
 versioning model — `Application` + `ApplicationVersion` with a per-version register and an
 admin-defined linear chain via `promotesTo`. That spec ships the schema, the deletion
 endpoint, and the cycle/back-reference guards, but **the actual promotion flow** — moving
@@ -44,19 +44,19 @@ move work between them.
   exercising the happy path plus the 409 lock-contention and 422 missing-target edge
   cases.
 - **CONTRACT** Schema changes inside the source's schema set are NOT pre-flighted by
-  openbuilt — the promotion endpoint forwards the source's schema set to OR's
+  openbuild — the promotion endpoint forwards the source's schema set to OR's
   schema-import / register-merge API for the target register, and OR's own breaking-change
-  handling drives the outcome. No openbuilt-side schema-diff UI or dry-run step.
+  handling drives the outcome. No openbuild-side schema-diff UI or dry-run step.
 - **CONTRACT** Concurrency is enforced via OR object locking on the target
   ApplicationVersion row. If the lock is held, the endpoint returns `409 Conflict` with
-  `{code: "version_locked", lockedBy, expiresAt}`. No openbuilt-side lock table.
+  `{code: "version_locked", lockedBy, expiresAt}`. No openbuild-side lock table.
 - **CONTRACT** Permission check uses the existing `permissions.{owners,editors}`
   resolution on the parent Application; viewers and non-members get `403`. Nextcloud
   admins are NOT auto-granted (deliberate: admin power is for NC app management, not
   per-virtual-app promotion).
 - **CONTRACT** Semver: on promotion to any target (production or mid-chain), the target's
   `semver` is replaced with the source's `semver`. The post-promotion minor-bump on the
-  upstream source is an existing rule owned by `openbuilt-versioning-model` (semver
+  upstream source is an existing rule owned by `openbuild-versioning-model` (semver
   auto-bump on next manifest change) — this spec does not introduce a new bump.
 
 ## Capabilities
@@ -71,7 +71,7 @@ move work between them.
 
 ### Modified Capabilities
 
-None. The `ApplicationVersion` schema is owned by `openbuilt-versioning-model` (spec C)
+None. The `ApplicationVersion` schema is owned by `openbuild-versioning-model` (spec C)
 and is consumed here unchanged. The promotion endpoint reads + writes existing
 ApplicationVersion fields (`manifest`, `register`, `semver`, `status`) via OR's standard
 API; it adds no new schema properties.
@@ -91,17 +91,17 @@ API; it adds no new schema properties.
   - `tests/integration/promotion.postman_collection.json` (Newman runnable)
 - **OpenRegister dependency** — uses OR's existing object-locking API, schema-import /
   register-merge API, and bulk object operations. Floor remains the `^v0.2.10` declared
-  in `lib/Settings/openbuilt_register.json` from spec C.
-- **No schema delta** — this spec does not edit `lib/Settings/openbuilt_register.json`.
+  in `lib/Settings/openbuild_register.json` from spec C.
+- **No schema delta** — this spec does not edit `lib/Settings/openbuild_register.json`.
 - **Out of scope** (covered by sibling specs in the chain):
   - The "Promote" button surface on the detail page / version switcher — owned by
-    `openbuilt-app-detail-overview` (spec B). For spec D the dialog component itself
+    `openbuild-app-detail-overview` (spec B). For spec D the dialog component itself
     is shipped; call sites are deferred.
-  - The `?version=<slug>` URL routing — owned by `openbuilt-version-routing` (spec E).
-  - The creation wizard — owned by `openbuilt-app-creation-wizard` (spec F).
+  - The `?version=<slug>` URL routing — owned by `openbuild-version-routing` (spec E).
+  - The creation wizard — owned by `openbuild-app-creation-wizard` (spec F).
   - OR's schema-import / register-merge implementation — owned by openregister; this
     spec consumes the existing contract.
   - The post-promotion upstream-source semver minor-bump — owned by the existing
-    auto-bump rule in `openbuilt-versioning-model` (spec C, REQ-OBV-103).
+    auto-bump rule in `openbuild-versioning-model` (spec C, REQ-OBV-103).
 - **No backward compatibility concerns** — this is additive on top of the new versioned
   model. There is no legacy promotion endpoint to deprecate.

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuilt GitHubPushService unit tests
+ * OpenBuild GitHubPushService unit tests
  *
  * Locks the PAT-handling contract: the PAT MUST be a method-scoped
  * parameter, MUST NOT be stored on $this, and MUST NOT appear in any
@@ -9,7 +9,7 @@
  * the contract that a future live implementation MUST honour.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Service
+ * @package  OCA\OpenBuild\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,9 +25,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Service;
+namespace OCA\OpenBuild\Tests\Unit\Service;
 
-use OCA\OpenBuilt\Service\GitHubPushService;
+use OCA\OpenBuild\Service\GitHubPushService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 

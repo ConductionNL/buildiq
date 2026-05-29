@@ -1,18 +1,18 @@
 ---
 kind: code
-depends_on: [bootstrap-openbuilt, openbuilt-versioning-model, openbuilt-app-creation-wizard]
+depends_on: [bootstrap-openbuild, openbuild-versioning-model, openbuild-app-creation-wizard]
 chain:
-  - bootstrap-openbuilt          # spec #1 — Application register + textarea editor
-  - openbuilt-versioning-model   # spec #3 — Application/ApplicationVersion split (ADR-002)
-  - openbuilt-schema-editor      # spec #4 — schema designer
-  - openbuilt-page-designer      # spec #5 — THIS spec
+  - bootstrap-openbuild          # spec #1 — Application register + textarea editor
+  - openbuild-versioning-model   # spec #3 — Application/ApplicationVersion split (ADR-002)
+  - openbuild-schema-editor      # spec #4 — schema designer
+  - openbuild-page-designer      # spec #5 — THIS spec
 ---
 
 ## Why
 
-Spec #1 (`bootstrap-openbuilt`) shipped a textarea-based JSON manifest editor as the
+Spec #1 (`bootstrap-openbuild`) shipped a textarea-based JSON manifest editor as the
 integrator-only entry point for authoring a virtual app. That textarea proves the runtime
-contract but is unusable for the citizen-developer audience OpenBuilt actually targets:
+contract but is unusable for the citizen-developer audience OpenBuild actually targets:
 hand-typing a manifest means knowing the canonical
 `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json` (v1.4.0) by heart,
 including its closed 9-type page enum, the per-type `config` sub-shapes, the
@@ -21,13 +21,13 @@ menu/permission/route grammar, and the `$ref`'d `column` / `action` / `widgetDef
 designer is the missing piece between "we can store and render a manifest" and "a
 non-technical user can build one".
 
-This is spec #5 of the OpenBuilt chain. It is **purely a frontend code change** inside
-the existing `openbuilt` Nextcloud app — no new schemas, no new backend controllers, no
+This is spec #5 of the OpenBuild chain. It is **purely a frontend code change** inside
+the existing `openbuild` Nextcloud app — no new schemas, no new backend controllers, no
 new register namespaces. The editor reads/writes the same `ApplicationVersion.manifest`
 JSON blob the textarea already reads/writes (via OR REST per ADR-022), just through a
 graphical UI instead of a raw text area. Per ADR-002 the manifest now lives on
 `ApplicationVersion`, not on `Application`; the save path targets
-`/api/objects/openbuilt/applicationVersion/{uuid}` accordingly.
+`/api/objects/openbuild/applicationVersion/{uuid}` accordingly.
 
 ## What Changes
 
@@ -85,7 +85,7 @@ graphical UI instead of a raw text area. Per ADR-002 the manifest now lives on
 
 #### New Capabilities
 
-- `openbuilt-page-designer`: The visual manifest / page designer that produces output
+- `openbuild-page-designer`: The visual manifest / page designer that produces output
   validating against
   `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`. Owns the
   menu-tree editor, page-list editor, per-page-type sub-editors for all nine canonical
@@ -95,7 +95,7 @@ graphical UI instead of a raw text area. Per ADR-002 the manifest now lives on
 
 #### Modified Capabilities
 
-- `openbuilt-runtime`: The editor swap. The Application edit view registered by spec
+- `openbuild-runtime`: The editor swap. The Application edit view registered by spec
   #1 (`ApplicationEditor.vue` — single-textarea) is reshaped into a tabbed editor with
   a "Design" tab (the new `PageDesigner.vue`) as default and a "Raw JSON" tab (the
   existing textarea) as the integrator fallback. The runtime contract (manifest

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Playwright end-to-end coverage for the ZIP export flow of spec #9
- * (openbuilt-export-to-real-app).
+ * (openbuild-export-to-real-app).
  *
  * Flow:
  *   1. Authenticate as admin against the local Nextcloud dev instance
@@ -17,7 +17,7 @@
  *      expected filename pattern `<appId>-<version>.zip` (or the job-UUID
  *      fallback the current ExportService emits).
  *
- * NOTE: The Playwright runner is not wired up in OpenBuilt yet — this file
+ * NOTE: The Playwright runner is not wired up in OpenBuild yet — this file
  * is committed alongside the apply PR per task 7.2 / 8.x of the spec.
  * It runs once the cohort-wide Playwright bootstrap lands and asserts the
  * end-to-end UX contract the controller + background-job tests have
@@ -32,7 +32,7 @@ const ADMIN_PASSWORD = process.env.NC_ADMIN_PASSWORD || 'admin'
 const APPLICATION_SLUG = 'hello-world'
 const POLL_TIMEOUT_MS = 60_000
 
-test.describe('OpenBuilt ZIP export', () => {
+test.describe('OpenBuild ZIP export', () => {
 	test.beforeEach(async ({ page }) => {
 		// Login via the Nextcloud login form. CI uses storageState; this
 		// fallback keeps the spec runnable in local dev.
@@ -48,7 +48,7 @@ test.describe('OpenBuilt ZIP export', () => {
 
 	test('export a hello-world Application as a ZIP and download it', async ({ page }) => {
 		// 1. Navigate to the hello-world editor.
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuilt/applications/${APPLICATION_SLUG}`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications/${APPLICATION_SLUG}`)
 
 		// 2. Open the Export dialog. The button is wired in
 		//    src/views/ApplicationDetail.vue per task 8.3.
@@ -86,7 +86,7 @@ test.describe('OpenBuilt ZIP export', () => {
 
 	test('export dialog rejects submission with invalid target', async ({ page }) => {
 		// Locks the client-side guard mirror of the 422 controller path.
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuilt/applications/${APPLICATION_SLUG}`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications/${APPLICATION_SLUG}`)
 		const exportButton = page.getByRole('button', { name: /export/i })
 		await expect(exportButton).toBeVisible({ timeout: 15_000 })
 		await exportButton.click()

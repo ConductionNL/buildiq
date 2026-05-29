@@ -1,10 +1,10 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-or-later
- * SPDX-FileCopyrightText: 2026 OpenBuilt Contributors
+ * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
  *
- * Documentation screenshot capture suite — openbuilt.
+ * Documentation screenshot capture suite — openbuild.
  *
- * This spec is *not* a regression test. It drives the OpenBuilt UI
+ * This spec is *not* a regression test. It drives the OpenBuild UI
  * through every flow documented under
  * `docs/tutorials/{user,admin}/*.md` and writes a fresh PNG into
  * `docs/static/screenshots/tutorials/<track>/<file>.png` for each
@@ -21,7 +21,7 @@
  * flag in `playwright.config.ts` so PR pipelines don't reshoot
  * screenshots on every push.
  *
- * Data dependency: OpenBuilt's repair step seeds a canonical
+ * Data dependency: OpenBuild's repair step seeds a canonical
  * "Hello World" virtual app on every fresh install, so the index
  * lists, the template gallery, the page designer and the builder
  * host all render with real data. Detail / sidebar views off the
@@ -43,7 +43,7 @@ import * as path from 'path'
 import * as fs from 'fs'
 
 const SHOT_ROOT = path.resolve(__dirname, '..', '..', 'docs', 'static', 'screenshots', 'tutorials')
-const APP = '/apps/openbuilt'
+const APP = '/apps/openbuild'
 const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASSWORD || process.env.NC_ADMIN_PASS || 'admin'
 
@@ -63,7 +63,7 @@ async function shoot(page: Page, track: 'user' | 'admin', file: string): Promise
 
 /** Drive the Nextcloud login form once per test (cheap; no global-setup). */
 async function ensureLoggedIn(page: Page): Promise<void> {
-	if (page.url().includes('/apps/openbuilt')) {
+	if (page.url().includes('/apps/openbuild')) {
 		return
 	}
 	await page.goto('/index.php/login').catch(() => {})
@@ -101,7 +101,7 @@ async function dismissOverlays(page: Page): Promise<void> {
 	}
 }
 
-/** Navigate to an OpenBuilt (or absolute) route and settle. */
+/** Navigate to an OpenBuild (or absolute) route and settle. */
 async function go(page: Page, route: string): Promise<void> {
 	await ensureLoggedIn(page)
 	const url = route.startsWith('/apps/') || route.startsWith('/settings/') ? route : `${APP}${route.startsWith('/') ? route : `/${route}`}`
@@ -155,7 +155,7 @@ test.describe('docs: user track', () => {
 		await shoot(page, 'user', '01-first-launch-03.png')
 		await go(page, '/applications')
 		await shoot(page, 'user', '01-first-launch-04.png')
-		expect(page.url()).toContain('/apps/openbuilt')
+		expect(page.url()).toContain('/apps/openbuild')
 	})
 
 	test('UN create-from-template', async ({ page }) => {
@@ -286,9 +286,9 @@ test.describe('docs: user track', () => {
 
 test.describe('docs: admin track', () => {
 	test('AN rbac', async ({ page }) => {
-		// docs/tutorials/admin/01-rbac.md — OpenBuilt's admin settings page
+		// docs/tutorials/admin/01-rbac.md — OpenBuild's admin settings page
 		// hosts the builder-group picker.
-		await go(page, '/settings/admin/openbuilt')
+		await go(page, '/settings/admin/openbuild')
 		await shoot(page, 'admin', '01-rbac-01.png')
 		await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
 		await page.waitForTimeout(300)
@@ -314,7 +314,7 @@ test.describe('docs: admin track', () => {
 
 	test('AN admin-settings', async ({ page }) => {
 		// docs/tutorials/admin/03-admin-settings.md
-		await go(page, '/settings/admin/openbuilt')
+		await go(page, '/settings/admin/openbuild')
 		await shoot(page, 'admin', '03-admin-settings-01.png')
 		await page.evaluate(() => window.scrollTo(0, 0))
 		await page.waitForTimeout(300)
@@ -329,6 +329,6 @@ test.describe('docs: admin track', () => {
 		await page.waitForTimeout(300)
 		await shoot(page, 'admin', '03-admin-settings-04.png')
 		await shoot(page, 'admin', '03-admin-settings-05.png')
-		expect(page.url()).toContain('/settings/admin/openbuilt')
+		expect(page.url()).toContain('/settings/admin/openbuild')
 	})
 })

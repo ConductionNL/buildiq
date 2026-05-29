@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Repair
+ * @package  OCA\OpenBuild\Tests\Unit\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Repair;
+namespace OCA\OpenBuild\Tests\Unit\Repair;
 
-use OCA\OpenBuilt\Repair\PopulateApplicationPermissions;
+use OCA\OpenBuild\Repair\PopulateApplicationPermissions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;

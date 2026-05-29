@@ -6,11 +6,11 @@
 <template>
 	<div class="dashboard-page-editor">
 		<h3 class="dashboard-page-editor__title">
-			{{ t('openbuilt', 'Dashboard page') }}
+			{{ t('openbuild', 'Dashboard page') }}
 		</h3>
 
 		<fieldset class="dashboard-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Widgets') }}</legend>
+			<legend>{{ t('openbuild', 'Widgets') }}</legend>
 			<WidgetBuilder
 				:model-value="config.widgets || []"
 				@update:modelValue="update('widgets', $event)" />
@@ -18,7 +18,7 @@
 		</fieldset>
 
 		<fieldset class="dashboard-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Layout') }}</legend>
+			<legend>{{ t('openbuild', 'Layout') }}</legend>
 			<LayoutItemBuilder
 				:model-value="config.layout || []"
 				@update:modelValue="update('layout', $event)" />

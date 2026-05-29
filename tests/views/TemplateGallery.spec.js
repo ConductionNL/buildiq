@@ -11,7 +11,7 @@
  *   - REQ-OBTC-006: free-text search over title/useCase/description narrows
  *     the visible set
  *   - REQ-OBTC-004: "Use this template" CTA triggers an axios POST to
- *     `/apps/openbuilt/api/applications/from-template/{slug}` with the
+ *     `/apps/openbuild/api/applications/from-template/{slug}` with the
  *     payload from the clone dialog
  *   - REQ-OBTC-008: on successful clone, the gallery navigates to the
  *     page editor surface for the newly cloned application
@@ -143,7 +143,7 @@ describe('TemplateGallery.vue', () => {
 		const { wrapper } = await mountGallery()
 
 		expect(axiosMock.get).toHaveBeenCalledTimes(1)
-		expect(axiosMock.get.mock.calls[0][0]).toContain('/apps/openregister/api/objects/openbuilt/application-template')
+		expect(axiosMock.get.mock.calls[0][0]).toContain('/apps/openregister/api/objects/openbuild/application-template')
 
 		const cards = wrapper.findAll('.template-card')
 		expect(cards.length).toBe(4)
@@ -196,7 +196,7 @@ describe('TemplateGallery.vue', () => {
 
 		expect(axiosMock.post).toHaveBeenCalledTimes(1)
 		const [url, payload] = axiosMock.post.mock.calls[0]
-		expect(url).toContain('/apps/openbuilt/api/applications/from-template/permit-tracker')
+		expect(url).toContain('/apps/openbuild/api/applications/from-template/permit-tracker')
 		expect(payload).toEqual({ name: 'My permits', slug: 'my-permits' })
 	})
 

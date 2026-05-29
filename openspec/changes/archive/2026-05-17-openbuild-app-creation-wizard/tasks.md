@@ -85,7 +85,7 @@
   - spec_ref: REQ-OBWIZ-001
   - files: `appinfo/routes.php`
   - Add route entry: `['name' => 'applicationCreation#wizard', 'url' => '/api/applications/wizard', 'verb' => 'POST']`.
-  - acceptance_criteria: Newman: `POST /index.php/apps/openbuilt/api/applications/wizard`
+  - acceptance_criteria: Newman: `POST /index.php/apps/openbuild/api/applications/wizard`
     with an authenticated session resolves to the new controller; without auth it returns
     401.
 
@@ -225,8 +225,8 @@
     both succeed when payload is valid).
 
 - [x] 8.4 **Newman: wizard endpoint integration**
-  - files: add to `tests/integration/openbuilt-schema-editor.postman_collection.json` (or
-    create `tests/integration/openbuilt-wizard.postman_collection.json`)
+  - files: add to `tests/integration/openbuild-schema-editor.postman_collection.json` (or
+    create `tests/integration/openbuild-wizard.postman_collection.json`)
   - Cover: successful `single` preset creation (201 + valid UUID returned), invalid-slug
     rejection (422), unauthenticated request (401), `dev-staging-prod` creation followed by
     verification that all three ApplicationVersion records + three registers exist.
@@ -237,7 +237,7 @@
     1. `single` — admin opens wizard, enters name "Hello World" (slug auto-derives to
        `hello-world`), selects `Single` preset, clicks through to step 4, clicks Create,
        lands on `/applications/<uuid>`. Verify backend: one ApplicationVersion `production`,
-       one register `openbuilt-hello-world-production`.
+       one register `openbuild-hello-world-production`.
     2. `dev-prod` — same flow, `Development + Production` preset. Verify backend: two
        ApplicationVersions with the chain `development → production`, both registers exist.
     3. `dev-staging-prod` — same flow, `Development + Staging + Production` preset.
@@ -259,16 +259,16 @@
 
 ## 9. Documentation
 
-- [x] 9.1 **Update `docs/integrator-guide.md` and `docs/openbuilt-runtime.md`**
+- [x] 9.1 **Update `docs/integrator-guide.md` and `docs/openbuild-runtime.md`**
   - Add a section "Creating a virtual app" walking through the wizard.
   - Note: the legacy `SeedHelloWorld` repair step (and its install-time auto-seed) is gone;
     fresh installs land the admin on an empty Virtual apps index.
   - acceptance_criteria: Doc pages render cleanly via the docusaurus preset; cross-links
-    to `openbuilt-version-promotion` / `openbuilt-version-routing` resolve.
+    to `openbuild-version-promotion` / `openbuild-version-routing` resolve.
 
 ## 10. Quality gates
 
-- [x] 10.1 (verified: composer phpcs 43/43 clean, composer lint passes, composer psalm passes — PHPUnit 216/216 via OPENBUILT_SKIP_NC_BOOTSTRAP=1; full `composer test:all` wrapper still needs container bootstrap — 2026-05-17) **PHP** — `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) passes.
+- [x] 10.1 (verified: composer phpcs 43/43 clean, composer lint passes, composer psalm passes — PHPUnit 216/216 via OPENBUILD_SKIP_NC_BOOTSTRAP=1; full `composer test:all` wrapper still needs container bootstrap — 2026-05-17) **PHP** — `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) passes.
 - [x] 10.2 **JS** — `npm run lint` and `npm run test:unit` (Vitest) pass.
 - [x] 10.3 **Integration** — Newman collection from 8.4 passes against a freshly seeded
   Newman dev environment.

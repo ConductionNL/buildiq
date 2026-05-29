@@ -22,17 +22,17 @@
 <template>
 	<div class="settings-page-editor">
 		<h3 class="settings-page-editor__title">
-			{{ t('openbuilt', 'Settings page') }}
+			{{ t('openbuild', 'Settings page') }}
 		</h3>
 
 		<fieldset class="settings-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Save endpoint') }}</legend>
+			<legend>{{ t('openbuild', 'Save endpoint') }}</legend>
 			<label class="settings-page-editor__group-row">
-				{{ t('openbuilt', 'saveEndpoint (optional)') }}
+				{{ t('openbuild', 'saveEndpoint (optional)') }}
 				<input
 					type="text"
 					:value="config.saveEndpoint || ''"
-					:placeholder="t('openbuilt', '/api/objects/:slug/settings')"
+					:placeholder="t('openbuild', '/api/objects/:slug/settings')"
 					:aria-invalid="isInvalid('saveEndpoint')"
 					@input="update('saveEndpoint', $event.target.value)">
 				<InlineFieldMark :error="markFor('saveEndpoint')" />
@@ -40,7 +40,7 @@
 		</fieldset>
 
 		<fieldset class="settings-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Layout') }}</legend>
+			<legend>{{ t('openbuild', 'Layout') }}</legend>
 			<div class="settings-page-editor__shape">
 				<label class="settings-page-editor__inline">
 					<input
@@ -48,7 +48,7 @@
 						:checked="layoutShape === 'sections'"
 						value="sections"
 						@change="setLayoutShape('sections')">
-					{{ t('openbuilt', 'Flat sections') }}
+					{{ t('openbuild', 'Flat sections') }}
 				</label>
 				<label class="settings-page-editor__inline">
 					<input
@@ -56,16 +56,16 @@
 						:checked="layoutShape === 'tabs'"
 						value="tabs"
 						@change="setLayoutShape('tabs')">
-					{{ t('openbuilt', 'Tabbed sections') }}
+					{{ t('openbuild', 'Tabbed sections') }}
 				</label>
 			</div>
 			<p class="settings-page-editor__hint">
-				{{ t('openbuilt', 'Exactly one of sections or tabs must be set.') }}
+				{{ t('openbuild', 'Exactly one of sections or tabs must be set.') }}
 			</p>
 		</fieldset>
 
 		<fieldset v-if="layoutShape === 'sections'" class="settings-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Sections') }}</legend>
+			<legend>{{ t('openbuild', 'Sections') }}</legend>
 			<SettingsSectionBuilder
 				:model-value="config.sections || []"
 				@update:modelValue="update('sections', $event)" />
@@ -73,31 +73,31 @@
 		</fieldset>
 
 		<fieldset v-else class="settings-page-editor__fieldset">
-			<legend>{{ t('openbuilt', 'Tabs') }}</legend>
+			<legend>{{ t('openbuild', 'Tabs') }}</legend>
 			<div v-for="(tab, index) in tabs" :key="index" class="settings-page-editor__tab">
 				<div class="settings-page-editor__tab-head">
 					<input
 						:value="tab.id || ''"
 						type="text"
 						class="settings-page-editor__field settings-page-editor__field--narrow"
-						:placeholder="t('openbuilt', 'Tab id')"
+						:placeholder="t('openbuild', 'Tab id')"
 						@input="updateTabField(index, 'id', $event.target.value)">
 					<input
 						:value="tab.label || ''"
 						type="text"
 						class="settings-page-editor__field"
-						:placeholder="t('openbuilt', 'Tab label (i18n key)')"
+						:placeholder="t('openbuild', 'Tab label (i18n key)')"
 						@input="updateTabField(index, 'label', $event.target.value)">
 					<input
 						:value="tab.icon || ''"
 						type="text"
 						class="settings-page-editor__field settings-page-editor__field--narrow"
-						:placeholder="t('openbuilt', 'Icon (optional)')"
+						:placeholder="t('openbuild', 'Icon (optional)')"
 						@input="updateTabField(index, 'icon', $event.target.value)">
 					<button
 						type="button"
 						class="settings-page-editor__remove"
-						:title="t('openbuilt', 'Remove tab')"
+						:title="t('openbuild', 'Remove tab')"
 						@click="removeTab(index)">
 						✕
 					</button>
@@ -107,7 +107,7 @@
 					@update:modelValue="updateTabField(index, 'sections', $event)" />
 			</div>
 			<button type="button" class="settings-page-editor__add" @click="addTab">
-				+ {{ t('openbuilt', 'Add tab') }}
+				+ {{ t('openbuild', 'Add tab') }}
 			</button>
 			<InlineFieldMark :error="markFor('tabs')" />
 		</fieldset>

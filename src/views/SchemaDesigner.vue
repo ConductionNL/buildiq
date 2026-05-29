@@ -1,7 +1,7 @@
 <!--
   - SPDX-License-Identifier: EUPL-1.2
   -
-  - SchemaDesigner — the top-level view for the OpenBuilt schema
+  - SchemaDesigner — the top-level view for the OpenBuild schema
   - designer (REQ-OBSD-001 — REQ-OBSD-008). Mounted at
   - `/builder/:slug/schemas` (list mode) and
   - `/builder/:slug/schemas/:schemaId` (detail mode). Owns the staged
@@ -16,11 +16,11 @@
   - All OR CRUD goes through the `useSchemasStore` Pinia store (which
   - wraps `createObjectStore` from `@conduction/nextcloud-vue`) — never
   - via direct axios calls. The store hits the per-virtual-app register
-  - `openbuilt-{slug}` per the hybrid register model: system schemas
-  - live in shared `openbuilt`, user-authored schemas live per-app.
+  - `openbuild-{slug}` per the hybrid register model: system schemas
+  - live in shared `openbuild`, user-authored schemas live per-app.
   -->
 <template>
-	<div class="openbuilt-schema-designer">
+	<div class="openbuild-schema-designer">
 		<!-- List mode -->
 		<SchemaListPanel
 			v-if="!schemaId"
@@ -31,33 +31,33 @@
 			@delete="deleteSchema" />
 
 		<!-- Detail mode -->
-		<div v-else class="openbuilt-schema-designer__detail">
-			<header class="openbuilt-schema-designer__detail-header">
+		<div v-else class="openbuild-schema-designer__detail">
+			<header class="openbuild-schema-designer__detail-header">
 				<div>
 					<NcButton type="tertiary" @click="goToList">
 						<template #icon>
 							<ArrowLeftIcon :size="20" />
 						</template>
-						{{ t('openbuilt', 'Back to schemas') }}
+						{{ t('openbuild', 'Back to schemas') }}
 					</NcButton>
 					<h2 v-if="staged">
 						{{ staged.title || schemaId }}
 					</h2>
 				</div>
-				<div class="openbuilt-schema-designer__detail-actions">
+				<div class="openbuild-schema-designer__detail-actions">
 					<NcButton :disabled="!hasStagedChanges || saving" @click="discardChanges">
-						{{ t('openbuilt', 'Discard staged edits') }}
+						{{ t('openbuild', 'Discard staged edits') }}
 					</NcButton>
 					<NcButton
 						type="primary"
 						:disabled="!canSave"
 						@click="save">
-						{{ saving ? t('openbuilt', 'Saving...') : t('openbuilt', 'Save') }}
+						{{ saving ? t('openbuild', 'Saving...') : t('openbuild', 'Save') }}
 					</NcButton>
 				</div>
 			</header>
 
-			<div v-if="loadingDetail" class="openbuilt-schema-designer__loading">
+			<div v-if="loadingDetail" class="openbuild-schema-designer__loading">
 				<NcLoadingIcon :size="32" />
 			</div>
 
@@ -67,7 +67,7 @@
 				</NcNoteCard>
 
 				<NcNoteCard v-if="!hasInitialLifecycleState && hasLifecycleStates" type="warning">
-					{{ t('openbuilt', 'Exactly one lifecycle state must be marked as initial before you can save.') }}
+					{{ t('openbuild', 'Exactly one lifecycle state must be marked as initial before you can save.') }}
 				</NcNoteCard>
 
 				<SchemaHeaderForm
@@ -102,11 +102,11 @@
 
 			<NcEmptyContent
 				v-else
-				:name="t('openbuilt', 'Schema not found')"
-				:description="t('openbuilt', 'No schema with this slug exists in the current virtual app.')">
+				:name="t('openbuild', 'Schema not found')"
+				:description="t('openbuild', 'No schema with this slug exists in the current virtual app.')">
 				<template #action>
 					<NcButton @click="goToList">
-						{{ t('openbuilt', 'Back to schemas') }}
+						{{ t('openbuild', 'Back to schemas') }}
 					</NcButton>
 				</template>
 			</NcEmptyContent>
@@ -195,7 +195,7 @@ export default {
 		},
 		/**
 		 * REQ-OBVR-004: read `?_version=` from the URL query.
-		 * The underscore-prefix param name is OpenBuilt's system-reserved marker
+		 * The underscore-prefix param name is OpenBuild's system-reserved marker
 		 * to avoid colliding with user-defined `?version=` params.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
@@ -213,7 +213,7 @@ export default {
 		store() {
 			// Re-creates the binding when appSlug changes; the store
 			// factory re-registers the `schema` type to the per-app
-			// register `openbuilt-{slug}` on every call (idempotent).
+			// register `openbuild-{slug}` on every call (idempotent).
 			// REQ-OBVR-007: pass versionSlug so the store targets the correct register.
 			return useSchemasStore(this.appSlug, this.versionSlug)
 		},
@@ -431,11 +431,11 @@ export default {
 				})
 				const err = this.store.errors[SCHEMA_TYPE]
 				if (err) {
-					showError(this.t('openbuilt', 'Failed to load schemas: {error}', { error: err }))
+					showError(this.t('openbuild', 'Failed to load schemas: {error}', { error: err }))
 				}
 			} catch (e) {
 				this.schemas = []
-				showError(this.t('openbuilt', 'Failed to load schemas: {error}', { error: this.errorMessage(e) }))
+				showError(this.t('openbuild', 'Failed to load schemas: {error}', { error: this.errorMessage(e) }))
 			} finally {
 				this.loadingList = false
 			}
@@ -461,7 +461,7 @@ export default {
 					this.persisted = null
 					const err = this.store.errors[SCHEMA_TYPE]
 					if (err) {
-						showError(this.t('openbuilt', 'Failed to load schema: {error}', { error: err }))
+						showError(this.t('openbuild', 'Failed to load schema: {error}', { error: err }))
 					}
 					return
 				}
@@ -470,7 +470,7 @@ export default {
 			} catch (e) {
 				this.staged = null
 				this.persisted = null
-				showError(this.t('openbuilt', 'Failed to load schema: {error}', { error: this.errorMessage(e) }))
+				showError(this.t('openbuild', 'Failed to load schema: {error}', { error: this.errorMessage(e) }))
 			} finally {
 				this.loadingDetail = false
 			}
@@ -629,7 +629,7 @@ export default {
 			// No `id` field on the payload — store treats this as a POST.
 			const data = await this.store.saveObject(SCHEMA_TYPE, body)
 			if (!data) {
-				const err = this.store.errors[SCHEMA_TYPE] || this.t('openbuilt', 'Unknown error')
+				const err = this.store.errors[SCHEMA_TYPE] || this.t('openbuild', 'Unknown error')
 				// Surface duplicate-slug specifically so the AddSchemaDialog
 				// can render an inline field error per REQ-OBSD-002.
 				if (typeof err === 'string' && /409|already exists|duplicate/i.test(err)) {
@@ -637,7 +637,7 @@ export default {
 					duplicate.status = 409
 					throw duplicate
 				}
-				throw new Error(typeof err === 'string' ? err : this.t('openbuilt', 'Failed to create schema'))
+				throw new Error(typeof err === 'string' ? err : this.t('openbuild', 'Failed to create schema'))
 			}
 			const newSlug = (data && (data.slug || (data['@self'] && data['@self'].slug))) || payload.slug
 			await this.refreshList()
@@ -647,7 +647,7 @@ export default {
 				{ slug: this.appSlug, schemaId: newSlug },
 				this.versionSlug,
 			))
-			showSuccess(this.t('openbuilt', 'Schema {slug} created.', { slug: newSlug }))
+			showSuccess(this.t('openbuild', 'Schema {slug} created.', { slug: newSlug }))
 		},
 		/**
 		 * Navigate to a schema's detail, preserving ?_version=.
@@ -689,11 +689,11 @@ export default {
 			const ok = await this.store.deleteObject(SCHEMA_TYPE, slug)
 			if (!ok) {
 				const err = this.store.errors[SCHEMA_TYPE]
-				showError(this.t('openbuilt', 'Failed to delete schema: {error}', { error: err || '' }))
+				showError(this.t('openbuild', 'Failed to delete schema: {error}', { error: err || '' }))
 				return
 			}
 			await this.refreshList()
-			showSuccess(this.t('openbuilt', 'Schema {slug} deleted.', { slug }))
+			showSuccess(this.t('openbuild', 'Schema {slug} deleted.', { slug }))
 			if (this.schemaId === slug) {
 				// goToList uses buildVersionedRoute internally — ?_version= is preserved.
 				this.goToList()
@@ -721,12 +721,12 @@ export default {
 					const err = this.store.errors[SCHEMA_TYPE]
 					this.saveError = typeof err === 'string'
 						? err
-						: this.t('openbuilt', 'Failed to save schema')
+						: this.t('openbuild', 'Failed to save schema')
 					return
 				}
 				this.persisted = data
 				this.staged = this.bodyToStaged(data)
-				showSuccess(this.t('openbuilt', 'Schema saved.'))
+				showSuccess(this.t('openbuild', 'Schema saved.'))
 			} catch (e) {
 				this.saveError = this.errorMessage(e)
 			} finally {
@@ -774,36 +774,36 @@ export default {
 </script>
 
 <style scoped>
-.openbuilt-schema-designer {
+.openbuild-schema-designer {
 	padding: 16px;
 	max-width: 1400px;
 }
 
-.openbuilt-schema-designer__detail {
+.openbuild-schema-designer__detail {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
 }
 
-.openbuilt-schema-designer__detail-header {
+.openbuild-schema-designer__detail-header {
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
 	gap: 16px;
 }
 
-.openbuilt-schema-designer__detail-header h2 {
+.openbuild-schema-designer__detail-header h2 {
 	margin: 8px 0 0;
 	font-size: 22px;
 	font-weight: 600;
 }
 
-.openbuilt-schema-designer__detail-actions {
+.openbuild-schema-designer__detail-actions {
 	display: flex;
 	gap: 8px;
 }
 
-.openbuilt-schema-designer__loading {
+.openbuild-schema-designer__loading {
 	display: flex;
 	justify-content: center;
 	padding: 32px 0;

@@ -6,21 +6,21 @@ retrofit_extensions:
   - REQ-OBR-MCP-004
 ---
 
-# openbuilt-runtime Specification Delta (Retrofit — MCP surface)
+# openbuild-runtime Specification Delta (Retrofit — MCP surface)
 
 ## Requirements
 
 ### Requirement: MCP tool-provider contract
 
-The OpenBuilt MCP surface SHALL be implemented by a class
-(`OCA\OpenBuilt\Mcp\OpenBuiltToolProvider`) that implements
+The OpenBuild MCP surface SHALL be implemented by a class
+(`OCA\OpenBuild\Mcp\OpenBuildToolProvider`) that implements
 `OCA\OpenRegister\Mcp\IMcpToolProvider`. The provider SHALL declare its
-host Nextcloud app id (`openbuilt`), expose a static tool catalogue of
-read tools (`openbuilt.listApps`, `openbuilt.getAppManifest`) and write
-tools covering virtual-app lifecycle (`openbuilt.createApp`,
-`openbuilt.promoteVersion`) and draft-version authoring
-(`openbuilt.upsertSchema`, `openbuilt.upsertPage`, `openbuilt.addWidget`,
-`openbuilt.upsertMenuItem`), and SHALL dispatch each invocation by tool
+host Nextcloud app id (`openbuild`), expose a static tool catalogue of
+read tools (`openbuild.listApps`, `openbuild.getAppManifest`) and write
+tools covering virtual-app lifecycle (`openbuild.createApp`,
+`openbuild.promoteVersion`) and draft-version authoring
+(`openbuild.upsertSchema`, `openbuild.upsertPage`, `openbuild.addWidget`,
+`openbuild.upsertMenuItem`), and SHALL dispatch each invocation by tool
 id to the matching internal handler. Unknown tool ids SHALL return a
 uniform error envelope of shape
 `{ isError: true, error, message }` carrying the machine-readable code
@@ -29,26 +29,26 @@ tool ids.
 
 **ID:** REQ-OBR-MCP-001
 
-#### Scenario: Provider reports the OpenBuilt app id
+#### Scenario: Provider reports the OpenBuild app id
 
 - **WHEN** OpenRegister's MCP orchestrator calls `getAppId()` on the
   provider
-- **THEN** the provider returns the string `openbuilt`
+- **THEN** the provider returns the string `openbuild`
 
-#### Scenario: Catalogue surfaces all OpenBuilt tools
+#### Scenario: Catalogue surfaces all OpenBuild tools
 
 - **WHEN** OpenRegister's MCP orchestrator calls `getTools()`
 - **THEN** the returned array contains the eight tool descriptors
-  (`openbuilt.listApps`, `openbuilt.getAppManifest`,
-  `openbuilt.createApp`, `openbuilt.promoteVersion`,
-  `openbuilt.upsertSchema`, `openbuilt.upsertPage`,
-  `openbuilt.addWidget`, `openbuilt.upsertMenuItem`), each with an
+  (`openbuild.listApps`, `openbuild.getAppManifest`,
+  `openbuild.createApp`, `openbuild.promoteVersion`,
+  `openbuild.upsertSchema`, `openbuild.upsertPage`,
+  `openbuild.addWidget`, `openbuild.upsertMenuItem`), each with an
   `inputSchema` of `type: object`
 
 #### Scenario: Unknown tool id returns a structured error
 
 - **WHEN** OpenRegister's MCP orchestrator calls
-  `invokeTool('openbuilt.nope', [])`
+  `invokeTool('openbuild.nope', [])`
 - **THEN** the response is `{ isError: true, error: 'unknown_tool',
   message: ... }` and `message` lists the available tool ids
 
@@ -73,21 +73,21 @@ admin posture without re-implementing the check.
 
 #### Scenario: Unauthenticated caller is rejected
 
-- **WHEN** the MCP orchestrator invokes any OpenBuilt tool with no
+- **WHEN** the MCP orchestrator invokes any OpenBuild tool with no
   active `IUserSession` user
 - **THEN** the response is `{ isError: true, error: 'forbidden', ... }`
   and no OpenRegister read/write is attempted
 
 #### Scenario: listApps rejects an out-of-range limit
 
-- **WHEN** an authenticated caller invokes `openbuilt.listApps` with
+- **WHEN** an authenticated caller invokes `openbuild.listApps` with
   `limit: 0` (or `limit: 51`)
 - **THEN** the response is `{ isError: true, error:
   'invalid_arguments', message: "Invalid limit 0." }`
 
 #### Scenario: listApps rejects an unknown statusFilter
 
-- **WHEN** an authenticated caller invokes `openbuilt.listApps` with
+- **WHEN** an authenticated caller invokes `openbuild.listApps` with
   `statusFilter: 'weird'`
 - **THEN** the response is `{ isError: true, error:
   'invalid_arguments', message: "Invalid statusFilter 'weird'." }`
@@ -108,7 +108,7 @@ in a follow-up so the pattern lives in exactly one place.
 
 Tools that operate on a single virtual app SHALL resolve the supplied
 slug to an `Application` object via the `built-app-route` index in the
-`openbuilt` register: the provider SHALL call
+`openbuild` register: the provider SHALL call
 `ObjectService::searchObjectsBySlug` to locate a matching route, then
 `ObjectService::find` to load the Application by its `applicationUuid`.
 A missing route SHALL surface as `{ isError: true, error: 'not_found'
@@ -116,10 +116,10 @@ A missing route SHALL surface as `{ isError: true, error: 'not_found'
 row) SHALL surface as `{ isError: true, error: 'inconsistent_state' }`.
 The compact response shape used by `listApps` SHALL include
 `{ uuid, slug, name, description, status, version }`. Each MCP
-response SHALL carry an OpenBuilt `source` descriptor of shape
-`{ type: 'openbuilt.application', uuid, url, label }` where `url` is
-a Nextcloud deep link of the form `/apps/openbuilt/builder/{slug}`
-(or `/apps/openbuilt` when no slug is bound). OR entities, arrays, and
+response SHALL carry an OpenBuild `source` descriptor of shape
+`{ type: 'openbuild.application', uuid, url, label }` where `url` is
+a Nextcloud deep link of the form `/apps/openbuild/builder/{slug}`
+(or `/apps/openbuild` when no slug is bound). OR entities, arrays, and
 `jsonSerialize`-able objects SHALL all be accepted as input to the
 mapping pipeline (`toArray`); UUIDs SHALL be extracted from the
 `uuid`, `id`, `@self.uuid`, or `@self.id` fields in that fallback
@@ -149,10 +149,10 @@ order (`extractUuid`).
 - **THEN** the helper returns `{ error: 'inconsistent_state', message:
   ... }`
 
-#### Scenario: Deep link uses /apps/openbuilt/builder/{slug}
+#### Scenario: Deep link uses /apps/openbuild/builder/{slug}
 
 - **WHEN** the provider calls `buildDeepLink('hello-world')`
-- **THEN** the returned URL is `/apps/openbuilt/builder/hello-world`
+- **THEN** the returned URL is `/apps/openbuild/builder/hello-world`
 
 #### Scenario: UUID extraction falls back through @self
 
@@ -164,8 +164,8 @@ order (`extractUuid`).
 ### Requirement: Draft-version manifest mutation isolation
 
 Authoring tools that mutate a virtual app
-(`openbuilt.upsertSchema`, `openbuilt.upsertPage`,
-`openbuilt.addWidget`, `openbuilt.upsertMenuItem`) SHALL default the
+(`openbuild.upsertSchema`, `openbuild.upsertPage`,
+`openbuild.addWidget`, `openbuild.upsertMenuItem`) SHALL default the
 `versionSlug` argument to `development` so a misfired tool call cannot
 mutate a production version. A version row SHALL be located via
 `loadVersion(objectService, appSlug, versionSlug)`, which SHALL look
@@ -182,7 +182,7 @@ helper SHALL be considered a violation of this requirement.
 
 #### Scenario: Authoring tools default versionSlug to development
 
-- **WHEN** a caller invokes `openbuilt.upsertPage` with `appSlug:
+- **WHEN** a caller invokes `openbuild.upsertPage` with `appSlug:
   hello-world` and omits `versionSlug`
 - **THEN** the mutation targets the `hello-world-development` version
   row, not any production version

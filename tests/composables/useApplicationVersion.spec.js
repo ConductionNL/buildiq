@@ -4,7 +4,7 @@
  *
  * Vitest spec for `useApplicationVersion` composable and `defaultEditableVersion`.
  *
- * Covers spec `openbuilt-version-routing` REQ-OBVR-005 and tasks.md §3.6:
+ * Covers spec `openbuild-version-routing` REQ-OBVR-005 and tasks.md §3.6:
  *  - Named-version fetch path (versionSlug provided).
  *  - Most-upstream-non-production fallback (versionSlug absent, 3-version chain).
  *  - Production-only fallback when no non-production version exists.

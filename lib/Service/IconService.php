@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuilt Icon Service
+ * OpenBuild Icon Service
  *
  * Resolves per-application SVG icons from OR-attached files with a filesystem
  * fallback chain.  Decision 2 in design.md defines the fallback order:
@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuilt\Service
+ * @package  OCA\OpenBuild\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,15 +27,15 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
  * @spec openspec/changes/retrofit-2026-05-24-app-icon-management-uuid/tasks.md#task-1
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Service;
+namespace OCA\OpenBuild\Service;
 
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -52,7 +52,7 @@ class IconService
     /**
      * Register slug that hosts Application objects.
      */
-    private const REGISTER_SLUG = 'openbuilt';
+    private const REGISTER_SLUG = 'openbuild';
 
     /**
      * Schema slug for Application objects.
@@ -62,12 +62,12 @@ class IconService
     /**
      * Filesystem path to the built-in light icon, relative to server root.
      */
-    private const FALLBACK_LIGHT_PATH = '/custom_apps/openbuilt/img/app.svg';
+    private const FALLBACK_LIGHT_PATH = '/custom_apps/openbuild/img/app.svg';
 
     /**
      * Filesystem path to the built-in dark icon, relative to server root.
      */
-    private const FALLBACK_DARK_PATH = '/custom_apps/openbuilt/img/app-dark.svg';
+    private const FALLBACK_DARK_PATH = '/custom_apps/openbuild/img/app-dark.svg';
 
     /**
      * Filesystem server root, used to locate fallback icon files.
@@ -112,8 +112,8 @@ class IconService
      *                                                         no filesystem fallback
      *                                                         exists (practically never).
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
      */
     public function getIconStream(string $slug, bool $dark): array
     {
@@ -136,7 +136,7 @@ class IconService
      *
      * @return array<string,mixed>|null Application data array, or null.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-1
      */
     private function fetchApplication(string $slug): ?array
     {
@@ -176,7 +176,7 @@ class IconService
      *
      * @return array{stream: resource|null, mimeType: string}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
      */
     private function resolveIconLight(?array $application): array
     {
@@ -208,7 +208,7 @@ class IconService
      *
      * @return array{stream: resource|null, mimeType: string}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
      */
     private function resolveIconDark(?array $application): array
     {

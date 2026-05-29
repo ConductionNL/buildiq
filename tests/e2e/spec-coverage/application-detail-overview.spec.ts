@@ -22,11 +22,11 @@
 import { test, expect } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const LIVE = process.env.OPENBUILT_E2E_LIVE === '1'
+const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
 
 // Helper: navigate to the Hello World detail page
 async function gotoHelloWorldDetail(page: import('@playwright/test').Page) {
-	await page.goto(`${BASE}/apps/openbuilt/applications`)
+	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -41,8 +41,8 @@ test('REQ-OBADO-001 — application detail page renders main area without crashi
 	// Main content area must be visible
 	await expect(page.locator('main'), 'main content must be visible').toBeVisible({ timeout: 10_000 })
 
-	// The page title must reference OpenBuilt
-	await expect(page).toHaveTitle(/openbuilt/i)
+	// The page title must reference OpenBuild
+	await expect(page).toHaveTitle(/openbuild/i)
 
 	// The app name "Hello World" must appear in the detail
 	await expect(page.getByText('Hello World').first(), 'app name must be visible in detail').toBeVisible({ timeout: 10_000 })
@@ -73,7 +73,7 @@ test('REQ-OBADO-001 — detail page renders the app icon from the Application re
 // @e2e application-detail-overview::register-widget-deep-links-to-openregister
 test('REQ-OBADO-006 — Register widget shows an "Open in OpenRegister" link on detail page', async ({ page }) => {
 	// @e2e application-detail-overview::register-widget-deep-links-to-openregister
-	test.skip(!LIVE, 'Requires live dev env with the ApplicationDetailHeader cockpit built — set OPENBUILT_E2E_LIVE=1')
+	test.skip(!LIVE, 'Requires live dev env with the ApplicationDetailHeader cockpit built — set OPENBUILD_E2E_LIVE=1')
 
 	await gotoHelloWorldDetail(page)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })

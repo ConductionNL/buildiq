@@ -6,7 +6,7 @@
 
 	The inline "+ Add schema" button delegates to the existing
 	create-schema dialog when a global registration is present
-	(currently checked via `window.openbuilt?.openAddSchemaDialog`).
+	(currently checked via `window.openbuild?.openAddSchemaDialog`).
 	When no dialog is registered the button emits a debug log entry
 	and no-ops, deferring the actual create flow to the future schema-
 	designer spec.
@@ -15,10 +15,10 @@
 	<div class="ob-schemas-widget">
 		<header class="ob-schemas-widget__header">
 			<h3 class="ob-schemas-widget__title">
-				{{ t('openbuilt', 'Schemas') }}
+				{{ t('openbuild', 'Schemas') }}
 			</h3>
 			<NcButton type="tertiary" @click="addSchema">
-				{{ t('openbuilt', '+ Add schema') }}
+				{{ t('openbuild', '+ Add schema') }}
 			</NcButton>
 		</header>
 		<ul v-if="schemas && schemas.length > 0" class="ob-schemas-widget__list">
@@ -34,12 +34,12 @@
 				<span class="ob-schemas-widget__row-name">{{ schema.name || schema.title || schema.slug }}</span>
 				<span class="ob-schemas-widget__row-meta">
 					<span class="ob-schemas-widget__row-count">{{ formatCount(schema.objectCount) }}</span>
-					<span class="ob-schemas-widget__row-status">{{ schema.status || t('openbuilt', 'active') }}</span>
+					<span class="ob-schemas-widget__row-status">{{ schema.status || t('openbuild', 'active') }}</span>
 				</span>
 			</li>
 		</ul>
 		<p v-else class="ob-schemas-widget__empty">
-			{{ t('openbuilt', 'No schemas yet in this version.') }}
+			{{ t('openbuild', 'No schemas yet in this version.') }}
 		</p>
 	</div>
 </template>
@@ -66,7 +66,7 @@ export default {
 		 */
 		formatCount(count) {
 			const n = Number(count || 0)
-			return t('openbuilt', '{count} objects', { count: n })
+			return t('openbuild', '{count} objects', { count: n })
 		},
 
 		/**
@@ -98,15 +98,15 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		addSchema() {
-			const opener = (typeof window !== 'undefined' && window.openbuilt && typeof window.openbuilt.openAddSchemaDialog === 'function')
-				? window.openbuilt.openAddSchemaDialog
+			const opener = (typeof window !== 'undefined' && window.openbuild && typeof window.openbuild.openAddSchemaDialog === 'function')
+				? window.openbuild.openAddSchemaDialog
 				: null
 			if (opener) {
 				opener({ appSlug: this.appSlug, versionSlug: this.versionSlug })
 				return
 			}
 			if (typeof console !== 'undefined' && typeof console.debug === 'function') {
-				console.debug('openbuilt: schema-create dialog not yet registered — deferred to schema-designer spec')
+				console.debug('openbuild: schema-create dialog not yet registered — deferred to schema-designer spec')
 			}
 			this.$emit('add-schema', { appSlug: this.appSlug, versionSlug: this.versionSlug })
 		},

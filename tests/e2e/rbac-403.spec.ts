@@ -2,18 +2,18 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * Playwright end-to-end test for the openbuilt-rbac change covering the
+ * Playwright end-to-end test for the openbuild-rbac change covering the
  * non-member's blackout: no Applications visible in the editor list AND a
  * deny screen on direct /builder/{slug} navigation. Together with the
  * Newman + PHPUnit suites this closes REQ-OBRBAC-002 (manifest 403) and
  * REQ-OBRBAC-003 (list filter) at the rendered-UI layer.
  *
  * Pre-conditions assumed by this spec — set up by Newman's Setup folder
- * (tests/integration/openbuilt-rbac.postman_collection.json) before the
+ * (tests/integration/openbuild-rbac.postman_collection.json) before the
  * Playwright run kicks off, OR by the CI harness:
  *
  *   - Nextcloud reachable at NC_BASE_URL (default http://localhost:8080)
- *     with the openbuilt app enabled and the SeedHelloWorld repair step
+ *     with the openbuild app enabled and the SeedHelloWorld repair step
  *     having produced a `hello-world` Application.
  *   - Test user `rbac-outsider` / `RbacOutsider-1!` exists and is NOT a
  *     member of any group referenced in the hello-world Application's
@@ -61,7 +61,7 @@ async function loginAs(page: Page, user: string, pass: string): Promise<void> {
 	}
 }
 
-test.describe('openbuilt-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRBAC-003)', () => {
+test.describe('openbuild-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRBAC-003)', () => {
 	// Skip storageState — we need a freshly authed outsider context, not
 	// the shared admin session.
 	test.use({ storageState: { cookies: [], origins: [] } })
@@ -71,7 +71,7 @@ test.describe('openbuilt-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRB
 	})
 
 	test('REQ-OBRBAC-003: outsider sees no Applications in the editor list', async ({ page }) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuilt/applications`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications`)
 
 		// Give the SPA up to 10s to fetch the filtered list. The empty
 		// state copy is exact text from src/views/ApplicationEditor.vue
@@ -97,7 +97,7 @@ test.describe('openbuilt-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRB
 			{ timeout: 10_000 },
 		).catch(() => null)
 
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuilt/builder/${TEST_SLUG}`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/builder/${TEST_SLUG}`)
 
 		const manifestResp = await manifestRequestPromise
 		// The page may render a deny screen without hitting the manifest
@@ -115,7 +115,7 @@ test.describe('openbuilt-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRB
 		//   - "ask an owner to grant you"       (list-empty-state copy)
 		// At least one must be visible within 10s.
 		const denySurface = page.getByText(
-			/(no access|forbidden|ask an owner to grant you|openbuilt\.rbac\.no_role)/i,
+			/(no access|forbidden|ask an owner to grant you|openbuild\.rbac\.no_role)/i,
 		).first()
 		await expect(denySurface).toBeVisible({ timeout: 10_000 })
 

@@ -9,16 +9,16 @@
   - message; authoring lands in tasks 8.1.
   -->
 <template>
-	<section class="openbuilt-aggregation-editor">
-		<header class="openbuilt-aggregation-editor__header">
-			<h3>{{ t('openbuilt', 'Aggregations') }}</h3>
+	<section class="openbuild-aggregation-editor">
+		<header class="openbuild-aggregation-editor__header">
+			<h3>{{ t('openbuild', 'Aggregations') }}</h3>
 		</header>
 		<NcNoteCard type="info">
-			{{ t('openbuilt', 'The aggregation editor ships in v1.1 (see design Decision 7). Existing aggregations declared on this schema are shown read-only below.') }}
+			{{ t('openbuild', 'The aggregation editor ships in v1.1 (see design Decision 7). Existing aggregations declared on this schema are shown read-only below.') }}
 		</NcNoteCard>
-		<pre v-if="aggregations" class="openbuilt-aggregation-editor__readonly">{{ formatted }}</pre>
-		<p v-else class="openbuilt-aggregation-editor__empty">
-			{{ t('openbuilt', 'No aggregations declared on this schema.') }}
+		<pre v-if="aggregations" class="openbuild-aggregation-editor__readonly">{{ formatted }}</pre>
+		<p v-else class="openbuild-aggregation-editor__empty">
+			{{ t('openbuild', 'No aggregations declared on this schema.') }}
 		</p>
 	</section>
 </template>
@@ -51,19 +51,19 @@ export default {
 </script>
 
 <style scoped>
-.openbuilt-aggregation-editor {
+.openbuild-aggregation-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
 
-.openbuilt-aggregation-editor__header h3 {
+.openbuild-aggregation-editor__header h3 {
 	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
 }
 
-.openbuilt-aggregation-editor__readonly {
+.openbuild-aggregation-editor__readonly {
 	margin: 0;
 	padding: 8px;
 	background: var(--color-background-dark);
@@ -73,7 +73,7 @@ export default {
 	overflow: auto;
 }
 
-.openbuilt-aggregation-editor__empty {
+.openbuild-aggregation-editor__empty {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 }

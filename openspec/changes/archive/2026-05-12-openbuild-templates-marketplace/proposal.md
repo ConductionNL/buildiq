@@ -1,19 +1,19 @@
 ---
 kind: mixed
-depends_on: [bootstrap-openbuilt, openbuilt-page-editor, openbuilt-schema-editor]
+depends_on: [bootstrap-openbuild, openbuild-page-editor, openbuild-schema-editor]
 chain:
-  - bootstrap-openbuilt
-  - openbuilt-page-editor
-  - openbuilt-schema-editor
-  - openbuilt-templates-marketplace  # THIS spec
+  - bootstrap-openbuild
+  - openbuild-page-editor
+  - openbuild-schema-editor
+  - openbuild-templates-marketplace  # THIS spec
 ---
 
 ## Why
 
-Spec #1 of the OpenBuilt chain (`bootstrap-openbuilt`) ships a textarea
+Spec #1 of the OpenBuild chain (`bootstrap-openbuild`) ships a textarea
 manifest editor and a single seeded `hello-world` Application. That is
 enough for an integrator to prove the plumbing, but for the citizen
-developers OpenBuilt actually targets — municipal department heads,
+developers OpenBuild actually targets — municipal department heads,
 policy advisors, HR managers, social workers — the activation energy is
 still too high. The user-stories captured in
 `concurrentie-analyse/app-builder/README.md` (US-1 through US-5) describe
@@ -24,10 +24,10 @@ them starts not from a blank manifest but from a recognisable use case.
 This spec ships the **template gallery** that turns those user-stories
 into one-click starting points.
 
-Crucially, this is the surface where OpenBuilt earns its market position
+Crucially, this is the surface where OpenBuild earns its market position
 against Mendix, OutSystems, Budibase, Appsmith and ToolJet — every
 low-code competitor in `app-builder/README.md` ships a starter-template
-gallery on day one. OpenBuilt has visual editors (chain #4 + #5) and a
+gallery on day one. OpenBuild has visual editors (chain #4 + #5) and a
 manifest contract (chain #1); the templates marketplace is the missing
 "on-ramp" that closes the loop. Spec #8 is the right place in the chain
 because the editors must exist first — "Use this template" is only
@@ -44,7 +44,7 @@ chain spec #1.
 ## What Changes
 
 - **NEW** OR schema `ApplicationTemplate` declared in
-  `lib/Settings/openbuilt_register.json` — `{ uuid, slug, title,
+  `lib/Settings/openbuild_register.json` — `{ uuid, slug, title,
   description, useCase, category, screenshotUrl?, manifest (JSON blob),
   companionSchemas (array of JSON-schema blobs), isSeeded, sourceUrl?,
   version }`. Includes `x-openregister-lifecycle` only insofar as OR's
@@ -66,7 +66,7 @@ chain spec #1.
   layout showing each template's title, description, use case,
   category, and optional screenshot. Filterable by `category` and
   `useCase`.
-- **NEW** Top-bar / left-nav entry "Templates" added to the OpenBuilt
+- **NEW** Top-bar / left-nav entry "Templates" added to the OpenBuild
   shell, plus a "Create from template" CTA on the empty Application
   list (the empty-state surfaces the gallery instead of the textarea
   editor).
@@ -82,7 +82,7 @@ chain spec #1.
 - **NEW** Route in `appinfo/routes.php` —
   `POST /api/applications/from-template/{templateSlug}` →
   `applications#createFromTemplate` (`#[NoAdminRequired]`).
-- **NEW** capability `openbuilt-template-catalogue` — the
+- **NEW** capability `openbuild-template-catalogue` — the
   `ApplicationTemplate` schema, the four seeded templates, the gallery
   view, and the clone-from-template action.
 
@@ -90,7 +90,7 @@ chain spec #1.
 
 #### New Capabilities
 
-- `openbuilt-template-catalogue`: The OR-backed template registry, the
+- `openbuild-template-catalogue`: The OR-backed template registry, the
   Conduction-curated seed (four starter packs derived from
   `concurrentie-analyse/app-builder` user-stories), the gallery UI, and
   the clone-into-new-Application action. Owns the citizen-developer
@@ -100,11 +100,11 @@ chain spec #1.
 
 #### Modified Capabilities
 
-None. This is purely additive — `openbuilt-application-register` and
-`openbuilt-runtime` from chain #1 remain unchanged; the new schema
-declaration is appended to `openbuilt_register.json` without altering
+None. This is purely additive — `openbuild-application-register` and
+`openbuild-runtime` from chain #1 remain unchanged; the new schema
+declaration is appended to `openbuild_register.json` without altering
 existing schemas. The two visual-editor capabilities from chain #4 and
-#5 (`openbuilt-page-editor` and `openbuilt-schema-editor`) are
+#5 (`openbuild-page-editor` and `openbuild-schema-editor`) are
 consumed read-only as the post-clone landing surface.
 
 ## Impact
@@ -112,10 +112,10 @@ consumed read-only as the post-clone landing surface.
 - **New code** — `lib/Controller/ApplicationsController.php` adds one
   method (`createFromTemplate`, ~30 LOC), `lib/Repair/SeedApplicationTemplates.php`
   (new file, follows the `SeedHelloWorld.php` pattern from chain #1),
-  `lib/Settings/openbuilt_register.json` gets a new
+  `lib/Settings/openbuild_register.json` gets a new
   `ApplicationTemplate` schema entry plus four seed-data references,
   `appinfo/routes.php` gets one new route, `src/views/TemplateGallery.vue`
-  is the only new SFC, and the existing left-nav of the OpenBuilt shell
+  is the only new SFC, and the existing left-nav of the OpenBuild shell
   gets one new entry. Four template-manifest JSON fixtures live under
   `lib/Settings/templates/{slug}.json` so they can be human-reviewed
   diff-by-diff (rather than embedded as encoded strings in the repair
@@ -127,7 +127,7 @@ consumed read-only as the post-clone landing surface.
   template manifests reference the canonical app-manifest schema
   pinned in `package.json` (ADR-024).
 - **OpenRegister** — adds one new schema (`ApplicationTemplate`) to
-  the existing `openbuilt` register namespace established by chain #1.
+  the existing `openbuild` register namespace established by chain #1.
   No new register namespace. Multi-tenancy via the existing
   `organisation` field; templates are scoped per-organisation with an
   `isSeeded:true` flag for the Conduction-shipped four (so admins can
@@ -156,7 +156,7 @@ change:
 - **Publish-existing-app-as-template** — the inverse flow ("turn my
   permit-tracker Application into a template my org can reuse") is
   out of scope; deferred to a follow-up issue
-  (`#openbuilt-template-publishing`).
+  (`#openbuild-template-publishing`).
 - **Template versioning** — re-cloning an updated template against an
   existing instance is explicitly not supported (one-shot snapshot
   semantics). A future versioning spec can address propagating

@@ -1,10 +1,10 @@
-## 1. Implementation Tasks — openbuilt-schema-designer (v1)
+## 1. Implementation Tasks — openbuild-schema-designer (v1)
 
 - [x] 1.1 **Wire `useSchemasStore` via `createObjectStore`**
   - spec_ref: REQ-OBSD-001, REQ-OBSD-002, REQ-OBSD-006
   - files: `src/store/schemas.js`
   - acceptance_criteria: `useSchemasStore` is created via
-    `createObjectStore({ register: 'openbuilt-{slug}', schema:
+    `createObjectStore({ register: 'openbuild-{slug}', schema:
     'schema' })` (memory rule: no bespoke Pinia store). Exposes
     `list / get / create / update / delete` over OR's runtime schema
     CRUD endpoints (chain `openregister-runtime-schema-api`). Has
@@ -137,12 +137,12 @@
     unchanged.
   - Test: Playwright happy-path + cancel-path on both dialogs.
 
-## 2. Implementation Tasks — openbuilt-runtime (modified)
+## 2. Implementation Tasks — openbuild-runtime (modified)
 
 - [ ] 2.1 **Register schema-designer routes on the outer router**
   - spec_ref: REQ-OBR-006
   - files: `src/router/index.js`
-  - acceptance_criteria: Two routes registered under the OpenBuilt
+  - acceptance_criteria: Two routes registered under the OpenBuild
     outer router: `/builder/:slug/schemas` (list mode) and
     `/builder/:slug/schemas/:schemaId` (detail mode). Both resolve
     to `SchemaDesigner.vue`. The existing `/builder/:slug/*`
@@ -156,7 +156,7 @@
   - acceptance_criteria: The outer-shell secondary navigation in
     the builder context surfaces a **Schemas** entry that links to
     `/builder/{slug}/schemas`. The label uses i18n key
-    `openbuilt.builder.menu.schemas`. The entry is visible to any
+    `openbuild.builder.menu.schemas`. The entry is visible to any
     authenticated user with read access to the Application object
     (chain #7 RBAC will narrow this later).
   - Test: Playwright opens `/builder/hello-world`, asserts the
@@ -208,12 +208,12 @@
 
 ## 5. Documentation (ADR-009, ADR-010)
 
-- [ ] 5.1 Add `docs/openbuilt-schema-designer.md` describing the
+- [ ] 5.1 Add `docs/openbuild-schema-designer.md` describing the
   designer architecture, the staged-state pattern, the
   declarative-output guarantee (ADR-031), and the phased delivery
   (v1 vs v1.1).
 - [ ] 5.2 Extend the existing integrator-guide page from
-  `bootstrap-openbuilt` (`docs/integrator-guide.md`) with a "How to
+  `bootstrap-openbuild` (`docs/integrator-guide.md`) with a "How to
   design a schema" walkthrough over the seeded `hello-message`
   example.
 - [ ] 5.3 NL Design (ADR-010) — confirm every new SFC uses Nextcloud
@@ -221,12 +221,12 @@
   new dialogs (`aria-label` on icon-only buttons; focus trap on the
   confirm dialogs).
 - [ ] 5.4 Update `openspec/app-config.json` capabilities list to
-  declare `openbuilt-schema-designer`.
+  declare `openbuild-schema-designer`.
 
 ## 6. i18n (ADR-005, ADR-007)
 
 - [ ] 6.1 Add English keys for every new string under
-  `openbuilt.schema.*` in `l10n/en.json` (list / form / field
+  `openbuild.schema.*` in `l10n/en.json` (list / form / field
   editor / lifecycle editor / relation editor / widget editor / save
   toast / confirm dialogs / Schemas menu entry).
 - [ ] 6.2 Add Dutch translations for the same keys in `l10n/nl.json`

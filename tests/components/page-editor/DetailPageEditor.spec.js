@@ -1,8 +1,8 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuilt Contributors
+ * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Vitest spec for DetailPageEditor (openbuilt#9 task 7.1).
+ * Vitest spec for DetailPageEditor (openbuild#9 task 7.1).
  *
  * Covers:
  *  - validatedConfigKeys is exactly [register, schema, sidebar, sidebarProps]
@@ -69,17 +69,17 @@ describe('DetailPageEditor', () => {
 
 	it('update(register, X) emits and clears any stale schema selection', async () => {
 		const wrapper = mountEditor({ register: 'oldreg', schema: 'oldsch' })
-		wrapper.vm.update('register', 'openbuilt')
+		wrapper.vm.update('register', 'openbuild')
 		await wrapper.vm.$nextTick()
 		const emitted = wrapper.emitted('update:config')
 		expect(emitted).toBeTruthy()
 		const next = emitted[emitted.length - 1][0]
-		expect(next.register).toBe('openbuilt')
+		expect(next.register).toBe('openbuild')
 		expect(next).not.toHaveProperty('schema')
 	})
 
 	it('update(schema, X) emits with schema set', async () => {
-		const wrapper = mountEditor({ register: 'openbuilt' })
+		const wrapper = mountEditor({ register: 'openbuild' })
 		wrapper.vm.update('schema', 'hello-message')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config').slice(-1)[0][0]

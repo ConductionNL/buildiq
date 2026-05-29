@@ -1,4 +1,4 @@
-# openbuilt-schema-designer Specification
+# openbuild-schema-designer Specification
 
 ## Purpose
 
@@ -19,9 +19,9 @@ disables Save until the staged change is valid.
 
 ### Requirement: Schema list panel scoped to the virtual app's register namespace
 
-The OpenBuilt schema designer SHALL render a list of schemas scoped to
+The OpenBuild schema designer SHALL render a list of schemas scoped to
 the current virtual app's OpenRegister register namespace. The list
-SHALL be reached at `/index.php/apps/openbuilt/builder/{slug}/schemas`
+SHALL be reached at `/index.php/apps/openbuild/builder/{slug}/schemas`
 and rendered by `SchemaDesigner.vue` via the
 `SchemaListPanel.vue` sub-component. For each schema the panel SHALL
 display the slug, title, version, count of properties, and the
@@ -37,7 +37,7 @@ with direct DB reads.
 #### Scenario: Designer lists the schemas of the current virtual app
 
 - **WHEN** an authenticated user navigates to
-  `/index.php/apps/openbuilt/builder/hello-world/schemas`
+  `/index.php/apps/openbuild/builder/hello-world/schemas`
 - **AND** the virtual app's register namespace contains a
   `hello-message` schema
 - **THEN** the schema list panel renders one row for `hello-message`
@@ -46,7 +46,7 @@ with direct DB reads.
 #### Scenario: Schemas from other virtual apps are not listed
 
 - **WHEN** an authenticated user navigates to
-  `/index.php/apps/openbuilt/builder/hello-world/schemas`
+  `/index.php/apps/openbuild/builder/hello-world/schemas`
 - **AND** a different virtual app's register namespace contains a
   `customer` schema
 - **THEN** the schema list panel does NOT render the `customer` row

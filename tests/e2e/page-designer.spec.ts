@@ -1,8 +1,8 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuilt Contributors
+ * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Playwright end-to-end coverage for openspec change `openbuilt-page-editor`.
+ * Playwright end-to-end coverage for openspec change `openbuild-page-editor`.
  *
  * Implements tasks 7.5 (add-page → save → render) and the tab-roundtrip
  * variant of 7.6 (Design ↔ Raw JSON parity). Task 7.6's "chain spec #2 not
@@ -26,12 +26,12 @@ const ADMIN_PASS = process.env.NC_ADMIN_PASS ?? 'admin'
 void ADMIN_USER
 void ADMIN_PASS
 
-test.describe('openbuilt page designer', () => {
+test.describe('openbuild page designer', () => {
 
 	test('REQ-OBPD-002 + REQ-OBPD-003 + REQ-OBPD-009: add page → save → renders in builder', async ({ page }) => {
 		// Open the editor pre-focused on the Design tab (router alias from
 		// task 5.3 of the spec).
-		await page.goto('/apps/openbuilt/applications/hello-world/design')
+		await page.goto('/apps/openbuild/applications/hello-world/design')
 
 		// The application editor mounts asynchronously after the manifest
 		// fetch returns. Wait for the page-list pane to settle before
@@ -59,7 +59,7 @@ test.describe('openbuilt page designer', () => {
 
 		// Fill required bindings — the IndexPageEditor needs register +
 		// schema before the manifest validator allows save.
-		await page.getByLabel(/register/i).first().fill('openbuilt')
+		await page.getByLabel(/register/i).first().fill('openbuild')
 		await page.getByLabel(/schema/i).first().fill('hello-message')
 
 		// The new page row defaults to a placeholder id/route — set a known
@@ -79,12 +79,12 @@ test.describe('openbuilt page designer', () => {
 
 		// REQ-OBPD-003: navigate to the built virtual app and assert the
 		// newly-added route renders inside the inner CnAppRoot mount.
-		await page.goto('/apps/openbuilt/builder/hello-world/added-by-e2e')
-		await expect(page.locator('#openbuilt-builder, .cn-app-root')).toBeVisible({ timeout: 15_000 })
+		await page.goto('/apps/openbuild/builder/hello-world/added-by-e2e')
+		await expect(page.locator('#openbuild-builder, .cn-app-root')).toBeVisible({ timeout: 15_000 })
 	})
 
 	test('REQ-OBR-005: edits survive a Design ↔ Raw JSON tab switch', async ({ page }) => {
-		await page.goto('/apps/openbuilt/applications/hello-world/design')
+		await page.goto('/apps/openbuild/applications/hello-world/design')
 		await page.waitForSelector('.page-designer__left', { timeout: 20_000 })
 
 		// Switch to the Raw JSON tab and mutate the manifest.
@@ -101,7 +101,7 @@ test.describe('openbuilt page designer', () => {
 			id: 'e2e-tab-roundtrip',
 			type: 'index',
 			route: '/e2e-tab-roundtrip',
-			config: { register: 'openbuilt', schema: 'hello-message' },
+			config: { register: 'openbuild', schema: 'hello-message' },
 		})
 		await textarea.fill(JSON.stringify(manifest, null, 2))
 

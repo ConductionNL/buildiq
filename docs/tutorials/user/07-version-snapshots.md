@@ -6,7 +6,7 @@ description: Save a named snapshot of your virtual app, compare it against the c
 
 # Snapshot and roll back a version
 
-Every virtual app has a **Version history** tab. Each time you publish the app — or click *Snapshot* manually — OpenBuilt freezes the full manifest (schemas + pages + menu + data sources) into a versioned record. Rolling back is one click.
+Every virtual app has a **Version history** tab. Each time you publish the app — or click *Snapshot* manually — OpenBuild freezes the full manifest (schemas + pages + menu + data sources) into a versioned record. Rolling back is one click.
 
 ## Goal
 
@@ -35,7 +35,7 @@ By the end you will have created a named snapshot of your app, edited something,
 
    ![Diff tab](/screenshots/tutorials/user/07-version-snapshots-04.png)
 
-5. Click **Roll back to this version** on the snapshot row. Confirm in the dialog. OpenBuilt swaps the current manifest for the snapshot's manifest, keeps the current state as a *Previous draft* snapshot (so you can roll forward again), and reloads.
+5. Click **Roll back to this version** on the snapshot row. Confirm in the dialog. OpenBuild swaps the current manifest for the snapshot's manifest, keeps the current state as a *Previous draft* snapshot (so you can roll forward again), and reloads.
 
    ![Rolled back](/screenshots/tutorials/user/07-version-snapshots-05.png)
 

@@ -6,11 +6,11 @@ retrofit_extensions:
   - REQ-OBR-MCP-004
 ---
 
-# openbuilt-runtime Specification
+# openbuild-runtime Specification
 
 ## Purpose
 
-The OpenBuilt runtime: foundational shell + per-slug manifest serving, plus every
+The OpenBuild runtime: foundational shell + per-slug manifest serving, plus every
 delta later archived chains have layered on the same capability. Defines the
 slug-keyed manifest endpoint backed by the `BuiltAppRoute` index, the nested
 `CnAppRoot` mount under `/builder/:slug/*` (inner router resolves path segments
@@ -32,7 +32,7 @@ icon / no-Live-chip refinement.
 @e2e exclude pure-backend REST endpoint — manifest fetch, 404 for unknown slug, and auth posture verified by Newman/manifest-endpoint.spec.ts; no separate UI surface
 
 The system SHALL expose
-`GET /index.php/apps/openbuilt/api/applications/{slug}/manifest`
+`GET /index.php/apps/openbuild/api/applications/{slug}/manifest`
 backed by `ApplicationsController::getManifest`. The endpoint SHALL
 resolve `{slug}` to an `Application` via the `BuiltAppRoute` index,
 return the stored `manifest` JSON blob with `Content-Type:
@@ -47,7 +47,7 @@ treats it as authenticated-user-readable.
 #### Scenario: Endpoint returns the stored manifest
 
 - **WHEN** an authenticated user requests
-  `/index.php/apps/openbuilt/api/applications/hello-world/manifest`
+  `/index.php/apps/openbuild/api/applications/hello-world/manifest`
 - **AND** a published `Application` with `slug: hello-world` exists
   in their organisation
 - **THEN** the response is `200 application/json` and the body is the
@@ -59,27 +59,27 @@ treats it as authenticated-user-readable.
   that has no matching `BuiltAppRoute`
 - **THEN** the response is `404` with a JSON error body
 
-### Requirement: OpenBuilt shell mounts a nested CnAppRoot per virtual app
+### Requirement: OpenBuild shell mounts a nested CnAppRoot per virtual app
 
-The OpenBuilt frontend SHALL register a route `/builder/:slug/*` whose
+The OpenBuild frontend SHALL register a route `/builder/:slug/*` whose
 view (`BuilderHost.vue`) mounts a **nested** `CnAppRoot` instance.
-The nested mount SHALL be supplied with `appId = openbuilt-{slug}`
+The nested mount SHALL be supplied with `appId = openbuild-{slug}`
 and a `bundledManifest` value, so that
 `useAppManifest(appId, bundledManifest)` deep-merges the per-slug
 endpoint response over the bundled placeholder and renders the virtual
-app inside the OpenBuilt shell. The outer OpenBuilt shell's
+app inside the OpenBuild shell. The outer OpenBuild shell's
 `CnAppNav`, header, and chrome SHALL remain visible; the inner
-`CnAppRoot` SHALL render only into the OpenBuilt page area.
+`CnAppRoot` SHALL render only into the OpenBuild page area.
 
 **ID:** REQ-OBR-002
 
 #### Scenario: Navigating into a virtual app renders its manifest pages
 
 - **WHEN** an authenticated user navigates to
-  `/index.php/apps/openbuilt/builder/hello-world`
-- **THEN** the outer OpenBuilt shell stays mounted
+  `/index.php/apps/openbuild/builder/hello-world`
+- **THEN** the outer OpenBuild shell stays mounted
 - **AND** a nested `CnAppRoot` mounts inside the page area with
-  `appId = openbuilt-hello-world`
+  `appId = openbuild-hello-world`
 - **AND** the index page declared in the `hello-world` manifest
   renders
 
@@ -88,7 +88,7 @@ app inside the OpenBuilt shell. The outer OpenBuilt shell's
 For routes matching `/builder/:slug/*`, the system SHALL forward the
 path segments after `/{slug}` to the **inner** manifest's vue-router
 so that detail, form, and dashboard pages inside the virtual app
-resolve correctly. The outer OpenBuilt router SHALL treat everything
+resolve correctly. The outer OpenBuild router SHALL treat everything
 after `/{slug}/` as opaque to the inner router; the inner router
 MUST match its own routes against that suffix.
 
@@ -97,7 +97,7 @@ MUST match its own routes against that suffix.
 #### Scenario: Detail route inside a virtual app resolves
 
 - **WHEN** an authenticated user navigates to
-  `/index.php/apps/openbuilt/builder/hello-world/messages/00000000-0000-0000-0000-000000000000`
+  `/index.php/apps/openbuild/builder/hello-world/messages/00000000-0000-0000-0000-000000000000`
 - **THEN** the inner `CnAppRoot`'s router matches its `detail` page
   for the `hello-message` schema
 - **AND** the detail page renders for the requested object id
@@ -107,7 +107,7 @@ MUST match its own routes against that suffix.
 The repair step SHALL seed a single Application with `slug:
 hello-world`, `status: published`, a `manifest` declaring at least
 one `type: index`, one `type: detail`, and one `type: form` page over
-a seeded `hello-message` schema in the OpenBuilt register, plus three
+a seeded `hello-message` schema in the OpenBuild register, plus three
 sample `hello-message` objects. The seed SHALL be idempotent (safe to
 re-run) and SHALL only run when no `Application` with `slug:
 hello-world` exists in the system organisation scope.
@@ -116,9 +116,9 @@ hello-world` exists in the system organisation scope.
 
 #### Scenario: Fresh install renders the seeded virtual app
 
-- **WHEN** the OpenBuilt app is installed on a fresh Nextcloud
+- **WHEN** the OpenBuild app is installed on a fresh Nextcloud
 - **AND** an administrator navigates to
-  `/index.php/apps/openbuilt/builder/hello-world`
+  `/index.php/apps/openbuild/builder/hello-world`
 - **THEN** the seeded index page lists the three sample
   `hello-message` objects
 - **AND** opening one of them renders the seeded detail page
@@ -133,14 +133,14 @@ hello-world` exists in the system organisation scope.
 
 ### Requirement: Textarea manifest editor saves to the Application object
 
-The OpenBuilt shell SHALL render a **tabbed Application editor** for
+The OpenBuild shell SHALL render a **tabbed Application editor** for
 the `manifest` field of an `Application` object, composed of two
 sibling tabs sharing one in-flight manifest state:
 
 1. **"Design"** (default tab) — mounts the visual `PageDesigner.vue`
-   shipped by the `openbuilt-page-designer` capability. The designer
+   shipped by the `openbuild-page-designer` capability. The designer
    authors the manifest through structured per-page-type sub-editors
-   and a menu-tree editor; see the `openbuilt-page-designer`
+   and a menu-tree editor; see the `openbuild-page-designer`
    capability spec for its full requirements.
 2. **"Raw JSON"** — the original JSON `<textarea>`-based editor (the
    integrator-only fallback path).
@@ -190,73 +190,73 @@ tab change.
 
 ### Requirement: Schema designer routes mounted under the builder host
 
-The OpenBuilt frontend router SHALL register two new routes under the
-existing `/builder/:slug/*` host (from `bootstrap-openbuilt`
+The OpenBuild frontend router SHALL register two new routes under the
+existing `/builder/:slug/*` host (from `bootstrap-openbuild`
 REQ-OBR-002 / REQ-OBR-003):
 
-- `/index.php/apps/openbuilt/builder/:slug/schemas` — schema list.
-- `/index.php/apps/openbuilt/builder/:slug/schemas/:schemaId` —
+- `/index.php/apps/openbuild/builder/:slug/schemas` — schema list.
+- `/index.php/apps/openbuild/builder/:slug/schemas/:schemaId` —
   schema detail / designer.
 
 Both routes SHALL be rendered by `src/views/SchemaDesigner.vue` and
-SHALL be registered under the OpenBuilt **outer** router (not the
+SHALL be registered under the OpenBuild **outer** router (not the
 nested-CnAppRoot inner router). The Schemas surface is a meta-tool
 that authors the data model OF a virtual app and SHALL stay scoped to
-the OpenBuilt shell so the user can navigate between schema authoring
+the OpenBuild shell so the user can navigate between schema authoring
 and the virtual app's runtime preview without re-mounting the nested
 CnAppRoot. The existing `/builder/:slug/*` virtual-app preview route
-from `bootstrap-openbuilt` SHALL continue to mount the nested
+from `bootstrap-openbuild` SHALL continue to mount the nested
 CnAppRoot for the runtime preview and SHALL be unaffected by this
 addition.
 
 **ID:** REQ-OBR-006a
 
 _Disambiguation note: original `REQ-OBR-006` from the
-`openbuilt-schema-editor` archive delta. Suffix `a` assigned 2026-05-24
+`openbuild-schema-editor` archive delta. Suffix `a` assigned 2026-05-24
 to disambiguate from `REQ-OBR-006b` (Publish action, from
-`openbuilt-versioning`) and `REQ-OBR-006c` (Manifest 403 RBAC gate,
-from `openbuilt-rbac`) per ADR-037._
+`openbuild-versioning`) and `REQ-OBR-006c` (Manifest 403 RBAC gate,
+from `openbuild-rbac`) per ADR-037._
 
 #### Scenario: Schema list route renders the designer, not the virtual app
 
 - **WHEN** an authenticated user navigates to
-  `/index.php/apps/openbuilt/builder/hello-world/schemas`
-- **THEN** the OpenBuilt outer shell renders `SchemaDesigner.vue`
+  `/index.php/apps/openbuild/builder/hello-world/schemas`
+- **THEN** the OpenBuild outer shell renders `SchemaDesigner.vue`
 - **AND** the nested `CnAppRoot` for `hello-world` is NOT mounted on
   this route
 
 #### Scenario: Virtual-app preview route still mounts the nested CnAppRoot
 
 - **WHEN** an authenticated user navigates to
-  `/index.php/apps/openbuilt/builder/hello-world`
+  `/index.php/apps/openbuild/builder/hello-world`
 - **THEN** the nested `CnAppRoot` for `hello-world` mounts per
-  REQ-OBR-002 (bootstrap-openbuilt)
+  REQ-OBR-002 (bootstrap-openbuild)
 - **AND** the Schemas menu entry is reachable from the outer shell's
   navigation
 
 ### Requirement: Schemas menu entry surfaced in the builder host
 
 `src/views/BuilderHost.vue` SHALL surface a **Schemas** menu entry in
-the OpenBuilt outer-shell secondary navigation while the user is in a
+the OpenBuild outer-shell secondary navigation while the user is in a
 virtual app's builder context. Activating the entry SHALL route to
 `/builder/{slug}/schemas`. The entry SHALL be visible to any user
 authorised to read the virtual app's Application object; chain spec
-`openbuilt-rbac` (#7) MAY narrow this visibility further. The menu
-entry SHALL use a translation key (`openbuilt.builder.menu.schemas`)
+`openbuild-rbac` (#7) MAY narrow this visibility further. The menu
+entry SHALL use a translation key (`openbuild.builder.menu.schemas`)
 in both `l10n/en.json` and `l10n/nl.json`.
 
 **ID:** REQ-OBR-007a
 
 _Disambiguation note: original `REQ-OBR-007` from the
-`openbuilt-schema-editor` archive delta. Suffix `a` assigned 2026-05-24
+`openbuild-schema-editor` archive delta. Suffix `a` assigned 2026-05-24
 to disambiguate from `REQ-OBR-007b` (Draft-vs-published indicator, from
-`openbuilt-versioning`) and `REQ-OBR-007c` (List filters by role, from
-`openbuilt-rbac`) per ADR-037._
+`openbuild-versioning`) and `REQ-OBR-007c` (List filters by role, from
+`openbuild-rbac`) per ADR-037._
 
 #### Scenario: Schemas entry appears in the builder context
 
 - **WHEN** an authenticated user opens
-  `/index.php/apps/openbuilt/builder/hello-world`
+  `/index.php/apps/openbuild/builder/hello-world`
 - **THEN** the outer shell's secondary navigation includes a
   **Schemas** entry
 - **AND** clicking the entry navigates to
@@ -279,7 +279,7 @@ SHALL be disabled while the lifecycle call is in flight.
 **ID:** REQ-OBR-006b
 
 _Disambiguation note: original `REQ-OBR-006` from the
-`openbuilt-versioning` archive delta. Suffix `b` assigned 2026-05-24
+`openbuild-versioning` archive delta. Suffix `b` assigned 2026-05-24
 to disambiguate from `REQ-OBR-006a` (Schema designer routes) and
 `REQ-OBR-006c` (Manifest 403 RBAC gate) per ADR-037._
 
@@ -302,7 +302,7 @@ to disambiguate from `REQ-OBR-006a` (Schema designer routes) and
 
 ### Requirement: Draft-vs-published indicator surfaces lifecycle state
 
-The OpenBuilt shell SHALL surface the Application's current
+The OpenBuild shell SHALL surface the Application's current
 `status` (and a marker for "has unpublished draft changes") in two
 places: (1) each row of the Application list view carries a small
 status badge (`draft` / `published` / `archived`); (2) the editor
@@ -315,7 +315,7 @@ hardcoded colour literals — per ADR-010).
 **ID:** REQ-OBR-007b
 
 _Disambiguation note: original `REQ-OBR-007` from the
-`openbuilt-versioning` archive delta. Suffix `b` assigned 2026-05-24
+`openbuild-versioning` archive delta. Suffix `b` assigned 2026-05-24
 to disambiguate from `REQ-OBR-007a` (Schemas menu entry) and
 `REQ-OBR-007c` (List filters by role) per ADR-037._
 
@@ -338,7 +338,7 @@ to disambiguate from `REQ-OBR-007a` (Schemas menu entry) and
 
 ### Requirement: VersionHistory.vue lists snapshots for an Application
 
-The OpenBuilt shell SHALL render a `VersionHistory.vue` panel
+The OpenBuild shell SHALL render a `VersionHistory.vue` panel
 inside `ApplicationEditor.vue` (collapsible / a sibling tab,
 implementer's choice) listing every `ApplicationVersion` row for
 the current Application in reverse-chronological order (newest
@@ -349,9 +349,9 @@ filtered by `applicationUuid` — no app-local wrapper service.
 **ID:** REQ-OBR-008a
 
 _Disambiguation note: original `REQ-OBR-008` from the
-`openbuilt-versioning` archive delta. Suffix `a` assigned 2026-05-24
+`openbuild-versioning` archive delta. Suffix `a` assigned 2026-05-24
 to disambiguate from `REQ-OBR-008b` (Editor UIs gate destructive
-actions per role, from `openbuilt-rbac`) per ADR-037._
+actions per role, from `openbuild-rbac`) per ADR-037._
 
 #### Scenario: History panel renders snapshots
 
@@ -387,9 +387,9 @@ its own SFC under `src/modals/` per Hydra modal-isolation gate
 **ID:** REQ-OBR-009a
 
 _Disambiguation note: original `REQ-OBR-009` from the
-`openbuilt-versioning` archive delta. Suffix `a` assigned 2026-05-24
+`openbuild-versioning` archive delta. Suffix `a` assigned 2026-05-24
 to disambiguate from `REQ-OBR-009b` (Caller's group set via
-IInitialState, from `openbuilt-rbac`) per ADR-037._
+IInitialState, from `openbuild-rbac`) per ADR-037._
 
 #### Scenario: Rollback restores manifest and stays in draft
 
@@ -409,7 +409,7 @@ IInitialState, from `openbuilt-rbac`) per ADR-037._
 
 ### Requirement: ManifestDiff.vue renders a side-by-side diff
 
-The OpenBuilt shell SHALL ship a `ManifestDiff.vue` component
+The OpenBuild shell SHALL ship a `ManifestDiff.vue` component
 rendering a client-side side-by-side diff between two manifest
 blobs. The component SHALL: (a) accept `from` and `to`
 `ApplicationVersion` UUIDs (or the literal `draft` for either) as
@@ -457,7 +457,7 @@ groups as
 If the two sets do not intersect — and the caller is not exercising
 the audited admin bypass declared in REQ-OBRBAC-006 — the controller
 SHALL respond `403 Forbidden` with a JSON body of shape
-`{ "error": "forbidden", "code": "openbuilt.rbac.no_role" }`. The
+`{ "error": "forbidden", "code": "openbuild.rbac.no_role" }`. The
 existing 404 branch (slug not found) is preserved; the 403 branch
 SHALL be ordered before the manifest-body emission and SHALL NOT
 leak any Application metadata (no name, no description, no manifest
@@ -467,14 +467,14 @@ service class — per ADR-022 §Exceptions(1).
 **ID:** REQ-OBR-006c
 
 _Disambiguation note: original `REQ-OBR-006` from the
-`openbuilt-rbac` archive delta. Suffix `c` assigned 2026-05-24 to
+`openbuild-rbac` archive delta. Suffix `c` assigned 2026-05-24 to
 disambiguate from `REQ-OBR-006a` (Schema designer routes) and
 `REQ-OBR-006b` (Publish action) per ADR-037._
 
 #### Scenario: Caller without a role gets 403 (not 200, not 404)
 
 - **WHEN** an authenticated user requests
-  `/index.php/apps/openbuilt/api/applications/hello-world/manifest`
+  `/index.php/apps/openbuild/api/applications/hello-world/manifest`
 - **AND** the Application exists in the user's organisation but no
   group the user belongs to appears in its `permissions`
 - **THEN** the response is `403`
@@ -492,7 +492,7 @@ disambiguate from `REQ-OBR-006a` (Schema designer routes) and
 
 ### Requirement: Application list view filters by caller's roles
 
-The system SHALL ensure the frontend Application list (the entry view of the OpenBuilt shell, currently `ApplicationEditor.vue`'s list mode) renders only Applications on which the caller has at least one role.
+The system SHALL ensure the frontend Application list (the entry view of the OpenBuild shell, currently `ApplicationEditor.vue`'s list mode) renders only Applications on which the caller has at least one role.
 
 The list view SHALL prefer OR-side filtering: if the Application
 schema declares an `x-openregister-authorization` rule that
@@ -501,21 +501,21 @@ the pre-filtered set and the frontend renders it directly.
 
 If the declarative path is not available, the frontend SHALL filter
 in JS using the caller's group set, which is provided to the
-frontend via `IInitialState::provideInitialState('openbuilt',
+frontend via `IInitialState::provideInitialState('openbuild',
 'currentUserGroups', [...])` consumed by `loadState` (per ADR-004 —
 no `document.getElementById().dataset` reads).
 
 **ID:** REQ-OBR-007c
 
 _Disambiguation note: original `REQ-OBR-007` from the
-`openbuilt-rbac` archive delta. Suffix `c` assigned 2026-05-24 to
+`openbuild-rbac` archive delta. Suffix `c` assigned 2026-05-24 to
 disambiguate from `REQ-OBR-007a` (Schemas menu entry) and
 `REQ-OBR-007b` (Draft-vs-published indicator) per ADR-037._
 
 #### Scenario: User sees only authorised applications
 
 - **WHEN** user `bob` (in groups `team-alpha`, `qa-shared`) opens
-  the OpenBuilt shell
+  the OpenBuild shell
 - **AND** the organisation contains Applications A (`permissions.owners
   = ["team-alpha"]`), B (`permissions.editors = ["other-team"]`),
   and C (`permissions.viewers = ["qa-shared"]`)
@@ -525,14 +525,14 @@ disambiguate from `REQ-OBR-007a` (Schemas menu entry) and
 #### Scenario: Empty list when user has no roles
 
 - **WHEN** an authenticated user with no role on any Application in
-  their organisation opens the OpenBuilt shell
+  their organisation opens the OpenBuild shell
 - **THEN** the Application list is empty
 - **AND** the empty-state UI explains "No applications available —
   ask an owner to grant you access"
 
 ### Requirement: Editor UIs gate destructive actions per role
 
-The system SHALL gate role-restricted actions in the OpenBuilt editor views (currently the textarea editor `ApplicationEditor.vue`; the visual editors arriving in chain specs #5 and #6 when they land) via a shared `useRole(application)` composable that returns the caller's effective role (`owner | editor | viewer | none`). The
+The system SHALL gate role-restricted actions in the OpenBuild editor views (currently the textarea editor `ApplicationEditor.vue`; the visual editors arriving in chain specs #5 and #6 when they land) via a shared `useRole(application)` composable that returns the caller's effective role (`owner | editor | viewer | none`). The
 mapping in REQ-OBRBAC-004 is the canonical source. UI controls
 SHALL be:
 
@@ -552,9 +552,9 @@ list; REQ-OBR-006c ensures direct-URL access returns 403).
 **ID:** REQ-OBR-008b
 
 _Disambiguation note: original `REQ-OBR-008` from the
-`openbuilt-rbac` archive delta. Suffix `b` assigned 2026-05-24 to
+`openbuild-rbac` archive delta. Suffix `b` assigned 2026-05-24 to
 disambiguate from `REQ-OBR-008a` (VersionHistory panel, from
-`openbuilt-versioning`) per ADR-037._
+`openbuild-versioning`) per ADR-037._
 
 #### Scenario: Editor sees Save but not Publish
 
@@ -575,13 +575,13 @@ disambiguate from `REQ-OBR-008a` (VersionHistory panel, from
 
 @e2e exclude pure-backend PHP IInitialState contract — loadState value verified by PHPUnit; no Playwright-accessible surface to assert server-side initial state injection
 
-The OpenBuilt PHP layer SHALL provide the caller's Nextcloud group
+The OpenBuild PHP layer SHALL provide the caller's Nextcloud group
 IDs to the frontend via
-`IInitialState::provideInitialState('openbuilt',
+`IInitialState::provideInitialState('openbuild',
 'currentUserGroups', string[])`, written from the relevant
 controller's `index` action (or a dedicated `InitialStateProvider`
 service registered in `lib/AppInfo/Application.php`). The frontend
-SHALL consume this value through `loadState('openbuilt',
+SHALL consume this value through `loadState('openbuild',
 'currentUserGroups')` from `@nextcloud/initial-state`. The
 frontend SHALL NOT read group membership from any DOM
 data-attribute, fetch endpoint, or `document.getElementById`
@@ -591,15 +591,15 @@ pattern (ADR-004 hard rule; enforced by the
 **ID:** REQ-OBR-009b
 
 _Disambiguation note: original `REQ-OBR-009` from the
-`openbuilt-rbac` archive delta. Suffix `b` assigned 2026-05-24 to
+`openbuild-rbac` archive delta. Suffix `b` assigned 2026-05-24 to
 disambiguate from `REQ-OBR-009a` (Rollback action, from
-`openbuilt-versioning`) per ADR-037._
+`openbuild-versioning`) per ADR-037._
 
 #### Scenario: Frontend sees the caller's groups
 
-- **WHEN** the OpenBuilt shell boots for user `bob` (in groups
+- **WHEN** the OpenBuild shell boots for user `bob` (in groups
   `team-alpha`, `qa-shared`)
-- **THEN** `loadState('openbuilt', 'currentUserGroups')` returns
+- **THEN** `loadState('openbuild', 'currentUserGroups')` returns
   `["team-alpha", "qa-shared"]`
 - **AND** no DOM data-attribute access is needed to obtain the
   groups
@@ -610,7 +610,7 @@ disambiguate from `REQ-OBR-009a` (Rollback action, from
 
 `ApplicationCard.vue` SHALL render the Application's icon in front of the app title using an
 `<img>` element whose `src` is the URL of the icon-serving light endpoint
-(`/index.php/apps/openbuilt/icons/{slug}.svg`). The image SHALL carry a descriptive `alt`
+(`/index.php/apps/openbuild/icons/{slug}.svg`). The image SHALL carry a descriptive `alt`
 attribute (the app's name). The component SHALL omit the `Live` chip that was previously
 conditionally rendered on `app.currentVersion` (line 30 of the original file); the
 lifecycle-status pill (line 23) already communicates "Published" state to the user and the
@@ -624,13 +624,13 @@ Live chip produces duplicate signalling. The `ob-app-card__chip--live` CSS rule 
 - **WHEN** a user views the virtual apps index and a published Application has an icon
   registered at the icon endpoint
 - **THEN** each ApplicationCard renders an `<img>` element with
-  `src="/index.php/apps/openbuilt/icons/{slug}.svg"` before the app name heading
+  `src="/index.php/apps/openbuild/icons/{slug}.svg"` before the app name heading
 
 #### Scenario: Card icon falls back gracefully when endpoint returns an error
 
 - **WHEN** the icon endpoint returns a non-200 response (e.g. slug not found)
 - **THEN** the `<img>` element's `@error` handler replaces the src with a transparent 1×1
-  placeholder or the OpenBuilt default icon path, so no broken-image icon appears in the card
+  placeholder or the OpenBuild default icon path, so no broken-image icon appears in the card
 
 #### Scenario: Live chip is absent from all ApplicationCards
 
@@ -649,15 +649,15 @@ Live chip produces duplicate signalling. The `ob-app-card__chip--live` CSS rule 
 
 @e2e exclude pure-backend PHP IMcpToolProvider unit — getAppId, getTools, invokeTool dispatch, and unknown-tool error envelope verified by PHPUnit; no Playwright-testable UI surface
 
-The OpenBuilt MCP surface SHALL be implemented by a class
-(`OCA\OpenBuilt\Mcp\OpenBuiltToolProvider`) that implements
+The OpenBuild MCP surface SHALL be implemented by a class
+(`OCA\OpenBuild\Mcp\OpenBuildToolProvider`) that implements
 `OCA\OpenRegister\Mcp\IMcpToolProvider`. The provider SHALL declare its
-host Nextcloud app id (`openbuilt`), expose a static tool catalogue of
-read tools (`openbuilt.listApps`, `openbuilt.getAppManifest`) and write
-tools covering virtual-app lifecycle (`openbuilt.createApp`,
-`openbuilt.promoteVersion`) and draft-version authoring
-(`openbuilt.upsertSchema`, `openbuilt.upsertPage`, `openbuilt.addWidget`,
-`openbuilt.upsertMenuItem`), and SHALL dispatch each invocation by tool
+host Nextcloud app id (`openbuild`), expose a static tool catalogue of
+read tools (`openbuild.listApps`, `openbuild.getAppManifest`) and write
+tools covering virtual-app lifecycle (`openbuild.createApp`,
+`openbuild.promoteVersion`) and draft-version authoring
+(`openbuild.upsertSchema`, `openbuild.upsertPage`, `openbuild.addWidget`,
+`openbuild.upsertMenuItem`), and SHALL dispatch each invocation by tool
 id to the matching internal handler. Unknown tool ids SHALL return a
 uniform error envelope of shape
 `{ isError: true, error, message }` carrying the machine-readable code
@@ -666,26 +666,26 @@ tool ids.
 
 **ID:** REQ-OBR-MCP-001
 
-#### Scenario: Provider reports the OpenBuilt app id
+#### Scenario: Provider reports the OpenBuild app id
 
 - **WHEN** OpenRegister's MCP orchestrator calls `getAppId()` on the
   provider
-- **THEN** the provider returns the string `openbuilt`
+- **THEN** the provider returns the string `openbuild`
 
-#### Scenario: Catalogue surfaces all OpenBuilt tools
+#### Scenario: Catalogue surfaces all OpenBuild tools
 
 - **WHEN** OpenRegister's MCP orchestrator calls `getTools()`
 - **THEN** the returned array contains the eight tool descriptors
-  (`openbuilt.listApps`, `openbuilt.getAppManifest`,
-  `openbuilt.createApp`, `openbuilt.promoteVersion`,
-  `openbuilt.upsertSchema`, `openbuilt.upsertPage`,
-  `openbuilt.addWidget`, `openbuilt.upsertMenuItem`), each with an
+  (`openbuild.listApps`, `openbuild.getAppManifest`,
+  `openbuild.createApp`, `openbuild.promoteVersion`,
+  `openbuild.upsertSchema`, `openbuild.upsertPage`,
+  `openbuild.addWidget`, `openbuild.upsertMenuItem`), each with an
   `inputSchema` of `type: object`
 
 #### Scenario: Unknown tool id returns a structured error
 
 - **WHEN** OpenRegister's MCP orchestrator calls
-  `invokeTool('openbuilt.nope', [])`
+  `invokeTool('openbuild.nope', [])`
 - **THEN** the response is `{ isError: true, error: 'unknown_tool',
   message: ... }` and `message` lists the available tool ids
 
@@ -712,21 +712,21 @@ admin posture without re-implementing the check.
 
 #### Scenario: Unauthenticated caller is rejected
 
-- **WHEN** the MCP orchestrator invokes any OpenBuilt tool with no
+- **WHEN** the MCP orchestrator invokes any OpenBuild tool with no
   active `IUserSession` user
 - **THEN** the response is `{ isError: true, error: 'forbidden', ... }`
   and no OpenRegister read/write is attempted
 
 #### Scenario: listApps rejects an out-of-range limit
 
-- **WHEN** an authenticated caller invokes `openbuilt.listApps` with
+- **WHEN** an authenticated caller invokes `openbuild.listApps` with
   `limit: 0` (or `limit: 51`)
 - **THEN** the response is `{ isError: true, error:
   'invalid_arguments', message: "Invalid limit 0." }`
 
 #### Scenario: listApps rejects an unknown statusFilter
 
-- **WHEN** an authenticated caller invokes `openbuilt.listApps` with
+- **WHEN** an authenticated caller invokes `openbuild.listApps` with
   `statusFilter: 'weird'`
 - **THEN** the response is `{ isError: true, error:
   'invalid_arguments', message: "Invalid statusFilter 'weird'." }`
@@ -749,7 +749,7 @@ in a follow-up so the pattern lives in exactly one place.
 
 Tools that operate on a single virtual app SHALL resolve the supplied
 slug to an `Application` object via the `built-app-route` index in the
-`openbuilt` register: the provider SHALL call
+`openbuild` register: the provider SHALL call
 `ObjectService::searchObjectsBySlug` to locate a matching route, then
 `ObjectService::find` to load the Application by its `applicationUuid`.
 A missing route SHALL surface as `{ isError: true, error: 'not_found'
@@ -757,10 +757,10 @@ A missing route SHALL surface as `{ isError: true, error: 'not_found'
 row) SHALL surface as `{ isError: true, error: 'inconsistent_state' }`.
 The compact response shape used by `listApps` SHALL include
 `{ uuid, slug, name, description, status, version }`. Each MCP
-response SHALL carry an OpenBuilt `source` descriptor of shape
-`{ type: 'openbuilt.application', uuid, url, label }` where `url` is
-a Nextcloud deep link of the form `/apps/openbuilt/builder/{slug}`
-(or `/apps/openbuilt` when no slug is bound). OR entities, arrays, and
+response SHALL carry an OpenBuild `source` descriptor of shape
+`{ type: 'openbuild.application', uuid, url, label }` where `url` is
+a Nextcloud deep link of the form `/apps/openbuild/builder/{slug}`
+(or `/apps/openbuild` when no slug is bound). OR entities, arrays, and
 `jsonSerialize`-able objects SHALL all be accepted as input to the
 mapping pipeline (`toArray`); UUIDs SHALL be extracted from the
 `uuid`, `id`, `@self.uuid`, or `@self.id` fields in that fallback
@@ -790,10 +790,10 @@ order (`extractUuid`).
 - **THEN** the helper returns `{ error: 'inconsistent_state', message:
   ... }`
 
-#### Scenario: Deep link uses /apps/openbuilt/builder/{slug}
+#### Scenario: Deep link uses /apps/openbuild/builder/{slug}
 
 - **WHEN** the provider calls `buildDeepLink('hello-world')`
-- **THEN** the returned URL is `/apps/openbuilt/builder/hello-world`
+- **THEN** the returned URL is `/apps/openbuild/builder/hello-world`
 
 #### Scenario: UUID extraction falls back through @self
 
@@ -807,8 +807,8 @@ order (`extractUuid`).
 @e2e exclude pure-backend PHP MCP authoring-tool isolation — versionSlug defaulting, loadVersion/saveVersionManifest contracts verified by PHPUnit; no Playwright-testable UI surface
 
 Authoring tools that mutate a virtual app
-(`openbuilt.upsertSchema`, `openbuilt.upsertPage`,
-`openbuilt.addWidget`, `openbuilt.upsertMenuItem`) SHALL default the
+(`openbuild.upsertSchema`, `openbuild.upsertPage`,
+`openbuild.addWidget`, `openbuild.upsertMenuItem`) SHALL default the
 `versionSlug` argument to `development` so a misfired tool call cannot
 mutate a production version. A version row SHALL be located via
 `loadVersion(objectService, appSlug, versionSlug)`, which SHALL look
@@ -825,7 +825,7 @@ helper SHALL be considered a violation of this requirement.
 
 #### Scenario: Authoring tools default versionSlug to development
 
-- **WHEN** a caller invokes `openbuilt.upsertPage` with `appSlug:
+- **WHEN** a caller invokes `openbuild.upsertPage` with `appSlug:
   hello-world` and omits `versionSlug`
 - **THEN** the mutation targets the `hello-world-development` version
   row, not any production version

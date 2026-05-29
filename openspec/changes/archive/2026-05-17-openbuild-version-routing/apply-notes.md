@@ -1,4 +1,4 @@
-# Apply Notes — openbuilt-version-routing
+# Apply Notes — openbuild-version-routing
 
 Applied: 2026-05-15
 

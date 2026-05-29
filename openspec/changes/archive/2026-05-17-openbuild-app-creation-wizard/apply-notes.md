@@ -1,9 +1,9 @@
-# Apply Notes — openbuilt-app-creation-wizard (spec F)
+# Apply Notes — openbuild-app-creation-wizard (spec F)
 
 Applied: 2026-05-16  
 Completed: 2026-05-16  
-Branch: `feature/openbuilt-app-creation-wizard`  
-Branched from: `feature/openbuilt-test-harness`
+Branch: `feature/openbuild-app-creation-wizard`  
+Branched from: `feature/openbuild-test-harness`
 
 ---
 
@@ -41,7 +41,7 @@ Branched from: `feature/openbuilt-test-harness`
 - `tests/dialogs/CreateApplicationWizard/Step3Custom.spec.js`
 - `tests/dialogs/CreateApplicationWizard/Step4Review.spec.js`
 - `tests/utils/slugPattern.spec.js`
-- `tests/integration/openbuilt-app-creation-wizard.postman_collection.json`
+- `tests/integration/openbuild-app-creation-wizard.postman_collection.json`
 - `tests/e2e/createApplicationWizard.spec.ts`
 
 ---
@@ -96,14 +96,14 @@ The manifest had `"actionsComponent": "VirtualAppsActions"` at the top level of 
 
 The following tests require a running Docker dev environment:
 
-### Newman (`tests/integration/openbuilt-app-creation-wizard.postman_collection.json`)
-- All 4 scenarios require `localhost:8080` with the OpenBuilt app enabled.
+### Newman (`tests/integration/openbuild-app-creation-wizard.postman_collection.json`)
+- All 4 scenarios require `localhost:8080` with the OpenBuild app enabled.
 - The `single` and `dev-staging-prod` creation scenarios leave state behind (the created applications are NOT cleaned up after the run). Re-running will hit `422 app_slug_conflict` for `newman-wizard-single` / `newman-wizard-dsp`. Clean up manually via the OpenRegister UI or delete the OR objects before re-running.
-- The `GET /versions` chain verification request returns 200 only when the `openbuilt` register and ApplicationVersion schema are seeded. In a fresh install, it may return 404 — the Newman test handles this gracefully (200 and 404 are both accepted for that specific assertion; chain-slug assertions only run on 200).
+- The `GET /versions` chain verification request returns 200 only when the `openbuild` register and ApplicationVersion schema are seeded. In a fresh install, it may return 404 — the Newman test handles this gracefully (200 and 404 are both accepted for that specific assertion; chain-slug assertions only run on 200).
 
 ### Playwright (`tests/e2e/createApplicationWizard.spec.ts`)
 - All 8 tests (4 happy paths + 4 validation) are guarded by `test.skip(!LIVE, ...)`.
-- Set `OPENBUILT_E2E_LIVE=1` to activate them.
+- Set `OPENBUILD_E2E_LIVE=1` to activate them.
 - Happy-path tests navigate to `/applications/<uuid>` — the router expects `VirtualAppDetail` to exist in the manifest, which it does.
 - The slug-conflict test (`hello-world already in use`) requires `hello-world` to be seeded by `SeedHelloWorld`.
 
@@ -135,4 +135,4 @@ Running `npx playwright test --list` does NOT require a live environment; all te
    - `npx vitest run` — 471 tests pass (39 test files, +133 from 338 baseline; 24 new Step4Review tests)
    - `npx playwright test --list` — 51 tests in 16 files (8 new wizard tests, all skip-guarded)
    - Hydra gates — ALL 14 GATES GREEN
-   - `openspec validate` — Change 'openbuilt-app-creation-wizard' is valid
+   - `openspec validate` — Change 'openbuild-app-creation-wizard' is valid

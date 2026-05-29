@@ -1,10 +1,10 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuilt Contributors
+ * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Vitest spec — manifest load → serialise round-trip (openbuilt#9 task 7.2).
+ * Vitest spec — manifest load → serialise round-trip (openbuild#9 task 7.2).
  *
- * A canonical OpenBuilt manifest must survive a JSON.parse → JSON.stringify
+ * A canonical OpenBuild manifest must survive a JSON.parse → JSON.stringify
  * cycle without losing information. The page editor depends on this when it
  * round-trips manifest edits through its Raw-JSON tab; the wizard seed
  * depends on it because every new app is born from `default-manifest.json`.
@@ -25,7 +25,7 @@ const REPO_ROOT = resolve(__dirname, '../..')
 
 const TARGETS = [
 	{
-		label: 'OpenBuilt shell manifest (src/manifest.json)',
+		label: 'OpenBuild shell manifest (src/manifest.json)',
 		path: 'src/manifest.json',
 		substituteTokens: false,
 	},
@@ -53,17 +53,27 @@ function substituteRegisterTokens(manifest) {
 			if (!page || !page.config) return page
 			const config = { ...page.config }
 			if (config.register === '{registerSlug}') {
-				config.register = 'openbuilt-validator-placeholder'
+				config.register = 'openbuild-validator-placeholder'
 			}
 			return { ...page, config }
 		}),
 	}
 }
 
-const SCHEMA_PATH = 'node_modules/@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json'
-const schema = JSON.parse(readFileSync(resolve(REPO_ROOT, SCHEMA_PATH), 'utf-8'))
+const SCHEMA_DIR = 'node_modules/@conduction/nextcloud-vue/src/schemas'
+const loadSchema = (name) => JSON.parse(readFileSync(resolve(REPO_ROOT, SCHEMA_DIR, name), 'utf-8'))
 const ajv = new Ajv.default({ allErrors: true, strict: false })
-const validate = ajv.compile(schema)
+const validators = {
+	v1: ajv.compile(loadSchema('app-manifest.schema.json')),
+	v2: ajv.compile(loadSchema('app-manifest-v2.schema.json')),
+}
+
+// Validate each manifest against the schema version it declares via `$schema`
+// (v2 shell manifest vs v1 wizard seed), mirroring scripts/check-manifest.js.
+function validatorFor(manifest) {
+	const ref = manifest && typeof manifest.$schema === 'string' ? manifest.$schema : ''
+	return ref.includes('app-manifest-v2') ? validators.v2 : validators.v1
+}
 
 describe('manifest round-trip', () => {
 	for (const target of TARGETS) {
@@ -78,6 +88,7 @@ describe('manifest round-trip', () => {
 				const { parsed } = loadManifest(target.path)
 				const re = JSON.parse(JSON.stringify(parsed))
 				const candidate = target.substituteTokens ? substituteRegisterTokens(re) : re
+				const validate = validatorFor(candidate)
 				const ok = validate(candidate)
 				if (!ok) {
 					// Surface the first 5 errors — strict equality already gives
@@ -113,7 +124,7 @@ describe('manifest round-trip', () => {
 			}
 			const re = JSON.parse(JSON.stringify(manifest))
 			expect(re).toEqual(manifest)
-			expect(validate(re)).toBe(true)
+			expect(validatorFor(re)(re)).toBe(true)
 		})
 
 		it('preserves nested config blocks without flattening or coercion', () => {
@@ -129,7 +140,7 @@ describe('manifest round-trip', () => {
 						type: 'index',
 						title: 'Messages',
 						config: {
-							register: 'openbuilt',
+							register: 'openbuild',
 							schema: 'hello-message',
 							columns: ['title', 'body'],
 							sort: { field: 'created', dir: 'desc' },

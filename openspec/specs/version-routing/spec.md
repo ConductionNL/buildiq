@@ -6,7 +6,7 @@
 
 Defines the URL contract that makes the ADR-002 versioned model reachable from the
 frontend: an optional `?_version=<versionSlug>` query parameter (the underscore
-prefix is OpenBuilt's reserved-namespace marker, avoiding collision with
+prefix is OpenBuild's reserved-namespace marker, avoiding collision with
 user-defined `?version=`) on both the manifest endpoint and the builder paths,
 with server-side RBAC so end users always see only production. Encapsulates the
 two-step slug resolution (Application by `slug` → ApplicationVersion by
@@ -23,8 +23,8 @@ per-version register.
 ### Requirement: Manifest endpoint accepts optional `?_version=<versionSlug>` query param
 
 The system SHALL accept an optional query parameter `_version` (underscore-prefix form)
-on `GET /index.php/apps/openbuilt/api/applications/{slug}/manifest`. The underscore
-prefix is OpenBuilt's system-reserved namespace marker — it prevents collision with
+on `GET /index.php/apps/openbuild/api/applications/{slug}/manifest`. The underscore
+prefix is OpenBuild's system-reserved namespace marker — it prevents collision with
 user-defined `?version=` query parameters that citizen developers may add to their
 own virtual apps' routes.
 
@@ -217,7 +217,7 @@ Vue Router already preserves across in-app navigation and on page reload.
 - **WHEN** `SchemaDesigner.vue` is mounted
 - **THEN** the component calls `useApplicationVersion('hello-world', 'staging')`
 - **AND** the schema list is populated from the `staging` ApplicationVersion's register
-  (`openbuilt-hello-world-staging`)
+  (`openbuild-hello-world-staging`)
 
 #### Scenario: BuilderHostView with no `?_version=` falls back to most-upstream non-production version
 
@@ -321,7 +321,7 @@ from the URL when the admin navigates between builder sub-sections.
 
 The system SHALL modify `src/stores/schemas.js` so that every OR call that targets the
 per-app register name accepts an optional `versionSlug` parameter. When `versionSlug`
-is provided, the register name SHALL be `openbuilt-{appSlug}-{versionSlug}` (matching
+is provided, the register name SHALL be `openbuild-{appSlug}-{versionSlug}` (matching
 spec C's per-version register naming convention). When `versionSlug` is absent or
 empty, the store SHALL fall back to the production version's register name (resolved
 from `Application.productionVersion.register`).
@@ -337,14 +337,14 @@ automatically target the correct register.
 - **GIVEN** the store's `versionSlug` is set to `'staging'` for Application
   `hello-world`
 - **WHEN** the store fetches schemas
-- **THEN** the OR call targets register `openbuilt-hello-world-staging`
+- **THEN** the OR call targets register `openbuild-hello-world-staging`
 
 #### Scenario: Store targets the production register when versionSlug is absent
 
 - **GIVEN** the store's `versionSlug` is not set
-- **AND** `Application.productionVersion.register` is `openbuilt-hello-world-production`
+- **AND** `Application.productionVersion.register` is `openbuild-hello-world-production`
 - **WHEN** the store fetches schemas
-- **THEN** the OR call targets register `openbuilt-hello-world-production`
+- **THEN** the OR call targets register `openbuild-hello-world-production`
 
 ### Requirement: Browser reload preserves `?_version=` (bookmarkability)
 

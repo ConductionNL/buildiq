@@ -4,20 +4,20 @@ status: draft
 
 ## Purpose
 
-OpenBuilt stelt citizen-developers in staat om binnen het Nextcloud-ecosysteem custom apps te ontwerpen via de page-designer en runtime. Wat momenteel ontbreekt is een gestructureerde manier om bedrijfsregels (business rules) los van UI-code te modelleren: validaties, workflow-routering, automatische berekeningen, conditionele zichtbaarheid van velden, en escalatie-logica. Nu eindigen deze als verspreide IF-conditions in templates, hardcoded backend-checks, of (erger) niet-gevalideerde aannames in formulieren.
+OpenBuild stelt citizen-developers in staat om binnen het Nextcloud-ecosysteem custom apps te ontwerpen via de page-designer en runtime. Wat momenteel ontbreekt is een gestructureerde manier om bedrijfsregels (business rules) los van UI-code te modelleren: validaties, workflow-routering, automatische berekeningen, conditionele zichtbaarheid van velden, en escalatie-logica. Nu eindigen deze als verspreide IF-conditions in templates, hardcoded backend-checks, of (erger) niet-gevalideerde aannames in formulieren.
 
 Voor de doelgroep (procesanalisten, business-experts zonder programmeer-achtergrond) is een visuele rule-engine essentieel. Twee dominante paradigmas dekken samen de overgrote meerderheid van use-cases: decision tables (gebaseerd op DMN, OMG-standaard) voor multi-condition mapping zoals tariefberekeningen, kortings-staffels, eligibility-checks, en condition-action chains voor sequentiele workflow-besluiten zoals routering van een aanvraag op basis van bedrag, regio en aanvragerstype.
 
-Deze spec levert een rule-engine die: (a) deze twee paradigmas via visual editors aanbiedt, (b) regels per tenant deployable maakt zonder app-redeploy, (c) een test-sandbox biedt waarin business-experts hun regels kunnen valideren met sample-payloads voordat ze live gaan, (d) versioning en audit-trail per rule biedt, (e) hot-reload zonder downtime ondersteunt, en (f) een runtime-API biedt waar andere openbuilt-apps tegen kunnen evalueren (synchrone calls voor validatie, async events voor routering).
+Deze spec levert een rule-engine die: (a) deze twee paradigmas via visual editors aanbiedt, (b) regels per tenant deployable maakt zonder app-redeploy, (c) een test-sandbox biedt waarin business-experts hun regels kunnen valideren met sample-payloads voordat ze live gaan, (d) versioning en audit-trail per rule biedt, (e) hot-reload zonder downtime ondersteunt, en (f) een runtime-API biedt waar andere openbuild-apps tegen kunnen evalueren (synchrone calls voor validatie, async events voor routering).
 
 ## Data Model
 
-**RuleSet** (nieuw schema, register `openbuilt-rules`):
+**RuleSet** (nieuw schema, register `openbuild-rules`):
 - `naam` (string, slug-formaat)
 - `beschrijving` (string)
 - `versie` (semver-string)
 - `status` (enum: draft / test / actief / gearchiveerd)
-- `eigenaarApp` (string, openbuilt-app-slug die deze rule-set bezit)
+- `eigenaarApp` (string, openbuild-app-slug die deze rule-set bezit)
 - `geactiveerdOp` (datetime, nullable)
 - `gedeactiveerdOp` (datetime, nullable)
 - `ingangsdatum`, `einddatum` (date, nullable - voor tijdelijke regels)
@@ -59,7 +59,7 @@ Deze spec levert een rule-engine die: (a) deze twee paradigmas via visual editor
 
 ### REQ-001: Decision table visueel ontwerpen
 
-GIVEN een gebruiker met rol rule-designer in openbuilt
+GIVEN een gebruiker met rol rule-designer in openbuild
 WHEN deze "Nieuwe decision table" kiest voor een RuleSet
 THEN opent een grid-editor waar input-kolommen + output-kolommen + rijen kunnen worden gedefinieerd, met inline validatie van celexpressies (FEEL-subset: ranges, lijsten, vergelijkingen), live preview van hit-policy-effect, en visuele hint bij overlappende/onvolledige regels.
 
@@ -83,19 +83,19 @@ THEN incrementeert het systeem automatisch de semver (patch bij regel-toevoeging
 
 ### REQ-005: Hot-reload zonder app-restart
 
-GIVEN een actieve RuleSet die wordt geconsumeerd door een openbuilt-app
+GIVEN een actieve RuleSet die wordt geconsumeerd door een openbuild-app
 WHEN een nieuwe versie wordt geactiveerd
 THEN herlaadt de rule-engine-runtime de regel-definitie binnen 30 seconden zonder restart van de consument-app, en vanaf dat moment evalueren nieuwe rule-aanroepen tegen de nieuwe versie - lopende async-flows behouden hun gebruikte versie.
 
 ### REQ-006: Runtime-API voor consument-apps
 
 GIVEN een actieve RuleSet
-WHEN een openbuilt-app via `POST /api/rules/{ruleSetSlug}/evaluate` een input-payload stuurt
+WHEN een openbuild-app via `POST /api/rules/{ruleSetSlug}/evaluate` een input-payload stuurt
 THEN evalueert het systeem de regels synchroon (default timeout 500ms), retourneert het resultaat als JSON met geraaktRegels-metadata, en logt de uitvoering in RuleExecutionLog - inclusief expliciete `dry-run`-modus die geen acties uitvoert maar wel het uitkomst-payload genereert.
 
 ### REQ-007: Per-tenant deployment
 
-GIVEN een multi-tenant openbuilt-installatie
+GIVEN een multi-tenant openbuild-installatie
 WHEN een tenant-beheerder een RuleSet wijzigt
 THEN is de wijziging alleen actief binnen die tenant (RuleSet's zijn tenant-scoped via standaard openregister-multitenancy), tenzij expliciet als `globaal` gemarkeerd door een platform-beheerder - waarbij globale rule-sets read-only zijn voor tenants en alleen overridable via een tenant-specifieke override-rule.
 
@@ -117,8 +117,8 @@ THEN registreert het systeem: tijdstip, gebruiker, oude/nieuwe versie, wijziging
 
 ## Cross-app
 
-- **openbuilt page-designer**: form-builder verwijst naar RuleSets voor veldvalidatie + conditionele zichtbaarheid
-- **openbuilt runtime**: consumeert runtime-API voor live evaluatie
+- **openbuild page-designer**: form-builder verwijst naar RuleSets voor veldvalidatie + conditionele zichtbaarheid
+- **openbuild runtime**: consumeert runtime-API voor live evaluatie
 - **openregister**: opslag van RuleSet/DecisionTable/etc als register-objecten
 - **n8n-nextcloud**: rule-actie `start-workflow` triggert n8n-flow
 - **mydash**: rule-uitvoeringsmetrics (calls/sec, faalpercentage)

@@ -8,5 +8,5 @@ jobs:
   release:
     uses: ConductionNL/.github/.github/workflows/release-beta.yml@main
     with:
-      app-name: openbuilt
+      app-name: openbuild
     secrets: inherit

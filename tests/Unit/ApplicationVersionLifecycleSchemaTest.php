@@ -2,7 +2,7 @@
 
 /**
  * Unit test for the ApplicationVersion lifecycle declared in
- * `lib/Settings/openbuilt_register.json` (openbuilt#10 task 5.2).
+ * `lib/Settings/openbuild_register.json` (openbuild#10 task 5.2).
  *
  * Per ADR-031 (schema-declarative business logic), the
  * `applicationVersion` schema carries an `x-openregister-lifecycle`
@@ -15,10 +15,10 @@
  *   - the three transitions are publish (draft→published),
  *     archive (published→archived), reopen (archived→draft)
  *   - the publish transition declares an `upsert_relation` action
- *     targeting `openbuilt/built-app-route` (BuiltAppRoute upkeep)
+ *     targeting `openbuild/built-app-route` (BuiltAppRoute upkeep)
  *
  * A real end-to-end transition test requires booted Nextcloud +
- * OpenRegister with a Postgres / MySQL backend (see openbuilt#10
+ * OpenRegister with a Postgres / MySQL backend (see openbuild#10
  * task 5.2 note "Requires container-bound NC bootstrap"). That
  * integration scope is tracked separately; this test guards the
  * declarative contract that anchors it.
@@ -27,7 +27,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit
+ * @package  OCA\OpenBuild\Tests\Unit
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -40,12 +40,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit;
+namespace OCA\OpenBuild\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 
 /**
- * Tests the declarative lifecycle of ApplicationVersion (openbuilt#10).
+ * Tests the declarative lifecycle of ApplicationVersion (openbuild#10).
  */
 class ApplicationVersionLifecycleSchemaTest extends TestCase
 {
@@ -64,7 +64,7 @@ class ApplicationVersionLifecycleSchemaTest extends TestCase
     private function registerSeed(): array
     {
         if (self::$registerSeed === null) {
-            $path = __DIR__.'/../../lib/Settings/openbuilt_register.json';
+            $path = __DIR__.'/../../lib/Settings/openbuild_register.json';
             self::assertFileExists($path, 'register seed file must be present');
             $raw     = file_get_contents($path);
             $decoded = json_decode($raw, true);
@@ -194,7 +194,7 @@ class ApplicationVersionLifecycleSchemaTest extends TestCase
         self::assertArrayHasKey('upsert_relation', $transition['on_transition']);
 
         $upsert = $transition['on_transition']['upsert_relation'];
-        self::assertSame('openbuilt/built-app-route', $upsert['schema'] ?? null);
+        self::assertSame('openbuild/built-app-route', $upsert['schema'] ?? null);
         // The slug-keyed match ensures the route survives republishes
         // (one row per Application slug).
         self::assertArrayHasKey('match', $upsert);

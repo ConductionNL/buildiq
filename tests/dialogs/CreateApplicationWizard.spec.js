@@ -4,7 +4,7 @@
  *
  * Vitest unit tests for src/dialogs/CreateApplicationWizard.vue (shell).
  *
- * Covers spec openbuilt-app-creation-wizard task 6.1:
+ * Covers spec openbuild-app-creation-wizard task 6.1:
  *   - shell renders step 1 on open
  *   - Next is disabled until step 1 is valid
  *   - navigation: 1→2, 2→4 (non-custom skips 3), 4→Back→2 (non-custom)
@@ -356,10 +356,10 @@ describe('CreateApplicationWizard.vue (shell) — spec task 6.1', () => {
 	it('orphanedResources details shown when list is non-empty', async () => {
 		const wrapper = mountWizard()
 		wrapper.vm.errorMessage = 'Rollback partial'
-		wrapper.vm.orphanedResources = ['openbuilt-my-app-development']
+		wrapper.vm.orphanedResources = ['openbuild-my-app-development']
 		await wrapper.vm.$nextTick()
 		expect(wrapper.find('.wizard__error-banner details').exists()).toBe(true)
-		expect(wrapper.find('.wizard__error-banner details').text()).toContain('openbuilt-my-app-development')
+		expect(wrapper.find('.wizard__error-banner details').text()).toContain('openbuild-my-app-development')
 	})
 
 	// -------------------------------------------------------------------------

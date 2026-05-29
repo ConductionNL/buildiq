@@ -1,5 +1,5 @@
 /**
- * OpenBuilt v2 component registry (ADR-036).
+ * OpenBuild v2 component registry (ADR-036).
  *
  * Kind-tagged map passed as the `registry` prop to CnAppRoot. CnPageRenderer
  * resolves every manifest-referenced component name (type:"custom" pages,
@@ -50,7 +50,7 @@ import ApplicationIconTab from './components/tabs/ApplicationIconTab.vue'
 // ── Virtual apps — actions components ────────────────────────────────────────
 
 // VirtualApps index actions bar — "Add application" button that opens the
-// four-step CreateApplicationWizard (openbuilt-app-creation-wizard).
+// four-step CreateApplicationWizard (openbuild-app-creation-wizard).
 import VirtualAppsActions from './components/VirtualAppsActions.vue'
 
 // VirtualAppDetail actions bar — Publish (OR lifecycle transition), Manage
@@ -60,7 +60,7 @@ import ApplicationDetailActions from './components/ApplicationDetailActions.vue'
 
 // ── Virtual apps — detail header ──────────────────────────────────────────────
 
-// VirtualAppDetail headerComponent (openbuilt-app-detail-overview
+// VirtualAppDetail headerComponent (openbuild-app-detail-overview
 // REQ-OBADO-001 / REQ-OBADO-011) — purpose-built maintainer dashboard
 // replacing the generic main-area data widget. Owns hero strip + version pill
 // tabs + window toggle + KPI grid + activity chart + structural widgets.

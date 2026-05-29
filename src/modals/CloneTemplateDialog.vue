@@ -2,31 +2,31 @@
 <template>
 	<NcModal v-if="open" size="normal" @close="onClose">
 		<div class="clone-dialog">
-			<h2>{{ t('openbuilt', 'Use this template') }}</h2>
+			<h2>{{ t('openbuild', 'Use this template') }}</h2>
 			<p v-if="template" class="clone-dialog__summary">
-				{{ t('openbuilt', 'Create a new application from') }}
+				{{ t('openbuild', 'Create a new application from') }}
 				<strong>{{ resolvedTitle }}</strong>.
-				{{ t('openbuilt', 'You can edit everything after cloning.') }}
+				{{ t('openbuild', 'You can edit everything after cloning.') }}
 			</p>
 			<NcTextField
 				:value="localName"
-				:label="t('openbuilt', 'Application name')"
-				:placeholder="t('openbuilt', 'My permits')"
+				:label="t('openbuild', 'Application name')"
+				:placeholder="t('openbuild', 'My permits')"
 				@update:value="localName = $event" />
 			<NcTextField
 				:value="localSlug"
-				:label="t('openbuilt', 'Slug (kebab-case, max 32 chars)')"
-				:placeholder="t('openbuilt', 'my-permits')"
+				:label="t('openbuild', 'Slug (kebab-case, max 32 chars)')"
+				:placeholder="t('openbuild', 'my-permits')"
 				@update:value="localSlug = $event" />
 			<p v-if="error" class="clone-dialog__error" role="alert">
 				{{ error }}
 			</p>
 			<div class="clone-dialog__actions">
 				<NcButton @click="onClose">
-					{{ t('openbuilt', 'Cancel') }}
+					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
 				<NcButton type="primary" :disabled="!canSubmit || submitting" @click="submit">
-					{{ submitting ? t('openbuilt', 'Cloning…') : t('openbuilt', 'Clone template') }}
+					{{ submitting ? t('openbuild', 'Cloning…') : t('openbuild', 'Clone template') }}
 				</NcButton>
 			</div>
 		</div>
@@ -60,7 +60,7 @@ export default {
 		 */
 		resolvedTitle() {
 			if (!this.template) return ''
-			return t('openbuilt', this.template.title || this.template.slug)
+			return t('openbuild', this.template.title || this.template.slug)
 		},
 		/**
 		 * Observed behaviour of `canSubmit` (retrofit annotation).
@@ -105,7 +105,7 @@ export default {
 		 */
 		async submit() {
 			if (!this.canSubmit) {
-				this.error = t('openbuilt', 'Provide a name and a kebab-case slug (max 32 chars).')
+				this.error = t('openbuild', 'Provide a name and a kebab-case slug (max 32 chars).')
 				return
 			}
 			this.submitting = true
@@ -113,7 +113,7 @@ export default {
 			try {
 				await this.$emit('submit', { name: this.localName.trim(), slug: this.localSlug.trim() })
 			} catch (e) {
-				this.error = e?.message || t('openbuilt', 'Clone failed.')
+				this.error = e?.message || t('openbuild', 'Clone failed.')
 				this.submitting = false
 			}
 		},

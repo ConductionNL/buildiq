@@ -4,7 +4,7 @@
  *
  * Vitest unit tests for src/utils/slugPattern.js.
  *
- * Covers spec openbuilt-app-creation-wizard task 5.1:
+ * Covers spec openbuild-app-creation-wizard task 5.1:
  *   - SLUG_PATTERN is the expected constant string
  *   - toKebabCase handles spaces, uppercase, accents, special chars
  *   - validateSlug: happy path, leading underscore, invalid chars, too short
@@ -100,7 +100,7 @@ describe('validateSlug', () => {
 	it('returns valid:false for leading underscore', () => {
 		const result = validateSlug('_internal')
 		expect(result.valid).toBe(false)
-		expect(result.message).toContain('reserved for openbuilt system use')
+		expect(result.message).toContain('reserved for openbuild system use')
 	})
 
 	it('returns valid:false for invalid characters', () => {

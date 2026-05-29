@@ -29,7 +29,7 @@ else.
 
 #### Scenario: No snapshot listener subscribed
 
-- **WHEN** the OpenBuilt app boots
+- **WHEN** the OpenBuild app boots
 - **THEN** no `ApplicationVersionSnapshotListener` (or successor) is registered as
   an event listener for `ObjectLifecycleTransitionedEvent`
 
@@ -59,7 +59,7 @@ the restored `manifest` differs from the immediately-prior saved state.
 ### Requirement: REQ-OBV-005 Diff endpoint returns two manifest blobs in one call
 
 The system SHALL expose
-`GET /index.php/apps/openbuilt/api/applications/{slug}/versions/diff?from={fromRef}&to={toRef}`
+`GET /index.php/apps/openbuild/api/applications/{slug}/versions/diff?from={fromRef}&to={toRef}`
 
 The diff endpoint changes shape under the versioned model: diffing two
 `ApplicationVersion` rows is the canonical case; comparing two historical states
@@ -126,7 +126,7 @@ on the `ApplicationVersion` row itself. Retention policy is therefore inherited 
 OR's object-history retention (which currently has no cap either), not from a
 spec-local requirement.
 
-**Migration**: No application-level retention logic to remove. OpenBuilt callers
+**Migration**: No application-level retention logic to remove. OpenBuild callers
 that previously enumerated `ApplicationVersion` rows for history MUST switch to
 querying OR's object-history API on a single `ApplicationVersion` row instead.
 
@@ -140,6 +140,6 @@ versioned-model ApplicationVersion schema declared in
 
 **Migration**: The legacy snapshot rows do not exist under the new model — there
 is no row-shape conversion to perform. The new schema is declared from scratch in
-`lib/Settings/openbuilt_register.json` as part of the green-field migration; the
-capability boundary moves from `openbuilt-version-snapshots` to
+`lib/Settings/openbuild_register.json` as part of the green-field migration; the
+capability boundary moves from `openbuild-version-snapshots` to
 `application-versions`.

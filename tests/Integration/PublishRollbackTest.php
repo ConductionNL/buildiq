@@ -3,7 +3,7 @@
 /**
  * Integration test for the full publish → rollback → republish cycle.
  *
- * Spec #6 openbuilt-versioning. Walks an Application object through:
+ * Spec #6 openbuild-versioning. Walks an Application object through:
  *   1. draft → published (asserts ApplicationVersion row created, BuiltAppRoute
  *      created, currentVersion set on the Application)
  *   2. rollback to v1.0.0 (asserts a NEW ApplicationVersion row is created
@@ -21,7 +21,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Integration
+ * @package  OCA\OpenBuild\Tests\Integration
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -34,9 +34,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Integration;
+namespace OCA\OpenBuild\Tests\Integration;
 
-use OCA\OpenBuilt\Listener\ApplicationVersionSnapshotListener;
+use OCA\OpenBuild\Listener\ApplicationVersionSnapshotListener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Service\ObjectService;
@@ -229,7 +229,7 @@ class PublishRollbackTest extends TestCase
                 'manifest'       => $manifestV1,
                 'currentVersion' => 'snap-bootstrap',
             ],
-            register: 'openbuilt',
+            register: 'openbuild',
             schema: 'application'
         );
         $appUuid = $appEntity->jsonSerialize()['@self']['id'];
@@ -239,7 +239,7 @@ class PublishRollbackTest extends TestCase
                 'slug'            => 'hello-world',
                 'applicationUuid' => $appUuid,
             ],
-            register: 'openbuilt',
+            register: 'openbuild',
             schema: 'built-app-route'
         );
 
@@ -252,7 +252,7 @@ class PublishRollbackTest extends TestCase
                 'publishedAt'     => '2026-05-01T10:00:00Z',
                 'publishedBy'     => 'system',
             ],
-            register: 'openbuilt',
+            register: 'openbuild',
             schema: 'application-version'
         );
 

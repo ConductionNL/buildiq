@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for VersionPromotionController (spec openbuilt-version-promotion).
+ * Unit tests for VersionPromotionController (spec openbuild-version-promotion).
  *
  * Exercises the endpoint contract: 200/422/400/409/403/500 mapping and the
  * IDOR-safe parent-uuid back-reference check (spec REQ-OBVP-007).
@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Controller
+ * @package  OCA\OpenBuild\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,15 +23,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Controller;
+namespace OCA\OpenBuild\Tests\Unit\Controller;
 
-use OCA\OpenBuilt\Controller\VersionPromotionController;
-use OCA\OpenBuilt\Exception\InvalidStrategyException;
-use OCA\OpenBuilt\Service\PermissionResolver;
-use OCA\OpenBuilt\Exception\NoPromoteTargetException;
-use OCA\OpenBuilt\Exception\PromotionFailedException;
-use OCA\OpenBuilt\Exception\VersionLockedException;
-use OCA\OpenBuilt\Service\VersionPromotionService;
+use OCA\OpenBuild\Controller\VersionPromotionController;
+use OCA\OpenBuild\Exception\InvalidStrategyException;
+use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\OpenBuild\Exception\NoPromoteTargetException;
+use OCA\OpenBuild\Exception\PromotionFailedException;
+use OCA\OpenBuild\Exception\VersionLockedException;
+use OCA\OpenBuild\Service\VersionPromotionService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;

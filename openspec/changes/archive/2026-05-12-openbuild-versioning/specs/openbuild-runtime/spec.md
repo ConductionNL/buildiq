@@ -33,7 +33,7 @@ SHALL be disabled while the lifecycle call is in flight.
 
 ### Requirement: REQ-OBR-007 Draft-vs-published indicator surfaces lifecycle state
 
-The OpenBuilt shell SHALL surface the Application's current
+The OpenBuild shell SHALL surface the Application's current
 `status` (and a marker for "has unpublished draft changes") in two
 places: (1) each row of the Application list view carries a small
 status badge (`draft` / `published` / `archived`); (2) the editor
@@ -62,7 +62,7 @@ hardcoded colour literals — per ADR-010).
 
 ### Requirement: REQ-OBR-008 VersionHistory.vue lists snapshots for an Application
 
-The OpenBuilt shell SHALL render a `VersionHistory.vue` panel
+The OpenBuild shell SHALL render a `VersionHistory.vue` panel
 inside `ApplicationEditor.vue` (collapsible / a sibling tab,
 implementer's choice) listing every `ApplicationVersion` row for
 the current Application in reverse-chronological order (newest
@@ -119,7 +119,7 @@ its own SFC under `src/modals/` per Hydra modal-isolation gate
 
 ### Requirement: REQ-OBR-010 ManifestDiff.vue renders a side-by-side diff
 
-The OpenBuilt shell SHALL ship a `ManifestDiff.vue` component
+The OpenBuild shell SHALL ship a `ManifestDiff.vue` component
 rendering a client-side side-by-side diff between two manifest
 blobs. The component SHALL: (a) accept `from` and `to`
 `ApplicationVersion` UUIDs (or the literal `draft` for either) as

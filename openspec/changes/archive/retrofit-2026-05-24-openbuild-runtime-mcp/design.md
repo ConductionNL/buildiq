@@ -1,18 +1,18 @@
-# Design — Retrofit openbuilt-runtime MCP surface
+# Design — Retrofit openbuild-runtime MCP surface
 
 > Retrofit change. Tasks describe retroactive annotation, not new implementation
 > work. The code already exists at HEAD.
 
 ## Context
 
-`lib/Mcp/OpenBuiltToolProvider.php` (1225 lines) was shipped under the
+`lib/Mcp/OpenBuildToolProvider.php` (1225 lines) was shipped under the
 AI-companion fleet rollout (see project memory note
 `project_ai-companion-fleet-rollout` — 2026-05-12). It implements
 `OCA\OpenRegister\Mcp\IMcpToolProvider`, the per-app extension point
 defined by the orchestrator in OpenRegister #1466 and ADR-019
 (Pluggable Integration Registry). The 16 methods on the provider were
-swept into Bucket 2a (`openbuilt-runtime`) by the 2026-05-24 coverage
-scan because the `openbuilt-runtime` spec already covers the
+swept into Bucket 2a (`openbuild-runtime`) by the 2026-05-24 coverage
+scan because the `openbuild-runtime` spec already covers the
 slug-keyed manifest endpoint + nested `CnAppRoot` mount but does not
 name the MCP surface as a deliverable of the same capability.
 
@@ -35,7 +35,7 @@ out would inflate the REQ count without adding observable behaviour.
   into the same runtime that REQ-OBR-001..013 already specify
   (manifest endpoints, version snapshots, RBAC, etc.). The methods
   read/write the same objects via OpenRegister, so they belong as
-  delta REQs on `openbuilt-runtime` rather than a new capability.
+  delta REQs on `openbuild-runtime` rather than a new capability.
 - **4 REQs, not 16.** Bias toward fewer REQs per the playbook. One
   observable behaviour per REQ. Helpers fold into the REQ they
   support.
@@ -54,7 +54,7 @@ out would inflate the REQ count without adding observable behaviour.
 ## Out of scope
 
 - Tightening `isValidSlug` against `SlugValidator` — separate PR.
-- Adding `openbuilt.deleteApp` / `openbuilt.archiveVersion` tools — not
+- Adding `openbuild.deleteApp` / `openbuild.archiveVersion` tools — not
   implemented today, not specified here.
 - Per-tool turn-budget / rate-limit semantics — orchestrator concern,
   not provider concern.

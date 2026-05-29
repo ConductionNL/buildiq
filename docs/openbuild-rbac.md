@@ -1,6 +1,6 @@
-# OpenBuilt RBAC — Per-Virtual-App Permissions
+# OpenBuild RBAC — Per-Virtual-App Permissions
 
-OpenBuilt's per-virtual-app role-based access control (RBAC) layers on
+OpenBuild's per-virtual-app role-based access control (RBAC) layers on
 top of OpenRegister's organisation-scoping (ADR-022). Within an
 organisation, three roles partition who can do what with each
 Application: `owner`, `editor`, `viewer`.
@@ -44,7 +44,7 @@ so the Application is never orphaned (REQ-OBRBAC-001).
 
 ## Manifest endpoint enforcement
 
-`GET /index.php/apps/openbuilt/api/applications/{slug}/manifest`
+`GET /index.php/apps/openbuild/api/applications/{slug}/manifest`
 deny-by-defaults to `403 Forbidden` when the caller has no group in
 the union of the three buckets (REQ-OBR-006, REQ-OBRBAC-002). The
 check runs before the manifest payload is emitted — the 403 body
@@ -53,7 +53,7 @@ never leaks Application metadata.
 Error envelope:
 
 ```json
-{ "error": "forbidden", "code": "openbuilt.rbac.no_role" }
+{ "error": "forbidden", "code": "openbuild.rbac.no_role" }
 ```
 
 ## Admin bypass (audited)
@@ -73,17 +73,17 @@ The bypass:
 
 - Runs **only** in `ApplicationsController::getManifest`. The frontend
   list filter does **not** include admins automatically.
-- Is logged at `info` level on the OpenBuilt PSR logger (where OR's
+- Is logged at `info` level on the OpenBuild PSR logger (where OR's
   audit-trail will pick it up via Nextcloud's logging pipeline).
 - Is narrow by design — sustained bypass volume from one admin is a
   signal to grant them an explicit role on the affected Applications.
 
 ## List filter
 
-The OpenBuilt shell's Application list (`ApplicationEditor.vue`)
+The OpenBuild shell's Application list (`ApplicationEditor.vue`)
 filters out Applications on which the caller has no role
 (REQ-OBR-007). The filter runs client-side using
-`loadState('openbuilt', 'currentUserGroups')` (no DOM data-attribute
+`loadState('openbuild', 'currentUserGroups')` (no DOM data-attribute
 reads — ADR-004 hard rule `gate-initial-state`).
 
 A future enhancement (DQ-1, see below) will move the filter to
@@ -105,15 +105,15 @@ array. No dedicated endpoint, no `TransferOwnershipService`. OR's
 per-object audit trail records the before / after values
 automatically.
 
-## openbuilt.use navigation gate
+## openbuild.use navigation gate
 
-Nextcloud's per-app group restriction (Apps → OpenBuilt → Restrict to
-groups) gates visibility of the OpenBuilt top-bar entry. Default is
+Nextcloud's per-app group restriction (Apps → OpenBuild → Restrict to
+groups) gates visibility of the OpenBuild top-bar entry. Default is
 no restriction (all authenticated users see it); admins can narrow it
 via the standard Apps panel or OCC:
 
 ```bash
-occ app:enable openbuilt --groups digital-team
+occ app:enable openbuild --groups digital-team
 ```
 
 This is coarse on/off visibility; the load-bearing security boundary
@@ -125,7 +125,7 @@ is the per-Application `permissions` enforced server-side.
 
 If a Nextcloud admin renames a group, every Application whose
 `permissions` array references the old `gid` loses or gains rows
-without a permission-history audit event scoped to OpenBuilt. We do
+without a permission-history audit event scoped to OpenBuild. We do
 not (currently) ship a group-rename listener. If a rename breaks
 access:
 
@@ -143,7 +143,7 @@ the `admin` group. Operators MUST re-grant access for non-admin teams
 via the Permissions modal:
 
 1. Sign in as an admin user.
-2. Navigate to OpenBuilt → Applications.
+2. Navigate to OpenBuild → Applications.
 3. For each Application that should be broadly accessible, open the
    Permissions modal and add the relevant Nextcloud groups to
    `owners`, `editors`, or `viewers`.

@@ -115,7 +115,7 @@
       payload. The dialog SHALL NOT call the backend endpoint itself.
 - [x] 4.8 i18n strings (per nl/en minimum — memory rule `i18n-requirement`): all
       visible strings (radio labels, descriptions, button labels, destructive
-      confirmation hint) routed via `t('openbuilt', '…')`. Add the new keys to
+      confirmation hint) routed via `t('openbuild', '…')`. Add the new keys to
       `l10n/en.json` and `l10n/nl.json`.
 - [x] 4.9 Component unit test
       `src/dialogs/__tests__/PromoteVersionDialog.spec.js` covering:
@@ -225,8 +225,8 @@
       `VersionPromotionControllerTest::testReturns500OnPromotionFailed` case.
       Live Newman scenario is env-deferred per 8.5 note.)
 - [x] 8.8 Run the collection in CI alongside the existing integration suite:
-      `npx newman run tests/integration/openbuilt-version-promotion.postman_collection.json --bail`.
-      (Collection ships at `tests/integration/openbuilt-version-promotion.postman_collection.json`
+      `npx newman run tests/integration/openbuild-version-promotion.postman_collection.json --bail`.
+      (Collection ships at `tests/integration/openbuild-version-promotion.postman_collection.json`
       with 8.1–8.6 + 8.7 stubs; runner is wired into `npm run test:newman` via the
       multi-collection orchestrator. Live "--bail" exit-code-zero gating defers
       to the OR-side fixup of the `appendOnly` schema attribute.)
@@ -294,11 +294,11 @@
       destructive-confirmation input both have proper labels), and
       `hydra-gate-route-auth` (the new route's controller method carries
       `#[NoAdminRequired]`).
-- [x] 10.5 Run `openspec validate openbuilt-version-promotion --strict`; confirm
+- [x] 10.5 Run `openspec validate openbuild-version-promotion --strict`; confirm
       clean.
 - [x] 10.6 Open PR against `development` (memory rule
       `feature-branches-from-dev`); reference ADR-002, the foundation change
-      `openbuilt-versioning-model`, and the three deferred sibling specs
-      (`openbuilt-app-detail-overview`, `openbuilt-version-routing`,
-      `openbuilt-app-creation-wizard`) in the description so reviewers can trace
+      `openbuild-versioning-model`, and the three deferred sibling specs
+      (`openbuild-app-detail-overview`, `openbuild-version-routing`,
+      `openbuild-app-creation-wizard`) in the description so reviewers can trace
       the chain delivery wave.

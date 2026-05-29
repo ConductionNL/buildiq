@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuilt Contributors
+ * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest spec for IndexPageEditor (REQ-OBPD-004).
@@ -20,8 +20,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 
 const fetchRegisters = vi.fn(async () => [
-	{ slug: 'openbuilt-hello-world', title: 'Hello World' },
-	{ slug: 'openbuilt', title: 'OpenBuilt apps' },
+	{ slug: 'openbuild-hello-world', title: 'Hello World' },
+	{ slug: 'openbuild', title: 'OpenBuild apps' },
 ])
 const fetchSchemas = vi.fn(async () => [
 	{ slug: 'page', title: 'Page' },
@@ -37,7 +37,7 @@ vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
 		fetchRegisters,
 		fetchSchemas,
 		fetchSchemaProperties,
-		resolveAppRegister: () => 'openbuilt-hello-world',
+		resolveAppRegister: () => 'openbuild-hello-world',
 	}),
 }))
 
@@ -97,8 +97,8 @@ describe('IndexPageEditor', () => {
 		await wrapper.vm.$nextTick()
 		const options = wrapper.findAll('option')
 		const slugs = options.wrappers.map((w) => w.element.value)
-		expect(slugs).toContain('openbuilt-hello-world')
-		expect(slugs).toContain('openbuilt')
+		expect(slugs).toContain('openbuild-hello-world')
+		expect(slugs).toContain('openbuild')
 	})
 
 	it('schema picker is disabled until a register is selected', () => {
@@ -109,20 +109,20 @@ describe('IndexPageEditor', () => {
 	})
 
 	it('schema picker is enabled when a register is set', async () => {
-		const wrapper = mountEditor({ register: 'openbuilt-hello-world' })
+		const wrapper = mountEditor({ register: 'openbuild-hello-world' })
 		await wrapper.vm.$nextTick()
 		const selects = wrapper.findAll('select')
 		expect(selects.at(1).element.disabled).toBe(false)
 	})
 
 	it('picking a register clears the previously-set schema', async () => {
-		const wrapper = mountEditor({ register: 'openbuilt-hello-world', schema: 'page' })
-		wrapper.vm.update('register', 'openbuilt')
+		const wrapper = mountEditor({ register: 'openbuild-hello-world', schema: 'page' })
+		wrapper.vm.update('register', 'openbuild')
 		await wrapper.vm.$nextTick()
 		const emitted = wrapper.emitted('update:config')
 		expect(emitted).toBeTruthy()
 		const next = emitted[0][0]
-		expect(next.register).toBe('openbuilt')
+		expect(next.register).toBe('openbuild')
 		expect(next).not.toHaveProperty('schema')
 	})
 
@@ -177,9 +177,9 @@ describe('IndexPageEditor', () => {
 
 	it('updates `cardComponent` via the optional input', async () => {
 		const wrapper = mountEditor({ register: 'r' })
-		wrapper.vm.update('cardComponent', 'OpenBuiltDefaultCard')
+		wrapper.vm.update('cardComponent', 'OpenBuildDefaultCard')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
-		expect(next.cardComponent).toBe('OpenBuiltDefaultCard')
+		expect(next.cardComponent).toBe('OpenBuildDefaultCard')
 	})
 })

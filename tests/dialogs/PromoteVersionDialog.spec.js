@@ -67,7 +67,7 @@ const SOURCE_VERSION = {
 	uuid: 'src-uuid-001',
 	name: 'Development',
 	slug: 'development',
-	register: 'openbuilt-hello-world-development',
+	register: 'openbuild-hello-world-development',
 }
 
 const TARGET_PRODUCTION = {
@@ -75,7 +75,7 @@ const TARGET_PRODUCTION = {
 	uuid: 'prod-uuid-001',
 	name: 'Production',
 	slug: 'production',
-	register: 'openbuilt-hello-world-production',
+	register: 'openbuild-hello-world-production',
 }
 
 const TARGET_MIDCHAIN = {
@@ -83,7 +83,7 @@ const TARGET_MIDCHAIN = {
 	uuid: 'staging-uuid-001',
 	name: 'Staging',
 	slug: 'staging',
-	register: 'openbuilt-hello-world-staging',
+	register: 'openbuild-hello-world-staging',
 }
 
 /**

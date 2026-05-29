@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenBuilt ManifestResolverService
+ * OpenBuild ManifestResolverService
  *
  * Encapsulates the two-step slug resolution (Application by slug →
  * ApplicationVersion by application + slug) and the RBAC gate for
- * version-aware manifest endpoint access (spec `openbuilt-version-routing`
+ * version-aware manifest endpoint access (spec `openbuild-version-routing`
  * REQ-OBVR-002 / REQ-OBVR-003).
  *
  * Design decisions:
@@ -25,7 +25,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuilt\Service
+ * @package  OCA\OpenBuild\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -35,16 +35,16 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-70
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-71
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Service;
+namespace OCA\OpenBuild\Service;
 
-use OCA\OpenBuilt\Service\ApplicationVersionService;
-use OCA\OpenBuilt\Service\PermissionResolver;
+use OCA\OpenBuild\Service\ApplicationVersionService;
+use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -90,7 +90,7 @@ class ManifestResolverService
      * Step 4  : return the resolved ApplicationVersion's `manifest` payload.
      *
      * NOTE on `_version` parameter name: the underscore-prefix form (`_version`) is
-     * OpenBuilt's system-reserved namespace marker for query parameters. This prevents
+     * OpenBuild's system-reserved namespace marker for query parameters. This prevents
      * collision with user-defined `?version=` params that citizen developers may add
      * to their virtual apps' routes. Callers of this service pass the string value
      * of `_version`; the underscore prefix is stripped at the HTTP layer.
@@ -101,8 +101,8 @@ class ManifestResolverService
      *
      * @return array<string, mixed>|null The manifest payload, or null → caller maps to 404.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-70
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-71
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
      */
     public function resolve(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array
     {
@@ -174,7 +174,7 @@ class ManifestResolverService
      *
      * @return bool True when access is denied; false when access is allowed.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-71
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
      */
     private function checkNonProductionAccess(
         array $application,
@@ -218,28 +218,28 @@ class ManifestResolverService
     /**
      * Look up the Application object by slug via OR's ObjectService.
      *
-     * Uses searchObjects with register=openbuilt, schema=application, slug={appSlug}.
+     * Uses searchObjects with register=openbuild, schema=application, slug={appSlug}.
      * Returns the first normalised result or null on miss.
      *
      * @param string $appSlug The application slug.
      *
      * @return array<string, mixed>|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-70
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
      */
     private function findApplicationBySlug(string $appSlug): ?array
     {
         try {
             // Spec decision (L2): _multitenancy: false is used throughout
             // ManifestResolverService so that all register/schema/object lookups
-            // operate in the global (non-tenant-isolated) scope.  OpenBuilt ships
+            // operate in the global (non-tenant-isolated) scope.  OpenBuild ships
             // virtual apps as a shared-instance service — each Application is owned
             // and accessed by specific NC users, but the Application objects themselves
             // are not partitioned by tenant/organisation.  Cross-tenant slug
             // uniqueness depends on this flag being consistently false across every
             // lookup in this service.  Changing it to true would silo Applications
             // per org and break the shared-registry model.
-            $registerId = $this->registerMapper->find('openbuilt', _multitenancy: false)->getId();
+            $registerId = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
             $schemaId   = $this->schemaMapper->find('application', _multitenancy: false)->getId();
 
             $results = $this->objectService->searchObjects(
@@ -279,7 +279,7 @@ class ManifestResolverService
      *
      * @return array<string, mixed>|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-70
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
      */
     private function resolveProductionManifest(array $application, string $appSlug): ?array
     {
@@ -332,7 +332,7 @@ class ManifestResolverService
      *
      * @return array<string, mixed>|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-70
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
      */
     private function findVersionBySlug(array $application, string $versionSlug): ?array
     {
@@ -342,7 +342,7 @@ class ManifestResolverService
                 return null;
             }
 
-            $registerId = $this->registerMapper->find('openbuilt', _multitenancy: false)->getId();
+            $registerId = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
             $schemaId   = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_VERSION_SCHEMA, _multitenancy: false)->getId();
 
             // Two-step: filter ApplicationVersions by parent application UUID + slug.
@@ -397,7 +397,7 @@ class ManifestResolverService
     private function findVersionBySlugFallback(string $applicationUuid, string $versionSlug): ?array
     {
         try {
-            $registerId = $this->registerMapper->find('openbuilt', _multitenancy: false)->getId();
+            $registerId = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
             $schemaId   = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_VERSION_SCHEMA, _multitenancy: false)->getId();
 
             $allVersions = $this->objectService->searchObjects(
@@ -441,7 +441,7 @@ class ManifestResolverService
         try {
             $version = $this->objectService->find(
                 id: $uuid,
-                register: 'openbuilt',
+                register: 'openbuild',
                 schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
             );
 
@@ -520,7 +520,7 @@ class ManifestResolverService
      *
      * @return bool True when the caller is an editor or owner; false otherwise.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-71
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
      */
     private function isCallerAuthorised(array $application, ?IUser $caller): bool
     {

@@ -6,6 +6,6 @@
   "link": {
     "type": "generated-index",
     "title": "User guide",
-    "description": "Workflows for citizen developers building an app with OpenBuilt — starting from a template, designing schemas and pages, connecting data, previewing and running the app, snapshotting versions, and exporting."
+    "description": "Workflows for citizen developers building an app with OpenBuild — starting from a template, designing schemas and pages, connecting data, previewing and running the app, snapshotting versions, and exporting."
   }
 }

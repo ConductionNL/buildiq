@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Listener
+ * @package  OCA\OpenBuild\Tests\Unit\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,10 +23,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Listener;
+namespace OCA\OpenBuild\Tests\Unit\Listener;
 
-use OCA\OpenBuilt\Listener\ProductionVersionGuardListener;
-use OCA\OpenBuilt\Service\ApplicationVersionService;
+use OCA\OpenBuild\Listener\ProductionVersionGuardListener;
+use OCA\OpenBuild\Service\ApplicationVersionService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use PHPUnit\Framework\MockObject\MockObject;

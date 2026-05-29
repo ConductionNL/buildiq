@@ -3,7 +3,7 @@
 Describes observed behaviour of the exporter UI — the `ExportDialog` and the
 `ExportJobsList` view — as 2 new REQs.
 
-Code already exists (it implements the `openbuilt-exporter` backend
+Code already exists (it implements the `openbuild-exporter` backend
 capability). This change retroactively specifies the export-target/visibility/
 license selection, submission, and job polling behaviour so gate-16
 spec-coverage can trace each method.

@@ -1,6 +1,6 @@
 {
     "translations": {
-        "OpenBuilt settings": "OpenBuilt instellingen",
+        "OpenBuild settings": "OpenBuild instellingen",
         "Configure the app settings": "Configureer de app-instellingen",
         "Configuration": "Configuratie",
         "Completed": "Afgerond",
@@ -31,7 +31,7 @@
         "This app needs OpenRegister to store and manage data. Please install OpenRegister from the app store to get started.": "Deze app heeft OpenRegister nodig om gegevens op te slaan en te beheren. Installeer OpenRegister via de app store om te beginnen.",
         "User settings will appear here in a future update.": "Gebruikersinstellingen verschijnen hier in een toekomstige update.",
         "Version Information": "Versie-informatie",
-        "Information about the current OpenBuilt installation": "Informatie over de huidige OpenBuilt-installatie",
+        "Information about the current OpenBuild installation": "Informatie over de huidige OpenBuild-installatie",
         "Support": "Ondersteuning",
         "For support, contact us at": "Voor ondersteuning, neem contact op via",
 
@@ -39,7 +39,7 @@
         "No virtual apps yet — seed `hello-world` should appear after install.": "Nog geen virtuele apps — de `hello-world`-seed zou na installatie zichtbaar moeten zijn.",
         "Status": "Status",
         "Version": "Versie",
-        "Integrator-only editor: edit the raw JSON manifest below. The visual editor lives in a follow-on release (openbuilt-page-editor).": "Editor voor integrators: bewerk hieronder het ruwe JSON-manifest. De visuele editor komt in een vervolg-release (openbuilt-page-editor).",
+        "Integrator-only editor: edit the raw JSON manifest below. The visual editor lives in a follow-on release (openbuild-page-editor).": "Editor voor integrators: bewerk hieronder het ruwe JSON-manifest. De visuele editor komt in een vervolg-release (openbuild-page-editor).",
         "Paste or edit the JSON manifest here. See @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json for the canonical schema.": "Plak of bewerk hier het JSON-manifest. Zie @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json voor het canonieke schema.",
         "Invalid manifest": "Ongeldig manifest",
         "Open virtual app": "Open virtuele app",

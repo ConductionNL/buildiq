@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuilt ExportsController unit tests
+ * OpenBuild ExportsController unit tests
  *
  * Covers the HTTP surface — submit() validation, RBAC fallback,
  * 202 queue semantics, GitHub-field validation, and download() expiry +
@@ -9,7 +9,7 @@
  * the controller is exercised in isolation.
  *
  * @category Test
- * @package  OCA\OpenBuilt\Tests\Unit\Controller
+ * @package  OCA\OpenBuild\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,10 +25,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Tests\Unit\Controller;
+namespace OCA\OpenBuild\Tests\Unit\Controller;
 
-use OCA\OpenBuilt\Controller\ExportsController;
-use OCA\OpenBuilt\Service\ExportJobService;
+use OCA\OpenBuild\Controller\ExportsController;
+use OCA\OpenBuild\Service\ExportJobService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -323,7 +323,7 @@ final class ExportsControllerTest extends TestCase
     {
         $this->stubAuthorisedFallback();
 
-        $tmpZip = sys_get_temp_dir().'/openbuilt-controller-test-'.uniqid().'.zip';
+        $tmpZip = sys_get_temp_dir().'/openbuild-controller-test-'.uniqid().'.zip';
         file_put_contents($tmpZip, 'PK fake zip bytes');
 
         try {
@@ -351,7 +351,7 @@ final class ExportsControllerTest extends TestCase
     {
         $this->stubAuthorisedFallback();
 
-        $tmpZip = sys_get_temp_dir().'/openbuilt-filename-test.zip';
+        $tmpZip = sys_get_temp_dir().'/openbuild-filename-test.zip';
         file_put_contents($tmpZip, 'PK');
 
         try {
@@ -369,7 +369,7 @@ final class ExportsControllerTest extends TestCase
             $headers     = $headersProp->getValue($response);
             $disposition = $headers['Content-Disposition'] ?? '';
             self::assertStringContainsString(
-                'openbuilt-filename-test.zip',
+                'openbuild-filename-test.zip',
                 (string) $disposition,
                 'Content-Disposition must include the original filename'
             );

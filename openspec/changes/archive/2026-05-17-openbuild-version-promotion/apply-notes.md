@@ -1,6 +1,6 @@
-# Apply notes — openbuilt-version-promotion
+# Apply notes — openbuild-version-promotion
 
-Branch: `feature/openbuilt-version-promotion` (off `feature/openbuilt-nextcloud-nav`).
+Branch: `feature/openbuild-version-promotion` (off `feature/openbuild-nextcloud-nav`).
 
 ## OR locking API surface (Decision 5 / REQ-OBVP-006)
 
@@ -71,7 +71,7 @@ approach matches spec C's apply-side decision for `orphanedAt`.
 ## Newman / Postman integration test (task 8)
 
 **Deferred to the dev container.** The repository does not currently
-ship a Newman harness for openbuilt; spec C's apply also deferred its
+ship a Newman harness for openbuild; spec C's apply also deferred its
 integration suite. Tasks 8.1–8.8 will land alongside the next
 docker-side test pass (the existing `tests/integration/` directory
 does not yet exist). The unit suite covers every contract listed in
@@ -81,13 +81,13 @@ issue without changing the controller contract.
 
 ## Component-side unit test (task 4.9)
 
-**Deferred** — the JS test harness for openbuilt's `src/dialogs/` is
+**Deferred** — the JS test harness for openbuild's `src/dialogs/` is
 not part of this wave. The pure-function default-strategy rule lives
 in `src/dialogs/promoteVersionDefaults.js` and is small enough to be
 covered by a future Jest / Vitest pass; the PHP twin is already unit-
 tested. The Playwright destructive-confirmation gate test (task 5.1)
 is similarly deferred to the journeydoc capture spec that the parent
-chain (spec B `openbuilt-app-detail-overview`) will wire up.
+chain (spec B `openbuild-app-detail-overview`) will wire up.
 
 ## Route registration (task 3)
 

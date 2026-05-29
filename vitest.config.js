@@ -1,8 +1,8 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuilt Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Vitest configuration for OpenBuilt Vue 2.7 unit tests.
+ * Vitest configuration for OpenBuild Vue 2.7 unit tests.
  *
  * Tests live under `tests/components/**` and `tests/views/**` and run in
  * a jsdom environment so DOM assertions (`wrapper.find`, `wrapper.text`,
@@ -26,7 +26,7 @@ const path = require('path')
 const vue2 = require('@vitejs/plugin-vue2')
 
 const cssNoop = {
-	name: 'openbuilt-css-noop',
+	name: 'openbuild-css-noop',
 	enforce: 'pre',
 	resolveId(id) {
 		if (typeof id === 'string' && /\.css(\?.*)?$/.test(id)) {

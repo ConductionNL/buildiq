@@ -1,18 +1,18 @@
 <?php
 
 /**
- * OpenBuilt MCP Tool Provider
+ * OpenBuild MCP Tool Provider
  *
  * Per-app implementation of OCA\OpenRegister\Mcp\IMcpToolProvider. Exposes the
- * full OpenBuilt authoring surface to an LLM via MCP: list/read apps, create
+ * full OpenBuild authoring surface to an LLM via MCP: list/read apps, create
  * new apps, promote versions, and mutate a draft version's manifest (pages,
  * widgets, menu items) and per-version schemas.
  *
  * This class is a thin dispatcher: all tool logic lives in dedicated handler
- * classes under OCA\OpenBuilt\Mcp\Handler\.
+ * classes under OCA\OpenBuild\Mcp\Handler\.
  *
  * @category Service
- * @package  OCA\OpenBuilt\Mcp
+ * @package  OCA\OpenBuild\Mcp
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,14 +22,14 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-8
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-42
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-50
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuilt/tasks.md#task-59
- * @spec openspec/changes/retrofit-2026-05-24-openbuilt-runtime-mcp/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-05-24-openbuilt-runtime-mcp/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-24-openbuilt-runtime-mcp/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-05-24-openbuilt-runtime-mcp/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-42
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
+ * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-4
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -37,9 +37,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Mcp;
+namespace OCA\OpenBuild\Mcp;
 
-use OCA\OpenBuilt\Service\PermissionResolver;
+use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -47,26 +47,26 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * OpenBuilt MCP Tool Provider — thin dispatcher to per-tool handler classes.
+ * OpenBuild MCP Tool Provider — thin dispatcher to per-tool handler classes.
  *
  * Read tools:
- *   - openbuilt.listApps        → ListAppsHandler
- *   - openbuilt.getAppManifest  → GetAppManifestHandler
+ *   - openbuild.listApps        → ListAppsHandler
+ *   - openbuild.getAppManifest  → GetAppManifestHandler
  *
  * Write tools (lifecycle):
- *   - openbuilt.createApp       → CreateAppHandler
- *   - openbuilt.promoteVersion  → PromoteVersionHandler
+ *   - openbuild.createApp       → CreateAppHandler
+ *   - openbuild.promoteVersion  → PromoteVersionHandler
  *
  * Write tools (authoring against the draft version's manifest):
- *   - openbuilt.upsertSchema    → UpsertSchemaHandler
- *   - openbuilt.upsertPage      → UpsertPageHandler
- *   - openbuilt.addWidget       → AddWidgetHandler
- *   - openbuilt.upsertMenuItem  → UpsertMenuItemHandler
+ *   - openbuild.upsertSchema    → UpsertSchemaHandler
+ *   - openbuild.upsertPage      → UpsertPageHandler
+ *   - openbuild.addWidget       → AddWidgetHandler
+ *   - openbuild.upsertMenuItem  → UpsertMenuItemHandler
  *
  * Authoring tools default to the `development` version so a misfired tool
  * call cannot mutate production. To promote the change use promoteVersion.
  */
-class OpenBuiltToolProvider implements IMcpToolProvider
+class OpenBuildToolProvider implements IMcpToolProvider
 {
 
     /**
@@ -76,9 +76,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
      */
     private const TOOL_DESCRIPTORS = [
         [
-            'id'          => 'openbuilt.listApps',
+            'id'          => 'openbuild.listApps',
             'name'        => 'List virtual apps',
-            'description' => 'List the virtual apps built with OpenBuilt in your organisation.',
+            'description' => 'List the virtual apps built with OpenBuild in your organisation.',
             'inputSchema' => [
                 'type'       => 'object',
                 'properties' => [
@@ -89,7 +89,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             ],
         ],
         [
-            'id'          => 'openbuilt.getAppManifest',
+            'id'          => 'openbuild.getAppManifest',
             'name'        => 'Get virtual app manifest',
             'description' => 'Fetch the runtime manifest blob for one published virtual app by slug.',
             'inputSchema' => [
@@ -101,9 +101,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             ],
         ],
         [
-            'id'          => 'openbuilt.createApp',
+            'id'          => 'openbuild.createApp',
             'name'        => 'Create a new virtual app',
-            'description' => 'Create a new OpenBuilt virtual app with an initial draft ApplicationVersion.'
+            'description' => 'Create a new OpenBuild virtual app with an initial draft ApplicationVersion.'
                 .' Preset chooses the version chain: "single", "dev-prod" or "dev-staging-prod".',
             'inputSchema' => [
                 'type'       => 'object',
@@ -117,7 +117,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             ],
         ],
         [
-            'id'          => 'openbuilt.promoteVersion',
+            'id'          => 'openbuild.promoteVersion',
             'name'        => 'Promote a virtual app version',
             'description' => 'Promote a virtual app from one version (e.g. development) to the next (e.g. production).'
                 .' Strategy "empty-start" (default, safest) leaves the target empty.',
@@ -136,7 +136,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             ],
         ],
         [
-            'id'          => 'openbuilt.upsertSchema',
+            'id'          => 'openbuild.upsertSchema',
             'name'        => 'Create or update a schema in a virtual app',
             'description' => 'Create or update a JSON Schema in the given app version\'s per-version OR register.'
                 .' Slug is automatically namespaced with appSlug+versionSlug.'
@@ -157,7 +157,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             ],
         ],
         [
-            'id'          => 'openbuilt.upsertPage',
+            'id'          => 'openbuild.upsertPage',
             'name'        => 'Create or update a page in a virtual app',
             'description' => 'Create or update a page in the draft manifest.'
                 .' pageId is the unique key; if it exists it is replaced.'
@@ -179,7 +179,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             ],
         ],
         [
-            'id'          => 'openbuilt.addWidget',
+            'id'          => 'openbuild.addWidget',
             'name'        => 'Add a widget to a page',
             'description' => 'Append a widget to a page\'s config.widgets array in the draft manifest.'
                 .' widgetType is e.g. "stat-counter", "chart", "list". widgetConfig is widget-type-specific.'
@@ -197,7 +197,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
             ],
         ],
         [
-            'id'          => 'openbuilt.upsertMenuItem',
+            'id'          => 'openbuild.upsertMenuItem',
             'name'        => 'Create or update a menu item',
             'description' => 'Create or update a top-level menu item in the draft manifest.'
                 .' id is the unique key; if it exists it is replaced. route should match a page id.'
@@ -223,7 +223,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
      *
      * @param IUserSession       $userSession        User session used to resolve the current authenticated user.
      * @param IGroupManager      $groupManager       Group manager used for admin checks.
-     * @param ContainerInterface $container          DI container used to resolve OpenRegister and OpenBuilt services lazily.
+     * @param ContainerInterface $container          DI container used to resolve OpenRegister and OpenBuild services lazily.
      * @param LoggerInterface    $logger             PSR logger used for non-fatal warnings and error logging.
      * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (H1 fix).
      */
@@ -243,7 +243,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
      */
     public function getAppId(): string
     {
-        return 'openbuilt';
+        return 'openbuild';
 
     }//end getAppId()
 
@@ -261,7 +261,7 @@ class OpenBuiltToolProvider implements IMcpToolProvider
     /**
      * Dispatch an MCP tool invocation to the matching handler.
      *
-     * @param string               $toolId    Fully qualified tool id (e.g. "openbuilt.listApps").
+     * @param string               $toolId    Fully qualified tool id (e.g. "openbuild.listApps").
      * @param array<string, mixed> $arguments Raw tool arguments as supplied by the MCP client.
      *
      * @return array<string, mixed>
@@ -271,14 +271,14 @@ class OpenBuiltToolProvider implements IMcpToolProvider
         // Handler class names are referenced as strings to keep the coupling
         // count of this dispatcher class within the PHPMD threshold.
         $handlerMap = [
-            'openbuilt.listApps'       => 'OCA\OpenBuilt\Mcp\Handler\ListAppsHandler',
-            'openbuilt.getAppManifest' => 'OCA\OpenBuilt\Mcp\Handler\GetAppManifestHandler',
-            'openbuilt.createApp'      => 'OCA\OpenBuilt\Mcp\Handler\CreateAppHandler',
-            'openbuilt.promoteVersion' => 'OCA\OpenBuilt\Mcp\Handler\PromoteVersionHandler',
-            'openbuilt.upsertSchema'   => 'OCA\OpenBuilt\Mcp\Handler\UpsertSchemaHandler',
-            'openbuilt.upsertPage'     => 'OCA\OpenBuilt\Mcp\Handler\UpsertPageHandler',
-            'openbuilt.addWidget'      => 'OCA\OpenBuilt\Mcp\Handler\AddWidgetHandler',
-            'openbuilt.upsertMenuItem' => 'OCA\OpenBuilt\Mcp\Handler\UpsertMenuItemHandler',
+            'openbuild.listApps'       => 'OCA\OpenBuild\Mcp\Handler\ListAppsHandler',
+            'openbuild.getAppManifest' => 'OCA\OpenBuild\Mcp\Handler\GetAppManifestHandler',
+            'openbuild.createApp'      => 'OCA\OpenBuild\Mcp\Handler\CreateAppHandler',
+            'openbuild.promoteVersion' => 'OCA\OpenBuild\Mcp\Handler\PromoteVersionHandler',
+            'openbuild.upsertSchema'   => 'OCA\OpenBuild\Mcp\Handler\UpsertSchemaHandler',
+            'openbuild.upsertPage'     => 'OCA\OpenBuild\Mcp\Handler\UpsertPageHandler',
+            'openbuild.addWidget'      => 'OCA\OpenBuild\Mcp\Handler\AddWidgetHandler',
+            'openbuild.upsertMenuItem' => 'OCA\OpenBuild\Mcp\Handler\UpsertMenuItemHandler',
         ];
 
         if (isset($handlerMap[$toolId]) === true) {
@@ -299,9 +299,9 @@ class OpenBuiltToolProvider implements IMcpToolProvider
      *
      * @param class-string $class Fully qualified handler class name.
      *
-     * @return \OCA\OpenBuilt\Mcp\Handler\AbstractToolHandler
+     * @return \OCA\OpenBuild\Mcp\Handler\AbstractToolHandler
      */
-    private function makeHandler(string $class): \OCA\OpenBuilt\Mcp\Handler\AbstractToolHandler
+    private function makeHandler(string $class): \OCA\OpenBuild\Mcp\Handler\AbstractToolHandler
     {
         return new $class(
             $this->userSession,
