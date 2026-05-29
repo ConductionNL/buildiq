@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ConductionNL/openbuilt/releases"><img src="https://img.shields.io/github/v/release/ConductionNL/openbuilt" alt="Latest release"></a>
-  <a href="https://github.com/ConductionNL/openbuilt/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
-  <a href="https://github.com/ConductionNL/openbuilt/actions"><img src="https://img.shields.io/github/actions/workflow/status/ConductionNL/openbuilt/code-quality.yml?label=quality" alt="Code quality"></a>
+  <a href="https://codeberg.org/Conduction/openbuilt/releases"><img src="https://img.shields.io/gitea/v/release/Conduction/openbuilt?gitea_url=https%3A%2F%2Fcodeberg.org" alt="Latest release"></a>
+  <a href="https://codeberg.org/Conduction/openbuilt/src/branch/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
+  <a href="https://ci.codeberg.org/repos/Conduction/openbuilt"><img src="https://ci.codeberg.org/api/badges/Conduction/openbuilt/status.svg" alt="Code quality"></a>
 </p>
 
 ---
@@ -20,7 +20,7 @@ OpenBuilt is a citizen-developer app builder for Nextcloud. It lets non-technica
 
 Per [ADR-024](../hydra/openspec/architecture/adr-024-app-manifest.md) each built app is rendered at runtime by mounting `CnAppRoot` with the app's manifest, which lives as a JSON blob in OpenBuilt's own OpenRegister namespace. Per [ADR-031](../hydra/openspec/architecture/adr-031-schema-declarative-business-logic.md) behaviour (state machines, aggregations, calculations, notifications) is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in OpenBuilt's register, rendered inside the OpenBuilt shell at `/apps/openbuilt/builder/{slug}`); a Phase-2 export generates a real Nextcloud app from a virtual app.
 
-> **Requires [OpenRegister](https://github.com/ConductionNL/openregister)** — all virtual-app data is stored as OpenRegister objects.
+> **Requires [OpenRegister](https://codeberg.org/Conduction/openregister)** — all virtual-app data is stored as OpenRegister objects.
 
 ## Screenshots
 
@@ -103,7 +103,7 @@ Data model is fully defined in [`lib/Settings/openbuilt_register.json`](lib/Sett
 | Nextcloud | 28 – 33 |
 | PHP | 8.1+ |
 | Node.js | 20+ |
-| [OpenRegister](https://github.com/ConductionNL/openregister) | latest |
+| [OpenRegister](https://codeberg.org/Conduction/openregister) | latest |
 | [@conduction/nextcloud-vue](https://www.npmjs.com/package/@conduction/nextcloud-vue) | latest |
 
 ## Installation
@@ -120,7 +120,7 @@ Data model is fully defined in [`lib/Settings/openbuilt_register.json`](lib/Sett
 
 ```bash
 cd /var/www/html/custom_apps
-git clone https://github.com/ConductionNL/openbuilt.git openbuilt
+git clone https://codeberg.org/Conduction/openbuilt.git openbuilt
 cd openbuilt
 npm install && npm run build
 php occ app:enable openbuilt
@@ -187,12 +187,12 @@ npm run stylelint       # CSS linting
 
 ## Related Apps
 
-- **[OpenRegister](https://github.com/ConductionNL/openregister)** — Object storage layer (required dependency)
-- **[OpenConnector](https://github.com/ConductionNL/openconnector)** — API / iPaaS integration (consumed by built apps via manifest)
-- **[Procest](https://github.com/ConductionNL/procest)** — Process / case management (consumed via workflow attachments)
-- **[Docudesk](https://github.com/ConductionNL/docudesk)** — Document generation (consumed via template attachments)
-- **[MyDash](https://github.com/ConductionNL/mydash)** — Dashboards (consumed via widget embeds)
-- **[NL Design](https://github.com/ConductionNL/nldesign)** — Government theming (CSS variable inheritance)
+- **[OpenRegister](https://codeberg.org/Conduction/openregister)** — Object storage layer (required dependency)
+- **[OpenConnector](https://codeberg.org/Conduction/openconnector)** — API / iPaaS integration (consumed by built apps via manifest)
+- **[Procest](https://codeberg.org/Conduction/procest)** — Process / case management (consumed via workflow attachments)
+- **[Docudesk](https://codeberg.org/Conduction/docudesk)** — Document generation (consumed via template attachments)
+- **[MyDash](https://codeberg.org/Conduction/mydash)** — Dashboards (consumed via widget embeds)
+- **[NL Design](https://codeberg.org/Conduction/nldesign)** — Government theming (CSS variable inheritance)
 
 ## Support
 
