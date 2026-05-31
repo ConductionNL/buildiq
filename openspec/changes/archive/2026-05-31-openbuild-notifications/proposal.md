@@ -32,15 +32,18 @@ Add `x-openregister-notifications` to two schemas in
 ### `exportJob` — export pipeline outcome
 
 `exportJob.status` is an enum `queued | running | succeeded | failed`,
-so the lifecycle is expressible via the `transition` trigger (no engine
-gap dependency). The schema has **no structured owner uid field**, so
+driven by the schema's `x-openregister-lifecycle` transitions named
+`start | succeed | fail`. The `transition` trigger matches on the
+transition **action name** (`succeed` / `fail`), not the destination
+state — see Caveats — so the rules key on `succeed` / `fail`. The schema
+has **no structured owner uid field**, so
 recipients use `object-acl` (the user who owns / can manage the job
 object — the builder who started the export).
 
 ```jsonc
 "x-openregister-notifications": {
   "export-succeeded": {
-    "trigger": { "type": "transition", "action": "succeeded" },
+    "trigger": { "type": "transition", "action": "succeed" },
     "enabled": true,
     "channels": ["nc-notification"],
     "recipients": [ { "kind": "object-acl", "permission": "manage" } ],
@@ -50,7 +53,7 @@ object — the builder who started the export).
     }
   },
   "export-failed": {
-    "trigger": { "type": "transition", "action": "failed" },
+    "trigger": { "type": "transition", "action": "fail" },
     "enabled": true,
     "channels": ["nc-notification"],
     "recipients": [ { "kind": "object-acl", "permission": "manage" } ],
@@ -64,15 +67,19 @@ object — the builder who started the export).
 
 ### `ApplicationVersion` — version published / archived
 
-`ApplicationVersion.status` is an enum `draft | published | archived`.
-Publishing and archiving are version lifecycle milestones the builder
-(and any co-maintainers) want to know about. Expressed via `transition`.
-Recipients use `object-acl` (no structured owner field on the schema).
+`ApplicationVersion.status` is an enum `draft | published | archived`,
+driven by the schema's `x-openregister-lifecycle` transitions named
+`publish | archive | reopen`. Publishing and archiving are version
+lifecycle milestones the builder (and any co-maintainers) want to know
+about. The `transition` trigger matches on the transition **action name**
+(`publish` / `archive`), not the destination state — so the rules key on
+`publish` / `archive`. Recipients use `object-acl` (no structured owner
+field on the schema).
 
 ```jsonc
 "x-openregister-notifications": {
   "version-published": {
-    "trigger": { "type": "transition", "action": "published" },
+    "trigger": { "type": "transition", "action": "publish" },
     "enabled": true,
     "channels": ["nc-notification"],
     "recipients": [ { "kind": "object-acl", "permission": "manage" } ],
@@ -82,7 +89,7 @@ Recipients use `object-acl` (no structured owner field on the schema).
     }
   },
   "version-archived": {
-    "trigger": { "type": "transition", "action": "archived" },
+    "trigger": { "type": "transition", "action": "archive" },
     "enabled": true,
     "channels": ["nc-notification"],
     "recipients": [ { "kind": "object-acl", "permission": "manage" } ],
@@ -116,16 +123,37 @@ Recipients use `object-acl` (no structured owner field on the schema).
 
 ## Caveats
 
-- **Export pipeline must write transition actions.** The `transition`
-  trigger fires on a named lifecycle action, not on a raw `status`
-  field write. The OpenBuild export pipeline currently sets
-  `exportJob.status` directly; for `export-succeeded` / `export-failed`
-  to fire, the pipeline must drive status through OpenRegister
-  transition actions named `succeeded` and `failed` (and the
-  `ApplicationVersion` publish/archive flows through `published` /
-  `archived` actions). If transition actions are not wired, these rules
-  are declared-but-dormant. This is the prerequisite for the change to
-  have observable effect.
+- **The trigger matches the transition NAME, not the destination state.**
+  OR's `AnnotationNotificationDispatcher::matches()` compares the rule's
+  `trigger.action` against `ObjectTransitionedEvent::getAction()`, which
+  carries the transition table's action *name* (e.g. `succeed`,
+  `publish`) — not the `to` state (`succeeded`, `published`). The
+  `exportJob` lifecycle declares transitions `start | succeed | fail` and
+  `ApplicationVersion` declares `publish | archive | reopen`. The rules
+  therefore key on `succeed` / `fail` / `publish` / `archive`. A rule
+  keyed on a state name would be declared-but-dormant. This alignment is
+  pinned by a unit test
+  (`ApplicationVersionLifecycleSchemaTest::testNotificationActionsMatchLifecycleTransitionNames`).
+- **exportJob pipeline drives the named transitions — verified.** The
+  export pipeline (`RunExportJob` → `ExportJobService::transitionJob()`)
+  drives `exportJob.status` through OR's `TransitionEngine->transition()`
+  with the named actions `start` / `succeed` / `fail`, which dispatch
+  `ObjectTransitionedEvent`. So `export-succeeded` / `export-failed` fire
+  end-to-end once OR's `TransitionEngine` is available on the installed
+  build (older builds log a gap and skip — never silent direct writes).
+- **ApplicationVersion publish/archive still writes status directly
+  (known dormancy).** `VersionPromotionService` sets
+  `$target['status'] = 'published'` / `'archived'` via `saveObject`
+  rather than driving the named `publish` / `archive` transitions through
+  `TransitionEngine`; no `ObjectTransitionedEvent` is dispatched, so the
+  `version-published` / `version-archived` rules are declared-but-dormant
+  until that pipeline is routed through the lifecycle engine. The rule
+  action keys are nonetheless correct (`publish` / `archive`), so the
+  rules light up automatically once the promotion path is wired — no
+  schema change will then be needed. Routing the promotion pipeline
+  through `TransitionEngine` is out of scope for this configuration
+  change (it touches `VersionPromotionService` PHP and is tracked
+  separately).
 - **No structured owner uid on either schema.** Neither `exportJob` nor
   `ApplicationVersion` carries an owner-uid field, so recipients use
   `object-acl` (`permission: manage`) rather than `field`. This routes
