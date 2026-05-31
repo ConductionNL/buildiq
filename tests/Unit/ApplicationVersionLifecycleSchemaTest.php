@@ -205,6 +205,123 @@ class ApplicationVersionLifecycleSchemaTest extends TestCase
     }//end testPublishUpsertsBuiltAppRoute()
 
     /**
+     * Pull an arbitrary schema block out of the register seed by its
+     * (PascalCase) component key.
+     *
+     * @param string $key Component schema key (e.g. `exportJob`).
+     *
+     * @return array<string, mixed>
+     */
+    private function schemaByKey(string $key): array
+    {
+        $seed    = $this->registerSeed();
+        $schemas = $seed['components']['schemas'];
+        self::assertIsArray($schemas);
+        self::assertArrayHasKey($key, $schemas, sprintf('register seed must define a %s schema', $key));
+        $schema = $schemas[$key];
+        self::assertIsArray($schema);
+        return $schema;
+    }//end schemaByKey()
+
+    /**
+     * Collect the declared transition action names for a schema's
+     * `x-openregister-lifecycle` block.
+     *
+     * @param array<string, mixed> $schema A decoded schema block.
+     *
+     * @return list<string>
+     */
+    private function transitionNames(array $schema): array
+    {
+        self::assertArrayHasKey('x-openregister-lifecycle', $schema);
+        $lifecycle = $schema['x-openregister-lifecycle'];
+        self::assertIsArray($lifecycle);
+        self::assertArrayHasKey('transitions', $lifecycle);
+        self::assertIsArray($lifecycle['transitions']);
+        return array_keys($lifecycle['transitions']);
+    }//end transitionNames()
+
+    /**
+     * Collect the `transition`-trigger action keys declared by a schema's
+     * `x-openregister-notifications` rules.
+     *
+     * @param array<string, mixed> $schema A decoded schema block.
+     *
+     * @return list<string>
+     */
+    private function notificationTransitionActions(array $schema): array
+    {
+        self::assertArrayHasKey('x-openregister-notifications', $schema);
+        $rules = $schema['x-openregister-notifications'];
+        self::assertIsArray($rules);
+
+        $actions = [];
+        foreach ($rules as $rule) {
+            self::assertIsArray($rule);
+            $trigger = ($rule['trigger'] ?? []);
+            self::assertIsArray($trigger);
+            if ((string) ($trigger['type'] ?? '') !== 'transition') {
+                continue;
+            }
+
+            self::assertArrayHasKey('action', $trigger, 'transition rule must name an action');
+            $actions[] = (string) $trigger['action'];
+        }
+
+        return $actions;
+    }//end notificationTransitionActions()
+
+    /**
+     * The crux of the openbuild-notifications prerequisite: every
+     * `transition`-trigger notification rule MUST reference a transition
+     * **action name** that is actually declared in the schema's
+     * `x-openregister-lifecycle.transitions` map.
+     *
+     * OR's AnnotationNotificationDispatcher::matches() compares the rule's
+     * `trigger.action` against `ObjectTransitionedEvent::getAction()`, which
+     * is the transition NAME from the transition table (e.g. `succeed`,
+     * `publish`) — NOT the destination STATE (`succeeded`, `published`).
+     * A rule keyed on a state name would be declared-but-dormant: it would
+     * never fire because no event ever carries that action. This test pins
+     * the keys so they cannot drift back to state names.
+     *
+     * @return void
+     */
+    public function testNotificationActionsMatchLifecycleTransitionNames(): void
+    {
+        $cases = [
+            'exportJob'          => ['succeed', 'fail'],
+            'ApplicationVersion' => ['publish', 'archive'],
+        ];
+
+        foreach ($cases as $schemaKey => $expectedActions) {
+            $schema          = $this->schemaByKey($schemaKey);
+            $transitionNames = $this->transitionNames($schema);
+            $ruleActions     = $this->notificationTransitionActions($schema);
+
+            self::assertSame(
+                $expectedActions,
+                $ruleActions,
+                sprintf('%s notification rules must trigger on transition names %s', $schemaKey, implode('/', $expectedActions))
+            );
+
+            foreach ($ruleActions as $action) {
+                self::assertContains(
+                    $action,
+                    $transitionNames,
+                    sprintf(
+                        '%s notification action "%s" must be a declared lifecycle transition (have: %s) — '
+                        .'a state name here would never fire (dispatcher matches transition NAME, not state).',
+                        $schemaKey,
+                        $action,
+                        implode(', ', $transitionNames)
+                    )
+                );
+            }
+        }
+    }//end testNotificationActionsMatchLifecycleTransitionNames()
+
+    /**
      * Sanity guard — a disallowed transition (e.g. draft → archived
      * directly) is NOT declared. OR's TransitionEngine rejects undefined
      * transitions; the test catches accidental schema drift that would
