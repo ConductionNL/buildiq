@@ -49,6 +49,7 @@ use PHPUnit\Framework\TestCase;
  */
 class ApplicationVersionLifecycleSchemaTest extends TestCase
 {
+
     /**
      * Decoded register-seed payload, lazily loaded.
      *
@@ -318,8 +319,176 @@ class ApplicationVersionLifecycleSchemaTest extends TestCase
                     )
                 );
             }
-        }
+        }//end foreach
     }//end testNotificationActionsMatchLifecycleTransitionNames()
+
+    /**
+     * REQ-OBN-001 — exportJob declares exactly the two notification rules
+     * required by openbuild-notifications (#23): export-succeeded and
+     * export-failed.
+     *
+     * @spec openspec/changes/openbuild-notifications/tasks.md#task-1
+     *
+     * @return void
+     */
+    public function testExportJobNotificationRuleNames(): void
+    {
+        $schema = $this->schemaByKey('exportJob');
+        self::assertArrayHasKey(
+            'x-openregister-notifications',
+            $schema,
+            'exportJob must declare x-openregister-notifications'
+        );
+        $rules = $schema['x-openregister-notifications'];
+        self::assertIsArray($rules);
+        self::assertArrayHasKey('export-succeeded', $rules, 'export-succeeded rule must exist');
+        self::assertArrayHasKey('export-failed', $rules, 'export-failed rule must exist');
+        self::assertCount(2, $rules, 'exportJob must declare exactly 2 notification rules');
+    }//end testExportJobNotificationRuleNames()
+
+    /**
+     * REQ-OBN-002 — ApplicationVersion declares exactly the two notification
+     * rules required by openbuild-notifications (#23): version-published and
+     * version-archived.
+     *
+     * @spec openspec/changes/openbuild-notifications/tasks.md#task-2
+     *
+     * @return void
+     */
+    public function testApplicationVersionNotificationRuleNames(): void
+    {
+        $schema = $this->applicationVersionSchema();
+        self::assertArrayHasKey(
+            'x-openregister-notifications',
+            $schema,
+            'ApplicationVersion must declare x-openregister-notifications'
+        );
+        $rules = $schema['x-openregister-notifications'];
+        self::assertIsArray($rules);
+        self::assertArrayHasKey('version-published', $rules, 'version-published rule must exist');
+        self::assertArrayHasKey('version-archived', $rules, 'version-archived rule must exist');
+        self::assertCount(2, $rules, 'ApplicationVersion must declare exactly 2 notification rules');
+    }//end testApplicationVersionNotificationRuleNames()
+
+    /**
+     * REQ-OBN-003 — Every notification rule on both schemas ships with
+     * object-acl recipients (permission: manage), is enabled by default, and
+     * uses the nc-notification channel (openbuild-notifications #23 task-3).
+     *
+     * @spec openspec/changes/openbuild-notifications/tasks.md#task-3
+     *
+     * @return void
+     */
+    public function testNotificationRulesHaveObjectAclRecipientsAndAreEnabled(): void
+    {
+        $cases = [
+            'exportJob'          => ['export-succeeded', 'export-failed'],
+            'ApplicationVersion' => ['version-published', 'version-archived'],
+        ];
+
+        foreach ($cases as $schemaKey => $ruleKeys) {
+            $schema = $this->schemaByKey($schemaKey);
+            self::assertArrayHasKey('x-openregister-notifications', $schema);
+            $rules = $schema['x-openregister-notifications'];
+            self::assertIsArray($rules);
+
+            foreach ($ruleKeys as $ruleKey) {
+                self::assertArrayHasKey($ruleKey, $rules, sprintf('%s must have rule %s', $schemaKey, $ruleKey));
+                $rule = $rules[$ruleKey];
+                self::assertIsArray($rule);
+
+                // Must be enabled by default.
+                self::assertTrue(
+                    (bool) ($rule['enabled'] ?? false),
+                    sprintf('%s.%s must ship with enabled=true', $schemaKey, $ruleKey)
+                );
+
+                // Must use nc-notification channel.
+                self::assertContains(
+                    'nc-notification',
+                    ($rule['channels'] ?? []),
+                    sprintf('%s.%s must declare nc-notification channel', $schemaKey, $ruleKey)
+                );
+
+                // Must have object-acl manage recipient.
+                $recipients = ($rule['recipients'] ?? []);
+                self::assertIsArray($recipients);
+                self::assertNotEmpty($recipients, sprintf('%s.%s must have at least one recipient', $schemaKey, $ruleKey));
+
+                $hasObjectAclManage = false;
+                foreach ($recipients as $recipient) {
+                    if (is_array($recipient) === true
+                        && ($recipient['kind'] ?? '') === 'object-acl'
+                        && ($recipient['permission'] ?? '') === 'manage'
+                    ) {
+                        $hasObjectAclManage = true;
+                        break;
+                    }
+                }
+
+                self::assertTrue(
+                    $hasObjectAclManage,
+                    sprintf(
+                        '%s.%s must have a {kind:object-acl, permission:manage} recipient',
+                        $schemaKey,
+                        $ruleKey
+                    )
+                );
+            }//end foreach
+        }//end foreach
+    }//end testNotificationRulesHaveObjectAclRecipientsAndAreEnabled()
+
+    /**
+     * REQ-OBN-004 — Every notification rule ships bilingual subjects in
+     * both Dutch (nl) and English (en) per ADR-007 / ADR-025
+     * (openbuild-notifications #23 task-4).
+     *
+     * @spec openspec/changes/openbuild-notifications/tasks.md#task-4
+     *
+     * @return void
+     */
+    public function testNotificationRulesHaveBilingualSubjects(): void
+    {
+        $cases = [
+            'exportJob'          => ['export-succeeded', 'export-failed'],
+            'ApplicationVersion' => ['version-published', 'version-archived'],
+        ];
+
+        foreach ($cases as $schemaKey => $ruleKeys) {
+            $schema = $this->schemaByKey($schemaKey);
+            self::assertArrayHasKey('x-openregister-notifications', $schema);
+            $rules = $schema['x-openregister-notifications'];
+            self::assertIsArray($rules);
+
+            foreach ($ruleKeys as $ruleKey) {
+                $rule = $rules[$ruleKey];
+                self::assertIsArray($rule);
+
+                $subject = ($rule['subject'] ?? []);
+                self::assertIsArray($subject, sprintf('%s.%s subject must be an object', $schemaKey, $ruleKey));
+
+                self::assertArrayHasKey(
+                    'nl',
+                    $subject,
+                    sprintf('%s.%s must have a Dutch (nl) subject (ADR-007)', $schemaKey, $ruleKey)
+                );
+                self::assertArrayHasKey(
+                    'en',
+                    $subject,
+                    sprintf('%s.%s must have an English (en) subject (ADR-007)', $schemaKey, $ruleKey)
+                );
+
+                self::assertNotEmpty(
+                    (string) ($subject['nl'] ?? ''),
+                    sprintf('%s.%s nl subject must not be empty', $schemaKey, $ruleKey)
+                );
+                self::assertNotEmpty(
+                    (string) ($subject['en'] ?? ''),
+                    sprintf('%s.%s en subject must not be empty', $schemaKey, $ruleKey)
+                );
+            }//end foreach
+        }//end foreach
+    }//end testNotificationRulesHaveBilingualSubjects()
 
     /**
      * Sanity guard — a disallowed transition (e.g. draft → archived
