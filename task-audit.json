@@ -1,0 +1,43 @@
+{
+  "spec": "openspec/changes/openbuild-notifications",
+  "verified": [
+    {
+      "task": "1",
+      "file": "lib/Settings/openbuild_register.json",
+      "ok": true,
+      "check": "exportJob has export-succeeded and export-failed rules: ['export-succeeded', 'export-failed']"
+    },
+    {
+      "task": "2",
+      "file": "lib/Settings/openbuild_register.json",
+      "ok": true,
+      "check": "ApplicationVersion has version-published and version-archived rules: ['version-published', 'version-archived']"
+    },
+    {
+      "task": "3",
+      "file": "lib/Settings/openbuild_register.json",
+      "ok": true,
+      "check": "object-acl recipients on all rules"
+    },
+    {
+      "task": "4",
+      "file": "lib/Settings/openbuild_register.json",
+      "ok": true,
+      "check": "bilingual subjects"
+    },
+    {
+      "task": "5",
+      "file": "lib/Settings/openbuild_register.json",
+      "ok": true,
+      "check": "valid JSON"
+    },
+    {
+      "task": "6",
+      "file": "lib/BackgroundJob/RunExportJob.php",
+      "ok": true,
+      "check": "exportJob pipeline wired via transitionJob(); ApplicationVersion declared-but-dormant (tracked separately)"
+    }
+  ],
+  "stubs": [],
+  "missing_routes": []
+}
