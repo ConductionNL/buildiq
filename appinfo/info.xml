@@ -2,8 +2,8 @@
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
     <id>openbuild</id>
-    <name lang="en">OpenBuilt</name>
-    <name lang="nl">OpenBuilt</name>
+    <name lang="en">OpenBuild</name>
+    <name lang="nl">OpenBuild</name>
     <summary lang="en">Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.</summary>
     <summary lang="nl">App builder voor Nextcloud — stel apps samen uit registers, connectors, processen en documenten zonder code.</summary>
     <description lang="en"><![CDATA[OpenBuilt is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Conduction ecosystem — OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, MyDash dashboards — through a visual interface, without scaffolding PHP for each new app.
@@ -47,7 +47,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
     <navigations>
         <navigation>
             <id>openbuilt</id>
-            <name>OpenBuilt</name>
+            <name>OpenBuild</name>
             <route>openbuilt.dashboard.page</route>
             <icon>app.svg</icon>
         </navigation>
