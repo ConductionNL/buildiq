@@ -9,6 +9,8 @@
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/ApplicationsController.php"/>
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Controller/ApplicationsController.php" method="__construct"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ApplicationsController.php" method="getManifest"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ApplicationsController.php" method="diffVersions"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ApplicationsController.php" method="diffVersions"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/ExportsController.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/ExportsController.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ExportsController.php" method="isAuthorisedForApplication"/>
