@@ -23,8 +23,9 @@
   "capabilities": [
     "openbuild-application-register",
     "openbuild-runtime",
-    "openbuild-rbac"
+    "openbuild-rbac",
+    "openbuild-exporter"
   ],
   "createdAt": "2026-05-11",
-  "updatedAt": "2026-05-11"
+  "updatedAt": "2026-06-02"
 }
