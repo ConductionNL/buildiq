@@ -1,6 +1,6 @@
 ## 1. Schema + lifecycle (declarative — ADR-031)
 
-- [ ] 1.1 **Declare `ExportJob` schema in `lib/Settings/openbuild_register.json`**
+- [x] 1.1 **Declare `ExportJob` schema in `lib/Settings/openbuild_register.json`**
   - spec_ref: REQ-OBEX-001
   - files: `lib/Settings/openbuild_register.json`
   - acceptance_criteria: Schema declares `uuid`, `applicationUuid` (UUID-format,
@@ -14,7 +14,7 @@
   - Test: integration test creates an ExportJob via OR REST; asserts schema validation
     rejects an invalid `target` (`ftp`).
 
-- [ ] 1.2 **Add `x-openregister-lifecycle` to the `ExportJob` schema**
+- [x] 1.2 **Add `x-openregister-lifecycle` to the `ExportJob` schema**
   - spec_ref: REQ-OBEX-001
   - files: `lib/Settings/openbuild_register.json` (NOT a new PHP service)
   - acceptance_criteria: Declares states `queued`, `running`, `succeeded`, `failed`
@@ -28,7 +28,7 @@
 
 ## 2. Embedded template snapshot
 
-- [ ] 2.1 **Snapshot `nextcloud-app-template/` into `lib/Resources/template/`**
+- [x] 2.1 **Snapshot `nextcloud-app-template/` into `lib/Resources/template/`**
   - spec_ref: REQ-OBEX-003
   - files: `lib/Resources/template/**` (full template tree from
     `apps-extra/nextcloud-app-template/` at OpenBuild's release-cut commit, minus
@@ -45,7 +45,7 @@
   - Test: unit test asserts `.path-manifest.txt` matches the actual file list under
     `lib/Resources/template/`.
 
-- [ ] 2.2 **Document the resnapshot procedure in `docs/releasing.md`**
+- [x] 2.2 **Document the resnapshot procedure in `docs/releasing.md`**
   - spec_ref: REQ-OBEX-003
   - files: `docs/releasing.md`
   - acceptance_criteria: Section "Refreshing the embedded template snapshot" describes
@@ -54,7 +54,7 @@
 
 ## 3. PlaceholderResolver service
 
-- [ ] 3.1 **Implement `lib/Service/PlaceholderResolver.php`**
+- [x] 3.1 **Implement `lib/Service/PlaceholderResolver.php`**
   - spec_ref: REQ-OBEX-003
   - files: `lib/Service/PlaceholderResolver.php`
   - acceptance_criteria: `PlaceholderResolver::resolve(string $template, array $tokens): string`
@@ -70,7 +70,7 @@
 
 ## 4. ExportService (code — ADR-031 §Exceptions)
 
-- [ ] 4.1 **Implement `lib/Service/ExportService.php`**
+- [x] 4.1 **Implement `lib/Service/ExportService.php`**
   - spec_ref: REQ-OBEX-003, REQ-OBEX-004, REQ-OBEX-005, REQ-OBEX-008, REQ-OBEX-009
   - files: `lib/Service/ExportService.php`
   - acceptance_criteria: `ExportService::run(ExportJob $job): void` orchestrates:
@@ -88,7 +88,7 @@
   - Test: PHPUnit integration test on `ExportService::run` with the seeded `hello-world`
     Application asserts the produced tree matches the path manifest from task 2.1.
 
-- [ ] 4.2 **Verify exported app boots standalone (REQ-OBEX-010)**
+- [x] 4.2 **Verify exported app boots standalone (REQ-OBEX-010)**
   - spec_ref: REQ-OBEX-010
   - files: `tests/Integration/ExporterStandaloneTest.php`
   - acceptance_criteria: Integration test scans the produced tree's `composer.json`,
@@ -100,7 +100,7 @@
 
 ## 5. ZIP delivery target
 
-- [ ] 5.1 **Implement ZIP packaging in `ExportService::packageZip`**
+- [x] 5.1 **Implement ZIP packaging in `ExportService::packageZip`**
   - spec_ref: REQ-OBEX-006, REQ-OBEX-008
   - files: `lib/Service/ExportService.php`
   - acceptance_criteria: Uses PHP's `ZipArchive`; outputs to
@@ -114,7 +114,7 @@
     if PHP's ZipArchive cannot be made fully byte-deterministic, asserts identical
     SHA-256 across all unzipped files).
 
-- [ ] 5.2 **Implement `GET /api/exports/{uuid}/download` endpoint**
+- [x] 5.2 **Implement `GET /api/exports/{uuid}/download` endpoint**
   - spec_ref: REQ-OBEX-006
   - files: `lib/Controller/ExportsController.php`, `appinfo/routes.php`
   - acceptance_criteria: `download(string $uuid): StreamResponse` resolves the
@@ -125,7 +125,7 @@
   - Test: Newman test covers 200 (within 24h), 410 (after expiry — simulate by setting
     `downloadExpiresAt` to the past via OR REST), 404 (unknown UUID).
 
-- [ ] 5.3 **Implement daily cleanup background job for expired ZIPs**
+- [x] 5.3 **Implement daily cleanup background job for expired ZIPs**
   - spec_ref: REQ-OBEX-006
   - files: `lib/BackgroundJob/CleanupExpiredExports.php`,
     `appinfo/info.xml` (register the job)
@@ -139,14 +139,19 @@
 
 ## 6. GitHub delivery target
 
-- [ ] 6.1 **Add `knplabs/github-api` to `composer.json`**
+- [x] 6.1 **GitHub HTTP transport** — *deviation, design-sanctioned.*
   - spec_ref: REQ-OBEX-007
-  - files: `composer.json`, `composer.lock`
-  - acceptance_criteria: Dependency added; lockfile regenerated; `composer audit` clean
-    (no CVEs); ADR-014 license overrides updated if knplabs ships under a
-    non-allowlisted license.
+  - files: `lib/Service/GitHubPushService.php`
+  - implementation_note: `knplabs/github-api` was **not** added. Instead the GitHub
+    transport uses Nextcloud's built-in `OCP\Http\Client\IClientService` against the
+    GitHub REST + Git Data API directly. This is explicitly sanctioned by design.md
+    (Risks — *"swap to direct cURL in `GitHubPushService` — no architectural change"*),
+    keeps the lockfile free of an extra dependency (no new `composer audit` surface,
+    no ADR-014 license override), and exercises the same create-repo → blob/tree/commit
+    → PR sequence the spec calls for. The wire contract (method signatures, PAT
+    handling) is unchanged.
 
-- [ ] 6.2 **Implement `lib/Service/GitHubPushService.php`**
+- [x] 6.2 **Implement `lib/Service/GitHubPushService.php`**
   - spec_ref: REQ-OBEX-007
   - files: `lib/Service/GitHubPushService.php`
   - acceptance_criteria: Methods: `createRepo($org, $repo, $visibility, $pat): array`,
@@ -159,7 +164,7 @@
   - Test: PHPUnit against a mocked `Github\Client` covers each method. NO live-GitHub
     call in CI.
 
-- [ ] 6.3 **Wire GitHub PAT through `ICredentialsManager`**
+- [x] 6.3 **Wire GitHub PAT through `ICredentialsManager`**
   - spec_ref: REQ-OBEX-007 (security checklist in design.md Decision 3)
   - files: `lib/Service/ExportService.php`, `lib/Controller/ExportsController.php`
   - acceptance_criteria: Controller's POST endpoint accepts `githubPat` in the request
@@ -175,7 +180,7 @@
 
 ## 7. Background job + controller
 
-- [ ] 7.1 **Implement `lib/BackgroundJob/RunExportJob.php`**
+- [x] 7.1 **Implement `lib/BackgroundJob/RunExportJob.php`**
   - spec_ref: REQ-OBEX-009
   - files: `lib/BackgroundJob/RunExportJob.php`,
     `appinfo/info.xml` (`<background-jobs>` registration)
@@ -186,7 +191,7 @@
     `log` (PAT never included). SPDX-in-docblock.
   - Test: PHPUnit asserts state transitions; asserts NO auto-retry on a forced failure.
 
-- [ ] 7.2 **Implement `POST /api/applications/{slug}/exports` endpoint**
+- [x] 7.2 **Implement `POST /api/applications/{slug}/exports` endpoint**
   - spec_ref: REQ-OBEX-002, REQ-OBEX-009
   - files: `lib/Controller/ExportsController.php`, `appinfo/routes.php`
   - acceptance_criteria: `submit(string $slug, array $body): JSONResponse` validates
@@ -198,7 +203,7 @@
   - Test: PHPUnit + Newman cover 202 (happy path), 422 (unknown version), 422 (draft
     version), 422 (missing org for `target=github`).
 
-- [ ] 7.3 **Standard CRUD on ExportJob uses OR REST directly (ADR-022)**
+- [x] 7.3 **Standard CRUD on ExportJob uses OR REST directly (ADR-022)**
   - spec_ref: REQ-OBEX-009
   - files: none (verification step)
   - acceptance_criteria: NO `list` / `get` / `update` / `delete` ExportJob methods
@@ -207,27 +212,27 @@
 
 ## 8. Verification + security
 
-- [ ] 8.1 **Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan)** — all green;
+- [x] 8.1 **Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan)** — all green;
       fix any pre-existing issues in touched files. No `// SPDX-` line comments —
       SPDX tags live inside the docblock.
 
-- [ ] 8.2 **PHPUnit test suite** — `tests/Unit/Service/ExportServiceTest.php`,
+- [x] 8.2 **PHPUnit test suite** — `tests/Unit/Service/ExportServiceTest.php`,
       `tests/Unit/Service/GitHubPushServiceTest.php` (mocked GitHub client),
       `tests/Unit/Service/PlaceholderResolverTest.php`,
       `tests/Unit/BackgroundJob/RunExportJobTest.php`,
       `tests/Unit/BackgroundJob/CleanupExpiredExportsTest.php`,
       `tests/Unit/Controller/ExportsControllerTest.php`.
 
-- [ ] 8.3 **Integration test** — `tests/Integration/ExporterEndToEndTest.php` runs an
+- [x] 8.3 **Integration test** — `tests/Integration/ExporterEndToEndTest.php` runs an
       export of the seeded `hello-world` Application end-to-end (ZIP target), unzips
       the result, runs `composer check:strict` against the unzipped tree (must be
       green), and asserts the path manifest from task 2.1 matches.
 
-- [ ] 8.4 **CI extension** — add `.github/workflows/exporter-e2e.yml` that runs the
+- [x] 8.4 **CI extension** — add `.github/workflows/exporter-e2e.yml` that runs the
       integration test from 8.3 on every PR. Parallelise with existing Newman +
       Playwright jobs per ADR-008.
 
-- [ ] 8.5 **Security review checklist (design.md Decision 3)** — verify by inspection
+- [x] 8.5 **Security review checklist (design.md Decision 3)** — verify by inspection
       and automated test:
   - PAT never echoed in any API response (Newman test).
   - PAT never written to the ExportJob's `log` / `errorMessage` (Newman test).
@@ -238,13 +243,13 @@
   - Token-scope guidance copy is present in the ExportDialog when `target=github` is
     selected (Playwright test).
 
-- [ ] 8.6 **Confirm no state-machine service class exists** — ADR-031 review gate.
+- [x] 8.6 **Confirm no state-machine service class exists** — ADR-031 review gate.
       Grep `lib/Service/` and `lib/StateMachine/` for `ExportJobStateMachine`,
       `ExportJobLifecycleService`, or similar; any hit is a fail.
 
 ## 9. Frontend
 
-- [ ] 9.1 **Build `src/dialogs/ExportDialog.vue`**
+- [x] 9.1 **Build `src/dialogs/ExportDialog.vue`**
   - spec_ref: REQ-OBEX-002, REQ-OBEX-006, REQ-OBEX-007, REQ-OBEX-009
   - files: `src/dialogs/ExportDialog.vue`
   - acceptance_criteria: Standalone `<NcDialog>` (modal-isolation gate — modal lives
@@ -266,7 +271,7 @@
     has the expected shape (no PAT in the URL, only in the POST body over the Nextcloud
     REST channel).
 
-- [ ] 9.2 **Build `src/views/ExportJobsList.vue`**
+- [x] 9.2 **Build `src/views/ExportJobsList.vue`**
   - spec_ref: REQ-OBEX-009
   - files: `src/views/ExportJobsList.vue`, `src/store/exports.js`
   - acceptance_criteria: Lists ExportJobs for the current Application via OR REST
@@ -277,7 +282,7 @@
     `queued → running → succeeded`, clicks the download button, asserts the ZIP
     downloads.
 
-- [ ] 9.3 **Wire the "Export" action into the Application detail toolbar**
+- [x] 9.3 **Wire the "Export" action into the Application detail toolbar**
   - spec_ref: REQ-OBEX-002
   - files: `src/views/ApplicationDetail.vue` (or its detail-view sibling)
   - acceptance_criteria: An "Export" button in the detail toolbar opens
@@ -286,7 +291,7 @@
 
 ## 10. Documentation + i18n
 
-- [ ] 10.1 **Add `docs/export-pipeline.md`**
+- [x] 10.1 **Add `docs/export-pipeline.md`**
   - spec_ref: design.md OQ-2, OQ-3
   - files: `docs/export-pipeline.md`
   - acceptance_criteria: Describes the ZIP + GitHub flows end-to-end; the embedded
@@ -295,7 +300,7 @@
     do next" steps after a successful GitHub export (review the PR, run
     `composer install` + `npm install` locally, etc.).
 
-- [ ] 10.2 **i18n keys (ADR-007)** — add English + Dutch translations in
+- [x] 10.2 **i18n keys (ADR-007)** — add English + Dutch translations in
       `l10n/en.json` + `l10n/nl.json`:
       `openbuild.export.title`,
       `openbuild.export.version.label`,
@@ -320,15 +325,15 @@
       `openbuild.export.error.repoExists`,
       `openbuild.export.error.authFailed`.
 
-- [ ] 10.3 **NL Design (ADR-010)** — confirm new dialog uses Nextcloud CSS variables
+- [x] 10.3 **NL Design (ADR-010)** — confirm new dialog uses Nextcloud CSS variables
       only; no hardcoded colours.
 
-- [ ] 10.4 **Update `openspec/app-config.json`** — add `"openbuild-exporter"` to the
+- [x] 10.4 **Update `openspec/app-config.json`** — add `"openbuild-exporter"` to the
       `capabilities` array.
 
 ## 11. Hydra mechanical gates (pre-merge)
 
-- [ ] 11.1 Run `/hydra-gates` against the apply PR and confirm all 13 gates green:
+- [x] 11.1 Run `/hydra-gates` against the apply PR and confirm all 13 gates green:
       SPDX, forbidden-patterns, stub-scan, composer-audit, route-auth, orphan-auth,
       no-admin-idor, unsafe-auth-resolver, semantic-auth, initial-state, admin-router,
       nc-input-labels, modal-isolation.

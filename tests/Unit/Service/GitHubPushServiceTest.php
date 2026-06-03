@@ -5,8 +5,8 @@
  *
  * Locks the PAT-handling contract: the PAT MUST be a method-scoped
  * parameter, MUST NOT be stored on $this, and MUST NOT appear in any
- * log line. The current implementation is stubbed; these tests assert
- * the contract that a future live implementation MUST honour.
+ * log line. Exercises the live IClientService-backed implementation
+ * against a mocked HTTP client (no live GitHub calls in CI).
  *
  * @category Test
  * @package  OCA\OpenBuild\Tests\Unit\Service
@@ -28,92 +28,151 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\GitHubPushService;
+use OCP\Http\Client\IClient;
+use OCP\Http\Client\IClientService;
+use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
+use Psr\Log\NullLogger;
+use RuntimeException;
 
 /**
- * Tests for {@see GitHubPushService} — PAT contract + return shape.
+ * Tests for {@see GitHubPushService} — PAT contract + GitHub wire surface.
  */
 final class GitHubPushServiceTest extends TestCase
 {
     /**
-     * push() accepts the PAT as a method-scoped argument. The signature
-     * itself (verified via Reflection) is the contract; passing a PAT
-     * MUST NOT throw, MUST NOT mutate $this, and MUST return the
-     * documented shape.
+     * Build a mocked IClientService whose newClient() returns a client that
+     * answers GET (repo-absent: throws 404) and POST (returns the supplied
+     * JSON payloads in sequence).
+     *
+     * @param array<int,array<string,mixed>> $postBodies Decoded bodies returned by successive POSTs.
+     * @param bool                           $repoExists When true, GET returns 200 (repo present).
+     *
+     * @return IClientService Mocked service.
+     */
+    private function mockClientService(array $postBodies, bool $repoExists=false): IClientService
+    {
+        $client = $this->createMock(IClient::class);
+
+        if ($repoExists === true) {
+            $getResponse = $this->createMock(IResponse::class);
+            $getResponse->method('getStatusCode')->willReturn(200);
+            $client->method('get')->willReturn($getResponse);
+        } else {
+            $client->method('get')->willThrowException(new RuntimeException('Client error: 404 Not Found'));
+        }
+
+        $responses = [];
+        foreach ($postBodies as $body) {
+            $response = $this->createMock(IResponse::class);
+            $response->method('getBody')->willReturn(json_encode($body));
+            $responses[] = $response;
+        }
+
+        if ($responses !== []) {
+            $client->method('post')->willReturnOnConsecutiveCalls(...$responses);
+        }
+
+        $service = $this->createMock(IClientService::class);
+        $service->method('newClient')->willReturn($client);
+
+        return $service;
+    }//end mockClientService()
+
+    /**
+     * push() accepts the PAT as a method-scoped argument and drives the full
+     * create-repo → push-tree → open-PR sequence against the mocked client.
      *
      * @return void
      */
-    public function testPushAcceptsPatAsParameter(): void
+    public function testPushAcceptsPatAndReturnsUrls(): void
     {
-        $service = new GitHubPushService(new \Psr\Log\NullLogger());
+        $treeDir = sys_get_temp_dir().'/openbuild-test-tree-'.uniqid();
+        mkdir($treeDir, 0o755, true);
+        file_put_contents($treeDir.'/README.md', '# hello');
+
+        // Order: createRepo, then for one file: blob; then tree, commit, ref; then PR.
+        $service = new GitHubPushService(
+            $this->mockClientService(
+                    [
+                        ['html_url' => 'https://github.com/acme/app', 'default_branch' => 'main'],
+                        ['sha' => 'blobsha'],
+                        ['sha' => 'treesha'],
+                        ['sha' => 'commitsha'],
+                        ['ref' => 'refs/heads/bootstrap'],
+                        ['html_url' => 'https://github.com/acme/app/pull/1'],
+                    ]
+                    ),
+            new NullLogger()
+        );
 
         $reflection = new \ReflectionMethod($service, 'push');
-        $parameters = $reflection->getParameters();
-        $names      = array_map(static fn ($p) => $p->getName(), $parameters);
-
+        $names      = array_map(static fn ($p) => $p->getName(), $reflection->getParameters());
         self::assertContains('pat', $names, 'push() must declare a $pat parameter');
 
-        // Calling push() with a PAT must complete without throwing.
         $result = $service->push(
             jobUuid: 'job-123',
-            treeDir: '/tmp/some-tree',
-            pat: 'ghp_test_token'
+            treeDir: $treeDir,
+            pat: 'ghp_test_token',
+            org: 'acme',
+            repo: 'app',
+            visibility: 'public'
         );
-        self::assertIsArray($result);
-    }//end testPushAcceptsPatAsParameter()
+
+        self::assertSame('https://github.com/acme/app', $result['repoUrl']);
+        self::assertSame('https://github.com/acme/app/pull/1', $result['pullRequestUrl']);
+
+        unlink($treeDir.'/README.md');
+        rmdir($treeDir);
+    }//end testPushAcceptsPatAndReturnsUrls()
 
     /**
-     * The service MUST NOT store the PAT on $this — a Reflection scan
-     * across all instance properties (before AND after a push() call)
-     * must find zero matches for the PAT string.
-     *
-     * Security-critical: a regression here would mean a long-lived
-     * service instance retains the PAT in memory between requests.
+     * push() against an already-existing repo fails fast (REQ-OBEX-007).
      *
      * @return void
      */
-    public function testPushNeverStoresPatOnInstance(): void
+    public function testPushFailsFastWhenRepoExists(): void
     {
-        $service = new GitHubPushService(new \Psr\Log\NullLogger());
-        $pat     = 'ghp_super_secret_pat_dont_leak';
+        $treeDir = sys_get_temp_dir().'/openbuild-test-tree-'.uniqid();
+        mkdir($treeDir, 0o755, true);
 
-        $service->push(jobUuid: 'job-456', treeDir: '/tmp/tree', pat: $pat);
+        $service = new GitHubPushService(
+            $this->mockClientService([], repoExists: true),
+            new NullLogger()
+        );
 
-        $reflection = new \ReflectionObject($service);
-        foreach ($reflection->getProperties() as $property) {
-            $property->setAccessible(true);
-            $value = $property->getValue($service);
-            self::assertNotSame(
-                $pat,
-                $value,
-                'Property '.$property->getName().' must NOT hold the PAT'
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('already exists');
+
+        try {
+            $service->push(
+                jobUuid: 'job-x',
+                treeDir: $treeDir,
+                pat: 'ghp_token',
+                org: 'gemeente-rotterdam',
+                repo: 'klachten-beheer',
+                visibility: 'public'
             );
-            if (is_string($value) === true) {
-                self::assertStringNotContainsString(
-                    $pat,
-                    $value,
-                    'Property '.$property->getName().' must NOT contain the PAT'
-                );
-            }
+        } finally {
+            rmdir($treeDir);
         }
-    }//end testPushNeverStoresPatOnInstance()
+    }//end testPushFailsFastWhenRepoExists()
 
     /**
-     * The Phase-1 stub returns the documented array shape with
-     * `repoUrl` and `pullRequestUrl` keys. When a live implementation
-     * lands, the same shape MUST be preserved (this test pins the
-     * contract).
-     *
-     * Also: the PAT MUST NOT leak into ANY log line emitted during the
-     * call.
+     * The service MUST NOT store the PAT on $this and MUST NOT log it.
      *
      * @return void
      */
-    public function testPushReturnsRepoAndPullRequestUrlsAndDoesNotLogPat(): void
+    public function testPushNeverStoresOrLogsPat(): void
     {
+        $treeDir = sys_get_temp_dir().'/openbuild-test-tree-'.uniqid();
+        mkdir($treeDir, 0o755, true);
+        file_put_contents($treeDir.'/x.txt', 'data');
+
         $captured = [];
         $logger   = new class ($captured) extends AbstractLogger {
+
             /**
              * @var list<string>
              */
@@ -122,60 +181,61 @@ final class GitHubPushServiceTest extends TestCase
             public function __construct(array &$captured)
             {
                 $this->sink = &$captured;
-            }
+            }//end __construct()
 
             public function log($level, \Stringable|string $message, array $context=[]): void
             {
                 $this->sink[] = (string) $message.' '.json_encode($context);
-            }
+            }//end log()
         };
 
-        $service = new GitHubPushService($logger);
-        $pat     = 'ghp_unique_marker_xyz_42';
-
-        $result = $service->push(
-            jobUuid: 'job-789',
-            treeDir: '/tmp/some-tree',
-            pat: $pat
+        $pat     = 'ghp_super_secret_pat_dont_leak';
+        $service = new GitHubPushService(
+            $this->mockClientService(
+                    [
+                        ['html_url' => 'https://github.com/acme/app', 'default_branch' => 'main'],
+                        ['sha' => 'b'],
+                        ['sha' => 't'],
+                        ['sha' => 'c'],
+                        ['ref' => 'r'],
+                        ['html_url' => 'https://github.com/acme/app/pull/2'],
+                    ]
+                    ),
+            $logger
         );
 
-        self::assertArrayHasKey('repoUrl', $result);
-        self::assertArrayHasKey('pullRequestUrl', $result);
+        $service->push(jobUuid: 'job-456', treeDir: $treeDir, pat: $pat, org: 'acme', repo: 'app');
+
+        $reflection = new \ReflectionObject($service);
+        foreach ($reflection->getProperties() as $property) {
+            $property->setAccessible(true);
+            $value = $property->getValue($service);
+            if (is_string($value) === true) {
+                self::assertStringNotContainsString($pat, $value, 'Property '.$property->getName().' must NOT contain the PAT');
+            }
+        }
 
         foreach ($captured as $line) {
-            self::assertStringNotContainsString(
-                $pat,
-                $line,
-                'PAT must NEVER appear in a log line — found in: '.$line
-            );
+            self::assertStringNotContainsString($pat, $line, 'PAT must NEVER appear in a log line — found in: '.$line);
         }
-    }//end testPushReturnsRepoAndPullRequestUrlsAndDoesNotLogPat()
+
+        unlink($treeDir.'/x.txt');
+        rmdir($treeDir);
+    }//end testPushNeverStoresOrLogsPat()
 
     /**
-     * resolveDefaultBranch() returns `development` for Conduction-style
-     * orgs (per OQ-2 in design.md) and `main` for everything else.
-     * The PAT parameter is method-scoped — same contract as push().
+     * resolveDefaultBranch() returns `development` for Conduction-style orgs
+     * (OQ-2) and `main` for everything else; PAT stays method-scoped.
      *
      * @return void
      */
     public function testResolveDefaultBranchHonoursConductionHeuristic(): void
     {
-        $service = new GitHubPushService(new \Psr\Log\NullLogger());
+        $service = new GitHubPushService($this->mockClientService([]), new NullLogger());
 
-        self::assertSame(
-            'development',
-            $service->resolveDefaultBranch('ConductionNL', 'ghp_token'),
-            'Conduction-style orgs must default to the `development` integration branch'
-        );
+        self::assertSame('development', $service->resolveDefaultBranch('ConductionNL', 'ghp_token'));
+        self::assertSame('main', $service->resolveDefaultBranch('acme-co', 'ghp_token'));
 
-        self::assertSame(
-            'main',
-            $service->resolveDefaultBranch('acme-co', 'ghp_token'),
-            'Non-Conduction orgs must default to `main`'
-        );
-
-        // PAT parameter is method-scoped — assert it's still in the
-        // signature (catches an over-zealous refactor that strips it).
         $reflection = new \ReflectionMethod($service, 'resolveDefaultBranch');
         $names      = array_map(static fn ($p) => $p->getName(), $reflection->getParameters());
         self::assertContains('pat', $names);

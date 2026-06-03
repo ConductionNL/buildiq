@@ -39,6 +39,8 @@ use RuntimeException;
 
 /**
  * Background job that runs a single ExportJob to completion.
+ *
+ * @spec openspec/changes/openbuild-exporter/tasks.md#task-7.1
  */
 class RunExportJob extends QueuedJob
 {
@@ -169,14 +171,14 @@ class RunExportJob extends QueuedJob
             'license'      => $license,
         ];
 
-        $zipPath = $this->exportService->generateAppZip(
+        $this->exportService->generateAppZip(
             applicationUuid: $applicationUuid,
             versionSlug: $applicationVersion,
             context: $context,
             jobUuid: $jobUuid
         );
 
-        $pushResult = $this->maybePush(jobUuid: $jobUuid, zipPath: $zipPath);
+        $pushResult = $this->maybePush(jobUuid: $jobUuid, job: $job);
 
         $extra = $this->buildSuccessFields(jobUuid: $jobUuid, pushResult: $pushResult);
 
@@ -215,24 +217,37 @@ class RunExportJob extends QueuedJob
     /**
      * Fetch the PAT once and push to GitHub if one was supplied.
      *
-     * @param string $jobUuid Job UUID.
-     * @param string $zipPath Path to the generated ZIP.
+     * The generated tree lives in the exporter's work scratch dir keyed by
+     * job UUID (see ExportService::prepareScratchDir); we hand that to the
+     * GitHub push service so it can blob/tree/commit each file.
+     *
+     * @param string              $jobUuid Job UUID.
+     * @param array<string,mixed> $job     Loaded ExportJob record.
      *
      * @return array{repoUrl?:string,pullRequestUrl?:string}|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
+     * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
      */
-    private function maybePush(string $jobUuid, string $zipPath): ?array
+    private function maybePush(string $jobUuid, array $job): ?array
     {
+        if ((string) ($job['target'] ?? 'zip') !== 'github') {
+            return null;
+        }
+
         $pat = $this->exportJobService->fetchPat(jobUuid: $jobUuid);
         if ($pat === null || $pat === '') {
             return null;
         }
 
+        $treeDir = $this->exportService->scratchTreeDir(jobUuid: $jobUuid);
+
         return $this->githubPushService->push(
             jobUuid: $jobUuid,
-            treeDir: dirname($zipPath).'/'.$jobUuid,
-            pat: $pat
+            treeDir: $treeDir,
+            pat: $pat,
+            org: (string) ($job['githubOrg'] ?? ''),
+            repo: (string) ($job['githubRepo'] ?? ''),
+            visibility: (string) ($job['githubVisibility'] ?? 'private')
         );
     }//end maybePush()
 
