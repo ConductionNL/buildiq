@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "spec_slug": "retrofit-2026-05-25-settings-and-observability",
+  "repo": "https://codeberg.org/Conduction/openbuild",
+  "issue": 13,
+  "cycles": [
+    {
+      "cycle": 1,
+      "trigger": "build:queued",
+      "started_at": "2026-06-03T15:58:27Z",
+      "ended_at": null,
+      "outcome": "in-flight",
+      "outcome_reason": null,
+      "pattern_tags": [],
+      "stages": []
+    }
+  ]
+}
