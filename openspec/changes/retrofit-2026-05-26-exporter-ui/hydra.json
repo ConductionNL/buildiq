@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "spec_slug": "retrofit-2026-05-26-exporter-ui",
+  "repo": "https://codeberg.org/Conduction/openbuild",
+  "issue": 11,
+  "cycles": [
+    {
+      "cycle": 1,
+      "trigger": "build:queued",
+      "started_at": "2026-06-03T16:13:21Z",
+      "ended_at": null,
+      "outcome": "in-flight",
+      "outcome_reason": null,
+      "pattern_tags": [],
+      "stages": []
+    }
+  ]
+}
