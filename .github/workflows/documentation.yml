@@ -10,4 +10,8 @@ jobs:
   deploy:
     uses: Conduction/.github/.github/workflows/documentation.yml@main
     with:
+<<<<<<< HEAD
       cname: openbuild.conduction.nl
+=======
+      cname: openbuilt.conduction.nl
+>>>>>>> 10957ce3f8c976b0130f09185418a73413913936

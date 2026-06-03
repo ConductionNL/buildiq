@@ -68,9 +68,15 @@ Vrij en open source onder de EUPL-1.2-licentie.
     -->
     <navigations>
         <navigation>
+<<<<<<< HEAD
             <id>openbuild</id>
             <name>OpenBuild</name>
             <route>openbuild.dashboard.page</route>
+=======
+            <id>openbuilt</id>
+            <name>OpenBuild</name>
+            <route>openbuilt.dashboard.page</route>
+>>>>>>> 10957ce3f8c976b0130f09185418a73413913936
             <icon>app.svg</icon>
         </navigation>
     </navigations>
