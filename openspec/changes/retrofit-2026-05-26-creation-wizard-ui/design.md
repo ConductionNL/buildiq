@@ -1,5 +1,7 @@
 # Design — creation-wizard-ui (retrofit)
 
+status: pr-created
+
 Retrofit change. Tasks describe retroactive annotation, not new implementation
 work. The Create Application Wizard UI already ships; this records its observed
 behaviour as numbered REQs so gate-16 spec-coverage can trace each method to a
