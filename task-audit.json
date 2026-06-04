@@ -1,41 +1,41 @@
 {
-  "spec": "openspec/changes/openbuild-notifications",
+  "spec": "openspec/changes/retrofit-2026-05-26-creation-wizard-ui",
   "verified": [
     {
       "task": "1",
-      "file": "lib/Settings/openbuild_register.json",
+      "file": "src/dialogs/CreateApplicationWizard.vue",
       "ok": true,
-      "check": "exportJob has export-succeeded and export-failed rules: ['export-succeeded', 'export-failed']"
+      "note": "displayStep, visibleStepCount, currentStepValid, allStepsValid, goNext, goBack, mergePayload, resetState, onModalShowUpdate, onClose, onSubmit annotated with @spec task-1"
     },
     {
       "task": "2",
-      "file": "lib/Settings/openbuild_register.json",
+      "file": "src/dialogs/CreateApplicationWizard/Step1Basics.vue",
       "ok": true,
-      "check": "ApplicationVersion has version-published and version-archived rules: ['version-published', 'version-archived']"
+      "note": "isValid, slugError, onNameInput, onSlugInput, onDescriptionInput, onIconChange annotated with @spec task-2"
+    },
+    {
+      "task": "2",
+      "file": "src/dialogs/CreateApplicationWizard/Step2Preset.vue",
+      "ok": true,
+      "note": "presetOptions, selectPreset annotated with @spec task-2"
     },
     {
       "task": "3",
-      "file": "lib/Settings/openbuild_register.json",
+      "file": "src/dialogs/CreateApplicationWizard/Step3Custom.vue",
       "ok": true,
-      "check": "object-acl recipients on all rules"
+      "note": "slugErrors, duplicateSlugs, isValid, emit, getSlugError, onNameInput, onSlugInput, toggleAdvanced, addRow, removeRow, moveUp, moveDown, onDragStart, onDragOver, onDrop, onDragEnd, handler, mounted annotated with @spec task-3"
     },
     {
       "task": "4",
-      "file": "lib/Settings/openbuild_register.json",
+      "file": "src/dialogs/CreateApplicationWizard/Step4Review.vue",
       "ok": true,
-      "check": "bilingual subjects"
+      "note": "versions, chainDisplay, productionSlug, iconLightUrl, iconDarkUrl annotated with @spec task-4"
     },
     {
-      "task": "5",
-      "file": "lib/Settings/openbuild_register.json",
+      "task": "4",
+      "file": "src/dialogs/IconUploadSection.vue",
       "ok": true,
-      "check": "valid JSON"
-    },
-    {
-      "task": "6",
-      "file": "lib/BackgroundJob/RunExportJob.php",
-      "ok": true,
-      "check": "exportJob pipeline wired via transitionJob(); ApplicationVersion declared-but-dormant (tracked separately)"
+      "note": "objectUuid, iconLightUrl, iconDarkUrl, handler, onLightPreviewError, onDarkPreviewError, validateSvgFile, onLightFileChange, onDarkFileChange, uploadIcon, removeLightIcon, removeDarkIcon, removeIcon annotated with @spec task-4"
     }
   ],
   "stubs": [],
