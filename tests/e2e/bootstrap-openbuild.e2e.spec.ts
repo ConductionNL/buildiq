@@ -43,7 +43,11 @@ test.describe('bootstrap-openbuild hello-world', () => {
 		}
 	})
 
-	test('returns the seeded manifest from the public endpoint', async ({ request }) => {
+	// MOVED TO NEWMAN: asserts on the manifest API response, not the UI. The
+	// API/contract is covered by tests/integration/*.postman_collection.json
+	// ("GET hello-world manifest returns 200 with version/menu/pages").
+	// Playwright is UI-only.
+	test.skip('returns the seeded manifest from the public endpoint', async ({ request }) => {
 		const response = await request.get('/index.php/apps/openbuild/api/applications/hello-world/manifest')
 		expect(response.status(), 'manifest endpoint must return 200 for the seeded slug').toBe(200)
 
