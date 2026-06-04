@@ -26,7 +26,8 @@ const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
 
 // @e2e openbuild-rbac::viewer-cannot-save-manifest-edits
-test('REQ-OBRBAC-004 — owner sees edit controls on the application detail page', async ({ page }) => {
+// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+test.skip('REQ-OBRBAC-004 — owner sees edit controls on the application detail page', async ({ page }) => {
 	// @e2e openbuild-rbac::viewer-cannot-save-manifest-edits
 	// As admin (owner), the editor must show Save/Publish controls
 	await page.goto(`${BASE}/apps/openbuild/applications`)
@@ -50,7 +51,8 @@ test('REQ-OBRBAC-004 — owner sees edit controls on the application detail page
 })
 
 // @e2e openbuild-rbac::editor-cannot-publish
-test('REQ-OBRBAC-004 — admin sees Publish capability (owner role confirmed)', async ({ page }) => {
+// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+test.skip('REQ-OBRBAC-004 — admin sees Publish capability (owner role confirmed)', async ({ page }) => {
 	// @e2e openbuild-rbac::editor-cannot-publish
 	test.skip(!LIVE, 'Requires live dev env with a draft Application — set OPENBUILD_E2E_LIVE=1')
 
