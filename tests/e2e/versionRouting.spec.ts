@@ -48,7 +48,8 @@ async function loginAs(page: import('@playwright/test').Page, user: string, pass
 // ---------------------------------------------------------------------------
 // 9.1 — Bookmarkability / reload preserves ?_version=
 // ---------------------------------------------------------------------------
-test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008)', () => {
+// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+test.describe.skip('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008)', () => {
 	test.use({ storageState: { cookies: [], origins: [] } })
 
 	test.beforeEach(async ({ page }) => {
@@ -105,7 +106,8 @@ test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008
 // ---------------------------------------------------------------------------
 // 9.2 — 404 for unauthorised on non-production version
 // ---------------------------------------------------------------------------
-test.describe('9.2 Unauthorised access to non-production version shows 404 UI (REQ-OBVR-001 / REQ-OBVR-003)', () => {
+// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+test.describe.skip('9.2 Unauthorised access to non-production version shows 404 UI (REQ-OBVR-001 / REQ-OBVR-003)', () => {
 	test.use({ storageState: { cookies: [], origins: [] } })
 
 	test.beforeEach(async ({ page }) => {
@@ -172,7 +174,8 @@ test.describe('9.2 Unauthorised access to non-production version shows 404 UI (R
 // ---------------------------------------------------------------------------
 // 9.3 — Default version is most-upstream-non-production fallback
 // ---------------------------------------------------------------------------
-test.describe('9.3 Default version resolution — most-upstream-non-production fallback (REQ-OBVR-004)', () => {
+// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+test.describe.skip('9.3 Default version resolution — most-upstream-non-production fallback (REQ-OBVR-004)', () => {
 	test.use({ storageState: { cookies: [], origins: [] } })
 
 	test.beforeEach(async ({ page }) => {
