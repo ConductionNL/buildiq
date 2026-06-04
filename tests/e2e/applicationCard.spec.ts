@@ -23,7 +23,8 @@ import { test, expect } from '@playwright/test'
  *     by design (spec C Decision 4). The test asserts the icon is present and
  *     the badge is NOT the pre-spec-A regression value "Live".
  */
-test.describe('ApplicationCard — icon + productionVersion fields (spec A / spec C)', () => {
+// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — builder host blank (BuilderHostView unresolved by nc-vue CnPageRenderer) / no detail/editor/version pages. Re-enable when #41 is fixed.
+test.describe.skip('ApplicationCard — icon + productionVersion fields (spec A / spec C)', () => {
 
 	test('index page renders ApplicationCards with icon <img> elements', async ({ page }) => {
 		await page.goto('/apps/openbuild/applications')

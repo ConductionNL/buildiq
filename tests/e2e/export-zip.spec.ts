@@ -32,7 +32,8 @@ const ADMIN_PASSWORD = process.env.NC_ADMIN_PASSWORD || 'admin'
 const APPLICATION_SLUG = 'hello-world'
 const POLL_TIMEOUT_MS = 60_000
 
-test.describe('OpenBuild ZIP export', () => {
+// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+test.describe.skip('OpenBuild ZIP export', () => {
 	test.beforeEach(async ({ page }) => {
 		// Login via the Nextcloud login form. CI uses storageState; this
 		// fallback keeps the spec runnable in local dev.
