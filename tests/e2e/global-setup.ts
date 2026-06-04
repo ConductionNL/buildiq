@@ -42,9 +42,23 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 		await page.goto('/index.php/login', { waitUntil: 'domcontentloaded' })
 		await page.locator('input[name="user"]').fill(adminUser)
 		await page.locator('input[name="password"]').fill(adminPassword)
-		await page.locator('button[type="submit"], input[type="submit"]').first().click()
-		// Accept both pretty + index.php-prefixed redirects.
-		await page.waitForURL(/\/apps\//, { timeout: 20_000 })
+		// Submit via the form rather than a button click: on a slow/loaded
+		// instance the themed submit button's click can be swallowed by an
+		// overlay/animation and never navigate. Falling back to a button
+		// click keeps it working where the form ref is unavailable.
+		await page.evaluate(() => {
+			const form = document.querySelector('form[name="login"], form') as HTMLFormElement | null
+			if (form && typeof form.requestSubmit === 'function') {
+				form.requestSubmit()
+			} else if (form) {
+				form.submit()
+			} else {
+				document.querySelector<HTMLButtonElement>('button[type="submit"], input[type="submit"]')?.click()
+			}
+		})
+		// Accept both pretty + index.php-prefixed redirects. Generous
+		// timeout for slow dev instances.
+		await page.waitForURL(/\/apps\//, { timeout: 45_000 })
 		await context.storageState({ path: storagePath })
 		// eslint-disable-next-line no-console
 		console.log(`[globalSetup] authenticated session stored at ${storagePath}`)
