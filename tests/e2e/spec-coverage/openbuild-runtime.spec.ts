@@ -313,8 +313,11 @@ test.skip('REQ-OBR-010 — ManifestDiff renders without crash', async ({ page })
 	await expect(page.locator('main').first()).toBeVisible({ timeout: 10_000 })
 })
 
+// MOVED TO NEWMAN: API/contract assertion on the manifest endpoint, not the UI.
+// RBAC + manifest-endpoint contract coverage lives in
+// tests/integration/openbuild-rbac.postman_collection.json. Playwright is UI-only.
 // @e2e openbuild-runtime::caller-without-a-role-gets-403-not-200-not-404
-test('REQ-OBR-006c — manifest endpoint 403 for no-role user', async ({ request }) => {
+test.skip('REQ-OBR-006c — manifest endpoint 403 for no-role user', async ({ request }) => {
 	// @e2e openbuild-runtime::caller-without-a-role-gets-403-not-200-not-404
 	// The manifest endpoint for hello-world: admin has owner access so gets 200
 	const res = await request.get('/index.php/apps/openbuild/api/applications/hello-world/manifest', {
@@ -324,8 +327,10 @@ test('REQ-OBR-006c — manifest endpoint 403 for no-role user', async ({ request
 	expect(res.status()).toBe(200)
 })
 
+// MOVED TO NEWMAN: API/contract assertion on the manifest endpoint, not the UI.
+// Covered by tests/integration/openbuild-rbac.postman_collection.json. Playwright is UI-only.
 // @e2e openbuild-runtime::caller-in-any-role-gets-200
-test('REQ-OBR-006c — admin (owner role) gets 200 from manifest endpoint', async ({ request }) => {
+test.skip('REQ-OBR-006c — admin (owner role) gets 200 from manifest endpoint', async ({ request }) => {
 	// @e2e openbuild-runtime::caller-in-any-role-gets-200
 	const res = await request.get('/index.php/apps/openbuild/api/applications/hello-world/manifest', {
 		headers: { 'OCS-APIRequest': 'true' },
