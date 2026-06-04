@@ -98,4 +98,8 @@ Vrij en open source onder de EUPL-1.2-licentie.
     <background-jobs>
         <job>OCA\OpenBuild\BackgroundJob\CleanupExpiredExports</job>
     </background-jobs>
+
+    <commands>
+        <command>OCA\OpenBuild\Command\SeedHelloWorldFixture</command>
+    </commands>
 </info>
