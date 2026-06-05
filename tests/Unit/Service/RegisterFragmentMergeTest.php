@@ -79,6 +79,37 @@ final class RegisterFragmentMergeTest extends TestCase
     }//end testDisjointFragmentsUnionSchemasAndPaths()
 
     /**
+     * Seed objects in components.objects[] union additively across fragments
+     * (fleet-standard ADR-037 rule relied on by the business-rules-engine
+     * fragment, which ships RuleSet/DecisionTable/TestCase seed objects).
+     *
+     * @return void
+     */
+    public function testSeedObjectsUnionAdditively(): void
+    {
+        // Base has no objects key — first fragment seeds it.
+        $base = $this->merge(
+            ['components' => ['schemas' => ['Existing' => ['type' => 'object']]]],
+            ['components' => ['objects' => [['@self' => ['slug' => 'alpha']]]]]
+        );
+        $this->assertCount(1, $base['components']['objects']);
+
+        // Second fragment concatenates its objects onto the accumulated list.
+        $base = $this->merge(
+            $base,
+            ['components' => ['objects' => [['@self' => ['slug' => 'beta']]]]]
+        );
+
+        $slugs = array_map(
+            static fn (array $o): string => $o['@self']['slug'],
+            $base['components']['objects']
+        );
+        $this->assertSame(['alpha', 'beta'], $slugs);
+        // Schemas from the base survive the objects-bearing overlay.
+        $this->assertArrayHasKey('Existing', $base['components']['schemas']);
+    }//end testSeedObjectsUnionAdditively()
+
+    /**
      * List arrays are concatenated; scalars overwrite.
      *
      * @return void

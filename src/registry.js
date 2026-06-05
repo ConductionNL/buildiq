@@ -79,6 +79,10 @@ import PageDesignerView from './views/PageDesignerHost.vue'
 // Virtual-app host — nested CnAppRoot rendering a virtual app's own manifest.
 import BuilderHostView from './views/BuilderHost.vue'
 
+// Business-rules engine dashboard — lists RuleSets, opens the decision-table /
+// condition-action editors and the test sandbox (spec business-rules-engine).
+import RuleSetsPageView from './views/RuleSetsPage.vue'
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /**
@@ -166,4 +170,7 @@ export default {
 	SchemaDesignerView: page(SchemaDesignerView),
 	PageDesignerView: page(PageDesignerView),
 	BuilderHostView: page(BuilderHostView),
+
+	// Business-rules engine dashboard (type:"custom" page).
+	RuleSetsPageView: page(RuleSetsPageView),
 }
