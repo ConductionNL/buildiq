@@ -36,10 +36,14 @@ matches the transition action name, not the destination state).
 - **WHEN** an `exportJob` object runs the `succeed` lifecycle transition
 - **THEN** the OpenRegister notification engine dispatches an `nc-notification` to the object's manage-ACL holders with a nl/en subject referencing `{{applicationVersion}}`
 
+@e2e exclude NC notification dispatch — no in-app toast surface; covered by PHPUnit/Newman
+
 #### Scenario: Export job fails
 
 - **WHEN** an `exportJob` object runs the `fail` lifecycle transition
 - **THEN** the engine dispatches an `nc-notification` to the object's manage-ACL holders with a nl/en subject referencing `{{applicationVersion}}` and `{{errorMessage}}`
+
+@e2e exclude NC notification dispatch — no in-app toast surface; covered by PHPUnit/Newman
 
 ### Requirement: Application version lifecycle notifications
 
@@ -56,7 +60,11 @@ action name, not the destination state).
 - **WHEN** an `ApplicationVersion` object runs the `publish` lifecycle transition
 - **THEN** the engine dispatches an `nc-notification` to the object's manage-ACL holders with a nl/en subject referencing `{{semver}}` and `{{name}}`
 
+@e2e exclude NC notification dispatch — no in-app toast surface; covered by PHPUnit/Newman
+
 #### Scenario: Version archived
 
 - **WHEN** an `ApplicationVersion` object runs the `archive` lifecycle transition
 - **THEN** the engine dispatches an `nc-notification` to the object's manage-ACL holders with a nl/en subject referencing `{{semver}}` and `{{name}}`
+
+@e2e exclude NC notification dispatch — no in-app toast surface; covered by PHPUnit/Newman
