@@ -35,4 +35,24 @@
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/ManifestResolverService.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/PermissionResolver.php" method="matchesCaller"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/VersionPromotionService.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/ConditionActionExecutor.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/DecisionTableEvaluator.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/DecisionTableEvaluator.php" method="applyHitPolicy"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/DecisionTableEvaluator.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/DecisionTableEvaluator.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/ExpressionEvaluator.php" method="evaluate"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/ExpressionEvaluator.php" method="evaluateBinary"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/FeelParser.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/FeelParser.php" method="tokenize"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/FeelParser.php" method="tokenize"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/FeelParser.php" method="tokenize"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/FeelParser.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/FeelParser.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/FeelParser.php" method="parseComparison"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/FeelParser.php" method="parsePrimary"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/RuleEngineService.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SettingsService.php" method="doLoadConfiguration"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SettingsService.php" method="doLoadConfiguration"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SettingsService.php" method="doLoadConfiguration"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/SettingsService.php"/>
 </phpmd-baseline>

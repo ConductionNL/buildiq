@@ -98,6 +98,16 @@ return [
         ['name' => 'exports#submit',   'url' => '/api/applications/{slug}/exports', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'exports#download', 'url' => '/api/exports/{uuid}/download',     'verb' => 'GET'],
 
+        // Business-rules engine (spec business-rules-engine REQ-BRE-006 / REQ-BRE-004).
+        // All three carry #[NoAdminRequired] on the controller; multi-tenant isolation
+        // is enforced server-side in RuleEngineService (a slug owned by another tenant
+        // resolves to 404 — no IDOR). evaluate/test-all are POST so they cannot collide
+        // with the GET SPA catch-all; the GET schema route's `/schema` suffix makes it
+        // strictly more specific than `/{path}`. Slugs are kebab-case.
+        ['name' => 'rules#evaluate', 'url' => '/api/rules/{ruleSetSlug}/evaluate', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'rules#schema',   'url' => '/api/rules/{ruleSetSlug}/schema',   'verb' => 'GET',  'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'rules#testAll',  'url' => '/api/rules/{ruleSetSlug}/test-all', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
         // SPA catch-all — same controller as the index route; must use a distinct route name
         // (duplicate names replace the earlier route in Symfony, which breaks GET /).
         ['name' => 'dashboard#catchAll', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '.+'], 'defaults' => ['path' => '']],
