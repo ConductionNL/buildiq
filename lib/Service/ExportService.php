@@ -336,8 +336,7 @@ class ExportService
      */
     public function prepareScratchDir(string $jobUuid): string
     {
-        $workRoot = $this->getOrCreateAppDataDir(name: 'work');
-        $scratch  = $workRoot.'/'.$jobUuid;
+        $scratch = $this->scratchTreeDir(jobUuid: $jobUuid);
 
         if (is_dir($scratch) === true) {
             $this->rrmdir(dir: $scratch);
@@ -346,6 +345,23 @@ class ExportService
         mkdir($scratch, 0o755, true);
         return $scratch;
     }//end prepareScratchDir()
+
+    /**
+     * Resolve the work scratch directory path that holds the generated tree
+     * for a job. The GitHub push target reads the tree from here after
+     * generateAppZip() has populated it. This is a pure path resolver — it
+     * does NOT create or wipe the directory (see prepareScratchDir for that).
+     *
+     * @param string $jobUuid ExportJob UUID.
+     *
+     * @return string Absolute path to the scratch tree directory.
+     *
+     * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+     */
+    public function scratchTreeDir(string $jobUuid): string
+    {
+        return $this->getOrCreateAppDataDir(name: 'work').'/'.$jobUuid;
+    }//end scratchTreeDir()
 
     /**
      * Ensure an export-staging subdirectory exists and return its local path.

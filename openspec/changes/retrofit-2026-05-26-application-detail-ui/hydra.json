@@ -1,0 +1,82 @@
+{
+  "schema_version": 2,
+  "spec_slug": "retrofit-2026-05-26-application-detail-ui",
+  "repo": "https://codeberg.org/Conduction/openbuild",
+  "issue": 18,
+  "cycles": [
+    {
+      "cycle": 1,
+      "trigger": "orchestrator",
+      "started_at": "2026-06-02T13:56:04Z",
+      "ended_at": "2026-06-02T15:08:27Z",
+      "outcome": "done",
+      "outcome_reason": "pipeline complete \u2014 reviews passed and applier passed (if run)",
+      "pattern_tags": [],
+      "stages": [
+        {
+          "stage": "applier",
+          "persona": "Axel Pli\u00e9r",
+          "model": "sonnet",
+          "container": "hydra-applier",
+          "started_at": "2026-06-02T13:55:21Z",
+          "ended_at": "2026-06-02T13:56:01Z",
+          "exit_code": 1,
+          "turns_used": 0,
+          "turns_budget": 20,
+          "checks_run": [
+            "hydra.json-consumer"
+          ],
+          "checks_skipped": [],
+          "findings": [
+            {
+              "id": "applier-fail",
+              "severity": "CRITICAL",
+              "gate": "applier",
+              "rule": "applier returned fail verdict",
+              "status": "open",
+              "note": "Applier blocking items should be captured in hydra.json pipeline.applier.blocking[] by the container itself. See logs/pipeline-*/applier.jsonl for detail.",
+              "autofixable": false
+            }
+          ],
+          "decisions": [],
+          "verdict": "fail",
+          "duration_seconds": 40
+        },
+        {
+          "stage": "applier",
+          "persona": "Axel Pli\u00e9r",
+          "model": "sonnet",
+          "container": "hydra-applier",
+          "started_at": "2026-06-02T15:06:14Z",
+          "ended_at": "2026-06-02T15:07:53Z",
+          "exit_code": 0,
+          "turns_used": 8,
+          "turns_budget": 20,
+          "checks_run": [
+            "hydra.json-consumer"
+          ],
+          "checks_skipped": [],
+          "findings": [],
+          "decisions": [],
+          "verdict": "pass",
+          "duration_seconds": 99
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "runs": 2,
+    "turns_used": 8,
+    "cost_usd": 0.0,
+    "duration_seconds": 139,
+    "cycles": 1,
+    "by_stage": {
+      "applier": {
+        "runs": 2,
+        "turns_used": 8,
+        "cost_usd": 0.0,
+        "duration_seconds": 139
+      }
+    }
+  }
+}

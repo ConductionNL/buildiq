@@ -114,18 +114,32 @@ Recipients use `object-acl` (no structured owner field on the schema).
 - Notifications only fire once the export pipeline writes the named
   `transition` actions — see Caveats.
 
+## Implementation notes (2026-06-01)
+
+- **Trigger action names corrected.** This spec was drafted with past-tense
+  action keys (`succeeded`, `failed`, `published`, `archived`). OR's
+  `AnnotationNotificationDispatcher::matches()` compares `trigger.action`
+  against the lifecycle *transition name* (the key in the `transitions` map),
+  not the destination state. The implemented action names therefore use
+  present-tense transition names (`succeed`, `fail`, `publish`, `archive`)
+  to match the `x-openregister-lifecycle.transitions` keys on each schema.
+  A past-tense state name would be declared-but-dormant and never fire.
+  `ApplicationVersionLifecycleSchemaTest::testNotificationActionsMatchLifecycleTransitionNames`
+  pins this contract.
+
 ## Caveats
 
 - **Export pipeline must write transition actions.** The `transition`
   trigger fires on a named lifecycle action, not on a raw `status`
-  field write. The OpenBuild export pipeline currently sets
-  `exportJob.status` directly; for `export-succeeded` / `export-failed`
-  to fire, the pipeline must drive status through OpenRegister
-  transition actions named `succeeded` and `failed` (and the
-  `ApplicationVersion` publish/archive flows through `published` /
-  `archived` actions). If transition actions are not wired, these rules
-  are declared-but-dormant. This is the prerequisite for the change to
-  have observable effect.
+  field write. **Confirmed wired (2026-06-01):** `RunExportJob` drives all
+  `exportJob` status changes through `ExportJobService::transitionJob()` with
+  action names `start`, `succeed`, and `fail` — `export-succeeded` and
+  `export-failed` notifications WILL fire. `ApplicationVersion`: not yet
+  wired — `VersionPromotionService::applyManifestAndSemver()` still writes
+  `status='published'` via `saveObject()` directly, so `version-published`
+  and `version-archived` rules are declared-but-dormant until that path is
+  refactored to call the `publish`/`archive` transition actions (tracked
+  separately).
 - **No structured owner uid on either schema.** Neither `exportJob` nor
   `ApplicationVersion` carries an owner-uid field, so recipients use
   `object-acl` (`permission: manage`) rather than `field`. This routes

@@ -15,3 +15,8 @@ can trace each method to a requirement.
   still require an authenticated session.
 
 No behaviour is changed by this retrofit.
+
+## Status
+
+status: pr-created
+PR: https://codeberg.org/Conduction/openbuild/pulls/35

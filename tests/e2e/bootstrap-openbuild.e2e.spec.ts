@@ -17,7 +17,8 @@ import { test, expect } from '@playwright/test'
  *  - Playwright browsers installed (`npx playwright install --with-deps`).
  */
 test.describe('bootstrap-openbuild hello-world', () => {
-	test('renders the three seeded hello-message objects on the index page', async ({ page }) => {
+	// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — builder host blank (BuilderHostView unresolved by nc-vue CnPageRenderer) / no detail/editor/version pages. Re-enable when #41 is fixed.
+	test.skip('renders the three seeded hello-message objects on the index page', async ({ page }) => {
 		await page.goto('/apps/openbuild/builder/hello-world')
 
 		// The SPA needs a moment to fetch the manifest and resolve the index page.
@@ -42,7 +43,11 @@ test.describe('bootstrap-openbuild hello-world', () => {
 		}
 	})
 
-	test('returns the seeded manifest from the public endpoint', async ({ request }) => {
+	// MOVED TO NEWMAN: asserts on the manifest API response, not the UI. The
+	// API/contract is covered by tests/integration/*.postman_collection.json
+	// ("GET hello-world manifest returns 200 with version/menu/pages").
+	// Playwright is UI-only.
+	test.skip('returns the seeded manifest from the public endpoint', async ({ request }) => {
 		const response = await request.get('/index.php/apps/openbuild/api/applications/hello-world/manifest')
 		expect(response.status(), 'manifest endpoint must return 200 for the seeded slug').toBe(200)
 

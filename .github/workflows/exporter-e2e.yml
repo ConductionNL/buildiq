@@ -1,0 +1,48 @@
+name: Exporter E2E
+
+# Runs the OpenBuild exporter end-to-end integration test on every PR.
+# Parallelises with the main Code Quality (PHPUnit/Newman/Playwright) job
+# per ADR-008 so the exporter's tree-generation contract (REQ-OBEX-003 /
+# REQ-OBEX-008 / REQ-OBEX-010) is exercised against the embedded template
+# snapshot independently of the full suite.
+
+on:
+  push:
+    branches: [main, development, feature/**, bugfix/**, hotfix/**]
+  pull_request:
+    branches: [main, master, development, beta]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exporter-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          tools: composer
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run exporter integration test
+        run: ./vendor/bin/phpunit --no-coverage tests/Integration/ExporterEndToEndTest.php
+
+      - name: Run exporter unit tests
+        run: >-
+          ./vendor/bin/phpunit --no-coverage
+          tests/Unit/Service/ExportServiceTest.php
+          tests/Unit/Service/ExportJobServiceTest.php
+          tests/Unit/Service/GitHubPushServiceTest.php
+          tests/Unit/Service/PlaceholderResolverTest.php
+          tests/Unit/Controller/ExportsControllerTest.php
+          tests/Unit/BackgroundJob/RunExportJobTest.php
+          tests/Unit/BackgroundJob/CleanupExpiredExportsTest.php

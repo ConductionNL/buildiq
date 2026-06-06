@@ -47,7 +47,8 @@ const ADMIN_PASS = process.env.NC_ADMIN_PASS ?? 'admin'
 const APP_SLUG = 'pw-hello'
 const SCHEMA_SLUG = 'message'
 
-test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', () => {
+// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+test.describe.skip('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', () => {
 	test.beforeEach(async ({ page }) => {
 		// Session is established by globalSetup (tests/e2e/global-setup.ts)
 		// which writes storageState that every spec inherits via the

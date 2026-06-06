@@ -1,0 +1,156 @@
+<!--
+  - SPDX-License-Identifier: EUPL-1.2
+  -
+  - ConditionActionRuleEditor — form editor for a condition-action rule (spec
+  - business-rules-engine REQ-BRE-003). Per ADR-004 modal isolation it is a
+  - standalone NcDialog under src/dialogs/, imported by RuleSetsPage. Owns a
+  - staged rule with name, prioriteit, salience, a FEEL condition, an ordered
+  - action list (set-veld / send-notification / start-workflow / call-rule-set)
+  - and an actief toggle. Persists via OpenRegister REST and emits `saved`.
+  -->
+<template>
+	<NcDialog
+		:name="t('openbuild', 'Condition-action rule editor')"
+		size="large"
+		@closing="$emit('close')">
+		<div class="condition-action-editor">
+			<NcTextField v-model="staged.naam" :label="t('openbuild', 'Rule name')" data-testid="rule-name" />
+			<NcTextField v-model="staged.beschrijving" :label="t('openbuild', 'Description')" />
+
+			<div class="condition-action-editor__row">
+				<NcTextField v-model.number="staged.prioriteit" type="number" :label="t('openbuild', 'Priority')" />
+				<NcTextField v-model.number="staged.salience" type="number" :label="t('openbuild', 'Salience')" />
+			</div>
+
+			<NcTextArea
+				v-model="staged.conditie"
+				:label="t('openbuild', 'Condition (FEEL)')"
+				data-testid="rule-condition" />
+
+			<h4>{{ t('openbuild', 'Actions') }}</h4>
+			<div v-for="(action, index) in staged.acties" :key="'a-' + index" class="condition-action-editor__action">
+				<NcSelect
+					v-model="action.type"
+					:input-label="t('openbuild', 'Action type')"
+					:options="actionTypes" />
+				<NcButton type="tertiary" @click="removeAction(index)">
+					{{ t('openbuild', 'Remove') }}
+				</NcButton>
+			</div>
+			<NcButton type="secondary" @click="addAction">
+				{{ t('openbuild', 'Add action') }}
+			</NcButton>
+
+			<NcCheckboxRadioSwitch :checked.sync="staged.actief">
+				{{ t('openbuild', 'Active') }}
+			</NcCheckboxRadioSwitch>
+
+			<NcNoteCard v-if="errorMessage" type="error">
+				{{ errorMessage }}
+			</NcNoteCard>
+		</div>
+
+		<template #actions>
+			<NcButton @click="$emit('close')">
+				{{ t('openbuild', 'Cancel') }}
+			</NcButton>
+			<NcButton type="primary" :disabled="saving" @click="save">
+				{{ saving ? t('openbuild', 'Saving...') : t('openbuild', 'Save') }}
+			</NcButton>
+		</template>
+	</NcDialog>
+</template>
+
+<script>
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+import { NcButton, NcCheckboxRadioSwitch, NcDialog, NcNoteCard, NcSelect, NcTextArea, NcTextField } from '@nextcloud/vue'
+
+export default {
+	name: 'ConditionActionRuleEditor',
+	components: {
+		NcButton,
+		NcCheckboxRadioSwitch,
+		NcDialog,
+		NcNoteCard,
+		NcSelect,
+		NcTextArea,
+		NcTextField,
+	},
+	props: {
+		ruleSet: {
+			type: Object,
+			required: true,
+		},
+	},
+	emits: ['close', 'saved'],
+	data() {
+		return {
+			staged: {
+				slug: this.ruleSet.slug || '',
+				naam: this.ruleSet.naam || '',
+				beschrijving: this.ruleSet.beschrijving || '',
+				prioriteit: this.ruleSet.prioriteit || 0,
+				salience: this.ruleSet.salience || 0,
+				conditie: this.ruleSet.conditie || '',
+				acties: this.ruleSet.acties ? JSON.parse(JSON.stringify(this.ruleSet.acties)) : [],
+				actief: this.ruleSet.actief !== false,
+			},
+			actionTypes: ['set-veld', 'send-notification', 'start-workflow', 'call-rule-set'],
+			saving: false,
+			errorMessage: '',
+		}
+	},
+	methods: {
+		addAction() {
+			this.staged.acties.push({ type: 'set-veld', parameters: {} })
+		},
+		removeAction(index) {
+			this.staged.acties.splice(index, 1)
+		},
+		async save() {
+			this.saving = true
+			this.errorMessage = ''
+			try {
+				const ruleSetUrl = generateUrl('/apps/openregister/api/objects/openbuild/rule-set')
+				await axios.post(ruleSetUrl, {
+					slug: this.staged.slug,
+					naam: this.staged.naam,
+					ruleType: 'condition-action',
+					status: this.ruleSet.status || 'draft',
+				})
+				const ruleUrl = generateUrl('/apps/openregister/api/objects/openbuild/condition-action-rule')
+				await axios.post(ruleUrl, {
+					ruleSetId: this.staged.slug,
+					naam: this.staged.naam,
+					beschrijving: this.staged.beschrijving,
+					prioriteit: this.staged.prioriteit,
+					salience: this.staged.salience,
+					conditie: this.staged.conditie,
+					acties: this.staged.acties,
+					actief: this.staged.actief,
+				})
+				this.$emit('saved')
+			} catch (error) {
+				this.errorMessage = t('openbuild', 'Could not save the rule.')
+			} finally {
+				this.saving = false
+			}
+		},
+	},
+}
+</script>
+
+<style scoped>
+.condition-action-editor__row {
+	display: flex;
+	gap: 8px;
+}
+
+.condition-action-editor__action {
+	display: flex;
+	gap: 8px;
+	align-items: flex-end;
+	margin-bottom: 8px;
+}
+</style>

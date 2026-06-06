@@ -261,7 +261,7 @@
       "ApplicationVersion": {
         "x-openregister-notifications": {
           "version-published": {
-            "trigger": { "type": "transition", "action": "published" },
+            "trigger": { "type": "transition", "action": "publish" },
             "enabled": true,
             "channels": ["nc-notification"],
             "recipients": [ { "kind": "object-acl", "permission": "manage" } ],
@@ -271,7 +271,7 @@
             }
           },
           "version-archived": {
-            "trigger": { "type": "transition", "action": "archived" },
+            "trigger": { "type": "transition", "action": "archive" },
             "enabled": true,
             "channels": ["nc-notification"],
             "recipients": [ { "kind": "object-acl", "permission": "manage" } ],
@@ -417,7 +417,7 @@
       "exportJob": {
         "x-openregister-notifications": {
           "export-succeeded": {
-            "trigger": { "type": "transition", "action": "succeeded" },
+            "trigger": { "type": "transition", "action": "succeed" },
             "enabled": true,
             "channels": ["nc-notification"],
             "recipients": [ { "kind": "object-acl", "permission": "manage" } ],
@@ -427,7 +427,7 @@
             }
           },
           "export-failed": {
-            "trigger": { "type": "transition", "action": "failed" },
+            "trigger": { "type": "transition", "action": "fail" },
             "enabled": true,
             "channels": ["nc-notification"],
             "recipients": [ { "kind": "object-acl", "permission": "manage" } ],

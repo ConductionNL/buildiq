@@ -206,10 +206,25 @@ class ApplicationsController extends Controller
                 return $denial;
             }
 
-            $manifest = ($applicationArray['manifest'] ?? null);
+            // Resolve the production manifest from the application's
+            // productionVersion. The versioned model (ADR-002) stores the
+            // manifest on the ApplicationVersion, not on the Application, so
+            // reading `applicationArray['manifest']` directly returns null for
+            // every app. ManifestResolverService resolves productionVersion →
+            // version.manifest and itself falls back to a legacy
+            // application-level `manifest` field; the direct read is kept as a
+            // last-resort fallback for safety.
+            $manifest = $this->manifestResolver->resolve(
+                appSlug: $slug,
+                versionSlug: null,
+                caller: $this->userSession->getUser()
+            );
+            if ($manifest === null) {
+                $manifest = ($applicationArray['manifest'] ?? null);
+            }
 
             if ($manifest === null) {
-                $this->logger->warning('OpenBuild: Application '.$applicationUuid.' has no manifest property');
+                $this->logger->warning('OpenBuild: Application '.$applicationUuid.' has no resolvable manifest');
                 return new JSONResponse(
                     data: ['error' => 'no_manifest', 'message' => 'Application has no manifest'],
                     statusCode: Http::STATUS_NOT_FOUND

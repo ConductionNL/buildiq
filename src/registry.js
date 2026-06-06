@@ -91,6 +91,10 @@ import BuilderHostView from './views/BuilderHost.vue'
 //   - audit-trail: recent audit entries for the object (detail sidebar).
 import { CnStatsBlockWidget, CnAuditTrailCard } from '@conduction/nextcloud-vue'
 
+// Business-rules engine dashboard — lists RuleSets, opens the decision-table /
+// condition-action editors and the test sandbox (spec business-rules-engine).
+import RuleSetsPageView from './views/RuleSetsPage.vue'
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /**
@@ -207,4 +211,7 @@ export default {
 	// Dashboard widgets — resolved by CnWidgetGrid by manifest widgetKey.
 	'stats-block': widget(CnStatsBlockWidget, ['body']),
 	'audit-trail': widget(CnAuditTrailCard, ['sidebar', 'body']),
+
+	// Business-rules engine dashboard (type:"custom" page).
+	RuleSetsPageView: page(RuleSetsPageView),
 }

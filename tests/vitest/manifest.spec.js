@@ -8,8 +8,28 @@
 // registry.js per ADR-036; the keys are the same component names.)
 
 import { describe, it, expect } from 'vitest'
-import manifest from '../../src/manifest.json'
+import baseManifest from '../../src/manifest.json'
 import registry from '../../src/registry.js'
+
+// ADR-037: the runtime manifest is the base monolith with every
+// src/manifest.d/*.json fragment's `pages`/`menu` arrays concatenated on
+// (mirrors src/main.js mergeManifestFragments()). The structural checks must
+// run against the merged manifest so fragment-only pages/components are seen.
+const fragmentModules = import.meta.glob('../../src/manifest.d/*.json', { eager: true })
+const manifest = {
+	...baseManifest,
+	menu: [...(baseManifest.menu || [])],
+	pages: [...(baseManifest.pages || [])],
+}
+for (const key of Object.keys(fragmentModules).sort()) {
+	const fragment = fragmentModules[key].default || fragmentModules[key]
+	if (Array.isArray(fragment.menu)) {
+		manifest.menu.push(...fragment.menu)
+	}
+	if (Array.isArray(fragment.pages)) {
+		manifest.pages.push(...fragment.pages)
+	}
+}
 
 describe('src/manifest.json', () => {
 	it('declares a version and the OpenRegister dependency', () => {

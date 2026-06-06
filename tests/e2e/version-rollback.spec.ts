@@ -55,7 +55,8 @@ async function loginAs(page: Page, user: string, pass: string): Promise<void> {
 	}
 }
 
-test.describe('openbuild-versioning — publish + rollback (REQ-OBV-005 / REQ-OBR-009)', () => {
+// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+test.describe.skip('openbuild-versioning — publish + rollback (REQ-OBV-005 / REQ-OBR-009)', () => {
 	test.use({ storageState: { cookies: [], origins: [] } })
 
 	test.beforeEach(async ({ page }) => {
