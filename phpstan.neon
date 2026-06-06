@@ -17,6 +17,11 @@ parameters:
         - lib/Resources/template
     scanDirectories:
         - vendor/nextcloud/ocp
+    scanFiles:
+        # OpenRegister lifecycle-guard contract (GuardResult + LifecycleGuardInterface)
+        # so the app-registered ApplicationVersionOwnerGuard resolves the OR
+        # interface it implements during static analysis (openbuild-rbac).
+        - tests/stubs/openregister-lifecycle.stub.php
     reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         # Nextcloud server internals (\OC, OC_App, OC\) not stubbed in nextcloud/ocp
