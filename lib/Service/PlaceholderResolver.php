@@ -35,6 +35,8 @@ namespace OCA\OpenBuild\Service;
  * Literal renames: legacy template strings (`app-template`, `AppTemplate`)
  * are replaced with the exported app's slug / namespace so the unzipped tree
  * builds standalone with no further hand-edits.
+ *
+ * @spec openspec/changes/openbuild-exporter/tasks.md#task-3.1
  */
 final class PlaceholderResolver
 {

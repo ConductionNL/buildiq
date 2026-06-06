@@ -49,6 +49,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Controller for the OpenBuild export pipeline.
+ *
+ * @spec openspec/changes/openbuild-exporter/tasks.md#task-7.2
+ * @spec openspec/changes/openbuild-exporter/tasks.md#task-5.2
  */
 class ExportsController extends Controller
 {
