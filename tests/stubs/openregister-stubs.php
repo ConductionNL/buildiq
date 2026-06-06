@@ -682,3 +682,80 @@ namespace OCA\OpenRegister\Event {
         }
     }
 }
+
+namespace OCA\OpenRegister\Lifecycle {
+
+    if (class_exists(GuardResult::class, autoload: false) === false) {
+        /**
+         * Stub GuardResult — allow/deny verdict value object returned by guards.
+         *
+         * Mirrors the real OR value object so the ApplicationVersionOwnerGuard
+         * under test can build verdicts and callers can inspect `isAllowed()` /
+         * `getMessage()`.
+         */
+        final class GuardResult
+        {
+            /**
+             * @param bool        $allowed Whether the transition is allowed.
+             * @param string|null $message Optional deny message.
+             *
+             * @return void
+             */
+            private function __construct(private bool $allowed, private ?string $message)
+            {
+            }
+
+            /**
+             * @return self Allow verdict.
+             */
+            public static function allow(): self
+            {
+                return new self(true, null);
+            }
+
+            /**
+             * @param string $message Deny reason.
+             *
+             * @return self Deny verdict.
+             */
+            public static function deny(string $message): self
+            {
+                return new self(false, $message);
+            }
+
+            /**
+             * @return bool True when allowed.
+             */
+            public function isAllowed(): bool
+            {
+                return $this->allowed;
+            }
+
+            /**
+             * @return string|null Deny message, or null.
+             */
+            public function getMessage(): ?string
+            {
+                return $this->message;
+            }
+        }
+    }
+
+    if (interface_exists(LifecycleGuardInterface::class, autoload: false) === false) {
+        /**
+         * Stub LifecycleGuardInterface — the contract apps implement to
+         * authorise a lifecycle transition.
+         */
+        interface LifecycleGuardInterface
+        {
+            /**
+             * @param array<string, mixed> $object The object payload.
+             * @param string               $action The transition action.
+             * @param string               $userId The acting user UID.
+             *
+             * @return GuardResult Allow or deny verdict.
+             */
+            public function check(array $object, string $action, string $userId): GuardResult;
+        }
+    }
+}

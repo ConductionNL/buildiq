@@ -24,18 +24,23 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\AppInfo;
 
+use OCA\OpenBuild\Lifecycle\ApplicationVersionOwnerGuard;
 use OCA\OpenBuild\Listener\ProductionVersionGuardListener;
 use OCA\OpenBuild\Listener\DeepLinkRegistrationListener;
 use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
 use OCA\OpenBuild\Service\AppNavigationService;
+use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\INavigationManager;
+use OCP\IUserManager;
+use Psr\Log\LoggerInterface;
 
 /**
  * Main application class for the OpenBuild Nextcloud app.
@@ -101,6 +106,26 @@ class Application extends App implements IBootstrap
         $context->registerServiceAlias(
             'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::openbuild',
             OpenBuildToolProvider::class
+        );
+
+        // Per-Application RBAC lifecycle guard (ADR-022/ADR-023; openbuild-rbac).
+        // OpenRegister's LifecycleGuardRegistry resolves the destructive
+        // ApplicationVersion transitions' `requires` tag — keyed by this guard's
+        // FQCN in the schema's x-openregister-lifecycle.transitions[*].requires —
+        // to this concrete instance. It is the real, default-secure, fail-closed
+        // ownership rule the descriptive `authorization` block cannot express
+        // (issue #1). Registered explicitly because the guard's dependencies
+        // (PermissionResolver, ObjectService) need wiring through the container.
+        $context->registerService(
+            ApplicationVersionOwnerGuard::class,
+            static function ($c): ApplicationVersionOwnerGuard {
+                return new ApplicationVersionOwnerGuard(
+                    objectService: $c->get(ObjectService::class),
+                    permissionResolver: $c->get(PermissionResolver::class),
+                    userManager: $c->get(IUserManager::class),
+                    logger: $c->get(LoggerInterface::class)
+                );
+            }
         );
 
         // Repair steps (InitializeSettings + MigrateToVersionedModel + …) are declared in info.xml.

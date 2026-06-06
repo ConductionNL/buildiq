@@ -21,7 +21,7 @@
         "title": "Application",
         "description": "A virtual app built with OpenBuild. Per ADR-002 the Application carries identity (slug, name, description, permissions) plus a productionVersion relation to the ApplicationVersion currently exposed at the canonical URL. Manifest, semver, and lifecycle now live on ApplicationVersion.",
         "authorization": {
-          "_note": "Wave-12 SB1: blocks unauthenticated OR-API writes. create=admin-only (no owner bypass on create). update/delete=admin + object-owner (OR PermissionHandler owner bypass applies). LIMITATION: per-Application role rows (owners/editors/viewers in `permissions`) are richer than schema-level group ACLs — a non-admin owner can still mutate their own Application via OR API, and the editors/viewers roles cannot be expressed at schema level. Tracked in https://codeberg.org/Conduction/openbuild/issues/1 for a future per-application RBAC engine improvement.",
+          "_note": "Wave-12 SB1: blocks unauthenticated OR-API writes. create=admin-only (no owner bypass on create). update/delete=admin + object-owner (OR PermissionHandler owner bypass applies). The richer per-Application role rows (owners/editors/viewers in `permissions`) that schema-level group ACLs cannot express are now enforced for the destructive ApplicationVersion lifecycle transitions (publish/archive/reopen) by the app-registered, fail-closed ApplicationVersionOwnerGuard (LifecycleGuardInterface, ADR-022/ADR-023; openbuild-rbac), and for the manifest read + write-role gates by the in-controller PermissionResolver checks. https://codeberg.org/Conduction/openbuild/issues/1.",
           "create": ["admin"],
           "update": ["admin"],
           "delete": ["admin"]
@@ -387,7 +387,8 @@
             "publish": {
               "from": ["draft"],
               "to": "published",
-              "description": "Mark this version as ready to be the parent Application's productionVersion. Relocated from Application schema per ADR-002 — published-ness is per-version now.",
+              "description": "Mark this version as ready to be the parent Application's productionVersion. Relocated from Application schema per ADR-002 — published-ness is per-version now. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by the ApplicationVersionOwnerGuard `requires` tag below, which OR's LifecycleValidationListener runs on this transition.",
+              "requires": "OCA\\OpenBuild\\Lifecycle\\ApplicationVersionOwnerGuard",
               "on_transition": {
                 "upsert_relation": {
                   "schema": "openbuild/built-app-route",
@@ -404,12 +405,14 @@
             "archive": {
               "from": ["published"],
               "to": "archived",
-              "description": "Retire a published version. Operators are responsible for swapping the parent Application's productionVersion off this row first."
+              "description": "Retire a published version. Operators are responsible for swapping the parent Application's productionVersion off this row first. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by ApplicationVersionOwnerGuard.",
+              "requires": "OCA\\OpenBuild\\Lifecycle\\ApplicationVersionOwnerGuard"
             },
             "reopen": {
               "from": ["archived"],
               "to": "draft",
-              "description": "Restore an archived ApplicationVersion to draft for further editing."
+              "description": "Restore an archived ApplicationVersion to draft for further editing. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by ApplicationVersionOwnerGuard.",
+              "requires": "OCA\\OpenBuild\\Lifecycle\\ApplicationVersionOwnerGuard"
             }
           }
         }
