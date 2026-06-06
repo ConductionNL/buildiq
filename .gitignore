@@ -46,7 +46,6 @@ phpqa_output.log
 **/implements *
 **/ALL *
 **/endpoints *
-**/*Analysis*
 **/*references*
 **/*encoding*
 **/ter
