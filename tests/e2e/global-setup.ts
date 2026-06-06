@@ -21,6 +21,28 @@
 import { chromium, FullConfig } from '@playwright/test'
 import { existsSync, mkdirSync } from 'fs'
 import { dirname } from 'path'
+import { execSync } from 'child_process'
+
+/**
+ * Seed the deterministic `hello-world` virtual-app fixture the e2e specs run
+ * against. Production no longer ships a hello-world seed (the SeedHelloWorld
+ * repair step was retired with the versioned-model migration), so the suite
+ * seeds it itself via the test-only occ command. Override the invocation with
+ * OPENBUILD_SEED_CMD when occ is reached differently (e.g. a non-docker CI).
+ * Non-fatal: a failure is logged and specs surface the missing fixture.
+ */
+function seedHelloWorldFixture(): void {
+	const cmd = process.env.OPENBUILD_SEED_CMD
+		|| 'docker exec -u www-data nextcloud php occ openbuild:seed-hello-world-fixture'
+	try {
+		const out = execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+		// eslint-disable-next-line no-console
+		console.log(`[globalSetup] hello-world fixture: ${out.trim().split('\n').pop()}`)
+	} catch (e) {
+		// eslint-disable-next-line no-console
+		console.warn(`[globalSetup] hello-world fixture seed failed (specs needing it will fail): ${(e as Error).message}`)
+	}
+}
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
 	const baseURL = (config.projects[0].use.baseURL as string)
@@ -54,4 +76,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	} finally {
 		await browser.close()
 	}
+
+	// Seed the hello-world fixture the specs run against (idempotent).
+	seedHelloWorldFixture()
 }
