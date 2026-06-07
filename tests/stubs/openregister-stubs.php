@@ -22,6 +22,15 @@
  *     `ObjectEntity` — same as the real service — so a test that wires those
  *     to return arrays fails the same way on both sides.
  *
+ * @category Test
+ * @package  OCA\OpenRegister\Stubs
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://conduction.nl
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  */
