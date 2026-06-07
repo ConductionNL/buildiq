@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/*
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
 namespace OCA\OpenBuild\Command;
 
 use OCA\OpenBuild\Service\ApplicationVersionService;

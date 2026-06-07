@@ -44,6 +44,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Main application class for the OpenBuild Nextcloud app.
+ *
+ * @spec openspec/changes/archive/2026-05-12-openbuild-rbac/tasks.md
  */
 class Application extends App implements IBootstrap
 {
@@ -67,6 +69,8 @@ class Application extends App implements IBootstrap
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/archive/2026-05-12-openbuild-rbac/tasks.md
      */
     public function register(IRegistrationContext $context): void
     {
@@ -142,6 +146,8 @@ class Application extends App implements IBootstrap
      * @param IBootContext $context The boot context
      *
      * @return void
+     *
+     * @spec openspec/changes/archive/2026-05-17-openbuild-nextcloud-nav/tasks.md
      */
     public function boot(IBootContext $context): void
     {

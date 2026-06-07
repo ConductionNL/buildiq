@@ -49,21 +49,29 @@ class ApplicationVersionOwnerGuardTest extends TestCase
 {
 
     /**
+     * Mocked ObjectService for stub-loading the parent Application.
+     *
      * @var ObjectService&MockObject
      */
     private ObjectService&MockObject $objectService;
 
     /**
+     * Mocked IGroupManager passed to the real PermissionResolver.
+     *
      * @var IGroupManager&MockObject
      */
     private IGroupManager&MockObject $groupManager;
 
     /**
+     * Mocked IUserManager for resolving the acting caller.
+     *
      * @var IUserManager&MockObject
      */
     private IUserManager&MockObject $userManager;
 
     /**
+     * Mocked PSR logger for fail-closed diagnostic assertions.
+     *
      * @var LoggerInterface&MockObject
      */
     private LoggerInterface&MockObject $logger;
@@ -84,12 +92,12 @@ class ApplicationVersionOwnerGuardTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectService = $this->createMock(ObjectService::class);
-        $this->groupManager  = $this->createMock(IGroupManager::class);
-        $this->userManager   = $this->createMock(IUserManager::class);
-        $this->logger        = $this->createMock(LoggerInterface::class);
+        $this->objectService = $this->createMock(originalClassName: ObjectService::class);
+        $this->groupManager  = $this->createMock(originalClassName: IGroupManager::class);
+        $this->userManager   = $this->createMock(originalClassName: IUserManager::class);
+        $this->logger        = $this->createMock(originalClassName: LoggerInterface::class);
 
-        $resolver = new PermissionResolver($this->groupManager, $this->logger);
+        $resolver = new PermissionResolver(groupManager: $this->groupManager, logger: $this->logger);
 
         $this->guard = new ApplicationVersionOwnerGuard(
             objectService: $this->objectService,
@@ -114,7 +122,7 @@ class ApplicationVersionOwnerGuardTest extends TestCase
 
         $result = $this->guard->check(['application' => 'app-A'], 'publish', 'alice');
 
-        self::assertTrue($result->isAllowed());
+        self::assertTrue(condition: $result->isAllowed());
     }//end testOwnerMayPublish()
 
     /**
@@ -132,7 +140,7 @@ class ApplicationVersionOwnerGuardTest extends TestCase
 
         $result = $this->guard->check(['application' => 'app-A'], 'archive', 'alice');
 
-        self::assertTrue($result->isAllowed());
+        self::assertTrue(condition: $result->isAllowed());
     }//end testUserPrefixOwnerMayArchive()
 
     /**
@@ -150,8 +158,8 @@ class ApplicationVersionOwnerGuardTest extends TestCase
 
         $result = $this->guard->check(['application' => 'app-A'], 'publish', 'bob');
 
-        self::assertFalse($result->isAllowed());
-        self::assertNotNull($result->getMessage());
+        self::assertFalse(condition: $result->isAllowed());
+        self::assertNotNull(actual: $result->getMessage());
     }//end testEditorIsDenied()
 
     /**
@@ -169,7 +177,7 @@ class ApplicationVersionOwnerGuardTest extends TestCase
 
         $result = $this->guard->check(['application' => 'app-A'], 'reopen', 'carol');
 
-        self::assertFalse($result->isAllowed());
+        self::assertFalse(condition: $result->isAllowed());
     }//end testViewerIsDenied()
 
     /**
@@ -187,7 +195,7 @@ class ApplicationVersionOwnerGuardTest extends TestCase
 
         $result = $this->guard->check(['application' => 'app-A'], 'publish', 'eve');
 
-        self::assertFalse($result->isAllowed());
+        self::assertFalse(condition: $result->isAllowed());
     }//end testNonMemberIsDenied()
 
     /**
@@ -205,7 +213,7 @@ class ApplicationVersionOwnerGuardTest extends TestCase
 
         $result = $this->guard->check(['application' => 'app-A'], 'archive', 'root');
 
-        self::assertTrue($result->isAllowed());
+        self::assertTrue(condition: $result->isAllowed());
     }//end testAdminBypassIsAllowed()
 
     /**
@@ -227,7 +235,7 @@ class ApplicationVersionOwnerGuardTest extends TestCase
 
         $result = $this->guard->check(['application' => 'app-A'], 'publish', 'mallory');
 
-        self::assertFalse($result->isAllowed());
+        self::assertFalse(condition: $result->isAllowed());
     }//end testIdorOwnerOfDifferentApplicationIsDenied()
 
     /**
@@ -243,7 +251,7 @@ class ApplicationVersionOwnerGuardTest extends TestCase
 
         $result = $this->guard->check(['application' => 'app-A'], 'publish', 'ghost');
 
-        self::assertFalse($result->isAllowed());
+        self::assertFalse(condition: $result->isAllowed());
     }//end testUnresolvableCallerIsDenied()
 
     /**
@@ -258,7 +266,7 @@ class ApplicationVersionOwnerGuardTest extends TestCase
 
         $result = $this->guard->check([], 'publish', 'alice');
 
-        self::assertFalse($result->isAllowed());
+        self::assertFalse(condition: $result->isAllowed());
     }//end testMissingApplicationRelationIsDenied()
 
     /**
@@ -273,7 +281,7 @@ class ApplicationVersionOwnerGuardTest extends TestCase
 
         $result = $this->guard->check(['application' => 'app-missing'], 'publish', 'alice');
 
-        self::assertFalse($result->isAllowed());
+        self::assertFalse(condition: $result->isAllowed());
     }//end testUnresolvedParentApplicationIsDenied()
 
     /**
@@ -292,7 +300,7 @@ class ApplicationVersionOwnerGuardTest extends TestCase
 
         $result = $this->guard->check(['application' => 'app-A'], 'publish', 'root');
 
-        self::assertFalse($result->isAllowed());
+        self::assertFalse(condition: $result->isAllowed());
     }//end testParentWithoutPermissionsIsDenied()
 
     /**
@@ -307,14 +315,14 @@ class ApplicationVersionOwnerGuardTest extends TestCase
      */
     private function arrangeCaller(string $uid, array $groups, bool $isAdmin): void
     {
-        $user = $this->createMock(IUser::class);
+        $user = $this->createMock(originalClassName: IUser::class);
         $user->method('getUID')->willReturn($uid);
 
         $this->userManager->method('get')->with($uid)->willReturn($user);
 
         $groupObjects = [];
         foreach ($groups as $gid) {
-            $group = $this->createMock(IGroup::class);
+            $group = $this->createMock(originalClassName: IGroup::class);
             $group->method('getGID')->willReturn($gid);
             $groupObjects[] = $group;
         }
@@ -338,7 +346,7 @@ class ApplicationVersionOwnerGuardTest extends TestCase
             $data['permissions'] = $permissions;
         }
 
-        $entity = $this->createMock(ObjectEntity::class);
+        $entity = $this->createMock(originalClassName: ObjectEntity::class);
         $entity->method('jsonSerialize')->willReturn($data);
 
         $this->objectService->method('find')->willReturn($entity);
