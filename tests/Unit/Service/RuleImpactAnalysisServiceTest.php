@@ -39,6 +39,8 @@ final class RuleImpactAnalysisServiceTest extends TestCase
 {
 
     /**
+     * OpenRegister ObjectService mock.
+     *
      * @var ObjectService&MockObject
      */
     private ObjectService&MockObject $objectService;
@@ -57,10 +59,10 @@ final class RuleImpactAnalysisServiceTest extends TestCase
      */
     protected function setUp(): void
     {
-        $this->objectService = $this->createMock(ObjectService::class);
+        $this->objectService = $this->createMock(originalClassName: ObjectService::class);
         $this->service       = new RuleImpactAnalysisService(
-            $this->objectService,
-            $this->createMock(LoggerInterface::class)
+            objectService: $this->objectService,
+            logger: $this->createMock(originalClassName: LoggerInterface::class)
         );
 
     }//end setUp()
@@ -88,18 +90,18 @@ final class RuleImpactAnalysisServiceTest extends TestCase
 
         $report = $this->service->analyzeImpactOnActivation(ruleSetId: 'loan-eligibility');
 
-        $this->assertSame('loan-eligibility', $report['ruleSetId']);
-        $this->assertSame(30, $report['windowDays']);
-        $this->assertCount(2, $report['consumerApps']);
+        $this->assertSame(expected: 'loan-eligibility', actual: $report['ruleSetId']);
+        $this->assertSame(expected: 30, actual: $report['windowDays']);
+        $this->assertCount(expectedCount: 2, haystack: $report['consumerApps']);
 
         // Most active (callCount 2) should be first.
-        $this->assertSame('app-alpha', $report['consumerApps'][0]['appId']);
-        $this->assertSame(2, $report['consumerApps'][0]['callCount']);
-        $this->assertSame('app-beta', $report['consumerApps'][1]['appId']);
-        $this->assertSame(1, $report['consumerApps'][1]['callCount']);
+        $this->assertSame(expected: 'app-alpha', actual: $report['consumerApps'][0]['appId']);
+        $this->assertSame(expected: 2, actual: $report['consumerApps'][0]['callCount']);
+        $this->assertSame(expected: 'app-beta', actual: $report['consumerApps'][1]['appId']);
+        $this->assertSame(expected: 1, actual: $report['consumerApps'][1]['callCount']);
 
-        $this->assertContains('app-alpha', $report['notification_recipients']);
-        $this->assertContains('app-beta', $report['notification_recipients']);
+        $this->assertContains(needle: 'app-alpha', haystack: $report['notification_recipients']);
+        $this->assertContains(needle: 'app-beta', haystack: $report['notification_recipients']);
 
     }//end testAnalyzeReturnsConsumerAppsFromTwoApps()
 
@@ -124,9 +126,9 @@ final class RuleImpactAnalysisServiceTest extends TestCase
 
         $report = $this->service->analyzeImpactOnActivation(ruleSetId: 'invoice-routing');
 
-        $this->assertCount(1, $report['consumerApps']);
-        $this->assertSame('app-new', $report['consumerApps'][0]['appId']);
-        $this->assertNotContains('app-old', $report['notification_recipients']);
+        $this->assertCount(expectedCount: 1, haystack: $report['consumerApps']);
+        $this->assertSame(expected: 'app-new', actual: $report['consumerApps'][0]['appId']);
+        $this->assertNotContains(needle: 'app-old', haystack: $report['notification_recipients']);
 
     }//end testOldEntriesExcluded()
 
@@ -143,9 +145,9 @@ final class RuleImpactAnalysisServiceTest extends TestCase
 
         $report = $this->service->analyzeImpactOnActivation(ruleSetId: 'no-calls-yet');
 
-        $this->assertSame('no-calls-yet', $report['ruleSetId']);
-        $this->assertCount(0, $report['consumerApps']);
-        $this->assertCount(0, $report['notification_recipients']);
+        $this->assertSame(expected: 'no-calls-yet', actual: $report['ruleSetId']);
+        $this->assertCount(expectedCount: 0, haystack: $report['consumerApps']);
+        $this->assertCount(expectedCount: 0, haystack: $report['notification_recipients']);
 
     }//end testEmptyLogsProducesEmptyReport()
 
@@ -162,13 +164,13 @@ final class RuleImpactAnalysisServiceTest extends TestCase
 
         $report = $this->service->analyzeImpactOnActivation(ruleSetId: 'any-rule-set');
 
-        $this->assertCount(0, $report['consumerApps']);
-        $this->assertCount(0, $report['notification_recipients']);
+        $this->assertCount(expectedCount: 0, haystack: $report['consumerApps']);
+        $this->assertCount(expectedCount: 0, haystack: $report['notification_recipients']);
 
     }//end testObjectServiceExceptionReturnsEmptyReport()
 
     /**
-     * lastCallAt tracks the most recent call for each consumer.
+     * The lastCallAt field should track the most recent call for each consumer.
      *
      * @return void
      */
@@ -188,8 +190,8 @@ final class RuleImpactAnalysisServiceTest extends TestCase
 
         $report = $this->service->analyzeImpactOnActivation(ruleSetId: 'complaint-escalation');
 
-        $this->assertSame(2, $report['consumerApps'][0]['callCount']);
-        $this->assertSame($later, $report['consumerApps'][0]['lastCallAt']);
+        $this->assertSame(expected: 2, actual: $report['consumerApps'][0]['callCount']);
+        $this->assertSame(expected: $later, actual: $report['consumerApps'][0]['lastCallAt']);
 
     }//end testLastCallAtIsTheMostRecent()
 
@@ -206,7 +208,7 @@ final class RuleImpactAnalysisServiceTest extends TestCase
 
         $report = $this->service->analyzeImpactOnActivation(ruleSetId: 'any', windowDays: 7);
 
-        $this->assertSame(7, $report['windowDays']);
+        $this->assertSame(expected: 7, actual: $report['windowDays']);
 
     }//end testCustomWindowLength()
 }//end class

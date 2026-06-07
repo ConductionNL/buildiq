@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  */
@@ -67,7 +67,7 @@ class SeedHelloWorldFixture extends Command
             }
 
             // 1. Application (no productionVersion yet — set after the version exists).
-            $application = $this->create(
+            $application     = $this->create(
                 $register,
                 ApplicationVersionService::APPLICATION_SCHEMA,
                 [
@@ -79,7 +79,7 @@ class SeedHelloWorldFixture extends Command
             $applicationUuid = $application->getUuid();
 
             // 2. Published version carrying the manifest.
-            $version = $this->create(
+            $version     = $this->create(
                 $register,
                 ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
                 [
@@ -162,7 +162,7 @@ class SeedHelloWorldFixture extends Command
         // IDs, not slugs (mirrors ApplicationsController::resolveApplicationBySlug).
         $registerId  = $this->registerMapper->find($register, _multitenancy: false)->getId();
         $routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
-        $routes = $this->objectService->searchObjects(
+        $routes      = $this->objectService->searchObjects(
             ['@self' => ['register' => $registerId, 'schema' => $routeSchema], 'slug' => self::SEED_SLUG],
             _rbac: false,
             _multitenancy: false
