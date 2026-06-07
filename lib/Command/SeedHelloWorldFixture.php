@@ -2,11 +2,6 @@
 
 declare(strict_types=1);
 
-/*
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
- */
-
 namespace OCA\OpenBuild\Command;
 
 use OCA\OpenBuild\Service\ApplicationVersionService;
@@ -33,6 +28,10 @@ use Throwable;
  * the legacy hello-world specs have a deterministic fixture to run against.
  *
  * Re-running is a no-op once the BuiltAppRoute for `hello-world` exists.
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
 class SeedHelloWorldFixture extends Command
 {
