@@ -1,5 +1,26 @@
 <?php
 
+/**
+ * OpenBuild SeedHelloWorldFixture Command
+ *
+ * occ command that idempotently seeds the canonical hello-world virtual app
+ * fixture used by the Playwright e2e suite.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Command
+ * @package  OCA\OpenBuild\Command
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://conduction.nl
+ */
+
 declare(strict_types=1);
 
 namespace OCA\OpenBuild\Command;
