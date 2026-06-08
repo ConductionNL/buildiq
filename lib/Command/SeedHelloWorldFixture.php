@@ -3,7 +3,7 @@
 /**
  * OpenBuild SeedHelloWorldFixture Command
  *
- * occ command that idempotently seeds the canonical hello-world virtual app
+ * Occ command that idempotently seeds the canonical hello-world virtual app
  * fixture used by the Playwright e2e suite.
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -35,7 +35,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
 
 /**
- * occ openbuild:seed-hello-world-fixture
+ * Occ openbuild:seed-hello-world-fixture.
  *
  * Idempotently seeds the canonical `hello-world` virtual app used by the
  * Playwright e2e suite: one published Application with a productionVersion
@@ -62,6 +62,13 @@ class SeedHelloWorldFixture extends Command
 
     private const SEMVER = '1.0.0';
 
+    /**
+     * Constructor.
+     *
+     * @param ObjectService  $objectService  OpenRegister object service.
+     * @param RegisterMapper $registerMapper OpenRegister register mapper.
+     * @param SchemaMapper   $schemaMapper   OpenRegister schema mapper.
+     */
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly RegisterMapper $registerMapper,
@@ -70,27 +77,40 @@ class SeedHelloWorldFixture extends Command
         parent::__construct();
     }//end __construct()
 
+    /**
+     * Configure the command name and description.
+     *
+     * @return void
+     */
     protected function configure(): void
     {
-        $this->setName('openbuild:seed-hello-world-fixture')
-            ->setDescription('Seed the hello-world virtual app fixture for the e2e suite (idempotent; test/dev only).');
+        $this->setName(name: 'openbuild:seed-hello-world-fixture')
+            ->setDescription(description: 'Seed the hello-world virtual app fixture for the e2e suite (idempotent; test/dev only).');
     }//end configure()
 
+    /**
+     * Execute the command.
+     *
+     * @param InputInterface  $input  The command input.
+     * @param OutputInterface $output The command output.
+     *
+     * @return int Command exit code.
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $register = ApplicationVersionService::REGISTER_SLUG;
 
         try {
-            if ($this->routeExists($register) === true) {
+            if ($this->routeExists(register: $register) === true) {
                 $output->writeln('<info>hello-world fixture already present — nothing to do.</info>');
                 return Command::SUCCESS;
             }
 
             // 1. Application (no productionVersion yet — set after the version exists).
             $application     = $this->create(
-                $register,
-                ApplicationVersionService::APPLICATION_SCHEMA,
-                [
+                register: $register,
+                schema: ApplicationVersionService::APPLICATION_SCHEMA,
+                data: [
                     'slug'        => self::SEED_SLUG,
                     'name'        => 'Hello World',
                     'description' => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
@@ -100,9 +120,9 @@ class SeedHelloWorldFixture extends Command
 
             // 2. Published version carrying the manifest.
             $version     = $this->create(
-                $register,
-                ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
-                [
+                register: $register,
+                schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+                data: [
                     'name'        => self::SEMVER,
                     'slug'        => self::VERSION_SLUG,
                     'manifest'    => $this->buildManifest(),
@@ -120,22 +140,22 @@ class SeedHelloWorldFixture extends Command
 
             // 3. Point the Application at its production version.
             $this->create(
-                $register,
-                ApplicationVersionService::APPLICATION_SCHEMA,
-                [
+                register: $register,
+                schema: ApplicationVersionService::APPLICATION_SCHEMA,
+                data: [
                     'slug'              => self::SEED_SLUG,
                     'name'              => 'Hello World',
                     'description'       => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
                     'productionVersion' => $versionUuid,
                 ],
-                $applicationUuid
+                uuid: $applicationUuid
             );
 
             // 4. BuiltAppRoute so getManifest()/resolveApplicationBySlug() resolve the slug.
             $this->create(
-                $register,
-                'built-app-route',
-                [
+                register: $register,
+                schema: 'built-app-route',
+                data: [
                     'slug'            => self::SEED_SLUG,
                     'applicationUuid' => $applicationUuid,
                 ]
@@ -143,7 +163,7 @@ class SeedHelloWorldFixture extends Command
 
             // 5. Three sample messages rendered by the index page.
             foreach ($this->buildSampleMessages() as $message) {
-                $this->create($register, 'hello-message', $message);
+                $this->create(register: $register, schema: 'hello-message', data: $message);
             }
 
             $output->writeln('<info>Seeded hello-world fixture (application '.$applicationUuid.').</info>');
@@ -159,7 +179,12 @@ class SeedHelloWorldFixture extends Command
      * via occ as the system (Anonymous) user, so the normal per-user write
      * guards must be bypassed for this system-seed operation.
      *
-     * @param array<string, mixed> $data
+     * @param string               $register The register slug.
+     * @param string               $schema   The schema slug.
+     * @param array<string, mixed> $data     The object data.
+     * @param string|null          $uuid     Optional UUID to update an existing object.
+     *
+     * @return \OCA\OpenRegister\Db\ObjectEntity The saved object.
      */
     private function create(string $register, string $schema, array $data, ?string $uuid=null): \OCA\OpenRegister\Db\ObjectEntity
     {
@@ -175,6 +200,10 @@ class SeedHelloWorldFixture extends Command
 
     /**
      * Whether a BuiltAppRoute for the hello-world slug already exists.
+     *
+     * @param string $register The register slug.
+     *
+     * @return bool True when the route already exists.
      */
     private function routeExists(string $register): bool
     {
@@ -244,9 +273,18 @@ class SeedHelloWorldFixture extends Command
     private function buildSampleMessages(): array
     {
         return [
-            ['title' => 'Welcome to OpenBuild', 'body' => 'This message is rendered by your first virtual app — built from a JSON manifest stored in OpenRegister.'],
-            ['title' => 'Edit me', 'body' => 'Open the OpenBuild shell, find hello-world, and edit its manifest to change what you see here.'],
-            ['title' => 'Built from a manifest', 'body' => 'Everything here — menu, pages, columns, form — came from a JSON manifest. No PHP was written for hello-world.'],
+            [
+                'title' => 'Welcome to OpenBuild',
+                'body'  => 'This message is rendered by your first virtual app — built from a JSON manifest stored in OpenRegister.',
+            ],
+            [
+                'title' => 'Edit me',
+                'body'  => 'Open the OpenBuild shell, find hello-world, and edit its manifest to change what you see here.',
+            ],
+            [
+                'title' => 'Built from a manifest',
+                'body'  => 'Everything here — menu, pages, columns, form — came from a JSON manifest. No PHP was written for hello-world.',
+            ],
         ];
     }//end buildSampleMessages()
 }//end class
