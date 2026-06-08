@@ -1,0 +1,24 @@
+{
+  "id": "intro",
+  "title": "OpenBuild",
+  "description": "Get started with OpenBuild, the no-code app builder inside Nextcloud. Compose apps from OpenRegister schemas, OpenConnector flows, and Pipelinq.",
+  "source": "@site/intro.md",
+  "sourceDirName": ".",
+  "slug": "/intro",
+  "permalink": "/docs/intro",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/intro.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "description": "Get started with OpenBuild, the no-code app builder inside Nextcloud. Compose apps from OpenRegister schemas, OpenConnector flows, and Pipelinq."
+  },
+  "sidebar": "tutorialSidebar",
+  "next": {
+    "title": "Tutorials",
+    "permalink": "/docs/category/tutorials"
+  }
+}

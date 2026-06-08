@@ -1,0 +1,29 @@
+{
+  "id": "tutorials/user/connect-data",
+  "title": "Connect a register or connector",
+  "description": "Point a page at an existing OpenRegister register, or pull data from an external system via OpenConnector.",
+  "source": "@site/tutorials/user/05-connect-data.md",
+  "sourceDirName": "tutorials/user",
+  "slug": "/tutorials/user/connect-data",
+  "permalink": "/docs/tutorials/user/connect-data",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/user/05-connect-data.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "sidebar_position": 5,
+    "title": "Connect a register or connector",
+    "description": "Point a page at an existing OpenRegister register, or pull data from an external system via OpenConnector."
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Design a page",
+    "permalink": "/docs/tutorials/user/design-page"
+  },
+  "next": {
+    "title": "Preview and run your app",
+    "permalink": "/docs/tutorials/user/preview-app"
+  }
+}

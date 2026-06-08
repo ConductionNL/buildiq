@@ -1,0 +1,29 @@
+{
+  "id": "tutorials/user/version-snapshots",
+  "title": "Snapshot and roll back a version",
+  "description": "Save a named snapshot of your virtual app, compare it against the current draft, and roll back if needed.",
+  "source": "@site/tutorials/user/07-version-snapshots.md",
+  "sourceDirName": "tutorials/user",
+  "slug": "/tutorials/user/version-snapshots",
+  "permalink": "/docs/tutorials/user/version-snapshots",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/user/07-version-snapshots.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 7,
+  "frontMatter": {
+    "sidebar_position": 7,
+    "title": "Snapshot and roll back a version",
+    "description": "Save a named snapshot of your virtual app, compare it against the current draft, and roll back if needed."
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Preview and run your app",
+    "permalink": "/docs/tutorials/user/preview-app"
+  },
+  "next": {
+    "title": "Export your app",
+    "permalink": "/docs/tutorials/user/export-app"
+  }
+}
