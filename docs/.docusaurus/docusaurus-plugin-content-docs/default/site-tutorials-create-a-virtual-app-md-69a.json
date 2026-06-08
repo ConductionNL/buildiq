@@ -1,0 +1,24 @@
+{
+  "id": "tutorials/create-a-virtual-app",
+  "title": "Tutorial: Create a virtual app",
+  "description": "Audience: OpenBuild admins creating their first virtual app on a fresh install or alongside existing apps.",
+  "source": "@site/tutorials/create-a-virtual-app.md",
+  "sourceDirName": "tutorials",
+  "slug": "/tutorials/create-a-virtual-app",
+  "permalink": "/docs/tutorials/create-a-virtual-app",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/create-a-virtual-app.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Manage OpenBuild settings",
+    "permalink": "/docs/tutorials/admin/admin-settings"
+  },
+  "next": {
+    "title": "Tutorial: Update a virtual app",
+    "permalink": "/docs/tutorials/update-a-virtual-app"
+  }
+}

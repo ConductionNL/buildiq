@@ -1,0 +1,29 @@
+{
+  "id": "tutorials/admin/template-catalogue",
+  "title": "Curate the template catalogue",
+  "description": "Promote an exported virtual app into the template gallery so other builders can clone from it.",
+  "source": "@site/tutorials/admin/02-template-catalogue.md",
+  "sourceDirName": "tutorials/admin",
+  "slug": "/tutorials/admin/template-catalogue",
+  "permalink": "/docs/tutorials/admin/template-catalogue",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/admin/02-template-catalogue.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2,
+    "title": "Curate the template catalogue",
+    "description": "Promote an exported virtual app into the template gallery so other builders can clone from it."
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Manage who can build (RBAC)",
+    "permalink": "/docs/tutorials/admin/rbac"
+  },
+  "next": {
+    "title": "Manage OpenBuild settings",
+    "permalink": "/docs/tutorials/admin/admin-settings"
+  }
+}

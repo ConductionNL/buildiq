@@ -1,0 +1,24 @@
+{
+  "id": "integrator-guide",
+  "title": "Integrator guide — authoring a virtual app by hand",
+  "description": "This guide walks you through creating a new virtual app in OpenBuild without using the visual editor (which lives in chain spec openbuild-page-editor — not yet shipped). At this stage, OpenBuild is integrator-only: you write JSON and the runtime renders it.",
+  "source": "@site/integrator-guide.md",
+  "sourceDirName": ".",
+  "slug": "/integrator-guide",
+  "permalink": "/docs/integrator-guide",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/integrator-guide.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Tutorial: Update a virtual app",
+    "permalink": "/docs/tutorials/update-a-virtual-app"
+  },
+  "next": {
+    "title": "OpenBuild RBAC — Per-Virtual-App Permissions",
+    "permalink": "/docs/openbuild-rbac"
+  }
+}

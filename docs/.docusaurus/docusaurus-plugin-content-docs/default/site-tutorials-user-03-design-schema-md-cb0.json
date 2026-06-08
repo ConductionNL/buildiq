@@ -1,0 +1,29 @@
+{
+  "id": "tutorials/user/design-schema",
+  "title": "Design a schema",
+  "description": "Define the data shape behind a virtual app — properties, types, required fields, references — with the schema designer.",
+  "source": "@site/tutorials/user/03-design-schema.md",
+  "sourceDirName": "tutorials/user",
+  "slug": "/tutorials/user/design-schema",
+  "permalink": "/docs/tutorials/user/design-schema",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/user/03-design-schema.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3,
+    "title": "Design a schema",
+    "description": "Define the data shape behind a virtual app — properties, types, required fields, references — with the schema designer."
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Create an application from a template",
+    "permalink": "/docs/tutorials/user/create-from-template"
+  },
+  "next": {
+    "title": "Design a page",
+    "permalink": "/docs/tutorials/user/design-page"
+  }
+}
