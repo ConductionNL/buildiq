@@ -17,6 +17,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\OpenRegister\Lifecycle;
@@ -27,22 +30,28 @@ namespace OCA\OpenRegister\Lifecycle;
 final class GuardResult
 {
     /**
+     * Construct a verdict value object.
+     *
      * @param bool        $allowed Whether the transition is allowed.
      * @param string|null $message Optional deny message.
      */
     private function __construct(private bool $allowed, private ?string $message)
     {
-    }
+    }//end __construct()
 
     /**
+     * Return an allow verdict.
+     *
      * @return self
      */
     public static function allow(): self
     {
         return new self(true, null);
-    }
+    }//end allow()
 
     /**
+     * Return a deny verdict with the given message.
+     *
      * @param string $message Deny reason.
      *
      * @return self
@@ -50,24 +59,28 @@ final class GuardResult
     public static function deny(string $message): self
     {
         return new self(false, $message);
-    }
+    }//end deny()
 
     /**
+     * Return whether the verdict allows the transition.
+     *
      * @return bool
      */
     public function isAllowed(): bool
     {
         return $this->allowed;
-    }
+    }//end isAllowed()
 
     /**
+     * Return the deny message, or null for allow verdicts.
+     *
      * @return string|null
      */
     public function getMessage(): ?string
     {
         return $this->message;
-    }
-}
+    }//end getMessage()
+}//end class
 
 /**
  * Contract apps implement to authorise a lifecycle transition.
@@ -75,6 +88,8 @@ final class GuardResult
 interface LifecycleGuardInterface
 {
     /**
+     * Authorise a lifecycle transition.
+     *
      * @param array<string, mixed> $object The object payload.
      * @param string               $action The transition action.
      * @param string               $userId The acting user UID.
@@ -82,4 +97,4 @@ interface LifecycleGuardInterface
      * @return GuardResult
      */
     public function check(array $object, string $action, string $userId): GuardResult;
-}
+}//end interface
