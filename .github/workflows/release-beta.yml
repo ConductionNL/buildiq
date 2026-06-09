@@ -3,10 +3,11 @@ name: Beta Release
 on:
   push:
     branches: [beta]
+  workflow_dispatch:
 
 jobs:
   release:
-    uses: ConductionNL/.github/.github/workflows/release-beta.yml@main
+    uses: Conduction/.github/.forgejo/workflows/release-semrel-beta.yml@main
     with:
       app-name: openbuilt
     secrets: inherit
