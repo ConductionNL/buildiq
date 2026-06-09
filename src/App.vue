@@ -16,6 +16,7 @@
 		app-id="openbuild"
 		:manifest="manifest"
 		:registry="registry"
+		:custom-components="flatRegistry"
 		:page-types="pageTypes"
 		:translate="translateForApp"
 		:permissions="permissions">
@@ -101,6 +102,43 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Flattened `{ name: component }` map derived from the v2 kind-tagged
+		 * `registry` (ADR-036), passed to CnAppRoot as the `customComponents`
+		 * prop.
+		 *
+		 * Why this is needed: CnPageRenderer resolves `slots.*`,
+		 * `actionsComponent`, `headerComponent`, `sidebarComponent` and
+		 * `type:"custom"` page components against `effectiveCustomComponents`
+		 * (= the `customComponents` prop, falling back to the injected
+		 * `cnCustomComponents`). In @conduction/nextcloud-vue 1.0.0-beta.107
+		 * that resolver does NOT consult the v2 `cnRegistry` inject, so when an
+		 * app passes only `:registry` (and no `customComponents`), every
+		 * slot-override / custom-page name fails to resolve — the page renders
+		 * empty and the console logs `… not found in registry`. This affected
+		 * the whole app (VirtualAppsActions "Add application" button, the
+		 * schema-designer slot, etc.), not just the Schemas page.
+		 *
+		 * Unwrapping the registry's `{ kind, component }` entries to
+		 * `{ name: component }` and feeding it through `customComponents`
+		 * restores resolution for every slot/custom dispatch while keeping the
+		 * single v2 `registry` as the source of truth.
+		 *
+		 * @return {object} Map of registry key → Vue component.
+		 */
+		flatRegistry() {
+			const out = {}
+			for (const [name, entry] of Object.entries(this.registry || {})) {
+				const component = entry && typeof entry === 'object' && 'component' in entry
+					? entry.component
+					: entry
+				if (component) {
+					out[name] = component
+				}
+			}
+			return out
+		},
+
 		/**
 		 * The current user's Nextcloud permission flags, passed to CnAppNav.
 		 *

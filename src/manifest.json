@@ -235,18 +235,19 @@
 		{
 			"id": "Schemas",
 			"route": "/schemas",
-			"type": "index",
+			"type": "detail",
 			"title": "Schemas",
+			"slots": {
+				"default": "SchemaDesignerView"
+			},
 			"config": {
 				"register": "openbuild",
 				"schema": "application",
-				"viewMode": "table",
 				"sidebar": {
-					"enabled": true,
-					"showMetadata": true
+					"enabled": false
 				}
 			},
-			"_note": "Top-level schemas overview \u2014 uses the openbuild register's `application` schema as the listing source; per-app drill-down lives under /builder/:slug/schemas."
+			"_note": "Top-level schemas overview \u2014 renders the SchemaDesignerView (list mode) via the registry-backed `slots.default` override so the primary action is the native \"Add schema\" flow (SchemaListPanel + AddSchemaDialog). Previously this page was type:\"index\" and fell through to the generic CnIndexPage, which keys its Add button off config.schema (\"application\") and so mislabelled the action \"Add Application\". A type:\"custom\" + top-level `component` does NOT resolve here because CnPageRenderer (beta.107) dispatches custom pages via the empty legacy customComponents map, not the v2 registry; the slot-override path (resolvedSlotEntries) is the one that reads cnRegistry. With no :schemaId route param SchemaDesignerView renders list mode and the no-slug /schemas shortcut falls back to the hello-world app. Per-app drill-down lives under /builder/:slug/schemas."
 		},
 		{
 			"id": "Templates",

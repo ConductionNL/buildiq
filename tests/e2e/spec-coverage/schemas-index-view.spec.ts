@@ -3,23 +3,23 @@
 
 /**
  * E2E coverage for the OpenBuild top-level Schemas index page (manifest
- * page `Schemas`, route `/schemas`, type `index`). This is distinct from
+ * page `Schemas`, route `/schemas`, type `custom`). This is distinct from
  * the per-virtual-app schema designer (`/builder/:slug/schemas`, covered by
  * openbuild-schema-designer.spec.ts). The top-level Schemas index had no
  * real-UI test before this spec — only a docs-screenshot pass.
  *
  * Observed live behaviour (dev container, admin session):
  *   - Heading "Schemas".
- *   - A primary action button. NOTE: in the served build the button is
- *     labelled "Add Application" on the Schemas page (see BUG below).
+ *   - A primary action button labelled "Add schema".
  *
- * BUG (flagged, not patched — tests only add coverage, never modify
- * source): the Schemas index renders a primary action labelled
- * "Add Application" instead of an "Add Schema"-style label. The view
- * appears to reuse the applications index toolbar without overriding the
- * create-button label. The first test asserts only the heading (stable);
- * the second test documents the observed-but-wrong label so a regression
- * is visible if it changes either way.
+ * FIXED (2026-06-09): previously the Schemas index fell through to the
+ * generic CnIndexPage with `config.schema: "application"`, so its primary
+ * action was mislabelled "Add Application" (CnIndexPage derives the Add
+ * label from the schema title). The manifest `/schemas` page now renders
+ * the SchemaDesignerView (list mode), whose SchemaListPanel exposes the
+ * native "Add schema" flow (AddSchemaDialog). The first test asserts the
+ * heading; the second now requires the corrected "Add schema" label and
+ * fails if the application-create button regresses back.
  */
 
 import { test, expect } from '@playwright/test'
@@ -37,15 +37,17 @@ test.describe('OpenBuild Schemas index view', () => {
 		).toBeVisible({ timeout: 15_000 })
 	})
 
-	test('exposes a primary create action (label currently "Add Application" — see BUG)', async ({ page }) => {
+	test('exposes a primary create action labelled "Add schema"', async ({ page }) => {
 		await page.goto(ROUTE)
 		await expect(page.getByRole('heading', { name: 'Schemas', exact: true }).first()).toBeVisible({ timeout: 15_000 })
 
-		// The page must offer *a* primary create action. We accept either the
-		// correct "Add Schema"-style label or the currently-rendered (wrong)
-		// "Add Application" label so the test does not lock in the bug, but
-		// still fails if the toolbar disappears entirely.
-		const createBtn = page.getByRole('button', { name: /add (schema|application)/i }).first()
-		await expect(createBtn, 'Schemas index must expose a create action').toBeVisible({ timeout: 10_000 })
+		// The primary action must read "Add schema" (the native schema-create
+		// flow), NOT "Add Application". This locks in the fix: if the page
+		// regresses to the generic application index, the assertion fails.
+		const addSchemaBtn = page.getByRole('button', { name: /add schema/i }).first()
+		await expect(addSchemaBtn, 'Schemas index must expose an "Add schema" action').toBeVisible({ timeout: 10_000 })
+
+		// Guard against regression to the application-create button.
+		await expect(page.getByRole('button', { name: /add application/i })).toHaveCount(0)
 	})
 })
