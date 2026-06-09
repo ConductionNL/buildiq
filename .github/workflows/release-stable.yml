@@ -3,10 +3,11 @@ name: Stable Release
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   release:
-    uses: ConductionNL/.github/.github/workflows/release-stable.yml@main
+    uses: Conduction/.github/.forgejo/workflows/release-semrel.yml@main
     with:
       app-name: openbuilt
     secrets: inherit
