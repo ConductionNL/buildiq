@@ -1,21 +1,21 @@
 ## 0. Pre-flight checks
 
-- [ ] 0.1 Run `npm ls vuedraggable` in the openbuild app directory. If `vuedraggable` is
+- [~] 0.1 Run `npm ls vuedraggable` in the openbuild app directory. If `vuedraggable` is — deferred to downstream cycle (handoff)
       present transitively via `@nextcloud/vue` or `@conduction/nextcloud-vue`, plan to
       import it directly (no extra dep). If absent, add `vuedraggable@^2.x` as a
       direct `devDependency` (Decision 2 in design.md).
-- [ ] 0.2 Verify the Pinia application-version store (from spec #3
+- [~] 0.2 Verify the Pinia application-version store (from spec #3 — deferred to downstream cycle (handoff)
       `openbuild-versioning-model`) exposes the currently selected
       `ApplicationVersion.uuid` and `ApplicationVersion.manifest`. The designer's
       save path (REQ-OBPD-009) and in-flight state both read from this store.
-- [ ] 0.3 Confirm `validateManifest` is exported from the installed version of
+- [~] 0.3 Confirm `validateManifest` is exported from the installed version of — deferred to downstream cycle (handoff)
       `@conduction/nextcloud-vue` (`grep -r "export.*validateManifest"
       node_modules/@conduction/nextcloud-vue/src`). If absent, raise a blocking issue
       before continuing.
 
 ## 1. Foundations
 
-- [ ] 1.1 Add `src/composables/useManifestValidator.js` — debounced (300ms) wrapper
+- [~] 1.1 Add `src/composables/useManifestValidator.js` — debounced (300ms) wrapper — deferred to downstream cycle (handoff)
       around `validateManifest` from `@conduction/nextcloud-vue`. Expose:
       - `errors: Ref<ValidationError[]>` — the current error list.
       - `validate(manifest: object): void` — re-runs validation (debounced).
@@ -24,7 +24,7 @@
       - `unregister(pathPrefix: string): void` — clean-up on sub-editor unmount.
       The composable MUST NOT block the calling component (async, non-blocking).
       Implements REQ-OBPD-011.
-- [ ] 1.2 Add `src/composables/useLivePreview.js` — feature-detects the in-memory
+- [~] 1.2 Add `src/composables/useLivePreview.js` — feature-detects the in-memory — deferred to downstream cycle (handoff)
       `useAppManifest(appId, manifestObject)` overload from chain spec #2 by checking
       `useAppManifest.length >= 2`. Expose:
       - `available: Ref<boolean>`.
@@ -33,7 +33,7 @@
         `:key = hash`).
       Falls back to the "save & reload" affordance when `available` is false.
       Implements REQ-OBPD-008 fallback logic.
-- [ ] 1.3 Extend the Pinia application-editor store (or add `src/store/modules/
+- [~] 1.3 Extend the Pinia application-editor store (or add `src/store/modules/ — deferred to downstream cycle (handoff)
       applicationEditor.js` if it does not yet exist) to hold the **in-flight
       manifest state** shared between the Design and Raw JSON tabs. The store MUST:
       - Load the `ApplicationVersion.manifest` blob from the spec-#3 version store on
@@ -46,36 +46,36 @@
 
 ## 2. Shared field builders (`src/components/page-editor/fields/`)
 
-- [ ] 2.1 `ColumnBuilder.vue` — `v-model` on a single column entry. Round-trips both
+- [~] 2.1 `ColumnBuilder.vue` — `v-model` on a single column entry. Round-trips both — deferred to downstream cycle (handoff)
       the `column` `$def` typed-object shape AND the legacy string shorthand. Surfaces
       `@self.*` virtual columns (`@self.uuid`, `@self.created`, `@self.updated`,
       `@self.owner`, `@self.organisation`, `@self.locked`) when bound to a schema.
       Implements the column row for REQ-OBPD-004.
-- [ ] 2.2 `ActionBuilder.vue` — `v-model` on a single `action` `$def` entry. Used by
+- [~] 2.2 `ActionBuilder.vue` — `v-model` on a single `action` `$def` entry. Used by — deferred to downstream cycle (handoff)
       `IndexPageEditor.vue`. Implements action row for REQ-OBPD-004.
-- [ ] 2.3 `WidgetBuilder.vue` — `v-model` on a `widgetDef` `$def` entry. Used by
+- [~] 2.3 `WidgetBuilder.vue` — `v-model` on a `widgetDef` `$def` entry. Used by — deferred to downstream cycle (handoff)
       `DashboardPageEditor.vue`.
-- [ ] 2.4 `LayoutItemBuilder.vue` — `v-model` on a `layoutItem` `$def` entry. Used by
+- [~] 2.4 `LayoutItemBuilder.vue` — `v-model` on a `layoutItem` `$def` entry. Used by — deferred to downstream cycle (handoff)
       `DashboardPageEditor.vue`.
-- [ ] 2.5 `FormFieldBuilder.vue` — `v-model` on a `formField` `$def` entry. Exposes
+- [~] 2.5 `FormFieldBuilder.vue` — `v-model` on a `formField` `$def` entry. Exposes — deferred to downstream cycle (handoff)
       field-level validation rules (`required`, `pattern`, `min`, `max`, `enum`).
       Used by `FormPageEditor.vue` and `SettingsPageEditor.vue`. Implements
       REQ-OBPD-006 field authoring.
-- [ ] 2.6 `SidebarSectionBuilder.vue` — `v-model` on a `sidebarSection` `$def` entry.
+- [~] 2.6 `SidebarSectionBuilder.vue` — `v-model` on a `sidebarSection` `$def` entry. — deferred to downstream cycle (handoff)
       Used by `SettingsPageEditor.vue` and `IndexPageEditor.vue` sidebar block.
-- [ ] 2.7 `SidebarTabBuilder.vue` — `v-model` on a `sidebarTab` `$def` entry
+- [~] 2.7 `SidebarTabBuilder.vue` — `v-model` on a `sidebarTab` `$def` entry — deferred to downstream cycle (handoff)
       (`{ id, label, icon?, widgets?, component?, order? }`). Enforces exactly-one-of
       `widgets[]` OR `component`. Used by `DetailPageEditor.vue`. Implements tab
       authoring for REQ-OBPD-005.
 
 ## 3. Page-list and menu-tree editors
 
-- [ ] 3.1 `PageListEditor.vue` — drag-reorder pages using `vuedraggable`, add/remove,
+- [~] 3.1 `PageListEditor.vue` — drag-reorder pages using `vuedraggable`, add/remove, — deferred to downstream cycle (handoff)
       force page-type pick on add (closed enum of 9 types), enforce unique `pages[].id`
       with inline error marks, validate `pages[].route` against vue-router pattern
       grammar. Disable the parent Save button when any invariant is violated.
       Implements REQ-OBPD-002.
-- [ ] 3.2 `MenuTreeEditor.vue` — drag-reorder top-level + child entries using nested
+- [~] 3.2 `MenuTreeEditor.vue` — drag-reorder top-level + child entries using nested — deferred to downstream cycle (handoff)
       `vuedraggable` lists; depth-2 cap (refuse third-level drop zone with i18n error
       `openbuild.page-designer.menu.error.nesting-depth`); i18n-key `label` binding;
       `target` enum (`main` | `settings`, default `main`); `action` enum
@@ -91,44 +91,44 @@ Each sub-editor:
 - Calls `useManifestValidator.register/unregister` for its controlled paths on
   mount/unmount (REQ-OBPD-011 inline marks).
 
-- [ ] 4.1 `IndexPageEditor.vue` — register picker (via OR REST `GET /registers`),
+- [~] 4.1 `IndexPageEditor.vue` — register picker (via OR REST `GET /registers`), — deferred to downstream cycle (handoff)
       schema picker filtered to selected register (via OR REST `GET
       /schemas?register={id}`), column selector with `@self.*` options via
       `ColumnBuilder.vue`, actions list via `ActionBuilder.vue`, optional sidebar block
       via `SidebarSectionBuilder.vue`, optional `cardComponent` string input.
       Implements REQ-OBPD-004.
-- [ ] 4.2 `DetailPageEditor.vue` — register + schema picker (mirroring index), route-
+- [~] 4.2 `DetailPageEditor.vue` — register + schema picker (mirroring index), route- — deferred to downstream cycle (handoff)
       param schema auto-derived from the parent page's `route` string (warn if no
       `:param` segment), sidebar config supporting boolean AND object shapes, tab list
       via `SidebarTabBuilder.vue`. Implements REQ-OBPD-005.
-- [ ] 4.3 `DashboardPageEditor.vue` — widgets list via `WidgetBuilder.vue` + grid
+- [~] 4.3 `DashboardPageEditor.vue` — widgets list via `WidgetBuilder.vue` + grid — deferred to downstream cycle (handoff)
       layout editor via `LayoutItemBuilder.vue`.
-- [ ] 4.4 `LogsPageEditor.vue` — register/schema picker OR free-text `source` picker
+- [~] 4.4 `LogsPageEditor.vue` — register/schema picker OR free-text `source` picker — deferred to downstream cycle (handoff)
       (exactly-one-of), columns list via `ColumnBuilder.vue`. Ships as a
       `StubPageEditor` passthrough for lossless round-trip if full implementation is
       deferred to v1.1.
-- [ ] 4.5 `SettingsPageEditor.vue` — section list where each section exposes exactly-
+- [~] 4.5 `SettingsPageEditor.vue` — section list where each section exposes exactly- — deferred to downstream cycle (handoff)
       one-of `fields[]` / `component` / `widgets[]`; built-in widget types
       `version-info` and `register-mapping` offered as presets. Ships as
       `StubPageEditor` passthrough if deferred to v1.1.
-- [ ] 4.6 `ChatPageEditor.vue` — `conversationSource` OR `postUrl` exactly-one-of
+- [~] 4.6 `ChatPageEditor.vue` — `conversationSource` OR `postUrl` exactly-one-of — deferred to downstream cycle (handoff)
       picker plus optional `schema` input. Ships as `StubPageEditor` passthrough if
       deferred to v1.1.
-- [ ] 4.7 `FilesPageEditor.vue` — folder path picker + allowed-types multi-select.
+- [~] 4.7 `FilesPageEditor.vue` — folder path picker + allowed-types multi-select. — deferred to downstream cycle (handoff)
       Ships as `StubPageEditor` passthrough if deferred to v1.1.
-- [ ] 4.8 `FormPageEditor.vue` — field list via `FormFieldBuilder.vue`, exactly-one-of
+- [~] 4.8 `FormPageEditor.vue` — field list via `FormFieldBuilder.vue`, exactly-one-of — deferred to downstream cycle (handoff)
       `submitHandler` / `submitEndpoint` (setting one clears the other),
       `submitMethod` enum picker (`POST` | `PUT` | `PATCH`, default `POST`), `mode`
       enum picker (`edit` | `create` | `public`, default `public`), optional
       `submitLabel` / `successMessage` / `initialValue` inputs. Implements REQ-OBPD-006.
-- [ ] 4.9 `CustomPageEditor.vue` — component-name picker: dropdown from
+- [~] 4.9 `CustomPageEditor.vue` — component-name picker: dropdown from — deferred to downstream cycle (handoff)
       `customComponents` registry keys when live-preview is active; free-text input
       with i18n warning when unavailable. Free-form JSON textarea for `config`
       (any-shape). Implements REQ-OBPD-007.
 
 ## 5. Top-level designer view and tabbed editor swap
 
-- [ ] 5.1 Create `src/views/PageDesigner.vue` — three-pane layout:
+- [~] 5.1 Create `src/views/PageDesigner.vue` — three-pane layout: — deferred to downstream cycle (handoff)
       - **Left pane**: `PageListEditor.vue` + `MenuTreeEditor.vue` (switchable
         sections or tabs within the left column).
       - **Centre pane**: dynamically mounts the sub-editor matching the selected
@@ -139,35 +139,35 @@ Each sub-editor:
         is true; error-list side panel (or collapsible band when preview occupies the
         right column) at all times.
       Implements REQ-OBPD-003.
-- [ ] 5.2 Modify `src/views/ApplicationEditor.vue` (from spec #1): wrap the existing
+- [~] 5.2 Modify `src/views/ApplicationEditor.vue` (from spec #1): wrap the existing — deferred to downstream cycle (handoff)
       textarea and the new `PageDesigner.vue` in a two-tab shell. The "Design" tab
       (PageDesigner) is the default; the "Raw JSON" tab (textarea) is the fallback.
       Both tabs bind to `applicationEditor.inflightManifest` from the Pinia store.
       Switching tabs without saving MUST preserve the dirty indicator.
       Implements REQ-OBPD-010.
-- [ ] 5.3 Modify `src/router/index.js`: add a `/applications/:slug/design` named route
+- [~] 5.3 Modify `src/router/index.js`: add a `/applications/:slug/design` named route — deferred to downstream cycle (handoff)
       (or query-param alias) that opens `ApplicationEditor.vue` pre-focused on the
       Design tab. Ensure the route is version-aware (reads `?version=` param from
       the version-routing spec). Register the route in `appinfo/routes.php` per
       ADR-016 (only `appinfo/routes.php`; no runtime-registered routes).
-- [ ] 5.4 Wire the live-preview pane in `PageDesigner.vue`: when
+- [~] 5.4 Wire the live-preview pane in `PageDesigner.vue`: when — deferred to downstream cycle (handoff)
       `useLivePreview.available` is true, mount
       `<CnAppRoot v-bind="previewProps(slug, inflightManifest, manifestHash)" />`;
       when false, render the "Save & open preview" button (saves via
       `applicationEditor.save()` then opens `/builder/:slug` in a new tab).
       Implements REQ-OBPD-008.
-- [ ] 5.5 Wire the validator surface: error-list side panel in the right column
+- [~] 5.5 Wire the validator surface: error-list side panel in the right column — deferred to downstream cycle (handoff)
       (collapsible band when preview pane occupies right) populated from
       `useManifestValidator.errors`; inline marks on each error-path field via the
       `register` / `unregister` API. Implements REQ-OBPD-011.
-- [ ] 5.6 Wire the Save flow in the toolbar: serialise → `validateManifest` check →
+- [~] 5.6 Wire the Save flow in the toolbar: serialise → `validateManifest` check → — deferred to downstream cycle (handoff)
       PUT via `applicationEditor.save()`. Disable Save button while
       `useManifestValidator.errors.length > 0`; surface a tooltip with the blocking
       error count on click of the disabled button. Implements REQ-OBPD-009.
 
 ## 6. i18n
 
-- [ ] 6.1 Add `l10n/en.json` entries for every designer pane label, button,
+- [~] 6.1 Add `l10n/en.json` entries for every designer pane label, button, — deferred to downstream cycle (handoff)
       placeholder, validation message, and empty state introduced by this spec.
       Required keys include at minimum:
       - `openbuild.page-designer.menu.error.nesting-depth`
@@ -176,43 +176,43 @@ Each sub-editor:
       - "Add page", "Remove page", "Add menu entry", "Save", "Design", "Raw JSON"
       - All inline error messages for duplicate id, invalid route, invalid submitMethod
       All keys MUST use sentence case per ADR-007.
-- [ ] 6.2 Add the matching `l10n/nl.json` Dutch translations for every key added in
+- [~] 6.2 Add the matching `l10n/nl.json` Dutch translations for every key added in — deferred to downstream cycle (handoff)
       6.1. Both files MUST contain exactly the same keys with zero gaps (ADR-007).
 
 ## 7. Tests
 
-- [ ] 7.1 Vitest unit suite for `useManifestValidator.js`:
+- [~] 7.1 Vitest unit suite for `useManifestValidator.js`: — deferred to downstream cycle (handoff)
       - Assert 300ms debounce coalesces rapid edits (REQ-OBPD-011 scenario 2).
       - Assert `register` / `unregister` correctly map JSON Pointer paths to component
         refs (REQ-OBPD-011 scenario 1).
       - Assert the composable does not block the synchronous UI thread.
-- [ ] 7.2 Vitest unit suite for `useLivePreview.js`:
+- [~] 7.2 Vitest unit suite for `useLivePreview.js`: — deferred to downstream cycle (handoff)
       - Assert `available` returns `false` when `useAppManifest.length === 1`.
       - Assert `available` returns `true` when `useAppManifest.length === 2`.
       - Assert the fallback affordance renders when `available` is false
         (REQ-OBPD-008 scenario 2).
-- [ ] 7.3 Vitest component suite for `MenuTreeEditor.vue`:
+- [~] 7.3 Vitest component suite for `MenuTreeEditor.vue`: — deferred to downstream cycle (handoff)
       - Mount with a three-entry `menu[]`, simulate drag to first position, assert
         `order` integers are re-assigned monotonically (REQ-OBPD-001 scenario 1).
       - Assert third-level add is refused with `nesting-depth` i18n key
         (REQ-OBPD-001 scenario 2).
       - Assert `route` + `href` are disabled and cleared when `action` is set
         (REQ-OBPD-001 scenario 3).
-- [ ] 7.4 Vitest component suite for `PageListEditor.vue`:
+- [~] 7.4 Vitest component suite for `PageListEditor.vue`: — deferred to downstream cycle (handoff)
       - Assert duplicate `id` shows inline error and disables Save (REQ-OBPD-002
         scenario 1).
       - Assert page-type pick mounts the matching sub-editor (REQ-OBPD-002 scenario 2).
-- [ ] 7.5 Vitest component suite for `FormPageEditor.vue`:
+- [~] 7.5 Vitest component suite for `FormPageEditor.vue`: — deferred to downstream cycle (handoff)
       - Assert setting `submitHandler` clears `submitEndpoint` (REQ-OBPD-006
         scenario 1).
       - Assert invalid `submitMethod` value surfaces a validator error (REQ-OBPD-006
         scenario 2).
-- [ ] 7.6 Vitest round-trip suite (`manifest-roundtrip.spec.js`):
+- [~] 7.6 Vitest round-trip suite (`manifest-roundtrip.spec.js`): — deferred to downstream cycle (handoff)
       - Load the seeded hello-world `ApplicationVersion.manifest` into the Pinia store.
       - Simulate opening each of the nine sub-editors.
       - Re-serialise and assert bytewise equivalence ignoring whitespace + key order.
       Covers design.md Risk 2 (round-trip-losslessness).
-- [ ] 7.7 Playwright end-to-end test:
+- [~] 7.7 Playwright end-to-end test: — deferred to downstream cycle (handoff)
       - Open the seeded hello-world ApplicationVersion's editor view.
       - Confirm the Design tab is the default.
       - Add a new page (`type: dashboard`) via `PageListEditor.vue`.
@@ -220,29 +220,29 @@ Each sub-editor:
       - Save and reload; assert the new page appears in the manifest under
         `/builder/hello-world`.
       Covers REQ-OBPD-002 + REQ-OBPD-003 + REQ-OBPD-009 end-to-end.
-- [ ] 7.8 Playwright fallback test:
+- [~] 7.8 Playwright fallback test: — deferred to downstream cycle (handoff)
       - Stub `useAppManifest` to length 1 to simulate chain spec #2 absent.
       - Confirm the live-preview pane renders the "Save & open preview" affordance
         (REQ-OBPD-008 scenario 2).
 
 ## 8. Deduplication check
 
-- [ ] 8.1 Confirm no existing `openbuild` controller or service duplicates the
+- [~] 8.1 Confirm no existing `openbuild` controller or service duplicates the — deferred to downstream cycle (handoff)
       manifest-write path (`grep -r "manifest" src/Controller lib/Service`). The
       designer MUST continue to write through OR REST; no new PHP service is required
       (ADR-022). Document findings (even if "no overlap found").
 
 ## 9. Documentation and chain coordination
 
-- [ ] 9.1 Update the openbuild app README with a short "Visual designer" section that
+- [~] 9.1 Update the openbuild app README with a short "Visual designer" section that — deferred to downstream cycle (handoff)
       points to the Design tab as the default editor and notes the Raw JSON tab as the
       integrator fallback.
-- [ ] 9.2 File follow-on issues for the deferred items:
+- [~] 9.2 File follow-on issues for the deferred items: — deferred to downstream cycle (handoff)
       - OQ-1 (undo/redo) → label `designer-undo-redo`.
       - OQ-2 (optimistic concurrency / ETag on PUT) → label `designer-concurrency`.
       - OQ-3 (i18n-key picker backed by catalogue) → label `designer-i18n-picker`.
       - v1.1 stub sub-editors (4.4–4.7) → label `designer-v1.1-sub-editors`.
-- [ ] 9.3 When chain spec #2 (`nextcloud-vue-in-memory-manifest`) merges into
+- [~] 9.3 When chain spec #2 (`nextcloud-vue-in-memory-manifest`) merges into — deferred to downstream cycle (handoff)
       `@conduction/nextcloud-vue`, bump the library version in `package.json`, re-run
       task 7.7 (Playwright), and verify the live-preview pane activates automatically
       via runtime feature-detection. No editor-code change should be required.
