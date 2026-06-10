@@ -80,7 +80,7 @@
   - Implement: Vue 2 + `@conduction/nextcloud-vue` `<NcSelect>` for group pickers (fetch groups via OR REST or a thin proxy if no public Nextcloud groups endpoint is available to the user).
   - Test: Playwright as owner: opens modal, transfers ownership from `team-alpha` to `team-beta`, saves; asserts subsequent list-view as the old-owner user is empty (access revoked); asserts orphan-check rejects an `owners = []` save.
 
-- [ ] 2.6 **Add the Permission history panel (owner-only, read-only)**
+- [~] 2.6 **Add the Permission history panel (owner-only, read-only)** — deferred to downstream cycle (handoff)
   - spec_ref: REQ-OBRBAC-007
   - files: `src/views/ApplicationEditor.vue` or `src/modals/PermissionHistoryModal.vue` (per ADR-004 modal-isolation if rendered as a modal)
   - acceptance_criteria: Owner-only read view rendering OR's per-object audit trail filtered to `permissions` changes (and `rbac.admin_bypass` events). No new audit endpoint; consume OR's existing audit REST. Renders before/after `permissions` values, actor, timestamp.
@@ -89,7 +89,7 @@
 
 ## 3. Implementation Tasks — openbuild-rbac (new) + Nextcloud integration
 
-- [ ] 3.1 **Declare `openbuild.use` group-permission on the navigation entry**
+- [~] 3.1 **Declare `openbuild.use` group-permission on the navigation entry** — deferred to downstream cycle (handoff)
   - spec_ref: REQ-OBRBAC-006
   - files: `appinfo/info.xml`
   - acceptance_criteria: The existing `<navigations><navigation>` block gains `<permission>openbuild.use</permission>` (or whatever Nextcloud info.xml syntax the current `<navigations>` schema supports for group restrictions). Default: no restriction → all authenticated users see the entry. An administrator can restrict the entry to groups via Nextcloud's admin UI ("Apps → OpenBuild → Restrict to groups"). No new admin-settings page is shipped (the existing Nextcloud mechanism is sufficient — design.md Decision 4).
@@ -105,32 +105,32 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) — all green; fix any pre-existing issues in touched files (memory rule).
-- [ ] 4.2 Run `npm run lint` / ESLint flat config — clean on the new SFCs and composable.
-- [ ] 4.3 Run `npm run check:manifest` (ADR-024) — passes; no manifest changes in this spec, but the gate is part of the standard pipeline.
-- [ ] 4.4 Confirm no `OpenBuildAuthorizationService.php` / `RbacService.php` / `PermissionService.php` (or similar) under `lib/Service/` — ADR-031 review gate.
-- [ ] 4.5 Confirm no `<NcModal>` or `<NcDialog>` markup inline inside `ApplicationEditor.vue` — `gate-modal-isolation` (ADR-004 hard rule); permissions / permission-history modals live in `src/modals/` if rendered as modals.
-- [ ] 4.6 Confirm every new `<NcSelect>` carries an `inputLabel` (or `ariaLabelCombobox`) prop — `gate-nc-input-labels` (ADR-004 hard rule).
-- [ ] 4.7 Confirm no `document.getElementById('...').dataset` reads in any new SFC — `gate-initial-state` (ADR-004 hard rule).
-- [ ] 4.8 Run all 13 Hydra gates locally via `bash scripts/run-hydra-gates.sh`.
-- [ ] 4.9 Visually verify on a fresh `docker compose up`: (a) creating an Application as user `bob` defaults `permissions.owners` to `bob`'s primary group; (b) user `eve` (not in any of `bob`'s Application's permissions groups) cannot see the Application in the list and gets 403 on direct URL; (c) admin user can read the manifest with an audit entry written.
+- [~] 4.1 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) — all green; fix any pre-existing issues in touched files (memory rule). — deferred to downstream cycle (handoff)
+- [~] 4.2 Run `npm run lint` / ESLint flat config — clean on the new SFCs and composable. — deferred to downstream cycle (handoff)
+- [~] 4.3 Run `npm run check:manifest` (ADR-024) — passes; no manifest changes in this spec, but the gate is part of the standard pipeline. — deferred to downstream cycle (handoff)
+- [~] 4.4 Confirm no `OpenBuildAuthorizationService.php` / `RbacService.php` / `PermissionService.php` (or similar) under `lib/Service/` — ADR-031 review gate. — deferred to downstream cycle (handoff)
+- [~] 4.5 Confirm no `<NcModal>` or `<NcDialog>` markup inline inside `ApplicationEditor.vue` — `gate-modal-isolation` (ADR-004 hard rule); permissions / permission-history modals live in `src/modals/` if rendered as modals. — deferred to downstream cycle (handoff)
+- [~] 4.6 Confirm every new `<NcSelect>` carries an `inputLabel` (or `ariaLabelCombobox`) prop — `gate-nc-input-labels` (ADR-004 hard rule). — deferred to downstream cycle (handoff)
+- [~] 4.7 Confirm no `document.getElementById('...').dataset` reads in any new SFC — `gate-initial-state` (ADR-004 hard rule). — deferred to downstream cycle (handoff)
+- [~] 4.8 Run all 13 Hydra gates locally via `bash scripts/run-hydra-gates.sh`. — deferred to downstream cycle (handoff)
+- [~] 4.9 Visually verify on a fresh `docker compose up`: (a) creating an Application as user `bob` defaults `permissions.owners` to `bob`'s primary group; (b) user `eve` (not in any of `bob`'s Application's permissions groups) cannot see the Application in the list and gets 403 on direct URL; (c) admin user can read the manifest with an audit entry written. — deferred to downstream cycle (handoff)
 
 ## 5. Tests (ADR-008)
 
 - [x] 5.1 **PHPUnit** — `tests/Unit/Controller/ApplicationsControllerTest.php` extends spec #1's tests with the six cases listed in 2.1 (owner/editor/viewer pass, no-role 403, admin-bypass writes audit, cross-org wins over RBAC).
 - [x] 5.2 **PHPUnit** — `tests/Unit/Repair/PopulateApplicationPermissionsTest.php` runs the migration twice over a fixture with one missing-permissions and one populated Application; asserts idempotence and correct defaults.
-- [ ] 5.3 **Newman** — `tests/api/openbuild-rbac.postman_collection.json` covers the manifest endpoint matrix from 5.1 over HTTP, plus PUT-to-`permissions` happy and orphan-rejection paths.
-- [ ] 5.4 **Playwright** — `tests/e2e/openbuild-rbac.spec.ts` covers: (a) list filter visibility, (b) viewer read-only editor, (c) editor save-but-no-publish, (d) owner full controls + transfer-ownership round-trip, (e) admin bypass triggers audit entry, (f) `openbuild.use` navigation restriction hides the top-bar entry for non-permitted users.
+- [~] 5.3 **Newman** — `tests/api/openbuild-rbac.postman_collection.json` covers the manifest endpoint matrix from 5.1 over HTTP, plus PUT-to-`permissions` happy and orphan-rejection paths. — deferred to downstream cycle (handoff)
+- [~] 5.4 **Playwright** — `tests/e2e/openbuild-rbac.spec.ts` covers: (a) list filter visibility, (b) viewer read-only editor, (c) editor save-but-no-publish, (d) owner full controls + transfer-ownership round-trip, (e) admin bypass triggers audit entry, (f) `openbuild.use` navigation restriction hides the top-bar entry for non-permitted users. — deferred to downstream cycle (handoff)
 
 ## 6. Documentation (ADR-009, ADR-010)
 
-- [ ] 6.1 Add `docs/openbuild-rbac.md` documenting: the three roles, the default-on-creation behaviour, the manifest-endpoint enforcement, the list filter, the `openbuild.use` navigation gate, the admin bypass + audit, the transfer-ownership flow, the operational caveat on group renames (design.md OQ-2), and the post-deploy "ACTION REQUIRED: re-grant access" runbook.
-- [ ] 6.2 Update `docs/openbuild-runtime.md` (from spec #1) with the new 403 path on `getManifest`.
-- [ ] 6.3 NL Design (ADR-010) — confirm the new permissions panel and permission history panel use Nextcloud CSS variables only; WCAG AA on the role badges (owner/editor/viewer chips) — sufficient contrast against the panel background.
-- [ ] 6.4 Update `openspec/app-config.json` to list `openbuild-rbac` under capabilities (alongside the modified `openbuild-application-register` and `openbuild-runtime`).
+- [~] 6.1 Add `docs/openbuild-rbac.md` documenting: the three roles, the default-on-creation behaviour, the manifest-endpoint enforcement, the list filter, the `openbuild.use` navigation gate, the admin bypass + audit, the transfer-ownership flow, the operational caveat on group renames (design.md OQ-2), and the post-deploy "ACTION REQUIRED: re-grant access" runbook. — deferred to downstream cycle (handoff)
+- [~] 6.2 Update `docs/openbuild-runtime.md` (from spec #1) with the new 403 path on `getManifest`. — deferred to downstream cycle (handoff)
+- [~] 6.3 NL Design (ADR-010) — confirm the new permissions panel and permission history panel use Nextcloud CSS variables only; WCAG AA on the role badges (owner/editor/viewer chips) — sufficient contrast against the panel background. — deferred to downstream cycle (handoff)
+- [~] 6.4 Update `openspec/app-config.json` to list `openbuild-rbac` under capabilities (alongside the modified `openbuild-application-register` and `openbuild-runtime`). — deferred to downstream cycle (handoff)
 
 ## 7. i18n (ADR-005, ADR-007)
 
-- [ ] 7.1 Add English translations for every new string in `l10n/en.json` — keys under `openbuild.rbac.*` (role labels, empty-state copy, transfer-ownership modal, orphan-check error, audit-trail panel headings, admin-bypass tooltip).
-- [ ] 7.2 Add Dutch translations for the same keys in `l10n/nl.json` (per workspace minimum nl+en).
-- [ ] 7.3 Confirm every user-facing string in the new permissions panel, permission-history panel, and 403 response body uses translation keys (no hardcoded English).
+- [~] 7.1 Add English translations for every new string in `l10n/en.json` — keys under `openbuild.rbac.*` (role labels, empty-state copy, transfer-ownership modal, orphan-check error, audit-trail panel headings, admin-bypass tooltip). — deferred to downstream cycle (handoff)
+- [~] 7.2 Add Dutch translations for the same keys in `l10n/nl.json` (per workspace minimum nl+en). — deferred to downstream cycle (handoff)
+- [~] 7.3 Confirm every user-facing string in the new permissions panel, permission-history panel, and 403 response body uses translation keys (no hardcoded English). — deferred to downstream cycle (handoff)
