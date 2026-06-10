@@ -26,11 +26,11 @@
  * faked green:
  *   - EDIT via the row detail/edit sidebar — Conduction/openbuild#41 (the
  *     application detail/editor sidebar does not populate the object's fields).
- *   - CREATE via the four-step wizard endpoint — BUG-A (the wizard's TOCTOU
- *     advisory lock calls OR `lockObject('createApp:<slug>')` on a not-yet-
- *     existing object; OR's current LockHandler rejects identifiers that do not
- *     resolve to a stored object, so every wizard create returns 422
- *     `app_slug_conflict`).
+ *
+ * CREATE via the four-step wizard endpoint (formerly BUG-A) is now GREEN:
+ * OpenRegister's `lockObject` accepts a pre-creation/advisory identifier, so the
+ * wizard's TOCTOU `lockObject('createApp:<slug>')` no longer 422s — the wizard
+ * returns 201 with the new app's UUID.
  *
  * Pre-conditions: Docker stack up at PLAYWRIGHT_BASE_URL (default
  * http://localhost:8080); OpenBuild + OpenRegister enabled; admin/admin.
@@ -175,28 +175,24 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 		expect(gone, 'deleted app must no longer be readable via OR API').toBeNull()
 	})
 
-	// ---- BUG-A: wizard create is broken in this build ----------------------
-	test.fixme(
-		'CREATE via the four-step wizard endpoint (BUG-A: OR lockObject on a non-existent object)',
-		async ({ request }) => {
-			// The documented "build a virtual app" entry point. Currently the
-			// wizard's TOCTOU mitigation locks `createApp:<slug>` via OR
-			// ObjectService::lockObject, but OR's LockHandler requires the
-			// identifier to resolve to a stored object, so EVERY create returns
-			// 422 app_slug_conflict ("...is being created by another request").
-			// Re-enable once the wizard uses a lock primitive that does not
-			// require a pre-existing object (or OR's lock accepts synthetic keys).
-			const slug = `${E2E_PREFIX}-wiz-${Math.floor(Math.random() * 1e4)}`
-			const { status, body } = await wizardCreate(request, {
-				name: `E2E Wizard ${slug}`,
-				slug,
-				description: 'wizard create',
-				preset: 'single',
-			})
-			expect(status, 'wizard create should return 201').toBe(201)
-			expect(body.applicationUuid, 'wizard must return the new app uuid').toBeTruthy()
-		},
-	)
+	// ---- BUG-A FIXED: wizard create works now ------------------------------
+	// Previously fixme'd: the wizard's TOCTOU mitigation locked
+	// `createApp:<slug>` via OR ObjectService::lockObject, but OR's LockHandler
+	// rejected identifiers that did not resolve to a stored object, so every
+	// create returned 422 app_slug_conflict. OpenRegister's lockObject now
+	// accepts a pre-creation/advisory identifier, so the documented four-step
+	// wizard entry point returns 201 with the new app's UUID.
+	test('CREATE via the four-step wizard endpoint returns 201 with the new app uuid', async ({ request }) => {
+		const slug = `${E2E_PREFIX}-wiz-${Math.floor(Math.random() * 1e4)}`
+		const { status, body } = await wizardCreate(request, {
+			name: `E2E Wizard ${slug}`,
+			slug,
+			description: 'wizard create',
+			preset: 'single',
+		})
+		expect(status, 'wizard create should return 201').toBe(201)
+		expect(body.applicationUuid, 'wizard must return the new app uuid').toBeTruthy()
+	})
 
 	// ---- #41: detail/editor sidebar does not populate ----------------------
 	test.fixme(

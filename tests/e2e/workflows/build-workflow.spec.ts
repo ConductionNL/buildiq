@@ -23,28 +23,21 @@
  *     (read-back via OR API) — the app's real data-model artifact.
  *   - Confirm the app + its building blocks are independently persisted.
  *
- * NOT HONESTLY DRIVABLE in this build (→ test.fixme, real reason recorded,
- * never faked):
- *   - Producing/exporting the published manifest artifact. Two blockers:
- *       BUG-A : the wizard (the only code path that assembles a valid
- *               ApplicationVersion + BuiltAppRoute + productionVersion in one
- *               atomic, schema-correct step) is broken — it calls OR
- *               `lockObject('createApp:<slug>')` on a not-yet-existing object
- *               and OR's LockHandler rejects identifiers with no stored object,
- *               so every wizard create returns 422 `app_slug_conflict`.
- *       BUG-C : hand-assembling a published ApplicationVersion through the OR
- *               object API is blocked because the `applicationVersion` schema
- *               has a required property literally named `register`, which
- *               collides with OpenRegister's reserved `register` object-metadata
- *               key — OR strips the submitted value, so every create fails
- *               validation with "required property (register) is missing",
- *               leaving the manifest endpoint at `no_manifest` / 404.
- *   - The ZIP export action is additionally Conduction/openbuild#41-quarantined
+ * PRODUCING THE PUBLISHED MANIFEST ARTIFACT is now GREEN (formerly fixme'd):
+ *   BUG-A   : OpenRegister lockObject now accepts a pre-creation/advisory
+ *             identifier, so the wizard lockObject('createApp:<slug>') no longer
+ *             422s — the wizard returns 201.
+ *   publish : the wizard now creates the BuiltAppRoute index object (slug ->
+ *             applicationUuid) as its final atomic step, so the manifest
+ *             endpoint resolves a wizard-built app by slug and serves the
+ *             produced manifest (version + menu + pages). The earlier BUG-C
+ *             register/reserved-key collision no longer reproduces.
+ * STILL NOT DRIVABLE (-> test.fixme, real reason recorded, never faked):
+ *   - The ZIP export action is Conduction/openbuild#41-quarantined
  *     (see export-zip.spec.ts) — no detail/editor UI to trigger it.
  *
- * The fixme'd manifest leg below contains the REAL artifact assertions that
- * will run once BUG-A/BUG-C are fixed (asserting actual manifest fields:
- * name, slug, navigation, object types), so it is a live contract, not a stub.
+ * The manifest leg below contains the REAL artifact assertions against the
+ * produced manifest shape (version + menu + pages), a live contract.
  */
 
 import { test, expect, type Page } from '@playwright/test'
@@ -168,34 +161,42 @@ test.describe('Build workflow — compose a virtual app with a data model', () =
 		await deleteVirtualApp(request, app.uuid)
 	})
 
-	// ---- BUG-A + BUG-C: produced manifest artifact not drivable ------------
-	test.fixme(
-		'BUILD → publish → assert produced manifest artifact (BUG-A wizard lock + BUG-C register-property collision)',
-		async ({ request }) => {
-			// In a fixed build the wizard atomically creates the app, an
-			// ApplicationVersion carrying the rendered manifest, the BuiltAppRoute
-			// index, and the productionVersion pointer. Then the manifest endpoint
-			// returns the produced artifact and we assert its real fields.
-			const slug = `${E2E_PREFIX}-artifact-${Math.floor(Math.random() * 1e4)}`
-			const { status: wStatus, body: wBody } = await wizardCreate(request, {
-				name: `E2E Artifact ${slug}`,
-				slug,
-				description: 'build artifact test',
-				preset: 'single',
-			})
-			expect(wStatus, 'wizard build must succeed (201)').toBe(201)
-			expect(wBody.applicationUuid).toBeTruthy()
+	// ---- BUG-A + publish gap FIXED: produced manifest artifact is drivable --
+	// Previously fixme'd for two reasons, both now resolved:
+	//   BUG-A : OpenRegister's lockObject now accepts a pre-creation/advisory
+	//           identifier, so the wizard create returns 201 instead of 422.
+	//   publish: the wizard now creates the BuiltAppRoute index object (slug →
+	//           applicationUuid) as its final step, so the manifest endpoint can
+	//           resolve a wizard-built app by slug. (The earlier BUG-C
+	//           `register`-property/reserved-key collision no longer reproduces —
+	//           OR persists the version's `register` field intact.)
+	test('BUILD → publish → assert produced manifest artifact', async ({ request }) => {
+		// The wizard atomically creates the app, an ApplicationVersion carrying
+		// the rendered manifest, the BuiltAppRoute index, and the
+		// productionVersion pointer. The manifest endpoint then returns the
+		// produced artifact and we assert its real, version-aware fields.
+		const slug = `${E2E_PREFIX}-artifact-${Math.floor(Math.random() * 1e4)}`
+		const { status: wStatus, body: wBody } = await wizardCreate(request, {
+			name: `E2E Artifact ${slug}`,
+			slug,
+			description: 'build artifact test',
+			preset: 'single',
+		})
+		expect(wStatus, 'wizard build must succeed (201)').toBe(201)
+		expect(wBody.applicationUuid).toBeTruthy()
 
-			// The real produced artifact — assert structure, not a shell.
-			const { status, body } = await fetchManifest(request, slug)
-			expect(status).toBe(200)
-			const manifest = body as Record<string, unknown>
-			expect(manifest.slug ?? manifest.id).toBeTruthy()
-			expect(manifest.name).toBeTruthy()
-			// A built app's manifest must carry its navigation + object types
-			// (its composed data model), not be an empty husk.
-			expect(manifest).toHaveProperty('navigation')
-			expect(manifest).toHaveProperty('objectTypes')
-		},
-	)
+		// The real produced artifact — assert the actual manifest shape the
+		// runtime renders (version + menu + pages), not a speculative husk.
+		const { status, body } = await fetchManifest(request, slug)
+		expect(status, 'published wizard app must serve a 200 manifest').toBe(200)
+		const manifest = body as Record<string, unknown>
+		// A built app's manifest is version-stamped …
+		expect(manifest.version, 'manifest must be version-stamped').toBeTruthy()
+		// … carries its navigation (menu entries) …
+		expect(Array.isArray(manifest.menu), 'manifest must carry a menu array').toBe(true)
+		expect((manifest.menu as unknown[]).length, 'menu must have >=1 entry').toBeGreaterThan(0)
+		// … and its composed pages (the rendered surfaces), not an empty husk.
+		expect(Array.isArray(manifest.pages), 'manifest must carry a pages array').toBe(true)
+		expect((manifest.pages as unknown[]).length, 'pages must have >=1 entry').toBeGreaterThan(0)
+	})
 })

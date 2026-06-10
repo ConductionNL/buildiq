@@ -97,6 +97,16 @@ class ApplicationCreationService
     private const INITIAL_SEMVER = '0.1.0';
 
     /**
+     * Schema slug for the BuiltAppRoute index object.
+     *
+     * The `getManifest`/`resolveApplicationBySlug` lookup path resolves a
+     * virtual-app slug to its Application UUID through a BuiltAppRoute object
+     * (one per published app). Without it the manifest endpoint returns 404
+     * `not_found` for every wizard-built app, so the wizard MUST create it.
+     */
+    private const BUILT_APP_ROUTE_SCHEMA = 'built-app-route';
+
+    /**
      * Constructor.
      *
      * @param LoggerInterface $logger          PSR logger for diagnostics
@@ -182,6 +192,7 @@ class ApplicationCreationService
                 'versionUuids'    => [],
                 'registerSlugs'   => [],
                 'versionPayloads' => [],
+                'routeUuids'      => [],
             ];
 
             // ---- Step 2: Create Application -------------------------------------
@@ -242,19 +253,10 @@ class ApplicationCreationService
             }//end try
 
             if ($state['applicationUuid'] === '') {
-                $orphaned = [];
-                $this->rollback(state: $state, orphaned: $orphaned);
-                $status = 'complete';
-                if ($orphaned !== []) {
-                    $status = 'partial';
-                }
-
-                throw new WizardCreationException(
-                errorCode: 'wizard_rollback',
-                failedAtStep: 'create-application',
-                message: 'Application record was not assigned a UUID by OR.',
-                rollbackStatus: $status,
-                orphanedResources: $orphaned
+                $this->rollbackAndThrow(
+                    state: $state,
+                    failedAtStep: 'create-application',
+                    cause: 'Application record was not assigned a UUID by OR.'
                 );
             }
 
@@ -303,21 +305,7 @@ class ApplicationCreationService
                     'OpenBuild: wizard create-version failed for '.$versionSlug.': '.$e->getMessage(),
                     ['exception' => $e]
                     );
-                    $orphaned = [];
-                    $this->rollback(state: $state, orphaned: $orphaned);
-                    $status = 'complete';
-                    if ($orphaned !== []) {
-                        $status = 'partial';
-                    }
-
-                    throw new WizardCreationException(
-                    errorCode: 'wizard_rollback',
-                    failedAtStep: 'create-version-'.$versionSlug,
-                    message: $e->getMessage(),
-                    rollbackStatus: $status,
-                    orphanedResources: $orphaned,
-                    previous: $e
-                    );
+                    $this->rollbackAndThrow(state: $state, failedAtStep: 'create-version-'.$versionSlug, cause: $e);
                 }//end try
 
                 // 3b: Provision per-version register
@@ -333,21 +321,7 @@ class ApplicationCreationService
                     'OpenBuild: wizard register-provision failed for '.$registerSlug.': '.$e->getMessage(),
                     ['exception' => $e]
                     );
-                    $orphaned = [];
-                    $this->rollback(state: $state, orphaned: $orphaned);
-                    $status = 'complete';
-                    if ($orphaned !== []) {
-                        $status = 'partial';
-                    }
-
-                    throw new WizardCreationException(
-                    errorCode: 'wizard_rollback',
-                    failedAtStep: 'register-provision-'.$versionSlug,
-                    message: $e->getMessage(),
-                    rollbackStatus: $status,
-                    orphanedResources: $orphaned,
-                    previous: $e
-                    );
+                    $this->rollbackAndThrow(state: $state, failedAtStep: 'register-provision-'.$versionSlug, cause: $e);
                 }//end try
             }//end foreach
 
@@ -386,21 +360,7 @@ class ApplicationCreationService
                     'OpenBuild: wizard chain-wiring failed for '.$currentSlug.' → '.$nextSlug.': '.$e->getMessage(),
                     ['exception' => $e]
                     );
-                    $orphaned = [];
-                    $this->rollback(state: $state, orphaned: $orphaned);
-                    $status = 'complete';
-                    if ($orphaned !== []) {
-                        $status = 'partial';
-                    }
-
-                    throw new WizardCreationException(
-                    errorCode: 'wizard_rollback',
-                    failedAtStep: 'wire-chain-'.$currentSlug.'-to-'.$nextSlug,
-                    message: $e->getMessage(),
-                    rollbackStatus: $status,
-                    orphanedResources: $orphaned,
-                    previous: $e
-                    );
+                    $this->rollbackAndThrow(state: $state, failedAtStep: 'wire-chain-'.$currentSlug.'-to-'.$nextSlug, cause: $e);
                 }//end try
             }//end for
 
@@ -435,21 +395,33 @@ class ApplicationCreationService
                 'OpenBuild: wizard set-productionVersion failed: '.$e->getMessage(),
                 ['exception' => $e]
                 );
-                $orphaned = [];
-                $this->rollback(state: $state, orphaned: $orphaned);
-                $status = 'complete';
-                if ($orphaned !== []) {
-                    $status = 'partial';
-                }
+                $this->rollbackAndThrow(state: $state, failedAtStep: 'set-production-version', cause: $e);
+            }//end try
 
-                throw new WizardCreationException(
-                errorCode: 'wizard_rollback',
-                failedAtStep: 'set-production-version',
-                message: $e->getMessage(),
-                rollbackStatus: $status,
-                orphanedResources: $orphaned,
-                previous: $e
+            // ---- Step 6: Publish the BuiltAppRoute index -----------------------
+            // The manifest endpoint (ApplicationsController::getManifest →
+            // resolveApplicationBySlug) resolves a virtual-app slug to its
+            // Application UUID through a BuiltAppRoute object. Without this step
+            // the wizard-built app is unreachable by slug and the manifest
+            // endpoint returns 404 `not_found` even though the app, its versions
+            // and its productionVersion pointer all exist (openbuild publish gap).
+            try {
+                $createdRoute = $this->objectService->saveObject(
+                object: ['slug' => $appSlug, 'applicationUuid' => $state['applicationUuid']],
+                register: ApplicationVersionService::REGISTER_SLUG,
+                schema: self::BUILT_APP_ROUTE_SCHEMA
                 );
+                $routeData    = $this->normaliseObject(object: $createdRoute);
+                $routeUuid    = (string) ($routeData['id'] ?? $routeData['uuid'] ?? '');
+                if ($routeUuid !== '') {
+                    $state['routeUuids'][] = $routeUuid;
+                }
+            } catch (Throwable $e) {
+                $this->logger->error(
+                'OpenBuild: wizard built-app-route publish failed for slug '.$appSlug.': '.$e->getMessage(),
+                ['exception' => $e]
+                );
+                $this->rollbackAndThrow(state: $state, failedAtStep: 'publish-route', cause: $e);
             }//end try
 
             $versionCount = count($versions);
@@ -772,6 +744,14 @@ class ApplicationCreationService
      */
     private function rollback(array $state, array &$orphaned): void
     {
+        // 0. BuiltAppRoute objects first (last created, first torn down).
+        $this->rollbackObjects(
+            uuids: (array) ($state['routeUuids'] ?? []),
+            label: 'BuiltAppRoute',
+            prefix: 'route:',
+            orphaned: $orphaned
+        );
+
         // 1. Delete registers (reverse order of creation).
         $registerSlugs = array_reverse(array_values((array) ($state['registerSlugs'] ?? [])));
         foreach ($registerSlugs as $registerSlug) {
@@ -781,9 +761,86 @@ class ApplicationCreationService
         }
 
         // 2. Delete ApplicationVersion rows (reverse order of creation).
-        $versionUuids = array_reverse(array_values((array) ($state['versionUuids'] ?? [])));
-        foreach ($versionUuids as $versionUuid) {
-            $uuid = (string) $versionUuid;
+        $this->rollbackObjects(
+            uuids: (array) ($state['versionUuids'] ?? []),
+            label: 'ApplicationVersion',
+            prefix: 'version:',
+            orphaned: $orphaned
+        );
+
+        // 3. Delete Application row.
+        $this->rollbackObjects(
+            uuids: [(string) ($state['applicationUuid'] ?? '')],
+            label: 'Application',
+            prefix: 'application:',
+            orphaned: $orphaned
+        );
+    }//end rollback()
+
+    /**
+     * Roll back all created state, then throw a wizard_rollback exception.
+     *
+     * Collapses the repeated "best-effort rollback → derive partial/complete
+     * status → throw WizardCreationException" boilerplate shared by every
+     * mid-flight creation failure in {@see createApplication()}.
+     *
+     * @param array<string,mixed> $state        Creation state tracker
+     * @param string              $failedAtStep The step identifier for the exception
+     * @param string|Throwable    $cause        The underlying failure, or a literal message string
+     *
+     * @return never
+     *
+     * @throws WizardCreationException Always — with the rollback status derived from orphaned resources
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+     */
+    private function rollbackAndThrow(array $state, string $failedAtStep, string|Throwable $cause): never
+    {
+        $orphaned = [];
+        $this->rollback(state: $state, orphaned: $orphaned);
+        $status = 'complete';
+        if ($orphaned !== []) {
+            $status = 'partial';
+        }
+
+        $message  = $cause;
+        $previous = null;
+        if (is_string($cause) === false) {
+            $message  = $cause->getMessage();
+            $previous = $cause;
+        }
+
+        throw new WizardCreationException(
+            errorCode: 'wizard_rollback',
+            failedAtStep: $failedAtStep,
+            message: $message,
+            rollbackStatus: $status,
+            orphanedResources: $orphaned,
+            previous: $previous
+        );
+    }//end rollbackAndThrow()
+
+    /**
+     * Best-effort delete a list of OR objects by UUID as part of rollback.
+     *
+     * Iterates in reverse creation order, skipping empty UUIDs. Each failure is
+     * logged and the UUID (prefixed) appended to $orphaned rather than aborting
+     * the remaining deletes.
+     *
+     * @param array<int|string,mixed> $uuids    UUIDs to delete (creation order; reversed here)
+     * @param string                  $label    Human label for log lines (e.g. "BuiltAppRoute")
+     * @param string                  $prefix   Orphan-list prefix (e.g. "route:")
+     * @param array<int,string>       $orphaned Accumulates un-deletable UUIDs (by ref)
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+     */
+    private function rollbackObjects(array $uuids, string $label, string $prefix, array &$orphaned): void
+    {
+        $ordered = array_reverse(array_values($uuids));
+        foreach ($ordered as $candidate) {
+            $uuid = (string) $candidate;
             if ($uuid === '') {
                 continue;
             }
@@ -792,27 +849,13 @@ class ApplicationCreationService
                 $this->objectService->deleteObject(uuid: $uuid);
             } catch (Throwable $e) {
                 $this->logger->error(
-                    'OpenBuild: wizard rollback failed to delete ApplicationVersion '.$uuid.': '.$e->getMessage(),
+                    'OpenBuild: wizard rollback failed to delete '.$label.' '.$uuid.': '.$e->getMessage(),
                     ['exception' => $e]
                 );
-                $orphaned[] = 'version:'.$uuid;
+                $orphaned[] = $prefix.$uuid;
             }
         }
-
-        // 3. Delete Application row.
-        $applicationUuid = (string) ($state['applicationUuid'] ?? '');
-        if ($applicationUuid !== '') {
-            try {
-                $this->objectService->deleteObject(uuid: $applicationUuid);
-            } catch (Throwable $e) {
-                $this->logger->error(
-                    'OpenBuild: wizard rollback failed to delete Application '.$applicationUuid.': '.$e->getMessage(),
-                    ['exception' => $e]
-                );
-                $orphaned[] = 'application:'.$applicationUuid;
-            }
-        }
-    }//end rollback()
+    }//end rollbackObjects()
 
     /**
      * Load the default manifest from the static fixture file.
