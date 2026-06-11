@@ -473,22 +473,23 @@
 			"name": "6. Exports",
 			"item": [
 				{
-					"name": "export submit QUARANTINED (current 403)",
+					"name": "export submit -> 202 Accepted (NC admin)",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"// QUARANTINE (honest, not a fake pass): ExportsController::submit() calls",
-									"// isAuthorisedForApplication(), which returns false on an empty",
-									"// searchObjectsBySlug() result BEFORE reaching its NC-admin bypass. So even an",
-									"// NC admin that owns the freshly wizard-built app receives 403. We assert the",
-									"// CURRENT 403 so the suite stays green without faking a 202. When the auth",
-									"// ordering is fixed (admin bypass before the slug lookup, or the slug lookup",
-									"// resolves the wizard app), this test goes RED -> flip it to assert 202 +",
-									"// a { uuid } body at that point.",
-									"pm.test('export submit currently returns 403 (quarantined bug)', () => pm.response.to.have.status(403));",
+									"// FIXED: ExportsController::isAuthorisedForApplication() now checks the",
+									"// NC-admin bypass FIRST, before the searchObjectsBySlug() lookup. A wizard-",
+									"// built app is not always indexed by that lookup, so the owning NC admin",
+									"// previously got 403; now an admin can export any application -> 202 + uuid.",
+									"// (mirrors ApplicationsController REQ-OBRBAC-006 admin policy).",
+									"// A non-admin who is in no role bucket still gets a clean 403.",
+									"pm.test('not a 500', () => pm.expect(pm.response.code).to.not.eql(500));",
+									"// 202 carries { uuid }; assert it below.",
+									"pm.test('export submit -> 202 Accepted', () => pm.response.to.have.status(202));",
+										"pm.test('export submit returns a job uuid', () => pm.expect(pm.response.json().uuid).to.be.a('string').and.not.empty);",
 									"pm.test('not a 500', () => pm.expect(pm.response.code).to.not.eql(500));"
 								]
 							}
@@ -514,12 +515,12 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"// On the quarantined app the auth gate fires first (403). We instead probe",
+									"// The admin is now authorised (admin-bypass fix), so a bad target reaches",
 									"// the validation path against an app the admin definitely owns by reusing the",
 									"// CRUD slug is not viable (it is deleted), so we assert the response is a",
 									"// clean 4xx (403 auth OR 422 validation) and never a 500.",
 									"pm.test('bad target -> 4xx not 500', () => {",
-									"  pm.expect(pm.response.code).to.be.oneOf([403, 422]);",
+									"  pm.expect(pm.response.code).to.be.oneOf([422]);",
 									"});"
 								]
 							}

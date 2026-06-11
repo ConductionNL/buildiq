@@ -101,6 +101,17 @@ class ExportsController extends Controller
             return false;
         }
 
+        $uid = $user->getUID();
+
+        // NC admin bypass FIRST — same policy as ApplicationsController
+        // (REQ-OBRBAC-006). An NC admin may export any application regardless
+        // of whether the OR slug lookup resolves: wizard-built apps may not be
+        // indexed by searchObjectsBySlug(), and returning false on an empty
+        // lookup before the bypass wrongly 403s the owning admin.
+        if ($this->groupManager->isInGroup($uid, 'admin') === true) {
+            return true;
+        }
+
         try {
             if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
                 return false;
@@ -126,8 +137,6 @@ class ExportsController extends Controller
             if (is_array($permissions) === false) {
                 $permissions = [];
             }
-
-            $uid = $user->getUID();
 
             // Check all three role buckets: owners, editors, viewers.
             foreach (['owners', 'editors', 'viewers'] as $role) {
@@ -162,8 +171,9 @@ class ExportsController extends Controller
                 }//end foreach
             }//end foreach
 
-            // NC admin bypass — same policy as ApplicationsController (REQ-OBRBAC-006).
-            return $this->groupManager->isInGroup($uid, 'admin') === true;
+            // NC admin already short-circuited to true above; a non-admin who
+            // is not in any role bucket is not authorised.
+            return false;
         } catch (\Throwable $e) {
             $this->logger->debug('OpenBuild export: authz lookup failed: '.$e->getMessage());
             return false;
