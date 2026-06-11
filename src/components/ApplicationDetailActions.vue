@@ -25,6 +25,12 @@
 			@click="permissionsOpen = true">
 			{{ t('openbuild', 'Manage permissions') }}
 		</NcButton>
+		<NcButton
+			v-if="obAppRole === 'owner'"
+			:disabled="!obApp"
+			@click="historyOpen = true">
+			{{ t('openbuild', 'Permission history') }}
+		</NcButton>
 		<NcButton v-if="obApp && obApp.slug" :to="{ name: 'PageDesigner', params: { slug: obApp.slug } }">
 			{{ t('openbuild', 'Design pages') }}
 		</NcButton>
@@ -39,6 +45,11 @@
 			:available-groups="availableGroups"
 			@update:open="permissionsOpen = $event"
 			@save="onPermissionsSave" />
+		<PermissionHistoryModal
+			v-if="obApp"
+			:open="historyOpen"
+			:application-uuid="obAppUuid"
+			@update:open="historyOpen = $event" />
 	</div>
 </template>
 
@@ -47,17 +58,19 @@ import { NcButton } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import PermissionsModal from '../modals/PermissionsModal.vue'
+import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
 import { getCurrentUserGroups } from '../composables/useRole.js'
 import applicationContext from '../mixins/applicationContext.js'
 
 export default {
 	name: 'ApplicationDetailActions',
-	components: { NcButton, PermissionsModal },
+	components: { NcButton, PermissionsModal, PermissionHistoryModal },
 	mixins: [applicationContext],
 	data() {
 		return {
 			publishing: false,
 			permissionsOpen: false,
+			historyOpen: false,
 			toast: '',
 			error: '',
 		}

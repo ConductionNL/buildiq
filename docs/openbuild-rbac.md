@@ -105,6 +105,30 @@ array. No dedicated endpoint, no `TransferOwnershipService`. OR's
 per-object audit trail records the before / after values
 automatically.
 
+## Permission history modal (owner-only)
+
+Owners get a second button next to "Manage permissions" labelled
+"Permission history". It opens a read-only modal
+(`src/modals/PermissionHistoryModal.vue`) that:
+
+- Fetches `GET /apps/openregister/api/objects/openbuild/application/{uuid}/audit?filter=permissions,rbac.admin_bypass&limit=50` —
+  reuses OR's existing per-object audit endpoint; no new audit REST is
+  shipped.
+- Renders one row per event with the actor, timestamp, event label
+  ("Permissions changed" / "Administrator bypass"), and before/after
+  JSON for diff inspection.
+- Highlights `rbac.admin_bypass` events with a warning border so an
+  owner can spot when an administrator read the manifest without a
+  per-Application role.
+- 403/401 responses render the empty-state placeholder rather than an
+  error toast — the modal is only ever opened by an owner, so a
+  non-owner reaching the underlying endpoint is the audit-endpoint's
+  own enforcement working as designed.
+
+The modal lives in `src/modals/` per ADR-004 modal-isolation; the
+owner button is gated by `v-if="obAppRole === 'owner'"` in
+`ApplicationDetailActions.vue`.
+
 ## openbuild.use navigation gate
 
 Nextcloud's per-app group restriction (Apps → OpenBuild → Restrict to

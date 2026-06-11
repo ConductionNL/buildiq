@@ -104,7 +104,7 @@ import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/
 
 import ConditionActionRuleEditor from '../dialogs/ConditionActionRuleEditor.vue'
 import DecisionTableEditor from '../dialogs/DecisionTableEditor.vue'
-import RuleSetTestSandbox from './RuleSetTestSandbox.vue'
+import RuleSetTestSandbox from '../modals/RuleSetTestSandboxModal.vue'
 
 export default {
 	name: 'RuleSetsPage',

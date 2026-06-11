@@ -289,7 +289,18 @@
         "Expected result (JSON)": "Verwacht resultaat (JSON)",
         "Save test case": "Testcase opslaan",
         "Could not load test cases.": "Kon testcases niet laden.",
-        "Could not save the test case — check the JSON is valid.": "Kon de testcase niet opslaan — controleer of de JSON geldig is."
+        "Could not save the test case — check the JSON is valid.": "Kon de testcase niet opslaan — controleer of de JSON geldig is.",
+        "Permission history": "Rechtenhistorie",
+        "Loading audit trail…": "Auditlogboek laden…",
+        "No permission changes recorded": "Geen rechtenwijzigingen geregistreerd",
+        "Future updates to owners / editors / viewers and any admin-bypass events will appear here.": "Toekomstige aanpassingen aan eigenaars / redacteuren / kijkers en admin-bypass-gebeurtenissen verschijnen hier.",
+        "Read-only view of permission changes and admin-bypass events on this application. Sourced from OpenRegister's per-object audit trail.": "Alleen-lezen weergave van rechtenwijzigingen en admin-bypass-gebeurtenissen voor deze applicatie. Afkomstig uit het OpenRegister-auditlogboek per object.",
+        "Administrator bypass": "Administrator-bypass",
+        "Permissions changed": "Rechten gewijzigd",
+        "system": "systeem",
+        "Before": "Voor",
+        "After": "Na",
+        "Failed to load permission history": "Laden van rechtenhistorie mislukt"
     },
     "plurals": ""
 }
