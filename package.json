@@ -26,6 +26,8 @@
     "test:newman": "newman run tests/integration/openbuild.postman_collection.json --env-var base_url=http://localhost:8080 --env-var admin_user=admin --env-var admin_password=admin",
     "test:newman:ci": "newman run tests/integration/openbuild.postman_collection.json --env-var base_url=http://localhost:8080 --env-var admin_user=admin --env-var admin_password=admin --reporters cli,junit --reporter-junit-export tests/integration/newman-results.xml",
     "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.reporter=json-summary --coverage.reporter=text-summary --coverage.include=src/** --coverage.reportsDirectory=coverage-vitest",
+    "test:coverage-ratchet": "npm run test:coverage && bash tests/coverage-ratchet.sh vitest coverage-vitest/coverage-summary.json",
     "test:unit:watch": "vitest",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

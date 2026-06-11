@@ -96,3 +96,5 @@ openspec/test-site-results/**/*.webp
 /.playwright/
 /playwright/.cache/
 tests/e2e/.auth/
+/coverage-vitest/
+/coverage/
