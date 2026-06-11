@@ -289,7 +289,18 @@
         "Expected result (JSON)": "Expected result (JSON)",
         "Save test case": "Save test case",
         "Could not load test cases.": "Could not load test cases.",
-        "Could not save the test case — check the JSON is valid.": "Could not save the test case — check the JSON is valid."
+        "Could not save the test case — check the JSON is valid.": "Could not save the test case — check the JSON is valid.",
+        "Permission history": "Permission history",
+        "Loading audit trail…": "Loading audit trail…",
+        "No permission changes recorded": "No permission changes recorded",
+        "Future updates to owners / editors / viewers and any admin-bypass events will appear here.": "Future updates to owners / editors / viewers and any admin-bypass events will appear here.",
+        "Read-only view of permission changes and admin-bypass events on this application. Sourced from OpenRegister's per-object audit trail.": "Read-only view of permission changes and admin-bypass events on this application. Sourced from OpenRegister's per-object audit trail.",
+        "Administrator bypass": "Administrator bypass",
+        "Permissions changed": "Permissions changed",
+        "system": "system",
+        "Before": "Before",
+        "After": "After",
+        "Failed to load permission history": "Failed to load permission history"
     },
     "plurals": ""
 }
