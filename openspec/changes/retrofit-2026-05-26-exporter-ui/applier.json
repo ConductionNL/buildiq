@@ -1,0 +1,22 @@
+{
+  "ran": true,
+  "pass": false,
+  "blocking": [
+    {
+      "file": "appinfo/info.xml",
+      "severity": "critical",
+      "note": "Unresolved git merge conflict markers committed into the file \u2014 invalid XML that Nextcloud parses for app ID, navigation route, and page registration; app will fail to load on merge."
+    },
+    {
+      "file": ".github/workflows/documentation.yml",
+      "severity": "critical",
+      "note": "Unresolved git merge conflict markers committed into the file \u2014 invalid YAML that will prevent the documentation CI workflow from parsing and running."
+    }
+  ],
+  "turns": 8,
+  "cost_usd": 0.2642,
+  "cost_eur": 0.2431,
+  "pr": 36,
+  "commit": "1035dbd",
+  "timestamp": "2026-06-03T17:02:12.206204+00:00"
+}
