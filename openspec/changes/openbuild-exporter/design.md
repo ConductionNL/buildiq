@@ -1,3 +1,7 @@
+---
+status: pr-created
+---
+
 ## Context
 
 OpenBuild's spec #1 (`bootstrap-openbuild`) committed to a **hybrid** architecture:

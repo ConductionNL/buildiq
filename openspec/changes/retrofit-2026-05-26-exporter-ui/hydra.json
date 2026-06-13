@@ -1,0 +1,101 @@
+{
+  "schema_version": 2,
+  "spec_slug": "retrofit-2026-05-26-exporter-ui",
+  "repo": "https://codeberg.org/Conduction/openbuild",
+  "issue": 11,
+  "cycles": [
+    {
+      "cycle": 1,
+      "trigger": "build:queued",
+      "started_at": "2026-06-03T16:13:21Z",
+      "ended_at": "2026-06-03T17:02:34Z",
+      "outcome": "needs-input",
+      "outcome_reason": "applier returned fail verdict",
+      "pattern_tags": [
+        "browser-test-nc-setup-failed"
+      ],
+      "stages": [
+        {
+          "stage": "build",
+          "persona": "Al Gorithm",
+          "model": "sonnet",
+          "container": "hydra-builder",
+          "started_at": "2026-06-03T15:49:41Z",
+          "ended_at": "2026-06-03T16:13:16Z",
+          "exit_code": 0,
+          "turns_used": 88,
+          "turns_budget": 200,
+          "checks_run": [],
+          "checks_skipped": [
+            "composer check:strict (phpcs) \u2014 Rule 0b",
+            "composer test:unit (phpunit) \u2014 Rule 0b"
+          ],
+          "findings": [
+            {
+              "id": "build-rule-0b-skipped",
+              "severity": "CRITICAL",
+              "gate": "rule-0b",
+              "rule": "builder did not invoke mandatory pre-push gate (composer check:strict, phpunit)",
+              "status": "open",
+              "note": "Rule 0b in images/builder/CLAUDE.md requires composer check:strict + phpunit before push. No invocations found in transcript \u2014 the pipeline will likely catch pre-review-quality failures downstream.",
+              "autofixable": false
+            }
+          ],
+          "decisions": [],
+          "verdict": "pass",
+          "duration_seconds": 1415
+        },
+        {
+          "stage": "applier",
+          "persona": "Axel Pli\u00e9r",
+          "model": "sonnet",
+          "container": "hydra-applier",
+          "started_at": "2026-06-03T16:59:59Z",
+          "ended_at": "2026-06-03T17:02:22Z",
+          "exit_code": 1,
+          "turns_used": 14,
+          "turns_budget": 20,
+          "checks_run": [
+            "hydra.json-consumer"
+          ],
+          "checks_skipped": [],
+          "findings": [
+            {
+              "id": "applier-fail",
+              "severity": "CRITICAL",
+              "gate": "applier",
+              "rule": "applier returned fail verdict",
+              "status": "open",
+              "note": "Applier blocking items should be captured in hydra.json pipeline.applier.blocking[] by the container itself. See logs/pipeline-*/applier.jsonl for detail.",
+              "autofixable": false
+            }
+          ],
+          "decisions": [],
+          "verdict": "fail",
+          "duration_seconds": 143
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "runs": 2,
+    "turns_used": 102,
+    "cost_usd": 0.0,
+    "duration_seconds": 1558,
+    "cycles": 1,
+    "by_stage": {
+      "build": {
+        "runs": 1,
+        "turns_used": 88,
+        "cost_usd": 0.0,
+        "duration_seconds": 1415
+      },
+      "applier": {
+        "runs": 1,
+        "turns_used": 14,
+        "cost_usd": 0.0,
+        "duration_seconds": 143
+      }
+    }
+  }
+}

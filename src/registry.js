@@ -95,6 +95,10 @@ import { CnStatsBlockWidget, CnAuditTrailCard } from '@conduction/nextcloud-vue'
 // condition-action editors and the test sandbox (spec business-rules-engine).
 import RuleSetsPageView from './views/RuleSetsPage.vue'
 
+// Export jobs tab — wraps ExportJobsList as the "Exports" sidebar tab on the
+// VirtualAppDetail page (spec openbuild-exporter task 9.2).
+import ExportJobsTab from './components/tabs/ExportJobsTab.vue'
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /**
@@ -214,4 +218,7 @@ export default {
 
 	// Business-rules engine dashboard (type:"custom" page).
 	RuleSetsPageView: page(RuleSetsPageView),
+
+	// Export jobs sidebar tab on VirtualAppDetail (spec openbuild-exporter task 9.2).
+	ExportJobsTab: tab(ExportJobsTab),
 }

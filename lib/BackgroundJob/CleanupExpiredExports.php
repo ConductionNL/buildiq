@@ -33,6 +33,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * 24-hour cleanup job for expired export archives.
+ *
+ * @spec openspec/changes/openbuild-exporter/tasks.md#task-5.3
  */
 class CleanupExpiredExports extends TimedJob
 {

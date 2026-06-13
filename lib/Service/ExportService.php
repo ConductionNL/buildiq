@@ -61,6 +61,8 @@ use ZipArchive;
  *
  *   - GitHub PAT NEVER passes through this class. It is fetched from
  *     ICredentialsManager by RunExportJob and handed to GitHubPushService.
+ *
+ * @spec openspec/changes/openbuild-exporter/tasks.md#task-4.1
  */
 class ExportService
 {

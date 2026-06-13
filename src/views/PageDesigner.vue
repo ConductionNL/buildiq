@@ -74,7 +74,7 @@
 				<div v-if="!previewAvailable" class="page-designer__preview-fallback">
 					<h4>{{ t('openbuild', 'Live preview') }}</h4>
 					<p class="page-designer__preview-message">
-						{{ t('openbuild', 'openbuild.page-designer.preview.unavailable — chain spec #2 not yet installed. Save and open the built app to preview your changes.') }}
+						{{ t('openbuild', 'Live preview is not yet installed. Save and open the built app to preview your changes.') }}
 					</p>
 					<button
 						type="button"
@@ -87,7 +87,7 @@
 				<div class="page-designer__errors">
 					<h4>{{ t('openbuild', 'Validation') }}</h4>
 					<p v-if="depthError" class="page-designer__error-row" role="alert">
-						{{ t('openbuild', 'openbuild.page-designer.menu.error.nesting-depth — menu depth limited to two levels.') }}
+						{{ t('openbuild', 'Menu depth is limited to two levels.') }}
 					</p>
 					<ul v-if="validatorErrors.length" class="page-designer__error-list">
 						<li v-for="(err, i) in validatorErrors" :key="i" class="page-designer__error-row">

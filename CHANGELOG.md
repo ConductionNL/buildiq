@@ -30,6 +30,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ExportService::scratchTreeDir()` split out as a pure path resolver so the GitHub push
   target can read the generated tree; `prepareScratchDir()` owns the wipe + create.
 
+## [0.3.12] - 2026-06-01
+
+### Added
+- Full Dutch + English translations for the visual page designer (170 strings, en↔nl parity) — the designer UI was previously untranslated (ADR-007 / `openbuild-page-designer` REQ-OBPD spec, tasks 6.1/6.2).
+
+### Changed
+- Page designer save path now targets the active `ApplicationVersion.manifest` (`PUT /api/objects/openbuild/applicationVersion/{uuid}`) per ADR-002 / Decision 6 / REQ-OBPD-009, surgical-merging the UI-controlled `manifest` field for round-trip safety; falls back to the `Application` object for apps that predate the versioned model.
+
+### Fixed
+- Removed two designer strings that leaked the internal `openbuild.page-designer.*` dotted-key prefix into the user-facing UI (live-preview unavailable note and the menu nesting-depth error).
+
 ## [0.3.11] - 2026-05-31
 
 ### Added

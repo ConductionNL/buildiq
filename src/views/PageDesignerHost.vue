@@ -242,8 +242,19 @@ export default {
 				const apps = (data && data.results) ? data.results : (Array.isArray(data) ? data : [])
 				const app = apps.find(a => a && a.slug === this.routeSlug) || null
 				this.application = app
-				this.manifest = (app && app.manifest && typeof app.manifest === 'object')
-					? JSON.parse(JSON.stringify(app.manifest))
+				// ADR-002 / REQ-OBPD-009: the manifest now lives on the active
+				// ApplicationVersion. Seed from the resolved version's manifest when
+				// available, falling back to the Application's manifest for apps that
+				// have not yet been migrated to the versioned model.
+				const versionManifest = this.applicationVersion
+					&& this.applicationVersion.manifest
+					&& typeof this.applicationVersion.manifest === 'object'
+					? this.applicationVersion.manifest
+					: null
+				const seed = versionManifest
+					|| (app && app.manifest && typeof app.manifest === 'object' ? app.manifest : null)
+				this.manifest = seed
+					? JSON.parse(JSON.stringify(seed))
 					: { ...EMPTY_MANIFEST }
 			} catch (e) {
 				this.application = null
@@ -278,6 +289,24 @@ export default {
 			this.error = ''
 			this.toast = ''
 			try {
+				// ADR-002 / REQ-OBPD-009 (design.md Decision 6): persist the manifest
+				// onto the active ApplicationVersion when one is resolved — surgical-merge
+				// the UI-controlled `manifest` field back into the original record so any
+				// version fields the designer does not touch round-trip losslessly
+				// (design.md Risk 2). Fall back to the Application object for apps that
+				// predate the versioned model.
+				const version = this.applicationVersion
+				const versionUuid = version
+					&& ((version['@self'] && version['@self'].id) || version.uuid || version.id)
+				if (version && versionUuid) {
+					const url = generateUrl(`/apps/openregister/api/objects/openbuild/applicationVersion/${versionUuid}`)
+					const { data } = await axios.put(url, { ...version, manifest: this.manifest })
+					if (data && typeof data === 'object') {
+						this.applicationVersion = data
+					}
+					this.toast = t('openbuild', 'Pages saved.')
+					return
+				}
 				const url = generateUrl(`/apps/openregister/api/objects/openbuild/application/${this.applicationUuid}`)
 				const { data } = await axios.put(url, { ...this.application, manifest: this.manifest })
 				if (data && typeof data === 'object') {
