@@ -37,8 +37,17 @@
 		<NcButton v-if="builderUrl" :href="builderUrl">
 			{{ t('openbuild', 'Open virtual app') }}
 		</NcButton>
+		<NcButton
+			:disabled="!obApp || !obApp.productionVersion"
+			@click="exportOpen = true">
+			{{ t('openbuild', 'Export') }}
+		</NcButton>
 		<span v-if="toast" class="ob-detail-actions__toast">{{ toast }}</span>
 		<span v-if="error" class="ob-detail-actions__error">{{ error }}</span>
+		<ExportDialog
+			v-if="exportOpen && obApp"
+			:application-slug="obApp.slug"
+			@close="exportOpen = false" />
 		<PermissionsModal
 			:open="permissionsOpen"
 			:application="obApp"
@@ -62,15 +71,18 @@ import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
 import { getCurrentUserGroups } from '../composables/useRole.js'
 import applicationContext from '../mixins/applicationContext.js'
 
+const ExportDialog = () => import('../dialogs/ExportDialog.vue')
+
 export default {
 	name: 'ApplicationDetailActions',
-	components: { NcButton, PermissionsModal, PermissionHistoryModal },
+	components: { NcButton, PermissionsModal, PermissionHistoryModal, ExportDialog },
 	mixins: [applicationContext],
 	data() {
 		return {
 			publishing: false,
 			permissionsOpen: false,
 			historyOpen: false,
+			exportOpen: false,
 			toast: '',
 			error: '',
 		}

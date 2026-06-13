@@ -217,6 +217,13 @@
 						"icon": "icon-image",
 						"component": "ApplicationIconTab",
 						"order": 50
+					},
+					{
+						"id": "exports",
+						"label": "Exports",
+						"icon": "icon-download",
+						"component": "ExportJobsTab",
+						"order": 60
 					}
 				]
 			},
@@ -278,7 +285,7 @@
 					"showMetadata": true
 				}
 			},
-			"_note": "Per-app schema list under the builder route. Scoped to the virtual app identified by :slug \u2014 the index page type's filter wiring kicks in via the route param."
+			"_note": "Per-app schema list under the builder route. Scoped to the virtual app identified by :slug — the index page type's filter wiring kicks in via the route param."
 		},
 		{
 			"id": "SchemaDesigner",
