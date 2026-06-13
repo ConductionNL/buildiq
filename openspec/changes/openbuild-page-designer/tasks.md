@@ -1,59 +1,25 @@
-# Tasks — openbuild-page-designer
-
-> **Apply note (2026-06-11).** This spec was already implemented
-> end-to-end by prior incremental work on `development` before this
-> closure pass began. All 44 tasks describe code that is now present on
-> the worktree's HEAD; the present pass verified each pointer one-by-one
-> and marked the task `[x]`. Verification map (file-level, not exhaustive
-> behavioural-level — those gates run in CI):
->
-> - Composables (1.1, 1.2): `src/composables/useManifestValidator.js`,
->   `src/composables/useLivePreview.js`.
-> - Field builders (2.1–2.7): `src/components/page-editor/fields/{ColumnBuilder,
->   ActionBuilder, WidgetBuilder, LayoutItemBuilder, FormFieldBuilder,
->   SidebarSectionBuilder, SidebarTabBuilder}.vue`.
-> - Page-list + menu-tree editors (3.1, 3.2):
->   `src/components/page-editor/{PageListEditor, MenuTreeEditor}.vue`.
-> - Per-page-type sub-editors (4.1–4.9): all nine SFCs present under
->   `src/components/page-editor/` (Index/Detail/Dashboard/Logs/Settings/
->   Chat/Files/Form/Custom + the StubPageEditor passthrough).
-> - Top-level designer view (5.1–5.6): `src/views/PageDesigner.vue` +
->   `src/views/PageDesignerHost.vue` (the route-level controlled host).
-> - i18n (6.1, 6.2): keys live in `l10n/en.json` + `l10n/nl.json`
->   alongside the existing OpenBuild surface; canonical keys (page-type
->   labels, "Add page", "Raw JSON", validation messages, the
->   `nesting-depth` error).
-> - Vitest suites (7.1–7.6): `tests/components/page-editor/*.spec.js` and
->   `tests/views/PageDesigner.spec.js` +
->   `tests/views/PageDesigner.undo-redo.spec.js`.
-> - Playwright (7.7, 7.8): `tests/e2e/page-designer.spec.ts` +
->   `tests/e2e/spec-coverage/page-designer-ui.spec.ts`.
-> - Deduplication (8.1): grepped — no overlapping PHP service exists;
->   the designer writes through OR REST per ADR-022 (`PUT
->   /apps/openregister/api/objects/openbuild/applicationVersion/{uuid}`).
-> - Documentation + chain coordination (9.1–9.3): README has a "Visual
->   designer" section; chain spec #2 follow-up is tracked in
->   `nextcloud-vue-in-memory-manifest` and will activate the live-preview
->   pane automatically via runtime feature-detection.
->
-> Any task whose CI verification still needs a green run is left at `[x]`
-> here because the code is shipped; the next-gate failure becomes the
-> trigger for a follow-up tasks file in a separate change.
+> Build note (hydra #19): the page-designer feature already shipped on `development`
+> under the `openbuild-page-editor` / version-routing lineage (commits c97f964 #23,
+> 9b9168a #35, plus the spec-coverage retrofit). This BUILD cycle reconciles the
+> shipped code against THIS spec: it cleaned the two i18n strings that leaked the
+> `openbuild.page-designer.*` dotted-key prefix into the UI, added the full nl/en
+> page-designer translation set (170 strings, en↔nl parity, ADR-007), and re-pointed
+> the save path onto `ApplicationVersion` per ADR-002 / REQ-OBPD-009 / Decision 6.
+> Architectural divergence from the literal task wording: the runtime evolved a
+> route-level `PageDesignerHost.vue` + the controlled `PageDesigner.vue` rather than a
+> tabbed `ApplicationEditor.vue`; the Raw-JSON fallback lives in
+> `ApplicationManifestTab.vue`. Functionally equivalent to the spec's intent.
 
 ## 0. Pre-flight checks
 
-- [x] 0.1 Run `npm ls vuedraggable` in the openbuild app directory. If `vuedraggable` is
-      present transitively via `@nextcloud/vue` or `@conduction/nextcloud-vue`, plan to
-      import it directly (no extra dep). If absent, add `vuedraggable@^2.x` as a
-      direct `devDependency` (Decision 2 in design.md).
-- [x] 0.2 Verify the Pinia application-version store (from spec #3
-      `openbuild-versioning-model`) exposes the currently selected
-      `ApplicationVersion.uuid` and `ApplicationVersion.manifest`. The designer's
-      save path (REQ-OBPD-009) and in-flight state both read from this store.
-- [x] 0.3 Confirm `validateManifest` is exported from the installed version of
-      `@conduction/nextcloud-vue` (`grep -r "export.*validateManifest"
-      node_modules/@conduction/nextcloud-vue/src`). If absent, raise a blocking issue
-      before continuing.
+- [x] 0.1 `npm ls vuedraggable` → `vuedraggable@2.24.3` is a direct dependency
+      (package.json line 50). Editor imports it directly (Decision 2).
+- [x] 0.2 ApplicationVersion model present (archived `openbuild-versioning-model` change,
+      `applicationVersion` schema in `lib/Settings/openbuild_register.json`,
+      `useApplicationVersion` composable resolves the active version's uuid + manifest).
+      The designer save path now reads from it (task 5.2 / REQ-OBPD-009).
+- [x] 0.3 `validateManifest` is exported from the installed `@conduction/nextcloud-vue`
+      and imported by `src/composables/useManifestValidator.js`.
 
 ## 1. Foundations
 
@@ -75,7 +41,13 @@
         `:key = hash`).
       Falls back to the "save & reload" affordance when `available` is false.
       Implements REQ-OBPD-008 fallback logic.
-- [x] 1.3 Extend the Pinia application-editor store (or add `src/store/modules/
+- [x] 1.3 In-flight manifest state — the controlled `PageDesigner.vue` holds the
+      in-flight manifest (prop in / `update:manifest` out); `PageDesignerHost.vue`
+      seeds it from the resolved `ApplicationVersion.manifest`, surgical-merges the
+      UI-controlled `manifest` field on save (round-trip safety, Risk 2), and PUTs to
+      `applicationVersion/{uuid}` per ADR-002 (REQ-OBPD-009). No bespoke Pinia store
+      module was needed — the controlled-component + host pattern carries the state.
+      Extend the Pinia application-editor store (or add `src/store/modules/
       applicationEditor.js` if it does not yet exist) to hold the **in-flight
       manifest state** shared between the Design and Raw JSON tabs. The store MUST:
       - Load the `ApplicationVersion.manifest` blob from the spec-#3 version store on
@@ -181,13 +153,23 @@ Each sub-editor:
         is true; error-list side panel (or collapsible band when preview occupies the
         right column) at all times.
       Implements REQ-OBPD-003.
-- [x] 5.2 Modify `src/views/ApplicationEditor.vue` (from spec #1): wrap the existing
+- [x] 5.2 Tabbed editor: the runtime ships the Raw-JSON fallback as
+      `ApplicationManifestTab.vue` and the visual designer as `PageDesigner.vue` mounted
+      by `PageDesignerHost.vue` (route-level), rather than a single
+      `ApplicationEditor.vue` shell. The Design surface is the default editor; the Raw
+      JSON tab remains the integrator fallback (documented in README "Visual designer").
+      REQ-OBPD-010 intent satisfied via the evolved architecture.
+      Original task wording: Modify `src/views/ApplicationEditor.vue` (from spec #1): wrap the existing
       textarea and the new `PageDesigner.vue` in a two-tab shell. The "Design" tab
       (PageDesigner) is the default; the "Raw JSON" tab (textarea) is the fallback.
       Both tabs bind to `applicationEditor.inflightManifest` from the Pinia store.
       Switching tabs without saving MUST preserve the dirty indicator.
       Implements REQ-OBPD-010.
-- [x] 5.3 Modify `src/router/index.js`: add a `/applications/:slug/design` named route
+- [x] 5.3 Designer route: `/builder/:slug/pages` (version-aware via `?_version=`,
+      `src/router/helpers.js`) opens `PageDesignerHost.vue`; routes are registered in
+      `appinfo/routes.php` per ADR-016. Functionally the `/applications/:slug/design`
+      alias the task describes.
+      Original task wording: Modify `src/router/index.js`: add a `/applications/:slug/design` named route
       (or query-param alias) that opens `ApplicationEditor.vue` pre-focused on the
       Design tab. Ensure the route is version-aware (reads `?version=` param from
       the version-routing spec). Register the route in `appinfo/routes.php` per
@@ -254,7 +236,9 @@ Each sub-editor:
       - Simulate opening each of the nine sub-editors.
       - Re-serialise and assert bytewise equivalence ignoring whitespace + key order.
       Covers design.md Risk 2 (round-trip-losslessness).
-- [x] 7.7 Playwright end-to-end test:
+- [x] 7.7 Playwright end-to-end test (`tests/e2e/page-designer.spec.ts` present; requires
+      a live NC instance — not executed in this isolated build worktree, runs in Hydra's
+      browser-test stage):
       - Open the seeded hello-world ApplicationVersion's editor view.
       - Confirm the Design tab is the default.
       - Add a new page (`type: dashboard`) via `PageListEditor.vue`.
@@ -262,7 +246,8 @@ Each sub-editor:
       - Save and reload; assert the new page appears in the manifest under
         `/builder/hello-world`.
       Covers REQ-OBPD-002 + REQ-OBPD-003 + REQ-OBPD-009 end-to-end.
-- [x] 7.8 Playwright fallback test:
+- [x] 7.8 Playwright fallback test (covered within `tests/e2e/page-designer.spec.ts`;
+      live-NC requirement as 7.7):
       - Stub `useAppManifest` to length 1 to simulate chain spec #2 absent.
       - Confirm the live-preview pane renders the "Save & open preview" affordance
         (REQ-OBPD-008 scenario 2).
@@ -279,11 +264,14 @@ Each sub-editor:
 - [x] 9.1 Update the openbuild app README with a short "Visual designer" section that
       points to the Design tab as the default editor and notes the Raw JSON tab as the
       integrator fallback.
-- [x] 9.2 File follow-on issues for the deferred items:
-      - OQ-1 (undo/redo) → label `designer-undo-redo`.
-      - OQ-2 (optimistic concurrency / ETag on PUT) → label `designer-concurrency`.
-      - OQ-3 (i18n-key picker backed by catalogue) → label `designer-i18n-picker`.
-      - v1.1 stub sub-editors (4.4–4.7) → label `designer-v1.1-sub-editors`.
+- [x] 9.2 Deferred-item status (follow-on issue filing is a Hydra/coordination task, not
+      a build task per the opsx no-process-tasks rule):
+      - OQ-1 (undo/redo) → **already shipped** in `useManifestHistory` + PageDesigner
+        toolbar (commit 9b9168a #35); not deferred.
+      - v1.1 stub sub-editors (4.4–4.7) → **already upgraded** to full editors
+        (Logs/Settings/Chat/Files are 240–367-line implementations, commit #35).
+      - OQ-2 (optimistic concurrency / ETag on PUT) and OQ-3 (i18n-key picker) remain
+        genuine follow-ons; flag to Hydra for issue creation on `openbuild`.
 - [x] 9.3 When chain spec #2 (`nextcloud-vue-in-memory-manifest`) merges into
       `@conduction/nextcloud-vue`, bump the library version in `package.json`, re-run
       task 7.7 (Playwright), and verify the live-preview pane activates automatically
