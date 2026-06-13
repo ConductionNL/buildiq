@@ -105,7 +105,7 @@
 					},
 					"dataSource": {
 						"register": "openbuild",
-						"schema": "built-app-route",
+						"schema": "builtAppRoute",
 						"aggregate": "count"
 					}
 				},
@@ -127,7 +127,7 @@
 					},
 					"dataSource": {
 						"register": "openbuild",
-						"schema": "application-template",
+						"schema": "applicationTemplate",
 						"aggregate": "count"
 					}
 				},
@@ -149,7 +149,7 @@
 					},
 					"dataSource": {
 						"register": "openbuild",
-						"schema": "application-version",
+						"schema": "applicationVersion",
 						"aggregate": "count"
 					}
 				}
