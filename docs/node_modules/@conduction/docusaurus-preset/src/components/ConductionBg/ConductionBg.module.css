@@ -1,0 +1,41 @@
+/**
+ * <ConductionBg /> styles. Mirrors preview/conduction-bg.css scoped
+ * under CSS modules so the React component carries its own styling.
+ */
+
+.bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  --cbg-hex: #ffffff;
+  --cbg-accent: var(--c-orange-knvb);
+}
+
+.onLight {
+  --cbg-hex: var(--c-blue-cobalt);
+  --cbg-accent: var(--c-orange-knvb);
+}
+
+.hex {
+  position: absolute;
+  clip-path: var(--hex-pointy-top);
+  background: var(--cbg-hex);
+  will-change: transform, opacity;
+  transform: translate(-50%, -50%);
+  animation: conductionBgBreathe var(--cbg-dur, 14s) ease-in-out var(--cbg-delay, 0s) infinite;
+}
+
+.accent { background: var(--cbg-accent); }
+
+@keyframes conductionBgBreathe {
+  0%, 100% { opacity: var(--cbg-opa-min, 0.04); }
+  50%      { opacity: var(--cbg-opa-max, 0.18); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hex {
+    animation: none;
+    opacity: var(--cbg-opa-max, 0.12);
+  }
+}

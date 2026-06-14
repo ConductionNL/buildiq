@@ -1,0 +1,31 @@
+/**
+ * <Section /> styles. Mirrors the .section / .platform / .strip /
+ * .apps-preview / .cta wrappers from preview/pages/landing.html.
+ */
+
+.section { font-family: var(--conduction-typography-font-family-body); }
+
+.inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 64px;
+}
+
+@media (max-width: 700px) {
+  .inner { padding: 0 16px; }
+}
+
+/* Background variants */
+.bg-default { background: white; }
+.bg-tinted  { background: var(--c-cobalt-50); border-top: 1px solid var(--c-cobalt-100); border-bottom: 1px solid var(--c-cobalt-100); }
+.bg-inverse { background: var(--c-blue-cobalt); color: white; }
+
+/* Vertical-spacing variants */
+.sp-default .inner { padding-block: 96px; }
+.sp-tight   .inner { padding-block: 48px; }
+.sp-flush   .inner { padding-block: 0; }
+
+@media (max-width: 700px) {
+  .sp-default .inner { padding-block: 56px; }
+  .sp-tight   .inner { padding-block: 32px; }
+}

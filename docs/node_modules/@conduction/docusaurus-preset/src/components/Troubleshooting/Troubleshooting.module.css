@@ -1,0 +1,83 @@
+.section {
+  margin: var(--space-10) 0 var(--space-8);
+  font-family: var(--conduction-typography-font-family-body);
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--c-cobalt-900);
+  margin: 0 0 var(--space-3);
+  line-height: 1.2;
+}
+
+.lede {
+  font-size: 17px;
+  color: var(--c-cobalt-700);
+  line-height: 1.6;
+  margin: 0 0 var(--space-5);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.item {
+  background: var(--c-cobalt-50);
+  border-left: 3px solid var(--c-orange-knvb);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.symptom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: var(--c-orange-knvb);
+  color: white;
+  font-family: var(--conduction-typography-font-family-display);
+  font-weight: 700;
+  font-size: 13px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  flex-shrink: 0;
+}
+
+.symptomText {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 14px;
+  color: var(--c-cobalt-900);
+  background: transparent;
+  padding: 0;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.body {
+  font-size: 16px;
+  color: var(--c-cobalt-700);
+  line-height: 1.6;
+}
+
+.body code {
+  background: var(--c-cobalt-100);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 14px;
+  color: var(--c-cobalt-900);
+}
+
+.body p { margin: var(--space-2) 0 0; }
+.body p:first-child { margin-top: 0; }

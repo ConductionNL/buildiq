@@ -1,0 +1,34 @@
+/**
+ * <IntegrationIcon /> styles.
+ *
+ * The icon itself is a 24×24 viewBox SVG with `fill="currentColor"`,
+ * so it tints to whatever colour the parent CSS sets. The wrapper
+ * fixes the rendered box size and inherits the colour from context.
+ */
+
+/* IntegrationIcon's root element carries `.am` itself so the rules
+   below use a compound selector (no descendant space). The .am scope
+   still namespaces the rule so plain `.ii` on a host page that does
+   not adopt the design system is unaffected. Sizes are compound for
+   the same reason. */
+.am.ii {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+  color: var(--c-cobalt-700);
+}
+.am.ii svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Sizes match the surfaces that consume the icon: tabs (xs), widget
+   headers (sm), gallery cards (md), hero scene (lg). */
+.am.ii.xs { width: 12px; height: 12px; }
+.am.ii.sm { width: 16px; height: 16px; }
+.am.ii.md { width: 24px; height: 24px; }
+.am.ii.lg { width: 40px; height: 40px; }
+.am.ii.xl { width: 64px; height: 64px; }

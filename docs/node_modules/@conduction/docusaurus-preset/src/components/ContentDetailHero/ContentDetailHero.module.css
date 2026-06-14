@@ -1,0 +1,95 @@
+/**
+ * <ContentDetailHero /> styles. Mirrors .content-detail-hero in
+ * preview/components/academy.css.
+ */
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-12) 0 var(--space-8);
+  font-family: var(--conduction-typography-font-family-body);
+}
+
+.crumb {
+  display: flex;
+  gap: 6px;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--c-cobalt-400);
+  flex-wrap: wrap;
+}
+.crumb a {
+  color: var(--c-cobalt-700);
+  text-decoration: none;
+}
+.crumb a:hover { color: var(--c-blue-cobalt); }
+.crumb .sep { color: var(--c-cobalt-300); }
+
+.tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--c-cobalt-900);
+  margin: 0;
+  line-height: 1.1;
+}
+@media (max-width: 700px) { .title { font-size: 32px; } }
+
+.summary {
+  font-size: 18px;
+  color: var(--c-cobalt-700);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 60ch;
+}
+
+.meta {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.duration {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--c-cobalt-400);
+}
+
+.cover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--c-cobalt-900);
+  border-radius: var(--radius-lg);
+  margin-top: var(--space-4);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coverImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.watermark {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url('/img/honeycomb-scatter.svg');
+  background-size: 320px;
+  background-repeat: repeat;
+  opacity: 0.5;
+}

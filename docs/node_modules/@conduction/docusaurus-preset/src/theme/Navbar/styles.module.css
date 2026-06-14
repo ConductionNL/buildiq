@@ -1,0 +1,207 @@
+/**
+ * Navbar swizzle styles. Mirrors preview/components/top-navbar.html in
+ * the design-system kit. CSS Modules so class names don't collide with
+ * Docusaurus's Infima rules.
+ */
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 56px;
+  border-bottom: 1px solid var(--c-cobalt-100);
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  font-family: var(--conduction-typography-font-family-body);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 44px;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--c-blue-cobalt);
+  text-decoration: none;
+}
+.wordmark:hover { color: var(--c-blue-cobalt); text-decoration: none; }
+
+/* App-glyph hex next to the wordmark. Every product navbar shows the
+   app's icon (sourced from navbar.logo); sized to match the wordmark's
+   cap height so the two land on the same baseline. */
+.wordmarkIcon {
+  width: 32px;
+  height: 32px;
+  display: block;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+/* Wordmark text wrapper; gives us a single hook for tweaks like
+   line-height alignment without touching the parent flex container. */
+.wordmarkText {
+  display: inline-block;
+  line-height: 1;
+}
+
+/* "Light" prefix syllable for product wordmarks. Mirrors
+   preview/apps.html .lockup .word .light: cobalt-400 + regular weight,
+   so "OpenRegister" reads as muted-"Open" + bold-"Register" and the
+   eye lands on the noun, not the brand prefix. */
+.wordmarkPrefix {
+  color: var(--c-cobalt-400);
+  font-weight: 400;
+}
+
+.links {
+  display: flex;
+  gap: 28px;
+}
+
+.link {
+  color: var(--c-cobalt-700);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 160ms ease;
+}
+.link:hover {
+  color: var(--c-orange-knvb);
+  text-decoration: none;
+}
+.linkActive {
+  color: var(--c-orange-knvb);
+  font-weight: 600;
+}
+
+.ctas {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ghost {
+  color: var(--c-cobalt-700);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+.ghost:hover {
+  color: var(--c-orange-knvb);
+  text-decoration: none;
+}
+
+.cta {
+  background: var(--c-blue-cobalt);
+  color: white;
+  padding: 9px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 160ms ease;
+}
+.cta:hover {
+  background: var(--c-cobalt-700);
+  color: white;
+  text-decoration: none;
+}
+
+/* Locale dropdown integration. Override Infima's defaults so it sits
+   inline with the other right-side items. */
+.localeWrapper :global(.dropdown) {
+  font-size: 14px;
+}
+.localeWrapper :global(.navbar__link) {
+  color: var(--c-cobalt-700);
+  font-weight: 500;
+  padding: 0 8px;
+}
+.localeWrapper :global(.navbar__link:hover) {
+  color: var(--c-orange-knvb);
+}
+
+/* Inline SVG slot used by `github` and `apiDocs` items. The icon
+   inherits the link's font-size + colour so a single `currentColor`
+   path stays on brand whether the link is active, hovered, or idle. */
+.iconGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.iconGlyph :global(svg) {
+  width: 1em;
+  height: 1em;
+  display: block;
+}
+
+/* Icon-only navbar link. Used by the github item; no visible label,
+   the aria-label gives it a name. Slightly larger icon (18px) than
+   text links so it reads as a fixed glyph rather than letterform. */
+.iconLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  color: var(--c-cobalt-700);
+  font-size: 18px;
+  text-decoration: none;
+  transition: color 160ms ease, background 160ms ease;
+}
+.iconLink:hover {
+  color: var(--c-blue-cobalt);
+  background: var(--c-cobalt-50);
+  text-decoration: none;
+}
+
+/* Icon + label link. Used by the apiDocs item. Same typography as
+   plain .link but with an inline icon before the label, gap matches
+   the brand button-icon spacing. */
+.iconLabelLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.iconLabelLink .iconGlyph {
+  font-size: 16px;
+}
+
+/* Stable-version pill. Code typeface, cobalt-50 fill, cobalt-400 text,
+   pill-radius. Source is customFields.appVersion via createConfig();
+   when undefined the pill isn't rendered at all (see NavItem). */
+.versionPill {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--c-cobalt-400);
+  background: var(--c-cobalt-50);
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+/* Responsive collapse, simplified for v1.
+   TODO: hamburger menu like the design-system mock. */
+@media (max-width: 900px) {
+  .nav {
+    padding: 16px 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .left { gap: 16px; }
+  .links { gap: 16px; }
+  .ctas { gap: 8px; }
+}

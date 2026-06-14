@@ -1,0 +1,196 @@
+/**
+ * <PartnerSidecard /> styles.
+ * Narrow rail (~300px) shown to the right of partner-detail body content.
+ * Card backgrounds + chip styling mirror <PartnerCard> so the directory
+ * and the detail-rail tell the same visual story per tier.
+ */
+
+.rail {
+  font-family: var(--conduction-typography-font-family-body);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  width: 100%;
+  max-width: 320px;
+}
+
+/* ---------- Tier card ---------- */
+
+.tierCard {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  position: relative;
+  box-shadow: var(--shadow-1);
+}
+
+.tier-certified .tierCard {
+  /* Cobalt-fill card carries the Conduction-issued credential treatment
+     for top-tier partners. */
+  background: var(--c-blue-cobalt);
+  border-color: var(--c-blue-cobalt);
+  color: white;
+}
+
+.tier-service .tierCard {
+  /* white card, but a hairline gold stripe reads it as a service-level
+     SLA partner rather than a plain Host. */
+  border-top: 4px solid var(--c-gold-500);
+}
+
+.tierBadge {
+  display: block;
+  width: 44px;
+  height: 44px;
+  margin: 0 0 var(--space-3);
+}
+
+.tierLabel {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-cobalt-700);
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+}
+.tier-certified .tierLabel { color: rgba(255, 255, 255, 0.78); }
+.tier-service .tierLabel { color: var(--c-gold-600, #8B6914); }
+
+.tierBlurb {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--c-cobalt-700);
+  margin: 0;
+}
+.tier-certified .tierBlurb { color: rgba(255, 255, 255, 0.85); }
+
+/* ---------- Generic section ---------- */
+
+.section {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-1);
+}
+
+.sectionTitle {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-cobalt-400);
+  font-weight: 600;
+  margin: 0 0 var(--space-3);
+}
+
+/* ---------- Apps chip row ---------- */
+
+.chipRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-700);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-family: var(--conduction-typography-font-family-code);
+  text-decoration: none;
+  transition: background 160ms, color 160ms;
+}
+/* Only the <a> form gets hover affordance — plain <span> chips
+   (apps not in the apps-registry, e.g. Nextcloud) stay static. */
+a.chip:hover {
+  background: var(--c-blue-cobalt);
+  color: white;
+  text-decoration: none;
+}
+
+/* ---------- Solutions list ---------- */
+
+.chipColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.solutionLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-900);
+  text-decoration: none;
+  transition: background 160ms, color 160ms;
+}
+.solutionLink:hover {
+  background: var(--c-blue-cobalt);
+  color: white;
+  text-decoration: none;
+}
+
+.solutionIcon {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+}
+.solutionIcon svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.solutionTitle {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* ---------- CTA ---------- */
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-blue-cobalt);
+  color: white;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  transition: background 160ms;
+}
+.cta:hover {
+  background: var(--c-cobalt-900);
+  color: white;
+  text-decoration: none;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 900px) {
+  .rail {
+    max-width: 100%;
+  }
+}

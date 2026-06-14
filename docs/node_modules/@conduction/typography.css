@@ -1,0 +1,25 @@
+/* Typography & colour defaults, applied via the semantic tokens.
+   Pages link this alongside tokens.css. Per-page CSS only overrides
+   when a surface needs something other than the brand default
+   (e.g. white text on a cobalt panel). */
+
+@import url("./tokens.css");
+
+body {
+  color: var(--conduction-color-text-default);
+  font-family: var(--conduction-typography-font-family-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--conduction-color-text-default);
+  font-family: var(--conduction-typography-font-family-heading);
+  margin: 0;
+}
+
+a {
+  color: var(--conduction-color-link-default);
+  transition: color 140ms ease;
+}
+a:hover { color: var(--conduction-color-link-hover); }

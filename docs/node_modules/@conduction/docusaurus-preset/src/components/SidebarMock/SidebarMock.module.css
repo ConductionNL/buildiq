@@ -1,0 +1,202 @@
+/**
+ * <SidebarMock /> styles.
+ *
+ * The sidebar chassis (.detail.rich, .sb-head, .sb-tabs, .sb-body and
+ * its built-in atoms .sb-input / .sb-filter / .sb-label) lives in
+ * AppMock/AppMock.module.css. SidebarMock reuses that module so the
+ * panel renders identically whether it is embedded inside an AppMock
+ * (taking the .detail slot in .body's flex layout) or rendered
+ * standalone for kit-page specimens.
+ *
+ * What lives here:
+ *
+ *   .smFrame  — the standalone wrapper card (white box, shadow,
+ *               radius, fixed size). Used only when rendering the
+ *               sidebar standalone in marketing copy or kit pages;
+ *               embedded mode skips it so the panel slots into
+ *               .body's flex layout untouched.
+ *
+ *   .am .sb-body atoms — extra body-level atoms beyond what
+ *               AppMock.module.css already provides under .sb-body
+ *               (.sb-input, .sb-filter, .sb-label). The atoms here
+ *               cover the rest of the marketing surfaces: key/value
+ *               pairs (smKv), person rows with status pip (smPerson),
+ *               stage timelines (smStage), log lines (smLog), and
+ *               PII-redaction pill maps (smPii).
+ */
+
+.am.sm { display: contents; }
+
+/* Standalone wrapper card. Inside, the .detail.rich panel renders
+   identically to its embedded twin, just clipped to the smFrame box.
+   Width/height come from the .sb-size-* modifier on the same element. */
+.am .smFrame {
+  background: white;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--c-cobalt-100);
+  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.am .smFrame.sb-size-sm { width: 240px; height: 320px; }
+.am .smFrame.sb-size-md { width: 300px; height: 400px; }
+.am .smFrame.sb-size-lg { width: 360px; height: 480px; }
+
+/* Inside .smFrame the .detail.rich child needs to fill the box; the
+   default .detail width: 26% rule is meant for an embedded layout so
+   we override here. */
+.am .smFrame > .detail.rich {
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  border-left: none;
+}
+
+/* ---- Body atoms beyond the AppMock-provided sb-input / sb-filter ---- */
+
+/* Generic row block. Sized by class modifier; defaults to thin neutral. */
+.am .sb-body .row {
+  height: 3px;
+  background: var(--c-cobalt-200);
+  border-radius: 1px;
+  flex-shrink: 0;
+  width: 100%;
+}
+.am .sb-body .row.head {
+  height: 5px;
+  width: 55%;
+  background: var(--c-cobalt-700);
+  margin-bottom: 4px;
+}
+.am .sb-body .row.short { width: 35%; }
+.am .sb-body .row.med   { width: 70%; }
+.am .sb-body .row.dark  { background: var(--c-cobalt-700); }
+.am .sb-body .row.accent { background: var(--c-orange-knvb); }
+
+/* Section break: thin horizontal rule between sub-sections. */
+.am .sb-body .smBreak {
+  height: 1px;
+  background: var(--c-cobalt-100);
+  margin: 4px 0;
+}
+
+/* Subhead: short bold-weight bar that introduces a new section. */
+.am .sb-body .smSub {
+  height: 4px;
+  width: 40%;
+  background: var(--c-cobalt-700);
+  border-radius: 1px;
+  margin-top: 4px;
+}
+
+/* Key-value list (used for metadata tabs). Label cobalt-400 short bar
+   plus longer cobalt-700 value bar on the same row. */
+.am .sb-body .smKv {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.am .sb-body .smKv .k {
+  height: 3px;
+  width: 30%;
+  background: var(--c-cobalt-400);
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+.am .sb-body .smKv .v {
+  flex: 1;
+  height: 3px;
+  background: var(--c-cobalt-700);
+  border-radius: 1px;
+}
+
+/* Person row (signatures, comments, history). Avatar + two text rows
+   + optional status pip. .b/.c/.d/.e modifiers shift the avatar to
+   the matching family colour. .pending / .blocked modifiers shift
+   the pip to orange / red. */
+.am .sb-body .smPerson {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.am .sb-body .smPerson .av {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--c-mint-300);
+  flex-shrink: 0;
+}
+.am .sb-body .smPerson.b .av { background: var(--c-lavender-300); }
+.am .sb-body .smPerson.c .av { background: var(--c-orange-knvb); }
+.am .sb-body .smPerson.d .av { background: var(--c-forest-300); }
+.am .sb-body .smPerson.e .av { background: var(--c-terracotta-300); }
+.am .sb-body .smPerson .lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.am .sb-body .smPerson .l1 { height: 3px; width: 70%; background: var(--c-cobalt-700); border-radius: 1px; }
+.am .sb-body .smPerson .l2 { height: 2px; width: 50%; background: var(--c-cobalt-300); border-radius: 1px; }
+.am .sb-body .smPerson .pip {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-mint-500);
+  flex-shrink: 0;
+}
+.am .sb-body .smPerson.pending .pip { background: var(--c-orange-knvb); }
+.am .sb-body .smPerson.blocked .pip { background: var(--c-red-vermillion); }
+
+/* Stage timeline (case sidebar, Timeline tab). Vertical list with a
+   stage hex on the left and two text rows. Modifiers .now / .late /
+   .todo shift the hex colour. */
+.am .sb-body .smStage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.am .sb-body .smStage .h {
+  width: 10px;
+  height: 11px;
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-mint-500);
+  flex-shrink: 0;
+}
+.am .sb-body .smStage.now .h    { background: var(--c-orange-knvb); }
+.am .sb-body .smStage.todo .h   { background: var(--c-cobalt-200); }
+.am .sb-body .smStage.late .h   { background: var(--c-red-vermillion); }
+.am .sb-body .smStage .lines    { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.am .sb-body .smStage .l1       { height: 3px; width: 60%; background: var(--c-cobalt-700); border-radius: 1px; }
+.am .sb-body .smStage .l2       { height: 2px; width: 40%; background: var(--c-cobalt-300); border-radius: 1px; }
+
+/* Log line (run-detail sidebar). Short timestamp bar + message bar.
+   .warn / .error tint the timestamp to orange / red so the eye can
+   scan severity at a glance. */
+.am .sb-body .smLog {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.am .sb-body .smLog .ts { width: 22px; height: 3px; background: var(--c-cobalt-400); border-radius: 1px; flex-shrink: 0; }
+.am .sb-body .smLog .msg { flex: 1; height: 3px; background: var(--c-cobalt-700); border-radius: 1px; }
+.am .sb-body .smLog.warn .ts { background: var(--c-orange-knvb); }
+.am .sb-body .smLog.error .ts { background: var(--c-red-vermillion); }
+
+/* PII redaction map (DocuDesk PII tab). Inline pills marking spans
+   in a paragraph; .redacted = applied (red), .suggested = proposed
+   (orange), default = neutral text. */
+.am .sb-body .smPiiBlock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.am .sb-body .smPii {
+  height: 6px;
+  background: var(--c-cobalt-200);
+  border-radius: 1px;
+}
+.am .sb-body .smPii.redacted { background: var(--c-red-vermillion); }
+.am .sb-body .smPii.suggested { background: var(--c-orange-knvb); }

@@ -1,0 +1,16 @@
+.actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-8);
+  justify-content: center;
+}
+
+.footnote {
+  font-size: 13px;
+  color: var(--c-cobalt-700);
+  text-align: center;
+  margin: var(--space-5) auto 0;
+  max-width: 64ch;
+  line-height: 1.55;
+}

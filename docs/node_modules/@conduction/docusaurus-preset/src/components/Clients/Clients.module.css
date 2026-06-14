@@ -1,0 +1,166 @@
+/**
+ * <Clients /> styles.
+ *
+ * Grid variant: 5/4/3/2-column flat wall, grayscale at rest. Used for
+ * the Partners row and any small logo set.
+ *
+ * Marquee variant: three pointy-top hex rows, honeycomb stagger. The
+ * scroll itself is JS-driven (lib/clients-flow.js): each row is a
+ * static relative container, the runtime spawns absolutely-positioned
+ * hex anchors on the right, drifts them left via translateX, and culls
+ * once they leave the viewport. CSS-animated tracks were dropped after
+ * the duplicate-and-wrap approach started showing a seam at the loop
+ * boundary. Soft mask fade at left/right edges, prefers-reduced-motion
+ * freezes the runtime to a static snapshot, < 720px collapses to one
+ * lane.
+ */
+
+.section {
+  background: white;
+  font-family: var(--conduction-typography-font-family-body);
+  padding: 96px 64px;
+}
+@media (max-width: 700px) {
+  .section { padding: 64px 16px; }
+}
+
+.inner {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* ============ Grid variant ============ */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 32px;
+  margin-top: var(--space-6);
+  align-items: center;
+  justify-items: center;
+}
+@media (max-width: 1100px) {
+  .grid { grid-template-columns: repeat(4, 1fr); gap: 24px; }
+}
+@media (max-width: 800px) {
+  .grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+}
+@media (max-width: 500px) {
+  .grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+}
+
+.cell {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 8px;
+  min-height: 72px;
+}
+
+.logo {
+  max-width: 100%;
+  max-height: 56px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter: grayscale(1);
+  opacity: 0.6;
+  transition: filter 200ms ease, opacity 200ms ease;
+}
+.cell:hover .logo {
+  filter: grayscale(0);
+  opacity: 1;
+}
+
+/* ============ Marquee variant ============ */
+
+.marquee {
+  --hex-w: 120px;
+  --hex-h: 138.56px;     /* hex-w * 1.1547 (pointy-top ratio) */
+  --gap: 8px;            /* breathing room between hexes */
+  /* Isotropic gap: vertical row pitch = (hex-w + gap) * √3/2 so the
+     visible gap perpendicular to the slanted hex edges matches the
+     horizontal gap between flat sides. Overlap = hex-h - that pitch. */
+  --hex-overlap: calc(var(--hex-h) - (var(--hex-w) + var(--gap)) * 0.866);
+  --offset: calc((var(--hex-w) + var(--gap)) / 2); /* row 2 lateral stagger */
+  position: relative;
+  overflow: hidden;
+  margin-top: var(--space-8);
+  padding: var(--space-4) 0;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+          mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+/* Each row is a static relative band the runtime spawns hexes into.
+   The honeycomb pack-up (negative margin-top) and row-2 stagger are
+   handled here in CSS; the runtime only drives x-axis drift. */
+.row {
+  position: relative;
+  overflow: hidden;
+  height: var(--hex-h);
+  margin-top: calc(var(--hex-overlap) * -1);
+}
+.row:first-child { margin-top: 0; }
+/* Row 2 stagger is applied by the runtime via translateX on the
+   spawned hexes (data-row-stagger or the default idx === 1 case),
+   so no CSS offset is needed here. Padding/margin would only
+   inflate the row's bounding rect, which the runtime measures for
+   spawn arithmetic — keeping the row plain ensures all three rows
+   have identical widths and stay in lockstep. */
+
+.hex {
+  /* The flow runtime sets position:absolute + top:0 + left:0 + an
+     animated translateX in inline style. Absent the runtime (preview
+     fallback or reduced-motion before hydrate completes) the hex
+     would otherwise pile at the row's natural baseline; absolute
+     positioning here keeps it tucked at top:0,left:0 until the
+     runtime sets a transform. */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--hex-w);
+  height: var(--hex-h);
+  background: white;
+  clip-path: var(--hex-pointy-top);
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+}
+.hex::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: var(--c-cobalt-50);
+  clip-path: var(--hex-pointy-top);
+  z-index: 0;
+}
+.hex::after {
+  content: "";
+  position: absolute; inset: 1.5px;
+  background: white;
+  clip-path: var(--hex-pointy-top);
+  z-index: 1;
+}
+.hexLogo {
+  position: relative;
+  z-index: 2;
+  max-width: 60%;
+  max-height: 50%;
+  object-fit: contain;
+  filter: grayscale(1) opacity(0.55);
+  transition: filter 200ms ease;
+}
+.hex:hover .hexLogo,
+.hex:focus-visible .hexLogo {
+  filter: grayscale(0) opacity(1);
+}
+
+@media (max-width: 720px) {
+  .marquee {
+    --hex-w: 88px;
+    --hex-h: 101.6px;
+    --gap: 6px;
+    /* --hex-overlap recomputes from the calc in .marquee */
+  }
+  .row2, .row3 { display: none; }
+}

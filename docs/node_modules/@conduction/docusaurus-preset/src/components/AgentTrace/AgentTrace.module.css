@@ -1,0 +1,115 @@
+/**
+ * <AgentTrace /> styles. Cobalt-900 terminal panel with monospace
+ * lines and Claude-CLI-style coloured bullets.
+ */
+
+.trace {
+  background: var(--c-cobalt-900);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6) var(--space-7) 0;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 14px;
+  line-height: 1.6;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  box-shadow: var(--shadow-3);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: var(--space-5);
+}
+
+.line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-feature-settings: "calt" 0;
+}
+
+/* Bullets — set inline-block so the gap works the same across kinds. */
+.bullet {
+  display: inline-block;
+  width: 12px;
+  flex-shrink: 0;
+  text-align: center;
+  font-weight: 700;
+  line-height: inherit;
+}
+.bDone   { color: white; }
+.bInfo   { color: var(--c-workspace-300); }
+.bOrange { color: var(--c-orange-knvb); }
+.bMint   { color: var(--c-mint-300); }
+
+/* Note — primary, white text. */
+.noteText { color: white; }
+
+/* Tool — lavender accent. */
+.toolText { color: var(--c-lavender-300); }
+
+/* Status — orange, with animated dots. */
+.statusText { color: var(--c-orange-knvb); }
+.dots {
+  display: inline-block;
+  margin-left: 2px;
+  animation: dots 1400ms steps(4, end) infinite;
+  white-space: pre;
+  overflow: hidden;
+  vertical-align: bottom;
+  width: 1.2em;
+}
+@keyframes dots {
+  0%   { width: 0; }
+  25%  { width: 0.4em; }
+  50%  { width: 0.8em; }
+  75%  { width: 1.2em; }
+  100% { width: 1.2em; }
+}
+
+/* Expand marker — gray rail + muted text. */
+.expand { color: var(--c-cobalt-200); }
+.expandRail {
+  display: inline-block;
+  width: 12px;
+  color: var(--c-cobalt-300);
+  flex-shrink: 0;
+  text-align: center;
+}
+.muted { color: var(--c-cobalt-200); }
+
+/* Continuation — indented under a tool call, lighter than primary. */
+.continuation { padding-left: 30px; }
+.continuationText { color: var(--c-cobalt-100); }
+
+/* Cursor */
+.cursorLine { color: var(--c-cobalt-300); margin-top: var(--space-2); }
+.prompt { color: var(--c-cobalt-300); margin-right: 6px; }
+.cursor {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: white;
+  vertical-align: -2px;
+  animation: blink 1100ms steps(2, end) infinite;
+}
+@keyframes blink {
+  0%, 50%   { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Mode strip at the bottom — separator + caption ("accept edits on…"). */
+.modeBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--c-cobalt-200);
+  font-size: 13px;
+}
+.modeArrow { color: var(--c-cobalt-300); }
+.modeText  { color: var(--c-cobalt-200); }

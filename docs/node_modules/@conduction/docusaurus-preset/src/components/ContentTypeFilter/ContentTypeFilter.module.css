@@ -1,0 +1,60 @@
+/**
+ * <ContentTypeFilter /> styles. Mirrors .type-filter in
+ * preview/components/academy.css.
+ */
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  color: var(--c-cobalt-700);
+  font-family: var(--conduction-typography-font-family-body);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  text-decoration: none;
+}
+.chip:hover {
+  background: var(--c-cobalt-50);
+  border-color: var(--c-cobalt-200);
+  text-decoration: none;
+  color: var(--c-cobalt-700);
+}
+.chip:focus-visible {
+  outline: 2px solid var(--c-blue-cobalt);
+  outline-offset: 2px;
+}
+
+.chip.active {
+  background: var(--c-blue-cobalt);
+  border-color: var(--c-blue-cobalt);
+  color: white;
+}
+.chip.active:hover {
+  background: var(--c-cobalt-700);
+  border-color: var(--c-cobalt-700);
+  color: white;
+}
+
+.label { display: inline-block; }
+
+.count {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  color: var(--c-cobalt-400);
+  font-weight: 500;
+}
+.chip.active .count { color: var(--c-cobalt-200); }

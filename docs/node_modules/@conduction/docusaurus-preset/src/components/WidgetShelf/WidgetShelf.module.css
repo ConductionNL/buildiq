@@ -1,0 +1,73 @@
+/**
+ * <WidgetShelf /> styles. Header + responsive grid of widget-preview
+ * cards. Each card has a tinted panel containing the widget mock,
+ * with title + description below.
+ */
+
+.shelf {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-12);
+  font-family: var(--conduction-typography-font-family-body);
+}
+
+.head { max-width: 70ch; margin: 0 0 var(--space-8); }
+.eyebrow {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--c-orange-knvb);
+  margin-bottom: var(--space-3);
+}
+.eyebrow .h { width: 10px; height: 12px; clip-path: var(--hex-pointy-top); background: var(--c-orange-knvb); }
+.title {
+  font-size: 36px; font-weight: 700; letter-spacing: -0.02em;
+  line-height: 1.1; color: var(--c-cobalt-900); margin: 0 0 var(--space-3);
+}
+.lede { font-size: 17px; line-height: 1.5; color: var(--c-cobalt-700); margin: 0; }
+
+.grid {
+  display: grid;
+  gap: var(--space-5);
+}
+.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.cols-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+.card {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel {
+  background: var(--c-cobalt-50);
+  padding: var(--space-5);
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Widget mocks (.w, .w-*) get a max-width so they don't stretch
+   awkwardly inside the card. */
+.panel > * { width: 100%; max-width: 280px; }
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--c-cobalt-900);
+  margin: 0;
+  padding: var(--space-4) var(--space-5) 0;
+}
+
+.cardDesc {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--c-cobalt-700);
+  margin: 0;
+  padding: var(--space-2) var(--space-5) var(--space-5);
+}

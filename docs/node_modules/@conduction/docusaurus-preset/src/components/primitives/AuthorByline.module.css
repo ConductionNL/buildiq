@@ -1,0 +1,58 @@
+/**
+ * <AuthorByline /> styles. The compact author + date line used on
+ * cards and detail headers.
+ */
+
+.byline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.avatar {
+  width: 22px;
+  height: 25px;
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-cobalt-100);
+  color: var(--c-cobalt-700);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.name { font-weight: 500; }
+
+.sep { opacity: 0.6; }
+
+.date { }
+
+/* Tones for placement on different grounds. */
+.tone-default .name { color: var(--c-cobalt-700); }
+.tone-default .date,
+.tone-default .sep,
+.tone-default        { color: var(--c-cobalt-400); }
+
+.tone-on-dark .name  { color: white; }
+.tone-on-dark .date,
+.tone-on-dark .sep,
+.tone-on-dark        { color: var(--c-cobalt-200); }
+.tone-on-dark .avatar { background: var(--c-cobalt-700); color: white; }
+
+.tone-muted .name    { color: var(--c-cobalt-700); }
+.tone-muted .date,
+.tone-muted .sep,
+.tone-muted          { color: var(--c-cobalt-300); }

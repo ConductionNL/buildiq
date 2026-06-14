@@ -1,0 +1,127 @@
+/**
+ * <FeaturedCard /> styles. Mirrors .featured-card in
+ * preview/components/academy.css.
+ */
+
+.card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-12);
+  padding: var(--space-12);
+  background: var(--c-cobalt-900);
+  color: white;
+  border-radius: var(--radius-xl);
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  font-family: var(--conduction-typography-font-family-body);
+}
+.card:hover { text-decoration: none; color: white; }
+
+@media (max-width: 900px) {
+  .card { grid-template-columns: 1fr; padding: var(--space-8); }
+}
+
+.body { min-width: 0; }
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-cobalt-300);
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: white;
+  margin: 0 0 var(--space-4);
+}
+@media (max-width: 700px) { .title { font-size: 28px; } }
+
+.lede {
+  font-size: 17px;
+  color: var(--c-cobalt-200);
+  line-height: 1.55;
+  margin: 0 0 var(--space-6);
+  max-width: 50ch;
+}
+
+.metaBits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--c-cobalt-200);
+  text-transform: uppercase;
+  margin-bottom: var(--space-4);
+}
+.metaBits .metaBit  { white-space: nowrap; }
+.metaBits .metaSep  { opacity: 0.6; }
+
+/* "For: MKB, Overheid, Developers" — same line treatment as the meta
+   bits but its own row so the audience set never wraps into the
+   duration / module line. On-dark variant of the ContentCard
+   audienceLine. */
+.audienceLine {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--c-cobalt-200);
+  line-height: 1.4;
+  margin-top: calc(var(--space-3) * -1);
+  margin-bottom: var(--space-4);
+}
+
+.meta { margin-bottom: var(--space-5); }
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  background: white;
+  color: var(--c-cobalt-900);
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition: background 120ms ease;
+}
+.card:hover .cta { background: var(--c-cobalt-50); }
+
+.visual {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  min-height: 300px;
+}
+
+.satellite {
+  position: absolute;
+  width: 64px;
+  height: 74px;
+  clip-path: var(--hex-pointy-top);
+}
+.s1 { top: 8px;     left: calc(50% - 160px); background: var(--c-cobalt-700); }
+.s2 { bottom: 12px; right: calc(50% - 168px); background: var(--c-cobalt-700); }
+.s3 { top: 40%;     right: calc(50% - 172px); }
+.s3Orange { background: var(--c-orange-knvb); }
+.s3Cobalt { background: var(--c-cobalt-700); }
+
+@media (max-width: 900px) {
+  .visual { min-height: 240px; }
+  .satellite { width: 48px; height: 56px; }
+}
