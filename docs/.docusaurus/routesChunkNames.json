@@ -1,0 +1,121 @@
+{
+  "/features/-cbb": {
+    "__comp": "55d11d86",
+    "__context": {
+      "plugin": "f622ed5e"
+    },
+    "data": "afa3ca50"
+  },
+  "/docs/-440": {
+    "__comp": "5e95c892",
+    "__context": {
+      "plugin": "aba21aa0"
+    }
+  },
+  "/docs/-e7e": {
+    "__comp": "a7bd4aaa",
+    "__props": "11b43341"
+  },
+  "/docs/-941": {
+    "__comp": "a94703ab"
+  },
+  "/docs/business-rules-engine/-4aa": {
+    "__comp": "17896441",
+    "content": "3d16ce64"
+  },
+  "/docs/category/admin-guide/-bc9": {
+    "__comp": "14eb3368",
+    "__props": "8cb5fad5"
+  },
+  "/docs/category/tutorials/-ae9": {
+    "__comp": "14eb3368",
+    "__props": "af75b968"
+  },
+  "/docs/category/user-guide/-a58": {
+    "__comp": "14eb3368",
+    "__props": "b1abb4d6"
+  },
+  "/docs/export-pipeline/-053": {
+    "__comp": "17896441",
+    "content": "e5f565f5"
+  },
+  "/docs/integrator-guide/-355": {
+    "__comp": "17896441",
+    "content": "83281ea4"
+  },
+  "/docs/intro/-224": {
+    "__comp": "17896441",
+    "content": "2e5b4b03"
+  },
+  "/docs/openbuild-rbac/-d7b": {
+    "__comp": "17896441",
+    "content": "6ebc08aa"
+  },
+  "/docs/openbuild-runtime/-f06": {
+    "__comp": "17896441",
+    "content": "536bad4a"
+  },
+  "/docs/releasing/-278": {
+    "__comp": "17896441",
+    "content": "9c60e451"
+  },
+  "/docs/tutorials/admin/admin-settings/-d1f": {
+    "__comp": "17896441",
+    "content": "36f4eb15"
+  },
+  "/docs/tutorials/admin/rbac/-378": {
+    "__comp": "17896441",
+    "content": "08d1b72e"
+  },
+  "/docs/tutorials/admin/template-catalogue/-f33": {
+    "__comp": "17896441",
+    "content": "7ca9b633"
+  },
+  "/docs/tutorials/create-a-virtual-app/-20f": {
+    "__comp": "17896441",
+    "content": "69a3e3e4"
+  },
+  "/docs/tutorials/update-a-virtual-app/-020": {
+    "__comp": "17896441",
+    "content": "0aee3659"
+  },
+  "/docs/tutorials/user/connect-data/-dbd": {
+    "__comp": "17896441",
+    "content": "ee40a5e8"
+  },
+  "/docs/tutorials/user/create-from-template/-8d6": {
+    "__comp": "17896441",
+    "content": "724a0b1a"
+  },
+  "/docs/tutorials/user/design-page/-82d": {
+    "__comp": "17896441",
+    "content": "8aec9aab"
+  },
+  "/docs/tutorials/user/design-schema/-1e0": {
+    "__comp": "17896441",
+    "content": "cb02ec7f"
+  },
+  "/docs/tutorials/user/export-app/-504": {
+    "__comp": "17896441",
+    "content": "fe9572d3"
+  },
+  "/docs/tutorials/user/first-launch/-391": {
+    "__comp": "17896441",
+    "content": "ec6d3eb8"
+  },
+  "/docs/tutorials/user/preview-app/-356": {
+    "__comp": "17896441",
+    "content": "eb3d7fb5"
+  },
+  "/docs/tutorials/user/version-snapshots/-9d8": {
+    "__comp": "17896441",
+    "content": "d3963936"
+  },
+  "/-2e1": {
+    "__comp": "c4f5d8e4",
+    "__context": {
+      "plugin": "a7456010"
+    },
+    "config": "5e9f5e1a"
+  }
+}
