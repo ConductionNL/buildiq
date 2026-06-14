@@ -86,10 +86,16 @@ import BuilderHostView from './views/BuilderHost.vue'
 // (object-table, form-renderer, map-viewer, card-grid, data, metadata,
 // integration), so the consuming app must register them. CnWidgetGrid resolves
 // a widgetKey against this registry before falling back to its built-ins.
-//   - stats-block: count KPI card; reads the manifest `dataSource` block
-//     ({ register, schema, aggregate: "count" }) and renders CnStatsBlock.
 //   - audit-trail: recent audit entries for the object (detail sidebar).
-import { CnStatsBlockWidget, CnAuditTrailCard } from '@conduction/nextcloud-vue'
+// Note: the `stats-block` KPI card is no longer registered here — the Dashboard
+// page now declares its KPIs via the v2 `config.widgets[].type: "stats-block"`
+// form, which CnDashboardPage's built-in dispatcher resolves to CnStatsBlockWidget
+// directly (no app-registry entry required).
+import { CnAuditTrailCard } from '@conduction/nextcloud-vue'
+
+// Dashboard widget — lists the most recently updated virtual applications,
+// with status badge, version, and a quick-open link to VirtualAppDetail.
+import DashboardAppsListWidget from './components/dashboard/DashboardAppsListWidget.vue'
 
 // Business-rules engine dashboard — lists RuleSets, opens the decision-table /
 // condition-action editors and the test sandbox (spec business-rules-engine).
@@ -207,13 +213,15 @@ export default {
 	// Header component for the maintainer dashboard (kind "header" — slot-override).
 	ApplicationDetailHeader: header(ApplicationDetailHeader),
 
+	// Dashboard apps-list slot widget (slot "widget-recent-apps" on the Dashboard page).
+	DashboardAppsListWidget: page(DashboardAppsListWidget),
+
 	// Custom page components — resolved by CnPageRenderer for type:"custom" pages.
 	SchemaDesignerView: page(SchemaDesignerView),
 	PageDesignerView: page(PageDesignerView),
 	BuilderHostView: page(BuilderHostView),
 
 	// Dashboard widgets — resolved by CnWidgetGrid by manifest widgetKey.
-	'stats-block': widget(CnStatsBlockWidget, ['body']),
 	'audit-trail': widget(CnAuditTrailCard, ['sidebar', 'body']),
 
 	// Business-rules engine dashboard (type:"custom" page).
