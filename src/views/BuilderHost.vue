@@ -61,8 +61,9 @@ export default {
 			versionLoading: false,
 			versionError: null,
 			// Runtime registry passed to the nested CnAppRoot so virtual-app
-			// manifests can resolve runtime widgets like `connector-data`
-			// (spec openconnector-api-sources REQ-OCAS-006).
+			// manifests can resolve runtime widgets like `procest-case-status`
+			// (spec procest-workflow-attachments REQ-PWA-004) and
+			// `connector-data` (spec openconnector-api-sources REQ-OCAS-006).
 			runtimeRegistry,
 		}
 	},

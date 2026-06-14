@@ -1,22 +1,35 @@
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * manifestDependencies — shared helpers to auto-manage the manifest v2
- * `dependencies[]` array on save. Used by the connector data-source feature
- * (REQ-OCAS-005) and its sibling runtime-block features; the helpers are
- * deliberately generic (`appId` parameter) so each feature reuses the same
- * add/remove logic instead of re-implementing it.
+ * `dependencies[]` array on save. Used by the workflow-attachment feature
+ * (REQ-PWA-006) and the connector data-source feature (REQ-OCAS-005) and
+ * their sibling runtime-block features; the helpers are deliberately generic
+ * (`appId` parameter) so each feature reuses the same add/remove logic
+ * instead of re-implementing it.
  *
- * Strategy (locked during apply for REQ-OCAS-005): the dependency is
- * auto-ADDED when ≥1 binding for the app exists, and auto-REMOVED when the
- * last binding is gone — but ONLY entries this layer added are tracked for
- * removal, via a non-enumerable marker on the manifest
- * (`_openbuildAutoDeps`). A dependency a builder added manually (or that
- * predates this layer) is never silently removed.
+ * Strategy: a dependency is auto-ADDED when ≥1 binding for the app exists,
+ * and auto-REMOVED when the last binding is gone — but ONLY entries this
+ * layer added are tracked for removal, via a non-enumerable marker on the
+ * manifest (`_openbuildAutoDeps`). A dependency a builder added manually (or
+ * that predates this layer) is never silently removed.
  *
+ * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
  * @spec openspec/changes/openconnector-api-sources/tasks.md#task-5.1
  */
 
 const MARKER = '_openbuildAutoDeps'
+
+/**
+ * Whether the manifest declares at least one workflow attachment.
+ *
+ * @param {object} manifest - the manifest.
+ * @return {boolean}
+ * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ */
+export function hasWorkflowAttachment(manifest) {
+	const workflows = manifest && manifest.runtime && manifest.runtime.workflows
+	return Array.isArray(workflows) && workflows.length > 0
+}
 
 /**
  * Whether the manifest has at least one page/widget connector binding.
@@ -47,8 +60,9 @@ export function hasConnectorBinding(manifest) {
  * this layer added it so it can be auto-removed later.
  *
  * @param {object} manifest - the manifest (mutated and returned).
- * @param {string} appId - the dependency app id, e.g. `openconnector`.
+ * @param {string} appId - the dependency app id, e.g. `procest` or `openconnector`.
  * @return {object} - the manifest.
+ * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
  * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function ensureDependency(manifest, appId) {
@@ -76,6 +90,7 @@ export function ensureDependency(manifest, appId) {
  * @param {object} manifest - the manifest (mutated and returned).
  * @param {string} appId - the dependency app id.
  * @return {object} - the manifest.
+ * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
  * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function removeAutoDependency(manifest, appId) {
@@ -89,6 +104,21 @@ export function removeAutoDependency(manifest, appId) {
 	manifest.dependencies = manifest.dependencies.filter((d) => d !== appId)
 	manifest[MARKER] = auto.filter((d) => d !== appId)
 	return manifest
+}
+
+/**
+ * Reconcile the `procest` dependency against the manifest's workflow
+ * attachments: add when ≥1 attachment, auto-remove when none remain.
+ *
+ * @param {object} manifest - the manifest (mutated and returned).
+ * @return {object} - the manifest.
+ * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ */
+export function reconcileWorkflowDependency(manifest) {
+	if (hasWorkflowAttachment(manifest)) {
+		return ensureDependency(manifest, 'procest')
+	}
+	return removeAutoDependency(manifest, 'procest')
 }
 
 /**
@@ -112,6 +142,7 @@ export function reconcileConnectorDependency(manifest) {
  *
  * @param {object} manifest - the manifest (mutated and returned).
  * @return {object} - the manifest.
+ * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
  * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function stripDependencyMarker(manifest) {
