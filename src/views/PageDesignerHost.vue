@@ -67,6 +67,16 @@
 			:slug="routeSlug"
 			@update:manifest="onManifestUpdate"
 			@save-and-preview="save" />
+
+		<!-- REQ-PWA-002: Workflows section — attach Procest case types to the
+		     app's schemas. Soft-checks Procest availability for graceful absence. -->
+		<WorkflowAttachmentsSection
+			v-if="application"
+			:manifest="manifest"
+			:schemas="appSchemas"
+			:procest-available="procestAvailable"
+			@update:manifest="onManifestUpdate"
+			@create-link-property="onCreateLinkProperty" />
 	</div>
 </template>
 
@@ -75,7 +85,10 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
+import { useAppStatus } from '../composables/useAppStatus.js'
+import { reconcileWorkflowDependency, stripDependencyMarker } from '../services/manifestDependencies.js'
 import PageDesigner from './PageDesigner.vue'
+import WorkflowAttachmentsSection from '../components/WorkflowAttachmentsSection.vue'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
 
@@ -87,6 +100,7 @@ export default {
 		NcEmptyContent,
 		NcLoadingIcon,
 		PageDesigner,
+		WorkflowAttachmentsSection,
 	},
 
 	data() {
@@ -101,10 +115,38 @@ export default {
 			applicationVersion: null,
 			versionLoading: false,
 			versionError: null,
+			// REQ-PWA-006: soft capability check for Procest (graceful absence).
+			procestAvailable: true,
 		}
 	},
 
 	computed: {
+		/**
+		 * The app's schemas normalized to `[{ slug, title, properties }]` for
+		 * the Workflows section's pickers. Reads the manifest's embedded
+		 * `schemas` (array or map); empty when none are embedded.
+		 *
+		 * @return {Array<{slug: string, title: string, properties: object}>}
+		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 */
+		appSchemas() {
+			const schemas = this.manifest && this.manifest.schemas
+			if (Array.isArray(schemas)) {
+				return schemas.map((s) => ({
+					slug: s.slug || s.id || s.title,
+					title: s.title || s.slug,
+					properties: s.properties || (s.schema && s.schema.properties) || {},
+				}))
+			}
+			if (schemas && typeof schemas === 'object') {
+				return Object.keys(schemas).map((slug) => ({
+					slug,
+					title: schemas[slug].title || slug,
+					properties: schemas[slug].properties || {},
+				}))
+			}
+			return []
+		},
 		/**
 		 * The virtual-app slug from the route (/builder/:slug/pages).
 		 *
@@ -195,9 +237,36 @@ export default {
 		// would strip ?_version= and break bookmarkability (REQ-OBVR-008).
 		this.resolveVersion()
 		this.load()
+		// REQ-PWA-006: soft-check Procest so the Workflows section degrades
+		// gracefully when it is absent.
+		const status = useAppStatus('procest')
+		status.check().then(() => {
+			this.procestAvailable = status.available.value
+		})
 	},
 
 	methods: {
+		/**
+		 * Delegate one-click link-property creation to the schema designer.
+		 * Emitted up from the Workflows dialog; opens the schema designer for
+		 * the chosen schema so the builder adds the `zaakUrl` string property
+		 * with the designer's own field validation (REQ-PWA-002).
+		 *
+		 * @param {string} schemaSlug - the schema to add the property to.
+		 * @return {void}
+		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 */
+		onCreateLinkProperty(schemaSlug) {
+			if (!schemaSlug) {
+				return
+			}
+			// Navigate to the app's schema designer (manifest-driven route at
+			// /builder/:slug/schemas) with the target schema + the property to
+			// add pre-seeded; the designer adds the string property with its own
+			// field validation.
+			const base = generateUrl(`/apps/openbuild/builder/${this.routeSlug}/schemas`)
+			window.location.href = `${base}?schema=${encodeURIComponent(schemaSlug)}&addProperty=zaakUrl`
+		},
 		/**
 		 * Resolve the active ApplicationVersion via useApplicationVersion composable
 		 * (REQ-OBVR-004 / REQ-OBVR-005). Called on created and when slug/versionSlug change.
@@ -288,6 +357,12 @@ export default {
 			this.saving = true
 			this.error = ''
 			this.toast = ''
+			// REQ-PWA-006: auto-manage the `procest` dependency against the
+			// manifest's workflow attachments, then strip the internal auto-dep
+			// marker so it never lands in the persisted manifest.
+			this.manifest = stripDependencyMarker(
+				reconcileWorkflowDependency({ ...this.manifest }),
+			)
 			try {
 				// ADR-002 / REQ-OBPD-009 (design.md Decision 6): persist the manifest
 				// onto the active ApplicationVersion when one is resolved — surgical-merge

@@ -23,6 +23,7 @@
  */
 import { ref, reactive, computed } from 'vue'
 import { validateManifest } from '@conduction/nextcloud-vue'
+import { validateWorkflowAttachments } from '../services/manifestValidation/workflowAttachments.js'
 
 const DEBOUNCE_MS = 300
 
@@ -52,7 +53,13 @@ export function useManifestValidator() {
 				const result = validateManifest
 					? validateManifest(manifest)
 					: { valid: true, errors: [] }
-				errors.value = Array.isArray(result.errors) ? result.errors.slice() : []
+				const libErrors = Array.isArray(result.errors) ? result.errors.slice() : []
+				// App-side strict checks for forms the canonical schema carries
+				// under `additionalProperties: true` (workflow attachments,
+				// REQ-PWA-001). Merged so the side panel + inline marks light up
+				// uniformly.
+				const appErrors = validateWorkflowAttachments(manifest)
+				errors.value = libErrors.concat(appErrors)
 			} catch (e) {
 				errors.value = [`validator threw: ${e && e.message ? e.message : e}`]
 			} finally {
