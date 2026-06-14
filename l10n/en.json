@@ -584,7 +584,14 @@
         "— select page type —": "— select page type —",
         "— select register —": "— select register —",
         "— select schema —": "— select schema —",
-        "— target —": "— target —"
+        "— target —": "— target —",
+        "App": "App",
+        "Create an app": "Create an app",
+        "Create your first virtual application to get started.": "Create your first virtual application to get started.",
+        "No virtual apps yet": "No virtual apps yet",
+        "Open {name}": "Open {name}",
+        "Updated": "Updated",
+        "View all {count} apps": "View all {count} apps"
     },
     "plurals": ""
 }
