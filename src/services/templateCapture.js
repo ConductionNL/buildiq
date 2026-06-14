@@ -41,6 +41,7 @@ export const TEMPLATE_CATEGORIES = [
  *
  * @param {*} value - any JSON-serialisable value.
  * @return {*} a structural deep copy.
+ * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
  */
 export function deepClone(value) {
 	if (value === null || typeof value !== 'object') {
@@ -55,6 +56,7 @@ export function deepClone(value) {
  *
  * @param {string} title - human-readable title.
  * @return {string} a kebab-case slug (possibly empty for empty input).
+ * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
  */
 export function suggestSlug(title) {
 	return String(title || '')
@@ -75,6 +77,7 @@ export function suggestSlug(title) {
  * @return {{ slug: string, shared: boolean }} de-namespaced slug; `shared`
  *   is `true` when the slug did NOT carry the prefix (a hand-attached /
  *   genuinely shared schema captured unchanged).
+ * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
  */
 export function deNamespaceSlug(schemaSlug, appSlug) {
 	const prefix = `${appSlug}-`
@@ -91,8 +94,9 @@ export function deNamespaceSlug(schemaSlug, appSlug) {
  * two keys recursively). Returns a NEW node — never mutates the input.
  *
  * @param {*} node - the manifest node (object / array / scalar).
- * @param {Object<string,string>} map - source-slug → de-namespaced-slug.
+ * @param {{[key: string]: string}} map - source-slug → de-namespaced-slug.
  * @return {*} the rewritten node.
+ * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
  */
 export function rewriteSchemaRefs(node, map) {
 	if (Array.isArray(node)) {
@@ -124,6 +128,7 @@ export class SlugCollisionError extends Error {
 	/**
 	 * @param {string} canonicalSlug - the colliding canonical slug.
 	 * @param {string[]} sourceSlugs - the two source slugs that collided.
+	 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 	 */
 	constructor(canonicalSlug, sourceSlugs) {
 
@@ -221,6 +226,7 @@ export function captureTemplate(application, schemas, manifest, metadata) {
  *
  * @param {string} version - a `MAJOR.MINOR.PATCH` semver string.
  * @return {string} the minor-bumped version.
+ * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
  */
 export function bumpMinor(version) {
 	const parts = String(version || '0.0.0').split('.')
@@ -247,6 +253,7 @@ export function bumpMinor(version) {
  * @return {{ mode: 'create'|'update', record?: object } | { error: string }}
  *   `create` for a free slug; `update` (with the existing record) for an
  *   own org-local slug; `{ error }` of `seeded-slug` or `slug-taken`.
+ * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
  */
 export function resolveSaveTarget(slug, existingTemplates, canWrite) {
 	const match = (Array.isArray(existingTemplates) ? existingTemplates : [])
