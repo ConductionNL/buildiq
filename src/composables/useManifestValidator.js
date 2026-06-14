@@ -23,6 +23,7 @@
  */
 import { ref, reactive, computed } from 'vue'
 import { validateManifest } from '@conduction/nextcloud-vue'
+import { validateWorkflowAttachments } from '../services/manifestValidation/workflowAttachments.js'
 import { validateManifestConnectors } from '../services/manifestValidation/connectorDataSource.js'
 
 const DEBOUNCE_MS = 300
@@ -55,10 +56,11 @@ export function useManifestValidator() {
 					: { valid: true, errors: [] }
 				const libErrors = Array.isArray(result.errors) ? result.errors.slice() : []
 				// App-side strict checks for forms the canonical schema carries
-				// under `additionalProperties: true` (connector data sources,
-				// REQ-OCAS-001). Merged into the same error list so the side
-				// panel + inline-mark mechanism light up uniformly.
-				const appErrors = validateManifestConnectors(manifest)
+				// under `additionalProperties: true` (workflow attachments,
+				// REQ-PWA-001; connector data sources, REQ-OCAS-001). Merged so
+				// the side panel + inline marks light up uniformly.
+				const appErrors = validateWorkflowAttachments(manifest)
+					.concat(validateManifestConnectors(manifest))
 				errors.value = libErrors.concat(appErrors)
 			} catch (e) {
 				errors.value = [`validator threw: ${e && e.message ? e.message : e}`]
