@@ -75,6 +75,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
+import { reconcileConnectorDependency, stripDependencyMarker } from '../services/manifestDependencies.js'
 import PageDesigner from './PageDesigner.vue'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
@@ -288,6 +289,13 @@ export default {
 			this.saving = true
 			this.error = ''
 			this.toast = ''
+			// REQ-OCAS-005: auto-manage the `openconnector` dependency against
+			// the manifest's connector bindings, then strip the internal
+			// auto-dep marker so it never lands in the persisted manifest.
+			const manifestToSave = stripDependencyMarker(
+				reconcileConnectorDependency({ ...this.manifest }),
+			)
+			this.manifest = manifestToSave
 			try {
 				// ADR-002 / REQ-OBPD-009 (design.md Decision 6): persist the manifest
 				// onto the active ApplicationVersion when one is resolved — surgical-merge
