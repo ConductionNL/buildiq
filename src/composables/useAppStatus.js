@@ -35,6 +35,7 @@ const statusCache = new Map()
  *   blob is silent (default `/apps/{appId}/api`).
  * @param {Function} [opts.client] - axios-like client injection for tests.
  * @return {{ available: import('vue').Ref<boolean>, checked: import('vue').Ref<boolean>, check: Function }}
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function useAppStatus(appId, opts = {}) {
 	const client = opts.client || axios
@@ -86,6 +87,8 @@ export function useAppStatus(appId, opts = {}) {
 
 /**
  * Test helper — clear the session status cache.
+ *
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function clearAppStatusCache() {
 	statusCache.clear()

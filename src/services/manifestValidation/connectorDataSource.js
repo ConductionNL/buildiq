@@ -36,6 +36,7 @@ const DOT_PATH = /^[A-Za-z0-9_$]+(\.[A-Za-z0-9_$]+)*$/
  * @param {string} pointer - JSON-Pointer to this dataSource (e.g.
  *   `/pages/1/config/dataSource`).
  * @return {string[]}
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-001
  */
 export function validateConnectorDataSource(dataSource, pointer) {
 	const errors = []
@@ -136,6 +137,7 @@ export function validateConnectorDataSource(dataSource, pointer) {
  *
  * @param {object} manifest - the in-flight manifest.
  * @return {string[]}
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-001
  */
 export function validateManifestConnectors(manifest) {
 	const errors = []

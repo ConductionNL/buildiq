@@ -76,10 +76,12 @@ export default {
 		 * otherwise default to OpenRegister.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
 		 */
 		origin() {
 			return this.dataSource && this.dataSource.connector ? 'openconnector' : 'openregister'
 		},
+		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002 */
 		connector() {
 			return (this.dataSource && this.dataSource.connector) || {}
 		},
@@ -121,17 +123,21 @@ export default {
 		 * Merge a partial connector update into the dataSource and emit.
 		 *
 		 * @param {object} patch - partial connector block.
+		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
 		 */
 		emitConnector(patch) {
 			const connector = { ...this.connector, ...patch }
 			this.$emit('update:dataSource', { ...this.dataSource, connector })
 		},
+		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002 */
 		onEndpointPath(endpointPath) {
 			this.emitConnector({ endpointPath })
 		},
+		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
 		onItemsPath(itemsPath) {
 			this.emitConnector({ itemsPath })
 		},
+		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
 		onFields(fields) {
 			this.emitConnector({ fields })
 		},
@@ -158,6 +164,7 @@ export default {
 				this.sampleLoading = false
 			}
 		},
+		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
 		onRefetch() {
 			this.onSampleFetch(this.connector.endpointPath)
 		},

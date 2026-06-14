@@ -23,6 +23,7 @@ const MARKER = '_openbuildAutoDeps'
  *
  * @param {object} manifest - the manifest.
  * @return {boolean}
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function hasConnectorBinding(manifest) {
 	if (!manifest || !Array.isArray(manifest.pages)) {
@@ -48,6 +49,7 @@ export function hasConnectorBinding(manifest) {
  * @param {object} manifest - the manifest (mutated and returned).
  * @param {string} appId - the dependency app id, e.g. `openconnector`.
  * @return {object} - the manifest.
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function ensureDependency(manifest, appId) {
 	if (!manifest || !appId) {
@@ -74,6 +76,7 @@ export function ensureDependency(manifest, appId) {
  * @param {object} manifest - the manifest (mutated and returned).
  * @param {string} appId - the dependency app id.
  * @return {object} - the manifest.
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function removeAutoDependency(manifest, appId) {
 	if (!manifest || !appId || !Array.isArray(manifest.dependencies)) {
@@ -94,6 +97,7 @@ export function removeAutoDependency(manifest, appId) {
  *
  * @param {object} manifest - the manifest (mutated and returned).
  * @return {object} - the manifest.
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function reconcileConnectorDependency(manifest) {
 	if (hasConnectorBinding(manifest)) {
@@ -108,6 +112,7 @@ export function reconcileConnectorDependency(manifest) {
  *
  * @param {object} manifest - the manifest (mutated and returned).
  * @return {object} - the manifest.
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function stripDependencyMarker(manifest) {
 	if (manifest && manifest[MARKER] !== undefined) {

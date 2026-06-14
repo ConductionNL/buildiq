@@ -80,18 +80,23 @@ export default {
 		return { resolver }
 	},
 	computed: {
+		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		loading() {
 			return this.resolver.loading.value
 		},
+		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		error() {
 			return this.resolver.error.value
 		},
+		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		isStale() {
 			return this.resolver.isStale.value
 		},
+		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		rows() {
 			return this.resolver.data.value || []
 		},
+		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		columns() {
 			const connector = (this.dataSource && this.dataSource.connector) || {}
 			return Object.keys(connector.fields || {})
@@ -101,6 +106,7 @@ export default {
 		this.resolver.load()
 	},
 	methods: {
+		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		retry() {
 			this.resolver.retry()
 		},

@@ -90,6 +90,7 @@ export default {
 		 * async soft-check resolves so the live UI does not flash.
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
 		 */
 		appAvailable() {
 			return !this.status.checked.value || this.status.available.value
@@ -99,6 +100,7 @@ export default {
 		 * ONLY (REQ-OCAS-004: never a credential).
 		 *
 		 * @return {Array<{label: string, path: string}>}
+		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-004
 		 */
 		endpointOptions() {
 			return this.endpoints.map((e) => ({
@@ -110,12 +112,14 @@ export default {
 		 * The option matching the current binding, for NcSelect's value.
 		 *
 		 * @return {?object}
+		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
 		 */
 		selectedOption() {
 			const current = this.binding && this.binding.endpointPath
 			return this.endpointOptions.find((o) => o.path === current) || null
 		},
 	},
+	/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002 */
 	async mounted() {
 		await this.status.check()
 		if (this.status.available.value) {
