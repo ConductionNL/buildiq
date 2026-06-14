@@ -25,6 +25,7 @@
  * @param {string} selector - dot-path like `resultaten.0.naam`. Empty /
  *   nullish selector returns the root value unchanged.
  * @return {*} - the resolved value, or `undefined` when the path breaks.
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function resolveSelector(value, selector) {
 	if (selector === undefined || selector === null || selector === '') {
@@ -55,6 +56,7 @@ export function resolveSelector(value, selector) {
  * @param {Function} [onMissing] - called `(fieldName, selector)` for each
  *   selector that resolved to `undefined`.
  * @return {object} - the projected row.
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function projectFields(item, fields, onMissing) {
 	const row = {}
@@ -83,6 +85,7 @@ export function projectFields(item, fields, onMissing) {
  * @param {*} response - the raw response payload.
  * @param {string} [itemsPath] - dot-path to the list root.
  * @return {Array} - the items list (possibly empty).
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function extractItems(response, itemsPath) {
 	if (itemsPath === undefined || itemsPath === null || itemsPath === '') {
@@ -101,6 +104,7 @@ export function extractItems(response, itemsPath) {
  * @param {string} [basePath] - accumulated dot-path prefix.
  * @param {number} [maxDepth] - recursion guard (default 8).
  * @return {Array<{path: string, value: *, isLeaf: boolean, isArray: boolean}>}
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003
  */
 export function flattenSample(value, basePath = '', maxDepth = 8) {
 	const out = []

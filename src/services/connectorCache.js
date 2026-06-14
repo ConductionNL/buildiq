@@ -27,6 +27,7 @@ const store = new Map()
  *
  * @param {object} [query] - query parameter map.
  * @return {string}
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function stableQueryHash(query) {
 	if (!query || typeof query !== 'object') {
@@ -43,6 +44,7 @@ export function stableQueryHash(query) {
  * @param {string} endpointPath - the OpenConnector endpoint path.
  * @param {object} [query] - query parameter map.
  * @return {string}
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function cacheKey(appId, endpointPath, query) {
 	return `${appId || ''}::${endpointPath || ''}::${stableQueryHash(query)}`
@@ -53,6 +55,7 @@ export function cacheKey(appId, endpointPath, query) {
  *
  * @param {number} [ttlSeconds] - raw cacheTtl in seconds.
  * @return {number} - TTL in milliseconds (0–3600 s clamped).
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function ttlToMs(ttlSeconds) {
 	const DEFAULT = 60
@@ -69,6 +72,7 @@ export function ttlToMs(ttlSeconds) {
  * @param {Function} loader - `() => Promise<*>` that performs the network call.
  * @param {Function} [now] - clock injection for tests (default `Date.now`).
  * @return {Promise<{data: *, isStale: boolean}>}
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export async function readThrough(key, ttlMs, loader, now = Date.now) {
 	const entry = store.get(key)
@@ -115,6 +119,8 @@ export async function readThrough(key, ttlMs, loader, now = Date.now) {
 
 /**
  * Test / teardown helper — drop all cached entries.
+ *
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function clearConnectorCache() {
 	store.clear()

@@ -38,6 +38,7 @@ import { cacheKey, ttlToMs, readThrough } from '../services/connectorCache.js'
  * @return {{ loading: import('vue').Ref<boolean>, data: import('vue').Ref<*>,
  *   error: import('vue').Ref<?Error>, isStale: import('vue').Ref<boolean>,
  *   retry: Function, load: Function }}
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function useConnectorDataSource(opts = {}) {
 	const appId = opts.appId || ''
