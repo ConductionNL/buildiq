@@ -36,6 +36,7 @@
 			:key="cacheKey"
 			:app-id="appId"
 			:bundled-manifest="placeholderManifest"
+			:registry="runtimeRegistry"
 			:options="manifestOptions" />
 	</div>
 </template>
@@ -45,6 +46,7 @@ import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { generateUrl } from '@nextcloud/router'
 
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
+import { runtimeRegistry } from '../runtimeRegistry.js'
 import placeholderManifest from '../manifests/placeholder.json'
 
 export default {
@@ -58,6 +60,10 @@ export default {
 			applicationVersion: null,
 			versionLoading: false,
 			versionError: null,
+			// Runtime registry passed to the nested CnAppRoot so virtual-app
+			// manifests can resolve runtime widgets like `connector-data`
+			// (spec openconnector-api-sources REQ-OCAS-006).
+			runtimeRegistry,
 		}
 	},
 	computed: {
