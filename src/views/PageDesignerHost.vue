@@ -86,7 +86,7 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useAppStatus } from '../composables/useAppStatus.js'
-import { reconcileWorkflowDependency, stripDependencyMarker } from '../services/manifestDependencies.js'
+import { reconcileWorkflowDependency, reconcileConnectorDependency, stripDependencyMarker } from '../services/manifestDependencies.js'
 import PageDesigner from './PageDesigner.vue'
 import WorkflowAttachmentsSection from '../components/WorkflowAttachmentsSection.vue'
 
@@ -357,11 +357,14 @@ export default {
 			this.saving = true
 			this.error = ''
 			this.toast = ''
-			// REQ-PWA-006: auto-manage the `procest` dependency against the
-			// manifest's workflow attachments, then strip the internal auto-dep
-			// marker so it never lands in the persisted manifest.
+			// REQ-PWA-006 / REQ-OCAS-005: auto-manage the `procest` dependency
+			// against the manifest's workflow attachments AND the `openconnector`
+			// dependency against its connector bindings, then strip the internal
+			// auto-dep marker so it never lands in the persisted manifest.
 			this.manifest = stripDependencyMarker(
-				reconcileWorkflowDependency({ ...this.manifest }),
+				reconcileConnectorDependency(
+					reconcileWorkflowDependency({ ...this.manifest }),
+				),
 			)
 			try {
 				// ADR-002 / REQ-OBPD-009 (design.md Decision 6): persist the manifest

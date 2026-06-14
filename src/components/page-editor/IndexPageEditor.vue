@@ -9,7 +9,10 @@
 		<h3 class="index-page-editor__title">
 			{{ t('openbuild', 'Index page') }}
 		</h3>
-		<div class="index-page-editor__group">
+		<DataSourceOriginToggle
+			:data-source="config.dataSource || {}"
+			@update:dataSource="onDataSourceUpdate" />
+		<div v-if="!connectorActive" class="index-page-editor__group">
 			<label>
 				{{ t('openbuild', 'Register') }}
 				<select :value="config.register || ''" :aria-invalid="isInvalid('register')" @change="update('register', $event.target.value)">
@@ -90,6 +93,7 @@ import ColumnBuilder from './fields/ColumnBuilder.vue'
 import ActionBuilder from './fields/ActionBuilder.vue'
 import SidebarSectionBuilder from './fields/SidebarSectionBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import DataSourceOriginToggle from './DataSourceOriginToggle.vue'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
@@ -100,6 +104,7 @@ export default {
 		ActionBuilder,
 		SidebarSectionBuilder,
 		InlineFieldMark,
+		DataSourceOriginToggle,
 	},
 	mixins: [pageEditorValidationMixin],
 	props: {
@@ -147,6 +152,16 @@ export default {
 		 */
 		validatedConfigKeys() {
 			return ['register', 'schema', 'cardComponent', 'columns', 'actions', 'sidebar']
+		},
+		/**
+		 * Whether this page binds an OpenConnector data source (hides the
+		 * OpenRegister register/schema pickers). REQ-OCAS-002.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.2
+		 */
+		connectorActive() {
+			return !!(this.config.dataSource && this.config.dataSource.connector)
 		},
 		/**
 		 * Observed behaviour of `sidebarEnabled` (retrofit annotation).
@@ -267,6 +282,24 @@ export default {
 		 */
 		async fetchSchemaProperties(register, schema) {
 			this.schemaProperties = await this.picker.fetchSchemaProperties(register, schema)
+		},
+		/**
+		 * Persist a `dataSource` change from the origin toggle onto the page
+		 * config. Clearing the connector block deletes `dataSource` entirely
+		 * when nothing else lives there, so a register-bound page round-trips
+		 * byte-identically (REQ-OCAS-002 regression guard).
+		 *
+		 * @param {object} dataSource - the updated dataSource object.
+		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.2
+		 */
+		onDataSourceUpdate(dataSource) {
+			const next = { ...this.config }
+			if (!dataSource || Object.keys(dataSource).length === 0) {
+				delete next.dataSource
+			} else {
+				next.dataSource = dataSource
+			}
+			this.$emit('update:config', next)
 		},
 	},
 }
