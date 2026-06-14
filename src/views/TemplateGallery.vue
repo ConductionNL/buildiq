@@ -42,6 +42,7 @@
 					<h2 class="template-card__title">
 						{{ tpl.title || tpl.slug }}
 					</h2>
+					<span v-if="isOrgLocal(tpl)" class="template-card__badge">{{ t('openbuild', 'Organisation template') }}</span>
 					<span class="template-card__category">{{ categoryLabel(tpl.category) }}</span>
 					<p class="template-card__usecase">
 						{{ tpl.useCase || '' }}
@@ -51,6 +52,17 @@
 					</p>
 				</div>
 				<div class="template-card__actions">
+					<NcButton
+						v-if="canManage(tpl)"
+						@click="openEdit(tpl)">
+						{{ t('openbuild', 'Edit') }}
+					</NcButton>
+					<NcButton
+						v-if="canManage(tpl)"
+						type="error"
+						@click="openDelete(tpl)">
+						{{ t('openbuild', 'Delete') }}
+					</NcButton>
 					<NcButton type="primary" @click="openClone(tpl)">
 						{{ t('openbuild', 'Use this template') }}
 					</NcButton>
@@ -64,14 +76,38 @@
 			:template="cloneTarget"
 			@close="cloneOpen = false"
 			@submit="onCloneSubmit" />
+
+		<EditTemplateMetadataDialog
+			:open="editOpen"
+			:template="editTarget"
+			@update:open="editOpen = $event"
+			@saved="onTemplateChanged" />
+
+		<NcDialog
+			:open="deleteOpen"
+			:name="t('openbuild', 'Delete template')"
+			@update:open="deleteOpen = $event">
+			<p class="template-gallery__delete-confirm">
+				{{ t('openbuild', 'Delete the template "{title}"? Applications previously cloned from it are not affected — only the template record is removed.', { title: (deleteTarget && (deleteTarget.title || deleteTarget.slug)) || '' }) }}
+			</p>
+			<template #actions>
+				<NcButton @click="deleteOpen = false">
+					{{ t('openbuild', 'Cancel') }}
+				</NcButton>
+				<NcButton type="error" :disabled="deleting" @click="confirmDelete">
+					{{ deleting ? t('openbuild', 'Deleting…') : t('openbuild', 'Delete') }}
+				</NcButton>
+			</template>
+		</NcDialog>
 	</div>
 </template>
 
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
+import { NcButton, NcDialog, NcEmptyContent, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import CloneTemplateDialog from '../modals/CloneTemplateDialog.vue'
+import EditTemplateMetadataDialog from '../dialogs/EditTemplateMetadataDialog.vue'
 
 const CATEGORY_LABELS = {
 	'government-services': 'Government services',
@@ -84,11 +120,13 @@ export default {
 	name: 'TemplateGallery',
 	components: {
 		NcButton,
+		NcDialog,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcSelect,
 		NcTextField,
 		CloneTemplateDialog,
+		EditTemplateMetadataDialog,
 	},
 	data() {
 		return {
@@ -98,6 +136,11 @@ export default {
 			categoryFilter: null,
 			cloneOpen: false,
 			cloneTarget: null,
+			editOpen: false,
+			editTarget: null,
+			deleteOpen: false,
+			deleteTarget: null,
+			deleting: false,
 		}
 	},
 	computed: {
@@ -162,6 +205,7 @@ export default {
 		/**
 		 * Observed behaviour of `resolveScreenshot` (retrofit annotation).
 		 *
+		 * @param url
 		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
 		 */
 		resolveScreenshot(url) {
@@ -176,6 +220,7 @@ export default {
 		/**
 		 * Observed behaviour of `categoryLabel` (retrofit annotation).
 		 *
+		 * @param category
 		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
 		 */
 		categoryLabel(category) {
@@ -184,6 +229,7 @@ export default {
 		/**
 		 * Observed behaviour of `openClone` (retrofit annotation).
 		 *
+		 * @param template
 		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
 		 */
 		openClone(template) {
@@ -191,8 +237,97 @@ export default {
 			this.cloneOpen = true
 		},
 		/**
+		 * Whether a template is org-local (user-submitted, REQ-SAT-005).
+		 * Seeded templates render the read-only REQ-OBTC-008 card unchanged.
+		 *
+		 * @param {object} tpl A template record.
+		 * @return {boolean}
+		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 */
+		isOrgLocal(tpl) {
+			return tpl && tpl.isSeeded === false
+		},
+		/**
+		 * Whether Edit/Delete actions render for a card — only for org-local
+		 * templates the caller may write per OR's per-object rights (no
+		 * openbuild-local role logic, REQ-SAT-005/006). Seeded templates are
+		 * never manageable in the UI (REQ-OBTC-008).
+		 *
+		 * @param {object} tpl A template record.
+		 * @return {boolean}
+		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 */
+		canManage(tpl) {
+			if (!this.isOrgLocal(tpl)) {
+				return false
+			}
+			const self = (tpl && tpl['@self']) || {}
+			const canWrite = self.canWrite ?? tpl.canWrite
+			return canWrite !== false
+		},
+		/**
+		 * Open the metadata-edit dialog for an org-local template.
+		 *
+		 * @param {object} template The template record.
+		 * @return {void}
+		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 */
+		openEdit(template) {
+			this.editTarget = template
+			this.editOpen = true
+		},
+		/**
+		 * Open the delete-confirm dialog for an org-local template.
+		 *
+		 * @param {object} template The template record.
+		 * @return {void}
+		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 */
+		openDelete(template) {
+			this.deleteTarget = template
+			this.deleteOpen = true
+		},
+		/**
+		 * Delete the template record via OR REST. Removes only the
+		 * ApplicationTemplate — cloned + source apps are untouched
+		 * (REQ-SAT-005). Zero new PHP (REQ-SAT-006).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 */
+		async confirmDelete() {
+			if (!this.deleteTarget || this.deleting) {
+				return
+			}
+			this.deleting = true
+			try {
+				const tpl = this.deleteTarget
+				const uuid = (tpl['@self'] && tpl['@self'].id) || tpl.uuid || tpl.id
+				const url = generateUrl(`/apps/openregister/api/objects/openbuild/application-template/${encodeURIComponent(uuid)}`)
+				await axios.delete(url)
+				this.deleteOpen = false
+				this.deleteTarget = null
+				await this.fetchTemplates()
+			} catch (e) {
+				console.error('Failed to delete template:', e)
+			} finally {
+				this.deleting = false
+			}
+		},
+		/**
+		 * Refresh the gallery after a metadata edit.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 */
+		async onTemplateChanged() {
+			this.editOpen = false
+			await this.fetchTemplates()
+		},
+		/**
 		 * Observed behaviour of `onCloneSubmit` (retrofit annotation).
 		 *
+		 * @param payload
 		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
 		 */
 		async onCloneSubmit(payload) {
@@ -214,6 +349,7 @@ export default {
 		/**
 		 * Observed behaviour of `redirectAfterClone` (retrofit annotation).
 		 *
+		 * @param created
 		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
 		 */
 		redirectAfterClone(created) {
@@ -316,6 +452,18 @@ export default {
 
 .template-card__category {
 	font-size: 0.8rem;
+	color: var(--color-primary-element);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.template-card__badge {
+	align-self: flex-start;
+	font-size: 0.7rem;
+	font-weight: 600;
+	padding: 2px 8px;
+	border-radius: 12px;
+	background: var(--color-primary-element-light, var(--color-background-dark));
 	color: var(--color-primary-element);
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
