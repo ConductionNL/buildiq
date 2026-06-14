@@ -333,6 +333,9 @@ export default {
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
 		schemas: {
+			/**
+			 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+			 */
 			handler() {
 				this.recomputeCollision()
 			},
