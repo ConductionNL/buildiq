@@ -16,6 +16,8 @@ The system SHALL provide `SaveAsTemplateDialog.vue` (standalone dialog in `src/d
 
 #### Scenario: No object data is captured
 
+@e2e exclude pure-logic capture contract — verifying the captured record carries schema definitions only and no object rows is a property of the pure `captureTemplate` function, covered by Vitest (tests/vitest/templateCapture.spec.js); no Playwright-observable UI surface for record internals.
+
 - **GIVEN** the same app holding 50 objects in its schemas
 - **WHEN** the template is saved
 - **THEN** the `ApplicationTemplate` record contains schema definitions only
@@ -41,11 +43,15 @@ When capturing, the system SHALL strip the leading `<sourceAppSlug>-` prefix fro
 
 #### Scenario: Unprefixed shared schema is flagged, not mangled
 
+@e2e exclude pure-logic de-namespace contract — shared-schema detection is a property of the pure `captureTemplate`/`deNamespaceSlug` functions, covered by Vitest; no Playwright-observable UI invariant beyond the dialog flag (exercised in the SaveAsTemplateDialog Vitest tests).
+
 - **GIVEN** the app also references a hand-attached schema `shared-contacts` that does not carry the `my-permits-` prefix
 - **WHEN** the capture summary renders
 - **THEN** `shared-contacts` is listed with the shared-schema flag and captured with its slug unchanged
 
 #### Scenario: De-namespace collision blocks the save
+
+@e2e exclude pure-logic collision contract — the typed SlugCollisionError and no-partial-result guarantee are properties of the pure `captureTemplate` function, covered by Vitest; the dialog hard-block is exercised in the SaveAsTemplateDialog Vitest tests.
 
 - **GIVEN** an app carrying schemas `my-permits-tasks` and a hand-attached `tasks`
 - **WHEN** the builder attempts to save it as a template
@@ -58,12 +64,16 @@ Before allowing Save, the dialog SHALL validate the **captured, de-namespaced** 
 
 #### Scenario: Invalid manifest blocks publication
 
+@e2e exclude validation-gate logic contract — the validateManifest-driven Save-disable is covered by the SaveAsTemplateDialog Vitest tests (mocked validator returning errors); the full UI flow is quarantined under Conduction/openbuild#41.
+
 - **GIVEN** an app whose manifest currently fails canonical validation
 - **WHEN** the builder opens "Save as template"
 - **THEN** Save is disabled and the validation errors are displayed
 - **AND** no template record is created
 
 #### Scenario: Sibling runtime blocks are captured and pass validation
+
+@e2e exclude pure-logic capture contract — verbatim `runtime.*` capture + `runtime.documents[].schema` rewrite is a property of the pure `captureTemplate`/`rewriteSchemaRefs` functions, covered by Vitest (round-trip test asserts the runtime.documents schema rewrite); no Playwright-observable UI surface for captured-blob internals.
 
 - **GIVEN** an app whose manifest declares `runtime.theme` and `runtime.documents[]`
 - **WHEN** it is saved as a template
@@ -84,11 +94,15 @@ When the chosen slug matches an existing `ApplicationTemplate` in the caller's o
 
 #### Scenario: Existing clones are untouched by an update
 
+@e2e exclude backend immutability contract — verifying a template update does NOT mutate previously cloned Applications requires two-step OR REST mutation + assertion; covered by Newman (update-in-place keeps UUID) + the one-shot clone semantics inherited from REQ-OBTC-007; no Playwright-observable UI invariant.
+
 - **GIVEN** an Application cloned from `permit-pack` 1.0.0 with `templateOrigin.version: "1.0.0"`
 - **WHEN** `permit-pack` is updated to 1.1.0
 - **THEN** the cloned Application's manifest and `templateOrigin.version` are unchanged
 
 #### Scenario: Seeded slug is never overwritable
+
+@e2e exclude slug-resolution logic contract — the `seeded-slug` rejection is a property of the pure `resolveSaveTarget` function, covered by Vitest (templateCapture + SaveAsTemplateDialog tests); no Playwright-observable UI surface beyond the disabled-Save state.
 
 - **WHEN** a builder attempts to save a template with slug `permit-tracker` (a seeded template)
 - **THEN** the save is rejected with `openbuild.templates.saveAs.error.seeded-slug`
@@ -106,6 +120,8 @@ The template gallery SHALL render `isSeeded: false` templates with an "Organisat
 - **AND** "Use this template" clones it through `POST /api/applications/from-template/permit-pack` exactly like a seeded template
 
 #### Scenario: Management actions are rights-gated
+
+@e2e exclude rights-gating logic contract — the `canManage` writability gate is covered by the TemplateGalleryManagement Vitest tests (writable vs non-writable org-local cards); the live UI is quarantined under Conduction/openbuild#41.
 
 - **GIVEN** an org-local template owned by user A
 - **WHEN** user B (no write rights on the record) views its gallery card
@@ -130,11 +146,15 @@ The save-as-template flow SHALL introduce no new PHP controllers, routes, servic
 
 #### Scenario: No new backend surface
 
+@e2e exclude static diff contract — "lib/ and appinfo/routes.php untouched" is a build-time invariant asserted by the PR diff (REQ-SAT-006), not a runtime behaviour; no Playwright-observable UI surface.
+
 - **WHEN** the change's diff is inspected
 - **THEN** `appinfo/routes.php` and `lib/` are untouched
 - **AND** all template writes in the new code target OR's object REST endpoints
 
 #### Scenario: OR RBAC governs template writes
+
+@e2e exclude backend RBAC contract — OR rejecting an unauthorized write to a foreign template is an OR REST authorization contract verified by Newman; no Playwright-observable UI surface for the server-side rejection.
 
 - **GIVEN** a user whose OR rights do not allow writing another user's template record
 - **WHEN** they attempt the update flow against it (e.g. crafted request)

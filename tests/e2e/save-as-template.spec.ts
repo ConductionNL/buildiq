@@ -33,6 +33,11 @@ const NEXTCLOUD_URL = process.env.NEXTCLOUD_URL || process.env.NC_BASE_URL || 'h
 // QUARANTINED (Conduction/openbuild#41): admin UI not functional in this build.
 test.describe.skip('OpenBuild save as template', () => {
 
+	// @e2e save-as-template::saving-captures-the-app-as-an-org-local-template
+	// @e2e save-as-template::round-trip-is-a-clean-rename
+	// @e2e save-as-template::update-in-place-bumps-the-version
+	// @e2e save-as-template::org-local-template-appears-with-badge-and-clones-normally
+	// @e2e save-as-template::delete-leaves-clones-and-the-source-app-intact
 	test('captures an app as an org-local template, round-trips a clone, updates and deletes it', async ({ page }) => {
 		// 1. Clone a seeded template into source app A (fixture for the capture).
 		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/templates`)
@@ -89,6 +94,8 @@ test.describe.skip('OpenBuild save as template', () => {
 		await expect(orgCard).toHaveCount(0, { timeout: 10_000 })
 	})
 
+	// @e2e save-as-template::viewer-cannot-save-a-template
+	// @e2e save-as-template::seeded-cards-remain-read-only
 	test('a viewer sees neither the save action nor the manage actions', async ({ page }) => {
 		// REQ-SAT-001 "Viewer cannot save a template" + REQ-SAT-005 rights-gating.
 		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild`)
