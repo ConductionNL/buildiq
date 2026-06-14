@@ -1,19 +1,4 @@
-# openbuild-page-designer Specification
-
-## Purpose
-
-The Page Designer is a visual manifest editor for OpenBuild virtual apps. It replaces
-the spec #1 textarea-as-only-editor with a graphical, validate-as-you-type UI that
-authors every shape declared in the canonical
-`@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json` (v1.4.0+) — the closed
-9-type page enum, the 7 shared `$defs`, the menu tree, and the save flow via OR REST.
-The textarea is preserved as a "Raw JSON" fallback tab for integrators. The two tabs
-share the same in-flight Pinia store state so edits made in one tab are visible in the
-other when switching without saving.
-
----
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: REQ-OBPD-001 Menu tree editor with two-level nesting
 
