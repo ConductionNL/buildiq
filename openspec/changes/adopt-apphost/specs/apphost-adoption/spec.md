@@ -1,18 +1,4 @@
----
-status: proposed
----
-
-# OpenBuild AppHost Adoption
-
-## Purpose
-
-OpenBuild's `/api/health` and `/api/metrics` run on the OpenRegister AppHost declarative engine — replacing a fake auth-gated health check (ADR-006 violation) and an empty metrics placeholder with real, contract-correct endpoints — and the fleet-standard boilerplate controllers/services are deleted in favour of the AppHost generics.
-
-**Cross-references**: `openregister/openspec/changes/apphost-observability-engine/specs/apphost-observability/spec.md`, `openregister/openspec/changes/apphost-boilerplate-controllers/`
-
----
-
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Public Real Health Endpoint
 
