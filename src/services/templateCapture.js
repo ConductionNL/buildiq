@@ -120,17 +120,21 @@ export function rewriteSchemaRefs(node, map) {
  * break the round-trip, so it fails loudly (REQ-SAT-002).
  */
 export class SlugCollisionError extends Error {
+
 	/**
 	 * @param {string} canonicalSlug - the colliding canonical slug.
 	 * @param {string[]} sourceSlugs - the two source slugs that collided.
 	 */
 	constructor(canonicalSlug, sourceSlugs) {
+
 		super(`openbuild.templates.saveAs.error.slug-collision: ${sourceSlugs.join(', ')} → ${canonicalSlug}`)
 		this.name = 'SlugCollisionError'
 		this.code = 'slug-collision'
 		this.canonicalSlug = canonicalSlug
 		this.sourceSlugs = sourceSlugs
+
 	}
+
 }
 
 /**

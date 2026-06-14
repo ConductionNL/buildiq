@@ -74,7 +74,9 @@
 			<div v-if="validationErrors.length" class="ob-save-template__error" role="alert">
 				<p>{{ t('openbuild', 'The captured manifest is invalid and cannot be published:') }}</p>
 				<ul>
-					<li v-for="(err, idx) in validationErrors" :key="idx">{{ err }}</li>
+					<li v-for="(err, idx) in validationErrors" :key="idx">
+						{{ err }}
+					</li>
 				</ul>
 			</div>
 			<p v-if="slugError === 'seeded-slug'" class="ob-save-template__error" role="alert">
@@ -83,7 +85,9 @@
 			<p v-if="slugError === 'slug-taken'" class="ob-save-template__error" role="alert">
 				{{ t('openbuild', 'That slug is already used by a template you cannot edit. Pick another slug.') }}
 			</p>
-			<p v-if="saveError" class="ob-save-template__error" role="alert">{{ saveError }}</p>
+			<p v-if="saveError" class="ob-save-template__error" role="alert">
+				{{ saveError }}
+			</p>
 
 			<!-- Update-in-place confirm -->
 			<p v-if="updateMode" class="ob-save-template__update-notice">
@@ -108,11 +112,7 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
-import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
-import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
-import NcTextArea from '@nextcloud/vue/dist/Components/NcTextArea.js'
+import { NcButton, NcDialog, NcSelect, NcTextField, NcTextArea } from '@nextcloud/vue'
 import { validateManifest } from '@conduction/nextcloud-vue'
 
 import {
@@ -302,10 +302,23 @@ export default {
 			return this.updateMode ? t('openbuild', 'Update template') : t('openbuild', 'Save as template')
 		},
 	},
+	/**
+	 * Prefill on mount when already open (the parent renders the dialog
+	 * with `v-if="open"`, so `created` fires with `open: true`).
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+	 */
+	created() {
+		if (this.open) {
+			this.resetForm()
+		}
+	},
 	watch: {
 		/**
 		 * Reset the form each time the dialog opens, prefilled from the app.
 		 *
+		 * @param value
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
 		open(value) {
