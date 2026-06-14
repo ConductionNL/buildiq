@@ -2,9 +2,10 @@
 /**
  * manifestDependencies — shared helpers to auto-manage the manifest v2
  * `dependencies[]` array on save. Used by the workflow-attachment feature
- * (REQ-PWA-006) and its sibling runtime-block features; the helpers are
- * deliberately generic (`appId` parameter) so each feature reuses the same
- * add/remove logic instead of re-implementing it.
+ * (REQ-PWA-006) and the connector data-source feature (REQ-OCAS-005) and
+ * their sibling runtime-block features; the helpers are deliberately generic
+ * (`appId` parameter) so each feature reuses the same add/remove logic
+ * instead of re-implementing it.
  *
  * Strategy: a dependency is auto-ADDED when ≥1 binding for the app exists,
  * and auto-REMOVED when the last binding is gone — but ONLY entries this
@@ -13,6 +14,7 @@
  * that predates this layer) is never silently removed.
  *
  * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/changes/openconnector-api-sources/tasks.md#task-5.1
  */
 
 const MARKER = '_openbuildAutoDeps'
@@ -30,13 +32,38 @@ export function hasWorkflowAttachment(manifest) {
 }
 
 /**
+ * Whether the manifest has at least one page/widget connector binding.
+ *
+ * @param {object} manifest - the manifest.
+ * @return {boolean}
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
+ */
+export function hasConnectorBinding(manifest) {
+	if (!manifest || !Array.isArray(manifest.pages)) {
+		return false
+	}
+	return manifest.pages.some((page) => {
+		const cfg = page && page.config
+		if (!cfg) {
+			return false
+		}
+		if (cfg.dataSource && cfg.dataSource.connector) {
+			return true
+		}
+		return Array.isArray(cfg.widgets)
+			&& cfg.widgets.some((w) => w && w.dataSource && w.dataSource.connector)
+	})
+}
+
+/**
  * Ensure `appId` is present in `dependencies[]` exactly once, recording that
  * this layer added it so it can be auto-removed later.
  *
  * @param {object} manifest - the manifest (mutated and returned).
- * @param {string} appId - the dependency app id, e.g. `procest`.
+ * @param {string} appId - the dependency app id, e.g. `procest` or `openconnector`.
  * @return {object} - the manifest.
  * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function ensureDependency(manifest, appId) {
 	if (!manifest || !appId) {
@@ -64,6 +91,7 @@ export function ensureDependency(manifest, appId) {
  * @param {string} appId - the dependency app id.
  * @return {object} - the manifest.
  * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function removeAutoDependency(manifest, appId) {
 	if (!manifest || !appId || !Array.isArray(manifest.dependencies)) {
@@ -94,12 +122,28 @@ export function reconcileWorkflowDependency(manifest) {
 }
 
 /**
+ * Reconcile the `openconnector` dependency against the manifest's connector
+ * bindings: add when ≥1 binding, auto-remove when none remain.
+ *
+ * @param {object} manifest - the manifest (mutated and returned).
+ * @return {object} - the manifest.
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
+ */
+export function reconcileConnectorDependency(manifest) {
+	if (hasConnectorBinding(manifest)) {
+		return ensureDependency(manifest, 'openconnector')
+	}
+	return removeAutoDependency(manifest, 'openconnector')
+}
+
+/**
  * Strip the non-spec marker before serialization so it never lands in the
  * persisted manifest.
  *
  * @param {object} manifest - the manifest (mutated and returned).
  * @return {object} - the manifest.
  * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function stripDependencyMarker(manifest) {
 	if (manifest && manifest[MARKER] !== undefined) {

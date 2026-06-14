@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useAppStatus — soft capability check: is a sibling Nextcloud app
- * (e.g. `procest`) installed and enabled on this instance?
+ * (e.g. `procest` or `openconnector`) installed and enabled on this instance?
  *
- * The builder uses this to degrade gracefully (REQ-PWA-006): when the app is
- * absent the attach action / case-type list is disabled with a hint. The
- * runtime gate itself is handled by CnAppRoot via the manifest
- * `dependencies[]`; this is only the design-time soft check.
+ * The builder uses this to degrade gracefully: when the app is absent the
+ * dependent action is disabled with a hint (the workflow attach action /
+ * case-type list, REQ-PWA-006; the connector origin option, REQ-OCAS-005 —
+ * which still offers a manual "enter endpoint path" escape hatch for an
+ * unverified binding). The runtime gate itself is handled by CnAppRoot via
+ * the manifest `dependencies[]`; this is only the design-time soft check.
  *
  * Strategy: not every app advertises a server capability key, so we use a
  * cheap authenticated probe of a known app route and interpret a non-404/501
@@ -16,6 +18,7 @@
  * session.
  *
  * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.2
  */
 import { ref } from 'vue'
 import axios from '@nextcloud/axios'
@@ -28,13 +31,14 @@ const statusCache = new Map()
  * Probe whether an app is available. Returns reactive `{ available, checked }`
  * refs that flip once the async probe resolves.
  *
- * @param {string} appId - the app id, e.g. `procest`.
+ * @param {string} appId - the app id, e.g. `procest` or `openconnector`.
  * @param {object} [opts] - options.
  * @param {string} [opts.probePath] - app route to probe when the webroots map
  *   is silent (default `/apps/{appId}/api`).
  * @param {Function} [opts.client] - axios-like client injection for tests.
  * @return {{ available: import('vue').Ref<boolean>, checked: import('vue').Ref<boolean>, check: Function }}
  * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function useAppStatus(appId, opts = {}) {
 	const client = opts.client || axios
@@ -72,6 +76,8 @@ export function useAppStatus(appId, opts = {}) {
 			available.value = true
 		} catch (e) {
 			const status = e && e.response && e.response.status
+			// 404 / 501 → route does not exist → app absent/disabled.
+			// Any other status (incl. 400/401/403) means the app answered.
 			available.value = !(status === 404 || status === 501 || status === undefined)
 		}
 		checked.value = true
@@ -86,6 +92,7 @@ export function useAppStatus(appId, opts = {}) {
  * Test helper — clear the session status cache.
  *
  * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function clearAppStatusCache() {
 	statusCache.clear()
