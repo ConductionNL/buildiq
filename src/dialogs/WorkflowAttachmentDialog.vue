@@ -162,6 +162,7 @@ export default {
 		},
 	},
 	watch: {
+		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		open(isOpen) {
 			if (isOpen) {
 				this.hydrate()

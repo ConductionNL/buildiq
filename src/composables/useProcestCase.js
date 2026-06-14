@@ -28,6 +28,7 @@ const ZRC = '/apps/procest/api/zgw/zaken/v1'
  * @param {string} template - the description template.
  * @param {object} object - the created OR object.
  * @return {string} - the rendered description.
+ * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-003
  */
 export function renderDescription(template, object) {
 	if (typeof template !== 'string' || template === '') {

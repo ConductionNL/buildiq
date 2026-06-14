@@ -142,6 +142,7 @@ export default {
 			return buildProcestCaseUrl(uuid)
 		},
 	},
+	/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 	mounted() {
 		if (this.linkReference) {
 			this.procest.loadDetail(this.linkReference)
