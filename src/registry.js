@@ -91,6 +91,10 @@ import BuilderHostView from './views/BuilderHost.vue'
 //   - audit-trail: recent audit entries for the object (detail sidebar).
 import { CnStatsBlockWidget, CnAuditTrailCard } from '@conduction/nextcloud-vue'
 
+// Dashboard widget — lists the most recently updated virtual applications,
+// with status badge, version, and a quick-open link to VirtualAppDetail.
+import DashboardAppsListWidget from './components/dashboard/DashboardAppsListWidget.vue'
+
 // Business-rules engine dashboard — lists RuleSets, opens the decision-table /
 // condition-action editors and the test sandbox (spec business-rules-engine).
 import RuleSetsPageView from './views/RuleSetsPage.vue'
@@ -206,6 +210,9 @@ export default {
 
 	// Header component for the maintainer dashboard (kind "header" — slot-override).
 	ApplicationDetailHeader: header(ApplicationDetailHeader),
+
+	// Dashboard apps-list slot widget (slot "widget-recent-apps" on the Dashboard page).
+	DashboardAppsListWidget: page(DashboardAppsListWidget),
 
 	// Custom page components — resolved by CnPageRenderer for type:"custom" pages.
 	SchemaDesignerView: page(SchemaDesignerView),
