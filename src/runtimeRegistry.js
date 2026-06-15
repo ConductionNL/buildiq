@@ -11,6 +11,7 @@
  *
  * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004
  * @spec openspec/changes/openconnector-api-sources/tasks.md#task-4.3
+ * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
  */
 
 // Runtime panel — renders the linked Procest case for the current object on a
@@ -20,6 +21,11 @@ import ProcestCaseStatusPanel from './components/runtime/ProcestCaseStatusPanel.
 // Runtime widget — renders an OpenConnector-bound data source for a manifest
 // page/widget that declares `dataSource.connector` (REQ-OCAS-006).
 import ConnectorDataView from './components/runtime/ConnectorDataView.vue'
+
+// Runtime surface — generate-and-download buttons for the Docudesk document
+// templates attached to the current object's schema (sidebar tab / detail
+// action group `docudesk-document-actions`, REQ-DDT-004).
+import DocumentActions from './components/runtime/DocumentActions.vue'
 
 /**
  * Build a slot-override registry entry (CnPageRenderer resolves any `kind`
@@ -58,4 +64,6 @@ export const runtimeRegistry = {
 	'procest-case-status': tab(ProcestCaseStatusPanel),
 	// Manifest widgetKey "connector-data" for a connector-bound page/widget.
 	'connector-data': widget(ConnectorDataView, ['body', 'sidebar']),
+	// Sidebar-tab / detail action group for Docudesk document generation.
+	'docudesk-document-actions': tab(DocumentActions),
 }
