@@ -22,14 +22,14 @@ half of the `version-routing`, `version-promotion`, and
 
 ### Requirement: Version history lists snapshots and gates compare and rollback
 
-@e2e exclude retrofit component-contract spec — `refresh`, `rowKey`/`rowUuid`/`rowVersion`/`rowNotes`/`rowPublishedAt`/`rowPublishedBy` display accessors, `compare`, `askRollback`/`onRollbackConfirmed`/`onRollbackCancelled` are component-state contracts verified by Vitest unit tests; snapshot listing and rollback flow are covered by the openbuild-runtime Playwright tests
-
 `VersionHistory` SHALL load the time-travel snapshot rows (`refresh`,
 `handler`), expose per-row display accessors (`rowKey`, `rowUuid`,
 `rowVersion`, `rowNotes`, `rowPublishedAt`, `rowPublishedBy`,
 `rowApplicationUuid`, `formatDate`), let the user compare two snapshots
 (`compare`), and route rollback through a confirm flow
 (`askRollback`, `onRollbackConfirmed`, `onRollbackCancelled`).
+
+@e2e exclude retrofit component-contract spec — `refresh`, `rowKey`/`rowUuid`/`rowVersion`/`rowNotes`/`rowPublishedAt`/`rowPublishedBy` display accessors, `compare`, `askRollback`/`onRollbackConfirmed`/`onRollbackCancelled` are component-state contracts verified by Vitest unit tests; snapshot listing and rollback flow are covered by the openbuild-runtime Playwright tests
 
 #### Scenario: List snapshots
 
@@ -43,14 +43,14 @@ half of the `version-routing`, `version-promotion`, and
 
 ### Requirement: Promote dialog computes strategy and gates the destructive confirm
 
-@e2e exclude retrofit component-contract spec — `computeDefaultStrategy`, `summaryText`, `confirmHelperText`, `confirmInputLabel`, `isDestructiveGateMet`, `onConfirm`/`onCancel` are dialog-component contracts verified by Vitest unit tests; destructive-gate flow requires a running dev→staging chain which is covered by the openbuild-version-snapshots Newman tests
-
 `PromoteVersionDialog` SHALL bind the application and target version
 (`application`, `targetVersion`), compute a default promotion strategy
 (`computeDefaultStrategy`), render the summary and confirm helper text
 (`summaryText`, `confirmHelperText`, `confirmInputLabel`), enforce a
 destructive-confirm gate (`isDestructiveGateMet`), and emit confirm/cancel
 (`onConfirm`, `onCancel`).
+
+@e2e exclude retrofit component-contract spec — `computeDefaultStrategy`, `summaryText`, `confirmHelperText`, `confirmInputLabel`, `isDestructiveGateMet`, `onConfirm`/`onCancel` are dialog-component contracts verified by Vitest unit tests; destructive-gate flow requires a running dev→staging chain which is covered by the openbuild-version-snapshots Newman tests
 
 #### Scenario: Gate a destructive promotion
 
@@ -59,11 +59,11 @@ destructive-confirm gate (`isDestructiveGateMet`), and emit confirm/cancel
 
 ### Requirement: Rollback confirm modal gates the revert
 
-@e2e exclude retrofit component-contract spec — `title`, `formattedPublishedAt`, `onUpdateOpen`, `confirm`/`cancel` emit contracts are modal-component contracts verified by Vitest unit tests; rollback confirmation flow is covered by the openbuild-runtime Playwright tests
-
 `RollbackConfirmModal` SHALL render the target title and formatted publish time
 (`title`, `formattedPublishedAt`), track open state (`onUpdateOpen`), and emit
 confirm/cancel (`confirm`, `cancel`).
+
+@e2e exclude retrofit component-contract spec — `title`, `formattedPublishedAt`, `onUpdateOpen`, `confirm`/`cancel` emit contracts are modal-component contracts verified by Vitest unit tests; rollback confirmation flow is covered by the openbuild-runtime Playwright tests
 
 #### Scenario: Confirm a rollback
 
@@ -72,13 +72,13 @@ confirm/cancel (`confirm`, `cancel`).
 
 ### Requirement: Version composables resolve active version and manifest history
 
-@e2e exclude retrofit composable-contract spec — `useApplicationVersion` reactive-state resolution, `defaultEditableVersion` helper, and `useManifestHistory` load contracts are composable contracts verified by Vitest unit tests; version slug resolution in the builder host is covered by the openbuild-runtime Playwright tests
-
 `useApplicationVersion(appSlug, versionSlug)` SHALL resolve the active version,
 exposing a default editable version helper (`defaultEditableVersion`).
 `useManifestHistory` SHALL load the manifest history for a version. These
 composables SHALL return reactive state consumed by the builder hosts and the
 detail header.
+
+@e2e exclude retrofit composable-contract spec — `useApplicationVersion` reactive-state resolution, `defaultEditableVersion` helper, and `useManifestHistory` load contracts are composable contracts verified by Vitest unit tests; version slug resolution in the builder host is covered by the openbuild-runtime Playwright tests
 
 #### Scenario: Resolve the active version
 
