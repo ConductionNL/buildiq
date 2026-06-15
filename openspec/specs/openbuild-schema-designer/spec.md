@@ -53,10 +53,10 @@ with direct DB reads.
 
 ### Requirement: Add Schema flow captures slug, title, description, version
 
-@e2e exclude mixed spec — POST to OR's runtime schema CRUD endpoint and `409 Conflict` duplicate-slug response are OR REST + Newman contracts; `SchemaHeaderForm.vue` validation and route-to-detail navigation require the runtime-schema-api chain spec to be applied; covered by Newman REST tests
-
 When the user activates the **Add Schema** action, the designer SHALL
 render a guided form via `SchemaHeaderForm.vue` capturing:
+
+@e2e exclude mixed spec — POST to OR's runtime schema CRUD endpoint and `409 Conflict` duplicate-slug response are OR REST + Newman contracts; `SchemaHeaderForm.vue` validation and route-to-detail navigation require the runtime-schema-api chain spec to be applied; covered by Newman REST tests
 
 - `slug` — required, kebab-case, MUST be unique within the virtual
   app's register namespace.
@@ -93,11 +93,11 @@ field.
 
 ### Requirement: Field editor manages property add, remove, reorder, type, and validation
 
-@e2e exclude visual-editor component spec — add/remove/reorder `FieldRow.vue` rows, `FieldTypePicker.vue` type selection, and type-specific validation inputs (`pattern`, `format`, `minLength`, `enum`, etc.) are staged-store + component contracts verified by Vitest unit tests; property order on reload requires the runtime schema CRUD chain spec
-
 The schema detail view SHALL render the schema's `properties` map as
 an ordered list of `FieldRow.vue` rows. For each property the user
 SHALL be able to:
+
+@e2e exclude visual-editor component spec — add/remove/reorder `FieldRow.vue` rows, `FieldTypePicker.vue` type selection, and type-specific validation inputs (`pattern`, `format`, `minLength`, `enum`, etc.) are staged-store + component contracts verified by Vitest unit tests; property order on reload requires the runtime schema CRUD chain spec
 
 - Add a new property (appended; `FieldTypePicker.vue` chooses one of
   `string`, `number`, `integer`, `boolean`, `array`, `object`,
@@ -141,11 +141,11 @@ user activates **Save** (REQ-OBSD-006). Live validation feedback
 
 ### Requirement: Visual lifecycle editor authors x-openregister-lifecycle declaratively
 
-@e2e exclude visual-editor component spec — `LifecycleEditor.vue` state/transition/`on_transition` authoring, `initial` radio selection, and exactly-one-initial validation are component contracts verified by Vitest unit tests; persisted `x-openregister-lifecycle` block requires the runtime schema CRUD chain spec; covered by Newman + Vitest
-
 The schema detail view SHALL render a `LifecycleEditor.vue` panel that
 lets the user author the schema's `x-openregister-lifecycle` block in
 full per ADR-031. The editor SHALL support:
+
+@e2e exclude visual-editor component spec — `LifecycleEditor.vue` state/transition/`on_transition` authoring, `initial` radio selection, and exactly-one-initial validation are component contracts verified by Vitest unit tests; persisted `x-openregister-lifecycle` block requires the runtime schema CRUD chain spec; covered by Newman + Vitest
 
 - Adding / removing **states** (each with a kebab-case `name` and a
   human-readable `label`).
@@ -192,10 +192,10 @@ declarative engine on schema reload (chain spec
 
 ### Requirement: Sub-editors for aggregations, calculations, notifications, relations, widgets
 
-@e2e exclude visual-editor component spec — `AggregationEditor.vue`, `CalculationEditor.vue`, `NotificationEditor.vue`, `RelationEditor.vue`, `WidgetEditor.vue` emit contracts, free-text PHP rejection, and `x-openregister-*` block persistence are component + OR runtime contracts verified by Vitest unit tests + Newman; no independent Playwright-testable URL surface
-
 The schema detail view SHALL render five further declarative
 sub-editors, each surfaced under a collapsible section:
+
+@e2e exclude visual-editor component spec — `AggregationEditor.vue`, `CalculationEditor.vue`, `NotificationEditor.vue`, `RelationEditor.vue`, `WidgetEditor.vue` emit contracts, free-text PHP rejection, and `x-openregister-*` block persistence are component + OR runtime contracts verified by Vitest unit tests + Newman; no independent Playwright-testable URL surface
 
 - `AggregationEditor.vue` — adds entries to
   `x-openregister-aggregations`. Each entry is a typed record:
@@ -250,13 +250,13 @@ accept free-text code in any field that affects runtime behaviour.
 
 ### Requirement: Live validation and explicit Save persist to OR's runtime schema CRUD
 
-@e2e exclude mixed spec — `canSave` gate (`hasStagedChanges`, `fieldNamesUnique`, `hasInitialLifecycleState`), PUT to OR runtime schema CRUD endpoint, success toast, and 4xx error inline are staged-store + OR REST contracts verified by Vitest unit tests + Newman; the runtime schema CRUD chain spec must be applied
-
 The designer SHALL run **live client-side validation** on every edit:
 field name uniqueness, slug pattern, semver pattern, required-field
 checks, and the typed-record shape of every declarative sub-editor.
 Validation results SHALL surface inline per row / section and SHALL
 disable the **Save** action until the staged change is valid.
+
+@e2e exclude mixed spec — `canSave` gate (`hasStagedChanges`, `fieldNamesUnique`, `hasInitialLifecycleState`), PUT to OR runtime schema CRUD endpoint, success toast, and 4xx error inline are staged-store + OR REST contracts verified by Vitest unit tests + Newman; the runtime schema CRUD chain spec must be applied
 
 The designer SHALL NOT auto-save. The user SHALL persist staged
 changes explicitly via the **Save** action. On Save the designer
@@ -293,8 +293,6 @@ duplicate that work.
 
 ### Requirement: Designer output is declarative-only (ADR-031 compliance)
 
-@e2e exclude pure static-analysis contract — verifying that the persisted JSON Schema body contains zero PHP class names or executable code strings is a static/structural assertion on the serialised output, verified by Newman schema-validation tests and the declarative-vocabulary JSON Schema lint; no Playwright-testable UI surface
-
 The schema designer's serialised output SHALL be valid JSON Schema
 with declarative `x-openregister-*` extension blocks only. The
 designer SHALL NOT serialise references to PHP service classes,
@@ -304,6 +302,8 @@ as a typed declarative record drawn from OR's declarative vocabulary
 (ADR-031). This is the canonical example of the ADR-031 principle
 applied to a code-only spec: the editor is code, but its product
 is declarative.
+
+@e2e exclude pure static-analysis contract — verifying that the persisted JSON Schema body contains zero PHP class names or executable code strings is a static/structural assertion on the serialised output, verified by Newman schema-validation tests and the declarative-vocabulary JSON Schema lint; no Playwright-testable UI surface
 
 **ID:** REQ-OBSD-007
 
@@ -317,10 +317,10 @@ is declarative.
 
 ### Requirement: Confirm-before-destructive on delete-field and delete-schema
 
-@e2e exclude visual-editor component spec — `FieldRow.vue` remove confirmation dialog and `SchemaListPanel.vue` typed-slug confirmation gate are component-dialog contracts verified by Vitest unit tests; the confirmation dialogs require the schema designer to be built with the runtime schema CRUD chain spec applied
-
 The designer SHALL surface a confirmation dialog before performing
 either of the following destructive actions:
+
+@e2e exclude visual-editor component spec — `FieldRow.vue` remove confirmation dialog and `SchemaListPanel.vue` typed-slug confirmation gate are component-dialog contracts verified by Vitest unit tests; the confirmation dialogs require the schema designer to be built with the runtime schema CRUD chain spec applied
 
 - **Delete property** — a `FieldRow.vue` remove action. The dialog
   SHALL warn that existing objects of this schema may have data in the

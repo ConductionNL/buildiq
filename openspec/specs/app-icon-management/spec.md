@@ -20,14 +20,14 @@ file storage is introduced.
 
 ### Requirement: Icon fields on Application schema (top-level)
 
-@e2e exclude pure-backend OR schema validation contract — verified by Newman REST tests; no Playwright-testable UI surface for schema validation
-
 The `Application` schema in `lib/Settings/openbuild_register.json` SHALL declare two optional
 top-level properties — `icon` and `iconDark` — as siblings to `slug`, `name`, `manifest`,
 `version`, and `permissions`. Each SHALL be an object of shape `{ "ref": "<filename>" }` where
 `<filename>` is the name of an SVG file attached to the Application record via OpenRegister's
 files-attached-to-object mechanism (ADR-001). Both fields SHALL be optional; omitting them
 SHALL NOT cause schema validation failure.
+
+@e2e exclude pure-backend OR schema validation contract — verified by Newman REST tests; no Playwright-testable UI surface for schema validation
 
 **ID:** REQ-OBICON-001
 
@@ -56,8 +56,6 @@ any upstream coupling with `@conduction/nextcloud-vue`.
 
 ### Requirement: Icon-serving endpoint (light)
 
-@e2e exclude pure-backend REST endpoint — icon serving, fallback chain, cache headers, and 401 rejection verified by Newman; no separate UI surface beyond the <img> covered by applicationCard.spec.ts
-
 The system SHALL expose `GET /index.php/apps/openbuild/icons/{slug}.svg` backed by
 `IconController::iconLight`. The endpoint SHALL:
 
@@ -69,6 +67,8 @@ The system SHALL expose `GET /index.php/apps/openbuild/icons/{slug}.svg` backed 
    OpenBuild's own `/img/app.svg` filesystem asset.
 4. Set `Cache-Control: public, max-age=60` on every successful response.
 5. Require any valid NC session (`#[NoAdminRequired]`); return `401` when no session exists.
+
+@e2e exclude pure-backend REST endpoint — icon serving, fallback chain, cache headers, and 401 rejection verified by Newman; no separate UI surface beyond the <img> covered by applicationCard.spec.ts
 
 **ID:** REQ-OBICON-002
 
@@ -94,8 +94,6 @@ The system SHALL expose `GET /index.php/apps/openbuild/icons/{slug}.svg` backed 
 
 ### Requirement: Icon-serving endpoint (dark)
 
-@e2e exclude pure-backend REST endpoint — dark-icon serving, 4-step fallback chain, and cache headers verified by Newman; no separate UI surface
-
 The system SHALL expose `GET /index.php/apps/openbuild/icons/{slug}-dark.svg` backed by
 `IconController::iconDark`. The endpoint SHALL apply the following fallback chain in order:
 
@@ -105,6 +103,8 @@ The system SHALL expose `GET /index.php/apps/openbuild/icons/{slug}-dark.svg` ba
 4. OpenBuild's own `/img/app.svg` filesystem asset (final fallback).
 
 Cache and auth posture SHALL be identical to REQ-OBICON-002.
+
+@e2e exclude pure-backend REST endpoint — dark-icon serving, 4-step fallback chain, and cache headers verified by Newman; no separate UI surface
 
 **ID:** REQ-OBICON-003
 
@@ -170,8 +170,6 @@ goes through OR's existing files-attached-to-object endpoint (ADR-001).
 
 ### Requirement: Application UUID resolution for icon attachment lookup
 
-@e2e exclude pure-backend PHP service unit: extractUuid fallback chain is a single-class function verified by PHPUnit; no UI surface
-
 `IconService` SHALL derive the OR object UUID it uses for icon
 attachment lookups (`FileService::getFile`) from a normalised
 Application array. The derivation SHALL walk three fallback locations
@@ -183,6 +181,8 @@ value the helper SHALL return `null`, and the calling
 `fetchAttachedFileStream` SHALL surface that as a short-circuit
 fallback (no OR call, downstream fallback chain runs) — not as an
 exception.
+
+@e2e exclude pure-backend PHP service unit: extractUuid fallback chain is a single-class function verified by PHPUnit; no UI surface
 
 **ID:** REQ-OBICON-005
 
