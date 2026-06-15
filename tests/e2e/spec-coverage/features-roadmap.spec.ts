@@ -23,7 +23,9 @@
 import { test, expect } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const ROUTE = `${BASE}/apps/openbuild/features-roadmap`
+// The app router runs in hash mode — deep-link via the hash fragment so the
+// SPA mounts the Features & roadmap view instead of booting at the Dashboard.
+const ROUTE = `${BASE}/apps/openbuild/#/features-roadmap`
 
 test.describe('OpenBuild Features & roadmap', () => {
 	test('renders the Features heading and header actions', async ({ page }) => {
