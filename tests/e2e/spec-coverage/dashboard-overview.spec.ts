@@ -34,8 +34,13 @@ import { test, expect } from '@playwright/test'
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 
 // In-app nav link scoped by its openbuild href (avoids the NC top-bar).
-const navLink = (page: import('@playwright/test').Page, path: string) =>
-	page.locator(`a[href$="/apps/openbuild${path}"]`).first()
+// The app router runs in hash mode, so vue-router emits hrefs of the form
+// `/apps/openbuild/#/applications`. Match the hash-suffixed route ('/' maps
+// to the bare `/#/`).
+const navLink = (page: import('@playwright/test').Page, path: string) => {
+	const suffix = path === '/' ? '/apps/openbuild/#/' : `/apps/openbuild/#${path}`
+	return page.locator(`a[href$="${suffix}"]`).first()
+}
 
 test.describe('OpenBuild Dashboard', () => {
 	test('renders the four stats-block widget titles', async ({ page }) => {
