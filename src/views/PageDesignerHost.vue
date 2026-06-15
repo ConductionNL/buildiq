@@ -17,7 +17,7 @@
   Tracks issue #26 (PageDesigner used to render with an empty manifest).
 -->
 <template>
-	<div class="page-designer-host">
+	<div class="page-designer-host" :data-openbuild-theme-scope="routeSlug">
 		<header class="page-designer-host__header">
 			<div class="page-designer-host__title">
 				<h2>{{ application ? application.name : t('openbuild', 'Page designer') }}</h2>
@@ -78,6 +78,15 @@
 			@update:manifest="onManifestUpdate"
 			@create-link-property="onCreateLinkProperty" />
 
+		<!-- REQ-NTS-002: Theme section — pick an NL Design token set for this
+		     app. Soft-checks nldesign availability for graceful absence. -->
+		<ThemeSection
+			v-if="application"
+			:manifest="manifest"
+			:nldesign-available="nldesignAvailable"
+			@update:manifest="onManifestUpdate"
+			@preview="onThemePreview" />
+
 		<!-- REQ-DDT-002: Documents section — attach Docudesk templates to the
 		     app's schemas. Soft-checks Docudesk availability for graceful absence. -->
 		<DocumentAttachmentsSection
@@ -95,9 +104,11 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useAppStatus } from '../composables/useAppStatus.js'
+import { useAppTheme } from '../composables/useAppTheme.js'
 import { reconcileWorkflowDependency, reconcileConnectorDependency, reconcileDocumentDependency, stripDependencyMarker } from '../services/manifestDependencies.js'
 import PageDesigner from './PageDesigner.vue'
 import WorkflowAttachmentsSection from '../components/WorkflowAttachmentsSection.vue'
+import ThemeSection from '../components/ThemeSection.vue'
 import DocumentAttachmentsSection from '../components/DocumentAttachmentsSection.vue'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
@@ -111,6 +122,7 @@ export default {
 		NcLoadingIcon,
 		PageDesigner,
 		WorkflowAttachmentsSection,
+		ThemeSection,
 		DocumentAttachmentsSection,
 	},
 
@@ -128,6 +140,10 @@ export default {
 			versionError: null,
 			// REQ-PWA-006: soft capability check for Procest (graceful absence).
 			procestAvailable: true,
+			// REQ-NTS-005: soft capability check for nldesign (graceful absence).
+			nldesignAvailable: true,
+			// REQ-NTS-002: scoped theme applier for the designer live preview.
+			appTheme: useAppTheme(),
 			// REQ-DDT-005: soft capability check for Docudesk (graceful absence).
 			docudeskAvailable: true,
 		}
@@ -256,6 +272,12 @@ export default {
 		status.check().then(() => {
 			this.procestAvailable = status.available.value
 		})
+		// REQ-NTS-005: soft-check nldesign so the Theme section degrades
+		// gracefully when it is absent.
+		const nldesignStatus = useAppStatus('nldesign')
+		nldesignStatus.check().then(() => {
+			this.nldesignAvailable = nldesignStatus.available.value
+		})
 		// REQ-DDT-005: soft-check Docudesk so the Documents section degrades
 		// gracefully when it is absent.
 		const docudeskStatus = useAppStatus('docudesk')
@@ -264,7 +286,33 @@ export default {
 		})
 	},
 
+	/**
+	 * REQ-NTS-002: tear down any live designer-preview theme on leave so it
+	 * never lingers after navigation.
+	 *
+	 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002
+	 */
+	beforeDestroy() {
+		this.appTheme.teardown(this.routeSlug)
+	},
+
 	methods: {
+		/**
+		 * REQ-NTS-002: apply or revert the candidate theme as a live preview on
+		 * the designer surface (the same scope attribute the runtime host uses,
+		 * carried on this view's root). `null` reverts to default styling.
+		 *
+		 * @param {?object} theme - the candidate runtime.theme, or null to revert.
+		 * @return {void}
+		 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 */
+		onThemePreview(theme) {
+			if (theme) {
+				this.appTheme.apply({ runtime: { theme } }, this.routeSlug)
+			} else {
+				this.appTheme.teardown(this.routeSlug)
+			}
+		},
 		/**
 		 * Delegate one-click link-property creation to the schema designer.
 		 * Emitted up from the Workflows dialog; opens the schema designer for
