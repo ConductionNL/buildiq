@@ -5,7 +5,8 @@
  * Vitest spec for manifest dependency auto-management (workflow attachments
  * and connector data sources — both reuse the same generic helpers).
  *
- * Spec: procest-workflow-attachments (REQ-PWA-006), openconnector-api-sources (REQ-OCAS-005).
+ * Spec: procest-workflow-attachments (REQ-PWA-006), openconnector-api-sources (REQ-OCAS-005),
+ * docudesk-document-templates (REQ-DDT-005).
  */
 import { describe, it, expect } from 'vitest'
 import {
@@ -13,6 +14,8 @@ import {
 	reconcileWorkflowDependency,
 	hasConnectorBinding,
 	reconcileConnectorDependency,
+	hasDocumentAttachment,
+	reconcileDocumentDependency,
 	stripDependencyMarker,
 } from '../../src/services/manifestDependencies.js'
 
@@ -75,5 +78,28 @@ describe('manifestDependencies (connector)', () => {
 		expect(m._openbuildAutoDeps).toBeDefined()
 		stripDependencyMarker(m)
 		expect(m._openbuildAutoDeps).toBeUndefined()
+	})
+})
+
+const withDoc = () => ({ dependencies: [], runtime: { documents: [{ id: 'd', schema: 's', templateId: 'u', templateName: 'T', label: 'L' }] } })
+
+describe('manifestDependencies (document)', () => {
+	it('detects a document attachment', () => {
+		expect(hasDocumentAttachment({ runtime: { documents: [] } })).toBe(false)
+		expect(hasDocumentAttachment(withDoc())).toBe(true)
+	})
+	it('adds docudesk once when an attachment exists', () => {
+		const m = reconcileDocumentDependency(withDoc())
+		expect(m.dependencies).toEqual(['docudesk'])
+		expect(reconcileDocumentDependency(m).dependencies).toEqual(['docudesk'])
+	})
+	it('auto-removes docudesk when the last attachment is gone', () => {
+		let m = reconcileDocumentDependency(withDoc())
+		m = reconcileDocumentDependency({ ...m, runtime: { documents: [] } })
+		expect(m.dependencies).toEqual([])
+	})
+	it('never removes a manually-added docudesk dependency', () => {
+		const m = reconcileDocumentDependency({ dependencies: ['docudesk'], runtime: { documents: [] } })
+		expect(m.dependencies).toEqual(['docudesk'])
 	})
 })
