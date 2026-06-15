@@ -16,6 +16,8 @@ OpenBuild's manifest validation layer SHALL reject: an unknown `source`, a missi
 
 #### Scenario: Valid theme declaration passes validation
 
+<!-- @e2e exclude pure app-side manifest validation, covered by vitest tests/services/themeValidation.spec.js. -->
+
 - **GIVEN** a virtual app manifest
 - **WHEN** it declares `runtime.theme: { source: "nldesign", tokenSet: "amsterdam", tokenSetName: "Gemeente Amsterdam", preview: { primaryColor: "#004699", backgroundColor: "#FFFFFF" } }`
 - **THEN** the validator pass reports no errors
@@ -23,11 +25,15 @@ OpenBuild's manifest validation layer SHALL reject: an unknown `source`, a missi
 
 #### Scenario: Unknown source is rejected
 
+<!-- @e2e exclude pure app-side manifest validation, covered by vitest tests/services/themeValidation.spec.js. -->
+
 - **WHEN** the manifest declares `runtime.theme.source: "material"`
 - **THEN** the validator reports `openbuild.theme.error.unknown-source` against the theme block
 - **AND** the Save button is disabled
 
 #### Scenario: Themeless app serializes byte-identically
+
+<!-- @e2e exclude serialization-regression assertion, covered by vitest tests/components/ThemeSection.spec.js. -->
 
 - **GIVEN** a virtual app that has never had a theme set
 - **WHEN** the app is saved through a build containing this feature
@@ -86,6 +92,8 @@ The virtual-app runtime host SHALL carry a `data-openbuild-theme-scope="<appSlug
 
 #### Scenario: Missing token asset degrades to default styling
 
+<!-- @e2e exclude applier 404-degradation, covered by vitest tests/composables/useAppTheme.spec.js. -->
+
 - **GIVEN** a manifest referencing a token set whose CSS asset returns 404 (set removed/renamed in nldesign)
 - **WHEN** the app renders
 - **THEN** the app renders fully functional in default styling
@@ -93,6 +101,8 @@ The virtual-app runtime host SHALL carry a `data-openbuild-theme-scope="<appSlug
 - **AND** no error surface is shown to the end user
 
 #### Scenario: Unrecognised CSS constructs inject nothing
+
+<!-- @e2e exclude applier at-rule bail-out, covered by vitest tests/composables/useAppTheme.spec.js + rewriteRootScope unit tests. -->
 
 - **GIVEN** a token CSS payload containing a nested `@media` block the rewriter does not positively recognise
 - **WHEN** the applier processes it
@@ -105,11 +115,15 @@ Because `runtime.theme` lives in the manifest, it SHALL be captured in Applicati
 
 #### Scenario: Promotion carries the theme
 
+<!-- @e2e exclude version-promotion exercised by the existing promoteDestructive/version e2e; theme is a plain manifest field carried losslessly, asserted by applier vitest. -->
+
 - **GIVEN** a development version themed `rijkshuisstijl` and a production version themed `nextcloud`-default
 - **WHEN** the development version is promoted to production
 - **THEN** the production manifest's `runtime.theme.tokenSet` is `rijkshuisstijl`
 
 #### Scenario: Version preview renders the version's own theme
+
+<!-- @e2e exclude version-routing covered by the existing versionRouting e2e; theme-per-version selection covered by useAppTheme applyTheme(version) vitest. -->
 
 - **GIVEN** the same two versions
 - **WHEN** an editor opens the app with `?_version=` targeting the development version
@@ -135,6 +149,8 @@ At design time, when `useAppStatus('nldesign')` reports the app missing or disab
 
 #### Scenario: Saving a theme never edits dependencies
 
+<!-- @e2e exclude dependencies-untouched assertion, covered by vitest tests/components/ThemeSection.spec.js. -->
+
 - **WHEN** the builder saves a manifest after picking a theme
 - **THEN** the persisted `dependencies[]` array is unchanged from before the pick
 
@@ -144,12 +160,16 @@ OpenBuild's nldesign integration SHALL call exactly: the static asset `css/token
 
 #### Scenario: Contract surface is closed
 
+<!-- @e2e exclude static source-tree assertion + Newman contract; pinned by tests/integration/openbuild-nldesign-theme.postman_collection.json, not a browser flow. -->
+
 - **WHEN** the openbuild source tree is scanned for `/apps/nldesign/` and `nldesign` asset references
 - **THEN** every call target is one of the listed reads (or the feature-probed non-admin list endpoint)
 - **AND** no nldesign PHP namespace is imported anywhere in openbuild
 - **AND** no POST/PUT/DELETE to nldesign exists
 
 #### Scenario: Newman pins the token asset shape
+
+<!-- @e2e exclude Newman asset-contract scenario; pinned by tests/integration/openbuild-nldesign-theme.postman_collection.json, not a browser flow. -->
 
 - **GIVEN** the Newman collection's token-asset request for `rijkshuisstijl`
 - **WHEN** the collection runs against the dev instance
