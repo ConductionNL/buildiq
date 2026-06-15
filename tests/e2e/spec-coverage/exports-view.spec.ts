@@ -23,7 +23,9 @@
 import { test, expect } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const ROUTE = `${BASE}/apps/openbuild/exports`
+// The app router runs in hash mode — deep-link via the hash fragment so the
+// SPA mounts the Exports view instead of booting at the default Dashboard.
+const ROUTE = `${BASE}/apps/openbuild/#/exports`
 
 test.describe('OpenBuild Exports view', () => {
 	test('renders the Exports heading and the Add Export Job action', async ({ page }) => {
@@ -48,14 +50,16 @@ test.describe('OpenBuild Exports view', () => {
 		await expect(page.getByRole('radio', { name: /table/i })).toBeVisible()
 	})
 
-	test('renders a deterministic empty state on the unseeded register', async ({ page }) => {
+	test('renders a deterministic list surface (empty state or row list)', async ({ page }) => {
 		await page.goto(ROUTE)
 		await expect(page.getByRole('button', { name: /add export job/i })).toBeVisible({ timeout: 15_000 })
 
-		// Data-independent: with no export jobs the index shows an empty state
-		// rather than a row list, and must not white-screen.
-		await expect(
-			page.getByText(/no items found|no exports|nothing/i).first(),
-		).toBeVisible({ timeout: 15_000 })
+		// Data-independent: the index must render a coherent list surface and
+		// never white-screen — either the empty state (unseeded register) or a
+		// populated row count summary (seeded register). Assert that at least
+		// one of those deterministic surfaces is present.
+		const emptyState = page.getByText(/no items found|no exports|nothing/i).first()
+		const rowSummary = page.getByText(/showing \d+ of \d+/i).first()
+		await expect(emptyState.or(rowSummary)).toBeVisible({ timeout: 15_000 })
 	})
 })
