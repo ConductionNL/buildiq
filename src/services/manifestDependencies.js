@@ -32,6 +32,18 @@ export function hasWorkflowAttachment(manifest) {
 }
 
 /**
+ * Whether the manifest declares at least one document attachment.
+ *
+ * @param {object} manifest - the manifest.
+ * @return {boolean}
+ * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-005
+ */
+export function hasDocumentAttachment(manifest) {
+	const documents = manifest && manifest.runtime && manifest.runtime.documents
+	return Array.isArray(documents) && documents.length > 0
+}
+
+/**
  * Whether the manifest has at least one page/widget connector binding.
  *
  * @param {object} manifest - the manifest.
@@ -119,6 +131,21 @@ export function reconcileWorkflowDependency(manifest) {
 		return ensureDependency(manifest, 'procest')
 	}
 	return removeAutoDependency(manifest, 'procest')
+}
+
+/**
+ * Reconcile the `docudesk` dependency against the manifest's document
+ * attachments: add when ≥1 attachment, auto-remove when none remain.
+ *
+ * @param {object} manifest - the manifest (mutated and returned).
+ * @return {object} - the manifest.
+ * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-005
+ */
+export function reconcileDocumentDependency(manifest) {
+	if (hasDocumentAttachment(manifest)) {
+		return ensureDependency(manifest, 'docudesk')
+	}
+	return removeAutoDependency(manifest, 'docudesk')
 }
 
 /**
