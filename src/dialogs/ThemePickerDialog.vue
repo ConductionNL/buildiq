@@ -259,6 +259,7 @@ export default {
 		 * @param {string} css - the stylesheet text.
 		 * @param {string} name - the variable name.
 		 * @return {string}
+		 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002
 		 */
 		readVar(css, name) {
 			const re = new RegExp(name.replace(/[-]/g, '\\-') + '\\s*:\\s*([^;}]+)')
