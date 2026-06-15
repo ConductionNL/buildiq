@@ -86,6 +86,15 @@
 			:nldesign-available="nldesignAvailable"
 			@update:manifest="onManifestUpdate"
 			@preview="onThemePreview" />
+
+		<!-- REQ-DDT-002: Documents section — attach Docudesk templates to the
+		     app's schemas. Soft-checks Docudesk availability for graceful absence. -->
+		<DocumentAttachmentsSection
+			v-if="application"
+			:manifest="manifest"
+			:schemas="appSchemas"
+			:docudesk-available="docudeskAvailable"
+			@update:manifest="onManifestUpdate" />
 	</div>
 </template>
 
@@ -96,10 +105,11 @@ import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useAppStatus } from '../composables/useAppStatus.js'
 import { useAppTheme } from '../composables/useAppTheme.js'
-import { reconcileWorkflowDependency, reconcileConnectorDependency, stripDependencyMarker } from '../services/manifestDependencies.js'
+import { reconcileWorkflowDependency, reconcileConnectorDependency, reconcileDocumentDependency, stripDependencyMarker } from '../services/manifestDependencies.js'
 import PageDesigner from './PageDesigner.vue'
 import WorkflowAttachmentsSection from '../components/WorkflowAttachmentsSection.vue'
 import ThemeSection from '../components/ThemeSection.vue'
+import DocumentAttachmentsSection from '../components/DocumentAttachmentsSection.vue'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
 
@@ -113,6 +123,7 @@ export default {
 		PageDesigner,
 		WorkflowAttachmentsSection,
 		ThemeSection,
+		DocumentAttachmentsSection,
 	},
 
 	data() {
@@ -133,6 +144,8 @@ export default {
 			nldesignAvailable: true,
 			// REQ-NTS-002: scoped theme applier for the designer live preview.
 			appTheme: useAppTheme(),
+			// REQ-DDT-005: soft capability check for Docudesk (graceful absence).
+			docudeskAvailable: true,
 		}
 	},
 
@@ -264,6 +277,12 @@ export default {
 		const nldesignStatus = useAppStatus('nldesign')
 		nldesignStatus.check().then(() => {
 			this.nldesignAvailable = nldesignStatus.available.value
+		})
+		// REQ-DDT-005: soft-check Docudesk so the Documents section degrades
+		// gracefully when it is absent.
+		const docudeskStatus = useAppStatus('docudesk')
+		docudeskStatus.check().then(() => {
+			this.docudeskAvailable = docudeskStatus.available.value
 		})
 	},
 
@@ -405,13 +424,17 @@ export default {
 			this.saving = true
 			this.error = ''
 			this.toast = ''
-			// REQ-PWA-006 / REQ-OCAS-005: auto-manage the `procest` dependency
-			// against the manifest's workflow attachments AND the `openconnector`
-			// dependency against its connector bindings, then strip the internal
-			// auto-dep marker so it never lands in the persisted manifest.
+			// REQ-PWA-006 / REQ-OCAS-005 / REQ-DDT-005: auto-manage the `procest`
+			// dependency against the manifest's workflow attachments, the
+			// `openconnector` dependency against its connector bindings, and the
+			// `docudesk` dependency against its document attachments, then strip
+			// the internal auto-dep marker so it never lands in the persisted
+			// manifest.
 			this.manifest = stripDependencyMarker(
-				reconcileConnectorDependency(
-					reconcileWorkflowDependency({ ...this.manifest }),
+				reconcileDocumentDependency(
+					reconcileConnectorDependency(
+						reconcileWorkflowDependency({ ...this.manifest }),
+					),
 				),
 			)
 			try {

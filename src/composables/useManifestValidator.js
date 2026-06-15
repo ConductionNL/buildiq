@@ -26,6 +26,7 @@ import { validateManifest } from '@conduction/nextcloud-vue'
 import { validateWorkflowAttachments } from '../services/manifestValidation/workflowAttachments.js'
 import { validateManifestConnectors } from '../services/manifestValidation/connectorDataSource.js'
 import { validateTheme } from '../services/manifestValidation/theme.js'
+import { validateDocumentAttachments } from '../services/manifestValidation/documentAttachments.js'
 
 const DEBOUNCE_MS = 300
 
@@ -59,11 +60,12 @@ export function useManifestValidator() {
 				// App-side strict checks for forms the canonical schema carries
 				// under `additionalProperties: true` (workflow attachments,
 				// REQ-PWA-001; connector data sources, REQ-OCAS-001; theme
-				// selection, REQ-NTS-001). Merged so the side panel + inline
-				// marks light up uniformly.
+				// selection, REQ-NTS-001; document attachments, REQ-DDT-001).
+				// Merged so the side panel + inline marks light up uniformly.
 				const appErrors = validateWorkflowAttachments(manifest)
 					.concat(validateManifestConnectors(manifest))
 					.concat(validateTheme(manifest))
+					.concat(validateDocumentAttachments(manifest))
 				errors.value = libErrors.concat(appErrors)
 			} catch (e) {
 				errors.value = [`validator threw: ${e && e.message ? e.message : e}`]
