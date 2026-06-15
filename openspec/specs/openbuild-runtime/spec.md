@@ -29,8 +29,6 @@ icon / no-Live-chip refinement.
 
 ### Requirement: Manifest endpoint per virtual-app slug
 
-@e2e exclude pure-backend REST endpoint — manifest fetch, 404 for unknown slug, and auth posture verified by Newman/manifest-endpoint.spec.ts; no separate UI surface
-
 The system SHALL expose
 `GET /index.php/apps/openbuild/api/applications/{slug}/manifest`
 backed by `ApplicationsController::getManifest`. The endpoint SHALL
@@ -41,6 +39,8 @@ matching published Application exists in the caller's organisation
 scope. The endpoint SHALL be registered via `appinfo/routes.php`
 (ADR-016) with `#[NoAdminRequired]` and a route-auth posture that
 treats it as authenticated-user-readable.
+
+@e2e exclude pure-backend REST endpoint — manifest fetch, 404 for unknown slug, and auth posture verified by Newman/manifest-endpoint.spec.ts; no separate UI surface
 
 **ID:** REQ-OBR-001
 
@@ -445,8 +445,6 @@ the diff view is opened.
 
 ### Requirement: Manifest endpoint returns 403 for unauthorised callers
 
-@e2e exclude backend manifest-403 endpoint — already covered by rbac-403.spec.ts (the canonical Playwright test for this gate)
-
 `ApplicationsController::getManifest` SHALL be extended with a
 permissions check that runs after the organisation-scope resolution
 and before any branch that returns the manifest payload. The check
@@ -463,6 +461,8 @@ SHALL be ordered before the manifest-body emission and SHALL NOT
 leak any Application metadata (no name, no description, no manifest
 fragment). Implementation is a single in-controller check — no new
 service class — per ADR-022 §Exceptions(1).
+
+@e2e exclude backend manifest-403 endpoint — already covered by rbac-403.spec.ts (the canonical Playwright test for this gate)
 
 **ID:** REQ-OBR-006c
 
@@ -573,8 +573,6 @@ disambiguate from `REQ-OBR-008a` (VersionHistory panel, from
 
 ### Requirement: Caller's group set is provided via initial state
 
-@e2e exclude pure-backend PHP IInitialState contract — loadState value verified by PHPUnit; no Playwright-accessible surface to assert server-side initial state injection
-
 The OpenBuild PHP layer SHALL provide the caller's Nextcloud group
 IDs to the frontend via
 `IInitialState::provideInitialState('openbuild',
@@ -587,6 +585,8 @@ frontend SHALL NOT read group membership from any DOM
 data-attribute, fetch endpoint, or `document.getElementById`
 pattern (ADR-004 hard rule; enforced by the
 `gate-initial-state` Hydra gate).
+
+@e2e exclude pure-backend PHP IInitialState contract — loadState value verified by PHPUnit; no Playwright-accessible surface to assert server-side initial state injection
 
 **ID:** REQ-OBR-009b
 
@@ -606,8 +606,6 @@ disambiguate from `REQ-OBR-009a` (Rollback action, from
 
 ### Requirement: ApplicationCard renders icon and omits redundant Live chip
 
-@e2e exclude already covered — all four scenarios verified by applicationCard.spec.ts; adding duplicate tags would double-count the same test
-
 `ApplicationCard.vue` SHALL render the Application's icon in front of the app title using an
 `<img>` element whose `src` is the URL of the icon-serving light endpoint
 (`/index.php/apps/openbuild/icons/{slug}.svg`). The image SHALL carry a descriptive `alt`
@@ -616,6 +614,8 @@ conditionally rendered on `app.currentVersion` (line 30 of the original file); t
 lifecycle-status pill (line 23) already communicates "Published" state to the user and the
 Live chip produces duplicate signalling. The `ob-app-card__chip--live` CSS rule and the
 `v-if="app.currentVersion"` conditional SHALL be removed.
+
+@e2e exclude already covered — all four scenarios verified by applicationCard.spec.ts; adding duplicate tags would double-count the same test
 
 **ID:** REQ-OBR-013
 
@@ -647,8 +647,6 @@ Live chip produces duplicate signalling. The `ob-app-card__chip--live` CSS rule 
 
 ### Requirement: MCP tool-provider contract
 
-@e2e exclude pure-backend PHP IMcpToolProvider unit — getAppId, getTools, invokeTool dispatch, and unknown-tool error envelope verified by PHPUnit; no Playwright-testable UI surface
-
 The OpenBuild MCP surface SHALL be implemented by a class
 (`OCA\OpenBuild\Mcp\OpenBuildToolProvider`) that implements
 `OCA\OpenRegister\Mcp\IMcpToolProvider`. The provider SHALL declare its
@@ -663,6 +661,8 @@ uniform error envelope of shape
 `{ isError: true, error, message }` carrying the machine-readable code
 `unknown_tool` and a human-readable message that lists the available
 tool ids.
+
+@e2e exclude pure-backend PHP IMcpToolProvider unit — getAppId, getTools, invokeTool dispatch, and unknown-tool error envelope verified by PHPUnit; no Playwright-testable UI surface
 
 **ID:** REQ-OBR-MCP-001
 
@@ -691,13 +691,13 @@ tool ids.
 
 ### Requirement: Auth-gated dispatch with arg validation
 
-@e2e exclude pure-backend PHP MCP arg-validation unit — unauthenticated rejection, limit/statusFilter clamping, and isAdmin helper verified by PHPUnit; no Playwright-testable UI surface
-
 Every MCP tool exposed by this provider SHALL require an authenticated
 Nextcloud session. The provider SHALL resolve the active user via
 `IUserSession`; if no user is signed in (or the user UID is empty), the
 handler SHALL short-circuit with an `{ isError: true, error:
 'forbidden', message }` envelope before performing any read or write.
+
+@e2e exclude pure-backend PHP MCP arg-validation unit — unauthenticated rejection, limit/statusFilter clamping, and isAdmin helper verified by PHPUnit; no Playwright-testable UI surface
 Read-tool argument shape SHALL be validated up-front — `listApps`
 SHALL clamp `limit` to the range 1..50 and SHALL reject any
 `statusFilter` outside the closed set `{any, draft, published,
@@ -745,13 +745,13 @@ in a follow-up so the pattern lives in exactly one place.
 
 ### Requirement: Application resolution and uniform response mapping
 
-@e2e exclude pure-backend PHP MCP resolution helpers — slug resolution, not_found/inconsistent_state envelopes, deepLink builder, extractUuid fallback verified by PHPUnit; no Playwright-testable UI surface
-
 Tools that operate on a single virtual app SHALL resolve the supplied
 slug to an `Application` object via the `built-app-route` index in the
 `openbuild` register: the provider SHALL call
 `ObjectService::searchObjectsBySlug` to locate a matching route, then
 `ObjectService::find` to load the Application by its `applicationUuid`.
+
+@e2e exclude pure-backend PHP MCP resolution helpers — slug resolution, not_found/inconsistent_state envelopes, deepLink builder, extractUuid fallback verified by PHPUnit; no Playwright-testable UI surface
 A missing route SHALL surface as `{ isError: true, error: 'not_found'
 }`; a route present without a matching Application (orphaned index
 row) SHALL surface as `{ isError: true, error: 'inconsistent_state' }`.
@@ -804,11 +804,7 @@ order (`extractUuid`).
 
 ### Requirement: Draft-version manifest mutation isolation
 
-@e2e exclude pure-backend PHP MCP authoring-tool isolation — versionSlug defaulting, loadVersion/saveVersionManifest contracts verified by PHPUnit; no Playwright-testable UI surface
-
-Authoring tools that mutate a virtual app
-(`openbuild.upsertSchema`, `openbuild.upsertPage`,
-`openbuild.addWidget`, `openbuild.upsertMenuItem`) SHALL default the
+Authoring tools that mutate a virtual app (`openbuild.upsertSchema`, `openbuild.upsertPage`, `openbuild.addWidget`, `openbuild.upsertMenuItem`) SHALL default the
 `versionSlug` argument to `development` so a misfired tool call cannot
 mutate a production version. A version row SHALL be located via
 `loadVersion(objectService, appSlug, versionSlug)`, which SHALL look
@@ -822,6 +818,8 @@ via `ObjectService::saveObject`; partial writes that bypass this
 helper SHALL be considered a violation of this requirement.
 
 **ID:** REQ-OBR-MCP-004
+
+@e2e exclude pure-backend PHP MCP authoring-tool isolation — versionSlug defaulting, loadVersion/saveVersionManifest contracts verified by PHPUnit; no Playwright-testable UI surface
 
 #### Scenario: Authoring tools default versionSlug to development
 
