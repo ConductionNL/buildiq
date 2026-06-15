@@ -19,6 +19,8 @@ OpenBuild's manifest validation layer SHALL reject: duplicate `id`s, duplicate *
 
 #### Scenario: Valid attachment passes validation
 
+<!-- @e2e exclude pure app-side manifest validation, covered by vitest tests/services/documentAttachmentsValidation.spec.js — no browser surface to drive. -->
+
 - **GIVEN** a virtual app with schema `kapaanvraag`
 - **WHEN** the manifest declares `runtime.documents: [{ id: "kap-confirm", schema: "kapaanvraag", templateId: "<uuid>", templateName: "Bevestigingsbrief", label: "Generate confirmation letter" }]`
 - **THEN** the validator pass reports no errors
@@ -26,16 +28,22 @@ OpenBuild's manifest validation layer SHALL reject: duplicate `id`s, duplicate *
 
 #### Scenario: Two attachments on the same schema with distinct labels are accepted
 
+<!-- @e2e exclude pure app-side manifest validation, covered by vitest tests/services/documentAttachmentsValidation.spec.js — no browser surface to drive. -->
+
 - **WHEN** a second entry targets `schema: "kapaanvraag"` with `label: "Generate besluit"`
 - **THEN** the validator pass reports no errors
 
 #### Scenario: Duplicate (schema, label) pair is rejected
+
+<!-- @e2e exclude pure app-side manifest validation, covered by vitest tests/services/documentAttachmentsValidation.spec.js — no browser surface to drive. -->
 
 - **WHEN** a second entry targets `schema: "kapaanvraag"` with the identical label "Generate confirmation letter"
 - **THEN** the validator marks both entries with the error `openbuild.document.error.duplicate-label`
 - **AND** the Save button is disabled
 
 #### Scenario: Attachment to a foreign schema is rejected
+
+<!-- @e2e exclude pure app-side manifest validation, covered by vitest tests/services/documentAttachmentsValidation.spec.js — no browser surface to drive. -->
 
 - **WHEN** an entry names `schema: "not-in-this-app"`
 - **THEN** the validator reports `openbuild.document.error.unknown-schema` with a click-to-focus link to the entry
@@ -142,11 +150,15 @@ OpenBuild's Docudesk integration SHALL call exactly the following existing Docud
 
 #### Scenario: Contract surface is closed
 
+<!-- @e2e exclude static source-tree assertion + Newman contract scenario; pinned by tests/integration/openbuild-docudesk-documents.postman_collection.json, not a browser flow. -->
+
 - **WHEN** the openbuild source tree is scanned for `/apps/docudesk/` references
 - **THEN** every call target is one of the four listed routes
 - **AND** no Docudesk PHP namespace is imported anywhere in openbuild
 
 #### Scenario: Newman pins the generate contract
+
+<!-- @e2e exclude Newman API-contract scenario; pinned by tests/integration/openbuild-docudesk-documents.postman_collection.json, not a browser flow. -->
 
 - **GIVEN** the Newman collection's generate request with a seeded template and a seeded OR object reference
 - **WHEN** the collection runs against the dev instance
