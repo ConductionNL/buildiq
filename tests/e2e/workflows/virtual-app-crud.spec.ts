@@ -66,6 +66,37 @@ async function gotoAppBrowser(page: Page): Promise<void> {
 	await page.waitForTimeout(1500)
 }
 
+/**
+ * Bring a freshly-seeded virtual app into view. The CnIndexPage list paginates
+ * at 20 rows/page and applies no default sort, so the OR backend returns rows
+ * in id order — a just-seeded app (highest id) lands on the LAST page, invisible
+ * on page 1 once the shared dev instance holds 20+ demo apps. Drive the
+ * CnPagination "Last" button to jump to that final page where the seed renders.
+ * Best-effort: if the pagination control is absent (≤20 rows total) the list
+ * already shows everything, so a no-op is correct.
+ */
+async function showSeededRow(page: Page): Promise<void> {
+	const pagination = page.locator('[data-testid="cn-pagination"]')
+	if (!(await pagination.count())) {
+		return
+	}
+	// "Last" jumps to the final page (label is i18n; default English "Last").
+	// Fall back to the highest numbered page button if the label differs.
+	const lastBtn = pagination.getByRole('button', { name: /^last$/i }).first()
+	if (await lastBtn.count()) {
+		await lastBtn.click()
+	} else {
+		const numbered = pagination.getByRole('button', { name: /^\d+$/ })
+		const n = await numbered.count()
+		if (n > 0) {
+			await numbered.nth(n - 1).click()
+		}
+	}
+	// Re-fetch of the page settles the DOM, not the network (polling app).
+	await page.waitForLoadState('domcontentloaded')
+	await page.waitForTimeout(1000)
+}
+
 test.describe('Virtual App — full CRUD with persistence', () => {
 	test.afterAll(async ({ request }) => {
 		await cleanupByPrefix(request)
@@ -131,6 +162,13 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 		const app = await seedVirtualApp(request, { name: `E2E Read ${E2E_PREFIX}` })
 
 		await gotoAppBrowser(page)
+
+		// The CnIndexPage paginates at 20 rows/page and applies no default sort,
+		// so a freshly-seeded app (highest id) lands on the LAST page — invisible
+		// on page 1. The shared dev instance already holds ~20+ demo apps, so we
+		// cannot assume the seed shows up first. Jump to the final page where the
+		// newest row renders, then assert.
+		await showSeededRow(page)
 
 		await expect(page.getByText(app.name, { exact: false }).first()).toBeVisible({ timeout: 10_000 })
 		// Slug is rendered in the row too.
