@@ -103,20 +103,20 @@ class Application extends App implements IBootstrap
         // the AppHost generics cannot cover on OpenRegister `development` (see
         // openspec/changes/adopt-apphost/design.md "Engine reality"):
         //
-        //   1. DashboardController — publishes `currentUserGroups` to
-        //      IInitialState (REQ-OBR-009); the generic dashboard controller
-        //      does not, which would break client-side per-Application role
-        //      derivation.
-        //   2. PreferencesController — there is NO GenericPreferencesController
-        //      in OpenRegister `development` (Bootstrap aliases a class that does
-        //      not exist), so the preferences routes would 500 under the alias.
-        //   3. SettingsController + SettingsService — the generic
-        //      AppHostSettingsService::loadConfiguration() calls OR's
-        //      ConfigurationService::importFromApp() with a 2-argument signature
-        //      that no longer matches `development` (4 required args) and performs
-        //      no ADR-037 `register.d/` fragment merge, which OpenBuild relies on
-        //      (10-business-rules.json). The bespoke SettingsController also
-        //      enforces body-level admin guards on create()/load().
+        // 1. DashboardController — publishes `currentUserGroups` to
+        // IInitialState (REQ-OBR-009); the generic dashboard controller
+        // does not, which would break client-side per-Application role
+        // derivation.
+        // 2. PreferencesController — there is NO GenericPreferencesController
+        // in OpenRegister `development` (Bootstrap aliases a class that does
+        // not exist), so the preferences routes would 500 under the alias.
+        // 3. SettingsController + SettingsService — the generic
+        // AppHostSettingsService::loadConfiguration() calls OR's
+        // ConfigurationService::importFromApp() with a 2-argument signature
+        // that no longer matches `development` (4 required args) and performs
+        // no ADR-037 `register.d/` fragment merge, which OpenBuild relies on
+        // (10-business-rules.json). The bespoke SettingsController also
+        // enforces body-level admin guards on create()/load().
         //
         // Re-registering these concrete classes AFTER Bootstrap::register lets
         // NC's DI container resolve the leaf class names to the real OpenBuild

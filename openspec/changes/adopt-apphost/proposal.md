@@ -73,6 +73,30 @@ The third promised metric — **icon cache hits** — has no persisted backing d
 - **Verification**: OR's AppHost Newman contract collection runs against OpenBuild; the existing 14 OpenBuild Newman collections and the e2e suite stay green — minus the documented issue #41 nested-routing quarantine, which this change neither fixes nor widens.
 - **Risk**: behavioural drift between the old local copies and the generics (preferences keys, settings load/reload, chunk-loading order in `templates/index.php`) — mitigated by endpoint-level parity checks before deletion, per the boilerplate change's binding parity rules.
 
+## Implementation deviations (verified engine reality — see design.md)
+
+Three of the planned outright-deletions were NOT possible against OpenRegister
+`development` and were kept bespoke (re-aliased to the concrete classes after
+`Bootstrap::register()`), per the gate-27 verification:
+
+1. **`PreferencesController`** — kept. There is no `GenericPreferencesController`
+   in OR `development`; the Bootstrap alias points at a missing class, so
+   deleting the bespoke controller would 500 the preferences routes.
+2. **`SettingsController` + `SettingsService`** — kept. The generic
+   `AppHostSettingsService::loadConfiguration()` calls
+   `ConfigurationService::importFromApp()` with a stale 2-arg signature (OR
+   `development` requires 4) and skips the ADR-037 `register.d/` fragment merge
+   OpenBuild relies on. `Repair/InitializeSettings` stays bespoke for the same
+   dependency.
+3. **`DashboardController`** — kept. It publishes `currentUserGroups` to
+   `IInitialState` (REQ-OBR-009); the generic dashboard controller does not.
+
+Adopted as planned: observability (Health + Metrics → engine generics + manifest
+block), `DeepLinkRegistrationListener` (→ manifest `deepLinks`), `AdminSettings`
++ `SettingsSection` (→ one-line generic stubs), `Bootstrap::register()` +
+`Routes::standard($extra)`. The ADR-006 health-public fix and admin-only
+Prometheus metrics ship as designed.
+
 ## Dependencies
 
 Chained on OpenRegister: `apphost-observability-engine` (engine + generic health/metrics controllers + Newman contract collection), `apphost-boilerplate-controllers` (generics, `Bootstrap`, `Routes::standard()`). ADR-040 (hydra) defines the manifest `observability` contract; ADR-006 is the endpoint contract this change finally satisfies.

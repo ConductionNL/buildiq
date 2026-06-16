@@ -1,5 +1,14 @@
 # Tasks: OpenBuild Adopts OpenRegister AppHost
 
+> **Implementation note (2026-06-16):** verified against a fresh OpenRegister
+> `development` clone (gate-27). Three planned deletions were kept bespoke +
+> re-aliased because the engine generics are missing/incompatible on
+> `development`: `PreferencesController` (no `GenericPreferencesController`),
+> `SettingsController`+`SettingsService`+`Repair/InitializeSettings` (generic
+> `importFromApp` signature stale + no ADR-037 `register.d/` merge),
+> `DashboardController` (REQ-OBR-009 `currentUserGroups`). See design.md.
+> Observability + deep-links + AdminSettings/SettingsSection adopted as planned.
+
 ## 0. Baseline
 
 - [ ] 0.1 Capture baseline on a seeded dev instance: `curl` (anon + authed) `/apps/openbuild/api/health` and `/apps/openbuild/api/metrics`; store responses as fixtures. Expected today: health 401 anon / fake `{"status":"ok"}` authed; metrics `{"metrics":[]}` JSON. These fixtures document the *broken* contract being replaced — the new output is intentionally different (the only non-parity endpoints in this change).
