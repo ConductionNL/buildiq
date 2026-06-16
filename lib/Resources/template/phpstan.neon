@@ -27,5 +27,3 @@ parameters:
         - '#Caught class GuzzleHttp\\#'
         # Dynamic HTTP status codes from business rule validation results
         - '#Parameter \$statusCode of class OCP\\AppFramework\\Http\\JSONResponse constructor expects#'
-        # registerRepairStep exists on server; not yet in nextcloud/ocp stub used for analysis
-        - '#Call to an undefined method OCP\\AppFramework\\Bootstrap\\IRegistrationContext::registerRepairStep#'
