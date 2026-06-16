@@ -862,3 +862,185 @@ namespace OCA\OpenRegister\Lifecycle {
         }
     }
 }
+
+namespace OCA\OpenRegister\AppHost {
+
+    if (class_exists(Bootstrap::class, autoload: false) === false) {
+        /**
+         * Stub AppHost Bootstrap — the real engine wires every standard
+         * plumbing class from the leaf app's Application::register(). The stub
+         * is a no-op so unit tests that instantiate Application do not fatal
+         * when the sibling openregister app is off the autoload path.
+         */
+        class Bootstrap
+        {
+            /**
+             * No-op stub of the one-call registrar.
+             *
+             * @param mixed                $context Registration context.
+             * @param string               $appId   Leaf app id.
+             * @param array<string, mixed> $options Options.
+             *
+             * @return void
+             */
+            public static function register($context, string $appId, array $options=[]): void
+            {
+            }
+        }
+    }
+
+    if (class_exists(Routes::class, autoload: false) === false) {
+        /**
+         * Stub AppHost Routes — pure array builder. The stub returns just the
+         * passed $extra wrapped in the NC routes shape so a routes.php require
+         * under the unit harness does not fatal.
+         */
+        class Routes
+        {
+            /**
+             * Stub of the canonical route table builder.
+             *
+             * @param array<int, array<string, mixed>> $extra App-specific routes.
+             *
+             * @return array{routes: array<int, array<string, mixed>>}
+             */
+            public static function standard(array $extra=[]): array
+            {
+                return ['routes' => $extra];
+            }
+        }
+    }
+}
+
+namespace OCA\OpenRegister\AppHost\Settings {
+
+    if (class_exists(GenericAdminSettings::class, autoload: false) === false) {
+        /**
+         * Stub GenericAdminSettings — OpenBuild's AdminSettings extends this.
+         * Implements IDelegatedSettings so the subclass satisfies the NC
+         * settings framework's type expectations under the unit harness.
+         */
+        class GenericAdminSettings implements \OCP\Settings\IDelegatedSettings
+        {
+
+            /**
+             * Constructor mirroring the real engine signature.
+             *
+             * @param string $appId     Leaf app id.
+             * @param string $sectionId Section id.
+             * @param int    $priority  Priority.
+             * @param mixed  $appManager   App manager.
+             * @param mixed  $initialState Initial state service.
+             */
+            public function __construct(
+                protected readonly string $appId='',
+                protected readonly string $sectionId='',
+                protected readonly int $priority=10,
+                protected readonly mixed $appManager=null,
+                protected readonly mixed $initialState=null
+            ) {
+            }
+
+            /**
+             * @return mixed
+             */
+            public function getForm()
+            {
+                return null;
+            }
+
+            /**
+             * @return string
+             */
+            public function getSection(): string
+            {
+                return $this->sectionId;
+            }
+
+            /**
+             * @return int
+             */
+            public function getPriority(): int
+            {
+                return $this->priority;
+            }
+
+            /**
+             * @return string|null
+             */
+            public function getName(): ?string
+            {
+                return null;
+            }
+
+            /**
+             * @return array<string, string[]>
+             */
+            public function getAuthorizedAppConfig(): array
+            {
+                return [];
+            }
+        }
+    }
+
+    if (class_exists(GenericSettingsSection::class, autoload: false) === false) {
+        /**
+         * Stub GenericSettingsSection — OpenBuild's SettingsSection extends this.
+         */
+        class GenericSettingsSection implements \OCP\Settings\IIconSection
+        {
+
+            /**
+             * Constructor mirroring the real engine signature.
+             *
+             * @param string $sectionId    Section id.
+             * @param string $name         Display name.
+             * @param string $appId        Owning app id.
+             * @param string $iconFile     Icon file.
+             * @param int    $priority     Priority.
+             * @param mixed  $urlGenerator URL generator.
+             */
+            public function __construct(
+                protected readonly string $sectionId='',
+                protected readonly string $name='',
+                protected readonly string $appId='',
+                protected readonly string $iconFile='',
+                protected readonly int $priority=75,
+                protected readonly mixed $urlGenerator=null
+            ) {
+            }
+
+            /**
+             * @return string
+             */
+            public function getID(): string
+            {
+                return $this->sectionId;
+            }
+
+            /**
+             * @return string
+             */
+            public function getName(): string
+            {
+                return $this->name;
+            }
+
+            /**
+             * @return int
+             */
+            public function getPriority(): int
+            {
+                return $this->priority;
+            }
+
+            /**
+             * @return string
+             */
+            public function getIcon(): string
+            {
+                return '';
+            }
+        }
+    }
+}

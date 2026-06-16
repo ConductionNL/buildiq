@@ -100,6 +100,11 @@
                 <referencedClass name="OCA\OpenRegister\Mcp\IMcpToolProvider"/>
                 <referencedClass name="OCA\OpenRegister\Lifecycle\LifecycleGuardInterface"/>
                 <referencedClass name="OCA\OpenRegister\Lifecycle\GuardResult"/>
+                <!-- AppHost engine (ADR-040) — lives in the sibling openregister app -->
+                <referencedClass name="OCA\OpenRegister\AppHost\Bootstrap"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Routes"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Settings\GenericAdminSettings"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Settings\GenericSettingsSection"/>
                 <!-- Additional OCP infrastructure types used across the fleet -->
                 <referencedClass name="OCP\AppFramework\Bootstrap\IBootContext"/>
                 <referencedClass name="OCP\AppFramework\Bootstrap\IRegistrationContext"/>
