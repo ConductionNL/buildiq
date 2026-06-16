@@ -379,5 +379,42 @@
 				"documentationUrl": "https://openbuild.conduction.nl"
 			}
 		}
+	],
+	"observability": {
+		"health": {
+			"statusCodePolicy": "adr006",
+			"checks": [
+				{ "id": "database", "type": "database" },
+				{ "id": "openregister", "type": "orAvailable", "severity": "degraded" }
+			]
+		},
+		"metrics": [
+			{
+				"name": "export_jobs_total",
+				"type": "gauge",
+				"help": "Export jobs by lifecycle status",
+				"source": { "kind": "objectCount", "register": "openbuild", "schema": "export-job", "groupBy": ["status"] }
+			},
+			{
+				"name": "applications_total",
+				"type": "gauge",
+				"help": "Virtual applications (one nav entry per published app)",
+				"source": { "kind": "objectCount", "register": "openbuild", "schema": "application" }
+			},
+			{
+				"name": "application_versions_total",
+				"type": "gauge",
+				"help": "Application versions by lifecycle status",
+				"source": { "kind": "objectCount", "register": "openbuild", "schema": "applicationVersion", "groupBy": ["status"] }
+			}
+		]
+	},
+	"deepLinks": [
+		{
+			"registerSlug": "openbuild",
+			"schemaSlug": "example",
+			"urlTemplate": "/apps/openbuild/#/examples/{uuid}",
+			"displayName": "Example"
+		}
 	]
 }

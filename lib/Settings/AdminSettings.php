@@ -3,7 +3,13 @@
 /**
  * OpenBuild Admin Settings
  *
- * Provides the admin settings form for the OpenBuild application.
+ * One-line AppHost stub. Nextcloud instantiates the admin-settings panel by
+ * the class name in info.xml `<settings><admin>`, and the
+ * `#[AuthorizedAdminSetting(AdminSettings::class)]` attribute targets this
+ * FQCN, so the class must physically exist in the OpenBuild namespace. All
+ * behaviour (form rendering, version initial-state, the IDelegatedSettings
+ * #299 fail-closed admin gating) lives in the engine base; OpenBuild's
+ * Application::register() binds this class to it via Bootstrap::register().
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -24,66 +30,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Settings;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCP\App\IAppManager;
-use OCP\AppFramework\Http\TemplateResponse;
-use OCP\AppFramework\Services\IInitialState;
-use OCP\Settings\ISettings;
+use OCA\OpenRegister\AppHost\Settings\GenericAdminSettings;
 
 /**
- * Provides the admin settings form for the OpenBuild application.
+ * AppHost-backed admin settings panel for OpenBuild (ADR-040).
+ *
+ * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md — Requirement: Boilerplate Adoption
  */
-class AdminSettings implements ISettings
+class AdminSettings extends GenericAdminSettings
 {
-    /**
-     * Constructor.
-     *
-     * @param IAppManager   $appManager   The app manager.
-     * @param IInitialState $initialState The initial-state service used to
-     *                                    deliver server-side data to the Vue
-     *                                    bundle (per ADR-004 hard rule + the
-     *                                    hydra-gate-initial-state mechanical
-     *                                    gate — do NOT use DOM dataset attrs).
-     */
-    public function __construct(
-        private readonly IAppManager $appManager,
-        private readonly IInitialState $initialState,
-    ) {
-    }//end __construct()
-
-    /**
-     * Get the settings form template.
-     *
-     * @return TemplateResponse
-     */
-    public function getForm(): TemplateResponse
-    {
-        $version = $this->appManager->getAppVersion(appId: Application::APP_ID);
-
-        // ADR-004 + hydra-gate-initial-state: hand server data to the bundle
-        // via IInitialState + loadState, not via DOM data-* attributes.
-        $this->initialState->provideInitialState(key: 'version', data: $version);
-
-        return new TemplateResponse(Application::APP_ID, 'settings/admin');
-    }//end getForm()
-
-    /**
-     * Get the section ID this settings page belongs to.
-     *
-     * @return string
-     */
-    public function getSection(): string
-    {
-        return 'openbuild';
-    }//end getSection()
-
-    /**
-     * Get the priority for ordering within the section.
-     *
-     * @return int
-     */
-    public function getPriority(): int
-    {
-        return 10;
-    }//end getPriority()
 }//end class
