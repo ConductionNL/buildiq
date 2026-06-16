@@ -285,23 +285,59 @@ class ApplicationVersionOwnerGuardTest extends TestCase
     }//end testUnresolvedParentApplicationIsDenied()
 
     /**
-     * Fail-closed: a parent Application with no permissions block denies even
-     * an admin? No — admin bypass is checked inside PermissionResolver only
-     * once a non-empty permissions block exists. With NO permissions block the
-     * guard denies before reaching the resolver, so even an admin is denied;
-     * this is the conservative fail-closed posture for an orphaned Application.
+     * No rechtenblok + NC admin caller: the audited admin escape hatch is
+     * granted, so a programmatically / synthetically created Application (which
+     * never materialised a permissions block) can still be published by an
+     * admin instead of bricking with a 422. Regression for the publish-422
+     * reported during fleet Newman verification.
      *
      * @return void
      */
-    public function testParentWithoutPermissionsIsDenied(): void
+    public function testParentWithoutPermissionsAllowsAdminEscapeHatch(): void
     {
         $this->arrangeCaller(uid: 'root', groups: ['admin'], isAdmin: true);
         $this->arrangeParentApplication(applicationUuid: 'app-A', permissions: null);
 
         $result = $this->guard->check(['application' => 'app-A'], 'publish', 'root');
 
+        self::assertTrue(condition: $result->isAllowed());
+    }//end testParentWithoutPermissionsAllowsAdminEscapeHatch()
+
+    /**
+     * No rechtenblok + ordinary (non-admin) caller: still denied. The absence
+     * of a permissions block must NOT widen access to ordinary users — no
+     * owner can be proven, so the guard stays fail-closed for everyone but the
+     * audited admin escape hatch. Guards the security boundary of the fix.
+     *
+     * @return void
+     */
+    public function testParentWithoutPermissionsDeniesNonAdmin(): void
+    {
+        $this->arrangeCaller(uid: 'alice', groups: ['team-alpha'], isAdmin: false);
+        $this->arrangeParentApplication(applicationUuid: 'app-A', permissions: null);
+
+        $result = $this->guard->check(['application' => 'app-A'], 'publish', 'alice');
+
         self::assertFalse(condition: $result->isAllowed());
-    }//end testParentWithoutPermissionsIsDenied()
+        self::assertNotNull(actual: $result->getMessage());
+    }//end testParentWithoutPermissionsDeniesNonAdmin()
+
+    /**
+     * No rechtenblok + an EMPTY permissions block (vs the omitted-key case) is
+     * treated identically: admin allowed, semantics unchanged. Confirms the
+     * `permissions === []` arm of the guard behaves like the missing-key arm.
+     *
+     * @return void
+     */
+    public function testParentWithEmptyPermissionsBlockAllowsAdmin(): void
+    {
+        $this->arrangeCaller(uid: 'root', groups: ['admin'], isAdmin: true);
+        $this->arrangeParentApplication(applicationUuid: 'app-A', permissions: []);
+
+        $result = $this->guard->check(['application' => 'app-A'], 'archive', 'root');
+
+        self::assertTrue(condition: $result->isAllowed());
+    }//end testParentWithEmptyPermissionsBlockAllowsAdmin()
 
     /**
      * Arrange the caller: an IUser resolved by IUserManager, with the given
