@@ -1,0 +1,243 @@
+<!--
+  - SPDX-License-Identifier: EUPL-1.2
+  -
+  - WidgetEditor — authors `x-openregister-widgets`
+  - (REQ-OBSD-005 widgets slice — v1). Until chain #5 publishes the
+  - widget catalogue (design OQ-3), `widget` is a free-text input with
+  - a visible "no catalogue registered yet" warning. `slot` is
+  - free-text; `config` is captured as raw JSON (read-only in v1).
+  -->
+<template>
+	<section class="openbuild-widget-editor">
+		<header class="openbuild-widget-editor__header">
+			<h3>{{ t('openbuild', 'Widgets') }}</h3>
+			<NcButton @click="addWidget">
+				<template #icon>
+					<PlusIcon :size="20" />
+				</template>
+				{{ t('openbuild', 'Add widget') }}
+			</NcButton>
+		</header>
+
+		<NcNoteCard type="warning">
+			{{ t('openbuild', 'No widget catalogue registered yet — widget IDs are free-text. The page editor (chain spec #5) will narrow this to a picker once it ships.') }}
+		</NcNoteCard>
+
+		<p v-if="widgets.length === 0" class="openbuild-widget-editor__empty">
+			{{ t('openbuild', 'No widgets yet.') }}
+		</p>
+
+		<ul v-else class="openbuild-widget-editor__rows">
+			<li
+				v-for="(widget, index) in widgets"
+				:key="widget._key"
+				class="openbuild-widget-editor__row">
+				<NcTextField
+					:value="widget.slot"
+					:label="t('openbuild', 'Slot')"
+					@update:value="updateWidget(index, 'slot', $event)" />
+				<NcTextField
+					:value="widget.widget"
+					:label="t('openbuild', 'Widget id')"
+					@update:value="updateWidget(index, 'widget', $event)" />
+				<NcTextField
+					:value="widget.configJson"
+					:label="t('openbuild', 'Config (JSON)')"
+					:error="!!widget.configError"
+					:helper-text="widget.configError"
+					@update:value="updateConfig(index, $event)" />
+				<NcButton type="error" @click="removeWidget(index)">
+					<template #icon>
+						<DeleteIcon :size="20" />
+					</template>
+				</NcButton>
+			</li>
+		</ul>
+	</section>
+</template>
+
+<script>
+import { NcButton, NcNoteCard, NcTextField } from '@nextcloud/vue'
+import DeleteIcon from 'vue-material-design-icons/Delete.vue'
+import PlusIcon from 'vue-material-design-icons/Plus.vue'
+
+let keyCounter = 0
+function nextKey() {
+	keyCounter += 1
+	return `widget-${keyCounter}`
+}
+
+export default {
+	name: 'WidgetEditor',
+	components: { DeleteIcon, NcButton, NcNoteCard, NcTextField, PlusIcon },
+	props: {
+		widgets: { type: Array, default: () => [] },
+	},
+	emits: ['update:widgets'],
+	methods: {
+		/**
+		 * Emit the updated widgets array to the parent.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {Array} next The next widgets array.
+		 * @return {void}
+		 */
+		emitWidgets(next) {
+			this.$emit('update:widgets', next)
+		},
+		/**
+		 * Append a new blank widget row.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @return {void}
+		 */
+		addWidget() {
+			const next = this.widgets.slice()
+			next.push({
+				_key: nextKey(),
+				slot: '',
+				widget: '',
+				configJson: '{}',
+				configError: '',
+			})
+			this.emitWidgets(next)
+		},
+		/**
+		 * Update a single field of a widget row.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {number} index Row index.
+		 * @param {string} key Field key.
+		 * @param {*} value New value.
+		 * @return {void}
+		 */
+		updateWidget(index, key, value) {
+			const next = this.widgets.slice()
+			next[index] = { ...next[index], [key]: value }
+			this.emitWidgets(next)
+		},
+		/**
+		 * Update a widget's config JSON, validating it parses.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {number} index Row index.
+		 * @param {string} value Raw JSON string.
+		 * @return {void}
+		 */
+		updateConfig(index, value) {
+			const next = this.widgets.slice()
+			let error = ''
+			try {
+				JSON.parse(value || '{}')
+			} catch (e) {
+				error = this.t('openbuild', 'Config must be valid JSON.')
+			}
+			next[index] = { ...next[index], configJson: value, configError: error }
+			this.emitWidgets(next)
+		},
+		/**
+		 * Remove a widget row by index.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {number} index Row index.
+		 * @return {void}
+		 */
+		removeWidget(index) {
+			const next = this.widgets.slice()
+			next.splice(index, 1)
+			this.emitWidgets(next)
+		},
+	},
+}
+
+/**
+ * Convert an `x-openregister-widgets` block into editor rows.
+ *
+ * @param {Array} block Existing widgets block (array of typed records).
+ * @return {Array} Editor widget rows.
+ */
+export function widgetsToEditor(block) {
+	if (!Array.isArray(block)) {
+		return []
+	}
+	return block.map((w) => ({
+		_key: nextKey(),
+		slot: w.slot || '',
+		widget: w.widget || '',
+		configJson: JSON.stringify(w.config || {}, null, 2),
+		configError: '',
+	}))
+}
+
+/**
+ * Reduce editor widget rows back into an `x-openregister-widgets` block.
+ *
+ * @param {Array} widgets Editor widget rows.
+ * @return {Array|null} The serialised block, or null when empty.
+ */
+export function editorToWidgets(widgets) {
+	if (!widgets || widgets.length === 0) {
+		return null
+	}
+	return widgets
+		.filter((w) => w.slot && w.widget && !w.configError)
+		.map((w) => {
+			let config = {}
+			try {
+				config = JSON.parse(w.configJson || '{}')
+			} catch {
+				config = {}
+			}
+			return {
+				slot: w.slot,
+				widget: w.widget,
+				config,
+			}
+		})
+}
+</script>
+
+<style scoped>
+.openbuild-widget-editor {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.openbuild-widget-editor__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.openbuild-widget-editor__header h3 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.openbuild-widget-editor__empty {
+	margin: 0;
+	color: var(--color-text-maxcontrast);
+}
+
+.openbuild-widget-editor__rows {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.openbuild-widget-editor__row {
+	display: grid;
+	grid-template-columns: 1fr 1fr 2fr auto;
+	gap: 8px;
+	align-items: center;
+	padding: 8px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	background: var(--color-main-background);
+}
+</style>

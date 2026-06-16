@@ -8,6 +8,6 @@ on:
 
 jobs:
   deploy:
-    uses: ConductionNL/.github/.github/workflows/documentation.yml@main
+    uses: Conduction/.github/.github/workflows/documentation.yml@main
     with:
-      cname: openbuilt.conduction.nl
+      cname: openbuild.conduction.nl

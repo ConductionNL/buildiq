@@ -16,11 +16,21 @@ export const useObjectStore = defineStore('object', {
 	}),
 
 	actions: {
+		/**
+		 * Observed behaviour of `configure` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
+		 */
 		configure({ baseUrl, schemaBaseUrl }) {
 			this.baseUrl = baseUrl
 			this.schemaBaseUrl = schemaBaseUrl
 		},
 
+		/**
+		 * Observed behaviour of `registerObjectType` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
+		 */
 		registerObjectType(type, schema, register) {
 			this.objectTypes[type] = { schema, register }
 			if (!this.objects[type]) {
@@ -28,6 +38,11 @@ export const useObjectStore = defineStore('object', {
 			}
 		},
 
+		/**
+		 * Observed behaviour of `fetchObjects` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
+		 */
 		async fetchObjects(type, params = {}) {
 			if (!this.objectTypes[type]) {
 				console.warn(`Object type "${type}" is not registered`)

@@ -1,20 +1,20 @@
 schema: spec-driven
 
 context: |
-  Project: OpenBuilt
-  Repo: ConductionNL/openbuilt
+  Project: OpenBuild
+  Repo: ConductionNL/openbuild
   Type: Nextcloud App (PHP backend + Vue 2 frontend) — citizen-developer app builder
-  Description: OpenBuilt is a citizen-developer app builder for Nextcloud. It composes apps from the Conduction ecosystem (OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, MyDash dashboards) without scaffolding PHP for each new app. Built apps are virtual — stored as records in OpenBuilt's own register — and rendered at runtime by mounting CnAppRoot with the app's manifest (ADR-024). Phase-2 export generates a real Nextcloud app from a virtual app.
+  Description: OpenBuild is a citizen-developer app builder for Nextcloud. It composes apps from the Conduction ecosystem (OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, LaunchPad dashboards) without scaffolding PHP for each new app. Built apps are virtual — stored as records in OpenBuild's own register — and rendered at runtime by mounting CnAppRoot with the app's manifest (ADR-024). Phase-2 export generates a real Nextcloud app from a virtual app.
   Key components: Application register, manifest editor, virtual-app host (nested CnAppRoot), schema editor, page editor
-  Database: PostgreSQL (via OpenRegister's ObjectService — Application + BuiltAppRoute schemas live in OpenBuilt's own register namespace)
-  Mount path: /var/www/html/custom_apps/openbuilt
+  Database: PostgreSQL (via OpenRegister's ObjectService — Application + BuiltAppRoute schemas live in OpenBuild's own register namespace)
+  Mount path: /var/www/html/custom_apps/openbuild
 
   Architecture:
-    Pattern: Thin client + dynamic-render host — OpenBuilt owns no own DB tables; virtual apps live as objects in OR
+    Pattern: Thin client + dynamic-render host — OpenBuild owns no own DB tables; virtual apps live as objects in OR
     Data layer: OpenRegister (Application, BuiltAppRoute schemas with x-openregister-lifecycle for draft/published)
     Frontend: Vue 2.7 + Pinia + @conduction/nextcloud-vue (CnAppRoot mounted recursively per virtual app)
     Backend: Minimal — ApplicationsController serving GET /api/applications/{slug}/manifest + standard OR-backed CRUD
-    Runtime contract: per ADR-024, useAppManifest loads the manifest blob, CnAppRoot renders it; OpenBuilt pioneers the in-memory manifest case (nextcloud-vue lib change tracked separately)
+    Runtime contract: per ADR-024, useAppManifest loads the manifest blob, CnAppRoot renders it; OpenBuild pioneers the in-memory manifest case (nextcloud-vue lib change tracked separately)
 
   Foundational ADRs: ADR-022 (consume OR abstractions), ADR-024 (app manifest), ADR-031 (schema-declarative business logic), ADR-032 (spec sizing)
   Shared specs: See ../../hydra/openspec/ for org-wide ADRs and i18n shared specs
@@ -23,7 +23,7 @@ context: |
 rules:
   proposal:
     - "Reference ADR-024 (manifest) and ADR-031 (schema-declarative) for foundational architecture"
-    - "OpenBuilt is spec one of a 9-spec chain (per ADR-032) — defer editor UIs, versioning, RBAC, marketplace, export to follow-on specs"
+    - "OpenBuild is spec one of a 9-spec chain (per ADR-032) — defer editor UIs, versioning, RBAC, marketplace, export to follow-on specs"
     - "Built apps must consume OR abstractions (ADR-022) — Application + BuiltAppRoute schemas live in OR, not in app-local tables"
   specs:
     - "Use Schema.org type annotations for entities where applicable"
@@ -31,7 +31,7 @@ rules:
     - "Manifest-shaped fields must validate against the canonical schema at @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json"
   design:
     - "Uses OpenRegister API directly from frontend (no own backend CRUD beyond manifest-endpoint)"
-    - "Register config in lib/Settings/openbuilt_register.json (OpenAPI 3.0.0 format)"
+    - "Register config in lib/Settings/openbuild_register.json (OpenAPI 3.0.0 format)"
     - "Imported via ConfigurationService::importFromApp() in repair step"
     - "Per ADR-031, state machines / aggregations / calculations / notifications are declared as schema metadata, not as service classes"
   tasks:

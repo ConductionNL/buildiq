@@ -17,10 +17,15 @@ export const useSettingsStore = defineStore('settings', {
 	},
 
 	actions: {
+		/**
+		 * Observed behaviour of `fetchSettings` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
+		 */
 		async fetchSettings() {
 			this.loading = true
 			try {
-				const response = await fetch(generateUrl('/apps/openbuilt/api/settings'), {
+				const response = await fetch(generateUrl('/apps/openbuild/api/settings'), {
 					headers: { requesttoken: getRequestToken() },
 				})
 				if (response.ok) {
@@ -38,10 +43,15 @@ export const useSettingsStore = defineStore('settings', {
 			return null
 		},
 
+		/**
+		 * Observed behaviour of `saveSettings` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
+		 */
 		async saveSettings(settings) {
 			this.loading = true
 			try {
-				const response = await fetch(generateUrl('/apps/openbuilt/api/settings'), {
+				const response = await fetch(generateUrl('/apps/openbuild/api/settings'), {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',

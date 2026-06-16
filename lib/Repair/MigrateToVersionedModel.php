@@ -1,0 +1,368 @@
+<?php
+
+/**
+ * OpenBuild MigrateToVersionedModel Repair Step
+ *
+ * @destructive
+ *
+ * SAFETY: This step deletes every pre-migration `Application` row and its
+ * per-app register (`openbuild-{slug}`). ADR-002 records the explicit
+ * decision to accept this data loss: existing OpenBuild installs hold
+ * only test data, and the new versioned model re-seeds Hello World at
+ * install time via the creation-wizard capability. If a deployment is
+ * known to hold real user data, that data MUST be exported before this
+ * step ships.
+ *
+ * The step is idempotent — re-running on an already-migrated install is
+ * a no-op via the short-circuit guard (spec REQ-OBGFM-002).
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Repair
+ * @package  OCA\OpenBuild\Repair
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-27
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-28
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-29
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenBuild\Repair;
+
+use OCA\OpenBuild\Service\ApplicationVersionService;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\RegisterService;
+use OCP\Migration\IOutput;
+use OCP\Migration\IRepairStep;
+use Psr\Log\LoggerInterface;
+use Throwable;
+
+/**
+ * Destructive, idempotent green-field migration to the versioned-app model.
+ */
+class MigrateToVersionedModel implements IRepairStep
+{
+    /**
+     * Schema slug introduced by the versioned-app model (post-migration).
+     */
+    private const VERSIONED_SCHEMA = 'applicationVersion';
+
+    /**
+     * Constructor.
+     *
+     * @param LoggerInterface $logger          PSR logger for diagnostics
+     * @param ObjectService   $objectService   OpenRegister object service
+     * @param RegisterService $registerService OpenRegister register service
+     * @param RegisterMapper  $registerMapper  Resolves register slugs
+     * @param SchemaMapper    $schemaMapper    Resolves schema slugs
+     *
+     * @return void
+     */
+    public function __construct(
+        private readonly LoggerInterface $logger,
+        private readonly ObjectService $objectService,
+        private readonly RegisterService $registerService,
+        private readonly RegisterMapper $registerMapper,
+        private readonly SchemaMapper $schemaMapper,
+    ) {
+    }//end __construct()
+
+    /**
+     * Get the human-readable name of this repair step.
+     *
+     * @return string
+     */
+    public function getName(): string
+    {
+        return 'Migrate OpenBuild to versioned app model (DESTRUCTIVE)';
+    }//end getName()
+
+    /**
+     * Execute the migration.
+     *
+     * Logic:
+     *   1. Short-circuit when the schema is already in versioned shape.
+     *   2. Enumerate every Application row.
+     *   3. For each row: drop the per-app register; on success delete the
+     *      Application row; emit one info-line; on register-delete failure
+     *      log the error and skip the Application row.
+     *
+     * @param IOutput $output The output channel for progress reporting
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
+     */
+    public function run(IOutput $output): void
+    {
+        try {
+            if ($this->isAlreadyVersioned() === true) {
+                $output->info('Migrated-to-versioned-model: schema already in versioned shape, skipping');
+                return;
+            }
+        } catch (Throwable $e) {
+            // If we cannot even read the schema state we cannot safely
+            // continue — assume the worst and skip rather than blow away
+            // data that we may not own.
+            $output->warning(
+                'Migrated-to-versioned-model: could not determine schema state ('.$e->getMessage().'); skipping for safety.'
+            );
+            $this->logger->error(
+                'OpenBuild: MigrateToVersionedModel short-circuit detection failed',
+                ['exception' => $e]
+            );
+            return;
+        }
+
+        $applications = $this->enumerateApplications();
+        if ($applications === []) {
+            $output->info('Migrated-to-versioned-model: no pre-migration Application rows found.');
+            return;
+        }
+
+        foreach ($applications as $application) {
+            $this->migrateOne(application: $application, output: $output);
+        }
+    }//end run()
+
+    /**
+     * Detect whether the schema is already in versioned shape.
+     *
+     * Short-circuit fires when EITHER:
+     *   - The `applicationVersion` schema exists in the `openbuild`
+     *     register; OR
+     *   - No pre-migration Application row carries a `currentVersion`
+     *     field (all surviving rows already match the new shape).
+     *
+     * @return bool True when the schema is already versioned
+     *
+     * @throws Throwable Propagated by callers — the caller decides whether
+     *                   to abort or continue
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-27
+     */
+    private function isAlreadyVersioned(): bool
+    {
+        // The previous check was "does the versioned schema exist?" — but
+        // InitializeSettings imports the schema register BEFORE this step
+        // runs, so the `applicationVersion` schema is always present by
+        // the time we reach here. That made the short-circuit always fire
+        // and the migration always skip (issue #69).
+        //
+        // Correct check: examine the Application rows themselves. If any
+        // row carries a legacy top-level `manifest` / `version` / `status`
+        // / `currentVersion` field (the pre-spec-C shape), the install
+        // still has pre-migration data. If no Application rows exist OR
+        // all surviving rows already match the post-C shape, we're
+        // versioned.
+        try {
+            $applications = $this->enumerateApplications();
+        } catch (Throwable) {
+            // No openbuild register or no Application schema — fresh
+            // install. Nothing to migrate.
+            return true;
+        }
+
+        if ($applications === []) {
+            return true;
+        }
+
+        foreach ($applications as $row) {
+            // Pre-C shape keys we need to migrate away from.
+            if (array_key_exists('currentVersion', $row) === true
+                || array_key_exists('manifest', $row) === true
+                || array_key_exists('version', $row) === true
+                || array_key_exists('status', $row) === true
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }//end isAlreadyVersioned()
+
+    /**
+     * Fetch every Application row in the `openbuild` register.
+     *
+     * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
+     */
+    private function enumerateApplications(): array
+    {
+        try {
+            $registerId = $this->registerMapper->find(
+                ApplicationVersionService::REGISTER_SLUG,
+                _multitenancy: false
+            )->getId();
+            $schemaId   = $this->schemaMapper->find(
+                ApplicationVersionService::APPLICATION_SCHEMA,
+                _multitenancy: false
+            )->getId();
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                'OpenBuild: MigrateToVersionedModel enumeration found no register/schema: '.$e->getMessage()
+            );
+            return [];
+        }
+
+        $rows = $this->objectService->findAll(
+            config: [
+                'filters' => [
+                    'register' => $registerId,
+                    'schema'   => $schemaId,
+                ],
+            ]
+        );
+
+        if (is_array($rows) === false) {
+            return [];
+        }
+
+        $normalised = [];
+        foreach ($rows as $row) {
+            $normalised[] = $this->normaliseObjectArray(object: $row);
+        }
+
+        return $normalised;
+    }//end enumerateApplications()
+
+    /**
+     * Migrate a single pre-migration Application row.
+     *
+     * Drops the per-app register first; only deletes the row when the
+     * register drop succeeded. On failure, leaves the row in place so
+     * the operator can retry on the next upgrade after fixing the
+     * underlying issue (spec REQ-OBGFM-004).
+     *
+     * @param array<string,mixed> $application Application row data
+     * @param IOutput             $output      Output channel for progress
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-28
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-29
+     */
+    private function migrateOne(array $application, IOutput $output): void
+    {
+        $slug = (string) ($application['slug'] ?? '');
+        if ($slug === '') {
+            $this->logger->warning(
+                'OpenBuild: MigrateToVersionedModel skipped Application without slug',
+                ['application' => $application]
+            );
+            return;
+        }
+
+        $perAppRegisterSlug = ApplicationVersionService::REGISTER_SLUG.'-'.$slug;
+
+        try {
+            $register = $this->registerMapper->find($perAppRegisterSlug, _multitenancy: false);
+        } catch (Throwable $e) {
+            // No per-app register to drop — proceed to delete the row.
+            $register = null;
+            $this->logger->debug(
+                'OpenBuild: MigrateToVersionedModel: register '.$perAppRegisterSlug.' not found ('.$e->getMessage().'); proceeding to row delete.'
+            );
+        }
+
+        if ($register !== null) {
+            try {
+                $this->registerService->delete(register: $register);
+            } catch (Throwable $e) {
+                $output->warning(
+                    sprintf(
+                        'Migrated-to-versioned-model: FAILED to drop register \'%s\''
+                        .' for Application \'%s\' (%s); Application row NOT deleted.',
+                        $perAppRegisterSlug,
+                        $slug,
+                        $e->getMessage()
+                    )
+                );
+                $this->logger->error(
+                    'OpenBuild: MigrateToVersionedModel: register-delete failed; preserving Application row',
+                    [
+                        'slug'      => $slug,
+                        'register'  => $perAppRegisterSlug,
+                        'exception' => $e->getMessage(),
+                    ]
+                );
+                return;
+            }//end try
+        }//end if
+
+        $applicationUuid = (string) ($application['id'] ?? $application['uuid'] ?? '');
+        if ($applicationUuid === '') {
+            $this->logger->warning(
+                'OpenBuild: MigrateToVersionedModel: Application \''.$slug.'\' has no UUID; cannot delete row.'
+            );
+            return;
+        }
+
+        try {
+            $this->objectService->deleteObject(uuid: $applicationUuid);
+        } catch (Throwable $e) {
+            $output->warning(
+                sprintf(
+                    'Migrated-to-versioned-model: dropped register \'%s\''
+                    .' but FAILED to delete Application row \'%s\' (%s).',
+                    $perAppRegisterSlug,
+                    $slug,
+                    $e->getMessage()
+                )
+            );
+            $this->logger->error(
+                'OpenBuild: MigrateToVersionedModel: row-delete failed after register dropped',
+                ['slug' => $slug, 'exception' => $e->getMessage()]
+            );
+            return;
+        }
+
+        $output->info(
+            "Migrated-to-versioned-model: dropped Application '".$slug."' and register 'openbuild-".$slug."'"
+        );
+    }//end migrateOne()
+
+    /**
+     * Coerce an OR result entry to a plain associative array.
+     *
+     * @param mixed $object The OR object/result entry
+     *
+     * @return array<string,mixed>
+     */
+    private function normaliseObjectArray(mixed $object): array
+    {
+        if (is_array($object) === true) {
+            return $object;
+        }
+
+        if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
+            $serialised = $object->jsonSerialize();
+            if (is_array($serialised) === true) {
+                return $serialised;
+            }
+        }
+
+        if (is_object($object) === true && method_exists($object, 'getObject') === true) {
+            $inner = $object->getObject();
+            if (is_array($inner) === true) {
+                return $inner;
+            }
+        }
+
+        return [];
+    }//end normaliseObjectArray()
+}//end class

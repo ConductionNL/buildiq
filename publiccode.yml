@@ -1,0 +1,64 @@
+publiccodeYmlVersion: "0.4"
+
+name: OpenBuild
+url: "https://codeberg.org/Conduction/openbuild"
+softwareVersion: "0.3.7"
+releaseDate: "2026-05-26"
+developmentStatus: beta
+softwareType: "standalone/other"
+
+platforms:
+  - nextcloud
+
+categories:
+  - project-management
+  - it-service-management
+
+description:
+  en:
+    shortDescription: >
+      Construction project management and built environment administration for Nextcloud.
+    longDescription: >
+      OpenBuild is a project management and administration application for the built
+      environment, built on Nextcloud and Open Register. It supports construction
+      project management, permit tracking, and built-environment administration for
+      municipalities and construction organisations. OpenBuild integrates with Dutch
+      government standards and open data sources for the built environment.
+    features:
+      - Construction project management
+      - Permit tracking and administration
+      - Built environment data management
+      - Integration with Dutch government open data
+
+  nl:
+    shortDescription: >
+      Bouwprojectbeheer en omgevingsadministratie voor Nextcloud.
+    longDescription: >
+      OpenBuild is een projectbeheers- en administratietoepassing voor de gebouwde
+      omgeving, gebouwd op Nextcloud en Open Register. Het ondersteunt bouwprojectbeheer,
+      vergunningenbewaking en omgevingsadministratie voor gemeenten en bouworganisaties.
+      OpenBuild integreert met Nederlandse overheidsstandaarden en open databronnen
+      voor de gebouwde omgeving.
+    features:
+      - Bouwprojectbeheer
+      - Vergunningenbewaking en -administratie
+      - Databeheer gebouwde omgeving
+      - Integratie met open data van de Nederlandse overheid
+
+legal:
+  license: EUPL-1.2
+  mainCopyrightOwner: "Conduction B.V."
+  repoOwner: "Conduction B.V."
+
+maintenance:
+  type: community
+  contacts:
+    - name: Conduction B.V.
+      email: info@conduction.nl
+      affiliation: Conduction B.V.
+
+localisation:
+  localisationReady: true
+  availableLanguages:
+    - nl
+    - en

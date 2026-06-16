@@ -1,0 +1,22 @@
+{
+	"_comment": "ADR-037 manifest fragment — business-rules-engine. Adds the Business rules menu entry + the custom RuleSets dashboard page. src/main.js mergeManifestFragments() concatenates these onto src/manifest.json's menu/pages arrays.",
+	"menu": [
+		{
+			"id": "BusinessRules",
+			"label": "Business rules",
+			"icon": "icon-category-customization",
+			"route": "BusinessRules",
+			"order": 36
+		}
+	],
+	"pages": [
+		{
+			"id": "BusinessRules",
+			"route": "/business-rules",
+			"type": "custom",
+			"title": "Business rules",
+			"component": "RuleSetsPageView",
+			"_note": "Custom page hosting the business-rules engine dashboard (RuleSetsPage.vue). Lists RuleSets and opens the decision-table / condition-action editors and test sandbox. type:custom because the grid editors and sandbox are bespoke and no built-in page type covers them."
+		}
+	]
+}

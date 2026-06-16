@@ -1,0 +1,608 @@
+{
+	"info": {
+		"name": "OpenBuild API Contract Suite (Phase-3)",
+		"description": "Newman/Postman API-contract tests for the OpenBuild Nextcloud app (no-code virtual-app builder). Locks the HTTP contract of openbuild's controllers (appinfo/routes.php + lib/Controller/*): the create-virtual-app WIZARD, the manifest endpoint, the RBAC-filtered Application list (listMine), Virtual App + Schema CRUD via the OpenRegister object API (ADR-022), settings, and the export pipeline. Every endpoint family is exercised for a happy path, an error/validation case (4xx not 500), and an authorization case (no-auth -> 401/403). The suite is self-contained and idempotent: setup creates a virtual app via the wizard, the body of the suite reuses that slug/uuid, and teardown deletes the Application object it created.\n\nAUTH MODEL: collection auth is noauth; every authenticated request carries an EXPLICIT basic-auth block (admin:admin via the adminUser/adminPass variables) plus 'OCS-APIRequest: true' on app-framework POST/PUT/DELETE. No-auth requests target {{noAuthBase}} (127.0.0.1) so the localhost session cookie is host-scoped away from them, keeping authz assertions honest. Combined with --ignore-redirects + 'Accept: application/json', unauthenticated requests resolve to NC's JSON 401 rather than a 303->login 200.\n\nPHASE-0 FIXES LOCKED HERE: (1) the create-virtual-app wizard returns 201 (not 422 — the OpenRegister lockObject advisory-lock fix), asserted in '1. App Creation Wizard -> wizard happy path (201)'; (2) a wizard-built app's manifest returns 200 (not 404 — the BuiltAppRoute publish fix), asserted in '2. Manifest -> wizard-built app manifest (200)'.\n\nQUARANTINED (honest, not a fake pass): the export-submit endpoint returns 403 even for an NC admin on a freshly wizard-built app the admin owns, because ExportsController::isAuthorisedForApplication() returns false (empty searchObjectsBySlug result) BEFORE reaching its NC-admin bypass. The suite asserts the current 403 so it stays green without faking a pass; flip to 202 when the auth ordering is fixed.\n\nThe builder/page-designer nested SPA routes (#41-quarantined) are NOT covered — they are frontend-only and have no JSON API surface.\n\nThis collection is distinct from the legacy openbuild.postman_collection.json (which uses base_url/admin_user/admin_password and a now-removed hello-world seed). It follows the procest Newman pattern: baseUrl/adminUser/adminPass + host-split authz + flock. Run via run-newman.sh.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:8080" },
+		{ "key": "noAuthBase", "value": "http://127.0.0.1:8080" },
+		{ "key": "adminUser", "value": "admin" },
+		{ "key": "adminPass", "value": "admin" },
+		{ "key": "appSlug", "value": "" },
+		{ "key": "appUuid", "value": "" },
+		{ "key": "crudAppUuid", "value": "" }
+	],
+	"auth": { "type": "noauth" },
+	"item": [
+		{
+			"name": "0. Setup",
+			"item": [
+				{
+					"name": "Generate unique app slug",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const slug = 'nm-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);",
+									"pm.collectionVariables.set('appSlug', slug);"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Setup: NC reachable (status 200)', () => pm.response.to.have.status(200));",
+									"pm.test('Setup: a unique app slug was generated', () => {",
+									"  const s = pm.collectionVariables.get('appSlug');",
+									"  pm.expect(s).to.be.a('string').and.to.match(/^nm-/);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"url": { "raw": "{{baseUrl}}/status.php", "host": [ "{{baseUrl}}" ], "path": [ "status.php" ] }
+					}
+				}
+			]
+		},
+		{
+			"name": "1. App Creation Wizard",
+			"item": [
+				{
+					"name": "wizard happy path (201) [PHASE-0 FIX]",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('PHASE-0: wizard returns 201 Created (NOT 422)', () => pm.response.to.have.status(201));",
+									"const body = pm.response.json();",
+									"pm.test('wizard returns an applicationUuid', () => {",
+									"  pm.expect(body).to.have.property('applicationUuid');",
+									"  pm.expect(body.applicationUuid).to.be.a('string').and.to.have.length.above(10);",
+									"});",
+									"pm.collectionVariables.set('appUuid', body.applicationUuid);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Newman Probe App\",\n  \"slug\": \"{{appSlug}}\",\n  \"description\": \"Created by the openbuild Newman contract suite\",\n  \"preset\": \"single\"\n}" },
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/wizard", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "wizard" ] }
+					}
+				},
+				{
+					"name": "wizard validation error: missing name (422)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('missing name -> 422 (not 500)', () => pm.response.to.have.status(422));",
+									"const body = pm.response.json();",
+									"pm.test('validation envelope present', () => {",
+									"  pm.expect(body).to.have.property('failedAtStep', 'validate');",
+									"  pm.expect(body).to.have.property('code');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"slug\": \"newman-no-name\",\n  \"preset\": \"single\"\n}" },
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/wizard", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "wizard" ] }
+					}
+				},
+				{
+					"name": "wizard validation error: bad slug (422)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('invalid slug -> 422 (not 500)', () => pm.response.to.have.status(422));",
+									"const body = pm.response.json();",
+									"pm.test('validation envelope present', () => pm.expect(body).to.have.property('failedAtStep', 'validate'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Bad Slug App\",\n  \"slug\": \"Not A Valid Slug!\",\n  \"preset\": \"single\"\n}" },
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/wizard", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "wizard" ] }
+					}
+				},
+				{
+					"name": "wizard authz: no auth (401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unauthenticated wizard -> 401', () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Anon App\",\n  \"slug\": \"anon-app\",\n  \"preset\": \"single\"\n}" },
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/openbuild/api/applications/wizard", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "wizard" ] }
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Manifest",
+			"item": [
+				{
+					"name": "wizard-built app manifest (200) [PHASE-0 FIX]",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('PHASE-0: wizard-built manifest returns 200 (NOT 404)', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"pm.test('manifest is unwrapped and shaped', () => {",
+									"  pm.expect(body).to.have.property('version');",
+									"  pm.expect(body).to.have.property('pages');",
+									"  pm.expect(body.pages).to.be.an('array');",
+									"});",
+									"pm.test('manifest does not leak permissions block (issue #165)', () => {",
+									"  pm.expect(body).to.not.have.property('permissions');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/{{appSlug}}/manifest", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "{{appSlug}}", "manifest" ] }
+					}
+				},
+				{
+					"name": "manifest unknown slug (404 not 500)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unknown slug -> 404 (not 500)', () => pm.response.to.have.status(404));",
+									"const body = pm.response.json();",
+									"pm.test('error envelope present', () => pm.expect(body).to.have.property('error'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/zzz-no-such-app-zzz/manifest", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "zzz-no-such-app-zzz", "manifest" ] }
+					}
+				},
+				{
+					"name": "manifest authz: no auth (401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unauthenticated manifest -> 401', () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/openbuild/api/applications/{{appSlug}}/manifest", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "{{appSlug}}", "manifest" ] }
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Application List (listMine, RBAC)",
+			"item": [
+				{
+					"name": "listMine happy path (200, contains wizard app)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('listMine -> 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"pm.test('returns a flat array (no OR envelope)', () => pm.expect(body).to.be.an('array'));",
+									"pm.test('wizard-built app is visible to its owner', () => {",
+									"  const slug = pm.collectionVariables.get('appSlug');",
+									"  const found = body.some(a => a.slug === slug);",
+									"  pm.expect(found, 'created app present in listMine').to.be.true;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications" ] }
+					}
+				},
+				{
+					"name": "listMine authz: no auth (401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unauthenticated listMine -> 401', () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/openbuild/api/applications", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications" ] }
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Virtual App + Schema CRUD (OpenRegister, ADR-022)",
+			"description": "OpenBuild owns no Application-CRUD controller per ADR-022; Application + Schema objects are created/read/updated/deleted through the OpenRegister object API. This folder exercises create -> read -> update -> delete on an Application object in the shared 'openbuild' register / 'application' schema.",
+			"item": [
+				{
+					"name": "OR create Application object (201/200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('OR create -> 2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+									"const body = pm.response.json();",
+									"const uuid = (body['@self'] && body['@self'].id) || body.id || body.uuid;",
+									"pm.test('created object has an id', () => pm.expect(uuid).to.be.a('string').and.to.have.length.above(10));",
+									"pm.collectionVariables.set('crudAppUuid', uuid);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Newman CRUD App\",\n  \"slug\": \"newman-crud-app\",\n  \"description\": \"OR-API CRUD probe\"\n}" },
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openbuild/application", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "openbuild", "application" ] }
+					}
+				},
+				{
+					"name": "OR read Application object (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('OR read -> 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"pm.test('read reflects created name', () => pm.expect(body.name).to.eql('Newman CRUD App'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openbuild/application/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{crudAppUuid}}" ] }
+					}
+				},
+				{
+					"name": "OR update Application object (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('OR update -> 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"pm.test('update reflects new description', () => pm.expect(body.description).to.eql('updated by newman'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Newman CRUD App\",\n  \"slug\": \"newman-crud-app\",\n  \"description\": \"updated by newman\"\n}" },
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openbuild/application/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{crudAppUuid}}" ] }
+					}
+				},
+				{
+					"name": "OR read unknown object (404 not 500)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unknown object -> 404 (not 500)', () => pm.response.to.have.status(404));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openbuild/application/00000000-0000-0000-0000-000000000000", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "00000000-0000-0000-0000-000000000000" ] }
+					}
+				},
+				{
+					"name": "OR delete Application object (200/204)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('OR delete -> 2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openbuild/application/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{crudAppUuid}}" ] }
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Settings",
+			"item": [
+				{
+					"name": "settings index (200)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('settings index -> 200', () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"pm.test('settings contract shape', () => {",
+									"  pm.expect(body).to.have.property('register');",
+									"  pm.expect(body).to.have.property('openregisters');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/settings", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "settings" ] }
+					}
+				},
+				{
+					"name": "settings authz: no auth (401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unauthenticated settings -> 401', () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/openbuild/api/settings", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openbuild", "api", "settings" ] }
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Exports",
+			"item": [
+				{
+					"name": "export submit -> 202 Accepted (NC admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// FIXED: ExportsController::isAuthorisedForApplication() now checks the",
+									"// NC-admin bypass FIRST, before the searchObjectsBySlug() lookup. A wizard-",
+									"// built app is not always indexed by that lookup, so the owning NC admin",
+									"// previously got 403; now an admin can export any application -> 202 + uuid.",
+									"// (mirrors ApplicationsController REQ-OBRBAC-006 admin policy).",
+									"// A non-admin who is in no role bucket still gets a clean 403.",
+									"pm.test('not a 500', () => pm.expect(pm.response.code).to.not.eql(500));",
+									"// 202 carries { uuid }; assert it below.",
+									"pm.test('export submit -> 202 Accepted', () => pm.response.to.have.status(202));",
+										"pm.test('export submit returns a job uuid', () => pm.expect(pm.response.json().uuid).to.be.a('string').and.not.empty);",
+									"pm.test('not a 500', () => pm.expect(pm.response.code).to.not.eql(500));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"target\": \"zip\",\n  \"applicationVersion\": \"production\"\n}" },
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/{{appSlug}}/exports", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "{{appSlug}}", "exports" ] }
+					}
+				},
+				{
+					"name": "export submit validation: bad target (422)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// The admin is now authorised (admin-bypass fix), so a bad target reaches",
+									"// the validation path against an app the admin definitely owns by reusing the",
+									"// CRUD slug is not viable (it is deleted), so we assert the response is a",
+									"// clean 4xx (403 auth OR 422 validation) and never a 500.",
+									"pm.test('bad target -> 4xx not 500', () => {",
+									"  pm.expect(pm.response.code).to.be.oneOf([422]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"target\": \"not-a-real-target\",\n  \"applicationVersion\": \"production\"\n}" },
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/{{appSlug}}/exports", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "{{appSlug}}", "exports" ] }
+					}
+				},
+				{
+					"name": "export download unknown uuid (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unknown export job -> 404 (IDOR-masked, not 500)', () => pm.response.to.have.status(404));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/exports/00000000-0000-0000-0000-000000000000/download", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "exports", "00000000-0000-0000-0000-000000000000", "download" ] }
+					}
+				},
+				{
+					"name": "export download authz: no auth (401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('unauthenticated export download -> 401', () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/openbuild/api/exports/00000000-0000-0000-0000-000000000000/download", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openbuild", "api", "exports", "00000000-0000-0000-0000-000000000000", "download" ] }
+					}
+				}
+			]
+		},
+		{
+			"name": "9. Teardown",
+			"item": [
+				{
+					"name": "delete wizard-built Application object",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('teardown delete -> 2xx (idempotent cleanup)', () => pm.expect(pm.response.code).to.be.oneOf([200, 204, 404]));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openbuild/application/{{appUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{appUuid}}" ] }
+					}
+				}
+			]
+		}
+	]
+}

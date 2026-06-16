@@ -6,64 +6,101 @@
     <name lang="nl">OpenBuild</name>
     <summary lang="en">Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.</summary>
     <summary lang="nl">App builder voor Nextcloud — stel apps samen uit registers, connectors, processen en documenten zonder code.</summary>
-    <description lang="en"><![CDATA[OpenBuilt is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Conduction ecosystem — OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, MyDash dashboards — through a visual interface, without scaffolding PHP for each new app.
+    <description lang="en"><![CDATA[OpenBuild is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Conduction ecosystem — OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, LaunchPad dashboards — through a visual interface, without scaffolding PHP for each new app.
 
-Per ADR-024 (app manifest), each built app is rendered at runtime by mounting CnAppRoot with the app's manifest, which lives as a JSON blob in OpenBuilt's own OpenRegister namespace. Per ADR-031 (schema-declarative business logic), behaviour like state machines, aggregations, calculations, and notifications is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in OpenBuilt's register, rendered inside the OpenBuilt shell at `/apps/openbuilt/{slug}`); a Phase-2 export generates a real Nextcloud app from a virtual app.
+Per ADR-024 (app manifest), each built app is rendered at runtime by mounting CnAppRoot with the app's manifest, which lives as a JSON blob in OpenBuild's own OpenRegister namespace. Per ADR-031 (schema-declarative business logic), behaviour like state machines, aggregations, calculations, and notifications is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in OpenBuild's register, rendered inside the OpenBuild shell at `/apps/openbuild/{slug}`); a Phase-2 export generates a real Nextcloud app from a virtual app.
 
 Free and open source under the EUPL-1.2 license.
 
 **Support:** For support, contact support@conduction.nl.
     ]]></description>
-    <description lang="nl"><![CDATA[OpenBuilt is een citizen-developer app builder voor Nextcloud. Niet-technische gebruikers stellen apps samen uit het Conduction-ecosysteem — OpenRegister-schema's, OpenConnector-API's, Procest-processen, Docudesk-documenten, NL Design-thema's, MyDash-dashboards — via een visuele interface, zonder voor elke nieuwe app PHP te hoeven schrijven.
+    <description lang="nl"><![CDATA[OpenBuild is een citizen-developer app builder voor Nextcloud. Niet-technische gebruikers stellen apps samen uit het Conduction-ecosysteem — OpenRegister-schema's, OpenConnector-API's, Procest-processen, Docudesk-documenten, NL Design-thema's, LaunchPad-dashboards — via een visuele interface, zonder voor elke nieuwe app PHP te hoeven schrijven.
 
-Conform ADR-024 (app-manifest) wordt elke gebouwde app tijdens runtime gerenderd door CnAppRoot te monteren met het manifest, dat als JSON-blob in OpenBuilt's eigen OpenRegister-namespace staat. Conform ADR-031 (schema-declaratieve businesslogica) wordt gedrag zoals state machines, aggregaties, berekeningen en notificaties als schema-metadata in het registerbestand gedeclareerd in plaats van als servicecode. Gebouwde apps zijn in eerste instantie virtueel (records in OpenBuilt's register, gerenderd binnen de OpenBuilt-shell op `/apps/openbuilt/{slug}`); een Phase-2 export genereert een echte Nextcloud-app uit een virtuele app.
+Conform ADR-024 (app-manifest) wordt elke gebouwde app tijdens runtime gerenderd door CnAppRoot te monteren met het manifest, dat als JSON-blob in OpenBuild's eigen OpenRegister-namespace staat. Conform ADR-031 (schema-declaratieve businesslogica) wordt gedrag zoals state machines, aggregaties, berekeningen en notificaties als schema-metadata in het registerbestand gedeclareerd in plaats van als servicecode. Gebouwde apps zijn in eerste instantie virtueel (records in OpenBuild's register, gerenderd binnen de OpenBuild-shell op `/apps/openbuild/{slug}`); een Phase-2 export genereert een echte Nextcloud-app uit een virtuele app.
 
 Vrij en open source onder de EUPL-1.2-licentie.
 
 **Ondersteuning:** Voor ondersteuning, neem contact op via support@conduction.nl.
     ]]></description>
-    <version>0.1.0</version>
+    <version>0.5.4</version>
     <licence>agpl</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
-    <namespace>OpenBuilt</namespace>
+    <namespace>OpenBuild</namespace>
     <documentation>
-        <user>https://github.com/ConductionNL/openbuilt</user>
-        <admin>https://github.com/ConductionNL/openbuilt</admin>
-        <developer>https://github.com/ConductionNL/openbuilt</developer>
+        <user>https://codeberg.org/Conduction/openbuild</user>
+        <admin>https://codeberg.org/Conduction/openbuild</admin>
+        <developer>https://codeberg.org/Conduction/openbuild</developer>
     </documentation>
     <category>tools</category>
-    <website>https://github.com/ConductionNL/openbuilt</website>
-    <discussion>https://github.com/ConductionNL/openbuilt/discussions</discussion>
-    <bugs>https://github.com/ConductionNL/openbuilt/issues</bugs>
-    <repository>https://github.com/ConductionNL/openbuilt</repository>
+    <website>https://codeberg.org/Conduction/openbuild</website>
+    <discussion>https://codeberg.org/Conduction/openbuild/discussions</discussion>
+    <bugs>https://codeberg.org/Conduction/openbuild/issues</bugs>
+    <repository>https://codeberg.org/Conduction/openbuild</repository>
 
-    <screenshot>https://raw.githubusercontent.com/ConductionNL/openbuilt/main/img/app-store.svg</screenshot>
+    <screenshot>https://codeberg.org/Conduction/openbuild/raw/branch/main/img/app-store.svg</screenshot>
 
     <dependencies>
         <nextcloud min-version="28" max-version="34"/>
-        <php min-version="8.1"/>
+        <php min-version="8.3"/>
     </dependencies>
 
+    <!--
+        openbuild.use navigation-entry gate (REQ-OBRBAC-006).
+
+        SPEC INTENT: REQ-OBRBAC-006 calls for a <permission>openbuild.use</permission>
+        child on the <navigation> element so admins can restrict the top-bar
+        entry to selected groups. We tried shipping that element and verified on
+        2026-05-11 (running "occ app:enable openbuild" with the force flag, on
+        Nextcloud 32) that the upstream apps/info.xsd schema rejects the
+        <permission> child ("appinfo file cannot be read"). The schema does not
+        yet expose this sub-element; an upstream issue is filed at:
+            https://github.com/nextcloud/server/issues/60310
+
+        FALLBACK: per design.md Decision 4 we rely on Nextcloud's standard
+        app-level group restriction ("occ app:enable openbuild" with the groups
+        flag, e.g. "groups team-alpha"), which configures group visibility
+        outside info.xml. Per-Application RBAC enforced server-side by
+        ApplicationsController::getManifest + ::listMine (REQ-OBRBAC-002 /
+        REQ-OBR-006) remains the load-bearing security boundary; this gate is
+        coarse top-bar visibility only.
+
+        See docs/openbuild-rbac.md for the operator guide.
+    -->
     <navigations>
         <navigation>
-            <id>openbuilt</id>
+            <id>openbuild</id>
             <name>OpenBuild</name>
-            <route>openbuilt.dashboard.page</route>
+            <route>openbuild.dashboard.page</route>
             <icon>app.svg</icon>
         </navigation>
     </navigations>
 
     <settings>
-        <admin>OCA\OpenBuilt\Settings\AdminSettings</admin>
-        <admin-section>OCA\OpenBuilt\Sections\SettingsSection</admin-section>
+        <admin>OCA\OpenBuild\Settings\AdminSettings</admin>
+        <admin-section>OCA\OpenBuild\Sections\SettingsSection</admin-section>
     </settings>
 
     <repair-steps>
         <install>
-            <step>OCA\OpenBuilt\Repair\InitializeSettings</step>
+            <step>OCA\OpenBuild\Repair\InitializeSettings</step>
+            <step>OCA\OpenBuild\Repair\MigrateToVersionedModel</step>
+            <step>OCA\OpenBuild\Repair\PopulateApplicationPermissions</step>
+            <step>OCA\OpenBuild\Repair\SeedApplicationTemplates</step>
         </install>
         <post-migration>
-            <step>OCA\OpenBuilt\Repair\InitializeSettings</step>
+            <step>OCA\OpenBuild\Repair\InitializeSettings</step>
+            <step>OCA\OpenBuild\Repair\MigrateToVersionedModel</step>
+            <step>OCA\OpenBuild\Repair\PopulateApplicationPermissions</step>
+            <step>OCA\OpenBuild\Repair\SeedApplicationTemplates</step>
         </post-migration>
     </repair-steps>
+
+    <background-jobs>
+        <job>OCA\OpenBuild\BackgroundJob\CleanupExpiredExports</job>
+        <job>OCA\OpenBuild\BackgroundJob\RuleExecutionLogCleanup</job>
+    </background-jobs>
+
+    <commands>
+        <command>OCA\OpenBuild\Command\SeedHelloWorldFixture</command>
+    </commands>
 </info>

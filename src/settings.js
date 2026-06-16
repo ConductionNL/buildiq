@@ -8,9 +8,9 @@ import AdminRoot from './views/settings/AdminRoot.vue'
 Vue.mixin({ methods: { t, n } })
 Vue.use(PiniaVuePlugin)
 
-loadTranslations('openbuilt', () => {
+loadTranslations('openbuild', () => {
 	new Vue({
 		pinia,
 		render: h => h(AdminRoot),
-	}).$mount('#openbuilt-settings')
+	}).$mount('#openbuild-settings')
 })

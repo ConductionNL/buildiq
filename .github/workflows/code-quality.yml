@@ -9,9 +9,9 @@ on:
 
 jobs:
   quality:
-    uses: ConductionNL/.github/.github/workflows/quality.yml@main
+    uses: Conduction/.github/.github/workflows/quality.yml@main
     with:
-      app-name: openbuilt
+      app-name: openbuild
       php-version: "8.3"
       php-test-versions: '["8.3", "8.4"]'
       nextcloud-test-refs: '["stable31", "stable32", "stable33"]'
@@ -21,6 +21,29 @@ jobs:
       enable-frontend: true
       enable-eslint: true
       enable-phpunit: true
-      enable-newman: true
-      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"main"}]'
+      # Newman stays disabled while the openbuild#33 fixes are in flight.
+      # The collection bugs in this PR are fixed (uuid `@self.id` extraction,
+      # `export-job` slug correction, hello-world `@self.slug` fallback). But
+      # an upstream OR-side infrastructure blocker still prevents the seed
+      # from running in CI:
+      #
+      #   1. `OpenBuild: SeedHelloWorld failed: Call to undefined function
+      #      React\Async\await()` — OR's runtime-schema-API on `development`
+      #      pulls `react/async` but the composer dependency isn't surfacing
+      #      in the CI install, so the function isn't autoloaded.
+      #   2. SQLite (`database: sqlite`) trips
+      #      `[PermissionHandler] no such function: REGEXP` from OR's
+      #      MagicMapper. The query uses MySQL's REGEXP operator which
+      #      SQLite doesn't ship.
+      #
+      # File those as their own issues; once both are unblocked, flip this
+      # back to `true` and re-evaluate.
+      enable-newman: false
+      database: sqlite
+      newman-seed-command: 'php occ app:disable openbuild && php occ app:enable openbuild'
+      # OpenRegister `development` carries the runtime-schema-API (auto-create
+      # Register on application-type imports — OR PR #1464) and the lifecycle
+      # engine (ObjectTransitionedEvent) that OpenBuild's repair steps + the
+      # Newman publish step need; `main` predates both. See openbuild#29.
+      additional-apps: '[{"repo":"Conduction/openregister","app":"openregister","ref":"development"}]'
       enable-sbom: true

@@ -46,7 +46,6 @@ phpqa_output.log
 **/implements *
 **/ALL *
 **/endpoints *
-**/*Analysis*
 **/*references*
 **/*encoding*
 **/ter
@@ -54,6 +53,8 @@ phpqa_output.log
 **/update*Settings*
 **/rebase*
 **/setup*
+!tests/vitest/setup.js
+!tests/e2e/global-setup.ts
 
 # Temporary test files that shouldn't be committed
 simple-solr-test.php
@@ -88,3 +89,12 @@ openspec/test-site-results/**/*.jpg
 openspec/test-site-results/**/*.jpeg
 openspec/test-site-results/**/*.gif
 openspec/test-site-results/**/*.webp
+
+# Playwright artefacts (e2e tests live in tests/e2e/, the artefacts do not).
+/playwright-report/
+/test-results/
+/.playwright/
+/playwright/.cache/
+tests/e2e/.auth/
+/coverage-vitest/
+/coverage/

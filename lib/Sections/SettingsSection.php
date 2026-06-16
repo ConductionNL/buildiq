@@ -1,16 +1,18 @@
 <?php
-// SPDX-License-Identifier: EUPL-1.2
 
 /**
- * OpenBuilt Settings Section
+ * OpenBuild Settings Section
  *
- * Defines the OpenBuilt section in the Nextcloud admin settings.
+ * Defines the OpenBuild section in the Nextcloud admin settings.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Sections
- * @package  OCA\OpenBuilt\Sections
+ * @package  OCA\OpenBuild\Sections
  *
- * @author    Conduction Development Team <dev@conductio.nl>
- * @copyright 2024 Conduction B.V.
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version GIT: <git-id>
@@ -20,14 +22,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Sections;
+namespace OCA\OpenBuild\Sections;
 
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\Settings\IIconSection;
 
 /**
- * Defines the OpenBuilt section in the Nextcloud admin settings.
+ * Defines the OpenBuild section in the Nextcloud admin settings.
  */
 class SettingsSection implements IIconSection
 {
@@ -52,7 +54,7 @@ class SettingsSection implements IIconSection
      */
     public function getID(): string
     {
-        return 'openbuilt';
+        return 'openbuild';
     }//end getID()
 
     /**
@@ -62,7 +64,7 @@ class SettingsSection implements IIconSection
      */
     public function getName(): string
     {
-        return $this->l->t('OpenBuilt');
+        return $this->l->t('OpenBuild');
     }//end getName()
 
     /**
@@ -82,6 +84,6 @@ class SettingsSection implements IIconSection
      */
     public function getIcon(): string
     {
-        return $this->urlGenerator->imagePath(appName: 'openbuilt', file: 'app-dark.svg');
+        return $this->urlGenerator->imagePath(appName: 'openbuild', file: 'app-dark.svg');
     }//end getIcon()
 }//end class
