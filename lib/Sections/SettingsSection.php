@@ -3,7 +3,12 @@
 /**
  * OpenBuild Settings Section
  *
- * Defines the OpenBuild section in the Nextcloud admin settings.
+ * One-line AppHost stub. Nextcloud instantiates the admin settings section by
+ * the class name in info.xml `<settings><admin-section>`, so the class must
+ * physically exist in the OpenBuild namespace. The section id ("openbuild"),
+ * display name ("OpenBuild"), icon ("app-dark.svg") and priority (75) are
+ * supplied by OpenBuild's Application::register() via Bootstrap::register();
+ * the engine base owns all IIconSection behaviour.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -24,66 +29,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Sections;
 
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\Settings\IIconSection;
+use OCA\OpenRegister\AppHost\Settings\GenericSettingsSection;
 
 /**
- * Defines the OpenBuild section in the Nextcloud admin settings.
+ * AppHost-backed admin settings section for OpenBuild (ADR-040).
+ *
+ * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md — Requirement: Boilerplate Adoption
  */
-class SettingsSection implements IIconSection
+class SettingsSection extends GenericSettingsSection
 {
-    /**
-     * Constructor for SettingsSection.
-     *
-     * @param IL10N         $l            The localization service
-     * @param IURLGenerator $urlGenerator The URL generator service
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly IL10N $l,
-        private readonly IURLGenerator $urlGenerator,
-    ) {
-    }//end __construct()
-
-    /**
-     * Get the section identifier.
-     *
-     * @return string
-     */
-    public function getID(): string
-    {
-        return 'openbuild';
-    }//end getID()
-
-    /**
-     * Get the display name of this section.
-     *
-     * @return string
-     */
-    public function getName(): string
-    {
-        return $this->l->t('OpenBuild');
-    }//end getName()
-
-    /**
-     * Get the priority for ordering this section.
-     *
-     * @return int
-     */
-    public function getPriority(): int
-    {
-        return 75;
-    }//end getPriority()
-
-    /**
-     * Get the icon path for this section.
-     *
-     * @return string
-     */
-    public function getIcon(): string
-    {
-        return $this->urlGenerator->imagePath(appName: 'openbuild', file: 'app-dark.svg');
-    }//end getIcon()
 }//end class

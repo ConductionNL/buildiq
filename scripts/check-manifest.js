@@ -60,17 +60,38 @@ function loadJson(filePath) {
 }
 
 /**
+ * Top-level manifest blocks owned by the OpenRegister AppHost engine
+ * (ADR-040), NOT by the @conduction/nextcloud-vue renderer. The canonical
+ * app-manifest schema sets `additionalProperties: false` at the root and does
+ * not yet describe these blocks (schema lag — an upstream nextcloud-vue PR is
+ * needed to add them). They are consumed server-side by OR's
+ * AppHost\Observability\ManifestLoader + GenericDeepLinkRegistrationListener,
+ * so the renderer-shape validation here strips them before validating against
+ * the (renderer-only) schema. Their own shape is validated by OR's
+ * ObservabilityManifest parser + the AppHost contract tests.
+ */
+const ENGINE_OWNED_KEYS = ['observability', 'deepLinks']
+
+/**
  * Replace token placeholders in a manifest with syntactically valid values
- * so the schema validator can run against the structural shape.
+ * and strip the engine-owned (AppHost) top-level blocks so the validator can
+ * run against the renderer-shape contract.
  *
  * @param {object} manifest The manifest payload.
- * @returns {object} The manifest with tokens substituted.
+ * @returns {object} The manifest with tokens substituted + engine blocks removed.
  */
 function substituteTokens(manifest) {
-	if (!manifest || !Array.isArray(manifest.pages)) return manifest
+	if (!manifest || typeof manifest !== 'object') return manifest
+
+	const stripped = { ...manifest }
+	for (const key of ENGINE_OWNED_KEYS) {
+		delete stripped[key]
+	}
+
+	if (!Array.isArray(stripped.pages)) return stripped
 	return {
-		...manifest,
-		pages: manifest.pages.map((page) => {
+		...stripped,
+		pages: stripped.pages.map((page) => {
 			if (!page || typeof page !== 'object' || !page.config) return page
 			const config = { ...page.config }
 			if (config.register === '{registerSlug}') {
