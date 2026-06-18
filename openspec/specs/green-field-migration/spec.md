@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # green-field-migration Specification
 
 ## Purpose

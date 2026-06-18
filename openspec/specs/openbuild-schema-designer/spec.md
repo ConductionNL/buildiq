@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # openbuild-schema-designer Specification
 
 ## Purpose

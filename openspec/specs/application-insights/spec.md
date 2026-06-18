@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # application-insights Specification
 
 ## Purpose

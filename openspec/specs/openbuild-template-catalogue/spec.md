@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # openbuild-template-catalogue Specification
 
 ## Purpose
