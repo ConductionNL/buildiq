@@ -166,7 +166,7 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface
                 'De bovenliggende applicatie heeft geen rechtenblok. Alleen een beheerder mag deze versie '
                 .$action.'; vraag een beheerder om het rechtenblok van de applicatie in te stellen.'
             );
-        }
+        }//end if
 
         // Owner role required. NC admins are granted as the audited
         // incident-response escape hatch (design.md Decision 5); the
