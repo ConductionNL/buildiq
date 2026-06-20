@@ -171,17 +171,14 @@
 		{
 			"id": "Templates",
 			"route": "/templates",
-			"type": "index",
+			"type": "custom",
 			"title": "Templates",
+			"component": "TemplateGallery",
 			"config": {
 				"register": "openbuild",
-				"schema": "application-template",
-				"viewMode": "cards",
-				"sidebar": {
-					"enabled": true,
-					"showMetadata": true
-				}
-			}
+				"schema": "application-template"
+			},
+			"_note": "Templates renders the store-aware TemplateGallery view (openbuild-remote-template-store): when a registry is configured the remote store search is the primary surface with built-in templates secondary; with no registry it falls back to the built-in templates as today. Install clones via CloneTemplateDialog."
 		},
 		{
 			"id": "SchemaDesignerList",

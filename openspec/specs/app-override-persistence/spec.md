@@ -16,6 +16,8 @@ compatible.
 
 **Status**: in-progress
 
+@e2e exclude backend compatibility-shim — the GET/PUT/DELETE /api/app-overrides/{appId} endpoints (now backed by the hybrid Application's version) are covered by the AppOverrideService + AppOverrideController PHPUnit suites; the client-side merge is the fleet app's own concern, so there is no Playwright flow here.
+
 ## Requirements
 
 ### Requirement: Fleet-app override is stored as a keyed delta keyed by appId

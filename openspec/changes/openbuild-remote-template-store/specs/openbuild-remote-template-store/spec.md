@@ -54,6 +54,11 @@ of card-shaped entries (`slug`, `title`, `description`, `useCase`, `category`,
 `companionSchemas` blobs in the search result. The browser SHALL never receive
 the registry URL or token; it SHALL only call the local store endpoints.
 
+@e2e exclude pure-backend proxy contract — search normalisation + `_search`
+forwarding + manifest-stripping are verified by the RemoteTemplateStoreService
+PHPUnit suite (mocked IClientService); there is no live remote catalogue to
+drive a Playwright flow in CI.
+
 #### Scenario: Search returns normalised remote template cards
 
 - **WHEN** the store search runs against a reachable configured registry that
@@ -142,6 +147,11 @@ user and makes the caller the owner of the resulting Application. The `{slug}`
 path parameter SHALL be validated against the kebab-case slug pattern and the
 `q` search term SHALL be URL-encoded before use in the outbound request.
 
+@e2e exclude pure-backend auth contract — the 401/auth posture + route wiring of
+both store endpoints is verified by the StoreController PHPUnit suite (anonymous
+search + install rejected, authenticated paths proxy/delegate); no live
+catalogue exists to drive a Playwright flow in CI.
+
 #### Scenario: Unauthenticated search is rejected
 
 - **WHEN** an unauthenticated request hits `GET /api/store/templates`
@@ -205,6 +215,11 @@ fetch. The settings load surfaced to the Templates page SHALL expose a
 "configure a registry" hint to admins) without breaking the local-template
 listing. This change SHALL be additive: with no registry configured, the
 Templates page behaves exactly as before this change.
+
+@e2e exclude config-fallback contract — the no-registry path is verified by the
+RemoteTemplateStoreService PHPUnit suite (not-configured → no fetch) and the
+TemplateGallery Vitest spec (local templates primary, no store request); there
+is no remote catalogue to drive a Playwright flow in CI.
 
 #### Scenario: Local templates render with no registry configured
 

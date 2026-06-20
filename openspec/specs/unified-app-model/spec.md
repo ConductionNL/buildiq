@@ -17,6 +17,8 @@ app; everything else stays editable) and the idempotent `AppOverride` → hybrid
 
 **Status**: done
 
+@e2e exclude backend app-model capability — the appType discriminator, baseRef link, hybrid Application+delta-only-version model, metadata-lock guard, and AppOverride→hybrid migration are covered by PHPUnit (HybridMetadataLockListener, MigrateAppOverridesToHybrid, AppOverrideService) plus Vitest badge/filter/wizard specs; no dedicated Playwright flow in this cut.
+
 ## Requirements
 
 ### Requirement: Application carries an appType discriminator

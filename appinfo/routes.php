@@ -127,6 +127,14 @@ return [
         ['name' => 'appOverride#save',  'url' => '/api/app-overrides/{appId}', 'verb' => 'PUT',    'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'appOverride#clear', 'url' => '/api/app-overrides/{appId}', 'verb' => 'DELETE', 'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // Remote template store (openbuild-remote-template-store). Consume-only:
+        // search proxies the configured remote OpenRegister catalogue server-side;
+        // install resolves a remote template by slug and clones it locally via the
+        // shared ApplicationsController install seam. Specific-first so `{slug}` is
+        // not shadowed by the SPA `/{path}` catch-all below.
+        ['name' => 'store#search',  'url' => '/api/store/templates',                  'verb' => 'GET'],
+        ['name' => 'store#install', 'url' => '/api/store/templates/{slug}/install',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
         // SPA catch-all — same controller as the index route; must use a distinct route name
         // (duplicate names replace the earlier route in Symfony, which breaks GET /).
         ['name' => 'dashboard#catchAll', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '.+'], 'defaults' => ['path' => '']],

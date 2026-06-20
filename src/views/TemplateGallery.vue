@@ -8,70 +8,147 @@
 			</p>
 		</header>
 
-		<div class="template-gallery__filters">
-			<NcTextField
-				:value="search"
-				:label="t('openbuild', 'Search templates')"
-				:placeholder="t('openbuild', 'Search by name, use case, or description')"
-				@update:value="search = $event" />
-			<NcSelect
-				v-model="categoryFilter"
-				:input-label="t('openbuild', 'Category')"
-				:options="categoryOptions"
-				:placeholder="t('openbuild', 'All categories')"
-				:clearable="true" />
-		</div>
+		<!-- PRIMARY surface: remote store search (only when a registry is configured) -->
+		<section v-if="storeConfigured" class="template-gallery__store">
+			<div class="template-gallery__filters">
+				<NcTextField
+					:value="storeSearch"
+					:label="t('openbuild', 'Search the template store')"
+					:placeholder="t('openbuild', 'Search by name, use case, or description')"
+					@update:value="onStoreSearch" />
+			</div>
 
-		<div v-if="loading" class="template-gallery__loading">
-			<NcLoadingIcon :size="32" />
-			<span>{{ t('openbuild', 'Loading templates…') }}</span>
-		</div>
+			<div v-if="storeLoading" class="template-gallery__loading">
+				<NcLoadingIcon :size="32" />
+				<span>{{ t('openbuild', 'Searching the store…') }}</span>
+			</div>
 
-		<div v-else-if="filteredTemplates.length === 0" class="template-gallery__empty">
-			<NcEmptyContent :name="t('openbuild', 'No templates match your filters')" />
-		</div>
+			<div v-else-if="storeError" class="template-gallery__store-error" role="alert">
+				<NcEmptyContent :name="t('openbuild', 'Store unavailable')"
+					:description="t('openbuild', 'The template store could not be reached. You can still use the built-in templates below.')" />
+			</div>
 
-		<ul v-else class="template-gallery__grid">
-			<li v-for="tpl in filteredTemplates" :key="tpl.slug || tpl.uuid" class="template-card">
-				<img
-					v-if="tpl.screenshotUrl"
-					:src="resolveScreenshot(tpl.screenshotUrl)"
-					:alt="tpl.title || tpl.slug"
-					class="template-card__screenshot">
-				<div class="template-card__body">
-					<h2 class="template-card__title">
-						{{ tpl.title || tpl.slug }}
-					</h2>
-					<span class="template-card__category">{{ categoryLabel(tpl.category) }}</span>
-					<p class="template-card__usecase">
-						{{ tpl.useCase || '' }}
-					</p>
-					<p class="template-card__description">
-						{{ tpl.description || '' }}
-					</p>
-				</div>
-				<div class="template-card__actions">
-					<NcButton type="primary" @click="openClone(tpl)">
-						{{ t('openbuild', 'Use this template') }}
-					</NcButton>
-				</div>
-			</li>
-		</ul>
+			<div v-else-if="storeCards.length === 0" class="template-gallery__empty">
+				<NcEmptyContent :name="t('openbuild', 'No store templates match your search')" />
+			</div>
 
+			<ul v-else class="template-gallery__grid">
+				<li v-for="card in storeCards" :key="card.slug" class="template-card">
+					<img
+						v-if="card.screenshotUrl"
+						:src="card.screenshotUrl"
+						:alt="card.title || card.slug"
+						class="template-card__screenshot">
+					<div class="template-card__body">
+						<h2 class="template-card__title">
+							{{ card.title || card.slug }}
+						</h2>
+						<span class="template-card__category">{{ categoryLabel(card.category) }}<template v-if="card.version"> · v{{ card.version }}</template></span>
+						<p class="template-card__usecase">
+							{{ card.useCase || '' }}
+						</p>
+						<p class="template-card__description">
+							{{ card.description || '' }}
+						</p>
+					</div>
+					<div class="template-card__actions">
+						<NcButton type="primary" @click="openInstall(card)">
+							{{ t('openbuild', 'Install') }}
+						</NcButton>
+					</div>
+				</li>
+			</ul>
+		</section>
+
+		<!-- Hint for admins when no registry is configured -->
+		<NcNoteCard v-else-if="isAdmin" type="info" class="template-gallery__hint">
+			{{ t('openbuild', 'Connect a template registry to browse and install shared templates from a store.') }}
+			<a :href="adminSettingsUrl">{{ t('openbuild', 'Configure a registry') }}</a>
+		</NcNoteCard>
+
+		<!-- Built-in templates: PRIMARY when no store, SECONDARY when store configured -->
+		<section class="template-gallery__local">
+			<h2 v-if="storeConfigured" class="template-gallery__local-title">
+				{{ t('openbuild', 'Built-in templates') }}
+			</h2>
+
+			<div v-if="!storeConfigured" class="template-gallery__filters">
+				<NcTextField
+					:value="search"
+					:label="t('openbuild', 'Search templates')"
+					:placeholder="t('openbuild', 'Search by name, use case, or description')"
+					@update:value="search = $event" />
+				<NcSelect
+					v-model="categoryFilter"
+					:input-label="t('openbuild', 'Category')"
+					:options="categoryOptions"
+					:placeholder="t('openbuild', 'All categories')"
+					:clearable="true" />
+			</div>
+
+			<div v-if="loading" class="template-gallery__loading">
+				<NcLoadingIcon :size="32" />
+				<span>{{ t('openbuild', 'Loading templates…') }}</span>
+			</div>
+
+			<div v-else-if="filteredTemplates.length === 0" class="template-gallery__empty">
+				<NcEmptyContent :name="t('openbuild', 'No templates match your filters')" />
+			</div>
+
+			<ul v-else class="template-gallery__grid">
+				<li v-for="tpl in filteredTemplates" :key="tpl.slug || tpl.uuid" class="template-card">
+					<img
+						v-if="tpl.screenshotUrl"
+						:src="resolveScreenshot(tpl.screenshotUrl)"
+						:alt="tpl.title || tpl.slug"
+						class="template-card__screenshot">
+					<div class="template-card__body">
+						<h2 class="template-card__title">
+							{{ tpl.title || tpl.slug }}
+						</h2>
+						<span class="template-card__category">{{ categoryLabel(tpl.category) }}</span>
+						<p class="template-card__usecase">
+							{{ tpl.useCase || '' }}
+						</p>
+						<p class="template-card__description">
+							{{ tpl.description || '' }}
+						</p>
+					</div>
+					<div class="template-card__actions">
+						<NcButton type="primary" @click="openClone(tpl)">
+							{{ t('openbuild', 'Use this template') }}
+						</NcButton>
+					</div>
+				</li>
+			</ul>
+		</section>
+
+		<!-- Local clone dialog -->
 		<CloneTemplateDialog
 			ref="cloneDialog"
 			:open="cloneOpen"
 			:template="cloneTarget"
 			@close="cloneOpen = false"
 			@submit="onCloneSubmit" />
+
+		<!-- Remote install dialog -->
+		<CloneTemplateDialog
+			ref="installDialog"
+			:open="installOpen"
+			:template="installTarget"
+			:remote="true"
+			:remote-slug="installTarget && installTarget.slug ? installTarget.slug : ''"
+			@close="installOpen = false"
+			@installed="onInstalled" />
 	</div>
 </template>
 
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
+import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard, NcSelect, NcTextField } from '@nextcloud/vue'
 import CloneTemplateDialog from '../modals/CloneTemplateDialog.vue'
+import { useSettingsStore } from '../store/modules/settings.js'
 
 const CATEGORY_LABELS = {
 	'government-services': 'Government services',
@@ -86,6 +163,7 @@ export default {
 		NcButton,
 		NcEmptyContent,
 		NcLoadingIcon,
+		NcNoteCard,
 		NcSelect,
 		NcTextField,
 		CloneTemplateDialog,
@@ -98,6 +176,16 @@ export default {
 			categoryFilter: null,
 			cloneOpen: false,
 			cloneTarget: null,
+			// Remote store state.
+			storeConfigured: false,
+			isAdmin: false,
+			storeSearch: '',
+			storeCards: [],
+			storeLoading: false,
+			storeError: false,
+			storeDebounce: null,
+			installOpen: false,
+			installTarget: null,
 		}
 	},
 	computed: {
@@ -133,11 +221,41 @@ export default {
 				return haystack.includes(needle)
 			})
 		},
+		/**
+		 * Deep link to the OpenBuild admin settings page where the registry
+		 * connection is configured.
+		 *
+		 * @return {string} The settings URL.
+		 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+		 */
+		adminSettingsUrl() {
+			return generateUrl('/settings/admin/openbuild')
+		},
 	},
 	mounted() {
+		this.loadStoreState()
 		this.fetchTemplates()
 	},
 	methods: {
+		/**
+		 * Read the store configuration from the settings store and, when a
+		 * registry is configured, perform an initial store search.
+		 *
+		 * @return {Promise<void>} Resolves once settings are loaded.
+		 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+		 */
+		async loadStoreState() {
+			const settingsStore = useSettingsStore()
+			let settings = settingsStore.getSettings
+			if (!settings || Object.keys(settings).length === 0) {
+				settings = await settingsStore.fetchSettings() || {}
+			}
+			this.storeConfigured = !!settings?.storeConfigured
+			this.isAdmin = !!settings?.isAdmin
+			if (this.storeConfigured) {
+				this.searchStore('')
+			}
+		},
 		/**
 		 * Observed behaviour of `fetchTemplates` (retrofit annotation).
 		 *
@@ -157,6 +275,51 @@ export default {
 				this.templates = []
 			} finally {
 				this.loading = false
+			}
+		},
+		/**
+		 * Handle debounced typing in the store search box.
+		 *
+		 * @param {string} value The new search term.
+		 * @return {void}
+		 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+		 */
+		onStoreSearch(value) {
+			this.storeSearch = value
+			if (this.storeDebounce) {
+				clearTimeout(this.storeDebounce)
+			}
+			this.storeDebounce = setTimeout(() => {
+				this.searchStore(this.storeSearch)
+			}, 350)
+		},
+		/**
+		 * Query the remote template store. Non-`ok` outcomes surface a generic
+		 * "store unavailable" message without disturbing the built-in list.
+		 *
+		 * @param {string} term The search term.
+		 * @return {Promise<void>} Resolves once the request settles.
+		 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+		 */
+		async searchStore(term) {
+			this.storeLoading = true
+			this.storeError = false
+			try {
+				const url = generateUrl('/apps/openbuild/api/store/templates')
+				const resp = await axios.get(url, { params: { q: term || '' } })
+				const data = resp.data
+				if (data?.outcome === 'ok') {
+					this.storeCards = Array.isArray(data.cards) ? data.cards : []
+				} else {
+					this.storeCards = []
+					this.storeError = true
+				}
+			} catch (e) {
+				console.error('Store search failed:', e)
+				this.storeCards = []
+				this.storeError = true
+			} finally {
+				this.storeLoading = false
 			}
 		},
 		/**
@@ -189,6 +352,28 @@ export default {
 		openClone(template) {
 			this.cloneTarget = template
 			this.cloneOpen = true
+		},
+		/**
+		 * Open the install dialog seeded with a remote store card.
+		 *
+		 * @param {object} card The remote store card.
+		 * @return {void}
+		 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+		 */
+		openInstall(card) {
+			this.installTarget = card
+			this.installOpen = true
+		},
+		/**
+		 * Handle a successful remote install — close and redirect to the editor.
+		 *
+		 * @param {object} created The created application descriptor.
+		 * @return {void}
+		 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+		 */
+		onInstalled(created) {
+			this.installOpen = false
+			this.redirectAfterClone(created)
 		},
 		/**
 		 * Observed behaviour of `onCloneSubmit` (retrofit annotation).
@@ -257,6 +442,25 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
+.template-gallery__store,
+.template-gallery__local {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.template-gallery__local-title {
+	margin: 8px 0 0 0;
+	font-size: 1.2rem;
+	border-top: 1px solid var(--color-border);
+	padding-top: 16px;
+}
+
+.template-gallery__hint a {
+	color: var(--color-primary-element);
+	text-decoration: underline;
+}
+
 .template-gallery__filters {
 	display: flex;
 	gap: 16px;
@@ -271,7 +475,8 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-.template-gallery__empty {
+.template-gallery__empty,
+.template-gallery__store-error {
 	padding: 32px;
 }
 

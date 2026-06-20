@@ -206,6 +206,7 @@ export default {
 		 * @param {object} [filter] Optional shorthand filter map (e.g. { appType: 'hybrid' }).
 		 *
 		 * @return {Promise<number>}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 		 */
 		async fetchTotal(schema, filter = {}) {
 			const url = generateUrl('/apps/openregister/api/objects/openbuild/{schema}', { schema })
@@ -220,6 +221,7 @@ export default {
 		 * @param {number} limit Max rows.
 		 *
 		 * @return {Promise<Array<object>>}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 		 */
 		async fetchObjects(schema, limit) {
 			const url = generateUrl('/apps/openregister/api/objects/openbuild/{schema}', { schema })
@@ -233,6 +235,7 @@ export default {
 		 * @param {string} name The route name.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 		 */
 		goTo(name) {
 			if (this.$router) {

@@ -23,6 +23,8 @@ the registry connection is an admin app-config value.
 
 **Status**: in-progress
 
+@e2e exclude consume-only remote store — the proxy/search/install backend is covered by the RemoteTemplateStoreService + StoreController PHPUnit suites and the UI by the TemplateGallery/CloneTemplateDialog Vitest specs; there is no live remote catalogue to drive a Playwright flow in CI.
+
 ## Requirements
 
 ### Requirement: Registry connection is an admin app-config value

@@ -82,6 +82,10 @@ import BuilderHostView from './views/BuilderHost.vue'
 // modelled on the DocuDesk dashboard pattern; mounted via the type:"custom"
 // Dashboard manifest page to avoid the dashboard-in-dashboard antipattern.
 import DashboardIndex from './views/DashboardIndex.vue'
+// TemplateGallery — the Templates page as a store-aware gallery: remote store
+// search (when a registry is configured) primary + built-in local templates,
+// install via CloneTemplateDialog (openbuild-remote-template-store).
+import TemplateGalleryView from './views/TemplateGallery.vue'
 
 // ── Dashboard widgets (kind: "widget") ───────────────────────────────────────
 //
@@ -216,6 +220,7 @@ export default {
 	PageDesignerView: page(PageDesignerView),
 	BuilderHostView: page(BuilderHostView),
 	DashboardIndex: page(DashboardIndex),
+	TemplateGallery: page(TemplateGalleryView),
 
 	// Dashboard widgets — resolved by CnWidgetGrid by manifest widgetKey.
 	'stats-block': widget(CnStatsBlockWidget, ['body']),
@@ -223,7 +228,7 @@ export default {
 	// Self-fetching table widget — used on the Dashboard for a "Recent apps"
 	// list (unify-apps-with-app-type dashboard enrichment). Fetches objects
 	// from /api/objects/{register}/{schemaId} (slugs accepted).
-	'table': widget(CnTableWidget, ['body']),
+	table: widget(CnTableWidget, ['body']),
 
 	// Business-rules engine dashboard (type:"custom" page).
 	RuleSetsPageView: page(RuleSetsPageView),
