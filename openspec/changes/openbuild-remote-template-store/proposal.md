@@ -51,13 +51,14 @@ no new schema.
   `POST /api/store/templates/{slug}/install` (resolve the remote template
   payload, then clone it locally through the existing `createFromTemplate`
   path). Both carry `#[NoAdminRequired]` and an in-body authorization guard.
-- **MODIFIED** the Templates page — it becomes a searchable "store" surface: a
-  search box + remote result cards rendered alongside/under the existing local
-  seeded templates. An **Install** action on a remote card reuses
-  `CloneTemplateDialog` to name + install the chosen template. When no registry
-  is configured, the store section is hidden (or shows a "configure a registry"
-  hint) and local templates keep working unchanged — fully additive, no
-  regression.
+- **MODIFIED** the Templates page — the searchable remote "store" becomes the
+  **primary** surface (search box + remote result cards as the main content); the
+  locally-seeded templates move to a secondary "Built-in templates" section
+  below (kept, not removed). An **Install** action on a remote card reuses
+  `CloneTemplateDialog` to name + install the chosen template. When **no registry
+  is configured**, the page falls back to the local built-in templates as primary
+  content plus a "configure a registry" hint — so a registry-less instance
+  behaves like today's local Templates page (no regression).
 - **NO** publishing to a remote catalogue (consume-only this cut). **NO** new
   OpenRegister schema — the registry URL/token are admin app-config values, not
   a schema change, and `ApplicationTemplate` already exists and is seeded by

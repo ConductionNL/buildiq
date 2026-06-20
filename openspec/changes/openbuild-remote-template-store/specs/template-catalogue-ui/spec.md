@@ -1,15 +1,17 @@
 ## ADDED Requirements
 
-### Requirement: Templates page renders a remote store search surface
+### Requirement: Templates page renders the remote store as its primary surface
 
-`TemplateGallery` SHALL render a store section — a search box and a row of remote
-result cards — alongside/under the existing local template list, **only when a
-registry is configured** (`storeConfigured` is true). The search box SHALL call
-`GET /api/store/templates?q=…` (debounced) and render the returned remote cards
-(`title`, `useCase`, `description`, `category`, `version`, optional screenshot).
-Each remote card SHALL expose an "Install" action that opens the existing
-`CloneTemplateDialog`. The local template list SHALL remain unchanged and SHALL
-keep working whether or not a registry is configured.
+`TemplateGallery` SHALL render the remote **store as the page's primary surface**
+when a registry is configured (`storeConfigured` is true) — a search box and a
+grid of remote result cards as the main content — and SHALL render the
+locally-seeded templates in a **secondary "Built-in templates" section** below
+(kept, not removed). The search box SHALL call `GET /api/store/templates?q=…`
+(debounced) and render the returned remote cards (`title`, `useCase`,
+`description`, `category`, `version`, optional screenshot). Each remote card
+SHALL expose an "Install" action that opens the existing `CloneTemplateDialog`.
+The local built-in templates SHALL keep working (install via the local
+from-template path) as the secondary section.
 
 @e2e exclude retrofit component-contract spec — the store search-renders-results
 and install-opens-dialog behaviours are `TemplateGallery` component-state
@@ -51,19 +53,20 @@ tests.
 - **AND** on success the dialog closes and the gallery redirects to the new
   application
 
-### Requirement: No-registry empty state hides the store section
+### Requirement: No-registry fallback shows built-in templates as the primary surface
 
-`TemplateGallery` SHALL hide the store section when no registry is configured.
-When `storeConfigured` is false, `TemplateGallery` SHALL NOT render the store
-search section and SHALL NOT issue any store request.
-Admin users SHALL see a "configure a registry" hint linking to the OpenBuild
-admin settings; non-admins SHALL simply see the local templates with no store
-section. The local template list SHALL render exactly as it did before this
-change.
+`TemplateGallery` SHALL fall back to rendering the locally-seeded **built-in
+templates as the primary content** when no registry is configured
+(`storeConfigured` is false) — exactly as today's local Templates page — and
+SHALL NOT render the store search box or remote cards, and SHALL NOT issue any
+store request. Admin
+users SHALL additionally see a "configure a registry" hint linking to the
+OpenBuild admin settings; non-admins SHALL simply see the local templates. This
+guarantees a registry-less instance is non-regressed.
 
-#### Scenario: Store section hidden when unconfigured
+#### Scenario: Falls back to local templates when unconfigured
 
 - **WHEN** the Templates page loads with `storeConfigured` false
 - **THEN** the store search box and remote cards are not rendered
 - **AND** no `GET /api/store/templates` request is issued
-- **AND** the local templates are listed unchanged
+- **AND** the local built-in templates are listed as the primary content

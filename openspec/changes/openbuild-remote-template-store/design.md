@@ -111,18 +111,25 @@ calls those helpers with the remote payload instead of an OR-looked-up one).
 register first, then calling the existing slug-based endpoint — rejected: it
 pollutes the local catalogue with a remote record the user did not ask to keep.
 
-### Decision 4 — UI: Templates page becomes a store surface (additive)
+### Decision 4 — UI: Templates page becomes the store (remote-primary), local templates secondary
 
-`TemplateGallery.vue` gains a **store section**: a search box bound to a
-debounced `GET /api/store/templates?q=…` call and a row of remote result cards
-rendered under the existing local templates. Each remote card's "Install"
-action opens the existing `CloneTemplateDialog` (name + slug form), whose submit
-calls `POST /api/store/templates/{slug}/install` instead of the local
-from-template endpoint; on success it redirects to the editor exactly like a
-local clone (REQ-OBTC-006). The store section is **only rendered when a registry
-is configured** — the page reads a `storeConfigured` flag from the existing
-settings load; when false, the store section is hidden (admins see a "configure
-a registry" hint linking to admin settings). Local templates are untouched.
+`TemplateGallery.vue` is reworked so the **remote store is the primary surface**
+(user-chosen "replace"): a search box bound to a debounced
+`GET /api/store/templates?q=…` call drives a grid of remote result cards as the
+page's main content. The locally-seeded templates move to a **secondary
+"Built-in templates" section** below the store results (kept, not removed, so
+nothing regresses). Each remote card's "Install" action opens the existing
+`CloneTemplateDialog` (name + slug form), whose submit calls
+`POST /api/store/templates/{slug}/install` instead of the local from-template
+endpoint; on success it redirects to the editor exactly like a local clone
+(REQ-OBTC-006).
+
+**No-registry fallback (non-breaking):** the page reads a `storeConfigured` flag
+from the existing settings load. When **false**, the remote store surface is
+replaced by the local "Built-in templates" list as the primary content plus a
+"configure a registry" hint (linking to admin settings) — so an instance with no
+registry configured behaves like today's local-only Templates page. When
+**true**, the store is primary and built-ins are the secondary section.
 
 ### Decision 5 — Declarative vs imperative (ADR-031)
 
