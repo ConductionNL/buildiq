@@ -39,12 +39,36 @@ class SettingsService
 {
 
     /**
-     * Configuration keys managed by this service.
+     * Configuration keys managed by this service (plain read/write).
      *
      * @var array<string>
      */
     private const CONFIG_KEYS = [
         'register',
+        'registry_url',
+        'registry_register',
+    ];
+
+    /**
+     * Per-key default values. Keys absent here default to ''.
+     * `registry_register` defaults to `openbuild` (the catalogue's register
+     * segment); `registry_url` defaults to '' so the store stays hidden until an
+     * admin configures it (the placeholder URL is only a UI hint, never stored).
+     *
+     * @var array<string, string>
+     */
+    private const CONFIG_DEFAULTS = [
+        'registry_register' => 'openbuild',
+    ];
+
+    /**
+     * Write-only config keys — accepted on update but NEVER returned by
+     * getSettings(). The remote registry read token lives here.
+     *
+     * @var array<string>
+     */
+    private const SECRET_KEYS = [
+        'registry_token',
     ];
 
     /**

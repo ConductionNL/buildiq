@@ -78,6 +78,10 @@ import PageDesignerView from './views/PageDesignerHost.vue'
 
 // Virtual-app host — nested CnAppRoot rendering a virtual app's own manifest.
 import BuilderHostView from './views/BuilderHost.vue'
+// DashboardIndex — custom dashboard view (KPI cards + Recent apps + Quick start),
+// modelled on the DocuDesk dashboard pattern; mounted via the type:"custom"
+// Dashboard manifest page to avoid the dashboard-in-dashboard antipattern.
+import DashboardIndex from './views/DashboardIndex.vue'
 
 // ── Dashboard widgets (kind: "widget") ───────────────────────────────────────
 //
@@ -211,6 +215,7 @@ export default {
 	SchemaDesignerView: page(SchemaDesignerView),
 	PageDesignerView: page(PageDesignerView),
 	BuilderHostView: page(BuilderHostView),
+	DashboardIndex: page(DashboardIndex),
 
 	// Dashboard widgets — resolved by CnWidgetGrid by manifest widgetKey.
 	'stats-block': widget(CnStatsBlockWidget, ['body']),
