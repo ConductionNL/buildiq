@@ -4,3 +4,20 @@
 #content {
 	height: 100%;
 }
+
+/* App-detail header: span the page full-width and float the action buttons at
+   the top-right, instead of letting the actions reserve a flex column that
+   narrows the header content (pills + insights window toggle). openbuild only —
+   scoped to `.app-openbuild` so it never affects other apps' detail pages. */
+.app-openbuild .cn-detail-page__header {
+	position: relative;
+}
+.app-openbuild .cn-detail-page__header > :first-child {
+	flex-basis: 100%;
+}
+.app-openbuild .cn-detail-page__header-actions {
+	position: absolute;
+	top: 0;
+	inset-inline-end: 0;
+	z-index: 2;
+}
