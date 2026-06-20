@@ -104,6 +104,8 @@
 			"config": {
 				"register": "openbuild",
 				"schema": "application",
+				"maxWidth": "none",
+				"showRelatedObjects": false,
 				"sidebarTabs": [
 					{
 						"id": "manifest",
@@ -139,20 +141,16 @@
 						"icon": "icon-download",
 						"component": "ExportJobsTab",
 						"order": 60
+					},
+					{
+						"id": "audit",
+						"label": "Audit trail",
+						"icon": "icon-history",
+						"component": "audit-trail",
+						"order": 70
 					}
 				]
-			},
-			"widgets": [
-				{
-					"widgetKey": "audit-trail",
-					"slot": "sidebar",
-					"tabGroup": "audit",
-					"gridX": 0,
-					"gridY": 0,
-					"gridWidth": 1,
-					"gridHeight": 1
-				}
-			]
+			}
 		},
 		{
 			"id": "Schemas",
