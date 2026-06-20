@@ -19,9 +19,9 @@ scope for this cut. When no registry is configured, local templates keep working
 unchanged (additive, no regression). No new OpenRegister schema is introduced;
 the registry connection is an admin app-config value.
 
-**OpenSpec changes**: [openbuild-remote-template-store](../../changes/openbuild-remote-template-store/)
+**OpenSpec changes**: [openbuild-remote-template-store](../../changes/archive/2026-06-20-openbuild-remote-template-store/) _(archived 2026-06-20)_
 
-**Status**: in-progress
+**Status**: done
 
 @e2e exclude consume-only remote store — the proxy/search/install backend is covered by the RemoteTemplateStoreService + StoreController PHPUnit suites and the UI by the TemplateGallery/CloneTemplateDialog Vitest specs; there is no live remote catalogue to drive a Playwright flow in CI.
 

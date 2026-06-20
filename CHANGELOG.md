@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.7] - 2026-06-20
+
+### Added
+- Remote template store (openbuild-remote-template-store): search + install
+  virtual-app templates from a remote OpenRegister-backed catalogue. Admin
+  registry config (URL/register/token, token write-only), a server-side
+  SSRF-guarded proxy (`RemoteTemplateStoreService`), `StoreController`
+  search/install endpoints, and a store-aware Templates gallery (store primary
+  when a registry is configured, built-in templates fallback otherwise). Install
+  clones via the shared `installFromTemplateArray` seam. Consume-only this cut.
+- DocuDesk-style dashboard: a self-contained `DashboardIndex` view (one
+  `CnDashboardPage`) with a 4-KPI row (Apps / Hybrid apps / Templates /
+  Published versions), a Recent apps table, and a Quick start panel.
+
+### Fixed
+- `SeedApplicationTemplates` + `PopulateApplicationPermissions` repair steps now
+  write in system context (OR RBAC/multitenancy bypassed) so they no longer fail
+  as the Anonymous user — the Templates KPI count is now accurate.
+- Dashboard Templates KPI queried the wrong schema slug (`applicationTemplate` →
+  `application-template`).
+
 ## [0.5.6] - 2026-06-20
 
 ### Added
