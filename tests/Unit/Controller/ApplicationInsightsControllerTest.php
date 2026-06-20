@@ -7,7 +7,7 @@
  * Covers:
  *  - 400 with the spec-defined body when `window` is missing
  *  - 400 with the spec-defined body when `window` is invalid (e.g. `24h`)
- *  - 200 + Cache-Control: public, max-age=60 on success
+ *  - 200 + Cache-Control: private, max-age=10 on success
  *  - 404 without the cache header when the service returns null
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -113,7 +113,7 @@ class ApplicationInsightsControllerTest extends TestCase
     }//end testInvalidWindowReturns400()
 
     /**
-     * Successful response carries 200 + `Cache-Control: public, max-age=60`.
+     * Successful response carries 200 + `Cache-Control: private, max-age=10`.
      *
      * @return void
      */
@@ -146,7 +146,7 @@ class ApplicationInsightsControllerTest extends TestCase
         $headersProp->setAccessible(true);
         $headers = $headersProp->getValue($response);
         self::assertArrayHasKey('Cache-Control', $headers);
-        self::assertSame('public, max-age=60', $headers['Cache-Control']);
+        self::assertSame('private, max-age=10', $headers['Cache-Control']);
     }//end testSuccessfulResponseCarriesCacheHeader()
 
     /**
@@ -169,6 +169,6 @@ class ApplicationInsightsControllerTest extends TestCase
         $headersProp->setAccessible(true);
         $headers = $headersProp->getValue($response);
         $cacheHeader = $headers['Cache-Control'] ?? null;
-        self::assertNotSame('public, max-age=60', $cacheHeader);
+        self::assertNotSame('private, max-age=10', $cacheHeader);
     }//end testServiceNullMapsToNotFoundWithoutCacheHeader()
 }//end class
