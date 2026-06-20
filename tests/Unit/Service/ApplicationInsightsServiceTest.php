@@ -38,6 +38,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -95,11 +97,19 @@ class ApplicationInsightsServiceTest extends TestCase
         $this->registerMapper   = $this->createMock(RegisterMapper::class);
         $this->logger           = $this->createMock(LoggerInterface::class);
 
+        // Cache that always misses (get → null), so every test exercises the
+        // real computation path; set() is a no-op.
+        $cache        = $this->createMock(ICache::class);
+        $cache->method('get')->willReturn(null);
+        $cacheFactory = $this->createMock(ICacheFactory::class);
+        $cacheFactory->method('createDistributed')->willReturn($cache);
+
         $this->service = new ApplicationInsightsService(
             objectService: $this->objectService,
             auditTrailMapper: $this->auditTrailMapper,
             schemaMapper: $this->schemaMapper,
             registerMapper: $this->registerMapper,
+            cacheFactory: $cacheFactory,
             logger: $this->logger,
         );
     }//end setUp()

@@ -59,6 +59,8 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -76,6 +78,15 @@ class ApplicationInsightsService
      * @var array<int, string>
      */
     public const ALLOWED_WINDOWS = ['7d', '30d', '90d'];
+
+    /**
+     * How long a computed insights payload is memoised (seconds). The
+     * aggregation is expensive for large apps; 10 minutes balances freshness
+     * against recompute cost.
+     *
+     * @var int
+     */
+    private const CACHE_TTL_SECONDS = 600;
 
     /**
      * Window-to-hours mapping (REQ-OBAI-004).
@@ -119,6 +130,7 @@ class ApplicationInsightsService
      * @param AuditTrailMapper $auditTrailMapper Audit-trail aggregations (chart + actors + counts)
      * @param SchemaMapper     $schemaMapper     Schema slug-to-integer-ID resolver
      * @param RegisterMapper   $registerMapper   Register lookup (installed-app footprint for hybrid apps)
+     * @param ICacheFactory    $cacheFactory     Distributed-cache factory (memoises computed payloads)
      * @param LoggerInterface  $logger           PSR logger
      *
      * @return void
@@ -128,9 +140,18 @@ class ApplicationInsightsService
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
+        ICacheFactory $cacheFactory,
         private readonly LoggerInterface $logger,
     ) {
+        $this->cache = $cacheFactory->createDistributed('openbuild_insights');
     }//end __construct()
+
+    /**
+     * Distributed cache for computed insights payloads.
+     *
+     * @var ICache
+     */
+    private ICache $cache;
 
     /**
      * Resolve + authorise the (Application, Version, caller) tuple.
@@ -225,6 +246,19 @@ class ApplicationInsightsService
 
             [$application, $version] = $resolved;
 
+            // These aggregations fan out across every schema/register of the
+            // (possibly very large) installed app — tens of seconds for a big
+            // hybrid app. The PAYLOAD is identical for all callers (RBAC is
+            // already enforced above), so memoise it in the distributed cache
+            // keyed by (app, version, window). First viewer pays the cost (the
+            // dashboard shows a spinner); everyone else gets it instantly until
+            // the short TTL lapses.
+            $cacheKey = sprintf('payload_%s_%s_%s', $appUuid, $versionUuid, $window);
+            $cached   = $this->cache->get($cacheKey);
+            if (is_array($cached) === true) {
+                return $cached;
+            }
+
             $appSlug = (string) ($application['slug'] ?? '');
             $hours   = self::WINDOW_HOURS[$window];
 
@@ -235,7 +269,9 @@ class ApplicationInsightsService
             // per-version register (which is usually empty). See REQ unified-app.
             $isHybrid = (($application['appType'] ?? 'virtual') === 'hybrid');
             if ($isHybrid === true) {
-                return $this->computeHybridInsights(appSlug: $appSlug, hours: $hours);
+                $payload = $this->computeHybridInsights(appSlug: $appSlug, hours: $hours);
+                $this->cache->set($cacheKey, $payload, self::CACHE_TTL_SECONDS);
+                return $payload;
             }
 
             $versionSlug  = (string) ($version['slug'] ?? '');
@@ -254,10 +290,12 @@ class ApplicationInsightsService
 
             $activity = $this->buildActivityTimeline(schemaIds: $schemaIds, hours: $hours, registerSlug: $registerSlug);
 
-            return [
+            $payload = [
                 'kpis'     => $kpis,
                 'activity' => $activity,
             ];
+            $this->cache->set($cacheKey, $payload, self::CACHE_TTL_SECONDS);
+            return $payload;
         } catch (Throwable $e) {
             $this->logger->error(
                 'OpenBuild: ApplicationInsightsService::computeInsights failed: {message}',
@@ -287,10 +325,12 @@ class ApplicationInsightsService
     {
         $registers    = $this->resolveInstalledAppRegisters(appSlug: $appSlug);
         $allSchemaIds = [];
+        $registerIds  = [];
         $objectCount  = 0;
 
         foreach ($registers as $register) {
-            $schemaIds = $register['schemaIds'];
+            $registerIds[] = $register['registerId'];
+            $schemaIds     = $register['schemaIds'];
             if (empty($schemaIds) === true) {
                 continue;
             }
@@ -306,20 +346,80 @@ class ApplicationInsightsService
 
         $schemaIds = array_keys($allSchemaIds);
 
+        // Audit count + activity timeline are computed PER REGISTER (one
+        // getActionChartData call per register, not per schema). An installed
+        // app can span dozens of schemas (pipelinq ≈ 58), so the per-schema
+        // fan-out the virtual path uses would be ~2 audit queries × 58 — the
+        // dominant cost. Per-register collapses that to a handful of queries.
+        [$auditCount, $activity] = $this->auditByRegisters(registerIds: $registerIds, hours: $hours);
+
         $kpis = [
             'activeUsers'     => $this->safeDistinctActorCount(schemaIds: $schemaIds, hours: $hours),
             'objectCount'     => $objectCount,
             'filesCount'      => $this->countAttachedFiles(registerSlug: '', schemaIds: $schemaIds),
-            'auditEventCount' => $this->countAuditEvents(schemaIds: $schemaIds, hours: $hours),
+            'auditEventCount' => $auditCount,
         ];
-
-        $activity = $this->buildActivityTimeline(schemaIds: $schemaIds, hours: $hours, registerSlug: '');
 
         return [
             'kpis'     => $kpis,
             'activity' => $activity,
         ];
     }//end computeHybridInsights()
+
+    /**
+     * Audit-event count + activity timeline for a set of registers, computed
+     * with ONE `getActionChartData` call per register (registerId filter) rather
+     * than per schema. Returns `[auditCount, timeline]`.
+     *
+     * @param array<int, int> $registerIds Register IDs to aggregate over.
+     * @param int             $hours       Window hours.
+     *
+     * @return array{0: int, 1: array<int, array{timestamp: string, eventCount: int}>}
+     *
+     * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+     */
+    private function auditByRegisters(array $registerIds, int $hours): array
+    {
+        if (empty($registerIds) === true) {
+            return [0, []];
+        }
+
+        try {
+            $from = new DateTime(sprintf('-%d hours', $hours));
+            $till = new DateTime();
+
+            $count   = 0;
+            $buckets = [];
+            foreach ($registerIds as $registerId) {
+                $chart  = $this->auditTrailMapper->getActionChartData(
+                    from: $from,
+                    till: $till,
+                    registerId: (int) $registerId,
+                    schemaId: null
+                );
+                $count += $this->sumChartSeries(chart: $chart);
+                $this->mergeChartIntoBuckets(chart: $chart, buckets: $buckets);
+            }
+
+            ksort($buckets);
+
+            $timeline = [];
+            foreach ($buckets as $date => $eventCount) {
+                $timeline[] = [
+                    'timestamp'  => sprintf('%sT00:00:00Z', $date),
+                    'eventCount' => (int) $eventCount,
+                ];
+            }
+
+            return [$count, $timeline];
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                'OpenBuild: auditByRegisters failed: {message}',
+                ['message' => $e->getMessage()]
+            );
+            return [0, []];
+        }//end try
+    }//end auditByRegisters()
 
     /**
      * Resolve the OpenRegister registers belonging to an installed app.

@@ -37,23 +37,53 @@
 
 		<!-- 2. KPI grid -->
 		<section class="ob-detail-dashboard__kpis">
-			<CnCard
+			<!-- KPI widgets. While insights are loading we show CnStatsBlock's
+			     built-in spinner (loading + !showZeroCount) instead of a stale 0;
+			     once loaded, showZeroCount renders a real 0 where applicable. -->
+			<CnStatsBlock
 				class="ob-detail-dashboard__kpi"
+				horizontal
+				:icon="iconUsers"
 				:title="t('openbuild', 'Active users')"
-				:description="String(kpis.activeUsers)" />
-			<CnCard
+				:count="kpis.activeUsers"
+				:count-label="t('openbuild', 'users')"
+				variant="primary"
+				:loading="!loaded"
+				:loading-label="t('openbuild', 'Loading…')"
+				:show-zero-count="loaded" />
+			<CnStatsBlock
 				class="ob-detail-dashboard__kpi"
+				horizontal
+				:icon="iconObjects"
 				:title="t('openbuild', 'Object count')"
-				:description="String(kpis.objectCount)" />
-			<CnCard
-				class="ob-detail-dashboard__kpi ob-detail-dashboard__kpi--files"
-				:title="t('openbuild', 'Files')"
-				:description="String(kpis.filesCount)"
-				:title-tooltip="filesTooltip" />
-			<CnCard
+				:count="kpis.objectCount"
+				:count-label="t('openbuild', 'objects')"
+				variant="primary"
+				:loading="!loaded"
+				:loading-label="t('openbuild', 'Loading…')"
+				:show-zero-count="loaded" />
+			<CnStatsBlock
 				class="ob-detail-dashboard__kpi"
+				horizontal
+				:icon="iconFiles"
+				:title="t('openbuild', 'Files')"
+				:count="kpis.filesCount"
+				:count-label="t('openbuild', 'files')"
+				variant="success"
+				:loading="!loaded"
+				:loading-label="t('openbuild', 'Loading…')"
+				:show-zero-count="loaded" />
+			<CnStatsBlock
+				class="ob-detail-dashboard__kpi"
+				horizontal
+				:icon="iconAudit"
 				:title="t('openbuild', 'Audit events')"
-				:description="String(kpis.auditEventCount)" />
+				:count="kpis.auditEventCount"
+				:count-label="t('openbuild', 'events')"
+				variant="warning"
+				:loading="!loaded"
+				:loading-label="t('openbuild', 'Loading…')"
+				:show-zero-count="loaded" />
 		</section>
 
 		<!-- 3. Activity graph -->
@@ -83,14 +113,9 @@
 			</p>
 		</section>
 
-		<!-- 4. Structural widget grid -->
+		<!-- 4. Structural widget grid. (Register card dropped — its
+		     schema/object/file counts are already shown in the KPI widgets.) -->
 		<section class="ob-detail-dashboard__widgets">
-			<RegisterWidget
-				:app-slug="appSlug"
-				:version-slug="activeVersionSlug"
-				:schema-count="schemaCount"
-				:object-count="kpis.objectCount"
-				:files-count="kpis.filesCount" />
 			<SchemasWidget
 				:app-slug="appSlug"
 				:version-slug="activeVersionSlug"
@@ -114,10 +139,13 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
-import { CnCard } from '@conduction/nextcloud-vue'
+import { CnStatsBlock } from '@conduction/nextcloud-vue'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
+import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
+import FileMultipleOutline from 'vue-material-design-icons/FileMultipleOutline.vue'
+import History from 'vue-material-design-icons/History.vue'
 
-import RegisterWidget from './widgets/RegisterWidget.vue'
 import SchemasWidget from './widgets/SchemasWidget.vue'
 import GroupsWidget from './widgets/GroupsWidget.vue'
 import PagesWidget from './widgets/PagesWidget.vue'
@@ -129,9 +157,8 @@ import { useInsightsWindow } from '../../composables/useInsightsWindow.js'
 export default {
 	name: 'ApplicationDetailDashboard',
 	components: {
-		CnCard,
+		CnStatsBlock,
 		NcButton,
-		RegisterWidget,
 		SchemasWidget,
 		GroupsWidget,
 		PagesWidget,
@@ -145,13 +172,20 @@ export default {
 	},
 	/**
 	 * Expose the shared insights-window ref (driven by the header toggle) so the
-	 * KPI/activity widgets re-fetch when the user changes 7d/30d/90d.
+	 * KPI/activity widgets re-fetch when the user changes 7d/30d/90d — plus the
+	 * (raw) MDI icon components for the KPI widgets.
 	 *
-	 * @return {{ selectedWindow: import('vue').Ref<string> }}
+	 * @return {object}
 	 */
 	setup() {
 		const { selectedWindow } = useInsightsWindow()
-		return { selectedWindow }
+		return {
+			selectedWindow,
+			iconUsers: AccountMultipleOutline,
+			iconObjects: CubeOutline,
+			iconFiles: FileMultipleOutline,
+			iconAudit: History,
+		}
 	},
 	data() {
 		return {
@@ -162,6 +196,9 @@ export default {
 			activity: [],
 			versionNoLongerAccessible: false,
 			loading: false,
+			// Becomes true after the first insights fetch settles; gates the KPI
+			// widgets' spinner so they show a loader (not a stale 0) while waiting.
+			loaded: false,
 			error: null,
 			insightsDebounce: null,
 		}
@@ -175,15 +212,6 @@ export default {
 		 */
 		appSlug() {
 			return (this.application && this.application.slug) || ''
-		},
-		/**
-		 * Files KPI tooltip.
-		 *
-		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
-		 */
-		filesTooltip() {
-			return t('openbuild', 'count of OR-attached files across all objects in this version\'s register; storage-bytes aggregation deferred')
 		},
 		/**
 		 * Production version UUID resolved from the Application record.
@@ -299,15 +327,6 @@ export default {
 				out.push({ id, name: id, objectCount: 0, status: 'active' })
 			})
 			return out
-		},
-		/**
-		 * Count of distinct schemas in the active version.
-		 *
-		 * @return {number}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
-		 */
-		schemaCount() {
-			return this.activeSchemas.length
 		},
 		/**
 		 * The production version row (for the chain/star resolution).
@@ -575,6 +594,7 @@ export default {
 				}
 			} finally {
 				this.loading = false
+				this.loaded = true
 			}
 		},
 	},
