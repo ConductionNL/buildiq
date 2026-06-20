@@ -8,8 +8,10 @@
 	widget body of a `type: "dashboard"` page) avoids the dashboard-in-dashboard
 	antipattern (hydra gate-15).
 
-	Row 1: four KPI tiles (Apps, Hybrid apps, Templates, Published versions).
-	Row 2: two content panels — Recent apps (table) + Quick start (actions).
+	Row 1: three KPI tiles (Apps, Hybrid apps, Published versions) — each clickable
+	       through to the Apps index.
+	Row 2: full-width Recent apps table.
+	Header: a "Create app" primary action opens the creation wizard.
 
 	@spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 -->
@@ -19,47 +21,62 @@
 		:widgets="widgetDefs"
 		:layout="dashboardLayout"
 		:loading="loading">
-		<!-- KPI: Apps (total) -->
+		<!-- Create app — primary header action (opens the creation wizard). -->
+		<template #header-actions>
+			<NcButton type="primary" @click="showWizard = true">
+				{{ t('openbuild', 'Create app') }}
+			</NcButton>
+		</template>
+
+		<!-- KPI: Apps (total) — clickable → Apps index -->
 		<template #widget-apps>
-			<CnStatsBlock
-				:title="t('openbuild', 'Apps')"
-				:count="counts.apps"
-				:count-label="t('openbuild', 'apps')"
-				variant="primary"
-				show-zero-count />
+			<div class="ob-kpi-link"
+				role="button"
+				tabindex="0"
+				@click="goTo('VirtualApps')"
+				@keyup.enter="goTo('VirtualApps')">
+				<CnStatsBlock
+					:title="t('openbuild', 'Apps')"
+					:count="counts.apps"
+					:count-label="t('openbuild', 'apps')"
+					variant="primary"
+					show-zero-count />
+			</div>
 		</template>
 
-		<!-- KPI: Hybrid apps -->
+		<!-- KPI: Hybrid apps — clickable → Apps index -->
 		<template #widget-hybrid>
-			<CnStatsBlock
-				:title="t('openbuild', 'Hybrid apps')"
-				:count="counts.hybrid"
-				:count-label="t('openbuild', 'hybrid')"
-				variant="default"
-				show-zero-count />
+			<div class="ob-kpi-link"
+				role="button"
+				tabindex="0"
+				@click="goTo('VirtualApps')"
+				@keyup.enter="goTo('VirtualApps')">
+				<CnStatsBlock
+					:title="t('openbuild', 'Hybrid apps')"
+					:count="counts.hybrid"
+					:count-label="t('openbuild', 'hybrid')"
+					variant="default"
+					show-zero-count />
+			</div>
 		</template>
 
-		<!-- KPI: Templates -->
-		<template #widget-templates>
-			<CnStatsBlock
-				:title="t('openbuild', 'Templates')"
-				:count="counts.templates"
-				:count-label="t('openbuild', 'templates')"
-				variant="default"
-				show-zero-count />
-		</template>
-
-		<!-- KPI: Published versions -->
+		<!-- KPI: Published versions — clickable → Apps index -->
 		<template #widget-versions>
-			<CnStatsBlock
-				:title="t('openbuild', 'Published versions')"
-				:count="counts.versions"
-				:count-label="t('openbuild', 'versions')"
-				variant="success"
-				show-zero-count />
+			<div class="ob-kpi-link"
+				role="button"
+				tabindex="0"
+				@click="goTo('VirtualApps')"
+				@keyup.enter="goTo('VirtualApps')">
+				<CnStatsBlock
+					:title="t('openbuild', 'Published versions')"
+					:count="counts.versions"
+					:count-label="t('openbuild', 'versions')"
+					variant="success"
+					show-zero-count />
+			</div>
 		</template>
 
-		<!-- Recent apps table -->
+		<!-- Recent apps table (full width, borderless — the widget card frames it) -->
 		<template #widget-recent-apps>
 			<NcEmptyContent
 				v-if="!loading && recentApps.length === 0"
@@ -68,28 +85,11 @@
 			<CnTableWidget
 				v-else
 				:rows="recentApps"
-				:columns="recentColumns" />
+				:columns="recentColumns"
+				borderless />
 		</template>
 
-		<!-- Quick start panel -->
-		<template #widget-quick-start>
-			<div class="ob-dash-quickstart">
-				<p class="ob-dash-quickstart__lead">
-					{{ t('openbuild', 'Build a new app, or customize an installed one.') }}
-				</p>
-				<div class="ob-dash-quickstart__actions">
-					<NcButton type="primary" @click="goTo('VirtualApps')">
-						{{ t('openbuild', 'Go to Apps') }}
-					</NcButton>
-					<NcButton @click="goTo('Templates')">
-						{{ t('openbuild', 'Browse templates') }}
-					</NcButton>
-					<NcButton @click="goTo('Schemas')">
-						{{ t('openbuild', 'Design schemas') }}
-					</NcButton>
-				</div>
-			</div>
-		</template>
+		<CreateApplicationWizard :show.sync="showWizard" @created="onAppCreated" />
 	</CnDashboardPage>
 </template>
 
@@ -98,6 +98,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent } from '@nextcloud/vue'
 import { CnDashboardPage, CnStatsBlock, CnTableWidget } from '@conduction/nextcloud-vue'
+import CreateApplicationWizard from '../dialogs/CreateApplicationWizard.vue'
 
 export default {
 	name: 'DashboardIndex',
@@ -106,6 +107,7 @@ export default {
 		CnDashboardPage,
 		CnStatsBlock,
 		CnTableWidget,
+		CreateApplicationWizard,
 		NcButton,
 		NcEmptyContent,
 	},
@@ -113,15 +115,14 @@ export default {
 	data() {
 		return {
 			loading: true,
-			counts: { apps: 0, hybrid: 0, templates: 0, versions: 0 },
+			showWizard: false,
+			counts: { apps: 0, hybrid: 0, versions: 0 },
 			recentApps: [],
 			dashboardLayout: [
-				{ id: 1, widgetId: 'apps', gridX: 0, gridY: 0, gridWidth: 3, gridHeight: 2, showTitle: false },
-				{ id: 2, widgetId: 'hybrid', gridX: 3, gridY: 0, gridWidth: 3, gridHeight: 2, showTitle: false },
-				{ id: 3, widgetId: 'templates', gridX: 6, gridY: 0, gridWidth: 3, gridHeight: 2, showTitle: false },
-				{ id: 4, widgetId: 'versions', gridX: 9, gridY: 0, gridWidth: 3, gridHeight: 2, showTitle: false },
-				{ id: 5, widgetId: 'recent-apps', gridX: 0, gridY: 2, gridWidth: 8, gridHeight: 5 },
-				{ id: 6, widgetId: 'quick-start', gridX: 8, gridY: 2, gridWidth: 4, gridHeight: 5 },
+				{ id: 1, widgetId: 'apps', gridX: 0, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
+				{ id: 2, widgetId: 'hybrid', gridX: 4, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
+				{ id: 3, widgetId: 'versions', gridX: 8, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
+				{ id: 4, widgetId: 'recent-apps', gridX: 0, gridY: 2, gridWidth: 12, gridHeight: 5 },
 			],
 		}
 	},
@@ -137,10 +138,8 @@ export default {
 			return [
 				{ id: 'apps', title: t('openbuild', 'Apps') },
 				{ id: 'hybrid', title: t('openbuild', 'Hybrid apps') },
-				{ id: 'templates', title: t('openbuild', 'Templates') },
 				{ id: 'versions', title: t('openbuild', 'Published versions') },
 				{ id: 'recent-apps', title: t('openbuild', 'Recent apps') },
-				{ id: 'quick-start', title: t('openbuild', 'Quick start') },
 			]
 		},
 
@@ -171,7 +170,7 @@ export default {
 
 	methods: {
 		/**
-		 * Fetch the four KPI counts + the recent-apps list from OpenRegister.
+		 * Fetch the KPI counts + the recent-apps list from OpenRegister.
 		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
@@ -179,14 +178,13 @@ export default {
 		async loadDashboard() {
 			this.loading = true
 			try {
-				const [apps, hybrid, templates, versions, recent] = await Promise.all([
+				const [apps, hybrid, versions, recent] = await Promise.all([
 					this.fetchTotal('application'),
 					this.fetchTotal('application', { appType: 'hybrid' }),
-					this.fetchTotal('application-template'),
 					this.fetchTotal('applicationVersion'),
 					this.fetchObjects('application', 8),
 				])
-				this.counts = { apps, hybrid, templates, versions }
+				this.counts = { apps, hybrid, versions }
 				this.recentApps = recent.map((a) => ({
 					...a,
 					typeLabel: a.appType === 'hybrid' ? t('openbuild', 'Hybrid') : t('openbuild', 'Virtual'),
@@ -197,6 +195,23 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * After the wizard creates an app, navigate to it (or refresh the list).
+		 *
+		 * @param {string} applicationUuid The new application UUID (may be empty for hybrid).
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		onAppCreated(applicationUuid) {
+			this.showWizard = false
+			if (this.$router && applicationUuid) {
+				this.$router.push({ name: 'VirtualAppDetail', params: { objectId: applicationUuid } }).catch(() => {})
+				return
+			}
+			this.loadDashboard()
 		},
 
 		/**
@@ -247,22 +262,19 @@ export default {
 </script>
 
 <style scoped>
-.ob-dash-quickstart {
-	display: flex;
-	flex-direction: column;
-	gap: 14px;
-	padding: 4px 2px;
+/* KPI tiles are clickable shortcuts to the Apps index. */
+.ob-kpi-link {
+	cursor: pointer;
+	height: 100%;
+	border-radius: var(--border-radius-large, 8px);
 }
 
-.ob-dash-quickstart__lead {
-	margin: 0;
-	color: var(--color-text-maxcontrast, #888);
+.ob-kpi-link:hover {
+	background: var(--color-background-hover, rgba(127, 127, 127, 0.08));
 }
 
-.ob-dash-quickstart__actions {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	align-items: stretch;
+.ob-kpi-link:focus-visible {
+	outline: 2px solid var(--color-primary-element);
+	outline-offset: -2px;
 }
 </style>
