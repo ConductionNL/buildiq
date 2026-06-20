@@ -98,6 +98,9 @@
 			"title": "App",
 			"headerComponent": "ApplicationDetailHeader",
 			"actionsComponent": "ApplicationDetailActions",
+			"slots": {
+				"before-body": "ApplicationDetailDashboard"
+			},
 			"config": {
 				"register": "openbuild",
 				"schema": "application",

@@ -61,10 +61,14 @@ import ApplicationDetailActions from './components/ApplicationDetailActions.vue'
 // ── Virtual apps — detail header ──────────────────────────────────────────────
 
 // VirtualAppDetail headerComponent (openbuild-app-detail-overview
-// REQ-OBADO-001 / REQ-OBADO-011) — purpose-built maintainer dashboard
-// replacing the generic main-area data widget. Owns hero strip + version pill
-// tabs + window toggle + KPI grid + activity chart + structural widgets.
+// REQ-OBADO-001 / REQ-OBADO-011) — identity + controls header: hero strip +
+// version pill tabs + window toggle. The analytics (KPI grid, activity chart,
+// structural widgets) live in the body dashboard below (grid-built page).
 import ApplicationDetailHeader from './components/applicationDetail/ApplicationDetailHeader.vue'
+// VirtualAppDetail before-body dashboard — KPI grid + activity chart +
+// structural widgets, rendered in CnDetailPage's #before-body slot (in the page
+// body, below the action-menu line, above the auto Data/Related sections).
+import ApplicationDetailDashboard from './components/applicationDetail/ApplicationDetailDashboard.vue'
 
 // ── Custom page components (kind: "page") ────────────────────────────────────
 
@@ -94,10 +98,8 @@ import TemplateGalleryView from './views/TemplateGallery.vue'
 // (object-table, form-renderer, map-viewer, card-grid, data, metadata,
 // integration), so the consuming app must register them. CnWidgetGrid resolves
 // a widgetKey against this registry before falling back to its built-ins.
-//   - stats-block: count KPI card; reads the manifest `dataSource` block
-//     ({ register, schema, aggregate: "count" }) and renders CnStatsBlock.
 //   - audit-trail: recent audit entries for the object (detail sidebar).
-import { CnStatsBlockWidget, CnAuditTrailCard, CnTableWidget } from '@conduction/nextcloud-vue'
+import { CnAuditTrailCard } from '@conduction/nextcloud-vue'
 
 // Business-rules engine dashboard — lists RuleSets, opens the decision-table /
 // condition-action editors and the test sandbox (spec business-rules-engine).
@@ -214,6 +216,7 @@ export default {
 
 	// Header component for the maintainer dashboard (kind "header" — slot-override).
 	ApplicationDetailHeader: header(ApplicationDetailHeader),
+	ApplicationDetailDashboard: page(ApplicationDetailDashboard),
 
 	// Custom page components — resolved by CnPageRenderer for type:"custom" pages.
 	SchemaDesignerView: page(SchemaDesignerView),
@@ -223,12 +226,7 @@ export default {
 	TemplateGallery: page(TemplateGalleryView),
 
 	// Dashboard widgets — resolved by CnWidgetGrid by manifest widgetKey.
-	'stats-block': widget(CnStatsBlockWidget, ['body']),
 	'audit-trail': widget(CnAuditTrailCard, ['sidebar', 'body']),
-	// Self-fetching table widget — used on the Dashboard for a "Recent apps"
-	// list (unify-apps-with-app-type dashboard enrichment). Fetches objects
-	// from /api/objects/{register}/{schemaId} (slugs accepted).
-	table: widget(CnTableWidget, ['body']),
 
 	// Business-rules engine dashboard (type:"custom" page).
 	RuleSetsPageView: page(RuleSetsPageView),
