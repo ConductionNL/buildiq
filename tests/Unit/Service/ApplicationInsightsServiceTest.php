@@ -34,6 +34,8 @@ namespace OCA\OpenBuild\Tests\Unit\Service;
 use OCA\OpenBuild\Service\ApplicationInsightsService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUser;
@@ -64,6 +66,11 @@ class ApplicationInsightsServiceTest extends TestCase
     private SchemaMapper&MockObject $schemaMapper;
 
     /**
+     * @var RegisterMapper&MockObject
+     */
+    private RegisterMapper&MockObject $registerMapper;
+
+    /**
      * @var LoggerInterface&MockObject
      */
     private LoggerInterface&MockObject $logger;
@@ -85,12 +92,14 @@ class ApplicationInsightsServiceTest extends TestCase
         $this->objectService    = $this->createMock(ObjectService::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->schemaMapper     = $this->createMock(SchemaMapper::class);
+        $this->registerMapper   = $this->createMock(RegisterMapper::class);
         $this->logger           = $this->createMock(LoggerInterface::class);
 
         $this->service = new ApplicationInsightsService(
             objectService: $this->objectService,
             auditTrailMapper: $this->auditTrailMapper,
             schemaMapper: $this->schemaMapper,
+            registerMapper: $this->registerMapper,
             logger: $this->logger,
         );
     }//end setUp()
@@ -313,6 +322,56 @@ class ApplicationInsightsServiceTest extends TestCase
         self::assertSame(0, $result['kpis']['auditEventCount']);
         self::assertSame([], $result['activity']);
     }//end testEmptyManifestPagesYieldsZeros()
+
+    /**
+     * Hybrid app: insights come from the installed-app registers (resolved via
+     * RegisterMapper by `register.application`), NOT the empty override version
+     * manifest — and the missing per-app permission buckets do not 404 it.
+     *
+     * @return void
+     */
+    public function testHybridAppComputesFromInstalledAppRegisters(): void
+    {
+        // Hybrid app, NO permissions block (proves the RBAC bypass for hybrid).
+        $app = $this->mockEntity([
+            'uuid' => 'app-uuid',
+            'slug' => 'pipelinq',
+            'appType' => 'hybrid',
+            'productionVersion' => 'prod-uuid',
+        ]);
+        $version = $this->mockEntity([
+            'uuid' => 'prod-uuid',
+            'slug' => 'production',
+            'application' => 'app-uuid',
+            'manifest' => [],
+        ]);
+
+        $this->objectService->method('find')
+            ->willReturnOnConsecutiveCalls($app, $version);
+
+        // Two registers belong to the installed app; one belongs to another app.
+        $reg = $this->createMock(Register::class);
+        $reg->method('getApplication')->willReturn('pipelinq');
+        $reg->method('getId')->willReturn(16);
+        $reg->method('getSchemas')->willReturn([16, 17]);
+
+        $other = $this->createMock(Register::class);
+        $other->method('getApplication')->willReturn('decidesk');
+        $other->method('getId')->willReturn(42);
+        $other->method('getSchemas')->willReturn([99]);
+
+        $this->registerMapper->method('findAll')->willReturn([$reg, $other]);
+
+        // Each (register, schema) count returns 4 → 2 schemas → objectCount 8.
+        $this->objectService->method('count')->willReturn(4);
+
+        $result = $this->service->computeInsights('app-uuid', 'prod-uuid', '7d', $this->mockUser('admin'));
+
+        self::assertNotNull($result, 'hybrid insights must not 404 despite absent permissions');
+        self::assertSame(8, $result['kpis']['objectCount'], 'object count sums the installed app registers only');
+        self::assertArrayHasKey('activeUsers', $result['kpis']);
+        self::assertArrayHasKey('activity', $result);
+    }//end testHybridAppComputesFromInstalledAppRegisters()
 
     /**
      * Schema-set walk dedupes schema IDs and ignores tuples referencing other registers.

@@ -56,6 +56,7 @@ namespace OCA\OpenBuild\Service;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUser;
@@ -117,6 +118,7 @@ class ApplicationInsightsService
      * @param ObjectService    $objectService    OR object surface
      * @param AuditTrailMapper $auditTrailMapper Audit-trail aggregations (chart + actors + counts)
      * @param SchemaMapper     $schemaMapper     Schema slug-to-integer-ID resolver
+     * @param RegisterMapper   $registerMapper   Register lookup (installed-app footprint for hybrid apps)
      * @param LoggerInterface  $logger           PSR logger
      *
      * @return void
@@ -125,6 +127,7 @@ class ApplicationInsightsService
         private readonly ObjectService $objectService,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly SchemaMapper $schemaMapper,
+        private readonly RegisterMapper $registerMapper,
         private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
@@ -222,15 +225,25 @@ class ApplicationInsightsService
 
             [$application, $version] = $resolved;
 
-            $appSlug      = (string) ($application['slug'] ?? '');
+            $appSlug = (string) ($application['slug'] ?? '');
+            $hours   = self::WINDOW_HOURS[$window];
+
+            // A hybrid app mirrors a live installed Nextcloud app — its KPIs
+            // should reflect that installed app's real footprint (objects /
+            // audit / files across the registers OpenRegister associates with
+            // the app via `register.application`), NOT the override version's
+            // per-version register (which is usually empty). See REQ unified-app.
+            $isHybrid = (($application['appType'] ?? 'virtual') === 'hybrid');
+            if ($isHybrid === true) {
+                return $this->computeHybridInsights(appSlug: $appSlug, hours: $hours);
+            }
+
             $versionSlug  = (string) ($version['slug'] ?? '');
             $registerSlug = sprintf('openbuild-%s-%s', $appSlug, $versionSlug);
 
             $manifest    = $this->extractManifest(version: $version);
             $schemaSlugs = $this->deriveSchemaIds(manifest: $manifest, registerSlug: $registerSlug);
             $schemaIds   = $this->resolveSchemaSlugsToIntIds(schemaSlugs: $schemaSlugs);
-
-            $hours = self::WINDOW_HOURS[$window];
 
             $kpis = [
                 'activeUsers'     => $this->safeDistinctActorCount(schemaIds: $schemaIds, hours: $hours),
@@ -253,6 +266,117 @@ class ApplicationInsightsService
             return null;
         }//end try
     }//end computeInsights()
+
+    /**
+     * Compute insights for a hybrid app from its installed-app footprint.
+     *
+     * A hybrid app's slug equals the installed Nextcloud app id. OpenRegister
+     * associates registers with an app via `register.application`, so we gather
+     * every register where `application === appSlug`, union their schema-sets and
+     * run the same KPI aggregations the virtual path uses — but across the real,
+     * live registers instead of the (usually empty) per-version override register.
+     *
+     * @param string $appSlug The hybrid app slug (== installed app id).
+     * @param int    $hours   Window hours.
+     *
+     * @return array<string, mixed> Insights payload `{kpis, activity}`.
+     *
+     * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+     */
+    private function computeHybridInsights(string $appSlug, int $hours): array
+    {
+        $registers    = $this->resolveInstalledAppRegisters(appSlug: $appSlug);
+        $allSchemaIds = [];
+        $objectCount  = 0;
+
+        foreach ($registers as $register) {
+            $schemaIds = $register['schemaIds'];
+            if (empty($schemaIds) === true) {
+                continue;
+            }
+
+            // Count by register ID (string-numeric) — slugs are NOT unique
+            // across registers (e.g. two "pipelinq" registers), so setRegister
+            // by slug would resolve ambiguously; the ID is unambiguous.
+            $objectCount += $this->countObjects(schemaIds: $schemaIds, registerSlug: (string) $register['registerId']);
+            foreach ($schemaIds as $schemaId) {
+                $allSchemaIds[$schemaId] = true;
+            }
+        }
+
+        $schemaIds = array_keys($allSchemaIds);
+
+        $kpis = [
+            'activeUsers'     => $this->safeDistinctActorCount(schemaIds: $schemaIds, hours: $hours),
+            'objectCount'     => $objectCount,
+            'filesCount'      => $this->countAttachedFiles(registerSlug: '', schemaIds: $schemaIds),
+            'auditEventCount' => $this->countAuditEvents(schemaIds: $schemaIds, hours: $hours),
+        ];
+
+        $activity = $this->buildActivityTimeline(schemaIds: $schemaIds, hours: $hours, registerSlug: '');
+
+        return [
+            'kpis'     => $kpis,
+            'activity' => $activity,
+        ];
+    }//end computeHybridInsights()
+
+    /**
+     * Resolve the OpenRegister registers belonging to an installed app.
+     *
+     * Returns one entry per register where `register.application === $appSlug`,
+     * each `{registerId, schemaIds}` with integer schema IDs. Empty array on any
+     * failure (degrades the hybrid KPIs to 0 rather than 500-ing).
+     *
+     * @param string $appSlug The installed app id (hybrid app slug).
+     *
+     * @return array<int, array{registerId: int, schemaIds: array<int, int>}>
+     *
+     * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+     */
+    private function resolveInstalledAppRegisters(string $appSlug): array
+    {
+        if ($appSlug === '') {
+            return [];
+        }
+
+        try {
+            $registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                'OpenBuild: resolveInstalledAppRegisters findAll failed: {message}',
+                ['message' => $e->getMessage()]
+            );
+            return [];
+        }
+
+        $out = [];
+        foreach ($registers as $register) {
+            // NB: getApplication() is a magic getter (Entity __call), so a
+            // method_exists() guard would skip every register — don't add one.
+            if (is_object($register) === false) {
+                continue;
+            }
+
+            if ((string) $register->getApplication() !== $appSlug) {
+                continue;
+            }
+
+            $schemaIds = [];
+            foreach ((array) $register->getSchemas() as $schemaId) {
+                if (is_numeric($schemaId) === true) {
+                    $schemaIds[] = (int) $schemaId;
+                }
+            }
+
+            $out[] = [
+                'registerId' => (int) $register->getId(),
+                'schemaIds'  => array_values(array_unique($schemaIds)),
+            ];
+        }//end foreach
+
+        return $out;
+    }//end resolveInstalledAppRegisters()
 
     /**
      * Derive the schema-set for the version per REQ-OBAI-003.
@@ -383,6 +507,16 @@ class ApplicationInsightsService
     {
         if ($caller === null) {
             return false;
+        }
+
+        // Hybrid apps mirror an installed Nextcloud app and are not created with
+        // the per-app permission buckets virtual apps carry. Their insights are
+        // aggregate counts of the installed app (which has its own RBAC on the
+        // underlying data), surfaced on the OpenBuild detail page that the caller
+        // already reached — so gate on an authenticated caller rather than the
+        // (absent) per-app role buckets.
+        if ((($application['appType'] ?? 'virtual') === 'hybrid')) {
+            return true;
         }
 
         $prodUuid     = $this->extractProductionVersionUuid(application: $application);
