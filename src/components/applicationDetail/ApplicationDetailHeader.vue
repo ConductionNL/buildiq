@@ -50,6 +50,14 @@
 				<p v-if="isHybrid" class="ob-detail-header__hybrid-note">
 					{{ t('openbuild', 'This is a hybrid app — its name and id mirror the installed Nextcloud app and are read-only. You can still customize its pages, widgets, and menu.') }}
 				</p>
+				<!-- Hybrid apps ARE the live installed Nextcloud app — surface a
+				     direct "Open app" link so it's obvious it's accessible. -->
+				<p v-if="isHybrid && installedAppUrl" class="ob-detail-header__open-app">
+					<a class="ob-detail-header__open-app-link" :href="installedAppUrl">
+						<OpenInNew :size="16" class="ob-detail-header__open-app-icon" />
+						{{ t('openbuild', 'Open {name}', { name: applicationName }) }}
+					</a>
+				</p>
 			</div>
 		</section>
 
@@ -102,11 +110,14 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+
 import { buildVersionedRoute } from '../../router/helpers.js'
 import { useInsightsWindow } from '../../composables/useInsightsWindow.js'
 
 export default {
 	name: 'ApplicationDetailHeader',
+	components: { OpenInNew },
 	props: {
 		// CnDetailPage passes the resolved record as `object` per the
 		// manifest contract. We accept both `object` and a route-param
@@ -211,6 +222,18 @@ export default {
 		iconUrl() {
 			if (!this.appSlug) return ''
 			return generateUrl(`/apps/openbuild/icons/${encodeURIComponent(this.appSlug)}.svg`)
+		},
+		/**
+		 * URL of the live installed Nextcloud app a hybrid app mirrors. A hybrid
+		 * app's slug equals the installed app id, so it is always reachable at
+		 * `/apps/{slug}`. Empty for virtual apps (not installed NC apps).
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		installedAppUrl() {
+			if (this.isHybrid === false || !this.appSlug) return ''
+			return generateUrl(`/apps/${encodeURIComponent(this.appSlug)}/`)
 		},
 		/**
 		 * Production version UUID resolved from the Application record.
@@ -580,6 +603,31 @@ export default {
 	margin: 8px 0 0;
 	font-size: 0.85rem;
 	color: var(--color-text-maxcontrast, #888);
+}
+
+.ob-detail-header__open-app {
+	margin: 10px 0 0;
+}
+
+.ob-detail-header__open-app-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 14px;
+	border-radius: var(--border-radius-element, 8px);
+	background: var(--color-primary-element, #4376fc);
+	color: var(--color-primary-element-text, #fff);
+	font-weight: 600;
+	font-size: 13px;
+	text-decoration: none;
+}
+
+.ob-detail-header__open-app-link:hover {
+	background: var(--color-primary-element-hover, #3568e6);
+}
+
+.ob-detail-header__open-app-icon {
+	display: inline-flex;
 }
 
 .ob-detail-header__controls {

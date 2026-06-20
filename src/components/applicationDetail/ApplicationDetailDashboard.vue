@@ -350,6 +350,12 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		banner() {
+			// A hybrid app IS the live installed Nextcloud app — the
+			// "version no longer accessible" banner is misleading there
+			// (the app is always reachable at /apps/{slug}); suppress it.
+			if (this.isHybrid) {
+				return null
+			}
 			if (this.versionNoLongerAccessible) {
 				return {
 					message: t('openbuild', 'This version is no longer accessible. Switch to production?'),
@@ -358,6 +364,15 @@ export default {
 				}
 			}
 			return null
+		},
+		/**
+		 * Whether this is a hybrid app (mirrors an installed Nextcloud app).
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		isHybrid() {
+			return (this.application && this.application.appType) === 'hybrid'
 		},
 	},
 	watch: {
