@@ -138,10 +138,15 @@ class SeedApplicationTemplates implements IRepairStep
             }
 
             try {
+                // Repair steps run as the Anonymous system user, which cannot
+                // satisfy the ApplicationTemplate schema's create:[admin] guard —
+                // write in system context (OR RBAC + multitenancy bypassed).
                 $this->objectService->saveObject(
                     object: $data,
                     register: 'openbuild',
-                    schema: 'application-template'
+                    schema: 'application-template',
+                    _rbac: false,
+                    _multitenancy: false
                 );
                 $output->info('Seeded ApplicationTemplate: '.$slug);
                 ++$seeded;

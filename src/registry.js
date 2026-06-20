@@ -89,7 +89,7 @@ import BuilderHostView from './views/BuilderHost.vue'
 //   - stats-block: count KPI card; reads the manifest `dataSource` block
 //     ({ register, schema, aggregate: "count" }) and renders CnStatsBlock.
 //   - audit-trail: recent audit entries for the object (detail sidebar).
-import { CnStatsBlockWidget, CnAuditTrailCard } from '@conduction/nextcloud-vue'
+import { CnStatsBlockWidget, CnAuditTrailCard, CnTableWidget } from '@conduction/nextcloud-vue'
 
 // Business-rules engine dashboard — lists RuleSets, opens the decision-table /
 // condition-action editors and the test sandbox (spec business-rules-engine).
@@ -215,6 +215,10 @@ export default {
 	// Dashboard widgets — resolved by CnWidgetGrid by manifest widgetKey.
 	'stats-block': widget(CnStatsBlockWidget, ['body']),
 	'audit-trail': widget(CnAuditTrailCard, ['sidebar', 'body']),
+	// Self-fetching table widget — used on the Dashboard for a "Recent apps"
+	// list (unify-apps-with-app-type dashboard enrichment). Fetches objects
+	// from /api/objects/{register}/{schemaId} (slugs accepted).
+	'table': widget(CnTableWidget, ['body']),
 
 	// Business-rules engine dashboard (type:"custom" page).
 	RuleSetsPageView: page(RuleSetsPageView),

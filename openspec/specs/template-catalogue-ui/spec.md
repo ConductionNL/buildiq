@@ -15,6 +15,10 @@ new application.
 This capability is observed behaviour of those components. It is the frontend
 half of the `openbuild-template-catalogue` backend capability.
 
+**OpenSpec changes**: [openbuild-remote-template-store](../../changes/openbuild-remote-template-store/)
+
+**Status**: in-progress
+
 ## Requirements
 
 ### Requirement: Gallery fetches, filters and resolves template screenshots

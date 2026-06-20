@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # application-versions Specification
 
 ## Purpose

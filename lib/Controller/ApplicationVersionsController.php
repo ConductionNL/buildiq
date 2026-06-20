@@ -147,24 +147,24 @@ class ApplicationVersionsController extends Controller
     /**
      * List ApplicationVersions for the named Application (spec REQ-OBV-107).
      *
-     * @param string $slug Parent Application slug
+     * @param string $appSlug Parent Application slug
      *
      * @return JSONResponse Versions array on 200, error envelope on miss
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
      */
     #[NoAdminRequired]
-    public function index(string $slug): JSONResponse
+    public function index(string $appSlug): JSONResponse
     {
-        $authError = $this->requireRole(slug: $slug, roles: self::READ_ROLES);
+        $authError = $this->requireRole(slug: $appSlug, roles: self::READ_ROLES);
         if ($authError !== null) {
             return $authError;
         }
 
         try {
-            $application = $this->loadApplication(slug: $slug);
+            $application = $this->loadApplication(slug: $appSlug);
             if ($application === null) {
-                return $this->errorResponse(code: 'not_found', detail: 'Application '.$slug.' not found', status: Http::STATUS_NOT_FOUND);
+                return $this->errorResponse(code: 'not_found', detail: 'Application '.$appSlug.' not found', status: Http::STATUS_NOT_FOUND);
             }
 
             $applicationUuid = (string) ($application['id'] ?? $application['uuid'] ?? '');
@@ -210,7 +210,7 @@ class ApplicationVersionsController extends Controller
             return new JSONResponse(data: $normalised, statusCode: Http::STATUS_OK);
         } catch (Throwable $e) {
             $this->logger->error(
-                'OpenBuild: ApplicationVersionsController::index failed for slug '.$slug.': '.$e->getMessage(),
+                'OpenBuild: ApplicationVersionsController::index failed for slug '.$appSlug.': '.$e->getMessage(),
                 ['exception' => $e]
             );
             return $this->errorResponse(code: 'internal_error', detail: 'Failed to load versions');
@@ -220,7 +220,7 @@ class ApplicationVersionsController extends Controller
     /**
      * Fetch a single ApplicationVersion by version slug (spec REQ-OBV-107).
      *
-     * @param string $slug        Parent Application slug
+     * @param string $appSlug     Parent Application slug
      * @param string $versionSlug ApplicationVersion slug
      *
      * @return JSONResponse The version on 200, error envelope on miss
@@ -228,14 +228,14 @@ class ApplicationVersionsController extends Controller
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
      */
     #[NoAdminRequired]
-    public function show(string $slug, string $versionSlug): JSONResponse
+    public function show(string $appSlug, string $versionSlug): JSONResponse
     {
-        $authError = $this->requireRole(slug: $slug, roles: self::READ_ROLES);
+        $authError = $this->requireRole(slug: $appSlug, roles: self::READ_ROLES);
         if ($authError !== null) {
             return $authError;
         }
 
-        $version = $this->findVersionForApplication(slug: $slug, versionSlug: $versionSlug);
+        $version = $this->findVersionForApplication(slug: $appSlug, versionSlug: $versionSlug);
         if ($version === null) {
             return $this->errorResponse(code: 'not_found', detail: $versionSlug, status: Http::STATUS_NOT_FOUND);
         }
@@ -246,7 +246,7 @@ class ApplicationVersionsController extends Controller
     /**
      * Create an ApplicationVersion under the named Application (spec REQ-OBV-107 / REQ-OBV-102).
      *
-     * @param string $slug Parent Application slug
+     * @param string $appSlug Parent Application slug
      *
      * @return JSONResponse 201 with the created version, or error envelope
      *
@@ -254,17 +254,17 @@ class ApplicationVersionsController extends Controller
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 20, period: 60)]
-    public function create(string $slug): JSONResponse
+    public function create(string $appSlug): JSONResponse
     {
-        $authError = $this->requireRole(slug: $slug, roles: self::WRITE_ROLES);
+        $authError = $this->requireRole(slug: $appSlug, roles: self::WRITE_ROLES);
         if ($authError !== null) {
             return $authError;
         }
 
         try {
-            $application = $this->loadApplication(slug: $slug);
+            $application = $this->loadApplication(slug: $appSlug);
             if ($application === null) {
-                return $this->errorResponse(code: 'not_found', detail: 'Application '.$slug.' not found', status: Http::STATUS_NOT_FOUND);
+                return $this->errorResponse(code: 'not_found', detail: 'Application '.$appSlug.' not found', status: Http::STATUS_NOT_FOUND);
             }
 
             $applicationUuid = (string) ($application['id'] ?? $application['uuid'] ?? '');
@@ -299,7 +299,7 @@ class ApplicationVersionsController extends Controller
             );
         } catch (Throwable $e) {
             $this->logger->error(
-                'OpenBuild: ApplicationVersionsController::create failed for slug '.$slug.': '.$e->getMessage(),
+                'OpenBuild: ApplicationVersionsController::create failed for slug '.$appSlug.': '.$e->getMessage(),
                 ['exception' => $e]
             );
             return $this->errorResponse(
@@ -313,7 +313,7 @@ class ApplicationVersionsController extends Controller
     /**
      * Update an ApplicationVersion (spec REQ-OBV-103 / REQ-OBV-104 / REQ-OBV-107).
      *
-     * @param string $slug        Parent Application slug
+     * @param string $appSlug     Parent Application slug
      * @param string $versionSlug ApplicationVersion slug
      *
      * @return JSONResponse 200 with the updated version, or error envelope
@@ -322,15 +322,15 @@ class ApplicationVersionsController extends Controller
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 60, period: 60)]
-    public function update(string $slug, string $versionSlug): JSONResponse
+    public function update(string $appSlug, string $versionSlug): JSONResponse
     {
-        $authError = $this->requireRole(slug: $slug, roles: self::WRITE_ROLES);
+        $authError = $this->requireRole(slug: $appSlug, roles: self::WRITE_ROLES);
         if ($authError !== null) {
             return $authError;
         }
 
         try {
-            $current = $this->findVersionForApplication(slug: $slug, versionSlug: $versionSlug);
+            $current = $this->findVersionForApplication(slug: $appSlug, versionSlug: $versionSlug);
             if ($current === null) {
                 return $this->errorResponse(code: 'not_found', detail: $versionSlug, status: Http::STATUS_NOT_FOUND);
             }
@@ -409,7 +409,7 @@ class ApplicationVersionsController extends Controller
             );
         } catch (Throwable $e) {
             $this->logger->error(
-                'OpenBuild: ApplicationVersionsController::update failed for slug '.$slug.'/'.$versionSlug.': '.$e->getMessage(),
+                'OpenBuild: ApplicationVersionsController::update failed for slug '.$appSlug.'/'.$versionSlug.': '.$e->getMessage(),
                 ['exception' => $e]
             );
             return $this->errorResponse(
@@ -428,7 +428,7 @@ class ApplicationVersionsController extends Controller
      * Attempts to delete the parent Application's production version
      * yield 422.
      *
-     * @param string $slug        Parent Application slug
+     * @param string $appSlug     Parent Application slug
      * @param string $versionSlug ApplicationVersion slug
      *
      * @return JSONResponse 204 on success, error envelope otherwise
@@ -437,9 +437,9 @@ class ApplicationVersionsController extends Controller
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 10, period: 60)]
-    public function destroy(string $slug, string $versionSlug): JSONResponse
+    public function destroy(string $appSlug, string $versionSlug): JSONResponse
     {
-        $authError = $this->requireRole(slug: $slug, roles: self::WRITE_ROLES);
+        $authError = $this->requireRole(slug: $appSlug, roles: self::WRITE_ROLES);
         if ($authError !== null) {
             return $authError;
         }
@@ -454,7 +454,7 @@ class ApplicationVersionsController extends Controller
         }
 
         try {
-            $current = $this->findVersionForApplication(slug: $slug, versionSlug: $versionSlug);
+            $current = $this->findVersionForApplication(slug: $appSlug, versionSlug: $versionSlug);
             if ($current === null) {
                 return $this->errorResponse(code: 'not_found', detail: $versionSlug, status: Http::STATUS_NOT_FOUND);
             }
@@ -466,7 +466,7 @@ class ApplicationVersionsController extends Controller
             return new JSONResponse(data: [], statusCode: Http::STATUS_NO_CONTENT);
         } catch (Throwable $e) {
             $this->logger->info(
-                'OpenBuild: ApplicationVersionsController::destroy refused for slug '.$slug.'/'.$versionSlug.': '.$e->getMessage()
+                'OpenBuild: ApplicationVersionsController::destroy refused for slug '.$appSlug.'/'.$versionSlug.': '.$e->getMessage()
             );
 
             $message = $e->getMessage();

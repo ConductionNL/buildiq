@@ -61,11 +61,18 @@ return [
         // SPA catch-all to win Symfony's order-sensitive router (memory
         // rule: specific-first). The `/diff` route above stays first
         // because its URL is more specific than `{versionSlug}`.
-        ['name' => 'applicationVersions#index',   'url' => '/api/applications/{slug}/versions',                'verb' => 'GET',    'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
-        ['name' => 'applicationVersions#create',  'url' => '/api/applications/{slug}/versions',                'verb' => 'POST',   'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
-        ['name' => 'applicationVersions#show',    'url' => '/api/applications/{slug}/versions/{versionSlug}',  'verb' => 'GET',    'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
-        ['name' => 'applicationVersions#update',  'url' => '/api/applications/{slug}/versions/{versionSlug}',  'verb' => 'PUT',    'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
-        ['name' => 'applicationVersions#destroy', 'url' => '/api/applications/{slug}/versions/{versionSlug}',  'verb' => 'DELETE', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // NOTE: the parent-application placeholder is `{appSlug}`, NOT `{slug}`.
+        // The POST/PUT bodies carry a `slug` field (the *version* slug), and
+        // Nextcloud merges JSON body params into the same bag it resolves
+        // controller arguments from — a `{slug}` route placeholder would be
+        // shadowed by the body's `slug`, so `create()` would look up the
+        // application by the version slug (e.g. "production") and 404. Using a
+        // distinct placeholder name avoids that body/route collision (NC32).
+        ['name' => 'applicationVersions#index',   'url' => '/api/applications/{appSlug}/versions',                'verb' => 'GET',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applicationVersions#create',  'url' => '/api/applications/{appSlug}/versions',                'verb' => 'POST',   'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applicationVersions#show',    'url' => '/api/applications/{appSlug}/versions/{versionSlug}',  'verb' => 'GET',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applicationVersions#update',  'url' => '/api/applications/{appSlug}/versions/{versionSlug}',  'verb' => 'PUT',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applicationVersions#destroy', 'url' => '/api/applications/{appSlug}/versions/{versionSlug}',  'verb' => 'DELETE', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Insights endpoint (openbuild-app-detail-overview REQ-OBAI-001 / REQ-OBAI-007).
         // GET /api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d
@@ -107,6 +114,18 @@ return [
         ['name' => 'rules#evaluate', 'url' => '/api/rules/{ruleSetSlug}/evaluate', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#schema',   'url' => '/api/rules/{ruleSetSlug}/schema',   'verb' => 'GET',  'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#testAll',  'url' => '/api/rules/{ruleSetSlug}/test-all', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
+        // App-override store-and-serve (openbuild-inline-edit-persistence,
+        // spec app-override-persistence). Per-instance shared manifest delta for
+        // an EXISTING fleet app, keyed by `appId`. GET returns the raw stored
+        // delta for client-side merge (mergeStrategy:'delta'); PUT upserts it
+        // (CSRF-enforced, OpenBuild-access guard, validate-shape + non-blank);
+        // DELETE clears it (idempotent). Specific-first so the `{appId}` routes
+        // are not shadowed by the SPA `/{path}` catch-all below; `appId` carries
+        // the kebab-case NC-app-id requirement.
+        ['name' => 'appOverride#get',   'url' => '/api/app-overrides/{appId}', 'verb' => 'GET',    'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'appOverride#save',  'url' => '/api/app-overrides/{appId}', 'verb' => 'PUT',    'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'appOverride#clear', 'url' => '/api/app-overrides/{appId}', 'verb' => 'DELETE', 'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // SPA catch-all — same controller as the index route; must use a distinct route name
         // (duplicate names replace the earlier route in Symfony, which breaks GET /).

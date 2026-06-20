@@ -12,7 +12,7 @@
   - caller's role.
   -->
 <template>
-	<div class="ob-app-card" :class="{ 'ob-app-card--selected': selected }">
+	<div v-if="!hiddenByFilter" class="ob-app-card" :class="{ 'ob-app-card--selected': selected }">
 		<div
 			class="ob-app-card__inner"
 			tabindex="0"
@@ -30,6 +30,7 @@
 				<h3 class="ob-app-card__title">
 					{{ app.name || app.slug || t('openbuild', 'Untitled app') }}
 				</h3>
+				<span class="ob-app-card__type" :class="`ob-app-card__type--${appTypeKey}`">{{ appTypeLabel }}</span>
 				<span class="ob-app-card__badge" :class="`ob-app-card__badge--${statusKey}`">{{ statusLabel }}</span>
 			</div>
 			<p v-if="app.description" class="ob-app-card__desc">
@@ -105,6 +106,43 @@ export default {
 		appUuid() {
 			const self = this.app['@self'] || {}
 			return self.id || this.app.uuid || this.app.id || ''
+		},
+		/**
+		 * The app's type discriminator (unify-apps-with-app-type). An absent
+		 * `appType` reads as `virtual` (legacy default), matching the schema.
+		 *
+		 * @return {string} 'virtual' | 'hybrid'
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		appTypeKey() {
+			return this.app.appType === 'hybrid' ? 'hybrid' : 'virtual'
+		},
+		/**
+		 * Human-readable label for the app type pill.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		appTypeLabel() {
+			return this.appTypeKey === 'hybrid'
+				? t('openbuild', 'Hybrid')
+				: t('openbuild', 'Virtual')
+		},
+		/**
+		 * Whether this card is hidden by the active all/virtual/hybrid filter,
+		 * read from the `?filter=` URL query param (set by VirtualAppsActions and
+		 * persisted in the URL so a filtered view is shareable). `all` or an
+		 * absent param shows everything.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		hiddenByFilter() {
+			const filter = this.$route && this.$route.query ? this.$route.query.filter : null
+			if (!filter || filter === 'all') {
+				return false
+			}
+			return filter !== this.appTypeKey
 		},
 		/**
 		 * Status key resolved from productionVersion (spec C). Falls back to
@@ -255,6 +293,25 @@ export default {
 	border-radius: var(--border-radius-pill, 12px);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
+}
+
+.ob-app-card__type {
+	font-size: 11px;
+	padding: 1px 8px;
+	border-radius: var(--border-radius-pill, 12px);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	margin-left: auto;
+}
+
+.ob-app-card__type--virtual {
+	background: var(--color-primary-element-light, rgba(0, 130, 201, 0.15));
+	color: var(--color-primary-element, #0082c9);
+}
+
+.ob-app-card__type--hybrid {
+	background: var(--color-background-dark, #eee);
+	color: var(--color-text-maxcontrast, #555);
 }
 
 .ob-app-card__badge--draft {

@@ -14,7 +14,7 @@
 		},
 		{
 			"id": "VirtualApps",
-			"label": "Virtual apps",
+			"label": "Apps",
 			"icon": "icon-category-app-bundles",
 			"route": "VirtualApps",
 			"order": 20
@@ -73,7 +73,7 @@
 					"gridWidth": 3,
 					"gridHeight": 2,
 					"props": {
-						"title": "Virtual apps",
+						"title": "Apps",
 						"iconClass": "icon-category-app-bundles",
 						"props": {
 							"countLabel": "apps",
@@ -95,17 +95,20 @@
 					"gridWidth": 3,
 					"gridHeight": 2,
 					"props": {
-						"title": "Published",
-						"iconClass": "icon-checkmark",
+						"title": "Hybrid apps",
+						"iconClass": "icon-category-customization",
 						"props": {
-							"countLabel": "live",
-							"variant": "success"
+							"countLabel": "hybrid",
+							"variant": "default"
 						},
 						"showTitle": true
 					},
 					"dataSource": {
 						"register": "openbuild",
-						"schema": "builtAppRoute",
+						"schema": "application",
+						"filter": {
+							"appType": "hybrid"
+						},
 						"aggregate": "count"
 					}
 				},
@@ -127,7 +130,7 @@
 					},
 					"dataSource": {
 						"register": "openbuild",
-						"schema": "applicationTemplate",
+						"schema": "application-template",
 						"aggregate": "count"
 					}
 				},
@@ -152,6 +155,25 @@
 						"schema": "applicationVersion",
 						"aggregate": "count"
 					}
+				},
+				{
+					"widgetKey": "table",
+					"slot": "body",
+					"gridX": 0,
+					"gridY": 2,
+					"gridWidth": 12,
+					"gridHeight": 4,
+					"props": {
+						"title": "Recent apps",
+						"register": "openbuild",
+						"schemaId": "application",
+						"limit": 8,
+						"columns": [
+							{ "key": "name", "label": "Name", "sortable": true },
+							{ "key": "appType", "label": "Type", "sortable": true },
+							{ "key": "slug", "label": "Slug", "sortable": false }
+						]
+					}
 				}
 			]
 		},
@@ -159,7 +181,7 @@
 			"id": "VirtualApps",
 			"route": "/applications",
 			"type": "index",
-			"title": "Virtual apps",
+			"title": "Apps",
 			"actionsComponent": "VirtualAppsActions",
 			"config": {
 				"register": "openbuild",
@@ -183,7 +205,7 @@
 			"id": "VirtualAppDetail",
 			"route": "/applications/:objectId",
 			"type": "detail",
-			"title": "Virtual app",
+			"title": "App",
 			"headerComponent": "ApplicationDetailHeader",
 			"actionsComponent": "ApplicationDetailActions",
 			"config": {
@@ -340,7 +362,7 @@
 			"id": "BuilderHost",
 			"route": "/builder/:slug/:pathMatch(.*)?",
 			"type": "custom",
-			"title": "Virtual app",
+			"title": "App",
 			"component": "BuilderHostView",
 			"_note": "Virtual-app host that mounts a nested CnAppRoot rendering the virtual app's own manifest from GET /api/applications/{slug}/manifest. This is a meta-app-shell (app inside app) pattern that no standard page type supports. It is the core runtime surface of openbuild and will always require a custom host component."
 		},

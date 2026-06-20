@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # application-creation-wizard Specification
 
 ## Purpose

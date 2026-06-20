@@ -35,7 +35,7 @@
 			{{ t('openbuild', 'Design pages') }}
 		</NcButton>
 		<NcButton v-if="builderUrl" :href="builderUrl">
-			{{ t('openbuild', 'Open virtual app') }}
+			{{ t('openbuild', 'Open app') }}
 		</NcButton>
 		<NcButton
 			:disabled="!obApp || !obApp.productionVersion"

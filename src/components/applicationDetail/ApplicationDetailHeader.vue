@@ -45,12 +45,18 @@
 					{{ applicationDescription }}
 				</p>
 				<div class="ob-detail-header__hero-meta">
+					<span
+						class="ob-detail-header__badge ob-detail-header__badge--type"
+						:class="`ob-detail-header__badge--type-${appTypeKey}`">{{ appTypeLabel }}</span>
 					<span class="ob-detail-header__badge ob-detail-header__badge--status">{{ applicationStatus }}</span>
 					<span v-if="callerRole" class="ob-detail-header__badge ob-detail-header__badge--role">{{ callerRole }}</span>
 					<span v-if="productionSemver" class="ob-detail-header__badge ob-detail-header__badge--semver">
 						v{{ productionSemver }}
 					</span>
 				</div>
+				<p v-if="isHybrid" class="ob-detail-header__hybrid-note">
+					{{ t('openbuild', 'This is a hybrid app — its name and id mirror the installed Nextcloud app and are read-only. You can still customize its pages, widgets, and menu.') }}
+				</p>
 			</div>
 		</section>
 
@@ -257,6 +263,36 @@ export default {
 		 */
 		applicationStatus() {
 			return (this.application && this.application.status) || t('openbuild', 'draft')
+		},
+		/**
+		 * The app's type discriminator (unify-apps-with-app-type). Absent reads
+		 * as 'virtual' (legacy default), matching the schema.
+		 *
+		 * @return {string} 'virtual' | 'hybrid'
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		appTypeKey() {
+			return (this.application && this.application.appType) === 'hybrid' ? 'hybrid' : 'virtual'
+		},
+		/**
+		 * Human-readable label for the app-type badge.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		appTypeLabel() {
+			return this.appTypeKey === 'hybrid' ? t('openbuild', 'Hybrid') : t('openbuild', 'Virtual')
+		},
+		/**
+		 * Whether this is a hybrid app whose identity metadata (name/slug) is
+		 * read-only — it mirrors the installed Nextcloud app it customizes and is
+		 * enforced server-side by HybridMetadataLockListener.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		isHybrid() {
+			return this.appTypeKey === 'hybrid'
 		},
 		/**
 		 * Observed behaviour of `iconUrl` (retrofit annotation).
@@ -853,6 +889,22 @@ export default {
 .ob-detail-header__badge--semver {
 	background: rgba(46, 184, 102, 0.15);
 	color: #246b3d;
+}
+
+.ob-detail-header__badge--type-virtual {
+	background: var(--color-primary-element-light, rgba(0, 130, 201, 0.15));
+	color: var(--color-primary-element, #0082c9);
+}
+
+.ob-detail-header__badge--type-hybrid {
+	background: rgba(120, 120, 120, 0.18);
+	color: #444;
+}
+
+.ob-detail-header__hybrid-note {
+	margin: 8px 0 0;
+	font-size: 0.85rem;
+	color: var(--color-text-maxcontrast, #888);
 }
 
 .ob-detail-header__controls {

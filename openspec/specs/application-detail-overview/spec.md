@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # application-detail-overview Specification
 
 ## Purpose

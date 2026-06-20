@@ -2,22 +2,35 @@
   - SPDX-License-Identifier: EUPL-1.2
   - SPDX-FileCopyrightText: 2026 Conduction B.V.
   -
-  - VirtualAppsActions — the actions bar on the VirtualApps index page
+  - VirtualAppsActions — the actions bar on the Apps index page
   - (`config.actionsComponent: "VirtualAppsActions"`).
   -
-  - Renders the "Add Application" button which opens the four-step
-  - CreateApplicationWizard. On wizard completion, navigates the admin
-  - to /applications/{applicationUuid} so they land on the detail page of
-  - the newly-created app.
+  - Renders an all/virtual/hybrid filter (persisted in the `?filter=` URL query
+  - param so a filtered view is shareable) plus the "Add app" button which opens
+  - the CreateApplicationWizard. On wizard completion, navigates the admin to
+  - /applications/{applicationUuid} so they land on the detail page of the
+  - newly-created app.
   -
   - spec: openbuild-app-creation-wizard REQ-OBWIZ-001
+  - spec: openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
   -->
 <template>
 	<div class="ob-va-actions">
+		<div class="ob-va-actions__filter" role="group" :aria-label="t('openbuild', 'Filter apps by type')">
+			<NcButton
+				v-for="opt in filterOptions"
+				:key="opt.value"
+				:type="activeFilter === opt.value ? 'secondary' : 'tertiary'"
+				:pressed="activeFilter === opt.value"
+				@click="setFilter(opt.value)">
+				{{ opt.label }}
+			</NcButton>
+		</div>
+
 		<NcButton
 			type="primary"
 			@click="showWizard = true">
-			{{ t('openbuild', 'Add application') }}
+			{{ t('openbuild', 'Add app') }}
 		</NcButton>
 
 		<CreateApplicationWizard
@@ -44,7 +57,58 @@ export default {
 		}
 	},
 
+	computed: {
+		/**
+		 * The available all/virtual/hybrid filter options.
+		 *
+		 * @return {Array<{value: string, label: string}>}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		filterOptions() {
+			return [
+				{ value: 'all', label: t('openbuild', 'All') },
+				{ value: 'virtual', label: t('openbuild', 'Virtual') },
+				{ value: 'hybrid', label: t('openbuild', 'Hybrid') },
+			]
+		},
+		/**
+		 * The active filter, read from the `?filter=` URL query param. Defaults
+		 * to 'all' when absent or unrecognised.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		activeFilter() {
+			const filter = this.$route && this.$route.query ? this.$route.query.filter : null
+			return ['virtual', 'hybrid'].includes(filter) ? filter : 'all'
+		},
+	},
+
 	methods: {
+		/**
+		 * Persist the chosen filter in the `?filter=` URL query param so the
+		 * filtered view is shareable/bookmarkable. 'all' clears the param.
+		 *
+		 * @param {string} value The filter value ('all' | 'virtual' | 'hybrid').
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		setFilter(value) {
+			if (!this.$router) {
+				return
+			}
+			const query = { ...(this.$route ? this.$route.query : {}) }
+			if (value === 'all') {
+				delete query.filter
+			} else {
+				query.filter = value
+			}
+			// Avoid a NavigationDuplicated error when the filter is unchanged.
+			if ((query.filter || 'all') !== (this.activeFilter || 'all')) {
+				this.$router.replace({ query }).catch(() => {})
+			}
+		},
 		/**
 		 * Observed behaviour of `onWizardCreated` (retrofit annotation).
 		 *
@@ -69,5 +133,11 @@ export default {
 	display: flex;
 	align-items: center;
 	gap: 8px;
+}
+
+.ob-va-actions__filter {
+	display: flex;
+	align-items: center;
+	gap: 2px;
 }
 </style>

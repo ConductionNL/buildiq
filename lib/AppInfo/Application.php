@@ -24,7 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\AppInfo;
 
+use OCA\OpenBuild\Capabilities;
 use OCA\OpenBuild\Lifecycle\ApplicationVersionOwnerGuard;
+use OCA\OpenBuild\Listener\HybridMetadataLockListener;
 use OCA\OpenBuild\Listener\ProductionVersionGuardListener;
 use OCA\OpenBuild\Listener\DeepLinkRegistrationListener;
 use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
@@ -102,6 +104,20 @@ class Application extends App implements IBootstrap
             listener: ProductionVersionGuardListener::class
         );
 
+        // Metadata-lock for hybrid apps (unify-apps-with-app-type). On every
+        // Application UPDATE, reject a change to a hybrid app's identity
+        // metadata (slug/name) — it mirrors the installed Nextcloud app it
+        // customizes and renaming it would desync the baseRef.id link and the
+        // /api/app-overrides/{appId} shim key. Cross-row check (compares the
+        // proposed payload against the stored row) realized as a pre-save
+        // listener, the imperative companion to the same-row
+        // `hybrid-requires-baseRef` x-openregister-validation rule (ADR-031
+        // §Exceptions(1)). Virtual apps keep full slug/name edit.
+        $context->registerEventListener(
+            event: ObjectUpdatingEvent::class,
+            listener: HybridMetadataLockListener::class
+        );
+
         // Register OpenBuildToolProvider as the MCP tool provider for the AI Chat Companion.
         // The alias key 'OCA\OpenRegister\Mcp\IMcpToolProvider::openbuild' is the format
         // that OR's McpToolsService enumerates to discover per-app providers (hydra ADR-035).
@@ -131,6 +147,14 @@ class Application extends App implements IBootstrap
                 );
             }
         );
+
+        // Edit-availability capability (openbuild-inline-edit-persistence, spec
+        // openbuild-capability). Advertises `{ openbuild: { enabled, canEdit } }`
+        // so a fleet app's in-place edit button has a robust per-user signal
+        // (IAppManager::isEnabledForUser respects the NC app group-restriction)
+        // instead of inferring availability from OC.appswebroots. `canEdit` is a
+        // UI hint only — the write/delete endpoints re-check access server-side.
+        $context->registerCapability(Capabilities::class);
 
         // Repair steps (InitializeSettings + MigrateToVersionedModel + …) are declared in info.xml.
     }//end register()

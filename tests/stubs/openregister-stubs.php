@@ -204,6 +204,18 @@ namespace OCA\OpenRegister\Db {
             {
                 return new Schema();
             }//end createFromArray()
+
+            /**
+             * Delete a schema (mirrors the real SchemaMapper::delete signature).
+             *
+             * @param \OCP\AppFramework\Db\Entity $entity The schema entity.
+             *
+             * @return Schema
+             */
+            public function delete(\OCP\AppFramework\Db\Entity $entity): Schema
+            {
+                return new Schema();
+            }//end delete()
         }//end class
     }//end if
 

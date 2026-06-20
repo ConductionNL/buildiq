@@ -18,7 +18,7 @@
 <template>
 	<NcModal
 		:show="show"
-		:name="t('openbuild', 'Create application')"
+		:name="t('openbuild', 'Create app')"
 		:can-close="!submitting"
 		size="normal"
 		@update:show="onModalShowUpdate"
@@ -36,6 +36,26 @@
 
 		<!-- Step content -->
 		<div class="wizard__body">
+			<!-- Step 1 opens with the app-type choice (unify-apps-with-app-type). -->
+			<div v-if="step === 1" class="wizard__type-select">
+				<span class="wizard__type-label">{{ t('openbuild', 'App type') }}</span>
+				<div class="wizard__type-toggle" role="group" :aria-label="t('openbuild', 'App type')">
+					<NcButton
+						:type="payload.appType === 'virtual' ? 'primary' : 'secondary'"
+						:pressed="payload.appType === 'virtual'"
+						@click="setAppType('virtual')">
+						{{ t('openbuild', 'Virtual') }}
+					</NcButton>
+					<NcButton
+						:type="payload.appType === 'hybrid' ? 'primary' : 'secondary'"
+						:pressed="payload.appType === 'hybrid'"
+						@click="setAppType('hybrid')">
+						{{ t('openbuild', 'Hybrid') }}
+					</NcButton>
+				</div>
+				<p class="wizard__type-hint">{{ appTypeHint }}</p>
+			</div>
+
 			<Step1Basics
 				v-if="step === 1"
 				:payload="payload"
@@ -144,6 +164,10 @@ export default {
 			 * Merged wizard payload — accumulates all step inputs.
 			 */
 			payload: {
+				// unify-apps-with-app-type: a virtual app is built from scratch
+				// (the version-preset flow); a hybrid app customizes an installed
+				// Nextcloud fleet app (a single delta-only version, no presets).
+				appType: 'virtual',
 				name: '',
 				slug: '',
 				description: '',
@@ -164,6 +188,28 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Whether the wizard is creating a hybrid (fleet-app override) app.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		isHybrid() {
+			return this.payload.appType === 'hybrid'
+		},
+
+		/**
+		 * Helper text under the app-type toggle.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		appTypeHint() {
+			return this.isHybrid
+				? t('openbuild', 'A hybrid app customizes an installed Nextcloud app. Enter that app\'s id as the slug; its name and pages come from the installed app and you layer your changes on top.')
+				: t('openbuild', 'A virtual app is built from scratch in OpenBuild — you define its pages, schemas, and versions.')
+		},
+
 		isCustomPreset() {
 			return this.payload.preset === 'custom'
 		},
@@ -174,6 +220,8 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
 		 */
 		displayStep() {
+			// Hybrid skips the version-preset steps entirely: 1 (basics) → 2 (review).
+			if (this.isHybrid) return this.step === 4 ? 2 : 1
 			if (!this.isCustomPreset && this.step === 4) return 3
 			return this.step
 		},
@@ -184,6 +232,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
 		 */
 		visibleStepCount() {
+			if (this.isHybrid) return 2
 			return this.isCustomPreset ? 4 : 3
 		},
 
@@ -205,6 +254,9 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
 		 */
 		allStepsValid() {
+			// A hybrid app needs only the basics (its single delta-only version
+			// is created automatically) — no preset/custom-chain validity.
+			if (this.isHybrid) return Boolean(this.payload._step1Valid)
 			const step3ok = !this.isCustomPreset || Boolean(this.payload._step3Valid)
 			return (
 				Boolean(this.payload._step1Valid)
@@ -238,12 +290,30 @@ export default {
 		},
 
 		/**
-		 * Observed behaviour of `goNext` (retrofit annotation).
+		 * Set the app type and reset preset state so a switch can't leave a
+		 * stale preset selection behind.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
+		 * @param {string} value 'virtual' | 'hybrid'
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		setAppType(value) {
+			this.mergePayload({ appType: value, preset: value === 'hybrid' ? '' : this.payload.preset })
+		},
+
+		/**
+		 * Advance to the next step; hybrid apps skip the preset/custom steps and
+		 * jump from basics straight to review.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 		 */
 		goNext() {
-			if (this.step === 2 && !this.isCustomPreset) {
+			if (this.isHybrid && this.step === 1) {
+				// Hybrid skips the preset/custom steps — go straight to review.
+				this.step = 4
+			} else if (this.step === 2 && !this.isCustomPreset) {
 				// Skip step 3 for canned presets.
 				this.step = 4
 			} else if (this.step < 4) {
@@ -257,7 +327,10 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
 		 */
 		goBack() {
-			if (this.step === 4 && !this.isCustomPreset) {
+			if (this.step === 4 && this.isHybrid) {
+				// Jump back to basics (preset/custom steps were skipped).
+				this.step = 1
+			} else if (this.step === 4 && !this.isCustomPreset) {
 				// Jump back to step 2 (step 3 was skipped).
 				this.step = 2
 			} else if (this.step > 1) {
@@ -274,6 +347,11 @@ export default {
 			this.submitting = true
 			this.errorMessage = null
 			this.orphanedResources = []
+
+			if (this.isHybrid) {
+				await this.submitHybrid()
+				return
+			}
 
 			const body = {
 				name: this.payload.name,
@@ -309,6 +387,33 @@ export default {
 		},
 
 		/**
+		 * Create a hybrid app via the app-overrides shim, which upserts the
+		 * hybrid Application + a delta-only version. A fresh hybrid starts with
+		 * an empty delta (the fleet app renders unchanged until customized).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+		 */
+		async submitHybrid() {
+			try {
+				const appId = this.payload.slug
+				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}', { appId })
+				// Empty delta = "no customization yet"; baseRef links the fleet app.
+				const { data } = await axios.put(url, { baseRef: { kind: 'fleet-app', id: appId } })
+
+				this.$emit('created', data && data.applicationUuid ? data.applicationUuid : null)
+				this.$emit('update:show', false)
+				this.resetState()
+			} catch (err) {
+				const data = err.response?.data || {}
+				this.errorMessage = data.detail || data.message || err.message
+					|| t('openbuild', 'Failed to create the hybrid app.')
+			} finally {
+				this.submitting = false
+			}
+		},
+
+		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-1
@@ -328,6 +433,7 @@ export default {
 		resetState() {
 			this.step = 1
 			this.payload = {
+				appType: 'virtual',
 				name: '',
 				slug: '',
 				description: '',
@@ -377,6 +483,29 @@ export default {
 .wizard__body {
 	padding: 8px 0;
 	min-height: 240px;
+}
+
+.wizard__type-select {
+	margin-bottom: 16px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--color-border, #ddd);
+}
+
+.wizard__type-label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 6px;
+}
+
+.wizard__type-toggle {
+	display: flex;
+	gap: 6px;
+}
+
+.wizard__type-hint {
+	margin: 8px 0 0;
+	font-size: 0.85rem;
+	color: var(--color-text-maxcontrast, #888);
 }
 
 .wizard__footer {

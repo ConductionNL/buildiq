@@ -124,10 +124,15 @@ class PopulateApplicationPermissions implements IRepairStep
                     'viewers' => [],
                 ];
 
+                // Repair runs as the Anonymous system user, which cannot satisfy
+                // the Application schema's update:[admin] guard — write in system
+                // context (OR RBAC + multitenancy bypassed).
                 $this->objectService->saveObject(
                     object: $applicationArray,
                     register: 'openbuild',
-                    schema: 'application'
+                    schema: 'application',
+                    _rbac: false,
+                    _multitenancy: false
                 );
                 $patched++;
             }//end foreach
