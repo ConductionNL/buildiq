@@ -1,0 +1,89 @@
+/**
+ * <ModulePage /> styles. Light surface, generous spacing — the page
+ * is a small landing, not an article. Echoes the ContentDetailHero
+ * structure without the hex visual (the parts-grid below carries the
+ * visual weight).
+ */
+
+.hero {
+  padding: var(--space-7) 0 var(--space-5);
+  max-width: 720px;
+}
+
+.eyebrow {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-cobalt-400);
+  margin-bottom: var(--space-3);
+}
+
+.title {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--c-cobalt-900);
+  line-height: 1.15;
+  margin: 0 0 var(--space-3);
+}
+
+.lede {
+  font-size: 18px;
+  color: var(--c-cobalt-700);
+  line-height: 1.55;
+  margin: 0 0 var(--space-4);
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--c-cobalt-400);
+  text-transform: uppercase;
+}
+
+.metaBit { white-space: nowrap; }
+
+.intro {
+  padding: var(--space-4) 0 var(--space-5);
+  max-width: 720px;
+  font-size: 16px;
+  color: var(--c-cobalt-700);
+  line-height: 1.7;
+}
+
+.parts {
+  padding: var(--space-5) 0 var(--space-7);
+}
+
+.partsTitle {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--c-cobalt-900);
+  margin: 0 0 var(--space-4);
+}
+
+.notFound {
+  padding: var(--space-7) 0;
+  max-width: 600px;
+}
+.notFound h1 {
+  font-size: 28px;
+  color: var(--c-cobalt-900);
+  margin-bottom: var(--space-3);
+}
+.notFound p {
+  color: var(--c-cobalt-700);
+  line-height: 1.6;
+}
+.notFound code {
+  background: var(--c-cobalt-50);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--conduction-typography-font-family-code);
+}

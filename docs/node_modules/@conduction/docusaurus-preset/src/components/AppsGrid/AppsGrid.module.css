@@ -1,0 +1,46 @@
+/**
+ * <AppsGrid /> styles. Mirrors apps-grid.html chip-row + 3-up grid.
+ */
+
+.section { font-family: var(--conduction-typography-font-family-body); }
+
+.chips {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 7px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-700);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 140ms ease, color 140ms ease;
+}
+.chip:hover { background: var(--c-cobalt-100); }
+.chipActive {
+  background: var(--c-blue-cobalt);
+  color: white;
+}
+.chipActive:hover { background: var(--c-cobalt-700); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+@media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+
+.empty {
+  margin: 32px 0;
+  font-size: 14px;
+  color: var(--c-cobalt-400);
+  text-align: center;
+}

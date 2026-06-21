@@ -127,11 +127,83 @@ The `hello-world` slug now ships only as part of the wizard's
 provisioned app gets the same one-index-one-detail-one-form starter and the
 `/builder/{slug}` route resolves the moment publish fires.
 
+## AppHost adoption (ADR-040)
+
+OpenBuild runs on the **OpenRegister AppHost** engine. The shared plumbing —
+the SPA dashboard controller, the settings API, per-user preferences, the
+admin settings panel + section, the install repair step, the deep-link
+listener, and the observability (health + metrics) controllers — is owned by
+`OCA\OpenRegister\AppHost\` in the sibling OpenRegister app rather than copied
+into OpenBuild. `lib/AppInfo/Application.php` wires it with one call,
+`Bootstrap::register($context, 'openbuild', ['observability' => true])`, and
+`appinfo/routes.php` is a single `Routes::standard($extra)` statement that
+appends OpenBuild's domain routes before the SPA catch-all.
+
+Every Bootstrap registration is a lazy closure, so a disabled or absent
+OpenRegister never fatals Nextcloud boot — the first request to an engine
+route degrades to a 5xx and `/api/health` reports `openregister: degraded`.
+
+**Kept bespoke** (the engine generics are unavailable or incompatible on the
+current OpenRegister `development`, re-aliased to the concrete classes after
+`Bootstrap::register`):
+
+- `DashboardController` — publishes `currentUserGroups` to `IInitialState`
+  (REQ-OBR-009); the generic dashboard controller does not.
+- `PreferencesController` — there is no `GenericPreferencesController` in
+  OpenRegister `development`, so relying on the alias would 500 the
+  preferences routes.
+- `SettingsController` + `SettingsService` — the generic
+  `AppHostSettingsService::loadConfiguration()` calls
+  `ConfigurationService::importFromApp()` with a stale 2-argument signature
+  and performs no ADR-037 `register.d/` fragment merge, which OpenBuild relies
+  on (`register.d/10-business-rules.json`).
+
+### Observability
+
+The health + metrics endpoints are declarative — driven by the
+`observability` block in [`src/manifest.json`](../src/manifest.json), executed
+by the engine's `GenericHealthController` / `GenericMetricsController`.
+
+- **`GET /api/health`** is now **public** and real (ADR-006). It runs a
+  `database` check (critical) and an `openregister` `orAvailable` check
+  (degraded), returning `{status, app, version, checks}` with the ADR-006
+  status-code policy (`200` ok, `200` degraded, `503` on a critical failure).
+  This **fixes a pre-existing ADR-006 violation**: the old bespoke
+  `HealthController` was auth-gated (`401` for anonymous callers,
+  `{status:"ok"}` for authenticated ones), so an external orchestrator /
+  load-balancer probe could not read liveness without a session. Health is a
+  liveness signal and must be reachable without auth.
+- **`GET /api/metrics`** is now **admin-only Prometheus** text exposition
+  (`version=0.0.4`), replacing the old public-to-any-authenticated-user JSON
+  `{"metrics":[]}` stub. Three descriptors are declared:
+  `openbuild_export_jobs_total{status=…}`, `openbuild_applications_total`, and
+  `openbuild_application_versions_total{status=…}` (object counts on the
+  `openbuild` register's `export-job` / `application` / `applicationVersion`
+  schemas), alongside the engine's implicit `openbuild_info` + `openbuild_up`.
+
+> **Promised-but-unbacked metric.** An earlier note mentioned an
+> "icon cache hits" counter. There is no backing data for it — OpenBuild's
+> icon controller does not record cache hits — so it is intentionally NOT
+> declared. Adding it later would require either an `appConfig` counter the
+> icon controller increments, or an `IMetricsProvider` (`provider` source
+> kind) that computes it; until that data exists, declaring the descriptor
+> would emit a constant zero.
+
+The `observability` and `deepLinks` blocks are top-level manifest keys owned by
+the AppHost engine, not by the `@conduction/nextcloud-vue` renderer. The
+canonical app-manifest schema is `additionalProperties: false` at the root and
+does not yet describe them (schema lag — an upstream nextcloud-vue PR is
+needed); `scripts/check-manifest.js` strips them before validating the
+renderer shape, and OpenRegister's `ObservabilityManifest` parser validates
+their own shape server-side.
+
 ## File map
 
 | Path | Role |
 |------|------|
-| [`appinfo/routes.php`](../appinfo/routes.php) | Registers `GET /api/applications/{slug}/manifest` |
+| [`lib/AppInfo/Application.php`](../lib/AppInfo/Application.php) | `Bootstrap::register()` + re-aliased bespoke controllers + domain wiring |
+| [`appinfo/routes.php`](../appinfo/routes.php) | `Routes::standard($extra)` — canonical AppHost routes + OpenBuild domain routes |
+| [`src/manifest.json`](../src/manifest.json) | UI shell + the `observability` (health/metrics) and `deepLinks` blocks |
 | [`lib/Controller/ApplicationsController.php`](../lib/Controller/ApplicationsController.php) | `getManifest()` — the only app-local controller method |
 | [`lib/Settings/openbuild_register.json`](../lib/Settings/openbuild_register.json) | OR schema declarations for `Application`, `BuiltAppRoute`, `HelloMessage`, plus the lifecycle metadata |
 | [`lib/Repair/InitializeSettings.php`](../lib/Repair/InitializeSettings.php) | Imports the register into OR on install/upgrade |
@@ -147,3 +219,5 @@ provisioned app gets the same one-index-one-detail-one-form starter and the
 - **ADR-024** — app manifest standard (`CnAppRoot` + `CnAppNav` + `CnPageRenderer` + `useAppManifest`)
 - **ADR-031** — schema-declarative business logic (the Application lifecycle is the canonical example)
 - **ADR-032** — spec sizing (`bootstrap-openbuild` is `kind: mixed` under the thin-glue exception)
+- **ADR-040** — AppHost engine: shared dashboard/settings/preferences/observability plumbing owned by OpenRegister
+- **ADR-006** — metrics & observability (health public; metrics admin-only Prometheus)

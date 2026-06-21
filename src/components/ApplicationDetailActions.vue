@@ -42,6 +42,12 @@
 			@click="exportOpen = true">
 			{{ t('openbuild', 'Export') }}
 		</NcButton>
+		<NcButton
+			v-if="canSaveAsTemplate"
+			:disabled="!obApp || saveTemplateLoading"
+			@click="openSaveAsTemplate">
+			{{ saveTemplateLoading ? t('openbuild', 'Preparing…') : t('openbuild', 'Save as template') }}
+		</NcButton>
 		<span v-if="toast" class="ob-detail-actions__toast">{{ toast }}</span>
 		<span v-if="error" class="ob-detail-actions__error">{{ error }}</span>
 		<ExportDialog
@@ -59,6 +65,15 @@
 			:open="historyOpen"
 			:application-uuid="obAppUuid"
 			@update:open="historyOpen = $event" />
+		<SaveAsTemplateDialog
+			v-if="saveTemplateOpen && obApp"
+			:open="saveTemplateOpen"
+			:application="obApp"
+			:manifest="saveTemplateManifest"
+			:schemas="saveTemplateSchemas"
+			:existing-templates="existingTemplates"
+			@update:open="saveTemplateOpen = $event"
+			@saved="onTemplateSaved" />
 	</div>
 </template>
 
@@ -68,14 +83,18 @@ import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import PermissionsModal from '../modals/PermissionsModal.vue'
 import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
+import SaveAsTemplateDialog from '../dialogs/SaveAsTemplateDialog.vue'
 import { getCurrentUserGroups } from '../composables/useRole.js'
+import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import applicationContext from '../mixins/applicationContext.js'
 
 const ExportDialog = () => import('../dialogs/ExportDialog.vue')
 
+const OR_TEMPLATES = '/apps/openregister/api/objects/openbuild/application-template'
+
 export default {
 	name: 'ApplicationDetailActions',
-	components: { NcButton, PermissionsModal, PermissionHistoryModal, ExportDialog },
+	components: { NcButton, PermissionsModal, PermissionHistoryModal, SaveAsTemplateDialog, ExportDialog },
 	mixins: [applicationContext],
 	data() {
 		return {
@@ -83,6 +102,11 @@ export default {
 			permissionsOpen: false,
 			historyOpen: false,
 			exportOpen: false,
+			saveTemplateOpen: false,
+			saveTemplateLoading: false,
+			saveTemplateManifest: null,
+			saveTemplateSchemas: [],
+			existingTemplates: [],
 			toast: '',
 			error: '',
 		}
@@ -106,6 +130,16 @@ export default {
 				return ''
 			}
 			return generateUrl(`/apps/openbuild/builder/${this.obApp.slug}`)
+		},
+		/**
+		 * "Save as template" is offered to owners and editors only — same
+		 * rbac source of truth as the edit actions (REQ-SAT-001). Viewers
+		 * (and 'none') never see it.
+		 *
+		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 */
+		canSaveAsTemplate() {
+			return this.obAppRole === 'owner' || this.obAppRole === 'editor'
 		},
 		/**
 		 * Observed behaviour of `availableGroups` (retrofit annotation).
@@ -168,6 +202,64 @@ export default {
 			} catch (e) {
 				this.error = `${t('openbuild', 'Failed to save permissions')}: ${e.message || e}`
 			}
+		},
+		/**
+		 * Gather the app's manifest + companion schemas + visible templates,
+		 * then open the SaveAsTemplateDialog (REQ-SAT-001).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 */
+		async openSaveAsTemplate() {
+			if (!this.canSaveAsTemplate || !this.obApp || this.saveTemplateLoading) {
+				return
+			}
+			this.saveTemplateLoading = true
+			this.error = ''
+			try {
+				// Manifest from the app's current/production version (falls back
+				// to an inline manifest on the record for un-versioned drafts).
+				this.saveTemplateManifest = this.obApp.manifest
+					|| (this.obApp.currentVersion && this.obApp.currentVersion.manifest)
+					|| {}
+				const picker = useRegisterPicker({ appSlug: this.obApp.slug })
+				this.saveTemplateSchemas = await picker.fetchSchemas(picker.resolveAppRegister())
+				this.existingTemplates = await this.loadExistingTemplates()
+				this.saveTemplateOpen = true
+			} catch (e) {
+				this.error = `${t('openbuild', 'Could not prepare template capture')}: ${e.message || e}`
+			} finally {
+				this.saveTemplateLoading = false
+			}
+		},
+		/**
+		 * Read the templates visible to the caller (for slug-collision
+		 * resolution). Plain OR REST read — no new PHP (REQ-SAT-006).
+		 *
+		 * @return {Promise<Array>}
+		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 */
+		async loadExistingTemplates() {
+			try {
+				const { data } = await axios.get(generateUrl(OR_TEMPLATES))
+				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				return list
+			} catch (e) {
+				return []
+			}
+		},
+		/**
+		 * Surface a toast after a successful template save/update.
+		 *
+		 * @param {{slug: string, mode: string}} payload The save result.
+		 * @return {void}
+		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 */
+		onTemplateSaved(payload) {
+			this.saveTemplateOpen = false
+			this.toast = payload && payload.mode === 'update'
+				? t('openbuild', 'Template "{slug}" updated', { slug: payload.slug })
+				: t('openbuild', 'Saved as template "{slug}"', { slug: payload.slug })
 		},
 	},
 }

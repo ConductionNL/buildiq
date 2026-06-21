@@ -1,0 +1,57 @@
+/**
+ * <ReferenceCard /> styles. Mirrors reference-cards.css exactly.
+ */
+
+.grid { display: grid; gap: 16px; }
+.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.cols-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+.card {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: var(--conduction-typography-font-family-body);
+}
+
+.sectorTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-cobalt-700);
+  background: var(--c-cobalt-50);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  align-self: flex-start;
+}
+
+.name { font-size: 17px; font-weight: 700; margin: 0; color: var(--c-cobalt-900); }
+.what { font-size: 14px; color: var(--c-cobalt-700); line-height: 1.5; margin: 0; }
+
+.stack {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid var(--c-cobalt-100);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-700);
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-family: var(--conduction-typography-font-family-code);
+}

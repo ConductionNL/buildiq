@@ -1,0 +1,184 @@
+/**
+ * <GameModal /> styles. Mirrors preview/components/game-modal.css
+ * for the panel + overlay; cobalt-on-white per huisstijl.
+ */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--conduction-typography-font-family-body);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 23, 47, 0.55);
+  backdrop-filter: blur(2px);
+  cursor: pointer;
+}
+
+.panel {
+  position: relative;
+  background: white;
+  color: var(--c-cobalt-700);
+  border-radius: var(--radius-xl);
+  padding: 40px 36px 32px;
+  width: calc(100% - 48px);
+  max-width: 520px;
+  box-shadow: var(--shadow-3, 0 30px 80px -20px rgba(10, 23, 47, 0.4));
+}
+
+.close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-700);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  font-family: inherit;
+  transition: background 120ms ease;
+}
+.close:hover { background: var(--c-cobalt-100); }
+
+.eyebrow {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-orange-knvb);
+  margin: 0 0 8px;
+  font-weight: 500;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--c-cobalt-900);
+  margin: 0 0 8px;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: var(--c-cobalt-700);
+  line-height: 1.55;
+  margin: 0 0 16px;
+}
+
+.scorePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-900);
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  margin-bottom: 24px;
+}
+
+.progress {
+  margin: 24px 0 16px;
+}
+.progressLabel {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-cobalt-400);
+  margin-bottom: 8px;
+}
+.progressLabel strong { color: var(--c-cobalt-900); font-weight: 700; }
+
+.progressBar {
+  height: 6px;
+  background: var(--c-cobalt-50);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progressFill {
+  height: 100%;
+  background: var(--c-orange-knvb);
+  transition: width 240ms ease;
+}
+
+.grid {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gridItem,
+.gridItemFound {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--c-cobalt-400);
+}
+.gridItemFound { color: var(--c-cobalt-900); font-weight: 500; }
+.gridHex {
+  width: 10px;
+  height: 12px;
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-cobalt-200);
+  flex-shrink: 0;
+}
+.gridItemFound .gridHex { background: var(--c-mint-500); }
+
+.cta {
+  font-size: 13px;
+  color: var(--c-cobalt-400);
+  margin: 16px 0 24px;
+  font-style: italic;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btnSecondary {
+  background: white;
+  color: var(--c-cobalt-700);
+  border: 1px solid var(--c-cobalt-200);
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 120ms ease;
+}
+.btnSecondary:hover { border-color: var(--c-blue-cobalt); color: var(--c-blue-cobalt); }
+
+.btnPrimary {
+  background: var(--c-blue-cobalt);
+  color: white;
+  border: 1px solid var(--c-blue-cobalt);
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 120ms ease;
+}
+.btnPrimary:hover { background: var(--c-cobalt-700); border-color: var(--c-cobalt-700); }

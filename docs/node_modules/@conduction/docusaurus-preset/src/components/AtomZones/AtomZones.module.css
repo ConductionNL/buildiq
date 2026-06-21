@@ -1,0 +1,647 @@
+/**
+ * <AtomZones /> styles.
+ *
+ * Two layers:
+ *
+ *   1. Locally-scoped layout (zones grid, zone-card, zone-head,
+ *      facts dl, tips list). Standard CSS-Modules class names.
+ *
+ *   2. The chassis atom toolkit (.am-frame, .am-topbar, .am-nav,
+ *      .am-col, .am-pageHeader, .am-detail, etc.) declared via
+ *      :global() so every chassis renders identically regardless of
+ *      consumer Webpack config. Class names are `am-`-prefixed to
+ *      avoid colliding with Docusaurus host-page utility classes.
+ *
+ * Mirrors the static-HTML reference at
+ *   preview/components/app-mock.html#five-atoms
+ * (the .anatomy .zones / .zone-card / .zone-focus rules and the
+ * inline .frame .pageHeader / .frame .nav .footer additions).
+ *
+ * Tokens only; one orange accent (KNVB) reserved for the focused
+ * atom outline + the navHead hex glyph.
+ */
+
+/* ============================================================
+   Layout — zones grid + zone-card
+   ============================================================ */
+
+.zones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+  margin: var(--space-6) 0 var(--space-10);
+}
+
+@media (max-width: 1100px) {
+  .zones {
+    grid-template-columns: 1fr;
+  }
+}
+
+.zoneCard {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.zoneHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.zoneHead code {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-blue-cobalt);
+  background: var(--c-cobalt-50);
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.zoneHead h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--c-blue-cobalt);
+  letter-spacing: -0.01em;
+}
+
+.applies {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-cobalt-400);
+  margin-left: auto;
+}
+
+.applies strong {
+  color: var(--c-mint-500);
+  font-weight: 500;
+}
+
+.never {
+  color: var(--c-cobalt-300);
+  font-style: italic;
+}
+
+.lede {
+  margin: 0;
+  color: var(--c-cobalt-700);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* ============================================================
+   Zone frame (the cobalt-50 cushion that holds the chassis)
+   ============================================================ */
+
+.zoneFrame {
+  background: var(--c-cobalt-50);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+/* ============================================================
+   Chassis — global so the markup matches the design-system kit
+   ============================================================ */
+
+.zoneFrame :global(.am-frame) {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  aspect-ratio: 16 / 10;
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--conduction-typography-font-family-body);
+  position: relative;
+}
+
+/* --- Topbar ---------------------------------------------------- */
+
+.zoneFrame :global(.am-topbar) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: var(--c-blue-cobalt);
+  flex-shrink: 0;
+  height: 24px;
+}
+
+.zoneFrame :global(.am-topbar .am-logo) {
+  width: 16px;
+  height: 12px;
+  border-radius: 6px;
+  background: white;
+}
+
+.zoneFrame :global(.am-topbar .am-icon) {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.zoneFrame :global(.am-topbar .am-spacer) {
+  flex: 1;
+}
+
+.zoneFrame :global(.am-topbar .am-bell) {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.zoneFrame :global(.am-topbar .am-avatar) {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: white;
+}
+
+/* --- Body wrapper --------------------------------------------- */
+
+.zoneFrame :global(.am-body) {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* --- Left navigation ----------------------------------------- */
+
+.zoneFrame :global(.am-nav) {
+  width: 22%;
+  min-width: 100px;
+  flex-shrink: 0;
+  background: var(--c-cobalt-50);
+  border-right: 1px solid var(--c-cobalt-100);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.zoneFrame :global(.am-nav .am-navHead) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--c-blue-cobalt);
+  padding: 6px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.zoneFrame :global(.am-nav .am-navHead .am-h) {
+  width: 8px;
+  height: 9px;
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-orange-knvb);
+}
+
+.zoneFrame :global(.am-nav .am-navHead .am-l) {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 1px;
+}
+
+.zoneFrame :global(.am-nav .am-item) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 3px;
+}
+
+.zoneFrame :global(.am-nav .am-item.am-active) {
+  background: var(--c-cobalt-100);
+}
+
+.zoneFrame :global(.am-nav .am-item .am-ico) {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  background: var(--c-cobalt-400);
+  flex-shrink: 0;
+}
+
+.zoneFrame :global(.am-nav .am-item.am-active .am-ico) {
+  background: var(--c-blue-cobalt);
+}
+
+.zoneFrame :global(.am-nav .am-item .am-l) {
+  flex: 1;
+  height: 4px;
+  background: var(--c-cobalt-200);
+  border-radius: 1px;
+}
+
+.zoneFrame :global(.am-nav .am-item.am-active .am-l) {
+  background: var(--c-cobalt-700);
+  height: 5px;
+}
+
+.zoneFrame :global(.am-nav .am-footer) {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--c-cobalt-100);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* --- Main column --------------------------------------------- */
+
+.zoneFrame :global(.am-col) {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* --- Page header --------------------------------------------- */
+
+.zoneFrame :global(.am-pageHeader) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.zoneFrame :global(.am-pageHeader .am-title-bar) {
+  flex: 1;
+  height: 14px;
+  background: var(--c-blue-cobalt);
+  border-radius: 3px;
+  max-width: 45%;
+}
+
+.zoneFrame :global(.am-pageHeader .am-spacer) {
+  flex: 1;
+}
+
+.zoneFrame :global(.am-pageHeader .am-actions) {
+  display: flex;
+  gap: 4px;
+}
+
+.zoneFrame :global(.am-pageHeader .am-actions .am-btn) {
+  height: 14px;
+  width: 38px;
+  background: var(--c-blue-cobalt);
+  border-radius: 3px;
+}
+
+.zoneFrame :global(.am-pageHeader .am-actions .am-btn.am-ghost) {
+  background: white;
+  border: 1px solid var(--c-cobalt-200);
+}
+
+/* --- KPI strip ------------------------------------------------ */
+
+.zoneFrame :global(.am-kpiRow) {
+  display: flex;
+  gap: 6px;
+}
+
+.zoneFrame :global(.am-kpi) {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px;
+  background: var(--c-cobalt-50);
+  border-radius: 4px;
+}
+
+.zoneFrame :global(.am-kpi .am-ico) {
+  width: 14px;
+  height: 16px;
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-mint-300);
+  flex-shrink: 0;
+}
+
+.zoneFrame :global(.am-kpi.am-forest .am-ico) {
+  background: var(--c-forest-300);
+}
+
+.zoneFrame :global(.am-kpi.am-amber .am-ico) {
+  background: var(--c-orange-knvb);
+}
+
+.zoneFrame :global(.am-kpi .am-meta) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.zoneFrame :global(.am-kpi .am-num) {
+  height: 7px;
+  background: var(--c-cobalt-900);
+  border-radius: 1px;
+  width: 35%;
+}
+
+.zoneFrame :global(.am-kpi .am-label) {
+  height: 3px;
+  background: var(--c-cobalt-400);
+  border-radius: 1px;
+  width: 70%;
+}
+
+/* --- Panel row + panels --------------------------------------- */
+
+.zoneFrame :global(.am-panelRow) {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.zoneFrame :global(.am-panel) {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: 4px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.zoneFrame :global(.am-panel .am-head) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.zoneFrame :global(.am-panel .am-head .am-title) {
+  height: 5px;
+  background: var(--c-cobalt-700);
+  border-radius: 1px;
+  width: 35%;
+}
+
+.zoneFrame :global(.am-panel .am-stack) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zoneFrame :global(.am-panel .am-item) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--c-cobalt-50);
+}
+
+.zoneFrame :global(.am-panel .am-item:last-child) {
+  border-bottom: 0;
+}
+
+.zoneFrame :global(.am-panel .am-item .am-av) {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--c-mint-300);
+  flex-shrink: 0;
+}
+
+.zoneFrame :global(.am-panel .am-item .am-av.am-b) {
+  background: var(--c-lavender-300);
+}
+
+.zoneFrame :global(.am-panel .am-item .am-lines) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.zoneFrame :global(.am-panel .am-item .am-l1) {
+  height: 4px;
+  background: var(--c-cobalt-700);
+  border-radius: 1px;
+  width: 65%;
+}
+
+/* --- Detail / Sidebar (rich) ---------------------------------- */
+
+.zoneFrame :global(.am-detail) {
+  width: 26%;
+  min-width: 130px;
+  flex-shrink: 0;
+  background: white;
+  border-left: 1px solid var(--c-cobalt-100);
+  display: flex;
+  flex-direction: column;
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-head) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  border-bottom: 1px solid var(--c-cobalt-100);
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-head .am-ico) {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--c-cobalt-50);
+  flex-shrink: 0;
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-head .am-meta) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-head .am-title) {
+  height: 6px;
+  background: var(--c-cobalt-900);
+  border-radius: 1px;
+  width: 50%;
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-head .am-desc) {
+  height: 3px;
+  background: var(--c-cobalt-300);
+  border-radius: 1px;
+  width: 85%;
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-head .am-close) {
+  width: 8px;
+  height: 8px;
+  background: var(--c-cobalt-300);
+  flex-shrink: 0;
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-tabs) {
+  display: flex;
+  gap: 4px;
+  padding: 4px 10px 0;
+  border-bottom: 1px solid var(--c-cobalt-100);
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-tab) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-bottom: 2px solid transparent;
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-tab.am-active) {
+  border-bottom-color: var(--c-blue-cobalt);
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-tab .am-ico) {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-cobalt-300);
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-tab.am-active .am-ico) {
+  background: var(--c-cobalt-700);
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-tab .am-l) {
+  height: 3px;
+  background: var(--c-cobalt-300);
+  width: 24px;
+  border-radius: 1px;
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-tab.am-active .am-l) {
+  background: var(--c-cobalt-700);
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-body) {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  overflow: hidden;
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-input) {
+  height: 14px;
+  background: white;
+  border: 1px solid var(--c-cobalt-200);
+  border-radius: 3px;
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-filter) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-filter .am-lbl) {
+  height: 3px;
+  background: var(--c-cobalt-400);
+  width: 30%;
+  border-radius: 1px;
+}
+
+.zoneFrame :global(.am-detail.am-rich .am-sb-filter .am-field) {
+  height: 12px;
+  background: white;
+  border: 1px solid var(--c-cobalt-200);
+  border-radius: 2px;
+}
+
+/* ============================================================
+   Zone-focus overlay — dim everything except the focused atom
+   ============================================================ */
+
+.zoneFrame :global(.am-topbar),
+.zoneFrame :global(.am-body > .am-nav),
+.zoneFrame :global(.am-body > .am-col),
+.zoneFrame :global(.am-body > .am-detail),
+.zoneFrame :global(.am-pageHeader) {
+  transition: opacity 200ms;
+}
+
+/* Topbar */
+.focusTopbar :global(.am-body) {
+  opacity: 0.25;
+}
+.focusTopbar :global(.am-topbar) {
+  box-shadow: 0 0 0 2px var(--c-orange-knvb);
+}
+
+/* Left navigation */
+.focusNav :global(.am-topbar),
+.focusNav :global(.am-body > .am-col),
+.focusNav :global(.am-body > .am-detail) {
+  opacity: 0.25;
+}
+.focusNav :global(.am-body > .am-nav) {
+  box-shadow: inset 0 0 0 2px var(--c-orange-knvb);
+}
+
+/* Main column */
+.focusCol :global(.am-topbar),
+.focusCol :global(.am-body > .am-nav),
+.focusCol :global(.am-body > .am-detail) {
+  opacity: 0.25;
+}
+.focusCol :global(.am-body > .am-col) {
+  box-shadow: inset 0 0 0 2px var(--c-orange-knvb);
+}
+
+/* Page header */
+.focusPageHeader :global(.am-topbar),
+.focusPageHeader :global(.am-body > .am-nav),
+.focusPageHeader :global(.am-body > .am-detail),
+.focusPageHeader :global(.am-body > .am-col > *:not(.am-pageHeader)) {
+  opacity: 0.25;
+}
+.focusPageHeader :global(.am-pageHeader) {
+  box-shadow: 0 0 0 2px var(--c-orange-knvb);
+  border-radius: 4px;
+}
+
+/* Sidebar */
+.focusDetail :global(.am-topbar),
+.focusDetail :global(.am-body > .am-nav),
+.focusDetail :global(.am-body > .am-col) {
+  opacity: 0.25;
+}
+.focusDetail :global(.am-body > .am-detail) {
+  box-shadow: inset 0 0 0 2px var(--c-orange-knvb);
+}

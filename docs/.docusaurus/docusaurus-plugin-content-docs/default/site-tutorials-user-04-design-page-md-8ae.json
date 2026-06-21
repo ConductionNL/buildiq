@@ -1,0 +1,29 @@
+{
+  "id": "tutorials/user/design-page",
+  "title": "Design a page",
+  "description": "Compose the screens of a virtual app — index lists, detail pages, forms, dashboards — from the page designer.",
+  "source": "@site/tutorials/user/04-design-page.md",
+  "sourceDirName": "tutorials/user",
+  "slug": "/tutorials/user/design-page",
+  "permalink": "/docs/tutorials/user/design-page",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/user/04-design-page.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4,
+    "title": "Design a page",
+    "description": "Compose the screens of a virtual app — index lists, detail pages, forms, dashboards — from the page designer."
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Design a schema",
+    "permalink": "/docs/tutorials/user/design-schema"
+  },
+  "next": {
+    "title": "Connect a register or connector",
+    "permalink": "/docs/tutorials/user/connect-data"
+  }
+}

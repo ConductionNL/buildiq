@@ -1,0 +1,16 @@
+/**
+ * <HexBullet /> styles. Three sizes mirror the recurring measurements
+ * across reference-cards, solution-cards, partner-cards, hero,
+ * footer, eyebrow, etc. Always pointy-top, never rotated.
+ */
+
+.hex {
+  display: inline-block;
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-orange-knvb);
+  flex-shrink: 0;
+}
+
+.sm { width: 8px;  height: 9px; }
+.md { width: 12px; height: 14px; }
+.lg { width: 44px; height: 50px; }

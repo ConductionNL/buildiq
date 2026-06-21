@@ -1,0 +1,166 @@
+/**
+ * <CookieCli /> styles. Mirrors preview/components/cookie-cli.html
+ * exactly: terminal dark panel, IBM Plex Mono throughout, three
+ * action buttons with key glyphs.
+ */
+
+.term {
+  --term-bg: #0A0F1A;
+  --term-fg: #C9D4E5;
+  --term-fg-dim: #5F6E86;
+  --term-cobalt: #6892D9;
+  --term-green: #5FE39A;
+  --term-border: #1A2540;
+
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+
+  background: var(--term-bg);
+  color: var(--term-fg);
+  border: 1px solid var(--term-border);
+  border-radius: 8px;
+  box-shadow:
+    0 0 0 1px rgba(33, 70, 139, 0.12),
+    0 24px 64px -16px rgba(10, 23, 47, 0.45),
+    inset 0 0 80px rgba(0, 0, 0, 0.4);
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 13px;
+  line-height: 1.55;
+  width: calc(100% - 48px);
+  max-width: 640px;
+  overflow: hidden;
+}
+
+.bar {
+  background: #060912;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--term-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--term-fg-dim);
+}
+.dots { display: flex; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dotR { background: #FF6B7A; }
+.dotY { background: #F7C76F; }
+.dotG { background: var(--term-green); }
+.title { flex: 1; text-align: center; }
+.title b { color: var(--term-fg); }
+
+.body { padding: 18px 20px; }
+
+.prompt { color: var(--term-fg); margin: 6px 0; }
+.user { color: var(--term-green); }
+.host { color: var(--term-cobalt); }
+.sigil { color: var(--term-fg-dim); }
+.path { color: var(--term-fg-dim); }
+.cmd { color: var(--term-fg); }
+
+.comment {
+  color: var(--term-fg-dim);
+  margin: 6px 0;
+}
+
+.opts {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.opts li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--term-fg);
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+  width: 100%;
+}
+.opts li:hover { background: rgba(255, 255, 255, 0.02); }
+.opts li:focus-visible {
+  outline: 1px solid var(--term-cobalt);
+  outline-offset: 2px;
+}
+.optKey { color: var(--term-fg-dim); }
+.optCheck { color: var(--term-fg-dim); width: 12px; }
+.optOn .optCheck { color: var(--term-green); }
+.optLabel { color: var(--term-fg); flex: 1; }
+.optTag {
+  font-size: 10px;
+  color: var(--term-fg-dim);
+  border: 1px solid var(--term-border);
+  padding: 1px 7px;
+  border-radius: 3px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--term-border);
+  flex-wrap: wrap;
+}
+
+.btn {
+  background: transparent;
+  color: var(--term-fg);
+  border: 1px solid var(--term-border);
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.btn:hover {
+  background: rgba(33, 70, 139, 0.10);
+  border-color: var(--term-cobalt);
+}
+
+.btnKey {
+  background: var(--term-border);
+  color: var(--term-cobalt);
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-size: 10px;
+}
+
+.btnPrimary {
+  background: var(--c-orange-knvb);
+  color: white;
+  border-color: var(--c-orange-knvb);
+}
+.btnPrimary:hover {
+  background: var(--c-orange-knvb);
+  border-color: white;
+  filter: brightness(1.05);
+}
+.btnPrimary .btnKey {
+  background: rgba(0, 0, 0, 0.2);
+  color: white;
+}
+
+@media (max-width: 600px) {
+  .term {
+    bottom: 12px;
+    width: calc(100% - 24px);
+  }
+  .actions { flex-direction: column; }
+  .btn { justify-content: center; }
+}

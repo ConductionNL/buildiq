@@ -1,0 +1,29 @@
+{
+  "id": "tutorials/user/preview-app",
+  "title": "Preview and run your app",
+  "description": "Open the virtual app in its live shell — the same surface end users will see — and click through it like a real user.",
+  "source": "@site/tutorials/user/06-preview-app.md",
+  "sourceDirName": "tutorials/user",
+  "slug": "/tutorials/user/preview-app",
+  "permalink": "/docs/tutorials/user/preview-app",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/user/06-preview-app.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 6,
+  "frontMatter": {
+    "sidebar_position": 6,
+    "title": "Preview and run your app",
+    "description": "Open the virtual app in its live shell — the same surface end users will see — and click through it like a real user."
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Connect a register or connector",
+    "permalink": "/docs/tutorials/user/connect-data"
+  },
+  "next": {
+    "title": "Snapshot and roll back a version",
+    "permalink": "/docs/tutorials/user/version-snapshots"
+  }
+}

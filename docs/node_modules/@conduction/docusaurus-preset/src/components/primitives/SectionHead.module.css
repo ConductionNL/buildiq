@@ -1,0 +1,43 @@
+/**
+ * <SectionHead /> styles. Mirrors .section-head from preview/pages/
+ * landing.html (and the same rule re-declared on apps-catalog,
+ * solutions-catalog, support, partners, about pages).
+ */
+
+.head { margin-bottom: 48px; }
+
+.align-split {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 64px;
+  align-items: end;
+}
+
+.align-stack { display: block; }
+.align-stack .lede { max-width: 60ch; margin-top: 16px; }
+
+@media (max-width: 900px) {
+  .align-split { grid-template-columns: 1fr; gap: 24px; }
+}
+
+.title {
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--c-cobalt-900);
+  margin: 0;
+}
+@media (max-width: 700px) { .title { font-size: 32px; } }
+
+.title :global(.next-blue) { color: var(--c-nextcloud-blue); }
+.title :global(.cg-yellow) { color: var(--c-commonground-yellow); }
+
+.lede {
+  font-size: 17px;
+  color: var(--c-cobalt-700);
+  line-height: 1.55;
+  margin: 0;
+}
+.lede :global(.next-blue) { color: var(--c-nextcloud-blue); }
+.lede :global(.cg-yellow) { color: var(--c-commonground-yellow); }

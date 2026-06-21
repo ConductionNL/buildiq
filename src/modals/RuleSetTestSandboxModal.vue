@@ -73,7 +73,7 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcTextArea, NcTextField } from '@nextcloud/vue'
 
 export default {
-	name: 'RuleSetTestSandbox',
+	name: 'RuleSetTestSandboxModal',
 	components: {
 		NcButton,
 		NcLoadingIcon,

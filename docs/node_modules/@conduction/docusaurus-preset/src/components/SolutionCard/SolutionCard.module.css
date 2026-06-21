@@ -1,0 +1,99 @@
+/**
+ * <SolutionCard /> styles. Mirrors solution-cards.css exactly.
+ */
+
+.grid { display: grid; gap: 20px; }
+.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.cols-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+.card {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  transition: all 160ms ease;
+  font-family: var(--conduction-typography-font-family-body);
+}
+.card:hover {
+  border-color: var(--c-blue-cobalt);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+  text-decoration: none;
+  color: inherit;
+}
+
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.iconHex {
+  width: 56px;
+  height: 64px;
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-blue-cobalt);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.iconHex svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+.sector-public  .iconHex { background: var(--c-blue-cobalt); }
+.sector-mkb     .iconHex { background: var(--c-cobalt-700); }
+.sector-health  .iconHex { background: var(--c-orange-knvb); }
+
+.sectorTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-cobalt-700);
+  background: var(--c-cobalt-50);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--c-cobalt-900);
+  margin: 0;
+}
+
+.outcome {
+  font-size: 15px;
+  color: var(--c-cobalt-700);
+  line-height: 1.55;
+  margin: 0;
+}
+.outcome :global(.next-blue) { color: var(--c-nextcloud-blue); }
+.outcome :global(.cg-yellow) { color: var(--c-commonground-yellow); }
+
+.builtOn {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid var(--c-cobalt-100);
+}

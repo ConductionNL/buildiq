@@ -1,0 +1,238 @@
+/**
+ * <PartnerCard /> styles. Mirrors partner-cards.css exactly.
+ */
+
+.grid {
+  display: grid;
+  gap: 24px;
+  align-items: stretch;
+  font-family: var(--conduction-typography-font-family-body);
+}
+.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.cols-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+.card {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: var(--shadow-1);
+  text-decoration: none;
+  color: inherit;
+  transition: all 160ms ease;
+  position: relative;
+  font-family: var(--conduction-typography-font-family-body);
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+  text-decoration: none;
+  color: inherit;
+}
+/* Stretched-link overlay. Covers the whole card so any click on
+   non-interactive content navigates to the partner detail page,
+   while leaving room for nested links (app pills) to take precedence
+   via z-index. The overlay carries the aria-label since the card
+   itself is no longer the anchor. */
+.cardLink {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 1;
+}
+.cardLink:focus-visible {
+  outline: 2px solid var(--c-blue-cobalt);
+  outline-offset: -2px;
+}
+
+.tier {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-700);
+}
+
+/* Service tier: gold pill on a white card. */
+.tier-service .tier { background: var(--c-gold-500); color: var(--c-cobalt-900); }
+
+/* Certified tier: cobalt-fill inverse card. The compound .card.tier-certified
+   selector is deliberate — it lifts specificity above the plain .card rule
+   so the cobalt fill reliably wins over .card { background: white } even
+   after CSS-module bundlers reshuffle declaration order. Same for the
+   nested colour rules below. */
+.card.tier-certified { background: var(--c-blue-cobalt); color: white; border-color: var(--c-blue-cobalt); }
+.tier-certified .tier { background: white; color: var(--c-blue-cobalt); }
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  background: white;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  height: 36px;
+  box-sizing: content-box;
+}
+.avatar img {
+  max-height: 36px;
+  max-width: 140px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.name { font-size: 18px; font-weight: 700; color: var(--c-cobalt-900); }
+.tier-certified .name { color: white; }
+
+.summary { font-size: 14px; line-height: 1.55; color: var(--c-cobalt-700); }
+.summary :global(.next-blue) { color: var(--c-nextcloud-blue); }
+.tier-certified .summary { color: rgba(255, 255, 255, 0.78); }
+.tier-certified .summary :global(.next-blue) { color: var(--c-nextcloud-cyan); }
+
+.apps {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--c-cobalt-100);
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tier-certified .apps { border-top-color: rgba(255, 255, 255, 0.18); }
+
+.appPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-700);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-family: var(--conduction-typography-font-family-code);
+  /* When the pill is rendered as <a> it sits above the cardLink
+     overlay so clicks land on the pill, not the card-wide link. */
+  position: relative;
+  z-index: 2;
+  text-decoration: none;
+  transition: background 160ms, color 160ms;
+}
+/* Hover affordance only when the pill is a real link (i.e. the
+   app is in the registry). Plain <span> pills (e.g. "Nextcloud")
+   stay static. */
+a.appPill:hover {
+  background: var(--c-blue-cobalt);
+  color: white;
+  text-decoration: none;
+}
+.card.tier-certified a.appPill:hover {
+  background: white;
+  color: var(--c-blue-cobalt);
+}
+.tier-certified .appPill { background: rgba(255, 255, 255, 0.12); color: white; }
+
+/* Become-a-partner CTA tile */
+.become {
+  background: var(--c-cobalt-50);
+  border: 1px dashed var(--c-cobalt-300);
+  box-shadow: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px;
+}
+.become:hover { border-color: var(--c-blue-cobalt); transform: none; box-shadow: var(--shadow-1); }
+
+.becomeEyebrow {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-cobalt-400);
+  margin-bottom: 8px;
+}
+.becomeTitle {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+  color: var(--c-cobalt-900);
+}
+.becomeBody {
+  font-size: 14px;
+  color: var(--c-cobalt-700);
+  line-height: 1.55;
+  margin: 0 0 14px;
+  max-width: 56ch;
+}
+.becomeArrow {
+  color: var(--c-blue-cobalt);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Compact "other" variant. Used at the bottom of partner-detail
+   pages ("Adjacent specialists") and anywhere else a small dense
+   reference to a partner makes sense. Mini-avatar on the left,
+   name + why on the right; tier-coloured ring echoes the full
+   card's tier styling. */
+.other {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  transition: all 160ms ease;
+  font-family: var(--conduction-typography-font-family-body);
+}
+.other:hover {
+  border-color: var(--c-blue-cobalt);
+  transform: translateY(-1px);
+  text-decoration: none;
+  color: inherit;
+}
+.miniAvatar {
+  width: 44px;
+  height: 50px;
+  clip-path: var(--hex-pointy-top);
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.miniAvatar img {
+  max-width: 28px;
+  max-height: 28px;
+  object-fit: contain;
+}
+.other.tier-service .miniAvatar { box-shadow: inset 0 0 0 2px var(--c-gold-500); }
+.other.tier-certified .miniAvatar { box-shadow: inset 0 0 0 2px var(--c-orange-knvb); }
+
+.otherName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--c-cobalt-900);
+  margin-bottom: 4px;
+}
+.otherWhy {
+  font-size: 13px;
+  color: var(--c-cobalt-700);
+  line-height: 1.5;
+}

@@ -1,0 +1,42 @@
+/**
+ * <Outcomes /> styles. The shell is provided by <HexCard>; only the
+ * orange-checkmark item layout lives here.
+ */
+
+.item {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: var(--space-3);
+  align-items: start;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--c-cobalt-700);
+}
+
+.check {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  color: var(--c-orange-knvb);
+  flex-shrink: 0;
+}
+
+.body {
+  display: block;
+}
+
+.body a {
+  color: var(--c-blue-cobalt);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.body a:hover { color: var(--c-cobalt-900); }
+
+.body code {
+  background: var(--c-cobalt-100);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 14px;
+  color: var(--c-cobalt-900);
+}

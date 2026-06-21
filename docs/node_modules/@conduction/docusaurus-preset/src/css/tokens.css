@@ -1,0 +1,12 @@
+/**
+ * Conduction brand tokens, mirrored for Docusaurus consumers.
+ *
+ * Re-exports the canonical tokens from ../../tokens.css so a Docusaurus
+ * site picking up the preset gets the same palette, typography, and hex
+ * clip-paths as the design-system kit.
+ *
+ * When the preset is published to npm, this file becomes the bundled
+ * copy; until then it imports relatively from the workspace.
+ */
+@import url("../../../tokens.css");
+@import url("../../../typography.css");

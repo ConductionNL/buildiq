@@ -19,8 +19,6 @@ object-change audit trail.
 
 ### Requirement: Permissions field shape and default on creation
 
-@e2e exclude pure-backend OR-REST default-permissions contract — verified by Newman REST tests; no Playwright-testable UI surface for schema-field defaults on creation
-
 The system SHALL extend the `Application` schema with an optional
 `permissions` property of shape
 `{ owners: string[], editors: string[], viewers: string[] }` where
@@ -33,6 +31,8 @@ an array containing the **creator's primary Nextcloud group**
 default to empty arrays. If the creator has no group membership, the
 system SHALL fall back to the `admin` group as the sole owner so the
 Application is never created in an unreachable "no owner" state.
+
+@e2e exclude pure-backend OR-REST default-permissions contract — verified by Newman REST tests; no Playwright-testable UI surface for schema-field defaults on creation
 
 **ID:** REQ-OBRBAC-001
 
@@ -54,8 +54,6 @@ Application is never created in an unreachable "no owner" state.
 
 ### Requirement: Manifest endpoint enforces role membership
 
-@e2e exclude backend manifest-403 contract — already covered by rbac-403.spec.ts (REQ-OBR-006c equivalent); this requirement's three scenarios duplicate that coverage
-
 The system SHALL augment
 `GET /index.php/apps/openbuild/api/applications/{slug}/manifest` so
 that, after the existing organisation-scope check passes and the
@@ -68,6 +66,8 @@ elevated via the admin-bypass declared in REQ-OBRBAC-006), the
 controller SHALL respond `403 Forbidden` with a JSON error body. The
 check SHALL run before any other branch that would return the
 manifest payload — deny-by-default per ADR-005.
+
+@e2e exclude backend manifest-403 contract — already covered by rbac-403.spec.ts (REQ-OBR-006c equivalent); this requirement's three scenarios duplicate that coverage
 
 **ID:** REQ-OBRBAC-002
 
@@ -99,12 +99,12 @@ manifest payload — deny-by-default per ADR-005.
 
 ### Requirement: Application list filters out unauthorised entries
 
-@e2e exclude backend list-filter: already covered by rbac-403.spec.ts (verifies non-member sees empty list); this requirement's single scenario duplicates that coverage
-
 The OpenBuild shell's Application list view SHALL display only
 Applications on which the caller has at least one role
 (`owner | editor | viewer`). The filter SHALL be applied in this
 order of preference:
+
+@e2e exclude backend list-filter: already covered by rbac-403.spec.ts (verifies non-member sees empty list); this requirement's single scenario duplicates that coverage
 
 1. **Preferred** — declarative, via OR's authorization extension. If
    OR's schema vocabulary supports an
@@ -175,8 +175,6 @@ SHALL consume the same `useRole(application)` composable.
 
 ### Requirement: Transfer-ownership flow
 
-@e2e exclude backend permissions-PUT + orphan-guard contract — verified by Newman REST tests; transfer-ownership UI dialog is a future spec feature not yet exercisable in isolation via Playwright
-
 The system SHALL support an owner replacing the `permissions.owners`
 list of an Application. The transfer SHALL be a single declarative
 update to the Application's `permissions` property via OR REST — no
@@ -186,6 +184,8 @@ permissions panel of the editor (`owner`-gated per REQ-OBRBAC-004)
 that opens a group picker and PUTs the updated `permissions` block.
 The system SHALL reject (`4xx`) any transfer that would result in an
 empty `permissions.owners` array, preventing accidental orphaning.
+
+@e2e exclude backend permissions-PUT + orphan-guard contract — verified by Newman REST tests; transfer-ownership UI dialog is a future spec feature not yet exercisable in isolation via Playwright
 
 **ID:** REQ-OBRBAC-005
 
@@ -255,8 +255,6 @@ exercised so the action is reviewable.
 
 ### Requirement: Permission changes are recorded in the OR audit trail
 
-@e2e exclude pure-backend audit-trail contract — OR native object-change events are verified by Newman; audit trail panel UI is owner-gated and tested by the application-detail-ui spec Playwright tests
-
 The system SHALL record every change to an Application's `permissions` property in OpenRegister's standard per-object audit trail, regardless of whether the change is made through the OpenBuild frontend permissions panel, the textarea editor, OR REST directly, or the transfer-ownership flow. The audit
 entry SHALL be the OR-native object-change event (no app-local
 audit duplication); it SHALL carry the before / after `permissions`
@@ -264,6 +262,8 @@ values, the actor's UID, and the timestamp, leveraging OR's existing
 change-tracking per ADR-022. The OpenBuild editor SHALL expose this
 audit trail in a "Permission history" panel visible to `owner` role
 holders only.
+
+@e2e exclude pure-backend audit-trail contract — OR native object-change events are verified by Newman; audit trail panel UI is owner-gated and tested by the application-detail-ui spec Playwright tests
 
 **ID:** REQ-OBRBAC-007
 

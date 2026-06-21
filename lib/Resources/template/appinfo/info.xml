@@ -69,4 +69,10 @@ Vrij en open source onder de EUPL-1.2-licentie.
         <admin>OCA\AppTemplate\Settings\AdminSettings</admin>
         <admin-section>OCA\AppTemplate\Sections\SettingsSection</admin-section>
     </settings>
+
+    <repair-steps>
+        <post-migration>
+            <step>OCA\AppTemplate\Repair\InitializeSettings</step>
+        </post-migration>
+    </repair-steps>
 </info>

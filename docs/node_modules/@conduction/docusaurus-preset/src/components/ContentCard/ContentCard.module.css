@@ -1,0 +1,184 @@
+/**
+ * <ContentCard /> styles. Mirrors .content-card and .content-grid in
+ * preview/components/academy.css.
+ */
+
+.grid { display: grid; gap: var(--space-6); }
+.cols-1 { grid-template-columns: 1fr; }
+.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.cols-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 900px) {
+  .cols-2, .cols-3 { grid-template-columns: 1fr; }
+}
+
+.card {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: var(--space-6);
+  padding: var(--space-5);
+  background: var(--c-cobalt-50);
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  align-items: stretch;
+  font-family: var(--conduction-typography-font-family-body);
+}
+.card:hover {
+  background: white;
+  box-shadow: var(--shadow-2);
+  transform: translateY(-2px);
+  text-decoration: none;
+  color: inherit;
+}
+
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+/* Four-line meta block under the thumbnail.
+   Layout: 32 px hex avatar on the left, four stacked lines on the
+   right. margin-top:auto pins the block to the bottom of the left
+   column so a tall right column doesn't leave it floating. */
+.metaStack {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+.avatar {
+  width: 32px;
+  height: 32px;
+  background: var(--c-cobalt-100);
+  color: var(--c-cobalt-700);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  overflow: hidden;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatarInitials { line-height: 1; }
+
+.metaLines { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.metaAuthor {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-cobalt-900);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.metaSub {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--c-cobalt-700);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.metaType {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-blue-cobalt);
+  line-height: 1.3;
+  margin-top: 2px;
+  font-weight: 600;
+}
+.metaModule {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--c-cobalt-400);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+  .card { grid-template-columns: 1fr; }
+  .metaStack { margin-top: 0; padding-top: var(--space-3); }
+}
+
+.thumbPanel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 184px;
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+}
+.panel-cobalt      { background: var(--c-blue-cobalt); }
+.panel-cobalt-dark { background: var(--c-cobalt-700); }
+.panel-cobalt-deep { background: var(--c-cobalt-900); }
+.panel-mint        { background: var(--c-mint-500); }
+.panel-orange      { background: var(--c-orange-knvb); }
+.panel-cobalt-50   { background: var(--c-cobalt-50); }
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--c-cobalt-900);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.summary {
+  font-size: 14px;
+  color: var(--c-cobalt-700);
+  margin: 0;
+  line-height: 1.55;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--c-cobalt-400);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.metaBit  { white-space: nowrap; }
+.metaSep  { opacity: 0.6; }
+
+/* "For: MKB, Overheid, Developers" — replaces the audience pill row
+   so a card with multiple audiences doesn't fill the body with chips.
+   Matches the .metaSub typography so it reads as another meta line
+   rather than a heading. */
+.audienceLine {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--c-cobalt-700);
+  line-height: 1.4;
+}
+
+.tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}

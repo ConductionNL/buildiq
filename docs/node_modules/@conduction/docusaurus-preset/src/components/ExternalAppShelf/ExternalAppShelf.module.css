@@ -1,0 +1,90 @@
+/**
+ * <ExternalAppShelf /> styles. Responsive card grid; each card has
+ * a brand-coloured icon tile on the left and a name + meta + desc
+ * on the right.
+ */
+
+.shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  font-family: var(--conduction-typography-font-family-body);
+}
+
+.card {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  transition: transform 160ms, box-shadow 160ms, border-color 160ms;
+}
+.card.linked { cursor: pointer; }
+.card.linked:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+  border-color: var(--c-cobalt-200);
+}
+
+/* Icon tile — brand colour wash with the project's logo SVG centred.
+   White stroke / fill on the icon for contrast against the brand. */
+.iconTile {
+  width: 48px;
+  height: 55px;
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-cobalt-700);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+.icon { display: inline-flex; align-items: center; justify-content: center; }
+.icon svg { width: 22px; height: 22px; fill: currentColor; stroke: currentColor; stroke-width: 0; }
+
+/* Body */
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.name {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--c-cobalt-900);
+  margin: 0;
+}
+.meta {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-cobalt-400);
+}
+.desc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--c-cobalt-700);
+  margin: 4px 0 0;
+}
+
+.arrow {
+  color: var(--c-cobalt-400);
+  font-size: 14px;
+  margin-left: auto;
+  transition: color 160ms, transform 160ms;
+  flex-shrink: 0;
+}
+.card.linked:hover .arrow {
+  color: var(--c-orange-knvb);
+  transform: translate(2px, -2px);
+}

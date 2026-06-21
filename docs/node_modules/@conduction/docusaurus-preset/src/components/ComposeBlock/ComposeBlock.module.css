@@ -1,0 +1,74 @@
+/**
+ * <ComposeBlock /> styles. Mirrors the .compose treatment from
+ * preview/pages/demo.html so the React component renders identically
+ * to the kit page version.
+ */
+
+.block {
+  position: relative;
+  background: var(--c-cobalt-900);
+  color: rgba(255, 247, 210, 0.92);
+  padding: 28px 32px;
+  border-radius: var(--radius-lg);
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 32px 0;
+  overflow-x: auto;
+  box-shadow: 0 12px 32px -8px rgba(10, 23, 47, 0.45);
+}
+
+.filename {
+  display: inline-block;
+  background: rgba(255, 247, 210, 0.08);
+  color: var(--c-orange-knvb);
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.copy {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(255, 247, 210, 0.06);
+  color: rgba(255, 247, 210, 0.7);
+  border: 1px solid rgba(255, 247, 210, 0.12);
+  padding: 4px 10px;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 140ms ease, background 140ms ease, color 140ms ease;
+}
+.block:hover .copy,
+.copy:focus-visible { opacity: 1; }
+.copy:hover {
+  background: rgba(255, 247, 210, 0.14);
+  color: rgba(255, 247, 210, 0.92);
+}
+
+.pre {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  white-space: pre;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+.pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: 0;
+  font-family: inherit;
+  white-space: pre;
+}

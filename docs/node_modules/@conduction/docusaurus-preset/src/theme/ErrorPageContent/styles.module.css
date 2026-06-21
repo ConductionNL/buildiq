@@ -1,0 +1,203 @@
+/**
+ * Conduction error-page styles. The dyke-break SVG and its supporting
+ * keyframes live here; the page itself uses brand tokens for spacing
+ * + type so it sits next to the rest of the marketing pages without
+ * looking like a borrowed template.
+ *
+ * The water uses an x-translate loop so the gushing reads as constant
+ * flow rather than a single splash. Droplets each have their own
+ * delay so they don't pop together. Everything respects
+ * prefers-reduced-motion.
+ */
+
+.page {
+  padding: 0 0 96px;
+  background: var(--c-cobalt-50);
+  min-height: calc(100vh - 200px);
+}
+
+.scene {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 800 / 360;
+  background: var(--c-cobalt-50);
+  overflow: hidden;
+}
+
+.houses {
+  /* solid silhouettes; no animation — they're the static village */
+}
+
+.windows {
+  /* tiny lit windows; static */
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* the cascade falling from the breach into the canal — a gentle
+   shimmer + scale loop so the stream reads as moving water, not a
+   frozen splash */
+.gushGroup {
+  transform-origin: 510px 190px;
+  animation: gush 2.4s ease-in-out infinite;
+}
+@keyframes gush {
+  0%   { transform: scaleY(1)    translateY(0);  opacity: 1; }
+  50%  { transform: scaleY(1.06) translateY(1px); opacity: 0.92; }
+  100% { transform: scaleY(1)    translateY(0);  opacity: 1; }
+}
+
+/* canal waves drift sideways for a slow flowing-water feel */
+.waves path {
+  animation: drift 7s ease-in-out infinite;
+  transform-origin: center;
+}
+.waves path:nth-child(2) { animation-duration: 9s;  animation-delay: -2s; }
+.waves path:nth-child(3) { animation-duration: 11s; animation-delay: -4s; }
+@keyframes drift {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(-6px); }
+}
+
+/* droplets where the cascade meets the canal — each on its own beat
+   so they don't pop in sync */
+.droplets circle { opacity: 0; }
+.d1 { animation: drop 1.6s ease-out infinite; animation-delay: 0.0s; }
+.d2 { animation: drop 1.6s ease-out infinite; animation-delay: 0.3s; }
+.d3 { animation: drop 1.6s ease-out infinite; animation-delay: 0.6s; }
+.d4 { animation: drop 1.6s ease-out infinite; animation-delay: 0.9s; }
+.d5 { animation: drop 1.6s ease-out infinite; animation-delay: 1.2s; }
+@keyframes drop {
+  0%   { transform: translate(0, 0);   opacity: 0; }
+  20%  {                                opacity: 1; }
+  100% { transform: translate(0, 14px); opacity: 0; }
+}
+
+/* the "duct tape inbound" tag wobbles like a paper sign on a string */
+.tag {
+  transform-origin: 420px 150px;
+  animation: wobble 3.5s ease-in-out infinite;
+}
+@keyframes wobble {
+  0%, 100% { transform: rotate(-3deg) translate(420px, 150px); }
+  50%      { transform: rotate(3deg)  translate(420px, 150px); }
+}
+.svg .tag {
+  transform: translate(420px, 150px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gushGroup, .droplets circle, .tag, .waves path {
+    animation: none;
+  }
+  .droplets circle { opacity: 0.6; }
+}
+
+/* copy block under the scene */
+.copy {
+  padding: 48px 24px 48px;
+  max-width: 640px;
+  margin: 0 auto;
+  font-family: var(--conduction-typography-font-family-body);
+}
+
+@media (max-width: 640px) {
+  .copy { padding: 32px 24px 36px; }
+}
+
+.eyebrow {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-orange-knvb);
+  margin: 0 0 12px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--c-cobalt-900);
+  line-height: 1.15;
+  margin: 0 0 16px;
+}
+
+.lede {
+  font-size: 17px;
+  color: var(--c-cobalt-700);
+  line-height: 1.55;
+  margin: 0 0 24px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+
+.tryButton {
+  background: var(--c-cobalt-900);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: var(--radius-pill);
+  font-family: var(--conduction-typography-font-family-body);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+.tryButton:hover { background: var(--c-blue-cobalt); }
+
+.homeLink {
+  color: var(--c-cobalt-700);
+  font-size: 14px;
+  text-decoration: none;
+}
+.homeLink:hover { color: var(--c-cobalt-900); text-decoration: underline; }
+
+.details {
+  border-top: 1px solid var(--c-cobalt-100);
+  padding-top: 16px;
+}
+.details summary {
+  cursor: pointer;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-cobalt-400);
+  list-style: none;
+}
+.details summary::-webkit-details-marker { display: none; }
+.details summary::before {
+  content: '▸';
+  margin-right: 8px;
+  display: inline-block;
+  transition: transform 160ms ease;
+}
+.details[open] summary::before { transform: rotate(90deg); }
+
+.detailsBody {
+  margin-top: 12px;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px;
+  color: var(--c-cobalt-700);
+  background: var(--c-cobalt-50);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+.detailsBody :global(pre) {
+  margin: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 12px;
+}

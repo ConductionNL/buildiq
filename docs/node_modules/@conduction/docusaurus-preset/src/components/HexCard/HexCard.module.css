@@ -1,0 +1,160 @@
+/**
+ * <HexCard /> styles. Tinted academy panel with a corner hex badge
+ * and an optional right-edge decorative hex motif.
+ *
+ * Layout: the badge is absolute-positioned and centered on the
+ * top-left corner of the card (half outside, half inside). Card
+ * padding has extra inset on the left and bottom so the title and
+ * the last list item never collide with the protruding hex.
+ *
+ *   ┌── ⬢ ────────────────────────┐
+ *   │ ⬢      Title       [actions]│
+ *   │   body / list / paragraph   │
+ *   │                             │
+ *   └─────────────────────────────┘
+ */
+
+.card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "head"
+    "body";
+  row-gap: var(--space-3);
+  align-items: start;
+  background: var(--c-cobalt-50);
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6) var(--space-8) var(--space-10) var(--space-12);
+  margin: var(--space-8) 0;
+  overflow: visible;
+  font-family: var(--conduction-typography-font-family-body);
+}
+
+.hasActions {
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "head    actions"
+    "body    actions";
+  align-items: center;
+  column-gap: var(--space-5);
+}
+
+@media (max-width: 720px) {
+  .hasActions {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "head"
+      "body"
+      "actions";
+  }
+  .card { padding: var(--space-6) var(--space-5) var(--space-8) var(--space-10); }
+}
+
+/* Hex badge centered on the top-left corner. Half overflows the
+   card to the upper-left so the badge reads as a corner mark, not
+   an inset glyph. z-index lifts it above the deco frame. */
+.badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: inline-flex;
+  pointer-events: none;
+}
+
+.head {
+  grid-area: head;
+  position: relative;
+  z-index: 1;
+  align-self: center;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--c-cobalt-900);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.body {
+  grid-area: body;
+  position: relative;
+  z-index: 1;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--c-cobalt-700);
+}
+
+.body > p { margin: 0; }
+.body > p + p { margin-top: var(--space-3); }
+.body > ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.actions {
+  grid-area: actions;
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+/* Wraps the decorative right-edge hexes. Absolute, fills the card,
+   inherits border-radius, and clips its own children so the deco
+   stays inside the rounded panel even though the card itself has
+   overflow: visible (needed for the corner badge). */
+.decoFrame {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.deco {
+  position: absolute;
+  background: var(--c-cobalt-100);
+  clip-path: var(--hex-pointy-top);
+}
+
+.deco1 {
+  width: 220px;
+  height: 254px;
+  right: -60px;
+  top: -40px;
+  opacity: 0.7;
+}
+
+.deco2 {
+  width: 110px;
+  height: 127px;
+  right: 80px;
+  bottom: -30px;
+  opacity: 0.5;
+  background: var(--c-cobalt-200);
+}
+
+.deco3 {
+  width: 56px;
+  height: 65px;
+  right: 220px;
+  top: 18px;
+  opacity: 0.5;
+  background: var(--c-cobalt-200);
+}
+
+@media (max-width: 720px) {
+  .deco1 { right: -100px; top: -80px; }
+  .deco2, .deco3 { display: none; }
+}

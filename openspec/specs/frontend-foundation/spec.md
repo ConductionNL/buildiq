@@ -19,8 +19,6 @@ modal, settings views, and the preferences endpoint.
 
 ### Requirement: Composables encapsulate insights, preview, validation and register-pick
 
-@e2e exclude retrofit composable-contract spec — `useApplicationInsights`, `useLivePreview`, `useManifestValidator`, `useRegisterPicker`, `useApplicationVersion`, `useManifestHistory` return values and reactive-state contracts are verified by Vitest unit tests; no independent Playwright-testable UI surface for composable internals
-
 `useApplicationInsights` SHALL return reactive insights state for a version.
 `useLivePreview` SHALL return the live-preview mount/state contract.
 `useManifestValidator` SHALL return a manifest validation function and its
@@ -30,6 +28,8 @@ default editable version helper (`defaultEditableVersion`) alongside the active
 version resolution. `useManifestHistory` SHALL load the version's manifest
 history.
 
+@e2e exclude retrofit composable-contract spec — `useApplicationInsights`, `useLivePreview`, `useManifestValidator`, `useRegisterPicker`, `useApplicationVersion`, `useManifestHistory` return values and reactive-state contracts are verified by Vitest unit tests; no independent Playwright-testable UI surface for composable internals
+
 #### Scenario: Validate a manifest
 
 - **WHEN** a caller invokes the validator composable's validate function
@@ -37,12 +37,12 @@ history.
 
 ### Requirement: Role composable resolves per-app RBAC
 
-@e2e exclude retrofit composable-contract spec — `useRole`, `getCurrentUserGroups`, `hasAnyRole` return-value contracts are verified by Vitest unit tests; role-gated UI surface is covered by the openbuild-rbac Playwright tests
-
 `useRole(application, userGroups)` SHALL resolve the caller's effective role
 for an application; `getCurrentUserGroups()` SHALL read the current user's
 groups; `hasAnyRole(application, userGroups)` SHALL return whether the caller
 holds any of the application's roles.
+
+@e2e exclude retrofit composable-contract spec — `useRole`, `getCurrentUserGroups`, `hasAnyRole` return-value contracts are verified by Vitest unit tests; role-gated UI surface is covered by the openbuild-rbac Playwright tests
 
 #### Scenario: Resolve no role
 
@@ -51,13 +51,13 @@ holds any of the application's roles.
 
 ### Requirement: Object and settings stores hold OR base config
 
-@e2e exclude retrofit store-contract spec — `configure`, `registerObjectType`, `fetchObjects`, `fetchSettings`, `saveSettings`, `initializeStores` are Vuex/Pinia store contracts verified by Vitest unit tests; store behaviour in context is exercised by the settings-and-observability Playwright tests
-
 The object store SHALL configure the OR base URLs (`configure`), register an
 object type to its schema/register (`registerObjectType`), and fetch objects of
 a type (`fetchObjects`). The settings store SHALL fetch and save app settings
 (`fetchSettings`, `saveSettings`). The store root SHALL initialise the modules
 (`initializeStores`).
+
+@e2e exclude retrofit store-contract spec — `configure`, `registerObjectType`, `fetchObjects`, `fetchSettings`, `saveSettings`, `initializeStores` are Vuex/Pinia store contracts verified by Vitest unit tests; store behaviour in context is exercised by the settings-and-observability Playwright tests
 
 #### Scenario: Fetch objects of a registered type
 
@@ -66,14 +66,14 @@ a type (`fetchObjects`). The settings store SHALL fetch and save app settings
 
 ### Requirement: Slug utilities, permissions modal and settings views
 
-@e2e exclude retrofit component/utility-contract spec — `toKebabCase`, `validateSlug`, `syncFromApplication`, `groupOptions`, `save`, `onClose` on `PermissionsModal`, and settings-view `created`/`save` lifecycle hooks are component/utility contracts verified by Vitest unit tests; slug validation is covered by the application-creation-wizard Playwright tests
-
 `utils/slugPattern` SHALL kebab-case an input (`toKebabCase`) and validate a
 slug against the shared pattern (`validateSlug`). `PermissionsModal` SHALL sync
 the editable permissions from the application (`syncFromApplication`), expose
 the group options (`groupOptions`, `handler`), save them (`save`), and close
 (`onClose`). The settings views (`settings/AdminRoot`, `settings/Settings`)
 SHALL load on `created` and `Settings` SHALL persist on `save`.
+
+@e2e exclude retrofit component/utility-contract spec — `toKebabCase`, `validateSlug`, `syncFromApplication`, `groupOptions`, `save`, `onClose` on `PermissionsModal`, and settings-view `created`/`save` lifecycle hooks are component/utility contracts verified by Vitest unit tests; slug validation is covered by the application-creation-wizard Playwright tests
 
 #### Scenario: Validate a slug
 
@@ -87,13 +87,13 @@ SHALL load on `created` and `Settings` SHALL persist on `save`.
 
 ### Requirement: Per-user preferences endpoint reads and writes sanitised keys
 
-@e2e exclude pure-backend preferences endpoint — key-sanitisation, namespace scoping, empty-value clear, and 401/400 error responses are verified by Newman REST tests; no Playwright-testable UI surface for the preferences controller directly
-
 `PreferencesController` SHALL read a per-user preference (`getPreference`) and
 write/clear one (`setPreference`), requiring an authenticated user (401
 otherwise), sanitising the key to a safe charset under the `pref_` namespace
 (rejecting an empty sanitised key with 400), and clearing the value when an
 empty string is written. Both endpoints SHALL return `{value: string|null}`.
+
+@e2e exclude pure-backend preferences endpoint — key-sanitisation, namespace scoping, empty-value clear, and 401/400 error responses are verified by Newman REST tests; no Playwright-testable UI surface for the preferences controller directly
 
 #### Scenario: Reject an unsafe key
 

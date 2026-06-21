@@ -1,0 +1,30 @@
+/**
+ * <Pill /> styles. Mirrors .pill rules in reference-cards.css,
+ * solution-cards.css, partner-cards.css.
+ */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.tone-default {
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-700);
+}
+
+.tone-solid {
+  background: var(--c-blue-cobalt);
+  color: white;
+}
+
+.label { display: inline-block; }

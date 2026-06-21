@@ -1,0 +1,19 @@
+/**
+ * <Eyebrow /> styles. Mirrors .eyebrow rules in hero.html, platform-
+ * overview.html, pipeline-flow.html, feature-grid.html, apps-grid.css.
+ */
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-cobalt-400);
+  margin-bottom: 24px;
+}
+
+.label :global(.next-blue) { color: var(--c-nextcloud-blue); }
+.label :global(.cg-yellow) { color: var(--c-commonground-yellow); }

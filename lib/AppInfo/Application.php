@@ -25,14 +25,17 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\AppInfo;
 
 use OCA\OpenBuild\Capabilities;
+use OCA\OpenBuild\Controller\DashboardController;
+use OCA\OpenBuild\Controller\PreferencesController;
+use OCA\OpenBuild\Controller\SettingsController;
 use OCA\OpenBuild\Lifecycle\ApplicationVersionOwnerGuard;
 use OCA\OpenBuild\Listener\HybridMetadataLockListener;
 use OCA\OpenBuild\Listener\ProductionVersionGuardListener;
-use OCA\OpenBuild\Listener\DeepLinkRegistrationListener;
 use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
 use OCA\OpenBuild\Service\AppNavigationService;
 use OCA\OpenBuild\Service\PermissionResolver;
-use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
+use OCA\OpenBuild\Service\SettingsService;
+use OCA\OpenRegister\AppHost\Bootstrap;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\ObjectService;
@@ -76,11 +79,76 @@ class Application extends App implements IBootstrap
      */
     public function register(IRegistrationContext $context): void
     {
-        // Register deep link patterns with OpenRegister's unified search provider.
-        // Only fires when OpenRegister is installed and dispatches the event.
-        $context->registerEventListener(
-            event: DeepLinkRegistrationEvent::class,
-            listener: DeepLinkRegistrationListener::class
+        // ADR-040 AppHost adoption: one call wires the standard plumbing —
+        // the generic dashboard/settings/preferences controllers, the
+        // observability (health + metrics) controllers, the install repair
+        // steps, the admin settings panel + section, and the manifest-driven
+        // deep-link listener (reads src/manifest.json `deepLinks`, replacing
+        // the bespoke DeepLinkRegistrationListener that was deleted).
+        //
+        // Every Bootstrap registration is a lazy closure, so a disabled/absent
+        // OpenRegister never fatals NC bootstrap (see Bootstrap docblock).
+        //
+        // `mcpProvider` is wired below explicitly (not via Bootstrap) because
+        // the domain registrations that follow override the relevant aliases.
+        Bootstrap::register(
+            $context,
+            self::APP_ID,
+            [
+                'namespace'     => 'OCA\\OpenBuild',
+                'sectionName'   => 'OpenBuild',
+                'observability' => true,
+            ]
+        );
+
+        // OpenBuild keeps three concrete controllers + the settings service that
+        // the AppHost generics cannot cover on OpenRegister `development` (see
+        // openspec/changes/adopt-apphost/design.md "Engine reality"):
+        //
+        // 1. DashboardController — publishes `currentUserGroups` to
+        // IInitialState (REQ-OBR-009); the generic dashboard controller
+        // does not, which would break client-side per-Application role
+        // derivation.
+        // 2. PreferencesController — there is NO GenericPreferencesController
+        // in OpenRegister `development` (Bootstrap aliases a class that does
+        // not exist), so the preferences routes would 500 under the alias.
+        // 3. SettingsController + SettingsService — the generic
+        // AppHostSettingsService::loadConfiguration() calls OR's
+        // ConfigurationService::importFromApp() with a 2-argument signature
+        // that no longer matches `development` (4 required args) and performs
+        // no ADR-037 `register.d/` fragment merge, which OpenBuild relies on
+        // (10-business-rules.json). The bespoke SettingsController also
+        // enforces body-level admin guards on create()/load().
+        //
+        // Re-registering these concrete classes AFTER Bootstrap::register lets
+        // NC's DI container resolve the leaf class names to the real OpenBuild
+        // controllers (last registration wins), so the canonical routes keep
+        // working while everything else is generic.
+        $context->registerService(
+            DashboardController::class,
+            static fn ($c): DashboardController => new DashboardController(
+                request: $c->get('OCP\\IRequest'),
+                initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState'),
+                userSession: $c->get('OCP\\IUserSession'),
+                groupManager: $c->get('OCP\\IGroupManager')
+            )
+        );
+        $context->registerService(
+            PreferencesController::class,
+            static fn ($c): PreferencesController => new PreferencesController(
+                request: $c->get('OCP\\IRequest'),
+                config: $c->get('OCP\\IConfig'),
+                userSession: $c->get('OCP\\IUserSession')
+            )
+        );
+        $context->registerService(
+            SettingsController::class,
+            static fn ($c): SettingsController => new SettingsController(
+                request: $c->get('OCP\\IRequest'),
+                settingsService: $c->get(SettingsService::class),
+                userSession: $c->get('OCP\\IUserSession'),
+                groupManager: $c->get('OCP\\IGroupManager')
+            )
         );
 
         // Per ADR-002 the snapshot-on-publish writeback listener has been

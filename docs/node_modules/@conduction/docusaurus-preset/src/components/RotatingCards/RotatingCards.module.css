@@ -1,0 +1,153 @@
+/**
+ * <RotatingCards /> styles. Scroll-pinned stacked cards.
+ *
+ * Each card is position: sticky and stays pinned at top: calc(...) as
+ * the viewport scrolls past it. Cards stagger by 24px each so that
+ * when card N is pinned and the user keeps scrolling, card N+1 slides
+ * up from below and ends 24px lower than card N — readable as a
+ * stack, not a swap.
+ */
+
+.root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-12);
+  font-family: var(--conduction-typography-font-family-body);
+}
+
+/* ---------- Header ---------- */
+.head { max-width: 70ch; margin: 0 0 var(--space-8); }
+.eyebrow {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--c-orange-knvb);
+  margin-bottom: var(--space-3);
+}
+.eyebrow .h { width: 10px; height: 12px; clip-path: var(--hex-pointy-top); background: var(--c-orange-knvb); }
+.title {
+  font-size: 40px; font-weight: 700; letter-spacing: -0.02em;
+  line-height: 1.1; color: var(--c-cobalt-900); margin: 0 0 var(--space-3);
+}
+.lede { font-size: 17px; line-height: 1.5; color: var(--c-cobalt-700); margin: 0; }
+
+/* ---------- The stack ---------- */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.card {
+  position: sticky;
+  /* `top` is set inline as `calc(var(--card-top, 80px) + i * 24px)` so
+     each pinned card lands a little lower than the previous one. */
+  display: grid;
+  /* Image side leans wider so the AppMock has room to breathe;
+     text side stays narrower for a comfortable measure. The gap
+     between them shows the card's white background as a clean
+     gutter, so the coloured image panel and the white text panel
+     feel like two distinct planes instead of one fused block. */
+  grid-template-columns: 1.15fr 1fr;
+  gap: var(--space-8);
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-2);
+  margin-bottom: var(--space-4);
+  /* Each card needs at least one viewport-height of scroll room before
+     the next card can pin over it. min-height drives that. */
+  min-height: 480px;
+}
+
+@media (max-width: 900px) {
+  .card { grid-template-columns: 1fr; min-height: auto; }
+}
+
+/* ---------- Image side (coloured panel) — full-bleed to all edges
+   so the colour clearly demarcates the panel from the white text
+   side. The AppMock floats centred on the colour; padding lives on
+   the inner wrapper, not on the panel itself. ---------- */
+.cardImage {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  min-height: 380px;
+}
+.cardImageInner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-8) var(--space-6);
+}
+
+/* Tone palettes — set the .cardImage background. */
+.tone-mint        .cardImage { background: var(--c-mint-300); }
+.tone-mint        .cardEyebrow,
+.tone-mint        .cardCta    { color: var(--c-mint-500); }
+
+.tone-lavender    .cardImage { background: var(--c-lavender-300); }
+.tone-lavender    .cardEyebrow,
+.tone-lavender    .cardCta    { color: var(--c-lavender-500); }
+
+.tone-forest      .cardImage { background: var(--c-forest-300); }
+.tone-forest      .cardEyebrow,
+.tone-forest      .cardCta    { color: var(--c-forest-500); }
+
+.tone-terracotta  .cardImage { background: var(--c-terracotta-300); }
+.tone-terracotta  .cardEyebrow,
+.tone-terracotta  .cardCta    { color: var(--c-terracotta-500); }
+
+.tone-coral       .cardImage { background: var(--c-coral-300); }
+.tone-coral       .cardEyebrow,
+.tone-coral       .cardCta    { color: var(--c-coral-500); }
+
+.tone-workspace   .cardImage { background: var(--c-workspace-300); }
+.tone-workspace   .cardEyebrow,
+.tone-workspace   .cardCta    { color: var(--c-cobalt-700); }
+
+.tone-cobalt      .cardImage { background: var(--c-cobalt-50); }
+.tone-cobalt      .cardEyebrow,
+.tone-cobalt      .cardCta    { color: var(--c-blue-cobalt); }
+
+/* ---------- Text side ---------- */
+.cardText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-10) var(--space-9);
+  justify-content: center;
+}
+
+.cardEyebrow {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+  font-weight: 600;
+}
+.cardTitle {
+  font-size: 32px; font-weight: 700; letter-spacing: -0.02em;
+  line-height: 1.15; color: var(--c-cobalt-900); margin: 0;
+}
+.cardSummary {
+  font-size: 17px; line-height: 1.55; color: var(--c-cobalt-700);
+  margin: 0;
+}
+
+.cardCta {
+  align-self: flex-start;
+  display: inline-flex; align-items: center;
+  background: var(--c-blue-cobalt); color: white !important;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 160ms;
+  margin-top: var(--space-2);
+}
+.cardCta:hover { background: var(--c-cobalt-700); }

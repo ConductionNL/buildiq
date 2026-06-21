@@ -1,0 +1,52 @@
+/**
+ * <HowSteps /> styles. Mirrors .how-row + .how-step from support.html.
+ */
+
+.row { display: grid; gap: 24px; font-family: var(--conduction-typography-font-family-body); }
+.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.cols-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 900px) { .row { grid-template-columns: 1fr; } }
+
+.step {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  position: relative;
+}
+
+.num {
+  width: 48px;
+  height: 56px;
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-blue-cobalt);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 18px;
+  font-family: var(--conduction-typography-font-family-code);
+}
+
+.tier-1 .num { background: var(--c-blue-cobalt); }
+.tier-2 .num { background: var(--c-orange-knvb); }
+.tier-3 .num { background: var(--c-cobalt-700); }
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 10px;
+  color: var(--c-cobalt-900);
+}
+
+.body {
+  font-size: 14px;
+  color: var(--c-cobalt-700);
+  line-height: 1.6;
+  margin: 0;
+}
+.body :global(.next-blue) { color: var(--c-nextcloud-blue); }

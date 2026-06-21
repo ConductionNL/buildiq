@@ -1,0 +1,168 @@
+/**
+ * <Showcase /> styles. Two layouts share the same atoms:
+ *   layout="side"  → accordion left, panel right (Conduction Difference)
+ *   layout="stack" → tabs on top, panel below (Solutions for every team)
+ */
+
+.showcase {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-12);
+  font-family: var(--conduction-typography-font-family-body);
+}
+
+/* ---------- Header ---------- */
+.head { max-width: 70ch; margin: 0 0 var(--space-8); }
+.eyebrow {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--c-orange-knvb);
+  margin-bottom: var(--space-3);
+}
+.eyebrow .h { width: 10px; height: 12px; clip-path: var(--hex-pointy-top); background: var(--c-orange-knvb); }
+.title {
+  font-size: 40px; font-weight: 700; letter-spacing: -0.02em;
+  line-height: 1.1; color: var(--c-cobalt-900); margin: 0 0 var(--space-3);
+}
+.lede { font-size: 17px; line-height: 1.5; color: var(--c-cobalt-700); margin: 0; }
+
+/* ---------- Body ---------- */
+.body { display: grid; gap: var(--space-8); align-items: stretch; }
+.layout-side  .body { grid-template-columns: 1fr 1.2fr; }
+.layout-stack .body { grid-template-columns: 1fr; gap: var(--space-6); }
+@media (max-width: 900px) { .layout-side .body { grid-template-columns: 1fr; } }
+
+/* ---------- List of items ---------- */
+.list { display: flex; flex-direction: column; gap: var(--space-3); }
+.layout-stack .list {
+  flex-direction: row; flex-wrap: wrap; gap: var(--space-2);
+}
+
+.item {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  transition: border-color 160ms, box-shadow 160ms, background 160ms;
+  display: flex; flex-direction: column; gap: var(--space-3);
+}
+.item:hover { border-color: var(--c-cobalt-300); }
+
+.itemHead {
+  /* button reset */
+  appearance: none; -webkit-appearance: none;
+  background: transparent; border: 0; padding: 0;
+  font: inherit; color: inherit; cursor: pointer;
+  width: 100%;
+  text-align: left;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+}
+.itemHead:focus-visible { outline: 2px solid var(--c-orange-knvb); outline-offset: 2px; border-radius: var(--radius-sm); }
+
+.titleGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.itemIcon {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 36px;
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-cobalt-50);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-cobalt-700);
+  transition: background 160ms, color 160ms;
+}
+.itemIcon svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.itemIconImg {
+  max-width: 60%;
+  max-height: 60%;
+  object-fit: contain;
+}
+.itemOpen .itemIcon { background: var(--c-blue-cobalt); color: white; }
+
+.itemTitle { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: var(--c-cobalt-900); margin: 0; }
+.chevron {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 22px; line-height: 1; color: var(--c-cobalt-400);
+  width: 22px; text-align: center;
+}
+
+.itemOpen {
+  border-color: var(--c-blue-cobalt);
+  box-shadow: var(--shadow-2);
+}
+.itemOpen .chevron { color: var(--c-blue-cobalt); }
+.itemOpen .itemTitle { color: var(--c-blue-cobalt); }
+
+.itemBody { display: flex; flex-direction: column; gap: var(--space-3); }
+.itemSummary { font-size: 14px; line-height: 1.55; color: var(--c-cobalt-700); margin: 0; }
+
+.cta {
+  align-self: flex-start;
+  display: inline-flex; align-items: center;
+  background: var(--c-blue-cobalt); color: white;
+  padding: 9px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 160ms;
+}
+.cta:hover { background: var(--c-cobalt-700); color: white; }
+
+/* Stack-layout tabs are denser */
+.layout-stack .item { flex: 1 1 180px; padding: var(--space-3) var(--space-4); }
+.layout-stack .itemTitle { font-size: 15px; }
+.layout-stack .itemBody { display: none; }
+
+/* ---------- Right panel ---------- */
+.panel {
+  background: var(--c-cobalt-50);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 360px;
+  overflow: hidden;
+}
+
+/* Big pointy-top hex sitting behind the panel content. The hex is
+   over-sized and pushed up so its top point and shoulder corners
+   crest the panel's top edge — two of the hex's six corners visibly
+   poke up into the layout, brand-identifying without being literal.
+   The lower half of the hex provides the cobalt-100 wash behind the
+   AppMock. */
+.panelHexBg {
+  position: absolute;
+  width: 130%;
+  aspect-ratio: 1 / 1.155;
+  top: -22%;
+  left: 50%;
+  transform: translateX(-50%);
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-cobalt-100);
+  z-index: 0;
+  pointer-events: none;
+}
+.panelInner {
+  position: relative; z-index: 1;
+  width: 100%;
+  display: flex; align-items: center; justify-content: center;
+}

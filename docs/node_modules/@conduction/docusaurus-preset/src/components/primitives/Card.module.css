@@ -1,0 +1,42 @@
+/**
+ * <Card /> styles. Recurring shape across six component files.
+ */
+
+.card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--c-cobalt-100);
+  background: white;
+  transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+  font-family: var(--conduction-typography-font-family-body);
+  color: var(--c-cobalt-700);
+}
+
+.tone-surface { background: white; }
+.tone-ghost {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--c-cobalt-200);
+}
+.tone-inverse {
+  background: var(--c-cobalt-900);
+  color: white;
+  border-color: var(--c-cobalt-700);
+}
+
+.pad-sm { padding: 16px; }
+.pad-md { padding: 20px; }
+.pad-lg { padding: 28px; }
+.pad-xl { padding: 32px; }
+
+.link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  display: block;
+}
+.link:hover {
+  border-color: var(--c-blue-cobalt);
+  text-decoration: none;
+  color: inherit;
+}

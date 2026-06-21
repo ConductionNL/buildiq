@@ -3,23 +3,19 @@
 
 declare(strict_types=1);
 
-return [
-    'routes' => [
-        // Dashboard + Settings.
-        ['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
-        ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
-        ['name' => 'settings#create', 'url' => '/api/settings', 'verb' => 'POST'],
-        ['name' => 'settings#load',  'url' => '/api/settings/load', 'verb' => 'POST'],
-
-        // Generic per-user preferences (used by shared nextcloud-vue widgets, e.g. CnSupportDialog).
-        ['name' => 'preferences#getPreference', 'url' => '/api/preferences/{key}', 'verb' => 'GET'],
-        ['name' => 'preferences#setPreference', 'url' => '/api/preferences/{key}', 'verb' => 'PUT'],
-
-        // Prometheus metrics endpoint.
-        ['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
-        // Health check endpoint.
-        ['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
-
+// ADR-040 AppHost adoption: the canonical route set (dashboard#page,
+// dashboard#catchAll, settings#index/create/load, preferences#getPreference/
+// setPreference, metrics#index, health#index) is owned by the engine via
+// \OCA\OpenRegister\AppHost\Routes::standard(). OpenBuild's domain routes are
+// passed as $extra; Routes::standard() inserts them BEFORE the SPA catch-all so
+// they keep priority over the `/{path}` fallback, and keeps the canonical
+// specific-first ordering. The catch-all (dashboard#catchAll) is always emitted
+// LAST so it never shadows an `/api/...` route.
+//
+// This file references no OpenRegister symbol at top level — Routes::standard()
+// is a pure array builder — so requiring it is safe even when OR is disabled.
+return \OCA\OpenRegister\AppHost\Routes::standard(
+    [
         // App-creation wizard endpoint (openbuild-app-creation-wizard REQ-OBWIZ-001).
         // POST /api/applications/wizard — atomic creation of Application + N versions + N registers.
         // #[NoAdminRequired] on the controller method; RBAC is implicit (caller becomes owner).
@@ -121,8 +117,8 @@ return [
         // delta for client-side merge (mergeStrategy:'delta'); PUT upserts it
         // (CSRF-enforced, OpenBuild-access guard, validate-shape + non-blank);
         // DELETE clears it (idempotent). Specific-first so the `{appId}` routes
-        // are not shadowed by the SPA `/{path}` catch-all below; `appId` carries
-        // the kebab-case NC-app-id requirement.
+        // are not shadowed by the engine-appended SPA `/{path}` catch-all;
+        // `appId` carries the kebab-case NC-app-id requirement.
         ['name' => 'appOverride#get',   'url' => '/api/app-overrides/{appId}', 'verb' => 'GET',    'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'appOverride#save',  'url' => '/api/app-overrides/{appId}', 'verb' => 'PUT',    'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'appOverride#clear', 'url' => '/api/app-overrides/{appId}', 'verb' => 'DELETE', 'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
@@ -130,13 +126,11 @@ return [
         // Remote template store (openbuild-remote-template-store). Consume-only:
         // search proxies the configured remote OpenRegister catalogue server-side;
         // install resolves a remote template by slug and clones it locally via the
-        // shared ApplicationsController install seam. Specific-first so `{slug}` is
-        // not shadowed by the SPA `/{path}` catch-all below.
+        // shared ApplicationsController install seam.
         ['name' => 'store#search',  'url' => '/api/store/templates',                  'verb' => 'GET'],
         ['name' => 'store#install', 'url' => '/api/store/templates/{slug}/install',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
-        // SPA catch-all — same controller as the index route; must use a distinct route name
-        // (duplicate names replace the earlier route in Symfony, which breaks GET /).
-        ['name' => 'dashboard#catchAll', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '.+'], 'defaults' => ['path' => '']],
-    ],
-];
+        // NB: the SPA catch-all (dashboard#catchAll) is appended by
+        // \OCA\OpenRegister\AppHost\Routes::standard() — do NOT add it here.
+    ]
+);

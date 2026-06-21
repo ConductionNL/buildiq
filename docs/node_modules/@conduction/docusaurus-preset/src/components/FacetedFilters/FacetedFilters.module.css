@@ -1,0 +1,133 @@
+/**
+ * <FacetedFilters /> styles. Mirrors the .filters / .facet rules in
+ * preview/components/faceted-filters.html.
+ */
+
+.filters {
+  width: 240px;
+  font-family: var(--conduction-typography-font-family-body);
+}
+
+.facet {
+  margin-bottom: 28px;
+  border: none;
+  padding: 0;
+}
+
+.facetTitle {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-cobalt-400);
+  font-weight: 500;
+  margin: 0 0 10px;
+}
+
+.facetList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.facetList li {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+  color: var(--c-cobalt-700);
+  padding: 4px 0;
+}
+.facetList li:hover { color: var(--c-blue-cobalt); }
+
+.facetList input[type="checkbox"] {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--c-cobalt-300);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  background: white;
+  transition: all 120ms;
+}
+.facetList input[type="checkbox"]:hover { border-color: var(--c-blue-cobalt); }
+.facetList input[type="checkbox"]:checked {
+  background: var(--c-blue-cobalt);
+  border-color: var(--c-blue-cobalt);
+}
+.facetList input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 1.6px 1.6px 0;
+  transform: rotate(45deg);
+}
+
+.facetList label {
+  cursor: pointer;
+}
+
+.count {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  color: var(--c-cobalt-400);
+}
+
+.clearAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--c-cobalt-400);
+  text-decoration: none;
+  margin-top: 8px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.clearAll:hover { color: var(--c-orange-knvb); }
+
+/* Active filter chip (companion strip) */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 12px;
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-900);
+  font-size: 13px;
+  font-family: var(--conduction-typography-font-family-code);
+  border-radius: var(--radius-pill);
+}
+
+.chipRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: var(--c-cobalt-100);
+  color: var(--c-cobalt-700);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  font-family: inherit;
+  transition: all 120ms ease;
+}
+.chipRemove:hover {
+  background: var(--c-orange-knvb);
+  color: white;
+}

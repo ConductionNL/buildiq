@@ -1,0 +1,153 @@
+/* LeafCard — per-leaf metadata header.
+   Pointy-top hex + label + status pill + meta grid. Sized for both
+   single-card placement at the top of a docs page and grid placement
+   on the overview. */
+
+.card {
+  display: block;
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+
+a.card:hover {
+  border-color: var(--c-cobalt-400);
+  transform: translateY(-1px);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.hex {
+  width: 40px;
+  height: 46px;
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.iconText {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.label {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--c-cobalt-900);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.id {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--c-cobalt-400);
+  font-family: var(--conduction-typography-font-family-code);
+  margin-top: 2px;
+}
+
+.statusPill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.status-backend-ready .statusPill {
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-700);
+}
+
+.status-stub .statusPill {
+  background: var(--c-orange-50, #fff4e5);
+  color: var(--c-orange-knvb);
+}
+
+.status-external .statusPill {
+  background: var(--c-cobalt-100);
+  color: var(--c-cobalt-900);
+}
+
+.status-built-in .statusPill {
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-700);
+}
+
+.description {
+  font-size: 14px;
+  color: var(--c-cobalt-700);
+  margin: 0 0 var(--space-4);
+  line-height: 1.55;
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px var(--space-4);
+  margin: 0;
+  font-size: 13px;
+}
+
+.meta dt {
+  color: var(--c-cobalt-400);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  align-self: center;
+}
+
+.meta dd {
+  margin: 0;
+  color: var(--c-cobalt-900);
+  align-self: center;
+}
+
+.muted {
+  color: var(--c-cobalt-400);
+  font-style: italic;
+}
+
+/* Grid for the overview page. */
+.grid {
+  display: grid;
+  gap: var(--space-5);
+  margin: var(--space-5) 0;
+}
+
+.grid-1 { grid-template-columns: 1fr; }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+@media (max-width: 768px) {
+  .grid-2, .grid-3, .grid-4 {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,45 @@
+/**
+ * <HexThumbnail /> styles. Pointy-top clip-path hex with size and tone
+ * variants. The img variant fills the hex via object-fit: cover.
+ */
+
+.thumb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  clip-path: var(--hex-pointy-top);
+  flex-shrink: 0;
+  overflow: hidden;
+  color: white;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb svg {
+  stroke: currentColor;
+  stroke-width: 1.6;
+  fill: none;
+}
+
+/* sizes */
+.size-sm { width: 56px;  height: 64px;  }
+.size-sm svg { width: 22px; height: 22px; }
+.size-md { width: 88px;  height: 100px; }
+.size-md svg { width: 36px; height: 36px; }
+.size-lg { width: 160px; height: 184px; }
+.size-lg svg { width: 64px; height: 64px; }
+.size-xl { width: 240px; height: 280px; }
+.size-xl svg { width: 96px; height: 96px; }
+
+/* tones */
+.tone-cobalt      { background: var(--c-blue-cobalt); }
+.tone-cobalt-dark { background: var(--c-cobalt-700); }
+.tone-cobalt-deep { background: var(--c-cobalt-900); }
+.tone-cobalt-50   { background: var(--c-cobalt-50); color: var(--c-blue-cobalt); }
+.tone-mint        { background: var(--c-mint-500); }
+.tone-orange      { background: var(--c-orange-knvb); }

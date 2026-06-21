@@ -25,7 +25,9 @@
 import { test, expect } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const ROUTE = `${BASE}/apps/openbuild/schemas`
+// The app router runs in hash mode — deep-link via the hash fragment so the
+// SPA mounts the Schemas index instead of booting at the default Dashboard.
+const ROUTE = `${BASE}/apps/openbuild/#/schemas`
 
 test.describe('OpenBuild Schemas index view', () => {
 	test('renders the Schemas heading without white-screening', async ({ page }) => {

@@ -1,0 +1,144 @@
+/**
+ * <EmployeeCard /> styles. Mirrors employee-cards.css scoped per variant.
+ */
+
+.grid { display: grid; gap: 16px; font-family: var(--conduction-typography-font-family-body); }
+.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.cols-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+/* avatar shapes shared across variants */
+.avatar, .avatarLarge {
+  clip-path: var(--hex-pointy-top);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  background: var(--c-blue-cobalt);
+  font-family: var(--conduction-typography-font-family-body);
+}
+.avatar { width: 44px; height: 50px; font-size: 16px; }
+.avatarLarge { width: 72px; height: 83px; font-size: 24px; }
+.avatar img, .avatarLarge img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Compact variant */
+.cardCompact {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--shadow-1);
+  transition: all 160ms ease;
+  text-decoration: none;
+  color: inherit;
+}
+.cardCompact:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-2);
+  border-color: var(--c-cobalt-200);
+  text-decoration: none;
+  color: inherit;
+}
+.info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.name { font-size: 15px; font-weight: 600; color: var(--c-blue-cobalt); line-height: 1.2; }
+.role { font-family: var(--conduction-typography-font-family-code); font-size: 11px; color: var(--c-cobalt-400); letter-spacing: 0.05em; }
+.linksRow { display: flex; gap: 8px; flex-shrink: 0; }
+.linksRow a {
+  width: 26px; height: 26px;
+  border-radius: var(--radius-sm);
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-700);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 140ms ease;
+}
+.linksRow a:hover { background: var(--c-blue-cobalt); color: white; }
+.linksRow svg { width: 13px; height: 13px; stroke: currentColor; strokeWidth: 2; fill: none; }
+
+/* Photo variant */
+.cardPhoto {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  box-shadow: var(--shadow-1);
+  font-family: var(--conduction-typography-font-family-body);
+}
+.cardPhoto .name { font-size: 19px; font-weight: 700; color: var(--c-cobalt-900); }
+.cardPhoto .role { font-size: 13px; color: var(--c-cobalt-700); font-family: var(--conduction-typography-font-family-body); letter-spacing: 0; max-width: 28ch; }
+.bio { font-size: 14px; color: var(--c-cobalt-700); line-height: 1.6; margin: 8px 0 0; max-width: 36ch; }
+
+.contacts { display: flex; gap: 10px; margin-top: 10px; }
+.contacts a {
+  width: 32px; height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-700);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 140ms ease;
+}
+.contacts a:hover { background: var(--c-blue-cobalt); color: white; }
+.contacts svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; fill: none; }
+
+/* Detail variant */
+.cardDetail {
+  background: white;
+  border: 1px solid var(--c-cobalt-100);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  box-shadow: var(--shadow-1);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+  font-family: var(--conduction-typography-font-family-body);
+}
+.cardDetail::before {
+  content: "";
+  position: absolute;
+  top: 0; right: 0;
+  width: 140px; height: 160px;
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-cobalt-50);
+  transform: translate(40px, -50px);
+  z-index: 0;
+}
+.cardDetail > * { position: relative; z-index: 1; }
+.cardDetail .name { font-size: 20px; font-weight: 700; color: var(--c-cobalt-900); }
+.cardDetail .role { font-size: 13px; }
+.appsLabel {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--c-cobalt-400);
+  margin-bottom: 8px;
+}
+.appsList { display: flex; gap: 6px; flex-wrap: wrap; }
+.appPill {
+  background: var(--c-cobalt-50);
+  color: var(--c-cobalt-700);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-family: var(--conduction-typography-font-family-code);
+}
+.contactsInline { display: flex; flex-wrap: wrap; gap: 16px; }
+.contactsInline a {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--c-cobalt-700);
+  text-decoration: none;
+}
+.contactsInline a:hover { color: var(--c-blue-cobalt); }
+.contactsInline svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }

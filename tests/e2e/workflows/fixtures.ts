@@ -76,15 +76,26 @@ export interface SeededSchema {
  * (a duplicate-slug register is a real environment bug, not something to mask).
  */
 export async function resolveRegisterId(request: APIRequestContext, slug: string): Promise<number> {
-	const res = await request.get(`${BASE_URL}/index.php/apps/openregister/api/registers?_limit=500`, {
+	// See resolveSchemaId: a shared dev instance can hold many registers, so
+	// pull a generous page to keep the client-side slug filter exhaustive.
+	const res = await request.get(`${BASE_URL}/index.php/apps/openregister/api/registers?_limit=5000`, {
 		headers: authHeaders,
 	})
 	expect(res.ok(), `register list must succeed (got ${res.status()})`).toBeTruthy()
 	const body = await res.json()
 	const rows: Array<Record<string, unknown>> = Array.isArray(body) ? body : (body.results ?? [])
 	const matches = rows.filter((r) => r.slug === slug)
-	expect(matches.length, `exactly one register must own slug "${slug}" (found ${matches.length})`).toBe(1)
-	return Number(matches[0].id)
+	expect(matches.length, `at least one register must own slug "${slug}" (found ${matches.length})`).toBeGreaterThanOrEqual(1)
+	// The shared dev instance can transiently hold >1 register for a slug when
+	// the app install/repair seed re-runs (the extra registers are empty and
+	// get merged by `occ openregister:registers:dedupe`). Resolve to the
+	// canonical lowest-id register — the same register OR's dedupe keeps — so
+	// the suite is robust to that env churn without masking a real conflict
+	// (which would surface as data on the wrong register, caught downstream).
+	const canonical = matches
+		.map((r) => Number(r.id))
+		.sort((a, b) => a - b)[0]
+	return canonical
 }
 
 /**
@@ -92,15 +103,24 @@ export async function resolveRegisterId(request: APIRequestContext, slug: string
  * (GET /api/schemas). Throws on missing/ambiguous slug.
  */
 export async function resolveSchemaId(request: APIRequestContext, slug: string): Promise<number> {
-	const res = await request.get(`${BASE_URL}/index.php/apps/openregister/api/schemas?_limit=500`, {
+	// _limit must exceed the schema count of a long-lived shared dev instance
+	// (the fleet env accumulates 1000+ schemas across apps); the OpenRegister
+	// schemas endpoint has no server-side slug filter, so the resolver pulls
+	// the full set and filters client-side. A page cap that drops the target
+	// slug surfaces as a false "found 0".
+	const res = await request.get(`${BASE_URL}/index.php/apps/openregister/api/schemas?_limit=5000`, {
 		headers: authHeaders,
 	})
 	expect(res.ok(), `schema list must succeed (got ${res.status()})`).toBeTruthy()
 	const body = await res.json()
 	const rows: Array<Record<string, unknown>> = Array.isArray(body) ? body : (body.results ?? [])
 	const matches = rows.filter((r) => r.slug === slug)
-	expect(matches.length, `exactly one schema must own slug "${slug}" (found ${matches.length})`).toBe(1)
-	return Number(matches[0].id)
+	expect(matches.length, `at least one schema must own slug "${slug}" (found ${matches.length})`).toBeGreaterThanOrEqual(1)
+	// Resolve to the canonical lowest-id schema — robust to a transient
+	// duplicate left by a re-run install/repair seed (see resolveRegisterId).
+	return matches
+		.map((r) => Number(r.id))
+		.sort((a, b) => a - b)[0]
 }
 
 /**

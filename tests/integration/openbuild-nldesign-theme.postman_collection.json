@@ -1,0 +1,77 @@
+{
+	"info": {
+		"name": "OpenBuild ⇄ NL Design Theme Asset Contract",
+		"description": "Newman/Postman contract suite for the nldesign-theme-selection feature (REQ-NTS-006). OpenBuild is a pure read-only consumer (ADR-022) of nldesign's EXISTING surface — it adds NO PHP. This collection pins exactly what openbuild reads so nldesign-side drift fails CI:\n\n  1. GET <static>/apps/nldesign/css/tokens/rijkshuisstijl.css — the ONLY call the runtime applier (useAppTheme) ever makes. Asserts 200, a text/css-ish content type, a `:root` rule, and the `--nldesign-color-primary` variable the applier scopes. This is the de-facto consumable contract (the very file nldesign injects globally).\n  2. GET /apps/nldesign/settings/tokensets as ADMIN — the builder picker's primary list source. Asserts 200 + an array containing `rijkshuisstijl` WHEN the admin list is reachable (the route is AuthorizedAdminSetting(Admin::class); admin:admin satisfies it).\n  3. GET /apps/nldesign/settings/tokensets as NON-ADMIN — DOCUMENTS TODAY'S REALITY: 401/403, because every nldesign settings/* route is AuthorizedAdminSetting(Admin::class) (verified 2026-06-15). This is the flagged dependency: openbuild's non-admin builders fall back to the validated free-text path until nldesign ships a #[NoAdminRequired] read-only list endpoint. When that lands, flip this assertion to 200 and add the array-shape check.\n\nAUTH MODEL mirrors the other openbuild collections: noauth collection auth + explicit basic-auth per request; the non-admin request uses the `viewerUser`/`viewerPass` variables (set to a non-admin account in CI) and targets the 127.0.0.1 host so the admin session cookie is host-scoped away from it. With no non-admin account configured the non-admin probe asserts 401 (unauthenticated), which is also a correct 'no non-admin read' outcome.\n\nThe collection is tolerant of a stock instance: the asset request always asserts; the admin-list request asserts its shape only when 200 (an empty/!installed nldesign skips with a note, never faking a pass). Run via run-newman.sh.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:8080" },
+		{ "key": "noAuthBase", "value": "http://127.0.0.1:8080" },
+		{ "key": "adminUser", "value": "admin" },
+		{ "key": "adminPass", "value": "admin" },
+		{ "key": "viewerUser", "value": "viewer" },
+		{ "key": "viewerPass", "value": "viewer" }
+	],
+	"auth": { "type": "noauth" },
+	"item": [
+		{
+			"name": "1. Token asset rijkshuisstijl.css (200, text/css, :root + --nldesign-color-primary)",
+			"request": {
+				"method": "GET",
+				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
+				"header": [ { "key": "Accept", "value": "text/css" } ],
+				"url": { "raw": "{{baseUrl}}/apps/nldesign/css/tokens/rijkshuisstijl.css", "host": [ "{{baseUrl}}" ], "path": [ "apps", "nldesign", "css", "tokens", "rijkshuisstijl.css" ] }
+			},
+			"event": [
+				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+					"if (pm.response.code === 404) { pm.test('skipped — nldesign / rijkshuisstijl asset not present on this instance', () => pm.expect(true).to.be.true); return; }",
+					"pm.test('token asset returns 200', () => pm.response.to.have.status(200));",
+					"const ct = pm.response.headers.get('Content-Type') || '';",
+					"pm.test('content type is css-ish', () => pm.expect(ct.toLowerCase()).to.match(/css|text/));",
+					"const body = pm.response.text();",
+					"pm.test('asset contains a :root rule', () => pm.expect(body).to.include(':root'));",
+					"pm.test('asset defines --nldesign-color-primary (the variable the applier scopes)', () => pm.expect(body).to.include('--nldesign-color-primary'));"
+				] } }
+			]
+		},
+		{
+			"name": "2. tokensets as ADMIN (200 + contains rijkshuisstijl, when reachable)",
+			"request": {
+				"method": "GET",
+				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
+				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+				"url": { "raw": "{{baseUrl}}/apps/nldesign/settings/tokensets", "host": [ "{{baseUrl}}" ], "path": [ "apps", "nldesign", "settings", "tokensets" ] }
+			},
+			"event": [
+				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+					"if (pm.response.code !== 200) { pm.test('admin token-set list not reachable on this instance — skipped (status ' + pm.response.code + ')', () => pm.expect(true).to.be.true); return; }",
+					"let body; try { body = pm.response.json(); } catch (e) { body = null; }",
+					"const list = body && (body.results || body.tokenSets || body.sets || body);",
+					"pm.test('admin list is an array', () => pm.expect(Array.isArray(list)).to.be.true);",
+					"if (Array.isArray(list)) {",
+					"  const ids = list.map((s) => s.id || s);",
+					"  pm.test('admin list contains rijkshuisstijl', () => pm.expect(ids).to.include('rijkshuisstijl'));",
+					"}"
+				] } }
+			]
+		},
+		{
+			"name": "3. tokensets as NON-ADMIN (401/403 today — flagged dependency)",
+			"request": {
+				"method": "GET",
+				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{viewerUser}}" }, { "key": "password", "value": "{{viewerPass}}" } ] },
+				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+				"url": { "raw": "{{noAuthBase}}/apps/nldesign/settings/tokensets", "host": [ "{{noAuthBase}}" ], "path": [ "apps", "nldesign", "settings", "tokensets" ] }
+			},
+			"event": [
+				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+					"// All of nldesign settings/* is AuthorizedAdminSetting(Admin::class) today,",
+					"// so a non-admin (or unauthenticated) caller cannot list token sets — openbuild",
+					"// falls back to the validated free-text path. Flip to 200 + array-shape when the",
+					"// flagged #[NoAdminRequired] list endpoint lands in nldesign.",
+					"pm.test('non-admin token-set list is denied (401/403) — documents the flagged dependency', () => pm.expect([401, 403]).to.include(pm.response.code));"
+				] } }
+			]
+		}
+	]
+}

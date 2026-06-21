@@ -1,0 +1,25 @@
+.layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 56px;
+  align-items: start;
+}
+
+.results {
+  min-width: 0;
+}
+
+.empty {
+  font-size: 16px;
+  color: var(--c-cobalt-700);
+  text-align: center;
+  padding: 64px 0 32px;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}

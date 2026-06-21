@@ -56,8 +56,12 @@ use Psr\Log\LoggerInterface;
 /**
  * Owner-only guard for the destructive ApplicationVersion transitions.
  *
- * Fails closed: any inability to resolve the caller, the parent Application,
- * or its `permissions.owners` denies the transition.
+ * Fails closed: any inability to resolve the caller or the parent Application
+ * denies the transition, and a caller who is neither an owner of the parent
+ * Application nor an NC admin is denied. When the parent Application carries no
+ * `permissions` block (rechtenblok) at all — the shape of a programmatically /
+ * synthetically created Application — only the audited NC-admin escape hatch is
+ * granted; every ordinary caller is still denied.
  *
  * @spec openspec/changes/openbuild-rbac/tasks.md#2.1
  */
@@ -130,14 +134,39 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface
 
         $permissions = ($application['permissions'] ?? []);
         if (is_array($permissions) === false || $permissions === []) {
+            // No rechtenblok (permissions block). This is the shape of a
+            // programmatically / synthetically created Application — e.g. one
+            // seeded via `occ`, an import pipeline, or the App Host engine —
+            // that never went through the controller path which materialises
+            // the owners/editors/viewers role rows. A blanket deny here is the
+            // wrong fail-closed posture: it bricks publish/archive/reopen for
+            // every such Application, including the documented NC-admin escape
+            // hatch (design.md Decision 5), because this branch short-circuits
+            // BEFORE the admin bypass inside PermissionResolver::matchesCaller()
+            // can run.
+            //
+            // Security choice: WITHOUT a permissions block no per-Application
+            // owner can be proven, so we must NOT widen access to ordinary
+            // callers. We therefore grant ONLY the audited NC-admin escape
+            // hatch — exactly the principal matchesCaller() would have admitted
+            // had the block existed — and continue to deny everyone else. This
+            // keeps the guard fail-closed for non-admins (no privilege
+            // escalation on orphaned/synthetic Applications) while unblocking
+            // the legitimate admin/programmatic publish path.
+            if ($this->permissionResolver->isAdmin(caller: $caller) === true) {
+                return GuardResult::allow();
+            }
+
             $this->logger->warning(
-                'OpenBuild ApplicationVersionOwnerGuard: parent Application has no permissions block; denying',
+                'OpenBuild ApplicationVersionOwnerGuard: parent Application has no permissions block; '
+                .'denying non-admin caller (admin escape hatch only)',
                 ['action' => $action, 'slug' => ($application['slug'] ?? null)]
             );
             return GuardResult::deny(
-                'De bovenliggende applicatie heeft geen rechtenblok; transitie geweigerd.'
+                'De bovenliggende applicatie heeft geen rechtenblok. Alleen een beheerder mag deze versie '
+                .$action.'; vraag een beheerder om het rechtenblok van de applicatie in te stellen.'
             );
-        }
+        }//end if
 
         // Owner role required. NC admins are granted as the audited
         // incident-response escape hatch (design.md Decision 5); the

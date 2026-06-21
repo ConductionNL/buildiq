@@ -1,0 +1,52 @@
+/**
+ * <FeatureList /> styles. Mirrors feature-list.css exactly.
+ */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  font-family: var(--conduction-typography-font-family-body);
+}
+
+.feature {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 24px;
+}
+
+.glyph {
+  width: 56px;
+  height: 64px;
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-cobalt-50);
+  color: var(--c-blue-cobalt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.glyph svg {
+  width: 26px;
+  height: 26px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+  color: var(--c-cobalt-900);
+}
+.title :global(.next-blue) { color: var(--c-nextcloud-blue); }
+
+.body {
+  font-size: 15px;
+  color: var(--c-cobalt-700);
+  line-height: 1.6;
+  margin: 0;
+}
+.body :global(.next-blue) { color: var(--c-nextcloud-blue); }
