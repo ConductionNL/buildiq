@@ -129,6 +129,244 @@ class AppOverrideService
     }//end findByAppId()
 
     /**
+     * Resolve the layered manifest delta for a calling user (layered-versioned-app-deltas).
+     *
+     * Returns `base ⊕ admin-delta ⊕ user-delta` collapsed into a single keyed
+     * delta the client loader applies over the fleet app's bundled base (the
+     * "pre-merged chain" — the loader contract is unchanged). The caller's own
+     * user delta is layered ONLY when the parent Application's
+     * `allowUserOverrides` is true AND a `scope: user` row owned by the caller
+     * exists; otherwise the result is exactly today's admin delta. A user can
+     * never see another user's delta — the uid is the session caller's, never a
+     * request parameter (no-admin-idor).
+     *
+     * @param string      $appId The kebab-case Nextcloud app id (natural key).
+     * @param string|null $uid   The calling user's UID, or null for an anonymous caller (admin layer only).
+     *
+     * @return array<string, mixed>|null The record with a merged `manifestDelta` key, or null when no hybrid app exists.
+     *
+     * @spec openspec/changes/layered-versioned-app-deltas/specs/layered-app-deltas/spec.md
+     */
+    public function resolveLayeredDelta(string $appId, ?string $uid): ?array
+    {
+        $application = $this->findHybridApplication(appId: $appId);
+        if ($application === null) {
+            return null;
+        }
+
+        $adminVersion = $this->findHybridProductionVersion(appId: $appId, application: $application);
+        $adminDelta   = [];
+        if ($adminVersion !== null) {
+            $candidate = ($adminVersion['manifestDelta'] ?? []);
+            if (is_array($candidate) === true) {
+                $adminDelta = $candidate;
+            }
+        }
+
+        $resolved = $adminDelta;
+
+        // Layer the caller's own user delta on top, gated by the per-app flag.
+        if ($uid !== null && $uid !== '' && $this->appAllowsUserOverrides(application: $application) === true) {
+            $userVersion = $this->findUserDeltaForApp(application: $application, uid: $uid);
+            if ($userVersion !== null) {
+                $userDelta = ($userVersion['manifestDelta'] ?? []);
+                if (is_array($userDelta) === true && $userDelta !== []) {
+                    $resolved = $this->deepMergeDelta(base: $adminDelta, overlay: $userDelta);
+                }
+            }
+        }
+
+        return [
+            'appId'         => $appId,
+            'manifestDelta' => $resolved,
+        ];
+
+    }//end resolveLayeredDelta()
+
+    /**
+     * Read the caller's own user-scoped delta record for a fleet app, for editing.
+     *
+     * Always owner-scoped to the passed UID — a caller can only ever read their
+     * own user delta (the UID is the session caller's, not a request param).
+     *
+     * @param string $appId The kebab-case Nextcloud app id (natural key).
+     * @param string $uid   The calling user's UID.
+     *
+     * @return array<string, mixed> A summary: `allowed` (app permits user overrides),
+     *                               `exists` (the caller has a user delta), `manifestDelta`,
+     *                               `versionUuid` (the OR row uuid for version history / rollback).
+     *
+     * @spec openspec/changes/layered-versioned-app-deltas/specs/layered-app-deltas/spec.md
+     */
+    public function getUserDelta(string $appId, string $uid): array
+    {
+        $application = $this->findHybridApplication(appId: $appId);
+        if ($application === null) {
+            return ['allowed' => false, 'exists' => false, 'manifestDelta' => [], 'versionUuid' => null];
+        }
+
+        $allowed = $this->appAllowsUserOverrides(application: $application);
+        $version = null;
+        if ($uid !== '') {
+            $version = $this->findUserDeltaForApp(application: $application, uid: $uid);
+        }
+
+        if ($version === null) {
+            return ['allowed' => $allowed, 'exists' => false, 'manifestDelta' => [], 'versionUuid' => null];
+        }
+
+        $delta = ($version['manifestDelta'] ?? []);
+        if (is_array($delta) === false) {
+            $delta = [];
+        }
+
+        return [
+            'allowed'       => $allowed,
+            'exists'        => true,
+            'manifestDelta' => $delta,
+            'versionUuid'   => $this->extractUuid(object: $version),
+        ];
+
+    }//end getUserDelta()
+
+    /**
+     * Create or update the caller's own user-scoped delta for a fleet app.
+     *
+     * Gated on the parent Application's `allowUserOverrides`. Writes a
+     * `scope: user`, `owner: <uid>` ApplicationVersion whose `baseRef` points at
+     * the admin delta version (`kind: application-version`) so resolution walks
+     * user → admin → base. The per-version promotion fields (semver/status/
+     * promotesTo) are inert on a user row. The write deliberately runs in system
+     * context (`_rbac: false`): a non-admin user cannot satisfy the
+     * ApplicationVersion schema's `create: [admin]` ACL, so authorization for
+     * the user layer is enforced HERE (the flag + the session-derived owner),
+     * not by OR's admin-only schema ACL — a caller can only ever write a row
+     * they own (the uid is the session caller's, never a request param).
+     *
+     * @param string               $appId The kebab-case Nextcloud app id (natural key).
+     * @param array<string, mixed> $delta The keyed manifest delta (already shape-validated by the caller).
+     * @param string               $uid   The calling user's UID (the owner).
+     *
+     * @return array<string, mixed> A summary: `appId`, `owner`, `updatedAt`, `versionUuid`.
+     *
+     * @throws \RuntimeException When the app does not exist or does not allow user overrides.
+     *
+     * @spec openspec/changes/layered-versioned-app-deltas/specs/layered-app-deltas/spec.md
+     */
+    public function upsertUserDelta(string $appId, array $delta, string $uid): array
+    {
+        if ($uid === '') {
+            throw new \RuntimeException('A user delta requires an authenticated owner.');
+        }
+
+        $application = $this->findHybridApplication(appId: $appId);
+        if ($application === null) {
+            throw new \RuntimeException('No hybrid app exists for '.$appId.'.');
+        }
+
+        if ($this->appAllowsUserOverrides(application: $application) === false) {
+            throw new \RuntimeException('This app does not allow per-user overrides.');
+        }
+
+        $now          = (new DateTimeImmutable())->format(DateTimeInterface::ATOM);
+        $appUuid      = $this->extractUuid(object: $application);
+        $adminVersion = $this->findHybridProductionVersion(appId: $appId, application: $application);
+        $adminUuid    = '';
+        if ($adminVersion !== null) {
+            $adminUuid = $this->extractUuid(object: $adminVersion);
+        }
+
+        $existing = $this->findUserDeltaForApp(application: $application, uid: $uid);
+
+        $userBaseRef = ['kind' => 'application-version', 'id' => $adminUuid];
+
+        if ($existing !== null) {
+            $versionUuid = $this->extractUuid(object: $existing);
+            $existing['manifestDelta'] = $delta;
+            $existing['manifest']      = (object) ($existing['manifest'] ?? []);
+            $existing['scope']         = 'user';
+            $existing['owner']         = $uid;
+            $existing['baseRef']       = $userBaseRef;
+            unset($existing['@self']);
+
+            $saved = $this->objectService->saveObject(
+                object: $existing,
+                register: self::REGISTER_SLUG,
+                schema: self::APPLICATION_VERSION_SCHEMA,
+                uuid: $versionUuid,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } else {
+            $saved = $this->objectService->saveObject(
+                object: [
+                    'name'          => 'Mijn weergave',
+                    'slug'          => $this->userVersionSlug(appId: $appId, uid: $uid),
+                    'scope'         => 'user',
+                    'owner'         => $uid,
+                    'manifest'      => (object) [],
+                    'manifestDelta' => $delta,
+                    'baseRef'       => $userBaseRef,
+                    'register'      => self::REGISTER_SLUG.'-'.$appId,
+                    'semver'        => '0.1.0',
+                    'status'        => 'draft',
+                    'application'   => $appUuid,
+                ],
+                register: self::REGISTER_SLUG,
+                schema: self::APPLICATION_VERSION_SCHEMA,
+                _rbac: false,
+                _multitenancy: false
+            );
+        }//end if
+
+        $savedData = $this->normaliseObject(object: $saved);
+
+        return [
+            'appId'       => $appId,
+            'owner'       => $uid,
+            'updatedAt'   => $now,
+            'versionUuid' => $this->extractUuid(object: $savedData),
+        ];
+
+    }//end upsertUserDelta()
+
+    /**
+     * Delete the caller's own user-scoped delta for a fleet app (idempotent).
+     *
+     * Owner-scoped to the passed UID — a caller can only ever delete their own
+     * user delta. A missing record is a no-op.
+     *
+     * @param string $appId The kebab-case Nextcloud app id (natural key).
+     * @param string $uid   The calling user's UID (the owner).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/layered-versioned-app-deltas/specs/layered-app-deltas/spec.md
+     */
+    public function deleteUserDelta(string $appId, string $uid): void
+    {
+        if ($uid === '') {
+            return;
+        }
+
+        $application = $this->findHybridApplication(appId: $appId);
+        if ($application === null) {
+            return;
+        }
+
+        $version = $this->findUserDeltaForApp(application: $application, uid: $uid);
+        if ($version === null) {
+            return;
+        }
+
+        $versionUuid = $this->extractUuid(object: $version);
+        if ($versionUuid !== '') {
+            $this->deleteObjectSafely(uuid: $versionUuid, context: 'user delta for '.$appId.' / '.$uid);
+        }
+
+    }//end deleteUserDelta()
+
+    /**
      * Create or update the hybrid app + delta-only version for a fleet app.
      *
      * Find-then-create-or-update keyed by `appId`: when a hybrid Application
@@ -521,6 +759,138 @@ class AppOverrideService
         }
 
     }//end deleteObjectSafely()
+
+    /**
+     * Find the caller's own `scope: user` ApplicationVersion for a hybrid app.
+     *
+     * Searches user-scoped versions owned by the UID, then filters to the rows
+     * belonging to this Application (the `application` relation is matched in PHP
+     * because it is a relation, not a plain searchable property). Returns the
+     * first match, or null when the caller has no user delta on this app.
+     *
+     * @param array<string, mixed> $application The resolved hybrid Application.
+     * @param string               $uid         The owning user UID.
+     *
+     * @return array<string, mixed>|null The normalised user-scoped version, or null when none exists.
+     */
+    private function findUserDeltaForApp(array $application, string $uid): ?array
+    {
+        if ($uid === '') {
+            return null;
+        }
+
+        $appUuid = $this->extractUuid(object: $application);
+        if ($appUuid === '') {
+            return null;
+        }
+
+        try {
+            $results = $this->objectService->searchObjectsBySlug(
+                registerSlug: self::REGISTER_SLUG,
+                schemaSlug: self::APPLICATION_VERSION_SCHEMA,
+                filters: [
+                    'scope' => 'user',
+                    'owner' => $uid,
+                ]
+            );
+        } catch (Throwable $e) {
+            $this->logger->error(
+                'OpenBuild: user delta lookup failed for '.$uid.': '.$e->getMessage(),
+                ['exception' => $e]
+            );
+            return null;
+        }
+
+        if (is_array($results) === false) {
+            return null;
+        }
+
+        foreach ($results as $result) {
+            $normalised = $this->normaliseObject(object: $result);
+            // Owner-scope re-check (defence in depth) + match the parent app.
+            if ((string) ($normalised['owner'] ?? '') !== $uid) {
+                continue;
+            }
+
+            if ((string) ($normalised['application'] ?? '') === $appUuid) {
+                return $normalised;
+            }
+        }
+
+        return null;
+
+    }//end findUserDeltaForApp()
+
+    /**
+     * Whether an Application permits per-user manifest overrides.
+     *
+     * Reads the declarative `allowUserOverrides` flag; absent reads as false
+     * (default-secure).
+     *
+     * @param array<string, mixed> $application The normalised Application.
+     *
+     * @return bool True when the app allows users to layer their own delta.
+     */
+    private function appAllowsUserOverrides(array $application): bool
+    {
+        return (bool) ($application['allowUserOverrides'] ?? false);
+
+    }//end appAllowsUserOverrides()
+
+    /**
+     * Deep-merge two keyed manifest deltas (`overlay` wins).
+     *
+     * Collapses `admin ⊕ user` into one keyed delta the client applies over the
+     * base. Associative sub-objects merge recursively; lists and scalars from the
+     * overlay replace the base value. The `{ "$op": "remove" }` deletion marker
+     * and `__order` reorder key pass through unchanged — both deltas use the same
+     * keyed-delta contract, so a sequential apply (base → admin → user) is
+     * equivalent to applying the deep-merged delta once.
+     *
+     * @param array<string, mixed> $base    The admin (lower) delta.
+     * @param array<string, mixed> $overlay The user (higher) delta.
+     *
+     * @return array<string, mixed> The merged delta.
+     */
+    private function deepMergeDelta(array $base, array $overlay): array
+    {
+        $result = $base;
+        foreach ($overlay as $key => $value) {
+            if (is_array($value) === true
+                && isset($result[$key]) === true
+                && is_array($result[$key]) === true
+                && array_is_list($value) === false
+                && array_is_list($result[$key]) === false
+            ) {
+                $result[$key] = $this->deepMergeDelta(base: $result[$key], overlay: $value);
+            } else {
+                $result[$key] = $value;
+            }
+        }
+
+        return $result;
+
+    }//end deepMergeDelta()
+
+    /**
+     * Build a URL-safe per-user version slug (`user-<sanitised-uid>`).
+     *
+     * @param string $appId The fleet app id (kept for context/uniqueness).
+     * @param string $uid   The owning user UID.
+     *
+     * @return string The kebab-case slug.
+     */
+    private function userVersionSlug(string $appId, string $uid): string
+    {
+        $safe = strtolower((string) preg_replace('/[^a-z0-9]+/i', '-', $uid));
+        $safe = trim($safe, '-');
+        if ($safe === '') {
+            $safe = 'me';
+        }
+
+        return 'user-'.$safe;
+
+    }//end userVersionSlug()
 
     /**
      * Read the canonical uuid from a normalised object payload.

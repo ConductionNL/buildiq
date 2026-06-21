@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenBuild Register",
     "description": "Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   "x-openregister": {
     "type": "application",
@@ -17,7 +17,7 @@
       "Application": {
         "slug": "application",
         "icon": "AppsBoxOutline",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "title": "Application",
         "description": "An app built or customized with OpenBuild (unify-apps-with-app-type). The `appType` discriminator distinguishes a `virtual` app (fully delivered by OpenBuild) from a `hybrid` app (a delta layered over an installed Nextcloud fleet app, linked via `baseRef`). Per ADR-002 the Application carries identity (slug, name, description, appType, baseRef, permissions) plus a productionVersion relation to the ApplicationVersion currently exposed at the canonical URL. Manifest, semver, and lifecycle live on ApplicationVersion. For a hybrid app the identity metadata (slug/name) mirrors the underlying NC app and is read-only after creation (enforced by HybridMetadataLockListener).",
         "authorization": {
@@ -106,6 +106,11 @@
               }
             },
             "additionalProperties": false
+          },
+          "allowUserOverrides": {
+            "type": "boolean",
+            "default": false,
+            "description": "Per-app permission flag (layered-versioned-app-deltas). When true, users of this app MAY create/edit their own user-scoped manifest delta layered over the admin delta (base ⊕ admin ⊕ user). Default false (default-secure) — an Application with no allowUserOverrides reads as false. Read directly by the override resolver, ApplicationVersionOwnerGuard, and the dashboard 'create override' affordance; purely declarative (no Service)."
           },
           "permissions": {
             "type": "object",
@@ -321,7 +326,7 @@
         },
         "slug": "applicationVersion",
         "icon": "SourceBranchOutline",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "title": "Application Version",
         "description": "A deployable runtime for an Application (ADR-002). A VIRTUAL app's version carries a full `manifest` blob and owns its own per-version OpenRegister register so production and test data are physically isolated. A HYBRID app's version (unify-apps-with-app-type) instead carries a delta-only customization: `manifest` is an empty object `{}`, `baseRef.kind` is `fleet-app`, and `manifestDelta` holds the keyed structural diff served raw via GET /api/app-overrides/{appId} and merged client-side over the installed fleet app's bundled manifest (OpenBuild holds no fleet base). The admin-defined linear promotion chain reads via the optional `promotesTo` relation. Lifecycle (draft → published → archived) is per-version; the `draft → published` transition upserts the BuiltAppRoute slug index.",
         "authorization": {
@@ -418,6 +423,19 @@
               "target": "openbuild/applicationVersion",
               "type": "many-to-one"
             }
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "user"
+            ],
+            "default": "admin",
+            "description": "Delta scope discriminator (layered-versioned-app-deltas). `admin` (default) = the instance-wide shared delta managed by admins (today's behaviour — the only existing scope). `user` = a per-user delta owned by a single user, layered over the admin delta and resolved as `base ⊕ admin ⊕ user` only when the parent Application's allowUserOverrides is true. An ApplicationVersion with no scope reads as `admin` (legacy default). Read by ApplicationVersionOwnerGuard + PermissionResolver + the override resolver; admin/user rows share this one schema (no new schema). On a `user` row the per-version promotion/publish fields (semver/status/promotesTo/register) are inert — the user delta is just manifestDelta + owner + baseRef."
+          },
+          "owner": {
+            "type": "string",
+            "description": "Owning Nextcloud user UID. Set ONLY on a `scope: user` row; identifies the single user who may read/edit/rollback this user-scoped delta. Empty/absent on `scope: admin` rows. Read by ApplicationVersionOwnerGuard + PermissionResolver for the user-scope ownership check (a user can never read/write another user's delta — fail-closed)."
           }
         },
         "x-openregister-validation": {
@@ -428,6 +446,13 @@
               "when": "promotesTo != null",
               "assert": "promotesTo != self.uuid",
               "message": "promotesTo cannot equal the version's own UUID (self-loop)."
+            },
+            {
+              "id": "user-scope-requires-owner",
+              "description": "A user-scoped delta MUST name its owner UID (layered-versioned-app-deltas). Same-row rule; the cross-row owner-vs-caller authorization is enforced imperatively by ApplicationVersionOwnerGuard + PermissionResolver (ADR-031 §Exceptions(1) cross-row).",
+              "when": "scope == 'user'",
+              "assert": "owner != null",
+              "message": "A user-scoped ApplicationVersion requires an owner UID."
             }
           ]
         },

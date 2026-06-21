@@ -120,8 +120,26 @@ class AppOverrideController extends Controller
             return $this->error(code: 'invalid_app_id', status: Http::STATUS_BAD_REQUEST);
         }
 
+        // `?scope=admin` returns the RAW shared admin delta (what the admin
+        // editor diffs/edits); the default returns the LAYERED resolution
+        // (admin ⊕ the calling user's own delta) for the loader to merge over
+        // the bundled base (layered-versioned-app-deltas). For an anonymous
+        // caller, or an app without per-user overrides, the layered result is
+        // exactly the admin delta — fully back-compatible.
+        $rawAdmin = ((string) $this->request->getParam('scope', '') === 'admin');
+
         try {
-            $record = $this->appOverrideService->findByAppId(appId: $appId);
+            if ($rawAdmin === true) {
+                $record = $this->appOverrideService->findByAppId(appId: $appId);
+            } else {
+                $user = $this->userSession->getUser();
+                $uid  = null;
+                if ($user !== null) {
+                    $uid = (string) $user->getUID();
+                }
+
+                $record = $this->appOverrideService->resolveLayeredDelta(appId: $appId, uid: $uid);
+            }
         } catch (Throwable $e) {
             $this->logger->error(
                 'OpenBuild: AppOverride get failed for appId '.$appId.': '.$e->getMessage(),
@@ -144,6 +162,168 @@ class AppOverrideController extends Controller
         return new JSONResponse(data: (object) $delta, statusCode: Http::STATUS_OK);
 
     }//end get()
+
+    /**
+     * Return the calling user's OWN user-scoped delta for a fleet app (for editing).
+     *
+     * Login-required. Always owner-scoped to the session UID — a caller can
+     * only ever read their own user delta (the UID is never a request param), so
+     * this is not an IDOR vector. Returns `{ allowed, exists, manifestDelta,
+     * versionUuid }` where `versionUuid` drives the Manifest detail page's OR
+     * version history.
+     *
+     * @param string $appId The kebab-case fleet-app id from the URL.
+     *
+     * @return JSONResponse 200 with the caller's user-delta summary; 400/401 on rejection.
+     *
+     * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function getUser(string $appId): JSONResponse
+    {
+        if ($this->isValidAppId(appId: $appId) === false) {
+            return $this->error(code: 'invalid_app_id', status: Http::STATUS_BAD_REQUEST);
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return $this->error(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+        }
+
+        try {
+            $record = $this->appOverrideService->getUserDelta(appId: $appId, uid: (string) $user->getUID());
+        } catch (Throwable $e) {
+            $this->logger->error(
+                'OpenBuild: user-delta get failed for appId '.$appId.': '.$e->getMessage(),
+                ['exception' => $e]
+            );
+            return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        return new JSONResponse(
+            data: [
+                'appId'         => $appId,
+                'allowed'       => ($record['allowed'] ?? false),
+                'exists'        => ($record['exists'] ?? false),
+                'manifestDelta' => (object) ($record['manifestDelta'] ?? []),
+                'versionUuid'   => ($record['versionUuid'] ?? null),
+            ],
+            statusCode: Http::STATUS_OK
+        );
+
+    }//end getUser()
+
+    /**
+     * Create or update the calling user's OWN user-scoped delta (the write endpoint).
+     *
+     * CSRF-enforced. Rejects anonymous (401) and out-of-scope (403) callers,
+     * a malformed / app-blanking delta (422), and an app that does not permit
+     * per-user overrides (403). The owner is always the session UID — a caller
+     * can only ever write their own user delta (no-admin-idor).
+     *
+     * @param string $appId The kebab-case fleet-app id from the URL.
+     *
+     * @return JSONResponse 200 on success; 400/401/403/422 on rejection.
+     *
+     * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+     */
+    #[NoAdminRequired]
+    public function saveUser(string $appId): JSONResponse
+    {
+        if ($this->isValidAppId(appId: $appId) === false) {
+            return $this->error(code: 'invalid_app_id', status: Http::STATUS_BAD_REQUEST);
+        }
+
+        $guard = $this->requireOpenBuildAccess();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $uid = (string) $this->userSession->getUser()->getUID();
+
+        $delta = $this->readDeltaBody();
+        if ($delta === null) {
+            return $this->error(
+                code: 'invalid_delta',
+                status: Http::STATUS_UNPROCESSABLE_ENTITY,
+                detail: 'request body must be a keyed delta object'
+            );
+        }
+
+        $rejection = $this->validateDelta(delta: $delta);
+        if ($rejection !== null) {
+            return $rejection;
+        }
+
+        try {
+            $saved = $this->appOverrideService->upsertUserDelta(appId: $appId, delta: $delta, uid: $uid);
+        } catch (\RuntimeException $e) {
+            // Flag-disabled / no-app — a deliberate authorization refusal.
+            return $this->error(
+                code: 'user_overrides_not_allowed',
+                status: Http::STATUS_FORBIDDEN,
+                detail: $e->getMessage()
+            );
+        } catch (Throwable $e) {
+            $this->logger->error(
+                'OpenBuild: user-delta save failed for appId '.$appId.': '.$e->getMessage(),
+                ['exception' => $e]
+            );
+            return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        return new JSONResponse(
+            data: [
+                'appId'       => $appId,
+                'owner'       => ($saved['owner'] ?? $uid),
+                'updatedAt'   => ($saved['updatedAt'] ?? null),
+                'versionUuid' => ($saved['versionUuid'] ?? null),
+            ],
+            statusCode: Http::STATUS_OK
+        );
+
+    }//end saveUser()
+
+    /**
+     * Clear the calling user's OWN user-scoped delta (the reset endpoint).
+     *
+     * CSRF-enforced. Rejects anonymous (401) and out-of-scope (403). Idempotent —
+     * a non-existent user delta is a success. Owner-scoped to the session UID.
+     *
+     * @param string $appId The kebab-case fleet-app id from the URL.
+     *
+     * @return JSONResponse 200 on success; 400/401/403 on rejection.
+     *
+     * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+     */
+    #[NoAdminRequired]
+    public function clearUser(string $appId): JSONResponse
+    {
+        if ($this->isValidAppId(appId: $appId) === false) {
+            return $this->error(code: 'invalid_app_id', status: Http::STATUS_BAD_REQUEST);
+        }
+
+        $guard = $this->requireOpenBuildAccess();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $uid = (string) $this->userSession->getUser()->getUID();
+
+        try {
+            $this->appOverrideService->deleteUserDelta(appId: $appId, uid: $uid);
+        } catch (Throwable $e) {
+            $this->logger->error(
+                'OpenBuild: user-delta clear failed for appId '.$appId.': '.$e->getMessage(),
+                ['exception' => $e]
+            );
+            return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        return new JSONResponse(data: ['appId' => $appId, 'cleared' => true], statusCode: Http::STATUS_OK);
+
+    }//end clearUser()
 
     /**
      * Upsert the manifest delta for a fleet app (the write endpoint).

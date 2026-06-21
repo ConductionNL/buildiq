@@ -252,8 +252,12 @@ class AppOverrideControllerTest extends TestCase
      */
     public function testGetReturnsStoredDelta(): void
     {
+        // The default GET now returns the LAYERED resolution (admin ⊕ the
+        // caller's own user delta) via resolveLayeredDelta — the loader
+        // contract is unchanged (layered-versioned-app-deltas). `?scope=admin`
+        // would instead read the raw admin delta via findByAppId.
         $delta = ['pages' => [['id' => 'home', 'title' => 'Renamed']]];
-        $this->service->method('findByAppId')->willReturn(['appId' => 'opencatalogi', 'manifestDelta' => $delta]);
+        $this->service->method('resolveLayeredDelta')->willReturn(['appId' => 'opencatalogi', 'manifestDelta' => $delta]);
 
         $response = $this->controller()->get(appId: 'opencatalogi');
 

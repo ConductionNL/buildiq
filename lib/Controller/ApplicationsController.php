@@ -884,7 +884,7 @@ class ApplicationsController extends Controller
         }
 
         // 3. Lookup the local template, then delegate the clone to the shared
-        //    seam (also reused by the remote-template store install path).
+        // seam (also reused by the remote-template store install path).
         $template = $this->lookupOne(
             registerId: $ctx['register'],
             schemaId: $ctx['templateSchema'],

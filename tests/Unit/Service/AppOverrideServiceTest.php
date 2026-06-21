@@ -177,10 +177,12 @@ class AppOverrideServiceTest extends TestCase
         $existingVersion = $this->mockEntity(['id' => 'ver-1', 'manifestDelta' => []]);
         $this->objectService->method('find')->willReturn($existingVersion);
 
-        // Exactly one saveObject — the version delta update (uuid reused).
+        // Exactly one saveObject — the version delta update (uuid reused). The
+        // uuid is the 5th positional arg of OR's saveObject signature
+        // (object, extend, register, schema, uuid, …); match it there.
         $this->objectService->expects(self::once())
             ->method('saveObject')
-            ->with(self::anything(), self::anything(), self::anything(), 'ver-1')
+            ->with(self::anything(), self::anything(), self::anything(), self::anything(), 'ver-1')
             ->willReturn($existingVersion);
 
         $result = $this->service->upsert(

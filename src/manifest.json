@@ -93,6 +93,15 @@
 			}
 		},
 		{
+			"id": "ApplicationManifestDetail",
+			"route": "/applications/:objectId/manifest",
+			"type": "custom",
+			"title": "Manifest layers",
+			"component": "ApplicationManifestDetail",
+			"config": {},
+			"_note": "Routed Manifest detail page (layered-versioned-app-deltas). Surfaces the three manifest customization layers (Base / Admin delta / Your delta), the per-layer OpenRegister version history + rollback (reusing VersionHistory), and the per-user create/edit/reset of the caller's own delta. type:custom mounts ManifestLayersDetail; reached from the app-detail Manifest widget. Declared before /applications/:objectId so the extra /manifest segment matches first."
+		},
+		{
 			"id": "VirtualAppDetail",
 			"route": "/applications/:objectId",
 			"type": "detail",

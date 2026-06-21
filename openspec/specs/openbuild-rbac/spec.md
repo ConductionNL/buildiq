@@ -1,5 +1,9 @@
 # openbuild-rbac Specification
 
+**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/)
+
+**Status**: in-progress
+
 ## Purpose
 
 Closes the per-built-app RBAC gap left open by `bootstrap-openbuild`'s "auth-only"
