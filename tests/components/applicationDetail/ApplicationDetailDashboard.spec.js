@@ -55,14 +55,15 @@ describe('ApplicationDetailDashboard', () => {
 		useInsightsWindow().selectedWindow.value = '7d'
 	})
 
-	it('renders the four KPI cards', () => {
+	it('renders the four KPI widgets', () => {
 		const wrapper = factory()
-		// CnCard is stubbed under shallowMount — assert the four KPI cards and
-		// their titles via the stub `title` prop rather than rendered text.
+		// CnStatsBlock is stubbed under shallowMount — assert the four KPI
+		// widgets and their titles via the stub `title` prop. (Storage shows a
+		// formatted byte size; before data loads it is the loading variant.)
 		const kpis = wrapper.findAll('.ob-detail-dashboard__kpi')
 		expect(kpis.length).toBe(4)
 		const titles = kpis.wrappers.map((w) => w.attributes('title'))
-		expect(titles).toEqual(['Active users', 'Object count', 'Files', 'Audit events'])
+		expect(titles).toEqual(['Active users', 'Object count', 'Storage', 'Audit events'])
 	})
 
 	it('shows the empty-state activity message when activity is empty (REQ-OBADO-005)', () => {

@@ -62,17 +62,35 @@
 				:loading="!loaded"
 				:loading-label="t('openbuild', 'Loading…')"
 				:show-zero-count="loaded" />
+			<!-- Storage: the KPI value is the SUM of attached-file sizes (bytes)
+			     from the audit trail, NOT a file count — so we label it Storage and
+			     format it human-readable. Two variants: the loaded one uses the
+			     #value slot (which would otherwise bypass the spinner), the loading
+			     one keeps CnStatsBlock's built-in spinner. -->
 			<CnStatsBlock
+				v-if="loaded"
 				class="ob-detail-dashboard__kpi"
 				horizontal
-				:icon="iconFiles"
-				:title="t('openbuild', 'Files')"
+				:icon="iconStorage"
+				:title="t('openbuild', 'Storage')"
 				:count="kpis.filesCount"
-				:count-label="t('openbuild', 'files')"
+				:count-label="''"
 				variant="success"
-				:loading="!loaded"
-				:loading-label="t('openbuild', 'Loading…')"
-				:show-zero-count="loaded" />
+				show-zero-count>
+				<template #value="{ count }">
+					{{ formatBytes(count) }}
+				</template>
+			</CnStatsBlock>
+			<CnStatsBlock
+				v-else
+				class="ob-detail-dashboard__kpi"
+				horizontal
+				:icon="iconStorage"
+				:title="t('openbuild', 'Storage')"
+				:count="0"
+				variant="success"
+				loading
+				:loading-label="t('openbuild', 'Loading…')" />
 			<CnStatsBlock
 				class="ob-detail-dashboard__kpi"
 				horizontal
@@ -143,7 +161,7 @@ import { CnStatsBlock } from '@conduction/nextcloud-vue'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
-import FileMultipleOutline from 'vue-material-design-icons/FileMultipleOutline.vue'
+import Harddisk from 'vue-material-design-icons/Harddisk.vue'
 import History from 'vue-material-design-icons/History.vue'
 
 import SchemasWidget from './widgets/SchemasWidget.vue'
@@ -183,7 +201,7 @@ export default {
 			selectedWindow,
 			iconUsers: AccountMultipleOutline,
 			iconObjects: CubeOutline,
-			iconFiles: FileMultipleOutline,
+			iconStorage: Harddisk,
 			iconAudit: History,
 		}
 	},
@@ -461,6 +479,30 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * Format a byte count as a human-readable storage size (e.g. 517 KB).
+		 *
+		 * @param {number} bytes Raw byte count.
+		 * @return {string} Localised size with a binary unit.
+		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 */
+		formatBytes(bytes) {
+			const n = Number(bytes) || 0
+			if (n < 1024) {
+				return t('openbuild', '{n} B', { n })
+			}
+			const units = ['KB', 'MB', 'GB', 'TB', 'PB']
+			let value = n / 1024
+			let i = 0
+			while (value >= 1024 && i < (units.length - 1)) {
+				value /= 1024
+				i++
+			}
+			// 1 decimal place, dropping a trailing .0.
+			const rounded = Math.round(value * 10) / 10
+			return `${rounded} ${units[i]}`
+		},
+
 		/**
 		 * Forward an open-permissions request from the Groups widget.
 		 *
