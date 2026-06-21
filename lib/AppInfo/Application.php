@@ -91,15 +91,38 @@ class Application extends App implements IBootstrap
         //
         // `mcpProvider` is wired below explicitly (not via Bootstrap) because
         // the domain registrations that follow override the relevant aliases.
-        Bootstrap::register(
-            $context,
-            self::APP_ID,
-            [
-                'namespace'     => 'OCA\\OpenBuild',
-                'sectionName'   => 'OpenBuild',
-                'observability' => true,
-            ]
-        );
+        //
+        // GUARDED: `Bootstrap::register` is an eager static call that fatals if
+        // OpenRegister's AppHost engine class is not autoloadable on this
+        // instance (e.g. a stale optimized/authoritative composer classmap that
+        // predates AppHost, or a stub OCA\OpenRegister PSR-4 prefix). That fatal
+        // would abort the WHOLE register() method BEFORE the domain listeners
+        // below — silently disabling the per-Application RBAC guards and the
+        // hybrid metadata-lock (so a hybrid app's immutable identity fields would
+        // become writable). Skip the generic AppHost plumbing when it is absent
+        // and fall through to OpenBuild's own concrete controllers + listeners,
+        // which is what this app actually relies on (the comment that the lazy
+        // closures "never fatal NC bootstrap" only held for the closures, not for
+        // resolving the Bootstrap class itself).
+        if (class_exists(Bootstrap::class) === true) {
+            Bootstrap::register(
+                $context,
+                self::APP_ID,
+                [
+                    'namespace'     => 'OCA\\OpenBuild',
+                    'sectionName'   => 'OpenBuild',
+                    'observability' => true,
+                ]
+            );
+        } else {
+            // No PSR logger is wired this early in register(); error_log is the
+            // safe channel and is captured by the NC log pipeline.
+            error_log(
+                'OpenBuild: OpenRegister AppHost\\Bootstrap is not autoloadable — '
+                .'skipping generic AppHost plumbing; concrete controllers + domain '
+                .'listeners (RBAC + hybrid metadata-lock) still register.'
+            );
+        }
 
         // OpenBuild keeps three concrete controllers + the settings service that
         // the AppHost generics cannot cover on OpenRegister `development` (see
