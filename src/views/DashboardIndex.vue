@@ -36,6 +36,8 @@
 				@click="goTo('VirtualApps')"
 				@keyup.enter="goTo('VirtualApps')">
 				<CnStatsBlock
+					horizontal
+					:icon="iconApps"
 					:title="t('openbuild', 'Apps')"
 					:count="counts.apps"
 					:count-label="t('openbuild', 'apps')"
@@ -52,6 +54,8 @@
 				@click="goTo('VirtualApps')"
 				@keyup.enter="goTo('VirtualApps')">
 				<CnStatsBlock
+					horizontal
+					:icon="iconHybrid"
 					:title="t('openbuild', 'Hybrid apps')"
 					:count="counts.hybrid"
 					:count-label="t('openbuild', 'hybrid')"
@@ -68,6 +72,8 @@
 				@click="goTo('VirtualApps')"
 				@keyup.enter="goTo('VirtualApps')">
 				<CnStatsBlock
+					horizontal
+					:icon="iconVersions"
 					:title="t('openbuild', 'Published versions')"
 					:count="counts.versions"
 					:count-label="t('openbuild', 'versions')"
@@ -98,6 +104,9 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent } from '@nextcloud/vue'
 import { CnDashboardPage, CnStatsBlock, CnTableWidget } from '@conduction/nextcloud-vue'
+import ShapeOutline from 'vue-material-design-icons/ShapeOutline.vue'
+import PuzzleOutline from 'vue-material-design-icons/PuzzleOutline.vue'
+import History from 'vue-material-design-icons/History.vue'
 import CreateApplicationWizard from '../dialogs/CreateApplicationWizard.vue'
 
 export default {
@@ -110,6 +119,19 @@ export default {
 		CreateApplicationWizard,
 		NcButton,
 		NcEmptyContent,
+	},
+
+	/**
+	 * Expose the (raw) MDI icon components for the KPI widgets.
+	 *
+	 * @return {object}
+	 */
+	setup() {
+		return {
+			iconApps: ShapeOutline,
+			iconHybrid: PuzzleOutline,
+			iconVersions: History,
+		}
 	},
 
 	data() {
