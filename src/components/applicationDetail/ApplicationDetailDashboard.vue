@@ -131,25 +131,38 @@
 			</p>
 		</section>
 
-		<!-- 4. Structural widget grid. (Register card dropped — its
-		     schema/object/file counts are already shown in the KPI widgets.) -->
+		<!-- 4. Customization-layer widget grid. The manifest-derived Schemas /
+		     Pages / Menu widgets are replaced by the Manifest widget (delta
+		     layers + version state) and the Register widget (counts + deep-link
+		     to OpenRegister) — the schema/page/menu detail always reflects the
+		     latest manifest and is reachable from the manifest layers
+		     (layered-versioned-app-deltas). -->
 		<section class="ob-detail-dashboard__widgets">
-			<SchemasWidget
+			<ManifestWidget
+				:app-slug="appSlug"
+				:is-hybrid="isHybrid"
+				:allow-user-overrides="allowUserOverrides"
+				:admin-label="adminVersionLabel"
+				:admin-status="adminVersionStatus"
+				@open-detail="openManifestDetail"
+				@edit-override="showUserDeltaModal = true"
+				@changed="onUserDeltaChanged" />
+			<RegisterWidget
 				:app-slug="appSlug"
 				:version-slug="activeVersionSlug"
-				:schemas="activeSchemas" />
+				:schema-count="activeSchemas.length"
+				:object-count="kpis.objectCount"
+				:files-count="kpis.filesCount" />
 			<GroupsWidget
 				:application="application"
 				@open-permissions="onOpenPermissions" />
-			<PagesWidget
-				:app-slug="appSlug"
-				:version-slug="activeVersionSlug"
-				:pages="activePages" />
-			<MenuWidget
-				:app-slug="appSlug"
-				:version-slug="activeVersionSlug"
-				:menu="activeMenu" />
 		</section>
+
+		<UserDeltaEditModal
+			:open.sync="showUserDeltaModal"
+			:app-slug="appSlug"
+			:delta="userDeltaContent"
+			@saved="onUserDeltaChanged" />
 	</div>
 </template>
 
@@ -164,10 +177,10 @@ import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import Harddisk from 'vue-material-design-icons/Harddisk.vue'
 import History from 'vue-material-design-icons/History.vue'
 
-import SchemasWidget from './widgets/SchemasWidget.vue'
 import GroupsWidget from './widgets/GroupsWidget.vue'
-import PagesWidget from './widgets/PagesWidget.vue'
-import MenuWidget from './widgets/MenuWidget.vue'
+import ManifestWidget from './widgets/ManifestWidget.vue'
+import RegisterWidget from './widgets/RegisterWidget.vue'
+import UserDeltaEditModal from '../../modals/UserDeltaEditModal.vue'
 
 import { buildVersionedRoute } from '../../router/helpers.js'
 import { useInsightsWindow } from '../../composables/useInsightsWindow.js'
@@ -177,10 +190,10 @@ export default {
 	components: {
 		CnStatsBlock,
 		NcButton,
-		SchemasWidget,
 		GroupsWidget,
-		PagesWidget,
-		MenuWidget,
+		ManifestWidget,
+		RegisterWidget,
+		UserDeltaEditModal,
 	},
 	props: {
 		// CnDetailPage's #before-body slot forwards the resolved record as
@@ -219,6 +232,9 @@ export default {
 			loaded: false,
 			error: null,
 			insightsDebounce: null,
+			// Layered-delta UI state (layered-versioned-app-deltas).
+			showUserDeltaModal: false,
+			userDeltaContent: {},
 		}
 	},
 	computed: {
@@ -411,6 +427,35 @@ export default {
 		isHybrid() {
 			return (this.application && this.application.appType) === 'hybrid'
 		},
+		/**
+		 * Whether this app allows per-user manifest overrides
+		 * (layered-versioned-app-deltas).
+		 *
+		 * @return {boolean}
+		 */
+		allowUserOverrides() {
+			return !!(this.application && this.application.allowUserOverrides)
+		},
+		/**
+		 * Human label for the admin delta's current version (the production
+		 * version's name/semver, falling back to the active version).
+		 *
+		 * @return {string}
+		 */
+		adminVersionLabel() {
+			const v = this.productionVersion || this.activeVersion
+			if (!v) return t('openbuild', 'current')
+			return v.semver || v.name || v.slug || t('openbuild', 'current')
+		},
+		/**
+		 * Lifecycle status of the admin delta's current version.
+		 *
+		 * @return {string}
+		 */
+		adminVersionStatus() {
+			const v = this.productionVersion || this.activeVersion
+			return (v && v.status) || ''
+		},
 	},
 	watch: {
 		/**
@@ -515,6 +560,48 @@ export default {
 		},
 
 		/**
+		 * Navigate to the routed Manifest detail page for this app
+		 * (layered-versioned-app-deltas).
+		 *
+		 * @return {void}
+		 */
+		openManifestDetail() {
+			const uuid = (this.application && (this.application.uuid || this.application.id)) || this.objectId
+			if (this.$router && uuid) {
+				this.$router.push({ name: 'ApplicationManifestDetail', params: { objectId: uuid } }).catch(() => {})
+			}
+		},
+
+		/**
+		 * Re-load the caller's user-delta content after a create/edit/reset so
+		 * the edit modal opens pre-seeded with the latest delta.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async onUserDeltaChanged() {
+			await this.loadUserDeltaContent()
+		},
+
+		/**
+		 * Fetch the caller's own user-delta content (for seeding the edit modal).
+		 *
+		 * @return {Promise<void>}
+		 */
+		async loadUserDeltaContent() {
+			if (!this.appSlug || !this.allowUserOverrides) {
+				this.userDeltaContent = {}
+				return
+			}
+			try {
+				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user', { appId: this.appSlug })
+				const { data } = await axios.get(url)
+				this.userDeltaContent = (data && data.manifestDelta) || {}
+			} catch (e) {
+				this.userDeltaContent = {}
+			}
+		},
+
+		/**
 		 * Switch the active version to the production version (banner action).
 		 *
 		 * @return {void}
@@ -586,6 +673,7 @@ export default {
 					this.selectedVersionUuid = this.orderedVersions[0].uuid
 				}
 				this.scheduleInsightsFetch()
+				this.loadUserDeltaContent()
 			} catch (e) {
 				this.error = e instanceof Error ? e : new Error(String(e))
 			}

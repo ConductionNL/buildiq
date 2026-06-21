@@ -69,6 +69,10 @@ import ApplicationDetailHeader from './components/applicationDetail/ApplicationD
 // structural widgets, rendered in CnDetailPage's #before-body slot (in the page
 // body, below the action-menu line, above the auto Data/Related sections).
 import ApplicationDetailDashboard from './components/applicationDetail/ApplicationDetailDashboard.vue'
+// ManifestLayersDetail — routed Manifest detail page (delta layers + per-layer
+// OR version history + rollback), reached from the app-detail Manifest widget
+// (layered-versioned-app-deltas).
+import ManifestLayersDetail from './views/ManifestLayersDetail.vue'
 
 // ── Custom page components (kind: "page") ────────────────────────────────────
 
@@ -217,6 +221,8 @@ export default {
 	// Header component for the maintainer dashboard (kind "header" — slot-override).
 	ApplicationDetailHeader: header(ApplicationDetailHeader),
 	ApplicationDetailDashboard: page(ApplicationDetailDashboard),
+	// Routed Manifest detail page (type custom; layered-versioned-app-deltas).
+	ApplicationManifestDetail: page(ManifestLayersDetail),
 
 	// Custom page components — resolved by CnPageRenderer for type:"custom" pages.
 	SchemaDesignerView: page(SchemaDesignerView),

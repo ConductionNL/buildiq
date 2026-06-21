@@ -260,7 +260,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep
                 ['appId' => $appId, 'exception' => $e->getMessage()]
             );
             return false;
-        }
+        }//end try
 
         // Copy verified — delete the source AppOverride row (clean break).
         $uuid = (string) ($row['id'] ?? ($row['uuid'] ?? ($row['@self']['id'] ?? '')));

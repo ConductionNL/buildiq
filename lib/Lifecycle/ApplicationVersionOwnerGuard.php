@@ -121,6 +121,41 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface
             return GuardResult::deny('Uw gebruiker kon niet worden bepaald; transitie geweigerd.');
         }
 
+        // User-scope branch (layered-versioned-app-deltas). A `scope: user` row
+        // is a single user's personal delta — authorised iff the caller owns it
+        // (audited NC-admin bypass aside) AND the parent Application still
+        // permits per-user overrides. No group/owners-role logic applies to a
+        // user row; the parent's `permissions` block is irrelevant here. Fails
+        // closed: a foreign owner, an unresolvable parent, or a disabled flag
+        // denies.
+        if ((string) ($object['scope'] ?? 'admin') === 'user') {
+            if ($this->permissionResolver->matchesUserScopeOwner(version: $object, caller: $caller) === false) {
+                $this->logger->warning(
+                    'OpenBuild ApplicationVersionOwnerGuard: non-owner denied on user-scoped delta',
+                    ['action' => $action, 'uid' => $userId]
+                );
+                return GuardResult::deny(
+                    'U mag deze persoonlijke aanpassing niet '.$action.'; alleen de eigenaar is gemachtigd.'
+                );
+            }
+
+            $parent = $this->loadParentApplication(version: $object);
+            $flag   = ($parent['allowUserOverrides'] ?? false);
+            // An NC admin keeps the audited escape hatch even when the flag is off.
+            if ($flag !== true && $this->permissionResolver->isAdmin(caller: $caller) === false) {
+                $this->logger->warning(
+                    'OpenBuild ApplicationVersionOwnerGuard: user-scoped transition denied — '
+                    .'parent app does not allow user overrides',
+                    ['action' => $action, 'uid' => $userId]
+                );
+                return GuardResult::deny(
+                    'Deze app staat geen persoonlijke aanpassingen (meer) toe; transitie geweigerd.'
+                );
+            }
+
+            return GuardResult::allow();
+        }//end if
+
         $application = $this->loadParentApplication(version: $object);
         if ($application === null) {
             $this->logger->warning(

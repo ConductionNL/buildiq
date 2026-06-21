@@ -176,6 +176,42 @@ class PermissionResolver
     }//end resolveUserGroups()
 
     /**
+     * Check whether the caller owns a `scope: user` ApplicationVersion (user-delta RBAC).
+     *
+     * A user-scoped delta (layered-versioned-app-deltas) has exactly one owner —
+     * the UID in its `owner` field. Unlike the admin `permissions` grammar there
+     * is NO group logic on a user row: the caller is authorised iff their UID
+     * equals the row's `owner` (or they are a Nextcloud admin exercising the
+     * audited escape hatch when `allowAdminBypass` is true). Fail-closed: an
+     * absent / non-string owner denies.
+     *
+     * @param array<string, mixed> $version          The ApplicationVersion payload (must carry `owner`).
+     * @param IUser                $caller           The authenticated caller.
+     * @param bool                 $allowAdminBypass When true, an NC admin is granted regardless of ownership.
+     *
+     * @return bool True when the caller owns the user-scoped row (or is an admin under bypass).
+     */
+    public function matchesUserScopeOwner(array $version, IUser $caller, bool $allowAdminBypass=true): bool
+    {
+        $owner = ($version['owner'] ?? null);
+        if (is_string($owner) === false || $owner === '') {
+            // Fail-closed: a user-scoped delta with no resolvable owner is never matchable.
+            return false;
+        }
+
+        if ($caller->getUID() === $owner) {
+            return true;
+        }
+
+        if ($allowAdminBypass === true && $this->groupManager->isAdmin($caller->getUID()) === true) {
+            return true;
+        }
+
+        return false;
+
+    }//end matchesUserScopeOwner()
+
+    /**
      * Whether the caller is a Nextcloud administrator.
      *
      * Exposed so guards can grant the audited NC-admin escape hatch in the

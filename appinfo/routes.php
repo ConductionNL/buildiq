@@ -119,6 +119,15 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // DELETE clears it (idempotent). Specific-first so the `{appId}` routes
         // are not shadowed by the engine-appended SPA `/{path}` catch-all;
         // `appId` carries the kebab-case NC-app-id requirement.
+        // Per-user delta layer (layered-versioned-app-deltas): GET reads the
+        // caller's OWN user delta for editing; PUT upserts it (gated on the app's
+        // allowUserOverrides flag); DELETE clears it. Owner = the session UID
+        // always (no-admin-idor). Declared specific-first so the extra `/user`
+        // segment is matched before the generic `{appId}` routes below.
+        ['name' => 'appOverride#getUser',   'url' => '/api/app-overrides/{appId}/user', 'verb' => 'GET',    'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'appOverride#saveUser',  'url' => '/api/app-overrides/{appId}/user', 'verb' => 'PUT',    'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'appOverride#clearUser', 'url' => '/api/app-overrides/{appId}/user', 'verb' => 'DELETE', 'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
         ['name' => 'appOverride#get',   'url' => '/api/app-overrides/{appId}', 'verb' => 'GET',    'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'appOverride#save',  'url' => '/api/app-overrides/{appId}', 'verb' => 'PUT',    'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'appOverride#clear', 'url' => '/api/app-overrides/{appId}', 'verb' => 'DELETE', 'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],

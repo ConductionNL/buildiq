@@ -12,7 +12,7 @@ repoints storage to a hybrid `Application` + delta-only `ApplicationVersion` and
 the three endpoints as compatibility shims so live fleet apps stay byte-for-byte
 compatible.
 
-**OpenSpec changes**: [openbuild-inline-edit-persistence](../../changes/openbuild-inline-edit-persistence/), [unify-apps-with-app-type](../../changes/archive/2026-06-20-unify-apps-with-app-type/) _(archived 2026-06-20)_
+**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/), [openbuild-inline-edit-persistence](../../changes/openbuild-inline-edit-persistence/), [unify-apps-with-app-type](../../changes/archive/2026-06-20-unify-apps-with-app-type/) _(archived 2026-06-20)_
 
 **Status**: in-progress
 

@@ -160,7 +160,7 @@ class SeedApplicationTemplates implements IRepairStep
                     0,
                     $e
                 );
-            }
+            }//end try
         }//end foreach
 
         $output->info('OpenBuild template seeding complete. New: '.$seeded);
