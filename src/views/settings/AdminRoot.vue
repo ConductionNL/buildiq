@@ -1,43 +1,30 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <template>
-	<div class="openbuild-admin">
-		<CnVersionInfoCard
-			:app-name="'OpenBuild'"
-			:app-version="appVersion"
-			:is-up-to-date="true"
-			:show-update-button="true"
-			:title="t('openbuild', 'Version Information')"
-			:description="t('openbuild', 'Information about the current OpenBuild installation')">
-			<template #footer>
-				<div class="cn-support-info">
-					<h4>{{ t('openbuild', 'Support') }}</h4>
-					<p>{{ t('openbuild', 'For support, contact us at') }} <a href="mailto:support@conduction.nl">support@conduction.nl</a></p>
-				</div>
-			</template>
-		</CnVersionInfoCard>
-
-		<Settings v-if="storesReady" />
-	</div>
+	<CnAdminSettingsShell
+		app-id="openbuild"
+		app-name="OpenBuild"
+		@reimported="onReimported">
+		<Settings v-if="storesReady" :key="settingsKey" />
+	</CnAdminSettingsShell>
 </template>
 
 <script>
-import { CnVersionInfoCard } from '@conduction/nextcloud-vue'
-import { loadState } from '@nextcloud/initial-state'
+import { CnAdminSettingsShell } from '@conduction/nextcloud-vue'
 import Settings from './Settings.vue'
 import { initializeStores } from '../../store/store.js'
 
 export default {
 	name: 'AdminRoot',
 	components: {
-		CnVersionInfoCard,
+		CnAdminSettingsShell,
 		Settings,
 	},
 	data() {
 		return {
 			storesReady: false,
-			// ADR-004 + hydra-gate-initial-state: server data flows via
-			// IInitialState + loadState, never via DOM data-* attributes.
-			appVersion: loadState('openbuild', 'version', 'Unknown'),
+			// Bumped after a re-import so the Settings section is re-created and
+			// re-reads the refreshed store state in its `created` hook.
+			settingsKey: 0,
 		}
 	},
 	/**
@@ -49,11 +36,15 @@ export default {
 		await initializeStores()
 		this.storesReady = true
 	},
+	methods: {
+		/**
+		 * Re-load the app stores after the shell's Re-import action so the
+		 * Configuration section reflects the freshly imported settings.
+		 */
+		async onReimported() {
+			await initializeStores()
+			this.settingsKey += 1
+		},
+	},
 }
 </script>
-
-<style scoped>
-.openbuild-admin {
-	max-width: 900px;
-}
-</style>
