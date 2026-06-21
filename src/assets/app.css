@@ -30,3 +30,13 @@
 	inset-inline-end: 0;
 	z-index: 2;
 }
+
+/* Left-nav icons: always render black. NC applies `brightness(0) invert(1)`
+   (→ white) to the active entry's icon, which disappears on OpenBuild's light
+   nav background; `brightness(0)` forces solid black in every state. (This
+   stylesheet only loads while OpenBuild is open, so it never touches other
+   apps' navigation.) */
+.app-navigation .app-navigation-entry-icon,
+.app-navigation .app-navigation-entry.active .app-navigation-entry-icon {
+	filter: brightness(0) !important;
+}
