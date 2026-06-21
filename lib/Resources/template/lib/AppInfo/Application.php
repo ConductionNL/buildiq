@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\AppTemplate\AppInfo;
 
 use OCA\AppTemplate\Listener\DeepLinkRegistrationListener;
-use OCA\AppTemplate\Repair\InitializeSettings;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
@@ -65,9 +64,10 @@ class Application extends App implements IBootstrap
             listener: DeepLinkRegistrationListener::class
         );
 
-        // Initialize register and schemas on install/upgrade.
-        $context->registerRepairStep(InitializeSettings::class);
-
+        // NB: the InitializeSettings repair step is declared in
+        // appinfo/info.xml <repair-steps>, not registered here —
+        // IRegistrationContext has no registerRepairStep() method (calling it
+        // is a fatal on modern Nextcloud, incl. NC34).
     }//end register()
 
     /**

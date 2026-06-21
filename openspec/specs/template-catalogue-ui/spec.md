@@ -23,14 +23,14 @@ half of the `openbuild-template-catalogue` backend capability.
 
 ### Requirement: Gallery fetches, filters and resolves template screenshots
 
-@e2e exclude retrofit component-contract spec — `categoryOptions`, `categoryLabel`, `filteredTemplates`, `resolveScreenshot`, `openClone`, `onCloneSubmit`, `redirectAfterClone` are component-state contracts verified by Vitest unit tests; gallery filter and clone-redirect integration are covered by the openbuild-template-catalogue Playwright tests
-
 `TemplateGallery` SHALL fetch the available templates (`fetchTemplates`),
 expose category filter options and the current filtered set
 (`categoryOptions`, `categoryLabel`, `filteredTemplates`), resolve each
 template's screenshot with a fallback (`resolveScreenshot`), open the clone
 modal (`openClone`), and redirect after a successful clone
 (`onCloneSubmit`, `redirectAfterClone`).
+
+@e2e exclude retrofit component-contract spec — `categoryOptions`, `categoryLabel`, `filteredTemplates`, `resolveScreenshot`, `openClone`, `onCloneSubmit`, `redirectAfterClone` are component-state contracts verified by Vitest unit tests; gallery filter and clone-redirect integration are covered by the openbuild-template-catalogue Playwright tests
 
 #### Scenario: Filter by category
 
@@ -44,12 +44,12 @@ modal (`openClone`), and redirect after a successful clone
 
 ### Requirement: Clone dialog validates, submits and redirects
 
-@e2e exclude retrofit component-contract spec — `resolvedTitle`, `canSubmit`, `submit`, `setError`, `onClose` are dialog-component contracts verified by Vitest unit tests; clone-dialog open/submit/redirect integration is covered by the openbuild-template-catalogue Playwright tests
-
 `CloneTemplateDialog` SHALL open seeded from a template (`open`,
 `resolvedTitle`), gate submission on a valid target (`canSubmit`), submit the
 clone (`submit`), surface errors (`setError`), and close (`onClose`). On success
 the gallery SHALL redirect to the new application.
+
+@e2e exclude retrofit component-contract spec — `resolvedTitle`, `canSubmit`, `submit`, `setError`, `onClose` are dialog-component contracts verified by Vitest unit tests; clone-dialog open/submit/redirect integration is covered by the openbuild-template-catalogue Playwright tests
 
 #### Scenario: Reject an empty target
 

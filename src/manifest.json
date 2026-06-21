@@ -88,7 +88,8 @@
 				"sidebar": {
 					"enabled": true,
 					"showMetadata": true
-				}
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
 			}
 		},
 		{
@@ -149,7 +150,8 @@
 						"component": "audit-trail",
 						"order": 70
 					}
-				]
+				],
+				"documentationUrl": "https://openbuild.conduction.nl"
 			}
 		},
 		{
@@ -165,7 +167,8 @@
 				"schema": "application",
 				"sidebar": {
 					"enabled": false
-				}
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
 			},
 			"_note": "Top-level schemas overview \u2014 renders the SchemaDesignerView (list mode) via the registry-backed `slots.default` override so the primary action is the native \"Add schema\" flow (SchemaListPanel + AddSchemaDialog). Previously this page was type:\"index\" and fell through to the generic CnIndexPage, which keys its Add button off config.schema (\"application\") and so mislabelled the action \"Add Application\". A type:\"custom\" + top-level `component` does NOT resolve here because CnPageRenderer (beta.107) dispatches custom pages via the empty legacy customComponents map, not the v2 registry; the slot-override path (resolvedSlotEntries) is the one that reads cnRegistry. With no :schemaId route param SchemaDesignerView renders list mode and the no-slug /schemas shortcut falls back to the hello-world app. Per-app drill-down lives under /builder/:slug/schemas."
 		},
@@ -177,7 +180,8 @@
 			"component": "TemplateGallery",
 			"config": {
 				"register": "openbuild",
-				"schema": "application-template"
+				"schema": "application-template",
+				"documentationUrl": "https://openbuild.conduction.nl"
 			},
 			"_note": "Templates renders the store-aware TemplateGallery view (openbuild-remote-template-store): when a registry is configured the remote store search is the primary surface with built-in templates secondary; with no registry it falls back to the built-in templates as today. Install clones via CloneTemplateDialog."
 		},
@@ -193,7 +197,8 @@
 				"sidebar": {
 					"enabled": true,
 					"showMetadata": true
-				}
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
 			},
 			"_note": "Per-app schema list under the builder route. Scoped to the virtual app identified by :slug — the index page type's filter wiring kicks in via the route param."
 		},
@@ -208,7 +213,8 @@
 				"sidebar": {
 					"enabled": true,
 					"showMetadata": true
-				}
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
 			},
 			"slots": {
 				"default": "SchemaDesignerView"
@@ -225,7 +231,8 @@
 				"sidebar": {
 					"enabled": true,
 					"showMetadata": true
-				}
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
 			},
 			"slots": {
 				"default": "PageDesignerView"
@@ -243,7 +250,8 @@
 				"sidebar": {
 					"enabled": true,
 					"showMetadata": true
-				}
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
 			}
 		},
 		{
@@ -262,6 +270,43 @@
 			"config": {
 				"documentationUrl": "https://openbuild.conduction.nl"
 			}
+		}
+	],
+	"observability": {
+		"health": {
+			"statusCodePolicy": "adr006",
+			"checks": [
+				{ "id": "database", "type": "database" },
+				{ "id": "openregister", "type": "orAvailable", "severity": "degraded" }
+			]
+		},
+		"metrics": [
+			{
+				"name": "export_jobs_total",
+				"type": "gauge",
+				"help": "Export jobs by lifecycle status",
+				"source": { "kind": "objectCount", "register": "openbuild", "schema": "export-job", "groupBy": ["status"] }
+			},
+			{
+				"name": "applications_total",
+				"type": "gauge",
+				"help": "Virtual applications (one nav entry per published app)",
+				"source": { "kind": "objectCount", "register": "openbuild", "schema": "application" }
+			},
+			{
+				"name": "application_versions_total",
+				"type": "gauge",
+				"help": "Application versions by lifecycle status",
+				"source": { "kind": "objectCount", "register": "openbuild", "schema": "applicationVersion", "groupBy": ["status"] }
+			}
+		]
+	},
+	"deepLinks": [
+		{
+			"registerSlug": "openbuild",
+			"schemaSlug": "example",
+			"urlTemplate": "/apps/openbuild/#/examples/{uuid}",
+			"displayName": "Example"
 		}
 	]
 }

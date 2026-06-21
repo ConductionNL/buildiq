@@ -1,0 +1,143 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/docs",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": true,
+          "path": "/docs",
+          "mainDocId": "intro",
+          "docs": [
+            {
+              "id": "business-rules-engine",
+              "path": "/docs/business-rules-engine",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "export-pipeline",
+              "path": "/docs/export-pipeline",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "integrator-guide",
+              "path": "/docs/integrator-guide",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "intro",
+              "path": "/docs/intro",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "openbuild-rbac",
+              "path": "/docs/openbuild-rbac",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "openbuild-runtime",
+              "path": "/docs/openbuild-runtime",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "releasing",
+              "path": "/docs/releasing",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorials/admin/admin-settings",
+              "path": "/docs/tutorials/admin/admin-settings",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorials/admin/rbac",
+              "path": "/docs/tutorials/admin/rbac",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorials/admin/template-catalogue",
+              "path": "/docs/tutorials/admin/template-catalogue",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorials/create-a-virtual-app",
+              "path": "/docs/tutorials/create-a-virtual-app",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorials/update-a-virtual-app",
+              "path": "/docs/tutorials/update-a-virtual-app",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorials/user/connect-data",
+              "path": "/docs/tutorials/user/connect-data",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorials/user/create-from-template",
+              "path": "/docs/tutorials/user/create-from-template",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorials/user/design-page",
+              "path": "/docs/tutorials/user/design-page",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorials/user/design-schema",
+              "path": "/docs/tutorials/user/design-schema",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorials/user/export-app",
+              "path": "/docs/tutorials/user/export-app",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorials/user/first-launch",
+              "path": "/docs/tutorials/user/first-launch",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorials/user/preview-app",
+              "path": "/docs/tutorials/user/preview-app",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorials/user/version-snapshots",
+              "path": "/docs/tutorials/user/version-snapshots",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "/category/tutorials",
+              "path": "/docs/category/tutorials",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "/category/user-guide",
+              "path": "/docs/category/user-guide",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "/category/admin-guide",
+              "path": "/docs/category/admin-guide",
+              "sidebar": "tutorialSidebar"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "tutorialSidebar": {
+              "link": {
+                "path": "/docs/intro",
+                "label": "intro"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}

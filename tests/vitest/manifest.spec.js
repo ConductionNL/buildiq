@@ -97,10 +97,10 @@ describe('src/manifest.json', () => {
 			}
 			// v2 manifest widgets reference registry components either directly
 			// (`widget.component`), via `widget.props.component` (e.g. the
-			// card-grid widget naming the per-row card), or by `widget.widgetKey`
-			// — CnWidgetGrid's primary lookup, which resolves the key against the
-			// app registry before its built-ins. Scan both page-level `widgets[]`
-			// (v2) and `config.widgets[]` (dashboard) arrays.
+			// card-grid widget naming the per-row card), or — CnWidgetGrid's
+			// primary lookup — via `widget.widgetKey` resolved against the
+			// kind-tagged registry. Scan both page-level `widgets[]` (v2) and
+			// `config.widgets[]` (dashboard) arrays.
 			const widgetArrays = [page.widgets, cfg.widgets]
 			for (const widgets of widgetArrays) {
 				for (const widget of widgets || []) {

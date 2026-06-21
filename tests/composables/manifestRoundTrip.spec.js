@@ -45,6 +45,24 @@ function loadManifest(rel) {
 	return { raw, parsed: JSON.parse(raw) }
 }
 
+// Top-level blocks owned by the OpenRegister AppHost engine (ADR-040), not by
+// the @conduction/nextcloud-vue renderer. The canonical app-manifest schema is
+// `additionalProperties: false` at the root and does not yet describe them
+// (schema lag — upstream nextcloud-vue PR pending). They are consumed
+// server-side by OR's ManifestLoader, so the renderer-shape schema validation
+// below strips them, mirroring scripts/check-manifest.js. The round-trip
+// deep-equal test above keeps them, so a true round-trip is still asserted.
+const ENGINE_OWNED_KEYS = ['observability', 'deepLinks']
+
+function stripEngineBlocks(manifest) {
+	if (!manifest || typeof manifest !== 'object') return manifest
+	const stripped = { ...manifest }
+	for (const key of ENGINE_OWNED_KEYS) {
+		delete stripped[key]
+	}
+	return stripped
+}
+
 function substituteRegisterTokens(manifest) {
 	if (!manifest || !Array.isArray(manifest.pages)) return manifest
 	return {
@@ -87,7 +105,8 @@ describe('manifest round-trip', () => {
 			it('round-tripped manifest still validates against the ADR-024 schema', () => {
 				const { parsed } = loadManifest(target.path)
 				const re = JSON.parse(JSON.stringify(parsed))
-				const candidate = target.substituteTokens ? substituteRegisterTokens(re) : re
+				const tokenised = target.substituteTokens ? substituteRegisterTokens(re) : re
+				const candidate = stripEngineBlocks(tokenised)
 				const validate = validatorFor(candidate)
 				const ok = validate(candidate)
 				if (!ok) {

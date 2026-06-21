@@ -1,0 +1,29 @@
+{
+  "id": "tutorials/admin/rbac",
+  "title": "Manage who can build (RBAC)",
+  "description": "Decide which Nextcloud groups can open the builder, edit virtual apps, publish, and export.",
+  "source": "@site/tutorials/admin/01-rbac.md",
+  "sourceDirName": "tutorials/admin",
+  "slug": "/tutorials/admin/rbac",
+  "permalink": "/docs/tutorials/admin/rbac",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/admin/01-rbac.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Manage who can build (RBAC)",
+    "description": "Decide which Nextcloud groups can open the builder, edit virtual apps, publish, and export."
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Admin guide",
+    "permalink": "/docs/category/admin-guide"
+  },
+  "next": {
+    "title": "Curate the template catalogue",
+    "permalink": "/docs/tutorials/admin/template-catalogue"
+  }
+}

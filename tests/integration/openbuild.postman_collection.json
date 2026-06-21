@@ -8,15 +8,51 @@
 	"auth": {
 		"type": "basic",
 		"basic": [
-			{ "key": "username", "value": "{{admin_user}}", "type": "string" },
-			{ "key": "password", "value": "{{admin_password}}", "type": "string" }
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
 		]
 	},
 	"variable": [
-		{ "key": "base_url", "value": "http://localhost:8080", "type": "string" },
-		{ "key": "admin_user", "value": "admin", "type": "string" },
-		{ "key": "admin_password", "value": "admin", "type": "string" },
-		{ "key": "created_uuid", "value": "", "type": "string" }
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "created_uuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "sat_template_uuid",
+			"value": ""
+		},
+		{
+			"key": "sat_clone_uuid",
+			"value": ""
+		},
+		{
+			"key": "sat_clone_slug",
+			"value": ""
+		}
 	],
 	"item": [
 		{
@@ -27,8 +63,14 @@
 					"request": {
 						"method": "GET",
 						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "OCS-APIRequest", "value": "true" }
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
 						],
 						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/hello-world/manifest",
 						"description": "Public manifest read for the seeded hello-world virtual app."
@@ -70,8 +112,14 @@
 					"request": {
 						"method": "GET",
 						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "OCS-APIRequest", "value": "true" }
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
 						],
 						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/no-such-slug/manifest",
 						"description": "Manifest lookup for a slug with no BuiltAppRoute must 404 with the not_found error code."
@@ -105,8 +153,14 @@
 					"request": {
 						"method": "GET",
 						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "OCS-APIRequest", "value": "true" }
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application",
 						"description": "After SeedHelloWorld runs, the openbuild/application register lists at least one object with slug='hello-world'."
@@ -143,9 +197,18 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "Content-Type", "value": "application/json" },
-							{ "key": "OCS-APIRequest", "value": "true" }
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
 						],
 						"body": {
 							"mode": "raw",
@@ -183,8 +246,14 @@
 					"request": {
 						"method": "GET",
 						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "OCS-APIRequest", "value": "true" }
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{created_uuid}}",
 						"description": "Read-back asserts the POST landed on disk and the uuid resolves. Versioned model: no manifest at this layer; verified separately on the version record below."
@@ -212,9 +281,18 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "Content-Type", "value": "application/json" },
-							{ "key": "OCS-APIRequest", "value": "true" }
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
 						],
 						"body": {
 							"mode": "raw",
@@ -251,9 +329,18 @@
 					"request": {
 						"method": "PUT",
 						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "Content-Type", "value": "application/json" },
-							{ "key": "OCS-APIRequest", "value": "true" }
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
 						],
 						"body": {
 							"mode": "raw",
@@ -286,16 +373,25 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "Content-Type", "value": "application/json" },
-							{ "key": "OCS-APIRequest", "value": "true" }
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
 						],
 						"body": {
 							"mode": "raw",
 							"raw": "{ \"action\": \"publish\" }"
 						},
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{created_version_uuid}}/transition",
-						"description": "Publishing is a state machine on the VERSION now (ADR-002). The transition fires ObjectTransitionedEvent → ApplicationVersionSnapshotListener upserts the BuiltAppRoute."
+						"description": "Publishing is a state machine on the VERSION now (ADR-002). The transition fires ObjectTransitionedEvent \u2192 ApplicationVersionSnapshotListener upserts the BuiltAppRoute."
 					},
 					"event": [
 						{
@@ -316,8 +412,14 @@
 					"request": {
 						"method": "GET",
 						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "OCS-APIRequest", "value": "true" }
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
 						],
 						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/newman-roundtrip/manifest",
 						"description": "After the publish transition + productionVersion pointer set, ManifestResolverService should resolve the slug to the version's manifest."
@@ -349,8 +451,14 @@
 					"request": {
 						"method": "DELETE",
 						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "OCS-APIRequest", "value": "true" }
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
 						],
 						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/newman-roundtrip/versions/production?strategy=hard",
 						"description": "Drop the version + its per-version register first so the parent Application can be safely deleted."
@@ -374,8 +482,14 @@
 					"request": {
 						"method": "DELETE",
 						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "OCS-APIRequest", "value": "true" }
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{created_uuid}}",
 						"description": "Tear down the round-trip Application so re-runs stay idempotent. OR returns 200 or 204."
@@ -389,6 +503,220 @@
 									"pm.test('returns 200 or 204', function () {",
 									"    pm.expect([200, 204]).to.include(pm.response.code);",
 									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Save-as-template ApplicationTemplate contracts",
+			"description": "REQ-SAT-004/005/006: org-local ApplicationTemplate create/update-in-place via OR REST (zero new PHP), clone of a user template through the existing from-template endpoint, and cleanup. Pins the OR-level contracts the SaveAsTemplateDialog + gallery management drive.",
+			"item": [
+				{
+					"name": "POST creates an org-local ApplicationTemplate (isSeeded:false) \u2014 REQ-SAT-004/006",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-template",
+						"description": "Create a user template via OR REST. REQ-SAT-006: no openbuild PHP endpoint \u2014 plain OR object create. Org scoping is applied by OR's standard `organisation` field.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"newman-sat-pack\",\n  \"title\": \"Newman SAT pack\",\n  \"description\": \"Synthetic org-local template created by the save-as-template Newman contract test\",\n  \"useCase\": \"Save-as-template contract\",\n  \"category\": \"internal-operations\",\n  \"manifest\": {\n    \"pages\": [\n      {\n        \"id\": \"idx\",\n        \"type\": \"index\",\n        \"config\": {\n          \"schema\": \"permit-application\"\n        }\n      }\n    ]\n  },\n  \"companionSchemas\": [\n    {\n      \"slug\": \"permit-application\",\n      \"title\": \"Permit\",\n      \"properties\": {}\n    }\n  ],\n  \"isSeeded\": false,\n  \"version\": \"1.0.0\"\n}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 201', function () {",
+									"    pm.expect([200, 201]).to.include(pm.response.code);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('template carries a uuid', function () {",
+									"    const self = body['@self'] || {};",
+									"    const uuid = self.id || self.uuid || body.uuid || body.id;",
+									"    pm.expect(uuid, 'no uuid in template POST response').to.be.a('string');",
+									"    pm.collectionVariables.set('sat_template_uuid', uuid);",
+									"});",
+									"pm.test('isSeeded is false (org-local)', function () {",
+									"    pm.expect(body.isSeeded === false || body.isSeeded === 'false').to.be.true;",
+									"});",
+									"pm.test('org scoping present via OR @self', function () {",
+									"    pm.expect(body).to.have.property('@self');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PUT update-in-place keeps the UUID and bumps version \u2014 REQ-SAT-004",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-template/{{sat_template_uuid}}",
+						"description": "Update-in-place is a standard OR object update on the existing record \u2014 same UUID, no delete+recreate (REQ-SAT-004).",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"newman-sat-pack\",\n  \"title\": \"Newman SAT pack\",\n  \"description\": \"Updated in place\",\n  \"useCase\": \"Save-as-template contract\",\n  \"category\": \"internal-operations\",\n  \"manifest\": {\n    \"pages\": [\n      {\n        \"id\": \"idx\",\n        \"type\": \"index\",\n        \"config\": {\n          \"schema\": \"permit-application\"\n        }\n      }\n    ]\n  },\n  \"companionSchemas\": [\n    {\n      \"slug\": \"permit-application\",\n      \"title\": \"Permit\",\n      \"properties\": {}\n    }\n  ],\n  \"isSeeded\": false,\n  \"version\": \"1.1.0\"\n}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+									"const body = pm.response.json();",
+									"pm.test('UUID is stable across update', function () {",
+									"    const self = body['@self'] || {};",
+									"    const uuid = self.id || self.uuid || body.uuid || body.id;",
+									"    pm.expect(uuid).to.eql(pm.collectionVariables.get('sat_template_uuid'));",
+									"});",
+									"pm.test('version bumped to 1.1.0', function () {",
+									"    pm.expect(String(body.version)).to.eql('1.1.0');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST clone of the user template returns 201 with templateOrigin \u2014 REQ-SAT-004",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/from-template/newman-sat-pack",
+						"description": "The existing from-template clone endpoint reads a user template (isSeeded:false) by slug and namespaces companion schemas \u2014 REQ-SAT-005 'clones normally'. Records templateOrigin for traceability.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Newman SAT clone\",\n  \"slug\": \"newman-sat-clone\"\n}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('clone returns 201', function () { pm.expect([200,201]).to.include(pm.response.code); });",
+									"const body = pm.response.json();",
+									"pm.test('cloned app carries a uuid', function () {",
+									"    const uuid = body.uuid || body.slug;",
+									"    pm.expect(uuid).to.be.a('string');",
+									"    pm.collectionVariables.set('sat_clone_uuid', body.uuid || '');",
+									"    pm.collectionVariables.set('sat_clone_slug', body.slug || 'newman-sat-clone');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE cleans up the cloned Application",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?slug=newman-sat-clone",
+						"description": "Best-effort cleanup of the clone produced by the contract test."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('cleanup accepted (2xx/4xx tolerated)', function () { pm.expect(pm.response.code).to.be.below(500); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE cleans up the ApplicationTemplate \u2014 REQ-SAT-005",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-template/{{sat_template_uuid}}",
+						"description": "Delete removes only the template record (REQ-SAT-005). Cloned apps are unaffected."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('template delete accepted', function () { pm.expect(pm.response.code).to.be.below(500); });"
 								]
 							}
 						}

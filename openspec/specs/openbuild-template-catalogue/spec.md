@@ -22,8 +22,6 @@ content are fully i18n'd (nl/en minimum).
 
 ### Requirement: ApplicationTemplate schema declares the template record contract
 
-@e2e exclude pure-backend schema-validation contract — OR schema-validation rejection of missing `manifest` field and slug-uniqueness enforcement are OR REST + Newman contracts; no Playwright-testable UI surface for schema-level validation responses
-
 The system SHALL declare an `ApplicationTemplate` schema in
 `lib/Settings/openbuild_register.json` under the existing `openbuild`
 register namespace established by chain spec #1. The schema SHALL
@@ -61,6 +59,8 @@ per organisation via OR's standard `organisation` field. No bespoke
 not have a draft/published/archived state machine of their own; they
 are either present or removed.
 
+@e2e exclude pure-backend schema-validation contract — OR schema-validation rejection of missing `manifest` field and slug-uniqueness enforcement are OR REST + Newman contracts; no Playwright-testable UI surface for schema-level validation responses
+
 **ID:** REQ-OBTC-001
 
 #### Scenario: Schema validation rejects a template with no manifest
@@ -79,8 +79,6 @@ are either present or removed.
 - **AND** the first template remains intact
 
 ### Requirement: Four Conduction-curated templates seeded via repair step
-
-@e2e exclude pure-backend repair-step contract — `SeedApplicationTemplates.php` idempotency and four-template seeding are PHPUnit repair-step tests; asserting `isSeeded: true` on OR objects requires OR REST queries covered by Newman; no Playwright-testable UI surface for repair-step internals
 
 The system SHALL seed at minimum four Conduction-curated
 `ApplicationTemplate` records on install via
@@ -111,6 +109,8 @@ The seed repair step SHALL be idempotent: re-running on an
 already-seeded install SHALL produce no duplicates and SHALL be
 guarded by per-template `slug` existence checks (matching the
 `SeedHelloWorld.php` guard pattern).
+
+@e2e exclude pure-backend repair-step contract — `SeedApplicationTemplates.php` idempotency and four-template seeding are PHPUnit repair-step tests; asserting `isSeeded: true` on OR objects requires OR REST queries covered by Newman; no Playwright-testable UI surface for repair-step internals
 
 **ID:** REQ-OBTC-002
 
@@ -168,8 +168,6 @@ CSS variables only (per ADR-010 — no hardcoded colours).
 
 ### Requirement: "Use this template" clones into a new Application
 
-@e2e exclude mixed spec — `POST /api/applications/from-template/{templateSlug}` response 201 with UUID, `templateOrigin.slug/version` fields, slug-collision 4xx, and companion schema namespace are backend OR REST + controller contracts verified by Newman; UI clone flow is covered by the template-catalogue-ui Vitest tests + the template-catalogue Playwright tests
-
 The system SHALL expose `POST
 /index.php/apps/openbuild/api/applications/from-template/{templateSlug}`
 backed by `ApplicationsController::createFromTemplate`. The endpoint
@@ -193,6 +191,8 @@ The route SHALL be registered in `appinfo/routes.php` (ADR-016) with
 `#[NoAdminRequired]`. The controller method is the only new
 PHP code surface in this spec beyond the seed step (≤30 LOC). No
 state-machine or "template service" class is introduced (ADR-031).
+
+@e2e exclude mixed spec — `POST /api/applications/from-template/{templateSlug}` response 201 with UUID, `templateOrigin.slug/version` fields, slug-collision 4xx, and companion schema namespace are backend OR REST + controller contracts verified by Newman; UI clone flow is covered by the template-catalogue-ui Vitest tests + the template-catalogue Playwright tests
 
 **ID:** REQ-OBTC-004
 
@@ -220,8 +220,6 @@ state-machine or "template service" class is introduced (ADR-031).
 
 ### Requirement: Cloned companion schemas are namespaced by Application slug
 
-@e2e exclude pure-backend namespace contract — `my-permits-permit-application` and `vggm-permits-permit-application` slug prefixing and manifest page-config reference rewrite are backend clone-controller contracts verified by Newman; no Playwright-testable UI surface for companion schema slug values
-
 When a template clone runs, the system SHALL prefix every cloned
 companion-schema `slug` with the new Application's slug joined by a
 hyphen. For example, cloning `permit-tracker` (which carries a
@@ -234,6 +232,8 @@ that the new Application loads correctly without manual edits.
 This avoids slug collisions when multiple Applications are cloned from
 the same template into the same organisation, and keeps the original
 template's companion schemas untouched.
+
+@e2e exclude pure-backend namespace contract — `my-permits-permit-application` and `vggm-permits-permit-application` slug prefixing and manifest page-config reference rewrite are backend clone-controller contracts verified by Newman; no Playwright-testable UI surface for companion schema slug values
 
 **ID:** REQ-OBTC-005
 
@@ -274,8 +274,6 @@ flow.
 
 ### Requirement: Template clones are one-shot snapshots
 
-@e2e exclude pure-backend immutability contract — verifying that a subsequent template manifest update does NOT propagate into previously cloned Applications requires two-step OR REST mutation + assertion; covered by Newman; no Playwright-testable UI surface for snapshot immutability
-
 A cloned Application SHALL be a fully independent record from the
 source template. The system SHALL NOT propagate later changes to a
 template back into Applications previously cloned from it. The
@@ -285,6 +283,8 @@ template's `version` SHALL be recorded on the new Application under
 
 This decision is documented in `design.md` (Decision 5 — Versioning)
 and is explicitly deferred to a future versioning spec.
+
+@e2e exclude pure-backend immutability contract — verifying that a subsequent template manifest update does NOT propagate into previously cloned Applications requires two-step OR REST mutation + assertion; covered by Newman; no Playwright-testable UI surface for snapshot immutability
 
 **ID:** REQ-OBTC-007
 
@@ -324,8 +324,6 @@ flow lives in a separate change.
 
 ### Requirement: Template manifests validate against the canonical app-manifest schema
 
-@e2e exclude pure-backend repair-step validation contract — `validateManifest` failure causing `occ maintenance:repair` to exit non-zero is a PHP CLI contract verified by PHPUnit; no Playwright-testable UI surface for repair-step validation failure
-
 Every seeded template's `manifest` blob SHALL validate against the
 canonical `app-manifest.schema.json` pinned in `package.json`
 (ADR-024). The repair step SHALL run `validateManifest` against each
@@ -334,6 +332,8 @@ the repair step loudly (rather than seeding a broken template).
 Cloned manifests (REQ-OBTC-004) inherit this guarantee transitively
 because they are byte-for-byte copies modulo the schema-slug rewrite
 in REQ-OBTC-005.
+
+@e2e exclude pure-backend repair-step validation contract — `validateManifest` failure causing `occ maintenance:repair` to exit non-zero is a PHP CLI contract verified by PHPUnit; no Playwright-testable UI surface for repair-step validation failure
 
 **ID:** REQ-OBTC-009
 
@@ -348,8 +348,6 @@ in REQ-OBTC-005.
 
 ### Requirement: i18n keys for gallery and seeded templates
 
-@e2e exclude locale-dependent spec — verifying Dutch gallery copy requires the test runner's locale to be `nl` and the `l10n/nl.json` translations to be shipped; locale simulation via Playwright requires browser context config not set up for this test suite; covered by i18n-spec Vitest tests
-
 The system SHALL ensure every user-visible string in the gallery view
 (gallery section title, filter labels, category labels, "Use this
 template" button label, empty-state copy) uses i18n keys under the
@@ -358,6 +356,8 @@ template" button label, empty-state copy) uses i18n keys under the
 i18n keys (preferred) or as English strings with Dutch translations
 shipped in `l10n/nl.json` so the gallery is bilingual on install
 (per the project-wide nl/en minimum).
+
+@e2e exclude locale-dependent spec — verifying Dutch gallery copy requires the test runner's locale to be `nl` and the `l10n/nl.json` translations to be shipped; locale simulation via Playwright requires browser context config not set up for this test suite; covered by i18n-spec Vitest tests
 
 **ID:** REQ-OBTC-010
 

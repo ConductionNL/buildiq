@@ -176,6 +176,26 @@ class PermissionResolver
     }//end resolveUserGroups()
 
     /**
+     * Whether the caller is a Nextcloud administrator.
+     *
+     * Exposed so guards can grant the audited NC-admin escape hatch in the
+     * degenerate case where no `permissions` block exists to feed
+     * {@see matchesCaller()} (which short-circuits on an empty block before its
+     * own admin bypass can run). Uses the SAME `IGroupManager::isAdmin()` check
+     * that {@see matchesCaller()}'s `allowAdminBypass` path trusts, so the admin
+     * grammar stays in one place.
+     *
+     * @param IUser $caller The authenticated caller.
+     *
+     * @return bool True when the caller belongs to the NC `admin` group.
+     */
+    public function isAdmin(IUser $caller): bool
+    {
+        return $this->groupManager->isAdmin($caller->getUID());
+
+    }//end isAdmin()
+
+    /**
      * Classify a single principal string into the UID or GID accumulator maps.
      *
      * Canonical forms:

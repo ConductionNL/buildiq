@@ -54,13 +54,37 @@ import {
 	E2E_PREFIX,
 } from './fixtures'
 
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
+const authHeaders = {
+	'OCS-APIRequest': 'true',
+	Authorization: 'Basic ' + Buffer.from(
+		`${process.env.NC_ADMIN_USER ?? 'admin'}:${process.env.NC_ADMIN_PASSWORD ?? 'admin'}`,
+	).toString('base64'),
+}
+
+/** Resolve a virtual-app uuid by its slug via the OR objects API. */
+async function appUuidBySlug(
+	request: import('@playwright/test').APIRequestContext,
+	slug: string,
+): Promise<string> {
+	const res = await request.get(
+		`${BASE_URL}/index.php/apps/openregister/api/objects/openbuild/application?_limit=200`,
+		{ headers: authHeaders },
+	)
+	const body = await res.json()
+	const rows: Array<Record<string, unknown>> = Array.isArray(body) ? body : (body.results ?? [])
+	const match = rows.find((r) => r.slug === slug)
+	return String(match?.id ?? match?.['@self']?.['id'] ?? '')
+}
+
 async function gotoAppBrowser(page: Page): Promise<void> {
-	await page.goto('/index.php/apps/openbuild/')
-	await page.waitForTimeout(1200)
-	await page.getByRole('link', { name: /^schemas$/i }).first().click()
+	// The app router runs in hash mode; the virtual-app list (with the
+	// "Add application" action) lives on the applications route, not Schemas.
+	// Deep-link via the hash so the SPA mounts the applications index directly.
+	await page.goto('/index.php/apps/openbuild/#/applications')
 	await page
 		.waitForResponse(
-			(r) => r.url().includes('/objects/openbuild/application?') && r.status() === 200,
+			(r) => r.url().includes('/objects/openbuild/application') && r.status() === 200,
 			{ timeout: 20_000 },
 		)
 		.catch(() => { /* possibly cached */ })
@@ -73,30 +97,46 @@ test.describe('Build workflow — compose a virtual app with a data model', () =
 	})
 
 	test('create app via UI + add a 2-property schema → both persist as real artifacts', async ({ page, request }) => {
-		const appSlug = `${E2E_PREFIX}-build-${Math.floor(Math.random() * 1e4)}`
-		const appName = `E2E Build ${appSlug}`
+		const appName = `${E2E_PREFIX} Build ${Math.floor(Math.random() * 1e4)}`
+		// Slug is auto-derived (kebab-case) from the name by the create wizard.
+		const appSlug = appName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
-		// --- Step 1: create the virtual app through the real UI create modal ---
+		// --- Step 1: create the virtual app through the real UI create wizard ---
+		// 3-step wizard: App basics (name, slug auto-derives) → version preset
+		// → review and create (POSTs /api/applications/wizard).
 		await gotoAppBrowser(page)
 		await page.getByRole('button', { name: /add application/i }).first().click()
 		const dialog = page.locator('[role="dialog"], .modal-container').first()
 		await expect(dialog).toBeVisible({ timeout: 8_000 })
-		await dialog.locator('input[placeholder*="Human-readable name" i]').first().fill(appName)
-		await dialog.locator('input[placeholder*="Kebab-case slug" i]').first().fill(appSlug)
 
+		const nameInput = dialog.locator('input[placeholder*="My Permit Tracker" i]').first()
+		await expect(nameInput).toBeVisible({ timeout: 8_000 })
+		await nameInput.fill(appName)
+		await dialog.getByRole('button', { name: /^next$/i }).click()
+
+		await expect(dialog.getByText(/choose a version preset/i)).toBeVisible({ timeout: 8_000 })
+		await dialog.getByRole('button', { name: /Single/i }).first().click()
+		await dialog.getByRole('button', { name: /^next$/i }).click()
+
+		await expect(dialog.getByText(/review and create/i)).toBeVisible({ timeout: 8_000 })
 		const createPost = page.waitForResponse(
-			(r) => r.url().includes('/objects/openbuild/application') && r.request().method() === 'POST',
-			{ timeout: 15_000 },
+			(r) => r.url().includes('/api/applications/wizard') && r.request().method() === 'POST',
+			{ timeout: 20_000 },
 		)
 		await dialog.getByRole('button', { name: /^create$/i }).click()
 		const createResp = await createPost
-		expect(createResp.status(), 'app create must persist (201)').toBe(201)
-		const appUuid = String((await createResp.json()).id ?? '')
-		expect(appUuid).not.toBe('')
+		expect([200, 201]).toContain(createResp.status())
 
-		// The app is a real, independently-readable artifact.
-		const persistedApp = await findVirtualApp(request, appUuid)
-		expect(persistedApp?.slug).toBe(appSlug)
+		// The app is a real, independently-readable artifact (resolve by slug).
+		await expect.poll(async () => {
+			const res = await request.get(
+				`${BASE_URL}/index.php/apps/openregister/api/objects/openbuild/application?_limit=200`,
+				{ headers: authHeaders },
+			)
+			const body = await res.json()
+			const rows: Array<Record<string, unknown>> = Array.isArray(body) ? body : (body.results ?? [])
+			return rows.some((r) => r.slug === appSlug)
+		}, { timeout: 15_000 }).toBe(true)
 
 		// --- Step 2: give the app a data model — a schema with 2 typed fields ---
 		const schemaSlug = `${E2E_PREFIX}-build-model-${Math.floor(Math.random() * 1e4)}`
@@ -119,7 +159,10 @@ test.describe('Build workflow — compose a virtual app with a data model', () =
 
 		// --- Cleanup the building blocks we created ---
 		await deleteSchema(request, schema.id)
-		await deleteVirtualApp(request, appUuid)
+		const appUuid = await appUuidBySlug(request, appSlug)
+		if (appUuid) {
+			await deleteVirtualApp(request, appUuid)
+		}
 	})
 
 	test('seeded app data model survives an independent read-back (composability)', async ({ request }) => {

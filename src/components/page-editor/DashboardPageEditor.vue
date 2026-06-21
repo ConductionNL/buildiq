@@ -9,6 +9,10 @@
 			{{ t('openbuild', 'Dashboard page') }}
 		</h3>
 
+		<DataSourceOriginToggle
+			:data-source="config.dataSource || {}"
+			@update:dataSource="onDataSourceUpdate" />
+
 		<fieldset class="dashboard-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Widgets') }}</legend>
 			<WidgetBuilder
@@ -31,11 +35,12 @@
 import WidgetBuilder from './fields/WidgetBuilder.vue'
 import LayoutItemBuilder from './fields/LayoutItemBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import DataSourceOriginToggle from './DataSourceOriginToggle.vue'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'DashboardPageEditor',
-	components: { WidgetBuilder, LayoutItemBuilder, InlineFieldMark },
+	components: { WidgetBuilder, LayoutItemBuilder, InlineFieldMark, DataSourceOriginToggle },
 	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
@@ -78,6 +83,22 @@ export default {
 				delete next[key]
 			} else {
 				next[key] = value
+			}
+			this.$emit('update:config', next)
+		},
+		/**
+		 * Persist a `dataSource` change from the origin toggle onto the
+		 * dashboard config (REQ-OCAS-002).
+		 *
+		 * @param {object} dataSource - the updated dataSource object.
+		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.2
+		 */
+		onDataSourceUpdate(dataSource) {
+			const next = { ...this.config }
+			if (!dataSource || Object.keys(dataSource).length === 0) {
+				delete next.dataSource
+			} else {
+				next.dataSource = dataSource
 			}
 			this.$emit('update:config', next)
 		},
