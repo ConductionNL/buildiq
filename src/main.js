@@ -113,7 +113,13 @@ function routesFromManifest(manifest) {
 }
 
 const router = new VueRouter({
-	mode: 'hash',
+	// History mode (clean path URLs + working deep-links e.g.
+	// /apps/openbuild/applications/{id}). This relies on the AppHost engine's
+	// SPA catch-all (\OCA\OpenRegister\AppHost\Routes::standard adds
+	// dashboard#catchAll for `/{path}`) serving the SPA index on any sub-path —
+	// without it, history-mode deep-links 404 at the server (the reason the app
+	// previously fell back to hash mode, fleet #133).
+	mode: 'history',
 	base: generateUrl('/apps/openbuild'),
 	routes: routesFromManifest(mergedManifest),
 })
