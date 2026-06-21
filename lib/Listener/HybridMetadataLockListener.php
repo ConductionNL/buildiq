@@ -59,11 +59,18 @@ use Psr\Log\LoggerInterface;
 class HybridMetadataLockListener implements IEventListener
 {
     /**
-     * The identity-metadata fields that are immutable on a hybrid app.
+     * The identity / structural fields that are immutable on a HYBRID app.
+     *
+     * A hybrid app mirrors the installed Nextcloud app it customizes: its
+     * identity (slug/name/description) is the fleet app's, and its
+     * productionVersion is the admin-managed delta version — none of which a
+     * user (or admin) may overwrite from the generic object editor. `appType`
+     * is handled separately because it is immutable for EVERY app, not just
+     * hybrids (layered-versioned-app-deltas).
      *
      * @var array<int, string>
      */
-    private const LOCKED_FIELDS = ['slug', 'name'];
+    private const LOCKED_FIELDS = ['slug', 'name', 'description', 'productionVersion'];
 
     /**
      * Constructor.
@@ -107,12 +114,29 @@ class HybridMetadataLockListener implements IEventListener
         $old = $this->extractObjectData(entity: $oldEntity);
         $new = $this->extractObjectData(entity: $newEntity);
 
-        // Scope to OpenBuild hybrid Applications via the `appType` discriminator
-        // — the only schema in the fleet that carries it. (Matching on the
-        // schema slug is unreliable: OR's ObjectEntity exposes the schema as a
-        // numeric id in @self.schema, e.g. '28', not the 'application' slug.)
-        // The lock is keyed on the STORED appType, so a virtual app keeps full
-        // edit of slug/name; an absent appType reads as virtual (legacy default).
+        // `appType` is immutable for EVERY Application (virtual or hybrid) once
+        // created — flipping the discriminator would desync the entire
+        // delta/baseRef model (a virtual app owns a full manifest; a hybrid app
+        // layers a delta over a fleet app). This runs before the hybrid gate so
+        // it also blocks a virtual→hybrid (or hybrid→virtual) flip.
+        if (array_key_exists('appType', $new) === true
+            && ($new['appType'] ?? null) !== ($old['appType'] ?? null)
+        ) {
+            $this->reject(
+                event: $event,
+                field: 'appType',
+                message: 'An app\'s type is immutable once created.',
+                old: $old
+            );
+            return;
+        }
+
+        // Identity / structural lock — HYBRID apps only, via the `appType`
+        // discriminator (the only schema in the fleet that carries it; matching
+        // on the schema slug is unreliable because OR exposes the schema as a
+        // numeric id in @self.schema). Keyed on the STORED appType, so a virtual
+        // app keeps full edit of slug/name/description/productionVersion; an
+        // absent appType reads as virtual (legacy default).
         if (($old['appType'] ?? 'virtual') !== 'hybrid') {
             return;
         }
@@ -122,11 +146,29 @@ class HybridMetadataLockListener implements IEventListener
             return;
         }
 
-        $message = sprintf(
-            'A hybrid app\'s %s is read-only — it mirrors the installed Nextcloud app it customizes.',
-            $changed
+        $this->reject(
+            event: $event,
+            field: $changed,
+            message: sprintf(
+                'A hybrid app\'s %s is read-only — it mirrors the installed Nextcloud app it customizes.',
+                $changed
+            ),
+            old: $old
         );
+    }//end handle()
 
+    /**
+     * Stop the save and attach a 422 error describing the locked field.
+     *
+     * @param Event                $event   The dispatched update event.
+     * @param string               $field   The locked field that was changed.
+     * @param string               $message The human-readable rejection message.
+     * @param array<string, mixed> $old     The stored object payload (for the log context).
+     *
+     * @return void
+     */
+    private function reject(Event $event, string $field, string $message, array $old): void
+    {
         $event->stopPropagation();
         if (method_exists($event, 'setErrors') === true) {
             $event->setErrors(
@@ -141,12 +183,12 @@ class HybridMetadataLockListener implements IEventListener
         $this->logger->info(
             message: 'OpenBuild: blocked Application update — hybrid metadata-lock rejected the change.',
             context: [
-                'field'  => $changed,
+                'field'  => $field,
                 'slug'   => ($old['slug'] ?? null),
                 'reason' => $message,
             ]
         );
-    }//end handle()
+    }//end reject()
 
     /**
      * Return the first locked field whose value differs between old and new,

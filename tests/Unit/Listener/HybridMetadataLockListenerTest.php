@@ -99,15 +99,16 @@ class HybridMetadataLockListenerTest extends TestCase
     }//end testRejectsNameChangeOnHybrid()
 
     /**
-     * A content-only edit on a hybrid app (slug/name unchanged) is allowed.
+     * A non-identity edit on a hybrid app (e.g. toggling allowUserOverrides) is
+     * allowed — only slug/name/description/productionVersion/appType are locked.
      *
      * @return void
      */
     public function testAllowsContentEditOnHybrid(): void
     {
         $event = $this->updateEvent(
-            old: ['appType' => 'hybrid', 'slug' => 'opencatalogi', 'name' => 'OpenCatalogi'],
-            new: ['appType' => 'hybrid', 'slug' => 'opencatalogi', 'name' => 'OpenCatalogi', 'productionVersion' => 'ver-2']
+            old: ['appType' => 'hybrid', 'slug' => 'opencatalogi', 'name' => 'OpenCatalogi', 'allowUserOverrides' => false],
+            new: ['appType' => 'hybrid', 'slug' => 'opencatalogi', 'name' => 'OpenCatalogi', 'allowUserOverrides' => true]
         );
 
         $this->listener->handle($event);
@@ -115,6 +116,60 @@ class HybridMetadataLockListenerTest extends TestCase
         self::assertFalse($event->isPropagationStopped());
 
     }//end testAllowsContentEditOnHybrid()
+
+    /**
+     * A hybrid app's description is read-only (layered-versioned-app-deltas).
+     *
+     * @return void
+     */
+    public function testRejectsDescriptionChangeOnHybrid(): void
+    {
+        $event = $this->updateEvent(
+            old: ['appType' => 'hybrid', 'slug' => 'pipelinq', 'name' => 'Pipelinq', 'description' => 'A'],
+            new: ['appType' => 'hybrid', 'slug' => 'pipelinq', 'name' => 'Pipelinq', 'description' => 'B']
+        );
+
+        $this->listener->handle($event);
+
+        self::assertTrue($event->isPropagationStopped());
+
+    }//end testRejectsDescriptionChangeOnHybrid()
+
+    /**
+     * A hybrid app's productionVersion is read-only (it is the admin delta).
+     *
+     * @return void
+     */
+    public function testRejectsProductionVersionChangeOnHybrid(): void
+    {
+        $event = $this->updateEvent(
+            old: ['appType' => 'hybrid', 'slug' => 'pipelinq', 'name' => 'Pipelinq', 'productionVersion' => 'ver-1'],
+            new: ['appType' => 'hybrid', 'slug' => 'pipelinq', 'name' => 'Pipelinq', 'productionVersion' => 'ver-2']
+        );
+
+        $this->listener->handle($event);
+
+        self::assertTrue($event->isPropagationStopped());
+
+    }//end testRejectsProductionVersionChangeOnHybrid()
+
+    /**
+     * appType is immutable for EVERY app — a virtual→hybrid flip is rejected.
+     *
+     * @return void
+     */
+    public function testRejectsAppTypeChangeOnVirtual(): void
+    {
+        $event = $this->updateEvent(
+            old: ['appType' => 'virtual', 'slug' => 'my-app', 'name' => 'My App'],
+            new: ['appType' => 'hybrid', 'slug' => 'my-app', 'name' => 'My App']
+        );
+
+        $this->listener->handle($event);
+
+        self::assertTrue($event->isPropagationStopped());
+
+    }//end testRejectsAppTypeChangeOnVirtual()
 
     /**
      * A virtual app keeps full edit of slug/name.

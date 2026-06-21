@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenBuild Register",
     "description": "Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.",
-    "version": "0.6.0"
+    "version": "0.7.0"
   },
   "x-openregister": {
     "type": "application",
@@ -17,7 +17,7 @@
       "Application": {
         "slug": "application",
         "icon": "AppsBoxOutline",
-        "version": "0.4.0",
+        "version": "0.5.0",
         "title": "Application",
         "description": "An app built or customized with OpenBuild (unify-apps-with-app-type). The `appType` discriminator distinguishes a `virtual` app (fully delivered by OpenBuild) from a `hybrid` app (a delta layered over an installed Nextcloud fleet app, linked via `baseRef`). Per ADR-002 the Application carries identity (slug, name, description, appType, baseRef, permissions) plus a productionVersion relation to the ApplicationVersion currently exposed at the canonical URL. Manifest, semver, and lifecycle live on ApplicationVersion. For a hybrid app the identity metadata (slug/name) mirrors the underlying NC app and is read-only after creation (enforced by HybridMetadataLockListener).",
         "authorization": {
@@ -36,15 +36,18 @@
             "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
             "minLength": 2,
             "maxLength": 48,
-            "description": "Kebab-case slug; uniquely identifies the virtual app within its organisation. Drives the runtime path /builder/{slug}/*. Max 48 chars so the synthetic appId `openbuild-{slug}` fits NC appId caps (per design.md OQ-4)."
+            "x-openregister-readonly-when": { "field": "appType", "equals": "hybrid" },
+            "description": "Kebab-case slug; uniquely identifies the virtual app within its organisation. Drives the runtime path /builder/{slug}/*. Max 48 chars so the synthetic appId `openbuild-{slug}` fits NC appId caps (per design.md OQ-4). READ-ONLY on a hybrid app (it mirrors the installed Nextcloud app it customizes) — enforced by HybridMetadataLockListener + the abstract data widget's x-openregister-readonly-when honouring."
           },
           "name": {
             "type": "string",
-            "description": "Human-readable name displayed in the OpenBuild shell."
+            "x-openregister-readonly-when": { "field": "appType", "equals": "hybrid" },
+            "description": "Human-readable name displayed in the OpenBuild shell. READ-ONLY on a hybrid app (mirrors the installed app) — enforced server-side + reflected by the data widget."
           },
           "description": {
             "type": "string",
-            "description": "Optional long-form description of the app."
+            "x-openregister-readonly-when": { "field": "appType", "equals": "hybrid" },
+            "description": "Optional long-form description of the app. READ-ONLY on a hybrid app (mirrors the installed app) — enforced server-side + reflected by the data widget."
           },
           "appType": {
             "type": "string",
@@ -53,7 +56,8 @@
               "hybrid"
             ],
             "default": "virtual",
-            "description": "The unified-app discriminator (unify-apps-with-app-type). `virtual` = an app fully delivered by OpenBuild (its ApplicationVersion manifest is built from scratch or from a template). `hybrid` = an app that customizes an already-installed Nextcloud fleet app (opencatalogi, pipelinq, …) — its ApplicationVersion carries a delta-only manifest layered over that fleet app's bundled manifest, served raw via GET /api/app-overrides/{appId} and merged client-side. An Application with no `appType` is treated as `virtual` on read (legacy default). Purely declarative — the Apps-list filter and the Virtual/Hybrid badge read this field directly (no Service)."
+            "readOnly": true,
+            "description": "IMMUTABLE once created (layered-versioned-app-deltas) — enforced server-side by HybridMetadataLockListener and rendered read-only by the abstract object data widget (CnObjectDataWidget honours `readOnly`). The unified-app discriminator (unify-apps-with-app-type). `virtual` = an app fully delivered by OpenBuild (its ApplicationVersion manifest is built from scratch or from a template). `hybrid` = an app that customizes an already-installed Nextcloud fleet app (opencatalogi, pipelinq, …) — its ApplicationVersion carries a delta-only manifest layered over that fleet app's bundled manifest, served raw via GET /api/app-overrides/{appId} and merged client-side. An Application with no `appType` is treated as `virtual` on read (legacy default). Purely declarative — the Apps-list filter and the Virtual/Hybrid badge read this field directly (no Service)."
           },
           "baseRef": {
             "type": "object",
@@ -77,7 +81,8 @@
           "productionVersion": {
             "type": "string",
             "format": "uuid",
-            "description": "Relation → ApplicationVersion currently exposed at the canonical /apps/openbuild/{slug} URL. Set explicitly by the admin (creation wizard, detail-page version switcher), not derived from chain terminality. The referenced ApplicationVersion's `application` relation MUST point back at this Application — enforced server-side by ApplicationVersionService::guardProductionVersionOwnership() (ADR-031 §Exceptions(1) cross-row guard).",
+            "x-openregister-readonly-when": { "field": "appType", "equals": "hybrid" },
+            "description": "Relation → ApplicationVersion currently exposed at the canonical /apps/openbuild/{slug} URL. READ-ONLY on a hybrid app (its production version is the admin-managed shared delta) — enforced server-side + reflected by the data widget. Set explicitly by the admin (creation wizard, detail-page version switcher), not derived from chain terminality. The referenced ApplicationVersion's `application` relation MUST point back at this Application — enforced server-side by ApplicationVersionService::guardProductionVersionOwnership() (ADR-031 §Exceptions(1) cross-row guard).",
             "x-openregister-relation": {
               "target": "openbuild/applicationVersion",
               "type": "many-to-one"
