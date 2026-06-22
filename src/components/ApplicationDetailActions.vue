@@ -13,11 +13,17 @@
 <template>
 	<div class="ob-detail-actions">
 		<NcButton
-			v-if="obAppRole === 'owner'"
+			v-if="obAppRole === 'owner' && obApp && obApp.status !== 'published'"
 			type="primary"
-			:disabled="!canPublish || publishing"
-			@click="publish">
+			:disabled="!obApp || publishing"
+			@click="setPublished(true)">
 			{{ publishing ? t('openbuild', 'Publishing…') : t('openbuild', 'Publish') }}
+		</NcButton>
+		<NcButton
+			v-if="obAppRole === 'owner' && obApp && obApp.status === 'published'"
+			:disabled="publishing"
+			@click="setPublished(false)">
+			{{ publishing ? t('openbuild', 'Unpublishing…') : t('openbuild', 'Unpublish') }}
 		</NcButton>
 		<NcButton
 			v-if="obAppRole === 'owner'"
@@ -113,14 +119,6 @@ export default {
 	},
 	computed: {
 		/**
-		 * Observed behaviour of `canPublish` (retrofit annotation).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
-		 */
-		canPublish() {
-			return !!this.obApp && (this.obApp.status === 'draft' || this.obApp.status === 'published')
-		},
-		/**
 		 * Observed behaviour of `builderUrl` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
@@ -159,11 +157,15 @@ export default {
 	},
 	methods: {
 		/**
-		 * Observed behaviour of `publish` (retrofit annotation).
+		 * Publish or unpublish the Application. Publishing flips
+		 * Application.status → published, which makes AppNavigationService list
+		 * the app in the Nextcloud top-bar menu; unpublishing reverts to draft
+		 * and removes it. Owner-only (enforced again server-side).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 * @param {boolean} shouldPublish True to publish, false to unpublish.
+		 * @return {Promise<void>}
 		 */
-		async publish() {
+		async setPublished(shouldPublish) {
 			if (this.obAppRole !== 'owner' || !this.obApp || this.publishing) {
 				return
 			}
@@ -171,17 +173,18 @@ export default {
 			this.toast = ''
 			this.error = ''
 			try {
-				// OR's lifecycle transition endpoint — fires ObjectTransitionedEvent,
-				// which ApplicationVersionSnapshotListener consumes to snapshot the
-				// manifest into ApplicationVersion and bump currentVersion + create
-				// the BuiltAppRoute.
-				const url = generateUrl(`/apps/openregister/api/objects/openbuild/application/${this.obAppUuid}/transition/publish`)
-				const { data } = await axios.post(url, {})
+				const action = shouldPublish ? 'publish' : 'unpublish'
+				const url = generateUrl(`/apps/openbuild/api/applications/${this.obAppUuid}/${action}`)
+				await axios.post(url, {})
 				await this.obLoadApp()
-				const v = (data && (data.currentVersion || data.uuid)) || (this.obApp && this.obApp.currentVersion) || ''
-				this.toast = t('openbuild', 'Published version {uuid}', { uuid: v ? String(v).slice(0, 8) + '…' : '' })
+				this.toast = shouldPublish
+					? t('openbuild', 'App published — it now appears in the app menu.')
+					: t('openbuild', 'App unpublished — removed from the app menu.')
 			} catch (e) {
-				this.error = `${t('openbuild', 'Publish failed')}: ${e.message || e}`
+				const detail = (e.response && e.response.data && e.response.data.detail) || e.message || e
+				this.error = shouldPublish
+					? `${t('openbuild', 'Publish failed')}: ${detail}`
+					: `${t('openbuild', 'Unpublish failed')}: ${detail}`
 			} finally {
 				this.publishing = false
 			}
