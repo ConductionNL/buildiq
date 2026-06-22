@@ -82,17 +82,36 @@
 			</div>
 		</template>
 
-		<!-- Recent apps table (full width, borderless — the widget card frames it) -->
+		<!-- Recent apps table — edge-to-edge inside the widget card (the wrapper's
+		     padding is bled away by .ob-recent-apps) with a per-row Edit action
+		     that opens the app detail page. The whole row is clickable too. -->
 		<template #widget-recent-apps>
 			<NcEmptyContent
 				v-if="!loading && recentApps.length === 0"
 				:name="t('openbuild', 'No apps yet')"
 				:description="t('openbuild', 'Create your first app to get started.')" />
-			<CnTableWidget
-				v-else
-				:rows="recentApps"
-				:columns="recentColumns"
-				borderless />
+			<div v-else class="ob-recent-apps">
+				<CnDataTable
+					:rows="recentApps"
+					:columns="recentColumns"
+					:loading="false"
+					:selectable="false"
+					@row-click="goToApp">
+					<template #actions-header>
+						{{ t('openbuild', 'Edit') }}
+					</template>
+					<template #row-actions="{ row }">
+						<NcButton
+							type="tertiary"
+							:aria-label="t('openbuild', 'Open {name}', { name: row.name || row.slug })"
+							@click="goToApp(row)">
+							<template #icon>
+								<PencilOutline :size="20" />
+							</template>
+						</NcButton>
+					</template>
+				</CnDataTable>
+			</div>
 		</template>
 
 		<CreateApplicationWizard :show.sync="showWizard" @created="onAppCreated" />
@@ -103,10 +122,11 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent } from '@nextcloud/vue'
-import { CnDashboardPage, CnStatsBlock, CnTableWidget } from '@conduction/nextcloud-vue'
+import { CnDashboardPage, CnStatsBlock, CnDataTable } from '@conduction/nextcloud-vue'
 import ShapeOutline from 'vue-material-design-icons/ShapeOutline.vue'
 import PuzzleOutline from 'vue-material-design-icons/PuzzleOutline.vue'
 import History from 'vue-material-design-icons/History.vue'
+import PencilOutline from 'vue-material-design-icons/PencilOutline.vue'
 import CreateApplicationWizard from '../dialogs/CreateApplicationWizard.vue'
 
 export default {
@@ -115,7 +135,8 @@ export default {
 	components: {
 		CnDashboardPage,
 		CnStatsBlock,
-		CnTableWidget,
+		CnDataTable,
+		PencilOutline,
 		CreateApplicationWizard,
 		NcButton,
 		NcEmptyContent,
@@ -279,6 +300,19 @@ export default {
 				this.$router.push({ name }).catch(() => {})
 			}
 		},
+
+		/**
+		 * Open a Recent-apps row's detail page (row click or the Edit action).
+		 *
+		 * @param {object} row The application row (carries the OR `@self` envelope).
+		 * @return {void}
+		 */
+		goToApp(row) {
+			const uuid = (row && ((row['@self'] && row['@self'].id) || row.uuid || row.id)) || ''
+			if (this.$router && uuid) {
+				this.$router.push({ name: 'VirtualAppDetail', params: { objectId: uuid } }).catch(() => {})
+			}
+		},
 	},
 }
 </script>
@@ -298,5 +332,19 @@ export default {
 .ob-kpi-link:focus-visible {
 	outline: 2px solid var(--color-primary-element);
 	outline-offset: -2px;
+}
+
+/* Recent apps: bleed past the CnWidgetWrapper's 16px content padding so the
+   table sits edge-to-edge with the widget card, and flatten the inner table
+   container's border/radius so there is no card-in-card frame. */
+.ob-recent-apps {
+	margin: -16px;
+}
+
+.ob-recent-apps :deep(.cn-table-container) {
+	border: none;
+	border-radius: 0;
+	box-shadow: none;
+	background: transparent;
 }
 </style>
