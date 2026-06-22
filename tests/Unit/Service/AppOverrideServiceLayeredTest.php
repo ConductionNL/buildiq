@@ -189,4 +189,56 @@ class AppOverrideServiceLayeredTest extends TestCase
             actual: $record['manifestDelta']
         );
     }//end testAdminOnlyWhenAnonymous()
+
+    /**
+     * listUserDeltas returns every user-scoped row for the app (maintainer view),
+     * scoped to the app's UUID, as owner+version summaries (not delta bodies).
+     *
+     * @return void
+     */
+    public function testListUserDeltasReturnsAllForApp(): void
+    {
+        $this->arrange(
+            allowUserOverrides: true,
+            userDelta: [
+                'id'            => 'user-uuid',
+                'scope'         => 'user',
+                'owner'         => 'alice',
+                'application'   => 'app-A',
+                'semver'        => '0.1.0',
+                'status'        => 'draft',
+                'manifestDelta' => ['pages' => ['dashboard' => ['subtitle' => 'Mine']]],
+            ]
+        );
+
+        $list = $this->service->listUserDeltas(appId: 'demo');
+
+        self::assertCount(expectedCount: 1, haystack: $list);
+        self::assertSame(expected: 'alice', actual: $list[0]['owner']);
+        self::assertSame(expected: 'user-uuid', actual: $list[0]['versionUuid']);
+        // Summary only — the private delta body is never exposed.
+        self::assertArrayNotHasKey(key: 'manifestDelta', array: $list[0]);
+    }//end testListUserDeltasReturnsAllForApp()
+
+    /**
+     * listUserDeltas excludes user rows belonging to a different application.
+     *
+     * @return void
+     */
+    public function testListUserDeltasExcludesOtherApps(): void
+    {
+        $this->arrange(
+            allowUserOverrides: true,
+            userDelta: [
+                'id'          => 'foreign-uuid',
+                'scope'       => 'user',
+                'owner'       => 'bob',
+                'application' => 'app-OTHER',
+            ]
+        );
+
+        $list = $this->service->listUserDeltas(appId: 'demo');
+
+        self::assertSame(expected: [], actual: $list);
+    }//end testListUserDeltasExcludesOtherApps()
 }//end class

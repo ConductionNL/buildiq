@@ -89,6 +89,37 @@
 			</article>
 		</section>
 
+		<!-- All user overrides (maintainer view). Visible only to an owner/editor
+		     of the app (or an admin); the endpoint 403s otherwise and the section
+		     stays hidden. Lists every user's personal delta — who has one — not
+		     the private delta bodies. -->
+		<section v-if="canViewUserOverrides" class="ob-manifest-detail__overrides">
+			<header class="ob-manifest-detail__overrides-header">
+				<h3>{{ t('openbuild', 'User overrides') }}</h3>
+				<span class="ob-manifest-detail__overrides-count">{{ userOverrides.length }}</span>
+			</header>
+			<p v-if="userOverrides.length === 0" class="ob-manifest-detail__layer-meta">
+				{{ t('openbuild', 'No users have created a personal override yet.') }}
+			</p>
+			<ul v-else class="ob-manifest-detail__overrides-list">
+				<li
+					v-for="ovr in userOverrides"
+					:key="ovr.versionUuid || ovr.owner"
+					class="ob-manifest-detail__override">
+					<div class="ob-manifest-detail__override-main">
+						<strong>{{ ovr.owner }}</strong>
+						<small v-if="ovr.updatedAt">{{ formatDate(ovr.updatedAt) }}</small>
+					</div>
+					<NcButton
+						v-if="ovr.versionUuid"
+						type="tertiary"
+						@click="openInOpenRegister(ovr.versionUuid)">
+						{{ t('openbuild', 'Open in OpenRegister') }}
+					</NcButton>
+				</li>
+			</ul>
+		</section>
+
 		<!-- Version history (reused). Lists the app's ApplicationVersion rows
 		     (admin + user deltas) with rollback via OpenRegister versioning. -->
 		<section class="ob-manifest-detail__history">
@@ -131,6 +162,9 @@ export default {
 			creating: false,
 			showEditModal: false,
 			error: '',
+			// Maintainer view of ALL users' overrides (403 → not a maintainer → hidden).
+			userOverrides: [],
+			canViewUserOverrides: false,
 		}
 	},
 	computed: {
@@ -202,7 +236,40 @@ export default {
 		 */
 		async loadAll() {
 			await this.loadApplication()
-			await Promise.all([this.loadAdminVersion(), this.loadUserDelta()])
+			await Promise.all([this.loadAdminVersion(), this.loadUserDelta(), this.loadUserOverrides()])
+		},
+		/**
+		 * Load ALL users' overrides for this app (maintainer view). A 403 means
+		 * the caller is not an owner/editor/admin — the section stays hidden.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async loadUserOverrides() {
+			if (!this.appSlug) return
+			try {
+				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user-deltas', { appId: this.appSlug })
+				const { data } = await axios.get(url)
+				this.userOverrides = (data && Array.isArray(data.overrides)) ? data.overrides : []
+				this.canViewUserOverrides = true
+			} catch (e) {
+				// 403 (not a maintainer) or any error → hide the section.
+				this.canViewUserOverrides = false
+				this.userOverrides = []
+			}
+		},
+		/**
+		 * Format an ISO timestamp for display, falling back to the raw value.
+		 *
+		 * @param {string} iso The ISO timestamp.
+		 * @return {string}
+		 */
+		formatDate(iso) {
+			if (!iso) return ''
+			try {
+				return new Date(iso).toLocaleString()
+			} catch (e) {
+				return iso
+			}
 		},
 		/**
 		 * Load the Application record by UUID.
@@ -411,5 +478,62 @@ export default {
 	border: 1px solid var(--color-border, #ddd);
 	border-radius: var(--border-radius-large, 8px);
 	background: var(--color-main-background, #fff);
+}
+
+.ob-manifest-detail__overrides {
+	padding: 16px;
+	border: 1px solid var(--color-border, #ddd);
+	border-radius: var(--border-radius-large, 8px);
+	background: var(--color-main-background, #fff);
+}
+
+.ob-manifest-detail__overrides-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+
+	h3 {
+		margin: 0;
+		font-size: 15px;
+		font-weight: 600;
+	}
+}
+
+.ob-manifest-detail__overrides-count {
+	font-size: 12px;
+	padding: 2px 8px;
+	border-radius: 10px;
+	background: var(--color-background-dark, #f0f0f0);
+	color: var(--color-text-maxcontrast, #666);
+}
+
+.ob-manifest-detail__overrides-list {
+	list-style: none;
+	margin: 8px 0 0 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.ob-manifest-detail__override {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 8px 12px;
+	border: 1px solid var(--color-border, #ddd);
+	border-radius: var(--border-radius, 4px);
+}
+
+.ob-manifest-detail__override-main {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+
+	small {
+		font-size: 12px;
+		color: var(--color-text-maxcontrast, #666);
+	}
 }
 </style>

@@ -30,6 +30,7 @@ namespace OCA\OpenBuild\Tests\Unit\Controller;
 
 use OCA\OpenBuild\Controller\AppOverrideController;
 use OCA\OpenBuild\Service\AppOverrideService;
+use OCA\OpenBuild\Service\PermissionResolver;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -66,6 +67,13 @@ class AppOverrideControllerTest extends TestCase
     private AppOverrideService&MockObject $service;
 
     /**
+     * Mock permission resolver (maintainer gate for listUserOverrides).
+     *
+     * @var PermissionResolver&MockObject
+     */
+    private PermissionResolver&MockObject $permissionResolver;
+
+    /**
      * Mock user session.
      *
      * @var IUserSession&MockObject
@@ -93,6 +101,7 @@ class AppOverrideControllerTest extends TestCase
         $this->service     = $this->createMock(AppOverrideService::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->appManager  = $this->createMock(IAppManager::class);
+        $this->permissionResolver = $this->createMock(PermissionResolver::class);
 
     }//end setUp()
 
@@ -108,7 +117,8 @@ class AppOverrideControllerTest extends TestCase
             logger: $this->logger,
             appOverrideService: $this->service,
             userSession: $this->userSession,
-            appManager: $this->appManager
+            appManager: $this->appManager,
+            permissionResolver: $this->permissionResolver
         );
 
     }//end controller()
@@ -311,4 +321,52 @@ class AppOverrideControllerTest extends TestCase
         self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 
     }//end testInvalidAppIdIsBadRequest()
+
+    /**
+     * A non-maintainer is forbidden (403) from listing all users' overrides —
+     * the no-admin-idor boundary. The service is never queried.
+     *
+     * @return void
+     */
+    public function testListUserOverridesForbiddenForNonMaintainer(): void
+    {
+        $this->userSession->method('getUser')->willReturn($this->mockUser('bob'));
+        $this->service->method('findHybridApplication')->willReturn(
+            ['slug' => 'pipelinq', 'permissions' => ['owners' => ['user:alice'], 'editors' => [], 'viewers' => []]]
+        );
+        $this->permissionResolver->method('resolveUserGroups')->willReturn([]);
+        $this->permissionResolver->method('matchesCaller')->willReturn(false);
+        $this->service->expects(self::never())->method('listUserDeltas');
+
+        $response = $this->controller()->listUserOverrides(appId: 'pipelinq');
+
+        self::assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+
+    }//end testListUserOverridesForbiddenForNonMaintainer()
+
+    /**
+     * An owner/editor (or admin) may list all users' overrides (200).
+     *
+     * @return void
+     */
+    public function testListUserOverridesAllowedForMaintainer(): void
+    {
+        $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+        $this->service->method('findHybridApplication')->willReturn(
+            ['slug' => 'pipelinq', 'permissions' => ['owners' => ['user:alice'], 'editors' => [], 'viewers' => []]]
+        );
+        $this->permissionResolver->method('resolveUserGroups')->willReturn([]);
+        $this->permissionResolver->method('matchesCaller')->willReturn(true);
+        $this->service->expects(self::once())->method('listUserDeltas')->willReturn(
+            [['owner' => 'carol', 'versionUuid' => 'v1', 'semver' => '0.1.0', 'status' => 'draft', 'updatedAt' => null]]
+        );
+
+        $response = $this->controller()->listUserOverrides(appId: 'pipelinq');
+
+        self::assertSame(Http::STATUS_OK, $response->getStatus());
+        $data = $response->getData();
+        self::assertSame(1, $data['total']);
+        self::assertSame('carol', $data['overrides'][0]['owner']);
+
+    }//end testListUserOverridesAllowedForMaintainer()
 }//end class

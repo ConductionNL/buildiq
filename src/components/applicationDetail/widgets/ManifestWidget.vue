@@ -88,6 +88,20 @@
 			</li>
 		</ul>
 
+		<!-- Maintainer-only: how many users have a personal override across the
+		     whole instance. Only resolves (non-null) for an owner/editor/admin
+		     (the endpoint 403s otherwise). Opens the detail page's full list. -->
+		<footer v-if="userOverrideCount !== null" class="ob-manifest-widget__overrides">
+			<a
+				class="ob-manifest-widget__view-all"
+				role="button"
+				tabindex="0"
+				@click="$emit('open-detail')"
+				@keyup.enter="$emit('open-detail')">
+				{{ n('openbuild', '%n user override', '%n user overrides', userOverrideCount) }}
+			</a>
+		</footer>
+
 		<p v-if="error" class="ob-manifest-widget__error">
 			{{ error }}
 		</p>
@@ -122,6 +136,9 @@ export default {
 			userLoading: false,
 			creating: false,
 			error: '',
+			// Count of ALL users' overrides — non-null only for a maintainer
+			// (owner/editor/admin); the endpoint 403s for everyone else.
+			userOverrideCount: null,
 		}
 	},
 	computed: {
@@ -161,8 +178,25 @@ export default {
 	},
 	mounted() {
 		this.loadUserDelta()
+		this.loadOverrideCount()
 	},
 	methods: {
+		/**
+		 * Load the count of ALL users' overrides (maintainer-only). Stays null
+		 * (footer hidden) for non-maintainers — the endpoint 403s.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async loadOverrideCount() {
+			if (!this.appSlug) return
+			try {
+				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user-deltas', { appId: this.appSlug })
+				const { data } = await axios.get(url)
+				this.userOverrideCount = (data && typeof data.total === 'number') ? data.total : 0
+			} catch (e) {
+				this.userOverrideCount = null
+			}
+		},
 		/**
 		 * Load the calling user's own user-delta state for this app.
 		 *

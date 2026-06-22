@@ -124,6 +124,10 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // allowUserOverrides flag); DELETE clears it. Owner = the session UID
         // always (no-admin-idor). Declared specific-first so the extra `/user`
         // segment is matched before the generic `{appId}` routes below.
+        // Maintainer view: list ALL users' overrides for an app (owner/editor or
+        // admin only). Declared before the {appId}/user routes (extra segment).
+        ['name' => 'appOverride#listUserOverrides', 'url' => '/api/app-overrides/{appId}/user-deltas', 'verb' => 'GET', 'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
         ['name' => 'appOverride#getUser',   'url' => '/api/app-overrides/{appId}/user', 'verb' => 'GET',    'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'appOverride#saveUser',  'url' => '/api/app-overrides/{appId}/user', 'verb' => 'PUT',    'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'appOverride#clearUser', 'url' => '/api/app-overrides/{appId}/user', 'verb' => 'DELETE', 'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
