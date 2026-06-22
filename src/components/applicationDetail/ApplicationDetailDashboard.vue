@@ -149,7 +149,8 @@
 				@changed="onUserDeltaChanged" />
 			<RegisterWidget
 				:app-slug="appSlug"
-				:version-slug="activeVersionSlug" />
+				:version-slug="activeVersionSlug"
+				:is-hybrid="isHybrid" />
 			<GroupsWidget
 				:application="application"
 				@open-permissions="onOpenPermissions" />
