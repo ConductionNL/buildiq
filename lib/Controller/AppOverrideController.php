@@ -45,6 +45,7 @@ namespace OCA\OpenBuild\Controller;
 
 use OCA\OpenBuild\AppInfo\Application;
 use OCA\OpenBuild\Service\AppOverrideService;
+use OCA\OpenBuild\Service\PermissionResolver;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -77,6 +78,7 @@ class AppOverrideController extends Controller
      * @param AppOverrideService $appOverrideService OR-backed override store.
      * @param IUserSession       $userSession        Current Nextcloud user session.
      * @param IAppManager        $appManager         Resolves OpenBuild-access for a user.
+     * @param PermissionResolver $permissionResolver Per-Application principal matcher (maintainer gate).
      *
      * @return void
      */
@@ -86,6 +88,7 @@ class AppOverrideController extends Controller
         private readonly AppOverrideService $appOverrideService,
         private readonly IUserSession $userSession,
         private readonly IAppManager $appManager,
+        private readonly PermissionResolver $permissionResolver,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
     }//end __construct()
@@ -324,6 +327,107 @@ class AppOverrideController extends Controller
         return new JSONResponse(data: ['appId' => $appId, 'cleared' => true], statusCode: Http::STATUS_OK);
 
     }//end clearUser()
+
+    /**
+     * List ALL users' overrides for a fleet app (the maintainer view).
+     *
+     * Unlike {@see getUser()} (which is owner-scoped to the caller's own delta),
+     * this returns every user-scoped delta for the app so a maintainer can see
+     * who has a personal override from the OpenBuild management screen. Gated to
+     * an OWNER/EDITOR of the parent Application or an NC admin — a regular user
+     * may NOT enumerate other users' deltas (no-admin-idor). Returns owner +
+     * version metadata only, never the private delta bodies.
+     *
+     * @param string $appId The kebab-case fleet-app id from the URL.
+     *
+     * @return JSONResponse 200 with `{ appId, total, overrides: [...] }`; 400/401/403 on rejection.
+     *
+     * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function listUserOverrides(string $appId): JSONResponse
+    {
+        if ($this->isValidAppId(appId: $appId) === false) {
+            return $this->error(code: 'invalid_app_id', status: Http::STATUS_BAD_REQUEST);
+        }
+
+        $denied = $this->requireAppMaintainer(appId: $appId);
+        if ($denied !== null) {
+            return $denied;
+        }
+
+        try {
+            $overrides = $this->appOverrideService->listUserDeltas(appId: $appId);
+        } catch (Throwable $e) {
+            $this->logger->error(
+                'OpenBuild: user-delta list failed for appId '.$appId.': '.$e->getMessage(),
+                ['exception' => $e]
+            );
+            return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        return new JSONResponse(
+            data: [
+                'appId'     => $appId,
+                'total'     => count($overrides),
+                'overrides' => $overrides,
+            ],
+            statusCode: Http::STATUS_OK
+        );
+
+    }//end listUserOverrides()
+
+    /**
+     * Guard: the caller must be an owner/editor of the parent Application, or an
+     * NC admin — the authorization for enumerating ALL users' overrides.
+     *
+     * Fail-closed: an anonymous caller (401), an unresolvable app, or a caller
+     * who is neither a maintainer nor an admin (403) is denied. An app with no
+     * `permissions` block grants only the audited NC-admin escape hatch (same
+     * posture as ApplicationVersionOwnerGuard).
+     *
+     * @param string $appId The fleet app id.
+     *
+     * @return JSONResponse|null Null on allow; 401/403 JSONResponse on deny.
+     *
+     * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+     */
+    private function requireAppMaintainer(string $appId): ?JSONResponse
+    {
+        $caller = $this->userSession->getUser();
+        if ($caller === null) {
+            return $this->error(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+        }
+
+        $application = $this->appOverrideService->findHybridApplication(appId: $appId);
+        $permissions = ($application['permissions'] ?? []);
+
+        // With a permissions block: owners/editors (or an admin) may view. Without
+        // one: only the audited NC-admin escape hatch.
+        if (is_array($permissions) === true && $permissions !== []) {
+            $userGroups = $this->permissionResolver->resolveUserGroups(user: $caller);
+            $allowed    = $this->permissionResolver->matchesCaller(
+                permissions: $permissions,
+                caller: $caller,
+                userGroups: $userGroups,
+                allowAdminBypass: true,
+                roles: ['owners', 'editors']
+            );
+            if ($allowed === true) {
+                return null;
+            }
+        } else if ($this->permissionResolver->isAdmin(caller: $caller) === true) {
+            return null;
+        }
+
+        return $this->error(
+            code: 'forbidden',
+            status: Http::STATUS_FORBIDDEN,
+            detail: 'only an owner/editor of this app (or an administrator) may view all user overrides'
+        );
+
+    }//end requireAppMaintainer()
 
     /**
      * Upsert the manifest delta for a fleet app (the write endpoint).

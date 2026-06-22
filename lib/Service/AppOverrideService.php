@@ -367,6 +367,83 @@ class AppOverrideService
     }//end deleteUserDelta()
 
     /**
+     * List ALL users' user-scoped deltas for a hybrid app (maintainer view).
+     *
+     * Unlike {@see getUserDelta()} this is NOT owner-scoped — it returns every
+     * `scope: user` ApplicationVersion for the app, so a maintainer can see who
+     * has a personal override. The caller's authorization (owner/editor of the
+     * parent Application, or an NC admin) is enforced by the controller; the
+     * service just aggregates. Each entry is a small summary, NOT the delta body
+     * (a maintainer manages presence, not other users' private customizations).
+     *
+     * @param string $appId The kebab-case Nextcloud app id (natural key).
+     *
+     * @return array<int, array<string, mixed>> List of `{ owner, versionUuid, semver, status, updatedAt }`.
+     *
+     * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+     */
+    public function listUserDeltas(string $appId): array
+    {
+        $application = $this->findHybridApplication(appId: $appId);
+        if ($application === null) {
+            return [];
+        }
+
+        $appUuid = $this->extractUuid(object: $application);
+        if ($appUuid === '') {
+            return [];
+        }
+
+        try {
+            $results = $this->objectService->searchObjectsBySlug(
+                registerSlug: self::REGISTER_SLUG,
+                schemaSlug: self::APPLICATION_VERSION_SCHEMA,
+                filters: ['scope' => 'user']
+            );
+        } catch (Throwable $e) {
+            $this->logger->error(
+                'OpenBuild: user delta list failed for '.$appId.': '.$e->getMessage(),
+                ['exception' => $e]
+            );
+            return [];
+        }
+
+        if (is_array($results) === false) {
+            return [];
+        }
+
+        $deltas = [];
+        foreach ($results as $result) {
+            $row = $this->normaliseObject(object: $result);
+            if ((string) ($row['application'] ?? '') !== $appUuid) {
+                continue;
+            }
+
+            $owner = (string) ($row['owner'] ?? '');
+            if ($owner === '') {
+                continue;
+            }
+
+            $self      = ($row['@self'] ?? []);
+            $updatedAt = null;
+            if (is_array($self) === true) {
+                $updatedAt = ($self['updated'] ?? null);
+            }
+
+            $deltas[] = [
+                'owner'       => $owner,
+                'versionUuid' => $this->extractUuid(object: $row),
+                'semver'      => ($row['semver'] ?? null),
+                'status'      => ($row['status'] ?? null),
+                'updatedAt'   => $updatedAt,
+            ];
+        }//end foreach
+
+        return $deltas;
+
+    }//end listUserDeltas()
+
+    /**
      * Create or update the hybrid app + delta-only version for a fleet app.
      *
      * Find-then-create-or-update keyed by `appId`: when a hybrid Application
