@@ -16,106 +16,110 @@
 	@spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 -->
 <template>
-	<CnDashboardPage
-		:title="t('openbuild', 'Dashboard')"
-		:widgets="widgetDefs"
-		:layout="dashboardLayout"
-		:loading="loading">
-		<!-- Create app — primary header action (opens the creation wizard). -->
-		<template #header-actions>
-			<NcButton type="primary" @click="showWizard = true">
-				{{ t('openbuild', 'Create app') }}
-			</NcButton>
-		</template>
+	<div class="ob-dashboard">
+		<CnDashboardPage
+			:title="t('openbuild', 'Dashboard')"
+			:widgets="widgetDefs"
+			:layout="dashboardLayout"
+			:loading="loading">
+			<!-- Create app — primary header action (opens the creation wizard). -->
+			<template #header-actions>
+				<NcButton type="primary" @click="showWizard = true">
+					{{ t('openbuild', 'Create app') }}
+				</NcButton>
+			</template>
 
-		<!-- KPI: Apps (total) — clickable → Apps index -->
-		<template #widget-apps>
-			<div class="ob-kpi-link"
-				role="button"
-				tabindex="0"
-				@click="goTo('VirtualApps')"
-				@keyup.enter="goTo('VirtualApps')">
-				<CnStatsBlock
-					horizontal
-					:icon="iconApps"
-					:title="t('openbuild', 'Apps')"
-					:count="counts.apps"
-					:count-label="t('openbuild', 'apps')"
-					variant="primary"
-					show-zero-count />
-			</div>
-		</template>
+			<!-- KPI: Apps (total) — clickable → Apps index -->
+			<template #widget-apps>
+				<div class="ob-kpi-link"
+					role="button"
+					tabindex="0"
+					@click="goTo('VirtualApps')"
+					@keyup.enter="goTo('VirtualApps')">
+					<CnStatsBlock
+						horizontal
+						:icon="iconApps"
+						:title="t('openbuild', 'Apps')"
+						:count="counts.apps"
+						:count-label="t('openbuild', 'apps')"
+						variant="primary"
+						show-zero-count />
+				</div>
+			</template>
 
-		<!-- KPI: Hybrid apps — clickable → Apps index -->
-		<template #widget-hybrid>
-			<div class="ob-kpi-link"
-				role="button"
-				tabindex="0"
-				@click="goTo('VirtualApps')"
-				@keyup.enter="goTo('VirtualApps')">
-				<CnStatsBlock
-					horizontal
-					:icon="iconHybrid"
-					:title="t('openbuild', 'Hybrid apps')"
-					:count="counts.hybrid"
-					:count-label="t('openbuild', 'hybrid')"
-					variant="default"
-					show-zero-count />
-			</div>
-		</template>
+			<!-- KPI: Hybrid apps — clickable → Apps index -->
+			<template #widget-hybrid>
+				<div class="ob-kpi-link"
+					role="button"
+					tabindex="0"
+					@click="goTo('VirtualApps')"
+					@keyup.enter="goTo('VirtualApps')">
+					<CnStatsBlock
+						horizontal
+						:icon="iconHybrid"
+						:title="t('openbuild', 'Hybrid apps')"
+						:count="counts.hybrid"
+						:count-label="t('openbuild', 'hybrid')"
+						variant="default"
+						show-zero-count />
+				</div>
+			</template>
 
-		<!-- KPI: Published versions — clickable → Apps index -->
-		<template #widget-versions>
-			<div class="ob-kpi-link"
-				role="button"
-				tabindex="0"
-				@click="goTo('VirtualApps')"
-				@keyup.enter="goTo('VirtualApps')">
-				<CnStatsBlock
-					horizontal
-					:icon="iconVersions"
-					:title="t('openbuild', 'Published versions')"
-					:count="counts.versions"
-					:count-label="t('openbuild', 'versions')"
-					variant="success"
-					show-zero-count />
-			</div>
-		</template>
+			<!-- KPI: Published versions — clickable → Apps index -->
+			<template #widget-versions>
+				<div class="ob-kpi-link"
+					role="button"
+					tabindex="0"
+					@click="goTo('VirtualApps')"
+					@keyup.enter="goTo('VirtualApps')">
+					<CnStatsBlock
+						horizontal
+						:icon="iconVersions"
+						:title="t('openbuild', 'Published versions')"
+						:count="counts.versions"
+						:count-label="t('openbuild', 'versions')"
+						variant="success"
+						show-zero-count />
+				</div>
+			</template>
 
-		<!-- Recent apps table — edge-to-edge inside the widget card (the wrapper's
+			<!-- Recent apps table — edge-to-edge inside the widget card (the wrapper's
 		     padding is bled away by .ob-recent-apps) with a per-row Edit action
 		     that opens the app detail page. The whole row is clickable too. -->
-		<template #widget-recent-apps>
-			<NcEmptyContent
-				v-if="!loading && recentApps.length === 0"
-				:name="t('openbuild', 'No apps yet')"
-				:description="t('openbuild', 'Create your first app to get started.')" />
-			<div v-else class="ob-recent-apps">
-				<CnDataTable
-					:rows="recentApps"
-					:columns="recentColumns"
-					:loading="false"
-					:selectable="false"
-					@row-click="goToApp">
-					<template #actions-header>
-						{{ t('openbuild', 'Edit') }}
-					</template>
-					<template #row-actions="{ row }">
-						<NcButton
-							type="tertiary"
-							:aria-label="t('openbuild', 'Open {name}', { name: row.name || row.slug })"
-							@click="goToApp(row)">
-							<template #icon>
-								<PencilOutline :size="20" />
-							</template>
-						</NcButton>
-					</template>
-				</CnDataTable>
-			</div>
-		</template>
+			<template #widget-recent-apps>
+				<NcEmptyContent
+					v-if="!loading && recentApps.length === 0"
+					:name="t('openbuild', 'No apps yet')"
+					:description="t('openbuild', 'Create your first app to get started.')" />
+				<div v-else class="ob-recent-apps">
+					<CnDataTable
+						:rows="recentApps"
+						:columns="recentColumns"
+						:loading="false"
+						:selectable="false"
+						@row-click="goToApp">
+						<template #actions-header>
+							{{ t('openbuild', 'Edit') }}
+						</template>
+						<template #row-actions="{ row }">
+							<NcButton
+								type="tertiary"
+								:aria-label="t('openbuild', 'Open {name}', { name: row.name || row.slug })"
+								@click="goToApp(row)">
+								<template #icon>
+									<PencilOutline :size="20" />
+								</template>
+							</NcButton>
+						</template>
+					</CnDataTable>
+				</div>
+			</template>
+		</CnDashboardPage>
 
+		<!-- Mounted as a sibling of CnDashboardPage (which has no default slot),
+		     so the wizard modal actually renders when showWizard flips true. -->
 		<CreateApplicationWizard :show.sync="showWizard" @created="onAppCreated" />
-	</CnDashboardPage>
+	</div>
 </template>
 
 <script>
@@ -318,6 +322,12 @@ export default {
 </script>
 
 <style scoped>
+/* Layout-transparent wrapper: lets the wizard modal mount as a sibling of
+   CnDashboardPage without altering the dashboard's own layout. */
+.ob-dashboard {
+	display: contents;
+}
+
 /* KPI tiles are clickable shortcuts to the Apps index. */
 .ob-kpi-link {
 	cursor: pointer;
