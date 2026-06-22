@@ -59,6 +59,16 @@
             "readOnly": true,
             "description": "IMMUTABLE once created (layered-versioned-app-deltas) — enforced server-side by HybridMetadataLockListener and rendered read-only by the abstract object data widget (CnObjectDataWidget honours `readOnly`). The unified-app discriminator (unify-apps-with-app-type). `virtual` = an app fully delivered by OpenBuild (its ApplicationVersion manifest is built from scratch or from a template). `hybrid` = an app that customizes an already-installed Nextcloud fleet app (opencatalogi, pipelinq, …) — its ApplicationVersion carries a delta-only manifest layered over that fleet app's bundled manifest, served raw via GET /api/app-overrides/{appId} and merged client-side. An Application with no `appType` is treated as `virtual` on read (legacy default). Purely declarative — the Apps-list filter and the Virtual/Hybrid badge read this field directly (no Service)."
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ],
+            "default": "draft",
+            "description": "Publish status that gates the per-app Nextcloud top-bar navigation entry. `draft` (default) = work-in-progress, hidden from the app menu. `published` = live, listed in the menu by AppNavigationService (which filters Applications on `status == published`). `archived` = retired. Flipped via the explicit Publish / Unpublish owner action (POST /api/applications/{appUuid}/publish|unpublish). MUST be a declared property so OpenRegister persists it — an undeclared status is stripped on save."
+          },
           "baseRef": {
             "type": "object",
             "description": "Optional link to the base this app extends. For a `hybrid` app `baseRef.kind` is `fleet-app` and `baseRef.id` is the kebab-case Nextcloud app id of the installed app being customized (the canonical link used by the /api/app-overrides/{appId} shim and the all/virtual/hybrid filter). For a `virtual` app `baseRef` MAY be absent. Mirrors the per-version baseRef shape from the app-delta-override model.",

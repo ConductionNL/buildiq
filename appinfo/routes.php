@@ -89,6 +89,13 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // inside (owners + editors only — admins NOT auto-granted, REQ-OBVP-007).
         ['name' => 'versionPromotion#promote', 'url' => '/api/applications/{appUuid}/versions/{versionUuid}/promote', 'verb' => 'POST', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}', 'versionUuid' => '[a-f0-9-]{8,}']],
 
+        // Explicit publish / unpublish — flips Application.status draft<->published.
+        // Only a `published` Application is listed in the app menu (AppNavigationService).
+        // #[NoAdminRequired] on the controller; RBAC inside (owners only + admin bypass).
+        // UUID path param + trailing literal disambiguate from the slug-based CRUD above.
+        ['name' => 'applicationPublish#publish', 'url' => '/api/applications/{appUuid}/publish', 'verb' => 'POST', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'applicationPublish#unpublish', 'url' => '/api/applications/{appUuid}/unpublish', 'verb' => 'POST', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
+
         // Icon-serving endpoints (openbuild-nextcloud-nav REQ-OBICON-002 / REQ-OBICON-003).
         // Both are #[NoAdminRequired] on the controller. The dark route uses a longer
         // URL pattern ("{slug}-dark.svg") that is unambiguous — it cannot shadow the
