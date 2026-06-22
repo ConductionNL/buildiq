@@ -32,18 +32,24 @@ use OCA\OpenBuild\Lifecycle\ApplicationVersionOwnerGuard;
 use OCA\OpenBuild\Listener\HybridMetadataLockListener;
 use OCA\OpenBuild\Listener\ProductionVersionGuardListener;
 use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
+use OCA\OpenBuild\Sections\SettingsSection;
 use OCA\OpenBuild\Service\AppNavigationService;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenBuild\Service\SettingsService;
+use OCA\OpenBuild\Settings\AdminSettings;
 use OCA\OpenRegister\AppHost\Bootstrap;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\App\IAppManager;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\AppFramework\Services\IInitialState;
+use OCP\IAppConfig;
 use OCP\INavigationManager;
+use OCP\IURLGenerator;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
@@ -171,6 +177,44 @@ class Application extends App implements IBootstrap
                 settingsService: $c->get(SettingsService::class),
                 userSession: $c->get('OCP\\IUserSession'),
                 groupManager: $c->get('OCP\\IGroupManager')
+            )
+        );
+
+        // 4. SettingsSection + AdminSettings — the admin settings section and
+        // panel referenced by info.xml `<settings>`. Both are one-line leaf
+        // subclasses of OpenRegister's GenericSettingsSection / GenericAdminSettings,
+        // whose constructors take scalar params (sectionId, name, icon, priority)
+        // that are NOT autowireable — they MUST be bound by a service factory.
+        // Bootstrap::register() normally binds them, but when Bootstrap is not
+        // autoloadable at register() time (it lives in OCA\OpenRegister and that
+        // app's autoloader is not guaranteed to be registered before OpenBuild
+        // boots — `openbuild` sorts before `openregister`), the else branch above
+        // skips it. NC's settings Manager instantiates EVERY registered section to
+        // render ANY settings page, so an unbound `sectionId` throws
+        // QueryNotFoundException that escapes NC's catch and blanks ALL admin AND
+        // personal settings pages instance-wide (not just OpenBuild's). Register
+        // the leaf classes unconditionally here with Bootstrap's exact defaults so
+        // they resolve regardless of app load order (last registration wins).
+        $context->registerService(
+            SettingsSection::class,
+            static fn ($c): SettingsSection => new SettingsSection(
+                sectionId: self::APP_ID,
+                name: 'OpenBuild',
+                appId: self::APP_ID,
+                iconFile: 'app-dark.svg',
+                priority: 75,
+                urlGenerator: $c->get(IURLGenerator::class)
+            )
+        );
+        $context->registerService(
+            AdminSettings::class,
+            static fn ($c): AdminSettings => new AdminSettings(
+                appId: self::APP_ID,
+                sectionId: self::APP_ID,
+                priority: 10,
+                appManager: $c->get(IAppManager::class),
+                initialState: $c->get(IInitialState::class),
+                appConfig: $c->get(IAppConfig::class)
             )
         );
 
