@@ -149,10 +149,7 @@
 				@changed="onUserDeltaChanged" />
 			<RegisterWidget
 				:app-slug="appSlug"
-				:version-slug="activeVersionSlug"
-				:schema-count="activeSchemas.length"
-				:object-count="kpis.objectCount"
-				:files-count="kpis.filesCount" />
+				:version-slug="activeVersionSlug" />
 			<GroupsWidget
 				:application="application"
 				@open-permissions="onOpenPermissions" />
