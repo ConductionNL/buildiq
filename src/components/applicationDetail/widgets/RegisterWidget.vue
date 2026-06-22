@@ -73,6 +73,13 @@ export default {
 		appSlug: { type: String, required: true },
 		/** The active version's slug (the per-version register is `openbuild-{appSlug}-{versionSlug}`). */
 		versionSlug: { type: String, required: true },
+		/**
+		 * Whether this is a hybrid app. A hybrid app's data + schemas live in the
+		 * INSTALLED app's register (named after the app), not the empty per-version
+		 * `openbuild-{appSlug}-{versionSlug}` register — so the widget points at the
+		 * fleet register for hybrids.
+		 */
+		isHybrid: { type: Boolean, default: false },
 	},
 	data() {
 		return {
@@ -85,13 +92,15 @@ export default {
 	},
 	computed: {
 		/**
-		 * Per-version register slug — convention `openbuild-{appSlug}-{versionSlug}`
-		 * (ADR-002 / openbuild-versioning-model).
+		 * The register to show. For a HYBRID app this is the installed fleet
+		 * app's register (named after the app — that is where its schemas/data
+		 * actually live); for a VIRTUAL app it is the per-version register
+		 * `openbuild-{appSlug}-{versionSlug}` (ADR-002 / openbuild-versioning-model).
 		 *
 		 * @return {string}
 		 */
 		registerSlug() {
-			return `openbuild-${this.appSlug}-${this.versionSlug}`
+			return this.isHybrid ? this.appSlug : `openbuild-${this.appSlug}-${this.versionSlug}`
 		},
 		/**
 		 * The schemas shown inline (the rest collapse into a "+N more" row).
@@ -112,14 +121,23 @@ export default {
 		/**
 		 * Resolve the register by slug and list its schemas by name. Two reads:
 		 * the registers list (to find this register's schema ids) and the schemas
-		 * list (to map those ids to titles). Best-effort — any failure leaves an
-		 * empty list and the widget still renders the deep-link.
+		 * list (to map those ids to titles).
 		 *
+		 * Retries a few times while the result is empty: on a cold page load (and
+		 * especially right after an app/container restart) OpenRegister may not
+		 * have the register's `schemas` populated yet when the widget first
+		 * mounts, which would otherwise leave a misleading "no schemas" state that
+		 * never recovers. Each attempt re-resolves, so it self-heals once OR is
+		 * ready. Bounded so a genuinely empty register settles instead of looping.
+		 *
+		 * @param {number} attempt The current attempt index (0-based).
 		 * @return {Promise<void>}
 		 */
-		async loadSchemas() {
+		async loadSchemas(attempt = 0) {
 			if (!this.appSlug || !this.versionSlug) return
-			this.loading = true
+			if (attempt === 0) this.loading = true
+
+			let result = []
 			try {
 				const registersUrl = generateUrl('/apps/openregister/api/registers')
 				const { data: regData } = await axios.get(registersUrl, {
@@ -130,32 +148,36 @@ export default {
 				const register = registers.find((r) => r.slug === this.registerSlug)
 				const schemaIds = (register && Array.isArray(register.schemas)) ? register.schemas.map(String) : []
 
-				if (schemaIds.length === 0) {
-					this.schemas = []
-					return
+				if (schemaIds.length > 0) {
+					const schemasUrl = generateUrl('/apps/openregister/api/schemas')
+					const { data: schData } = await axios.get(schemasUrl, {
+						params: { _limit: 10000 },
+						headers: { 'OCS-APIREQUEST': 'true' },
+					})
+					const allSchemas = (schData && Array.isArray(schData.results)) ? schData.results : []
+					const byId = new Map()
+					allSchemas.forEach((s) => {
+						const id = String((s['@self'] && s['@self'].id) || s.id || '')
+						if (id) byId.set(id, s.title || s.slug || id)
+					})
+
+					result = schemaIds
+						.map((id) => (byId.has(id) ? { id, name: byId.get(id) } : null))
+						.filter(Boolean)
+						.sort((a, b) => String(a.name).localeCompare(String(b.name)))
 				}
-
-				const schemasUrl = generateUrl('/apps/openregister/api/schemas')
-				const { data: schData } = await axios.get(schemasUrl, {
-					params: { _limit: 10000 },
-					headers: { 'OCS-APIREQUEST': 'true' },
-				})
-				const allSchemas = (schData && Array.isArray(schData.results)) ? schData.results : []
-				const byId = new Map()
-				allSchemas.forEach((s) => {
-					const id = String((s['@self'] && s['@self'].id) || s.id || '')
-					if (id) byId.set(id, s.title || s.slug || id)
-				})
-
-				this.schemas = schemaIds
-					.map((id) => (byId.has(id) ? { id, name: byId.get(id) } : null))
-					.filter(Boolean)
-					.sort((a, b) => String(a.name).localeCompare(String(b.name)))
 			} catch (e) {
-				this.schemas = []
-			} finally {
-				this.loading = false
+				result = []
 			}
+
+			// Self-heal a cold-load race: re-attempt while empty (bounded).
+			if (result.length === 0 && attempt < 3) {
+				setTimeout(() => this.loadSchemas(attempt + 1), 1200)
+				return
+			}
+
+			this.schemas = result
+			this.loading = false
 		},
 		/**
 		 * Deep-link to OpenRegister's register detail page (top-level Nextcloud
