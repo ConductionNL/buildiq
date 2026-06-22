@@ -20,25 +20,11 @@
 			"order": 20
 		},
 		{
-			"id": "Schemas",
-			"label": "Schemas",
-			"icon": "icon-category-customization",
-			"route": "Schemas",
-			"order": 30
-		},
-		{
-			"id": "Templates",
-			"label": "Templates",
+			"id": "Store",
+			"label": "Store",
 			"icon": "icon-category-organization",
 			"route": "Templates",
-			"order": 35
-		},
-		{
-			"id": "Exports",
-			"label": "Exports",
-			"icon": "icon-download",
-			"route": "Exports",
-			"order": 40
+			"order": 30
 		},
 		{
 			"id": "Documentation",
@@ -85,6 +71,7 @@
 					"@self.updated"
 				],
 				"showAdd": false,
+				"showMassImport": true,
 				"sidebar": {
 					"enabled": true,
 					"showMetadata": true
@@ -185,7 +172,7 @@
 			"id": "Templates",
 			"route": "/templates",
 			"type": "custom",
-			"title": "Templates",
+			"title": "Store",
 			"component": "TemplateGallery",
 			"config": {
 				"register": "openbuild",

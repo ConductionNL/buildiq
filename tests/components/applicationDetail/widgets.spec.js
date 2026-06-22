@@ -4,6 +4,14 @@
 import { describe, it, expect, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 
+const { axiosGetMock } = vi.hoisted(() => ({ axiosGetMock: vi.fn(async () => ({ data: { results: [] } })) }))
+vi.mock('@nextcloud/axios', () => ({ default: { get: axiosGetMock } }))
+vi.mock('@nextcloud/router', () => ({ generateUrl: (p, params) => {
+	let out = p
+	Object.entries(params || {}).forEach(([k, v]) => { out = out.replace(`{${k}}`, v) })
+	return out
+} }))
+
 import RegisterWidget from '../../../src/components/applicationDetail/widgets/RegisterWidget.vue'
 import SchemasWidget from '../../../src/components/applicationDetail/widgets/SchemasWidget.vue'
 import GroupsWidget from '../../../src/components/applicationDetail/widgets/GroupsWidget.vue'
@@ -23,14 +31,18 @@ const route = { name: 'VirtualAppDetail', params: {}, query: {} }
  * end-to-end behaviour lives in tests/e2e/application-detail-overview.spec.ts.
  */
 describe('applicationDetail widgets', () => {
-	it('RegisterWidget renders the register slug and three counts', () => {
+	it('RegisterWidget renders the register slug + Schemas section (no object/file counts)', () => {
 		const wrapper = shallowMount(RegisterWidget, {
-			propsData: { appSlug: 'hello-world', versionSlug: 'production', schemaCount: 4, objectCount: 12, filesCount: 3 },
-			mocks: { t },
+			propsData: { appSlug: 'hello-world', versionSlug: 'production' },
+			mocks: { t, n: (app, s, p, n) => (n === 1 ? s : p) },
 		})
 		const text = wrapper.text()
 		expect(text).toContain('openbuild-hello-world-production')
 		expect(text).toContain('Register')
+		expect(text).toContain('Schemas')
+		// Object/file counts moved to the dashboard KPI tiles — not here.
+		expect(text).not.toContain('Objects')
+		expect(text).not.toContain('Files')
 	})
 
 	it('SchemasWidget renders schema names + emits add-schema event', async () => {
