@@ -59,6 +59,12 @@
 				</template>
 				{{ saveTemplateLoading ? t('openbuild', 'Preparing…') : t('openbuild', 'Save as template') }}
 			</NcActionButton>
+			<NcActionLink href="https://openbuild.conduction.nl" target="_blank" rel="noopener noreferrer">
+				<template #icon>
+					<HelpCircleOutline :size="20" />
+				</template>
+				{{ t('openbuild', 'Documentation') }}
+			</NcActionLink>
 			<NcActionButton v-if="obAppRole === 'owner'" :disabled="!obApp" @click="deleteOpen = true">
 				<template #icon>
 					<DeleteOutline :size="20" />
@@ -113,7 +119,7 @@
 </template>
 
 <script>
-import { NcButton, NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcButton, NcActions, NcActionButton, NcActionLink } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
@@ -123,6 +129,7 @@ import PencilRulerOutline from 'vue-material-design-icons/PencilRulerOutline.vue
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
 import History from 'vue-material-design-icons/History.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import HelpCircleOutline from 'vue-material-design-icons/HelpCircleOutline.vue'
 import PermissionsModal from '../modals/PermissionsModal.vue'
 import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
 import AppSettingsModal from '../modals/AppSettingsModal.vue'
@@ -142,6 +149,7 @@ export default {
 		NcButton,
 		NcActions,
 		NcActionButton,
+		NcActionLink,
 		OpenInNew,
 		CogOutline,
 		DeleteOutline,
@@ -149,6 +157,7 @@ export default {
 		AccountMultipleOutline,
 		History,
 		ContentSaveOutline,
+		HelpCircleOutline,
 		PermissionsModal,
 		PermissionHistoryModal,
 		AppSettingsModal,
