@@ -1,19 +1,27 @@
 # Tasks — openbuild-walkthrough-editor
 
 ## 1. Edit-shell mode
-- [~] Delivered as a standalone **WalkthroughDesigner view** (route
+- [x] Delivered as a standalone **WalkthroughDesigner view** (route
       `/builder/:slug/walkthrough`, page in manifest, registered in registry.js,
-      linked from `ApplicationDetailActions` "Design walkthrough"). The live
-      recorder overlay over the running app is **deferred** (follow-up).
-- [ ] Recorder overlay: hover-highlight resolvable targets; click to create a step.
+      linked from `ApplicationDetailActions` "Design walkthrough").
+- [x] Live **recorder**: a "Record from app" button (shown when an `appSlug` +
+      active tour exist) mounts `WalkthroughRecorder.vue`, which embeds the running
+      virtual app (`/apps/openbuild/builder/{slug}`) in a same-origin iframe and,
+      while armed, captures clicks inside it to create steps (instead of hover-
+      highlight). Toggle recording off to navigate the app, back on to keep picking.
 
 ## 2. Target resolution
-- [ ] `walkthroughTargetResolver` — NOT done (part of the deferred live recorder).
-      The form editor lets the author type the target `kind` + `ref` directly.
+- [x] `recorderTargetResolver.js` — pure `resolveTargetFromElement(el)` resolving a
+      clicked node to the most stable descriptor via `closest()` priority order:
+      data-walkthrough-id → data-cn-route (nav-item) → data-widget-key → data-action-id
+      → data-testid → short CSS path (`cssPath`). 6 vitest specs.
 
 ## 3. advanceOn recording
-- [ ] `walkthroughRecorder` — NOT done (deferred live recorder). The form editor
-      lets the author pick `advanceOn.type` + route/register/schema directly.
+- [x] `WalkthroughRecorder` emits each resolved target as `pick`; the designer's
+      `onRecorderPick` appends a step with a default advance — `click-target` for
+      instrumented controls, `manual` for bare selector/page targets. 2 vitest specs.
+      (Auto-observing the iframe router/store for route-match/object-created advances
+      remains an optional follow-up; the form editor still sets those directly.)
 
 ## 4. Step + tour editor
 - [x] `WalkthroughDesigner.vue` (controlled component, `manifest` prop →
@@ -40,12 +48,16 @@
 
 ## 7. Validate
 - [x] `openspec validate openbuild-walkthrough-editor --strict` passes.
-- [x] vitest: WalkthroughDesigner 6 tests green; manifest tests unaffected (9).
+- [x] vitest: WalkthroughDesigner 14 tests + recorderTargetResolver 6 tests green
+      (20 total); manifest tests unaffected.
 - [x] Live (:8080): designer renders, authors tour+step (all fields), validates.
       Save initially 400'd — root-caused to a PRE-EXISTING bug (ApplicationVersion
       schema requires `register`, which collides with OR's reserved system field;
       every raw /api/objects/.../applicationVersion PUT 400s, no-op round-trip
       included, affecting PageDesignerHost too). FIXED: persist via openbuild's
       ApplicationVersionsController#update; walkthrough manifest now persists (200,
-      verified). End-to-end Save-button reconfirm pending stable env (orchestration
-      churn flapped :8080 to maintenance/needsDbUpgrade mid-verify).
+      verified).
+- [x] Live (:8080) recorder: on test23, "Record from app" mounts the iframe runtime
+      (armed); clicking the inner span of a `data-cn-route="MessagesIndex"` nav item
+      resolved to `{kind:'nav-item', ref:'MessagesIndex'}` (closest() through the
+      child) and appended `step-1` with a `click-target` advance. Deployed 0.5.8.
