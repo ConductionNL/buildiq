@@ -15,13 +15,21 @@
 <template>
 	<div class="wt-host">
 		<NcEmptyContent v-if="loading" :name="t('openbuild', 'Loading…')">
-			<template #icon><NcLoadingIcon :size="32" /></template>
+			<template #icon>
+				<NcLoadingIcon :size="32" />
+			</template>
 		</NcEmptyContent>
-		<NcNoteCard v-else-if="error" type="error">{{ error }}</NcNoteCard>
+		<NcNoteCard v-else-if="error" type="error">
+			{{ error }}
+		</NcNoteCard>
 		<template v-else>
-			<NcNoteCard v-if="toast" type="success">{{ toast }}</NcNoteCard>
+			<NcNoteCard v-if="toast" type="success">
+				{{ toast }}
+			</NcNoteCard>
 			<WalkthroughDesigner
 				:manifest="manifest"
+				:app-slug="routeSlug"
+				:version-slug="versionSlug || ''"
 				@update:manifest="onManifestUpdate"
 				@save-and-preview="save" />
 		</template>
