@@ -85,6 +85,56 @@ function routesFromManifest(manifest) {
 }
 
 /**
+ * Best-effort load of the app's OpenRegister registers + schemas, shaped for the
+ * in-app pages editor (CnAppRoot's `dataSources`). The editor turns these into
+ * Register / Schema / Columns dropdowns for index/detail pages so a created page
+ * renders a table. Only this app's registers (slug prefix `openbuild-{slug}`) are
+ * offered. Failures (RBAC, network) return null — the editor then falls back to
+ * free-text slug inputs, so this never blocks boot.
+ *
+ * @return {Promise<object|null>} `{ registers: [{ value, label, schemas: [...] }] }` or null.
+ */
+async function loadDataSources() {
+	try {
+		const regUrl = generateUrl('/apps/openregister/api/registers') + '?_limit=1000'
+		const { data } = await axios.get(regUrl)
+		const all = (data && (data.results || data.registers)) || (Array.isArray(data) ? data : [])
+		const prefix = `openbuild-${slug}`
+		const mine = all.filter((r) => typeof r.slug === 'string' && r.slug.startsWith(prefix))
+		if (!mine.length) return null
+
+		// Resolve each register's schema ids to { value: slug, label, columns }.
+		const ids = [...new Set(mine.flatMap((r) => (Array.isArray(r.schemas) ? r.schemas : [])).filter((x) => typeof x === 'number'))]
+		const schemaById = {}
+		await Promise.all(ids.map(async (id) => {
+			try {
+				const { data: s } = await axios.get(generateUrl(`/apps/openregister/api/schemas/${id}`))
+				if (s && s.slug) {
+					schemaById[id] = {
+						value: s.slug,
+						label: s.title || s.slug,
+						columns: Object.keys(s.properties || {}),
+					}
+				}
+			} catch {
+				// skip a schema we can't read
+			}
+		}))
+
+		const registers = mine.map((r) => ({
+			value: r.slug,
+			label: r.title || r.slug,
+			schemas: (Array.isArray(r.schemas) ? r.schemas : []).map((id) => schemaById[id]).filter(Boolean),
+		}))
+		return registers.length ? { registers } : null
+	} catch (e) {
+		// eslint-disable-next-line no-console
+		console.warn('[openbuild:builder] could not load data sources for the pages editor', e)
+		return null
+	}
+}
+
+/**
  * Translate manifest label keys. Virtual-app manifests usually carry plain
  * strings; t() returns them unchanged when no translation is registered.
  *
@@ -125,6 +175,10 @@ async function boot() {
 		console.error('[openbuild:builder] failed to load manifest for ' + slug, e)
 	}
 
+	// Load the app's registers/schemas for the in-app pages editor (best-effort;
+	// null → the editor uses free-text register/schema fields).
+	const dataSources = await loadDataSources()
+
 	const router = new VueRouter({
 		mode: 'history',
 		base: generateUrl(`/apps/openbuild/builder/${slug}`),
@@ -142,6 +196,9 @@ async function boot() {
 				registry: { ...runtimeRegistry },
 				pageTypes: { ...defaultPageTypes },
 				translate: translateForApp,
+				// App registers/schemas so the Edit-pages modal offers Register /
+				// Schema / Columns dropdowns for index/detail pages (null → free text).
+				dataSources,
 				// Persist in-app edits (pages / menu / settings / sidebar / actions)
 				// back to the app's manifest. CnAppRoot's useManifestEditor mutates
 				// THIS same `manifest` object in place while editing, so on Save we
@@ -151,6 +208,17 @@ async function boot() {
 				persistManifestDelta: async () => {
 					const saveUrl = generateUrl(`/apps/openbuild/api/applications/${slug}/manifest`)
 					await axios.put(saveUrl, { manifest })
+					// Rebuild the router from the just-saved manifest so pages added
+					// or re-routed during this edit become navigable immediately —
+					// without it a freshly-created menu item points at a route that
+					// only exists after a full reload. Replacing `matcher` is the
+					// vue-router 3 reset idiom (keeps `*` ordered last correctly).
+					const fresh = new VueRouter({
+						mode: 'history',
+						base: generateUrl(`/apps/openbuild/builder/${slug}`),
+						routes: routesFromManifest(manifest),
+					})
+					router.matcher = fresh.matcher
 				},
 			},
 		}),
