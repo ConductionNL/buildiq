@@ -32,8 +32,11 @@
       `walkthrough`-scoped `validateManifest` errors and disables Save while invalid.
 
 ## 6. Setup-block reuse
-- [ ] Editing `manifest.setup` steps in the same panel — NOT done; follow-up
-      (same controlled-component + host pattern).
+- [x] WalkthroughDesigner gains a Walkthrough|Setup mode toggle; in Setup mode it
+      edits `manifest.setup` steps (info/choice/config-fields/run-action/summary/
+      component) — type-aware fields, required/multiple/healthCheck switches, a
+      choice options editor, reorder/delete — committing to `manifest.setup` via the
+      same controlled contract + host persistence. 6 added vitest specs (12 total).
 
 ## 7. Validate
 - [x] `openspec validate openbuild-walkthrough-editor --strict` passes.
