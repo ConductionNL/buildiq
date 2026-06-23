@@ -45,6 +45,12 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // and BuiltAppRoute schemas (^[a-z0-9][a-z0-9-]*[a-z0-9]$, min 2 max 48 chars).
         ['name' => 'applications#getManifest', 'url' => '/api/applications/{slug}/manifest', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // Symmetric write counterpart — the standalone runtime's in-app edit shell
+        // (ADR-041) PUTs the full edited manifest here on Save. Owner/editor RBAC +
+        // audited admin bypass live in the controller. Without this, in-app edits
+        // (pages/menu/settings/sidebar/actions) were computed but never persisted.
+        ['name' => 'applications#saveManifest', 'url' => '/api/applications/{slug}/manifest', 'verb' => 'PUT', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
         // Versioning — diff endpoint (chain spec #6 openbuild-versioning, REQ-OBV-005). Returns
         // two ApplicationVersion manifest blobs in one round-trip so the client diff component
         // does not double-fetch. `from`/`to` are ApplicationVersion UUIDs OR the literal `draft`.
