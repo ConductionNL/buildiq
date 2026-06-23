@@ -24,6 +24,11 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'settings.js'),
 		filename: appId + '-settings.js',
 	},
+	// Standalone runtime for a published virtual app (/apps/openbuild/builder/{slug}).
+	builder: {
+		import: path.join(__dirname, 'src', 'builder.js'),
+		filename: appId + '-builder.js',
+	},
 }
 
 // Use local source when available (monorepo dev), otherwise fall back to npm

@@ -99,6 +99,33 @@ class DashboardController extends Controller
     }//end catchAll()
 
     /**
+     * Render the STANDALONE runtime page for a published virtual app.
+     *
+     * Unlike the SPA (which renders apps nested inside OpenBuild's own shell),
+     * this serves a dedicated template (`builder`) whose JS entry mounts the
+     * virtual app's CnAppRoot at the top level — its own menu, pages and
+     * routing from GET /api/applications/{slug}/manifest. Only the bare
+     * `/builder/{slug}` runtime uses this; the designer sub-routes
+     * (`/builder/{slug}/pages`, `/schemas`) stay in the SPA via the catch-all.
+     *
+     * @param string $slug The virtual app slug (path param).
+     *
+     * @return TemplateResponse
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function builder(string $slug): TemplateResponse
+    {
+        $this->publishCurrentUserGroups();
+        $this->initialState->provideInitialState('builderSlug', $slug);
+        $this->initialState->provideInitialState(
+            'builderVersion',
+            (string) $this->request->getParam('_version', '')
+        );
+        return new TemplateResponse(Application::APP_ID, 'builder');
+    }//end builder()
+
+    /**
      * Publish the caller's group IDs via IInitialState.
      *
      * Per REQ-OBR-009 the frontend consumes `loadState('openbuild',
