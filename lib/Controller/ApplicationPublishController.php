@@ -73,10 +73,10 @@ class ApplicationPublishController extends Controller
     /**
      * Constructor.
      *
-     * @param IRequest           $request            The current HTTP request
-     * @param LoggerInterface    $logger             PSR logger
-     * @param ObjectService      $objectService      OR object surface (load + save)
-     * @param IUserSession       $userSession        Current NC user session
+     * @param IRequest                   $request            The current HTTP request
+     * @param LoggerInterface            $logger             PSR logger
+     * @param ObjectService              $objectService      OR object surface (load + save)
+     * @param IUserSession               $userSession        Current NC user session
      * @param PermissionResolver         $permissionResolver Shared permission-grammar resolver
      * @param ApplicationDeletionService $deletionService    Full-teardown service for delete
      *

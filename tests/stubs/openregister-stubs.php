@@ -158,6 +158,17 @@ namespace OCA\OpenRegister\Db {
             }//end find()
 
             /**
+             * Signature mirrors the real OR mapper so callers passing
+             * `_rbac:` / `_multitenancy:` as named arguments resolve identically.
+             *
+             * @return array<int, Register>
+             */
+            public function findAll(?int $limit=null, ?int $offset=null, array $filters=[], array $searchConditions=[], array $searchParams=[], bool $_rbac=true, bool $_multitenancy=true): array
+            {
+                return [];
+            }//end findAll()
+
+            /**
              * @param array<string, mixed> $object
              *
              * @return Register
