@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Tests\Unit\Controller;
 
 use OCA\OpenBuild\Controller\ApplicationPublishController;
+use OCA\OpenBuild\Service\ApplicationDeletionService;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -70,6 +71,11 @@ class ApplicationPublishControllerTest extends TestCase
     private IGroupManager&MockObject $groupManager;
 
     /**
+     * @var ApplicationDeletionService&MockObject
+     */
+    private ApplicationDeletionService&MockObject $deletionService;
+
+    /**
      * Controller under test.
      */
     private ApplicationPublishController $controller;
@@ -90,7 +96,8 @@ class ApplicationPublishControllerTest extends TestCase
         $this->groupManager->method('getUserGroups')->willReturn([]);
         $this->groupManager->method('getUserGroupIds')->willReturn([]);
 
-        $permissionResolver = new PermissionResolver($this->groupManager, $this->createMock(LoggerInterface::class));
+        $permissionResolver    = new PermissionResolver($this->groupManager, $this->createMock(LoggerInterface::class));
+        $this->deletionService = $this->createMock(ApplicationDeletionService::class);
 
         $this->controller = new ApplicationPublishController(
             request: $this->request,
@@ -98,6 +105,7 @@ class ApplicationPublishControllerTest extends TestCase
             objectService: $this->objectService,
             userSession: $this->userSession,
             permissionResolver: $permissionResolver,
+            deletionService: $this->deletionService,
         );
     }//end setUp()
 
@@ -256,4 +264,49 @@ class ApplicationPublishControllerTest extends TestCase
         $response = $this->controller->publish('u-app');
         self::assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
     }//end testPublishForbiddenForNonOwner()
+
+    /**
+     * destroy() deletes via the service and returns 200 with orphaned list.
+     *
+     * @return void
+     */
+    public function testDestroyDeletesForOwner(): void
+    {
+        $this->signInAs(uid: 'alice');
+        $app = $this->buildEntity(payload: [
+            'id'          => 'u-app',
+            'slug'        => 'demo',
+            'permissions' => ['owners' => ['user:alice'], 'editors' => [], 'viewers' => []],
+        ]);
+        $this->objectService->method('find')->willReturn($app);
+        $this->deletionService->expects($this->once())
+            ->method('deleteApplication')
+            ->with(appUuid: 'u-app', appSlug: 'demo')
+            ->willReturn([]);
+
+        $response = $this->controller->destroy('u-app');
+        self::assertSame(Http::STATUS_OK, $response->getStatus());
+        self::assertTrue($response->getData()['deleted']);
+    }//end testDestroyDeletesForOwner()
+
+    /**
+     * destroy() is forbidden for a non-owner and never calls the service.
+     *
+     * @return void
+     */
+    public function testDestroyForbiddenForNonOwner(): void
+    {
+        $this->signInAs(uid: 'mallory');
+        $this->groupManager->method('isAdmin')->willReturn(false);
+        $app = $this->buildEntity(payload: [
+            'id'          => 'u-app',
+            'slug'        => 'demo',
+            'permissions' => ['owners' => ['user:alice'], 'editors' => [], 'viewers' => []],
+        ]);
+        $this->objectService->method('find')->willReturn($app);
+        $this->deletionService->expects($this->never())->method('deleteApplication');
+
+        $response = $this->controller->destroy('u-app');
+        self::assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+    }//end testDestroyForbiddenForNonOwner()
 }//end class

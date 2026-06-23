@@ -35,73 +35,130 @@
 			</NcButton>
 		</section>
 
-		<!-- 2. KPI grid -->
-		<section class="ob-detail-dashboard__kpis">
-			<!-- KPI widgets. While insights are loading we show CnStatsBlock's
-			     built-in spinner (loading + !showZeroCount) instead of a stale 0;
-			     once loaded, showZeroCount renders a real 0 where applicable. -->
-			<CnStatsBlock
-				class="ob-detail-dashboard__kpi"
-				horizontal
-				:icon="iconUsers"
-				:title="t('openbuild', 'Active users')"
-				:count="kpis.activeUsers"
-				:count-label="t('openbuild', 'users')"
-				variant="primary"
-				:loading="!loaded"
-				:loading-label="t('openbuild', 'Loading…')"
-				:show-zero-count="loaded" />
-			<CnStatsBlock
-				class="ob-detail-dashboard__kpi"
-				horizontal
-				:icon="iconObjects"
-				:title="t('openbuild', 'Object count')"
-				:count="kpis.objectCount"
-				:count-label="t('openbuild', 'objects')"
-				variant="primary"
-				:loading="!loaded"
-				:loading-label="t('openbuild', 'Loading…')"
-				:show-zero-count="loaded" />
-			<!-- Storage: the KPI value is the SUM of attached-file sizes (bytes)
-			     from the audit trail, NOT a file count — so we label it Storage and
-			     format it human-readable. Two variants: the loaded one uses the
-			     #value slot (which would otherwise bypass the spinner), the loading
-			     one keeps CnStatsBlock's built-in spinner. -->
-			<CnStatsBlock
-				v-if="loaded"
-				class="ob-detail-dashboard__kpi"
-				horizontal
-				:icon="iconStorage"
-				:title="t('openbuild', 'Storage')"
-				:count="kpis.filesCount"
-				:count-label="''"
-				variant="success"
-				show-zero-count>
-				<template #value="{ count }">
-					{{ formatBytes(count) }}
-				</template>
-			</CnStatsBlock>
-			<CnStatsBlock
-				v-else
-				class="ob-detail-dashboard__kpi"
-				horizontal
-				:icon="iconStorage"
-				:title="t('openbuild', 'Storage')"
-				:count="0"
-				variant="success"
-				loading
-				:loading-label="t('openbuild', 'Loading…')" />
-			<CnStatsBlock
-				class="ob-detail-dashboard__kpi"
-				horizontal
-				:icon="iconAudit"
-				:title="t('openbuild', 'Audit events')"
-				:count="kpis.auditEventCount"
-				:count-label="t('openbuild', 'events')"
-				variant="warning"
-				:loading="!loaded"
-				:loading-label="t('openbuild', 'Loading…')"
-				:show-zero-count="loaded" />
+		<!-- 2. KPI grid — the time-range control lives in the strip header (no
+		     separate floating pill row above the cards). Each card is clickable
+		     and deep-links into OpenRegister. -->
+		<section class="ob-detail-dashboard__kpis-section">
+			<div class="ob-detail-dashboard__kpis-toolbar">
+				<div
+					class="ob-detail-dashboard__range"
+					role="group"
+					:aria-label="t('openbuild', 'Time range')">
+					<NcButton
+						v-for="opt in windowOptions"
+						:key="opt"
+						:type="selectedWindow === opt ? 'primary' : 'tertiary'"
+						:aria-pressed="selectedWindow === opt"
+						@click="selectedWindow = opt">
+						{{ opt }}
+					</NcButton>
+				</div>
+			</div>
+
+			<div class="ob-detail-dashboard__kpis">
+				<!-- KPI widgets. While insights are loading we show CnStatsBlock's
+				     built-in spinner (loading + !showZeroCount) instead of a stale 0;
+				     once loaded, showZeroCount renders a real 0 where applicable.
+				     The wrapper makes the whole card a clickable OpenRegister link. -->
+				<div
+					class="ob-detail-dashboard__kpi-link"
+					:class="{ 'ob-detail-dashboard__kpi-link--clickable': !!registerSlug }"
+					role="button"
+					tabindex="0"
+					:title="t('openbuild', 'Open in OpenRegister')"
+					@click="openInRegister('audit')"
+					@keyup.enter="openInRegister('audit')">
+					<CnStatsBlock
+						class="ob-detail-dashboard__kpi"
+						horizontal
+						:icon="iconUsers"
+						:title="t('openbuild', 'Active users')"
+						:count="kpis.activeUsers"
+						:count-label="t('openbuild', 'users')"
+						variant="primary"
+						:loading="!loaded"
+						:loading-label="t('openbuild', 'Loading…')"
+						:show-zero-count="loaded" />
+				</div>
+				<div
+					class="ob-detail-dashboard__kpi-link"
+					:class="{ 'ob-detail-dashboard__kpi-link--clickable': !!registerSlug }"
+					role="button"
+					tabindex="0"
+					:title="t('openbuild', 'Open in OpenRegister')"
+					@click="openInRegister('objects')"
+					@keyup.enter="openInRegister('objects')">
+					<CnStatsBlock
+						class="ob-detail-dashboard__kpi"
+						horizontal
+						:icon="iconObjects"
+						:title="t('openbuild', 'Object count')"
+						:count="kpis.objectCount"
+						:count-label="t('openbuild', 'objects')"
+						variant="primary"
+						:loading="!loaded"
+						:loading-label="t('openbuild', 'Loading…')"
+						:show-zero-count="loaded" />
+				</div>
+				<!-- Storage: the KPI value is the SUM of attached-file sizes (bytes)
+				     from the audit trail, NOT a file count — so we label it Storage and
+				     format it human-readable. Two variants: the loaded one uses the
+				     #value slot (which would otherwise bypass the spinner), the loading
+				     one keeps CnStatsBlock's built-in spinner. -->
+				<div
+					class="ob-detail-dashboard__kpi-link"
+					:class="{ 'ob-detail-dashboard__kpi-link--clickable': !!registerSlug }"
+					role="button"
+					tabindex="0"
+					:title="t('openbuild', 'Open in OpenRegister')"
+					@click="openInRegister('files')"
+					@keyup.enter="openInRegister('files')">
+					<CnStatsBlock
+						v-if="loaded"
+						class="ob-detail-dashboard__kpi"
+						horizontal
+						:icon="iconStorage"
+						:title="t('openbuild', 'Storage')"
+						:count="kpis.filesCount"
+						:count-label="''"
+						variant="success"
+						show-zero-count>
+						<template #value="{ count }">
+							{{ formatBytes(count) }}
+						</template>
+					</CnStatsBlock>
+					<CnStatsBlock
+						v-else
+						class="ob-detail-dashboard__kpi"
+						horizontal
+						:icon="iconStorage"
+						:title="t('openbuild', 'Storage')"
+						:count="0"
+						variant="success"
+						loading
+						:loading-label="t('openbuild', 'Loading…')" />
+				</div>
+				<div
+					class="ob-detail-dashboard__kpi-link"
+					:class="{ 'ob-detail-dashboard__kpi-link--clickable': !!registerSlug }"
+					role="button"
+					tabindex="0"
+					:title="t('openbuild', 'Open in OpenRegister')"
+					@click="openInRegister('audit')"
+					@keyup.enter="openInRegister('audit')">
+					<CnStatsBlock
+						class="ob-detail-dashboard__kpi"
+						horizontal
+						:icon="iconAudit"
+						:title="t('openbuild', 'Audit events')"
+						:count="kpis.auditEventCount"
+						:count-label="t('openbuild', 'events')"
+						variant="warning"
+						:loading="!loaded"
+						:loading-label="t('openbuild', 'Loading…')"
+						:show-zero-count="loaded" />
+				</div>
+			</div>
 		</section>
 
 		<!-- 3. Activity graph -->
@@ -207,9 +264,10 @@ export default {
 	 * @return {object}
 	 */
 	setup() {
-		const { selectedWindow } = useInsightsWindow()
+		const { selectedWindow, windowOptions } = useInsightsWindow()
 		return {
 			selectedWindow,
+			windowOptions,
 			iconUsers: AccountMultipleOutline,
 			iconObjects: CubeOutline,
 			iconStorage: Harddisk,
@@ -454,6 +512,20 @@ export default {
 			const v = this.productionVersion || this.activeVersion
 			return (v && v.status) || ''
 		},
+		/**
+		 * Slug of the OpenRegister register the KPIs reflect. Hybrid apps use the
+		 * installed fleet app's register (== appSlug); virtual apps use the
+		 * per-version register `openbuild-{appSlug}-{versionSlug}`. Empty until the
+		 * app + active version are known (KPI cards are then non-clickable).
+		 *
+		 * @return {string}
+		 */
+		registerSlug() {
+			if (!this.appSlug) return ''
+			if (this.isHybrid) return this.appSlug
+			if (!this.activeVersionSlug) return ''
+			return `openbuild-${this.appSlug}-${this.activeVersionSlug}`
+		},
 	},
 	watch: {
 		/**
@@ -522,6 +594,25 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * Deep-link a KPI into OpenRegister — the system of record behind the
+		 * numbers — at the app's register detail page. The optional `tab` hint
+		 * (objects / files / audit) is passed as a query param; OpenRegister lands
+		 * on the right tab when it honours it and on the register otherwise. A
+		 * no-op until the register is resolved. OpenRegister is a sibling app, so
+		 * this is a top-level navigation.
+		 *
+		 * @param {string} [tab] Optional tab hint: 'objects' | 'files' | 'audit'.
+		 * @return {void}
+		 */
+		openInRegister(tab) {
+			if (!this.registerSlug) return
+			let url = generateUrl(`/apps/openregister/registers/${encodeURIComponent(this.registerSlug)}`)
+			if (typeof tab === 'string' && tab !== '') {
+				url += `?tab=${encodeURIComponent(tab)}`
+			}
+			window.location.href = url
+		},
 		/**
 		 * Format a byte count as a human-readable storage size (e.g. 517 KB).
 		 *
@@ -746,10 +837,42 @@ export default {
 	border-radius: var(--border-radius-large, 8px);
 }
 
+.ob-detail-dashboard__kpis-toolbar {
+	display: flex;
+	justify-content: flex-end;
+	margin-bottom: 8px;
+}
+
+.ob-detail-dashboard__range {
+	display: inline-flex;
+	gap: 2px;
+	padding: 2px;
+	border-radius: var(--border-radius-pill, 16px);
+	background: var(--color-background-dark, #f0f0f0);
+}
+
 .ob-detail-dashboard__kpis {
 	display: grid;
 	grid-template-columns: repeat(4, minmax(0, 1fr));
 	gap: 12px;
+}
+
+/* Each KPI card is a clickable deep-link into OpenRegister. */
+.ob-detail-dashboard__kpi-link {
+	border-radius: var(--border-radius-large, 8px);
+}
+
+.ob-detail-dashboard__kpi-link--clickable {
+	cursor: pointer;
+}
+
+.ob-detail-dashboard__kpi-link--clickable:hover {
+	background: var(--color-background-hover, rgba(127, 127, 127, 0.08));
+}
+
+.ob-detail-dashboard__kpi-link--clickable:focus-visible {
+	outline: 2px solid var(--color-primary-element);
+	outline-offset: 2px;
 }
 
 @media (max-width: 900px) {

@@ -4,62 +4,91 @@
   -
   - ApplicationDetailActions — the actions bar on the VirtualAppDetail
   - (`type: detail`) page (`config.actionsComponent: "ApplicationDetailActions"`).
-  - Owner/editor-gated Publish (OR lifecycle transition → ObjectTransitionedEvent
-  - → version snapshot + BuiltAppRoute), Manage permissions (PermissionsModal —
-  - kept in this component per ADR-004 gate-modal-isolation), Design pages
-  - (router-link to PageDesigner), and Open virtual app. Reads/writes the
-  - Application via OR's REST API (ADR-022) using the applicationContext mixin.
+  - Surfaces a primary "Open app" button (the app's own manifest runtime), an
+  - Export button, and a "··· Actions" overflow menu (Settings — incl.
+  - publish/unpublish — Design pages, permissions, Save as template, Delete).
+  - Reads/writes the Application via OR's REST API (ADR-022) + the dedicated
+  - publish/delete endpoints, using the applicationContext mixin. Modals/dialogs
+  - live in their own files per ADR-004 gate-modal-isolation.
   -->
 <template>
 	<div class="ob-detail-actions">
 		<NcButton
-			v-if="obAppRole === 'owner' && obApp && obApp.status !== 'published'"
+			v-if="builderUrl"
 			type="primary"
-			:disabled="!obApp || publishing"
-			@click="setPublished(true)">
-			{{ publishing ? t('openbuild', 'Publishing…') : t('openbuild', 'Publish') }}
-		</NcButton>
-		<NcButton
-			v-if="obAppRole === 'owner' && obApp && obApp.status === 'published'"
-			:disabled="publishing"
-			@click="setPublished(false)">
-			{{ publishing ? t('openbuild', 'Unpublishing…') : t('openbuild', 'Unpublish') }}
-		</NcButton>
-		<NcButton
-			v-if="obAppRole === 'owner'"
-			:disabled="!obApp"
-			@click="permissionsOpen = true">
-			{{ t('openbuild', 'Manage permissions') }}
-		</NcButton>
-		<NcButton
-			v-if="obAppRole === 'owner'"
-			:disabled="!obApp"
-			@click="historyOpen = true">
-			{{ t('openbuild', 'Permission history') }}
-		</NcButton>
-		<NcButton v-if="obApp && obApp.slug" :to="{ name: 'PageDesigner', params: { slug: obApp.slug } }">
-			{{ t('openbuild', 'Design pages') }}
-		</NcButton>
-		<NcButton v-if="builderUrl" :href="builderUrl">
+			:href="builderUrl">
+			<template #icon>
+				<OpenInNew :size="20" />
+			</template>
 			{{ t('openbuild', 'Open app') }}
 		</NcButton>
 		<NcButton
-			:disabled="!obApp || !obApp.productionVersion"
+			:disabled="!obApp"
 			@click="exportOpen = true">
 			{{ t('openbuild', 'Export') }}
 		</NcButton>
-		<NcButton
-			v-if="canSaveAsTemplate"
-			:disabled="!obApp || saveTemplateLoading"
-			@click="openSaveAsTemplate">
-			{{ saveTemplateLoading ? t('openbuild', 'Preparing…') : t('openbuild', 'Save as template') }}
-		</NcButton>
+
+		<NcActions :menu-name="t('openbuild', 'Actions')" :force-menu="true">
+			<NcActionButton v-if="obAppRole === 'owner'" :disabled="!obApp" @click="settingsOpen = true">
+				<template #icon>
+					<CogOutline :size="20" />
+				</template>
+				{{ t('openbuild', 'Settings') }}
+			</NcActionButton>
+			<NcActionButton v-if="obApp && obApp.slug" :to="{ name: 'PageDesigner', params: { slug: obApp.slug } }">
+				<template #icon>
+					<PencilRulerOutline :size="20" />
+				</template>
+				{{ t('openbuild', 'Design pages') }}
+			</NcActionButton>
+			<NcActionButton v-if="obAppRole === 'owner'" :disabled="!obApp" @click="permissionsOpen = true">
+				<template #icon>
+					<AccountMultipleOutline :size="20" />
+				</template>
+				{{ t('openbuild', 'Manage permissions') }}
+			</NcActionButton>
+			<NcActionButton v-if="obAppRole === 'owner'" :disabled="!obApp" @click="historyOpen = true">
+				<template #icon>
+					<History :size="20" />
+				</template>
+				{{ t('openbuild', 'Permission history') }}
+			</NcActionButton>
+			<NcActionButton v-if="canSaveAsTemplate" :disabled="!obApp || saveTemplateLoading" @click="openSaveAsTemplate">
+				<template #icon>
+					<ContentSaveOutline :size="20" />
+				</template>
+				{{ saveTemplateLoading ? t('openbuild', 'Preparing…') : t('openbuild', 'Save as template') }}
+			</NcActionButton>
+			<NcActionButton v-if="obAppRole === 'owner'" :disabled="!obApp" @click="deleteOpen = true">
+				<template #icon>
+					<DeleteOutline :size="20" />
+				</template>
+				{{ t('openbuild', 'Delete') }}
+			</NcActionButton>
+		</NcActions>
+
 		<span v-if="toast" class="ob-detail-actions__toast">{{ toast }}</span>
 		<span v-if="error" class="ob-detail-actions__error">{{ error }}</span>
+
 		<ExportDialog
 			v-if="exportOpen && obApp"
 			:application-slug="obApp.slug"
 			@close="exportOpen = false" />
+		<AppSettingsModal
+			:open="settingsOpen"
+			:app-name="(obApp && (obApp.name || obApp.slug)) || ''"
+			:is-published="(obApp && obApp.status) === 'published'"
+			:allow-user-overrides="!!(obApp && obApp.allowUserOverrides)"
+			:busy="publishing"
+			@update:open="settingsOpen = $event"
+			@set-published="setPublished"
+			@update:allow-overrides="setAllowOverrides" />
+		<DeleteAppDialog
+			:open="deleteOpen"
+			:app-name="(obApp && (obApp.name || obApp.slug)) || ''"
+			:busy="deleting"
+			@update:open="deleteOpen = $event"
+			@confirm="deleteApp" />
 		<PermissionsModal
 			:open="permissionsOpen"
 			:application="obApp"
@@ -84,11 +113,20 @@
 </template>
 
 <script>
-import { NcButton } from '@nextcloud/vue'
+import { NcButton, NcActions, NcActionButton } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
+import PencilRulerOutline from 'vue-material-design-icons/PencilRulerOutline.vue'
+import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
+import History from 'vue-material-design-icons/History.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import PermissionsModal from '../modals/PermissionsModal.vue'
 import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
+import AppSettingsModal from '../modals/AppSettingsModal.vue'
+import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
 import SaveAsTemplateDialog from '../dialogs/SaveAsTemplateDialog.vue'
 import { getCurrentUserGroups } from '../composables/useRole.js'
 import { useRegisterPicker } from '../composables/useRegisterPicker.js'
@@ -100,11 +138,31 @@ const OR_TEMPLATES = '/apps/openregister/api/objects/openbuild/application-templ
 
 export default {
 	name: 'ApplicationDetailActions',
-	components: { NcButton, PermissionsModal, PermissionHistoryModal, SaveAsTemplateDialog, ExportDialog },
+	components: {
+		NcButton,
+		NcActions,
+		NcActionButton,
+		OpenInNew,
+		CogOutline,
+		DeleteOutline,
+		PencilRulerOutline,
+		AccountMultipleOutline,
+		History,
+		ContentSaveOutline,
+		PermissionsModal,
+		PermissionHistoryModal,
+		AppSettingsModal,
+		DeleteAppDialog,
+		SaveAsTemplateDialog,
+		ExportDialog,
+	},
 	mixins: [applicationContext],
 	data() {
 		return {
 			publishing: false,
+			deleting: false,
+			settingsOpen: false,
+			deleteOpen: false,
 			permissionsOpen: false,
 			historyOpen: false,
 			exportOpen: false,
@@ -119,30 +177,33 @@ export default {
 	},
 	computed: {
 		/**
-		 * Observed behaviour of `builderUrl` (retrofit annotation).
+		 * URL of the app's own manifest runtime (the nested CnAppRoot host at
+		 * /builder/{slug}). Shown as the primary "Open app" action whenever the
+		 * app slug is known. Top-level URL — the runtime is a sibling route.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 * @return {string}
 		 */
 		builderUrl() {
-			if (!this.obApp || !(this.obApp.currentVersion || this.obApp.status === 'published')) {
+			if (!this.obApp || !this.obApp.slug) {
 				return ''
 			}
 			return generateUrl(`/apps/openbuild/builder/${this.obApp.slug}`)
 		},
 		/**
 		 * "Save as template" is offered to owners and editors only — same
-		 * rbac source of truth as the edit actions (REQ-SAT-001). Viewers
-		 * (and 'none') never see it.
+		 * rbac source of truth as the edit actions (REQ-SAT-001).
 		 *
+		 * @return {boolean}
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
 		canSaveAsTemplate() {
 			return this.obAppRole === 'owner' || this.obAppRole === 'editor'
 		},
 		/**
-		 * Observed behaviour of `availableGroups` (retrofit annotation).
+		 * Group ids selectable in the permissions modal (current user's groups
+		 * unioned with any already-referenced principals).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 * @return {Array<string>}
 		 */
 		availableGroups() {
 			const perms = (this.obApp && this.obApp.permissions) || {}
@@ -157,10 +218,8 @@ export default {
 	},
 	methods: {
 		/**
-		 * Publish or unpublish the Application. Publishing flips
-		 * Application.status → published, which makes AppNavigationService list
-		 * the app in the Nextcloud top-bar menu; unpublishing reverts to draft
-		 * and removes it. Owner-only (enforced again server-side).
+		 * Publish or unpublish the app (owner-only, enforced again server-side).
+		 * Publishing makes it appear in the Nextcloud app menu.
 		 *
 		 * @param {boolean} shouldPublish True to publish, false to unpublish.
 		 * @return {Promise<void>}
@@ -174,8 +233,7 @@ export default {
 			this.error = ''
 			try {
 				const action = shouldPublish ? 'publish' : 'unpublish'
-				const url = generateUrl(`/apps/openbuild/api/applications/${this.obAppUuid}/${action}`)
-				await axios.post(url, {})
+				await axios.post(generateUrl(`/apps/openbuild/api/applications/${this.obAppUuid}/${action}`), {})
 				await this.obLoadApp()
 				this.toast = shouldPublish
 					? t('openbuild', 'App published — it now appears in the app menu.')
@@ -190,9 +248,54 @@ export default {
 			}
 		},
 		/**
-		 * Observed behaviour of `onPermissionsSave` (retrofit annotation).
+		 * Toggle per-user manifest overrides on the app.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 * @param {boolean} allow Whether to allow per-user overrides.
+		 * @return {Promise<void>}
+		 */
+		async setAllowOverrides(allow) {
+			if (this.obAppRole !== 'owner' || !this.obApp) {
+				return
+			}
+			this.error = ''
+			try {
+				await this.obPatchApp({ allowUserOverrides: allow })
+			} catch (e) {
+				this.error = `${t('openbuild', 'Failed to save settings')}: ${e.message || e}`
+			}
+		},
+		/**
+		 * Delete the app (Application + versions + per-version registers), then
+		 * navigate back to the apps list. Owner-only (enforced server-side too).
+		 *
+		 * @return {Promise<void>}
+		 */
+		async deleteApp() {
+			if (this.obAppRole !== 'owner' || !this.obApp || this.deleting) {
+				return
+			}
+			this.deleting = true
+			this.error = ''
+			try {
+				await axios.delete(generateUrl(`/apps/openbuild/api/applications/${this.obAppUuid}`))
+				this.deleteOpen = false
+				if (this.$router) {
+					this.$router.push({ name: 'VirtualApps' }).catch(() => {})
+				} else {
+					window.location.href = generateUrl('/apps/openbuild/applications')
+				}
+			} catch (e) {
+				const detail = (e.response && e.response.data && e.response.data.detail) || e.message || e
+				this.error = `${t('openbuild', 'Delete failed')}: ${detail}`
+			} finally {
+				this.deleting = false
+			}
+		},
+		/**
+		 * Persist edited permissions from the permissions modal.
+		 *
+		 * @param {object} permissions The new permissions block.
+		 * @return {Promise<void>}
 		 */
 		async onPermissionsSave(permissions) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {
@@ -207,8 +310,8 @@ export default {
 			}
 		},
 		/**
-		 * Gather the app's manifest + companion schemas + visible templates,
-		 * then open the SaveAsTemplateDialog (REQ-SAT-001).
+		 * Gather the app's manifest + companion schemas + visible templates, then
+		 * open the SaveAsTemplateDialog (REQ-SAT-001).
 		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
@@ -220,8 +323,6 @@ export default {
 			this.saveTemplateLoading = true
 			this.error = ''
 			try {
-				// Manifest from the app's current/production version (falls back
-				// to an inline manifest on the record for un-versioned drafts).
 				this.saveTemplateManifest = this.obApp.manifest
 					|| (this.obApp.currentVersion && this.obApp.currentVersion.manifest)
 					|| {}
@@ -245,8 +346,7 @@ export default {
 		async loadExistingTemplates() {
 			try {
 				const { data } = await axios.get(generateUrl(OR_TEMPLATES))
-				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
-				return list
+				return Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
 			} catch (e) {
 				return []
 			}

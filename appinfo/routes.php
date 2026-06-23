@@ -95,6 +95,8 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // UUID path param + trailing literal disambiguate from the slug-based CRUD above.
         ['name' => 'applicationPublish#publish', 'url' => '/api/applications/{appUuid}/publish', 'verb' => 'POST', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
         ['name' => 'applicationPublish#unpublish', 'url' => '/api/applications/{appUuid}/unpublish', 'verb' => 'POST', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
+        // Owner-only full delete (Application + versions + per-version registers + routes).
+        ['name' => 'applicationPublish#destroy', 'url' => '/api/applications/{appUuid}', 'verb' => 'DELETE', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
 
         // Icon-serving endpoints (openbuild-nextcloud-nav REQ-OBICON-002 / REQ-OBICON-003).
         // Both are #[NoAdminRequired] on the controller. The dark route uses a longer

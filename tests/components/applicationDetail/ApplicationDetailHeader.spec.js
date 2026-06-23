@@ -60,7 +60,7 @@ describe('ApplicationDetailHeader', () => {
 		},
 	}
 
-	it('mounts and renders the hero strip + window toggle controls', () => {
+	it('mounts and renders the hero strip', () => {
 		const wrapper = shallowMount(ApplicationDetailHeader, {
 			propsData: { object: application, objectId: 'app-uuid' },
 			mocks: { t, $router: router, $route: route },
@@ -68,15 +68,9 @@ describe('ApplicationDetailHeader', () => {
 		expect(wrapper.find('.ob-detail-header').exists()).toBe(true)
 		expect(wrapper.text()).toContain('Hello World')
 
-		// Three window toggle buttons.
-		const winButtons = wrapper.findAll('.ob-detail-header__window-btn')
-		expect(winButtons.length).toBe(3)
-		expect(winButtons.at(0).text()).toBe('7d')
-		expect(winButtons.at(1).text()).toBe('30d')
-		expect(winButtons.at(2).text()).toBe('90d')
-
-		// Default window is 7d.
-		expect(winButtons.at(0).classes()).toContain('ob-detail-header__window-btn--active')
+		// The insights time-range toggle moved out of the header into the body
+		// dashboard's KPI strip — the header no longer renders it.
+		expect(wrapper.findAll('.ob-detail-header__window-btn').length).toBe(0)
 	})
 
 	it('renders pill tabs for each version in chain order, with production starred', async () => {
@@ -131,12 +125,4 @@ describe('ApplicationDetailHeader', () => {
 		expect(visible[0].slug).toBe('production')
 	})
 
-	it('changing the window updates the active window state', async () => {
-		const wrapper = shallowMount(ApplicationDetailHeader, {
-			propsData: { object: application, objectId: 'app-uuid' },
-			mocks: { t, $router: router, $route: route },
-		})
-		await wrapper.findAll('.ob-detail-header__window-btn').at(1).trigger('click')
-		expect(wrapper.vm.selectedWindow).toBe('30d')
-	})
 })
