@@ -87,8 +87,13 @@ jobs:
       - name: Run unit suite (phpunit-unit.xml)
         # unit-gating=false reports failures without failing the job, for apps
         # carrying pre-existing tests/Unit debt (see TESTING-CI-ROLLOUT.md).
-        continue-on-error: ${{ inputs.unit-gating == false }}
-        run: ./vendor/bin/phpunit --configuration phpunit-unit.xml --no-coverage --colors=never
+        # Gating is done in-shell, NOT via `continue-on-error: ${{ }}` — Forgejo
+        # Actions cannot unmarshal an expression into that bool field, which made
+        # the whole workflow fail to parse (cannot unmarshal !!str into bool).
+        run: |
+          ./vendor/bin/phpunit --configuration phpunit-unit.xml --no-coverage --colors=never && exit 0
+          [ "${{ inputs.unit-gating }}" = "false" ] && { echo "unit-gating off — not failing the job"; exit 0; }
+          exit 1
 
   # ---------------------------------------------------------------------------
   # HARD GATE 2 — l10n extraction-drift check (no NC needed; pure Node).
@@ -117,7 +122,9 @@ jobs:
     runs-on: codeberg-medium
     container:
       image: php:8.3-cli
-    continue-on-error: ${{ inputs.unit-gating == false }}
+    # Soft-gating (unit-gating=false) is applied in-shell on the ratchet step,
+    # NOT via `continue-on-error: ${{ }}` — Forgejo can't unmarshal an
+    # expression into that bool and the workflow fails to parse.
     steps:
       - name: Install base tooling
         run: |
@@ -153,7 +160,9 @@ jobs:
       - name: Coverage ratchet (fail on drop)
         run: |
           test -f coverage/clover.xml || exit 0
-          bash tests/coverage-ratchet.sh phpunit coverage/clover.xml
+          bash tests/coverage-ratchet.sh phpunit coverage/clover.xml && exit 0
+          [ "${{ inputs.unit-gating }}" = "false" ] && { echo "unit-gating off — not failing on coverage drop"; exit 0; }
+          exit 1
 
   # ---------------------------------------------------------------------------
   # COVERAGE GATE B — FRONTEND COVERAGE RATCHET (Vitest v8, src/** line coverage).
