@@ -152,16 +152,24 @@ export default {
 			this.error = ''
 			this.toast = ''
 			try {
+				// Persist through openbuild's ApplicationVersionsController#update
+				// (PUT /api/applications/{slug}/versions/{versionSlug}) with just the
+				// manifest. The controller allowlists MUTABLE_FIELDS and passes the
+				// OR register/schema as parameters, so it avoids the raw-objects PUT
+				// failure where the schema-declared `register` data property collides
+				// with OpenRegister's reserved system field (a no-op round-trip PUT to
+				// /api/objects/.../applicationVersion 400s "register missing").
 				const version = this.applicationVersion
-				const versionUuid = version
-					&& ((version['@self'] && version['@self'].id) || version.uuid || version.id)
-				if (version && versionUuid) {
-					const url = generateUrl(`/apps/openregister/api/objects/openbuild/applicationVersion/${versionUuid}`)
-					const { data } = await axios.put(url, { ...version, manifest: this.manifest })
-					if (data && typeof data === 'object') this.applicationVersion = data
+				const versionSlug = version && (version.slug || (version['@self'] && version['@self'].slug))
+				if (version && versionSlug && this.routeSlug) {
+					const url = generateUrl(`/apps/openbuild/api/applications/${this.routeSlug}/versions/${versionSlug}`)
+					const { data } = await axios.put(url, { manifest: this.manifest })
+					const saved = (data && typeof data === 'object') ? (data.version || data.data || data) : null
+					if (saved && typeof saved === 'object') this.applicationVersion = saved
 					this.toast = t('openbuild', 'Walkthrough saved.')
 					return
 				}
+				// Fallback for un-versioned apps: persist onto the Application object.
 				if (!this.applicationUuid) {
 					this.error = t('openbuild', 'No app to save to.')
 					return
