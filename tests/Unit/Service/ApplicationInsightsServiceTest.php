@@ -360,12 +360,12 @@ class ApplicationInsightsServiceTest extends TestCase
             ->willReturnOnConsecutiveCalls($app, $version);
 
         // Two registers belong to the installed app; one belongs to another app.
-        $reg = $this->createMock(Register::class);
+        $reg = $this->getMockBuilder(Register::class)->disableOriginalConstructor()->onlyMethods(['getSchemas'])->addMethods(['getApplication', 'getId'])->getMock();
         $reg->method('getApplication')->willReturn('pipelinq');
         $reg->method('getId')->willReturn(16);
         $reg->method('getSchemas')->willReturn([16, 17]);
 
-        $other = $this->createMock(Register::class);
+        $other = $this->getMockBuilder(Register::class)->disableOriginalConstructor()->onlyMethods(['getSchemas'])->addMethods(['getApplication', 'getId'])->getMock();
         $other->method('getApplication')->willReturn('decidesk');
         $other->method('getId')->willReturn(42);
         $other->method('getSchemas')->willReturn([99]);
