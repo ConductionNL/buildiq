@@ -3,9 +3,15 @@
 <template>
 	<div class="wt-designer">
 		<div class="wt-designer__bar">
-			<h2 class="wt-designer__heading">{{ t('openbuild', 'Walkthrough designer') }}</h2>
+			<div class="wt-designer__modes" role="tablist">
+				<NcButton :type="mode === 'walkthrough' ? 'primary' : 'tertiary'" @click="mode = 'walkthrough'">{{ t('openbuild', 'Walkthrough') }}</NcButton>
+				<NcButton :type="mode === 'setup' ? 'primary' : 'tertiary'" @click="mode = 'setup'">{{ t('openbuild', 'Setup wizard') }}</NcButton>
+			</div>
 			<span class="wt-designer__spacer" />
-			<NcCheckboxRadioSwitch type="switch" :checked="enabled" @update:checked="setEnabled">
+			<NcCheckboxRadioSwitch v-if="mode === 'walkthrough'" type="switch" :checked="enabled" @update:checked="setEnabled">
+				{{ t('openbuild', 'Enabled') }}
+			</NcCheckboxRadioSwitch>
+			<NcCheckboxRadioSwitch v-else type="switch" :checked="setupEnabled" @update:checked="setSetupEnabled">
 				{{ t('openbuild', 'Enabled') }}
 			</NcCheckboxRadioSwitch>
 			<NcButton type="primary" :disabled="!valid" @click="$emit('save-and-preview')">
@@ -18,7 +24,54 @@
 			<ul class="wt-designer__errors"><li v-for="(e, i) in errors" :key="i">{{ e }}</li></ul>
 		</NcNoteCard>
 
-		<div class="wt-designer__body">
+		<!-- Setup wizard editor (manifest.setup) -->
+		<div v-if="mode === 'setup'" class="wt-designer__setup">
+			<div class="wt-designer__steps-head">
+				<strong>{{ t('openbuild', 'Setup steps') }}</strong>
+				<NcButton type="secondary" @click="addSetupStep">
+					<template #icon><Plus :size="20" /></template>
+					{{ t('openbuild', 'Add step') }}
+				</NcButton>
+			</div>
+			<ol class="wt-designer__steps">
+				<li v-for="(step, si) in setupSteps" :key="step.id || si" class="wt-designer__step">
+					<div class="wt-designer__step-head">
+						<span class="wt-designer__step-num">{{ si + 1 }}</span>
+						<NcTextField :label="t('openbuild', 'Step id')" :value="step.id || ''" @update:value="v => setSetupStep(si, 'id', v)" />
+						<NcButton type="tertiary" :disabled="si === 0" :aria-label="t('openbuild', 'Move up')" @click="moveSetupStep(si, -1)"><template #icon><ArrowUp :size="20" /></template></NcButton>
+						<NcButton type="tertiary" :disabled="si === setupSteps.length - 1" :aria-label="t('openbuild', 'Move down')" @click="moveSetupStep(si, 1)"><template #icon><ArrowDown :size="20" /></template></NcButton>
+						<NcButton type="tertiary" :aria-label="t('openbuild', 'Delete step')" @click="deleteSetupStep(si)"><template #icon><Delete :size="20" /></template></NcButton>
+					</div>
+					<div class="wt-designer__step-grid">
+						<NcSelect :input-label="t('openbuild', 'Type')" :options="SETUP_TYPES" :value="step.type || 'info'" @input="v => setSetupStep(si, 'type', v)" />
+						<NcTextField :label="t('openbuild', 'Title')" :value="step.title || ''" @update:value="v => setSetupStep(si, 'title', v)" />
+						<NcTextField :label="t('openbuild', 'Body')" :value="step.body || ''" @update:value="v => setSetupStep(si, 'body', v)" />
+						<NcTextField v-if="step.type === 'choice' || step.type === 'config-fields'" :label="t('openbuild', 'Config key')" :value="step.configKey || ''" @update:value="v => setSetupStep(si, 'configKey', v)" />
+						<NcTextField v-if="step.type === 'run-action'" :label="t('openbuild', 'Action id')" :value="step.action || ''" @update:value="v => setSetupStep(si, 'action', v)" />
+						<NcTextField v-if="step.type === 'component'" :label="t('openbuild', 'Component')" :value="step.component || ''" @update:value="v => setSetupStep(si, 'component', v)" />
+					</div>
+					<div v-if="step.type === 'choice'" class="wt-designer__options">
+						<div class="wt-designer__options-head">
+							<span>{{ t('openbuild', 'Options') }}</span>
+							<NcButton type="tertiary" @click="addSetupOption(si)"><template #icon><Plus :size="20" /></template></NcButton>
+						</div>
+						<div v-for="(opt, oi) in (step.options || [])" :key="oi" class="wt-designer__option-row">
+							<NcTextField :label="t('openbuild', 'Value')" :value="opt.value != null ? String(opt.value) : ''" @update:value="v => setSetupOption(si, oi, 'value', v)" />
+							<NcTextField :label="t('openbuild', 'Label')" :value="opt.label || ''" @update:value="v => setSetupOption(si, oi, 'label', v)" />
+							<NcButton type="tertiary" :aria-label="t('openbuild', 'Remove option')" @click="deleteSetupOption(si, oi)"><template #icon><Delete :size="20" /></template></NcButton>
+						</div>
+					</div>
+					<div class="wt-designer__step-switches">
+						<NcCheckboxRadioSwitch type="switch" :checked="step.required === true" @update:checked="v => setSetupStep(si, 'required', v)">{{ t('openbuild', 'Required (gates the app)') }}</NcCheckboxRadioSwitch>
+						<NcCheckboxRadioSwitch v-if="step.type === 'choice'" type="switch" :checked="step.multiple === true" @update:checked="v => setSetupStep(si, 'multiple', v)">{{ t('openbuild', 'Multi-select') }}</NcCheckboxRadioSwitch>
+						<NcCheckboxRadioSwitch v-if="step.type === 'summary'" type="switch" :checked="step.healthCheck === true" @update:checked="v => setSetupStep(si, 'healthCheck', v)">{{ t('openbuild', 'Health recap') }}</NcCheckboxRadioSwitch>
+					</div>
+				</li>
+				<li v-if="setupSteps.length === 0" class="wt-designer__empty">{{ t('openbuild', 'No setup steps yet — add one.') }}</li>
+			</ol>
+		</div>
+
+		<div v-else class="wt-designer__body">
 			<!-- Tours rail -->
 			<aside class="wt-designer__rail">
 				<div class="wt-designer__rail-head">
@@ -116,6 +169,7 @@ const TRIGGERS = ['first-visit', 'version-bump', 'empty-index', 'manual']
 const PLACEMENTS = ['auto', 'top', 'bottom', 'left', 'right', 'center']
 const TARGET_KINDS = ['nav-item', 'widget', 'action', 'page', 'element', 'selector']
 const ADVANCE_TYPES = ['manual', 'click-target', 'route-match', 'element-appears', 'object-created', 'delay']
+const SETUP_TYPES = ['info', 'choice', 'config-fields', 'run-action', 'summary', 'component']
 
 /**
  * WalkthroughDesigner — visual editor for an app's `manifest.walkthrough` block
@@ -138,7 +192,7 @@ export default {
 	emits: ['update:manifest', 'save-and-preview'],
 
 	data() {
-		return { activeTourIndex: 0, TRIGGERS, PLACEMENTS, TARGET_KINDS, ADVANCE_TYPES }
+		return { mode: 'walkthrough', activeTourIndex: 0, TRIGGERS, PLACEMENTS, TARGET_KINDS, ADVANCE_TYPES, SETUP_TYPES }
 	},
 
 	computed: {
@@ -156,10 +210,20 @@ export default {
 		},
 		errors() {
 			const { errors } = validateManifest(this.manifest || {})
-			return (errors || []).filter((e) => String(e).includes('walkthrough'))
+			const scope = this.mode === 'setup' ? 'setup' : 'walkthrough'
+			return (errors || []).filter((e) => String(e).includes(scope))
 		},
 		valid() {
 			return this.errors.length === 0
+		},
+		setup() {
+			return (this.manifest && this.manifest.setup) || { enabled: true, steps: [] }
+		},
+		setupEnabled() {
+			return this.setup.enabled !== false
+		},
+		setupSteps() {
+			return Array.isArray(this.setup.steps) ? this.setup.steps : []
 		},
 	},
 
@@ -243,6 +307,66 @@ export default {
 			step.advanceOn = { ...(step.advanceOn || {}), [key]: value }
 			this.commit(w)
 		},
+
+		// --- Setup wizard (manifest.setup) editing ---
+		/**
+		 * Emit a new manifest with the given setup block merged in.
+		 *
+		 * @param {object} setup The next setup block.
+		 * @return {void}
+		 */
+		commitSetup(setup) {
+			this.$emit('update:manifest', { ...(this.manifest || {}), setup })
+		},
+		cloneSetup() {
+			return JSON.parse(JSON.stringify(this.setup))
+		},
+		setSetupEnabled(v) {
+			const s = this.cloneSetup()
+			s.enabled = v
+			this.commitSetup(s)
+		},
+		addSetupStep() {
+			const s = this.cloneSetup()
+			if (!Array.isArray(s.steps)) s.steps = []
+			s.steps.push({ id: `step-${s.steps.length + 1}`, type: 'info', required: false })
+			this.commitSetup(s)
+		},
+		deleteSetupStep(si) {
+			const s = this.cloneSetup()
+			s.steps.splice(si, 1)
+			this.commitSetup(s)
+		},
+		moveSetupStep(si, dir) {
+			const s = this.cloneSetup()
+			const j = si + dir
+			if (j < 0 || j >= s.steps.length) return
+			const [moved] = s.steps.splice(si, 1)
+			s.steps.splice(j, 0, moved)
+			this.commitSetup(s)
+		},
+		setSetupStep(si, key, value) {
+			const s = this.cloneSetup()
+			s.steps[si][key] = value
+			this.commitSetup(s)
+		},
+		addSetupOption(si) {
+			const s = this.cloneSetup()
+			const step = s.steps[si]
+			if (!Array.isArray(step.options)) step.options = []
+			step.options.push({ value: '', label: '' })
+			this.commitSetup(s)
+		},
+		setSetupOption(si, oi, key, value) {
+			const s = this.cloneSetup()
+			s.steps[si].options[oi][key] = value
+			this.commitSetup(s)
+		},
+		deleteSetupOption(si, oi) {
+			const s = this.cloneSetup()
+			s.steps[si].options.splice(oi, 1)
+			this.commitSetup(s)
+		},
 	},
 }
 </script>
@@ -272,4 +396,9 @@ export default {
 .wt-designer__step-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 12px; }
 .wt-designer__step-switches { display: flex; gap: 16px; margin-top: 12px; }
 .wt-designer__empty { color: var(--color-text-maxcontrast); padding: 12px; }
+.wt-designer__modes { display: flex; gap: 4px; }
+.wt-designer__setup { display: flex; flex-direction: column; gap: 16px; }
+.wt-designer__options { margin-top: 12px; border-top: 1px solid var(--color-border); padding-top: 8px; }
+.wt-designer__options-head { display: flex; align-items: center; justify-content: space-between; }
+.wt-designer__option-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; margin-top: 6px; }
 </style>
