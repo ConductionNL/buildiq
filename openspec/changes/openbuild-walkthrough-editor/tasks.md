@@ -38,5 +38,11 @@
 ## 7. Validate
 - [x] `openspec validate openbuild-walkthrough-editor --strict` passes.
 - [x] vitest: WalkthroughDesigner 6 tests green; manifest tests unaffected (9).
-- [ ] Live (:8080): open an app → Design walkthrough → author + Save — NOT yet run
-      (openbuild deploy = prod build + docker cp; deferred).
+- [x] Live (:8080): designer renders, authors tour+step (all fields), validates.
+      Save initially 400'd — root-caused to a PRE-EXISTING bug (ApplicationVersion
+      schema requires `register`, which collides with OR's reserved system field;
+      every raw /api/objects/.../applicationVersion PUT 400s, no-op round-trip
+      included, affecting PageDesignerHost too). FIXED: persist via openbuild's
+      ApplicationVersionsController#update; walkthrough manifest now persists (200,
+      verified). End-to-end Save-button reconfirm pending stable env (orchestration
+      churn flapped :8080 to maintenance/needsDbUpgrade mid-verify).
