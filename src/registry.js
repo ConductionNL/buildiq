@@ -84,6 +84,10 @@ import SchemaDesignerView from './views/SchemaDesigner.vue'
 // virtual app's manifest via PATCH (REQ-OBPD-003).
 import PageDesignerView from './views/PageDesignerHost.vue'
 
+// Visual walkthrough designer — form-based editor for the manifest `walkthrough`
+// block (ADR-043); persists onto the active ApplicationVersion like PageDesigner.
+import WalkthroughDesignerView from './views/WalkthroughDesignerHost.vue'
+
 // Virtual-app host — nested CnAppRoot rendering a virtual app's own manifest.
 import BuilderHostView from './views/BuilderHost.vue'
 // DashboardIndex — custom dashboard view (KPI cards + Recent apps + Quick start),
@@ -227,6 +231,7 @@ export default {
 	// Custom page components — resolved by CnPageRenderer for type:"custom" pages.
 	SchemaDesignerView: page(SchemaDesignerView),
 	PageDesignerView: page(PageDesignerView),
+	WalkthroughDesignerView: page(WalkthroughDesignerView),
 	BuilderHostView: page(BuilderHostView),
 	DashboardIndex: page(DashboardIndex),
 	TemplateGallery: page(TemplateGalleryView),
