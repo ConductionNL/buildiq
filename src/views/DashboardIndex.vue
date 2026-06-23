@@ -169,7 +169,7 @@ export default {
 				{ id: 1, widgetId: 'apps', gridX: 0, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
 				{ id: 2, widgetId: 'hybrid', gridX: 4, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
 				{ id: 3, widgetId: 'versions', gridX: 8, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
-				{ id: 4, widgetId: 'recent-apps', gridX: 0, gridY: 2, gridWidth: 12, gridHeight: 5 },
+				{ id: 4, widgetId: 'recent-apps', gridX: 0, gridY: 2, gridWidth: 12, gridHeight: 5, flush: true },
 			],
 		}
 	},
@@ -344,13 +344,10 @@ export default {
 	outline-offset: -2px;
 }
 
-/* Recent apps: bleed past the CnWidgetWrapper's 16px content padding so the
-   table sits edge-to-edge with the widget card, and flatten the inner table
-   container's border/radius so there is no card-in-card frame. */
-.ob-recent-apps {
-	margin: -16px;
-}
-
+/* Recent apps: the widget is flush (layout `flush: true` → no CnWidgetWrapper
+   content padding), so the table already sits edge-to-edge — no negative-margin
+   bleed needed. Flatten the inner table container's border/radius so there is
+   no card-in-card frame. */
 .ob-recent-apps :deep(.cn-table-container) {
 	border: none;
 	border-radius: 0;
