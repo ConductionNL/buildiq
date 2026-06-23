@@ -142,6 +142,16 @@ async function boot() {
 				registry: { ...runtimeRegistry },
 				pageTypes: { ...defaultPageTypes },
 				translate: translateForApp,
+				// Persist in-app edits (pages / menu / settings / sidebar / actions)
+				// back to the app's manifest. CnAppRoot's useManifestEditor mutates
+				// THIS same `manifest` object in place while editing, so on Save we
+				// PUT the full current manifest to the app's save endpoint. Without
+				// a persist handler the editor computes a delta and discards it —
+				// edits would vanish on refresh.
+				persistManifestDelta: async () => {
+					const saveUrl = generateUrl(`/apps/openbuild/api/applications/${slug}/manifest`)
+					await axios.put(saveUrl, { manifest })
+				},
 			},
 		}),
 	}).$mount('#content')
