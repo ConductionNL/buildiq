@@ -237,6 +237,24 @@
 			}
 		},
 		{
+			"id": "WalkthroughDesigner",
+			"route": "/builder/:slug/walkthrough",
+			"type": "detail",
+			"title": "Walkthrough designer",
+			"config": {
+				"register": "openbuild",
+				"schema": "application",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			},
+			"slots": {
+				"default": "WalkthroughDesignerView"
+			}
+		},
+		{
 			"id": "Exports",
 			"route": "/exports",
 			"type": "index",

@@ -41,6 +41,12 @@
 				</template>
 				{{ t('openbuild', 'Design pages') }}
 			</NcActionButton>
+			<NcActionButton v-if="obApp && obApp.slug" :to="{ name: 'WalkthroughDesigner', params: { slug: obApp.slug } }">
+				<template #icon>
+					<MapMarkerPath :size="20" />
+				</template>
+				{{ t('openbuild', 'Design walkthrough') }}
+			</NcActionButton>
 			<NcActionButton v-if="obAppRole === 'owner'" :disabled="!obApp" @click="permissionsOpen = true">
 				<template #icon>
 					<AccountMultipleOutline :size="20" />
@@ -126,6 +132,7 @@ import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import PencilRulerOutline from 'vue-material-design-icons/PencilRulerOutline.vue'
+import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
 import History from 'vue-material-design-icons/History.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
@@ -154,6 +161,7 @@ export default {
 		CogOutline,
 		DeleteOutline,
 		PencilRulerOutline,
+		MapMarkerPath,
 		AccountMultipleOutline,
 		History,
 		ContentSaveOutline,
