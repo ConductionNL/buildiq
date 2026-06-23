@@ -98,6 +98,13 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // Owner-only full delete (Application + versions + per-version registers + routes).
         ['name' => 'applicationPublish#destroy', 'url' => '/api/applications/{appUuid}', 'verb' => 'DELETE', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
 
+        // Standalone runtime page for a published virtual app. The slug pattern
+        // excludes slashes, so ONLY the bare /builder/{slug} matches here — the
+        // designer sub-routes (/builder/{slug}/pages, /schemas) fall through to
+        // the SPA catch-all. Placed before the catch-all (Routes::standard
+        // appends it) so this specific page wins.
+        ['name' => 'dashboard#builder', 'url' => '/builder/{slug}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
         // Icon-serving endpoints (openbuild-nextcloud-nav REQ-OBICON-002 / REQ-OBICON-003).
         // Both are #[NoAdminRequired] on the controller. The dark route uses a longer
         // URL pattern ("{slug}-dark.svg") that is unambiguous — it cannot shadow the
