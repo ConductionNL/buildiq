@@ -213,12 +213,21 @@ async function boot() {
 					// without it a freshly-created menu item points at a route that
 					// only exists after a full reload. Replacing `matcher` is the
 					// vue-router 3 reset idiom (keeps `*` ordered last correctly).
-					const fresh = new VueRouter({
-						mode: 'history',
-						base: generateUrl(`/apps/openbuild/builder/${slug}`),
-						routes: routesFromManifest(manifest),
-					})
-					router.matcher = fresh.matcher
+					// Best-effort: the manifest is ALREADY persisted by the PUT above,
+					// so a router-build error here (e.g. a duplicate route the user
+					// created) must NOT reject the save — that would leave the editor
+					// stuck "dirty" and confuse the user. Log and move on.
+					try {
+						const fresh = new VueRouter({
+							mode: 'history',
+							base: generateUrl(`/apps/openbuild/builder/${slug}`),
+							routes: routesFromManifest(manifest),
+						})
+						router.matcher = fresh.matcher
+					} catch (e) {
+						// eslint-disable-next-line no-console
+						console.warn('[openbuild:builder] router rebuild after save failed (edit is saved; reload to pick up new routes)', e)
+					}
 				},
 			},
 		}),
