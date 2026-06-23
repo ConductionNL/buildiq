@@ -50,6 +50,30 @@ export function getCurrentUserGroups() {
 }
 
 /**
+ * Resolve the current Nextcloud user id from the global OC object.
+ *
+ * @return {string} The caller's uid, or '' when not signed in / unavailable.
+ */
+export function getCurrentUid() {
+	try {
+		if (typeof window !== 'undefined' && window.OC) {
+			if (typeof window.OC.getCurrentUser === 'function') {
+				const u = window.OC.getCurrentUser()
+				if (u && u.uid) {
+					return String(u.uid)
+				}
+			}
+			if (window.OC.currentUser) {
+				return String(window.OC.currentUser)
+			}
+		}
+	} catch (e) {
+		// Defensive: never throw from a pure role derivation.
+	}
+	return ''
+}
+
+/**
  * Compute the caller's effective role on the given Application.
  *
  * @param {Application | null | undefined} application The Application object
@@ -62,11 +86,20 @@ export function useRole(application, userGroups) {
 		return 'none'
 	}
 	const groups = Array.isArray(userGroups) ? userGroups : getCurrentUserGroups()
-	if (groups.length === 0) {
+	const uid = getCurrentUid()
+	if (groups.length === 0 && uid === '') {
 		return 'none'
 	}
 	const permissions = application.permissions || {}
-	const intersects = (bucket) => Array.isArray(bucket) && bucket.some(g => groups.includes(g))
+	// Match by group GID OR by the caller's own user principal. Permission
+	// buckets carry `user:<uid>`, `group:<gid>`, or a bare GID — the same
+	// grammar the backend PermissionResolver enforces. The previous group-only
+	// check silently denied a user-principal owner (e.g. owners: ['user:admin'])
+	// every role-gated action.
+	const intersects = (bucket) => Array.isArray(bucket) && bucket.some(
+		(p) => groups.includes(p)
+			|| (uid !== '' && (p === `user:${uid}` || p === uid)),
+	)
 
 	if (intersects(permissions.owners)) {
 		return 'owner'

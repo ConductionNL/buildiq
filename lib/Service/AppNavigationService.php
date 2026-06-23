@@ -151,7 +151,11 @@ class AppNavigationService
                 ['slug' => $slug]
             );
 
-            $appUrl  = '/apps/openbuild/'.$slug;
+            // Point at the virtual-app runtime host (/builder/{slug}) which mounts
+            // a nested CnAppRoot rendering THIS app's own manifest (menu + pages),
+            // not OpenBuild's apps list. The bare `/apps/openbuild/{slug}` had no
+            // route and fell through to OpenBuild's own shell.
+            $appUrl  = '/apps/openbuild/builder/'.$slug;
             $entryId = 'openbuild-app-'.$slug;
             $order   = 1000 + (abs(crc32($slug)) % 1000);
 

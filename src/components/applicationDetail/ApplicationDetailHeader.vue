@@ -87,21 +87,6 @@
 					</button>
 				</div>
 			</div>
-			<div
-				class="ob-detail-header__window-toggle"
-				role="radiogroup"
-				:aria-label="t('openbuild', 'Insights window')">
-				<button
-					v-for="opt in windowOptions"
-					:key="opt"
-					:class="['ob-detail-header__window-btn', selectedWindow === opt ? 'ob-detail-header__window-btn--active' : '']"
-					role="radio"
-					:aria-checked="selectedWindow === opt ? 'true' : 'false'"
-					type="button"
-					@click="selectedWindow = opt">
-					{{ opt }}
-				</button>
-			</div>
 		</section>
 	</div>
 </template>
@@ -113,7 +98,6 @@ import { generateUrl } from '@nextcloud/router'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 
 import { buildVersionedRoute } from '../../router/helpers.js'
-import { useInsightsWindow } from '../../composables/useInsightsWindow.js'
 
 export default {
 	name: 'ApplicationDetailHeader',
@@ -126,15 +110,9 @@ export default {
 		objectId: { type: String, default: '' },
 	},
 	/**
-	 * Expose the shared insights-window ref + options. The 7d/30d/90d toggle
-	 * writes to this ref, which the body dashboard reads to re-fetch KPIs.
-	 *
-	 * @return {{ selectedWindow: import('vue').Ref<string>, windowOptions: string[] }}
+	 * Local component state. The insights time-range control now lives in the
+	 * body dashboard (ApplicationDetailDashboard), not the header.
 	 */
-	setup() {
-		const { selectedWindow, windowOptions } = useInsightsWindow()
-		return { selectedWindow, windowOptions }
-	},
 	data() {
 		return {
 			// CnDetailPage's #header slot only forwards presentational props

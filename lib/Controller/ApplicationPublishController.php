@@ -33,6 +33,7 @@ namespace OCA\OpenBuild\Controller;
 
 use OCA\OpenBuild\AppInfo\Application;
 use OCA\OpenBuild\Exception\InsufficientPermissionException;
+use OCA\OpenBuild\Service\ApplicationDeletionService;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenBuild\Service\VersionPromotionService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -76,7 +77,8 @@ class ApplicationPublishController extends Controller
      * @param LoggerInterface    $logger             PSR logger
      * @param ObjectService      $objectService      OR object surface (load + save)
      * @param IUserSession       $userSession        Current NC user session
-     * @param PermissionResolver $permissionResolver Shared permission-grammar resolver
+     * @param PermissionResolver         $permissionResolver Shared permission-grammar resolver
+     * @param ApplicationDeletionService $deletionService    Full-teardown service for delete
      *
      * @return void
      */
@@ -86,6 +88,7 @@ class ApplicationPublishController extends Controller
         private readonly ObjectService $objectService,
         private readonly IUserSession $userSession,
         private readonly PermissionResolver $permissionResolver,
+        private readonly ApplicationDeletionService $deletionService,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
     }//end __construct()
@@ -122,6 +125,64 @@ class ApplicationPublishController extends Controller
     {
         return $this->setStatus(appUuid: $appUuid, status: self::STATUS_DRAFT);
     }//end unpublish()
+
+    /**
+     * Delete an Application and everything it owns (versions, per-version
+     * registers, routes). Owner-only (admin bypass). Wired as
+     * `applicationPublish#destroy`.
+     *
+     * @param string $appUuid Parent Application UUID (path param)
+     *
+     * @return JSONResponse 200 + `{deleted, orphanedResources}`, or an error envelope
+     */
+    #[NoAdminRequired]
+    #[UserRateLimit(limit: 10, period: 60)]
+    public function destroy(string $appUuid): JSONResponse
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(
+                data: ['error' => 'unauthenticated'],
+                statusCode: Http::STATUS_UNAUTHORIZED
+            );
+        }
+
+        try {
+            $application = $this->loadApplication(uuid: $appUuid);
+            if ($application === null) {
+                return new JSONResponse(
+                    data: ['error' => 'not_found', 'detail' => 'Application '.$appUuid.' not found'],
+                    statusCode: Http::STATUS_NOT_FOUND
+                );
+            }
+
+            $this->assertOwner(application: $application, user: $user);
+
+            $orphaned = $this->deletionService->deleteApplication(
+                appUuid: $appUuid,
+                appSlug: (string) ($application['slug'] ?? '')
+            );
+
+            return new JSONResponse(
+                data: ['deleted' => true, 'orphanedResources' => $orphaned],
+                statusCode: Http::STATUS_OK
+            );
+        } catch (InsufficientPermissionException $e) {
+            return new JSONResponse(
+                data: ['error' => 'forbidden', 'detail' => $e->getMessage()],
+                statusCode: Http::STATUS_FORBIDDEN
+            );
+        } catch (Throwable $e) {
+            $this->logger->error(
+                'OpenBuild: delete failed for {uuid}: {message}',
+                ['uuid' => $appUuid, 'message' => $e->getMessage(), 'exception' => $e]
+            );
+            return new JSONResponse(
+                data: ['error' => 'internal_error', 'detail' => $e->getMessage()],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+    }//end destroy()
 
     /**
      * Flip an Application's status after an owner-only RBAC check.
