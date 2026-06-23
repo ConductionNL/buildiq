@@ -126,6 +126,27 @@ class DashboardController extends Controller
     }//end builder()
 
     /**
+     * Trailing-slash alias of {@see builder()}.
+     *
+     * Browsers and pasted links often append a `/`, e.g.
+     * `/builder/{slug}/`. The bare runtime route's slug pattern excludes
+     * slashes, so the trailing-slash form would otherwise fall through to the
+     * SPA catch-all and render OpenBuild's own shell instead of the app. This
+     * alias keeps a DISTINCT route name (the AppHost Routes::standard() guard
+     * throws on duplicate names) while serving the exact same page.
+     *
+     * @param string $slug The virtual app slug (path param).
+     *
+     * @return TemplateResponse
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function builderSlash(string $slug): TemplateResponse
+    {
+        return $this->builder($slug);
+    }//end builderSlash()
+
+    /**
      * Publish the caller's group IDs via IInitialState.
      *
      * Per REQ-OBR-009 the frontend consumes `loadState('openbuild',

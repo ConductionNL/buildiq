@@ -123,6 +123,7 @@ class Application extends App implements IBootstrap
         } else {
             // No PSR logger is wired this early in register(); error_log is the
             // safe channel and is captured by the NC log pipeline.
+            // phpcs:ignore Generic.PHP.ForbiddenFunctions.Found -- intentional: no PSR logger available this early in register().
             error_log(
                 'OpenBuild: OpenRegister AppHost\\Bootstrap is not autoloadable — '
                 .'skipping generic AppHost plumbing; concrete controllers + domain '

@@ -72,7 +72,12 @@ class ApplicationDeletionService
         $orphaned = [];
 
         // 1. Versions + their per-version registers.
-        foreach ($this->findChildren(schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA, field: 'application', value: $appUuid) as $version) {
+        $versions = $this->findChildren(
+            schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+            field: 'application',
+            value: $appUuid
+        );
+        foreach ($versions as $version) {
             $versionUuid  = (string) ($version['id'] ?? ($version['@self']['id'] ?? ''));
             $registerSlug = (string) ($version['register'] ?? '');
             if ($registerSlug !== '') {
@@ -156,8 +161,8 @@ class ApplicationDeletionService
     /**
      * Delete a per-version register by slug (best-effort).
      *
-     * @param string             $registerSlug The register slug.
-     * @param array<int,string> &$orphaned     Collector for failures.
+     * @param string            $registerSlug The register slug.
+     * @param array<int,string> $orphaned     Collector for failures.
      *
      * @return void
      */
@@ -178,9 +183,9 @@ class ApplicationDeletionService
     /**
      * Delete an object by UUID (best-effort).
      *
-     * @param string             $uuid      The object UUID.
-     * @param string             $label     A short label for the orphaned list.
-     * @param array<int,string> &$orphaned  Collector for failures.
+     * @param string            $uuid     The object UUID.
+     * @param string            $label    A short label for the orphaned list.
+     * @param array<int,string> $orphaned Collector for failures.
      *
      * @return void
      */

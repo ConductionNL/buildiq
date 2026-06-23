@@ -125,11 +125,11 @@ class MigrateAppOverridesToHybridTest extends TestCase
      */
     public function testMigratesRowDeletesSourceAndDropsSchema(): void
     {
-        $schema = $this->createMock(Schema::class);
+        $schema = $this->getMockBuilder(Schema::class)->disableOriginalConstructor()->addMethods(['getId'])->getMock();
         $schema->method('getId')->willReturn(42);
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        $register = $this->createMock(\OCA\OpenRegister\Db\Register::class);
+        $register = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)->disableOriginalConstructor()->addMethods(['getId'])->getMock();
         $register->method('getId')->willReturn(7);
         $this->registerMapper->method('find')->willReturn($register);
 
@@ -170,11 +170,11 @@ class MigrateAppOverridesToHybridTest extends TestCase
      */
     public function testDoesNotDropSchemaWhenARowFails(): void
     {
-        $schema = $this->createMock(Schema::class);
+        $schema = $this->getMockBuilder(Schema::class)->disableOriginalConstructor()->addMethods(['getId'])->getMock();
         $schema->method('getId')->willReturn(42);
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        $register = $this->createMock(\OCA\OpenRegister\Db\Register::class);
+        $register = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)->disableOriginalConstructor()->addMethods(['getId'])->getMock();
         $register->method('getId')->willReturn(7);
         $this->registerMapper->method('find')->willReturn($register);
 
@@ -202,11 +202,11 @@ class MigrateAppOverridesToHybridTest extends TestCase
      */
     public function testIdempotentWhenNoRowsRemain(): void
     {
-        $schema = $this->createMock(Schema::class);
+        $schema = $this->getMockBuilder(Schema::class)->disableOriginalConstructor()->addMethods(['getId'])->getMock();
         $schema->method('getId')->willReturn(42);
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        $register = $this->createMock(\OCA\OpenRegister\Db\Register::class);
+        $register = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)->disableOriginalConstructor()->addMethods(['getId'])->getMock();
         $register->method('getId')->willReturn(7);
         $this->registerMapper->method('find')->willReturn($register);
 
