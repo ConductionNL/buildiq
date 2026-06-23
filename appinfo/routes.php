@@ -105,6 +105,13 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // appends it) so this specific page wins.
         ['name' => 'dashboard#builder', 'url' => '/builder/{slug}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // Same page with a trailing slash — browsers and pasted links often add one.
+        // A BARE trailing slash must still serve the standalone runtime, NOT fall to
+        // the SPA catch-all the way the real designer sub-routes (/builder/{slug}/pages)
+        // do. MUST use a DISTINCT route name (dashboard#builderSlash, a thin alias of
+        // builder()) — the AppHost Routes::standard() guard throws on duplicate names.
+        ['name' => 'dashboard#builderSlash', 'url' => '/builder/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
         // Icon-serving endpoints (openbuild-nextcloud-nav REQ-OBICON-002 / REQ-OBICON-003).
         // Both are #[NoAdminRequired] on the controller. The dark route uses a longer
         // URL pattern ("{slug}-dark.svg") that is unambiguous — it cannot shadow the
