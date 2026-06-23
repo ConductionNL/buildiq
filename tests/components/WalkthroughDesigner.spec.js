@@ -75,6 +75,23 @@ describe('WalkthroughDesigner — controlled walkthrough editor', () => {
 		w.vm.setEnabled(false)
 		expect(lastManifest(w).walkthrough.enabled).toBe(false)
 	})
+
+	it('onRecorderPick appends a step with the resolved target (click-target advance for controls)', () => {
+		const w = factory({ enabled: true, tours: [{ id: 't1', steps: [] }] })
+		w.vm.activeTourIndex = 0
+		w.vm.onRecorderPick({ kind: 'nav-item', ref: 'Products' })
+		const steps = lastManifest(w).walkthrough.tours[0].steps
+		expect(steps.length).toBe(1)
+		expect(steps[0].target).toEqual({ kind: 'nav-item', ref: 'Products' })
+		expect(steps[0].advanceOn.type).toBe('click-target')
+	})
+
+	it('onRecorderPick uses a manual advance for selector/page targets', () => {
+		const w = factory({ enabled: true, tours: [{ id: 't1', steps: [] }] })
+		w.vm.activeTourIndex = 0
+		w.vm.onRecorderPick({ kind: 'selector', selector: '#plain' })
+		expect(lastManifest(w).walkthrough.tours[0].steps[0].advanceOn.type).toBe('manual')
+	})
 })
 
 describe('WalkthroughDesigner — setup-block editing (REQ-WALK-OB-005)', () => {
