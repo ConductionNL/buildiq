@@ -104,6 +104,8 @@
 				"schema": "application",
 				"maxWidth": "none",
 				"showRelatedObjects": false,
+				"showRefresh": false,
+				"showRequestFeature": false,
 				"sidebarTabs": [
 					{
 						"id": "manifest",
@@ -147,8 +149,7 @@
 						"component": "audit-trail",
 						"order": 70
 					}
-				],
-				"documentationUrl": "https://openbuild.conduction.nl"
+				]
 			}
 		},
 		{
