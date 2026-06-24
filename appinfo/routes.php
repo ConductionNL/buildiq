@@ -118,6 +118,17 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // builder()) — the AppHost Routes::standard() guard throws on duplicate names.
         ['name' => 'dashboard#builderSlash', 'url' => '/builder/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // App-page deep links / refreshes within the standalone runtime. The
+        // runtime mounts a history-mode router, so a sub-path like
+        // /builder/{slug}/dogs (or /dogs/123 for a detail page) must serve the
+        // runtime template too — otherwise it falls to the SPA catch-all and
+        // renders OpenBuild's own shell (wrong nav, empty content). The `path`
+        // requirement allows slashes (`.+`, for multi-segment detail routes) but
+        // EXCLUDES the designer sub-routes (pages / schemas / walkthrough), which
+        // must stay in the SPA — they fall through to the catch-all because the
+        // negative lookahead makes them not match here.
+        ['name' => 'dashboard#builderPath', 'url' => '/builder/{slug}/{path}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'path' => '(?!(?:pages|schemas|walkthrough)(?:/|$)).+']],
+
         // Icon-serving endpoints (openbuild-nextcloud-nav REQ-OBICON-002 / REQ-OBICON-003).
         // Both are #[NoAdminRequired] on the controller. The dark route uses a longer
         // URL pattern ("{slug}-dark.svg") that is unambiguous — it cannot shadow the

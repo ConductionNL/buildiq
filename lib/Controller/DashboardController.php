@@ -147,6 +147,31 @@ class DashboardController extends Controller
     }//end builderSlash()
 
     /**
+     * Sub-path alias of {@see builder()} for the runtime's own page routes.
+     *
+     * The standalone runtime mounts a history-mode vue-router, so deep links
+     * and refreshes on an app page (e.g. `/builder/{slug}/dogs`,
+     * `/builder/{slug}/dogs/123`) must be served the runtime template too — the
+     * client router then resolves the page from the URL. The route's `path`
+     * requirement EXCLUDES the designer sub-routes (`pages`, `schemas`,
+     * `walkthrough`), which stay in the SPA via the catch-all. The `$path` is
+     * read client-side from `window.location`, so it is intentionally unused
+     * here beyond routing.
+     *
+     * @param string $slug The virtual app slug (path param).
+     * @param string $path The remaining app-route path (unused server-side).
+     *
+     * @return TemplateResponse
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function builderPath(string $slug, string $path): TemplateResponse
+    {
+        unset($path);
+        return $this->builder($slug);
+    }//end builderPath()
+
+    /**
      * Publish the caller's group IDs via IInitialState.
      *
      * Per REQ-OBR-009 the frontend consumes `loadState('openbuild',
