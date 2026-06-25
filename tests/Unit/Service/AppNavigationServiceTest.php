@@ -443,7 +443,9 @@ class AppNavigationServiceTest extends TestCase
 
         $this->assertSame('openbuild-app-hello-world', $entry['id']);
         $this->assertSame('Hello World', $entry['name']);
-        $this->assertStringContainsString('/apps/openbuild/hello-world', $entry['href']);
+        // Nav links target the standalone runtime page (/builder/{slug}), not
+        // the bare app root — see AppNavigationService + DashboardController::builder.
+        $this->assertStringContainsString('/apps/openbuild/builder/hello-world', $entry['href']);
         $this->assertArrayHasKey('order', $entry);
         $this->assertArrayHasKey('enabled', $entry);
     }//end testRegisteredClosureReturnsExpectedShape()

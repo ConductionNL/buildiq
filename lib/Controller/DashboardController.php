@@ -99,6 +99,54 @@ class DashboardController extends Controller
     }//end catchAll()
 
     /**
+     * Render the STANDALONE runtime page for a published virtual app.
+     *
+     * Unlike the SPA (which renders apps nested inside OpenBuild's own shell),
+     * this serves a dedicated template (`builder`) whose JS entry mounts the
+     * virtual app's CnAppRoot at the top level — its own menu, pages and
+     * routing from GET /api/applications/{slug}/manifest. Only the bare
+     * `/builder/{slug}` runtime uses this; the designer sub-routes
+     * (`/builder/{slug}/pages`, `/schemas`) stay in the SPA via the catch-all.
+     *
+     * @param string $slug The virtual app slug (path param).
+     *
+     * @return TemplateResponse
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function builder(string $slug): TemplateResponse
+    {
+        $this->publishCurrentUserGroups();
+        $this->initialState->provideInitialState('builderSlug', $slug);
+        $this->initialState->provideInitialState(
+            'builderVersion',
+            (string) $this->request->getParam('_version', '')
+        );
+        return new TemplateResponse(Application::APP_ID, 'builder');
+    }//end builder()
+
+    /**
+     * Trailing-slash alias of {@see builder()}.
+     *
+     * Browsers and pasted links often append a `/`, e.g.
+     * `/builder/{slug}/`. The bare runtime route's slug pattern excludes
+     * slashes, so the trailing-slash form would otherwise fall through to the
+     * SPA catch-all and render OpenBuild's own shell instead of the app. This
+     * alias keeps a DISTINCT route name (the AppHost Routes::standard() guard
+     * throws on duplicate names) while serving the exact same page.
+     *
+     * @param string $slug The virtual app slug (path param).
+     *
+     * @return TemplateResponse
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function builderSlash(string $slug): TemplateResponse
+    {
+        return $this->builder($slug);
+    }//end builderSlash()
+
+    /**
      * Publish the caller's group IDs via IInitialState.
      *
      * Per REQ-OBR-009 the frontend consumes `loadState('openbuild',

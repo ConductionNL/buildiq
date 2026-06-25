@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # app-nav-entries Specification
 
 ## Purpose

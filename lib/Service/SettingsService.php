@@ -34,17 +34,43 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Service for managing OpenBuild application configuration and settings.
+ *
+ * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
  */
 class SettingsService
 {
 
     /**
-     * Configuration keys managed by this service.
+     * Configuration keys managed by this service (plain read/write).
      *
      * @var array<string>
      */
     private const CONFIG_KEYS = [
         'register',
+        'registry_url',
+        'registry_register',
+    ];
+
+    /**
+     * Per-key default values. Keys absent here default to ''.
+     * `registry_register` defaults to `openbuild` (the catalogue's register
+     * segment); `registry_url` defaults to '' so the store stays hidden until an
+     * admin configures it (the placeholder URL is only a UI hint, never stored).
+     *
+     * @var array<string, string>
+     */
+    private const CONFIG_DEFAULTS = [
+        'registry_register' => 'openbuild',
+    ];
+
+    /**
+     * Write-only config keys — accepted on update but NEVER returned by
+     * getSettings(). The remote registry read token lives here.
+     *
+     * @var array<string>
+     */
+    private const SECRET_KEYS = [
+        'registry_token',
     ];
 
     /**
@@ -73,6 +99,8 @@ class SettingsService
      * Check whether OpenRegister is installed and available.
      *
      * @return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
      */
     public function isOpenRegisterAvailable(): bool
     {
@@ -93,17 +121,24 @@ class SettingsService
     {
         $settings = [];
         foreach (self::CONFIG_KEYS as $key) {
-            $settings[$key] = $this->appConfig->getValueString(Application::APP_ID, $key, '');
+            $default        = (self::CONFIG_DEFAULTS[$key] ?? '');
+            $settings[$key] = $this->appConfig->getValueString(Application::APP_ID, $key, $default);
         }
 
         $user    = $this->userSession->getUser();
         $isAdmin = ($user !== null && $this->groupManager->isAdmin($user->getUID()));
 
+        // Remote template store (openbuild-remote-template-store): expose a
+        // token-presence flag + a storeConfigured flag, but NEVER the token value.
+        $registryToken = $this->appConfig->getValueString(Application::APP_ID, 'registry_token', '');
+
         return array_merge(
             $settings,
             [
-                'openregisters' => $this->isOpenRegisterAvailable(),
-                'isAdmin'       => $isAdmin,
+                'openregisters'      => $this->isOpenRegisterAvailable(),
+                'isAdmin'            => $isAdmin,
+                'registry_token_set' => ($registryToken !== ''),
+                'storeConfigured'    => (trim($settings['registry_url'] ?? '') !== ''),
             ]
         );
     }//end getSettings()
@@ -121,6 +156,15 @@ class SettingsService
     {
         foreach (self::CONFIG_KEYS as $key) {
             if (isset($data[$key]) === true) {
+                $this->appConfig->setValueString(Application::APP_ID, $key, (string) $data[$key]);
+            }
+        }
+
+        // Write-only secrets (registry_token): an empty submitted value means
+        // "leave the stored token unchanged" so re-saving the form does not wipe
+        // a previously-stored token (the form never receives the value back).
+        foreach (self::SECRET_KEYS as $key) {
+            if (isset($data[$key]) === true && (string) $data[$key] !== '') {
                 $this->appConfig->setValueString(Application::APP_ID, $key, (string) $data[$key]);
             }
         }

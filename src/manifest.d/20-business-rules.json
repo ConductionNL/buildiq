@@ -1,14 +1,6 @@
 {
-	"_comment": "ADR-037 manifest fragment — business-rules-engine. Adds the Business rules menu entry + the custom RuleSets dashboard page. src/main.js mergeManifestFragments() concatenates these onto src/manifest.json's menu/pages arrays.",
-	"menu": [
-		{
-			"id": "BusinessRules",
-			"label": "Business rules",
-			"icon": "icon-category-customization",
-			"route": "BusinessRules",
-			"order": 36
-		}
-	],
+	"_comment": "ADR-037 manifest fragment — business-rules-engine. Registers the RuleSets page only; NO top-level menu entry. Business rules exist only as part of an app (reached from within the app builder, not a global menu item) — the standalone /business-rules page stays routable for deep-links but is intentionally off the main nav. src/main.js mergeManifestFragments() concatenates pages onto src/manifest.json.",
+	"menu": [],
 	"pages": [
 		{
 			"id": "BusinessRules",

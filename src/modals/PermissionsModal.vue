@@ -18,7 +18,7 @@
 		@update:open="onClose">
 		<div class="openbuild-permissions-modal">
 			<p class="openbuild-permissions-modal__help">
-				{{ t('openbuild', 'Configure which Nextcloud groups can view, edit, or own this virtual app. Members of any of these groups will see the app in their list; only owners may publish, archive, delete, transfer ownership, or change these permissions.') }}
+				{{ t('openbuild', 'Configure which Nextcloud groups can view, edit, or own this app. Members of any of these groups will see the app in their list; only owners may publish, archive, delete, transfer ownership, or change these permissions.') }}
 			</p>
 
 			<NcSelect

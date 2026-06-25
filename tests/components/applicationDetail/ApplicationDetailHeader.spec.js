@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
+
+import { useInsightsWindow } from '../../../src/composables/useInsightsWindow.js'
 
 // Stub axios + nextcloud helpers before importing the component.
 vi.mock('@nextcloud/axios', () => ({
@@ -30,12 +32,20 @@ const route = { name: 'VirtualAppDetail', params: { objectId: 'app-uuid' }, quer
 
 /**
  * Spec: openbuild-app-detail-overview / application-detail-overview
- * REQ-OBADO-001 (six rows), REQ-OBADO-002 (pill ordering), REQ-OBADO-003 (window toggle).
+ * REQ-OBADO-001 (identity + controls header), REQ-OBADO-002 (pill ordering),
+ * REQ-OBADO-003 (window toggle). The KPI / activity / structural / banner rows
+ * moved to ApplicationDetailDashboard (grid-built body) — see its spec.
  *
  * Mount-only assertions — the integration behaviour (HTTP fan-out, real
  * routing) lives in the Playwright spec.
  */
 describe('ApplicationDetailHeader', () => {
+	// The window selection is a process-wide singleton shared with the body
+	// dashboard; reset it so test order doesn't leak the 30d selection.
+	beforeEach(() => {
+		useInsightsWindow().selectedWindow.value = '7d'
+	})
+
 	const application = {
 		uuid: 'app-uuid',
 		slug: 'hello-world',
@@ -50,7 +60,7 @@ describe('ApplicationDetailHeader', () => {
 		},
 	}
 
-	it('mounts and renders the hero strip + window toggle controls', () => {
+	it('mounts and renders the hero strip', () => {
 		const wrapper = shallowMount(ApplicationDetailHeader, {
 			propsData: { object: application, objectId: 'app-uuid' },
 			mocks: { t, $router: router, $route: route },
@@ -58,15 +68,9 @@ describe('ApplicationDetailHeader', () => {
 		expect(wrapper.find('.ob-detail-header').exists()).toBe(true)
 		expect(wrapper.text()).toContain('Hello World')
 
-		// Three window toggle buttons.
-		const winButtons = wrapper.findAll('.ob-detail-header__window-btn')
-		expect(winButtons.length).toBe(3)
-		expect(winButtons.at(0).text()).toBe('7d')
-		expect(winButtons.at(1).text()).toBe('30d')
-		expect(winButtons.at(2).text()).toBe('90d')
-
-		// Default window is 7d.
-		expect(winButtons.at(0).classes()).toContain('ob-detail-header__window-btn--active')
+		// The insights time-range toggle moved out of the header into the body
+		// dashboard's KPI strip — the header no longer renders it.
+		expect(wrapper.findAll('.ob-detail-header__window-btn').length).toBe(0)
 	})
 
 	it('renders pill tabs for each version in chain order, with production starred', async () => {
@@ -121,31 +125,4 @@ describe('ApplicationDetailHeader', () => {
 		expect(visible[0].slug).toBe('production')
 	})
 
-	it('changing the window updates the active window state', async () => {
-		const wrapper = shallowMount(ApplicationDetailHeader, {
-			propsData: { object: application, objectId: 'app-uuid' },
-			mocks: { t, $router: router, $route: route },
-		})
-		await wrapper.findAll('.ob-detail-header__window-btn').at(1).trigger('click')
-		expect(wrapper.vm.selectedWindow).toBe('30d')
-	})
-
-	it('shows the empty-state activity message when activity is empty (REQ-OBADO-005)', () => {
-		const wrapper = shallowMount(ApplicationDetailHeader, {
-			propsData: { object: application, objectId: 'app-uuid' },
-			mocks: { t, $router: router, $route: route },
-		})
-		expect(wrapper.text()).toContain('No activity in the selected window')
-	})
-
-	it('renders the version-no-longer-accessible banner when 404 occurs', async () => {
-		const wrapper = shallowMount(ApplicationDetailHeader, {
-			propsData: { object: application, objectId: 'app-uuid' },
-			mocks: { t, $router: router, $route: route },
-		})
-		wrapper.vm.versionNoLongerAccessible = true
-		await wrapper.vm.$nextTick()
-		expect(wrapper.find('.ob-detail-header__banner').exists()).toBe(true)
-		expect(wrapper.text()).toContain('no longer accessible')
-	})
 })

@@ -24,24 +24,32 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\AppInfo;
 
+use OCA\OpenBuild\Capabilities;
 use OCA\OpenBuild\Controller\DashboardController;
 use OCA\OpenBuild\Controller\PreferencesController;
 use OCA\OpenBuild\Controller\SettingsController;
 use OCA\OpenBuild\Lifecycle\ApplicationVersionOwnerGuard;
+use OCA\OpenBuild\Listener\HybridMetadataLockListener;
 use OCA\OpenBuild\Listener\ProductionVersionGuardListener;
 use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
+use OCA\OpenBuild\Sections\SettingsSection;
 use OCA\OpenBuild\Service\AppNavigationService;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenBuild\Service\SettingsService;
+use OCA\OpenBuild\Settings\AdminSettings;
 use OCA\OpenRegister\AppHost\Bootstrap;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\App\IAppManager;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\AppFramework\Services\IInitialState;
+use OCP\IAppConfig;
 use OCP\INavigationManager;
+use OCP\IURLGenerator;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
@@ -89,15 +97,39 @@ class Application extends App implements IBootstrap
         //
         // `mcpProvider` is wired below explicitly (not via Bootstrap) because
         // the domain registrations that follow override the relevant aliases.
-        Bootstrap::register(
-            $context,
-            self::APP_ID,
-            [
-                'namespace'     => 'OCA\\OpenBuild',
-                'sectionName'   => 'OpenBuild',
-                'observability' => true,
-            ]
-        );
+        //
+        // GUARDED: `Bootstrap::register` is an eager static call that fatals if
+        // OpenRegister's AppHost engine class is not autoloadable on this
+        // instance (e.g. a stale optimized/authoritative composer classmap that
+        // predates AppHost, or a stub OCA\OpenRegister PSR-4 prefix). That fatal
+        // would abort the WHOLE register() method BEFORE the domain listeners
+        // below — silently disabling the per-Application RBAC guards and the
+        // hybrid metadata-lock (so a hybrid app's immutable identity fields would
+        // become writable). Skip the generic AppHost plumbing when it is absent
+        // and fall through to OpenBuild's own concrete controllers + listeners,
+        // which is what this app actually relies on (the comment that the lazy
+        // closures "never fatal NC bootstrap" only held for the closures, not for
+        // resolving the Bootstrap class itself).
+        if (class_exists(Bootstrap::class) === true) {
+            Bootstrap::register(
+                $context,
+                self::APP_ID,
+                [
+                    'namespace'     => 'OCA\\OpenBuild',
+                    'sectionName'   => 'OpenBuild',
+                    'observability' => true,
+                ]
+            );
+        } else {
+            // No PSR logger is wired this early in register(); error_log is the
+            // safe channel and is captured by the NC log pipeline.
+            // phpcs:ignore Generic.PHP.ForbiddenFunctions.Found -- intentional: no PSR logger available this early in register().
+            error_log(
+                'OpenBuild: OpenRegister AppHost\\Bootstrap is not autoloadable — '
+                .'skipping generic AppHost plumbing; concrete controllers + domain '
+                .'listeners (RBAC + hybrid metadata-lock) still register.'
+            );
+        }
 
         // OpenBuild keeps three concrete controllers + the settings service that
         // the AppHost generics cannot cover on OpenRegister `development` (see
@@ -149,6 +181,44 @@ class Application extends App implements IBootstrap
             )
         );
 
+        // 4. SettingsSection + AdminSettings — the admin settings section and
+        // panel referenced by info.xml `<settings>`. Both are one-line leaf
+        // subclasses of OpenRegister's GenericSettingsSection / GenericAdminSettings,
+        // whose constructors take scalar params (sectionId, name, icon, priority)
+        // that are NOT autowireable — they MUST be bound by a service factory.
+        // Bootstrap::register() normally binds them, but when Bootstrap is not
+        // autoloadable at register() time (it lives in OCA\OpenRegister and that
+        // app's autoloader is not guaranteed to be registered before OpenBuild
+        // boots — `openbuild` sorts before `openregister`), the else branch above
+        // skips it. NC's settings Manager instantiates EVERY registered section to
+        // render ANY settings page, so an unbound `sectionId` throws
+        // QueryNotFoundException that escapes NC's catch and blanks ALL admin AND
+        // personal settings pages instance-wide (not just OpenBuild's). Register
+        // the leaf classes unconditionally here with Bootstrap's exact defaults so
+        // they resolve regardless of app load order (last registration wins).
+        $context->registerService(
+            SettingsSection::class,
+            static fn ($c): SettingsSection => new SettingsSection(
+                sectionId: self::APP_ID,
+                name: 'OpenBuild',
+                appId: self::APP_ID,
+                iconFile: 'app-dark.svg',
+                priority: 75,
+                urlGenerator: $c->get(IURLGenerator::class)
+            )
+        );
+        $context->registerService(
+            AdminSettings::class,
+            static fn ($c): AdminSettings => new AdminSettings(
+                appId: self::APP_ID,
+                sectionId: self::APP_ID,
+                priority: 10,
+                appManager: $c->get(IAppManager::class),
+                initialState: $c->get(IInitialState::class),
+                appConfig: $c->get(IAppConfig::class)
+            )
+        );
+
         // Per ADR-002 the snapshot-on-publish writeback listener has been
         // retired. ApplicationVersion is now a first-class long-lived row,
         // not an append-only snapshot, and `Application.currentVersion` has
@@ -168,6 +238,20 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(
             event: ObjectUpdatingEvent::class,
             listener: ProductionVersionGuardListener::class
+        );
+
+        // Metadata-lock for hybrid apps (unify-apps-with-app-type). On every
+        // Application UPDATE, reject a change to a hybrid app's identity
+        // metadata (slug/name) — it mirrors the installed Nextcloud app it
+        // customizes and renaming it would desync the baseRef.id link and the
+        // /api/app-overrides/{appId} shim key. Cross-row check (compares the
+        // proposed payload against the stored row) realized as a pre-save
+        // listener, the imperative companion to the same-row
+        // `hybrid-requires-baseRef` x-openregister-validation rule (ADR-031
+        // §Exceptions(1)). Virtual apps keep full slug/name edit.
+        $context->registerEventListener(
+            event: ObjectUpdatingEvent::class,
+            listener: HybridMetadataLockListener::class
         );
 
         // Register OpenBuildToolProvider as the MCP tool provider for the AI Chat Companion.
@@ -199,6 +283,14 @@ class Application extends App implements IBootstrap
                 );
             }
         );
+
+        // Edit-availability capability (openbuild-inline-edit-persistence, spec
+        // openbuild-capability). Advertises `{ openbuild: { enabled, canEdit } }`
+        // so a fleet app's in-place edit button has a robust per-user signal
+        // (IAppManager::isEnabledForUser respects the NC app group-restriction)
+        // instead of inferring availability from OC.appswebroots. `canEdit` is a
+        // UI hint only — the write/delete endpoints re-check access server-side.
+        $context->registerCapability(Capabilities::class);
 
         // Repair steps (InitializeSettings + MigrateToVersionedModel + …) are declared in info.xml.
     }//end register()

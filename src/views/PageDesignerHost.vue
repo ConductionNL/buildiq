@@ -22,15 +22,15 @@
 			<div class="page-designer-host__title">
 				<h2>{{ application ? application.name : t('openbuild', 'Page designer') }}</h2>
 				<p v-if="application" class="page-designer-host__subtitle">
-					{{ t('openbuild', 'Design the pages and menu of this virtual app, then publish from Virtual apps.') }}
+					{{ t('openbuild', 'Design the pages and menu of this app, then publish from Apps.') }}
 				</p>
 			</div>
 			<div class="page-designer-host__actions">
 				<router-link class="page-designer-host__link" :to="{ name: 'VirtualApps' }">
-					{{ t('openbuild', 'Back to Virtual apps') }}
+					{{ t('openbuild', 'Back to Apps') }}
 				</router-link>
 				<a v-if="builderUrl" class="page-designer-host__link" :href="builderUrl">
-					{{ t('openbuild', 'Open virtual app') }}
+					{{ t('openbuild', 'Open app') }}
 				</a>
 				<NcButton
 					v-if="application"
@@ -59,8 +59,8 @@
 		</div>
 		<NcEmptyContent
 			v-else-if="!application"
-			:name="t('openbuild', 'No virtual app found')"
-			:description="t('openbuild', 'No virtual app exists for the slug {slug}.', { slug: routeSlug })" />
+			:name="t('openbuild', 'No app found')"
+			:description="t('openbuild', 'No app exists for the slug {slug}.', { slug: routeSlug })" />
 		<PageDesigner
 			v-else
 			:manifest="manifest"
@@ -394,7 +394,7 @@ export default {
 					: { ...EMPTY_MANIFEST }
 			} catch (e) {
 				this.application = null
-				this.error = t('openbuild', 'Failed to load the virtual app: {error}', { error: (e && e.message) || String(e) })
+				this.error = t('openbuild', 'Failed to load the app: {error}', { error: (e && e.message) || String(e) })
 			} finally {
 				this.loading = false
 			}

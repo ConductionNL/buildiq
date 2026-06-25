@@ -65,33 +65,47 @@ jobs:
   # ---------------------------------------------------------------------------
   phpunit-unit:
     name: PHPUnit unit (${{ inputs.app-id }})
-    runs-on: codeberg-small
+    runs-on: codeberg-medium
     container:
-      image: code.forgejo.org/oci/ci-php:8.3
+      image: php:8.3-cli
     steps:
+      - name: Install base tooling
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git curl ca-certificates gnupg jq unzip zip \
+            libzip-dev libpng-dev python3
+          docker-php-ext-install -j"$(nproc)" zip gd
+          curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Install composer deps
-        run: composer install --no-interaction --no-progress --prefer-dist
+        run: composer install --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
 
       - name: Run unit suite (phpunit-unit.xml)
         # unit-gating=false reports failures without failing the job, for apps
         # carrying pre-existing tests/Unit debt (see TESTING-CI-ROLLOUT.md).
-        continue-on-error: ${{ inputs.unit-gating == false }}
-        run: ./vendor/bin/phpunit --configuration phpunit-unit.xml --no-coverage --colors=never
+        # Gating is done in-shell, NOT via `continue-on-error: ${{ }}` — Forgejo
+        # Actions cannot unmarshal an expression into that bool field, which made
+        # the whole workflow fail to parse (cannot unmarshal !!str into bool).
+        run: |
+          ./vendor/bin/phpunit --configuration phpunit-unit.xml --no-coverage --colors=never && exit 0
+          [ "${{ inputs.unit-gating }}" = "false" ] && { echo "unit-gating off — not failing the job"; exit 0; }
+          exit 1
 
   # ---------------------------------------------------------------------------
   # HARD GATE 2 — l10n extraction-drift check (no NC needed; pure Node).
   # ---------------------------------------------------------------------------
   l10n-check:
     name: l10n extraction check (${{ inputs.app-id }})
-    runs-on: codeberg-small
+    runs-on: codeberg-medium
     container:
-      image: code.forgejo.org/oci/ci-node:${{ inputs.node-version }}
+      image: node:${{ inputs.node-version }}
     steps:
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Assert every t() source string is in l10n/en.json
         run: node tests/l10n/check-l10n.js
@@ -105,13 +119,24 @@ jobs:
   # ---------------------------------------------------------------------------
   phpunit-coverage-ratchet:
     name: PHPUnit coverage ratchet (${{ inputs.app-id }})
-    runs-on: codeberg-small
+    runs-on: codeberg-medium
     container:
-      image: code.forgejo.org/oci/ci-php:8.3
-    continue-on-error: ${{ inputs.unit-gating == false }}
+      image: php:8.3-cli
+    # Soft-gating (unit-gating=false) is applied in-shell on the ratchet step,
+    # NOT via `continue-on-error: ${{ }}` — Forgejo can't unmarshal an
+    # expression into that bool and the workflow fails to parse.
     steps:
+      - name: Install base tooling
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git curl ca-certificates gnupg jq unzip zip \
+            libzip-dev libpng-dev python3
+          docker-php-ext-install -j"$(nproc)" zip gd
+          curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Ensure a coverage driver (PCOV)
         run: |
@@ -123,7 +148,7 @@ jobs:
             || echo "coverage driver: ABSENT (ratchet will no-op; see TESTING-CI-ROLLOUT.md)"
 
       - name: Install composer deps
-        run: composer install --no-interaction --no-progress --prefer-dist
+        run: composer install --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
 
       - name: Run unit suite WITH coverage (clover)
         run: |
@@ -135,7 +160,9 @@ jobs:
       - name: Coverage ratchet (fail on drop)
         run: |
           test -f coverage/clover.xml || exit 0
-          bash tests/coverage-ratchet.sh phpunit coverage/clover.xml
+          bash tests/coverage-ratchet.sh phpunit coverage/clover.xml && exit 0
+          [ "${{ inputs.unit-gating }}" = "false" ] && { echo "unit-gating off — not failing on coverage drop"; exit 0; }
+          exit 1
 
   # ---------------------------------------------------------------------------
   # COVERAGE GATE B — FRONTEND COVERAGE RATCHET (Vitest v8, src/** line coverage).
@@ -144,12 +171,12 @@ jobs:
   # ---------------------------------------------------------------------------
   frontend-coverage-ratchet:
     name: Frontend coverage ratchet (${{ inputs.app-id }})
-    runs-on: codeberg-small
+    runs-on: codeberg-medium
     container:
-      image: code.forgejo.org/oci/ci-node:${{ inputs.node-version }}
+      image: node:${{ inputs.node-version }}
     steps:
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Install npm deps (+ coverage-v8)
         run: |
@@ -192,7 +219,7 @@ jobs:
     runs-on: docker
     steps:
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: TODO — boot seeded NC, then run deep e2e
         run: |
@@ -215,7 +242,7 @@ jobs:
     runs-on: docker
     steps:
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: TODO — boot NC, then run Newman
         run: |

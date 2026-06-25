@@ -53,6 +53,8 @@ use Throwable;
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
  */
 class SeedHelloWorldFixture extends Command
 {
@@ -61,6 +63,14 @@ class SeedHelloWorldFixture extends Command
     private const VERSION_SLUG = 'production';
 
     private const SEMVER = '1.0.0';
+
+    /**
+     * Slug/appId of the seeded HYBRID example app (unify-apps-with-app-type).
+     * Points at the OpenCatalogi fleet app; the delta is data-only and renders
+     * over that app's bundled manifest client-side, so it is harmless even when
+     * OpenCatalogi is not installed on this instance.
+     */
+    private const HYBRID_SLUG = 'opencatalogi';
 
     /**
      * Constructor.
@@ -95,6 +105,8 @@ class SeedHelloWorldFixture extends Command
      * @param OutputInterface $output The command output.
      *
      * @return int Command exit code.
+     *
+     * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -102,7 +114,8 @@ class SeedHelloWorldFixture extends Command
 
         try {
             if ($this->routeExists(register: $register) === true) {
-                $output->writeln('<info>hello-world fixture already present — nothing to do.</info>');
+                $output->writeln('<info>hello-world fixture already present — skipping the virtual app.</info>');
+                $this->seedHybridExample(register: $register, output: $output);
                 return Command::SUCCESS;
             }
 
@@ -167,12 +180,112 @@ class SeedHelloWorldFixture extends Command
             }
 
             $output->writeln('<info>Seeded hello-world fixture (application '.$applicationUuid.').</info>');
+
+            // Also seed the hybrid example app (unify-apps-with-app-type).
+            $this->seedHybridExample(register: $register, output: $output);
             return Command::SUCCESS;
         } catch (Throwable $e) {
             $output->writeln('<error>Failed to seed hello-world fixture: '.$e->getMessage().'</error>');
             return Command::FAILURE;
         }//end try
     }//end execute()
+
+    /**
+     * Idempotently seed one HYBRID example app (unify-apps-with-app-type): a
+     * hybrid Application(appType:hybrid, slug=opencatalogi) + a delta-only
+     * production ApplicationVersion carrying a small manifestDelta. The delta is
+     * served raw by the /api/app-overrides/{appId} shim and merged client-side
+     * over the OpenCatalogi fleet app's bundled manifest, so it is harmless even
+     * when OpenCatalogi is not installed. Re-running is a no-op once the hybrid
+     * Application exists.
+     *
+     * @param string          $register The openbuild register slug.
+     * @param OutputInterface $output   The command output.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+     */
+    private function seedHybridExample(string $register, OutputInterface $output): void
+    {
+        if ($this->hybridExists(register: $register) === true) {
+            $output->writeln('<info>hybrid example already present — nothing to do.</info>');
+            return;
+        }
+
+        $baseRef = ['kind' => 'fleet-app', 'id' => self::HYBRID_SLUG];
+
+        $application     = $this->create(
+            register: $register,
+            schema: ApplicationVersionService::APPLICATION_SCHEMA,
+            data: [
+                'slug'        => self::HYBRID_SLUG,
+                'name'        => 'OpenCatalogi',
+                'description' => 'Seeded hybrid example — a local layout customization layered over the installed OpenCatalogi app.',
+                'appType'     => 'hybrid',
+                'baseRef'     => $baseRef,
+            ]
+        );
+        $applicationUuid = $application->getUuid();
+
+        $version     = $this->create(
+            register: $register,
+            schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+            data: [
+                'name'          => 'Production',
+                'slug'          => self::VERSION_SLUG,
+                'manifest'      => (object) [],
+                'manifestDelta' => [
+                    'pages' => [
+                        'Publications' => ['title' => 'Open Data'],
+                    ],
+                ],
+                'baseRef'       => $baseRef,
+                'register'      => $register.'-'.self::HYBRID_SLUG,
+                'semver'        => '0.1.0',
+                'status'        => 'published',
+                'application'   => $applicationUuid,
+            ]
+        );
+        $versionUuid = $version->getUuid();
+
+        $this->create(
+            register: $register,
+            schema: ApplicationVersionService::APPLICATION_SCHEMA,
+            data: [
+                'slug'              => self::HYBRID_SLUG,
+                'name'              => 'OpenCatalogi',
+                'appType'           => 'hybrid',
+                'baseRef'           => $baseRef,
+                'productionVersion' => $versionUuid,
+            ],
+            uuid: $applicationUuid
+        );
+
+        $output->writeln('<info>Seeded hybrid example app (application '.$applicationUuid.').</info>');
+    }//end seedHybridExample()
+
+    /**
+     * Whether the hybrid example Application already exists.
+     *
+     * @param string $register The openbuild register slug.
+     *
+     * @return bool True when the hybrid example is already present.
+     */
+    private function hybridExists(string $register): bool
+    {
+        $registerId = $this->registerMapper->find($register, _multitenancy: false)->getId();
+        $appSchema  = $this->schemaMapper->find(
+            ApplicationVersionService::APPLICATION_SCHEMA,
+            _multitenancy: false
+        )->getId();
+        $apps       = $this->objectService->searchObjects(
+            ['@self' => ['register' => $registerId, 'schema' => $appSchema], 'slug' => self::HYBRID_SLUG, 'appType' => 'hybrid'],
+            _rbac: false,
+            _multitenancy: false
+        );
+        return empty($apps) === false;
+    }//end hybridExists()
 
     /**
      * Create an object with RBAC + multitenancy disabled. The command runs

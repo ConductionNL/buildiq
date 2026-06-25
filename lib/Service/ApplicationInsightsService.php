@@ -56,8 +56,11 @@ namespace OCA\OpenBuild\Service;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -75,6 +78,15 @@ class ApplicationInsightsService
      * @var array<int, string>
      */
     public const ALLOWED_WINDOWS = ['7d', '30d', '90d'];
+
+    /**
+     * How long a computed insights payload is memoised (seconds). The
+     * aggregation is expensive for large apps; 10 minutes balances freshness
+     * against recompute cost.
+     *
+     * @var int
+     */
+    private const CACHE_TTL_SECONDS = 600;
 
     /**
      * Window-to-hours mapping (REQ-OBAI-004).
@@ -117,6 +129,8 @@ class ApplicationInsightsService
      * @param ObjectService    $objectService    OR object surface
      * @param AuditTrailMapper $auditTrailMapper Audit-trail aggregations (chart + actors + counts)
      * @param SchemaMapper     $schemaMapper     Schema slug-to-integer-ID resolver
+     * @param RegisterMapper   $registerMapper   Register lookup (installed-app footprint for hybrid apps)
+     * @param ICacheFactory    $cacheFactory     Distributed-cache factory (memoises computed payloads)
      * @param LoggerInterface  $logger           PSR logger
      *
      * @return void
@@ -125,9 +139,19 @@ class ApplicationInsightsService
         private readonly ObjectService $objectService,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly SchemaMapper $schemaMapper,
+        private readonly RegisterMapper $registerMapper,
+        ICacheFactory $cacheFactory,
         private readonly LoggerInterface $logger,
     ) {
+        $this->cache = $cacheFactory->createDistributed('openbuild_insights');
     }//end __construct()
+
+    /**
+     * Distributed cache for computed insights payloads.
+     *
+     * @var ICache
+     */
+    private ICache $cache;
 
     /**
      * Resolve + authorise the (Application, Version, caller) tuple.
@@ -222,15 +246,40 @@ class ApplicationInsightsService
 
             [$application, $version] = $resolved;
 
-            $appSlug      = (string) ($application['slug'] ?? '');
+            // These aggregations fan out across every schema/register of the
+            // (possibly very large) installed app — tens of seconds for a big
+            // hybrid app. The PAYLOAD is identical for all callers (RBAC is
+            // already enforced above), so memoise it in the distributed cache
+            // keyed by (app, version, window). First viewer pays the cost (the
+            // dashboard shows a spinner); everyone else gets it instantly until
+            // the short TTL lapses.
+            $cacheKey = sprintf('payload_%s_%s_%s', $appUuid, $versionUuid, $window);
+            $cached   = $this->cache->get($cacheKey);
+            if (is_array($cached) === true) {
+                return $cached;
+            }
+
+            $appSlug = (string) ($application['slug'] ?? '');
+            $hours   = self::WINDOW_HOURS[$window];
+
+            // A hybrid app mirrors a live installed Nextcloud app — its KPIs
+            // should reflect that installed app's real footprint (objects /
+            // audit / files across the registers OpenRegister associates with
+            // the app via `register.application`), NOT the override version's
+            // per-version register (which is usually empty). See REQ unified-app.
+            $isHybrid = (($application['appType'] ?? 'virtual') === 'hybrid');
+            if ($isHybrid === true) {
+                $payload = $this->computeHybridInsights(appSlug: $appSlug, hours: $hours);
+                $this->cache->set($cacheKey, $payload, self::CACHE_TTL_SECONDS);
+                return $payload;
+            }
+
             $versionSlug  = (string) ($version['slug'] ?? '');
             $registerSlug = sprintf('openbuild-%s-%s', $appSlug, $versionSlug);
 
             $manifest    = $this->extractManifest(version: $version);
             $schemaSlugs = $this->deriveSchemaIds(manifest: $manifest, registerSlug: $registerSlug);
             $schemaIds   = $this->resolveSchemaSlugsToIntIds(schemaSlugs: $schemaSlugs);
-
-            $hours = self::WINDOW_HOURS[$window];
 
             $kpis = [
                 'activeUsers'     => $this->safeDistinctActorCount(schemaIds: $schemaIds, hours: $hours),
@@ -241,10 +290,12 @@ class ApplicationInsightsService
 
             $activity = $this->buildActivityTimeline(schemaIds: $schemaIds, hours: $hours, registerSlug: $registerSlug);
 
-            return [
+            $payload = [
                 'kpis'     => $kpis,
                 'activity' => $activity,
             ];
+            $this->cache->set($cacheKey, $payload, self::CACHE_TTL_SECONDS);
+            return $payload;
         } catch (Throwable $e) {
             $this->logger->error(
                 'OpenBuild: ApplicationInsightsService::computeInsights failed: {message}',
@@ -253,6 +304,179 @@ class ApplicationInsightsService
             return null;
         }//end try
     }//end computeInsights()
+
+    /**
+     * Compute insights for a hybrid app from its installed-app footprint.
+     *
+     * A hybrid app's slug equals the installed Nextcloud app id. OpenRegister
+     * associates registers with an app via `register.application`, so we gather
+     * every register where `application === appSlug`, union their schema-sets and
+     * run the same KPI aggregations the virtual path uses — but across the real,
+     * live registers instead of the (usually empty) per-version override register.
+     *
+     * @param string $appSlug The hybrid app slug (== installed app id).
+     * @param int    $hours   Window hours.
+     *
+     * @return array<string, mixed> Insights payload `{kpis, activity}`.
+     *
+     * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+     */
+    private function computeHybridInsights(string $appSlug, int $hours): array
+    {
+        $registers    = $this->resolveInstalledAppRegisters(appSlug: $appSlug);
+        $allSchemaIds = [];
+        $registerIds  = [];
+        $objectCount  = 0;
+
+        foreach ($registers as $register) {
+            $registerIds[] = $register['registerId'];
+            $schemaIds     = $register['schemaIds'];
+            if (empty($schemaIds) === true) {
+                continue;
+            }
+
+            // Count by register ID (string-numeric) — slugs are NOT unique
+            // across registers (e.g. two "pipelinq" registers), so setRegister
+            // by slug would resolve ambiguously; the ID is unambiguous.
+            $objectCount += $this->countObjects(schemaIds: $schemaIds, registerSlug: (string) $register['registerId']);
+            foreach ($schemaIds as $schemaId) {
+                $allSchemaIds[$schemaId] = true;
+            }
+        }
+
+        $schemaIds = array_keys($allSchemaIds);
+
+        // Audit count + activity timeline are computed PER REGISTER (one
+        // getActionChartData call per register, not per schema). An installed
+        // app can span dozens of schemas (pipelinq ≈ 58), so the per-schema
+        // fan-out the virtual path uses would be ~2 audit queries × 58 — the
+        // dominant cost. Per-register collapses that to a handful of queries.
+        [$auditCount, $activity] = $this->auditByRegisters(registerIds: $registerIds, hours: $hours);
+
+        $kpis = [
+            'activeUsers'     => $this->safeDistinctActorCount(schemaIds: $schemaIds, hours: $hours),
+            'objectCount'     => $objectCount,
+            'filesCount'      => $this->countAttachedFiles(registerSlug: '', schemaIds: $schemaIds),
+            'auditEventCount' => $auditCount,
+        ];
+
+        return [
+            'kpis'     => $kpis,
+            'activity' => $activity,
+        ];
+    }//end computeHybridInsights()
+
+    /**
+     * Audit-event count + activity timeline for a set of registers, computed
+     * with ONE `getActionChartData` call per register (registerId filter) rather
+     * than per schema. Returns `[auditCount, timeline]`.
+     *
+     * @param array<int, int> $registerIds Register IDs to aggregate over.
+     * @param int             $hours       Window hours.
+     *
+     * @return array{0: int, 1: array<int, array{timestamp: string, eventCount: int}>}
+     *
+     * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+     */
+    private function auditByRegisters(array $registerIds, int $hours): array
+    {
+        if (empty($registerIds) === true) {
+            return [0, []];
+        }
+
+        try {
+            $from = new DateTime(sprintf('-%d hours', $hours));
+            $till = new DateTime();
+
+            $count   = 0;
+            $buckets = [];
+            foreach ($registerIds as $registerId) {
+                $chart  = $this->auditTrailMapper->getActionChartData(
+                    from: $from,
+                    till: $till,
+                    registerId: (int) $registerId,
+                    schemaId: null
+                );
+                $count += $this->sumChartSeries(chart: $chart);
+                $this->mergeChartIntoBuckets(chart: $chart, buckets: $buckets);
+            }
+
+            ksort($buckets);
+
+            $timeline = [];
+            foreach ($buckets as $date => $eventCount) {
+                $timeline[] = [
+                    'timestamp'  => sprintf('%sT00:00:00Z', $date),
+                    'eventCount' => (int) $eventCount,
+                ];
+            }
+
+            return [$count, $timeline];
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                'OpenBuild: auditByRegisters failed: {message}',
+                ['message' => $e->getMessage()]
+            );
+            return [0, []];
+        }//end try
+    }//end auditByRegisters()
+
+    /**
+     * Resolve the OpenRegister registers belonging to an installed app.
+     *
+     * Returns one entry per register where `register.application === $appSlug`,
+     * each `{registerId, schemaIds}` with integer schema IDs. Empty array on any
+     * failure (degrades the hybrid KPIs to 0 rather than 500-ing).
+     *
+     * @param string $appSlug The installed app id (hybrid app slug).
+     *
+     * @return array<int, array{registerId: int, schemaIds: array<int, int>}>
+     *
+     * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+     */
+    private function resolveInstalledAppRegisters(string $appSlug): array
+    {
+        if ($appSlug === '') {
+            return [];
+        }
+
+        try {
+            $registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                'OpenBuild: resolveInstalledAppRegisters findAll failed: {message}',
+                ['message' => $e->getMessage()]
+            );
+            return [];
+        }
+
+        $out = [];
+        foreach ($registers as $register) {
+            // NB: getApplication() is a magic getter (Entity __call), so a
+            // method_exists() guard would skip every register — don't add one.
+            if (is_object($register) === false) {
+                continue;
+            }
+
+            if ((string) $register->getApplication() !== $appSlug) {
+                continue;
+            }
+
+            $schemaIds = [];
+            foreach ((array) $register->getSchemas() as $schemaId) {
+                if (is_numeric($schemaId) === true) {
+                    $schemaIds[] = (int) $schemaId;
+                }
+            }
+
+            $out[] = [
+                'registerId' => (int) $register->getId(),
+                'schemaIds'  => array_values(array_unique($schemaIds)),
+            ];
+        }//end foreach
+
+        return $out;
+    }//end resolveInstalledAppRegisters()
 
     /**
      * Derive the schema-set for the version per REQ-OBAI-003.
@@ -383,6 +607,16 @@ class ApplicationInsightsService
     {
         if ($caller === null) {
             return false;
+        }
+
+        // Hybrid apps mirror an installed Nextcloud app and are not created with
+        // the per-app permission buckets virtual apps carry. Their insights are
+        // aggregate counts of the installed app (which has its own RBAC on the
+        // underlying data), surfaced on the OpenBuild detail page that the caller
+        // already reached — so gate on an authenticated caller rather than the
+        // (absent) per-app role buckets.
+        if ((($application['appType'] ?? 'virtual') === 'hybrid')) {
+            return true;
         }
 
         $prodUuid     = $this->extractProductionVersionUuid(application: $application);

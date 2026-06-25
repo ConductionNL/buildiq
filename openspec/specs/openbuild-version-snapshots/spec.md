@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # openbuild-version-snapshots Specification
 
 ## Purpose

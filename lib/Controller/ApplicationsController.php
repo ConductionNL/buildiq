@@ -262,6 +262,140 @@ class ApplicationsController extends Controller
     }//end getManifest()
 
     /**
+     * Persist an in-app manifest edit (pages / menu / settings / sidebar / actions).
+     *
+     * Symmetric write counterpart to {@see getManifest}: the standalone runtime's
+     * OpenBuild edit shell (ADR-041) PUTs the full edited manifest here on Save.
+     * Resolves the app by slug, enforces owner/editor RBAC (viewers are read-only;
+     * NC admins get an audited bypass), then surgically writes the `manifest` field
+     * onto the production ApplicationVersion (versioned model, ADR-002), falling
+     * back to the Application object for legacy un-versioned apps. The caller-
+     * supplied `permissions` block is stripped so a non-owner cannot escalate.
+     *
+     * @param string $slug The virtual-app slug from the URL.
+     *
+     * @return JSONResponse 200 on save, 400 on bad body, 403 without write role.
+     *
+     * @spec openspec/specs/openbuild-rbac/spec.md
+     */
+    #[NoAdminRequired]
+    public function saveManifest(string $slug): JSONResponse
+    {
+        try {
+            $resolved = $this->resolveApplicationBySlug(slug: $slug);
+            if ($resolved instanceof JSONResponse) {
+                return $resolved;
+            }
+
+            [$application, $applicationArray, $applicationUuid] = $resolved;
+
+            $user = $this->userSession->getUser();
+            if ($user === null) {
+                return new JSONResponse(
+                    data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
+
+            // Write requires owner/editor (NOT viewer). NC admins get an audited bypass.
+            $hasWrite = $this->permissionResolver->matchesCaller(
+                permissions: ($applicationArray['permissions'] ?? []),
+                caller: $user,
+                userGroups: $this->permissionResolver->resolveUserGroups($user),
+                allowAdminBypass: false,
+                roles: ['owners', 'editors']
+            );
+            if ($hasWrite === false) {
+                if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === true) {
+                    $this->recordAdminBypass(
+                        application: ($application instanceof ObjectEntity ? $application : null),
+                        slug: $slug,
+                        actor: $user->getUID()
+                    );
+                } else {
+                    return new JSONResponse(
+                        data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
+                        statusCode: Http::STATUS_FORBIDDEN
+                    );
+                }
+            }
+
+            $manifest = $this->request->getParam('manifest');
+            if (is_array($manifest) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'bad_request', 'message' => 'Missing or invalid manifest'],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Never let a manifest body inject/overwrite the permissions roster.
+            unset($manifest['permissions']);
+
+            // Versioned model: write onto the production ApplicationVersion when one
+            // is resolvable; fall back to the Application object for legacy apps.
+            // Mirror ManifestResolverService::resolveProductionManifest's read
+            // shape EXACTLY so the write target matches the read target:
+            // productionVersion is either a UUID string (→ the ApplicationVersion
+            // object), an inline embedded object (→ its nested manifest on the
+            // Application), or absent (→ legacy application-level manifest).
+            $productionVersion = ($applicationArray['productionVersion'] ?? null);
+
+            // Case 1: UUID reference — write onto that ApplicationVersion. The
+            // uuid comes from the already-RBAC'd Application, so no cross-app check
+            // is needed (and the version's app-link field is `application`, not
+            // `applicationUuid`).
+            if (is_string($productionVersion) === true && $productionVersion !== '' && $productionVersion !== 'draft') {
+                $versionEntity = $this->objectService->find(
+                    id: $productionVersion,
+                    register: 'openbuild',
+                    schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+                );
+                if ($versionEntity !== null) {
+                    $versionArray             = $this->normaliseObject(object: $versionEntity);
+                    $versionArray['manifest'] = $manifest;
+                    $this->objectService->saveObject(
+                        object: $versionArray,
+                        register: 'openbuild',
+                        schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+                    );
+                    return new JSONResponse(data: ['status' => 'ok', 'target' => 'version'], statusCode: Http::STATUS_OK);
+                }
+            }
+
+            // Case 2: inline embedded version object — update its nested manifest
+            // and persist the Application (the embedded version travels with it).
+            if (is_array($productionVersion) === true) {
+                $applicationArray['productionVersion']['manifest'] = $manifest;
+                $this->objectService->saveObject(
+                    object: $applicationArray,
+                    register: 'openbuild',
+                    schema: 'application'
+                );
+                return new JSONResponse(data: ['status' => 'ok', 'target' => 'embedded'], statusCode: Http::STATUS_OK);
+            }
+
+            // Case 3: legacy un-versioned app — application-level manifest.
+            $applicationArray['manifest'] = $manifest;
+            $this->objectService->saveObject(
+                object: $applicationArray,
+                register: 'openbuild',
+                schema: 'application'
+            );
+            return new JSONResponse(data: ['status' => 'ok', 'target' => 'application'], statusCode: Http::STATUS_OK);
+        } catch (Throwable $e) {
+            $correlationId = bin2hex(random_bytes(8));
+            $this->logger->error(
+                'OpenBuild: saveManifest failed for slug '.$slug.': '.$e->getMessage(),
+                ['exception' => $e, 'correlationId' => $correlationId, 'slug' => $slug]
+            );
+            return new JSONResponse(
+                data: ['error' => 'internal_error', 'message' => 'Failed to save manifest', 'correlationId' => $correlationId],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+    }//end saveManifest()
+
+    /**
      * Delegate to ManifestResolverService for versioned-manifest access.
      *
      * Performs the two-step lookup (Application → ApplicationVersion) and RBAC
@@ -883,7 +1017,8 @@ class ApplicationsController extends Controller
             );
         }
 
-        // 3. Lookup template + slug-collision check (scoped to caller's UID).
+        // 3. Lookup the local template, then delegate the clone to the shared
+        // seam (also reused by the remote-template store install path).
         $template = $this->lookupOne(
             registerId: $ctx['register'],
             schemaId: $ctx['templateSchema'],
@@ -897,29 +1032,75 @@ class ApplicationsController extends Controller
             );
         }
 
-        // WF1 fix: check slug uniqueness org-wide (no owner filter) to prevent
-        // squatting — two users picking the same slug would let the first
-        // publisher win the BuiltAppRoute insert and the second receive an opaque
-        // clone_failed error on publish. Rejection here is early and explicit.
+        $result = $this->installFromTemplateArray(
+            template: $template,
+            name: $name,
+            newSlug: $newSlug,
+            ownerUid: $ownerUid
+        );
+
+        return new JSONResponse(data: $result['data'], statusCode: $result['status']);
+    }//end createFromTemplate()
+
+    /**
+     * Clone a template ARRAY into a new local Application (shared install seam).
+     *
+     * This is the reusable clone body extracted from createFromTemplate so the
+     * remote-template store (openbuild-remote-template-store) can install a
+     * template fetched from a remote catalogue through the exact same path —
+     * companion-schema namespacing, manifest rewrite, per-app register
+     * provisioning, owner-tagged persist. The only difference between the local
+     * and remote callers is WHERE the `$template` array comes from.
+     *
+     * Returns a plain `{status, data}` result (NOT a Response) so both thin
+     * controller actions — the local createFromTemplate and the remote
+     * StoreController::install — own their own JSONResponse; this also keeps it
+     * out of the route-reachability surface (ADR-029: a Response-returning
+     * public controller method without a route is a latent unrouted action; a
+     * result-computer returning an array is not).
+     *
+     * @param array<string,mixed> $template The template record (local or remote payload).
+     * @param string              $name     Human-readable name for the new app.
+     * @param string              $newSlug  The new (kebab-case, pre-validated) app slug.
+     * @param string              $ownerUid The owner UID (becomes the app owner).
+     *
+     * @return array{status:int,data:array<string,mixed>} 201 + app on success; 409/500/503 on failure.
+     *
+     * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+     */
+    public function installFromTemplateArray(
+        array $template,
+        string $name,
+        string $newSlug,
+        string $ownerUid
+    ): array {
+        $ctx = $this->resolveSharedContext();
+        if ($ctx === null) {
+            return [
+                'status' => Http::STATUS_SERVICE_UNAVAILABLE,
+                'data'   => ['error' => 'not_configured', 'detail' => 'OpenBuild register/schemas not initialised'],
+            ];
+        }
+
+        // Slug uniqueness org-wide (no owner filter) to prevent squatting.
         $existing = $this->lookupOne(
             registerId: $ctx['register'],
             schemaId: $ctx['applicationSchema'],
             slug: $newSlug
         );
         if ($existing !== null) {
-            return $this->errorResponse(
-                code: 'slug_collision',
-                detail: $newSlug,
-                status: Http::STATUS_CONFLICT
-            );
+            return [
+                'status' => Http::STATUS_CONFLICT,
+                'data'   => ['error' => 'slug_collision', 'detail' => $newSlug],
+            ];
         }
 
-        // 4. Prepare manifest + companion-schema clone map.
+        // Prepare manifest + companion-schema clone map.
         $companionInput = $this->extractCompanionSchemas(template: $template);
         $rewriteMap     = $this->buildRewriteMap(companions: $companionInput, newSlug: $newSlug);
         $manifest       = $this->buildClonedManifest(template: $template, rewriteMap: $rewriteMap);
 
-        // 5. Provision per-app register + clone companion schemas into it.
+        // Provision per-app register + clone companion schemas into it.
         $cloneResult = $this->provisionPerAppArtifacts(
             newSlug: $newSlug,
             ownerUid: $ownerUid,
@@ -927,33 +1108,33 @@ class ApplicationsController extends Controller
             rewriteMap: $rewriteMap
         );
         if (isset($cloneResult['error']) === true) {
-            return new JSONResponse(data: $cloneResult['error'], statusCode: $cloneResult['status']);
+            return ['status' => $cloneResult['status'], 'data' => $cloneResult['error']];
         }
 
-        // 6. Persist the Application record (in shared register), tagged with owner.
+        // Persist the Application record (shared register), tagged with owner.
         $persistResult = $this->persistApplication(
             name: $name,
             newSlug: $newSlug,
             ownerUid: $ownerUid,
             manifest: $manifest,
             template: $template,
-            templateSlug: $templateSlug,
+            templateSlug: (string) ($template['slug'] ?? $newSlug),
             ctx: $ctx
         );
         if (isset($persistResult['error']) === true) {
-            return new JSONResponse(data: $persistResult['error'], statusCode: $persistResult['status']);
+            return ['status' => $persistResult['status'], 'data' => $persistResult['error']];
         }
 
-        return new JSONResponse(
-            data: [
+        return [
+            'status' => Http::STATUS_CREATED,
+            'data'   => [
                 'uuid'             => $persistResult['uuid'],
                 'slug'             => $newSlug,
                 'register'         => $cloneResult['register']->getSlug(),
                 'companionSchemas' => $cloneResult['schemaIds'],
             ],
-            statusCode: Http::STATUS_CREATED
-        );
-    }//end createFromTemplate()
+        ];
+    }//end installFromTemplateArray()
 
     /**
      * Build a uniform error response.

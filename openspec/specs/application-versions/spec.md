@@ -1,4 +1,10 @@
+---
+status: in-progress
+---
+
 # application-versions Specification
+
+**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/)
 
 ## Purpose
 

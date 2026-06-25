@@ -1,6 +1,7 @@
 {
 	"$schema": "https://codeberg.org/Conduction/nextcloud-vue/raw/branch/main/src/schemas/app-manifest-v2.schema.json",
 	"version": "2.0.0",
+	"openbuildEditable": false,
 	"dependencies": [
 		"openregister"
 	],
@@ -14,31 +15,17 @@
 		},
 		{
 			"id": "VirtualApps",
-			"label": "Virtual apps",
+			"label": "Apps",
 			"icon": "icon-category-app-bundles",
 			"route": "VirtualApps",
 			"order": 20
 		},
 		{
-			"id": "Schemas",
-			"label": "Schemas",
-			"icon": "icon-category-customization",
-			"route": "Schemas",
-			"order": 30
-		},
-		{
-			"id": "Templates",
-			"label": "Templates",
+			"id": "Store",
+			"label": "Store",
 			"icon": "icon-category-organization",
 			"route": "Templates",
-			"order": 35
-		},
-		{
-			"id": "Exports",
-			"label": "Exports",
-			"icon": "icon-download",
-			"route": "Exports",
-			"order": 40
+			"order": 30
 		},
 		{
 			"id": "Documentation",
@@ -61,123 +48,17 @@
 		{
 			"id": "Dashboard",
 			"route": "/",
-			"type": "dashboard",
-			"title": "App development overview",
-			"slots": {
-				"widget-recent-apps": "DashboardAppsListWidget"
-			},
-			"config": {
-				"description": "Build, manage and publish virtual applications on OpenRegister",
-				"documentationUrl": "https://openbuild.conduction.nl",
-				"widgets": [
-					{
-						"id": "kpi-virtual-apps",
-						"title": "Virtual apps",
-						"type": "stats-block",
-						"iconClass": "icon-category-app-bundles",
-						"props": { "countLabel": "apps", "variant": "primary" },
-						"dataSource": {
-							"register": "openbuild",
-							"schema": "application",
-							"aggregate": "count"
-						}
-					},
-					{
-						"id": "kpi-published",
-						"title": "Published",
-						"type": "stats-block",
-						"iconClass": "icon-checkmark",
-						"props": { "countLabel": "live", "variant": "success" },
-						"dataSource": {
-							"register": "openbuild",
-							"schema": "builtAppRoute",
-							"aggregate": "count"
-						}
-					},
-					{
-						"id": "kpi-templates",
-						"title": "Templates",
-						"type": "stats-block",
-						"iconClass": "icon-category-organization",
-						"props": { "countLabel": "templates", "variant": "default" },
-						"dataSource": {
-							"register": "openbuild",
-							"schema": "applicationTemplate",
-							"aggregate": "count"
-						}
-					},
-					{
-						"id": "kpi-versions",
-						"title": "Published versions",
-						"type": "stats-block",
-						"iconClass": "icon-history",
-						"props": { "countLabel": "snapshots", "variant": "default" },
-						"dataSource": {
-							"register": "openbuild",
-							"schema": "applicationVersion",
-							"aggregate": "count"
-						}
-					},
-					{
-						"id": "recent-apps",
-						"title": "Virtual apps",
-						"type": "custom",
-						"iconClass": "icon-category-app-bundles"
-					}
-				],
-				"layout": [
-					{
-						"id": "layout-kpi-virtual-apps",
-						"widgetId": "kpi-virtual-apps",
-						"gridX": 0,
-						"gridY": 0,
-						"gridWidth": 3,
-						"gridHeight": 2,
-						"showTitle": true
-					},
-					{
-						"id": "layout-kpi-published",
-						"widgetId": "kpi-published",
-						"gridX": 3,
-						"gridY": 0,
-						"gridWidth": 3,
-						"gridHeight": 2,
-						"showTitle": true
-					},
-					{
-						"id": "layout-kpi-templates",
-						"widgetId": "kpi-templates",
-						"gridX": 6,
-						"gridY": 0,
-						"gridWidth": 3,
-						"gridHeight": 2,
-						"showTitle": true
-					},
-					{
-						"id": "layout-kpi-versions",
-						"widgetId": "kpi-versions",
-						"gridX": 9,
-						"gridY": 0,
-						"gridWidth": 3,
-						"gridHeight": 2,
-						"showTitle": true
-					},
-					{
-						"id": "layout-recent-apps",
-						"widgetId": "recent-apps",
-						"gridX": 0,
-						"gridY": 2,
-						"gridWidth": 12,
-						"gridHeight": 6
-					}
-				]
-			}
+			"type": "custom",
+			"title": "Dashboard",
+			"component": "DashboardIndex",
+			"config": {},
+			"_note": "Dashboard renders the self-contained DashboardIndex view (one CnDashboardPage: 4 KPI cards + Recent apps table + Quick start panel), modelled on the DocuDesk dashboard. type:custom mounts a single CnDashboardPage to avoid the dashboard-in-dashboard antipattern (hydra gate-15)."
 		},
 		{
 			"id": "VirtualApps",
 			"route": "/applications",
 			"type": "index",
-			"title": "Virtual apps",
+			"title": "Apps",
 			"actionsComponent": "VirtualAppsActions",
 			"config": {
 				"register": "openbuild",
@@ -191,6 +72,7 @@
 					"@self.updated"
 				],
 				"showAdd": false,
+				"showMassImport": true,
 				"sidebar": {
 					"enabled": true,
 					"showMetadata": true
@@ -199,15 +81,31 @@
 			}
 		},
 		{
+			"id": "ApplicationManifestDetail",
+			"route": "/applications/:objectId/manifest",
+			"type": "custom",
+			"title": "Manifest layers",
+			"component": "ApplicationManifestDetail",
+			"config": {},
+			"_note": "Routed Manifest detail page (layered-versioned-app-deltas). Surfaces the three manifest customization layers (Base / Admin delta / Your delta), the per-layer OpenRegister version history + rollback (reusing VersionHistory), and the per-user create/edit/reset of the caller's own delta. type:custom mounts ManifestLayersDetail; reached from the app-detail Manifest widget. Declared before /applications/:objectId so the extra /manifest segment matches first."
+		},
+		{
 			"id": "VirtualAppDetail",
 			"route": "/applications/:objectId",
 			"type": "detail",
-			"title": "Virtual app",
+			"title": "App",
 			"headerComponent": "ApplicationDetailHeader",
 			"actionsComponent": "ApplicationDetailActions",
+			"slots": {
+				"before-body": "ApplicationDetailDashboard"
+			},
 			"config": {
 				"register": "openbuild",
 				"schema": "application",
+				"maxWidth": "none",
+				"showRelatedObjects": false,
+				"showRefresh": false,
+				"showRequestFeature": false,
 				"sidebarTabs": [
 					{
 						"id": "manifest",
@@ -243,21 +141,16 @@
 						"icon": "icon-download",
 						"component": "ExportJobsTab",
 						"order": 60
+					},
+					{
+						"id": "audit",
+						"label": "Audit trail",
+						"icon": "icon-history",
+						"component": "audit-trail",
+						"order": 70
 					}
-				],
-				"documentationUrl": "https://openbuild.conduction.nl"
-			},
-			"widgets": [
-				{
-					"widgetKey": "audit-trail",
-					"slot": "sidebar",
-					"tabGroup": "audit",
-					"gridX": 0,
-					"gridY": 0,
-					"gridWidth": 1,
-					"gridHeight": 1
-				}
-			]
+				]
+			}
 		},
 		{
 			"id": "Schemas",
@@ -280,18 +173,15 @@
 		{
 			"id": "Templates",
 			"route": "/templates",
-			"type": "index",
-			"title": "Templates",
+			"type": "custom",
+			"title": "Store",
+			"component": "TemplateGallery",
 			"config": {
 				"register": "openbuild",
 				"schema": "application-template",
-				"viewMode": "cards",
-				"sidebar": {
-					"enabled": true,
-					"showMetadata": true
-				},
 				"documentationUrl": "https://openbuild.conduction.nl"
-			}
+			},
+			"_note": "Templates renders the store-aware TemplateGallery view (openbuild-remote-template-store): when a registry is configured the remote store search is the primary surface with built-in templates secondary; with no registry it falls back to the built-in templates as today. Install clones via CloneTemplateDialog."
 		},
 		{
 			"id": "SchemaDesignerList",
@@ -347,6 +237,24 @@
 			}
 		},
 		{
+			"id": "WalkthroughDesigner",
+			"route": "/builder/:slug/walkthrough",
+			"type": "detail",
+			"title": "Walkthrough designer",
+			"config": {
+				"register": "openbuild",
+				"schema": "application",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			},
+			"slots": {
+				"default": "WalkthroughDesignerView"
+			}
+		},
+		{
 			"id": "Exports",
 			"route": "/exports",
 			"type": "index",
@@ -366,7 +274,7 @@
 			"id": "BuilderHost",
 			"route": "/builder/:slug/:pathMatch(.*)?",
 			"type": "custom",
-			"title": "Virtual app",
+			"title": "App",
 			"component": "BuilderHostView",
 			"_note": "Virtual-app host that mounts a nested CnAppRoot rendering the virtual app's own manifest from GET /api/applications/{slug}/manifest. This is a meta-app-shell (app inside app) pattern that no standard page type supports. It is the core runtime surface of openbuild and will always require a custom host component."
 		},

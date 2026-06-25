@@ -137,7 +137,10 @@ class ApplicationInsightsController extends Controller
         }
 
         $response = new JSONResponse(data: $payload, statusCode: Http::STATUS_OK);
-        $response->addHeader('Cache-Control', 'public, max-age=60');
+        // `private` (not `public`): this payload is per-caller RBAC-gated, so it
+        // must never sit in a shared cache. Short max-age keeps the maintainer
+        // dashboard fresh and lets a transiently-stale value self-heal quickly.
+        $response->addHeader('Cache-Control', 'private, max-age=10');
         return $response;
     }//end getInsights()
 }//end class

@@ -158,6 +158,17 @@ namespace OCA\OpenRegister\Db {
             }//end find()
 
             /**
+             * Signature mirrors the real OR mapper so callers passing
+             * `_rbac:` / `_multitenancy:` as named arguments resolve identically.
+             *
+             * @return array<int, Register>
+             */
+            public function findAll(?int $limit=null, ?int $offset=null, array $filters=[], array $searchConditions=[], array $searchParams=[], bool $_rbac=true, bool $_multitenancy=true): array
+            {
+                return [];
+            }//end findAll()
+
+            /**
              * @param array<string, mixed> $object
              *
              * @return Register
@@ -204,6 +215,18 @@ namespace OCA\OpenRegister\Db {
             {
                 return new Schema();
             }//end createFromArray()
+
+            /**
+             * Delete a schema (mirrors the real SchemaMapper::delete signature).
+             *
+             * @param \OCP\AppFramework\Db\Entity $entity The schema entity.
+             *
+             * @return Schema
+             */
+            public function delete(\OCP\AppFramework\Db\Entity $entity): Schema
+            {
+                return new Schema();
+            }//end delete()
         }//end class
     }//end if
 

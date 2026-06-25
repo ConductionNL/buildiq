@@ -61,10 +61,18 @@ import ApplicationDetailActions from './components/ApplicationDetailActions.vue'
 // ── Virtual apps — detail header ──────────────────────────────────────────────
 
 // VirtualAppDetail headerComponent (openbuild-app-detail-overview
-// REQ-OBADO-001 / REQ-OBADO-011) — purpose-built maintainer dashboard
-// replacing the generic main-area data widget. Owns hero strip + version pill
-// tabs + window toggle + KPI grid + activity chart + structural widgets.
+// REQ-OBADO-001 / REQ-OBADO-011) — identity + controls header: hero strip +
+// version pill tabs + window toggle. The analytics (KPI grid, activity chart,
+// structural widgets) live in the body dashboard below (grid-built page).
 import ApplicationDetailHeader from './components/applicationDetail/ApplicationDetailHeader.vue'
+// VirtualAppDetail before-body dashboard — KPI grid + activity chart +
+// structural widgets, rendered in CnDetailPage's #before-body slot (in the page
+// body, below the action-menu line, above the auto Data/Related sections).
+import ApplicationDetailDashboard from './components/applicationDetail/ApplicationDetailDashboard.vue'
+// ManifestLayersDetail — routed Manifest detail page (delta layers + per-layer
+// OR version history + rollback), reached from the app-detail Manifest widget
+// (layered-versioned-app-deltas).
+import ManifestLayersDetail from './views/ManifestLayersDetail.vue'
 
 // ── Custom page components (kind: "page") ────────────────────────────────────
 
@@ -76,8 +84,20 @@ import SchemaDesignerView from './views/SchemaDesigner.vue'
 // virtual app's manifest via PATCH (REQ-OBPD-003).
 import PageDesignerView from './views/PageDesignerHost.vue'
 
+// Visual walkthrough designer — form-based editor for the manifest `walkthrough`
+// block (ADR-043); persists onto the active ApplicationVersion like PageDesigner.
+import WalkthroughDesignerView from './views/WalkthroughDesignerHost.vue'
+
 // Virtual-app host — nested CnAppRoot rendering a virtual app's own manifest.
 import BuilderHostView from './views/BuilderHost.vue'
+// DashboardIndex — custom dashboard view (KPI cards + Recent apps + Quick start),
+// modelled on the DocuDesk dashboard pattern; mounted via the type:"custom"
+// Dashboard manifest page to avoid the dashboard-in-dashboard antipattern.
+import DashboardIndex from './views/DashboardIndex.vue'
+// TemplateGallery — the Templates page as a store-aware gallery: remote store
+// search (when a registry is configured) primary + built-in local templates,
+// install via CloneTemplateDialog (openbuild-remote-template-store).
+import TemplateGalleryView from './views/TemplateGallery.vue'
 
 // ── Dashboard widgets (kind: "widget") ───────────────────────────────────────
 //
@@ -87,15 +107,7 @@ import BuilderHostView from './views/BuilderHost.vue'
 // integration), so the consuming app must register them. CnWidgetGrid resolves
 // a widgetKey against this registry before falling back to its built-ins.
 //   - audit-trail: recent audit entries for the object (detail sidebar).
-// Note: the `stats-block` KPI card is no longer registered here — the Dashboard
-// page now declares its KPIs via the v2 `config.widgets[].type: "stats-block"`
-// form, which CnDashboardPage's built-in dispatcher resolves to CnStatsBlockWidget
-// directly (no app-registry entry required).
 import { CnAuditTrailCard } from '@conduction/nextcloud-vue'
-
-// Dashboard widget — lists the most recently updated virtual applications,
-// with status badge, version, and a quick-open link to VirtualAppDetail.
-import DashboardAppsListWidget from './components/dashboard/DashboardAppsListWidget.vue'
 
 // Business-rules engine dashboard — lists RuleSets, opens the decision-table /
 // condition-action editors and the test sandbox (spec business-rules-engine).
@@ -212,14 +224,17 @@ export default {
 
 	// Header component for the maintainer dashboard (kind "header" — slot-override).
 	ApplicationDetailHeader: header(ApplicationDetailHeader),
-
-	// Dashboard apps-list slot widget (slot "widget-recent-apps" on the Dashboard page).
-	DashboardAppsListWidget: page(DashboardAppsListWidget),
+	ApplicationDetailDashboard: page(ApplicationDetailDashboard),
+	// Routed Manifest detail page (type custom; layered-versioned-app-deltas).
+	ApplicationManifestDetail: page(ManifestLayersDetail),
 
 	// Custom page components — resolved by CnPageRenderer for type:"custom" pages.
 	SchemaDesignerView: page(SchemaDesignerView),
 	PageDesignerView: page(PageDesignerView),
+	WalkthroughDesignerView: page(WalkthroughDesignerView),
 	BuilderHostView: page(BuilderHostView),
+	DashboardIndex: page(DashboardIndex),
+	TemplateGallery: page(TemplateGalleryView),
 
 	// Dashboard widgets — resolved by CnWidgetGrid by manifest widgetKey.
 	'audit-trail': widget(CnAuditTrailCard, ['sidebar', 'body']),

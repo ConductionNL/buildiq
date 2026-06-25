@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.7] - 2026-06-20
+
+### Added
+- Remote template store (openbuild-remote-template-store): search + install
+  virtual-app templates from a remote OpenRegister-backed catalogue. Admin
+  registry config (URL/register/token, token write-only), a server-side
+  SSRF-guarded proxy (`RemoteTemplateStoreService`), `StoreController`
+  search/install endpoints, and a store-aware Templates gallery (store primary
+  when a registry is configured, built-in templates fallback otherwise). Install
+  clones via the shared `installFromTemplateArray` seam. Consume-only this cut.
+- DocuDesk-style dashboard: a self-contained `DashboardIndex` view (one
+  `CnDashboardPage`) with a 4-KPI row (Apps / Hybrid apps / Templates /
+  Published versions), a Recent apps table, and a Quick start panel.
+
+### Fixed
+- `SeedApplicationTemplates` + `PopulateApplicationPermissions` repair steps now
+  write in system context (OR RBAC/multitenancy bypassed) so they no longer fail
+  as the Anonymous user — the Templates KPI count is now accurate.
+- Dashboard Templates KPI queried the wrong schema slug (`applicationTemplate` →
+  `application-template`).
+
+## [0.5.6] - 2026-06-20
+
+### Added
+- Unified app model (unify-apps-with-app-type): every app now carries an `appType`
+  discriminator (`virtual` | `hybrid`). Hybrid apps — customizations layered over an
+  installed Nextcloud fleet app — are first-class `Application` records with a
+  delta-only `ApplicationVersion`, replacing the standalone `AppOverride` schema.
+- `appType` + `baseRef` on the `Application` schema and `manifestDelta` + `baseRef` on
+  `ApplicationVersion`.
+- Virtual/Hybrid badge on app cards + the app detail header; an all/virtual/hybrid
+  filter on the Apps list persisted in the `?filter=` URL query param.
+- App-creation wizard gains a Virtual/Hybrid branch (hybrid = pick an installed app).
+- Idempotent migration converting existing `AppOverride` rows into hybrid Applications
+  (system-context writes; schema dropped only when every row migrates successfully).
+
+### Changed
+- "Virtual apps" renamed to "Apps" across the UI (menu, titles, copy); route paths
+  unchanged so deep-links survive.
+- `GET/PUT/DELETE /api/app-overrides/{appId}` are now compatibility shims backed by the
+  hybrid Application's version (HTTP contract preserved).
+
+### Removed
+- The standalone `AppOverride` schema (folded into the unified hybrid-app model).
+
+### Security
+- Hybrid metadata-lock: a hybrid app's `slug`/`name` are read-only (mirror the installed
+  app), enforced by a pre-save guard (`openbuild.hybrid_metadata.locked`).
+
 ## [0.4.0] - 2026-06-02
 
 ### Added

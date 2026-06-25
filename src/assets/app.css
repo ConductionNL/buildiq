@@ -4,3 +4,39 @@
 #content {
 	height: 100%;
 }
+
+/* App-detail header: span the page full-width and float the action buttons at
+   the top-right, instead of letting the actions reserve a flex column that
+   narrows the header content (pills + insights window toggle). openbuild only —
+   scoped to `.app-openbuild` so it never affects other apps' detail pages. */
+.app-openbuild .cn-detail-page__header {
+	position: relative;
+	/* Drop the lib's 56px nav-toggle clearance so the header content lines up
+	   flush with the body (KPI cards) on the left — the hero icon sits well to
+	   the right of the toggle, so no clearance is needed here. */
+	padding-inline-start: 0;
+}
+.app-openbuild .cn-detail-page__header > :first-child {
+	flex-basis: 100%;
+}
+/* Drop the detail-header component's own inline padding so the hero, version
+   pills and window toggle align edge-to-edge with the KPI cards below. */
+.app-openbuild .ob-detail-header {
+	padding-inline: 0;
+}
+.app-openbuild .cn-detail-page__header-actions {
+	position: absolute;
+	top: 0;
+	inset-inline-end: 0;
+	z-index: 2;
+}
+
+/* Left-nav icons: always render black. NC applies `brightness(0) invert(1)`
+   (→ white) to the active entry's icon, which disappears on OpenBuild's light
+   nav background; `brightness(0)` forces solid black in every state. (This
+   stylesheet only loads while OpenBuild is open, so it never touches other
+   apps' navigation.) */
+.app-navigation .app-navigation-entry-icon,
+.app-navigation .app-navigation-entry.active .app-navigation-entry-icon {
+	filter: brightness(0) !important;
+}

@@ -103,7 +103,7 @@
 			<NcEmptyContent
 				v-else
 				:name="t('openbuild', 'Schema not found')"
-				:description="t('openbuild', 'No schema with this slug exists in the current virtual app.')">
+				:description="t('openbuild', 'No schema with this slug exists in the current app.')">
 				<template #action>
 					<NcButton @click="goToList">
 						{{ t('openbuild', 'Back to schemas') }}
