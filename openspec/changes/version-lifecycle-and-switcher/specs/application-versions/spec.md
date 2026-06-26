@@ -80,10 +80,16 @@ a chosen `ApplicationVersion`, atomically in intent:
    `ApplicationVersionService::guardProductionVersionOwnership` (back-reference check;
    mismatch → `422`).
 4. demotes the previously production version (if any and if different) by setting its
-   `status` to `archived`, so it no longer holds the production role.
+   `status` to `archived`, so it no longer holds the production role. A previous
+   production that is still a `draft` (an unpublished version serving as production —
+   the common seed state) is NOT archived, because `x-openregister-lifecycle` has no
+   `draft → archived` transition; it is demoted by the pointer move alone and left as a
+   `draft` the maintainer can keep editing or delete. Only a `published` previous
+   production transitions to `archived`.
 
 After a successful release exactly one version is the Application's production version
-(single-production invariant). The endpoint SHALL be registered in `appinfo/routes.php` and
+(single-production invariant) — enforced by the single-valued `productionVersion`
+pointer regardless of the previous production's resulting status. The endpoint SHALL be registered in `appinfo/routes.php` and
 SHALL carry `#[NoAdminRequired]` (the owner check lives in the method body).
 
 The endpoint SHALL NOT drop or mint any register. When the chosen version shares
@@ -101,6 +107,16 @@ register row untouched.
 - **AND** `X.productionVersion` is `V_new`
 - **AND** `V_new.status` is `published`
 - **AND** `V_old.status` is `archived`
+
+#### Scenario: Releasing when the previous production is an unpublished draft
+
+- **GIVEN** an Application X whose `productionVersion = V_old` and `V_old.status: draft`
+  (an unpublished version serving as production — the seed state) and a draft `V_new`
+- **WHEN** an owner releases `V_new`
+- **THEN** `X.productionVersion` is `V_new` and `V_new.status` is `published`
+- **AND** `V_old.status` remains `draft` (no `draft → archived` transition exists; it is
+  demoted by the pointer move alone)
+- **AND** exactly one production version exists (the single-valued pointer)
 
 #### Scenario: Release of a foreign version is rejected
 
