@@ -35,7 +35,7 @@ By the end you will have requested an export of your app, watched the job comple
 
    ![Export completed](/screenshots/tutorials/user/08-export-app-04.png)
 
-5. To re-import, copy the ZIP to the target instance, open **Virtual apps → Import application** there, pick the ZIP, and OpenBuild recreates the app with its schemas, pages, and sample data.
+5. To re-import, copy the ZIP to the target instance, open **Apps → Import application** there, pick the ZIP, and OpenBuild recreates the app with its schemas, pages, and sample data.
 
    ![Re-import dialog](/screenshots/tutorials/user/08-export-app-05.png)
 
@@ -48,7 +48,7 @@ The export is good when: the export job shows status *Completed* with a non-zero
 | Symptom | Fix |
 |---|---|
 | Job sits on *Queued* | The Nextcloud background jobs are not running — check `php occ background-job:list` on the host. |
-| Job ends in *Failed* | Open the job row to see the error in the *Logs* tab. The two most common causes: the manifest is invalid (fix in the page designer), or a connector source is unreachable (sample-data dump retries it). |
+| Job ends in *Failed* | Open the job row to see the error in the *Logs* tab. The two most common causes: the manifest is invalid (fix in-app with Edit with OpenBuild), or a connector source is unreachable (sample-data dump retries it). |
 | ZIP is tiny / empty | No schemas were ticked in step 2 — re-run with at least the schemas you care about ticked. |
 
 ## Reference

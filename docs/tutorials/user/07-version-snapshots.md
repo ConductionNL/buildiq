@@ -27,7 +27,7 @@ By the end you will have created a named snapshot of your app, edited something,
 
    ![Take snapshot dialog](/screenshots/tutorials/user/07-version-snapshots-02.png)
 
-3. Make a change you can undo — add a page, rename a property, remove a menu entry — and **Save pages**. The draft is now diverged from the snapshot.
+3. Make a change you can undo — add or move a widget, rename a property, remove a menu entry — with **Edit with OpenBuild** and **Save page**. The draft is now diverged from the snapshot.
 
    ![Make a change](/screenshots/tutorials/user/07-version-snapshots-03.png)
 
@@ -41,17 +41,17 @@ By the end you will have created a named snapshot of your app, edited something,
 
 ## Verification
 
-The roll-back worked when: the **Version history** tab shows a new *Previous draft* snapshot at the top, the page designer loads with the schemas / pages / menu of the snapshot you rolled to, and the builder host renders the rolled-back app.
+The roll-back worked when: the **Version history** tab shows a new *Previous draft* snapshot at the top, and the app loads and runs with the schemas / pages / menu of the snapshot you rolled to.
 
 ## Common issues
 
 | Symptom | Fix |
 |---|---|
-| **Take snapshot** errors *"manifest is invalid"* | The current draft has validation errors — fix them in the page designer first, then snapshot. |
-| Diff is empty | The snapshot and the draft are byte-identical — make at least one save in the designer between snapshots. |
+| **Take snapshot** errors *"manifest is invalid"* | The current draft has validation errors — fix them in-app first, then snapshot. |
+| Diff is empty | The snapshot and the draft are byte-identical — make at least one in-app save between snapshots. |
 | Rollback restored the manifest but the data looks wrong | Snapshots cover the *manifest* only (schemas, pages, menu), not the records — record rollback uses OpenRegister's revisions, see the per-record audit trail. |
 
 ## Reference
 
 - [Export the app](./08-export-app.md) — turn a snapshot into a downloadable bundle.
-- [Manifest reference](../../features/manifest.md) — what exactly is in a snapshot.
+- [OpenBuild runtime](../../openbuild-runtime.md) — how the manifest in a snapshot is rendered.
