@@ -21,5 +21,5 @@ jobs:
     if: github.event_name != 'pull_request'
     uses: Conduction/.github/.forgejo/workflows/documentation-deploy.yml@main
     with:
-      cf-project-name: openbuilt-docs
+      cf-project-name: openbuild-docs
     secrets: inherit
