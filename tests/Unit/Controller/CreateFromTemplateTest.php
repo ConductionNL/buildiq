@@ -151,14 +151,13 @@ class CreateFromTemplateTest extends TestCase
         // RegisterMapper mock chain: find()->getId(), create + update.
         $registerEntity = $this->getMockBuilder(Register::class)
             ->disableOriginalConstructor()
-            ->addMethods(['getId'])
+            ->onlyMethods(['getId'])
             ->getMock();
         $registerEntity->method('getId')->willReturn(926);
 
         $this->perAppRegister = $this->getMockBuilder(Register::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['getSchemas', 'setSchemas'])
-            ->addMethods(['getId', 'getSlug'])
+            ->onlyMethods(['getSchemas', 'setSchemas', 'getId', 'getSlug'])
             ->getMock();
         $this->perAppRegister->method('getId')->willReturn(2001);
         $this->perAppRegister->method('getSlug')->willReturn('openbuild-my-permits');
@@ -182,12 +181,12 @@ class CreateFromTemplateTest extends TestCase
         // SchemaMapper mock chain: find()->getId() for shared schemas; createFromArray for clones.
         $applicationTemplateSchema = $this->getMockBuilder(Schema::class)
             ->disableOriginalConstructor()
-            ->addMethods(['getId'])
+            ->onlyMethods(['getId'])
             ->getMock();
         $applicationTemplateSchema->method('getId')->willReturn(1635);
         $applicationSchema = $this->getMockBuilder(Schema::class)
             ->disableOriginalConstructor()
-            ->addMethods(['getId'])
+            ->onlyMethods(['getId'])
             ->getMock();
         $applicationSchema->method('getId')->willReturn(1636);
 
@@ -235,7 +234,7 @@ class CreateFromTemplateTest extends TestCase
     {
         $schema = $this->getMockBuilder(Schema::class)
             ->disableOriginalConstructor()
-            ->addMethods(['getId'])
+            ->onlyMethods(['getId'])
             ->getMock();
         $schema->method('getId')->willReturn($id);
         return $schema;
