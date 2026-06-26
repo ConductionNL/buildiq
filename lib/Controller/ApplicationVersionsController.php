@@ -588,14 +588,14 @@ class ApplicationVersionsController extends Controller
             return null;
         }
 
-        $productionVersionUuid = (string) ($productionVersion ?? '');
-        if ($productionVersionUuid === '') {
+        $versionUuid = (string) ($productionVersion ?? '');
+        if ($versionUuid === '') {
             return null;
         }
 
         try {
             $version = $this->objectService->find(
-                id: $productionVersionUuid,
+                id: $versionUuid,
                 register: ApplicationVersionService::REGISTER_SLUG,
                 schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
             );

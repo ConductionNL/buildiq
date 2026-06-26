@@ -287,7 +287,7 @@ class ApplicationsController extends Controller
                 return $resolved;
             }
 
-            [$application, $applicationArray, $applicationUuid] = $resolved;
+            [$application, $applicationArray] = $resolved;
 
             $user = $this->userSession->getUser();
             if ($user === null) {
@@ -305,24 +305,24 @@ class ApplicationsController extends Controller
                 allowAdminBypass: false,
                 roles: ['owners', 'editors']
             );
-            if ($hasWrite === false) {
-                if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === true) {
-                    $bypassApplication = null;
-                    if ($application instanceof ObjectEntity) {
-                        $bypassApplication = $application;
-                    }
+            if ($hasWrite === false && $this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
 
-                    $this->recordAdminBypass(
-                        application: $bypassApplication,
-                        slug: $slug,
-                        actor: $user->getUID()
-                    );
-                } else {
-                    return new JSONResponse(
-                        data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
-                        statusCode: Http::STATUS_FORBIDDEN
-                    );
+            if ($hasWrite === false) {
+                $bypassApplication = null;
+                if ($application instanceof ObjectEntity) {
+                    $bypassApplication = $application;
                 }
+
+                $this->recordAdminBypass(
+                    application: $bypassApplication,
+                    slug: $slug,
+                    actor: $user->getUID()
+                );
             }
 
             $manifest = $this->request->getParam('manifest');

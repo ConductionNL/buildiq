@@ -707,7 +707,9 @@ class ApplicationVersionService
         $productionRegister = '';
         if (is_array($productionVersion) === true) {
             $productionRegister = (string) ($productionVersion['register'] ?? '');
-        } else {
+        }
+
+        if (is_array($productionVersion) === false) {
             $productionUuid = (string) ($productionVersion ?? '');
             if ($productionUuid !== '') {
                 $prod = $this->objectService->find(
