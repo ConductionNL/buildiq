@@ -275,6 +275,25 @@ class ApplicationVersionsController extends Controller
             // Honour the back-reference even if the client forgot to send it.
             $payload['application'] = $applicationUuid;
 
+            // Manifest-only versioning (REQ-OBV-107, design Decision 2): when no
+            // `register` is supplied, inherit the current production version's
+            // register so the new version SHARES production's data — no
+            // per-version register is minted. An explicitly-supplied register is
+            // honoured unchanged (the wizard / promotion paths keep that option).
+            $suppliedRegister = (string) ($payload['register'] ?? '');
+            if ($suppliedRegister === '') {
+                $inheritedRegister = $this->resolveProductionRegister(application: $application);
+                if ($inheritedRegister === null) {
+                    return $this->errorResponse(
+                        code: 'no_register_to_inherit',
+                        detail: 'Application '.$appSlug.' has no production version to inherit a register from; supply an explicit `register`.',
+                        status: Http::STATUS_UNPROCESSABLE_ENTITY
+                    );
+                }
+
+                $payload['register'] = $inheritedRegister;
+            }
+
             $payload = $this->versionService->onSave(current: null, next: $payload);
 
             $promotesTo = (string) ($payload['promotesTo'] ?? '');
@@ -480,6 +499,179 @@ class ApplicationVersionsController extends Controller
             return $this->errorResponse(code: $code, detail: $message, status: $status);
         }//end try
     }//end destroy()
+
+    /**
+     * Release a version: set-as-production + publish + demote previous production.
+     *
+     * Owner-only with NO admin bypass (REQ-OBV-110 scenario 4): a Nextcloud admin
+     * who is not an owner of this Application cannot release. Delegates the
+     * cross-row mutation (publish chosen + move productionVersion pointer + archive
+     * previous production) to {@see ApplicationVersionService::releaseVersion()}.
+     *
+     * @param string $appSlug     Parent Application slug
+     * @param string $versionSlug ApplicationVersion slug to release
+     *
+     * @return JSONResponse 200 with the release result, or an error envelope
+     *
+     * @spec openspec/changes/version-lifecycle-and-switcher/specs/application-versions/spec.md
+     */
+    #[NoAdminRequired]
+    #[UserRateLimit(limit: 10, period: 60)]
+    public function release(string $appSlug, string $versionSlug): JSONResponse
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return $this->errorResponse(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+        }
+
+        $application = $this->loadApplication(slug: $appSlug);
+        if ($application === null) {
+            return $this->errorResponse(
+                code: 'not_found',
+                detail: 'Application '.$appSlug.' not found',
+                status: Http::STATUS_NOT_FOUND
+            );
+        }
+
+        if ($this->isOwnerStrict(application: $application, user: $user) === false) {
+            return $this->errorResponse(code: 'openbuild.rbac.not_owner', status: Http::STATUS_FORBIDDEN);
+        }
+
+        try {
+            $version = $this->findVersionRowBySlug(application: $application, versionSlug: $versionSlug);
+            if ($version === null) {
+                return $this->errorResponse(code: 'not_found', detail: $versionSlug, status: Http::STATUS_NOT_FOUND);
+            }
+
+            $applicationUuid = (string) ($application['id'] ?? $application['uuid'] ?? '');
+            $versionUuid     = (string) ($version['id'] ?? $version['uuid'] ?? '');
+
+            $result = $this->versionService->releaseVersion(
+                applicationUuid: $applicationUuid,
+                versionUuid: $versionUuid
+            );
+
+            return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
+        } catch (Throwable $e) {
+            $this->logger->info(
+                'OpenBuild: ApplicationVersionsController::release refused for slug '.$appSlug.'/'.$versionSlug.': '.$e->getMessage()
+            );
+            return $this->errorResponse(
+                code: 'release_failed',
+                detail: $e->getMessage(),
+                status: Http::STATUS_UNPROCESSABLE_ENTITY
+            );
+        }//end try
+    }//end release()
+
+    /**
+     * Resolve the register of the Application's current production version.
+     *
+     * Handles both the UUID-string and the inline-embedded-object shapes of
+     * `Application.productionVersion`. Returns null when there is no production
+     * version or it carries no register — the caller turns that into a 422.
+     *
+     * @param array<string,mixed> $application Normalised Application data
+     *
+     * @return string|null The production version's register slug, or null
+     */
+    private function resolveProductionRegister(array $application): ?string
+    {
+        $productionVersion = ($application['productionVersion'] ?? null);
+
+        if (is_array($productionVersion) === true) {
+            $register = (string) ($productionVersion['register'] ?? '');
+            return ($register !== '') ? $register : null;
+        }
+
+        $productionVersionUuid = (string) ($productionVersion ?? '');
+        if ($productionVersionUuid === '') {
+            return null;
+        }
+
+        try {
+            $version = $this->objectService->find(
+                id: $productionVersionUuid,
+                register: ApplicationVersionService::REGISTER_SLUG,
+                schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+            );
+        } catch (Throwable $e) {
+            return null;
+        }
+
+        if ($version === null) {
+            return null;
+        }
+
+        $register = (string) ($this->normaliseObject(object: $version)['register'] ?? '');
+        return ($register !== '') ? $register : null;
+    }//end resolveProductionRegister()
+
+    /**
+     * Find a version row by slug, scoped to the parent Application (robust).
+     *
+     * Mirrors {@see index()}'s client-side filter (OR relation-equality filters
+     * are unreliable on some installs), so release resolves the version reliably.
+     *
+     * @param array<string,mixed> $application Normalised Application data
+     * @param string              $versionSlug The version slug to find
+     *
+     * @return array<string,mixed>|null The version row, or null on miss
+     */
+    private function findVersionRowBySlug(array $application, string $versionSlug): ?array
+    {
+        $applicationUuid = (string) ($application['id'] ?? $application['uuid'] ?? '');
+        $registerId      = $this->registerMapper->find(
+            ApplicationVersionService::REGISTER_SLUG,
+            _multitenancy: false
+        )->getId();
+        $schemaId        = $this->schemaMapper->find(
+            ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+            _multitenancy: false
+        )->getId();
+
+        $rows = $this->objectService->searchObjects(
+            query: ['@self' => ['register' => $registerId, 'schema' => $schemaId]]
+        );
+        if (is_array($rows) === false) {
+            return null;
+        }
+
+        foreach ($rows as $row) {
+            $normalised = $this->normaliseObject(object: $row);
+            if ((string) ($normalised['application'] ?? '') !== $applicationUuid) {
+                continue;
+            }
+
+            if ((string) ($normalised['slug'] ?? '') === $versionSlug) {
+                return $normalised;
+            }
+        }
+
+        return null;
+    }//end findVersionRowBySlug()
+
+    /**
+     * Owner-only check with NO admin bypass (REQ-OBV-110).
+     *
+     * Unlike {@see requireRole()} (which grants an audited admin bypass), the
+     * release operation requires an explicit `owners` grant — Nextcloud admin
+     * power does not auto-authorise it.
+     *
+     * @param array<string,mixed> $application Normalised Application data
+     * @param IUser               $user        The calling user
+     *
+     * @return bool True only when the caller is an owner principal
+     */
+    private function isOwnerStrict(array $application, IUser $user): bool
+    {
+        $authorised = $this->collectAuthorisedPrincipals(application: $application, roles: ['owners']);
+        if (in_array($user->getUID(), $authorised['users'], true) === true) {
+            return true;
+        }
+
+        return (count(array_intersect($this->getUserGroupIds(user: $user), $authorised['groups'])) > 0);
+    }//end isOwnerStrict()
 
     /**
      * Resolve the parent Application by slug, returning a normalised array.
