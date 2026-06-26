@@ -12,7 +12,6 @@
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/ApplicationVersionsController.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ApplicationVersionsController.php" method="update"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ApplicationVersionsController.php" method="update"/>
-  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Controller/ApplicationVersionsController.php"/>
   <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Controller/ApplicationsController.php"/>
   <violation rule="PHPMD\Rule\Design\TooManyMethods" file="lib/Controller/ApplicationsController.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/ApplicationsController.php"/>
@@ -24,8 +23,6 @@
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ApplicationsController.php" method="saveManifest"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ApplicationsController.php" method="saveManifest"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Controller/ApplicationsController.php" method="saveManifest"/>
-  <violation rule="PHPMD\Rule\UnusedLocalVariable" file="lib/Controller/ApplicationsController.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/ApplicationsController.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ApplicationsController.php" method="diffVersions"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ApplicationsController.php" method="diffVersions"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/ExportsController.php"/>
@@ -65,7 +62,6 @@
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/ApplicationInsightsService.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/ApplicationVersionService.php"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/ApplicationVersionService.php" method="releaseVersion"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/ApplicationVersionService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/ConditionActionExecutor.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/DecisionTableEvaluator.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/DecisionTableEvaluator.php" method="applyHitPolicy"/>
