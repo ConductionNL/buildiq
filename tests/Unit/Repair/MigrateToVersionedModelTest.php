@@ -138,7 +138,7 @@ class MigrateToVersionedModelTest extends TestCase
         // Register + schema lookups succeed.
         $register = $this->getMockBuilder(Register::class)
             ->disableOriginalConstructor()
-            ->addMethods(['getId'])
+            ->onlyMethods(['getId'])
             ->getMock();
         $register->method('getId')->willReturn(1);
         $this->registerMapper->method('find')->willReturn($register);
@@ -146,7 +146,7 @@ class MigrateToVersionedModelTest extends TestCase
         $this->schemaMapper->method('find')->willReturn(
             $this->getMockBuilder(Schema::class)
                 ->disableOriginalConstructor()
-                ->addMethods(['getId'])
+                ->onlyMethods(['getId'])
                 ->getMock()
         );
 
@@ -184,13 +184,13 @@ class MigrateToVersionedModelTest extends TestCase
 
                 return $this->getMockBuilder(Schema::class)
                     ->disableOriginalConstructor()
-                    ->addMethods(['getId'])
+                    ->onlyMethods(['getId'])
                     ->getMock();
             });
 
         $register = $this->getMockBuilder(Register::class)
             ->disableOriginalConstructor()
-            ->addMethods(['getId'])
+            ->onlyMethods(['getId'])
             ->getMock();
         $register->method('getId')->willReturn(1);
         $this->registerMapper->method('find')->willReturn($register);
@@ -239,13 +239,13 @@ class MigrateToVersionedModelTest extends TestCase
 
                 return $this->getMockBuilder(Schema::class)
                     ->disableOriginalConstructor()
-                    ->addMethods(['getId'])
+                    ->onlyMethods(['getId'])
                     ->getMock();
             });
 
         $register = $this->getMockBuilder(Register::class)
             ->disableOriginalConstructor()
-            ->addMethods(['getId'])
+            ->onlyMethods(['getId'])
             ->getMock();
         $register->method('getId')->willReturn(1);
 
