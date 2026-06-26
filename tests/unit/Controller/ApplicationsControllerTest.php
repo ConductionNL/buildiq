@@ -115,7 +115,7 @@ class ApplicationsControllerTest extends TestCase
 
         $registerEntity = $this->getMockBuilder(Register::class)
             ->disableOriginalConstructor()
-            ->addMethods(['getId'])
+            ->onlyMethods(['getId'])
             ->getMock();
         $registerEntity->method('getId')->willReturn(926);
         $registerMapper = $this->createMock(RegisterMapper::class);
@@ -123,7 +123,7 @@ class ApplicationsControllerTest extends TestCase
 
         $schemaEntity = $this->getMockBuilder(Schema::class)
             ->disableOriginalConstructor()
-            ->addMethods(['getId'])
+            ->onlyMethods(['getId'])
             ->getMock();
         $schemaEntity->method('getId')->willReturn(1635);
         $schemaMapper = $this->createMock(SchemaMapper::class);

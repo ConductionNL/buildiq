@@ -287,7 +287,7 @@ class ApplicationsController extends Controller
                 return $resolved;
             }
 
-            [$application, $applicationArray, $applicationUuid] = $resolved;
+            [$application, $applicationArray] = $resolved;
 
             $user = $this->userSession->getUser();
             if ($user === null) {
@@ -305,19 +305,24 @@ class ApplicationsController extends Controller
                 allowAdminBypass: false,
                 roles: ['owners', 'editors']
             );
+            if ($hasWrite === false && $this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
+
             if ($hasWrite === false) {
-                if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === true) {
-                    $this->recordAdminBypass(
-                        application: ($application instanceof ObjectEntity ? $application : null),
-                        slug: $slug,
-                        actor: $user->getUID()
-                    );
-                } else {
-                    return new JSONResponse(
-                        data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
-                        statusCode: Http::STATUS_FORBIDDEN
-                    );
+                $bypassApplication = null;
+                if ($application instanceof ObjectEntity) {
+                    $bypassApplication = $application;
                 }
+
+                $this->recordAdminBypass(
+                    application: $bypassApplication,
+                    slug: $slug,
+                    actor: $user->getUID()
+                );
             }
 
             $manifest = $this->request->getParam('manifest');
@@ -351,7 +356,7 @@ class ApplicationsController extends Controller
                     schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
                 );
                 if ($versionEntity !== null) {
-                    $versionArray             = $this->normaliseObject(object: $versionEntity);
+                    $versionArray = $this->normaliseObject(object: $versionEntity);
                     $versionArray['manifest'] = $manifest;
                     $this->objectService->saveObject(
                         object: $versionArray,

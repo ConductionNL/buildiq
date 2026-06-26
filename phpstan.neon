@@ -22,6 +22,10 @@ parameters:
         # so the app-registered ApplicationVersionOwnerGuard resolves the OR
         # interface it implements during static analysis (openbuild-rbac).
         - tests/stubs/openregister-lifecycle.stub.php
+        # AppHost Settings engine stubs (GenericSettingsSection + GenericAdminSettings)
+        # so SettingsSection and AdminSettings resolve their parent constructors during
+        # static analysis when the openregister sibling app is absent (ADR-040).
+        - tests/stubs/openregister-apphost.stub.php
     reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         # Nextcloud server internals (\OC, OC_App, OC\) not stubbed in nextcloud/ocp

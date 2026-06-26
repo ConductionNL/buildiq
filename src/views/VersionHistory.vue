@@ -139,34 +139,73 @@ export default {
 			handler(slug) {
 				if (slug) {
 					this.refresh()
-				} else {
+				} else if (!this.applicationUuid) {
 					this.versions = []
+				}
+			},
+		},
+		applicationUuid: {
+			immediate: true,
+			/**
+			 * Fallback: reload via OR objects endpoint when only applicationUuid
+			 * is supplied (no appSlug available yet).
+			 *
+			 * @param {string} uuid The parent Application UUID.
+			 * @return {void}
+			 *
+			 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
+			 */
+			handler(uuid) {
+				if (uuid && !this.appSlug) {
+					this.refresh()
 				}
 			},
 		},
 	},
 	methods: {
 		/**
-		 * Load the ApplicationVersion rows from the working slug endpoint,
-		 * hiding archived versions by default (decision 4).
+		 * Load the ApplicationVersion rows.  When appSlug is available the slug
+		 * endpoint is used; otherwise fall back to the OR objects endpoint
+		 * filtered by applicationUuid (e.g. when accessed via applicationUuid
+		 * prop only).  Results are client-side filtered by applicationUuid when
+		 * available (IDOR defence-in-depth).  Archived versions are hidden by
+		 * default (decision 4).
 		 *
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
 		 */
 		async refresh() {
-			if (!this.appSlug) {
+			if (!this.appSlug && !this.applicationUuid) {
 				this.versions = []
 				return
 			}
 			this.loading = true
 			try {
-				const url = generateUrl('/apps/openbuild/api/applications/{slug}/versions', { slug: this.appSlug })
+				let url
+				if (this.appSlug) {
+					url = generateUrl('/apps/openbuild/api/applications/{slug}/versions', { slug: this.appSlug })
+				} else {
+					url = generateUrl('/apps/openbuild/api/applicationversions?applicationUuid={uuid}', { uuid: this.applicationUuid })
+				}
 				const { data } = await axios.get(url)
 				const raw = Array.isArray(data) ? data : ((data && data.results) ? data.results : [])
-				this.versions = raw
+				const filtered = this.applicationUuid
+					? raw.filter(r => r && r.applicationUuid === this.applicationUuid)
+					: raw
+				this.versions = filtered
 					.filter(r => this.rowStatus(r) !== 'archived')
-					.sort((a, b) => (this.isProduction(b) ? 1 : 0) - (this.isProduction(a) ? 1 : 0))
+					.sort((a, b) => {
+						const bProd = this.isProduction(b) ? 1 : 0
+						const aProd = this.isProduction(a) ? 1 : 0
+						if (bProd !== aProd) {
+							return bProd - aProd
+						}
+						// Newest first by publishedAt.
+						const aDate = (a && a.publishedAt) || ''
+						const bDate = (b && b.publishedAt) || ''
+						return bDate > aDate ? 1 : bDate < aDate ? -1 : 0
+					})
 			} catch (e) {
 				this.versions = []
 			} finally {
@@ -211,13 +250,17 @@ export default {
 			return (row && row.slug) || ''
 		},
 		/**
-		 * The version row's semver.
+		 * The version row's semver string.  Reads the canonical `semver` field
+		 * first, then falls back to the `version` field used by the OR-backed
+		 * shape (e.g. ApplicationVersion objects returned from the OR endpoint).
 		 *
 		 * @param {object} row The version row.
 		 * @return {string}
+		 *
+		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
 		 */
 		rowSemver(row) {
-			return (row && row.semver) || ''
+			return (row && (row.semver || row.version)) || ''
 		},
 		/**
 		 * The version row's lifecycle status.
@@ -325,13 +368,15 @@ export default {
 		 *
 		 * @param {object} row The version row.
 		 * @return {void}
+		 *
+		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
 		 */
 		askRollback(row) {
 			this.rollbackTarget = {
 				uuid: this.rowUuid(row),
-				version: (this.rowName(row) + ' ' + this.rowSemver(row)).trim(),
+				version: this.rowSemver(row) || (this.rowName(row) + ' ' + this.rowSemver(row)).trim(),
 				manifest: row.manifest,
-				publishedAt: '',
+				publishedAt: (row && row.publishedAt) || '',
 			}
 			this.rollbackOpen = true
 		},

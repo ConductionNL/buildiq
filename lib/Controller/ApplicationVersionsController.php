@@ -581,17 +581,21 @@ class ApplicationVersionsController extends Controller
 
         if (is_array($productionVersion) === true) {
             $register = (string) ($productionVersion['register'] ?? '');
-            return ($register !== '') ? $register : null;
+            if ($register !== '') {
+                return $register;
+            }
+
+            return null;
         }
 
-        $productionVersionUuid = (string) ($productionVersion ?? '');
-        if ($productionVersionUuid === '') {
+        $versionUuid = (string) ($productionVersion ?? '');
+        if ($versionUuid === '') {
             return null;
         }
 
         try {
             $version = $this->objectService->find(
-                id: $productionVersionUuid,
+                id: $versionUuid,
                 register: ApplicationVersionService::REGISTER_SLUG,
                 schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
             );
@@ -604,7 +608,11 @@ class ApplicationVersionsController extends Controller
         }
 
         $register = (string) ($this->normaliseObject(object: $version)['register'] ?? '');
-        return ($register !== '') ? $register : null;
+        if ($register !== '') {
+            return $register;
+        }
+
+        return null;
     }//end resolveProductionRegister()
 
     /**
