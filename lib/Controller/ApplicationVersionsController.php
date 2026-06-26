@@ -581,7 +581,11 @@ class ApplicationVersionsController extends Controller
 
         if (is_array($productionVersion) === true) {
             $register = (string) ($productionVersion['register'] ?? '');
-            return ($register !== '') ? $register : null;
+            if ($register !== '') {
+                return $register;
+            }
+
+            return null;
         }
 
         $productionVersionUuid = (string) ($productionVersion ?? '');
@@ -604,7 +608,11 @@ class ApplicationVersionsController extends Controller
         }
 
         $register = (string) ($this->normaliseObject(object: $version)['register'] ?? '');
-        return ($register !== '') ? $register : null;
+        if ($register !== '') {
+            return $register;
+        }
+
+        return null;
     }//end resolveProductionRegister()
 
     /**
