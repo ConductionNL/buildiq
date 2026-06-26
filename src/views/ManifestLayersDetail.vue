@@ -123,11 +123,24 @@
 		<!-- Version history (reused). Lists the app's ApplicationVersion rows
 		     (admin + user deltas) with rollback via OpenRegister versioning. -->
 		<section class="ob-manifest-detail__history">
+			<div v-if="canEdit" class="ob-manifest-detail__history-actions">
+				<NcButton type="secondary" :disabled="creatingDraft" @click="createDraft">
+					<template #icon>
+						<Plus :size="20" />
+					</template>
+					{{ t('openbuild', 'New draft') }}
+				</NcButton>
+			</div>
 			<VersionHistory
 				v-if="appUuid"
+				ref="versionHistory"
+				:app-slug="appSlug"
 				:application-uuid="appUuid"
 				:current-version-uuid="adminVersionUuid"
-				@rollback="onRollback" />
+				:can-edit="canEdit"
+				:can-release="canRelease"
+				@rollback="onRollback"
+				@released="loadAll" />
 		</section>
 
 		<UserDeltaEditModal
@@ -141,15 +154,18 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { getCurrentUser } from '@nextcloud/auth'
+import { showSuccess } from '@nextcloud/dialogs'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 
 import VersionHistory from './VersionHistory.vue'
 import UserDeltaEditModal from '../modals/UserDeltaEditModal.vue'
 
 export default {
 	name: 'ManifestLayersDetail',
-	components: { NcButton, ArrowLeft, VersionHistory, UserDeltaEditModal },
+	components: { NcButton, ArrowLeft, Plus, VersionHistory, UserDeltaEditModal },
 	props: {
 		// The app UUID, forwarded from the route param by CnPageRenderer.
 		objectId: { type: String, default: '' },
@@ -160,6 +176,7 @@ export default {
 			adminVersionUuid: '',
 			userDelta: { allowed: false, exists: false, versionUuid: null, manifestDelta: {} },
 			creating: false,
+			creatingDraft: false,
 			showEditModal: false,
 			error: '',
 			// Maintainer view of ALL users' overrides (403 → not a maintainer → hidden).
@@ -212,6 +229,35 @@ export default {
 			return !!(this.application && this.application.allowUserOverrides)
 		},
 		/**
+		 * Whether the caller may edit versions (owner / editor / NC admin).
+		 *
+		 * Server-side RBAC is authoritative; this only gates the affordance.
+		 *
+		 * @return {boolean}
+		 */
+		canEdit() {
+			return this.hasRole('owners') || this.hasRole('editors') || this.isAdmin
+		},
+		/**
+		 * Whether the caller may release a draft to production (owner only).
+		 *
+		 * Mirrors the server's owner-only-no-admin-bypass rule (REQ-OBV-110), so
+		 * a non-owner admin does not see a button that would 403.
+		 *
+		 * @return {boolean}
+		 */
+		canRelease() {
+			return this.hasRole('owners')
+		},
+		/**
+		 * Whether the current user is a Nextcloud admin.
+		 *
+		 * @return {boolean}
+		 */
+		isAdmin() {
+			return !!(typeof OC !== 'undefined' && OC.isUserAdmin && OC.isUserAdmin())
+		},
+		/**
 		 * Pre-translated meta line for the user-delta layer.
 		 *
 		 * @return {string}
@@ -237,6 +283,23 @@ export default {
 		async loadAll() {
 			await this.loadApplication()
 			await Promise.all([this.loadAdminVersion(), this.loadUserDelta(), this.loadUserOverrides()])
+		},
+		/**
+		 * Whether the current user is listed (by `user:<uid>`) in a permission
+		 * role bucket on the loaded Application. Group membership is enforced
+		 * server-side; this client check covers the direct-user grant.
+		 *
+		 * @param {string} role The role bucket name (owners / editors / viewers).
+		 * @return {boolean}
+		 */
+		hasRole(role) {
+			const uid = (getCurrentUser() && getCurrentUser().uid) || ''
+			if (!uid || !this.application) {
+				return false
+			}
+			const perms = this.application.permissions || {}
+			const bucket = Array.isArray(perms[role]) ? perms[role] : []
+			return bucket.includes('user:' + uid)
 		},
 		/**
 		 * Load ALL users' overrides for this app (maintainer view). A 403 means
@@ -373,6 +436,76 @@ export default {
 			this.loadAll()
 		},
 		/**
+		 * The own UUID of an ApplicationVersion row (`id` or `@self` envelope).
+		 *
+		 * @param {object} row The version row.
+		 * @return {string}
+		 */
+		rowUuid(row) {
+			const self = (row && row['@self']) || {}
+			return (row && row.id) || self.id || self.uuid || (row && row.uuid) || ''
+		},
+		/**
+		 * Create a new draft version: clone the production manifest, share the
+		 * production register (omit `register` so the backend inherits it), and
+		 * auto-name it `Draft N` / `draft-n` (decision: auto naming).
+		 *
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 */
+		async createDraft() {
+			if (!this.appSlug || this.creatingDraft) {
+				return
+			}
+			this.creatingDraft = true
+			this.error = ''
+			try {
+				const listUrl = generateUrl('/apps/openbuild/api/applications/{slug}/versions', { slug: this.appSlug })
+				const { data } = await axios.get(listUrl)
+				const rows = Array.isArray(data) ? data : ((data && data.results) ? data.results : [])
+
+				// Clone the current production version's manifest.
+				let manifest = {}
+				const prod = rows.find(r => this.rowUuid(r) === this.adminVersionUuid)
+				if (prod && prod.manifest) {
+					manifest = prod.manifest
+				}
+
+				// Next "Draft N" / draft-n (one past the highest existing draft-N).
+				let maxN = 0
+				rows.forEach((r) => {
+					const m = /^draft-(\d+)$/.exec((r && r.slug) || '')
+					if (m) {
+						maxN = Math.max(maxN, parseInt(m[1], 10))
+					}
+				})
+				const n = maxN + 1
+				let slug = 'draft-' + n
+				if (rows.some(r => (r && r.slug) === slug)) {
+					slug = slug + '-' + Date.now().toString(36)
+				}
+
+				// Omit `register` → backend inherits production's (manifest-only versioning).
+				await axios.post(listUrl, {
+					name: 'Draft ' + n,
+					slug,
+					status: 'draft',
+					manifest,
+					application: this.appUuid,
+				})
+				showSuccess(t('openbuild', 'Draft “{name}” created.', { name: 'Draft ' + n }))
+				if (this.$refs.versionHistory) {
+					await this.$refs.versionHistory.refresh()
+				}
+			} catch (e) {
+				const detail = (e && e.response && e.response.data && e.response.data.detail) || ''
+				this.error = t('openbuild', 'Could not create a draft.') + (detail ? ' ' + detail : '')
+			} finally {
+				this.creatingDraft = false
+			}
+		},
+		/**
 		 * Deep-link to an ApplicationVersion row's OpenRegister object page
 		 * (which carries OR's native version history / time-travel / rollback).
 		 *
@@ -478,6 +611,12 @@ export default {
 	border: 1px solid var(--color-border, #ddd);
 	border-radius: var(--border-radius-large, 8px);
 	background: var(--color-main-background, #fff);
+}
+
+.ob-manifest-detail__history-actions {
+	display: flex;
+	justify-content: flex-end;
+	margin-bottom: 12px;
 }
 
 .ob-manifest-detail__overrides {

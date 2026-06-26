@@ -406,12 +406,101 @@ class ApplicationVersionServiceTest extends TestCase
     }//end testDeleteVersionKeepRegisterDoesNotDropRegister()
 
     /**
+     * release() publishes the chosen version, moves the production pointer, and
+     * archives the previous production (REQ-OBV-110): three saves, correct result.
+     *
+     * @return void
+     */
+    public function testReleaseVersionPublishesPointsAndArchivesPrevious(): void
+    {
+        $newVersion  = $this->mockVersion(application: 'uuid-app', register: 'openbuild-foo-prod', uuid: 'uuid-new');
+        $oldVersion  = $this->mockVersion(application: 'uuid-app', register: 'openbuild-foo-prod', uuid: 'uuid-old', status: 'published');
+        $application = $this->mockApplication(productionVersion: 'uuid-old');
+
+        $this->objectService->method('find')
+            ->willReturnCallback(
+                static function (string|int $id) use ($newVersion, $oldVersion, $application): ?ObjectEntity {
+                    return match ($id) {
+                        'uuid-new' => $newVersion,
+                        'uuid-old' => $oldVersion,
+                        'uuid-app' => $application,
+                        default    => null,
+                    };
+                }
+            );
+
+        // Exactly three saves: publish chosen + move pointer + archive previous.
+        $this->objectService->expects(self::exactly(3))->method('saveObject')
+            ->willReturn($this->createMock(ObjectEntity::class));
+
+        $result = $this->service->releaseVersion(applicationUuid: 'uuid-app', versionUuid: 'uuid-new');
+
+        self::assertSame('uuid-new', $result['productionVersion']);
+        self::assertSame('uuid-new', $result['published']);
+        self::assertSame('uuid-old', $result['archived']);
+    }//end testReleaseVersionPublishesPointsAndArchivesPrevious()
+
+    /**
+     * release() of a version that back-references a different Application is
+     * rejected by the productionVersion guard (REQ-OBV-110 — 422 at the caller).
+     *
+     * @return void
+     */
+    public function testReleaseVersionRejectsForeignVersion(): void
+    {
+        $foreign = $this->mockVersion(application: 'uuid-other-app', uuid: 'uuid-v');
+        $this->objectService->method('find')
+            ->willReturnCallback(static fn (string|int $id): ?ObjectEntity => ($id === 'uuid-v' ? $foreign : null));
+
+        $this->objectService->expects(self::never())->method('saveObject');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches('/back-reference mismatch/');
+        $this->service->releaseVersion(applicationUuid: 'uuid-app', versionUuid: 'uuid-v');
+    }//end testReleaseVersionRejectsForeignVersion()
+
+    /**
+     * delete-now on a draft whose register is SHARED with production must NOT drop
+     * the register (REQ-OBV-111) — it is downgraded to keep-register semantics.
+     *
+     * @return void
+     */
+    public function testDeleteNowOnProductionSharedRegisterDoesNotDrop(): void
+    {
+        $version     = $this->mockVersion(application: 'uuid-app', register: 'openbuild-foo-prod', uuid: 'uuid-v');
+        $production  = $this->mockVersion(application: 'uuid-app', register: 'openbuild-foo-prod', uuid: 'uuid-prod');
+        $application = $this->mockApplication(productionVersion: 'uuid-prod');
+
+        $this->objectService->method('find')
+            ->willReturnCallback(
+                static function (string|int $id) use ($version, $production, $application): ?ObjectEntity {
+                    return match ($id) {
+                        'uuid-v'    => $version,
+                        'uuid-prod' => $production,
+                        'uuid-app'  => $application,
+                        default     => null,
+                    };
+                }
+            );
+
+        // Shared register → delete-now downgraded → register is NOT dropped.
+        $this->registerService->expects(self::never())->method('delete');
+        $this->objectService->expects(self::once())->method('deleteObject')->with('uuid-v');
+
+        $this->service->deleteVersion(
+            versionUuid: 'uuid-v',
+            strategy: ApplicationVersionService::STRATEGY_DELETE_NOW
+        );
+    }//end testDeleteNowOnProductionSharedRegisterDoesNotDrop()
+
+    /**
      * Build a mock ObjectEntity standing in for an ApplicationVersion row.
      *
      * @param string|null $promotesTo  Optional promotesTo target UUID
      * @param string|null $application Optional parent Application UUID
      * @param string|null $register    Optional per-version register slug
      * @param string|null $uuid        Optional own UUID
+     * @param string|null $status      Optional lifecycle status
      *
      * @return ObjectEntity&MockObject
      */
@@ -419,7 +508,8 @@ class ApplicationVersionServiceTest extends TestCase
         ?string $promotesTo=null,
         ?string $application=null,
         ?string $register=null,
-        ?string $uuid=null
+        ?string $uuid=null,
+        ?string $status=null
     ): ObjectEntity&MockObject {
         $entity = $this->createMock(ObjectEntity::class);
         $payload = [];
@@ -437,6 +527,10 @@ class ApplicationVersionServiceTest extends TestCase
 
         if ($uuid !== null) {
             $payload['id'] = $uuid;
+        }
+
+        if ($status !== null) {
+            $payload['status'] = $status;
         }
 
         $entity->method('jsonSerialize')->willReturn($payload);
