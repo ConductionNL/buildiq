@@ -81,7 +81,10 @@ namespace OCA\OpenRegister\Db {
 
     if (class_exists(Register::class, autoload: false) === false) {
         /**
-         * Stub Register — `getId()`/`getSlug()` resolve via Entity's `__call`;
+         * Stub Register — declares getId()/getSlug() explicitly so PHPUnit
+         * MockObject::method() can configure them without requiring addMethods().
+         * The real OR class resolves these via Entity::__call; explicit
+         * declarations here satisfy PHPUnit 10's MethodCannotBeConfiguredException.
          * `getSchemas()`/`setSchemas()` are real methods on the OR class.
          */
         class Register extends \OCP\AppFramework\Db\Entity
@@ -100,6 +103,26 @@ namespace OCA\OpenRegister\Db {
              * @var array<int, int>|null
              */
             protected ?array $schemas = [];
+
+            /**
+             * Return the entity id.
+             *
+             * @return int
+             */
+            public function getId(): int
+            {
+                return (int) ($this->id ?? 0);
+            }//end getId()
+
+            /**
+             * Return the register slug.
+             *
+             * @return string
+             */
+            public function getSlug(): string
+            {
+                return (string) ($this->slug ?? '');
+            }//end getSlug()
 
             /**
              * @return array<int, int>
@@ -124,7 +147,8 @@ namespace OCA\OpenRegister\Db {
 
     if (class_exists(Schema::class, autoload: false) === false) {
         /**
-         * Stub Schema — `getId()`/`getSlug()` resolve via Entity's `__call`.
+         * Stub Schema — declares getId()/getSlug() explicitly so PHPUnit
+         * MockObject::method() can configure them (same reason as Register).
          */
         class Schema extends \OCP\AppFramework\Db\Entity
         {
@@ -135,6 +159,26 @@ namespace OCA\OpenRegister\Db {
              * @var string|null
              */
             protected ?string $slug = null;
+
+            /**
+             * Return the entity id.
+             *
+             * @return int
+             */
+            public function getId(): int
+            {
+                return (int) ($this->id ?? 0);
+            }//end getId()
+
+            /**
+             * Return the schema slug.
+             *
+             * @return string
+             */
+            public function getSlug(): string
+            {
+                return (string) ($this->slug ?? '');
+            }//end getSlug()
         }//end class
     }
 
@@ -473,6 +517,52 @@ namespace OCA\OpenRegister\Service {
             {
                 return new \OCA\OpenRegister\Db\Register();
             }//end find()
+        }//end class
+    }//end if
+
+    if (class_exists(SecurityService::class, autoload: false) === false) {
+        /**
+         * Stub SecurityService — no-op SSRF guard for unit-test isolation.
+         *
+         * RemoteTemplateStoreService calls `SecurityService::assertSafeFetchUrl()`
+         * at runtime via `class_exists()` + `call_user_func()`. In unit tests the
+         * mock HttpClient already controls what "returns", but the guard fires
+         * BEFORE the mock client is invoked — and performs real DNS lookups that
+         * fail for the `.test` / `.example.test` hostnames used in fixtures.
+         *
+         * Defining the stub here (in the Service namespace, loaded by bootstrap-unit.php
+         * BEFORE the OR PSR-4 path is searched) satisfies the `class_exists()` check
+         * without triggering a DNS lookup, so the mock HttpClient layer is reached.
+         */
+        class SecurityService
+        {
+            /**
+             * Scheme-only SSRF guard for unit-test isolation.
+             *
+             * Mirrors the real SecurityService logic for scheme validation (rejects
+             * non-http/https URLs with the same exception) but skips DNS resolution,
+             * which fails for `.test` / `.example.test` hostnames used in fixtures.
+             *
+             * @param string $url The URL to guard.
+             *
+             * @return void
+             *
+             * @throws \InvalidArgumentException For non-http/https or malformed URLs.
+             */
+            public static function assertSafeFetchUrl(string $url): void
+            {
+                $parts = parse_url($url);
+                if ($parts === false || empty($parts['scheme']) === true || empty($parts['host']) === true) {
+                    throw new \InvalidArgumentException('Invalid or malformed URL.');
+                }
+
+                $scheme = strtolower($parts['scheme']);
+                if (in_array($scheme, ['http', 'https'], true) === false) {
+                    throw new \InvalidArgumentException('Only http and https URLs are allowed.');
+                }
+
+                // DNS resolution intentionally skipped in unit-test stub.
+            }//end assertSafeFetchUrl()
         }//end class
     }//end if
 
