@@ -1,58 +1,108 @@
 ---
 sidebar_position: 4
-title: Design a page
-description: Compose the screens of a virtual app — index lists, detail pages, forms, dashboards — from the page designer.
+title: Build your app in-app
+description: Edit pages live from inside the running app — switch to edit mode, add and configure widgets, and manage pages, menu, sidebar and data, all without leaving the page.
 ---
 
-# Design a page
+# Build your app in-app
 
-Pages are the screens of a virtual app: an index list, a detail view, a form, a dashboard. The page designer composes them from typed page descriptors (`type: 'index' | 'detail' | 'form' | 'dashboard' | 'custom'`) plus the schema you designed in the previous step.
+You build and refine an OpenBuild app **from inside the running app**. Every
+page carries an **Edit with OpenBuild** button (the orange cube, top-right).
+From there you turn the page into an editable grid, add and configure widgets,
+and manage the app's pages, menu, sidebar and data — live, with no separate
+build step.
 
 ## Goal
 
-By the end you will have added a new page to your virtual app, picked its type, attached a schema, dropped it into the main menu, and saved.
+By the end you will have switched a page into edit mode, added and configured a
+widget, rearranged the grid, and saved — all in-app.
 
 ## Prerequisites
 
-- A virtual app with at least one schema (see [Design a schema](./03-design-schema.md)).
-- A clear idea of what the page is for — *list of all records*, *one record*, *form to add a record*, *summary dashboard*.
+- An OpenBuild app you can open (from a template or blank — see
+  [Create from a template](./02-create-from-template.md)).
+- At least one schema so pages have data to show (see
+  [Design a schema](./03-design-schema.md)).
+
+## The Edit with OpenBuild menu
+
+Open any page of your app and click the orange **Edit with OpenBuild** cube.
+
+![A detail page with the Edit with OpenBuild button](/screenshots/in-app/01-detail-page.png)
+
+The menu offers:
+
+![The OpenBuild edit menu](/screenshots/in-app/02-edit-menu.png)
+
+| Item | What it does |
+|---|---|
+| **Edit page** | Turns the current page into an editable grid (drag / resize / configure). |
+| **Add widget…** | Adds a widget to the current page (enabled while editing). |
+| **Edit pages…** | Add, rename, retype and route the app's pages. |
+| **Edit menu…** | Manage the navigation menu and its sections. |
+| **Edit sidebar…** | Configure the object sidebar tabs. |
+| **Edit actions…** | Configure page-level actions. |
+| **Edit settings…** | Configure the app's settings page. |
+| **Edit data…** | Manage the app's register and its schemas. |
 
 ## Steps
 
-1. Open the page designer for your app at `/apps/openbuild/builder/\<slug\>/pages`. The designer splits the screen into three panels: pages on the left, menu in the middle, the editor for the selected page on the right.
+1. **Enter edit mode.** Click **Edit with OpenBuild → Edit page**. The page
+   body becomes a drag-and-drop grid: each widget gets resize handles and, where
+   it's configurable, a **cog** in its corner. A detail page starts with the
+   **Data** and **Related** widgets by default.
 
-   ![Page designer overview](/screenshots/tutorials/user/04-design-page-01.png)
+   ![A page in edit mode with widget cogs and resize handles](/screenshots/in-app/03-edit-mode.png)
 
-2. Click **+ Add page** in the **Pages** panel. Fill in the page's **Slug** (for example `tasks`), its **Type** (*index*, *detail*, *form*, *dashboard*, *custom*) and a **Title** that will show in the title bar.
+2. **Rearrange.** Drag a widget to move it, drag its corner to resize. The grid
+   is a real 12-column layout — widgets reflow as you go.
 
-   ![Add page dialog](/screenshots/tutorials/user/04-design-page-02.png)
+3. **Add a widget.** Click **Edit with OpenBuild → Add widget…**, pick a type
+   (see the [Widgets reference](../../widgets.md)), set its appearance, and
+   confirm. The new widget drops into the grid.
 
-3. For an *index* page, pick the **Register** and **Schema** it lists, the **View mode** (cards or table) and the **Columns** to show. For a *form* page, pick the schema and (optionally) tick which fields are visible. The right-hand editor updates the preview live.
+   ![The Add Widget dialog](/screenshots/widgets/01-add-widget.png)
 
-   ![Page editor for an index page](/screenshots/tutorials/user/04-design-page-03.png)
+4. **Configure a widget.** Click a widget's **cog** to open its config. For the
+   **Data** widget you choose which properties show, their order and layout
+   (Stacked / 2-col / 3-col), and per-field options — the same map drives both
+   the inline display and the edit form.
 
-4. In the **Menu** panel, click **+ Add menu entry**, pick the section (*main*, *settings*, *user-settings*, *action*), and link it to the page you just created. Drag-and-drop to reorder.
+   ![Per-property configuration of the Data widget](/screenshots/in-app/04-per-property-config.png)
 
-   ![Menu builder](/screenshots/tutorials/user/04-design-page-04.png)
+5. **Save.** Click **Edit with OpenBuild → Save page**. Your changes are written
+   into the app's manifest and the page renders them immediately. **Cancel**
+   instead to discard the edit session.
 
-5. Click **Save pages**. The new page lands in the app's manifest; switch to **Save & open preview** to see the page render inside the live virtual-app shell.
+## Managing structure (pages, menu, data)
 
-   ![Pages saved](/screenshots/tutorials/user/04-design-page-05.png)
+Beyond the current page, the same menu manages the whole app:
+
+- **Edit pages…** — add a page, pick its type (`index` / `detail` / `dashboard`
+  / `custom`), bind a register + schema, and route it.
+- **Edit menu…** — add menu entries, choose the section, and reorder by
+  drag-and-drop.
+- **Edit data…** — create or pick the app's register and add/edit/remove its
+  schemas, without leaving the app.
 
 ## Verification
 
-The page is good when: it appears under **Pages** in the left panel with no red validation badge, the right-hand preview renders without error, and clicking through to the live virtual-app shell shows the page on the menu and lists/forms the right data.
+The edit went well when: the page leaves edit mode after **Save page** with your
+widgets in place, the widgets render their data without error, and reloading the
+page shows the same layout (the manifest persisted).
 
 ## Common issues
 
 | Symptom | Fix |
 |---|---|
-| Validation panel says *"form pages must declare a non-empty fields[] array"* | A *form*-type page was saved without picking any fields — open the page, tick at least one field, save. |
-| The page is not on the menu | The menu entry was saved but its link points at a stale page — re-link it from the **Menu** panel. |
-| Preview shows an empty list | The schema has no records yet — add a few via the form page you just designed, or use *Add Item* on the index page. |
+| **Add widget…** is greyed out | You're not in edit mode — click **Edit page** first. |
+| A reload "asks to leave the page" | You have an unsaved edit session — **Save page** or **Cancel** before navigating. |
+| A widget shows no data | Its register/schema (inherited from the page) has no records yet, or the widget's filter excludes them — add a record or widen the config. |
+| The change disappeared after reload | You left edit mode with **Cancel** (or didn't **Save page**) — re-edit and **Save page**. |
 
 ## Reference
 
-- [Design a schema](./03-design-schema.md) — the data the page reads from.
-- [Connect external data](./05-connect-data.md) — make the page list rows from an external source.
-- [Preview the running app](./06-preview-app.md) — see the page in the live shell.
+- [Widgets](../../widgets.md) — every widget you can add and how to configure it.
+- [Design a schema](./03-design-schema.md) — the data your pages read from.
+- [Connect external data](./05-connect-data.md) — list rows from an external source.
+- [Preview the running app](./06-preview-app.md) — see the app in its live shell.
