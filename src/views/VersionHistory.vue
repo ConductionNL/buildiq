@@ -1,11 +1,14 @@
 <!--
   - SPDX-License-Identifier: EUPL-1.2
+  - SPDX-FileCopyrightText: 2026 Conduction B.V.
   -
-  - Version-history sibling panel inside ApplicationEditor.vue. Reads
-  - ApplicationVersion rows from OR REST filtered by applicationUuid
-  - (no app-local wrapper service per ADR-022). Each row carries
-  - rollback + "compare with current draft" affordances per
-  - REQ-OBR-008, REQ-OBR-009, design.md OQ-4.
+  - Version-history list for an Application. Reads ApplicationVersion rows from
+  - the slug-based OpenBuild endpoint (`/api/applications/{slug}/versions`) — the
+  - OR objects endpoint + `applicationUuid` filter never matched this register
+  - shape, so this is the working source (version-lifecycle-and-switcher,
+  - version-routing-ui MODIFIED). Each row can be opened (view/use) in the live
+  - shell, edited (editor+) in the designer, released to production (owner, draft
+  - only), or rolled back. Archived versions are hidden by default (decision 4).
   -->
 <template>
 	<div class="version-history">
@@ -16,26 +19,50 @@
 			{{ t('openbuild', 'Loading…') }}
 		</p>
 		<p v-else-if="!versions.length" class="version-history__empty">
-			{{ t('openbuild', 'No versions yet — publish this app to create the first snapshot.') }}
+			{{ t('openbuild', 'No versions yet — create a draft to start a new version.') }}
 		</p>
 		<ul v-else class="version-history__list">
 			<li
 				v-for="row in versions"
 				:key="rowKey(row)"
 				class="version-history__row"
-				:class="{ 'version-history__row--current': isCurrent(row) }">
+				:class="{ 'version-history__row--current': isProduction(row) }"
+				tabindex="0"
+				role="button"
+				@click="openVersion(row)"
+				@keydown.enter="openVersion(row)">
 				<div class="version-history__row-main">
-					<strong>{{ rowVersion(row) }}</strong>
-					<span class="version-history__when">{{ formatDate(rowPublishedAt(row)) }}</span>
-					<small class="version-history__by">{{ t('openbuild', 'By') }}: {{ rowPublishedBy(row) }}</small>
-					<small v-if="rowNotes(row)" class="version-history__notes">{{ rowNotes(row) }}</small>
+					<div class="version-history__row-title">
+						<strong>{{ rowName(row) }}</strong>
+						<small class="version-history__semver">{{ rowSemver(row) }}</small>
+						<span class="version-history__badge" :class="`version-history__badge--${rowStatus(row)}`">
+							{{ statusLabel(row) }}
+						</span>
+						<span v-if="isProduction(row)" class="version-history__badge version-history__badge--production">
+							{{ t('openbuild', 'Production') }}
+						</span>
+					</div>
 				</div>
-				<div class="version-history__actions">
-					<button class="version-history__btn" @click="compare(row)">
-						{{ t('openbuild', 'Compare with current draft') }}
+				<!-- Actions stop row-click propagation so a button never doubles as "open". -->
+				<div class="version-history__actions" @click.stop>
+					<button class="version-history__btn" @click="openVersion(row)">
+						{{ t('openbuild', 'Open') }}
 					</button>
-					<button class="version-history__btn version-history__btn--danger" @click="askRollback(row)">
-						{{ t('openbuild', 'Roll back to this version') }}
+					<button v-if="canEdit" class="version-history__btn" @click="editVersion(row)">
+						{{ t('openbuild', 'Edit') }}
+					</button>
+					<button
+						v-if="canRelease && rowStatus(row) === 'draft'"
+						class="version-history__btn version-history__btn--primary"
+						:disabled="releasing === rowUuid(row)"
+						@click="release(row)">
+						{{ t('openbuild', 'Release') }}
+					</button>
+					<button
+						v-if="!isProduction(row)"
+						class="version-history__btn version-history__btn--danger"
+						@click="askRollback(row)">
+						{{ t('openbuild', 'Roll back') }}
 					</button>
 				</div>
 			</li>
@@ -53,6 +80,7 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import RollbackConfirmModal from '../modals/RollbackConfirmModal.vue'
 
 export default {
@@ -61,34 +89,55 @@ export default {
 		RollbackConfirmModal,
 	},
 	props: {
+		/** The parent Application slug — drives the working versions endpoint. */
+		appSlug: {
+			type: String,
+			default: '',
+		},
+		/** The parent Application UUID (kept for back-compat callers). */
 		applicationUuid: {
 			type: String,
-			required: true,
+			default: '',
 		},
+		/** The current production version UUID — marks the "Production" row. */
 		currentVersionUuid: {
 			type: String,
 			default: '',
 		},
+		/** Whether the caller may edit versions (owner/editor/admin). */
+		canEdit: {
+			type: Boolean,
+			default: false,
+		},
+		/** Whether the caller may release a draft to production (owner only). */
+		canRelease: {
+			type: Boolean,
+			default: false,
+		},
 	},
-	emits: ['compare', 'rollback'],
+	emits: ['rollback', 'released'],
 	data() {
 		return {
 			versions: [],
 			loading: false,
+			releasing: '',
 			rollbackOpen: false,
 			rollbackTarget: null,
 		}
 	},
 	watch: {
-		applicationUuid: {
+		appSlug: {
 			immediate: true,
 			/**
-			 * Observed behaviour of `handler` (retrofit annotation).
+			 * Reload the list when the parent slug resolves.
 			 *
-			 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+			 * @param {string} slug The parent Application slug.
+			 * @return {void}
+			 *
+			 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
 			 */
-			handler(uuid) {
-				if (uuid) {
+			handler(slug) {
+				if (slug) {
 					this.refresh()
 				} else {
 					this.versions = []
@@ -98,141 +147,199 @@ export default {
 	},
 	methods: {
 		/**
-		 * Observed behaviour of `refresh` (retrofit annotation).
+		 * Load the ApplicationVersion rows from the working slug endpoint,
+		 * hiding archived versions by default (decision 4).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
 		 */
 		async refresh() {
-			if (!this.applicationUuid) {
+			if (!this.appSlug) {
 				this.versions = []
 				return
 			}
 			this.loading = true
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/application-version')
-				const { data } = await axios.get(url, {
-					params: {
-						applicationUuid: this.applicationUuid,
-						_limit: 200,
-					},
-				})
-				const raw = (data && data.results) ? data.results : (Array.isArray(data) ? data : [])
-				// Filter client-side too (OR returns full register page if param ignored) and sort newest first.
+				const url = generateUrl('/apps/openbuild/api/applications/{slug}/versions', { slug: this.appSlug })
+				const { data } = await axios.get(url)
+				const raw = Array.isArray(data) ? data : ((data && data.results) ? data.results : [])
 				this.versions = raw
-					.filter(r => this.rowApplicationUuid(r) === this.applicationUuid)
-					.sort((a, b) => {
-						const aT = new Date(this.rowPublishedAt(a) || 0).getTime()
-						const bT = new Date(this.rowPublishedAt(b) || 0).getTime()
-						return bT - aT
-					})
+					.filter(r => this.rowStatus(r) !== 'archived')
+					.sort((a, b) => (this.isProduction(b) ? 1 : 0) - (this.isProduction(a) ? 1 : 0))
 			} catch (e) {
 				this.versions = []
-				// Empty state with no console error per REQ-OBR-008 scenario 2.
 			} finally {
 				this.loading = false
 			}
 		},
 		/**
-		 * Observed behaviour of `rowKey` (retrofit annotation).
+		 * Stable key for a version row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 * @param {object} row The version row.
+		 * @return {string}
 		 */
 		rowKey(row) {
-			return this.rowUuid(row) || JSON.stringify(row).slice(0, 32)
+			return this.rowUuid(row) || (this.rowSlug(row) + ':' + this.rowName(row))
 		},
 		/**
-		 * Observed behaviour of `rowUuid` (retrofit annotation).
+		 * The version row's own UUID (from `id` or the `@self` envelope).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 * @param {object} row The version row.
+		 * @return {string}
 		 */
 		rowUuid(row) {
 			const self = (row && row['@self']) || {}
-			return self.id || self.uuid || row.uuid || ''
+			return (row && row.id) || self.id || self.uuid || (row && row.uuid) || ''
 		},
 		/**
-		 * Observed behaviour of `rowApplicationUuid` (retrofit annotation).
+		 * The version row's human label (name, falling back to slug).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 * @param {object} row The version row.
+		 * @return {string}
 		 */
-		rowApplicationUuid(row) {
-			return (row && row.applicationUuid) || ''
+		rowName(row) {
+			return (row && (row.name || row.slug)) || ''
 		},
 		/**
-		 * Observed behaviour of `rowVersion` (retrofit annotation).
+		 * The version row's slug (used for `?_version=`).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 * @param {object} row The version row.
+		 * @return {string}
 		 */
-		rowVersion(row) {
-			return (row && row.version) || ''
+		rowSlug(row) {
+			return (row && row.slug) || ''
 		},
 		/**
-		 * Observed behaviour of `rowPublishedAt` (retrofit annotation).
+		 * The version row's semver.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 * @param {object} row The version row.
+		 * @return {string}
 		 */
-		rowPublishedAt(row) {
-			return (row && row.publishedAt) || ''
+		rowSemver(row) {
+			return (row && row.semver) || ''
 		},
 		/**
-		 * Observed behaviour of `rowPublishedBy` (retrofit annotation).
+		 * The version row's lifecycle status.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 * @param {object} row The version row.
+		 * @return {string}
 		 */
-		rowPublishedBy(row) {
-			return (row && row.publishedBy) || ''
+		rowStatus(row) {
+			return (row && row.status) || 'draft'
 		},
 		/**
-		 * Observed behaviour of `rowNotes` (retrofit annotation).
+		 * Translated label for a row's status.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 * @param {object} row The version row.
+		 * @return {string}
 		 */
-		rowNotes(row) {
-			return (row && row.notes) || ''
-		},
-		isCurrent(row) {
-			return this.rowUuid(row) === this.currentVersionUuid
-		},
-		/**
-		 * Observed behaviour of `formatDate` (retrofit annotation).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
-		 */
-		formatDate(iso) {
-			if (!iso) {
-				return ''
+		statusLabel(row) {
+			const status = this.rowStatus(row)
+			if (status === 'published') {
+				return t('openbuild', 'Published')
 			}
+			if (status === 'archived') {
+				return t('openbuild', 'Archived')
+			}
+			return t('openbuild', 'Draft')
+		},
+		/**
+		 * Whether the row is the Application's current production version.
+		 *
+		 * @param {object} row The version row.
+		 * @return {boolean}
+		 */
+		isProduction(row) {
+			return !!this.currentVersionUuid && this.rowUuid(row) === this.currentVersionUuid
+		},
+		/**
+		 * Open a version in the live shell — production at the canonical URL,
+		 * any other version via `?_version=` (RBAC-gated server-side).
+		 *
+		 * @param {object} row The version row.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 */
+		openVersion(row) {
+			if (!this.appSlug) {
+				return
+			}
+			const base = generateUrl('/apps/openbuild/builder/{slug}', { slug: this.appSlug })
+			window.location.href = this.isProduction(row)
+				? base
+				: base + '?_version=' + encodeURIComponent(this.rowSlug(row))
+		},
+		/**
+		 * Edit a version in the page designer, scoped via `?_version=` for
+		 * non-production versions (editor+ only — gated by `canEdit`).
+		 *
+		 * @param {object} row The version row.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 */
+		editVersion(row) {
+			if (!this.appSlug) {
+				return
+			}
+			const base = generateUrl('/apps/openbuild/builder/{slug}/pages', { slug: this.appSlug })
+			window.location.href = this.isProduction(row)
+				? base
+				: base + '?_version=' + encodeURIComponent(this.rowSlug(row))
+		},
+		/**
+		 * Release a draft version: set-as-production + publish + demote previous
+		 * production (owner only, server-enforced). Refreshes on success.
+		 *
+		 * @param {object} row The version row.
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 */
+		async release(row) {
+			const versionSlug = this.rowSlug(row)
+			if (!this.appSlug || !versionSlug || this.releasing) {
+				return
+			}
+			this.releasing = this.rowUuid(row)
 			try {
-				return new Date(iso).toLocaleString()
+				const url = generateUrl(
+					'/apps/openbuild/api/applications/{slug}/versions/{versionSlug}/release',
+					{ slug: this.appSlug, versionSlug },
+				)
+				await axios.post(url, {})
+				showSuccess(t('openbuild', '“{name}” is now the production version.', { name: this.rowName(row) }))
+				this.$emit('released')
+				await this.refresh()
 			} catch (e) {
-				return iso
+				const detail = (e && e.response && e.response.data && e.response.data.detail) || (e && e.message) || ''
+				showError(t('openbuild', 'Release failed') + (detail ? ': ' + detail : ''))
+			} finally {
+				this.releasing = ''
 			}
 		},
 		/**
-		 * Observed behaviour of `compare` (retrofit annotation).
+		 * Open the rollback confirmation for a non-production version.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
-		 */
-		compare(row) {
-			this.$emit('compare', { from: 'draft', to: this.rowUuid(row) })
-		},
-		/**
-		 * Observed behaviour of `askRollback` (retrofit annotation).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 * @param {object} row The version row.
+		 * @return {void}
 		 */
 		askRollback(row) {
 			this.rollbackTarget = {
 				uuid: this.rowUuid(row),
-				version: this.rowVersion(row),
+				version: (this.rowName(row) + ' ' + this.rowSemver(row)).trim(),
 				manifest: row.manifest,
-				publishedAt: this.rowPublishedAt(row),
+				publishedAt: '',
 			}
 			this.rollbackOpen = true
 		},
 		/**
-		 * Observed behaviour of `onRollbackConfirmed` (retrofit annotation).
+		 * Forward a confirmed rollback to the parent (which performs the PUT).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 * @param {object} version The rollback target.
+		 * @return {void}
 		 */
 		onRollbackConfirmed(version) {
 			this.$emit('rollback', version)
@@ -240,9 +347,9 @@ export default {
 			this.rollbackTarget = null
 		},
 		/**
-		 * Observed behaviour of `onRollbackCancelled` (retrofit annotation).
+		 * Dismiss the rollback confirmation.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-1
+		 * @return {void}
 		 */
 		onRollbackCancelled() {
 			this.rollbackOpen = false
@@ -281,12 +388,20 @@ export default {
 
 .version-history__row {
 	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 8px;
 	padding: 10px 12px;
 	border: 1px solid var(--color-border, #ddd);
 	border-radius: var(--border-radius, 4px);
-	background: var(--color-background-hover, transparent);
+	background: var(--color-main-background, transparent);
+	cursor: pointer;
+}
+
+.version-history__row:hover,
+.version-history__row:focus-visible {
+	background: var(--color-background-hover, #f5f5f5);
 }
 
 .version-history__row--current {
@@ -294,21 +409,34 @@ export default {
 	background: var(--color-primary-light, #e6f0fa);
 }
 
-.version-history__row-main {
+.version-history__row-title {
 	display: flex;
-	flex-direction: column;
-	gap: 2px;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
 }
 
-.version-history__when {
-	font-size: 13px;
-	color: var(--color-text-maxcontrast, #888);
-}
-
-.version-history__by,
-.version-history__notes {
+.version-history__semver {
 	font-size: 12px;
 	color: var(--color-text-maxcontrast, #888);
+}
+
+.version-history__badge {
+	font-size: 11px;
+	padding: 1px 8px;
+	border-radius: 10px;
+	background: var(--color-background-dark, #f0f0f0);
+	color: var(--color-text-maxcontrast, #666);
+}
+
+.version-history__badge--published {
+	background: var(--color-success, #2d7d46);
+	color: #fff;
+}
+
+.version-history__badge--production {
+	background: var(--color-primary-element, #0082c9);
+	color: var(--color-primary-element-text, #fff);
 }
 
 .version-history__actions {
@@ -324,6 +452,12 @@ export default {
 	border: 1px solid var(--color-border, #ddd);
 	background: var(--color-main-background, #fff);
 	color: var(--color-main-text, #222);
+}
+
+.version-history__btn--primary {
+	background: var(--color-primary-element, #0082c9);
+	color: var(--color-primary-element-text, #fff);
+	border-color: var(--color-primary-element, #0082c9);
 }
 
 .version-history__btn--danger {

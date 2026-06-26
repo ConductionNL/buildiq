@@ -80,6 +80,13 @@ export default {
 		 * fleet register for hybrids.
 		 */
 		isHybrid: { type: Boolean, default: false },
+		/**
+		 * The active version's REAL register slug. Versions may share production's
+		 * register (manifest-only versioning), so the `openbuild-{appSlug}-{versionSlug}`
+		 * convention can name a non-existent register; when this override is set it
+		 * takes precedence.
+		 */
+		registerSlugOverride: { type: String, default: '' },
 	},
 	data() {
 		return {
@@ -100,6 +107,7 @@ export default {
 		 * @return {string}
 		 */
 		registerSlug() {
+			if (this.registerSlugOverride) return this.registerSlugOverride
 			return this.isHybrid ? this.appSlug : `openbuild-${this.appSlug}-${this.versionSlug}`
 		},
 		/**
