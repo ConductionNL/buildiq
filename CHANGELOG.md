@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.39] - 2026-06-26
+## [0.5.40] - 2026-06-26
 
 ### Added
 - Version lifecycle + switcher (version-lifecycle-and-switcher): draft versions,
@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version history list was always empty — it queried a non-working OpenRegister
   objects endpoint and filtered on a non-existent `applicationUuid` field; it now
   uses `/api/applications/{slug}/versions` with the real fields.
+- App-detail Register widget (and KPI register links) showed a phantom
+  `openbuild-{slug}-{versionSlug}` register for shared-register versions; they now
+  use the active version's real `register` field.
 
 ### Security
 - Delete guard: never drop an OpenRegister register that is shared with the

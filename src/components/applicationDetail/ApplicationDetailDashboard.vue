@@ -207,6 +207,7 @@
 			<RegisterWidget
 				:app-slug="appSlug"
 				:version-slug="activeVersionSlug"
+				:register-slug-override="registerSlug"
 				:is-hybrid="isHybrid" />
 			<GroupsWidget
 				:application="application"
@@ -523,6 +524,12 @@ export default {
 		registerSlug() {
 			if (!this.appSlug) return ''
 			if (this.isHybrid) return this.appSlug
+			// Prefer the active version's REAL register — versions may share
+			// production's register (manifest-only versioning), so the
+			// `openbuild-{appSlug}-{versionSlug}` convention can name a register
+			// that doesn't exist. Fall back to the convention when absent.
+			const real = (this.activeVersion && this.activeVersion.register) || ''
+			if (real) return real
 			if (!this.activeVersionSlug) return ''
 			return `openbuild-${this.appSlug}-${this.activeVersionSlug}`
 		},
