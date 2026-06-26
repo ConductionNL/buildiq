@@ -106,12 +106,14 @@ class ApplicationVersionsControllerTest extends TestCase
         $this->groupManager   = $this->createMock(IGroupManager::class);
         $this->versionService = $this->createMock(ApplicationVersionService::class);
 
-        $register = $this->createMock(Register::class);
-        $register->method('getId')->willReturn(1);
+        // Real entities — NC Db entities expose getId() via magic __call, which
+        // PHPUnit cannot mock; construct them and set the id instead.
+        $register = new Register();
+        $register->setId(1);
         $this->registerMapper->method('find')->willReturn($register);
 
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getId')->willReturn(2);
+        $schema = new Schema();
+        $schema->setId(2);
         $this->schemaMapper->method('find')->willReturn($schema);
 
         $this->controller = new ApplicationVersionsController(
