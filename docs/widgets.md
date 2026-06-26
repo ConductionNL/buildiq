@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 8
 title: Widgets
 description: The widget library you can drop onto any OpenBuild page — object widgets (Data, Object relations, tables, charts, KPIs) and content widgets (text, media, navigation), each configurable in-app.
 ---
