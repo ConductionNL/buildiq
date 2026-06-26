@@ -455,11 +455,11 @@ class ApplicationVersionService
         );
 
         // 4. Demote the previous production. The single-production invariant is
-        //    already satisfied by the pointer move (step 3); archiving is the
-        //    cleanup. Only a `published` version can transition to `archived`
-        //    (x-openregister-lifecycle has no draft→archived edge), so a draft
-        //    ex-production is demoted by the pointer move alone and left as a
-        //    draft the maintainer can keep editing or delete.
+        // already satisfied by the pointer move (step 3); archiving is the
+        // cleanup. Only a `published` version can transition to `archived`
+        // (x-openregister-lifecycle has no draft→archived edge), so a draft
+        // ex-production is demoted by the pointer move alone and left as a
+        // draft the maintainer can keep editing or delete.
         $archived = null;
         if ($previousProduction !== '' && $previousProduction !== $versionUuid) {
             $previous = $this->objectService->find(
@@ -481,6 +481,16 @@ class ApplicationVersionService
                     $archived = $previousProduction;
                 }
             }
+        }//end if
+
+        $previousLabel = $previousProduction;
+        if ($previousProduction === '') {
+            $previousLabel = '(none)';
+        }
+
+        $archivedLabel = 'unchanged';
+        if ($archived !== null) {
+            $archivedLabel = 'archived';
         }
 
         $this->logger->info(
@@ -488,8 +498,8 @@ class ApplicationVersionService
                 'OpenBuild: released ApplicationVersion %s as production for Application %s (previous %s %s).',
                 $versionUuid,
                 $applicationUuid,
-                ($previousProduction === '' ? '(none)' : $previousProduction),
-                ($archived !== null ? 'archived' : 'unchanged')
+                $previousLabel,
+                $archivedLabel
             )
         );
 

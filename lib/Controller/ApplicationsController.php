@@ -307,8 +307,13 @@ class ApplicationsController extends Controller
             );
             if ($hasWrite === false) {
                 if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === true) {
+                    $bypassApplication = null;
+                    if ($application instanceof ObjectEntity) {
+                        $bypassApplication = $application;
+                    }
+
                     $this->recordAdminBypass(
-                        application: ($application instanceof ObjectEntity ? $application : null),
+                        application: $bypassApplication,
                         slug: $slug,
                         actor: $user->getUID()
                     );
@@ -351,7 +356,7 @@ class ApplicationsController extends Controller
                     schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
                 );
                 if ($versionEntity !== null) {
-                    $versionArray             = $this->normaliseObject(object: $versionEntity);
+                    $versionArray = $this->normaliseObject(object: $versionEntity);
                     $versionArray['manifest'] = $manifest;
                     $this->objectService->saveObject(
                         object: $versionArray,

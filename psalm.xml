@@ -151,6 +151,11 @@
         <InvalidMethodCall errorLevel="suppress"/>
         <UndefinedInterfaceMethod errorLevel="suppress"/>
         <MissingTemplateParam errorLevel="suppress"/>
+        <!-- AppHost parent constructors are in the sibling openregister app and
+             invisible to Psalm in CI; suppress TooManyArguments and
+             UnusedClosureParam false-positives that arise from those stubs. -->
+        <TooManyArguments errorLevel="suppress"/>
+        <UnusedClosureParam errorLevel="suppress"/>
     </issueHandlers>
     <extraFiles>
         <directory name="vendor/nextcloud/ocp" />

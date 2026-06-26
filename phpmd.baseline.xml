@@ -1,14 +1,31 @@
 <?xml version="1.0"?>
 <phpmd-baseline>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/AppInfo/Application.php"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/AppInfo/Application.php" method="register"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/AppInfo/Application.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/AppInfo/Application.php"/>
+  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Command/SeedHelloWorldFixture.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/AppOverrideController.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/AppOverrideController.php"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/ApplicationPublishController.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/ApplicationVersionsController.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/ApplicationVersionsController.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ApplicationVersionsController.php" method="update"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ApplicationVersionsController.php" method="update"/>
+  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Controller/ApplicationVersionsController.php"/>
   <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Controller/ApplicationsController.php"/>
+  <violation rule="PHPMD\Rule\Design\TooManyMethods" file="lib/Controller/ApplicationsController.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/ApplicationsController.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/ApplicationsController.php"/>
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Controller/ApplicationsController.php" method="__construct"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ApplicationsController.php" method="getManifest"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ApplicationsController.php" method="getManifest"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Controller/ApplicationsController.php" method="getManifest"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ApplicationsController.php" method="saveManifest"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ApplicationsController.php" method="saveManifest"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Controller/ApplicationsController.php" method="saveManifest"/>
+  <violation rule="PHPMD\Rule\UnusedLocalVariable" file="lib/Controller/ApplicationsController.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/ApplicationsController.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ApplicationsController.php" method="diffVersions"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ApplicationsController.php" method="diffVersions"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/ExportsController.php"/>
@@ -16,30 +33,45 @@
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ExportsController.php" method="isAuthorisedForApplication"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ExportsController.php" method="isAuthorisedForApplication"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/ExportsController.php"/>
+  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Controller/StoreController.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/VersionPromotionController.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Lifecycle/ApplicationVersionOwnerGuard.php" method="check"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Lifecycle/ApplicationVersionOwnerGuard.php" method="check"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Lifecycle/ApplicationVersionOwnerGuard.php" method="check"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Mcp/Handler/AbstractToolHandler.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Mcp/Handler/AbstractToolHandler.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Mcp/Handler/AbstractToolHandler.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Mcp/Handler/AbstractToolHandler.php" method="callerHasWriteRole"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Mcp/Handler/AbstractToolHandler.php" method="callerHasWriteRole"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Repair/MigrateAppOverridesToHybrid.php"/>
+  <violation rule="PHPMD\Rule\Design\TooManyPublicMethods" file="lib/Service/AppOverrideService.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/AppOverrideService.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/AppOverrideService.php" method="resolveLayeredDelta"/>
+  <violation rule="PHPMD\Rule\CleanCode\MissingImport" file="lib/Service/AppOverrideService.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/AppOverrideService.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/AppOverrideService.php"/>
+  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/AppOverrideService.php"/>
+  <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Service/ApplicationCreationService.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/ApplicationCreationService.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/ApplicationCreationService.php" method="createApplication"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/ApplicationCreationService.php" method="createApplication"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/ApplicationCreationService.php" method="createApplication"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/ApplicationCreationService.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/ApplicationCreationService.php" method="rollback"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/ApplicationCreationService.php" method="rollback"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/ApplicationCreationService.php" method="substituteVersionContext"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/ApplicationCreationService.php" method="substituteVersionContext"/>
+  <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Service/ApplicationInsightsService.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/ApplicationInsightsService.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/ApplicationVersionService.php"/>
-  <violation rule="PHPMD\Rule\Design\TooManyPublicMethods" file="lib/Service/ExportJobService.php"/>
-  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/ManifestResolverService.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/PermissionResolver.php" method="matchesCaller"/>
-  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/VersionPromotionService.php"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/ApplicationVersionService.php" method="releaseVersion"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/ApplicationVersionService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/ConditionActionExecutor.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/DecisionTableEvaluator.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/DecisionTableEvaluator.php" method="applyHitPolicy"/>
   <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/DecisionTableEvaluator.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/DecisionTableEvaluator.php"/>
+  <violation rule="PHPMD\Rule\Design\TooManyPublicMethods" file="lib/Service/ExportJobService.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/ExpressionEvaluator.php" method="evaluate"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/ExpressionEvaluator.php" method="evaluateBinary"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/FeelParser.php"/>
@@ -50,9 +82,16 @@
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/FeelParser.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/FeelParser.php" method="parseComparison"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/FeelParser.php" method="parsePrimary"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/ManifestResolverService.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/PermissionResolver.php" method="matchesCaller"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/PermissionResolver.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/RemoteTemplateStoreService.php" method="fetch"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/RemoteTemplateStoreService.php" method="fetch"/>
+  <violation rule="PHPMD\Rule\CleanCode\MissingImport" file="lib/Service/RemoteTemplateStoreService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/RuleEngineService.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SettingsService.php" method="doLoadConfiguration"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SettingsService.php" method="doLoadConfiguration"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SettingsService.php" method="doLoadConfiguration"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/SettingsService.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/VersionPromotionService.php"/>
 </phpmd-baseline>
