@@ -12,10 +12,22 @@ it drops into the page's grid. Each widget has a **cog** for its own
 configuration. Most widgets can be added more than once and configured
 differently each time.
 
-![Object widgets rendered on a detail page — the Object data and Object Id widgets showing live data](/screenshots/widgets/object-widgets-on-page.png)
-
 Widgets fall into two groups: **object widgets** that read your app's data, and
 **content widgets** for text, media and navigation.
+
+## Gallery: a dashboard built from widgets
+
+Every tile below is a widget configured in-app. This one dashboard from the
+[Pet Store tutorial](https://conduction.nl/academy/build-a-nextcloud-app-with-openbuild)
+combines a header banner, four statistic cards, two charts, a gauge, a
+comparison/delta, an object list and an image — no code:
+
+![A Pet Store dashboard composed of many widget types: a header banner, four stat cards, a donut chart, a line chart, a gauge, a delta, an object list and an image](/screenshots/widgets/dashboard-all-widgets.png)
+
+A detail page is the same idea bound to one object — a header, an Object data
+grid, a Files panel and an Object relations section:
+
+![A pet detail page with a header banner, an Object data grid, and Files and Object relations widgets](/screenshots/widgets/detail-all-widgets.png)
 
 ## Object widgets
 
@@ -49,12 +61,37 @@ for *Mails + Events* — and add as many as you need.
 
 ![Object relations configuration — pick which relation groups to show](/screenshots/widgets/02-object-relations-config.png)
 
-### Statistic, gauge & chart widgets
+### Object list
 
-The metric widgets read a register and render a live value. Here is a **Gauge**
-widget on a built app's dashboard, showing a value against its target:
+A list or table of objects from a register and schema, with the columns, sort
+and limit you choose:
 
-![A Gauge widget rendered on a built app's dashboard](/screenshots/widgets/gauge-widget.png)
+![An Object list widget titled "Recent pets" with Name, Species and Status columns](/screenshots/widgets/object-list-widget.png)
+
+### Statistic / KPI
+
+A single headline metric — a count, sum or average over a register — with a
+label and icon:
+
+![A Statistic widget showing "Pets 10 in catalogue" with an icon](/screenshots/widgets/stat-widget.png)
+
+### Chart
+
+A bar, line, area or donut chart bucketed or grouped over a register:
+
+![A donut Chart widget titled "Pets by status" with available, sold and pending segments](/screenshots/widgets/chart-widget.png)
+
+### Gauge / utilization
+
+A gauge for a value against a target or capacity:
+
+![A Gauge widget titled "Pets sold" showing progress toward a target](/screenshots/widgets/gauge-widget.png)
+
+### Comparison / delta
+
+A metric compared against a previous period, with the change shown as a delta:
+
+![A Comparison/delta widget titled "Revenue trend"](/screenshots/widgets/delta-widget.png)
 
 ## Content & layout widgets
 
@@ -75,6 +112,24 @@ These don't need data — they're for text, media, navigation and structure.
 | **Menu** | A navigation menu block. |
 | **News** | A news/announcements feed block. |
 | **Files** | A files panel for the object or a folder. |
+
+### Header Banner
+
+A full-width page banner with a title, subtitle and background styling:
+
+![A Header Banner widget reading "Pet Store — Pets, owners, orders and vet visits"](/screenshots/widgets/header-widget.png)
+
+### Image
+
+An image, uploaded into Nextcloud Files or referenced by a same-origin URL:
+
+![An Image widget showing a photo of a cat and dog](/screenshots/widgets/image-widget.png)
+
+### Text
+
+A rich-text / Markdown paragraph block:
+
+![A Text widget showing a Markdown welcome paragraph](/screenshots/widgets/text-widget.png)
 
 ## Appearance (every widget)
 
