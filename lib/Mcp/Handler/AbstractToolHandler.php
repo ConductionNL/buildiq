@@ -162,7 +162,15 @@ abstract class AbstractToolHandler
         }
 
         $objectService = $this->container->get('OCA\OpenRegister\Service\ObjectService');
-        $apps          = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'application', ['slug' => $appSlug]);
+        // Openbuild is a system-wide register (not org-scoped); bypass the
+        // organisation filter so MCP callers in any org can resolve apps.
+        $apps = $objectService->searchObjectsBySlug(
+            self::REGISTER_SLUG,
+            'application',
+            ['slug' => $appSlug],
+            _rbac: true,
+            _multitenancy: false
+        );
         if (is_array($apps) === false || $apps === []) {
             return $this->errorResult(error: 'not_found', message: "No virtual app found for slug '{$appSlug}'.");
         }
@@ -487,7 +495,7 @@ abstract class AbstractToolHandler
      */
     protected function loadVersion(object $objectService, string $appSlug, string $versionSlug): array
     {
-        $apps = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'application', ['slug' => $appSlug]);
+        $apps = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'application', ['slug' => $appSlug], _rbac: true, _multitenancy: false);
         if (is_array($apps) === false || $apps === []) {
             return ['error' => 'not_found', 'message' => "No virtual app found for slug '{$appSlug}'."];
         }
@@ -498,7 +506,9 @@ abstract class AbstractToolHandler
         $versions = $objectService->searchObjectsBySlug(
             self::REGISTER_SLUG,
             'applicationVersion',
-            ['application' => $appUuid, 'slug' => $versionSlug]
+            ['application' => $appUuid, 'slug' => $versionSlug],
+            _rbac: true,
+            _multitenancy: false
         );
         if (is_array($versions) === false || $versions === []) {
             return ['error' => 'not_found', 'message' => "No version '{$versionSlug}' found for app '{$appSlug}'."];
