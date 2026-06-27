@@ -12,7 +12,7 @@ it drops into the page's grid. Each widget has a **cog** for its own
 configuration. Most widgets can be added more than once and configured
 differently each time.
 
-![The Add Widget dialog](/screenshots/widgets/01-add-widget.png)
+![Object widgets rendered on a detail page — the Object data and Object Id widgets showing live data](/screenshots/widgets/object-widgets-on-page.png)
 
 Widgets fall into two groups: **object widgets** that read your app's data, and
 **content widgets** for text, media and navigation.
@@ -39,7 +39,7 @@ The default body of a detail page. Click the cog to choose exactly which fields
 show and how they're laid out — hide `id`, show `name` and `race` stacked, and
 so on. The same map drives both the inline display and the edit form.
 
-![Per-property configuration of the Object data widget](/screenshots/in-app/04-per-property-config.png)
+![The Object data widget rendered on a detail page, showing the object's fields as a data grid](/screenshots/widgets/object-data-widget.png)
 
 ### Object relations
 
@@ -47,7 +47,14 @@ Aggregates the object's relations into tabs. Pick **Relations to show** to scope
 a widget to a subset — for example one widget for *Objects + Files* and another
 for *Mails + Events* — and add as many as you need.
 
-![Object relations configuration — pick which relations to show](/screenshots/widgets/02-object-relations-config.png)
+![Object relations configuration — pick which relation groups to show](/screenshots/widgets/02-object-relations-config.png)
+
+### Statistic, gauge & chart widgets
+
+The metric widgets read a register and render a live value. Here is a **Gauge**
+widget on a built app's dashboard, showing a value against its target:
+
+![A Gauge widget rendered on a built app's dashboard](/screenshots/widgets/gauge-widget.png)
 
 ## Content & layout widgets
 
