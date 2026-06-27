@@ -97,6 +97,57 @@ function translateForApp(key, vars) {
 }
 
 /**
+ * Rebrand the Nextcloud top-bar (app name + icon) to the virtual app's identity.
+ *
+ * The global top-bar is server-rendered chrome for the host `openbuild` app, so
+ * there is no supported API to retitle it per virtual app. We patch the DOM
+ * directly and keep it in sync with a MutationObserver, because Nextcloud's
+ * app-menu is a Vue component that can re-render (resize, unified-search and
+ * notification updates) and would otherwise reset our changes. `apply()` is
+ * idempotent — it only writes when the value differs — so it never loops on its
+ * own mutations.
+ *
+ * @param {string} appName The virtual app's display name.
+ * @param {string} appSlug The virtual app's slug, used for its icon endpoint.
+ */
+function brandTopBar(appName, appSlug) {
+	if (!appName || typeof document === 'undefined') {
+		return
+	}
+	// The coloured top-bar wants the white (dark-slot) icon; fall back to the
+	// light icon if the app has no dark variant uploaded.
+	const iconDark = generateUrl(`/apps/openbuild/icons/${appSlug}-dark.svg`)
+	const iconLight = generateUrl(`/apps/openbuild/icons/${appSlug}.svg`)
+	const apply = () => {
+		const nameEl = document.querySelector('.app-menu__current-app-name')
+		if (nameEl && nameEl.textContent !== appName) {
+			nameEl.textContent = appName
+		}
+		const iconEl = document.querySelector('.app-menu__current-app-icon')
+		if (iconEl) {
+			const src = iconEl.getAttribute('src')
+			if (src !== iconDark && src !== iconLight) {
+				iconEl.onerror = () => { iconEl.onerror = null; iconEl.setAttribute('src', iconLight) }
+				iconEl.setAttribute('src', iconDark)
+				iconEl.setAttribute('alt', appName)
+			}
+		}
+		const trigger = document.querySelector('[aria-label^="Open apps menu, currently in"]')
+		if (trigger) {
+			const label = t('openbuild', 'Open apps menu, currently in {app}', { app: appName })
+			if (trigger.getAttribute('aria-label') !== label) {
+				trigger.setAttribute('aria-label', label)
+			}
+		}
+	}
+	apply()
+	const header = document.querySelector('header#header') || document.body
+	if (header) {
+		new MutationObserver(apply).observe(header, { childList: true, subtree: true, characterData: true })
+	}
+}
+
+/**
  * Fetch the app manifest, build its router, and mount the standalone shell.
  *
  * @return {Promise<void>}
@@ -112,12 +163,11 @@ async function boot() {
 		if (data && typeof data === 'object' && Array.isArray(data.pages)) {
 			manifest = data
 		}
-		// Reflect the app's identity in the browser tab (the global NC top-bar
-		// still shows the host 'OpenBuild' app — a virtual app is not a real
-		// Nextcloud app, so its name/icon can't replace the host chrome there).
+		// Reflect the app's identity in the browser tab and the global NC top-bar.
 		const appName = (manifest.name || manifest.title || slug)
 		if (appName) {
 			document.title = `${appName} – Nextcloud`
+			brandTopBar(appName, slug)
 		}
 	} catch (e) {
 		// Render an empty (but well-formed) shell; the app simply has no pages.
