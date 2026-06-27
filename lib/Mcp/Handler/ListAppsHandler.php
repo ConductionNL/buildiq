@@ -61,7 +61,7 @@ class ListAppsHandler extends AbstractToolHandler
                 $filters['status'] = $validation['statusFilter'];
             }
 
-            $rawApps = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'application', $filters);
+            $rawApps = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'application', $filters, _rbac: true, _multitenancy: false);
             if (is_array(value: $rawApps) === false) {
                 $rawApps = [];
             }
