@@ -1,0 +1,29 @@
+{
+  "id": "widgets",
+  "title": "Widgets",
+  "description": "The widget library you can drop onto any OpenBuild page — object widgets (Data, Object relations, tables, charts, KPIs) and content widgets (text, media, navigation), each configurable in-app.",
+  "source": "@site/widgets.md",
+  "sourceDirName": ".",
+  "slug": "/widgets",
+  "permalink": "/docs/widgets",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/widgets.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 8,
+  "frontMatter": {
+    "sidebar_position": 8,
+    "title": "Widgets",
+    "description": "The widget library you can drop onto any OpenBuild page — object widgets (Data, Object relations, tables, charts, KPIs) and content widgets (text, media, navigation), each configurable in-app."
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Tutorial: Update a virtual app",
+    "permalink": "/docs/tutorials/update-a-virtual-app"
+  },
+  "next": {
+    "title": "business-rules-engine",
+    "permalink": "/docs/business-rules-engine"
+  }
+}

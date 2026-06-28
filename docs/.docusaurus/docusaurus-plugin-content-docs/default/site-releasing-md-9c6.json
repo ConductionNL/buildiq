@@ -16,5 +16,9 @@
   "previous": {
     "title": "OpenBuild Runtime",
     "permalink": "/docs/openbuild-runtime"
+  },
+  "next": {
+    "title": "Remote template store",
+    "permalink": "/docs/template-store"
   }
 }
