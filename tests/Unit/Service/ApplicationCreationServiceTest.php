@@ -457,12 +457,11 @@ class ApplicationCreationServiceTest extends TestCase
      */
     private function stubSuccessfulCreation(string $appUuid, array $versionUuids): void
     {
-        // Build the mock register. Register::getId() resolves via Entity::__call so it must
-        // be declared through addMethods() rather than mocked via createMock() alone.
+        // Build the mock register. Register::getId() is now an explicit stub method
+        // (declared in tests/stubs/openregister-stubs.php) so use onlyMethods().
         $mockRegister = $this->getMockBuilder(Register::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['getSchemas', 'setSchemas'])
-            ->addMethods(['getId'])
+            ->onlyMethods(['getSchemas', 'setSchemas', 'getId'])
             ->getMock();
         $mockRegister->method('getSchemas')->willReturn([]);
         $mockRegister->method('getId')->willReturn(1);
@@ -471,11 +470,11 @@ class ApplicationCreationServiceTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($mockRegister);
         $this->registerMapper->method('update')->willReturn($mockRegister);
 
-        // Build mock schema. Schema::getId() resolves via Entity::__call so it must be
-        // declared through addMethods() rather than mocked via createMock() alone.
+        // Build mock schema. Schema::getId() is now an explicit stub method
+        // (declared in tests/stubs/openregister-stubs.php) so use onlyMethods().
         $mockSchema = $this->getMockBuilder(Schema::class)
             ->disableOriginalConstructor()
-            ->addMethods(['getId'])
+            ->onlyMethods(['getId'])
             ->getMock();
         $mockSchema->method('getId')->willReturn(1);
         $this->schemaMapper->method('find')->willReturn($mockSchema);

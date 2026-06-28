@@ -15,9 +15,13 @@
 		</p>
 		<VersionHistory
 			v-if="obAppUuid"
+			:app-slug="(obApp && obApp.slug) || ''"
 			:application-uuid="obAppUuid"
-			:current-version-uuid="(obApp && obApp.currentVersion) || ''"
-			@rollback="onRollback" />
+			:current-version-uuid="(obApp && (obApp.productionVersion || obApp.currentVersion)) || ''"
+			:can-edit="canEdit"
+			:can-release="canRelease"
+			@rollback="onRollback"
+			@released="onReleased" />
 		<p v-if="rollbackError" class="ob-versions-tab__error">
 			{{ rollbackError }}
 		</p>
@@ -35,7 +39,33 @@ export default {
 	data() {
 		return { rollbackError: '' }
 	},
+	computed: {
+		/**
+		 * Whether the caller may edit versions (owner / editor role).
+		 *
+		 * @return {boolean}
+		 */
+		canEdit() {
+			return this.obAppRole === 'owner' || this.obAppRole === 'editor'
+		},
+		/**
+		 * Whether the caller may release a draft to production (owner only).
+		 *
+		 * @return {boolean}
+		 */
+		canRelease() {
+			return this.obAppRole === 'owner'
+		},
+	},
 	methods: {
+		/**
+		 * Refresh the application after a release so the production marker moves.
+		 *
+		 * @return {void}
+		 */
+		onReleased() {
+			this.obLoadApp()
+		},
 		/**
 		 * Observed behaviour of `shortHex` (retrofit annotation).
 		 *

@@ -98,3 +98,4 @@ openspec/test-site-results/**/*.webp
 tests/e2e/.auth/
 /coverage-vitest/
 /coverage/
+.hydra

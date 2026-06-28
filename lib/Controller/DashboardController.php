@@ -138,12 +138,14 @@ class DashboardController extends Controller
      * @param string $slug The virtual app slug (path param).
      *
      * @return TemplateResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function builderSlash(string $slug): TemplateResponse
     {
-        return $this->builder($slug);
+        return $this->builder(slug: $slug);
     }//end builderSlash()
 
     /**

@@ -28,6 +28,11 @@
     </projectFiles>
     <stubs>
         <file name="vendor/nextcloud/ocp/OCP/Capabilities/ICapability.php" preloadClasses="true" />
+        <!-- AppHost engine stubs (GenericSettingsSection + GenericAdminSettings)
+             so SettingsSection and AdminSettings resolve their parent constructor
+             during static analysis when the openregister sibling app is absent.
+             The real classes live in openregister/lib/AppHost/Settings/. -->
+        <file name="tests/stubs/openregister-apphost.stub.php" preloadClasses="true" />
     </stubs>
     <issueHandlers>
         <UndefinedDocblockClass errorLevel="suppress"/>

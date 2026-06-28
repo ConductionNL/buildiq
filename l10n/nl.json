@@ -1,5 +1,15 @@
 {
     "translations": {
+        "Production": "Productie",
+        "Release": "Vrijgeven",
+        "New draft": "Nieuw concept",
+        "Open a version": "Een versie openen",
+        "No versions yet — create a draft to start a new version.": "Nog geen versies — maak een concept om een nieuwe versie te starten.",
+        "“{name}” is now the production version.": "“{name}” is nu de productieversie.",
+        "Release failed": "Vrijgeven mislukt",
+        "Draft “{name}” created.": "Concept “{name}” aangemaakt.",
+        "Could not create a draft.": "Kon geen concept aanmaken.",
+        "Edit {name}": "{name} bewerken",
         "Virtual": "Virtueel",
         "Hybrid": "Hybride",
         "App type": "App-type",

@@ -96,7 +96,7 @@ class ManifestResolverServiceTest extends TestCase
 
         // RegisterMapper stub: find() returns a Register whose getId() returns 1.
         $register = $this->getMockBuilder(Register::class)
-            ->addMethods(['getId'])
+            ->onlyMethods(['getId'])
             ->getMock();
         $register->method('getId')->willReturn(1);
 
@@ -105,7 +105,7 @@ class ManifestResolverServiceTest extends TestCase
 
         // SchemaMapper stub: find() returns a Schema whose getId() returns 2.
         $schema = $this->getMockBuilder(Schema::class)
-            ->addMethods(['getId'])
+            ->onlyMethods(['getId'])
             ->getMock();
         $schema->method('getId')->willReturn(2);
 
