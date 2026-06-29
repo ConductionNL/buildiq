@@ -82,6 +82,8 @@ jobs:
         uses: https://github.com/actions/checkout@v4
 
       - name: Install composer deps
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_COMPOSER_TOKEN }}"}}'
         run: composer install --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
 
       - name: Run unit suite (phpunit-unit.xml)
@@ -148,6 +150,8 @@ jobs:
             || echo "coverage driver: ABSENT (ratchet will no-op; see TESTING-CI-ROLLOUT.md)"
 
       - name: Install composer deps
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_COMPOSER_TOKEN }}"}}'
         run: composer install --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
 
       - name: Run unit suite WITH coverage (clover)
