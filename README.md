@@ -207,3 +207,5 @@ This project is licensed under the [EUPL-1.2](LICENSE).
 ## Authors
 
 Built by [Conduction](https://conduction.nl) — open-source software for Dutch government and public sector organizations.
+
+<!-- verify v3 openbuild -->
