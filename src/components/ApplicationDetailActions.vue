@@ -19,6 +19,7 @@
 			<NcButton
 				type="primary"
 				:href="builderUrl"
+				target="_blank"
 				class="ob-detail-actions__open-primary">
 				<template #icon>
 					<OpenInNew :size="20" />
@@ -376,9 +377,11 @@ export default {
 				return
 			}
 			const base = generateUrl(`/apps/openbuild/builder/${this.obApp.slug}`)
-			window.location.href = this.isProductionVersion(v)
+			const url = this.isProductionVersion(v)
 				? base
 				: `${base}?_version=${encodeURIComponent(v.slug)}`
+			// Open in a new tab to match the open-in-new affordance (OpenInNew icon).
+			window.open(url, '_blank', 'noopener,noreferrer')
 		},
 		/**
 		 * Edit a version in the page designer, scoped via `?_version=` for
