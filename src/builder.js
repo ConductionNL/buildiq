@@ -30,6 +30,7 @@ import {
 } from '@conduction/nextcloud-vue'
 import pinia from './pinia.js'
 import { runtimeRegistry } from './runtimeRegistry.js'
+import { registerDirectives } from './registerDirectives.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
 import './assets/app.css'
@@ -37,6 +38,7 @@ import './assets/app.css'
 Vue.mixin({ methods: { t, n } })
 Vue.use(PiniaVuePlugin)
 Vue.use(VueRouter)
+registerDirectives()
 
 registerIcons()
 try {

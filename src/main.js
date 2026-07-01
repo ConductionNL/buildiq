@@ -14,6 +14,7 @@ import pinia from './pinia.js'
 import App from './App.vue'
 import bundledManifest from './manifest.json'
 import registry from './registry.js'
+import { registerDirectives } from './registerDirectives.js'
 
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages).
 import '@conduction/nextcloud-vue/css/index.css'
@@ -24,6 +25,7 @@ import './assets/app.css'
 Vue.mixin({ methods: { t, n } })
 Vue.use(PiniaVuePlugin)
 Vue.use(VueRouter)
+registerDirectives()
 
 // Library-side icon set + lib translations (best effort).
 registerIcons()
