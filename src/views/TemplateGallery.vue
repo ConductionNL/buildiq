@@ -104,7 +104,7 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
+import { generateUrl, imagePath } from '@nextcloud/router'
 import { NcButton, NcDialog, NcEmptyContent, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import CloneTemplateDialog from '../modals/CloneTemplateDialog.vue'
 import EditTemplateMetadataDialog from '../dialogs/EditTemplateMetadataDialog.vue'
@@ -212,10 +212,17 @@ export default {
 			if (!url) {
 				return ''
 			}
+			// Absolute URLs and root-relative paths are used verbatim.
 			if (url.startsWith('http') || url.startsWith('/')) {
 				return url
 			}
-			return generateUrl(`/apps/openbuild/${url}`)
+			// App-relative screenshots (e.g. "img/templates/permit-tracker.svg")
+			// are static app assets. Resolve them via imagePath — which yields the
+			// web-root path /apps/openbuild/img/… served directly by the web
+			// server. generateUrl would prefix /index.php and route through the PHP
+			// app router, which has no route for img/* and returns the app HTML
+			// shell (200 text/html) instead of the image.
+			return imagePath('openbuild', url.replace(/^img\//, ''))
 		},
 		/**
 		 * Observed behaviour of `categoryLabel` (retrofit annotation).

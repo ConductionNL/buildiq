@@ -46,6 +46,7 @@
 </template>
 
 <script>
+import { imagePath } from '@nextcloud/router'
 import { useRole, getCurrentUserGroups } from '../composables/useRole.js'
 
 export default {
@@ -196,7 +197,20 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		onIconError(e) {
-			e.target.src = '/apps/openbuild/img/app.svg'
+			// imagePath resolves to the app's real web root (e.g.
+			// /apps/openbuild/img/app.svg, or /apps-shared/… in dev). The previous
+			// hardcoded '/apps/openbuild/img/app.svg' 404s when the web root differs,
+			// which re-fired this error handler and re-set the same failing src in an
+			// infinite loop (spamming the request + draining resources).
+			const fallback = imagePath('openbuild', 'app.svg')
+			// Guard against re-entry: if the fallback itself fails to load, the error
+			// event lands here again — bail once we're already showing the fallback
+			// so we swap the src at most once. Compare the literal attribute (not the
+			// resolved .src property, which is absolute) against the fallback path.
+			if (e.target.getAttribute('src') === fallback) {
+				return
+			}
+			e.target.src = fallback
 		},
 		/**
 		 * Observed behaviour of `onCardActivate` (retrofit annotation).
