@@ -31,7 +31,7 @@
 			<NcEmptyContent :name="t('openbuild', 'No templates match your filters')" />
 		</div>
 
-		<ul v-else class="template-gallery__grid">
+		<ul v-else class="template-gallery__grid" data-walkthrough-id="templates-grid">
 			<li v-for="tpl in filteredTemplates" :key="tpl.slug || tpl.uuid" class="template-card">
 				<img
 					v-if="tpl.screenshotUrl"
