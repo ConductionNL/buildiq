@@ -122,12 +122,18 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'dashboard#builderSlash', 'url' => '/builder/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Icon-serving endpoints (openbuild-nextcloud-nav REQ-OBICON-002 / REQ-OBICON-003).
-        // Both are #[NoAdminRequired] on the controller. The dark route uses a longer
-        // URL pattern ("{slug}-dark.svg") that is unambiguous — it cannot shadow the
-        // light route because slugs are kebab-case [a-z0-9-] and never end in "-dark".
-        // Placed before the SPA catch-all; after exports so slug patterns don't collide.
-        ['name' => 'icon#iconLight', 'url' => '/icons/{slug}.svg',      'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // Both are #[NoAdminRequired] on the controller. ORDER MATTERS: iconDark's
+        // pattern ("{slug}-dark.svg") is a SUBSET of iconLight's ("{slug}.svg") because
+        // {slug} matches hyphens — so "foo-dark.svg" matches BOTH (iconDark with
+        // slug="foo", OR iconLight with slug="foo-dark"). Routes match in registration
+        // order (first wins), so iconDark MUST come first; otherwise every dark-icon
+        // request is captured by the light route (slug="foo-dark" → no such app → light
+        // default) and dark icons never resolve. Light requests ("foo.svg") lack the
+        // "-dark.svg" suffix so they never match iconDark — dark-first is safe (assumes
+        // no app slug itself ends in "-dark"). Placed before the SPA catch-all; after
+        // exports so slug patterns don't collide.
         ['name' => 'icon#iconDark',  'url' => '/icons/{slug}-dark.svg', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'icon#iconLight', 'url' => '/icons/{slug}.svg',      'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Export pipeline (Phase-2 graduation).
         ['name' => 'exports#submit',   'url' => '/api/applications/{slug}/exports', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
