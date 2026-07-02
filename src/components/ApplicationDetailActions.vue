@@ -447,19 +447,24 @@ export default {
 			}
 		},
 		/**
-		 * Delete the app (Application + versions + per-version registers), then
-		 * navigate back to the apps list. Owner-only (enforced server-side too).
+		 * Delete the app (Application + versions + routes), then navigate back to
+		 * the apps list. Owner-only (enforced server-side too). When `deleteData`
+		 * is true the underlying registers and all their data are wiped too;
+		 * otherwise that data is preserved.
 		 *
+		 * @param {boolean} deleteData Whether to also delete all app data.
 		 * @return {Promise<void>}
 		 */
-		async deleteApp() {
+		async deleteApp(deleteData = false) {
 			if (this.obAppRole !== 'owner' || !this.obApp || this.deleting) {
 				return
 			}
 			this.deleting = true
 			this.error = ''
 			try {
-				await axios.delete(generateUrl(`/apps/openbuild/api/applications/${this.obAppUuid}`))
+				await axios.delete(generateUrl(`/apps/openbuild/api/applications/${this.obAppUuid}`), {
+					params: { deleteData: deleteData ? 1 : 0 },
+				})
 				this.deleteOpen = false
 				if (this.$router) {
 					this.$router.push({ name: 'VirtualApps' }).catch(() => {})

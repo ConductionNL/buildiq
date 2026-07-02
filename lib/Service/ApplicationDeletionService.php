@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Service;
 
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
@@ -41,6 +42,21 @@ use Throwable;
  */
 class ApplicationDeletionService
 {
+    /**
+     * Page size when draining a register's objects before deleting it.
+     *
+     * @var int
+     */
+    private const PURGE_BATCH_LIMIT = 500;
+
+    /**
+     * Safety cap on drain rounds per schema, so a delete that never removes a
+     * row cannot spin forever.
+     *
+     * @var int
+     */
+    private const MAX_PURGE_ROUNDS = 200;
+
     /**
      * Constructor.
      *
@@ -60,18 +76,25 @@ class ApplicationDeletionService
     }//end __construct()
 
     /**
-     * Delete an Application plus its versions, per-version registers and routes.
+     * Delete an Application plus its versions and routes, and — only when
+     * $deleteData is true — its per-version registers and all their objects.
      *
-     * @param string $appUuid The Application UUID.
-     * @param string $appSlug The Application slug (for log context).
+     * By default ($deleteData false) the underlying registers and the data
+     * inside them are PRESERVED: the app wrapper is removed but the user's data
+     * survives in OpenRegister. The caller must opt in (checkbox) to wipe data.
+     *
+     * @param string $appUuid    The Application UUID.
+     * @param string $appSlug    The Application slug (for log context).
+     * @param bool   $deleteData When true, also delete the per-version registers
+     *                           and every object stored in them.
      *
      * @return array<int,string> Resources that could not be removed (orphaned).
      */
-    public function deleteApplication(string $appUuid, string $appSlug): array
+    public function deleteApplication(string $appUuid, string $appSlug, bool $deleteData = false): array
     {
         $orphaned = [];
 
-        // 1. Versions + their per-version registers.
+        // 1. Versions + (optionally) their per-version registers.
         $versions = $this->findChildren(
             schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
             field: 'application',
@@ -80,7 +103,7 @@ class ApplicationDeletionService
         foreach ($versions as $version) {
             $versionUuid  = (string) ($version['id'] ?? ($version['@self']['id'] ?? ''));
             $registerSlug = (string) ($version['register'] ?? '');
-            if ($registerSlug !== '') {
+            if ($deleteData === true && $registerSlug !== '') {
                 $this->deleteRegister(registerSlug: $registerSlug, orphaned: $orphaned);
             }
 
@@ -170,6 +193,24 @@ class ApplicationDeletionService
     {
         try {
             $register = $this->registerMapper->find($registerSlug, _multitenancy: false);
+        } catch (Throwable $e) {
+            // The register is already gone (or was never provisioned) — nothing
+            // to tear down, and nothing to orphan.
+            $this->logger->info(
+                'OpenBuild: deleteApplication register {slug} not found, skipping: {message}',
+                ['slug' => $registerSlug, 'message' => $e->getMessage()]
+            );
+            return;
+        }
+
+        // RegisterMapper::delete() refuses to remove a register that still has
+        // objects attached. Drain it first: otherwise the register — and its
+        // unique organisation+slug row — survives the teardown, and a later
+        // re-create with the same slug fails with a duplicate-key rollback
+        // (wizard_rollback at register-provision-*).
+        $this->purgeRegisterObjects(register: $register, registerSlug: $registerSlug, orphaned: $orphaned);
+
+        try {
             $this->registerService->delete(register: $register);
         } catch (Throwable $e) {
             $this->logger->error(
@@ -179,6 +220,112 @@ class ApplicationDeletionService
             $orphaned[] = 'register:'.$registerSlug;
         }
     }//end deleteRegister()
+
+    /**
+     * Delete every object stored in a register, across all its schemas.
+     *
+     * Best-effort: per-schema query failures and per-object delete failures are
+     * logged and collected into $orphaned rather than aborting. Deletes are soft
+     * (OR default), which is enough to satisfy the register-delete guard — its
+     * object count excludes soft-deleted rows (`_deleted IS NULL`).
+     *
+     * @param Register          $register     The register to drain.
+     * @param string            $registerSlug The register slug (for log context).
+     * @param array<int,string> $orphaned     Collector for failures.
+     *
+     * @return void
+     */
+    private function purgeRegisterObjects(Register $register, string $registerSlug, array &$orphaned): void
+    {
+        foreach (($register->getSchemas() ?? []) as $schemaId) {
+            $this->purgeRegisterSchema(registerSlug: $registerSlug, schemaId: $schemaId, orphaned: $orphaned);
+        }
+    }//end purgeRegisterObjects()
+
+    /**
+     * Drain all objects for a single register+schema pair, in batches.
+     *
+     * @param string            $registerSlug The register slug.
+     * @param mixed             $schemaId     The schema identifier (id or slug).
+     * @param array<int,string> $orphaned     Collector for failures.
+     *
+     * @return void
+     */
+    private function purgeRegisterSchema(string $registerSlug, mixed $schemaId, array &$orphaned): void
+    {
+        for ($round = 0; $round < self::MAX_PURGE_ROUNDS; $round++) {
+            try {
+                $objects = $this->objectService->findAll(
+                    config: [
+                        'filters' => [
+                            'register' => $registerSlug,
+                            'schema'   => $schemaId,
+                        ],
+                        'limit'   => self::PURGE_BATCH_LIMIT,
+                    ]
+                );
+            } catch (Throwable $e) {
+                $this->logger->error(
+                    'OpenBuild: deleteApplication failed to list objects in register {slug} schema {schema}: {message}',
+                    ['slug' => $registerSlug, 'schema' => (string) $schemaId, 'message' => $e->getMessage()]
+                );
+                $orphaned[] = 'register-objects:'.$registerSlug;
+                return;
+            }
+
+            if ($objects === []) {
+                return;
+            }
+
+            // Track progress so a batch that can never be deleted (e.g. an
+            // append-only/archival schema) breaks the loop instead of spinning.
+            $progressed = false;
+            foreach ($objects as $object) {
+                $uuid = $this->extractUuid(item: $object);
+                if ($uuid === '') {
+                    continue;
+                }
+
+                try {
+                    $this->objectService->deleteObject(uuid: $uuid);
+                    $progressed = true;
+                } catch (Throwable $e) {
+                    $this->logger->error(
+                        'OpenBuild: deleteApplication failed to delete object {uuid}: {message}',
+                        ['uuid' => $uuid, 'message' => $e->getMessage()]
+                    );
+                    $orphaned[] = 'object:'.$uuid;
+                }
+            }//end foreach
+
+            if ($progressed === false) {
+                return;
+            }
+        }//end for
+    }//end purgeRegisterSchema()
+
+    /**
+     * Extract an object UUID/id from a findAll result item (array or entity).
+     *
+     * @param mixed $item A rendered object array or an entity.
+     *
+     * @return string The object UUID/id, or '' when it cannot be determined.
+     */
+    private function extractUuid(mixed $item): string
+    {
+        if (is_array($item) === true) {
+            return (string) ($item['id'] ?? ($item['@self']['id'] ?? ''));
+        }
+
+        if (is_object($item) === true && method_exists($item, 'jsonSerialize') === true) {
+            $serialised = $item->jsonSerialize();
+            if (is_array($serialised) === true) {
+                return (string) ($serialised['id'] ?? ($serialised['@self']['id'] ?? ''));
+            }
+        }
+
+        return '';
+    }//end extractUuid()
 
     /**
      * Delete an object by UUID (best-effort).
