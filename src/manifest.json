@@ -80,6 +80,9 @@
 			"type": "index",
 			"title": "Apps",
 			"actionsComponent": "VirtualAppsActions",
+			"slots": {
+				"delete-dialog": "AppDeleteDialogSlot"
+			},
 			"config": {
 				"register": "openbuild",
 				"schema": "application",
