@@ -52,6 +52,7 @@ import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { NcAppContent, NcButton, NcEmptyContent } from '@nextcloud/vue'
 import { initializeStores } from './store/store.js'
 import { useSettingsStore } from './store/modules/settings.js'
+import AppDeleteDialogSlot from './components/AppDeleteDialogSlot.vue'
 
 export default {
 	name: 'App',
@@ -136,6 +137,13 @@ export default {
 					out[name] = component
 				}
 			}
+			// Slot-override component for CnIndexPage's `#delete-dialog` slot on
+			// the applications index (manifest page.slots["delete-dialog"]). Kept
+			// here rather than in the kind-tagged `registry` prop: CnPageRenderer
+			// resolves slot components by name against customComponents too, and
+			// CnAppRoot's registry validator throws on any kind it doesn't know.
+			// See AppDeleteDialogSlot.
+			out.AppDeleteDialogSlot = AppDeleteDialogSlot
 			return out
 		},
 
