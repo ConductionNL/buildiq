@@ -120,7 +120,9 @@ export default {
 			// Placeholder: real impl polls OR REST per ADR-022; the controller
 			// deliberately does not expose CRUD on ExportJob.
 			try {
-				const response = await fetch('/index.php/apps/openregister/api/objects/openbuild/exportJob?filter[applicationSlug]=' + encodeURIComponent(this.applicationSlug))
+				// Schema slug is `export-job` (OpenRegister derives it from the
+				// "Export Job" title); the camelCase `exportJob` 404s.
+				const response = await fetch('/index.php/apps/openregister/api/objects/openbuild/export-job?filter[applicationSlug]=' + encodeURIComponent(this.applicationSlug))
 				if (!response.ok) {
 					return
 				}
