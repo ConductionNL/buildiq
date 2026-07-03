@@ -31,6 +31,7 @@ import {
 import pinia from './pinia.js'
 import { runtimeRegistry } from './runtimeRegistry.js'
 import { registerDirectives } from './registerDirectives.js'
+import { useRegisterPicker } from './composables/useRegisterPicker.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
 import './assets/app.css'
@@ -127,6 +128,20 @@ async function boot() {
 		console.error('[openbuild:builder] failed to load manifest for ' + slug, e)
 	}
 
+	// Registers/schemas (+ columns) for the in-app pages editor. Provided to
+	// CnAppRoot as `dataSources` so the edit-pages / page-config modals show
+	// searchable Register / Schema / Columns dropdowns instead of free-text slug
+	// inputs. Awaited before mount so the value is fully populated when
+	// CnAppRoot's provide() captures it (provide runs once, non-reactively).
+	// Best-effort: on failure the editor keeps its free-text fallback.
+	let dataSources = { registers: [] }
+	try {
+		dataSources = await useRegisterPicker({ appSlug: slug }).fetchDataSources()
+	} catch (e) {
+		// eslint-disable-next-line no-console
+		console.warn('[openbuild:builder] failed to load data sources for the pages editor', e)
+	}
+
 	const router = new VueRouter({
 		mode: 'history',
 		base: generateUrl(`/apps/openbuild/builder/${slug}`),
@@ -144,6 +159,7 @@ async function boot() {
 				registry: { ...runtimeRegistry },
 				pageTypes: { ...defaultPageTypes },
 				translate: translateForApp,
+				dataSources,
 				// Persist in-app edits (pages / menu / settings / sidebar / actions)
 				// back to the app's manifest. CnAppRoot's useManifestEditor mutates
 				// THIS same `manifest` object in place while editing, so on Save we
