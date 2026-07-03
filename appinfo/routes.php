@@ -121,6 +121,21 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // builder()) — the AppHost Routes::standard() guard throws on duplicate names.
         ['name' => 'dashboard#builderSlash', 'url' => '/builder/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // A published virtual app's OWN pages live at /builder/{slug}/{path}
+        // (e.g. /builder/pet-store/pets) — the standalone runtime (builder.js)
+        // builds its router from the app's manifest with base /builder/{slug}.
+        // The bare-runtime route's slug pattern excludes slashes, so without
+        // this route every deep in-app link falls to the SPA catch-all and
+        // renders OpenBuild's own shell (the nested BuilderHost that cannot
+        // resolve the app's pages) instead of the app. The `path` requirement
+        // is a negative lookahead that EXCLUDES the OpenBuild designer
+        // sub-routes (pages, schemas, schemas/{id}, walkthrough) so those keep
+        // falling through to the SPA catch-all; everything else serves the
+        // standalone runtime. `.+` (not `[^/]+`) so nested in-app routes like
+        // /pets/42 match. DISTINCT name (Routes::standard throws on dupes),
+        // placed before the engine-appended SPA catch-all so it wins.
+        ['name' => 'dashboard#builderDeep', 'url' => '/builder/{slug}/{path}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'path' => '(?!pages$|pages/|schemas$|schemas/|walkthrough$|walkthrough/).+']],
+
         // Icon-serving endpoints (openbuild-nextcloud-nav REQ-OBICON-002 / REQ-OBICON-003).
         // Both are #[NoAdminRequired] on the controller. ORDER MATTERS: iconDark's
         // pattern ("{slug}-dark.svg") is a SUBSET of iconLight's ("{slug}.svg") because

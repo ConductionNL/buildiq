@@ -149,6 +149,37 @@ class DashboardController extends Controller
     }//end builderSlash()
 
     /**
+     * Deep-path alias of {@see builder()} for a virtual app's OWN page routes.
+     *
+     * A published virtual app renders in the standalone runtime (`builder.js`),
+     * whose router base is `/builder/{slug}` and whose routes come from the
+     * app's manifest — so its pages live at `/builder/{slug}/{path}` (e.g.
+     * `/builder/pet-store/pets`). The bare-runtime route's slug pattern excludes
+     * slashes, so without this alias every such deep link falls through to the
+     * SPA catch-all and renders OpenBuild's own shell (the nested BuilderHost,
+     * which cannot resolve the app's pages) instead of the app.
+     *
+     * The route's `{path}` requirement excludes the OpenBuild DESIGNER
+     * sub-routes (`pages`, `schemas`, `schemas/{id}`, `walkthrough`) so those
+     * keep falling through to the SPA catch-all as before; everything else
+     * serves the standalone runtime. Uses a DISTINCT route name (the AppHost
+     * Routes::standard() guard throws on duplicate names) while serving the
+     * exact same page. `$path` is consumed client-side by the runtime's router;
+     * the server ignores it.
+     *
+     * @param string $slug The virtual app slug (path param).
+     * @param string $path The remaining in-app route path (client-side only).
+     *
+     * @return TemplateResponse
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function builderDeep(string $slug, string $path): TemplateResponse
+    {
+        return $this->builder(slug: $slug);
+    }//end builderDeep()
+
+    /**
      * Publish the caller's group IDs via IInitialState.
      *
      * Per REQ-OBR-009 the frontend consumes `loadState('openbuild',
