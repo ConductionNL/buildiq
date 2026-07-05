@@ -29,11 +29,17 @@ vi.mock('../../src/composables/useRole.js', () => ({
 	useRole: roleMock,
 	getCurrentUserGroups: () => ['group1'],
 }))
+const { useRegisterPickerSpy } = vi.hoisted(() => ({
+	useRegisterPickerSpy: vi.fn(),
+}))
 vi.mock('../../src/composables/useRegisterPicker.js', () => ({
-	useRegisterPicker: () => ({
-		fetchSchemas: fetchSchemasMock,
-		resolveAppRegister: () => 'openbuild-my-permits',
-	}),
+	useRegisterPicker: (opts) => {
+		useRegisterPickerSpy(opts)
+		return {
+			fetchSchemas: fetchSchemasMock,
+			resolveAppRegister: () => 'openbuild-my-permits',
+		}
+	},
 }))
 
 import ApplicationDetailActions from '../../src/components/ApplicationDetailActions.vue'
@@ -45,6 +51,7 @@ const application = {
 	status: 'draft',
 	manifest: { pages: [] },
 	permissions: { owners: ['group1'], editors: [], viewers: [] },
+	dataRegisters: [{ register: 'spectr', label: 'Spectr market intelligence data' }],
 }
 
 const t = (app, key, vars) => {
@@ -75,6 +82,7 @@ describe('ApplicationDetailActions — Save as template action (REQ-SAT-001)', (
 		axiosMock.get.mockReset()
 		axiosMock.post.mockReset()
 		fetchSchemasMock.mockClear()
+		useRegisterPickerSpy.mockClear()
 	})
 
 	it('offers the action to owners', () => {
@@ -109,5 +117,12 @@ describe('ApplicationDetailActions — Save as template action (REQ-SAT-001)', (
 		expect(wrapper.vm.existingTemplates).toEqual([{ slug: 'permit-pack', isSeeded: false }])
 		expect(wrapper.vm.saveTemplateOpen).toBe(true)
 		expect(wrapper.vm.saveTemplateManifest).toEqual({ pages: [] })
+		// data-registers-runtime task 2.3: the Application's declared
+		// dataRegisters are forwarded into the picker used to resolve
+		// saveTemplateSchemas.
+		expect(useRegisterPickerSpy).toHaveBeenCalledWith({
+			appSlug: 'my-permits',
+			dataRegisters: application.dataRegisters,
+		})
 	})
 })
