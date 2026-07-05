@@ -1,14 +1,14 @@
 ## 1. Picker merge (single composable change)
 
 - [x] 1.1 `src/composables/useRegisterPicker.js`: accept `opts.dataRegisters` (array of `{register, label?}`, default `[]`); in `fetchRegisters()`, label matching entries (`binding.label ?? binding.register`) and hoist them after the per-app register, per design.md Decision 1 — when `dataRegisters` is absent/empty, output must stay byte-identical to today
-- [ ] 1.2 Extend `tests/composables/useRegisterPicker.spec.js`: labelled match, slug-fallback when `label` absent, hoist ordering (per-app register, then matched bindings, then the rest), and a no-`dataRegisters`-passed regression case
+- [x] 1.2 Extend `tests/composables/useRegisterPicker.spec.js`: labelled match, slug-fallback when `label` absent, hoist ordering (per-app register, then matched bindings, then the rest), and a no-`dataRegisters`-passed regression case
 
 ## 2. Wire the four verified consumers + PageDesigner
 
-- [ ] 2.1 `IndexPageEditor.vue`, `DetailPageEditor.vue`, `LogsPageEditor.vue`: add a `dataRegisters: { type: Array, default: () => [] }` prop and pass it into the existing `useRegisterPicker({ appSlug: props.appSlug })` call in `setup()`
-- [ ] 2.2 `src/views/PageDesigner.vue`: add an `applicationDataRegisters` data field populated by a small fetch (`GET /apps/openregister/api/objects/openbuild/application?slug=<slug>&_limit=1`, same call shape `useApplicationVersion.js` already uses) in `created()`; pass `:data-registers="applicationDataRegisters"` on the `<component :is="subEditorFor(...)">` binding, next to the existing `:app-slug="slug"`
-- [ ] 2.3 `ApplicationDetailActions.vue`: in `openSaveAsTemplate()`, extend `useRegisterPicker({ appSlug: this.obApp.slug })` to also pass `dataRegisters: this.obApp.dataRegisters || []`
-- [ ] 2.4 Extend `tests/components/page-editor/IndexPageEditor.spec.js`: mounting with a `data-registers` prop passes it through to the mocked `useRegisterPicker` factory call
+- [x] 2.1 `IndexPageEditor.vue`, `DetailPageEditor.vue`, `LogsPageEditor.vue`: add a `dataRegisters: { type: Array, default: () => [] }` prop and pass it into the existing `useRegisterPicker({ appSlug: props.appSlug })` call in `setup()`
+- [x] 2.2 `src/views/PageDesigner.vue`: add an `applicationDataRegisters` data field populated by a small fetch (`GET /apps/openregister/api/objects/openbuild/application?slug=<slug>&_limit=1`, same call shape `useApplicationVersion.js` already uses) in `created()`; pass `:data-registers="applicationDataRegisters"` on the `<component :is="subEditorFor(...)">` binding, next to the existing `:app-slug="slug"`
+- [x] 2.3 `ApplicationDetailActions.vue`: in `openSaveAsTemplate()`, extend `useRegisterPicker({ appSlug: this.obApp.slug })` to also pass `dataRegisters: this.obApp.dataRegisters || []`
+- [x] 2.4 Extend `tests/components/page-editor/IndexPageEditor.spec.js`: mounting with a `data-registers` prop passes it through to the mocked `useRegisterPicker` factory call
 
 ## 3. Promotion-skip regression coverage
 
