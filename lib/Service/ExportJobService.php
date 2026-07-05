@@ -47,6 +47,23 @@ class ExportJobService
     private const PAT_CREDENTIAL_SUFFIX = '.pat';
 
     /**
+     * OR register slug hosting the ExportJob schema (#104).
+     */
+    public const REGISTER_SLUG = 'openbuild';
+
+    /**
+     * OR schema SLUG for the ExportJob record (#104). NOTE: this is
+     * NOT the same as the schema's JSON key (`exportJob` in
+     * openbuild_register.json) — the declared `slug` field is
+     * kebab-cased to `export-job`. `saveObject()`/`find()` resolve
+     * register/schema by SLUG, so the kebab-case form is the one that
+     * MUST be used here (and everywhere else a caller addresses this
+     * schema, e.g. src/manifest.json's Exports page and
+     * ExportJobsList.vue's OR REST fetch).
+     */
+    public const EXPORT_JOB_SCHEMA = 'export-job';
+
+    /**
      * Constructor.
      *
      * @param ContainerInterface  $container          Container — used to lazily fetch OR services.
@@ -188,6 +205,20 @@ class ExportJobService
      * truth — direct status writes here would bypass the declarative
      * x-openregister-lifecycle on the exportJob schema.
      *
+     * Fixes #104 (persist/load mismatch): the previous call omitted BOTH
+     * `register`/`schema` (so `ObjectService::saveObject()` relied on
+     * whatever register/schema context an EARLIER call in the same request
+     * left behind — e.g. `ExportsController::isAuthorisedForApplication()`'s
+     * `searchObjectsBySlug('openbuild', 'application', ...)` call re-anchors
+     * that ambient state to schema=`application`, which does not accept an
+     * ExportJob payload's shape) AND `uuid` (so `extractUuidAndNormalizeObject()`
+     * — which only recognises `@self.id`/`id`, not our own `uuid` data field —
+     * never saw it, and OR silently auto-generated its OWN identity for the
+     * row, disconnected from the `$jobUuid` returned to the caller and handed
+     * to the background job). Either gap alone means the record OR actually
+     * persists is unreachable by `loadJob($jobUuid)` afterwards — the
+     * background job's "could not load ExportJob record" failure.
+     *
      * @param array<string,mixed> $job Sanitised job record.
      *
      * @return void
@@ -204,11 +235,21 @@ class ExportJobService
 
             $service = $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
             if (method_exists($service, 'saveObject') === true) {
-                $service->saveObject($job);
+                $explicitUuid = null;
+                if (isset($job['uuid']) === true && is_string($job['uuid']) === true && $job['uuid'] !== '') {
+                    $explicitUuid = $job['uuid'];
+                }
+
+                $service->saveObject(
+                    $job,
+                    register: self::REGISTER_SLUG,
+                    schema: self::EXPORT_JOB_SCHEMA,
+                    uuid: $explicitUuid
+                );
             }
         } catch (\Throwable $e) {
             $this->logger->warning('Could not persist ExportJob to OR: '.$e->getMessage());
-        }
+        }//end try
     }//end persistJob()
 
     /**
@@ -329,7 +370,16 @@ class ExportJobService
                 $data           = $existing->getObject() ?? [];
                 $merged         = array_merge($data, $fields);
                 $merged['uuid'] = $jobUuid;
-                $service->saveObject($merged);
+                // #104: explicit register/schema/uuid — see persistJob()'s
+                // docblock for why omitting these silently misfiles (or
+                // outright drops) the write instead of updating this SAME
+                // existing record.
+                $service->saveObject(
+                    $merged,
+                    register: self::REGISTER_SLUG,
+                    schema: self::EXPORT_JOB_SCHEMA,
+                    uuid: $jobUuid
+                );
             }
         } catch (\Throwable $e) {
             $this->logger->warning(
@@ -469,7 +519,15 @@ class ExportJobService
     /**
      * Generate a UUIDv4.
      *
-     * @return string UUIDv4.
+     * Fixes #104: the previous implementation split the 32 hex digits into
+     * eight 4-char groups (`str_split($hex, 4)`) but `vsprintf()` only
+     * consumes the first FIVE of a format string's `%s` placeholders,
+     * silently discarding the remaining three groups — the returned string
+     * was five 4-char groups (20 hex digits) instead of the canonical
+     * 8-4-4-4-12 (32 hex digits). The version/variant nibble-setting above
+     * was already correct; only the grouping was malformed.
+     *
+     * @return string UUIDv4 in canonical 8-4-4-4-12 form.
      *
      * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
      */
@@ -478,6 +536,15 @@ class ExportJobService
         $data    = random_bytes(16);
         $data[6] = chr((ord($data[6]) & 0x0F) | 0x40);
         $data[8] = chr((ord($data[8]) & 0x3F) | 0x80);
-        return vsprintf('%s-%s-%s-%s-%s', str_split(bin2hex($data), 4));
+        $hex     = bin2hex($data);
+
+        return sprintf(
+            '%s-%s-%s-%s-%s',
+            substr($hex, 0, 8),
+            substr($hex, 8, 4),
+            substr($hex, 12, 4),
+            substr($hex, 16, 4),
+            substr($hex, 20, 12)
+        );
     }//end uuid4()
 }//end class

@@ -133,14 +133,15 @@ final class ExportJobServiceTest extends TestCase
             githubPat: 'ghp_super_secret_pat'
         );
 
-        // Note: the service's uuid4() emits a 5-group hex string (not the
-        // canonical 8-4-4-4-12); we lock the actually-observed shape so
-        // a future refactor toward the canonical form is a deliberate
-        // change rather than a silent regression.
+        // #104 fix: uuid4() previously discarded the last 3 of 8 hex groups
+        // (vsprintf only consumes 5 of a str_split(..., 4)'s 8 elements),
+        // emitting a malformed 5-group string. Lock the CANONICAL RFC 4122
+        // v4 shape (8-4-4-4-12, version nibble 4, variant nibble 8/9/a/b) so
+        // a future regression back to the malformed form is caught here.
         self::assertMatchesRegularExpression(
-            '/^[0-9a-f]{4}(?:-[0-9a-f]{4}){4,}$/',
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/',
             $jobUuid,
-            'Returned UUID should follow the documented format'
+            'Returned UUID should be a canonical RFC 4122 v4 UUID'
         );
         self::assertNotEmpty($jobUuid, 'queue() must return a non-empty UUID');
     }//end testQueueStoresPatOnlyForGithubTarget()
@@ -322,4 +323,120 @@ final class ExportJobServiceTest extends TestCase
 
         self::assertSame([], $captured['dataRegisters']);
     }//end testQueueDefaultsDataRegistersToEmptyArrayWhenOmitted()
+
+    /**
+     * uuid4() emits a canonical RFC 4122 v4 UUID for every call — regression
+     * guard for #104's malformed 5x4-char grouping bug (vsprintf silently
+     * dropping 3 of 8 hex groups). Runs several iterations since the value
+     * is random; the version/variant nibbles must ALWAYS be correct too.
+     *
+     * @return void
+     */
+    public function testUuid4EmitsCanonicalRfc4122V4Uuid(): void
+    {
+        $seen = [];
+        for ($i = 0; $i < 25; $i++) {
+            $uuid = $this->service->uuid4();
+
+            self::assertMatchesRegularExpression(
+                '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/',
+                $uuid,
+                'uuid4() must emit a canonical 8-4-4-4-12 RFC 4122 v4 UUID'
+            );
+            self::assertSame(36, strlen($uuid), 'canonical UUID string is always 36 characters');
+            self::assertArrayNotHasKey($uuid, $seen, 'uuid4() must not repeat within a small sample');
+            $seen[$uuid] = true;
+        }
+    }//end testUuid4EmitsCanonicalRfc4122V4Uuid()
+
+    /**
+     * persistJob() MUST pass explicit register/schema/uuid to
+     * ObjectService::saveObject() (#104). Omitting them let saveObject()
+     * fall back to whatever register/schema an EARLIER call in the same
+     * request left as ambient state (e.g. ExportsController's
+     * searchObjectsBySlug('openbuild', 'application', ...) re-anchors it to
+     * schema=application) and let OR auto-generate its own identity instead
+     * of the job's own UUID — so a later loadJob($jobUuid) could never find
+     * the record it just "persisted".
+     *
+     * @return void
+     */
+    public function testPersistJobPassesExplicitRegisterSchemaAndUuidToSaveObject(): void
+    {
+        $container     = $this->createMock(ContainerInterface::class);
+        $objectService = $this->createMock(ObjectService::class);
+        $container->method('has')->willReturn(true);
+        $container->method('get')->willReturn($objectService);
+
+        $capturedArgs = null;
+        $objectService
+            ->expects(self::once())
+            ->method('saveObject')
+            ->willReturnCallback(function ($job, $extend=[], $register=null, $schema=null, $uuid=null) use (&$capturedArgs): ObjectEntity {
+                $capturedArgs = ['job' => $job, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid];
+                return new ObjectEntity();
+            });
+
+        $service = new ExportJobService($container, $this->credentialsManager, $this->jobList, new NullLogger());
+
+        $service->persistJob([
+            'uuid'               => 'job-uuid-123',
+            'applicationSlug'    => 'hello-world',
+            'applicationUuid'    => 'app-uuid-1',
+            'applicationVersion' => '1.0.0',
+            'target'             => 'zip',
+            'status'             => 'queued',
+        ]);
+
+        self::assertSame('openbuild', $capturedArgs['register'], 'persistJob() must target the openbuild register');
+        self::assertSame('export-job', $capturedArgs['schema'], 'persistJob() must target the export-job schema SLUG (not the exportJob JSON key)');
+        self::assertSame('job-uuid-123', $capturedArgs['uuid'], 'persistJob() must persist under the job\'s OWN uuid, not an OR-auto-generated identity');
+    }//end testPersistJobPassesExplicitRegisterSchemaAndUuidToSaveObject()
+
+    /**
+     * mergeJobFields() MUST likewise pass explicit register/schema/uuid to
+     * saveObject() when re-saving the merged record (#104) — otherwise the
+     * side-field merge (errorMessage, downloadUrl, …) would target the wrong
+     * schema / a fresh OR-generated identity instead of updating the SAME
+     * existing ExportJob row `find()` just resolved.
+     *
+     * @return void
+     */
+    public function testMergeJobFieldsPassesExplicitRegisterSchemaAndUuidToSaveObject(): void
+    {
+        $container     = $this->createMock(ContainerInterface::class);
+        $objectService = $this->createMock(ObjectService::class);
+        $container->method('has')->willReturn(true);
+        $container->method('get')->willReturn($objectService);
+
+        $existing = new ObjectEntity();
+        $existing->setUuid('job-uuid-456');
+        $existing->setRegister('openbuild');
+        $existing->setSchema('export-job');
+        $existing->setObject([
+            'applicationUuid'    => 'app-uuid-1',
+            'applicationVersion' => '1.0.0',
+            'target'             => 'zip',
+            'status'             => 'running',
+        ]);
+
+        $objectService->method('find')->willReturn($existing);
+
+        $capturedArgs = null;
+        $objectService
+            ->expects(self::once())
+            ->method('saveObject')
+            ->willReturnCallback(function ($job, $extend=[], $register=null, $schema=null, $uuid=null) use (&$capturedArgs): ObjectEntity {
+                $capturedArgs = ['job' => $job, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid];
+                return new ObjectEntity();
+            });
+
+        $service = new ExportJobService($container, $this->credentialsManager, $this->jobList, new NullLogger());
+        $service->mergeJobFields('job-uuid-456', ['downloadUrl' => '/index.php/apps/openbuild/api/exports/job-uuid-456/download']);
+
+        self::assertSame('openbuild', $capturedArgs['register'], 'mergeJobFields() must target the openbuild register');
+        self::assertSame('export-job', $capturedArgs['schema'], 'mergeJobFields() must target the export-job schema SLUG');
+        self::assertSame('job-uuid-456', $capturedArgs['uuid'], 'mergeJobFields() must update the SAME existing record by uuid');
+        self::assertSame('/index.php/apps/openbuild/api/exports/job-uuid-456/download', $capturedArgs['job']['downloadUrl']);
+    }//end testMergeJobFieldsPassesExplicitRegisterSchemaAndUuidToSaveObject()
 }//end class

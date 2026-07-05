@@ -55,6 +55,20 @@ namespace OCA\OpenRegister\Db {
             protected ?string $uuid = null;
 
             /**
+             * Stub register-slug column.
+             *
+             * @var string|null
+             */
+            protected ?string $register = null;
+
+            /**
+             * Stub schema-slug column.
+             *
+             * @var string|null
+             */
+            protected ?string $schema = null;
+
+            /**
              * Stub serialised object payload.
              *
              * @var array<string, mixed>|null
