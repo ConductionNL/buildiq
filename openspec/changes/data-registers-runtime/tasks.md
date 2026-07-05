@@ -1,6 +1,6 @@
 ## 1. Picker merge (single composable change)
 
-- [ ] 1.1 `src/composables/useRegisterPicker.js`: accept `opts.dataRegisters` (array of `{register, label?}`, default `[]`); in `fetchRegisters()`, label matching entries (`binding.label ?? binding.register`) and hoist them after the per-app register, per design.md Decision 1 — when `dataRegisters` is absent/empty, output must stay byte-identical to today
+- [x] 1.1 `src/composables/useRegisterPicker.js`: accept `opts.dataRegisters` (array of `{register, label?}`, default `[]`); in `fetchRegisters()`, label matching entries (`binding.label ?? binding.register`) and hoist them after the per-app register, per design.md Decision 1 — when `dataRegisters` is absent/empty, output must stay byte-identical to today
 - [ ] 1.2 Extend `tests/composables/useRegisterPicker.spec.js`: labelled match, slug-fallback when `label` absent, hoist ordering (per-app register, then matched bindings, then the rest), and a no-`dataRegisters`-passed regression case
 
 ## 2. Wire the four verified consumers + PageDesigner
@@ -12,26 +12,26 @@
 
 ## 3. Promotion-skip regression coverage
 
-- [ ] 3.1 Confirm (already verified in design.md) `VersionPromotionService.php` needs no production-code change — no task, proof only
-- [ ] 3.2 Add a PHPUnit regression test to `tests/Unit/Service/VersionPromotionServiceTest.php`: an Application/source carrying a `dataRegisters` binding promotes under all three strategies without any mock call referencing the bound register's slug — only `source['register']` / `target['register']` are touched
+- [x] 3.1 Confirm (already verified in design.md) `VersionPromotionService.php` needs no production-code change — no task, proof only
+- [x] 3.2 Add a PHPUnit regression test to `tests/Unit/Service/VersionPromotionServiceTest.php`: an Application/source carrying a `dataRegisters` binding promotes under all three strategies without any mock call referencing the bound register's slug — only `source['register']` / `target['register']` are touched
 
 ## 4. Export: schema-defs + per-binding includeData toggle
 
-- [ ] 4.1 Add a `register.d/` fragment declaring `exportJob.dataRegisters` (array of `{register, includeData}`, default `[]`) — mirrors `includeSeedData`; no touch to `Application`
-- [ ] 4.2 `ExportService.php`: add `bundleDataRegisterSchemas()`, called from `generateAppZip()`, writing `lib/Settings/data-registers/<register-slug>.schema.json` for every bound register (schema defs only, never merged into `<app>_register.json`) and `<register-slug>.seed-data.json` additionally when that binding's `includeData` is true
-- [ ] 4.3 `ExportJobService::queue()` / `ExportsController::submit()`: accept and persist the request's `dataRegisters` array onto the `ExportJob` record (same pattern as `includeSeedData`); `RunExportJob` forwards it from `loadJob()` into `generateAppZip()`
-- [ ] 4.4 `ExportDialog.vue`: render one `NcCheckboxRadioSwitch` per binding in the source Application's `dataRegisters` (label `binding.label ?? binding.register`), unchecked by default; submit payload mirrors the bindings 1:1 with the resolved `includeData` flags
-- [ ] 4.5 `ApplicationDetailActions.vue`: pass `:data-registers="obApp.dataRegisters || []"` into `<ExportDialog>`
-- [ ] 4.6 Add PHPUnit tests to `tests/Unit/Service/ExportServiceTest.php`: schema-defs file is always written for a bound register; seed-data file is written only when `includeData` is true; no `data-registers/` directory when `dataRegisters` is empty
+- [x] 4.1 Add a `register.d/` fragment declaring `exportJob.dataRegisters` (array of `{register, includeData}`, default `[]`) — mirrors `includeSeedData`; no touch to `Application`
+- [x] 4.2 `ExportService.php`: add `bundleDataRegisterSchemas()`, called from `generateAppZip()`, writing `lib/Settings/data-registers/<register-slug>.schema.json` for every bound register (schema defs only, never merged into `<app>_register.json`) and `<register-slug>.seed-data.json` additionally when that binding's `includeData` is true
+- [x] 4.3 `ExportJobService::queue()` / `ExportsController::submit()`: accept and persist the request's `dataRegisters` array onto the `ExportJob` record (same pattern as `includeSeedData`); `RunExportJob` forwards it from `loadJob()` into `generateAppZip()`
+- [x] 4.4 `ExportDialog.vue`: render one `NcCheckboxRadioSwitch` per binding in the source Application's `dataRegisters` (label `binding.label ?? binding.register`), unchecked by default; submit payload mirrors the bindings 1:1 with the resolved `includeData` flags
+- [x] 4.5 `ApplicationDetailActions.vue`: pass `:data-registers="obApp.dataRegisters || []"` into `<ExportDialog>`
+- [x] 4.6 Add PHPUnit tests to `tests/Unit/Service/ExportServiceTest.php`: schema-defs file is always written for a bound register; seed-data file is written only when `includeData` is true; no `data-registers/` directory when `dataRegisters` is empty
 
 ## 5. Designer UI: add/remove dataRegisters bindings
 
-- [ ] 5.1 `AppSettingsModal.vue`: add a "Data registers" section — list of `{register, label?}` rows with add/remove controls (register slug `NcTextField`, optional label `NcTextField`), emitting `update:data-registers` with the full array on any change
-- [ ] 5.2 `ApplicationDetailActions.vue`: wire `AppSettingsModal`'s `update:data-registers` to `this.obPatchApp({ dataRegisters })`, matching the existing `update:allow-overrides` → `setAllowOverrides()` pattern
+- [x] 5.1 `AppSettingsModal.vue`: add a "Data registers" section — list of `{register, label?}` rows with add/remove controls (register slug `NcTextField`, optional label `NcTextField`), emitting `update:data-registers` with the full array on any change
+- [x] 5.2 `ApplicationDetailActions.vue`: wire `AppSettingsModal`'s `update:data-registers` to `this.obPatchApp({ dataRegisters })`, matching the existing `update:allow-overrides` → `setAllowOverrides()` pattern
 
 ## 6. Spec-delta bookkeeping
 
-- [ ] 6.1 Append this change to the `**OpenSpec changes**` list and set `**Status**: in-progress` on `openspec/specs/version-promotion/spec.md` (update its `status:` frontmatter key), `openspec/specs/openbuild-exporter/spec.md`, and `openspec/specs/page-designer-ui/spec.md`
+- [x] 6.1 Append this change to the `**OpenSpec changes**` list and set `**Status**: in-progress` on `openspec/specs/version-promotion/spec.md` (update its `status:` frontmatter key), `openspec/specs/openbuild-exporter/spec.md`, and `openspec/specs/page-designer-ui/spec.md` — verified already pre-seeded on all three (change-list entry + in-progress status present) when this task began; no edit needed
 
 ## Quality reminders (run before requesting review — not tracked as tasks)
 
