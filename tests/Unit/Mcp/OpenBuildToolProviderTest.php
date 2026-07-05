@@ -494,7 +494,7 @@ class OpenBuildToolProviderTest extends TestCase
         $result = $this->provider->invokeTool('openbuild.addWidget', [
             'appSlug'    => 'my-app',
             'pageId'     => 'home',
-            'widgetType' => 'stat-counter',
+            'widgetType' => 'stats-block',
         ]);
 
         $this->assertTrue($result['isError']);
