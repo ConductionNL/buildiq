@@ -622,6 +622,354 @@ class VersionPromotionServiceTest extends TestCase
     }//end testEmptyStartWipesButDoesNotCopy()
 
     /**
+     * REQ-OBVP-012 (data-registers-runtime): start-with-source-data leaves a
+     * bound data register untouched.
+     *
+     * `dataRegisters` is not actually a property of the ApplicationVersion
+     * schema (it lives on the parent Application) — it is injected onto
+     * both `$source` and `$target` here defensively, so this regression
+     * test remains meaningful even if a future caller mistakenly forwards
+     * the Application's `dataRegisters` alongside the version payload:
+     * proof that `promote()` neither reads nor writes anything derived from
+     * it, under any circumstance.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/data-registers-runtime/tasks.md#task-3.2
+     */
+    public function testPromotionNeverReferencesBoundDataRegisterUnderStartWithSourceData(): void
+    {
+        $boundDataRegisters = [['register' => 'spectr', 'label' => 'Spectr market intelligence data']];
+
+        $source = [
+            'id'            => 'u-src',
+            'register'      => 'openbuild-app-staging',
+            'manifest'      => ['version' => '2.0.0'],
+            'semver'        => '2.0.0',
+            'promotesTo'    => 'u-tgt',
+            'dataRegisters' => $boundDataRegisters,
+        ];
+
+        $target = [
+            'id'            => 'u-tgt',
+            'register'      => 'openbuild-app-production',
+            'manifest'      => ['version' => '1.0.0'],
+            'semver'        => '1.0.0',
+            'dataRegisters' => $boundDataRegisters,
+        ];
+
+        $targetEntity = $this->buildObjectEntity(uuid: 'u-tgt', payload: $target);
+        $this->objectService->method('find')->willReturn($targetEntity);
+
+        $this->registerMapper
+            ->method('find')
+            ->willReturnCallback(function ($slug) {
+                self::assertNotSame(
+                    'spectr',
+                    $slug,
+                    'RegisterMapper::find() must never resolve the bound data register slug during promotion'
+                );
+                return $this->buildRegister(id: 7, slug: (string) $slug, schemas: ['s1']);
+            });
+
+        $sourceRow1 = $this->buildObjectEntity(uuid: 'r-src-1', payload: ['id' => 'r-src-1', 'foo' => 'bar']);
+        $targetRow1 = $this->buildObjectEntity(uuid: 'r-tgt-1', payload: ['id' => 'r-tgt-1']);
+
+        $searchCall = 0;
+        $this->objectService
+            ->method('searchObjects')
+            ->willReturnCallback(function (array $query=[]) use (&$searchCall, $targetRow1, $sourceRow1): array {
+                $registerId = ($query['@self']['register'] ?? null);
+                self::assertNotSame('spectr', $registerId, 'searchObjects() must never target the bound data register');
+                $searchCall++;
+                return $searchCall === 1 ? [$targetRow1] : [$sourceRow1];
+            });
+
+        $this->objectService
+            ->method('deleteObject')
+            ->willReturnCallback(function (string $uuid): bool {
+                self::assertNotSame('spectr', $uuid);
+                return true;
+            });
+
+        $savedTarget = $this->buildObjectEntity(
+            uuid: 'u-tgt',
+            payload: [
+                'id'            => 'u-tgt',
+                'register'      => 'openbuild-app-production',
+                'manifest'      => ['version' => '2.0.0'],
+                'semver'        => '2.0.0',
+                'status'        => 'published',
+                'dataRegisters' => $boundDataRegisters,
+            ]
+        );
+        $this->objectService
+            ->method('saveObject')
+            ->willReturnCallback(function ($object) use ($savedTarget): ObjectEntity {
+                if (is_array($object) === true) {
+                    self::assertNotSame('spectr', ($object['register'] ?? null));
+                }
+                return $savedTarget;
+            });
+
+        $result = $this->service->promote(
+            source: $source,
+            strategy: VersionPromotionService::STRATEGY_START_WITH_SOURCE_DATA
+        );
+
+        self::assertSame('2.0.0', $result['semver']);
+        // The bound data register binding round-trips completely
+        // unmodified — proof this is a pass-through, not a strip or a read.
+        self::assertSame($boundDataRegisters, $result['dataRegisters']);
+    }//end testPromotionNeverReferencesBoundDataRegisterUnderStartWithSourceData()
+
+    /**
+     * REQ-OBVP-012 (data-registers-runtime): migrate-existing-data leaves a
+     * bound data register untouched.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/data-registers-runtime/tasks.md#task-3.2
+     */
+    public function testPromotionNeverReferencesBoundDataRegisterUnderMigrateExistingData(): void
+    {
+        $boundDataRegisters = [['register' => 'spectr']];
+
+        $source = [
+            'id'            => 'u-src',
+            'register'      => 'openbuild-app-staging',
+            'manifest'      => ['version' => '1.5.0', 'pages' => []],
+            'semver'        => '1.5.0',
+            'promotesTo'    => 'u-tgt',
+            'dataRegisters' => $boundDataRegisters,
+        ];
+
+        $target = [
+            'id'            => 'u-tgt',
+            'register'      => 'openbuild-app-production',
+            'manifest'      => ['version' => '1.0.0'],
+            'semver'        => '1.0.0',
+            'dataRegisters' => $boundDataRegisters,
+        ];
+
+        $targetEntity = $this->buildObjectEntity(uuid: 'u-tgt', payload: $target);
+        $this->objectService->method('find')->willReturn($targetEntity);
+
+        $this->registerMapper
+            ->method('find')
+            ->willReturnCallback(function ($slug) {
+                self::assertNotSame('spectr', $slug);
+                return $this->buildRegister(id: 1, slug: (string) $slug, schemas: ['s1', 's2']);
+            });
+
+        $this->registerMapper->expects(self::atLeastOnce())->method('update');
+
+        $savedEntity = $this->buildObjectEntity(
+            uuid: 'u-tgt',
+            payload: [
+                'id'            => 'u-tgt',
+                'register'      => 'openbuild-app-production',
+                'manifest'      => ['version' => '1.5.0', 'pages' => []],
+                'semver'        => '1.5.0',
+                'status'        => 'published',
+                'dataRegisters' => $boundDataRegisters,
+            ]
+        );
+        $this->objectService
+            ->method('saveObject')
+            ->willReturnCallback(function ($object) use ($savedEntity): ObjectEntity {
+                if (is_array($object) === true) {
+                    self::assertNotSame('spectr', ($object['register'] ?? null));
+                }
+                return $savedEntity;
+            });
+
+        $result = $this->service->promote(
+            source: $source,
+            strategy: VersionPromotionService::STRATEGY_MIGRATE_EXISTING_DATA
+        );
+
+        self::assertSame('1.5.0', $result['semver']);
+        self::assertSame($boundDataRegisters, $result['dataRegisters']);
+    }//end testPromotionNeverReferencesBoundDataRegisterUnderMigrateExistingData()
+
+    /**
+     * REQ-OBVP-012 (data-registers-runtime): empty-start leaves a bound
+     * data register untouched.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/data-registers-runtime/tasks.md#task-3.2
+     */
+    public function testPromotionNeverReferencesBoundDataRegisterUnderEmptyStart(): void
+    {
+        $boundDataRegisters = [['register' => 'spectr']];
+
+        $source = [
+            'id'            => 'u-src',
+            'register'      => 'openbuild-app-staging',
+            'manifest'      => ['version' => '2.0.0'],
+            'semver'        => '2.0.0',
+            'promotesTo'    => 'u-tgt',
+            'dataRegisters' => $boundDataRegisters,
+        ];
+
+        $target = [
+            'id'            => 'u-tgt',
+            'register'      => 'openbuild-app-production',
+            'manifest'      => ['version' => '1.0.0'],
+            'semver'        => '1.0.0',
+            'dataRegisters' => $boundDataRegisters,
+        ];
+
+        $targetEntity = $this->buildObjectEntity(uuid: 'u-tgt', payload: $target);
+        $this->objectService->method('find')->willReturn($targetEntity);
+
+        $this->registerMapper
+            ->method('find')
+            ->willReturnCallback(function ($slug) {
+                self::assertNotSame('spectr', $slug);
+                return $this->buildRegister(id: 7, slug: (string) $slug, schemas: ['s1']);
+            });
+
+        $targetRow1 = $this->buildObjectEntity(uuid: 'r-tgt-1', payload: ['id' => 'r-tgt-1']);
+        $targetRow2 = $this->buildObjectEntity(uuid: 'r-tgt-2', payload: ['id' => 'r-tgt-2']);
+
+        $this->objectService
+            ->method('searchObjects')
+            ->willReturnCallback(function (array $query=[]) use ($targetRow1, $targetRow2): array {
+                self::assertNotSame('spectr', ($query['@self']['register'] ?? null));
+                return [$targetRow1, $targetRow2];
+            });
+
+        $this->objectService
+            ->method('deleteObject')
+            ->willReturnCallback(function (string $uuid): bool {
+                self::assertNotSame('spectr', $uuid);
+                return true;
+            });
+
+        $savedTarget = $this->buildObjectEntity(
+            uuid: 'u-tgt',
+            payload: [
+                'id'            => 'u-tgt',
+                'register'      => 'openbuild-app-production',
+                'manifest'      => ['version' => '2.0.0'],
+                'semver'        => '2.0.0',
+                'status'        => 'published',
+                'dataRegisters' => $boundDataRegisters,
+            ]
+        );
+        $this->objectService
+            ->method('saveObject')
+            ->willReturnCallback(function ($object) use ($savedTarget): ObjectEntity {
+                if (is_array($object) === true) {
+                    self::assertNotSame('spectr', ($object['register'] ?? null));
+                }
+                return $savedTarget;
+            });
+
+        $result = $this->service->promote(
+            source: $source,
+            strategy: VersionPromotionService::STRATEGY_EMPTY_START
+        );
+
+        self::assertSame('2.0.0', $result['semver']);
+        self::assertSame($boundDataRegisters, $result['dataRegisters']);
+    }//end testPromotionNeverReferencesBoundDataRegisterUnderEmptyStart()
+
+    /**
+     * REQ-OBVP-012 (data-registers-runtime): a promotion failure does not
+     * archive or otherwise modify a bound data register — only the target
+     * ApplicationVersion row is touched by the on-failure archive flip.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/data-registers-runtime/tasks.md#task-3.2
+     */
+    public function testPromotionFailureDoesNotReferenceBoundDataRegister(): void
+    {
+        $boundDataRegisters = [['register' => 'spectr']];
+
+        $source = [
+            'id'            => 'u-src',
+            'register'      => 'openbuild-app-staging',
+            'manifest'      => ['version' => '1.5.0'],
+            'semver'        => '1.5.0',
+            'promotesTo'    => 'u-tgt',
+            'dataRegisters' => $boundDataRegisters,
+        ];
+
+        $target = [
+            'id'            => 'u-tgt',
+            'register'      => 'openbuild-app-production',
+            'manifest'      => ['version' => '1.0.0'],
+            'semver'        => '1.0.0',
+            'status'        => 'published',
+            'dataRegisters' => $boundDataRegisters,
+        ];
+
+        $targetEntity = $this->buildObjectEntity(uuid: 'u-tgt', payload: $target);
+        $this->objectService->method('find')->willReturn($targetEntity);
+
+        $this->registerMapper
+            ->method('find')
+            ->willReturnCallback(function ($slug) {
+                self::assertNotSame('spectr', $slug);
+                return $this->buildRegister(id: 1, slug: (string) $slug, schemas: ['s1']);
+            });
+
+        $savedArchived = $this->buildObjectEntity(
+            uuid: 'u-tgt',
+            payload: [
+                'id'            => 'u-tgt',
+                'register'      => 'openbuild-app-production',
+                'status'        => 'archived',
+                'dataRegisters' => $boundDataRegisters,
+            ]
+        );
+
+        $callCount = 0;
+        $this->objectService
+            ->method('saveObject')
+            ->willReturnCallback(
+                function ($object) use (&$callCount, $savedArchived): ObjectEntity {
+                    if (is_array($object) === true) {
+                        self::assertNotSame('spectr', ($object['register'] ?? null));
+                    }
+
+                    $callCount++;
+                    if ($callCount === 1) {
+                        throw new RuntimeException('OR schema-import boom');
+                    }
+
+                    return $savedArchived;
+                }
+            );
+
+        $this->objectService->method('unlockObject')->willReturnCallback(function ($uuid) {
+            self::assertNotSame('spectr', $uuid);
+            return true;
+        });
+
+        $this->expectException(PromotionFailedException::class);
+
+        try {
+            $this->service->promote(
+                source: $source,
+                strategy: VersionPromotionService::STRATEGY_MIGRATE_EXISTING_DATA
+            );
+        } catch (PromotionFailedException $e) {
+            // Only the target ApplicationVersion row is modified; the
+            // dataRegisters binding on both source and target is untouched
+            // in memory (never stripped, never read).
+            self::assertSame($boundDataRegisters, $source['dataRegisters']);
+            self::assertSame($boundDataRegisters, $target['dataRegisters']);
+            throw $e;
+        }
+    }//end testPromotionFailureDoesNotReferenceBoundDataRegister()
+
+    /**
      * Helper — build an ObjectEntity wrapping a payload, with `getUuid()`.
      *
      * @param string              $uuid    Entity uuid
