@@ -74,7 +74,11 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends \
             git curl ca-certificates gnupg jq unzip zip \
-            libzip-dev libpng-dev python3 nodejs
+            libzip-dev libpng-dev python3
+          # Node is required by actions/checkout@v4 (a JS action) which runs
+          # inside this php:8.3-cli container; the stock image ships no node.
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          apt-get install -y --no-install-recommends nodejs
           docker-php-ext-install -j"$(nproc)" zip gd
           curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
@@ -82,20 +86,13 @@ jobs:
         uses: https://github.com/actions/checkout@v4
 
       - name: Install composer deps
-        env:
-          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_COMPOSER_TOKEN }}"}}'
         run: composer install --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
 
       - name: Run unit suite (phpunit-unit.xml)
         # unit-gating=false reports failures without failing the job, for apps
         # carrying pre-existing tests/Unit debt (see TESTING-CI-ROLLOUT.md).
-        # Gating is done in-shell, NOT via `continue-on-error: ${{ }}` — Forgejo
-        # Actions cannot unmarshal an expression into that bool field, which made
-        # the whole workflow fail to parse (cannot unmarshal !!str into bool).
-        run: |
-          ./vendor/bin/phpunit --configuration phpunit-unit.xml --no-coverage --colors=never && exit 0
-          [ "${{ inputs.unit-gating }}" = "false" ] && { echo "unit-gating off — not failing the job"; exit 0; }
-          exit 1
+        continue-on-error: false
+        run: ./vendor/bin/phpunit --configuration phpunit-unit.xml --no-coverage --colors=never
 
   # ---------------------------------------------------------------------------
   # HARD GATE 2 — l10n extraction-drift check (no NC needed; pure Node).
@@ -113,6 +110,30 @@ jobs:
         run: node tests/l10n/check-l10n.js
 
   # ---------------------------------------------------------------------------
+  # HARD GATE 3 — frontend unit suite (Vitest, OFFLINE; no NC needed).
+  #
+  # Runs the pure-logic Vitest suite under tests/vitest/** (Pinia store
+  # state transitions, util/formatter calc, form-validation mappers, and any
+  # offline component mounts). These need no DOM/NC runtime — @nextcloud/* and
+  # @conduction/nextcloud-vue are aliased to deterministic stubs in
+  # vitest.config.js. Always gating.
+  # ---------------------------------------------------------------------------
+  frontend-unit:
+    name: Frontend unit (Vitest — ${{ inputs.app-id }})
+    runs-on: codeberg-medium
+    container:
+      image: node:${{ inputs.node-version }}
+    steps:
+      - name: Checkout
+        uses: https://github.com/actions/checkout@v4
+
+      - name: Install npm deps
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+      - name: Run Vitest unit suite
+        run: npm run test:unit
+
+  # ---------------------------------------------------------------------------
   # COVERAGE GATE A — PHPUnit COVERAGE RATCHET (PCOV clover line coverage).
   # Fails a PR that drops backend coverage below tests/.coverage-baseline.json
   # `phpunit` minus tolerance. Inherits continue-on-error from unit-gating so a
@@ -124,16 +145,18 @@ jobs:
     runs-on: codeberg-medium
     container:
       image: php:8.3-cli
-    # Soft-gating (unit-gating=false) is applied in-shell on the ratchet step,
-    # NOT via `continue-on-error: ${{ }}` — Forgejo can't unmarshal an
-    # expression into that bool and the workflow fails to parse.
+    continue-on-error: false
     steps:
       - name: Install base tooling
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
             git curl ca-certificates gnupg jq unzip zip \
-            libzip-dev libpng-dev python3 nodejs
+            libzip-dev libpng-dev python3
+          # Node is required by actions/checkout@v4 (a JS action) which runs
+          # inside this php:8.3-cli container; the stock image ships no node.
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          apt-get install -y --no-install-recommends nodejs
           docker-php-ext-install -j"$(nproc)" zip gd
           curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
@@ -150,8 +173,6 @@ jobs:
             || echo "coverage driver: ABSENT (ratchet will no-op; see TESTING-CI-ROLLOUT.md)"
 
       - name: Install composer deps
-        env:
-          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_COMPOSER_TOKEN }}"}}'
         run: composer install --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
 
       - name: Run unit suite WITH coverage (clover)
@@ -164,9 +185,7 @@ jobs:
       - name: Coverage ratchet (fail on drop)
         run: |
           test -f coverage/clover.xml || exit 0
-          bash tests/coverage-ratchet.sh phpunit coverage/clover.xml && exit 0
-          [ "${{ inputs.unit-gating }}" = "false" ] && { echo "unit-gating off — not failing on coverage drop"; exit 0; }
-          exit 1
+          bash tests/coverage-ratchet.sh phpunit coverage/clover.xml
 
   # ---------------------------------------------------------------------------
   # COVERAGE GATE B — FRONTEND COVERAGE RATCHET (Vitest v8, src/** line coverage).
