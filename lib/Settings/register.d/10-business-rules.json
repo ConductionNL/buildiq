@@ -3,6 +3,7 @@
 	"components": {
 		"schemas": {
 			"RuleSet": {
+				"x-schema-org": "schema:CreativeWork",
 				"slug": "rule-set",
 				"icon": "Sitemap",
 				"version": "1.0.0",
@@ -414,6 +415,7 @@
 				}
 			},
 			"RuleExecutionLog": {
+				"x-schema-org": "schema:Event",
 				"slug": "rule-execution-log",
 				"icon": "ClipboardText",
 				"version": "1.0.0",
@@ -506,6 +508,7 @@
 				}
 			},
 			"TestCase": {
+				"x-schema-org": "schema:CreativeWork",
 				"slug": "rule-test-case",
 				"icon": "CheckCircle",
 				"version": "1.0.0",
