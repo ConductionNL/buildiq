@@ -1,12 +1,12 @@
 ## 1. Schema fragment (register.d)
 
-- [ ] 1.1 Grep `lib/Settings/register.d/*.json` and `lib/Settings/openbuild_register.json` for any existing `dataRegisters` property name on the `Application` schema (ADR-012 dedup check) before authoring the fragment
-- [ ] 1.2 Create `lib/Settings/register.d/20-data-registers.json` declaring the optional `dataRegisters` array property on the `Application` schema — shape, titles, and descriptions exactly per design.md Decision 1 and specs `REQ-OBA-010` (array of `{ register, label? }`, `additionalProperties: false` on the item, English title + description on every property and sub-property per gate-28)
-- [ ] 1.3 Confirm the fragment's JSON path is scoped to `components.schemas.Application.properties.dataRegisters` only — no edit to `Application.required`, no edit to any other `Application` property, no edit to `ApplicationVersion` or any other schema
+- [x] 1.1 Grep `lib/Settings/register.d/*.json` and `lib/Settings/openbuild_register.json` for any existing `dataRegisters` property name on the `Application` schema (ADR-012 dedup check) before authoring the fragment
+- [x] 1.2 Create `lib/Settings/register.d/20-data-registers.json` declaring the optional `dataRegisters` array property on the `Application` schema — shape, titles, and descriptions exactly per design.md Decision 1 and specs `REQ-OBA-010` (array of `{ register, label? }`, `additionalProperties: false` on the item, English title + description on every property and sub-property per gate-28)
+- [x] 1.3 Confirm the fragment's JSON path is scoped to `components.schemas.Application.properties.dataRegisters` only — no edit to `Application.required`, no edit to any other `Application` property, no edit to `ApplicationVersion` or any other schema
 
 ## 2. Seed-data fixtures
 
-- [ ] 2.1 Add the two design.md seed-data examples (the `spectr` Application and the generic-municipality Application) as fixture JSON reusable by the follower spec's tests and by manual QA — no live object is created by this change
+- [x] 2.1 Add the two design.md seed-data examples (the `spectr` Application and the generic-municipality Application) as fixture JSON reusable by the follower spec's tests and by manual QA — no live object is created by this change
 
 ## Quality reminders (run before requesting review — not tracked as tasks)
 
