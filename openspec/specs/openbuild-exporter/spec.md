@@ -15,6 +15,10 @@ schema bundle, no per-slug endpoint workaround, no nested mount — the exported
 **is** the top-level app. Closes the loop on the hybrid model committed to in
 `bootstrap-openbuild`.
 
+**OpenSpec changes**: [data-registers-runtime](../../changes/data-registers-runtime/)
+
+**Status**: in-progress
+
 ## Requirements
 
 
