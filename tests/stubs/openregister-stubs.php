@@ -149,6 +149,14 @@ namespace OCA\OpenRegister\Db {
         /**
          * Stub Schema — declares getId()/getSlug() explicitly so PHPUnit
          * MockObject::method() can configure them (same reason as Register).
+         *
+         * getTitle()/getDescription()/getRequired()/getProperties() mirror
+         * the real OR Schema entity's own explicit/magic-getter shape
+         * (lib/Db/Schema.php) — declared here (not left to Entity's magic
+         * __call) for the same PHPUnit-10 MethodCannotBeConfiguredException
+         * reason as getId()/getSlug(). Added for data-registers-runtime's
+         * ExportService::bundleDataRegisterSchemas(), which reads a bound
+         * data register's schema definitions.
          */
         class Schema extends \OCP\AppFramework\Db\Entity
         {
@@ -159,6 +167,34 @@ namespace OCA\OpenRegister\Db {
              * @var string|null
              */
             protected ?string $slug = null;
+
+            /**
+             * Stub title column.
+             *
+             * @var string|null
+             */
+            protected ?string $title = null;
+
+            /**
+             * Stub description column.
+             *
+             * @var string|null
+             */
+            protected ?string $description = null;
+
+            /**
+             * Stub required-fields column.
+             *
+             * @var array<int, string>|null
+             */
+            protected ?array $required = [];
+
+            /**
+             * Stub properties column.
+             *
+             * @var array<string, mixed>|null
+             */
+            protected ?array $properties = [];
 
             /**
              * Return the entity id.
@@ -179,6 +215,46 @@ namespace OCA\OpenRegister\Db {
             {
                 return (string) ($this->slug ?? '');
             }//end getSlug()
+
+            /**
+             * Return the schema title.
+             *
+             * @return string|null
+             */
+            public function getTitle(): ?string
+            {
+                return $this->title;
+            }//end getTitle()
+
+            /**
+             * Return the schema description.
+             *
+             * @return string|null
+             */
+            public function getDescription(): ?string
+            {
+                return $this->description;
+            }//end getDescription()
+
+            /**
+             * Return the schema's required property names.
+             *
+             * @return array<int, string>
+             */
+            public function getRequired(): array
+            {
+                return ($this->required ?? []);
+            }//end getRequired()
+
+            /**
+             * Return the schema's JSON Schema `properties` map.
+             *
+             * @return array<string, mixed>
+             */
+            public function getProperties(): array
+            {
+                return ($this->properties ?? []);
+            }//end getProperties()
         }//end class
     }
 

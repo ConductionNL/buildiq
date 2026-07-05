@@ -29,6 +29,8 @@ namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\AppInfo\Application;
 use OCA\OpenBuild\Service\ExportJobService;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\BackgroundJob\IJobList;
 use OCP\Security\ICredentialsManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -236,4 +238,88 @@ final class ExportJobServiceTest extends TestCase
         $emptyKey = $this->service->credentialKey('');
         self::assertSame('openbuild.export..pat', $emptyKey);
     }//end testCredentialKeyFormatIsDeterministic()
+
+    /**
+     * queue() persists a normalised `dataRegisters` array — mirrors the
+     * existing `includeSeedData` (bool) cast pattern (data-registers-runtime
+     * task 4.3). Malformed entries (non-array, or missing/empty `register`)
+     * are dropped rather than rejected.
+     *
+     * @return void
+     */
+    public function testQueuePersistsSanitisedDataRegisters(): void
+    {
+        $container     = $this->createMock(ContainerInterface::class);
+        $objectService = $this->createMock(ObjectService::class);
+        $container->method('has')->willReturn(true);
+        $container->method('get')->willReturn($objectService);
+
+        $captured = null;
+        $objectService
+            ->method('saveObject')
+            ->willReturnCallback(function ($job) use (&$captured): ObjectEntity {
+                $captured = $job;
+                return new ObjectEntity();
+            });
+
+        $service = new ExportJobService($container, $this->credentialsManager, $this->jobList, new NullLogger());
+
+        $service->queue(
+            applicationSlug: 'hello-world',
+            payload: [
+                'target'             => 'zip',
+                'applicationVersion' => '1.0.0',
+                'dataRegisters'      => [
+                    ['register' => 'spectr', 'includeData' => true],
+                    ['register' => 'bag-adressen'],
+                    ['register' => '', 'includeData' => true],
+                    ['includeData' => true],
+                    'not-an-array',
+                ],
+            ],
+            githubPat: null
+        );
+
+        self::assertIsArray($captured);
+        self::assertSame(
+            [
+                ['register' => 'spectr', 'includeData' => true],
+                ['register' => 'bag-adressen', 'includeData' => false],
+            ],
+            $captured['dataRegisters']
+        );
+    }//end testQueuePersistsSanitisedDataRegisters()
+
+    /**
+     * queue() defaults `dataRegisters` to `[]` when the request payload
+     * omits it entirely — every existing ExportJob-submit call predating
+     * this property continues to round-trip unchanged.
+     *
+     * @return void
+     */
+    public function testQueueDefaultsDataRegistersToEmptyArrayWhenOmitted(): void
+    {
+        $container     = $this->createMock(ContainerInterface::class);
+        $objectService = $this->createMock(ObjectService::class);
+        $container->method('has')->willReturn(true);
+        $container->method('get')->willReturn($objectService);
+
+        $captured = null;
+        $objectService
+            ->method('saveObject')
+            ->willReturnCallback(function ($job) use (&$captured): ObjectEntity {
+                $captured = $job;
+                return new ObjectEntity();
+            });
+
+        $service = new ExportJobService($container, $this->credentialsManager, $this->jobList, new NullLogger());
+
+        $service->queue(
+            applicationSlug: 'hello-world',
+            payload: ['target' => 'zip', 'applicationVersion' => '1.0.0'],
+            githubPat: null
+        );
+
+        self::assertSame([], $captured['dataRegisters']);
+    }//end testQueueDefaultsDataRegistersToEmptyArrayWhenOmitted()
 }//end class
