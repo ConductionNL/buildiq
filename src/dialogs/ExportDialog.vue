@@ -27,6 +27,22 @@
 				{{ t('openbuild', 'Include seed data') }}
 			</NcCheckboxRadioSwitch>
 
+			<template v-if="dataRegisterChoices.length">
+				<h4 class="export-dialog__section-title">
+					{{ t('openbuild', 'Data registers') }}
+				</h4>
+				<p class="export-dialog__scope-hint">
+					{{ t('openbuild', 'This app is bound to shared data registers it does not own. Their schema definitions are always included as reference material. Row data is only bundled for a register when you switch it on below.') }}
+				</p>
+				<NcCheckboxRadioSwitch
+					v-for="choice in dataRegisterChoices"
+					:key="choice.register"
+					v-model="choice.includeData"
+					:disabled="submitting">
+					{{ t('openbuild', 'Include row data for {label}', { label: choice.label || choice.register }) }}
+				</NcCheckboxRadioSwitch>
+			</template>
+
 			<template v-if="form.target && form.target.value === 'github'">
 				<NcTextField
 					v-model="form.githubOrg"
@@ -97,6 +113,13 @@ export default {
 			type: Array,
 			default: () => [{ label: '0.1.0', value: '0.1.0' }],
 		},
+		// The source Application's declared `dataRegisters` bindings
+		// (data-registers-runtime design.md Decision 5). One toggle is
+		// rendered per binding, unchecked by default (schema-defs-only).
+		dataRegisters: {
+			type: Array,
+			default: () => [],
+		},
 	},
 	emits: ['close', 'queued'],
 	data() {
@@ -113,6 +136,14 @@ export default {
 				githubVisibility: { label: this.t('openbuild', 'Private'), value: 'private' },
 				githubPat: '',
 			},
+			// Per-binding includeData choice, unchecked by default. Built
+			// once from the dataRegisters prop — mirrors `form`'s own
+			// once-at-creation pattern above.
+			dataRegisterChoices: this.dataRegisters.map((binding) => ({
+				register: binding.register,
+				label: binding.label,
+				includeData: false,
+			})),
 		}
 	},
 	computed: {
@@ -185,6 +216,13 @@ export default {
 					target: this.form.target.value,
 					license: this.form.license.value,
 					includeSeedData: this.form.includeSeedData,
+					// Mirrors the source Application's dataRegisters bindings
+					// 1:1, each carrying the resolved includeData flag
+					// (data-registers-runtime design.md Decision 5).
+					dataRegisters: this.dataRegisterChoices.map((choice) => ({
+						register: choice.register,
+						includeData: choice.includeData,
+					})),
 				}
 				if (this.form.target.value === 'github') {
 					payload.githubOrg = this.form.githubOrg
@@ -219,6 +257,12 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.85rem;
 	margin: 0;
+}
+
+.export-dialog__section-title {
+	margin: 8px 0 0;
+	font-size: 0.95rem;
+	font-weight: 600;
 }
 
 .export-dialog__error {
