@@ -78,6 +78,7 @@ class ExportJobService
      * @throws \InvalidArgumentException When required fields are missing.
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+     * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.3
      */
     public function queue(
         string $applicationSlug,
@@ -113,6 +114,7 @@ class ExportJobService
             'githubRepo'         => $githubRepo,
             'githubVisibility'   => $githubVisibility,
             'includeSeedData'    => (bool) ($payload['includeSeedData'] ?? false),
+            'dataRegisters'      => $this->sanitiseDataRegisters(raw: $payload['dataRegisters'] ?? []),
             'license'            => (string) ($payload['license'] ?? 'EUPL-1.2'),
             'log'                => [],
         ];
@@ -134,6 +136,47 @@ class ExportJobService
 
         return $jobUuid;
     }//end queue()
+
+    /**
+     * Normalise the submit request's `dataRegisters` choice onto the shape
+     * `{register: string, includeData: bool}` — mirrors the existing
+     * `includeSeedData` boolean-cast pattern above. Malformed entries (not
+     * an array, or missing/empty `register`) are dropped rather than
+     * rejected — no existence validation of the referenced register is
+     * performed here (matches the head spec's own Non-Goal for a dangling
+     * `Application.dataRegisters[].register` slug).
+     *
+     * @param mixed $raw The request payload's `dataRegisters` value.
+     *
+     * @return array<int,array{register:string,includeData:bool}>
+     *
+     * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.3
+     */
+    private function sanitiseDataRegisters(mixed $raw): array
+    {
+        if (is_array($raw) === false) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($raw as $entry) {
+            if (is_array($entry) === false) {
+                continue;
+            }
+
+            $register = (string) ($entry['register'] ?? '');
+            if ($register === '') {
+                continue;
+            }
+
+            $out[] = [
+                'register'    => $register,
+                'includeData' => (bool) ($entry['includeData'] ?? false),
+            ];
+        }
+
+        return $out;
+    }//end sanitiseDataRegisters()
 
     /**
      * Persist the ExportJob record via OR (best-effort; falls back to a no-op
