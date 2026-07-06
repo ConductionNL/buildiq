@@ -76,6 +76,17 @@ namespace OCA\OpenRegister\Db {
             protected ?array $object = [];
 
             /**
+             * Stub owner column (Nextcloud UID of the object's creator).
+             * Real OR stamps this via applyOwnerAttribution() at
+             * saveObject()-time; ExportJobService::impersonateJobOwner()
+             * (#105) reads it back via getOwner() to impersonate the
+             * ExportJob submitter for background-job lifecycle transitions.
+             *
+             * @var string|null
+             */
+            protected ?string $owner = null;
+
+            /**
              * @return array<string, mixed>
              */
             public function getObject(): array

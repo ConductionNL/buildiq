@@ -29,6 +29,7 @@ namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\AppInfo\Application;
 use OCA\OpenBuild\Service\ExportJobService;
+use OCA\OpenBuild\Service\JobOwnerImpersonator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\BackgroundJob\IJobList;
@@ -37,6 +38,24 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+
+/**
+ * Local double contract for OR's `TransitionEngine`. Production code
+ * (`ExportJobService::transitionJob()`) resolves the engine by string class
+ * name through the PSR container and never type-hints it directly, so a
+ * duck-typed double implementing just `transition()` is sufficient — no
+ * dependency on OR's real `Lifecycle\TransitionEngine` class is needed.
+ */
+interface FakeTransitionEngineForTest
+{
+    /**
+     * @param string $objectId Object id/uuid/slug.
+     * @param string $action   Transition action name.
+     *
+     * @return mixed
+     */
+    public function transition(string $objectId, string $action): mixed;
+}
 
 /**
  * Tests for {@see ExportJobService} — PAT handling + queue semantics.
@@ -72,6 +91,17 @@ final class ExportJobServiceTest extends TestCase
     private ExportJobService $service;
 
     /**
+     * Owner-impersonation collaborator mock (#105). Its OWN impersonation
+     * contract (resolve owner, swap session, always restore) is covered by
+     * {@see \OCA\OpenBuild\Tests\Unit\Service\JobOwnerImpersonatorTest} —
+     * here we only need to verify ExportJobService::transitionJob() wires
+     * into it correctly (delegates the work through `runAsOwner()`).
+     *
+     * @var JobOwnerImpersonator&MockObject
+     */
+    private JobOwnerImpersonator&MockObject $jobOwnerImpersonator;
+
+    /**
      * Build a fresh service for each test with all dependencies mocked.
      *
      * @return void
@@ -79,19 +109,28 @@ final class ExportJobServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->container          = $this->createMock(ContainerInterface::class);
-        $this->credentialsManager = $this->createMock(ICredentialsManager::class);
-        $this->jobList            = $this->createMock(IJobList::class);
+        $this->container           = $this->createMock(ContainerInterface::class);
+        $this->credentialsManager  = $this->createMock(ICredentialsManager::class);
+        $this->jobList             = $this->createMock(IJobList::class);
+        $this->jobOwnerImpersonator = $this->createMock(JobOwnerImpersonator::class);
 
         // Default: OR not available — keeps the unit isolated from the
         // ObjectService surface. Individual tests override per-call.
         $this->container->method('has')->willReturn(false);
 
+        // NOTE: deliberately NOT pre-configuring `runAsOwner()` here.
+        // PHPUnit applies EVERY matching stub configured on a mock method to
+        // an invocation (not just the most specific one) — a blanket
+        // passthrough default here plus a test-specific `->with(...)`
+        // stub would both fire for the same call, invoking `$work` twice.
+        // Each transitionJob() test that needs `runAsOwner()` to actually
+        // run its callback configures that behaviour itself.
         $this->service = new ExportJobService(
             $this->container,
             $this->credentialsManager,
             $this->jobList,
-            new NullLogger()
+            new NullLogger(),
+            $this->jobOwnerImpersonator
         );
     }//end setUp()
 
@@ -263,7 +302,13 @@ final class ExportJobServiceTest extends TestCase
                 return new ObjectEntity();
             });
 
-        $service = new ExportJobService($container, $this->credentialsManager, $this->jobList, new NullLogger());
+        $service = new ExportJobService(
+            $container,
+            $this->credentialsManager,
+            $this->jobList,
+            new NullLogger(),
+            $this->jobOwnerImpersonator
+        );
 
         $service->queue(
             applicationSlug: 'hello-world',
@@ -313,7 +358,13 @@ final class ExportJobServiceTest extends TestCase
                 return new ObjectEntity();
             });
 
-        $service = new ExportJobService($container, $this->credentialsManager, $this->jobList, new NullLogger());
+        $service = new ExportJobService(
+            $container,
+            $this->credentialsManager,
+            $this->jobList,
+            new NullLogger(),
+            $this->jobOwnerImpersonator
+        );
 
         $service->queue(
             applicationSlug: 'hello-world',
@@ -377,7 +428,13 @@ final class ExportJobServiceTest extends TestCase
                 return new ObjectEntity();
             });
 
-        $service = new ExportJobService($container, $this->credentialsManager, $this->jobList, new NullLogger());
+        $service = new ExportJobService(
+            $container,
+            $this->credentialsManager,
+            $this->jobList,
+            new NullLogger(),
+            $this->jobOwnerImpersonator
+        );
 
         $service->persistJob([
             'uuid'               => 'job-uuid-123',
@@ -431,7 +488,13 @@ final class ExportJobServiceTest extends TestCase
                 return new ObjectEntity();
             });
 
-        $service = new ExportJobService($container, $this->credentialsManager, $this->jobList, new NullLogger());
+        $service = new ExportJobService(
+            $container,
+            $this->credentialsManager,
+            $this->jobList,
+            new NullLogger(),
+            $this->jobOwnerImpersonator
+        );
         $service->mergeJobFields('job-uuid-456', ['downloadUrl' => '/index.php/apps/openbuild/api/exports/job-uuid-456/download']);
 
         self::assertSame('openbuild', $capturedArgs['register'], 'mergeJobFields() must target the openbuild register');
@@ -439,4 +502,162 @@ final class ExportJobServiceTest extends TestCase
         self::assertSame('job-uuid-456', $capturedArgs['uuid'], 'mergeJobFields() must update the SAME existing record by uuid');
         self::assertSame('/index.php/apps/openbuild/api/exports/job-uuid-456/download', $capturedArgs['job']['downloadUrl']);
     }//end testMergeJobFieldsPassesExplicitRegisterSchemaAndUuidToSaveObject()
+
+    /**
+     * Build a container mock that resolves ONLY the TransitionEngine
+     * class-string. Owner impersonation is delegated to the (mocked)
+     * {@see JobOwnerImpersonator} collaborator — its own ObjectService/
+     * IUserSession/IUserManager wiring is covered by
+     * {@see \OCA\OpenBuild\Tests\Unit\Service\JobOwnerImpersonatorTest} —
+     * so transitionJob()'s own tests only need the engine resolvable.
+     *
+     * @param FakeTransitionEngineForTest&MockObject $engine Engine double.
+     *
+     * @return ContainerInterface&MockObject
+     */
+    private function containerResolvingEngine(FakeTransitionEngineForTest&MockObject $engine): ContainerInterface&MockObject
+    {
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('has')->willReturnCallback(
+            fn (string $id): bool => $id === 'OCA\\OpenRegister\\Service\\Lifecycle\\TransitionEngine'
+        );
+        $container->method('get')->willReturn($engine);
+
+        return $container;
+    }//end containerResolvingEngine()
+
+    /**
+     * transitionJob() MUST run the TransitionEngine call through
+     * {@see JobOwnerImpersonator::runAsOwner()} — passing the ExportJob's
+     * UUID as the object whose owner should be impersonated — rather than
+     * calling the engine directly. Background jobs run with no HTTP
+     * session, and OR's TransitionEngine + PermissionHandler fail-closed
+     * for an anonymous caller against the export-job schema's admin-only
+     * `authorization.update` (#105); the impersonation mechanics
+     * themselves (resolve owner, swap session, always restore) are
+     * JobOwnerImpersonator's own contract, tested in isolation.
+     *
+     * @return void
+     */
+    public function testTransitionJobDelegatesThroughJobOwnerImpersonator(): void
+    {
+        $engine = $this->createMock(FakeTransitionEngineForTest::class);
+        $engine->expects(self::once())->method('transition')->with('job-uuid-owner', 'start');
+
+        $this->jobOwnerImpersonator
+            ->expects(self::once())
+            ->method('runAsOwner')
+            ->with('job-uuid-owner', self::isType('callable'))
+            ->willReturnCallback(fn (string $objectId, callable $work) => $work());
+
+        $service = new ExportJobService(
+            $this->containerResolvingEngine($engine),
+            $this->credentialsManager,
+            $this->jobList,
+            new NullLogger(),
+            $this->jobOwnerImpersonator
+        );
+
+        $result = $service->transitionJob(jobUuid: 'job-uuid-owner', action: 'start');
+
+        self::assertTrue($result, 'transitionJob() must return true when the impersonated work succeeds');
+    }//end testTransitionJobDelegatesThroughJobOwnerImpersonator()
+
+    /**
+     * The extraFields merge (errorMessage, downloadUrl, …) MUST happen
+     * INSIDE the impersonated work — not after `runAsOwner()` returns —
+     * so the merge write is authorised under the same impersonated
+     * identity as the transition itself.
+     *
+     * @return void
+     */
+    public function testTransitionJobMergesExtraFieldsInsideTheImpersonatedWork(): void
+    {
+        $engine = $this->createMock(FakeTransitionEngineForTest::class);
+        $engine->method('transition');
+
+        $existing = new ObjectEntity();
+        $existing->setUuid('job-uuid-extra');
+        $existing->setRegister('openbuild');
+        $existing->setSchema('export-job');
+        $existing->setObject(['status' => 'running']);
+
+        $objectService = $this->createMock(ObjectService::class);
+        $objectService->method('find')->willReturn($existing);
+
+        $captured = null;
+        $objectService
+            ->expects(self::once())
+            ->method('saveObject')
+            ->willReturnCallback(function ($job) use (&$captured): ObjectEntity {
+                $captured = $job;
+                return new ObjectEntity();
+            });
+
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('has')->willReturn(true);
+        $container->method('get')->willReturnCallback(
+            function (string $id) use ($engine, $objectService) {
+                if ($id === 'OCA\\OpenRegister\\Service\\Lifecycle\\TransitionEngine') {
+                    return $engine;
+                }
+
+                return $objectService;
+            }
+        );
+
+        $this->jobOwnerImpersonator
+            ->method('runAsOwner')
+            ->willReturnCallback(fn (string $objectId, callable $work) => $work());
+
+        $service = new ExportJobService(
+            $container,
+            $this->credentialsManager,
+            $this->jobList,
+            new NullLogger(),
+            $this->jobOwnerImpersonator
+        );
+
+        $result = $service->transitionJob(
+            jobUuid: 'job-uuid-extra',
+            action: 'succeed',
+            extraFields: ['downloadUrl' => '/index.php/apps/openbuild/api/exports/job-uuid-extra/download']
+        );
+
+        self::assertTrue($result);
+        self::assertSame(
+            '/index.php/apps/openbuild/api/exports/job-uuid-extra/download',
+            $captured['downloadUrl']
+        );
+    }//end testTransitionJobMergesExtraFieldsInsideTheImpersonatedWork()
+
+    /**
+     * When the impersonated work throws (e.g. the TransitionEngine itself
+     * rejects the transition), transitionJob() must catch it, log, and
+     * return false rather than let the exception escape — RunExportJob has
+     * no recovery path for an exception escaping transitionJob().
+     *
+     * @return void
+     */
+    public function testTransitionJobReturnsFalseWhenTheImpersonatedWorkThrows(): void
+    {
+        $engine = $this->createMock(FakeTransitionEngineForTest::class);
+        $engine->method('transition')->willThrowException(new \RuntimeException('OR rejected the transition'));
+
+        $this->jobOwnerImpersonator
+            ->method('runAsOwner')
+            ->willReturnCallback(fn (string $objectId, callable $work) => $work());
+
+        $service = new ExportJobService(
+            $this->containerResolvingEngine($engine),
+            $this->credentialsManager,
+            $this->jobList,
+            new NullLogger(),
+            $this->jobOwnerImpersonator
+        );
+
+        $result = $service->transitionJob(jobUuid: 'job-uuid-throws', action: 'start');
+
+        self::assertFalse($result, 'transitionJob() must return false when the impersonated work throws');
+    }//end testTransitionJobReturnsFalseWhenTheImpersonatedWorkThrows()
 }//end class
