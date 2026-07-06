@@ -40,6 +40,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Bridges the ExportsController to the OR ExportJob record + RunExportJob.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
  */
 class ExportJobService
 {
@@ -66,16 +68,21 @@ class ExportJobService
     /**
      * Constructor.
      *
-     * @param ContainerInterface  $container          Container — used to lazily fetch OR services.
-     * @param ICredentialsManager $credentialsManager Nextcloud credentials manager.
-     * @param IJobList            $jobList            Background job list.
-     * @param LoggerInterface     $logger             Logger.
+     * @param ContainerInterface   $container            Container — used to lazily fetch OR
+     *                                                   services.
+     * @param ICredentialsManager  $credentialsManager   Nextcloud credentials manager.
+     * @param IJobList             $jobList              Background job list.
+     * @param LoggerInterface      $logger               Logger.
+     * @param JobOwnerImpersonator $jobOwnerImpersonator Impersonates the ExportJob owner for the
+     *                                                   duration of a lifecycle transition (#105) —
+     *                                                   background jobs run with no HTTP session.
      */
     public function __construct(
         private ContainerInterface $container,
         private ICredentialsManager $credentialsManager,
         private IJobList $jobList,
         private LoggerInterface $logger,
+        private JobOwnerImpersonator $jobOwnerImpersonator,
     ) {
     }//end __construct()
 
@@ -265,6 +272,26 @@ class ExportJobService
      * can decide what to do; we never silently fall back to direct status
      * writes (that would defeat the entire declarative contract).
      *
+     * Background-job impersonation (#105): RunExportJob drives this
+     * transition from a Nextcloud QueuedJob, which runs with NO HTTP
+     * session. TransitionEngine::transition() resolves the acting user
+     * from IUserSession and gates the mutation on
+     * PermissionHandler::hasPermission('update', ...); the export-job
+     * schema's `authorization.update` is admin-only
+     * (lib/Settings/openbuild_register.json), and PermissionHandler fails
+     * closed for an anonymous (null) caller on write actions. Left
+     * unaddressed, EVERY export would fail its `start` transition with a
+     * permission denial before the pipeline even ran. {@see
+     * JobOwnerImpersonator} resolves the ExportJob's owner (stamped
+     * automatically by ObjectService::saveObject()'s
+     * applyOwnerAttribution() at queue() time, from the submitting user's
+     * real HTTP session) and impersonates them for the duration of the
+     * transition — PermissionHandler grants an object's owner full access
+     * to their own object regardless of the schema's group-based
+     * authorization, so this succeeds without relaxing admin-only
+     * authorization for any other caller. Mirrors hermiq's
+     * ScheduleService::runAgentAsOwner() impersonation pattern.
+     *
      * @param string              $jobUuid     ExportJob UUID.
      * @param string              $action      Transition action name
      *                                         ('start', 'succeed', 'fail').
@@ -309,17 +336,24 @@ class ExportJobService
                 return false;
             }
 
-            $engine->transition($jobUuid, $action);
+            return $this->jobOwnerImpersonator->runAsOwner(
+                objectId: $jobUuid,
+                work: function () use ($engine, $jobUuid, $action, $extraFields): bool {
+                    $engine->transition($jobUuid, $action);
 
-            // Side fields (errorMessage, downloadUrl, …) are NOT part of the
-            // transition itself; merge them via the standard ObjectService
-            // save path so they go through validation but do not race with
-            // the lifecycle field.
-            if ($extraFields !== []) {
-                $this->mergeJobFields(jobUuid: $jobUuid, fields: $extraFields);
-            }
+                    // Side fields (errorMessage, downloadUrl, …) are NOT
+                    // part of the transition itself; merge them via the
+                    // standard ObjectService save path so they go through
+                    // validation but do not race with the lifecycle
+                    // field. Still impersonated here, so this write is
+                    // authorised the same way.
+                    if ($extraFields !== []) {
+                        $this->mergeJobFields(jobUuid: $jobUuid, fields: $extraFields);
+                    }
 
-            return true;
+                    return true;
+                }
+            );
         } catch (\Throwable $e) {
             $this->logger->error(
                 'OpenBuild export: lifecycle transition "'.$action.'" failed on job '
