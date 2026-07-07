@@ -17,28 +17,77 @@
     ],
     "pages": [
       {
-        "name": "Onboardings",
+        "id": "Onboardings",
         "route": "/onboardings",
         "type": "index",
         "title": "All onboardings",
         "config": { "schema": "onboarding-task" }
       },
       {
-        "name": "OnboardingDetail",
+        "id": "OnboardingDetail",
         "route": "/onboardings/:id",
         "type": "detail",
         "title": "Onboarding detail",
-        "config": { "schema": "onboarding-task", "relatedSchema": "onboarding-document" }
+        "config": {
+          "schema": "onboarding-task",
+          "register": "{{register}}",
+          "_note": "Per-employee onboarding record archetype: the data widget carries the employee/start-date/department/status fields; the legacy `relatedSchema: onboarding-document` hint is realized as a proper FK-scoped object-list (onboarding-document.taskUuid = @objectId) below the data widget, since a document belongs to exactly one task. No related-panel widget: onboarding-task declares no outbound x-openregister-relation. No lifecycle widget: status is a plain enum with no x-openregister-lifecycle block. No content leaves (files/calendar/notes): the schema carries no linkedType hint and documents are tracked as their own child schema, not as attached files, so a files integration would duplicate the object-list below. KNOWN GAP: `register` is an unresolved `{{register}}` placeholder — ApplicationsController::rewriteSchemaRefs() (openbuild) only rewrites `schema`/`relatedSchema` keys at clone time, never `register`, so no widget on any page cloned from this template can fetch data until that gap is closed (see task report).",
+          "widgets": [
+            {
+              "id": "onboarding-data",
+              "type": "data",
+              "title": "Onboarding details",
+              "content": { "columns": 2 }
+            },
+            {
+              "id": "onboarding-documents",
+              "type": "object-list",
+              "title": "Documents",
+              "content": {
+                "register": "{{register}}",
+                "schema": "onboarding-document",
+                "filter": { "taskUuid": "@objectId" },
+                "sort": { "field": "documentName", "order": "asc" },
+                "limit": 10,
+                "columns": [
+                  { "key": "documentName", "label": "Document" },
+                  { "key": "uploadedFile", "label": "File" },
+                  { "key": "approved", "label": "Approved" }
+                ]
+              }
+            }
+          ],
+          "layout": [
+            { "id": "1", "widgetId": "onboarding-data", "gridX": 0, "gridY": 0, "gridWidth": 12, "gridHeight": 4 },
+            { "id": "2", "widgetId": "onboarding-documents", "gridX": 0, "gridY": 4, "gridWidth": 12, "gridHeight": 4 }
+          ],
+          "summaryAggregates": [
+            {
+              "label": "Documents attached",
+              "register": "{{register}}",
+              "schema": "onboarding-document",
+              "metric": "count",
+              "filter": { "taskUuid": "@objectId" }
+            }
+          ],
+          "sidebar": {
+            "enabled": true,
+            "showMetadata": true,
+            "tabs": [
+              { "id": "audit", "label": "History", "component": "CnAuditTrailTab" }
+            ]
+          }
+        }
       },
       {
-        "name": "OnboardingTaskChecklist",
+        "id": "OnboardingTaskChecklist",
         "route": "/tasks",
         "type": "checklist",
         "title": "Onboarding tasks",
         "config": { "schema": "onboarding-task", "groupBy": "status" }
       },
       {
-        "name": "OnboardingDocumentForm",
+        "id": "OnboardingDocumentForm",
         "route": "/documents/new",
         "type": "form",
         "title": "Add onboarding document",
