@@ -126,6 +126,11 @@
 				"showRelatedObjects": false,
 				"showRefresh": false,
 				"showRequestFeature": false,
+				"_note": "Purpose-built maintainer cockpit, NOT the generic data+audit-trail archetype — deliberately exempt from the standard detail-page widget composition (detail-page-redesign brief). headerComponent/actionsComponent/slots.before-body are pre-existing, spec-driven custom components (openspec/changes/retrofit-2026-05-26-application-detail-ui): the before-body ApplicationDetailDashboard already surfaces the KPI grid, activity graph, and a Manifest/Register/Groups widget row — Register's widget already deep-links to this Application's pages/schemas/menu structure (comment in ApplicationDetailDashboard.vue: 'the schema/page/menu detail always reflects the latest manifest and is reachable from the manifest layers'), so the FK-scoped versions/pages/schemas visibility the brief calls for is already covered there, NOT duplicated here. pages and schemas are NOT OpenRegister objects (they live inside ApplicationVersion.manifest as a JSON blob) so no object-list can FK-scope them; ApplicationVersion IS a real FK child (application relation) and its history is what the sidebar 'history' tab already surfaces via rollback-capable VersionHistory. The five non-audit sidebar tabs (Manifest raw editor, Version history+rollback, Diff, Icon upload, Export jobs) are bespoke registered components (kind:'tab' in src/registry.js) with NO catalog widget equivalent (no diff/rollback/icon-upload widget type exists) — moving them into config.widgets is not expressible without inventing a widget type or registering a new kind:'widget' component, both forbidden by the manifest-only rule. Kept as-is; only the audit tab was normalised to the canonical nc-vue built-in below so History still resolves without app registration.",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
 				"sidebarTabs": [
 					{
 						"id": "manifest",
@@ -164,9 +169,9 @@
 					},
 					{
 						"id": "audit",
-						"label": "Audit trail",
+						"label": "History",
 						"icon": "icon-history",
-						"component": "audit-trail",
+						"component": "CnAuditTrailTab",
 						"order": 70
 					}
 				]

@@ -18,28 +18,50 @@
     ],
     "pages": [
       {
-        "name": "Applications",
+        "id": "Applications",
         "route": "/applications",
         "type": "index",
         "title": "Permit applications",
         "config": { "schema": "permit-application" }
       },
       {
-        "name": "ApplicationDetail",
+        "id": "ApplicationDetail",
         "route": "/applications/:id",
         "type": "detail",
         "title": "Application detail",
-        "config": { "schema": "permit-application" }
+        "config": {
+          "schema": "permit-application",
+          "register": "{{register}}",
+          "_note": "Single-record archetype: permit-application is the only companion schema in this template — no child schema references it (no FK), it declares no outbound x-openregister-relation, and no lifecycle block (status is a plain enum). Kept deliberately lean per starter-template scope: one data widget with all fields (applicant/address/buildingType/status/submittedAt/decision), no related panel, no object-list, no content leaves (no file/photo/calendar field on the schema). KNOWN GAP: `register` is an unresolved `{{register}}` placeholder — see task report (ApplicationsController::rewriteSchemaRefs() never injects a register at clone time).",
+          "widgets": [
+            {
+              "id": "permit-data",
+              "type": "data",
+              "title": "Application details",
+              "content": { "columns": 2 }
+            }
+          ],
+          "layout": [
+            { "id": "1", "widgetId": "permit-data", "gridX": 0, "gridY": 0, "gridWidth": 12, "gridHeight": 4 }
+          ],
+          "sidebar": {
+            "enabled": true,
+            "showMetadata": true,
+            "tabs": [
+              { "id": "audit", "label": "History", "component": "CnAuditTrailTab" }
+            ]
+          }
+        }
       },
       {
-        "name": "ApplicationForm",
+        "id": "ApplicationForm",
         "route": "/submit",
         "type": "form",
         "title": "Submit a permit application",
         "config": { "schema": "permit-application" }
       },
       {
-        "name": "ApplicationKanban",
+        "id": "ApplicationKanban",
         "route": "/kanban",
         "type": "kanban",
         "title": "Application pipeline",

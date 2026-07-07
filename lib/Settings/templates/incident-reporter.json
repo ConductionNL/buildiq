@@ -17,25 +17,47 @@
     ],
     "pages": [
       {
-        "name": "IncidentForm",
+        "id": "IncidentForm",
         "route": "/report",
         "type": "form",
         "title": "Report an incident",
         "config": { "schema": "incident" }
       },
       {
-        "name": "Incidents",
+        "id": "Incidents",
         "route": "/incidents",
         "type": "index",
         "title": "All incidents",
         "config": { "schema": "incident" }
       },
       {
-        "name": "IncidentDetail",
+        "id": "IncidentDetail",
         "route": "/incidents/:id",
         "type": "detail",
         "title": "Incident detail",
-        "config": { "schema": "incident" }
+        "config": {
+          "schema": "incident",
+          "register": "{{register}}",
+          "_note": "Single-record archetype: incident is the only companion schema in this template — no child schema references it, no outbound x-openregister-relation, no lifecycle block (status/severity are plain enums). Kept lean per starter-template scope: one data widget with all fields (reportedBy/location/incidentType/severity/description/reportedAt/status), no related panel, no object-list, no content leaves (no file/photo field on the schema — a field incident report with photo evidence would justify a files leaf, but this schema doesn't declare one; adding it would be fabricating a use-case the schema doesn't support). KNOWN GAP: `register` is an unresolved `{{register}}` placeholder — see task report.",
+          "widgets": [
+            {
+              "id": "incident-data",
+              "type": "data",
+              "title": "Incident details",
+              "content": { "columns": 2 }
+            }
+          ],
+          "layout": [
+            { "id": "1", "widgetId": "incident-data", "gridX": 0, "gridY": 0, "gridWidth": 12, "gridHeight": 4 }
+          ],
+          "sidebar": {
+            "enabled": true,
+            "showMetadata": true,
+            "tabs": [
+              { "id": "audit", "label": "History", "component": "CnAuditTrailTab" }
+            ]
+          }
+        }
       }
     ]
   },

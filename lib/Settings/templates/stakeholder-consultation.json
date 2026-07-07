@@ -17,28 +17,77 @@
     ],
     "pages": [
       {
-        "name": "Consultations",
+        "id": "Consultations",
         "route": "/consultations",
         "type": "index",
         "title": "Open consultations",
         "config": { "schema": "consultation" }
       },
       {
-        "name": "ConsultationDetail",
+        "id": "ConsultationDetail",
         "route": "/consultations/:id",
         "type": "detail",
         "title": "Consultation detail",
-        "config": { "schema": "consultation", "relatedSchema": "consultation-comment" }
+        "config": {
+          "schema": "consultation",
+          "register": "{{register}}",
+          "_note": "Publish-and-collect archetype: the data widget carries the topic's own fields (title/description/openFrom/closeAt/status); the legacy `relatedSchema: consultation-comment` hint is realized as a proper FK-scoped object-list (consultation-comment.consultationUuid = @objectId) below the data widget, since a comment belongs to exactly one consultation, plus a summaryAggregates chip counting comments. No related-panel widget: consultation declares no outbound x-openregister-relation. No lifecycle widget: status is a plain enum with no x-openregister-lifecycle block. No content leaves (files/calendar/notes): the schema carries no linkedType hint. KNOWN GAP: `register` is an unresolved `{{register}}` placeholder — see task report.",
+          "widgets": [
+            {
+              "id": "consultation-data",
+              "type": "data",
+              "title": "Consultation details",
+              "content": { "columns": 2 }
+            },
+            {
+              "id": "consultation-comments",
+              "type": "object-list",
+              "title": "Comments",
+              "content": {
+                "register": "{{register}}",
+                "schema": "consultation-comment",
+                "filter": { "consultationUuid": "@objectId" },
+                "sort": { "field": "createdAt", "order": "desc" },
+                "limit": 10,
+                "columns": [
+                  { "key": "authorName", "label": "Author" },
+                  { "key": "body", "label": "Comment" },
+                  { "key": "createdAt", "label": "Posted" }
+                ]
+              }
+            }
+          ],
+          "layout": [
+            { "id": "1", "widgetId": "consultation-data", "gridX": 0, "gridY": 0, "gridWidth": 12, "gridHeight": 4 },
+            { "id": "2", "widgetId": "consultation-comments", "gridX": 0, "gridY": 4, "gridWidth": 12, "gridHeight": 5 }
+          ],
+          "summaryAggregates": [
+            {
+              "label": "Comments",
+              "register": "{{register}}",
+              "schema": "consultation-comment",
+              "metric": "count",
+              "filter": { "consultationUuid": "@objectId" }
+            }
+          ],
+          "sidebar": {
+            "enabled": true,
+            "showMetadata": true,
+            "tabs": [
+              { "id": "audit", "label": "History", "component": "CnAuditTrailTab" }
+            ]
+          }
+        }
       },
       {
-        "name": "ConsultationForm",
+        "id": "ConsultationForm",
         "route": "/submit",
         "type": "form",
         "title": "Start a new consultation",
         "config": { "schema": "consultation" }
       },
       {
-        "name": "CommentForm",
+        "id": "CommentForm",
         "route": "/comment",
         "type": "form",
         "title": "Add your comment",
