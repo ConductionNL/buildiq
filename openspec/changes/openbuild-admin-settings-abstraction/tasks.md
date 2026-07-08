@@ -28,8 +28,8 @@
 
 ## 6. Verify
 
-- [ ] 6.1 Run `openspec validate openbuild-admin-settings-abstraction --strict` and the relevant hydra gates (initial-state, modal-isolation, nc-input-labels, spec-coverage) green on the diff.
-- [ ] 6.2 Backend owner projection matches `matchesCaller` for owner/non-owner/super-admin; confirm no change to `PermissionResolver` grammar or `permissions` block shape.
+- [x] 6.1 Run `openspec validate openbuild-admin-settings-abstraction --strict` and the relevant hydra gates (initial-state, modal-isolation, nc-input-labels, spec-coverage) green on the diff.
+- [x] 6.2 Backend owner projection matches `matchesCaller` for owner/non-owner/super-admin; confirm no change to `PermissionResolver` grammar or `permissions` block shape.
 
 ## Acceptance criteria
 
