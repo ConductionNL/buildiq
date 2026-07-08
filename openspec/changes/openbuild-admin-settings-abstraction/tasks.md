@@ -1,19 +1,19 @@
 ## 1. Manifest schema (nextcloud-vue)
 
-- [ ] 1.1 Add the top-level `adminSettings` array + `$defs/adminSettingsEntry` to `src/schemas/app-manifest-v2.schema.json`: required `id`/`label`, optional `order`/`permission`/`props`, exactly-one-of `type`|`component`, `type` closed enum `["organisation-credentials"]`, `additionalProperties:false`. Sibling to `pages`/`menu`.
-- [ ] 1.2 Add manifest fixtures + `validateManifest` unit tests: built-in section validates, custom section validates, neither-type-nor-component rejected, both rejected, unknown `type` rejected, absent `adminSettings` still validates.
+- [x] 1.1 Add the top-level `adminSettings` array + `$defs/adminSettingsEntry` to `src/schemas/app-manifest-v2.schema.json`: required `id`/`label`, optional `order`/`permission`/`props`, exactly-one-of `type`|`component`, `type` closed enum `["organisation-credentials"]`, `additionalProperties:false`. Sibling to `pages`/`menu`.
+- [x] 1.2 Add manifest fixtures + `validateManifest` unit tests: built-in section validates, custom section validates, neither-type-nor-component rejected, both rejected, unknown `type` rejected, absent `adminSettings` still validates.
 
 ## 2. Generic admin dialog (CnAppRoot)
 
-- [ ] 2.1 Mount a second `NcAppSettingsDialog` (distinct from the personal one) in `CnAppRoot`, opened via a new `cnOpenAdminSettings` inject; iterate `manifest.adminSettings[]` sorted by `order` into one `NcAppSettingsSection` per entry.
-- [ ] 2.2 Map built-in `type: "organisation-credentials"` → `CnCredentials scope="organisation"`; resolve `component` entries from the custom-components registry forwarding `props`; keep each built-in section component in its own file (modal-isolation).
-- [ ] 2.3 Verify the personal user-settings dialog, its `action: "user-settings"` wiring, `CnNotificationPreferences`, and the personal Credentials pane are unchanged.
+- [x] 2.1 Mount a second `NcAppSettingsDialog` (distinct from the personal one) in `CnAppRoot`, opened via a new `cnOpenAdminSettings` inject; iterate `manifest.adminSettings[]` sorted by `order` into one `NcAppSettingsSection` per entry.
+- [x] 2.2 Map built-in `type: "organisation-credentials"` → `CnCredentials scope="organisation"`; resolve `component` entries from the custom-components registry forwarding `props`; keep each built-in section component in its own file (modal-isolation).
+- [x] 2.3 Verify the personal user-settings dialog, its `action: "user-settings"` wiring, `CnNotificationPreferences`, and the personal Credentials pane are unchanged.
 
 ## 3. Owner gating (CnAppRoot / CnAppNav)
 
-- [ ] 3.1 Resolve `isOwner` on the frontend: `loadState('openbuild','currentUserGroups',[])` ∩ GIDs parsed from `permissions.owners` (`group:<gid>`/bare grammar), OR a `runtime.user` owner/role signal; read via initial-state, never DOM attributes.
-- [ ] 3.2 Auto-include an owner-gated "Admin settings" nav entry in `CnAppNav` and honour a manifest `action: "admin-settings"` entry (REQ-JMR-004); open the admin dialog on click.
-- [ ] 3.3 Remove `OC.isUserAdmin()` as the gate for the admin surface; gate both the nav entry and the dialog (and per-section `permission` narrowing) on `isOwner`, with `permission` narrow-only.
+- [x] 3.1 Resolve `isOwner` on the frontend: `loadState('openbuild','currentUserGroups',[])` ∩ GIDs parsed from `permissions.owners` (`group:<gid>`/bare grammar), OR a `runtime.user` owner/role signal; read via initial-state, never DOM attributes.
+- [x] 3.2 Auto-include an owner-gated "Admin settings" nav entry in `CnAppNav` and honour a manifest `action: "admin-settings"` entry (REQ-JMR-004); open the admin dialog on click.
+- [x] 3.3 Remove `OC.isUserAdmin()` as the gate for the admin surface; gate both the nav entry and the dialog (and per-section `permission` narrowing) on `isOwner`, with `permission` narrow-only.
 
 ## 4. Backend owner signal (openbuild)
 
@@ -22,8 +22,8 @@
 
 ## 5. Tests
 
-- [ ] 5.1 nextcloud-vue vitest: admin dialog renders org-credentials + custom sections in `order`; absent/empty `adminSettings` mounts no admin surface.
-- [ ] 5.2 nextcloud-vue vitest: owner sees admin surface; non-owner does not; `runtime.user` owner signal path; NC super-admin flag alone does not unlock; section `permission` narrows only.
+- [x] 5.1 nextcloud-vue vitest: admin dialog renders org-credentials + custom sections in `order`; absent/empty `adminSettings` mounts no admin surface.
+- [x] 5.2 nextcloud-vue vitest: owner sees admin surface; non-owner does not; `runtime.user` owner signal path; NC super-admin flag alone does not unlock; section `permission` narrows only.
 - [ ] 5.3 Playwright e2e (owner + non-owner): open a virtual app, assert admin nav entry + org-credentials pane visibility per owner-group membership; tag the new scenarios `@spec` + e2e.
 
 ## 6. Verify
