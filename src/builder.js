@@ -30,6 +30,7 @@ import {
 } from '@conduction/nextcloud-vue'
 import pinia from './pinia.js'
 import { runtimeRegistry } from './runtimeRegistry.js'
+import { registerSlugForApp } from './store/schemas.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
 import './assets/app.css'
@@ -97,6 +98,56 @@ function translateForApp(key, vars) {
 }
 
 /**
+ * Build the CnAppRoot `dataSources` for the in-app pages editor (ADR-041), so
+ * its Register / Schema / Columns pickers render as populated dropdowns instead
+ * of free-text fields.
+ *
+ * Collects the registers already referenced by the manifest's data pages
+ * (falling back to the app's own per-version register when a fresh app has none
+ * yet), then fetches each register's schemas from OpenRegister to derive the
+ * selectable schemas and their columns.
+ *
+ * @param {object} manifest - the resolved app manifest.
+ * @return {Promise<{registers: Array}>}
+ */
+async function loadDataSources(manifest) {
+	const pages = manifest && Array.isArray(manifest.pages) ? manifest.pages : []
+	const registers = [...new Set(
+		pages.map((p) => p && p.config && p.config.register).filter(Boolean),
+	)]
+	if (registers.length === 0) {
+		registers.push(registerSlugForApp(slug, versionSlug))
+	}
+
+	const result = []
+	for (const register of registers) {
+		let schemas = []
+		try {
+			const url = generateUrl(
+				`/apps/openregister/api/registers/${encodeURIComponent(register)}/schemas`,
+			)
+			const { data } = await axios.get(url)
+			const list = Array.isArray(data)
+				? data
+				: (data && Array.isArray(data.results) ? data.results : [])
+			schemas = list.map((s) => ({
+				value: s.slug || s.id || s.title,
+				label: s.title || s.slug || String(s.id),
+				columns: Object.keys(
+					(s.properties && typeof s.properties === 'object') ? s.properties : {},
+				),
+			}))
+		} catch (e) {
+			// Register unreadable (deleted / no access): leave its schema list
+			// empty — the affected row falls back to free-text register/schema.
+			schemas = []
+		}
+		result.push({ value: register, label: register, schemas })
+	}
+	return { registers: result }
+}
+
+/**
  * Fetch the app manifest, build its router, and mount the standalone shell.
  *
  * @return {Promise<void>}
@@ -125,6 +176,11 @@ async function boot() {
 		console.error('[openbuild:builder] failed to load manifest for ' + slug, e)
 	}
 
+	// Register/schema pickers for the in-app pages editor (ADR-041). Resolved
+	// before mount so the Edit-pages modal's Register / Schema fields render as
+	// populated dropdowns instead of free text.
+	const dataSources = await loadDataSources(manifest)
+
 	const router = new VueRouter({
 		mode: 'history',
 		base: generateUrl(`/apps/openbuild/builder/${slug}`),
@@ -141,6 +197,7 @@ async function boot() {
 				isLoading: false,
 				registry: { ...runtimeRegistry },
 				pageTypes: { ...defaultPageTypes },
+				dataSources,
 				translate: translateForApp,
 				// Persist in-app edits (pages / menu / settings / sidebar / actions)
 				// back to the app's manifest. CnAppRoot's useManifestEditor mutates
