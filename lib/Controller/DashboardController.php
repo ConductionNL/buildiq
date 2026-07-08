@@ -31,12 +31,14 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Controller;
 
 use OCA\OpenBuild\AppInfo\Application;
+use OCA\OpenBuild\Service\AppNavigationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IGroupManager;
+use OCP\INavigationManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 
@@ -48,10 +50,11 @@ class DashboardController extends Controller
     /**
      * Constructor for the DashboardController.
      *
-     * @param IRequest      $request      The request object
-     * @param IInitialState $initialState Initial-state writer (ADR-004)
-     * @param IUserSession  $userSession  Current Nextcloud user session
-     * @param IGroupManager $groupManager Group membership resolver
+     * @param IRequest           $request           The request object
+     * @param IInitialState      $initialState      Initial-state writer (ADR-004)
+     * @param IUserSession       $userSession       Current Nextcloud user session
+     * @param IGroupManager      $groupManager      Group membership resolver
+     * @param INavigationManager $navigationManager Top-bar navigation manager
      *
      * @return void
      */
@@ -60,6 +63,7 @@ class DashboardController extends Controller
         private readonly IInitialState $initialState,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
+        private readonly INavigationManager $navigationManager,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
     }//end __construct()
@@ -121,6 +125,11 @@ class DashboardController extends Controller
     #[NoCSRFRequired]
     public function builder(string $slug): TemplateResponse
     {
+        // Mark the virtual app's own nav entry (registered per published
+        // Application by AppNavigationService) as active — otherwise Nextcloud
+        // resolves the active entry from the URL's app id and the top bar
+        // shows OpenBuild's name and icon instead of the virtual app's.
+        $this->navigationManager->setActiveEntry(AppNavigationService::ENTRY_ID_PREFIX.$slug);
         $this->publishCurrentUserGroups();
         $this->initialState->provideInitialState('builderSlug', $slug);
         $this->initialState->provideInitialState(
