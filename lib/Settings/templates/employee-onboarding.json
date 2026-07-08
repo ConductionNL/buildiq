@@ -31,24 +31,44 @@
         "config": {
           "schema": "onboarding-task",
           "register": "{{register}}",
-          "_note": "Per-employee onboarding record archetype: the data widget carries the employee/start-date/department/status fields; the legacy `relatedSchema: onboarding-document` hint is realized as a proper FK-scoped object-list (onboarding-document.taskUuid = @objectId) below the data widget, since a document belongs to exactly one task. No related-panel widget: onboarding-task declares no outbound x-openregister-relation. No lifecycle widget: status is a plain enum with no x-openregister-lifecycle block. No content leaves (files/calendar/notes): the schema carries no linkedType hint and documents are tracked as their own child schema, not as attached files, so a files integration would duplicate the object-list below. KNOWN GAP: `register` is an unresolved `{{register}}` placeholder — ApplicationsController::rewriteSchemaRefs() (openbuild) only rewrites `schema`/`relatedSchema` keys at clone time, never `register`, so no widget on any page cloned from this template can fetch data until that gap is closed (see task report).",
+          "_note": "ADR-062 rev3 lead row: onboarding-data (8w, Account icon, 4 fields) + onboarding-stats (4w) stats-block replacing the deprecated summaryAggregates chip (rule 2), one entry counting the FK-scoped documents. Per-employee onboarding record archetype: the data widget carries the employee/start-date/department/status fields; the legacy `relatedSchema: onboarding-document` hint is realized as a proper FK-scoped object-list (onboarding-document.taskUuid = @objectId) below the lead row, since a document belongs to exactly one task. No related-panel widget: onboarding-task declares no outbound x-openregister-relation. No lifecycle widget: status is a plain enum with no x-openregister-lifecycle block. No content leaves (files/calendar/notes): the schema carries no linkedType hint and documents are tracked as their own child schema, not as attached files, so a files integration would duplicate the object-list below. allowCreate left at its ON default on onboarding-documents — new-hire document upload is a first-class self-serve action from the task detail, not a read-only/computed collection. No viewAllRoute on the documents list: this template has no index page for onboarding-document (only OnboardingTaskChecklist and OnboardingDocumentForm), so there is no existing page id to link to. KNOWN GAP: `register` is an unresolved `{{register}}` placeholder — ApplicationsController::rewriteSchemaRefs() (openbuild) only rewrites `schema`/`relatedSchema` keys at clone time, never `register`, so no widget on any page cloned from this template can fetch data until that gap is closed (see task report; openbuild#113, placeholder deliberately left as-is here).",
           "widgets": [
             {
               "id": "onboarding-data",
               "type": "data",
               "title": "Onboarding details",
+              "icon": "Account",
               "content": { "columns": 2 }
+            },
+            {
+              "id": "onboarding-stats",
+              "type": "stats-block",
+              "title": "Onboarding stats",
+              "icon": "ClipboardCheckOutline",
+              "content": {
+                "entries": [
+                  {
+                    "title": "Documents attached",
+                    "register": "{{register}}",
+                    "schema": "onboarding-document",
+                    "metric": "count",
+                    "filter": { "taskUuid": "@objectId" }
+                  }
+                ]
+              }
             },
             {
               "id": "onboarding-documents",
               "type": "object-list",
               "title": "Documents",
+              "icon": "FileDocument",
               "content": {
                 "register": "{{register}}",
                 "schema": "onboarding-document",
                 "filter": { "taskUuid": "@objectId" },
                 "sort": { "field": "documentName", "order": "asc" },
-                "limit": 10,
+                "limit": 25,
+                "emptyText": "No documents uploaded yet.",
                 "columns": [
                   { "key": "documentName", "label": "Document" },
                   { "key": "uploadedFile", "label": "File" },
@@ -58,17 +78,9 @@
             }
           ],
           "layout": [
-            { "id": "1", "widgetId": "onboarding-data", "gridX": 0, "gridY": 0, "gridWidth": 12, "gridHeight": 4 },
-            { "id": "2", "widgetId": "onboarding-documents", "gridX": 0, "gridY": 4, "gridWidth": 12, "gridHeight": 4 }
-          ],
-          "summaryAggregates": [
-            {
-              "label": "Documents attached",
-              "register": "{{register}}",
-              "schema": "onboarding-document",
-              "metric": "count",
-              "filter": { "taskUuid": "@objectId" }
-            }
+            { "id": "1", "widgetId": "onboarding-data", "gridX": 0, "gridY": 0, "gridWidth": 8, "gridHeight": 3 },
+            { "id": "2", "widgetId": "onboarding-stats", "gridX": 8, "gridY": 0, "gridWidth": 4, "gridHeight": 3 },
+            { "id": "3", "widgetId": "onboarding-documents", "gridX": 0, "gridY": 3, "gridWidth": 12, "gridHeight": 4 }
           ],
           "sidebar": {
             "enabled": true,
@@ -120,7 +132,7 @@
       "type": "object",
       "required": ["taskUuid", "documentName"],
       "properties": {
-        "taskUuid": { "type": "string", "format": "uuid" },
+        "taskUuid": { "type": "string", "format": "uuid", "$ref": "onboarding-task", "description": "Relation to the parent onboarding task (ADR-062 rule 7 canonical dialect)." },
         "documentName": { "type": "string" },
         "uploadedFile": { "type": "string" },
         "approved": { "type": "boolean", "default": false }
