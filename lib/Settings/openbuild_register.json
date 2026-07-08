@@ -122,6 +122,7 @@
               "equals": "hybrid"
             },
             "description": "Relation → ApplicationVersion currently exposed at the canonical /apps/openbuild/{slug} URL. READ-ONLY on a hybrid app (its production version is the admin-managed shared delta) — enforced server-side + reflected by the data widget. Set explicitly by the admin (creation wizard, detail-page version switcher), not derived from chain terminality. The referenced ApplicationVersion's `application` relation MUST point back at this Application — enforced server-side by ApplicationVersionService::guardProductionVersionOwnership() (ADR-031 §Exceptions(1) cross-row guard).",
+            "x-relation-filter": { "application": "@objectId" },
             "x-openregister-relation": {
               "target": "openbuild/applicationVersion",
               "type": "many-to-one"
@@ -354,6 +355,7 @@
             "title": "Application UUID",
             "type": "string",
             "format": "uuid",
+            "$ref": "Application",
             "description": "UUID of the published Application this route resolves to."
           }
         }
@@ -551,6 +553,7 @@
             "type": "string",
             "format": "uuid",
             "description": "Optional relation → next ApplicationVersion in the linear promotion chain. Terminal versions have `promotesTo: null`. Cycle detection is enforced server-side by ApplicationVersionService::guardNoCycle() (ADR-031 §Exceptions(1) cross-row).",
+            "x-relation-filter": { "application": "@object.application" },
             "x-openregister-relation": {
               "target": "openbuild/applicationVersion",
               "type": "many-to-one"
@@ -716,6 +719,7 @@
             "title": "Application UUID",
             "type": "string",
             "format": "uuid",
+            "$ref": "Application",
             "description": "UUID of the source Application record being exported."
           },
           "applicationVersion": {

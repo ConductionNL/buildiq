@@ -6,7 +6,7 @@
     <name lang="nl">OpenBuild</name>
     <summary lang="en">Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.</summary>
     <summary lang="nl">App builder voor Nextcloud — stel apps samen uit registers, connectors, processen en documenten zonder code.</summary>
-    <description lang="en"><![CDATA[OpenBuild is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Conduction ecosystem — OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, LaunchPad dashboards — through a visual interface, without scaffolding PHP for each new app.
+    <description lang="en"><![CDATA[OpenBuild is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Technical Core — OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes — through a visual interface, without scaffolding PHP for each new app.
 
 Per ADR-024 (app manifest), each built app is rendered at runtime by mounting CnAppRoot with the app's manifest, which lives as a JSON blob in OpenBuild's own OpenRegister namespace. Per ADR-031 (schema-declarative business logic), behaviour like state machines, aggregations, calculations, and notifications is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in OpenBuild's register, rendered inside the OpenBuild shell at `/apps/openbuild/{slug}`); a Phase-2 export generates a real Nextcloud app from a virtual app.
 
@@ -14,7 +14,7 @@ Free and open source under the EUPL-1.2 license.
 
 **Support:** For support, contact support@conduction.nl.
     ]]></description>
-    <description lang="nl"><![CDATA[OpenBuild is een citizen-developer app builder voor Nextcloud. Niet-technische gebruikers stellen apps samen uit het Conduction-ecosysteem — OpenRegister-schema's, OpenConnector-API's, Procest-processen, Docudesk-documenten, NL Design-thema's, LaunchPad-dashboards — via een visuele interface, zonder voor elke nieuwe app PHP te hoeven schrijven.
+    <description lang="nl"><![CDATA[OpenBuild is een citizen-developer app builder voor Nextcloud. Niet-technische gebruikers stellen apps samen uit de Technical Core — OpenRegister-schema's, OpenConnector-API's, Procest-processen, Docudesk-documenten, NL Design-thema's — via een visuele interface, zonder voor elke nieuwe app PHP te hoeven schrijven.
 
 Conform ADR-024 (app-manifest) wordt elke gebouwde app tijdens runtime gerenderd door CnAppRoot te monteren met het manifest, dat als JSON-blob in OpenBuild's eigen OpenRegister-namespace staat. Conform ADR-031 (schema-declaratieve businesslogica) wordt gedrag zoals state machines, aggregaties, berekeningen en notificaties als schema-metadata in het registerbestand gedeclareerd in plaats van als servicecode. Gebouwde apps zijn in eerste instantie virtueel (records in OpenBuild's register, gerenderd binnen de OpenBuild-shell op `/apps/openbuild/{slug}`); een Phase-2 export genereert een echte Nextcloud-app uit een virtuele app.
 
@@ -23,7 +23,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
 **Ondersteuning:** Voor ondersteuning, neem contact op via support@conduction.nl.
     ]]></description>
     <version>0.6.0</version>
-    <licence>agpl</licence>
+    <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenBuild</namespace>
     <documentation>
@@ -40,6 +40,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
     <screenshot>https://codeberg.org/Conduction/openbuild/raw/branch/main/img/app-store.svg</screenshot>
 
     <dependencies>
+        <app>openregister</app>
         <nextcloud min-version="28" max-version="34"/>
         <php min-version="8.3"/>
     </dependencies>
