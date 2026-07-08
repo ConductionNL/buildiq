@@ -15,6 +15,7 @@
   "components": {
     "schemas": {
       "Application": {
+        "x-schema-org": "schema:SoftwareApplication",
         "slug": "application",
         "icon": "AppsBoxOutline",
         "version": "0.5.0",
@@ -211,6 +212,7 @@
         }
       },
       "ApplicationTemplate": {
+        "x-schema-org": "schema:CreativeWork",
         "slug": "application-template",
         "icon": "ViewGridOutline",
         "version": "0.1.0",
@@ -359,6 +361,7 @@
         }
       },
       "HelloMessage": {
+        "x-schema-org": "schema:Message",
         "slug": "hello-message",
         "icon": "MessageTextOutline",
         "version": "0.1.0",
@@ -393,6 +396,7 @@
         }
       },
       "ApplicationVersion": {
+        "x-schema-org": "schema:SoftwareApplication",
         "x-openregister-notifications": {
           "version-published": {
             "trigger": {
@@ -644,6 +648,7 @@
         }
       },
       "exportJob": {
+        "x-schema-org": "schema:Action",
         "x-openregister-notifications": {
           "export-succeeded": {
             "trigger": {

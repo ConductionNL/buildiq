@@ -136,6 +136,7 @@ class RunExportJob extends QueuedJob
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+     * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.3
      */
     private function executePipeline(string $jobUuid): void
     {
@@ -154,6 +155,11 @@ class RunExportJob extends QueuedJob
         $applicationVersion = (string) ($job['applicationVersion'] ?? '0.1.0');
         $applicationSlug    = (string) ($job['applicationSlug'] ?? 'exported-app');
         $license            = (string) ($job['license'] ?? 'EUPL-1.2');
+
+        $dataRegisters = [];
+        if (is_array($job['dataRegisters'] ?? null) === true) {
+            $dataRegisters = $job['dataRegisters'];
+        }
 
         if ($applicationUuid === '') {
             throw new RuntimeException(
@@ -175,7 +181,8 @@ class RunExportJob extends QueuedJob
             applicationUuid: $applicationUuid,
             versionSlug: $applicationVersion,
             context: $context,
-            jobUuid: $jobUuid
+            jobUuid: $jobUuid,
+            dataRegisters: $dataRegisters
         );
 
         $pushResult = $this->maybePush(jobUuid: $jobUuid, job: $job);

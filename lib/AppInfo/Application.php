@@ -160,7 +160,8 @@ class Application extends App implements IBootstrap
                 request: $c->get('OCP\\IRequest'),
                 initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState'),
                 userSession: $c->get('OCP\\IUserSession'),
-                groupManager: $c->get('OCP\\IGroupManager')
+                groupManager: $c->get('OCP\\IGroupManager'),
+                navigationManager: $c->get('OCP\\INavigationManager')
             )
         );
         $context->registerService(
