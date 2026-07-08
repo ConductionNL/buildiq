@@ -58,6 +58,12 @@ use Psr\Log\LoggerInterface;
 class AppNavigationService
 {
     /**
+     * Prefix of every per-published-app nav entry id; the runtime host
+     * (DashboardController::builder) uses it to mark the entry active.
+     */
+    public const ENTRY_ID_PREFIX = 'openbuild-app-';
+
+    /**
      * Register slug that hosts Application objects.
      */
     private const REGISTER_SLUG = 'openbuild';
@@ -156,7 +162,7 @@ class AppNavigationService
             // not OpenBuild's apps list. The bare `/apps/openbuild/{slug}` had no
             // route and fell through to OpenBuild's own shell.
             $appUrl  = '/apps/openbuild/builder/'.$slug;
-            $entryId = 'openbuild-app-'.$slug;
+            $entryId = self::ENTRY_ID_PREFIX.$slug;
             $order   = 1000 + (abs(crc32($slug)) % 1000);
 
             // Capture variables for the closure — PHP closures close over
