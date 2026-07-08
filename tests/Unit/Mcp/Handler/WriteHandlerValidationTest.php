@@ -567,7 +567,7 @@ class WriteHandlerValidationTest extends TestCase
 
         $result = $this->provider->invokeTool('openbuild.addWidget', [
             'appSlug'    => 'my-app',
-            'widgetType' => 'stat-counter',
+            'widgetType' => 'stats-block',
         ]);
 
         $this->assertTrue($result['isError']);
@@ -618,7 +618,7 @@ class WriteHandlerValidationTest extends TestCase
         $result = $this->provider->invokeTool('openbuild.addWidget', [
             'appSlug'    => 'my-app',
             'pageId'     => 'home',
-            'widgetType' => 'stat-counter',
+            'widgetType' => 'stats-block',
         ]);
 
         // Widget type was valid; hit not_found (page not in manifest), not invalid_arguments.
