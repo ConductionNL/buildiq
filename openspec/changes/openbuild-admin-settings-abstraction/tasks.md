@@ -17,8 +17,8 @@
 
 ## 4. Backend owner signal (openbuild)
 
-- [ ] 4.1 Surface a read-only owner flag/role on the manifest `runtime.user` context at serve time, computed via `PermissionResolver::matchesCaller(...['owners'])` over the app's `permissions`; reuse the already-published `openbuild.currentUserGroups` and `PopulateApplicationPermissions` owner default. No grammar/model change.
-- [ ] 4.2 SPDX headers + full PHPDoc + `@spec` tags on any touched PHP; pass `composer check:strict`.
+- [x] 4.1 Surface a read-only owner flag/role on the manifest `runtime.user` context at serve time, computed via `PermissionResolver::matchesCaller(...['owners'])` over the app's `permissions`; reuse the already-published `openbuild.currentUserGroups` and `PopulateApplicationPermissions` owner default. No grammar/model change.
+- [x] 4.2 SPDX headers + full PHPDoc + `@spec` tags on any touched PHP; pass `composer check:strict`.
 
 ## 5. Tests
 
