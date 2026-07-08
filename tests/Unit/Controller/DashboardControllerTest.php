@@ -32,6 +32,7 @@ use OCA\OpenBuild\Controller\DashboardController;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IGroupManager;
+use OCP\INavigationManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -72,6 +73,13 @@ class DashboardControllerTest extends TestCase
     private IGroupManager&MockObject $groupManager;
 
     /**
+     * Mock top-bar navigation manager.
+     *
+     * @var INavigationManager&MockObject
+     */
+    private INavigationManager&MockObject $navigationManager;
+
+    /**
      * Controller under test.
      */
     private DashboardController $controller;
@@ -87,8 +95,9 @@ class DashboardControllerTest extends TestCase
 
         $this->request      = $this->createMock(IRequest::class);
         $this->initialState = $this->createMock(IInitialState::class);
-        $this->userSession   = $this->createMock(IUserSession::class);
-        $this->groupManager  = $this->createMock(IGroupManager::class);
+        $this->userSession       = $this->createMock(IUserSession::class);
+        $this->groupManager      = $this->createMock(IGroupManager::class);
+        $this->navigationManager = $this->createMock(INavigationManager::class);
 
         $user = $this->createMock(IUser::class);
         $this->userSession->method('getUser')->willReturn($user);
@@ -100,7 +109,8 @@ class DashboardControllerTest extends TestCase
             $this->request,
             $this->initialState,
             $this->userSession,
-            $this->groupManager
+            $this->groupManager,
+            $this->navigationManager
         );
     }//end setUp()
 
