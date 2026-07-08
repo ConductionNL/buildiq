@@ -353,6 +353,7 @@
             "title": "Application UUID",
             "type": "string",
             "format": "uuid",
+            "$ref": "Application",
             "description": "UUID of the published Application this route resolves to."
           }
         }
@@ -713,6 +714,7 @@
             "title": "Application UUID",
             "type": "string",
             "format": "uuid",
+            "$ref": "Application",
             "description": "UUID of the source Application record being exported."
           },
           "applicationVersion": {

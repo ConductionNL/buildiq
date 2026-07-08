@@ -32,12 +32,13 @@
         "config": {
           "schema": "permit-application",
           "register": "{{register}}",
-          "_note": "Single-record archetype: permit-application is the only companion schema in this template — no child schema references it (no FK), it declares no outbound x-openregister-relation, and no lifecycle block (status is a plain enum). Kept deliberately lean per starter-template scope: one data widget with all fields (applicant/address/buildingType/status/submittedAt/decision), no related panel, no object-list, no content leaves (no file/photo/calendar field on the schema). KNOWN GAP: `register` is an unresolved `{{register}}` placeholder — see task report (ApplicationsController::rewriteSchemaRefs() never injects a register at clone time).",
+          "_note": "Single-record archetype: permit-application is the only companion schema in this template — no child schema references it (no FK), it declares no outbound x-openregister-relation, and no lifecycle block (status is a plain enum). Kept deliberately lean per starter-template scope: one full-width data widget with all 6 fields (applicant/address/buildingType/status/submittedAt/decision; gridHeight 4, ceil(6/2)=3 rows +1 header per ADR-062 sizing heuristic), no stats-block (no child schema exists to aggregate — fabricating a KPI would violate 'never fabricate'), no related panel, no object-list, no content leaves (no file/photo/calendar field on the schema). KNOWN GAP: `register` is an unresolved `{{register}}` placeholder — see task report (ApplicationsController::rewriteSchemaRefs() never injects a register at clone time; openbuild#113, placeholder deliberately left as-is here).",
           "widgets": [
             {
               "id": "permit-data",
               "type": "data",
               "title": "Application details",
+              "icon": "FileSign",
               "content": { "columns": 2 }
             }
           ],
