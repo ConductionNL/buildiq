@@ -161,7 +161,8 @@ class Application extends App implements IBootstrap
                 request: $c->get('OCP\\IRequest'),
                 initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState'),
                 userSession: $c->get('OCP\\IUserSession'),
-                groupManager: $c->get('OCP\\IGroupManager')
+                groupManager: $c->get('OCP\\IGroupManager'),
+                navigationManager: $c->get('OCP\\INavigationManager')
             )
         );
         $context->registerService(
@@ -178,14 +179,19 @@ class Application extends App implements IBootstrap
         // OpenRegister's generic AppHostSettingsService, whose loadConfiguration()
         // calls ConfigurationService::importFromApp() with a stale 2-argument
         // signature (OR `development` now requires 4) and skips the ADR-037
-        // register.d/ fragment merge. On the app-enable/install path the
-        // InitializeSettings repair step resolves THIS class directly, so under the
-        // generic binding the register import fails with
-        // "importFromApp(): Argument #2 ($data) not passed" — leaving the openbuild
-        // register uncreated until a manual re-import. Registering the concrete
-        // class here (mirroring the controllers above) guarantees every caller —
-        // the InitializeSettings repair step AND SettingsController — uses the
-        // correct 4-arg importer + fragment merge on all paths.
+        // register.d/ fragment merge. Without this override the SettingsController
+        // factory below also resolves `$c->get(SettingsService::class)` to the
+        // generic AppHostSettingsService and fatals with a TypeError (constructor
+        // arg #2 type mismatch), 500-ing `GET /api/settings` and leaving the app
+        // detail page in its empty fallback ("Untitled application", `openbuild--`
+        // register). On the app-enable/install path the InitializeSettings repair
+        // step resolves THIS class directly, so under the generic binding the
+        // register import fails with "importFromApp(): Argument #2 ($data) not
+        // passed" — leaving the openbuild register uncreated until a manual
+        // re-import. Registering the concrete class here (mirroring the controllers
+        // above) guarantees every caller — the InitializeSettings repair step AND
+        // SettingsController — uses the correct 4-arg importer + fragment merge on
+        // all paths.
         $context->registerService(
             SettingsService::class,
             static fn ($c): SettingsService => new SettingsService(

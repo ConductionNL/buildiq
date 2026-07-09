@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-description: Get started with OpenBuild, the no-code app builder inside Nextcloud. Compose apps from OpenRegister schemas, OpenConnector flows, and Pipelinq.
+description: Get started with OpenBuild, the no-code app builder inside Nextcloud. Compose apps from OpenRegister schemas, OpenConnector flows, and Procest workflows.
 ---
 
 # OpenBuild
@@ -17,11 +17,16 @@ export it. No code, no second platform.
 - A schema designer: define your data model field by field, backed by
   OpenRegister typed registers. No migrations.
 - A page designer: lay out list, detail, and form pages over your registers.
-- Data wiring: connect a register, an OpenConnector connector, an n8n
+- Data wiring: connect a register, an OpenConnector connector, a Procest
   workflow, or a DocuDesk template — the app reads and writes through
   OpenRegister abstractions.
+- Configuration over code: state machines, aggregations, calculations, and
+  notifications are declared as schema metadata, not service code. Manifest
+  overrides are delta-only, so customisation survives upgrades.
 - Version snapshots: snapshot the whole app and roll back a bad edit. Export
-  the bundle as a ZIP at any time.
+  the bundle as a ZIP, or **publish the app to a GitHub repository** and install
+  it again from the store on any instance — the token stays in Doriath and never
+  reaches OpenBuild (see [GitHub store](./github-store.md)).
 - RBAC: administrators control who can build, and per-record access is
   enforced through OpenRegister.
 

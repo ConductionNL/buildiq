@@ -24,6 +24,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref, computed } from 'vue'
 
+// data-registers-runtime task 2.2: PageDesigner resolves the Application
+// record itself (a small, dedicated fetch — see design.md Decision 2), so
+// axios + generateUrl need a deterministic mock. `fetchApplicationDataRegisters`
+// (created()) and `useApplicationVersion`'s internal lookups (mounted()) both
+// call GET .../objects/openbuild/application — served from the same fixture
+// below; the versions-list endpoint resolves empty (irrelevant to these specs).
+const axiosGetMock = vi.fn()
+let applicationFixture = null
+vi.mock('@nextcloud/axios', () => ({
+	default: { get: (...args) => axiosGetMock(...args) },
+}))
+vi.mock('@nextcloud/router', () => ({
+	generateUrl: (p) => p,
+}))
+
 // Mock both composables to keep the spec deterministic. Real refs are
 // required so Vue's template auto-unwrap sees them as ref-like.
 const validatorErrorsRef = ref([])
@@ -55,7 +70,7 @@ function stub(name) {
 	return {
 		default: {
 			name,
-			props: ['config', 'pageType', 'appSlug', 'parentRoute'],
+			props: ['config', 'pageType', 'appSlug', 'dataRegisters', 'parentRoute'],
 			render(h) { return h('div', { staticClass: `${name.toLowerCase()}-stub` }, name) },
 		},
 	}
@@ -101,6 +116,17 @@ describe('PageDesigner', () => {
 		validatorErrorsRef.value = []
 		previewAvailableRef.value = false
 		validatorStub.validate.mockClear()
+
+		applicationFixture = null
+		axiosGetMock.mockReset()
+		axiosGetMock.mockImplementation((url, config) => {
+			if (typeof url === 'string' && url.includes('/versions')) {
+				return Promise.resolve({ data: { results: [] } })
+			}
+			const slug = (config && config.params && config.params.slug) || 'hello-world'
+			const app = applicationFixture || { slug }
+			return Promise.resolve({ data: { results: [app] } })
+		})
 	})
 
 	it('renders the three-pane layout', () => {
@@ -294,5 +320,74 @@ describe('PageDesigner', () => {
 		wrapper.setProps({ manifest: { pages: [{ id: 'home', type: 'index' }], menu: [] } })
 		await wrapper.vm.$nextTick()
 		expect(validateSpy).toHaveBeenCalledTimes(2)
+	})
+
+	// data-registers-runtime task 2.2: applicationDataRegisters fetch + pass-through.
+	describe('applicationDataRegisters (data-registers-runtime task 2.2)', () => {
+		it('resolves the Application record in created() and stores its dataRegisters', async () => {
+			applicationFixture = {
+				slug: 'hello-world',
+				dataRegisters: [{ register: 'spectr', label: 'Spectr market intelligence data' }],
+			}
+			const wrapper = mountDesigner({ pages: [], menu: [] }, 'hello-world')
+			await new Promise((r) => setTimeout(r, 0))
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.applicationDataRegisters).toEqual([
+				{ register: 'spectr', label: 'Spectr market intelligence data' },
+			])
+		})
+
+		it('passes applicationDataRegisters as the data-registers prop to the mounted sub-editor', async () => {
+			applicationFixture = {
+				slug: 'hello-world',
+				dataRegisters: [{ register: 'spectr', label: 'Spectr market intelligence data' }],
+			}
+			const wrapper = mountDesigner({
+				pages: [{ id: 'home', type: 'index', config: {} }],
+				menu: [],
+			}, 'hello-world')
+			await new Promise((r) => setTimeout(r, 0))
+			await wrapper.vm.$nextTick()
+			wrapper.vm.selectPage(0)
+			await wrapper.vm.$nextTick()
+			const indexEditor = wrapper.findComponent({ name: 'IndexPageEditor' })
+			expect(indexEditor.props('dataRegisters')).toEqual([
+				{ register: 'spectr', label: 'Spectr market intelligence data' },
+			])
+		})
+
+		it('defaults to [] when the Application record has no dataRegisters', async () => {
+			applicationFixture = { slug: 'hello-world' }
+			const wrapper = mountDesigner({ pages: [], menu: [] }, 'hello-world')
+			await new Promise((r) => setTimeout(r, 0))
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.applicationDataRegisters).toEqual([])
+		})
+
+		it('does not fetch and stays [] when slug is empty', async () => {
+			const wrapper = mountDesigner({ pages: [], menu: [] }, '')
+			await new Promise((r) => setTimeout(r, 0))
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.applicationDataRegisters).toEqual([])
+			// Only the (skipped) dataRegisters fetch would have used a plain
+			// application lookup; assert none of the recorded calls targeted it.
+			const appLookupCalls = axiosGetMock.mock.calls.filter(
+				([url]) => typeof url === 'string' && url.includes('objects/openbuild/application'),
+			)
+			expect(appLookupCalls).toHaveLength(0)
+		})
+
+		it('degrades to [] when the fetch fails', async () => {
+			axiosGetMock.mockImplementation((url) => {
+				if (typeof url === 'string' && url.includes('/versions')) {
+					return Promise.resolve({ data: { results: [] } })
+				}
+				return Promise.reject(new Error('network error'))
+			})
+			const wrapper = mountDesigner({ pages: [], menu: [] }, 'hello-world')
+			await new Promise((r) => setTimeout(r, 0))
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.applicationDataRegisters).toEqual([])
+		})
 	})
 })

@@ -208,7 +208,9 @@
 				:app-slug="appSlug"
 				:version-slug="activeVersionSlug"
 				:register-slug-override="registerSlug"
-				:is-hybrid="isHybrid" />
+				:is-hybrid="isHybrid"
+				:can-import="canImport"
+				@import-data="onImportData" />
 			<GroupsWidget
 				:application="application"
 				@open-permissions="onOpenPermissions" />
@@ -219,6 +221,13 @@
 			:app-slug="appSlug"
 			:delta="userDeltaContent"
 			@saved="onUserDeltaChanged" />
+
+		<ImportDataWizard
+			v-if="showImportWizard"
+			:register-id="registerSlug"
+			:schemas="importSchemas"
+			@imported="onImported"
+			@close="showImportWizard = false" />
 	</div>
 </template>
 
@@ -237,9 +246,12 @@ import GroupsWidget from './widgets/GroupsWidget.vue'
 import ManifestWidget from './widgets/ManifestWidget.vue'
 import RegisterWidget from './widgets/RegisterWidget.vue'
 import UserDeltaEditModal from '../../modals/UserDeltaEditModal.vue'
+import ImportDataWizard from '../../dialogs/ImportDataWizard.vue'
 
 import { buildVersionedRoute } from '../../router/helpers.js'
 import { useInsightsWindow } from '../../composables/useInsightsWindow.js'
+import { useRole } from '../../composables/useRole.js'
+import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 
 export default {
 	name: 'ApplicationDetailDashboard',
@@ -250,6 +262,7 @@ export default {
 		ManifestWidget,
 		RegisterWidget,
 		UserDeltaEditModal,
+		ImportDataWizard,
 	},
 	props: {
 		// CnDetailPage's #before-body slot forwards the resolved record as
@@ -292,6 +305,9 @@ export default {
 			// Layered-delta UI state (layered-versioned-app-deltas).
 			showUserDeltaModal: false,
 			userDeltaContent: {},
+			// Import-data wizard state (openbuild-data-import-wizard).
+			showImportWizard: false,
+			importSchemas: [],
 		}
 	},
 	computed: {
@@ -533,6 +549,19 @@ export default {
 			if (!this.activeVersionSlug) return ''
 			return `openbuild-${this.appSlug}-${this.activeVersionSlug}`
 		},
+		/**
+		 * Whether the caller holds a build/manage role (owner or editor) on this
+		 * Application. Gates the "Import data" affordance (REQ: the import is
+		 * authorised on both sides — the write is independently re-gated by
+		 * OpenRegister's own register manage-permission).
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 */
+		canImport() {
+			const role = useRole(this.application)
+			return role === 'owner' || role === 'editor'
+		},
 	},
 	watch: {
 		/**
@@ -653,6 +682,42 @@ export default {
 		 */
 		onOpenPermissions(application) {
 			this.$emit('open-permissions', application)
+		},
+
+		/**
+		 * Open the Import-data wizard for the active version's register. Fetches
+		 * the register's schemas so the wizard can offer them as existing-schema
+		 * targets — only schemas in THIS register (the active version's own
+		 * per-version register) are fetched, so shared bound `dataRegisters` are
+		 * never offered as import targets.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 */
+		async onImportData() {
+			if (!this.registerSlug) {
+				return
+			}
+			try {
+				const { fetchSchemas } = useRegisterPicker({ appSlug: this.appSlug })
+				this.importSchemas = await fetchSchemas(this.registerSlug)
+			} catch (e) {
+				this.importSchemas = []
+			}
+			this.showImportWizard = true
+		},
+
+		/**
+		 * Refresh the insights/KPIs after a successful import (or rollback) so
+		 * the object counts reflect the freshly imported rows.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 */
+		onImported() {
+			if (typeof this.fetchInsights === 'function') {
+				this.fetchInsights()
+			}
 		},
 
 		/**

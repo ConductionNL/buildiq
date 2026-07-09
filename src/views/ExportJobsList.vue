@@ -54,6 +54,7 @@
 
 <script>
 import { NcButton } from '@nextcloud/vue'
+import { generateUrl } from '@nextcloud/router'
 import ExportDialog from '../dialogs/ExportDialog.vue'
 
 export default {
@@ -117,12 +118,16 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 		 */
 		async fetchJobs() {
-			// Placeholder: real impl polls OR REST per ADR-022; the controller
-			// deliberately does not expose CRUD on ExportJob.
+			// Polls OR REST per ADR-022; the controller deliberately does not
+			// expose CRUD on ExportJob. The schema's JSON key in
+			// openbuild_register.json is `exportJob`, but its declared `slug`
+			// (which OR's REST API addresses schemas by) is kebab-cased to
+			// `export-job` — fixes #104's schema-slug 404.
 			try {
 				// Schema slug is `export-job` (OpenRegister derives it from the
 				// "Export Job" title); the camelCase `exportJob` 404s.
-				const response = await fetch('/index.php/apps/openregister/api/objects/openbuild/export-job?filter[applicationSlug]=' + encodeURIComponent(this.applicationSlug))
+				const url = generateUrl('/apps/openregister/api/objects/openbuild/export-job') + '?filter[applicationSlug]=' + encodeURIComponent(this.applicationSlug)
+				const response = await fetch(url)
 				if (!response.ok) {
 					return
 				}
