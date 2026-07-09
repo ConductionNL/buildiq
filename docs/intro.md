@@ -24,7 +24,9 @@ export it. No code, no second platform.
   notifications are declared as schema metadata, not service code. Manifest
   overrides are delta-only, so customisation survives upgrades.
 - Version snapshots: snapshot the whole app and roll back a bad edit. Export
-  the bundle as a ZIP, or push it straight to a new GitHub repository.
+  the bundle as a ZIP, or **publish the app to a GitHub repository** and install
+  it again from the store on any instance — the token stays in Doriath and never
+  reaches OpenBuild (see [GitHub store](./github-store.md)).
 - RBAC: administrators control who can build, and per-record access is
   enforced through OpenRegister.
 
