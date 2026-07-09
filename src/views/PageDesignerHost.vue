@@ -95,6 +95,14 @@
 			:schemas="appSchemas"
 			:docudesk-available="docudeskAvailable"
 			@update:manifest="onManifestUpdate" />
+
+		<!-- REQ-OBSA-001: Scheduled tasks section — author the app's top-level
+		     `schedules[]` (cadence + action). Persistence rides the existing
+		     ApplicationVersion PUT; no new save path. -->
+		<SchedulesSection
+			v-if="application"
+			:manifest="manifest"
+			@update:manifest="onManifestUpdate" />
 	</div>
 </template>
 
@@ -110,6 +118,7 @@ import PageDesigner from './PageDesigner.vue'
 import WorkflowAttachmentsSection from '../components/WorkflowAttachmentsSection.vue'
 import ThemeSection from '../components/ThemeSection.vue'
 import DocumentAttachmentsSection from '../components/DocumentAttachmentsSection.vue'
+import SchedulesSection from '../components/SchedulesSection.vue'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
 
@@ -124,6 +133,7 @@ export default {
 		WorkflowAttachmentsSection,
 		ThemeSection,
 		DocumentAttachmentsSection,
+		SchedulesSection,
 	},
 
 	data() {

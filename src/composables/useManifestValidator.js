@@ -27,6 +27,7 @@ import { validateWorkflowAttachments } from '../services/manifestValidation/work
 import { validateManifestConnectors } from '../services/manifestValidation/connectorDataSource.js'
 import { validateTheme } from '../services/manifestValidation/theme.js'
 import { validateDocumentAttachments } from '../services/manifestValidation/documentAttachments.js'
+import { validateSchedules } from '../services/manifestValidation/schedules.js'
 
 const DEBOUNCE_MS = 300
 
@@ -66,6 +67,7 @@ export function useManifestValidator() {
 					.concat(validateManifestConnectors(manifest))
 					.concat(validateTheme(manifest))
 					.concat(validateDocumentAttachments(manifest))
+					.concat(validateSchedules(manifest))
 				errors.value = libErrors.concat(appErrors)
 			} catch (e) {
 				errors.value = [`validator threw: ${e && e.message ? e.message : e}`]
