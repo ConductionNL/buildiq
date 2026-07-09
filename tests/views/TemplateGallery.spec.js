@@ -91,7 +91,22 @@ const seededTemplates = [
  * @return {Promise<import('@vue/test-utils').Wrapper>}
  */
 async function mountGallery(routerOverrides = {}) {
-	axiosMock.get.mockResolvedValueOnce({ data: { results: seededTemplates } })
+	// mounted() fires three GETs: templates (fetchTemplates), the registry
+	// store probe (probeRegistry), and the github credential probe
+	// (fetchGithubCredentials). Dispatch by URL so all three resolve.
+	axiosMock.get.mockImplementation((url) => {
+		const u = String(url)
+		if (u.includes('application-template')) {
+			return Promise.resolve({ data: { results: seededTemplates } })
+		}
+		if (u.includes('store/templates')) {
+			return Promise.resolve({ data: { outcome: 'not_configured', cards: [] } })
+		}
+		if (u.includes('credentials')) {
+			return Promise.resolve({ data: [] })
+		}
+		return Promise.resolve({ data: {} })
+	})
 
 	const $router = {
 		resolve: vi.fn().mockReturnValue({ resolved: { matched: [{}], fullPath: '/applications/my-permits' } }),
@@ -120,6 +135,7 @@ async function mountGallery(routerOverrides = {}) {
 			},
 			NcLoadingIcon: true,
 			NcEmptyContent: { name: 'NcEmptyContent', props: ['name'], template: '<div class="nc-empty-stub">{{ name }}</div>' },
+			NcNoteCard: { name: 'NcNoteCard', props: ['type'], template: '<div class="nc-note-stub" :data-type="type"><slot /></div>' },
 		},
 	})
 
@@ -142,7 +158,8 @@ describe('TemplateGallery.vue', () => {
 	it('renders the four seeded templates after mount', async () => {
 		const { wrapper } = await mountGallery()
 
-		expect(axiosMock.get).toHaveBeenCalledTimes(1)
+		expect(axiosMock.get).toHaveBeenCalled()
+		// fetchTemplates() is the first mount-time GET.
 		expect(axiosMock.get.mock.calls[0][0]).toContain('/apps/openregister/api/objects/openbuild/application-template')
 
 		const cards = wrapper.findAll('.template-card')

@@ -169,7 +169,7 @@ export default {
 				{ id: 1, widgetId: 'apps', gridX: 0, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
 				{ id: 2, widgetId: 'hybrid', gridX: 4, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
 				{ id: 3, widgetId: 'versions', gridX: 8, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
-				{ id: 4, widgetId: 'recent-apps', gridX: 0, gridY: 2, gridWidth: 12, gridHeight: 5, flush: true },
+				{ id: 4, widgetId: 'recent-apps', gridX: 0, gridY: 2, gridWidth: 12, gridHeight: 8, flush: true },
 			],
 		}
 	},

@@ -30,6 +30,9 @@
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ExportsController.php" method="isAuthorisedForApplication"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ExportsController.php" method="isAuthorisedForApplication"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/ExportsController.php"/>
+  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Controller/ShopController.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ShopController.php" method="githubInstall"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ShopController.php" method="githubInstall"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Controller/StoreController.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/VersionPromotionController.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Lifecycle/ApplicationVersionOwnerGuard.php" method="check"/>
@@ -54,8 +57,6 @@
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/ApplicationCreationService.php" method="createApplication"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/ApplicationCreationService.php" method="createApplication"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/ApplicationCreationService.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/ApplicationCreationService.php" method="rollback"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/ApplicationCreationService.php" method="rollback"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/ApplicationCreationService.php" method="substituteVersionContext"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/ApplicationCreationService.php" method="substituteVersionContext"/>
   <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Service/ApplicationInsightsService.php"/>
@@ -78,6 +79,19 @@
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/FeelParser.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/FeelParser.php" method="parseComparison"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/FeelParser.php" method="parsePrimary"/>
+  <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Service/GitHubAppSyncService.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/GitHubAppSyncService.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/GitHubAppSyncService.php" method="ensureRepo"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/GitHubAppSyncService.php" method="ensureRepo"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/GitHubAppSyncService.php" method="commitTree"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/GitHubAppSyncService.php" method="commitTree"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/GitHubAppSyncService.php" method="reconcileCompanionSchemas"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/GitHubAppSyncService.php" method="reconcileCompanionSchemas"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/GitHubAppSyncService.php" method="resolveVersion"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/GitHubAppSyncService.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/GitHubCatalogService.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/GitHubCatalogService.php" method="search"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/GitHubCatalogService.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/ManifestResolverService.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/PermissionResolver.php" method="matchesCaller"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/PermissionResolver.php"/>

@@ -33,6 +33,7 @@ namespace OCA\OpenBuild\Tests\Unit\Controller;
 
 use OCA\OpenBuild\Controller\ApplicationPublishController;
 use OCA\OpenBuild\Service\ApplicationDeletionService;
+use OCA\OpenBuild\Service\Credential\VirtualAppCredentialRegistrar;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -76,6 +77,11 @@ class ApplicationPublishControllerTest extends TestCase
     private ApplicationDeletionService&MockObject $deletionService;
 
     /**
+     * @var VirtualAppCredentialRegistrar&MockObject
+     */
+    private VirtualAppCredentialRegistrar&MockObject $credentialRegistrar;
+
+    /**
      * Controller under test.
      */
     private ApplicationPublishController $controller;
@@ -97,7 +103,8 @@ class ApplicationPublishControllerTest extends TestCase
         $this->groupManager->method('getUserGroupIds')->willReturn([]);
 
         $permissionResolver    = new PermissionResolver($this->groupManager, $this->createMock(LoggerInterface::class));
-        $this->deletionService = $this->createMock(ApplicationDeletionService::class);
+        $this->deletionService     = $this->createMock(ApplicationDeletionService::class);
+        $this->credentialRegistrar = $this->createMock(VirtualAppCredentialRegistrar::class);
 
         $this->controller = new ApplicationPublishController(
             request: $this->request,
@@ -106,6 +113,7 @@ class ApplicationPublishControllerTest extends TestCase
             userSession: $this->userSession,
             permissionResolver: $permissionResolver,
             deletionService: $this->deletionService,
+            credentialRegistrar: $this->credentialRegistrar,
         );
     }//end setUp()
 
@@ -194,7 +202,36 @@ class ApplicationPublishControllerTest extends TestCase
     }//end testPublishSetsStatusPublished()
 
     /**
-     * unpublish() flips status back to draft and returns 200.
+     * publish() triggers credential-broker onboarding for the app's slug.
+     *
+     * @return void
+     */
+    public function testPublishTriggersCredentialOnboarding(): void
+    {
+        $this->signInAs(uid: 'alice');
+        $app = $this->buildEntity(payload: [
+            'id'          => 'u-app',
+            'slug'        => 'spectr',
+            'name'        => 'Spectr',
+            'status'      => 'draft',
+            'permissions' => ['owners' => ['user:alice'], 'editors' => [], 'viewers' => []],
+        ]);
+        $this->objectService->method('find')->willReturn($app);
+        $this->objectService->method('saveObject')->willReturnCallback(
+            fn (array $object): ObjectEntity => $this->buildEntity(payload: $object)
+        );
+
+        $this->credentialRegistrar->expects($this->once())
+            ->method('onPublish')
+            ->with('spectr', $this->isInstanceOf(IUser::class));
+
+        $response = $this->controller->publish('u-app');
+
+        self::assertSame(Http::STATUS_OK, $response->getStatus());
+    }//end testPublishTriggersCredentialOnboarding()
+
+    /**
+     * unpublish() flips status back to draft and returns 200 — and never onboards credentials.
      *
      * @return void
      */
@@ -212,6 +249,9 @@ class ApplicationPublishControllerTest extends TestCase
         $this->objectService->method('saveObject')->willReturnCallback(
             fn (array $object): ObjectEntity => $this->buildEntity(payload: $object)
         );
+
+        // Unpublish is not a go-live event — onboarding must not fire.
+        $this->credentialRegistrar->expects($this->never())->method('onPublish');
 
         $response = $this->controller->unpublish('u-app');
 
