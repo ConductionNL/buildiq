@@ -19,6 +19,8 @@ This capability is observed behaviour of those components. It is the frontend
 half of the `application-detail-overview` and `application-insights` backend
 capabilities.
 
+**OpenSpec changes**: [github-app-sync](../../changes/github-app-sync/)
+
 ## Requirements
 
 ### Requirement: Detail header cockpit renders versions, KPIs, activity and refresh
