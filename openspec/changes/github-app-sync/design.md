@@ -72,7 +72,12 @@ release endpoint, REQ-OBV-110).
    it), create one via the broker: `POST /user/repos` (user-owned) or
    `POST /orgs/{org}/repos` (org-owned), then set the discovery **topic
    `openbuild-app`** (`PUT /repos/{owner}/{repo}/topics`), and store `githubRepo`
-   + `githubDefaultBranch` on the Application.
+   + `githubDefaultBranch` on the Application. The create-repo body sets
+   **`"private": false` (PUBLIC by default)** — rationale: a freshly published app
+   must be discoverable in the shop's *anonymous* catalogue search, and a private
+   repo is invisible to it. Visibility is overridable via an optional `visibility`
+   push param (`'public'` | `'private'`, default `'public'`) threaded
+   controller → `push()` → `ensureRepo()`; `'private'` sets `"private": true`.
 4. **Tree push (ported from `GitHubPushService`, broker-routed)** — for each file:
    `POST /repos/{o}/{r}/git/blobs`; then `POST …/git/trees` (assemble the tree),
    `POST …/git/commits` (parented on the current default-branch head, fetched via

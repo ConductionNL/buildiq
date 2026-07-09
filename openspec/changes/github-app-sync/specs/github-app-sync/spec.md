@@ -50,7 +50,10 @@ headers, body, actingUserId)` so the credential's token is used by the broker an
 NEVER reaches OpenBuild. When the Application is not yet linked to a repo (or a
 `repo` override is supplied for a new repo), push SHALL create the repository
 (`POST /user/repos` or `POST /orgs/{org}/repos` via the broker) and set the
-discovery topic `openbuild-app`. Push SHALL be non-destructive — the commit is
+discovery topic `openbuild-app`. A created repository SHALL default to **PUBLIC**
+(`"private": false`) so the shop's anonymous catalogue search can discover it; the
+owner MAY override this via an optional `visibility` push param (`'public'` |
+`'private'`, default `'public'`). Push SHALL be non-destructive — the commit is
 parented on the current branch head (push adds a commit, never a force overwrite)
 — and SHALL record the resulting `commitSha` on the pushed `ApplicationVersion`.
 
@@ -72,8 +75,16 @@ parented on the current branch head (push adds a commit, never a force overwrite
 - **GIVEN** an Application with no `githubRepo` and a push request naming a new repo
 - **WHEN** an owner pushes
 - **THEN** a GitHub repository is created via the broker
+- **AND** the repository is created PUBLIC by default (`"private": false`) so the shop can discover it
 - **AND** the repository carries the topic `openbuild-app`
 - **AND** the Application's `githubRepo` + `githubDefaultBranch` are stored
+
+#### Scenario: Owner overrides created-repo visibility to private
+
+- **GIVEN** an Application with no `githubRepo` and a push request naming a new repo
+- **WHEN** an owner pushes with `visibility: 'private'`
+- **THEN** the repository is created PRIVATE (`"private": true`)
+- **AND** absent an explicit `visibility`, the repository defaults to PUBLIC
 
 #### Scenario: Push is non-destructive
 
