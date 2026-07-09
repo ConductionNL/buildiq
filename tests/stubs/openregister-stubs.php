@@ -55,11 +55,36 @@ namespace OCA\OpenRegister\Db {
             protected ?string $uuid = null;
 
             /**
+             * Stub register-slug column.
+             *
+             * @var string|null
+             */
+            protected ?string $register = null;
+
+            /**
+             * Stub schema-slug column.
+             *
+             * @var string|null
+             */
+            protected ?string $schema = null;
+
+            /**
              * Stub serialised object payload.
              *
              * @var array<string, mixed>|null
              */
             protected ?array $object = [];
+
+            /**
+             * Stub owner column (Nextcloud UID of the object's creator).
+             * Real OR stamps this via applyOwnerAttribution() at
+             * saveObject()-time; ExportJobService::impersonateJobOwner()
+             * (#105) reads it back via getOwner() to impersonate the
+             * ExportJob submitter for background-job lifecycle transitions.
+             *
+             * @var string|null
+             */
+            protected ?string $owner = null;
 
             /**
              * @return array<string, mixed>
@@ -81,7 +106,10 @@ namespace OCA\OpenRegister\Db {
 
     if (class_exists(Register::class, autoload: false) === false) {
         /**
-         * Stub Register — `getId()`/`getSlug()` resolve via Entity's `__call`;
+         * Stub Register — declares getId()/getSlug() explicitly so PHPUnit
+         * MockObject::method() can configure them without requiring addMethods().
+         * The real OR class resolves these via Entity::__call; explicit
+         * declarations here satisfy PHPUnit 10's MethodCannotBeConfiguredException.
          * `getSchemas()`/`setSchemas()` are real methods on the OR class.
          */
         class Register extends \OCP\AppFramework\Db\Entity
@@ -100,6 +128,26 @@ namespace OCA\OpenRegister\Db {
              * @var array<int, int>|null
              */
             protected ?array $schemas = [];
+
+            /**
+             * Return the entity id.
+             *
+             * @return int
+             */
+            public function getId(): int
+            {
+                return (int) ($this->id ?? 0);
+            }//end getId()
+
+            /**
+             * Return the register slug.
+             *
+             * @return string
+             */
+            public function getSlug(): string
+            {
+                return (string) ($this->slug ?? '');
+            }//end getSlug()
 
             /**
              * @return array<int, int>
@@ -124,7 +172,16 @@ namespace OCA\OpenRegister\Db {
 
     if (class_exists(Schema::class, autoload: false) === false) {
         /**
-         * Stub Schema — `getId()`/`getSlug()` resolve via Entity's `__call`.
+         * Stub Schema — declares getId()/getSlug() explicitly so PHPUnit
+         * MockObject::method() can configure them (same reason as Register).
+         *
+         * getTitle()/getDescription()/getRequired()/getProperties() mirror
+         * the real OR Schema entity's own explicit/magic-getter shape
+         * (lib/Db/Schema.php) — declared here (not left to Entity's magic
+         * __call) for the same PHPUnit-10 MethodCannotBeConfiguredException
+         * reason as getId()/getSlug(). Added for data-registers-runtime's
+         * ExportService::bundleDataRegisterSchemas(), which reads a bound
+         * data register's schema definitions.
          */
         class Schema extends \OCP\AppFramework\Db\Entity
         {
@@ -135,6 +192,94 @@ namespace OCA\OpenRegister\Db {
              * @var string|null
              */
             protected ?string $slug = null;
+
+            /**
+             * Stub title column.
+             *
+             * @var string|null
+             */
+            protected ?string $title = null;
+
+            /**
+             * Stub description column.
+             *
+             * @var string|null
+             */
+            protected ?string $description = null;
+
+            /**
+             * Stub required-fields column.
+             *
+             * @var array<int, string>|null
+             */
+            protected ?array $required = [];
+
+            /**
+             * Stub properties column.
+             *
+             * @var array<string, mixed>|null
+             */
+            protected ?array $properties = [];
+
+            /**
+             * Return the entity id.
+             *
+             * @return int
+             */
+            public function getId(): int
+            {
+                return (int) ($this->id ?? 0);
+            }//end getId()
+
+            /**
+             * Return the schema slug.
+             *
+             * @return string
+             */
+            public function getSlug(): string
+            {
+                return (string) ($this->slug ?? '');
+            }//end getSlug()
+
+            /**
+             * Return the schema title.
+             *
+             * @return string|null
+             */
+            public function getTitle(): ?string
+            {
+                return $this->title;
+            }//end getTitle()
+
+            /**
+             * Return the schema description.
+             *
+             * @return string|null
+             */
+            public function getDescription(): ?string
+            {
+                return $this->description;
+            }//end getDescription()
+
+            /**
+             * Return the schema's required property names.
+             *
+             * @return array<int, string>
+             */
+            public function getRequired(): array
+            {
+                return ($this->required ?? []);
+            }//end getRequired()
+
+            /**
+             * Return the schema's JSON Schema `properties` map.
+             *
+             * @return array<string, mixed>
+             */
+            public function getProperties(): array
+            {
+                return ($this->properties ?? []);
+            }//end getProperties()
         }//end class
     }
 
@@ -148,11 +293,13 @@ namespace OCA\OpenRegister\Db {
         class RegisterMapper
         {
             /**
-             * @param array<int, string>|null $_extend Eager-load relations (ignored).
+             * Signature mirrors the real OR RegisterMapper::find so callers
+             * passing `_rbac:` / `_multitenancy:` as named arguments resolve
+             * identically (the real mapper takes NO `_extend`/`published`).
              *
              * @return Register
              */
-            public function find(string|int $id, ?array $_extend=[], ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): Register
+            public function find(string|int $id, bool $_rbac=true, bool $_multitenancy=true): Register
             {
                 return new Register();
             }//end find()
@@ -161,9 +308,13 @@ namespace OCA\OpenRegister\Db {
              * Signature mirrors the real OR mapper so callers passing
              * `_rbac:` / `_multitenancy:` as named arguments resolve identically.
              *
+             * @param array<string, mixed>|null $filters          Filter map (ignored).
+             * @param array<int, string>|null   $searchConditions Search conditions (ignored).
+             * @param array<string, mixed>|null $searchParams     Search params (ignored).
+             *
              * @return array<int, Register>
              */
-            public function findAll(?int $limit=null, ?int $offset=null, array $filters=[], array $searchConditions=[], array $searchParams=[], bool $_rbac=true, bool $_multitenancy=true): array
+            public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $searchConditions=[], ?array $searchParams=[], bool $_rbac=true, bool $_multitenancy=true): array
             {
                 return [];
             }//end findAll()
@@ -197,11 +348,15 @@ namespace OCA\OpenRegister\Db {
         class SchemaMapper
         {
             /**
+             * Signature mirrors the real OR SchemaMapper::find (which takes
+             * `_extend` but NO `published` param), so callers passing
+             * `_multitenancy:` as a named argument resolve identically.
+             *
              * @param array<int, string>|null $_extend Eager-load relations (ignored).
              *
              * @return Schema
              */
-            public function find(string|int $id, ?array $_extend=[], ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): Schema
+            public function find(string|int $id, ?array $_extend=[], bool $_rbac=true, bool $_multitenancy=true): Schema
             {
                 return new Schema();
             }//end find()
@@ -332,7 +487,7 @@ namespace OCA\OpenRegister\Service {
              *
              * @return \OCA\OpenRegister\Db\ObjectEntity|null
              */
-            public function find(int|string $id, ?array $_extend=[], bool $files=false, mixed $register=null, mixed $schema=null, bool $_rbac=true, bool $_multitenancy=true): ?\OCA\OpenRegister\Db\ObjectEntity
+            public function find(int|string $id, ?array $_extend=[], bool $files=false, \OCA\OpenRegister\Db\Register|string|int|null $register=null, \OCA\OpenRegister\Db\Schema|string|int|null $schema=null, bool $_rbac=true, bool $_multitenancy=true): ?\OCA\OpenRegister\Db\ObjectEntity
             {
                 return null;
             }//end find()
@@ -354,7 +509,7 @@ namespace OCA\OpenRegister\Service {
              *
              * @return \OCA\OpenRegister\Db\ObjectEntity
              */
-            public function saveObject(array|\OCA\OpenRegister\Db\ObjectEntity $object, ?array $extend=[], mixed $register=null, mixed $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false, ?array $uploadedFiles=null): \OCA\OpenRegister\Db\ObjectEntity
+            public function saveObject(array|\OCA\OpenRegister\Db\ObjectEntity $object, ?array $extend=[], \OCA\OpenRegister\Db\Register|string|int|null $register=null, \OCA\OpenRegister\Db\Schema|string|int|null $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false, ?array $uploadedFiles=null, ?\OCP\IUser $currentUser=null): \OCA\OpenRegister\Db\ObjectEntity
             {
                 return new \OCA\OpenRegister\Db\ObjectEntity();
             }//end saveObject()
@@ -362,7 +517,7 @@ namespace OCA\OpenRegister\Service {
             /**
              * @return bool
              */
-            public function deleteObject(string $uuid, bool $_rbac=true, bool $_multitenancy=true): bool
+            public function deleteObject(string $uuid, \OCA\OpenRegister\Db\Register|string|int|null $register=null, \OCA\OpenRegister\Db\Schema|string|int|null $schema=null, bool $_rbac=true, bool $_multitenancy=true, bool $_retentionSweep=false): bool
             {
                 return true;
             }//end deleteObject()
@@ -384,35 +539,27 @@ namespace OCA\OpenRegister\Service {
             }//end unlockObject()
 
             /**
-             * @return array<string, mixed>|null
-             */
-            public function getLockInfo(string $identifier): ?array
-            {
-                return null;
-            }//end getLockInfo()
-
-            /**
-             * Stub setter for the current register context. Real OR signature
-             * is `setRegister(Register|string|int): static`.
+             * Stub setter for the current register context. Signature mirrors
+             * the real OR service `setRegister(Register|string|int): static`.
              *
-             * @param mixed $register Register reference.
+             * @param \OCA\OpenRegister\Db\Register|string|int $register Register reference.
              *
              * @return static
              */
-            public function setRegister(mixed $register): static
+            public function setRegister(\OCA\OpenRegister\Db\Register|string|int $register): static
             {
                 return $this;
             }//end setRegister()
 
             /**
-             * Stub setter for the current schema context. Real OR signature
-             * is `setSchema(Schema|string|int): static`.
+             * Stub setter for the current schema context. Signature mirrors
+             * the real OR service `setSchema(Schema|string|int): static`.
              *
-             * @param mixed $schema Schema reference.
+             * @param \OCA\OpenRegister\Db\Schema|string|int $schema Schema reference.
              *
              * @return static
              */
-            public function setSchema(mixed $schema): static
+            public function setSchema(\OCA\OpenRegister\Db\Schema|string|int $schema): static
             {
                 return $this;
             }//end setSchema()
@@ -476,6 +623,52 @@ namespace OCA\OpenRegister\Service {
         }//end class
     }//end if
 
+    if (class_exists(SecurityService::class, autoload: false) === false) {
+        /**
+         * Stub SecurityService — no-op SSRF guard for unit-test isolation.
+         *
+         * RemoteTemplateStoreService calls `SecurityService::assertSafeFetchUrl()`
+         * at runtime via `class_exists()` + `call_user_func()`. In unit tests the
+         * mock HttpClient already controls what "returns", but the guard fires
+         * BEFORE the mock client is invoked — and performs real DNS lookups that
+         * fail for the `.test` / `.example.test` hostnames used in fixtures.
+         *
+         * Defining the stub here (in the Service namespace, loaded by bootstrap-unit.php
+         * BEFORE the OR PSR-4 path is searched) satisfies the `class_exists()` check
+         * without triggering a DNS lookup, so the mock HttpClient layer is reached.
+         */
+        class SecurityService
+        {
+            /**
+             * Scheme-only SSRF guard for unit-test isolation.
+             *
+             * Mirrors the real SecurityService logic for scheme validation (rejects
+             * non-http/https URLs with the same exception) but skips DNS resolution,
+             * which fails for `.test` / `.example.test` hostnames used in fixtures.
+             *
+             * @param string $url The URL to guard.
+             *
+             * @return void
+             *
+             * @throws \InvalidArgumentException For non-http/https or malformed URLs.
+             */
+            public static function assertSafeFetchUrl(string $url): void
+            {
+                $parts = parse_url($url);
+                if ($parts === false || empty($parts['scheme']) === true || empty($parts['host']) === true) {
+                    throw new \InvalidArgumentException('Invalid or malformed URL.');
+                }
+
+                $scheme = strtolower($parts['scheme']);
+                if (in_array($scheme, ['http', 'https'], true) === false) {
+                    throw new \InvalidArgumentException('Only http and https URLs are allowed.');
+                }
+
+                // DNS resolution intentionally skipped in unit-test stub.
+            }//end assertSafeFetchUrl()
+        }//end class
+    }//end if
+
     if (class_exists(FileService::class, autoload: false) === false) {
         /**
          * Stub FileService — `getFile` call surface used by IconService.
@@ -500,6 +693,41 @@ namespace OCA\OpenRegister\Service {
                 // Stub — tests mock this method; real implementation is in OR.
                 throw new \RuntimeException('FileService::getFile stub — must be mocked in tests.');
             }//end getFile()
+        }//end class
+    }//end if
+}
+
+namespace OCA\OpenRegister\Service\Credential {
+
+    if (class_exists(CredentialBrokerService::class, autoload: false) === false) {
+        /**
+         * Stub CredentialBrokerService — the `request()` call surface OpenBuild's
+         * GitHubAppSyncService routes every outbound GitHub call through (resolved
+         * lazily via `Server::get()`). The signature mirrors the real OR broker
+         * (`request(string $credentialId, string $appId, string $method, string
+         * $path, array $headers=[], ?string $body=null, ?string $actingUserId=null):
+         * array`) so a caller passing the wrong argument shape fails identically
+         * against the stub and the real class.
+         */
+        class CredentialBrokerService
+        {
+            /**
+             * Broker a single outbound HTTP call for an allowed credential.
+             *
+             * @param string                $credentialId The credential UUID.
+             * @param string                $appId        The calling app id.
+             * @param string                $method       The HTTP method.
+             * @param string                $path         The provider-relative path.
+             * @param array<string, string> $headers      Request headers.
+             * @param string|null           $body         Optional request body.
+             * @param string|null           $actingUserId The acting user UID (owner guard).
+             *
+             * @return array<string, mixed> The `{status, headers, body}` response shape.
+             */
+            public function request(string $credentialId, string $appId, string $method, string $path, array $headers=[], ?string $body=null, ?string $actingUserId=null): array
+            {
+                return [];
+            }//end request()
         }//end class
     }//end if
 }

@@ -31,14 +31,21 @@ const fetchSchemaProperties = vi.fn(async () => ({
 	title: { type: 'string' },
 	route: { type: 'string' },
 }))
+// Spies on the composable factory call itself — asserts the `dataRegisters`
+// prop is forwarded into useRegisterPicker's opts (data-registers-runtime
+// task 2.4), separate from the returned fetch-fn spies above.
+const useRegisterPickerSpy = vi.fn()
 
 vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
-	useRegisterPicker: () => ({
-		fetchRegisters,
-		fetchSchemas,
-		fetchSchemaProperties,
-		resolveAppRegister: () => 'openbuild-hello-world',
-	}),
+	useRegisterPicker: (opts) => {
+		useRegisterPickerSpy(opts)
+		return {
+			fetchRegisters,
+			fetchSchemas,
+			fetchSchemaProperties,
+			resolveAppRegister: () => 'openbuild-hello-world',
+		}
+	},
 }))
 
 // Stub the field builders — they have their own specs; here we only
@@ -67,10 +74,12 @@ vi.mock('../../../src/components/page-editor/fields/SidebarSectionBuilder.vue', 
 
 const IndexPageEditor = (await import('../../../src/components/page-editor/IndexPageEditor.vue')).default
 
-function mountEditor(config = {}, appSlug = 'hello-world') {
-	return mount(IndexPageEditor, {
-		propsData: { config, appSlug },
-	})
+function mountEditor(config = {}, appSlug = 'hello-world', dataRegisters) {
+	const propsData = { config, appSlug }
+	if (dataRegisters !== undefined) {
+		propsData.dataRegisters = dataRegisters
+	}
+	return mount(IndexPageEditor, { propsData })
 }
 
 describe('IndexPageEditor', () => {
@@ -78,6 +87,7 @@ describe('IndexPageEditor', () => {
 		fetchRegisters.mockClear()
 		fetchSchemas.mockClear()
 		fetchSchemaProperties.mockClear()
+		useRegisterPickerSpy.mockClear()
 	})
 
 	it('renders the editor title', () => {
@@ -181,5 +191,17 @@ describe('IndexPageEditor', () => {
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
 		expect(next.cardComponent).toBe('OpenBuildDefaultCard')
+	})
+
+	// data-registers-runtime task 2.4/2.1: dataRegisters prop pass-through.
+	it('forwards the dataRegisters prop into useRegisterPicker', () => {
+		const dataRegisters = [{ register: 'spectr', label: 'Spectr market intelligence data' }]
+		mountEditor({}, 'hello-world', dataRegisters)
+		expect(useRegisterPickerSpy).toHaveBeenCalledWith({ appSlug: 'hello-world', dataRegisters })
+	})
+
+	it('defaults dataRegisters to [] when the prop is not passed', () => {
+		mountEditor({}, 'hello-world')
+		expect(useRegisterPickerSpy).toHaveBeenCalledWith({ appSlug: 'hello-world', dataRegisters: [] })
 	})
 })

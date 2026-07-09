@@ -115,7 +115,7 @@ class ApplicationsControllerTest extends TestCase
 
         $registerEntity = $this->getMockBuilder(Register::class)
             ->disableOriginalConstructor()
-            ->addMethods(['getId'])
+            ->onlyMethods(['getId'])
             ->getMock();
         $registerEntity->method('getId')->willReturn(926);
         $registerMapper = $this->createMock(RegisterMapper::class);
@@ -123,7 +123,7 @@ class ApplicationsControllerTest extends TestCase
 
         $schemaEntity = $this->getMockBuilder(Schema::class)
             ->disableOriginalConstructor()
-            ->addMethods(['getId'])
+            ->onlyMethods(['getId'])
             ->getMock();
         $schemaEntity->method('getId')->willReturn(1635);
         $schemaMapper = $this->createMock(SchemaMapper::class);
@@ -463,4 +463,94 @@ class ApplicationsControllerTest extends TestCase
 
         self::assertSame(Http::STATUS_OK, $result->getStatus());
     }//end testGetManifestAdminBypassWritesOrAuditTrail()
+
+    /**
+     * admin-settings-owner-gating: a caller whose group intersects
+     * `permissions.owners` gets `runtime.user.isOwner === true` on the
+     * served manifest.
+     *
+     * @return void
+     */
+    public function testGetManifestSetsIsOwnerTrueForOwner(): void
+    {
+        $controller = $this->buildController(uid: 'alice', callerGroups: ['team-alpha']);
+        $this->wireApplication(permissions: ['owners' => ['team-alpha'], 'editors' => [], 'viewers' => []]);
+
+        $result = $controller->getManifest(slug: 'hello-world');
+
+        self::assertSame(Http::STATUS_OK, $result->getStatus());
+        $data = $result->getData();
+        self::assertArrayHasKey('runtime', $data);
+        self::assertTrue($data['runtime']['user']['isOwner']);
+    }//end testGetManifestSetsIsOwnerTrueForOwner()
+
+    /**
+     * admin-settings-owner-gating: a caller with a role (e.g. viewer) but NOT
+     * in `permissions.owners` gets `runtime.user.isOwner === false`.
+     *
+     * @return void
+     */
+    public function testGetManifestSetsIsOwnerFalseForNonOwner(): void
+    {
+        $controller = $this->buildController(uid: 'bob', callerGroups: ['team-alpha']);
+        $this->wireApplication(permissions: ['owners' => ['team-omega'], 'editors' => [], 'viewers' => ['team-alpha']]);
+
+        $result = $controller->getManifest(slug: 'hello-world');
+
+        self::assertSame(Http::STATUS_OK, $result->getStatus());
+        $data = $result->getData();
+        self::assertFalse($data['runtime']['user']['isOwner']);
+    }//end testGetManifestSetsIsOwnerFalseForNonOwner()
+
+    /**
+     * admin-settings-owner-gating: an NC super-admin who is NOT in
+     * `permissions.owners` still gets `isOwner === false` — the whole point
+     * of the gate is that super-admin ≠ app-owner and there is NO
+     * super-admin fallback on the owner signal (unlike the read-gate's
+     * separate, audited admin bypass in {@see requirePermission()}).
+     *
+     * @return void
+     */
+    public function testGetManifestSetsIsOwnerFalseForSuperAdminNotInOwners(): void
+    {
+        $controller = $this->buildController(uid: 'sysadmin', callerGroups: ['admin'], isAdmin: true);
+        $this->wireApplication(permissions: ['owners' => ['team-alpha'], 'editors' => [], 'viewers' => []]);
+
+        $result = $controller->getManifest(slug: 'hello-world');
+
+        // The admin bypass still lets the request through (read-gate, RBAC OK)...
+        self::assertSame(Http::STATUS_OK, $result->getStatus());
+        $data = $result->getData();
+        // ...but the owner SIGNAL must remain false — no super-admin fallback.
+        self::assertFalse($data['runtime']['user']['isOwner']);
+    }//end testGetManifestSetsIsOwnerFalseForSuperAdminNotInOwners()
+
+    /**
+     * admin-settings-owner-gating: when no Application context is resolvable
+     * (edge case — e.g. the legacy application-array-only fallback branch),
+     * the owner signal degrades to `false` and the endpoint does not fatal.
+     *
+     * This exercises the inconsistent-state 500 branch (no applicationUuid)
+     * as the closest reachable "no Application context" path through the
+     * public controller surface; the unit-level guarantee that
+     * {@see ApplicationsController::injectOwnerSignal()} never fatals on a
+     * null Application array is the behaviour under test.
+     *
+     * @return void
+     */
+    public function testGetManifestOwnerSignalDegradesGracefullyWithoutApplicationContext(): void
+    {
+        $controller = $this->buildController(uid: 'bob', callerGroups: []);
+
+        $reflection = new \ReflectionClass($controller);
+        $method     = $reflection->getMethod('injectOwnerSignal');
+        $method->setAccessible(true);
+
+        $manifest = ['version' => '1.0.0', 'pages' => []];
+
+        $result = $method->invoke($controller, $manifest, null, null);
+
+        self::assertIsArray($result);
+        self::assertFalse($result['runtime']['user']['isOwner']);
+    }//end testGetManifestOwnerSignalDegradesGracefullyWithoutApplicationContext()
 }//end class

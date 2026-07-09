@@ -42,19 +42,29 @@ class AddWidgetHandler extends AbstractToolHandler
      * @var array<int, string>
      */
     private const ALLOWED_WIDGET_TYPES = [
-        'stat-counter',
-        'data-table',
-        'chart-bar',
-        'chart-line',
-        'chart-pie',
-        'kanban-board',
-        'timeline',
-        'markdown',
-        'iframe',
-        'form-embed',
+        // Content & layout widgets.
+        'header',
+        'label',
+        'text',
+        'image',
+        'divider',
+        'tile',
+        // Statistic / metric widgets (OpenRegister-data-driven).
+        'stat',
+        'stats-block',
+        'delta',
+        'gauge',
+        'chart',
+        // List / table widgets.
         'object-list',
-        'object-detail',
-        'calendar',
+        'table',
+        // Object-context widgets (detail pages).
+        'data',
+        'related',
+        'files',
+        'metadata',
+        // Integration / map.
+        'integration',
         'map',
     ];
 

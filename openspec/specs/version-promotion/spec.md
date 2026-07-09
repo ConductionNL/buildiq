@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 ---
 
 # version-promotion Specification
@@ -22,6 +22,8 @@ on-failure target flip to `archived` with a `_self.promotionFailedAt` marker for
 recovery. Default strategy is a pure function of chain position
 (production-target → migrate; mid-chain → start-with-source-data; never
 empty-start), implemented identically in PHP and JS.
+
+**OpenSpec changes**: [data-registers-runtime](../../changes/data-registers-runtime/)
 
 ## Requirements
 

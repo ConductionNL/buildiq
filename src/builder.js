@@ -30,6 +30,7 @@ import {
 } from '@conduction/nextcloud-vue'
 import pinia from './pinia.js'
 import { runtimeRegistry } from './runtimeRegistry.js'
+import { registerSlugForApp } from './store/schemas.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
 import './assets/app.css'
@@ -226,6 +227,7 @@ async function boot() {
 				isLoading: false,
 				registry: { ...runtimeRegistry },
 				pageTypes: { ...defaultPageTypes },
+				dataSources,
 				translate: translateForApp,
 				// App registers/schemas so the Edit-pages modal offers Register /
 				// Schema / Columns dropdowns for index/detail pages (null → free text).

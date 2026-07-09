@@ -52,6 +52,12 @@
 		</div>
 
 		<footer class="ob-register-widget__footer">
+			<NcButton
+				v-if="canImport"
+				type="secondary"
+				@click="$emit('import-data', { registerSlug, schemas })">
+				{{ t('openbuild', 'Import data') }}
+			</NcButton>
 			<NcButton type="primary" @click="openInOpenRegister">
 				{{ t('openbuild', 'Open in OpenRegister') }}
 			</NcButton>
@@ -80,7 +86,23 @@ export default {
 		 * fleet register for hybrids.
 		 */
 		isHybrid: { type: Boolean, default: false },
+		/**
+		 * The active version's REAL register slug. Versions may share production's
+		 * register (manifest-only versioning), so the `openbuild-{appSlug}-{versionSlug}`
+		 * convention can name a non-existent register; when this override is set it
+		 * takes precedence.
+		 */
+		registerSlugOverride: { type: String, default: '' },
+		/**
+		 * Whether the caller holds a build/manage role on the Application. When
+		 * true the widget surfaces the "Import data" affordance (the import
+		 * itself is independently re-gated server-side by OpenRegister's own
+		 * register manage-permission). Default false — non-builders never see
+		 * the affordance.
+		 */
+		canImport: { type: Boolean, default: false },
 	},
+	emits: ['import-data'],
 	data() {
 		return {
 			/** @type {Array<{id: (string|number), name: string}>} */
@@ -100,6 +122,7 @@ export default {
 		 * @return {string}
 		 */
 		registerSlug() {
+			if (this.registerSlugOverride) return this.registerSlugOverride
 			return this.isHybrid ? this.appSlug : `openbuild-${this.appSlug}-${this.versionSlug}`
 		},
 		/**

@@ -61,6 +61,7 @@
 						:config="selectedPage.config || {}"
 						:page-type="selectedPage.type"
 						:app-slug="slug"
+						:data-registers="applicationDataRegisters"
 						:parent-route="selectedPage.route || ''"
 						@update:config="onConfigUpdate" />
 				</div>
@@ -104,6 +105,8 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import PageListEditor from '../components/page-editor/PageListEditor.vue'
 import MenuTreeEditor from '../components/page-editor/MenuTreeEditor.vue'
 import IndexPageEditor from '../components/page-editor/IndexPageEditor.vue'
@@ -202,6 +205,11 @@ export default {
 			applicationVersion: null,
 			versionLoading: false,
 			versionError: null,
+			// The active Application's declared `dataRegisters` bindings
+			// (data-registers-runtime design.md Decision 2) — resolved via a
+			// small, dedicated fetch (see fetchApplicationDataRegisters()) and
+			// threaded down to the mounted sub-editor's register picker.
+			applicationDataRegisters: [],
 		}
 	},
 	computed: {
@@ -286,6 +294,20 @@ export default {
 		},
 	},
 	/**
+	 * Resolve the active Application's declared `dataRegisters` bindings
+	 * (design.md Decision 2) so the mounted sub-editor's register picker can
+	 * label/hoist them. A small, dedicated fetch — NOT routed through
+	 * useApplicationVersion.js, which is shared by all four builder views and
+	 * never returns the parent Application record.
+	 *
+	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.2
+	 */
+	created() {
+		if (this.slug) {
+			this.fetchApplicationDataRegisters()
+		}
+	},
+	/**
 	 * Observed behaviour of `mounted` (retrofit annotation).
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
@@ -319,6 +341,31 @@ export default {
 		document.removeEventListener('keydown', this.onKeydown)
 	},
 	methods: {
+		/**
+		 * Fetch the Application record for `this.slug` and store its
+		 * `dataRegisters` (default `[]`). Same call shape
+		 * `useApplicationVersion.js` already uses internally
+		 * (`GET /apps/openregister/api/objects/openbuild/application`,
+		 * filtered by `slug` + `_limit: 1`) — see design.md Decision 2 for why
+		 * this is a small dedicated fetch rather than widening that shared
+		 * composable's contract. Failures degrade to `[]` (no bindings)
+		 * rather than surfacing an error — matching the picker's own
+		 * dangling-reference non-goal.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.2
+		 */
+		async fetchApplicationDataRegisters() {
+			try {
+				const url = generateUrl('/apps/openregister/api/objects/openbuild/application')
+				const { data } = await axios.get(url, { params: { slug: this.slug, _limit: 1 } })
+				const apps = Array.isArray(data && data.results) ? data.results : (Array.isArray(data) ? data : [])
+				const app = apps.find((a) => a && a.slug === this.slug) || null
+				this.applicationDataRegisters = (app && Array.isArray(app.dataRegisters)) ? app.dataRegisters : []
+			} catch (e) {
+				this.applicationDataRegisters = []
+			}
+		},
 		/**
 		 * Observed behaviour of `subEditorFor` (retrofit annotation).
 		 *
