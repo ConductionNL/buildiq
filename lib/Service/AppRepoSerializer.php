@@ -58,9 +58,10 @@ class AppRepoSerializer
     /**
      * Constructor.
      *
-     * @param RegisterMapper  $registerMapper Resolves the app's per-app register by slug.
-     * @param SchemaMapper    $schemaMapper   Resolves companion schema definitions by id.
-     * @param LoggerInterface $logger         PSR logger (server-side diagnostics only).
+     * @param RegisterMapper         $registerMapper     Resolves the app's per-app register by slug.
+     * @param SchemaMapper           $schemaMapper       Resolves companion schema definitions by id.
+     * @param LoggerInterface        $logger             PSR logger (server-side diagnostics only).
+     * @param TemplateRepoSerializer $templateSerializer Serialises a seeded template into the same repo layout.
      *
      * @return void
      */
@@ -68,6 +69,7 @@ class AppRepoSerializer
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger,
+        private readonly TemplateRepoSerializer $templateSerializer,
     ) {
     }//end __construct()
 
@@ -108,6 +110,31 @@ class AppRepoSerializer
 
         return $files;
     }//end serialize()
+
+    /**
+     * Serialise a seeded `application-template` object into the same repo file
+     * map `serialize()` produces, so a published template repo round-trips back
+     * through AppRepoParser identically to a published Application version.
+     *
+     * Delegated to TemplateRepoSerializer (a template carries its own inline
+     * `manifest` and `companionSchemas`, so its serialisation is a distinct
+     * concern from the Application + per-app-register path), keeping the public
+     * seam on this service where callers (GitHubAppSyncService::publishTemplate)
+     * already resolve the serializer.
+     *
+     * @param array<string,mixed> $template The seeded application-template object
+     *                                      (jsonSerialize shape): slug/title/
+     *                                      description/useCase/category/version/
+     *                                      manifest/companionSchemas.
+     *
+     * @return array<string,string> Ordered `path => contents` map (canonical JSON + README).
+     *
+     * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+     */
+    public function serializeTemplate(array $template): array
+    {
+        return $this->templateSerializer->serialize(template: $template);
+    }//end serializeTemplate()
 
     /**
      * Build the `openbuild-app.json` descriptor (REQ-GARF-002, REQ-GARF-009).

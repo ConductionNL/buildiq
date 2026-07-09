@@ -1024,7 +1024,23 @@
         "This repository has no readable OpenBuild descriptor and cannot be installed.": "This repository has no readable OpenBuild descriptor and cannot be installed.",
         "Unreadable app descriptor": "Unreadable app descriptor",
         "Using credential: {name}": "Using credential: {name}",
-        "Version to publish": "Version to publish"
+        "Version to publish": "Version to publish",
+        "App store": "App store",
+        "Install an app published to GitHub. The store lists every repository tagged with the openbuild-app topic; installing clones it into an editable draft application.": "Install an app published to GitHub. The store lists every repository tagged with the openbuild-app topic; installing clones it into an editable draft application.",
+        "Open apps menu, currently in {app}": "Open apps menu, currently in {app}",
+        "Add a dark override": "Add a dark override",
+        "Could not read that file": "Could not read that file",
+        "Dark variant (optional — defaults to the icon above)": "Dark variant (optional — defaults to the icon above)",
+        "Hide dark override": "Hide dark override",
+        "On a light background (dark icon)": "On a light background (dark icon)",
+        "On the app header (light icon)": "On the app header (light icon)",
+        "That file does not contain an SVG": "That file does not contain an SVG",
+        "Upload your own SVG": "Upload your own SVG",
+        "All data will be permanently removed. The app slug becomes available again.": "All data will be permanently removed. The app slug becomes available again.",
+        "Also permanently delete all data (the app's registers and everything stored in them)": "Also permanently delete all data (the app's registers and everything stored in them)",
+        "Delete \"{name}\" and all of its versions? This cannot be undone.": "Delete \"{name}\" and all of its versions? This cannot be undone.",
+        "Delete failed: {error}": "Delete failed: {error}",
+        "The app is removed but its data is kept in OpenRegister.": "The app is removed but its data is kept in OpenRegister."
     },
     "plurals": ""
 }
