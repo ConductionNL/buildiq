@@ -106,7 +106,13 @@ class GetAppManifestHandler extends AbstractToolHandler
      */
     private function resolveApplicationBySlug(object $objectService, string $slug): array
     {
-        $routeResults = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'built-app-route', ['slug' => $slug], _rbac: true, _multitenancy: false);
+        $routeResults = $objectService->searchObjectsBySlug(
+            self::REGISTER_SLUG,
+            'built-app-route',
+            ['slug' => $slug],
+            _rbac: true,
+            _multitenancy: false
+        );
         if (is_array($routeResults) === false || $routeResults === []) {
             return ['error' => 'not_found', 'message' => "No published virtual app found for slug '{$slug}'."];
         }

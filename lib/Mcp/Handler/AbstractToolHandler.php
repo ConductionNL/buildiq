@@ -162,9 +162,15 @@ abstract class AbstractToolHandler
         }
 
         $objectService = $this->container->get('OCA\OpenRegister\Service\ObjectService');
-        // openbuild is a system-wide register (not org-scoped); bypass the
+        // Openbuild is a system-wide register (not org-scoped); bypass the
         // organisation filter so MCP callers in any org can resolve apps.
-        $apps          = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'application', ['slug' => $appSlug], _rbac: true, _multitenancy: false);
+        $apps = $objectService->searchObjectsBySlug(
+            self::REGISTER_SLUG,
+            'application',
+            ['slug' => $appSlug],
+            _rbac: true,
+            _multitenancy: false
+        );
         if (is_array($apps) === false || $apps === []) {
             return $this->errorResult(error: 'not_found', message: "No virtual app found for slug '{$appSlug}'.");
         }

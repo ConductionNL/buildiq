@@ -44,6 +44,7 @@ const STUBS = {
 	NcSelect: { name: 'NcSelect', props: ['value', 'options'], template: '<select />' },
 	NcLoadingIcon: true,
 	NcEmptyContent: { name: 'NcEmptyContent', props: ['name'], template: '<div />' },
+	NcNoteCard: { name: 'NcNoteCard', props: ['type'], template: '<div class="nc-note-stub"><slot /></div>' },
 	NcDialog: { name: 'NcDialog', props: ['open', 'name'], template: '<div class="nc-dialog-stub"><slot /><slot name="actions" /></div>' },
 }
 
@@ -51,7 +52,17 @@ const STUBS = {
  * @return {Promise<import('@vue/test-utils').Wrapper>}
  */
 async function mountGallery() {
-	axiosMock.get.mockResolvedValueOnce({ data: { results: templates } })
+	// mounted() fires three GETs (templates + registry probe + credential probe).
+	axiosMock.get.mockImplementation((url) => {
+		const u = String(url)
+		if (u.includes('store/templates')) {
+			return Promise.resolve({ data: { outcome: 'not_configured', cards: [] } })
+		}
+		if (u.includes('credentials')) {
+			return Promise.resolve({ data: [] })
+		}
+		return Promise.resolve({ data: { results: templates } })
+	})
 	const wrapper = mount(TemplateGallery, {
 		mocks: { $router: { resolve: vi.fn(), push: vi.fn() } },
 		stubs: STUBS,
@@ -64,6 +75,8 @@ async function mountGallery() {
 describe('TemplateGallery.vue — org-local management (REQ-SAT-005)', () => {
 	beforeEach(() => {
 		axiosMock.get.mockReset()
+		axiosMock.post.mockReset()
+		axiosMock.put.mockReset()
 		axiosMock.delete.mockReset()
 	})
 
@@ -113,8 +126,9 @@ describe('TemplateGallery.vue — org-local management (REQ-SAT-005)', () => {
 
 		expect(axiosMock.delete).toHaveBeenCalledTimes(1)
 		expect(axiosMock.delete.mock.calls[0][0]).toContain('/application-template/org-1')
-		// Gallery re-fetched after delete.
-		expect(axiosMock.get).toHaveBeenCalledTimes(2)
+		// Gallery re-fetched the template list after delete (mount fetch + refetch).
+		const templateGets = axiosMock.get.mock.calls.filter((c) => String(c[0]).includes('/application-template'))
+		expect(templateGets.length).toBe(2)
 		expect(wrapper.vm.deleteOpen).toBe(false)
 	})
 })
