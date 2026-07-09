@@ -1035,7 +1035,12 @@
         "On a light background (dark icon)": "On a light background (dark icon)",
         "On the app header (light icon)": "On the app header (light icon)",
         "That file does not contain an SVG": "That file does not contain an SVG",
-        "Upload your own SVG": "Upload your own SVG"
+        "Upload your own SVG": "Upload your own SVG",
+        "All data will be permanently removed. The app slug becomes available again.": "All data will be permanently removed. The app slug becomes available again.",
+        "Also permanently delete all data (the app's registers and everything stored in them)": "Also permanently delete all data (the app's registers and everything stored in them)",
+        "Delete \"{name}\" and all of its versions? This cannot be undone.": "Delete \"{name}\" and all of its versions? This cannot be undone.",
+        "Delete failed: {error}": "Delete failed: {error}",
+        "The app is removed but its data is kept in OpenRegister.": "The app is removed but its data is kept in OpenRegister."
     },
     "plurals": ""
 }

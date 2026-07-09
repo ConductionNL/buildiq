@@ -66,7 +66,10 @@ async function mountGallery(routerOverrides = {}) {
 	})
 
 	const $router = {
-		resolve: vi.fn().mockReturnValue({ resolved: { matched: [{}], fullPath: '/applications/my-petstore' } }),
+		// redirectAfterClone probes registered route names via hasRoute(), which
+		// reads $router.options.routes (routes are built flat from the manifest
+		// with name = page.id). Provide the surfaces it feature-detects.
+		options: { routes: [{ name: 'PageEditor' }, { name: 'VirtualApps' }, { name: 'Dashboard' }] },
 		push: vi.fn(),
 		...routerOverrides,
 	}
@@ -137,10 +140,12 @@ describe('TemplateGallery.vue — GitHub-only store', () => {
 		// The dialog owns the POST and emits `installed` with the created app.
 		wrapper.vm.onInstalled({ uuid: 'new-app', slug: 'my-petstore' })
 
-		expect($router.resolve).toHaveBeenCalled()
+		// PageEditor is a registered route, so redirectAfterClone navigates there
+		// by name (no $router.resolve() probing — that logs a vue-router warning
+		// for unknown names).
 		expect($router.push).toHaveBeenCalled()
-		const firstResolveArgs = $router.resolve.mock.calls[0][0]
-		expect(firstResolveArgs.name).toBe('PageEditor')
-		expect(firstResolveArgs.params.slug).toBe('my-petstore')
+		const firstPushArgs = $router.push.mock.calls[0][0]
+		expect(firstPushArgs.name).toBe('PageEditor')
+		expect(firstPushArgs.params.slug).toBe('my-petstore')
 	})
 })

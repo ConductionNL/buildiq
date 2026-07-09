@@ -19,6 +19,7 @@
 			<NcButton
 				type="primary"
 				:href="builderUrl"
+				target="_blank"
 				class="ob-detail-actions__open-primary">
 				<template #icon>
 					<OpenInNew :size="20" />
@@ -396,9 +397,11 @@ export default {
 				return
 			}
 			const base = generateUrl(`/apps/openbuild/builder/${this.obApp.slug}`)
-			window.location.href = this.isProductionVersion(v)
+			const url = this.isProductionVersion(v)
 				? base
 				: `${base}?_version=${encodeURIComponent(v.slug)}`
+			// Open in a new tab to match the open-in-new affordance (OpenInNew icon).
+			window.open(url, '_blank', 'noopener,noreferrer')
 		},
 		/**
 		 * Edit a version in the page designer, scoped via `?_version=` for
@@ -483,19 +486,24 @@ export default {
 			}
 		},
 		/**
-		 * Delete the app (Application + versions + per-version registers), then
-		 * navigate back to the apps list. Owner-only (enforced server-side too).
+		 * Delete the app (Application + versions + routes), then navigate back to
+		 * the apps list. Owner-only (enforced server-side too). When `deleteData`
+		 * is true the underlying registers and all their data are wiped too;
+		 * otherwise that data is preserved.
 		 *
+		 * @param {boolean} deleteData Whether to also delete all app data.
 		 * @return {Promise<void>}
 		 */
-		async deleteApp() {
+		async deleteApp(deleteData = false) {
 			if (this.obAppRole !== 'owner' || !this.obApp || this.deleting) {
 				return
 			}
 			this.deleting = true
 			this.error = ''
 			try {
-				await axios.delete(generateUrl(`/apps/openbuild/api/applications/${this.obAppUuid}`))
+				await axios.delete(generateUrl(`/apps/openbuild/api/applications/${this.obAppUuid}`), {
+					params: { deleteData: deleteData ? 1 : 0 },
+				})
 				this.deleteOpen = false
 				if (this.$router) {
 					this.$router.push({ name: 'VirtualApps' }).catch(() => {})

@@ -103,7 +103,7 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
+import { generateUrl, imagePath } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
@@ -206,7 +206,21 @@ export default {
 		},
 
 		onIconError(e) {
-			e.target.src = '/apps/openbuild/img/app-dark.svg'
+			// imagePath resolves to the app's real web root (e.g.
+			// /apps/openbuild/img/app-dark.svg, or /apps-shared/… in dev). The
+			// previous hardcoded '/apps/openbuild/img/app-dark.svg' 404s when the web
+			// root differs, which re-fired this error handler and re-set the same
+			// failing src in an infinite loop (spamming the request + draining
+			// resources).
+			const fallback = imagePath('openbuild', 'app-dark.svg')
+			// Guard against re-entry: if the fallback itself fails to load, the error
+			// event lands here again — bail once we're already showing the fallback
+			// so we swap the src at most once. Compare the literal attribute (not the
+			// resolved .src property, which is absolute) against the fallback path.
+			if (e.target.getAttribute('src') === fallback) {
+				return
+			}
+			e.target.src = fallback
 		},
 
 		openApp(app) {

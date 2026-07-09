@@ -30,6 +30,8 @@ import {
 } from '@conduction/nextcloud-vue'
 import pinia from './pinia.js'
 import { runtimeRegistry } from './runtimeRegistry.js'
+import { registerDirectives } from './registerDirectives.js'
+import { useRegisterPicker } from './composables/useRegisterPicker.js'
 import { registerSlugForApp } from './store/schemas.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
@@ -38,6 +40,7 @@ import './assets/app.css'
 Vue.mixin({ methods: { t, n } })
 Vue.use(PiniaVuePlugin)
 Vue.use(VueRouter)
+registerDirectives()
 
 registerIcons()
 try {
@@ -83,56 +86,6 @@ function routesFromManifest(manifest) {
 	const home = (pages[0] && pages[0].route) || '/'
 	routes.push({ path: '*', redirect: home })
 	return routes
-}
-
-/**
- * Best-effort load of the app's OpenRegister registers + schemas, shaped for the
- * in-app pages editor (CnAppRoot's `dataSources`). The editor turns these into
- * Register / Schema / Columns dropdowns for index/detail pages so a created page
- * renders a table. Only this app's registers (slug prefix `openbuild-{slug}`) are
- * offered. Failures (RBAC, network) return null — the editor then falls back to
- * free-text slug inputs, so this never blocks boot.
- *
- * @return {Promise<object|null>} `{ registers: [{ value, label, schemas: [...] }] }` or null.
- */
-async function loadDataSources() {
-	try {
-		const regUrl = generateUrl('/apps/openregister/api/registers') + '?_limit=1000'
-		const { data } = await axios.get(regUrl)
-		const all = (data && (data.results || data.registers)) || (Array.isArray(data) ? data : [])
-		const prefix = `openbuild-${slug}`
-		const mine = all.filter((r) => typeof r.slug === 'string' && r.slug.startsWith(prefix))
-		if (!mine.length) return null
-
-		// Resolve each register's schema ids to { value: slug, label, columns }.
-		const ids = [...new Set(mine.flatMap((r) => (Array.isArray(r.schemas) ? r.schemas : [])).filter((x) => typeof x === 'number'))]
-		const schemaById = {}
-		await Promise.all(ids.map(async (id) => {
-			try {
-				const { data: s } = await axios.get(generateUrl(`/apps/openregister/api/schemas/${id}`))
-				if (s && s.slug) {
-					schemaById[id] = {
-						value: s.slug,
-						label: s.title || s.slug,
-						columns: Object.keys(s.properties || {}),
-					}
-				}
-			} catch {
-				// skip a schema we can't read
-			}
-		}))
-
-		const registers = mine.map((r) => ({
-			value: r.slug,
-			label: r.title || r.slug,
-			schemas: (Array.isArray(r.schemas) ? r.schemas : []).map((id) => schemaById[id]).filter(Boolean),
-		}))
-		return registers.length ? { registers } : null
-	} catch (e) {
-		// eslint-disable-next-line no-console
-		console.warn('[openbuild:builder] could not load data sources for the pages editor', e)
-		return null
-	}
 }
 
 /**
@@ -298,9 +251,19 @@ async function boot() {
 	// Normalise pages (config-as-object guard + inline page titles for data pages).
 	normalizeManifestPages(manifest)
 
-	// Load the app's registers/schemas for the in-app pages editor (best-effort;
-	// null → the editor uses free-text register/schema fields).
-	const dataSources = await loadDataSources()
+	// Registers/schemas (+ columns) for the in-app pages editor. Provided to
+	// CnAppRoot as `dataSources` so the edit-pages / page-config modals show
+	// searchable Register / Schema / Columns dropdowns instead of free-text slug
+	// inputs. Awaited before mount so the value is fully populated when
+	// CnAppRoot's provide() captures it (provide runs once, non-reactively).
+	// Best-effort: on failure the editor keeps its free-text fallback.
+	let dataSources = { registers: [] }
+	try {
+		dataSources = await useRegisterPicker({ appSlug: slug }).fetchDataSources()
+	} catch (e) {
+		// eslint-disable-next-line no-console
+		console.warn('[openbuild:builder] failed to load data sources for the pages editor', e)
+	}
 
 	const router = new VueRouter({
 		mode: 'history',
@@ -318,11 +281,10 @@ async function boot() {
 				isLoading: false,
 				registry: { ...runtimeRegistry },
 				pageTypes: { ...defaultPageTypes },
-				dataSources,
-				translate: translateForApp,
 				// App registers/schemas so the Edit-pages modal offers Register /
 				// Schema / Columns dropdowns for index/detail pages (null → free text).
 				dataSources,
+				translate: translateForApp,
 				// Persist in-app edits (pages / menu / settings / sidebar / actions)
 				// back to the app's manifest. CnAppRoot's useManifestEditor mutates
 				// THIS same `manifest` object in place while editing, so on Save we

@@ -39,6 +39,7 @@ namespace OCA\OpenBuild\Service;
 
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -60,14 +61,12 @@ class IconService
     private const APPLICATION_SCHEMA = 'application';
 
     /**
-     * Filesystem path to the built-in light icon, relative to server root.
+     * Built-in fallback icon filenames, resolved against the app's real `img/`
+     * directory by {@see bundledImgDir()} (NOT a hardcoded install path).
      */
-    private const FALLBACK_LIGHT_PATH = '/custom_apps/openbuild/img/app.svg';
+    private const FALLBACK_LIGHT_FILE = 'app.svg';
 
-    /**
-     * Filesystem path to the built-in dark icon, relative to server root.
-     */
-    private const FALLBACK_DARK_PATH = '/custom_apps/openbuild/img/app-dark.svg';
+    private const FALLBACK_DARK_FILE = 'app-dark.svg';
 
     /**
      * Filesystem server root, used to locate fallback icon files.
@@ -94,9 +93,40 @@ class IconService
         private readonly FileService $fileService,
         private readonly LoggerInterface $logger,
         ?string $serverRoot=null,
+        private readonly ?IAppManager $appManager=null,
     ) {
         $this->serverRoot = ($serverRoot ?? (\OC::$SERVERROOT ?? ''));
     }//end __construct()
+
+    /**
+     * Absolute filesystem path to OpenBuild's bundled `img/` directory (no
+     * trailing slash), used for the built-in fallback icons.
+     *
+     * Resolved via IAppManager::getAppPath so it is correct wherever the app is
+     * installed (apps/, custom_apps/, apps-shared/, …) — the previous hardcoded
+     * `\OC::$SERVERROOT.'/custom_apps/openbuild/img'` only matched a custom_apps
+     * layout, so on any other layout the fallback file was missing and the icon
+     * endpoint returned 404 for every app without a custom icon. Falls back to
+     * the legacy serverRoot-relative path only when no app manager was injected
+     * (unit tests that pass an explicit serverRoot).
+     *
+     * @return string The absolute path to the app's img directory.
+     */
+    private function bundledImgDir(): string
+    {
+        if ($this->appManager !== null) {
+            try {
+                return rtrim($this->appManager->getAppPath('openbuild'), '/').'/img';
+            } catch (\Throwable $e) {
+                // App path unavailable — fall through to the legacy location.
+                $this->logger->warning(
+                    'IconService: could not resolve openbuild app path, using legacy fallback: '.$e->getMessage()
+                );
+            }
+        }
+
+        return $this->serverRoot.'/custom_apps/openbuild/img';
+    }//end bundledImgDir()
 
     /**
      * Return a stream + MIME type for the icon of a given Application slug.
@@ -196,7 +226,7 @@ class IconService
             }
         }
 
-        return $this->fallbackStream(path: $this->serverRoot.self::FALLBACK_LIGHT_PATH);
+        return $this->fallbackStream(path: $this->bundledImgDir().'/'.self::FALLBACK_LIGHT_FILE);
     }//end resolveIconLight()
 
     /**
@@ -227,13 +257,13 @@ class IconService
         }//end if
 
         // Step 3: /img/app-dark.svg.
-        $darkPath = $this->serverRoot.self::FALLBACK_DARK_PATH;
+        $darkPath = $this->bundledImgDir().'/'.self::FALLBACK_DARK_FILE;
         if (file_exists($darkPath) === true) {
             return $this->fallbackStream(path: $darkPath);
         }
 
         // Step 4: /img/app.svg.
-        return $this->fallbackStream(path: $this->serverRoot.self::FALLBACK_LIGHT_PATH);
+        return $this->fallbackStream(path: $this->bundledImgDir().'/'.self::FALLBACK_LIGHT_FILE);
     }//end resolveIconDark()
 
     /**

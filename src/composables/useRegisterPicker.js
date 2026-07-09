@@ -213,10 +213,47 @@ export function useRegisterPicker(opts = {}) {
 		}
 	}
 
+	/**
+	 * Build the `dataSources` object consumed by the library's page-config /
+	 * edit-pages modals (provided down as `cnDataSources` by CnAppRoot). Its
+	 * presence flips the Register / Schema / Columns fields from free-text slug
+	 * inputs to searchable NcSelect dropdowns.
+	 *
+	 * Fetches every register and, in parallel, each register's schemas. The
+	 * schemas endpoint returns each schema's `properties` inline (see
+	 * OpenRegister `Schema::jsonSerialize`), so column names come for free from
+	 * the property keys — no extra per-schema request.
+	 *
+	 * @return {Promise<{registers: Array<{value: string, label: string,
+	 *   schemas: Array<{value: string, label: string, columns: string[]}>}>}>}
+	 *   - the data-sources map (empty `registers` on failure).
+	 */
+	async function fetchDataSources() {
+		const registers = await fetchRegisters()
+		if (!Array.isArray(registers) || registers.length === 0) {
+			return { registers: [] }
+		}
+		const mapped = await Promise.all(registers.map(async (r) => {
+			const registerSlug = r.slug || r.id
+			const schemas = await fetchSchemas(registerSlug)
+			return {
+				value: registerSlug,
+				label: r.title || registerSlug,
+				schemas: (Array.isArray(schemas) ? schemas : []).map((s) => ({
+					value: s.slug || s.id,
+					label: s.title || s.slug || s.id,
+					columns: Object.keys((s && s.properties) || {}),
+				})),
+			}
+		}))
+		return { registers: mapped }
+	}
+
 	return {
 		fetchRegisters,
 		fetchSchemas,
 		fetchSchemaProperties,
+		fetchDataSources,
 		resolveAppRegister,
 	}
 }
