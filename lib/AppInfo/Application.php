@@ -32,6 +32,7 @@ use OCA\OpenBuild\Lifecycle\ApplicationVersionOwnerGuard;
 use OCA\OpenBuild\Listener\HybridMetadataLockListener;
 use OCA\OpenBuild\Listener\ProductionVersionGuardListener;
 use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
+use OCA\OpenBuild\Repair\InitializeSettings;
 use OCA\OpenBuild\Sections\SettingsSection;
 use OCA\OpenBuild\Service\AppNavigationService;
 use OCA\OpenBuild\Service\PermissionResolver;
@@ -172,14 +173,25 @@ class Application extends App implements IBootstrap
                 userSession: $c->get('OCP\\IUserSession')
             )
         );
-        // Re-bind the concrete OpenBuild SettingsService AFTER Bootstrap::register.
-        // Bootstrap aliases the FQCN `OCA\OpenBuild\Service\SettingsService` to the
-        // generic AppHostSettingsService (Bootstrap.php registers `$serviceNs\SettingsService`
-        // → AppHostSettingsService). Without this override, the SettingsController factory
-        // below resolves `$c->get(SettingsService::class)` to AppHostSettingsService and
-        // fatals with a TypeError (constructor arg #2 type mismatch), 500-ing
-        // `GET /api/settings` and leaving the app detail page in its empty fallback
-        // ("Untitled application", `openbuild--` register). Last registration wins.
+        // SettingsService — bind the concrete OpenBuild implementation so it wins
+        // over the generic AppHost binding (last registration wins). When
+        // Bootstrap::register ran (above), it aliases this leaf class name to
+        // OpenRegister's generic AppHostSettingsService, whose loadConfiguration()
+        // calls ConfigurationService::importFromApp() with a stale 2-argument
+        // signature (OR `development` now requires 4) and skips the ADR-037
+        // register.d/ fragment merge. Without this override the SettingsController
+        // factory below also resolves `$c->get(SettingsService::class)` to the
+        // generic AppHostSettingsService and fatals with a TypeError (constructor
+        // arg #2 type mismatch), 500-ing `GET /api/settings` and leaving the app
+        // detail page in its empty fallback ("Untitled application", `openbuild--`
+        // register). On the app-enable/install path the InitializeSettings repair
+        // step resolves THIS class directly, so under the generic binding the
+        // register import fails with "importFromApp(): Argument #2 ($data) not
+        // passed" — leaving the openbuild register uncreated until a manual
+        // re-import. Registering the concrete class here (mirroring the controllers
+        // above) guarantees every caller — the InitializeSettings repair step AND
+        // SettingsController — uses the correct 4-arg importer + fragment merge on
+        // all paths.
         $context->registerService(
             SettingsService::class,
             static fn ($c): SettingsService => new SettingsService(
@@ -188,6 +200,24 @@ class Application extends App implements IBootstrap
                 container: $c,
                 groupManager: $c->get('OCP\\IGroupManager'),
                 userSession: $c->get('OCP\\IUserSession'),
+                logger: $c->get('Psr\\Log\\LoggerInterface')
+            )
+        );
+        // InitializeSettings repair step — bind OpenBuild's own class so it wins
+        // over the generic AppHost binding (last registration wins). Bootstrap
+        // above re-registers this exact class name to OpenRegister's
+        // GenericInitializeSettings, which imports via the broken generic
+        // AppHostSettingsService (2-arg importFromApp) and does NO register.d/
+        // fragment merge. info.xml declares OCA\OpenBuild\Repair\InitializeSettings
+        // as an <install>/<post-migration> step; NC's repair runner resolves that
+        // class name through the container, so without this the generic (failing)
+        // step runs on install and the openbuild register is never created.
+        // Re-registering the concrete step here makes install use the correct
+        // 4-arg importer + fragment merge (via the concrete SettingsService above).
+        $context->registerService(
+            InitializeSettings::class,
+            static fn ($c): InitializeSettings => new InitializeSettings(
+                settingsService: $c->get(SettingsService::class),
                 logger: $c->get('Psr\\Log\\LoggerInterface')
             )
         );

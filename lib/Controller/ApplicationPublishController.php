@@ -130,17 +130,20 @@ class ApplicationPublishController extends Controller
     }//end unpublish()
 
     /**
-     * Delete an Application and everything it owns (versions, per-version
-     * registers, routes). Owner-only (admin bypass). Wired as
-     * `applicationPublish#destroy`.
+     * Delete an Application and the app wrapper it owns (versions, routes). When
+     * $deleteData is true, also delete the per-version registers and all their
+     * data; otherwise that data is preserved. Owner-only (admin bypass). Wired
+     * as `applicationPublish#destroy`.
      *
-     * @param string $appUuid Parent Application UUID (path param)
+     * @param string $appUuid    Parent Application UUID (path param)
+     * @param bool   $deleteData When true, also delete the underlying registers
+     *                           and every object stored in them (query param)
      *
      * @return JSONResponse 200 + `{deleted, orphanedResources}`, or an error envelope
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 10, period: 60)]
-    public function destroy(string $appUuid): JSONResponse
+    public function destroy(string $appUuid, bool $deleteData = false): JSONResponse
     {
         $user = $this->userSession->getUser();
         if ($user === null) {
@@ -163,7 +166,8 @@ class ApplicationPublishController extends Controller
 
             $orphaned = $this->deletionService->deleteApplication(
                 appUuid: $appUuid,
-                appSlug: (string) ($application['slug'] ?? '')
+                appSlug: (string) ($application['slug'] ?? ''),
+                deleteData: $deleteData
             );
 
             return new JSONResponse(

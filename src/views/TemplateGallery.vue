@@ -35,7 +35,7 @@
 			<NcEmptyContent :name="t('openbuild', 'No GitHub apps match your search')" />
 		</div>
 
-		<ul v-else class="template-gallery__grid">
+		<ul v-else class="template-gallery__grid" data-walkthrough-id="templates-grid">
 			<li v-for="card in githubCards" :key="card.owner + '/' + card.repo" class="template-card">
 				<div class="template-card__body">
 					<h2 class="template-card__title">
@@ -258,18 +258,32 @@ export default {
 				return
 			}
 			// Feature-detect chain #5 page editor; fall back to the manifest-driven
-			// virtual-app manager, then the dashboard.
-			const editorRoute = this.$router.resolve({ name: 'PageEditor', params: { slug } })
-			if (editorRoute?.resolved?.matched?.length > 0) {
-				this.$router.push(editorRoute.resolved.fullPath)
+			// virtual-app manager, then the dashboard. Routes are registered from
+			// the manifest with `name = page.id` (see main.js#routesFromManifest),
+			// so probe by name against the registered route table first —
+			// $router.resolve() on an unknown name emits a vue-router warning.
+			if (this.hasRoute('PageEditor')) {
+				this.$router.push({ name: 'PageEditor', params: { slug } })
 				return
 			}
-			const fallback = this.$router.resolve({ name: 'VirtualApps', params: { slug } })
-			if (fallback?.resolved?.matched?.length > 0) {
-				this.$router.push(fallback.resolved.fullPath)
+			if (this.hasRoute('VirtualApps')) {
+				this.$router.push({ name: 'VirtualApps', params: { slug } })
 				return
 			}
 			this.$router.push({ name: 'Dashboard' })
+		},
+		/**
+		 * Whether a named route is registered on the router. Routes are built
+		 * from the manifest (flat, `name = page.id`), so a shallow scan of
+		 * `$router.options.routes` is sufficient and avoids the vue-router
+		 * warning that `$router.resolve()` logs for unknown route names.
+		 *
+		 * @param {string} name The route name to check.
+		 * @return {boolean} True when a route with that name is registered.
+		 */
+		hasRoute(name) {
+			const routes = this.$router?.options?.routes || []
+			return routes.some((route) => route.name === name)
 		},
 	},
 }
