@@ -75,44 +75,87 @@
 				@input="onDescriptionInput" />
 		</div>
 
-		<!-- Icon uploads (optional) -->
+		<!-- App icon (optional) — pick a Material or OpenGemeenten glyph, or
+		     upload your own SVG. A single pick yields a correct light/dark pair
+		     (white glyph for the dark app header, dark glyph for light bg);
+		     an optional dark override lets you use a different dark glyph. -->
 		<div class="wizard-step1__field">
 			<p class="wizard-step1__label">
 				{{ t('openbuild', 'App icon (optional)') }}
 			</p>
-			<div class="wizard-step1__icons">
-				<div class="wizard-step1__icon-slot">
-					<label for="wizard-icon-light" class="wizard-step1__file-label">
-						{{ t('openbuild', 'Light icon (SVG)') }}
-					</label>
+
+			<div class="wizard-step1__icon-row">
+				<CnIconPicker
+					:value="payload.iconValue"
+					searchable
+					clearable
+					:sources="iconSources"
+					:catalogues="iconCatalogues"
+					@input="onIconInput" />
+
+				<!-- Live preview of the resolved app icon on both backgrounds. -->
+				<div class="wizard-step1__icon-preview">
+					<div class="wizard-step1__preview-box wizard-step1__preview-box--light" :title="t('openbuild', 'On the app header (light icon)')">
+						<!-- eslint-disable-next-line vue/no-v-html -->
+						<span v-if="lightPreview" class="wizard-step1__preview-svg" v-html="lightPreview" />
+						<span v-else class="wizard-step1__preview-empty">—</span>
+					</div>
+					<div class="wizard-step1__preview-box wizard-step1__preview-box--dark" :title="t('openbuild', 'On a light background (dark icon)')">
+						<!-- eslint-disable-next-line vue/no-v-html -->
+						<span v-if="darkPreview" class="wizard-step1__preview-svg" v-html="darkPreview" />
+						<span v-else class="wizard-step1__preview-empty">—</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Upload fallback: read a user SVG as text and use it directly. -->
+			<div class="wizard-step1__icon-actions">
+				<label class="wizard-step1__advanced-toggle wizard-step1__upload-link">
 					<input
-						id="wizard-icon-light"
+						ref="uploadInput"
 						type="file"
 						accept=".svg,image/svg+xml"
 						class="wizard-step1__file-input"
-						@change="onIconChange('icon', $event)">
-				</div>
-				<div class="wizard-step1__icon-slot">
-					<label for="wizard-icon-dark" class="wizard-step1__file-label">
-						{{ t('openbuild', 'Dark icon (SVG)') }}
-					</label>
-					<input
-						id="wizard-icon-dark"
-						type="file"
-						accept=".svg,image/svg+xml"
-						class="wizard-step1__file-input"
-						@change="onIconChange('iconDark', $event)">
-				</div>
+						@change="onUploadSvg">
+					{{ t('openbuild', 'Upload your own SVG') }}
+				</label>
+				<button
+					type="button"
+					class="wizard-step1__advanced-toggle"
+					@click="showDarkOverride = !showDarkOverride">
+					{{ showDarkOverride ? t('openbuild', 'Hide dark override') : t('openbuild', 'Add a dark override') }}
+				</button>
+				<span v-if="iconError" class="wizard-step1__error-msg" role="alert">{{ iconError }}</span>
+			</div>
+
+			<!-- Optional dark-variant override. -->
+			<div v-if="showDarkOverride" class="wizard-step1__dark-override">
+				<p class="wizard-step1__file-label">
+					{{ t('openbuild', 'Dark variant (optional — defaults to the icon above)') }}
+				</p>
+				<CnIconPicker
+					:value="payload.iconDarkValue"
+					searchable
+					clearable
+					:sources="iconSources"
+					:catalogues="iconCatalogues"
+					@input="onDarkInput" />
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
+import { CnIconPicker } from '@conduction/nextcloud-vue'
 import { toKebabCase, validateSlug } from '../../utils/slugPattern.js'
+import { ICON_SOURCES, buildIconCatalogues, resolveAppIcon } from '../../utils/iconCatalogues.js'
 
 export default {
 	name: 'Step1Basics',
+
+	components: {
+		CnIconPicker,
+	},
 
 	props: {
 		/**
@@ -130,10 +173,36 @@ export default {
 		return {
 			showAdvanced: false,
 			slugManuallyEdited: false,
+			showDarkOverride: false,
+			iconError: '',
+			iconSources: ICON_SOURCES,
+			// Frozen so Vue doesn't deep-observe ~7.7k catalogue entries.
+			iconCatalogues: Object.freeze(buildIconCatalogues()),
 		}
 	},
 
 	computed: {
+		/**
+		 * The resolved light app icon (white glyph) for the preview box, or ''.
+		 *
+		 * @return {string} SVG markup or an empty string.
+		 */
+		lightPreview() {
+			return resolveAppIcon(this.payload.iconValue, { dark: false }) || ''
+		},
+
+		/**
+		 * The resolved dark app icon (no fill) for the preview box. Falls back to
+		 * the primary icon when no dark override is set, mirroring how the wizard
+		 * derives the dark variant on submit.
+		 *
+		 * @return {string} SVG markup or an empty string.
+		 */
+		darkPreview() {
+			const source = this.payload.iconDarkValue || this.payload.iconValue
+			return resolveAppIcon(source, { dark: true }) || ''
+		},
+
 		/**
 		 * Observed behaviour of `slugError` (retrofit annotation).
 		 *
@@ -203,13 +272,61 @@ export default {
 		},
 
 		/**
-		 * Observed behaviour of `onIconChange` (retrofit annotation).
+		 * Store the primary icon pick (an mdi/OpenGemeenten catalogue value or
+		 * raw SVG). The app-icon SVG is synthesized from this on submit.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 * @param {string|null} value The picker's emitted value.
+		 * @return {void}
 		 */
-		onIconChange(field, event) {
-			const file = event.target.files?.[0] || null
-			this.$emit('update:payload', { [field]: file })
+		onIconInput(value) {
+			this.iconError = ''
+			this.$emit('update:payload', { iconValue: value || null })
+		},
+
+		/**
+		 * Store the optional dark-variant override.
+		 *
+		 * @param {string|null} value The picker's emitted value.
+		 * @return {void}
+		 */
+		onDarkInput(value) {
+			this.$emit('update:payload', { iconDarkValue: value || null })
+		},
+
+		/**
+		 * Read an uploaded SVG file as text and use its markup as the icon value
+		 * (the fallback for when no catalogue glyph fits).
+		 *
+		 * @param {Event} event The file-input change event.
+		 * @return {void}
+		 */
+		onUploadSvg(event) {
+			this.iconError = ''
+			const file = event.target.files?.[0]
+			if (!file) {
+				return
+			}
+			const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name)
+			if (!isSvg) {
+				this.iconError = t('openbuild', 'Only .svg files are accepted')
+				this.$refs.uploadInput.value = ''
+				return
+			}
+			const reader = new FileReader()
+			reader.onload = (e) => {
+				const text = typeof e.target.result === 'string' ? e.target.result.trim() : ''
+				if (!text.includes('<svg')) {
+					this.iconError = t('openbuild', 'That file does not contain an SVG')
+				} else {
+					this.$emit('update:payload', { iconValue: text })
+				}
+				this.$refs.uploadInput.value = ''
+			}
+			reader.onerror = () => {
+				this.iconError = t('openbuild', 'Could not read that file')
+				this.$refs.uploadInput.value = ''
+			}
+			reader.readAsText(file)
 		},
 	},
 }
@@ -293,16 +410,75 @@ export default {
 	margin: 4px 0 0;
 }
 
-.wizard-step1__icons {
+.wizard-step1__icon-row {
 	display: flex;
 	gap: 16px;
+	align-items: flex-start;
 	flex-wrap: wrap;
 }
 
-.wizard-step1__icon-slot {
+.wizard-step1__icon-row > .cn-icon-picker {
+	flex: 1 1 280px;
+	min-width: 240px;
+}
+
+.wizard-step1__icon-preview {
+	display: flex;
+	gap: 8px;
+}
+
+.wizard-step1__preview-box {
+	width: 44px;
+	height: 44px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--border-radius, 4px);
+	border: 1px solid var(--color-border, #ddd);
+	flex-shrink: 0;
+}
+
+.wizard-step1__preview-box--light {
+	background: #1c1c1e;
+}
+
+.wizard-step1__preview-box--dark {
+	background: #ffffff;
+}
+
+.wizard-step1__preview-svg {
+	display: inline-flex;
+	width: 28px;
+	height: 28px;
+}
+
+.wizard-step1__preview-svg :deep(svg) {
+	width: 100%;
+	height: 100%;
+}
+
+.wizard-step1__preview-empty {
+	font-size: 18px;
+	color: var(--color-text-maxcontrast, #888);
+}
+
+.wizard-step1__icon-actions {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	flex-wrap: wrap;
+	margin-top: 8px;
+}
+
+.wizard-step1__upload-link {
+	cursor: pointer;
+}
+
+.wizard-step1__dark-override {
+	margin-top: 12px;
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: 6px;
 }
 
 .wizard-step1__file-label {
@@ -311,6 +487,6 @@ export default {
 }
 
 .wizard-step1__file-input {
-	font-size: 0.875rem;
+	display: none;
 }
 </style>
