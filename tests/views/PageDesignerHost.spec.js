@@ -20,10 +20,12 @@ import { ref } from 'vue'
 
 const axiosGetMock = vi.fn()
 const axiosPutMock = vi.fn()
+const axiosPatchMock = vi.fn()
 vi.mock('@nextcloud/axios', () => ({
 	default: {
 		get: (...a) => axiosGetMock(...a),
 		put: (...a) => axiosPutMock(...a),
+		patch: (...a) => axiosPatchMock(...a),
 	},
 }))
 vi.mock('@nextcloud/router', () => ({
@@ -82,8 +84,10 @@ function mountHost({ slug = 'petstore', query = {}, version = null, appList = []
 	statusAvailable = available
 	axiosGetMock.mockReset()
 	axiosPutMock.mockReset()
+	axiosPatchMock.mockReset()
 	axiosGetMock.mockResolvedValue({ data: { results: appList } })
 	axiosPutMock.mockResolvedValue({ data: {} })
+	axiosPatchMock.mockResolvedValue({ data: {} })
 	return mount(PageDesignerHost, {
 		mocks: { $route: { params: { slug }, query } },
 		stubs: { 'router-link': true },
@@ -255,12 +259,15 @@ describe('PageDesignerHost', () => {
 			appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
 		})
 		await flush(wrapper)
-		axiosPutMock.mockResolvedValueOnce({ data: { '@self': { id: 'ver-uuid' }, saved: true } })
+		axiosPatchMock.mockResolvedValueOnce({ data: { '@self': { id: 'ver-uuid' }, saved: true } })
 		await wrapper.vm.save()
-		expect(axiosPutMock).toHaveBeenCalledWith(
+		// PATCH the manifest only — a full-object PUT trips the reserved `register`
+		// property collision on the ApplicationVersion schema.
+		expect(axiosPatchMock).toHaveBeenCalledWith(
 			'/apps/openregister/api/objects/openbuild/applicationVersion/ver-uuid',
-			expect.objectContaining({ manifest: expect.any(Object) }),
+			{ manifest: expect.any(Object) },
 		)
+		expect(axiosPutMock).not.toHaveBeenCalled()
 		expect(wrapper.vm.toast).toBe('Pages saved.')
 	})
 
