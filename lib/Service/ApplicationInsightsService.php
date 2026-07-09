@@ -274,8 +274,16 @@ class ApplicationInsightsService
                 return $payload;
             }
 
+            // Prefer the version's REAL register. Versions may share production's
+            // register (manifest-only versioning), so the
+            // `openbuild-{appSlug}-{versionSlug}` convention can name a register
+            // that does not exist (yielding empty KPIs). Fall back to the
+            // convention only when the version carries no register.
             $versionSlug  = (string) ($version['slug'] ?? '');
-            $registerSlug = sprintf('openbuild-%s-%s', $appSlug, $versionSlug);
+            $registerSlug = (string) ($version['register'] ?? '');
+            if ($registerSlug === '') {
+                $registerSlug = sprintf('openbuild-%s-%s', $appSlug, $versionSlug);
+            }
 
             $manifest    = $this->extractManifest(version: $version);
             $schemaSlugs = $this->deriveSchemaIds(manifest: $manifest, registerSlug: $registerSlug);

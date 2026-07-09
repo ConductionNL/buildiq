@@ -13,15 +13,43 @@
   -->
 <template>
 	<div class="ob-detail-actions">
-		<NcButton
-			v-if="builderUrl"
-			type="primary"
-			:href="builderUrl">
-			<template #icon>
-				<OpenInNew :size="20" />
-			</template>
-			{{ t('openbuild', 'Open app') }}
-		</NcButton>
+		<!-- Split button: primary opens PRODUCTION; chevron lists versions to
+		     view/use (and edit, editor+). Production is always the canonical URL. -->
+		<div v-if="builderUrl" class="ob-detail-actions__open">
+			<NcButton
+				type="primary"
+				:href="builderUrl"
+				class="ob-detail-actions__open-primary">
+				<template #icon>
+					<OpenInNew :size="20" />
+				</template>
+				{{ t('openbuild', 'Open app') }}
+			</NcButton>
+			<NcActions
+				v-if="openableVersions.length"
+				:menu-name="t('openbuild', 'Open a version')"
+				:force-menu="true"
+				class="ob-detail-actions__open-chevron">
+				<template v-for="v in openableVersions">
+					<NcActionButton :key="`open-${v.slug}`" @click="openVersion(v)">
+						<template #icon>
+							<OpenInNew :size="20" />
+						</template>
+						{{ versionLabel(v) }}
+					</NcActionButton>
+					<NcActionButton
+						v-if="canEditVersions"
+						:key="`edit-${v.slug}`"
+						class="ob-detail-actions__open-edit"
+						@click="editVersion(v)">
+						<template #icon>
+							<PencilRulerOutline :size="20" />
+						</template>
+						{{ t('openbuild', 'Edit {name}', { name: versionLabel(v) }) }}
+					</NcActionButton>
+				</template>
+			</NcActions>
+		</div>
 		<NcButton
 			:disabled="!obApp"
 			@click="exportOpen = true">
@@ -46,6 +74,12 @@
 					<MapMarkerPath :size="20" />
 				</template>
 				{{ t('openbuild', 'Design walkthrough') }}
+			</NcActionButton>
+			<NcActionButton v-if="obApp && obApp.slug" :disabled="!obApp" @click="githubOpen = true">
+				<template #icon>
+					<Github :size="20" />
+				</template>
+				{{ t('openbuild', 'GitHub') }}
 			</NcActionButton>
 			<NcActionButton v-if="obAppRole === 'owner'" :disabled="!obApp" @click="permissionsOpen = true">
 				<template #icon>
@@ -85,16 +119,25 @@
 		<ExportDialog
 			v-if="exportOpen && obApp"
 			:application-slug="obApp.slug"
+			:data-registers="obApp.dataRegisters || []"
 			@close="exportOpen = false" />
+		<GitHubSyncModal
+			v-if="obApp && obApp.slug"
+			:open="githubOpen"
+			:slug="obApp.slug"
+			:is-owner="obAppRole === 'owner'"
+			@update:open="githubOpen = $event" />
 		<AppSettingsModal
 			:open="settingsOpen"
 			:app-name="(obApp && (obApp.name || obApp.slug)) || ''"
 			:is-published="(obApp && obApp.status) === 'published'"
 			:allow-user-overrides="!!(obApp && obApp.allowUserOverrides)"
+			:data-registers="(obApp && obApp.dataRegisters) || []"
 			:busy="publishing"
 			@update:open="settingsOpen = $event"
 			@set-published="setPublished"
-			@update:allow-overrides="setAllowOverrides" />
+			@update:allow-overrides="setAllowOverrides"
+			@update:data-registers="setDataRegisters" />
 		<DeleteAppDialog
 			:open="deleteOpen"
 			:app-name="(obApp && (obApp.name || obApp.slug)) || ''"
@@ -137,9 +180,11 @@ import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOut
 import History from 'vue-material-design-icons/History.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import HelpCircleOutline from 'vue-material-design-icons/HelpCircleOutline.vue'
+import Github from 'vue-material-design-icons/Github.vue'
 import PermissionsModal from '../modals/PermissionsModal.vue'
 import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
 import AppSettingsModal from '../modals/AppSettingsModal.vue'
+import GitHubSyncModal from '../modals/GitHubSyncModal.vue'
 import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
 import SaveAsTemplateDialog from '../dialogs/SaveAsTemplateDialog.vue'
 import { getCurrentUserGroups } from '../composables/useRole.js'
@@ -166,9 +211,11 @@ export default {
 		History,
 		ContentSaveOutline,
 		HelpCircleOutline,
+		Github,
 		PermissionsModal,
 		PermissionHistoryModal,
 		AppSettingsModal,
+		GitHubSyncModal,
 		DeleteAppDialog,
 		SaveAsTemplateDialog,
 		ExportDialog,
@@ -176,8 +223,10 @@ export default {
 	mixins: [applicationContext],
 	data() {
 		return {
+			versions: [],
 			publishing: false,
 			deleting: false,
+			githubOpen: false,
 			settingsOpen: false,
 			deleteOpen: false,
 			permissionsOpen: false,
@@ -217,6 +266,39 @@ export default {
 			return this.obAppRole === 'owner' || this.obAppRole === 'editor'
 		},
 		/**
+		 * Whether the caller may edit versions (owner / editor) — gates the
+		 * per-version Edit entries in the Open-a-version chevron.
+		 *
+		 * @return {boolean}
+		 */
+		canEditVersions() {
+			return this.obAppRole === 'owner' || this.obAppRole === 'editor'
+		},
+		/**
+		 * The current production version UUID (handles string + inline-object).
+		 *
+		 * @return {string}
+		 */
+		productionUuid() {
+			const pv = this.obApp && this.obApp.productionVersion
+			if (!pv) {
+				return ''
+			}
+			return (typeof pv === 'string') ? pv : (pv.uuid || pv.id || '')
+		},
+		/**
+		 * Versions offered in the Open-a-version chevron — non-archived, with the
+		 * production version first (decision 4: archived hidden by default).
+		 *
+		 * @return {Array<object>}
+		 */
+		openableVersions() {
+			return this.versions
+				.filter(v => (v.status || 'draft') !== 'archived')
+				.slice()
+				.sort((a, b) => (this.isProductionVersion(b) ? 1 : 0) - (this.isProductionVersion(a) ? 1 : 0))
+		},
+		/**
 		 * Group ids selectable in the permissions modal (current user's groups
 		 * unioned with any already-referenced principals).
 		 *
@@ -233,7 +315,107 @@ export default {
 			return Array.from(gids)
 		},
 	},
+	watch: {
+		'obApp.slug': {
+			immediate: true,
+			/**
+			 * Load the app's versions for the Open-a-version chevron once the
+			 * slug resolves.
+			 *
+			 * @param {string} slug The app slug.
+			 * @return {void}
+			 */
+			handler(slug) {
+				if (slug) {
+					this.loadVersions()
+				}
+			},
+		},
+	},
 	methods: {
+		/**
+		 * Load the app's ApplicationVersion rows for the Open-a-version chevron.
+		 *
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 */
+		async loadVersions() {
+			if (!this.obApp || !this.obApp.slug) {
+				this.versions = []
+				return
+			}
+			try {
+				const url = generateUrl('/apps/openbuild/api/applications/{slug}/versions', { slug: this.obApp.slug })
+				const { data } = await axios.get(url)
+				this.versions = Array.isArray(data) ? data : ((data && data.results) ? data.results : [])
+			} catch (e) {
+				this.versions = []
+			}
+		},
+		/**
+		 * The own UUID of a version row (`id` or the `@self` envelope).
+		 *
+		 * @param {object} v The version row.
+		 * @return {string}
+		 */
+		versionRowUuid(v) {
+			const self = (v && v['@self']) || {}
+			return (v && v.id) || self.id || self.uuid || (v && v.uuid) || ''
+		},
+		/**
+		 * Whether a version row is the current production version.
+		 *
+		 * @param {object} v The version row.
+		 * @return {boolean}
+		 */
+		isProductionVersion(v) {
+			return !!this.productionUuid && this.versionRowUuid(v) === this.productionUuid
+		},
+		/**
+		 * Human label for a version in the chevron (name + semver + marker).
+		 *
+		 * @param {object} v The version row.
+		 * @return {string}
+		 */
+		versionLabel(v) {
+			const name = (v && (v.name || v.slug)) || ''
+			const semver = (v && v.semver) ? ` (${v.semver})` : ''
+			const prod = this.isProductionVersion(v) ? ` — ${t('openbuild', 'Production')}` : ''
+			return `${name}${semver}${prod}`
+		},
+		/**
+		 * Open a version in the live shell — production at the canonical URL,
+		 * any other via `?_version=` (RBAC-gated server-side).
+		 *
+		 * @param {object} v The version row.
+		 * @return {void}
+		 */
+		openVersion(v) {
+			if (!this.obApp || !this.obApp.slug) {
+				return
+			}
+			const base = generateUrl(`/apps/openbuild/builder/${this.obApp.slug}`)
+			window.location.href = this.isProductionVersion(v)
+				? base
+				: `${base}?_version=${encodeURIComponent(v.slug)}`
+		},
+		/**
+		 * Edit a version in the page designer, scoped via `?_version=` for
+		 * non-production versions.
+		 *
+		 * @param {object} v The version row.
+		 * @return {void}
+		 */
+		editVersion(v) {
+			if (!this.obApp || !this.obApp.slug) {
+				return
+			}
+			const base = generateUrl(`/apps/openbuild/builder/${this.obApp.slug}/pages`)
+			window.location.href = this.isProductionVersion(v)
+				? base
+				: `${base}?_version=${encodeURIComponent(v.slug)}`
+		},
 		/**
 		 * Publish or unpublish the app (owner-only, enforced again server-side).
 		 * Publishing makes it appear in the Nextcloud app menu.
@@ -277,6 +459,25 @@ export default {
 			this.error = ''
 			try {
 				await this.obPatchApp({ allowUserOverrides: allow })
+			} catch (e) {
+				this.error = `${t('openbuild', 'Failed to save settings')}: ${e.message || e}`
+			}
+		},
+		/**
+		 * Persist an add/remove/edit of the app's `dataRegisters` bindings
+		 * from the settings modal — same shape as `setAllowOverrides()`
+		 * (data-registers-runtime task 5.2).
+		 *
+		 * @param {Array<{register: string, label?: string}>} dataRegisters The full updated bindings array.
+		 * @return {Promise<void>}
+		 */
+		async setDataRegisters(dataRegisters) {
+			if (this.obAppRole !== 'owner' || !this.obApp) {
+				return
+			}
+			this.error = ''
+			try {
+				await this.obPatchApp({ dataRegisters })
 			} catch (e) {
 				this.error = `${t('openbuild', 'Failed to save settings')}: ${e.message || e}`
 			}
@@ -343,7 +544,7 @@ export default {
 				this.saveTemplateManifest = this.obApp.manifest
 					|| (this.obApp.currentVersion && this.obApp.currentVersion.manifest)
 					|| {}
-				const picker = useRegisterPicker({ appSlug: this.obApp.slug })
+				const picker = useRegisterPicker({ appSlug: this.obApp.slug, dataRegisters: this.obApp.dataRegisters || [] })
 				this.saveTemplateSchemas = await picker.fetchSchemas(picker.resolveAppRegister())
 				this.existingTemplates = await this.loadExistingTemplates()
 				this.saveTemplateOpen = true
@@ -391,6 +592,12 @@ export default {
 	flex-wrap: wrap;
 	gap: 8px;
 	align-items: center;
+}
+
+.ob-detail-actions__open {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
 }
 
 .ob-detail-actions__toast {

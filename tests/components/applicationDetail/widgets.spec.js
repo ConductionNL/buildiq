@@ -45,6 +45,27 @@ describe('applicationDetail widgets', () => {
 		expect(text).not.toContain('Files')
 	})
 
+	it('RegisterWidget hides the Import data affordance for non-builders (canImport=false)', () => {
+		const wrapper = shallowMount(RegisterWidget, {
+			propsData: { appSlug: 'hello-world', versionSlug: 'production', canImport: false },
+			mocks: { t, n: (app, s, p, num) => (num === 1 ? s : p) },
+		})
+		expect(wrapper.text()).not.toContain('Import data')
+	})
+
+	it('RegisterWidget shows Import data + emits import-data when canImport=true', async () => {
+		const wrapper = shallowMount(RegisterWidget, {
+			propsData: { appSlug: 'hello-world', versionSlug: 'production', canImport: true },
+			mocks: { t, n: (app, s, p, num) => (num === 1 ? s : p) },
+			stubs: { NcButton: { name: 'NcButton', props: ['type'], template: '<button @click="$emit(\'click\')"><slot /></button>' } },
+		})
+		expect(wrapper.text()).toContain('Import data')
+		wrapper.findAllComponents({ name: 'NcButton' }).at(0).vm.$emit('click')
+		await wrapper.vm.$nextTick()
+		expect(wrapper.emitted('import-data')).toBeTruthy()
+		expect(wrapper.emitted('import-data')[0][0].registerSlug).toBe('openbuild-hello-world-production')
+	})
+
 	it('SchemasWidget renders schema names + emits add-schema event', async () => {
 		const schemas = [{ id: 's1', name: 'Customer', objectCount: 5, status: 'active' }]
 		const wrapper = shallowMount(SchemasWidget, {

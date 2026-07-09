@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.40] - 2026-06-26
+
+### Added
+- Version lifecycle + switcher (version-lifecycle-and-switcher): draft versions,
+  release-to-production, and a version switcher UI.
+- **New draft** action — clones the production manifest and SHARES production's
+  data register (manifest-only versioning; the create endpoint inherits the
+  production register when none is supplied).
+- **Release** action (owner-only, no admin bypass) — set-as-production + publish
+  + demote the previous production, enforcing exactly one production version via
+  the single-valued `productionVersion` pointer (a draft previous-production is
+  demoted by the pointer move alone).
+- **Open-app split button** — primary opens production; a chevron lists versions
+  to view/use and edit (production marked, archived hidden).
+- Click-to-open a version (`?_version=`) and per-row Edit (designer) in the
+  version history; production/active markers; EN + NL i18n.
+
+### Fixed
+- Version history list was always empty — it queried a non-working OpenRegister
+  objects endpoint and filtered on a non-existent `applicationUuid` field; it now
+  uses `/api/applications/{slug}/versions` with the real fields.
+- App-detail Register widget (and KPI register links) showed a phantom
+  `openbuild-{slug}-{versionSlug}` register for shared-register versions; they now
+  use the active version's real `register` field.
+
+### Security
+- Delete guard: never drop an OpenRegister register that is shared with the
+  production version (a `delete-now` on a production-shared draft is downgraded to
+  keep-register so production data is never destroyed).
+
 ## [0.5.7] - 2026-06-20
 
 ### Added

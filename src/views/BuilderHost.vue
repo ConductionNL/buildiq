@@ -40,17 +40,20 @@
 			:app-id="appId"
 			:bundled-manifest="placeholderManifest"
 			:registry="runtimeRegistry"
+			:data-sources="dataSources"
 			:options="manifestOptions" />
 	</div>
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { generateUrl } from '@nextcloud/router'
 
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useAppTheme } from '../composables/useAppTheme.js'
 import { runtimeRegistry } from '../runtimeRegistry.js'
+import { registerSlugForApp } from '../store/schemas.js'
 import placeholderManifest from '../manifests/placeholder.json'
 
 export default {
@@ -72,6 +75,11 @@ export default {
 			// (spec procest-workflow-attachments REQ-PWA-004) and
 			// `connector-data` (spec openconnector-api-sources REQ-OCAS-006).
 			runtimeRegistry,
+			// Register/schema pickers for the in-app pages editor (ADR-041):
+			// `{ registers: [{ value, label, schemas: [{ value, label, columns }] }] }`.
+			// Fetched from OpenRegister once the version manifest resolves; null
+			// until then (the editor falls back to free-text register/schema).
+			dataSources: null,
 		}
 	},
 	computed: {
@@ -200,9 +208,11 @@ export default {
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
 			this.applyTheme(applicationVersion.value)
+			this.loadDataSources(applicationVersion.value)
 			const unwatch = this.$watch(() => applicationVersion.value, (v) => {
 				this.applicationVersion = v
 				this.applyTheme(v)
+				this.loadDataSources(v)
 			})
 			const unwatchLoading = this.$watch(() => loading.value, (v) => {
 				this.versionLoading = v
@@ -234,6 +244,60 @@ export default {
 				return
 			}
 			this.appTheme.apply(manifest, this.slug)
+		},
+		/**
+		 * Build the `dataSources` for the nested CnAppRoot's in-app pages editor
+		 * (ADR-041), so its Register / Schema / Columns pickers render as
+		 * populated dropdowns instead of free-text fields.
+		 *
+		 * Collects the registers already referenced by the resolved manifest's
+		 * data pages (falling back to the app's own per-version register when a
+		 * fresh app has none yet), then fetches each register's schemas from
+		 * OpenRegister to derive the selectable schemas and their columns.
+		 *
+		 * @param {?object} version - the resolved ApplicationVersion (carries the manifest).
+		 * @return {Promise<void>}
+		 */
+		async loadDataSources(version) {
+			const manifest = version && version.manifest && typeof version.manifest === 'object'
+				? version.manifest
+				: null
+			const pages = manifest && Array.isArray(manifest.pages) ? manifest.pages : []
+			const registers = [...new Set(
+				pages.map((p) => p && p.config && p.config.register).filter(Boolean),
+			)]
+			if (registers.length === 0) {
+				// Fresh app with no configured data pages yet: fall back to the
+				// app's own per-version register so the pickers still populate.
+				registers.push(registerSlugForApp(this.slug, this.versionSlug))
+			}
+
+			const result = []
+			for (const register of registers) {
+				let schemas = []
+				try {
+					const url = generateUrl(
+						`/apps/openregister/api/registers/${encodeURIComponent(register)}/schemas`,
+					)
+					const { data } = await axios.get(url)
+					const list = Array.isArray(data)
+						? data
+						: (data && Array.isArray(data.results) ? data.results : [])
+					schemas = list.map((s) => ({
+						value: s.slug || s.id || s.title,
+						label: s.title || s.slug || String(s.id),
+						columns: Object.keys(
+							(s.properties && typeof s.properties === 'object') ? s.properties : {},
+						),
+					}))
+				} catch (e) {
+					// Register unreadable (deleted / no access): leave its schema
+					// list empty — the affected row falls back to free-text.
+					schemas = []
+				}
+				result.push({ value: register, label: register, schemas })
+			}
+			this.dataSources = { registers: result }
 		},
 	},
 }

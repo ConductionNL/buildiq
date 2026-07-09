@@ -378,6 +378,139 @@ class ApplicationVersionService
     }//end guardProductionVersionOwnership()
 
     /**
+     * Release a version: publish it, point production at it, archive the previous
+     * production (spec REQ-OBV-110 / design Decision 3).
+     *
+     * Cross-row imperative glue (ADR-031 §Exceptions(1)): one version's lifecycle
+     * transition + the Application's single-valued pointer + a second version's
+     * demotion, atomic in intent. Ordered pointer-move before demotion so a
+     * mid-failure leaves at most a published-but-not-production version, which a
+     * re-run converges. Never drops or mints a register.
+     *
+     * Steps:
+     *   1. guardProductionVersionOwnership — back-reference must match (else 422).
+     *   2. transition chosen version `draft → published` (saving `status` drives the
+     *      x-openregister-lifecycle transition + BuiltAppRoute upsert, REQ-OBV-106).
+     *   3. set `Application.productionVersion` = chosen version uuid.
+     *   4. archive the previous production version (if any and different) so exactly
+     *      one production version remains (single-production invariant).
+     *
+     * @param string $applicationUuid Parent Application UUID
+     * @param string $versionUuid     ApplicationVersion UUID to release
+     *
+     * @return array{productionVersion: string, published: string, archived: string|null}
+     *
+     * @throws RuntimeException On back-reference mismatch or a missing object
+     *
+     * @spec openspec/changes/version-lifecycle-and-switcher/specs/application-versions/spec.md
+     */
+    public function releaseVersion(string $applicationUuid, string $versionUuid): array
+    {
+        // 1. Back-reference integrity (REQ-OBV-105) — surfaced as 422 by the caller.
+        $this->guardProductionVersionOwnership(
+            applicationUuid: $applicationUuid,
+            proposedVersionUuid: $versionUuid
+        );
+
+        $application = $this->objectService->find(
+            id: $applicationUuid,
+            register: self::REGISTER_SLUG,
+            schema: self::APPLICATION_SCHEMA
+        );
+        if ($application === null) {
+            throw new RuntimeException(message: sprintf('Application %s does not exist.', $applicationUuid));
+        }
+
+        $applicationData    = $this->normaliseObjectArray(object: $application);
+        $previousProduction = (string) ($applicationData['productionVersion'] ?? '');
+
+        // 2. Publish the chosen version (draft → published) — fires the lifecycle.
+        $version = $this->objectService->find(
+            id: $versionUuid,
+            register: self::REGISTER_SLUG,
+            schema: self::APPLICATION_VERSION_SCHEMA
+        );
+        if ($version === null) {
+            throw new RuntimeException(message: sprintf('ApplicationVersion %s does not exist.', $versionUuid));
+        }
+
+        $versionData = $this->normaliseObjectArray(object: $version);
+        unset($versionData['@self']);
+        $versionData['status'] = 'published';
+        $this->objectService->saveObject(
+            object: $versionData,
+            register: self::REGISTER_SLUG,
+            schema: self::APPLICATION_VERSION_SCHEMA,
+            uuid: $versionUuid
+        );
+
+        // 3. Move the single production pointer (single-production invariant).
+        unset($applicationData['@self']);
+        $applicationData['productionVersion'] = $versionUuid;
+        $this->objectService->saveObject(
+            object: $applicationData,
+            register: self::REGISTER_SLUG,
+            schema: self::APPLICATION_SCHEMA,
+            uuid: $applicationUuid
+        );
+
+        // 4. Demote the previous production. The single-production invariant is
+        // already satisfied by the pointer move (step 3); archiving is the
+        // cleanup. Only a `published` version can transition to `archived`
+        // (x-openregister-lifecycle has no draft→archived edge), so a draft
+        // ex-production is demoted by the pointer move alone and left as a
+        // draft the maintainer can keep editing or delete.
+        $archived = null;
+        if ($previousProduction !== '' && $previousProduction !== $versionUuid) {
+            $previous = $this->objectService->find(
+                id: $previousProduction,
+                register: self::REGISTER_SLUG,
+                schema: self::APPLICATION_VERSION_SCHEMA
+            );
+            if ($previous !== null) {
+                $previousData = $this->normaliseObjectArray(object: $previous);
+                if ((string) ($previousData['status'] ?? '') === 'published') {
+                    unset($previousData['@self']);
+                    $previousData['status'] = 'archived';
+                    $this->objectService->saveObject(
+                        object: $previousData,
+                        register: self::REGISTER_SLUG,
+                        schema: self::APPLICATION_VERSION_SCHEMA,
+                        uuid: $previousProduction
+                    );
+                    $archived = $previousProduction;
+                }
+            }
+        }//end if
+
+        $previousLabel = $previousProduction;
+        if ($previousProduction === '') {
+            $previousLabel = '(none)';
+        }
+
+        $archivedLabel = 'unchanged';
+        if ($archived !== null) {
+            $archivedLabel = 'archived';
+        }
+
+        $this->logger->info(
+            sprintf(
+                'OpenBuild: released ApplicationVersion %s as production for Application %s (previous %s %s).',
+                $versionUuid,
+                $applicationUuid,
+                $previousLabel,
+                $archivedLabel
+            )
+        );
+
+        return [
+            'productionVersion' => $versionUuid,
+            'published'         => $versionUuid,
+            'archived'          => $archived,
+        ];
+    }//end releaseVersion()
+
+    /**
      * Delete an ApplicationVersion using the named strategy (spec REQ-OBV-108).
      *
      * Branching effect chain:
@@ -426,7 +559,26 @@ class ApplicationVersionService
 
         $registerSlug = (string) ($versionData['register'] ?? '');
 
-        switch ($strategy) {
+        // REQ-OBV-111 / design Decision 2: never drop a register shared with
+        // production. When this version's register is the SAME as the parent
+        // Application's production version's register (manifest-only case),
+        // downgrade `delete-now` to keep-register — dropping a shared register
+        // would destroy production data.
+        $effectiveStrategy = $strategy;
+        if ($strategy === self::STRATEGY_DELETE_NOW
+            && $this->registerSharedWithProduction(versionData: $versionData, registerSlug: $registerSlug) === true
+        ) {
+            $this->logger->warning(
+                sprintf(
+                    'OpenBuild: delete-now on ApplicationVersion %s downgraded to keep-register — register %s is shared with production.',
+                    $versionUuid,
+                    $registerSlug
+                )
+            );
+            $effectiveStrategy = self::STRATEGY_KEEP_REGISTER;
+        }
+
+        switch ($effectiveStrategy) {
             case self::STRATEGY_DELETE_NOW:
                 $this->dropPerVersionRegister(registerSlug: $registerSlug, versionUuid: $versionUuid);
                 break;
@@ -515,6 +667,64 @@ class ApplicationVersionService
             )
         );
     }//end assertNotProductionVersion()
+
+    /**
+     * Whether the given version's register is shared with production (REQ-OBV-111).
+     *
+     * Returns true when the version's `register` equals the parent Application's
+     * production version's `register` (the manifest-only / shared-register case).
+     * Handles both the UUID-string and inline-object shapes of
+     * `Application.productionVersion`.
+     *
+     * @param array<string,mixed> $versionData  Normalised ApplicationVersion data
+     * @param string              $registerSlug The version's register slug
+     *
+     * @return bool True when the register is shared with production
+     */
+    private function registerSharedWithProduction(array $versionData, string $registerSlug): bool
+    {
+        if ($registerSlug === '') {
+            return false;
+        }
+
+        $applicationUuid = (string) ($versionData['application'] ?? '');
+        if ($applicationUuid === '') {
+            return false;
+        }
+
+        $application = $this->objectService->find(
+            id: $applicationUuid,
+            register: self::REGISTER_SLUG,
+            schema: self::APPLICATION_SCHEMA
+        );
+        if ($application === null) {
+            return false;
+        }
+
+        $applicationData   = $this->normaliseObjectArray(object: $application);
+        $productionVersion = ($applicationData['productionVersion'] ?? null);
+
+        $productionRegister = '';
+        if (is_array($productionVersion) === true) {
+            $productionRegister = (string) ($productionVersion['register'] ?? '');
+        }
+
+        if (is_array($productionVersion) === false) {
+            $productionUuid = (string) ($productionVersion ?? '');
+            if ($productionUuid !== '') {
+                $prod = $this->objectService->find(
+                    id: $productionUuid,
+                    register: self::REGISTER_SLUG,
+                    schema: self::APPLICATION_VERSION_SCHEMA
+                );
+                if ($prod !== null) {
+                    $productionRegister = (string) ($this->normaliseObjectArray(object: $prod)['register'] ?? '');
+                }
+            }
+        }
+
+        return ($productionRegister !== '' && $productionRegister === $registerSlug);
+    }//end registerSharedWithProduction()
 
     /**
      * Drop a per-version register entirely (delete-now strategy).

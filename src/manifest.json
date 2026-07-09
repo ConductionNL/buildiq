@@ -5,6 +5,26 @@
 	"dependencies": [
 		"openregister"
 	],
+	"walkthrough": {
+		"enabled": true,
+		"version": 1,
+		"completionConfigKey": "walkthrough_completed_version",
+		"tours": [
+			{
+				"id": "openbuild:getting-started",
+				"title": "Getting started",
+				"trigger": "first-visit",
+				"minAppVersion": "0.5.9",
+				"steps": [
+					{ "id": "welcome", "sinceVersion": "0.5.9", "placement": "center", "title": "Welcome to OpenBuild", "body": "Let's take a quick spin through the app builder — we'll create your first app from a template so you can see how the pieces fit. You'll do each step yourself.", "target": { "kind": "page", "ref": "Dashboard" }, "advanceOn": { "type": "manual" } },
+					{ "id": "go-apps", "sinceVersion": "0.5.9", "placement": "right", "body": "Apps are the heart of OpenBuild — every app you build lives here. Open Apps from the menu to see what's already there.", "task": "Click Apps in the menu", "target": { "kind": "nav-item", "ref": "VirtualApps" }, "advanceOn": { "type": "route-match", "route": "VirtualApps" } },
+					{ "id": "go-store", "sinceVersion": "0.5.9", "placement": "right", "body": "The fastest way to start is from a template. Open the Store to browse ready-made apps you can clone and make your own.", "task": "Click Store in the menu", "target": { "kind": "nav-item", "ref": "Store" }, "advanceOn": { "type": "route-match", "route": "Templates" } },
+					{ "id": "create-app", "sinceVersion": "0.5.9", "placement": "bottom", "allowManualNext": true, "body": "Pick a template and clone it — give your new app a name, then create it. Once it exists you can shape its schemas and pages.", "task": "Clone a template into a new app", "target": { "kind": "page", "ref": "Templates" }, "advanceOn": { "type": "object-created", "register": "openbuild", "schema": "application", "capture": { "applicationId": ":id" } } },
+					{ "id": "done", "sinceVersion": "0.5.9", "placement": "center", "title": "You're all set", "body": "Nicely done — your first app exists. Open it from Apps to design its schemas and pages, and reopen this tour anytime from the … menu.", "target": { "kind": "page", "ref": "Dashboard" }, "advanceOn": { "type": "manual" } }
+				]
+			}
+		]
+	},
 	"menu": [
 		{
 			"id": "Dashboard",
@@ -106,6 +126,11 @@
 				"showRelatedObjects": false,
 				"showRefresh": false,
 				"showRequestFeature": false,
+				"_note": "Purpose-built maintainer cockpit, NOT the generic data+audit-trail archetype — deliberately exempt from the standard detail-page widget composition (detail-page-redesign brief). headerComponent/actionsComponent/slots.before-body are pre-existing, spec-driven custom components (openspec/changes/retrofit-2026-05-26-application-detail-ui): the before-body ApplicationDetailDashboard already surfaces the KPI grid, activity graph, and a Manifest/Register/Groups widget row — Register's widget already deep-links to this Application's pages/schemas/menu structure (comment in ApplicationDetailDashboard.vue: 'the schema/page/menu detail always reflects the latest manifest and is reachable from the manifest layers'), so the FK-scoped versions/pages/schemas visibility the brief calls for is already covered there, NOT duplicated here. pages and schemas are NOT OpenRegister objects (they live inside ApplicationVersion.manifest as a JSON blob) so no object-list can FK-scope them; ApplicationVersion IS a real FK child (application relation) and its history is what the sidebar 'history' tab already surfaces via rollback-capable VersionHistory. The five non-audit sidebar tabs (Manifest raw editor, Version history+rollback, Diff, Icon upload, Export jobs) are bespoke registered components (kind:'tab' in src/registry.js) with NO catalog widget equivalent (no diff/rollback/icon-upload widget type exists) — moving them into config.widgets is not expressible without inventing a widget type or registering a new kind:'widget' component, both forbidden by the manifest-only rule. Kept as-is; only the audit tab was normalised to the canonical nc-vue built-in below so History still resolves without app registration.",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
 				"sidebarTabs": [
 					{
 						"id": "manifest",
@@ -144,9 +169,9 @@
 					},
 					{
 						"id": "audit",
-						"label": "Audit trail",
+						"label": "History",
 						"icon": "icon-history",
-						"component": "audit-trail",
+						"widgets": [ { "type": "audit" } ],
 						"order": 70
 					}
 				]
