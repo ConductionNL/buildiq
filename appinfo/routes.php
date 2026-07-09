@@ -107,11 +107,9 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // Owner-only full delete (Application + versions + per-version registers + routes).
         ['name' => 'applicationPublish#destroy', 'url' => '/api/applications/{appUuid}', 'verb' => 'DELETE', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
 
-        // Standalone runtime page for a published virtual app. The slug pattern
-        // excludes slashes, so ONLY the bare /builder/{slug} matches here — the
-        // designer sub-routes (/builder/{slug}/pages, /schemas) fall through to
-        // the SPA catch-all. Placed before the catch-all (Routes::standard
-        // appends it) so this specific page wins.
+        // Standalone runtime page for a published virtual app — the bare
+        // /builder/{slug} (no sub-path). Placed before the catch-all
+        // (Routes::standard appends it) so this specific page wins.
         ['name' => 'dashboard#builder', 'url' => '/builder/{slug}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Same page with a trailing slash — browsers and pasted links often add one.
@@ -120,6 +118,29 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // do. MUST use a DISTINCT route name (dashboard#builderSlash, a thin alias of
         // builder()) — the AppHost Routes::standard() guard throws on duplicate names.
         ['name' => 'dashboard#builderSlash', 'url' => '/builder/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
+        // Reserved OpenBuild designer sub-paths (openbuild-deep-links #100 fix).
+        // `pages`, `schemas`, `schemas/{schemaId}` and `walkthrough` are
+        // OpenBuild's OWN designer surfaces (src/manifest.json: PageDesigner,
+        // SchemaDesignerList, SchemaDesigner, WalkthroughDesigner) — matched by
+        // the SPA's OWN vue-router (main.js) before its BuilderHost wildcard.
+        // They must keep serving the OpenBuild SPA shell (dashboard#builderDesigner
+        // renders the same page as catchAll()), NOT the standalone virtual-app
+        // runtime that dashboard#builderPath now serves below. MUST precede
+        // builderPath so this more-specific literal alternation wins
+        // (NC/Symfony route matching is order-sensitive, first-match-wins).
+        ['name' => 'dashboard#builderDesigner', 'url' => '/builder/{slug}/{designerPath}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'designerPath' => 'pages|schemas|schemas/[^/]+|walkthrough']],
+
+        // ANY OTHER /builder/{slug}/... sub-path is a page defined by the
+        // DEPLOYED virtual app's OWN manifest (openbuild-deep-links #100).
+        // Direct navigation (fresh load / refresh / bookmark) previously fell
+        // through to the SPA catch-all — the wrong shell, nesting the app
+        // inside OpenBuild's own chrome/router instead of letting the app's
+        // own client-side router (builder.js, history mode) resolve it, the
+        // way clicking within the app already does. `path` allows slashes
+        // (requirement '.*', same trick as the SPA catch-all's `.+`) so
+        // nested app pages (e.g. /tenders/{id}) deep-link correctly too.
+        ['name' => 'dashboard#builderPath', 'url' => '/builder/{slug}/{path}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'path' => '.*']],
 
         // Icon-serving endpoints (openbuild-nextcloud-nav REQ-OBICON-002 / REQ-OBICON-003).
         // Both are #[NoAdminRequired] on the controller. The dark route uses a longer

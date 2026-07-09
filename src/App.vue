@@ -14,6 +14,7 @@
 <template>
 	<CnAppRoot
 		app-id="openbuild"
+		:ai-companion="true"
 		:manifest="manifest"
 		:registry="registry"
 		:custom-components="flatRegistry"

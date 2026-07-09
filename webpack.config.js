@@ -38,7 +38,7 @@ webpackConfig.entry = {
 // of the resolved node_modules package, producing wrong/broken builds.
 const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
 const localLibPkg = path.resolve(__dirname, '../nextcloud-vue/package.json')
-let useLocalLib = fs.existsSync(localLib)
+let useLocalLib = process.env.USE_LOCAL_LIB !== 'false' && fs.existsSync(localLib)
 if (useLocalLib && fs.existsSync(localLibPkg)) {
 	try {
 		const semver = require('semver')

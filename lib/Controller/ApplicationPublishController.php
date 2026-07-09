@@ -34,6 +34,7 @@ namespace OCA\OpenBuild\Controller;
 use OCA\OpenBuild\AppInfo\Application;
 use OCA\OpenBuild\Exception\InsufficientPermissionException;
 use OCA\OpenBuild\Service\ApplicationDeletionService;
+use OCA\OpenBuild\Service\Credential\VirtualAppCredentialRegistrar;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenBuild\Service\VersionPromotionService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -73,12 +74,13 @@ class ApplicationPublishController extends Controller
     /**
      * Constructor.
      *
-     * @param IRequest                   $request            The current HTTP request
-     * @param LoggerInterface            $logger             PSR logger
-     * @param ObjectService              $objectService      OR object surface (load + save)
-     * @param IUserSession               $userSession        Current NC user session
-     * @param PermissionResolver         $permissionResolver Shared permission-grammar resolver
-     * @param ApplicationDeletionService $deletionService    Full-teardown service for delete
+     * @param IRequest                      $request             The current HTTP request
+     * @param LoggerInterface               $logger              PSR logger
+     * @param ObjectService                 $objectService       OR object surface (load + save)
+     * @param IUserSession                  $userSession         Current NC user session
+     * @param PermissionResolver            $permissionResolver  Shared permission-grammar resolver
+     * @param ApplicationDeletionService    $deletionService     Full-teardown service for delete
+     * @param VirtualAppCredentialRegistrar $credentialRegistrar Onboards a published credentials[]-declaring app to the broker
      *
      * @return void
      */
@@ -89,6 +91,7 @@ class ApplicationPublishController extends Controller
         private readonly IUserSession $userSession,
         private readonly PermissionResolver $permissionResolver,
         private readonly ApplicationDeletionService $deletionService,
+        private readonly VirtualAppCredentialRegistrar $credentialRegistrar,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
     }//end __construct()
@@ -224,6 +227,16 @@ class ApplicationPublishController extends Controller
                 schema: VersionPromotionService::APPLICATION_SCHEMA,
                 uuid: $appUuid
             );
+
+            // On go-live, onboard the app to the credential broker when its
+            // manifest declares credentials[]. Best-effort + never-throw — a
+            // broker/Doriath hiccup must not fail the publish (see registrar).
+            if ($status === self::STATUS_PUBLISHED) {
+                $slug = (string) ($application['slug'] ?? '');
+                if ($slug !== '') {
+                    $this->credentialRegistrar->onPublish(slug: $slug, caller: $user);
+                }
+            }
 
             return new JSONResponse(
                 data: [
