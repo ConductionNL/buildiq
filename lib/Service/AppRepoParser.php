@@ -95,7 +95,7 @@ class AppRepoParser
     /**
      * Parse a repo file map into the clone-seam template array.
      *
-     * @param array<string,string>      $files A `path => contents` map (bytes/string).
+     * @param array<string,string>                 $files A `path => contents` map (bytes/string).
      * @param array{owner:string,name:string}|null $repo  Optional repo identity for `templateOrigin`.
      *
      * @return array<string,mixed> The `ApplicationTemplate`-shaped payload.
@@ -323,9 +323,9 @@ class AppRepoParser
                 );
             }
 
-            $schema['slug']    = $slug;
-            $seenSlugs[$slug]  = $path;
-            $companions[]      = $schema;
+            $schema['slug']   = $slug;
+            $seenSlugs[$slug] = $path;
+            $companions[]     = $schema;
         }//end foreach
 
         return $companions;
@@ -403,8 +403,8 @@ class AppRepoParser
             return null;
         }
 
-        $owner = (string) ($repo['owner'] ?? '');
-        $name  = (string) ($repo['name'] ?? '');
+        $owner = (string) $repo['owner'];
+        $name  = (string) $repo['name'];
         if ($owner === '' || $name === '') {
             return null;
         }

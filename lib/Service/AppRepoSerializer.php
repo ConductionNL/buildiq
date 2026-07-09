@@ -93,7 +93,7 @@ class AppRepoSerializer
         $files['openbuild-app.json'] = $this->encode(
             data: $this->buildDescriptor(application: $application, version: $version, manifest: $manifest)
         );
-        $files['manifest.json'] = $this->encode(data: $manifest);
+        $files['manifest.json']      = $this->encode(data: $manifest);
 
         $companions = $this->collectCompanionSchemas(slug: $slug);
         ksort($companions);
@@ -180,7 +180,7 @@ class AppRepoSerializer
 
             $scopes = [];
             if (is_array($entry['scopes'] ?? null) === true) {
-                $scopes = array_values(array_map(static fn ($s): string => (string) $s, $entry['scopes']));
+                $scopes = array_values(array_map(static fn ($scope): string => (string) $scope, $entry['scopes']));
             }
 
             $credentials[] = [
