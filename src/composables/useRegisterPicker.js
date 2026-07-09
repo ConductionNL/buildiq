@@ -37,12 +37,21 @@ const PICKER_HEADERS = () => ({
  * @param {object} [opts] - Options.
  * @param {string} [opts.appSlug] - Current Application slug. When set, the
  *   picker filters to the per-app register `openbuild-{slug}` first.
+ * @param {Array<{register: string, label?: string}>} [opts.dataRegisters] -
+ *   The Application's declared shared data-register bindings
+ *   (`Application.dataRegisters`, data-registers-schema-declaration). When
+ *   set, `fetchRegisters()` labels matching entries with
+ *   `binding.label ?? binding.register` and hoists them after the per-app
+ *   register. Absent/empty is a no-op — `fetchRegisters()` then returns
+ *   output byte-identical to the pre-existing (perApp-only) behaviour.
  * @return {object} - { fetchRegisters, fetchSchemas, fetchSchemaProperties,
  *   resolveAppRegister }.
  * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
+ * @spec openspec/changes/data-registers-runtime/tasks.md#task-1.1
  */
 export function useRegisterPicker(opts = {}) {
 	const appSlug = opts.appSlug || ''
+	const dataRegisters = Array.isArray(opts.dataRegisters) ? opts.dataRegisters : []
 
 	/**
 	 * Resolve the per-app register slug for the current Application.
@@ -57,9 +66,14 @@ export function useRegisterPicker(opts = {}) {
 	/**
 	 * Fetch the list of registers available to the page editor. When the
 	 * current Application has a slug, the per-app register is hoisted to
-	 * the top so picker UX defaults to the right namespace.
+	 * the top so picker UX defaults to the right namespace. When the
+	 * Application declares `dataRegisters` bindings (design.md Decision 1),
+	 * matching entries are labelled with `binding.label ?? binding.register`
+	 * and hoisted immediately after the per-app register, in declaration
+	 * order; every other entry keeps OR's original relative order.
 	 *
 	 * @return {Promise<Array>} - registers list.
+	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-1.1
 	 */
 	async function fetchRegisters() {
 		try {
@@ -73,17 +87,79 @@ export function useRegisterPicker(opts = {}) {
 			if (!Array.isArray(list)) {
 				return []
 			}
+
 			// Hoist the per-app register so it is the obvious default.
 			const perApp = resolveAppRegister()
-			if (!perApp) {
-				return list
+
+			// No dataRegisters bindings declared — regression-safe default:
+			// byte-identical to the pre-existing (perApp-only) behaviour.
+			if (dataRegisters.length === 0) {
+				if (!perApp) {
+					return list
+				}
+				const sorted = [...list].sort((a, b) => {
+					if ((a.slug || a.id) === perApp) return -1
+					if ((b.slug || b.id) === perApp) return 1
+					return 0
+				})
+				return sorted
 			}
-			const sorted = [...list].sort((a, b) => {
-				if ((a.slug || a.id) === perApp) return -1
-				if ((b.slug || b.id) === perApp) return 1
-				return 0
+
+			// Map<registerSlug, label> — label ?? register per design.md.
+			const labelByRegister = new Map()
+			dataRegisters.forEach((binding) => {
+				if (binding && binding.register) {
+					labelByRegister.set(binding.register, binding.label ?? binding.register)
+				}
 			})
-			return sorted
+
+			// Declaration order of each binding, for the "matching entries,
+			// in the order the Application declared them" tier.
+			const declarationOrder = new Map()
+			dataRegisters.forEach((binding, index) => {
+				if (binding && binding.register && !declarationOrder.has(binding.register)) {
+					declarationOrder.set(binding.register, index)
+				}
+			})
+
+			const labelled = list.map((entry) => {
+				const key = entry && (entry.slug || entry.id)
+				if (key && labelByRegister.has(key)) {
+					return { ...entry, label: labelByRegister.get(key) }
+				}
+				return entry
+			})
+
+			// Tier 0: per-app register. Tier 1: dataRegisters bindings (in
+			// declaration order). Tier 2: everything else (OR's order).
+			function tierFor(entry) {
+				const key = entry && (entry.slug || entry.id)
+				if (perApp && key === perApp) {
+					return 0
+				}
+				if (key && declarationOrder.has(key)) {
+					return 1
+				}
+				return 2
+			}
+
+			const indexed = labelled.map((entry, originalIndex) => ({ entry, originalIndex }))
+			indexed.sort((a, b) => {
+				const tierA = tierFor(a.entry)
+				const tierB = tierFor(b.entry)
+				if (tierA !== tierB) {
+					return tierA - tierB
+				}
+				if (tierA === 1) {
+					const keyA = a.entry.slug || a.entry.id
+					const keyB = b.entry.slug || b.entry.id
+					return declarationOrder.get(keyA) - declarationOrder.get(keyB)
+				}
+				// Tiers 0 (singleton) and 2 keep the original relative order.
+				return a.originalIndex - b.originalIndex
+			})
+
+			return indexed.map((i) => i.entry)
 		} catch {
 			return []
 		}
