@@ -2,9 +2,10 @@
   - SPDX-License-Identifier: EUPL-1.2
   - SPDX-FileCopyrightText: 2026 Conduction B.V.
   -
-  - DeleteAppDialog — owner confirmation for the destructive full delete of an
-  - app (Application + versions + per-version registers). Kept in its own file
-  - per ADR-004 gate-modal-isolation.
+  - DeleteAppDialog — owner confirmation for deleting an app (Application +
+  - versions + routes). By default the underlying registers and their data are
+  - PRESERVED; the owner must tick "also delete all data" to wipe them. Kept in
+  - its own file per ADR-004 gate-modal-isolation.
   -->
 <template>
 	<NcDialog
@@ -14,14 +15,24 @@
 		@closing="$emit('update:open', false)">
 		<div class="delete-app">
 			<p>
-				{{ t('openbuild', 'Permanently delete "{name}" and all of its versions and data? This cannot be undone.', { name: appName }) }}
+				{{ t('openbuild', 'Delete "{name}" and all of its versions? This cannot be undone.', { name: appName }) }}
+			</p>
+			<NcCheckboxRadioSwitch
+				:checked.sync="deleteData"
+				:disabled="busy">
+				{{ t('openbuild', 'Also permanently delete all data (the app\'s registers and everything stored in them)') }}
+			</NcCheckboxRadioSwitch>
+			<p class="delete-app__hint">
+				{{ deleteData
+					? t('openbuild', 'All data will be permanently removed. The app slug becomes available again.')
+					: t('openbuild', 'The app is removed but its data is kept in OpenRegister.') }}
 			</p>
 		</div>
 		<template #actions>
 			<NcButton :disabled="busy" @click="$emit('update:open', false)">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="error" :disabled="busy" @click="$emit('confirm')">
+			<NcButton type="error" :disabled="busy" @click="$emit('confirm', deleteData)">
 				<template v-if="busy" #icon>
 					<NcLoadingIcon :size="20" />
 				</template>
@@ -34,11 +45,12 @@
 <script>
 import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 
 export default {
 	name: 'DeleteAppDialog',
-	components: { NcDialog, NcButton, NcLoadingIcon },
+	components: { NcDialog, NcButton, NcCheckboxRadioSwitch, NcLoadingIcon },
 	props: {
 		/** Whether the dialog is shown (bind with `.sync`). */
 		open: { type: Boolean, default: false },
@@ -48,11 +60,34 @@ export default {
 		busy: { type: Boolean, default: false },
 	},
 	emits: ['update:open', 'confirm'],
+	data() {
+		return {
+			// Opt-in destructive-data toggle. Reset every time the dialog opens so
+			// a previous "delete data" choice never carries over silently.
+			deleteData: false,
+		}
+	},
+	watch: {
+		open(value) {
+			if (value) {
+				this.deleteData = false
+			}
+		},
+	},
 }
 </script>
 
 <style scoped>
 .delete-app {
 	padding: 16px 24px 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.delete-app__hint {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+	margin: 0;
 }
 </style>

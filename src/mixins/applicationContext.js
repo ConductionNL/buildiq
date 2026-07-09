@@ -23,8 +23,14 @@ export default {
 		objectId: { type: [String, Number], default: '' },
 		objectUuid: { type: [String, Number], default: '' },
 		object: { type: Object, default: null },
-		register: { type: [String, Number], default: '' },
-		schema: { type: [String, Number], default: '' },
+		register: { type: [String, Number, Object], default: '' },
+		// CnDetailPage binds :schema="currentSchema" — the RESOLVED schema object
+		// (its documented @binding is `{object} schema`), not a slug string. Accept
+		// String/Number too for CnObjectSidebar's sharedTabProps, which pass the
+		// slug. This mixin never reads schema/register (it works off objectId /
+		// object), so the wider type is purely to match what callers pass and avoid
+		// the "Invalid prop: type check failed for prop schema" warning.
+		schema: { type: [String, Number, Object], default: '' },
 	},
 	data() {
 		return {

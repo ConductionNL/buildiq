@@ -1,8 +1,13 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <template>
-	<NcModal v-if="open" size="normal" @close="onClose">
+	<NcModal v-if="open"
+		size="normal"
+		label-id="clone-template-dialog-title"
+		@close="onClose">
 		<div class="clone-dialog">
-			<h2>{{ dialogHeading }}</h2>
+			<h2 id="clone-template-dialog-title">
+				{{ dialogHeading }}
+			</h2>
 			<p v-if="template" class="clone-dialog__summary">
 				{{ dialogSummaryLead }}
 				<strong>{{ resolvedTitle }}</strong>.
@@ -66,6 +71,15 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Title shown in the dialog heading and used as the NcModal `name`
+		 * (required for accessibility — provides the modal's accessible label).
+		 *
+		 * @return {string} The translated dialog title.
+		 */
+		dialogTitle() {
+			return this.remote ? t('openbuild', 'Install template') : t('openbuild', 'Use this template')
+		},
 		/**
 		 * Observed behaviour of `resolvedTitle` (retrofit annotation).
 		 *

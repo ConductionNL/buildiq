@@ -222,10 +222,13 @@ export default {
 	border: 1px solid var(--color-border, #ddd);
 	border-radius: 8px;
 	margin: 0;
+	/* Fixed backgrounds so each icon renders against the surface it targets,
+	   independent of the active NC theme. */
+	background: #fff;
 }
 
 .wizard-step4__icon-preview--dark {
-	background: #1a1a2e;
+	background: #171717;
 }
 
 .wizard-step4__icon-img {
@@ -236,7 +239,8 @@ export default {
 
 .wizard-step4__icon-preview figcaption {
 	font-size: 0.75rem;
-	color: var(--color-text-maxcontrast, #555);
+	/* Fixed to stay legible on the hardcoded #fff background regardless of theme. */
+	color: #555;
 }
 
 .wizard-step4__icon-preview--dark figcaption {

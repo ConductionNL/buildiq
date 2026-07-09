@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Repair;
 
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -150,6 +151,22 @@ class SeedApplicationTemplates implements IRepairStep
                 );
                 $output->info('Seeded ApplicationTemplate: '.$slug);
                 ++$seeded;
+            } catch (DoesNotExistException $e) {
+                // The openbuild register / application-template schema is not
+                // provisioned yet — the configuration import (InitializeSettings)
+                // has not completed on this pass (e.g. install ordering). Defer
+                // seeding rather than aborting the whole install: a subsequent
+                // `occ maintenance:repair` (or the admin re-import) runs this step
+                // again once the register exists. Non-fatal by design.
+                $this->logger->warning(
+                    'OpenBuild: register/application-template schema not available yet — deferring template seeding',
+                    ['slug' => $slug, 'exception' => $e->getMessage()]
+                );
+                $output->warning(
+                    'OpenBuild register/schema not available yet — deferring template seeding '
+                    .'(completes on the next repair once the register exists).'
+                );
+                return;
             } catch (Throwable $e) {
                 $this->logger->error(
                     'OpenBuild: failed to seed template',
