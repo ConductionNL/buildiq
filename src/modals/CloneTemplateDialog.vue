@@ -6,10 +6,10 @@
 		@close="onClose">
 		<div class="clone-dialog">
 			<h2 id="clone-template-dialog-title">
-				{{ dialogTitle }}
+				{{ dialogHeading }}
 			</h2>
 			<p v-if="template" class="clone-dialog__summary">
-				{{ remote ? t('openbuild', 'Install a new application from') : t('openbuild', 'Create a new application from') }}
+				{{ dialogSummaryLead }}
 				<strong>{{ resolvedTitle }}</strong>.
 				{{ t('openbuild', 'You can edit everything after cloning.') }}
 			</p>
@@ -54,6 +54,12 @@ export default {
 		remote: { type: Boolean, default: false },
 		// The remote template slug to install (the {slug} path segment).
 		remoteSlug: { type: String, default: '' },
+		// When true the dialog installs a GitHub-shop app via the GitHub shop
+		// install endpoint (github-shop-catalogue) instead of the local clone
+		// path or the remote store path.
+		github: { type: Boolean, default: false },
+		// The GitHub repo identity to install `{ owner, repo, ref? }`.
+		githubRepo: { type: Object, default: null },
 	},
 	emits: ['close', 'submit', 'installed'],
 	data() {
@@ -101,10 +107,35 @@ export default {
 		 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
 		 */
 		submitLabel() {
-			if (this.remote) {
+			if (this.remote || this.github) {
 				return this.submitting ? t('openbuild', 'Installing…') : t('openbuild', 'Install')
 			}
 			return this.submitting ? t('openbuild', 'Cloning…') : t('openbuild', 'Clone template')
+		},
+		/**
+		 * Modal heading — install wording for a remote store / GitHub app,
+		 * clone wording for a local template.
+		 *
+		 * @return {string} The translated heading.
+		 * @spec openspec/changes/github-shop-catalogue/specs/template-catalogue-ui/spec.md
+		 */
+		dialogHeading() {
+			if (this.github) {
+				return t('openbuild', 'Install app from GitHub')
+			}
+			return this.remote ? t('openbuild', 'Install template') : t('openbuild', 'Use this template')
+		},
+		/**
+		 * Lead-in sentence of the summary line, matching the install/clone verb.
+		 *
+		 * @return {string} The translated lead-in.
+		 * @spec openspec/changes/github-shop-catalogue/specs/template-catalogue-ui/spec.md
+		 */
+		dialogSummaryLead() {
+			if (this.remote || this.github) {
+				return t('openbuild', 'Install a new application from')
+			}
+			return t('openbuild', 'Create a new application from')
 		},
 	},
 	watch: {
@@ -149,6 +180,10 @@ export default {
 			const payload = { name: this.localName.trim(), slug: this.localSlug.trim() }
 			this.submitting = true
 			this.error = ''
+			if (this.github) {
+				await this.installGithub(payload)
+				return
+			}
 			if (this.remote) {
 				await this.installRemote(payload)
 				return
@@ -181,6 +216,49 @@ export default {
 			} catch (e) {
 				const data = e?.response?.data
 				this.error = data?.detail || data?.error || e?.message || t('openbuild', 'Install failed.')
+				this.submitting = false
+			}
+		},
+		/**
+		 * Install a GitHub-shop app via the GitHub shop install endpoint, then
+		 * emit `installed` with the created application so the parent can redirect
+		 * to the new app's editor. A strict-parse failure returned by the endpoint
+		 * is surfaced in the dialog naming the offending file, creating nothing.
+		 *
+		 * @param {object} payload The new app `{name, slug}`.
+		 * @return {Promise<void>} Resolves once the request settles.
+		 * @spec openspec/changes/github-shop-catalogue/specs/template-catalogue-ui/spec.md
+		 */
+		async installGithub(payload) {
+			const repo = this.githubRepo || {}
+			if (!repo.owner || !repo.repo) {
+				this.error = t('openbuild', 'This GitHub app is missing its repository identity.')
+				this.submitting = false
+				return
+			}
+			try {
+				const url = generateUrl('/apps/openbuild/api/shop/github/install')
+				const body = {
+					owner: repo.owner,
+					repo: repo.repo,
+					name: payload.name,
+					slug: payload.slug,
+				}
+				if (repo.ref) {
+					body.ref = repo.ref
+				}
+				const resp = await axios.post(url, body)
+				this.$emit('installed', resp.data)
+				this.$emit('close')
+			} catch (e) {
+				const data = e?.response?.data
+				// The install endpoint returns a generic-but-actionable error
+				// carrying the parser error code + offending file path.
+				const file = data?.file || data?.path
+				const base = data?.detail || data?.error || e?.message || t('openbuild', 'Install failed.')
+				this.error = file
+					? t('openbuild', '{message} (in {file})', { message: base, file })
+					: base
 				this.submitting = false
 			}
 		},

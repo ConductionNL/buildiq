@@ -76,6 +76,12 @@
 				</template>
 				{{ t('openbuild', 'Design walkthrough') }}
 			</NcActionButton>
+			<NcActionButton v-if="obApp && obApp.slug" :disabled="!obApp" @click="githubOpen = true">
+				<template #icon>
+					<Github :size="20" />
+				</template>
+				{{ t('openbuild', 'GitHub') }}
+			</NcActionButton>
 			<NcActionButton v-if="obAppRole === 'owner'" :disabled="!obApp" @click="permissionsOpen = true">
 				<template #icon>
 					<AccountMultipleOutline :size="20" />
@@ -114,16 +120,25 @@
 		<ExportDialog
 			v-if="exportOpen && obApp"
 			:application-slug="obApp.slug"
+			:data-registers="obApp.dataRegisters || []"
 			@close="exportOpen = false" />
+		<GitHubSyncModal
+			v-if="obApp && obApp.slug"
+			:open="githubOpen"
+			:slug="obApp.slug"
+			:is-owner="obAppRole === 'owner'"
+			@update:open="githubOpen = $event" />
 		<AppSettingsModal
 			:open="settingsOpen"
 			:app-name="(obApp && (obApp.name || obApp.slug)) || ''"
 			:is-published="(obApp && obApp.status) === 'published'"
 			:allow-user-overrides="!!(obApp && obApp.allowUserOverrides)"
+			:data-registers="(obApp && obApp.dataRegisters) || []"
 			:busy="publishing"
 			@update:open="settingsOpen = $event"
 			@set-published="setPublished"
-			@update:allow-overrides="setAllowOverrides" />
+			@update:allow-overrides="setAllowOverrides"
+			@update:data-registers="setDataRegisters" />
 		<DeleteAppDialog
 			:open="deleteOpen"
 			:app-name="(obApp && (obApp.name || obApp.slug)) || ''"
@@ -166,9 +181,11 @@ import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOut
 import History from 'vue-material-design-icons/History.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import HelpCircleOutline from 'vue-material-design-icons/HelpCircleOutline.vue'
+import Github from 'vue-material-design-icons/Github.vue'
 import PermissionsModal from '../modals/PermissionsModal.vue'
 import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
 import AppSettingsModal from '../modals/AppSettingsModal.vue'
+import GitHubSyncModal from '../modals/GitHubSyncModal.vue'
 import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
 import SaveAsTemplateDialog from '../dialogs/SaveAsTemplateDialog.vue'
 import { getCurrentUserGroups } from '../composables/useRole.js'
@@ -195,9 +212,11 @@ export default {
 		History,
 		ContentSaveOutline,
 		HelpCircleOutline,
+		Github,
 		PermissionsModal,
 		PermissionHistoryModal,
 		AppSettingsModal,
+		GitHubSyncModal,
 		DeleteAppDialog,
 		SaveAsTemplateDialog,
 		ExportDialog,
@@ -208,6 +227,7 @@ export default {
 			versions: [],
 			publishing: false,
 			deleting: false,
+			githubOpen: false,
 			settingsOpen: false,
 			deleteOpen: false,
 			permissionsOpen: false,
@@ -447,6 +467,25 @@ export default {
 			}
 		},
 		/**
+		 * Persist an add/remove/edit of the app's `dataRegisters` bindings
+		 * from the settings modal — same shape as `setAllowOverrides()`
+		 * (data-registers-runtime task 5.2).
+		 *
+		 * @param {Array<{register: string, label?: string}>} dataRegisters The full updated bindings array.
+		 * @return {Promise<void>}
+		 */
+		async setDataRegisters(dataRegisters) {
+			if (this.obAppRole !== 'owner' || !this.obApp) {
+				return
+			}
+			this.error = ''
+			try {
+				await this.obPatchApp({ dataRegisters })
+			} catch (e) {
+				this.error = `${t('openbuild', 'Failed to save settings')}: ${e.message || e}`
+			}
+		},
+		/**
 		 * Delete the app (Application + versions + routes), then navigate back to
 		 * the apps list. Owner-only (enforced server-side too). When `deleteData`
 		 * is true the underlying registers and all their data are wiped too;
@@ -513,7 +552,7 @@ export default {
 				this.saveTemplateManifest = this.obApp.manifest
 					|| (this.obApp.currentVersion && this.obApp.currentVersion.manifest)
 					|| {}
-				const picker = useRegisterPicker({ appSlug: this.obApp.slug })
+				const picker = useRegisterPicker({ appSlug: this.obApp.slug, dataRegisters: this.obApp.dataRegisters || [] })
 				this.saveTemplateSchemas = await picker.fetchSchemas(picker.resolveAppRegister())
 				this.existingTemplates = await this.loadExistingTemplates()
 				this.saveTemplateOpen = true
