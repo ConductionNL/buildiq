@@ -172,6 +172,25 @@ class Application extends App implements IBootstrap
                 userSession: $c->get('OCP\\IUserSession')
             )
         );
+        // Re-bind the concrete OpenBuild SettingsService AFTER Bootstrap::register.
+        // Bootstrap aliases the FQCN `OCA\OpenBuild\Service\SettingsService` to the
+        // generic AppHostSettingsService (Bootstrap.php registers `$serviceNs\SettingsService`
+        // → AppHostSettingsService). Without this override, the SettingsController factory
+        // below resolves `$c->get(SettingsService::class)` to AppHostSettingsService and
+        // fatals with a TypeError (constructor arg #2 type mismatch), 500-ing
+        // `GET /api/settings` and leaving the app detail page in its empty fallback
+        // ("Untitled application", `openbuild--` register). Last registration wins.
+        $context->registerService(
+            SettingsService::class,
+            static fn ($c): SettingsService => new SettingsService(
+                appConfig: $c->get('OCP\\IAppConfig'),
+                appManager: $c->get('OCP\\App\\IAppManager'),
+                container: $c,
+                groupManager: $c->get('OCP\\IGroupManager'),
+                userSession: $c->get('OCP\\IUserSession'),
+                logger: $c->get('Psr\\Log\\LoggerInterface')
+            )
+        );
         $context->registerService(
             SettingsController::class,
             static fn ($c): SettingsController => new SettingsController(
