@@ -222,6 +222,13 @@ namespace OCA\OpenRegister\Db {
             protected ?array $properties = [];
 
             /**
+             * Stub version column.
+             *
+             * @var string|null
+             */
+            protected ?string $version = null;
+
+            /**
              * Return the entity id.
              *
              * @return int
@@ -280,6 +287,16 @@ namespace OCA\OpenRegister\Db {
             {
                 return ($this->properties ?? []);
             }//end getProperties()
+
+            /**
+             * Return the schema version (mirrors the real OR Schema::getVersion).
+             *
+             * @return string
+             */
+            public function getVersion(): string
+            {
+                return (string) ($this->version ?? '');
+            }//end getVersion()
         }//end class
     }
 

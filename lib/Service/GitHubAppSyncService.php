@@ -200,7 +200,7 @@ class GitHubAppSyncService
      * @param string                                           $credentialId The allowed `github` credential UUID.
      * @param array{owner:string,name:string,org?:string}|null $repoOverride Optional repo to create/link on this push.
      * @param string|null                                      $actingUserId The session UID (broker owner-guard identity).
-     * @param string                                           $visibility   Repo visibility for a freshly created repo ('public'|'private'); defaults to 'public' for shop discoverability.
+     * @param string                                           $visibility   Fresh-repo visibility ('public'|'private').
      *
      * @return array<string,mixed> `{outcome, ...}` — outcome `ok` carries `commitSha`/`branch`/`repoUrl`.
      *
@@ -236,11 +236,116 @@ class GitHubAppSyncService
             return $repo;
         }
 
-        $owner  = $repo['owner'];
-        $name   = $repo['name'];
-        $branch = $repo['branch'];
+        $result = $this->commitFileMap(
+            owner: $repo['owner'],
+            name: $repo['name'],
+            branch: $repo['branch'],
+            files: $files,
+            credentialId: $credentialId,
+            actingUserId: $actingUserId
+        );
+        if ($result['outcome'] !== self::OUTCOME_OK) {
+            return $result;
+        }
 
-        $head = $this->resolveHead(owner: $owner, name: $name, branch: $branch, credentialId: $credentialId, actingUserId: $actingUserId);
+        $this->stampVersionProvenance(version: $version, commitSha: (string) $result['commitSha'], sourceRef: null);
+
+        return $result;
+    }//end push()
+
+    /**
+     * Serialize a seeded template and publish it to GitHub as an `openbuild-app`
+     * repo (never-throw). The repo is created (or reused) via the broker, tagged
+     * with the discovery topic, then the template file map is tree-pushed — the
+     * SAME create-repo + topic + Git-Data mechanics `push()` uses, so the result
+     * is installable by AppRepoParser (round-trip).
+     *
+     * @param array<string,mixed> $template     The seeded application-template object.
+     * @param string              $credentialId The allowed `github` credential UUID.
+     * @param string|null         $org          Optional org to create the repo under (null = the credential user's account).
+     * @param string|null         $repoName     Optional repo name (defaults to `openbuild-{template-slug}`).
+     * @param string|null         $actingUserId The session UID (broker owner-guard identity).
+     * @param string              $visibility   Repo visibility for a freshly created repo ('public'|'private'); 'public' by default.
+     *
+     * @return array<string,mixed> `{outcome, ...}` — outcome `ok` carries `repoUrl`/`commitSha`/`branch`.
+     *
+     * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+     */
+    public function publishTemplate(
+        array $template,
+        string $credentialId,
+        ?string $org,
+        ?string $repoName,
+        ?string $actingUserId,
+        string $visibility='public'
+    ): array {
+        if ($this->isBrokerAvailable() === false) {
+            return ['outcome' => self::OUTCOME_BROKER_UNAVAILABLE];
+        }
+
+        $slug = trim((string) ($template['slug'] ?? ''));
+        if ($slug === '') {
+            return ['outcome' => 'template_invalid'];
+        }
+
+        $name = trim((string) ($repoName ?? ''));
+        if ($name === '') {
+            $name = 'openbuild-'.$slug;
+        }
+
+        $files = $this->serializer->serializeTemplate(template: $template);
+
+        $repo = $this->createRepoViaBroker(
+            name: $name,
+            org: $org,
+            credentialId: $credentialId,
+            actingUserId: $actingUserId,
+            visibility: $visibility,
+            reuseExisting: true
+        );
+        if (isset($repo['outcome']) === true) {
+            return $repo;
+        }
+
+        return $this->commitFileMap(
+            owner: $repo['owner'],
+            name: $repo['name'],
+            branch: $repo['branch'],
+            files: $files,
+            credentialId: $credentialId,
+            actingUserId: $actingUserId
+        );
+    }//end publishTemplate()
+
+    /**
+     * Resolve the branch head, blob→tree→commit→ref push a file map, and build
+     * the `{outcome, repoUrl, commitSha, branch}` result — the shared publish
+     * mechanics reused by `push()` and `publishTemplate()`.
+     *
+     * @param string               $owner        Repo owner.
+     * @param string               $name         Repo name.
+     * @param string               $branch       Target branch.
+     * @param array<string,string> $files        The serialized `path => contents` map.
+     * @param string               $credentialId The `github` credential UUID.
+     * @param string|null          $actingUserId The session UID (broker identity).
+     *
+     * @return array<string,mixed> `{outcome}` on failure; `{outcome:ok, repoUrl, commitSha, branch}` on success.
+     */
+    private function commitFileMap(
+        string $owner,
+        string $name,
+        string $branch,
+        array $files,
+        string $credentialId,
+        ?string $actingUserId
+    ): array {
+        $head = $this->resolveHead(
+            owner: $owner,
+            name: $name,
+            branch: $branch,
+            credentialId: $credentialId,
+            actingUserId: $actingUserId
+        );
 
         $commit = $this->commitTree(
             owner: $owner,
@@ -255,16 +360,13 @@ class GitHubAppSyncService
             return $commit;
         }
 
-        $commitSha = (string) $commit['commitSha'];
-        $this->stampVersionProvenance(version: $version, commitSha: $commitSha, sourceRef: null);
-
         return [
             'outcome'   => self::OUTCOME_OK,
             'repoUrl'   => 'https://github.com/'.$owner.'/'.$name,
-            'commitSha' => $commitSha,
+            'commitSha' => (string) $commit['commitSha'],
             'branch'    => $branch,
         ];
-    }//end push()
+    }//end commitFileMap()
 
     /**
      * Store the app's GitHub linkage (owner/name + resolved default branch).
@@ -418,7 +520,7 @@ class GitHubAppSyncService
      * @param array{owner:string,name:string,org?:string}|null $repoOverride Optional repo to create/link.
      * @param string                                           $credentialId The `github` credential UUID.
      * @param string|null                                      $actingUserId The session UID (broker identity).
-     * @param string                                           $visibility   Repo visibility for a freshly created repo ('public'|'private'); 'public' by default so the shop's anonymous search can discover it.
+     * @param string                                           $visibility   Fresh-repo visibility ('public'|'private').
      *
      * @return array{owner:string,name:string,branch:string}|array{outcome:string}
      */
@@ -444,17 +546,62 @@ class GitHubAppSyncService
             return ['outcome' => self::OUTCOME_NOT_LINKED];
         }
 
-        $owner = (string) $repoOverride['owner'];
-        $name  = (string) $repoOverride['name'];
-        $org   = (string) ($repoOverride['org'] ?? '');
+        $name   = (string) $repoOverride['name'];
+        $org    = null;
+        $orgRaw = trim((string) ($repoOverride['org'] ?? ''));
+        if ($orgRaw !== '') {
+            $org = $orgRaw;
+        }
 
+        $repo = $this->createRepoViaBroker(
+            name: $name,
+            org: $org,
+            credentialId: $credentialId,
+            actingUserId: $actingUserId,
+            visibility: $visibility,
+            reuseExisting: false
+        );
+        if (isset($repo['outcome']) === true) {
+            return $repo;
+        }
+
+        $application['githubRepo']          = ['owner' => $repo['owner'], 'name' => $repo['name']];
+        $application['githubDefaultBranch'] = $repo['branch'];
+        $this->saveApplication(application: $application);
+
+        return $repo;
+    }//end ensureRepo()
+
+    /**
+     * Create (or reuse) a GitHub repo via the broker and tag it with the
+     * discovery topic — the shared create-repo mechanics used by both the app
+     * push (`ensureRepo`) and the template publish (`publishTemplate`).
+     *
+     * @param string      $name          The repo name.
+     * @param string|null $org           Optional org to create under (null = the credential user's account).
+     * @param string      $credentialId  The `github` credential UUID.
+     * @param string|null $actingUserId  The session UID (broker identity).
+     * @param string      $visibility    Repo visibility for a fresh repo ('public'|'private').
+     * @param bool        $reuseExisting True reuses a 422 name-taken repo (idempotent); false surfaces unreachable (preserves push()).
+     *
+     * @return array{owner:string,name:string,branch:string}|array{outcome:string}
+     */
+    private function createRepoViaBroker(
+        string $name,
+        ?string $org,
+        string $credentialId,
+        ?string $actingUserId,
+        string $visibility,
+        bool $reuseExisting
+    ): array {
+        $orgTrim    = trim((string) ($org ?? ''));
         $createPath = '/user/repos';
-        if ($org !== '') {
-            $createPath = '/orgs/'.rawurlencode($org).'/repos';
+        if ($orgTrim !== '') {
+            $createPath = '/orgs/'.rawurlencode($orgTrim).'/repos';
         }
 
         // Default to a PUBLIC repo so the shop's anonymous catalogue search can
-        // discover it; the owner may override to 'private' via the push param.
+        // discover it; the caller may override to 'private' via the param.
         $isPrivate = ($visibility === 'private');
 
         $created = $this->brokerJson(
@@ -475,34 +622,98 @@ class GitHubAppSyncService
         }
 
         if ($created['ok'] === false) {
+            // A 422 means the repo name is already taken. On an idempotent
+            // re-publish, reuse it: resolve the owner + default branch and push
+            // an additive commit onto the existing repo.
+            if ($reuseExisting === true && $created['status'] === 422) {
+                return $this->reuseExistingRepo(
+                    name: $name,
+                    org: $orgTrim,
+                    credentialId: $credentialId,
+                    actingUserId: $actingUserId
+                );
+            }
+
             return ['outcome' => self::OUTCOME_UNREACHABLE];
-        }
+        }//end if
 
         $resolvedOwner = (string) ($created['data']['owner']['login'] ?? '');
+        if ($resolvedOwner === '' && $orgTrim !== '') {
+            $resolvedOwner = $orgTrim;
+        }
+
         if ($resolvedOwner === '') {
-            $resolvedOwner = $owner;
-            if ($org !== '') {
-                $resolvedOwner = $org;
-            }
+            return ['outcome' => self::OUTCOME_UNREACHABLE];
         }
 
         $branch = (string) ($created['data']['default_branch'] ?? 'main');
 
-        // Set the discovery topic so the shop can find the repo.
-        $this->brokerJson(
-            method: 'PUT',
-            path: '/repos/'.rawurlencode($resolvedOwner).'/'.rawurlencode($name).'/topics',
-            body: ['names' => [self::DISCOVERY_TOPIC]],
+        $this->setDiscoveryTopic(owner: $resolvedOwner, name: $name, credentialId: $credentialId, actingUserId: $actingUserId);
+
+        return ['owner' => $resolvedOwner, 'name' => $name, 'branch' => $branch];
+    }//end createRepoViaBroker()
+
+    /**
+     * Resolve an existing repo's owner + default branch for an idempotent
+     * re-publish, and re-assert the discovery topic.
+     *
+     * @param string      $name         The repo name.
+     * @param string      $org          The org (empty = the credential user's account).
+     * @param string      $credentialId The `github` credential UUID.
+     * @param string|null $actingUserId The session UID (broker identity).
+     *
+     * @return array{owner:string,name:string,branch:string}|array{outcome:string}
+     */
+    private function reuseExistingRepo(string $name, string $org, string $credentialId, ?string $actingUserId): array
+    {
+        $owner = $org;
+        if ($owner === '') {
+            $user  = $this->brokerJson(
+                method: 'GET',
+                path: '/user',
+                body: null,
+                credentialId: $credentialId,
+                actingUserId: $actingUserId
+            );
+            $owner = (string) ($user['data']['login'] ?? '');
+        }
+
+        if ($owner === '') {
+            return ['outcome' => self::OUTCOME_UNREACHABLE];
+        }
+
+        $branch = $this->resolveDefaultBranch(
+            owner: $owner,
+            name: $name,
             credentialId: $credentialId,
             actingUserId: $actingUserId
         );
 
-        $application['githubRepo']          = ['owner' => $resolvedOwner, 'name' => $name];
-        $application['githubDefaultBranch'] = $branch;
-        $this->saveApplication(application: $application);
+        $this->setDiscoveryTopic(owner: $owner, name: $name, credentialId: $credentialId, actingUserId: $actingUserId);
 
-        return ['owner' => $resolvedOwner, 'name' => $name, 'branch' => $branch];
-    }//end ensureRepo()
+        return ['owner' => $owner, 'name' => $name, 'branch' => $branch];
+    }//end reuseExistingRepo()
+
+    /**
+     * Set the shop discovery topic on a repo (best-effort; failure is non-fatal).
+     *
+     * @param string      $owner        Repo owner.
+     * @param string      $name         Repo name.
+     * @param string      $credentialId The `github` credential UUID.
+     * @param string|null $actingUserId The session UID (broker identity).
+     *
+     * @return void
+     */
+    private function setDiscoveryTopic(string $owner, string $name, string $credentialId, ?string $actingUserId): void
+    {
+        $this->brokerJson(
+            method: 'PUT',
+            path: '/repos/'.rawurlencode($owner).'/'.rawurlencode($name).'/topics',
+            body: ['names' => [self::DISCOVERY_TOPIC]],
+            credentialId: $credentialId,
+            actingUserId: $actingUserId
+        );
+    }//end setDiscoveryTopic()
 
     /**
      * Resolve the current branch head commit + base tree (null when the branch is empty).
