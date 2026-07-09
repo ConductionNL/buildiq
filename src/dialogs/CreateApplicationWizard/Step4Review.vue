@@ -228,24 +228,36 @@ export default {
 	border: 1px solid var(--color-border, #ddd);
 	border-radius: 8px;
 	margin: 0;
+	/* The light icon is a white glyph meant for the dark app header, so
+	   preview it on a dark background (else it's white-on-white). */
+	background: #1c1c1e;
+	color: #fff;
 }
 
 .wizard-step4__icon-preview--dark {
-	background: #1a1a2e;
+	/* The dark icon is a dark glyph meant for light backgrounds, so preview
+	   it on white (else it's black-on-black). */
+	background: #ffffff;
+	color: #1c1c1e;
 }
 
 .wizard-step4__icon-img {
+	display: inline-flex;
 	width: 48px;
 	height: 48px;
-	object-fit: contain;
+}
+
+.wizard-step4__icon-img :deep(svg) {
+	width: 100%;
+	height: 100%;
 }
 
 .wizard-step4__icon-preview figcaption {
 	font-size: 0.75rem;
-	color: var(--color-text-maxcontrast, #555);
+	color: #ccc;
 }
 
 .wizard-step4__icon-preview--dark figcaption {
-	color: #aaa;
+	color: var(--color-text-maxcontrast, #555);
 }
 </style>
