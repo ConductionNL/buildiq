@@ -325,6 +325,69 @@ final class RunExportJobTest extends TestCase
     }//end testRerunWithSameParamsProducesEquivalentInvocations()
 
     /**
+     * The loaded ExportJob's `dataRegisters` choice is forwarded verbatim
+     * into `ExportService::generateAppZip()` (data-registers-runtime task
+     * 4.3). Absent on the job record — defaults to `[]`, not omitted/null.
+     *
+     * @return void
+     */
+    public function testForwardsDataRegistersFromLoadedJobIntoGenerateAppZip(): void
+    {
+        $jobUuid       = 'job-data-registers-uuid';
+        $dataRegisters = [
+            ['register' => 'spectr', 'includeData' => true],
+            ['register' => 'bag-adressen', 'includeData' => false],
+        ];
+
+        $job                   = $this->jobFixture();
+        $job['dataRegisters']  = $dataRegisters;
+        $this->exportJobService->method('loadJob')->willReturn($job);
+        $this->exportJobService->method('fetchPat')->willReturn(null);
+        $this->exportJobService->method('transitionJob')->willReturn(true);
+
+        $captured = null;
+        $this->exportService
+            ->expects(self::once())
+            ->method('generateAppZip')
+            ->willReturnCallback(function (...$args) use (&$captured): string {
+                $captured = $args;
+                return '/tmp/out.zip';
+            });
+
+        $this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
+
+        self::assertSame($dataRegisters, $captured[4] ?? null, 'dataRegisters must be forwarded as the 5th argument');
+    }//end testForwardsDataRegistersFromLoadedJobIntoGenerateAppZip()
+
+    /**
+     * A job record predating this property (no `dataRegisters` key at all)
+     * forwards `[]` — additive, backward compatible.
+     *
+     * @return void
+     */
+    public function testForwardsEmptyDataRegistersWhenJobRecordPredatesTheProperty(): void
+    {
+        $jobUuid = 'job-no-data-registers-uuid';
+
+        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
+        $this->exportJobService->method('fetchPat')->willReturn(null);
+        $this->exportJobService->method('transitionJob')->willReturn(true);
+
+        $captured = null;
+        $this->exportService
+            ->expects(self::once())
+            ->method('generateAppZip')
+            ->willReturnCallback(function (...$args) use (&$captured): string {
+                $captured = $args;
+                return '/tmp/out.zip';
+            });
+
+        $this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
+
+        self::assertSame([], $captured[4] ?? null);
+    }//end testForwardsEmptyDataRegistersWhenJobRecordPredatesTheProperty()
+
+    /**
      * The PAT MUST NEVER appear in a log line. This test captures every
      * log line emitted during a run that fetches a PAT and dispatches a
      * push, then asserts the PAT marker is absent across all of them.

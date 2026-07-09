@@ -28,8 +28,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Tests\Integration;
 
+use OCA\OpenBuild\Service\DataRegisterExportBundler;
 use OCA\OpenBuild\Service\ExportService;
 use OCA\OpenBuild\Service\PlaceholderResolver;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\Files\IAppData;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -183,7 +187,19 @@ final class ExporterEndToEndTest extends TestCase
     private function buildService(): ExportService
     {
         $appData = $this->createStub(IAppData::class);
-        return new ExportService($appData, new PlaceholderResolver(), new NullLogger());
+        $bundler = new DataRegisterExportBundler(
+            $this->createStub(RegisterMapper::class),
+            $this->createStub(SchemaMapper::class),
+            $this->createStub(ObjectService::class),
+            new NullLogger()
+        );
+
+        return new ExportService(
+            $appData,
+            new PlaceholderResolver(),
+            new NullLogger(),
+            $bundler
+        );
     }//end buildService()
 
     /**

@@ -150,12 +150,19 @@ class ApplicationsController extends Controller
      * exists. RBAC lives inside ManifestResolverService (for versioned access)
      * and requirePermission (for the production path).
      *
+     * Owner signal (admin-settings-owner-gating): before the `permissions`
+     * block is stripped, {@see injectOwnerSignal()} projects a read-only
+     * `runtime.user.isOwner` boolean onto the returned manifest, computed via
+     * `PermissionResolver::matchesCaller(...['owners'])` with no NC
+     * super-admin fallback — see design.md Decision D3.
+     *
      * @param string $slug The virtual-app slug from the URL
      *
-     * @return JSONResponse The manifest blob, or a 404 envelope when not found
+     * @return JSONResponse The manifest blob (carrying `runtime.user.isOwner`), or a 404 envelope when not found
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-51
+     * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-openbuild-primitives
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -234,8 +241,17 @@ class ApplicationsController extends Controller
             // Strip the `permissions` block (and any other owning-user PII) from
             // the public manifest response (issue #165). The caller's own role was
             // already verified by requirePermission above; they do not need the
-            // full owners/editors/viewers roster to render the app.
+            // full owners/editors/viewers roster to render the app. Before the
+            // block is stripped, project a read-only `runtime.user.isOwner`
+            // signal (admin-settings-owner-gating) computed from that same
+            // `permissions` block, so the frontend can gate the admin-settings
+            // surface without ever seeing the raw owners/editors/viewers roster.
             if (is_array($manifest) === true) {
+                $manifest = $this->injectOwnerSignal(
+                    manifest: $manifest,
+                    applicationArray: $applicationArray,
+                    caller: $this->userSession->getUser()
+                );
                 unset($manifest['permissions']);
             }
 
@@ -844,6 +860,70 @@ class ApplicationsController extends Controller
 
         return [$filtered, $adminBypassUsed];
     }//end filterApplicationsByRole()
+
+    /**
+     * Project a read-only owner flag onto the manifest's `runtime.user` context.
+     *
+     * Computes `runtime.user.isOwner` via {@see PermissionResolver::matchesCaller()}
+     * against the Application's `permissions.owners` bucket ONLY — the same
+     * grammar and bucket used elsewhere in this controller, no new permission
+     * model. `allowAdminBypass` is deliberately `false`: per design.md
+     * Decision D3 there is NO Nextcloud super-admin fallback for the
+     * admin-settings gate — super-admin and app-owner are different sets, and
+     * a caller who reached this method via the existing admin-bypass RBAC
+     * read-gate (see {@see requirePermission()}) must still resolve to
+     * `isOwner = false` unless they are also literally in `permissions.owners`.
+     *
+     * Additive-only: any existing `runtime`/`runtime.user` fields on the
+     * manifest are preserved untouched; only the `isOwner` key is set/overwritten.
+     * Degrades to `isOwner = false` (never fatals) when the caller is null or
+     * the Application context / its `permissions` block is absent or malformed —
+     * e.g. the legacy un-versioned fallback path that has no Application record.
+     *
+     * @param array<string, mixed>      $manifest         The resolved manifest payload (mutated copy is returned).
+     * @param array<string, mixed>|null $applicationArray The normalised Application data (source of
+     *                                                    `permissions`), or null when no Application
+     *                                                    context is available.
+     * @param IUser|null                $caller           The authenticated caller, or null for an
+     *                                                    unauthenticated request.
+     *
+     * @return array<string, mixed> The manifest with `runtime.user.isOwner` set (boolean).
+     *
+     * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-openbuild-primitives
+     */
+    private function injectOwnerSignal(array $manifest, ?array $applicationArray, ?IUser $caller): array
+    {
+        $isOwner = false;
+
+        if ($caller !== null && $applicationArray !== null) {
+            $permissions = ($applicationArray['permissions'] ?? []);
+            if (is_array($permissions) === true) {
+                $isOwner = $this->permissionResolver->matchesCaller(
+                    permissions: $permissions,
+                    caller: $caller,
+                    userGroups: $this->permissionResolver->resolveUserGroups($caller),
+                    allowAdminBypass: false,
+                    roles: ['owners']
+                );
+            }
+        }
+
+        $runtime = ($manifest['runtime'] ?? []);
+        if (is_array($runtime) === false) {
+            $runtime = [];
+        }
+
+        $runtimeUser = ($runtime['user'] ?? []);
+        if (is_array($runtimeUser) === false) {
+            $runtimeUser = [];
+        }
+
+        $runtimeUser['isOwner'] = $isOwner;
+        $runtime['user']        = $runtimeUser;
+        $manifest['runtime']    = $runtime;
+
+        return $manifest;
+    }//end injectOwnerSignal()
 
     /**
      * Enforce the per-Application RBAC permissions block.
