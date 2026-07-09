@@ -127,6 +127,8 @@ class GitHubCatalogService
 
     /**
      * The distributed cache, or null when no cache backend is available.
+     *
+     * @var ICache|null
      */
     private readonly ?ICache $cache;
 
@@ -144,7 +146,12 @@ class GitHubCatalogService
         ICacheFactory $cacheFactory,
         private readonly LoggerInterface $logger,
     ) {
-        $this->cache = ($cacheFactory->isAvailable() === true) ? $cacheFactory->createDistributed(self::CACHE_NS) : null;
+        $cache = null;
+        if ($cacheFactory->isAvailable() === true) {
+            $cache = $cacheFactory->createDistributed(self::CACHE_NS);
+        }
+
+        $this->cache = $cache;
     }//end __construct()
 
     /**
@@ -181,14 +188,23 @@ class GitHubCatalogService
             return $cached;
         }
 
-        $q    = self::DISCOVERY_TOPIC.($term !== '' ? ' '.$term : '');
-        $path = '/search/repositories?q='.rawurlencode($q).'&per_page='.self::MAX_HITS;
+        $queryString = self::DISCOVERY_TOPIC;
+        if ($term !== '') {
+            $queryString .= ' '.$term;
+        }
+
+        $path = '/search/repositories?q='.rawurlencode($queryString).'&per_page='.self::MAX_HITS;
 
         $result = $this->get(path: $path, actingUserId: $actingUserId, credentialId: $credentialId);
         if ($result['ok'] === false) {
             // Rate-limited with no fresh result — surface a generic outcome.
+            $failure = self::OUTCOME_UNREACHABLE;
+            if ($result['rateLimited'] === true) {
+                $failure = self::OUTCOME_RATE_LIMITED;
+            }
+
             return [
-                'outcome'     => ($result['rateLimited'] === true) ? self::OUTCOME_RATE_LIMITED : self::OUTCOME_UNREACHABLE,
+                'outcome'     => $failure,
                 'cards'       => [],
                 'brokerUsed'  => $result['brokerUsed'],
                 'rateLimited' => $result['rateLimited'],
@@ -312,8 +328,11 @@ class GitHubCatalogService
         }
 
         $sha = (string) ($decoded['sha'] ?? '');
+        if ($sha === '') {
+            return null;
+        }
 
-        return ($sha !== '') ? $sha : null;
+        return $sha;
     }//end resolveCommitSha()
 
     /**
@@ -356,7 +375,14 @@ class GitHubCatalogService
             }
         }
 
-        foreach ($this->listSchemaFiles(owner: $owner, repo: $repo, ref: $ref, actingUserId: $actingUserId, credentialId: $credentialId) as $schemaPath) {
+        $schemaPaths = $this->listSchemaFiles(
+            owner: $owner,
+            repo: $repo,
+            ref: $ref,
+            actingUserId: $actingUserId,
+            credentialId: $credentialId
+        );
+        foreach ($schemaPaths as $schemaPath) {
             $contents = $this->fetchFileContents(
                 owner: $owner,
                 repo: $repo,
@@ -385,9 +411,18 @@ class GitHubCatalogService
      */
     private function buildCard(array $item, ?string $actingUserId, ?string $credentialId): ?array
     {
-        $fullName = (string) ($item['full_name'] ?? '');
-        $owner    = (string) (($item['owner']['login'] ?? '') ?: (explode('/', $fullName)[0] ?? ''));
-        $repo     = (string) ($item['name'] ?? (explode('/', $fullName)[1] ?? ''));
+        $fullName  = (string) ($item['full_name'] ?? '');
+        $nameParts = explode('/', $fullName);
+        $owner     = (string) ($item['owner']['login'] ?? '');
+        if ($owner === '') {
+            $owner = (string) ($nameParts[0] ?? '');
+        }
+
+        $repo = (string) ($item['name'] ?? '');
+        if ($repo === '') {
+            $repo = (string) ($nameParts[1] ?? '');
+        }
+
         if ($owner === '' || $repo === '') {
             return null;
         }
@@ -403,11 +438,11 @@ class GitHubCatalogService
 
         if ($descriptor === null) {
             return [
-                'owner'         => $owner,
-                'repo'          => $repo,
-                'stars'         => $stars,
-                'installable'   => false,
-                'unparseable'   => true,
+                'owner'       => $owner,
+                'repo'        => $repo,
+                'stars'       => $stars,
+                'installable' => false,
+                'unparseable' => true,
             ];
         }
 
@@ -520,10 +555,18 @@ class GitHubCatalogService
         $encoding = (string) ($decoded['encoding'] ?? '');
         if ($encoding === 'base64') {
             $raw = base64_decode(str_replace("\n", '', $content), true);
-            return ($raw === false) ? null : $raw;
+            if ($raw === false) {
+                return null;
+            }
+
+            return $raw;
         }
 
-        return ($content !== '') ? $content : null;
+        if ($content === '') {
+            return null;
+        }
+
+        return $content;
     }//end fetchFileContents()
 
     /**
@@ -543,6 +586,7 @@ class GitHubCatalogService
             if ($brokered !== null) {
                 return $brokered;
             }
+
             // Broker denied / rules missing — fall through to anonymous.
         }
 
