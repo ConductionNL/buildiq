@@ -15,9 +15,9 @@ new application.
 This capability is observed behaviour of those components. It is the frontend
 half of the `openbuild-template-catalogue` backend capability.
 
-**OpenSpec changes**: [openbuild-remote-template-store](../../changes/archive/2026-06-20-openbuild-remote-template-store/) _(archived 2026-06-20)_
+**OpenSpec changes**: [openbuild-remote-template-store](../../changes/archive/2026-06-20-openbuild-remote-template-store/) _(archived 2026-06-20)_, [github-shop-catalogue](../../changes/github-shop-catalogue/)
 
-**Status**: done
+**Status**: in-progress
 
 ## Requirements
 

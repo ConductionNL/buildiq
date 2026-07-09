@@ -22,13 +22,19 @@
 <template>
 	<div class="openbuild-schema-designer">
 		<!-- List mode -->
-		<SchemaListPanel
-			v-if="!schemaId"
-			:schemas="schemas"
-			:loading="loadingList"
-			@add="addSchema"
-			@open="openSchema"
-			@delete="deleteSchema" />
+		<template v-if="!schemaId">
+			<div v-if="canImport" class="openbuild-schema-designer__toolbar">
+				<NcButton type="secondary" @click="showImportWizard = true">
+					{{ t('openbuild', 'Import data') }}
+				</NcButton>
+			</div>
+			<SchemaListPanel
+				:schemas="schemas"
+				:loading="loadingList"
+				@add="addSchema"
+				@open="openSchema"
+				@delete="deleteSchema" />
+		</template>
 
 		<!-- Detail mode -->
 		<div v-else class="openbuild-schema-designer__detail">
@@ -111,10 +117,20 @@
 				</template>
 			</NcEmptyContent>
 		</div>
+
+		<ImportDataWizard
+			v-if="showImportWizard"
+			:register-id="importRegisterId"
+			:schemas="schemas"
+			:initial-schema="schemaId || ''"
+			@imported="onSchemaImported"
+			@close="showImportWizard = false" />
 	</div>
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import ArrowLeftIcon from 'vue-material-design-icons/ArrowLeft.vue'
@@ -129,8 +145,11 @@ import AggregationEditor from '../components/schema-editor/AggregationEditor.vue
 import CalculationEditor from '../components/schema-editor/CalculationEditor.vue'
 import NotificationEditor from '../components/schema-editor/NotificationEditor.vue'
 
-import { useSchemasStore } from '../store/schemas.js'
+import ImportDataWizard from '../dialogs/ImportDataWizard.vue'
+
+import { useSchemasStore, registerSlugForApp } from '../store/schemas.js'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
+import { useRole } from '../composables/useRole.js'
 import { buildVersionedRoute } from '../router/helpers.js'
 
 /**
@@ -156,6 +175,7 @@ export default {
 		SchemaHeaderForm,
 		SchemaListPanel,
 		WidgetEditor,
+		ImportDataWizard,
 	},
 	data() {
 		return {
@@ -170,6 +190,9 @@ export default {
 			applicationVersion: null,
 			versionLoading: false,
 			versionError: null,
+			// Import-data wizard state (openbuild-data-import-wizard).
+			applicationRecord: null,
+			showImportWizard: false,
 		}
 	},
 	computed: {
@@ -216,6 +239,29 @@ export default {
 			// register `openbuild-{slug}` on every call (idempotent).
 			// REQ-OBVR-007: pass versionSlug so the store targets the correct register.
 			return useSchemasStore(this.appSlug, this.versionSlug)
+		},
+		/**
+		 * The active version's own per-version register — the ONLY import
+		 * target the wizard writes into (ADR-002).
+		 *
+		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @return {string} Register slug.
+		 */
+		importRegisterId() {
+			return registerSlugForApp(this.appSlug, this.versionSlug)
+		},
+		/**
+		 * Whether the caller holds a build/manage role (owner or editor) on the
+		 * Application. Gates the "Import data" affordance; the write is
+		 * independently re-gated server-side by OpenRegister's own register
+		 * manage-permission.
+		 *
+		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @return {boolean}
+		 */
+		canImport() {
+			const role = useRole(this.applicationRecord)
+			return role === 'owner' || role === 'editor'
 		},
 		/**
 		 * List the slugs of the other schemas (relation targets).
@@ -365,12 +411,43 @@ export default {
 	async mounted() {
 		// REQ-OBVR-004: resolve the active ApplicationVersion via useApplicationVersion.
 		this.resolveVersion()
+		this.loadApplicationRecord()
 		await this.refreshList()
 		if (this.schemaId) {
 			await this.loadDetail()
 		}
 	},
 	methods: {
+		/**
+		 * Resolve the caller's Application record (from the "my applications"
+		 * list) so the "Import data" affordance can be gated by the caller's
+		 * build/manage role. The list only returns apps the caller has a role
+		 * on; `useRole` then derives owner/editor/viewer from its permissions.
+		 *
+		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @return {Promise<void>}
+		 */
+		async loadApplicationRecord() {
+			try {
+				const url = generateUrl('/apps/openbuild/api/applications')
+				const { data } = await axios.get(url, { headers: { 'OCS-APIREQUEST': 'true' } })
+				const list = (data && (data.results || data)) || []
+				const apps = Array.isArray(list) ? list : []
+				this.applicationRecord = apps.find((a) => a && a.slug === this.appSlug) || null
+			} catch (e) {
+				this.applicationRecord = null
+			}
+		},
+		/**
+		 * Refresh the schema list after a successful import (a create-from-file
+		 * import may have added a new schema to the register).
+		 *
+		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @return {Promise<void>}
+		 */
+		async onSchemaImported() {
+			await this.refreshList()
+		},
 		/**
 		 * Resolve the active ApplicationVersion via useApplicationVersion composable
 		 * (REQ-OBVR-004 / REQ-OBVR-005). Called on mount and when appSlug / versionSlug
@@ -807,5 +884,11 @@ export default {
 	display: flex;
 	justify-content: center;
 	padding: 32px 0;
+}
+
+.openbuild-schema-designer__toolbar {
+	display: flex;
+	justify-content: flex-end;
+	margin-bottom: 12px;
 }
 </style>
