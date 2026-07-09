@@ -277,6 +277,46 @@ class GitHubCatalogService
     }//end fetchDescriptor()
 
     /**
+     * Resolve the exact commit SHA a ref points at (for pull provenance).
+     *
+     * @param string      $owner        Repo owner (pattern-validated).
+     * @param string      $repo         Repo name (pattern-validated).
+     * @param string      $ref          The git ref (branch/tag/sha, pattern-validated).
+     * @param string|null $actingUserId The session UID (broker identity), or null.
+     * @param string|null $credentialId Optional allowed `github` credential.
+     *
+     * @return string|null The resolved commit SHA, or null when unresolvable.
+     *
+     * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+     */
+    public function resolveCommitSha(
+        string $owner,
+        string $repo,
+        string $ref,
+        ?string $actingUserId,
+        ?string $credentialId=null
+    ): ?string {
+        if ($this->validRepo(owner: $owner, repo: $repo, ref: $ref) === false || $ref === '') {
+            return null;
+        }
+
+        $path   = '/repos/'.rawurlencode($owner).'/'.rawurlencode($repo).'/commits/'.rawurlencode($ref);
+        $result = $this->get(path: $path, actingUserId: $actingUserId, credentialId: $credentialId);
+        if ($result['ok'] === false) {
+            return null;
+        }
+
+        $decoded = json_decode($result['body'], true);
+        if (is_array($decoded) === false) {
+            return null;
+        }
+
+        $sha = (string) ($decoded['sha'] ?? '');
+
+        return ($sha !== '') ? $sha : null;
+    }//end resolveCommitSha()
+
+    /**
      * Fetch the repo file map (`path => contents`) AppRepoParser::parse expects:
      * `openbuild-app.json`, `manifest.json`, and every `schemas/*.json`.
      *
