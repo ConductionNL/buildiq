@@ -105,5 +105,6 @@ Vrij en open source onder de EUPL-1.2-licentie.
 
     <commands>
         <command>OCA\OpenBuild\Command\SeedHelloWorldFixture</command>
+        <command>OCA\OpenBuild\Command\PublishTemplates</command>
     </commands>
 </info>
