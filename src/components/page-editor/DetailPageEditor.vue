@@ -139,6 +139,12 @@ export default {
 			type: String,
 			default: '',
 		},
+		// The Application's declared `dataRegisters` bindings, forwarded into
+		// useRegisterPicker so the register picker labels/hoists them.
+		dataRegisters: {
+			type: Array,
+			default: () => [],
+		},
 		pageType: {
 			type: String,
 			default: 'detail',
@@ -149,9 +155,10 @@ export default {
 	 * Observed behaviour of `setup` (retrofit annotation).
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1
 	 */
 	setup(props) {
-		const picker = useRegisterPicker({ appSlug: props.appSlug })
+		const picker = useRegisterPicker({ appSlug: props.appSlug, dataRegisters: props.dataRegisters })
 		return { picker }
 	},
 	data() {

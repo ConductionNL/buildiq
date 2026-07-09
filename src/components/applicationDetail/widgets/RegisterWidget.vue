@@ -52,6 +52,12 @@
 		</div>
 
 		<footer class="ob-register-widget__footer">
+			<NcButton
+				v-if="canImport"
+				type="secondary"
+				@click="$emit('import-data', { registerSlug, schemas })">
+				{{ t('openbuild', 'Import data') }}
+			</NcButton>
 			<NcButton type="primary" @click="openInOpenRegister">
 				{{ t('openbuild', 'Open in OpenRegister') }}
 			</NcButton>
@@ -87,7 +93,16 @@ export default {
 		 * takes precedence.
 		 */
 		registerSlugOverride: { type: String, default: '' },
+		/**
+		 * Whether the caller holds a build/manage role on the Application. When
+		 * true the widget surfaces the "Import data" affordance (the import
+		 * itself is independently re-gated server-side by OpenRegister's own
+		 * register manage-permission). Default false — non-builders never see
+		 * the affordance.
+		 */
+		canImport: { type: Boolean, default: false },
 	},
+	emits: ['import-data'],
 	data() {
 		return {
 			/** @type {Array<{id: (string|number), name: string}>} */

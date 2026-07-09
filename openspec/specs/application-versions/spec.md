@@ -4,7 +4,7 @@ status: in-progress
 
 # application-versions Specification
 
-**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/), [version-lifecycle-and-switcher](../../changes/archive/2026-06-26-version-lifecycle-and-switcher/) _(archived 2026-06-26)_
+**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/), [version-lifecycle-and-switcher](../../changes/archive/2026-06-26-version-lifecycle-and-switcher/) _(archived 2026-06-26)_, [github-app-repo-format](../../changes/github-app-repo-format/)
 
 ## Purpose
 

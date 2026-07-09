@@ -1,0 +1,47 @@
+{
+	"_comment": "Seed-data fixture for task 2.1 of this change (data-registers-schema-declaration). Deliberately NOT placed under lib/Settings/register.d/ — SettingsService::doLoadConfiguration() only globs lib/Settings/register.d/*.json, so nothing in this file is ever merged into openbuild_register.json or passed to OpenRegister's ConfigurationService::importFromApp(). No live object is created by this change (design.md Seed Data section; proposal.md). This file reproduces design.md's two illustrative Application examples verbatim as machine-readable JSON, reusable by the follower spec data-registers-runtime's tests and by manual QA. Each object uses the ADR-001 @self envelope ({register, schema, slug}); `schema` is the Application schema's own `slug` value (`application`), matching the convention used by lib/Settings/register.d/10-business-rules.json's seed objects. The `spectr` example uses fully concrete, valid values (nil UUID, real kebab-case slugs) and validates cleanly against the merged Application schema. The `generic-municipality` example intentionally keeps design.md's angle-bracket placeholders (<application-uuid>, <gemeente-slug>, <Gemeente>, <application-version-uuid>) as a fill-in-the-blanks template for a real municipality's admin/integrator — those placeholders do NOT satisfy the `register` slug pattern or `productionVersion` uuid format by design, exactly as design.md documents; substitute real values before creating either object for real.",
+	"objects": [
+		{
+			"@self": {
+				"register": "openbuild",
+				"schema": "application",
+				"slug": "spectr"
+			},
+			"uuid": "00000000-0000-0000-0000-000000000000",
+			"slug": "spectr",
+			"name": "Spectr",
+			"description": "Market intelligence: tenders, competitors, standards, features.",
+			"appType": "virtual",
+			"productionVersion": "00000000-0000-0000-0000-000000000000",
+			"dataRegisters": [
+				{
+					"register": "spectr",
+					"label": "Spectr market intelligence data"
+				}
+			]
+		},
+		{
+			"@self": {
+				"register": "openbuild",
+				"schema": "application",
+				"slug": "vergunningen-<gemeente-slug>"
+			},
+			"uuid": "<application-uuid>",
+			"slug": "vergunningen-<gemeente-slug>",
+			"name": "Vergunningen <Gemeente>",
+			"description": "Permit intake for <Gemeente>.",
+			"appType": "virtual",
+			"productionVersion": "<application-version-uuid>",
+			"dataRegisters": [
+				{
+					"register": "brp-personen",
+					"label": "BRP personen (shared municipal register)"
+				},
+				{
+					"register": "bag-adressen",
+					"label": "BAG adressen"
+				}
+			]
+		}
+	]
+}

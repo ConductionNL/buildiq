@@ -98,3 +98,6 @@ openspec/test-site-results/**/*.webp
 tests/e2e/.auth/
 /coverage-vitest/
 /coverage/
+
+# Nested hydra tooling repo (separate repo + secrets) — never track here
+.hydra/
