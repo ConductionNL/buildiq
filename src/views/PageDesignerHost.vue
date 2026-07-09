@@ -449,17 +449,21 @@ export default {
 			)
 			try {
 				// ADR-002 / REQ-OBPD-009 (design.md Decision 6): persist the manifest
-				// onto the active ApplicationVersion when one is resolved — surgical-merge
-				// the UI-controlled `manifest` field back into the original record so any
-				// version fields the designer does not touch round-trip losslessly
-				// (design.md Risk 2). Fall back to the Application object for apps that
-				// predate the versioned model.
+				// onto the active ApplicationVersion when one is resolved. Use a
+				// PATCH of just the `manifest` field — a full-object PUT re-validates
+				// the whole ApplicationVersion, and its `register` property (the
+				// per-version data-register slug, e.g. `openbuild-…`) collides with
+				// OpenRegister's reserved `register` routing metadata, so a
+				// `{ ...version, manifest }` PUT is rejected ("required property
+				// (register) is missing"). PATCH merges the new manifest into the
+				// stored object server-side, leaving every untouched field intact —
+				// losslessly and without tripping the collision.
 				const version = this.applicationVersion
 				const versionUuid = version
 					&& ((version['@self'] && version['@self'].id) || version.uuid || version.id)
 				if (version && versionUuid) {
 					const url = generateUrl(`/apps/openregister/api/objects/openbuild/applicationVersion/${versionUuid}`)
-					const { data } = await axios.put(url, { ...version, manifest: this.manifest })
+					const { data } = await axios.patch(url, { manifest: this.manifest })
 					if (data && typeof data === 'object') {
 						this.applicationVersion = data
 					}
