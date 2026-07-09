@@ -16,6 +16,7 @@ scoping via OR's standard `organisation` field (ADR-022). Lifecycle relocates to
 
 **OpenSpec changes**: [unify-apps-with-app-type](../../changes/archive/2026-06-20-unify-apps-with-app-type/) _(archived 2026-06-20)_
 [data-registers-schema-declaration](../../changes/data-registers-schema-declaration/)
+[github-app-repo-format](../../changes/github-app-repo-format/)
 
 **Status**: in-progress
 

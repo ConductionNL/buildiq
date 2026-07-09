@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenBuild Register",
     "description": "Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.",
-    "version": "0.7.0"
+    "version": "0.8.0"
   },
   "x-openregister": {
     "type": "application",
@@ -18,7 +18,7 @@
         "x-schema-org": "schema:SoftwareApplication",
         "slug": "application",
         "icon": "AppsBoxOutline",
-        "version": "0.5.0",
+        "version": "0.6.0",
         "title": "Application",
         "description": "An app built or customized with OpenBuild (unify-apps-with-app-type). The `appType` discriminator distinguishes a `virtual` app (fully delivered by OpenBuild) from a `hybrid` app (a delta layered over an installed Nextcloud fleet app, linked via `baseRef`). Per ADR-002 the Application carries identity (slug, name, description, appType, baseRef, permissions) plus a productionVersion relation to the ApplicationVersion currently exposed at the canonical URL. Manifest, semver, and lifecycle live on ApplicationVersion. For a hybrid app the identity metadata (slug/name) mirrors the underlying NC app and is read-only after creation (enforced by HybridMetadataLockListener).",
         "authorization": {
@@ -122,6 +122,7 @@
               "equals": "hybrid"
             },
             "description": "Relation → ApplicationVersion currently exposed at the canonical /apps/openbuild/{slug} URL. READ-ONLY on a hybrid app (its production version is the admin-managed shared delta) — enforced server-side + reflected by the data widget. Set explicitly by the admin (creation wizard, detail-page version switcher), not derived from chain terminality. The referenced ApplicationVersion's `application` relation MUST point back at this Application — enforced server-side by ApplicationVersionService::guardProductionVersionOwnership() (ADR-031 §Exceptions(1) cross-row guard).",
+            "x-relation-filter": { "application": "@objectId" },
             "x-openregister-relation": {
               "target": "openbuild/applicationVersion",
               "type": "many-to-one"
@@ -196,6 +197,33 @@
               }
             },
             "additionalProperties": false
+          },
+          "githubRepo": {
+            "title": "GitHub Repository",
+            "type": "object",
+            "description": "Optional linkage to the app's round-trip GitHub home (github-app-repo-format REQ-OBA-010). Set by the owner round-trip capability (github-app-sync) when the app is linked/pushed; omittable so every existing Application stays schema-valid. Purely declarative (stored data, no state machine, no calculation) per ADR-031 — read by the shop + sync surfaces, populated by no runtime that never touches GitHub.",
+            "required": [
+              "owner",
+              "name"
+            ],
+            "properties": {
+              "owner": {
+                "title": "Repository Owner",
+                "type": "string",
+                "description": "GitHub owner (user or organisation) of the linked repository."
+              },
+              "name": {
+                "title": "Repository Name",
+                "type": "string",
+                "description": "GitHub repository name of the app's round-trip home."
+              }
+            },
+            "additionalProperties": false
+          },
+          "githubDefaultBranch": {
+            "title": "GitHub Default Branch",
+            "type": "string",
+            "description": "Optional branch that push/pull operations target, resolved from the linked repo's default branch at link time and admin-overridable (github-app-repo-format REQ-OBA-010). Omittable; purely declarative per ADR-031."
           }
         },
         "x-openregister-validation": {
@@ -354,6 +382,7 @@
             "title": "Application UUID",
             "type": "string",
             "format": "uuid",
+            "$ref": "Application",
             "description": "UUID of the published Application this route resolves to."
           }
         }
@@ -439,7 +468,7 @@
         },
         "slug": "applicationVersion",
         "icon": "SourceBranchOutline",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "title": "Application Version",
         "description": "A deployable runtime for an Application (ADR-002). A VIRTUAL app's version carries a full `manifest` blob and owns its own per-version OpenRegister register so production and test data are physically isolated. A HYBRID app's version (unify-apps-with-app-type) instead carries a delta-only customization: `manifest` is an empty object `{}`, `baseRef.kind` is `fleet-app`, and `manifestDelta` holds the keyed structural diff served raw via GET /api/app-overrides/{appId} and merged client-side over the installed fleet app's bundled manifest (OpenBuild holds no fleet base). The admin-defined linear promotion chain reads via the optional `promotesTo` relation. Lifecycle (draft → published → archived) is per-version; the `draft → published` transition upserts the BuiltAppRoute slug index.",
         "authorization": {
@@ -551,6 +580,7 @@
             "type": "string",
             "format": "uuid",
             "description": "Optional relation → next ApplicationVersion in the linear promotion chain. Terminal versions have `promotesTo: null`. Cycle detection is enforced server-side by ApplicationVersionService::guardNoCycle() (ADR-031 §Exceptions(1) cross-row).",
+            "x-relation-filter": { "application": "@object.application" },
             "x-openregister-relation": {
               "target": "openbuild/applicationVersion",
               "type": "many-to-one"
@@ -570,6 +600,16 @@
             "title": "Owner",
             "type": "string",
             "description": "Owning Nextcloud user UID. Set ONLY on a `scope: user` row; identifies the single user who may read/edit/rollback this user-scoped delta. Empty/absent on `scope: admin` rows. Read by ApplicationVersionOwnerGuard + PermissionResolver for the user-scope ownership check (a user can never read/write another user's delta — fail-closed)."
+          },
+          "commitSha": {
+            "title": "GitHub Commit SHA",
+            "type": "string",
+            "description": "Optional GitHub provenance (github-app-repo-format REQ-OBV-112). The exact Git commit this version was pushed to (on publish to GitHub) or pulled from (on import). Omittable; absent on versions with no GitHub provenance. Purely declarative per ADR-031 — a commitSha write is metadata and does NOT by itself bump `semver` (the manifest-content auto-bump, REQ-OBV-103, is unaffected)."
+          },
+          "sourceRef": {
+            "title": "GitHub Source Ref",
+            "type": "string",
+            "description": "Optional GitHub provenance (github-app-repo-format REQ-OBV-112). The branch/tag/ref a PULLED version was imported from (e.g. `refs/heads/main` or a tag name). Omittable; absent on versions with no GitHub provenance. Purely declarative per ADR-031 — no lifecycle or semver effect."
           }
         },
         "x-openregister-validation": {
@@ -716,6 +756,7 @@
             "title": "Application UUID",
             "type": "string",
             "format": "uuid",
+            "$ref": "Application",
             "description": "UUID of the source Application record being exported."
           },
           "applicationVersion": {
