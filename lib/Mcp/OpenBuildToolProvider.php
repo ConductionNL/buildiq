@@ -182,7 +182,7 @@ class OpenBuildToolProvider implements IMcpToolProvider
             'id'          => 'openbuild.addWidget',
             'name'        => 'Add a widget to a page',
             'description' => 'Append a widget to a page\'s config.widgets array in the draft manifest.'
-                .' widgetType is e.g. "stat-counter", "chart", "list". widgetConfig is widget-type-specific.'
+                .' widgetType is e.g. "stat", "chart", "table". widgetConfig is widget-type-specific.'
                 .' Defaults versionSlug to "development".',
             'inputSchema' => [
                 'type'       => 'object',

@@ -84,14 +84,19 @@ class ExportService
     /**
      * Constructor.
      *
-     * @param IAppData            $appData             The app-data area for scratch + exports.
-     * @param PlaceholderResolver $placeholderResolver Pure resolver for {{tokens}}.
-     * @param LoggerInterface     $logger              Logger.
+     * @param IAppData                  $appData             The app-data area for scratch + exports.
+     * @param PlaceholderResolver       $placeholderResolver Pure resolver for {{tokens}}.
+     * @param LoggerInterface           $logger              Logger.
+     * @param DataRegisterExportBundler $dataRegisterBundler Bundles bound data registers into the exported
+     *                                                       tree (data-registers-runtime) — a dedicated
+     *                                                       collaborator so this class's own coupling/
+     *                                                       complexity stays within PHPMD's thresholds.
      */
     public function __construct(
         private IAppData $appData,
         private PlaceholderResolver $placeholderResolver,
         private LoggerInterface $logger,
+        private DataRegisterExportBundler $dataRegisterBundler,
     ) {
         $this->templateRoot = dirname(__DIR__).'/Resources/template';
         // 2026-01-01T00:00:00Z — fixed for deterministic ZIPs.
@@ -104,23 +109,32 @@ class ExportService
      * @param string              $applicationUuid Source Application UUID.
      * @param string              $versionSlug     Semver of the Application version.
      * @param array<string,mixed> $context         Placeholder context: appId, appNamespace, etc.
-     * @param string              $jobUuid         ExportJob UUID — used as the ZIP filename.
+     * @param string              $jobUuid         ExportJob UUID — used as the ZIP
+     *                                             filename.
+     * @param array<int,mixed>    $dataRegisters   Source Application's `dataRegisters` bindings + the
+     *                                             per-export includeData choice for each
+     *                                             (data-registers-runtime design.md Decision 5).
+     *                                             Default `[]`. Untrusted shape — see
+     *                                             bundleDataRegisterSchemas().
      *
      * @return string Absolute (local) path to the produced ZIP.
      *
      * @throws RuntimeException When packaging fails.
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+     * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
      */
     public function generateAppZip(
         string $applicationUuid,
         string $versionSlug,
         array $context,
         string $jobUuid,
+        array $dataRegisters=[],
     ): string {
         $scratchDir = $this->prepareScratchDir(jobUuid: $jobUuid);
         $this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
         $this->resolvePlaceholders(rootDir: $scratchDir, context: $context);
+        $this->bundleDataRegisterSchemas(rootDir: $scratchDir, dataRegisters: $dataRegisters);
 
         // Audit-trail entry names only the source — never the PAT, never secret values.
         $this->logger->info(
@@ -134,6 +148,67 @@ class ExportService
 
         return $this->packageZip(sourceDir: $scratchDir, jobUuid: $jobUuid);
     }//end generateAppZip()
+
+    /**
+     * Bundle every `dataRegisters` binding's schema definitions (always) and
+     * row data (only when that binding's `includeData` is true) into the
+     * exported tree (spec openbuild-exporter, ADDED Requirements "Bound
+     * data registers' schema definitions are bundled into every export" +
+     * "Per-binding includeData toggle controls data-register row-data
+     * inclusion"). Delegates to {@see DataRegisterExportBundler} (a
+     * dedicated collaborator — see design.md Decision 5 and this class's
+     * own constructor docblock for why), then pins every written file's
+     * mtime to the same deterministic `$zipTimestamp` every other file in
+     * the exported tree uses, preserving REQ-OBEX-008 byte-equivalence
+     * across re-exports.
+     *
+     * @param string           $rootDir       Scratch directory (exported tree root).
+     * @param array<int,mixed> $dataRegisters Bindings + per-export includeData choice — see
+     *                                        DataRegisterExportBundler::bundle() for the shape note.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+     */
+    public function bundleDataRegisterSchemas(string $rootDir, array $dataRegisters): void
+    {
+        $this->dataRegisterBundler->bundle(rootDir: $rootDir, dataRegisters: $dataRegisters);
+        $this->pinDataRegisterFileTimestamps(rootDir: $rootDir);
+    }//end bundleDataRegisterSchemas()
+
+    /**
+     * Pin every file `bundleDataRegisterSchemas()` just wrote to the
+     * deterministic `$zipTimestamp` (REQ-OBEX-008) — mirrors how every
+     * other write in this class (`copyTemplate()`, `resolvePlaceholders()`)
+     * touches its own output. Kept here (not in the bundler) because the
+     * ZIP-determinism contract is this class's concern, not the bundler's.
+     *
+     * @param string $rootDir Scratch directory (exported tree root).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+     */
+    private function pinDataRegisterFileTimestamps(string $rootDir): void
+    {
+        $targetDir = $rootDir.'/lib/Settings/data-registers';
+        if (is_dir($targetDir) === false) {
+            return;
+        }
+
+        $entries = scandir($targetDir);
+        if ($entries === false) {
+            return;
+        }
+
+        foreach ($entries as $entry) {
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+
+            touch($targetDir.'/'.$entry, $this->zipTimestamp);
+        }
+    }//end pinDataRegisterFileTimestamps()
 
     /**
      * Package a directory tree into a deterministic ZIP archive.
