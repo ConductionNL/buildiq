@@ -45,18 +45,20 @@
 			</p>
 		</div>
 
-		<!-- Icon previews when uploaded -->
-		<div v-if="payload.icon || payload.iconDark" class="wizard-step4__icons">
+		<!-- Icon previews when a glyph was chosen -->
+		<div v-if="lightIconSvg || darkIconSvg" class="wizard-step4__icons">
 			<h4 class="wizard-step4__subheading">
 				{{ t('openbuild', 'Icons') }}
 			</h4>
 			<div class="wizard-step4__icon-previews">
-				<figure v-if="iconLightUrl" class="wizard-step4__icon-preview">
-					<img :src="iconLightUrl" :alt="t('openbuild', 'Light icon preview')" class="wizard-step4__icon-img">
+				<figure v-if="lightIconSvg" class="wizard-step4__icon-preview">
+					<!-- eslint-disable-next-line vue/no-v-html -->
+					<span class="wizard-step4__icon-img" v-html="lightIconSvg" />
 					<figcaption>{{ t('openbuild', 'Light') }}</figcaption>
 				</figure>
-				<figure v-if="iconDarkUrl" class="wizard-step4__icon-preview wizard-step4__icon-preview--dark">
-					<img :src="iconDarkUrl" :alt="t('openbuild', 'Dark icon preview')" class="wizard-step4__icon-img">
+				<figure v-if="darkIconSvg" class="wizard-step4__icon-preview wizard-step4__icon-preview--dark">
+					<!-- eslint-disable-next-line vue/no-v-html -->
+					<span class="wizard-step4__icon-img" v-html="darkIconSvg" />
 					<figcaption>{{ t('openbuild', 'Dark') }}</figcaption>
 				</figure>
 			</div>
@@ -65,6 +67,8 @@
 </template>
 
 <script>
+import { resolveAppIcon } from '../../utils/iconCatalogues.js'
+
 export default {
 	name: 'Step4Review',
 
@@ -110,21 +114,23 @@ export default {
 		},
 
 		/**
-		 * Observed behaviour of `iconLightUrl` (retrofit annotation).
+		 * The resolved light app-icon SVG (white glyph) for the review preview.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @return {string|null} SVG markup, or null when no icon was chosen.
 		 */
-		iconLightUrl() {
-			return this.payload.icon ? URL.createObjectURL(this.payload.icon) : null
+		lightIconSvg() {
+			return resolveAppIcon(this.payload.iconValue, { dark: false })
 		},
 
 		/**
-		 * Observed behaviour of `iconDarkUrl` (retrofit annotation).
+		 * The resolved dark app-icon SVG (no fill), defaulting to the primary
+		 * icon so it mirrors what the wizard attaches on submit.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @return {string|null} SVG markup, or null when no icon was chosen.
 		 */
-		iconDarkUrl() {
-			return this.payload.iconDark ? URL.createObjectURL(this.payload.iconDark) : null
+		darkIconSvg() {
+			const source = this.payload.iconDarkValue || this.payload.iconValue
+			return resolveAppIcon(source, { dark: true })
 		},
 	},
 }

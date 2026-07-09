@@ -254,24 +254,21 @@ export default {
 			const filename = variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
 
 			try {
-				// 1. Upload the file to OR's files-attached-to-object endpoint.
-				const formData = new FormData()
-				formData.append('file', file, filename)
-
+				// 1. Upload the SVG to OR's files#create endpoint, which takes
+				//    JSON { name, content } and writes the content verbatim.
+				const content = await file.text()
 				const uploadUrl = generateUrl(
 					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files`,
 				)
-				await axios.post(uploadUrl, formData, {
-					headers: { 'Content-Type': 'multipart/form-data' },
-				})
+				await axios.post(uploadUrl, { name: filename, content })
 
-				// 2. Patch the Application record with the new icon ref.
+				// 2. PATCH (partial merge) the icon ref — a PUT would replace the
+				//    whole object and fail validation on the missing name/slug.
 				const field = variant === 'dark' ? 'iconDark' : 'icon'
-				const payload = { [field]: { ref: filename } }
 				const patchUrl = generateUrl(
 					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}`,
 				)
-				await axios.put(patchUrl, payload)
+				await axios.patch(patchUrl, { [field]: { ref: filename } })
 
 				// 3. Update local state and notify parent.
 				if (variant === 'dark') {
@@ -333,11 +330,11 @@ export default {
 				)
 				await axios.delete(deleteUrl)
 
-				// 2. Clear the ref on the Application.
+				// 2. Clear the ref on the Application (partial merge, not replace).
 				const patchUrl = generateUrl(
 					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}`,
 				)
-				await axios.put(patchUrl, { [field]: null })
+				await axios.patch(patchUrl, { [field]: null })
 
 				// 3. Update local state.
 				if (variant === 'dark') {
