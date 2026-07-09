@@ -196,6 +196,24 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'store#search',  'url' => '/api/store/templates',                  'verb' => 'GET'],
         ['name' => 'store#install', 'url' => '/api/store/templates/{slug}/install',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // GitHub shop source (github-shop-catalogue REQ-GHSC-005 / REQ-GHSC-006).
+        // Both #[NoAdminRequired] with an in-body 401 guard; search is an
+        // instance-shared read, install parses the repo via AppRepoParser then
+        // reuses ApplicationsController::installFromTemplateArray. Specific-first,
+        // before the engine-appended SPA catch-all.
+        ['name' => 'shop#githubSearch',  'url' => '/api/shop/github/search',  'verb' => 'GET'],
+        ['name' => 'shop#githubInstall', 'url' => '/api/shop/github/install', 'verb' => 'POST'],
+
+        // GitHub owner round-trip (github-app-sync REQ-GHAS-001..004). All four
+        // #[NoAdminRequired] with a per-object owner guard (status viewer-readable).
+        // The trailing `/github/{action}` literal disambiguates from the slug-based
+        // CRUD + versions routes above; `{slug}` carries the kebab-case constraint.
+        // Registered specific-first before the SPA catch-all.
+        ['name' => 'gitHubSync#link',   'url' => '/api/applications/{slug}/github/link',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'gitHubSync#push',   'url' => '/api/applications/{slug}/github/push',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'gitHubSync#pull',   'url' => '/api/applications/{slug}/github/pull',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'gitHubSync#status', 'url' => '/api/applications/{slug}/github/status', 'verb' => 'GET',  'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
         // NB: the SPA catch-all (dashboard#catchAll) is appended by
         // \OCA\OpenRegister\AppHost\Routes::standard() — do NOT add it here.
     ]

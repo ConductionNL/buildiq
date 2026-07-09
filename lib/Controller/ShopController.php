@@ -77,11 +77,11 @@ class ShopController extends Controller
     /**
      * Constructor.
      *
-     * @param IRequest              $request                The current HTTP request.
-     * @param LoggerInterface       $logger                 PSR logger.
-     * @param IUserSession          $userSession            Current NC user session.
-     * @param GitHubCatalogService  $catalogService         Fixed-host GitHub source.
-     * @param AppRepoParser         $repoParser             Strict repo-file-map parser (change 1).
+     * @param IRequest               $request                The current HTTP request.
+     * @param LoggerInterface        $logger                 PSR logger.
+     * @param IUserSession           $userSession            Current NC user session.
+     * @param GitHubCatalogService   $catalogService         Fixed-host GitHub source.
+     * @param AppRepoParser          $repoParser             Strict repo-file-map parser (change 1).
      * @param ApplicationsController $applicationsController Shared clone/install seam.
      *
      * @return void
@@ -175,10 +175,14 @@ class ShopController extends Controller
             return $this->error(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
         }
 
-        $owner   = (string) ($this->request->getParam('owner') ?? '');
-        $repo    = (string) ($this->request->getParam('repo') ?? '');
-        $refRaw  = $this->request->getParam('ref');
-        $ref     = (is_string($refRaw) === true && $refRaw !== '') ? $refRaw : null;
+        $owner  = (string) ($this->request->getParam('owner') ?? '');
+        $repo   = (string) ($this->request->getParam('repo') ?? '');
+        $refRaw = $this->request->getParam('ref');
+        $ref    = null;
+        if (is_string($refRaw) === true && $refRaw !== '') {
+            $ref = $refRaw;
+        }
+
         $name    = (string) ($this->request->getParam('name') ?? '');
         $newSlug = (string) ($this->request->getParam('slug') ?? '');
 

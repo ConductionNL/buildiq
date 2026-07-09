@@ -59,7 +59,7 @@ final class AppRepoParseException extends RuntimeException
         private readonly ?string $filePath=null,
         ?Throwable $previous=null,
     ) {
-        parent::__construct($message, 0, $previous);
+        parent::__construct(message: $message, code: 0, previous: $previous);
     }//end __construct()
 
     /**
