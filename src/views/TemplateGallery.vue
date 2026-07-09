@@ -59,7 +59,7 @@
 				<NcEmptyContent :name="t('openbuild', 'No templates match your filters')" />
 			</div>
 
-			<ul v-else class="template-gallery__grid">
+			<ul v-else class="template-gallery__grid" data-walkthrough-id="templates-grid">
 				<li v-for="tpl in visibleCards" :key="tpl.slug || tpl.uuid" class="template-card">
 					<img
 						v-if="tpl.screenshotUrl"
@@ -211,7 +211,7 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
+import { generateUrl, imagePath } from '@nextcloud/router'
 import { NcButton, NcDialog, NcEmptyContent, NcLoadingIcon, NcNoteCard, NcSelect, NcTextField } from '@nextcloud/vue'
 import CloneTemplateDialog from '../modals/CloneTemplateDialog.vue'
 import EditTemplateMetadataDialog from '../dialogs/EditTemplateMetadataDialog.vue'
@@ -549,10 +549,17 @@ export default {
 			if (!url) {
 				return ''
 			}
+			// Absolute URLs and root-relative paths are used verbatim.
 			if (url.startsWith('http') || url.startsWith('/')) {
 				return url
 			}
-			return generateUrl(`/apps/openbuild/${url}`)
+			// App-relative screenshots (e.g. "img/templates/permit-tracker.svg")
+			// are static app assets. Resolve them via imagePath — which yields the
+			// web-root path /apps/openbuild/img/… served directly by the web
+			// server. generateUrl would prefix /index.php and route through the PHP
+			// app router, which has no route for img/* and returns the app HTML
+			// shell (200 text/html) instead of the image.
+			return imagePath('openbuild', url.replace(/^img\//, ''))
 		},
 		/**
 		 * Observed behaviour of `categoryLabel` (retrofit annotation).
@@ -698,18 +705,32 @@ export default {
 				return
 			}
 			// Feature-detect chain #5 page editor; fall back to the manifest-driven
-			// virtual-app manager, then the dashboard.
-			const editorRoute = this.$router.resolve({ name: 'PageEditor', params: { slug } })
-			if (editorRoute?.resolved?.matched?.length > 0) {
-				this.$router.push(editorRoute.resolved.fullPath)
+			// virtual-app manager, then the dashboard. Routes are registered from
+			// the manifest with `name = page.id` (see main.js#routesFromManifest),
+			// so probe by name against the registered route table first —
+			// $router.resolve() on an unknown name emits a vue-router warning.
+			if (this.hasRoute('PageEditor')) {
+				this.$router.push({ name: 'PageEditor', params: { slug } })
 				return
 			}
-			const fallback = this.$router.resolve({ name: 'VirtualApps', params: { slug } })
-			if (fallback?.resolved?.matched?.length > 0) {
-				this.$router.push(fallback.resolved.fullPath)
+			if (this.hasRoute('VirtualApps')) {
+				this.$router.push({ name: 'VirtualApps', params: { slug } })
 				return
 			}
 			this.$router.push({ name: 'Dashboard' })
+		},
+		/**
+		 * Whether a named route is registered on the router. Routes are built
+		 * from the manifest (flat, `name = page.id`), so a shallow scan of
+		 * `$router.options.routes` is sufficient and avoids the vue-router
+		 * warning that `$router.resolve()` logs for unknown route names.
+		 *
+		 * @param {string} name The route name to check.
+		 * @return {boolean} True when a route with that name is registered.
+		 */
+		hasRoute(name) {
+			const routes = this.$router?.options?.routes || []
+			return routes.some((route) => route.name === name)
 		},
 	},
 }

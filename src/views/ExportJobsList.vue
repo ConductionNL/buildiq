@@ -124,6 +124,8 @@ export default {
 			// (which OR's REST API addresses schemas by) is kebab-cased to
 			// `export-job` — fixes #104's schema-slug 404.
 			try {
+				// Schema slug is `export-job` (OpenRegister derives it from the
+				// "Export Job" title); the camelCase `exportJob` 404s.
 				const url = generateUrl('/apps/openregister/api/objects/openbuild/export-job') + '?filter[applicationSlug]=' + encodeURIComponent(this.applicationSlug)
 				const response = await fetch(url)
 				if (!response.ok) {

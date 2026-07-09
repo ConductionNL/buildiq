@@ -10,7 +10,6 @@
 				"title": "RuleSet",
 				"description": "A versioned container of business rules (DecisionTables and/or ConditionActionRules) that a consumer app evaluates against an input payload. Lifecycle (draft → test → active → archived) is declarative via x-openregister-lifecycle. Tenant-scoped by OR multitenancy.",
 				"authorization": {
-					"_note": "Blocks unauthenticated OR-API writes. create=admin-only; update/delete=admin + object-owner (OR PermissionHandler owner bypass applies). The runtime evaluate endpoint is gated separately in RulesController per ADR-005.",
 					"create": [
 						"admin"
 					],
@@ -92,10 +91,7 @@
 					},
 					"einddatum": {
 						"title": "End Date",
-						"type": [
-							"string",
-							"null"
-						],
+						"type": "string",
 						"format": "date",
 						"description": "Optional end-of-validity date."
 					},
@@ -281,7 +277,11 @@
 									"description": "Data type of the output column.",
 									"type": "string"
 								},
-								"defaultwaarde": {}
+								"defaultwaarde": {
+									"title": "Default Value",
+									"description": "Optional default value for this output column, expressed as text.",
+									"type": "string"
+								}
 							}
 						}
 					},
