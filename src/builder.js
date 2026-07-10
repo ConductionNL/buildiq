@@ -21,6 +21,7 @@ import { translate as t, translatePlural as n, loadTranslations } from '@nextclo
 import { generateUrl } from '@nextcloud/router'
 import { loadState } from '@nextcloud/initial-state'
 import axios from '@nextcloud/axios'
+import { NcEmptyContent } from '@nextcloud/vue'
 import {
 	CnAppRoot,
 	CnPageRenderer,
@@ -67,6 +68,23 @@ try {
 // ESM records and Vue.extend() attaches a `_Ctor` cache (see main.js).
 const RoutePageRenderer = { ...CnPageRenderer }
 
+// Rendered at the catch-all route when the manifest has no pages — e.g. it
+// failed to load (404: app deleted / never published) or the app genuinely
+// has none yet. Replaces the previous `* → '/'` redirect, which looped
+// forever when there was no real home route (`/` matches `*` → redirects to
+// `/` → …) and overflowed the call stack.
+const AppNotFound = {
+	name: 'AppNotFound',
+	render(h) {
+		return h(NcEmptyContent, {
+			props: {
+				name: t('openbuild', 'App not found'),
+				description: t('openbuild', 'This app could not be loaded — it may have been deleted, or it has no pages yet.'),
+			},
+		})
+	},
+}
+
 /**
  * Build the vue-router config from a manifest — one route per page, named by
  * `page.id` (the lib's contract: CnPageRenderer matches by route name). The
@@ -83,7 +101,13 @@ function routesFromManifest(manifest) {
 		component: RoutePageRenderer,
 		props: typeof page.route === 'string' && page.route.includes(':'),
 	}))
-	const home = (pages[0] && pages[0].route) || '/'
+	if (pages.length === 0) {
+		// No pages → no real home route. A `* → '/'` redirect would loop
+		// forever (`/` matches `*` again), so render a clean not-found screen.
+		routes.push({ path: '*', component: AppNotFound })
+		return routes
+	}
+	const home = pages[0].route || '/'
 	routes.push({ path: '*', redirect: home })
 	return routes
 }
