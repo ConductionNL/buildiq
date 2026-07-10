@@ -486,10 +486,10 @@ export default {
 			}
 		},
 		/**
-		 * Delete the app (Application + versions + routes), then navigate back to
-		 * the apps list. Owner-only (enforced server-side too). When `deleteData`
-		 * is true the underlying registers and all their data are wiped too;
-		 * otherwise that data is preserved.
+		 * Delete the app (Application + versions + per-version registers + routes),
+		 * then navigate back to the apps list. Owner-only (enforced server-side
+		 * too). When `deleteData` is true the underlying registers and all their
+		 * data are wiped too; otherwise that data is preserved.
 		 *
 		 * @param {boolean} deleteData Whether to also delete all app data.
 		 * @return {Promise<void>}
