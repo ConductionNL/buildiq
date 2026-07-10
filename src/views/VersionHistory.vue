@@ -476,7 +476,7 @@ export default {
 
 .version-history__badge--published {
 	background: var(--color-success, #2d7d46);
-	color: #fff;
+	color: var(--color-success-text, #fff);
 }
 
 .version-history__badge--production {

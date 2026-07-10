@@ -895,7 +895,11 @@
         "Register slug": "Register slug",
         "Remove data register": "Remove data register",
         "Shared, non-versioned OpenRegister registers this app binds to alongside its own per-version register (e.g. a dataset fed by OpenConnector). Not owned by this app — promotion and export treat them as reference-only.": "Shared, non-versioned OpenRegister registers this app binds to alongside its own per-version register (e.g. a dataset fed by OpenConnector). Not owned by this app — promotion and export treat them as reference-only.",
-        "This app is bound to shared data registers it does not own. Their schema definitions are always included as reference material. Row data is only bundled for a register when you switch it on below.": "This app is bound to shared data registers it does not own. Their schema definitions are always included as reference material. Row data is only bundled for a register when you switch it on below."
+        "This app is bound to shared data registers it does not own. Their schema definitions are always included as reference material. Row data is only bundled for a register when you switch it on below.": "This app is bound to shared data registers it does not own. Their schema definitions are always included as reference material. Row data is only bundled for a register when you switch it on below.",
+        "Add option": "Add option",
+        "Remove relation": "Remove relation",
+        "Remove state": "Remove state",
+        "Remove transition": "Remove transition"
     },
     "plurals": ""
 }

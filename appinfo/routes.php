@@ -22,6 +22,15 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // Must precede the {slug} + collection routes so it does not shadow them.
         ['name' => 'applicationCreation#wizard', 'url' => '/api/applications/wizard', 'verb' => 'POST'],
 
+        // First-time-setup contract (openbuild-first-time-setup, ADR-042) — the
+        // fleet-wide CnSetupWizard endpoints. Admin-only via
+        // #[AuthorizedAdminSetting] on each controller method (CSRF enforced).
+        // The run-action step seeds the bundled ApplicationTemplate records
+        // idempotently. Specific-first, before the SPA catch-all (ADR-016/029).
+        ['name' => 'setup#status', 'url' => '/api/setup/status', 'verb' => 'GET'],
+        ['name' => 'setup#saveConfig', 'url' => '/api/setup/config', 'verb' => 'POST'],
+        ['name' => 'setup#runAction', 'url' => '/api/setup/action/{actionId}', 'verb' => 'POST'],
+
         // RBAC-filtered Application list (openbuild-rbac REQ-OBRBAC-002 / REQ-OBR-007).
         // OR's schema-level read rule is a coarse group ACL — not a row-level filter on the
         // Application's `permissions` block — so the editor list MUST go through this

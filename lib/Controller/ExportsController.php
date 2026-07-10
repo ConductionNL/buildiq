@@ -322,10 +322,17 @@ class ExportsController extends Controller
      *
      * @return JSONResponse 202 Accepted with `{ uuid }` on success.
      *
+     * State-changing POST that carries a PAT: `#[NoCSRFRequired]` is
+     * DELIBERATELY NOT applied here. The SPA posts via `@nextcloud/axios`,
+     * which attaches the `requesttoken` header automatically, so the CSRF
+     * check costs the legitimate caller nothing while blocking a forged
+     * cross-site POST that could queue an export (and exfiltrate a PAT)
+     * on behalf of an authenticated user.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+     * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-11
      */
     #[NoAdminRequired]
-    #[NoCSRFRequired]
     public function submit(string $slug): JSONResponse
     {
         // ADR-005 Rule 3 guard: per-object authorization on a #[NoAdminRequired]
@@ -384,7 +391,15 @@ class ExportsController extends Controller
      *
      * @return Response 200 with the ZIP body, 410 Gone after expiry, 404 unknown.
      *
+     * `#[NoCSRFRequired]` is INTENTIONAL here: this is a plain `<a href>`
+     * navigation download (idempotent GET, no state change), gated by
+     * `isAuthorisedForJob` with 404-masking of unauthorised job UUIDs. Do
+     * NOT remove this attribute in a future security sweep — a GET-only
+     * download link cannot carry the `requesttoken` header a CSRF check
+     * requires, and removing it would break the download link entirely.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+     * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-13
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
