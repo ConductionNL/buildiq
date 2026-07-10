@@ -234,6 +234,7 @@ export default {
 	color: #fff;
 }
 
+/* intentional: simulated dark canvas for icon preview — must NOT track the theme */
 .wizard-step4__icon-preview--dark {
 	/* The dark icon is a dark glyph meant for light backgrounds, so preview
 	   it on white (else it's black-on-black). */
@@ -257,6 +258,7 @@ export default {
 	color: #ccc;
 }
 
+/* intentional: caption inside the simulated dark icon-preview canvas — must NOT track the theme */
 .wizard-step4__icon-preview--dark figcaption {
 	color: var(--color-text-maxcontrast, #555);
 }

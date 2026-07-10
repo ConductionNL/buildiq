@@ -53,7 +53,10 @@
 						:value="state.label"
 						:label="t('openbuild', 'Label')"
 						@update:value="updateState(sIndex, 'label', $event)" />
-					<NcButton type="error" @click="removeState(sIndex)">
+					<NcButton
+						type="error"
+						:aria-label="t('openbuild', 'Remove state')"
+						@click="removeState(sIndex)">
 						<template #icon>
 							<DeleteIcon :size="20" />
 						</template>
@@ -105,7 +108,10 @@
 							:value="transition.label || ''"
 							:label="t('openbuild', 'Label (optional)')"
 							@update:value="updateTransition(tIndex, 'label', $event)" />
-						<NcButton type="error" @click="removeTransition(tIndex)">
+						<NcButton
+							type="error"
+							:aria-label="t('openbuild', 'Remove transition')"
+							@click="removeTransition(tIndex)">
 							<template #icon>
 								<DeleteIcon :size="20" />
 							</template>
@@ -144,7 +150,10 @@
 									:label="t('openbuild', 'Payload key (declarative)')"
 									:placeholder="t('openbuild', 'e.g. event name, template slug')"
 									@update:value="updateAction(tIndex, aIndex, 'payload', $event)" />
-								<NcButton type="error" @click="removeAction(tIndex, aIndex)">
+								<NcButton
+									type="error"
+									:aria-label="t('openbuild', 'Remove action')"
+									@click="removeAction(tIndex, aIndex)">
 									<template #icon>
 										<DeleteIcon :size="18" />
 									</template>

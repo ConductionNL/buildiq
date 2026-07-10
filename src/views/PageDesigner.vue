@@ -71,8 +71,28 @@
 			</section>
 
 			<aside class="page-designer__right">
-				<!-- TODO(chain-spec-2): live preview pane requires in-memory useAppManifest -->
-				<div v-if="!previewAvailable" class="page-designer__preview-fallback">
+				<!-- REQ-OBPD-008: sandboxed live-preview pane. The "available"
+				     branch mounts a CnAppRoot rendered from the in-flight
+				     (unsaved) manifest via the in-memory useAppManifest overload
+				     (chain spec #2). It is a READ-ONLY render — no PUT/save is
+				     ever issued to OpenRegister from this instance. The v-else
+				     branch is the degraded fallback for environments whose
+				     @conduction/nextcloud-vue predates the overload. -->
+				<div v-if="previewAvailable && livePreviewProps" class="page-designer__preview">
+					<h4>{{ t('openbuild', 'Live preview') }}</h4>
+					<div class="page-designer__preview-surface">
+						<CnAppRoot
+							:key="livePreviewProps.key"
+							:app-id="livePreviewProps.appId"
+							:manifest="livePreviewProps.manifest"
+							:registry="previewRegistry"
+							:custom-components="previewFlatRegistry"
+							:page-types="previewPageTypes"
+							:translate="translateForPreview"
+							:permissions="previewPermissions" />
+					</div>
+				</div>
+				<div v-else class="page-designer__preview-fallback">
 					<h4>{{ t('openbuild', 'Live preview') }}</h4>
 					<p class="page-designer__preview-message">
 						{{ t('openbuild', 'Live preview is not yet installed. Save and open the built app to preview your changes.') }}
@@ -107,6 +127,9 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { translate as ncT } from '@nextcloud/l10n'
+import { CnAppRoot, defaultPageTypes } from '@conduction/nextcloud-vue'
+import registry from '../registry.js'
 import PageListEditor from '../components/page-editor/PageListEditor.vue'
 import MenuTreeEditor from '../components/page-editor/MenuTreeEditor.vue'
 import IndexPageEditor from '../components/page-editor/IndexPageEditor.vue'
@@ -142,6 +165,7 @@ const SUB_EDITOR_MAP = {
 export default {
 	name: 'PageDesigner',
 	components: {
+		CnAppRoot,
 		PageListEditor,
 		MenuTreeEditor,
 		IndexPageEditor,
@@ -271,6 +295,81 @@ export default {
 		 */
 		canRedo() {
 			return !!(this.history && this.history.canRedo.value)
+		},
+		/**
+		 * REQ-OBPD-008: prop bag for the sandboxed CnAppRoot preview mount —
+		 * `{ appId, manifest, key }` derived from the in-flight (unsaved)
+		 * manifest. `previewProps()` (from useLivePreview) returns null when
+		 * the in-memory useAppManifest overload is unavailable, so this
+		 * computed doubles as the render guard for the "available" branch.
+		 * The `key` is the manifest content-hash, so an edit forces a clean
+		 * re-mount of the sandbox (per REQ-OBPD-008's re-mount contract)
+		 * rather than leaving stale internal state.
+		 *
+		 * @return {?object} preview props, or null when preview is unavailable.
+		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-22
+		 */
+		livePreviewProps() {
+			if (!this.previewAvailable) {
+				return null
+			}
+			return this.previewProps(this.slug, this.manifest)
+		},
+		/**
+		 * REQ-OBPD-008 / REQ-OBPD-007: the v2 kind-tagged registry the preview
+		 * sandbox resolves custom-page / slot-override components against —
+		 * the SAME map the production App.vue mount uses, so a component
+		 * resolves identically in the preview as it will in the built app.
+		 *
+		 * @return {object} v2 registry map.
+		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-23
+		 */
+		previewRegistry() {
+			// Shallow clone: the lib exports frozen module objects in some
+			// bundle shapes and Vue.extend() mutates component defs (_Ctor).
+			return { ...registry }
+		},
+		/**
+		 * Flattened `{ name: component }` map derived from the v2 registry,
+		 * mirroring App.vue's `flatRegistry` — CnPageRenderer's
+		 * `effectiveCustomComponents` resolver (beta.107) consults
+		 * `customComponents`, not the v2 registry inject, so the sandbox
+		 * needs both to resolve slot/custom-page names.
+		 *
+		 * @return {object} Map of registry key → Vue component.
+		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-23
+		 */
+		previewFlatRegistry() {
+			const out = {}
+			for (const [name, entry] of Object.entries(this.previewRegistry || {})) {
+				const component = entry && typeof entry === 'object' && 'component' in entry
+					? entry.component
+					: entry
+				if (component) {
+					out[name] = component
+				}
+			}
+			return out
+		},
+		/**
+		 * The built-in page-type registry the preview sandbox dispatches
+		 * `page.type` against — the same `defaultPageTypes` App.vue passes.
+		 *
+		 * @return {object} page-type map.
+		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-23
+		 */
+		previewPageTypes() {
+			return { ...defaultPageTypes }
+		},
+		/**
+		 * Permission flags handed to the preview's CnAppNav. Mirrors
+		 * App.vue's `permissions` computed.
+		 *
+		 * @return {Array} Permission identifiers (empty when unavailable).
+		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-23
+		 */
+		previewPermissions() {
+			return window.OC?.currentUser?.permissions ?? []
 		},
 	},
 	watch: {
@@ -438,6 +537,19 @@ export default {
 		 */
 		saveAndPreview() {
 			this.$emit('save-and-preview')
+		},
+		/**
+		 * REQ-OBPD-008: translate function handed to the sandboxed CnAppRoot
+		 * preview (mirrors App.vue's `translateForApp`). Closes over
+		 * Nextcloud's translate against the openbuild app id so preview chrome
+		 * (nav labels, empty states) localises identically to the built app.
+		 *
+		 * @param {string} key - Translation key.
+		 * @return {string} Translated string (or the key on miss).
+		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-23
+		 */
+		translateForPreview(key) {
+			return ncT('openbuild', key)
 		},
 		// --- Undo / redo (OQ-1) -------------------------------------------
 		/**
@@ -619,6 +731,25 @@ export default {
 	font-size: 14px;
 }
 
+.page-designer__preview {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 8px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	background: var(--color-main-background);
+}
+
+.page-designer__preview-surface {
+	flex: 1;
+	min-height: 240px;
+	overflow: auto;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	background: var(--color-main-background);
+}
+
 .page-designer__preview-fallback {
 	display: flex;
 	flex-direction: column;
@@ -629,6 +760,7 @@ export default {
 	background: var(--color-background-hover);
 }
 
+.page-designer__preview h4,
 .page-designer__preview-fallback h4,
 .page-designer__errors h4 {
 	margin: 0;

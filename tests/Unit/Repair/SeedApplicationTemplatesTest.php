@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Tests\Unit\Repair;
 
 use OCA\OpenBuild\Repair\SeedApplicationTemplates;
+use OCA\OpenBuild\Service\TemplateSeedService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
@@ -203,9 +204,11 @@ class SeedApplicationTemplatesTest extends TestCase
             ->method('saveObject');
 
         $step = new SeedApplicationTemplates(
-            logger: $this->logger,
-            appManager: $this->appManager,
-            objectService: $this->objectService,
+            seedService: new TemplateSeedService(
+                logger: $this->logger,
+                appManager: $this->appManager,
+                objectService: $this->objectService,
+            ),
         );
 
         $step->run($this->output);
@@ -234,9 +237,11 @@ class SeedApplicationTemplatesTest extends TestCase
         $this->objectService->expects(self::never())->method('saveObject');
 
         $step = new SeedApplicationTemplates(
-            logger: $this->logger,
-            appManager: $this->appManager,
-            objectService: $this->objectService,
+            seedService: new TemplateSeedService(
+                logger: $this->logger,
+                appManager: $this->appManager,
+                objectService: $this->objectService,
+            ),
         );
 
         $step->run($this->output);
@@ -271,9 +276,11 @@ class SeedApplicationTemplatesTest extends TestCase
             );
 
         $step = new SeedApplicationTemplates(
-            logger: $this->logger,
-            appManager: $this->appManager,
-            objectService: $this->objectService,
+            seedService: new TemplateSeedService(
+                logger: $this->logger,
+                appManager: $this->appManager,
+                objectService: $this->objectService,
+            ),
         );
 
         $step->run($this->output);
@@ -305,9 +312,11 @@ class SeedApplicationTemplatesTest extends TestCase
         $this->objectService->method('findAll')->willReturn([]);
 
         $step = new SeedApplicationTemplates(
-            logger: $this->logger,
-            appManager: $this->appManager,
-            objectService: $this->objectService,
+            seedService: new TemplateSeedService(
+                logger: $this->logger,
+                appManager: $this->appManager,
+                objectService: $this->objectService,
+            ),
         );
 
         $this->expectException(RuntimeException::class);

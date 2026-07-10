@@ -99,7 +99,10 @@
 					<div v-if="step.type === 'choice'" class="wt-designer__options">
 						<div class="wt-designer__options-head">
 							<span>{{ t('openbuild', 'Options') }}</span>
-							<NcButton type="tertiary" @click="addSetupOption(si)">
+							<NcButton
+								type="tertiary"
+								:aria-label="t('openbuild', 'Add option')"
+								@click="addSetupOption(si)">
 								<template #icon>
 									<Plus :size="20" />
 								</template>

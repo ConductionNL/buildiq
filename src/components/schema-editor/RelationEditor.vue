@@ -50,7 +50,10 @@
 					:value="relation.inverseOf || ''"
 					:label="t('openbuild', 'Inverse-of (optional)')"
 					@update:value="updateRelation(index, 'inverseOf', $event)" />
-				<NcButton type="error" @click="removeRelation(index)">
+				<NcButton
+					type="error"
+					:aria-label="t('openbuild', 'Remove relation')"
+					@click="removeRelation(index)">
 					<template #icon>
 						<DeleteIcon :size="20" />
 					</template>
