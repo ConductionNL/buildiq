@@ -193,6 +193,9 @@ async function boot() {
 		render: (h) => h(CnAppRoot, {
 			props: {
 				appId: `openbuild-${slug}`,
+				// The app's display name — drives the support dialog title etc.
+				// Without it CnAppRoot falls back to the appId ("openbuild-{slug}").
+				appName: manifest.name || manifest.title || slug,
 				manifest,
 				isLoading: false,
 				registry: { ...runtimeRegistry },
