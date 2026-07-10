@@ -161,7 +161,8 @@ class ApplicationCreationService
                 $this->objectService->lockObject(
                     identifier: $lockKey,
                     process: 'openbuild.createApplication',
-                    duration: 10
+                    duration: 10,
+                    advisory: true
                 );
                 $locked = true;
             } catch (Throwable $lockError) {
@@ -435,7 +436,7 @@ class ApplicationCreationService
             // M2: Release the per-slug advisory lock regardless of outcome.
             if ($locked === true) {
                 try {
-                    $this->objectService->unlockObject(identifier: $lockKey);
+                    $this->objectService->unlockObject(identifier: $lockKey, advisory: true);
                 } catch (Throwable $unlockError) {
                     $this->logger->warning(
                         'OpenBuild: failed to release slug lock '.$lockKey,
