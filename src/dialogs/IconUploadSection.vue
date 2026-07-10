@@ -392,11 +392,13 @@ export default {
 	flex-shrink: 0;
 }
 
+/* intentional: simulated light/dark canvas for icon preview — must NOT track the theme */
 .ob-icon-section__preview--light {
 	background: #ffffff;
 	border: 1px solid var(--color-border, #ddd);
 }
 
+/* intentional: simulated light/dark canvas for icon preview — must NOT track the theme */
 .ob-icon-section__preview--dark {
 	background: #1c1c1e;
 	border: 1px solid var(--color-border, #ddd);
@@ -422,7 +424,7 @@ export default {
 	padding: 4px 10px;
 	border-radius: var(--border-radius, 4px);
 	background: var(--color-primary-element, #0082c9);
-	color: #fff;
+	color: var(--color-primary-element-text, #fff);
 	font-size: 12px;
 	user-select: none;
 }
