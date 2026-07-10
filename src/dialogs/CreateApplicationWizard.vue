@@ -58,18 +58,11 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { CnWizardDialog } from '@conduction/nextcloud-vue'
 
+import { resolveAppIcon } from '../utils/iconCatalogues.js'
 import Step1Basics from './CreateApplicationWizard/Step1Basics.vue'
 import Step2Preset from './CreateApplicationWizard/Step2Preset.vue'
 import Step3Custom from './CreateApplicationWizard/Step3Custom.vue'
 import Step4Review from './CreateApplicationWizard/Step4Review.vue'
-
-// OR object coordinates for the created virtual app, and the stable attached
-// filenames used for its icons (must match IconUploadSection's sidebar flow so
-// re-uploads from the Icons tab overwrite the same files).
-const REGISTER = 'openbuild'
-const SCHEMA = 'application'
-const LIGHT_ICON_FILENAME = 'app-icon.svg'
-const DARK_ICON_FILENAME = 'app-icon-dark.svg'
 
 export default {
 	name: 'CreateApplicationWizard',
@@ -111,8 +104,8 @@ export default {
 				name: '',
 				slug: '',
 				description: '',
-				icon: null,
-				iconDark: null,
+				iconValue: null,
+				iconDarkValue: null,
 				preset: '',
 				versions: [],
 				_step1Valid: false,
@@ -195,88 +188,79 @@ export default {
 				versions: stepData.versions,
 			}
 
-			let applicationUuid
 			try {
 				const url = generateUrl('/apps/openbuild/api/applications/wizard')
 				const { data, status } = await axios.post(url, body)
 
 				if (status === 201 && data.applicationUuid) {
-					applicationUuid = data.applicationUuid
+					// Attach the chosen icon (best-effort — the app already exists,
+					// so a failure here is recoverable on the detail page).
+					await this.uploadIcons(data.applicationUuid, stepData)
+					this.$emit('created', data.applicationUuid)
+					this.$emit('update:show', false)
 				} else {
 					this.reportError(data)
-					return
 				}
 			} catch (err) {
 				this.reportError(err.response?.data || {}, err)
+			}
+		},
+
+		/**
+		 * Synthesize and attach the app icon(s) to the freshly-created
+		 * Application. A catalogue pick yields a white light glyph (for the dark
+		 * app header) and a no-fill dark glyph (for light backgrounds); the dark
+		 * variant defaults to the primary icon so IconService's dark fallback
+		 * (iconDark.ref → icon.ref) never serves a white glyph on light.
+		 * Non-fatal: logs and returns on failure so app creation still succeeds.
+		 *
+		 * @param {string} uuid     The created Application UUID.
+		 * @param {object} stepData The accumulated wizard data.
+		 * @return {Promise<void>}
+		 */
+		async uploadIcons(uuid, stepData) {
+			const lightSvg = resolveAppIcon(stepData.iconValue, { dark: false })
+			const darkSource = stepData.iconDarkValue || stepData.iconValue
+			const darkSvg = resolveAppIcon(darkSource, { dark: true })
+			if (!lightSvg && !darkSvg) {
 				return
 			}
-
-			// The app now exists. Upload the optional icons chosen in Step 1 —
-			// the wizard endpoint only persists name/slug/description/versions, so
-			// without this the icons the user picked are silently dropped. Failures
-			// here are non-fatal: the app is already created (retrying would
-			// duplicate it), and the icons can be (re)uploaded from the Icons
-			// sidebar tab.
 			try {
-				await this.uploadIcons(applicationUuid, stepData)
+				if (lightSvg) {
+					await this.attachIcon(uuid, 'icon', 'app-icon.svg', lightSvg)
+				}
+				if (darkSvg) {
+					await this.attachIcon(uuid, 'iconDark', 'app-icon-dark.svg', darkSvg)
+				}
 			} catch (err) {
-				console.error('[CreateApplicationWizard] icon upload failed', err)
-			}
-
-			this.$emit('created', applicationUuid)
-			this.$emit('update:show', false)
-		},
-
-		/**
-		 * Upload the light/dark icons selected in Step 1 to the freshly created
-		 * app and set their refs on the Application record, mirroring the sidebar
-		 * IconUploadSection flow.
-		 *
-		 * @param {string} objectUuid The created app's OR object UUID.
-		 * @param {object} stepData   The accumulated wizard data (holds icon Files).
-		 * @return {Promise<void>}
-		 */
-		async uploadIcons(objectUuid, stepData) {
-			if (stepData.icon) {
-				await this.uploadIcon(objectUuid, stepData.icon, 'light')
-			}
-			if (stepData.iconDark) {
-				await this.uploadIcon(objectUuid, stepData.iconDark, 'dark')
+				console.error('OpenBuild: failed to attach app icon', err)
 			}
 		},
 
 		/**
-		 * Attach a single icon file to the app object and set its ref field.
+		 * Upload one SVG to the Application object and patch its icon ref, using
+		 * the same OpenRegister files endpoints as the detail-page IconUploadSection.
 		 *
-		 * Two calls, matching IconUploadSection: (1) POST the file to OR's
-		 * files-attached-to-object multipart endpoint, then (2) GET-merge-PUT the
-		 * object with the new `icon`/`iconDark` ref — OR's PUT is a full replace,
-		 * so we re-fetch fresh each time to avoid clobbering the sibling ref.
-		 *
-		 * @param {string} objectUuid The app's OR object UUID.
-		 * @param {File}    file       The selected SVG file.
-		 * @param {string}  variant    `'light'` or `'dark'`.
+		 * @param {string} uuid     The Application UUID.
+		 * @param {string} field    The record field to patch (`icon` / `iconDark`).
+		 * @param {string} filename The attachment filename.
+		 * @param {string} svg      The SVG markup to store.
 		 * @return {Promise<void>}
 		 */
-		async uploadIcon(objectUuid, file, variant) {
-			const filename = variant === 'dark' ? DARK_ICON_FILENAME : LIGHT_ICON_FILENAME
-			const field = variant === 'dark' ? 'iconDark' : 'icon'
-
-			const formData = new FormData()
-			formData.append('file', file, filename)
-			const uploadUrl = generateUrl(
-				`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${objectUuid}/filesMultipart`,
+		async attachIcon(uuid, field, filename, svg) {
+			// OR's files#create endpoint takes JSON { name, content } and writes
+			// the content verbatim — no multipart needed for text SVG.
+			const filesUrl = generateUrl(
+				`/apps/openregister/api/objects/openbuild/application/${uuid}/files`,
 			)
-			await axios.post(uploadUrl, formData, {
-				headers: { 'Content-Type': 'multipart/form-data' },
-			})
+			await axios.post(filesUrl, { name: filename, content: svg })
 
-			const objectUrl = generateUrl(
-				`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${objectUuid}`,
+			// PATCH (partial merge) — a PUT would replace the whole object and fail
+			// validation on the now-missing required name/slug.
+			const patchUrl = generateUrl(
+				`/apps/openregister/api/objects/openbuild/application/${uuid}`,
 			)
-			const { data } = await axios.get(objectUrl)
-			const obj = (data && data.results) ? data.results : data
-			await axios.put(objectUrl, { ...obj, [field]: { ref: filename } })
+			await axios.patch(patchUrl, { [field]: { ref: filename } })
 		},
 
 		/**

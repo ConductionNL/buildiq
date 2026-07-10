@@ -14,9 +14,8 @@
   -   - Remove buttons: detach from OR and clear the ref field.
   -
   - Calls:
-  -   - POST   /index.php/apps/openregister/api/objects/{register}/{schema}/{uuid}/filesMultipart
-  -             — upload SVG as multipart/form-data (the `/files` endpoint expects
-  -               name+content params, NOT a multipart file — use filesMultipart)
+  -   - POST   /index.php/apps/openregister/api/objects/{register}/{schema}/{uuid}/files
+  -             — upload SVG as multipart/form-data
   -   - DELETE /index.php/apps/openregister/api/objects/{register}/{schema}/{uuid}/files/{filename}
   -             — remove the attached file
   -   - PUT    /index.php/apps/openregister/api/objects/{register}/{schema}/{uuid}
@@ -244,28 +243,6 @@ export default {
 		},
 
 		/**
-		 * Persist a single icon field (`icon` / `iconDark`) on the Application.
-		 *
-		 * OR's object PUT is a full REPLACE that revalidates required fields, so a
-		 * partial body like `{ icon: { ref } }` 400s with "required properties
-		 * (slug, name) are missing". We also can't just spread the `application`
-		 * prop: it isn't refreshed after a save, so a second upload would clobber
-		 * the sibling ref set moments earlier. GET the current object fresh, merge
-		 * the one field, and PUT the whole thing back.
-		 *
-		 * @param {string}      field The Application field to set (`icon` | `iconDark`).
-		 * @param {object|null} value The new value (`{ ref }`), or null to clear it.
-		 * @return {Promise<void>}
-		 */
-		async patchIconField(field, value) {
-			const objectUrl = generateUrl(
-				`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}`,
-			)
-			const { data } = await axios.get(objectUrl)
-			const body = (data && data.results) ? data.results : data
-			await axios.put(objectUrl, { ...body, [field]: value })
-		},
-		/**
 		 * Observed behaviour of `uploadIcon` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
@@ -277,24 +254,21 @@ export default {
 			const filename = variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
 
 			try {
-				// 1. Upload the file to OR's files-attached-to-object endpoint.
-				const formData = new FormData()
-				formData.append('file', file, filename)
-
-				// Use the multipart endpoint: the plain `/files` (files#create) route
-				// expects `name` + `content` params, not an uploaded file, and 400s
-				// with "File name is required (use name or filename)". files#createMultipart
-				// reads the `file` field via extractUploadedFiles().
+				// 1. Upload the SVG to OR's files#create endpoint, which takes
+				//    JSON { name, content } and writes the content verbatim.
+				const content = await file.text()
 				const uploadUrl = generateUrl(
-					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/filesMultipart`,
+					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files`,
 				)
-				await axios.post(uploadUrl, formData, {
-					headers: { 'Content-Type': 'multipart/form-data' },
-				})
+				await axios.post(uploadUrl, { name: filename, content })
 
-				// 2. Patch the Application record with the new icon ref.
+				// 2. PATCH (partial merge) the icon ref — a PUT would replace the
+				//    whole object and fail validation on the missing name/slug.
 				const field = variant === 'dark' ? 'iconDark' : 'icon'
-				await this.patchIconField(field, { ref: filename })
+				const patchUrl = generateUrl(
+					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}`,
+				)
+				await axios.patch(patchUrl, { [field]: { ref: filename } })
 
 				// 3. Update local state and notify parent.
 				if (variant === 'dark') {
@@ -350,23 +324,17 @@ export default {
 			const field = variant === 'dark' ? 'iconDark' : 'icon'
 
 			try {
-				// 1. Delete the file from OR. The delete route requires the numeric
-				//    file id, NOT the filename (deleting by name falls through to the
-				//    app HTML shell), so resolve the id from the files index first.
-				const filesUrl = generateUrl(
-					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files`,
+				// 1. Delete the file from OR.
+				const deleteUrl = generateUrl(
+					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files/${filename}`,
 				)
-				const { data } = await axios.get(filesUrl)
-				const files = Array.isArray(data) ? data : (data && data.results) || []
-				const match = files.find((f) => (f.title || f.name) === filename)
-				if (match && match.id) {
-					await axios.delete(generateUrl(
-						`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files/${match.id}`,
-					))
-				}
+				await axios.delete(deleteUrl)
 
-				// 2. Clear the ref on the Application.
-				await this.patchIconField(field, null)
+				// 2. Clear the ref on the Application (partial merge, not replace).
+				const patchUrl = generateUrl(
+					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}`,
+				)
+				await axios.patch(patchUrl, { [field]: null })
 
 				// 3. Update local state.
 				if (variant === 'dark') {
