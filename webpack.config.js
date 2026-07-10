@@ -7,7 +7,13 @@ const { VueLoaderPlugin } = require('vue-loader')
 
 const buildMode = process.env.NODE_ENV
 const isDev = buildMode === 'development'
-webpackConfig.devtool = isDev ? 'cheap-source-map' : 'source-map'
+// Production builds disable source maps entirely. The full `source-map` devtool
+// (and Terser's own source-map generation) added significant memory and time on
+// top of compilation, and emitted large .map files into js/ (openbuild has three
+// entries — main/settings/builder — each bundling the shared nextcloud-vue lib).
+// Dropping them keeps the output minified while lowering peak memory. Dev keeps
+// cheap, fast line-level maps. Mirrors pipelinq/openregister.
+webpackConfig.devtool = isDev ? 'cheap-source-map' : false
 
 webpackConfig.stats = {
 	colors: true,
@@ -41,6 +47,10 @@ const localLibPkg = path.resolve(__dirname, '../nextcloud-vue/package.json')
 let useLocalLib = fs.existsSync(localLib)
 if (useLocalLib && fs.existsSync(localLibPkg)) {
 	try {
+		// semver is an optional transitive dep — the try/catch degrades
+		// gracefully when it is absent, so it is intentionally not declared
+		// as a direct dependency of this app.
+		// eslint-disable-next-line n/no-extraneous-require
 		const semver = require('semver')
 		const required = require('./package.json').dependencies['@conduction/nextcloud-vue']
 		const localVersion = require(localLibPkg).version
@@ -64,8 +74,8 @@ webpackConfig.resolve = {
 		...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),
 		// Deduplicate shared packages so the aliased library source uses
 		// the same instances as the app (prevents dual-Pinia / dual-Vue bugs).
-		'vue$': path.resolve(__dirname, 'node_modules/vue'),
-		'pinia$': path.resolve(__dirname, 'node_modules/pinia'),
+		vue$: path.resolve(__dirname, 'node_modules/vue'),
+		pinia$: path.resolve(__dirname, 'node_modules/pinia'),
 		'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue'),
 	},
 }

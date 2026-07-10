@@ -224,6 +224,7 @@ export default {
 	margin: 0;
 }
 
+/* intentional: simulated dark canvas for icon preview — must NOT track the theme */
 .wizard-step4__icon-preview--dark {
 	background: #1a1a2e;
 }
@@ -239,6 +240,7 @@ export default {
 	color: var(--color-text-maxcontrast, #555);
 }
 
+/* intentional: caption inside the simulated dark icon-preview canvas — must NOT track the theme */
 .wizard-step4__icon-preview--dark figcaption {
 	color: #aaa;
 }

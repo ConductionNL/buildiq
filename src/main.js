@@ -6,6 +6,7 @@ import { translate as t, translatePlural as n, loadTranslations } from '@nextclo
 import { generateUrl } from '@nextcloud/router'
 import {
 	CnPageRenderer,
+	buildManifest,
 	defaultPageTypes,
 	registerIcons,
 	registerTranslations,
@@ -13,6 +14,7 @@ import {
 import pinia from './pinia.js'
 import App from './App.vue'
 import bundledManifest from './manifest.json'
+import menuLayout from './menu-layout.json'
 import registry from './registry.js'
 
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages).
@@ -57,33 +59,18 @@ function tryLoadTranslations() {
 // source. Cloning gives vue-router an extensible options object.
 const RoutePageRenderer = { ...CnPageRenderer }
 
-/**
- * ADR-037: merge modular manifest fragments from src/manifest.d/*.json onto the
- * bundled base manifest. Each OpenSpec change drops its own fragment (pages/menu)
- * instead of editing the monolith src/manifest.json, so concurrent builds touch
- * disjoint files. `pages` and `menu` arrays are concatenated.
- *
- * @param {object} base The bundled base manifest.
- * @return {object} The manifest with all fragment pages/menu appended.
- */
-function mergeManifestFragments(base) {
-	const merged = { ...base, pages: [...(base.pages || [])], menu: [...(base.menu || [])] }
-	// require.context is resolved at build time; src/manifest.d/ must exist (it
-	// ships with a placeholder). It is a no-op when the directory holds no fragments.
-	const ctx = require.context('./manifest.d/', false, /\.json$/)
-	ctx.keys().sort().forEach((key) => {
-		const frag = ctx(key)
-		if (Array.isArray(frag.pages)) {
-			merged.pages.push(...frag.pages)
-		}
-		if (Array.isArray(frag.menu)) {
-			merged.menu.push(...frag.menu)
-		}
-	})
-	return merged
-}
-
-const mergedManifest = mergeManifestFragments(bundledManifest)
+// ADR-044 §1: build the effective manifest through the shared
+// `@conduction/nextcloud-vue` `buildManifest(base, fragments, menuLayout)`
+// pipeline instead of a per-app re-implementation. The only app-local step is
+// collecting the `src/manifest.d/*.json` fragments (ADR-037) — `require.context`
+// is resolved by OpenBuild's own webpack build, so we gather the fragment
+// objects here and hand them in. `menu-layout.json` (relocations / removals /
+// settingsSection) is the single declarative home for future navigation-IA
+// changes; it ships all-empty today, so `buildManifest()` reproduces the prior
+// pages/menu concatenation exactly.
+const manifestFragmentContext = require.context('./manifest.d/', false, /\.json$/)
+const manifestFragments = manifestFragmentContext.keys().sort().map((key) => manifestFragmentContext(key))
+const mergedManifest = buildManifest(bundledManifest, manifestFragments, menuLayout)
 
 /**
  * Build the vue-router config from the manifest. Each manifest page becomes

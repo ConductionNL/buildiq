@@ -34,57 +34,33 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Repair;
 
-use OCA\OpenRegister\Service\ObjectService;
-use OCP\App\IAppManager;
+use OCA\OpenBuild\Service\TemplateSeedService;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
-use Throwable;
 
 /**
  * Seed Conduction-curated ApplicationTemplate records.
+ *
+ * Thin wrapper over {@see TemplateSeedService}: the create-missing-never-
+ * overwrite seeding logic is shared with the first-time-setup action endpoint
+ * (ADR-042). This step reports the resulting counts and preserves its
+ * loud-fail contract (REQ-OBTC-009) by re-raising when the service collects
+ * any error.
+ *
+ * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-12
  */
 class SeedApplicationTemplates implements IRepairStep
 {
-
-    /**
-     * The four seeded template slugs (one fixture per slug).
-     *
-     * @var array<int,string>
-     */
-    private const TEMPLATE_SLUGS = [
-        'permit-tracker',
-        'stakeholder-consultation',
-        'employee-onboarding',
-        'incident-reporter',
-    ];
-
-    /**
-     * The allowed categories per REQ-OBTC-009.
-     *
-     * @var array<int,string>
-     */
-    private const ALLOWED_CATEGORIES = [
-        'government-services',
-        'internal-operations',
-        'citizen-engagement',
-        'field-work',
-    ];
-
     /**
      * Constructor for SeedApplicationTemplates.
      *
-     * @param LoggerInterface $logger        The logger
-     * @param IAppManager     $appManager    The app manager (for fixtures path)
-     * @param ObjectService   $objectService OpenRegister object service (hard dep via info.xml)
+     * @param TemplateSeedService $seedService The shared idempotent seeding service.
      *
      * @return void
      */
     public function __construct(
-        private LoggerInterface $logger,
-        private IAppManager $appManager,
-        private ObjectService $objectService,
+        private TemplateSeedService $seedService,
     ) {
     }//end __construct()
 
@@ -92,6 +68,8 @@ class SeedApplicationTemplates implements IRepairStep
      * Get the name of this repair step.
      *
      * @return string
+     *
+     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-12
      */
     public function getName(): string
     {
@@ -99,155 +77,37 @@ class SeedApplicationTemplates implements IRepairStep
     }//end getName()
 
     /**
-     * Run the repair step — seed each fixture if its slug is not present.
+     * Run the repair step — delegate to the shared seed service and report.
      *
      * @param IOutput $output The output interface for progress reporting
      *
      * @return void
      *
+     * @throws RuntimeException When the service collects any seeding error (loud-fail, REQ-OBTC-009).
+     *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-54
+     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-12
      */
     public function run(IOutput $output): void
     {
         $output->info('Seeding ApplicationTemplate records...');
 
-        $fixturesDir = $this->appManager->getAppPath('openbuild').'/lib/Settings/templates';
-        if (is_dir($fixturesDir) === false) {
-            $output->warning('Template fixtures directory missing: '.$fixturesDir);
-            return;
-        }
+        $result = $this->seedService->seed();
 
-        $seeded = 0;
-        foreach (self::TEMPLATE_SLUGS as $slug) {
-            $fixturePath = $fixturesDir.'/'.$slug.'.json';
-            if (is_file($fixturePath) === false) {
-                throw new RuntimeException('Missing template fixture: '.$fixturePath);
+        if (empty($result['errors']) === false) {
+            foreach ($result['errors'] as $error) {
+                $output->warning($error);
             }
 
-            $raw  = file_get_contents($fixturePath);
-            $data = json_decode($raw, true);
-            if (is_array($data) === false) {
-                throw new RuntimeException('Invalid JSON in template fixture: '.$fixturePath);
-            }
-
-            $this->validateFixture(data: $data, slug: $slug);
-
-            if ($this->findBySlug(slug: $slug) !== null) {
-                $output->info('Template already seeded — skipping: '.$slug);
-                continue;
-            }
-
-            try {
-                // Repair steps run as the Anonymous system user, which cannot
-                // satisfy the ApplicationTemplate schema's create:[admin] guard —
-                // write in system context (OR RBAC + multitenancy bypassed).
-                $this->objectService->saveObject(
-                    object: $data,
-                    register: 'openbuild',
-                    schema: 'application-template',
-                    _rbac: false,
-                    _multitenancy: false
-                );
-                $output->info('Seeded ApplicationTemplate: '.$slug);
-                ++$seeded;
-            } catch (Throwable $e) {
-                $this->logger->error(
-                    'OpenBuild: failed to seed template',
-                    ['slug' => $slug, 'exception' => $e->getMessage()]
-                );
-                throw new RuntimeException(
-                    'Failed to seed template "'.$slug.'": '.$e->getMessage(),
-                    0,
-                    $e
-                );
-            }//end try
-        }//end foreach
-
-        $output->info('OpenBuild template seeding complete. New: '.$seeded);
-    }//end run()
-
-    /**
-     * Validate a fixture has the minimum required fields per REQ-OBTC-009.
-     *
-     * @param array<string,mixed> $data The decoded fixture
-     * @param string              $slug The slug for error messages
-     *
-     * @return void
-     *
-     * @throws RuntimeException When a required field is missing or empty.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-57
-     */
-    private function validateFixture(array $data, string $slug): void
-    {
-        $required = ['slug', 'title', 'description', 'useCase', 'category', 'manifest', 'version'];
-        foreach ($required as $key) {
-            if (isset($data[$key]) === false || $data[$key] === '') {
-                throw new RuntimeException('Template "'.$slug.'" missing required field: '.$key);
-            }
-        }
-
-        if (($data['slug'] ?? '') !== $slug) {
+            // Preserve the pre-refactor loud-fail contract: a validation or
+            // write failure must fail the repair step, not pass silently.
             throw new RuntimeException(
-                'Template fixture filename "'.$slug.'.json" does not match its slug "'.($data['slug'] ?? '').'".'
+                'OpenBuild template seeding failed: '.implode('; ', $result['errors'])
             );
         }
 
-        if (is_array($data['manifest']) === false || isset($data['manifest']['pages']) === false) {
-            throw new RuntimeException('Template "'.$slug.'" manifest is missing pages.');
-        }
-
-        if (in_array($data['category'], self::ALLOWED_CATEGORIES, true) === false) {
-            throw new RuntimeException('Template "'.$slug.'" has unknown category: '.$data['category']);
-        }
-    }//end validateFixture()
-
-    /**
-     * Find an existing template by slug.
-     *
-     * @param string $slug The slug to look up
-     *
-     * @return array<string,mixed>|null The existing record or null when absent.
-     */
-    private function findBySlug(string $slug): ?array
-    {
-        try {
-            $results = $this->objectService->findAll(
-                config: [
-                    'filters' => [
-                        'register' => 'openbuild',
-                        'schema'   => 'application-template',
-                        'slug'     => $slug,
-                    ],
-                    'limit'   => 1,
-                ]
-            );
-
-            if (is_array($results) === false || count($results) === 0) {
-                return null;
-            }
-
-            $first = reset($results);
-            if (is_array($first) === true) {
-                return $first;
-            }
-
-            if (is_object($first) === true && method_exists($first, 'jsonSerialize') === true) {
-                $serialised = $first->jsonSerialize();
-                if (is_array($serialised) === true) {
-                    return $serialised;
-                }
-
-                return null;
-            }
-
-            return null;
-        } catch (Throwable $e) {
-            $this->logger->warning(
-                'OpenBuild: template lookup failed — treating as absent',
-                ['slug' => $slug, 'exception' => $e->getMessage()]
-            );
-            return null;
-        }//end try
-    }//end findBySlug()
+        $output->info(
+            'OpenBuild template seeding complete. New: '.$result['seeded'].', skipped: '.$result['skipped']
+        );
+    }//end run()
 }//end class

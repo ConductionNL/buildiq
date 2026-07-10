@@ -553,18 +553,18 @@ export default {
 }
 
 .ob-detail-header__badge--status {
-	background: rgba(67, 118, 252, 0.15);
-	color: #2e5ed9;
+	background: var(--color-primary-element-light);
+	color: var(--color-primary-element);
 }
 
 .ob-detail-header__badge--role {
-	background: rgba(120, 120, 120, 0.15);
-	color: #555;
+	background: var(--color-background-dark);
+	color: var(--color-text-maxcontrast);
 }
 
 .ob-detail-header__badge--semver {
-	background: rgba(46, 184, 102, 0.15);
-	color: #246b3d;
+	background: var(--color-success-hover);
+	color: var(--color-success-text);
 }
 
 .ob-detail-header__badge--type-virtual {
@@ -573,8 +573,8 @@ export default {
 }
 
 .ob-detail-header__badge--type-hybrid {
-	background: rgba(120, 120, 120, 0.18);
-	color: #444;
+	background: var(--color-background-dark);
+	color: var(--color-text-maxcontrast);
 }
 
 .ob-detail-header__hybrid-note {

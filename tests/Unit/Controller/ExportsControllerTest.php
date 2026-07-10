@@ -46,6 +46,7 @@ use Psr\Log\NullLogger;
  */
 final class ExportsControllerTest extends TestCase
 {
+
     /**
      * IRequest mock — getParams() is the only relevant method.
      *
@@ -156,7 +157,7 @@ final class ExportsControllerTest extends TestCase
                         ],
                     ],
                 ];
-            }
+            }//end searchObjectsBySlug()
 
             /**
              * @param string $id UUID to look up.
@@ -166,7 +167,7 @@ final class ExportsControllerTest extends TestCase
             public function find(string $id): array
             {
                 return ['uuid' => $id, 'submittedBy' => 'alice'];
-            }
+            }//end find()
         };
 
         $this->container->method('has')->willReturnCallback(
@@ -187,10 +188,12 @@ final class ExportsControllerTest extends TestCase
     public function testSubmitReturns422ForInvalidTarget(): void
     {
         $this->stubAuthorisedFallback();
-        $this->request->method('getParams')->willReturn([
-            'target'             => 'ftp',
-            'applicationVersion' => '1.0.0',
-        ]);
+        $this->request->method('getParams')->willReturn(
+                [
+                    'target'             => 'ftp',
+                    'applicationVersion' => '1.0.0',
+                ]
+                );
 
         $this->exportJobService->expects(self::never())->method('queue');
 
@@ -212,10 +215,12 @@ final class ExportsControllerTest extends TestCase
     public function testSubmitReturns403WhenRbacDenies(): void
     {
         $this->container->method('has')->willReturn(false);
-        $this->request->method('getParams')->willReturn([
-            'target'             => 'zip',
-            'applicationVersion' => '1.0.0',
-        ]);
+        $this->request->method('getParams')->willReturn(
+                [
+                    'target'             => 'zip',
+                    'applicationVersion' => '1.0.0',
+                ]
+                );
 
         $this->exportJobService->expects(self::never())->method('queue');
 
@@ -234,10 +239,12 @@ final class ExportsControllerTest extends TestCase
     public function testSubmitQueuesJobAndReturns202(): void
     {
         $this->stubAuthorisedFallback();
-        $this->request->method('getParams')->willReturn([
-            'target'             => 'zip',
-            'applicationVersion' => '1.0.0',
-        ]);
+        $this->request->method('getParams')->willReturn(
+                [
+                    'target'             => 'zip',
+                    'applicationVersion' => '1.0.0',
+                ]
+                );
 
         $this->exportJobService
             ->expects(self::once())
@@ -259,11 +266,13 @@ final class ExportsControllerTest extends TestCase
     public function testSubmitValidatesGithubOrgAndRepo(): void
     {
         $this->stubAuthorisedFallback();
-        $this->request->method('getParams')->willReturn([
-            'target'             => 'github',
-            'applicationVersion' => '1.0.0',
+        $this->request->method('getParams')->willReturn(
+                [
+                    'target'             => 'github',
+                    'applicationVersion' => '1.0.0',
             // Missing githubOrg + githubRepo.
-        ]);
+                ]
+                );
 
         $this->exportJobService->expects(self::never())->method('queue');
 
@@ -375,6 +384,49 @@ final class ExportsControllerTest extends TestCase
             );
         } finally {
             @unlink($tmpZip);
-        }
+        }//end try
     }//end testDownloadPreservesContentDispositionFilename()
+
+    /**
+     * Test 9: regression pin for the CSRF hardening fix — `submit()` is a
+     * state-changing POST and must NOT carry `#[NoCSRFRequired]`, while
+     * `download()` is a GET-only navigation download and legitimately
+     * keeps it. Both must still declare `#[NoAdminRequired]` (per-object
+     * RBAC guard lives in the method body, not the framework attribute).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-21
+     */
+    public function testSubmitDoesNotCarryNoCsrfRequiredWhileDownloadDoes(): void
+    {
+        $reflection          = new \ReflectionClass(ExportsController::class);
+        $attributeNameMapper = static fn (\ReflectionAttribute $attribute): string => $attribute->getName();
+
+        $submitAttributeNames = array_map(callback: $attributeNameMapper, array: $reflection->getMethod('submit')->getAttributes());
+
+        self::assertNotContains(
+            needle: \OCP\AppFramework\Http\Attribute\NoCSRFRequired::class,
+            haystack: $submitAttributeNames,
+            message: 'submit() is a state-changing POST and must be CSRF-protected.'
+        );
+        self::assertContains(
+            needle: \OCP\AppFramework\Http\Attribute\NoAdminRequired::class,
+            haystack: $submitAttributeNames,
+            message: 'submit() must remain reachable by non-admin users (guarded by isAuthorisedForApplication).'
+        );
+
+        $downloadAttributeNames = array_map(callback: $attributeNameMapper, array: $reflection->getMethod('download')->getAttributes());
+
+        self::assertContains(
+            needle: \OCP\AppFramework\Http\Attribute\NoCSRFRequired::class,
+            haystack: $downloadAttributeNames,
+            message: 'download() is a GET-only navigation download and intentionally skips the CSRF check.'
+        );
+        self::assertContains(
+            needle: \OCP\AppFramework\Http\Attribute\NoAdminRequired::class,
+            haystack: $downloadAttributeNames,
+            message: 'download() must remain reachable by non-admin users (guarded by isAuthorisedForJob).'
+        );
+    }//end testSubmitDoesNotCarryNoCsrfRequiredWhileDownloadDoes()
 }//end class

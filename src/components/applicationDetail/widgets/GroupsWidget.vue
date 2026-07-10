@@ -173,18 +173,18 @@ export default {
 }
 
 .ob-groups-widget__row-role--owners {
-	background: rgba(229, 153, 0, 0.15);
-	color: #a06900;
+	background: var(--color-warning-hover);
+	color: var(--color-warning-text);
 }
 
 .ob-groups-widget__row-role--editors {
-	background: rgba(67, 118, 252, 0.15);
-	color: #2e5ed9;
+	background: var(--color-primary-element-light);
+	color: var(--color-primary-element);
 }
 
 .ob-groups-widget__row-role--viewers {
-	background: rgba(120, 120, 120, 0.15);
-	color: #555;
+	background: var(--color-background-dark);
+	color: var(--color-text-maxcontrast);
 }
 
 .ob-groups-widget__row-members {
