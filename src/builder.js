@@ -295,12 +295,27 @@ async function boot() {
 		routes: routesFromManifest(manifest),
 	})
 
+	// Bumped AFTER a router rebuild that changed the PAGE SET, to remount the
+	// shell's <router-view> (via CnAppRoot's `routerViewKey`). A Vue Router 3
+	// matcher swap resolves new hrefs but leaves the view's component-instance
+	// cache tied to the OLD route records, so SPA-navigating to a page added
+	// this session renders blank until reload; remounting the view drops that
+	// cache. Only the routed view remounts — the shell and its teleported modals
+	// stay put — and only when pages actually change, so menu / settings / sidebar
+	// edits never disturb it.
+	const shellState = Vue.observable({ routerEpoch: 0 })
+	const pageSignature = () => (Array.isArray(manifest.pages)
+		? manifest.pages.map((p) => `${p && p.id}:${p && p.route}`).join('|')
+		: '')
+	let lastPageSig = pageSignature()
+
 	new Vue({
 		pinia,
 		router,
 		render: (h) => h(CnAppRoot, {
 			props: {
 				appId: `openbuild-${slug}`,
+				routerViewKey: shellState.routerEpoch,
 				// The app's display name — drives the support dialog title etc.
 				// Without it CnAppRoot falls back to the appId ("openbuild-{slug}").
 				appName: manifest.name || manifest.title || slug,
@@ -321,15 +336,18 @@ async function boot() {
 				persistManifestDelta: async () => {
 					const saveUrl = generateUrl(`/apps/openbuild/api/applications/${slug}/manifest`)
 					await axios.put(saveUrl, { manifest })
+					// Only touch the router when the PAGE SET actually changed — a
+					// menu / settings / sidebar / actions edit leaves routes intact.
+					const sig = pageSignature()
+					if (sig === lastPageSig) {
+						return
+					}
+					lastPageSig = sig
 					// Rebuild the router from the just-saved manifest so pages added
-					// or re-routed during this edit become navigable immediately —
-					// without it a freshly-created menu item points at a route that
-					// only exists after a full reload. Replacing `matcher` is the
-					// vue-router 3 reset idiom (keeps `*` ordered last correctly).
+					// or re-routed during this edit become navigable immediately.
 					// Best-effort: the manifest is ALREADY persisted by the PUT above,
 					// so a router-build error here (e.g. a duplicate route the user
-					// created) must NOT reject the save — that would leave the editor
-					// stuck "dirty" and confuse the user. Log and move on.
+					// created) must NOT reject the save — log and move on.
 					try {
 						const fresh = new VueRouter({
 							mode: 'history',
@@ -341,6 +359,9 @@ async function boot() {
 						// eslint-disable-next-line no-console
 						console.warn('[openbuild:builder] router rebuild after save failed (edit is saved; reload to pick up new routes)', e)
 					}
+					// Remount the routed view AFTER the matcher rebuild so it mounts
+					// the added/removed page routes (see shellState / routerViewKey).
+					shellState.routerEpoch++
 				},
 			},
 		}),
