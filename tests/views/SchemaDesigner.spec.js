@@ -80,6 +80,7 @@ const editorStubs = {
 	FieldEditor: { name: 'FieldEditor', props: ['fields', 'schemaSlugs'], template: '<div class="field-editor-stub" />' },
 	LifecycleEditor: { name: 'LifecycleEditor', props: ['states', 'transitions'], template: '<div class="lifecycle-editor-stub" />' },
 	RelationEditor: { name: 'RelationEditor', props: ['relations', 'schemaSlugs'], template: '<div class="relation-editor-stub" />' },
+	AccessEditor: { name: 'AccessEditor', props: ['access', 'fieldNames', 'availableGroups', 'readOnly'], template: '<div class="access-editor-stub" />' },
 	WidgetEditor: { name: 'WidgetEditor', props: ['widgets'], template: '<div class="widget-editor-stub" />' },
 	AggregationEditor: { name: 'AggregationEditor', props: ['aggregations'], template: '<div class="agg-stub" />' },
 	CalculationEditor: { name: 'CalculationEditor', props: ['calculations'], template: '<div class="calc-stub" />' },
