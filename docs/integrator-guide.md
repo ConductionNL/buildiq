@@ -59,6 +59,45 @@ For further reading on what each step writes through to OR, see
 [`openbuild-runtime.md`](./openbuild-runtime.md) and the wizard chain spec
 [`openspec/changes/openbuild-app-creation-wizard/`](../openspec/changes/openbuild-app-creation-wizard/).
 
+## Editing session: undo/redo (page designer & schema designer)
+
+Both visual designers — the page designer (`/builder/{slug}/pages`) and the
+schema designer (`/builder/{slug}/schemas/{schemaId}`) — offer editor-level
+undo/redo over your in-flight (unsaved) edits, on top of the toolbar's
+Save action:
+
+- **Reach it three ways:** the toolbar's Undo/Redo buttons (disabled at the
+  ends of the stack), `Ctrl+Z` (undo) and `Ctrl+Shift+Z` or `Ctrl+Y` (redo),
+  or the `Cmd` equivalents on macOS.
+- **Native text-field undo wins while typing.** Pressing `Ctrl+Z` inside an
+  `<input>`, `<textarea>`, `<select>`, or any contenteditable field triggers
+  the browser's own text-editing undo, not the designer's draft-level undo —
+  so correcting a typo never accidentally reverts an earlier structural edit.
+- **History survives navigating between pages/sub-editors.** Selecting a
+  different page in the page designer (or scrolling between sections in the
+  schema designer) is navigation, not an edit, so your undo stack stays
+  intact across it.
+- **Save is a session boundary, not an undo boundary.** Once you save, Undo
+  and Redo both go back to disabled — the saved state becomes the new
+  baseline. Editor-level undo only ever covers the *current, unsaved*
+  editing session; to restore an **earlier saved** state, use Version
+  History (`VersionHistory.vue` / the rollback action), which is unaffected
+  by this feature.
+- **Switching app or version also starts a new session.** Opening a
+  different app, or switching `?_version=` to another version, resets the
+  undo/redo stack to that version's current manifest — you can never
+  accidentally undo into a different version's draft.
+- **A raw-JSON paste (the "Manifest" tab's textarea) counts as one edit.**
+  If you paste a whole new manifest there and later edit it further in the
+  page designer, one undo restores the complete pre-paste manifest — it does
+  not unwind field-by-field.
+- **Schema designer parity:** "Discard staged edits" is itself undoable — if
+  you discard by mistake, `Ctrl+Z` (or the Undo button) brings your
+  discarded edits straight back, in one step.
+
+This is in-memory only (depth 100 per session) and issues no network
+request — it never competes with Save.
+
 ## Step-by-step (manual / integrator path)
 
 1. **Pick a slug.** Must be kebab-case, 2–48 chars, unique within your organisation. The synthetic appId in CnAppRoot becomes `openbuild-${slug}`.
