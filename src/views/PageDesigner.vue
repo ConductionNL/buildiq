@@ -63,6 +63,8 @@
 						:app-slug="slug"
 						:data-registers="applicationDataRegisters"
 						:parent-route="selectedPage.route || ''"
+						:title="t('openbuild', 'Unsupported page type: {type}', { type: selectedPage.type })"
+						:message="t('openbuild', 'No visual editor exists for this page type yet. Edit the raw config below; unknown keys are preserved.')"
 						@update:config="onConfigUpdate" />
 				</div>
 				<div v-else class="page-designer__empty">
@@ -141,15 +143,22 @@ import SettingsPageEditor from '../components/page-editor/SettingsPageEditor.vue
 import ChatPageEditor from '../components/page-editor/ChatPageEditor.vue'
 import FilesPageEditor from '../components/page-editor/FilesPageEditor.vue'
 import CustomPageEditor from '../components/page-editor/CustomPageEditor.vue'
+import MapPageEditor from '../components/page-editor/MapPageEditor.vue'
+import RoadmapPageEditor from '../components/page-editor/RoadmapPageEditor.vue'
+import SearchPageEditor from '../components/page-editor/SearchPageEditor.vue'
+import WikiPageEditor from '../components/page-editor/WikiPageEditor.vue'
 import StubPageEditor from '../components/page-editor/StubPageEditor.vue'
 import { useLivePreview } from '../composables/useLivePreview.js'
 import { useManifestValidator } from '../composables/useManifestValidator.js'
 import { useManifestHistory } from '../composables/useManifestHistory.js'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 
-// Closed mapping of page.type → sub-editor component. Adding a new type
-// requires both the schema enum bump in `app-manifest.schema.json` AND a
-// new entry here. Unsupported types fall back to StubPageEditor.
+// Mapping of page.type → sub-editor component, covering every canonical v2
+// page type that ships a renderer component (REQ-PEC-001). Adding a new
+// type requires both the schema enum bump in `app-manifest-v2.schema.json`
+// AND a new entry here. Types absent from this map (unknown/future types)
+// fall back to StubPageEditor, whose required `title`/`message` props are
+// bound on the `<component :is>` dispatch site below.
 const SUB_EDITOR_MAP = {
 	index: 'IndexPageEditor',
 	detail: 'DetailPageEditor',
@@ -160,6 +169,10 @@ const SUB_EDITOR_MAP = {
 	chat: 'ChatPageEditor',
 	files: 'FilesPageEditor',
 	custom: 'CustomPageEditor',
+	map: 'MapPageEditor',
+	roadmap: 'RoadmapPageEditor',
+	search: 'SearchPageEditor',
+	wiki: 'WikiPageEditor',
 }
 
 export default {
@@ -177,6 +190,10 @@ export default {
 		ChatPageEditor,
 		FilesPageEditor,
 		CustomPageEditor,
+		MapPageEditor,
+		RoadmapPageEditor,
+		SearchPageEditor,
+		WikiPageEditor,
 		StubPageEditor,
 	},
 	/**
