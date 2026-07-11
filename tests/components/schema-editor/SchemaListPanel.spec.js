@@ -21,7 +21,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-import SchemaListPanel from '../../../src/components/schema-editor/SchemaListPanel.vue'
+import SchemaListPanel, { scopeSummary } from '../../../src/components/schema-editor/SchemaListPanel.vue'
 
 const stubs = {
 	NcButton: {
@@ -202,6 +202,69 @@ describe('SchemaListPanel', () => {
 		expect(wrapper.find('.openbuild-schema-list__loading').exists()).toBe(true)
 		// Loading branch should suppress the empty-state.
 		expect(wrapper.find('.openbuild-schema-list__empty').exists()).toBe(false)
+	})
+})
+
+describe('scopeSummary (REQ-OBDSA-005)', () => {
+	it('returns null for a schema with no authorization block', () => {
+		expect(scopeSummary(makeSchema())).toBeNull()
+	})
+
+	it('returns null for a schema with an empty authorization block', () => {
+		expect(scopeSummary(makeSchema({ authorization: {} }))).toBeNull()
+	})
+
+	it('summarises a single-operation group scope', () => {
+		const badge = scopeSummary(makeSchema({ authorization: { read: ['vets'] } }))
+		expect(badge).toEqual({ label: 'Restricted', title: 'read: vets' })
+	})
+
+	it('summarises multiple operation scopes in read/create/update/delete order', () => {
+		const badge = scopeSummary(makeSchema({
+			authorization: { delete: ['admin'], read: ['vets'] },
+		}))
+		expect(badge.title).toBe('read: vets; delete: admin')
+	})
+
+	it('summarises an own-records (@creator) scope', () => {
+		const badge = scopeSummary(makeSchema({ authorization: { update: ['@creator'] } }))
+		expect(badge.title).toBe('update: @creator')
+	})
+
+	it('summarises a condition scope', () => {
+		const badge = scopeSummary(makeSchema({
+			authorization: {
+				delete: [],
+				conditions: { delete: { field: 'assignee', operator: 'equals', value: '@user.uid' } },
+			},
+		}))
+		expect(badge.title).toBe('delete: condition(assignee)')
+	})
+
+	it('falls back to a generic title when the block only carries unrelated keys', () => {
+		const badge = scopeSummary(makeSchema({ authorization: { _note: 'hand-authored' } }))
+		expect(badge).toEqual({ label: 'Restricted', title: 'Custom authorization metadata' })
+	})
+})
+
+describe('SchemaListPanel — scope badge rendering (REQ-OBDSA-005)', () => {
+	it('shows a "Restricted" badge for a scoped schema and none for an unscoped one', () => {
+		const wrapper = mount(SchemaListPanel, {
+			propsData: {
+				schemas: [
+					makeSchema({ authorization: { read: ['vets'] } }),
+					makeSchema({ slug: 'unscoped', title: 'Unscoped' }),
+				],
+				loading: false,
+			},
+			stubs,
+		})
+		const rows = wrapper.findAll('.openbuild-schema-list__row')
+		const scopedBadge = rows.at(0).find('.openbuild-schema-list__badge')
+		expect(scopedBadge.exists()).toBe(true)
+		expect(scopedBadge.text()).toContain('Restricted')
+		expect(scopedBadge.attributes('title')).toContain('read: vets')
+		expect(rows.at(1).find('.openbuild-schema-list__badge').exists()).toBe(false)
 	})
 })
 
