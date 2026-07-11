@@ -20,6 +20,7 @@
 - [x] 2.4 Edit `lib/Service/ConditionActionExecutor.php` — add `object-op` and `webhook` to `SIDE_EFFECT_ACTIONS`; dry-run suppression unchanged
 - [x] 2.5 Edit `lib/Service/RuleEngineService.php` — pass the wired `RuleActionDispatcher` callable at the `ConditionActionExecutor::execute()` call site (line ~142; fixes the verified silent no-op of side-effect actions in wet runs); constructor gains the dispatcher dependency
 - [x] 2.6 Edit `lib/Service/ApplicationVersionService.php` — in the version-branch/copy flow, clone the source version's automations to the new version (new uuids, recompiled with fresh `aut-<uuid8>` rule-set slugs) per design Decision 6
+- [x] 2.7 (ADDED — not in original task list, required by REQ-AUTD-005) Add `lib/Listener/AutomationCleanupListener.php` subscribing OR's `ObjectDeletedEvent`: when a deleted object's schema is `automation`, call `AutomationCompilerService::remove()` with its provenance. Automation CRUD (including delete) intentionally stays on OR REST per ADR-022 (task 3.1 explicitly excludes a delete route to satisfy the redundant-controller gate), so there is no controller hook to run the cleanup — the event listener is the imperative companion to that declarative delete, mirroring the already-established `ProductionVersionGuardListener`/`HybridMetadataLockListener` pattern (ADR-031 §Exceptions(1)). Registered in `lib/AppInfo/Application.php`; unit test `tests/Unit/Listener/AutomationCleanupListenerTest.php`.
 
 ## 3. Controller & routes
 
