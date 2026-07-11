@@ -62,6 +62,11 @@ final class AutomationsControllerTest extends TestCase
     private AutomationCompilerService&MockObject $compiler;
 
     /**
+     * @var ConditionActionExecutor&MockObject
+     */
+    private ConditionActionExecutor&MockObject $conditionExecutor;
+
+    /**
      * @var IUserSession&MockObject
      */
     private IUserSession&MockObject $userSession;
@@ -87,7 +92,8 @@ final class AutomationsControllerTest extends TestCase
     {
         $this->request       = $this->createMock(IRequest::class);
         $this->objectService = $this->createMock(ObjectService::class);
-        $this->compiler       = $this->createMock(AutomationCompilerService::class);
+        $this->compiler          = $this->createMock(AutomationCompilerService::class);
+        $this->conditionExecutor = $this->createMock(ConditionActionExecutor::class);
         $this->userSession   = $this->createMock(IUserSession::class);
         $this->groupManager  = $this->createMock(IGroupManager::class);
         $this->groupManager->method('getUserGroups')->willReturn([]);
@@ -102,7 +108,7 @@ final class AutomationsControllerTest extends TestCase
             logger: $this->createMock(LoggerInterface::class),
             objectService: $this->objectService,
             compiler: $this->compiler,
-            conditionExecutor: $this->createMock(ConditionActionExecutor::class),
+            conditionExecutor: $this->conditionExecutor,
             permissionResolver: $permissionResolver,
             userSession: $this->userSession
         );
@@ -363,4 +369,48 @@ final class AutomationsControllerTest extends TestCase
         $this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
 
     }//end testCompileReturns422OnUnsupportedCombination()
+
+    /**
+     * REQ-AUTD-007: dry-run compiles the automation in-memory and evaluates
+     * it via the rules engine with dryRun:true, returning the condition
+     * match + would-be actions without dispatching any side effect.
+     *
+     * @return void
+     */
+    public function testDryRunReturnsWouldBeActionsWithoutSideEffects(): void
+    {
+        $this->wireUser(uid: 'bob');
+        $this->wireLookup(
+            automation: ['id' => 'a-1', 'applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version', 'trigger' => ['type' => 'manual']],
+            application: [
+                'id'          => 'app-1',
+                'slug'        => 'permit-tracker',
+                'permissions' => ['owners' => ['user:alice'], 'editors' => ['user:bob']],
+            ]
+        );
+
+        $this->request->method('getParams')->willReturn(['payload' => ['amount' => 5000]]);
+
+        $this->compiler->expects($this->once())
+            ->method('compileDryRunRule')
+            ->willReturn(['naam' => 'a', 'conditie' => '', 'acties' => [['type' => 'send-notification', 'parameters' => []]], 'actief' => true]);
+
+        $this->conditionExecutor->expects($this->once())
+            ->method('execute')
+            ->with(
+                $this->anything(),
+                ['amount' => 5000],
+                true,
+                null
+            )
+            ->willReturn(['triggeredRules' => [['id' => 'a', 'name' => 'a', 'actions_executed' => ['send-notification (dry-run, skipped)']]], 'result' => [], 'errors' => []]);
+
+        $response = $this->controller->dryRun(uuid: 'a-1');
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $data = $response->getData();
+        $this->assertTrue($data['conditionMatched']);
+        $this->assertSame(['send-notification (dry-run, skipped)'], $data['actions']);
+
+    }//end testDryRunReturnsWouldBeActionsWithoutSideEffects()
 }//end class
