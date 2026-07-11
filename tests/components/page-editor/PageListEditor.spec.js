@@ -40,11 +40,15 @@ describe('PageListEditor', () => {
 		expect(wrapper.text()).toContain('No pages yet')
 	})
 
-	it('exports the canonical PAGE_TYPES enum (9 entries)', () => {
-		expect(PAGE_TYPES).toHaveLength(9)
+	it('exports the canonical PAGE_TYPES enum (13 entries, incl. REQ-PEC-002 additions)', () => {
+		expect(PAGE_TYPES).toHaveLength(13)
 		expect(PAGE_TYPES).toContain('index')
 		expect(PAGE_TYPES).toContain('form')
 		expect(PAGE_TYPES).toContain('custom')
+		expect(PAGE_TYPES).toContain('map')
+		expect(PAGE_TYPES).toContain('roadmap')
+		expect(PAGE_TYPES).toContain('search')
+		expect(PAGE_TYPES).toContain('wiki')
 	})
 
 	it('clicking Add reveals the type picker', async () => {
@@ -79,6 +83,36 @@ describe('PageListEditor', () => {
 		expect(next[0].type).toBe('form')
 		expect(next[0].config.submitMethod).toBe('POST')
 		expect(next[0].config.mode).toBe('public')
+	})
+
+	it('confirmAdd for map-type seeds the pinned map-shaped default config (REQ-PEC-002)', async () => {
+		const wrapper = mountEditor([])
+		wrapper.vm.startAdd()
+		wrapper.vm.addingType = 'map'
+		wrapper.vm.confirmAdd()
+		await wrapper.vm.$nextTick()
+		const next = wrapper.emitted('update:pages')[0][0]
+		expect(next[0].type).toBe('map')
+		expect(next[0].route).toBe('/map')
+		expect(next[0].config).toEqual({ center: [52.1326, 5.2913], zoom: 7, layers: [], markers: {} })
+	})
+
+	it('confirmAdd for roadmap/search/wiki types seeds their pinned default configs', async () => {
+		const cases = [
+			{ type: 'roadmap', config: {} },
+			{ type: 'search', config: { register: '', schema: '', facets: [] } },
+			{ type: 'wiki', config: { register: '', schema: '' } },
+		]
+		for (const { type, config } of cases) {
+			const wrapper = mountEditor([])
+			wrapper.vm.startAdd()
+			wrapper.vm.addingType = type
+			wrapper.vm.confirmAdd()
+			await wrapper.vm.$nextTick()
+			const next = wrapper.emitted('update:pages')[0][0]
+			expect(next[0].type).toBe(type)
+			expect(next[0].config).toEqual(config)
+		}
 	})
 
 	it('confirmAdd is a no-op when type is empty', () => {

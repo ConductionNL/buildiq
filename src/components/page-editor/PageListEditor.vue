@@ -1,7 +1,8 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!--
   - PageListEditor — drag-reorder pages, add/remove, force page-type pick on
-  - add (closed enum of 9), enforce unique `id`, validate route-pattern grammar.
+  - add (closed enum of 13 — REQ-PEC-002 adds map/roadmap/search/wiki),
+  - enforce unique `id`, validate route-pattern grammar.
   - Implements REQ-OBPD-002.
   -->
 <template>
@@ -94,6 +95,10 @@ export const PAGE_TYPES = [
 	'files',
 	'form',
 	'custom',
+	'map',
+	'roadmap',
+	'search',
+	'wiki',
 ]
 
 const ROUTE_PATTERN = /^\/$|^(\/[A-Za-z0-9_-]+|\/:[A-Za-z_][A-Za-z0-9_]*(\(.*\))?)+$/
@@ -108,6 +113,10 @@ const DEFAULT_CONFIGS = {
 	files: { folder: '' },
 	form: { fields: [], submitMethod: 'POST', mode: 'public' },
 	custom: {},
+	map: { center: [52.1326, 5.2913], zoom: 7, layers: [], markers: {} },
+	roadmap: {},
+	search: { register: '', schema: '', facets: [] },
+	wiki: { register: '', schema: '' },
 }
 
 export default {

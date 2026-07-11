@@ -1,9 +1,12 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!--
-  - StubPageEditor — Coming-in-v1.1 placeholder used by the five page-type
-  - sub-editors that ship as stubs (logs, settings, chat, files, custom).
-  - Round-trips the config block losslessly via a raw-JSON textarea so the
-  - editor never blanks externally authored manifests for the deferred types.
+  - StubPageEditor — fallback for page types absent from `SUB_EDITOR_MAP`
+  - (unknown/future types only; every canonical v2 type has a dedicated
+  - sub-editor as of REQ-PEC-001). Round-trips the config block losslessly
+  - via a raw-JSON textarea so the editor never blanks externally authored
+  - manifests for a type it doesn't recognise. `title` / `message` are
+  - required props — `PageDesigner.vue`'s dispatch binding supplies both
+  - whenever this component mounts.
   -->
 <template>
 	<div class="stub-page-editor">

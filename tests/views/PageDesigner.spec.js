@@ -84,7 +84,29 @@ vi.mock('../../src/components/page-editor/SettingsPageEditor.vue', () => stub('S
 vi.mock('../../src/components/page-editor/ChatPageEditor.vue', () => stub('ChatPageEditor'))
 vi.mock('../../src/components/page-editor/FilesPageEditor.vue', () => stub('FilesPageEditor'))
 vi.mock('../../src/components/page-editor/CustomPageEditor.vue', () => stub('CustomPageEditor'))
-vi.mock('../../src/components/page-editor/StubPageEditor.vue', () => stub('StubPageEditor'))
+vi.mock('../../src/components/page-editor/MapPageEditor.vue', () => stub('MapPageEditor'))
+vi.mock('../../src/components/page-editor/RoadmapPageEditor.vue', () => stub('RoadmapPageEditor'))
+vi.mock('../../src/components/page-editor/SearchPageEditor.vue', () => stub('SearchPageEditor'))
+vi.mock('../../src/components/page-editor/WikiPageEditor.vue', () => stub('WikiPageEditor'))
+// StubPageEditor keeps its real required-prop contract (title/message) so
+// the dispatch-binding tests below can assert PageDesigner actually binds
+// them (REQ-PEC-001) rather than stubbing that contract away.
+vi.mock('../../src/components/page-editor/StubPageEditor.vue', () => ({
+	default: {
+		name: 'StubPageEditor',
+		props: {
+			title: { type: String, required: true },
+			message: { type: String, required: true },
+			config: { type: Object, default: () => ({}) },
+		},
+		render(h) {
+			return h('div', { staticClass: 'stubpageeditor-stub' }, [
+				h('h3', this.title),
+				h('p', this.message),
+			])
+		},
+	},
+}))
 
 // PageListEditor + MenuTreeEditor are stubbed so we can fire their
 // emitted events directly without rendering the whole tree.
@@ -188,26 +210,67 @@ describe('PageDesigner', () => {
 		// fields survive a round-trip via the raw-JSON editor.
 		const stubInstance = wrapper.findComponent({ name: 'StubPageEditor' })
 		expect(stubInstance.props('config')).toEqual({ foo: 'bar' })
-		expect(stubInstance.props('pageType')).toBe('unknown-future-type')
 	})
 
-	it('subEditorFor maps every documented page type', () => {
-		const wrapper = mountDesigner()
-		const mapping = {
-			index: 'IndexPageEditor',
-			detail: 'DetailPageEditor',
-			dashboard: 'DashboardPageEditor',
-			form: 'FormPageEditor',
-			logs: 'LogsPageEditor',
-			settings: 'SettingsPageEditor',
-			chat: 'ChatPageEditor',
-			files: 'FilesPageEditor',
-			custom: 'CustomPageEditor',
-		}
-		for (const [type, expected] of Object.entries(mapping)) {
-			expect(wrapper.vm.subEditorFor(type)).toBe(expected)
-		}
-		expect(wrapper.vm.subEditorFor('mystery')).toBe('StubPageEditor')
+	// REQ-PEC-001: StubPageEditor is the fallback ONLY for types outside
+	// SUB_EDITOR_MAP, and PageDesigner must bind its required title/message
+	// props whenever it mounts (the mocked StubPageEditor above keeps the
+	// REAL required-prop contract, unlike the generic sub-editor stubs, so
+	// this test would fail with a Vue required-prop warning / empty heading
+	// if the dispatch binding regressed).
+	describe('REQ-PEC-001 — stub fallback narrowed to unknown types only', () => {
+		it('subEditorFor maps every canonical v2 page type to its dedicated editor', () => {
+			const wrapper = mountDesigner()
+			const mapping = {
+				index: 'IndexPageEditor',
+				detail: 'DetailPageEditor',
+				dashboard: 'DashboardPageEditor',
+				form: 'FormPageEditor',
+				logs: 'LogsPageEditor',
+				settings: 'SettingsPageEditor',
+				chat: 'ChatPageEditor',
+				files: 'FilesPageEditor',
+				custom: 'CustomPageEditor',
+				map: 'MapPageEditor',
+				roadmap: 'RoadmapPageEditor',
+				search: 'SearchPageEditor',
+				wiki: 'WikiPageEditor',
+			}
+			for (const [type, expected] of Object.entries(mapping)) {
+				expect(wrapper.vm.subEditorFor(type)).toBe(expected)
+			}
+			expect(wrapper.vm.subEditorFor('timeline')).toBe('StubPageEditor')
+		})
+
+		it('unknown page type still falls back to the stub with its title/message props bound', async () => {
+			const wrapper = mountDesigner({
+				pages: [{ id: 'x', type: 'timeline', config: {} }],
+				menu: [],
+			})
+			wrapper.vm.selectPage(0)
+			await wrapper.vm.$nextTick()
+			const stub = wrapper.findComponent({ name: 'StubPageEditor' })
+			expect(stub.exists()).toBe(true)
+			expect(stub.props('title')).toBeTruthy()
+			// The stubbed t() in tests/vitest/setup.js returns the raw i18n key
+			// without interpolating `{type}` — assert the key names the type.
+			expect(stub.props('title')).toContain('Unsupported page type')
+			expect(stub.props('message')).toBeTruthy()
+			// The real component renders both as non-empty heading + message.
+			expect(stub.find('h3').text()).not.toBe('')
+			expect(stub.find('p').text()).not.toBe('')
+		})
+
+		it('selecting a wiki page mounts the wiki sub-editor, not the stub', async () => {
+			const wrapper = mountDesigner({
+				pages: [{ id: 'w', type: 'wiki', config: { register: 'r', schema: 's' } }],
+				menu: [],
+			})
+			wrapper.vm.selectPage(0)
+			await wrapper.vm.$nextTick()
+			expect(wrapper.findComponent({ name: 'WikiPageEditor' }).exists()).toBe(true)
+			expect(wrapper.findComponent({ name: 'StubPageEditor' }).exists()).toBe(false)
+		})
 	})
 
 	it('switching selectedIndex updates the rendered sub-editor', async () => {
