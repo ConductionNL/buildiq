@@ -143,6 +143,17 @@ occ app:enable openbuild --groups digital-team
 This is coarse on/off visibility; the load-bearing security boundary
 is the per-Application `permissions` enforced server-side.
 
+## Data scopes vs. navigation permissions (data-scopes-authoring)
+
+This document covers **Application-level** RBAC — who may view, edit, publish, or own a virtual app as a whole. It is a separate boundary from two other permission-shaped concepts elsewhere in OpenBuild, and the distinction matters:
+
+- **Manifest `permission` fields** (`runtime-group-scoped-access`) hide menu items and pages from users who lack the declared group. This is presentation only — it improves the UX by not showing navigation a user cannot use, but it enforces nothing on its own.
+- **Schema-level `authorization` scopes** (the Schema Designer's **Access** sub-editor, `data-scopes-authoring`) are compiled into the schema's `authorization` block and enforced server-side by OpenRegister on every read/create/update/delete — independently of whether the data was reached via a visible menu, a hidden page, or a direct API call. This is the actual row-level security boundary.
+
+A schema scoped with `authorization.read = ["vets"]` denies non-vet, non-admin users at the OpenRegister layer even if they bypass a hidden menu entirely — hiding navigation is never a substitute for scoping data.
+
+Production-version Access scope changes are owner-only, mirroring the owner-only release rule above (`ApplicationVersionOwnerGuard`): an editor can stage scope changes on a draft version, but only an owner (or NC admin) can change the scopes enforced on the production version. The Schema Designer's read-only rendering for editors on production is a UI consistency surface — the authoritative gate remains OpenRegister's register manage-permission plus the owner-gated publish transition.
+
 ## Operational caveats
 
 ### Group renames
