@@ -82,12 +82,11 @@ enforce.
 
 ### Requirement: The designer MUST warn when scopes would hide the schema's data from the author
 
-When the staged `read` scope is group-based, the selected groups do not
+The Schema Designer SHALL show a warning note when the staged `read` scope is group-based, the selected groups do not
 intersect the author's own group memberships (from
 `getCurrentUserGroups()`, initial state per ADR-004), and the author is
-not an NC admin (admins bypass OR enforcement), the Schema Designer
-SHALL show a warning note that saving will make this schema's records
-invisible to the author. The warning SHALL be advisory: Save remains
+not an NC admin (admins bypass OR enforcement) — the note states that
+saving will make this schema's records invisible to the author. The warning SHALL be advisory: Save remains
 enabled. Own-records and condition scopes SHALL NOT trigger the warning.
 
 **ID:** REQ-OBDSA-004
@@ -121,9 +120,9 @@ a pure exported helper so it is unit-testable.
 
 ### Requirement: Scope edits MUST be version-scoped like all schema edits
 
-Access scopes live inside the schema body in the per-app/per-version
-register; editing under `?_version=` SHALL stage and save against that
-version's register only, and navigation from the Access sub-editor SHALL
+Editing under `?_version=` SHALL stage and save against that
+version's register only — access scopes live inside the schema body in the per-app/per-version
+register, and navigation from the Access sub-editor SHALL
 preserve `?_version=` (REQ-OBVR-006 conventions). A scope change on a
 draft version MUST NOT alter the production version's `authorization`.
 
@@ -137,10 +136,9 @@ draft version MUST NOT alter the production version's `authorization`.
 
 ### Requirement: Production-version scope changes MUST be owner-only
 
-When the active version is the Application's `productionVersion` and the
-caller's role (via `useRole`) is `editor`, the Access sub-editor SHALL
-render read-only with an i18n note that production access scopes can only
-be changed by an owner. Owners and NC admins SHALL retain edit access.
+The Access sub-editor SHALL render read-only with an i18n note that production access scopes can only
+be changed by an owner, when the active version is the Application's `productionVersion` and the
+caller's role (via `useRole`) is `editor`. Owners and NC admins SHALL retain edit access.
 This UI gate mirrors the owner-only release rule (REQ-OBRBAC-004); the
 authoritative server-side path to production remains the owner-gated
 publish transition (`ApplicationVersionOwnerGuard`) plus OR's register
@@ -161,12 +159,12 @@ manage-permission.
 
 ### Requirement: Authored scopes MUST rely on OpenRegister enforcement, not designer gating
 
-The Access sub-editor is an authoring surface only: the authoritative
-row-level control is OpenRegister's server-side evaluation of the
-compiled `authorization` block, exactly as the
-runtime-group-scoped-access boundary rule states for navigation gating.
 OpenBuild MUST NOT add client-side row filtering that substitutes for
-the compiled metadata, and author documentation SHALL state that the
+the compiled `authorization` metadata: the Access sub-editor is an authoring surface only, and the authoritative
+row-level control is OpenRegister's server-side evaluation of the
+compiled block, exactly as the
+runtime-group-scoped-access boundary rule states for navigation gating.
+Author documentation SHALL state that the
 `permission` field (runtime-group-scoped-access) hides navigation while
 Access scopes are what actually restrict data.
 

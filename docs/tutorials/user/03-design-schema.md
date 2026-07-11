@@ -39,6 +39,22 @@ By the end you will have added at least one new property to a schema in your vir
 
    ![Schema saved](/screenshots/tutorials/user/03-design-schema-05.png)
 
+## Data scopes (row-level access)
+
+Below the field, lifecycle, and relation editors sits **Access** — where you scope who can read, create, update, or delete records of this schema. This is enforced by OpenRegister itself, not just a UI convenience: it is the actual security boundary for the data in this schema.
+
+For each of the four operations you pick exactly one scope kind:
+
+- **Everyone with app access** — the default; no restriction beyond having access to the app at all.
+- **Specific groups** — pick one or more Nextcloud groups; only members of those groups (plus admins) may perform the operation.
+- **Own records (creator)** and **Condition** (a field-value match against the current user, e.g. "assignee equals me") are advanced scopes offered only when the connected OpenRegister instance advertises support for them. If you don't see these options, your OpenRegister does not support them yet — this is expected on most installs today.
+
+If you scope **Read** to a group you are not a member of (and you are not a Nextcloud admin), the designer shows a warning that saving will make this schema's own records invisible to you. Saving is still allowed — this can be an intentional handover to another team.
+
+Scopes are saved as part of the schema, exactly like fields — they are versioned per `?_version=`, and a scope change on a draft version never affects the production version until it is published. On a production version, only an app **owner** (not an editor) can change Access scopes.
+
+> **Access vs. navigation.** A page or menu item's `permission` field (set elsewhere in the builder) only hides navigation — it is a UX convenience. The **Access** sub-editor here is what actually restricts which records a user can read, create, update, or delete, enforced server-side by OpenRegister.
+
 ## Verification
 
 The schema is good when: it appears in the left-panel list with no red badge, the JSON preview validates without error, and the property you added shows up when you open the page designer next.
