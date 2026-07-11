@@ -95,6 +95,48 @@ export function useAppManifest(_appId) {
 	return { manifest: null, loading: false }
 }
 
+/**
+ * `manifestEditHistory` (builder-undo-redo, nc-vue change
+ * `manifest-edit-history`) is a plain-JS undo/redo engine plus a thin
+ * `ref()`-based Vue wrapper — neither file transitively `require()`s a
+ * `.vue` SFC, so unlike the rest of this stub module it is re-exported
+ * directly from the installed package's ESM output rather than faked.
+ * Vitest's `@conduction/nextcloud-vue` alias only matches the bare
+ * specifier (see vitest.config.js), so this subpath import resolves
+ * through normal node_modules resolution and is NOT re-aliased back to
+ * this file. Tests exercising undo/redo therefore run against the real,
+ * published leaf logic (bounded stack, branch discard, structural-
+ * identity no-op, snapshot freeze/share) — not a hand-rolled fake.
+ *
+ * NOTE: these are wrapped in local function declarations rather than a
+ * bare `export { X } from '...'` re-export — an `export { X, Y }`
+ * pass-through of these two particular imports triggers a Vite/Vitest
+ * SSR-transform bug in this file (reproduced in isolation: the
+ * re-exported binding resolves to `ReferenceError: X is not defined` at
+ * call time, even though the same import works fine everywhere else).
+ * The wrapper wins because it never puts the raw import binding on this
+ * module's export list — only a Vitest quirk is being routed around
+ * here, not the leaf's behaviour, which the wrappers forward unchanged.
+ */
+import { createManifestEditHistory as _createManifestEditHistory } from '@conduction/nextcloud-vue/dist/esm/utils/manifestEditHistory.js'
+import { useManifestEditHistory as _useManifestEditHistory } from '@conduction/nextcloud-vue/dist/esm/composables/useManifestEditHistory.js'
+
+/**
+ * @param {object} [options] Forwarded verbatim to the leaf.
+ * @return {object} The leaf's history instance.
+ */
+export function createManifestEditHistory(options) {
+	return _createManifestEditHistory(options)
+}
+
+/**
+ * @param {object} [options] Forwarded verbatim to the leaf.
+ * @return {object} The leaf's reactive history handle.
+ */
+export function useManifestEditHistory(options) {
+	return _useManifestEditHistory(options)
+}
+
 export default {
 	NcModal,
 	NcDialog,
@@ -114,4 +156,6 @@ export default {
 	registerTranslations,
 	validateManifest,
 	useAppManifest,
+	createManifestEditHistory,
+	useManifestEditHistory,
 }
