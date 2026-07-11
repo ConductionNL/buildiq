@@ -9,8 +9,8 @@
 
 ## 1. Schema & storage
 
-- [ ] 1.1 Add `lib/Settings/register.d/40-automations.json` — ADR-037 fragment declaring the `Automation` schema (slug `automation`) on the shared `openbuild` register: `slug`, `name`, `description`, `applicationSlug`, `versionUuid`, `enabled`, typed `trigger`, optional `condition`, `actions[]` (typed records incl. reserved `approval` type per design Decision 8), `provenance` (notificationKeys/lifecycleActions/scheduleIds/ruleSetSlug/openconnectorObjects/compiledHash); English property names; `_comment` explaining ADR-031 posture and the `aut-` namespace
-- [ ] 1.2 Add `tests/Unit/Settings/AutomationsFragmentTest.php` — fragment parses, merges via `SettingsService::deepMergeConfig` without colliding with `10-business-rules.json`/`20-data-registers.json` schema keys
+- [x] 1.1 Add `lib/Settings/register.d/40-automations.json` — ADR-037 fragment declaring the `Automation` schema (slug `automation`) on the shared `openbuild` register: `slug`, `name`, `description`, `applicationSlug`, `versionUuid`, `enabled`, typed `trigger`, optional `condition`, `actions[]` (typed records incl. reserved `approval` type per design Decision 8), `provenance` (notificationKeys/lifecycleActions/scheduleIds/ruleSetSlug/openconnectorObjects/compiledHash); English property names; `_comment` explaining ADR-031 posture and the `aut-` namespace
+- [x] 1.2 Add `tests/Unit/Settings/AutomationsFragmentTest.php` — fragment parses, merges via `SettingsService::deepMergeConfig` without colliding with `10-business-rules.json`/`20-data-registers.json` schema keys
 
 ## 2. Compiler & dispatcher (backend)
 
