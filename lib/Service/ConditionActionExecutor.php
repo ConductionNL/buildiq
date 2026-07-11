@@ -9,8 +9,9 @@
  * Decision 4). Actions run synchronously in declaration order; a failing action
  * aborts the rule's remaining actions unless `continueOnError` is set. In
  * dry-run mode side-effecting actions (send-notification, start-workflow,
- * call-rule-set) are recorded but NOT dispatched; `set-veld` always mutates the
- * working payload because it is in-memory and side-effect-free.
+ * call-rule-set, object-op, webhook) are recorded but NOT dispatched;
+ * `set-veld` always mutates the working payload because it is in-memory and
+ * side-effect-free.
  *
  * Side-effect dispatch (NC notifications, n8n workflows) is delegated to an
  * optional ActionDispatcher callable so this evaluator stays pure and unit
@@ -48,9 +49,17 @@ class ConditionActionExecutor
     /**
      * Action types that mutate external state and are skipped on dry-run.
      *
+     * `object-op` and `webhook` were added by the automation-designer change
+     * (spec REQ-AUTD-010) to complete the ADR-031 §Exceptions typed-action
+     * vocabulary — `object-op` writes via OpenRegister's ObjectService,
+     * `webhook` POSTs the compiler-materialised target config. Both are
+     * dispatched exactly like the pre-existing side-effect actions: skipped
+     * (dry-run, skipped) when `$dryRun` is true, otherwise forwarded to the
+     * wired `RuleActionDispatcher`.
+     *
      * @var array<int,string>
      */
-    private const SIDE_EFFECT_ACTIONS = ['send-notification', 'start-workflow', 'call-rule-set'];
+    private const SIDE_EFFECT_ACTIONS = ['send-notification', 'start-workflow', 'call-rule-set', 'object-op', 'webhook'];
 
     /**
      * Constructor.

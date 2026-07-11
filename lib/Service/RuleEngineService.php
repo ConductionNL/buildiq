@@ -83,6 +83,10 @@ class RuleEngineService
      * @param RuleSetCacheManager     $cacheManager      Hot-reload bundle cache.
      * @param IUserSession            $userSession       Current user session.
      * @param LoggerInterface         $logger            PSR logger.
+     * @param RuleActionDispatcher    $actionDispatcher  Wired side-effect dispatcher (spec REQ-AUTD-010 —
+     *                                                   fixes the verified defect where side-effecting
+     *                                                   actions silently no-op in wet runs because no
+     *                                                   dispatcher was ever passed to the executor).
      *
      * @return void
      */
@@ -93,6 +97,7 @@ class RuleEngineService
         private readonly RuleSetCacheManager $cacheManager,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger,
+        private readonly RuleActionDispatcher $actionDispatcher,
     ) {
 
     }//end __construct()
@@ -139,7 +144,10 @@ class RuleEngineService
                     $triggeredRules[] = $outcome['triggeredRuleId'];
                 }
             } else if ($ruleType === 'condition-action') {
-                $outcome        = $this->conditionExecutor->execute($bundle['conditionRules'], $payload, $dryRun);
+                // Pass the wired dispatcher (spec REQ-AUTD-010) — the executor
+                // itself suppresses dispatch when $dryRun is true, so it is
+                // always safe to hand the real dispatcher through here.
+                $outcome        = $this->conditionExecutor->execute($bundle['conditionRules'], $payload, $dryRun, $this->actionDispatcher);
                 $result         = $outcome['result'];
                 $errors         = $outcome['errors'];
                 $triggeredRules = array_column($outcome['triggeredRules'], 'name');
