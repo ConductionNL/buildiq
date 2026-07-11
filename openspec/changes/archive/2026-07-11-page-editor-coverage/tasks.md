@@ -12,7 +12,7 @@
 
 ## 1. Add-page picker: types + defaults
 
-- [ ] 1.1 `src/components/page-editor/PageListEditor.vue`: append
+- [x] 1.1 `src/components/page-editor/PageListEditor.vue`: append
       `'map'`, `'roadmap'`, `'search'`, `'wiki'` to the exported
       `PAGE_TYPES` array (line 87 at authoring time) and add four
       `DEFAULT_CONFIGS` entries exactly as REQ-PEC-002 pins them:
@@ -21,7 +21,7 @@
       `search: { register: '', schema: '', facets: [] }`,
       `wiki: { register: '', schema: '' }`. No other change to the add
       flow (id/route/title derivation stays generic).
-- [ ] 1.2 `tests/components/page-editor/PageListEditor.spec.js`: extend
+- [x] 1.2 `tests/components/page-editor/PageListEditor.spec.js`: extend
       the existing spec — assert `PAGE_TYPES` contains all thirteen
       types, and that confirming an add with type `map` produces a page
       whose `config` deep-equals the pinned map default (REQ-PEC-002
@@ -30,7 +30,7 @@
 
 ## 2. MapPageEditor
 
-- [ ] 2.1 Create `src/components/page-editor/MapPageEditor.vue` by
+- [x] 2.1 Create `src/components/page-editor/MapPageEditor.vue` by
       cloning `LogsPageEditor.vue`'s structure (SPDX header, props
       `config`/`pageType` (default `'map'`)/`appSlug`/`dataRegisters`/
       `parentRoute`, `emits: ['update:config']`,
@@ -54,12 +54,12 @@
       `['center', 'zoom', 'height', 'layers', 'markers']`; every
       surfaced field gets `<InlineFieldMark :error="markFor(key)" />`
       and `:aria-invalid="isInvalid(key)"`.
-- [ ] 2.2 `src/views/PageDesigner.vue`: add
+- [x] 2.2 `src/views/PageDesigner.vue`: add
       `import MapPageEditor from '../components/page-editor/MapPageEditor.vue'`,
       register it in the `components` block, and add `map:
       'MapPageEditor'` to `SUB_EDITOR_MAP` (line 153 at authoring
       time).
-- [ ] 2.3 Create `tests/components/page-editor/MapPageEditor.spec.js`
+- [x] 2.3 Create `tests/components/page-editor/MapPageEditor.spec.js`
       modelled on `LogsPageEditor.spec.js` (same `useRegisterPicker`
       mock factory): assert (a) mounting with the REQ-PEC-002 default
       config renders centre/zoom pre-filled; (b) editing zoom emits
@@ -73,7 +73,7 @@
 
 ## 3. RoadmapPageEditor
 
-- [ ] 3.1 Create `src/components/page-editor/RoadmapPageEditor.vue`
+- [x] 3.1 Create `src/components/page-editor/RoadmapPageEditor.vue`
       (same contract skeleton as task 2.1; `pageType` default
       `'roadmap'`; no register picker needed — omit the
       `useRegisterPicker` setup, keep the `dataRegisters` prop for
@@ -91,10 +91,10 @@
       'documentationUrl', 'suggestUrl', 'openbuiltUrl',
       'llmSkillsUrl']`; InlineFieldMark + `aria-invalid` on every
       surfaced field.
-- [ ] 3.2 `src/views/PageDesigner.vue`: import + `components`
+- [x] 3.2 `src/views/PageDesigner.vue`: import + `components`
       registration + `roadmap: 'RoadmapPageEditor'` in
       `SUB_EDITOR_MAP`.
-- [ ] 3.3 Create
+- [x] 3.3 Create
       `tests/components/page-editor/RoadmapPageEditor.spec.js`: assert
       (a) repo/forge fields render and emit shape
       `{ repo, forge: { type, baseUrl } }`; (b) a seeded `features`
@@ -104,7 +104,7 @@
 
 ## 4. SearchPageEditor
 
-- [ ] 4.1 Create `src/components/page-editor/SearchPageEditor.vue`
+- [x] 4.1 Create `src/components/page-editor/SearchPageEditor.vue`
       (same contract skeleton as task 2.1, WITH `useRegisterPicker`).
       Form surface per REQ-PEC-005: register + schema dropdowns
       (generic scope keys); text inputs for `title`, `placeholder`,
@@ -116,9 +116,9 @@
       `validatedConfigKeys` returns `['register', 'schema', 'title',
       'placeholder', 'searchLabel', 'idleLabel', 'emptyLabel',
       'facets']`; InlineFieldMark + `aria-invalid` per field.
-- [ ] 4.2 `src/views/PageDesigner.vue`: import + `components`
+- [x] 4.2 `src/views/PageDesigner.vue`: import + `components`
       registration + `search: 'SearchPageEditor'` in `SUB_EDITOR_MAP`.
-- [ ] 4.3 Create
+- [x] 4.3 Create
       `tests/components/page-editor/SearchPageEditor.spec.js`: assert
       (a) adding a facet row with key + two options emits the
       `facets[]` shape `{ key, options: [{ value }, { value }] }`;
@@ -129,7 +129,7 @@
 
 ## 5. WikiPageEditor
 
-- [ ] 5.1 Create `src/components/page-editor/WikiPageEditor.vue`
+- [x] 5.1 Create `src/components/page-editor/WikiPageEditor.vue`
       (same contract skeleton as task 2.1, WITH `useRegisterPicker`
       and its `config.register`/`config.schema` watchers fetching
       schemas + schema properties, exactly like LogsPageEditor). Form
@@ -148,9 +148,9 @@
       'sidebarTitleField', 'sidebarRegister', 'sidebarSchema',
       'emptyText', 'emptyDescription', 'emptyBodyText',
       'emptyBodyDescription']`.
-- [ ] 5.2 `src/views/PageDesigner.vue`: import + `components`
+- [x] 5.2 `src/views/PageDesigner.vue`: import + `components`
       registration + `wiki: 'WikiPageEditor'` in `SUB_EDITOR_MAP`.
-- [ ] 5.3 Create
+- [x] 5.3 Create
       `tests/components/page-editor/WikiPageEditor.spec.js`: assert
       (a) empty register/schema render error marks with `aria-invalid`
       (REQ-PEC-007 scenario "Wiki register and schema are marked
@@ -164,7 +164,7 @@
 
 ## 6. Dispatch fallback: stub narrowed to unknown types only
 
-- [ ] 6.1 `src/views/PageDesigner.vue`: on the centre-pane
+- [x] 6.1 `src/views/PageDesigner.vue`: on the centre-pane
       `<component :is="subEditorFor(selectedPage.type)">` binding
       (line 59-66 at authoring time), additionally bind
       `:title="t('openbuild', 'Unsupported page type: {type}', { type: selectedPage.type })"`
@@ -174,7 +174,7 @@
       the fallback mounts (REQ-PEC-001). The four dedicated editors do
       not declare these props; Vue drops them as unused attrs — do NOT
       add per-type conditional template branches.
-- [ ] 6.2 `tests/views/PageDesigner.spec.js`: extend the existing
+- [x] 6.2 `tests/views/PageDesigner.spec.js`: extend the existing
       dispatch coverage — assert `subEditorFor('map') ===
       'MapPageEditor'`, `subEditorFor('roadmap') ===
       'RoadmapPageEditor'`, `subEditorFor('search') ===
@@ -189,7 +189,7 @@
 
 ## 7. Playwright e2e — one flow per new editor
 
-- [ ] 7.1 Create `tests/e2e/spec-coverage/page-editor-coverage.spec.ts`
+- [x] 7.1 Create `tests/e2e/spec-coverage/page-editor-coverage.spec.ts`
       following the header-comment + structure conventions of
       `tests/e2e/spec-coverage/page-designer-ui.spec.ts` (SPDX header;
       header comment listing each REQ-PEC id with the scenario titles
@@ -200,7 +200,7 @@
       openbuild#41 quarantine convention if the builder surface is
       still quarantined at implementation time — mirror whatever
       `page-designer-ui.spec.ts` does at HEAD).
-- [ ] 7.2 In that file, e2e test 1 (REQ-PEC-003 "Create, configure,
+- [x] 7.2 In that file, e2e test 1 (REQ-PEC-003 "Create, configure,
       save and render a map page" + REQ-PEC-002 "Add page lists the
       four new types" / "Adding a map page seeds the map-shaped default
       config"): open the page designer for the seed app, click "Add
@@ -211,18 +211,18 @@
       `/apps/openbuild/builder/<slug>/map` and assert
       `[data-testid="cn-map-page"]` is visible, then reopen the
       designer and assert the values round-tripped.
-- [ ] 7.3 e2e test 2 (REQ-PEC-004 "Create, configure, save and render a
+- [x] 7.3 e2e test 2 (REQ-PEC-004 "Create, configure, save and render a
       roadmap page"): add a `roadmap` page, set `repo` to
       `ConductionNL/openbuild` and forge type `github`, save, navigate
       to the page route and assert `.cn-features-and-roadmap-view` is
       visible, reopen and assert repo/forge round-trip.
-- [ ] 7.4 e2e test 3 (REQ-PEC-005 "Create, configure, save and render a
+- [x] 7.4 e2e test 3 (REQ-PEC-005 "Create, configure, save and render a
       search page"): add a `search` page, set a placeholder and one
       facet with two options, save, navigate to the page route and
       assert `[data-testid="cn-search-page"]` is visible with the
       configured placeholder and both facet options in the sidebar,
       reopen and assert round-trip.
-- [ ] 7.5 e2e test 4 (REQ-PEC-006 "Create, configure, save and render a
+- [x] 7.5 e2e test 4 (REQ-PEC-006 "Create, configure, save and render a
       wiki page"): add a `wiki` page, bind the seed app's register +
       schema via the dropdowns, pick a `contentField` and `titleField`,
       save, navigate to the page route and assert
