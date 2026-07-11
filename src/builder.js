@@ -33,7 +33,6 @@ import pinia from './pinia.js'
 import { runtimeRegistry } from './runtimeRegistry.js'
 import { registerDirectives } from './registerDirectives.js'
 import { useRegisterPicker } from './composables/useRegisterPicker.js'
-import { registerSlugForApp } from './store/schemas.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
 import './assets/app.css'

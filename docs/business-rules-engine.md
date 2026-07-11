@@ -105,3 +105,14 @@ job (7-day interval) purges logs past the 90-day retention window.
 
 To query the audit trail for compliance, list `rule-execution-log` objects in
 the `openbuild` register filtered by `ruleSetId` and time window.
+
+## Automation designer
+
+A `manual`-trigger automation composed on the [Automations page](./automation-designer.md)
+compiles to exactly this engine: a namespaced RuleSet (`aut-<uuid8>`) plus one
+`condition-action` rule, evaluated and dry-run through the same
+`RuleEngineService` — inheriting the audit trail, PII masking and 500&nbsp;ms
+soft timeout documented above unchanged. The Automations page is the
+citizen-developer composer for the common "when X happens, do Y" case; this
+page's DecisionTable / ConditionActionRule editors remain the power-user
+surface for hand-authoring rule sets directly.
