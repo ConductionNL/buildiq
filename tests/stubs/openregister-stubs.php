@@ -1002,6 +1002,28 @@ namespace OCA\OpenRegister\Event {
         }//end class
     }//end if
 
+    if (class_exists(ObjectDeletedEvent::class, autoload: false) === false) {
+        /**
+         * Stub ObjectDeletedEvent — post-delete notification (non-cancellable,
+         * mirrors the real OR class: `__construct(ObjectEntity $object)`, only
+         * `getObject()`). Used by AutomationCleanupListener (automation-designer
+         * REQ-AUTD-005) to remove compiled artifacts after the OR object itself
+         * has already been deleted.
+         */
+        class ObjectDeletedEvent extends \OCP\EventDispatcher\Event
+        {
+            public function __construct(private readonly \OCA\OpenRegister\Db\ObjectEntity $object)
+            {
+                parent::__construct();
+            }//end __construct()
+
+            public function getObject(): \OCA\OpenRegister\Db\ObjectEntity
+            {
+                return $this->object;
+            }//end getObject()
+        }//end class
+    }//end if
+
     if (class_exists(DeepLinkRegistrationEvent::class, autoload: false) === false) {
         /**
          * Stub DeepLinkRegistrationEvent — `register` call surface.
