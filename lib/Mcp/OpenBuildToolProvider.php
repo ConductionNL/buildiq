@@ -259,6 +259,27 @@ class OpenBuildToolProvider implements IMcpToolProvider
     }//end getTools()
 
     /**
+     * Return the tool catalogue for consumers that need the raw descriptor
+     * array (id + inputSchema) rather than the MCP-shaped {@see getTools()}
+     * response. `TOOL_DESCRIPTORS` stays private/single-source; this is the
+     * one public accessor other services read it through — currently the
+     * AI copilot's plan validator/prompt builder
+     * ({@see \OCA\OpenBuild\Service\Copilot\CopilotPlanValidator},
+     * {@see \OCA\OpenBuild\Service\Copilot\CopilotPromptBuilder}), which
+     * restrict LLM-proposed plan steps to exactly these tool ids and
+     * validate each step's arguments against the matching `inputSchema`.
+     *
+     * @return array<int, array<string, mixed>>
+     *
+     * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+     */
+    public function getToolDescriptors(): array
+    {
+        return self::TOOL_DESCRIPTORS;
+
+    }//end getToolDescriptors()
+
+    /**
      * Dispatch an MCP tool invocation to the matching handler.
      *
      * @param string               $toolId    Fully qualified tool id (e.g. "openbuild.listApps").

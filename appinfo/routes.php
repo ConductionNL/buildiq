@@ -229,6 +229,16 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'gitHubSync#pull',   'url' => '/api/applications/{slug}/github/pull',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'gitHubSync#status', 'url' => '/api/applications/{slug}/github/status', 'verb' => 'GET',  'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // AI copilot / prompt-to-app (spec `ai-copilot` REQ-OBAIC-001/002/004).
+        // All three #[NoAdminRequired]; per-object RBAC (existing-app owners/
+        // editors, hybrid-app rejection) is enforced inside CopilotService, not
+        // via a route attribute. `plan` performs zero writes; `execute` re-
+        // validates and dispatches through OpenBuildToolProvider::invokeTool().
+        // Specific-first, before the engine-appended SPA catch-all.
+        ['name' => 'copilot#health',  'url' => '/api/copilot/health',  'verb' => 'GET'],
+        ['name' => 'copilot#plan',    'url' => '/api/copilot/plan',    'verb' => 'POST'],
+        ['name' => 'copilot#execute', 'url' => '/api/copilot/execute', 'verb' => 'POST'],
+
         // NB: the SPA catch-all (dashboard#catchAll) is appended by
         // \OCA\OpenRegister\AppHost\Routes::standard() — do NOT add it here.
     ]
