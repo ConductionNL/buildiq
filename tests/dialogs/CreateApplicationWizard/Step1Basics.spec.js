@@ -17,9 +17,21 @@
  *   - description input emits update:payload
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+
+// Step1Basics probes AI-copilot health on created() (spec ai-copilot
+// REQ-OBAIC-001/006) via useCopilot -> services/copilot.js -> axios. Mock
+// both so the existing suite stays network-free and deterministic.
+vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
+vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn(() => Promise.reject(new Error('no provider in tests'))) } }))
+
 import Step1Basics from '../../../src/dialogs/CreateApplicationWizard/Step1Basics.vue'
+import { clearCopilotHealthCache } from '../../../src/composables/useCopilot.js'
+
+beforeEach(() => {
+	clearCopilotHealthCache()
+})
 
 /**
  * Build a default payload.
