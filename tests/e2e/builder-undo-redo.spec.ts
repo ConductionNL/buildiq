@@ -1,0 +1,318 @@
+/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * Playwright end-to-end spec for openspec change `builder-undo-redo`
+ * (REQ-BUR-001 .. REQ-BUR-005; REQ-BUR-006/007 are engine-seam contracts
+ * excluded from e2e per the spec's `@e2e exclude` notes — see
+ * openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md).
+ *
+ * Follows the same conventions as the other designer e2e suites
+ * (`schema-designer.spec.ts`, `schema-access-scopes.spec.ts`,
+ * `versionRouting.spec.ts`): shared admin `storageState` from
+ * `tests/e2e/global-setup.ts` (no per-spec login), a create-if-not-present
+ * app helper, and the same Conduction/openbuild#41 quarantine — the
+ * designer admin UI does not render in this build yet, so this suite is
+ * skipped until #41 is fixed. One test per scenario, named with the
+ * requirement id.
+ *
+ * Scenario → task mapping (openspec/changes/builder-undo-redo/tasks.md §7):
+ *   7.1 REQ-BUR-001 undo restores / redo re-applies, no network write
+ *   7.2 REQ-BUR-001 a new edit after undo truncates the redo tail
+ *   7.3 REQ-BUR-002 toolbar disabled states across the edit/undo cycle
+ *   7.4 REQ-BUR-003 Ctrl+Z / Ctrl+Shift+Z outside editable fields
+ *   7.5 REQ-BUR-003 Ctrl+Z inside a text field leaves draft history untouched
+ *   7.6 REQ-BUR-004 history survives a sub-editor (page) switch
+ *   7.7 REQ-BUR-004 save resets the session history
+ *   7.8 REQ-BUR-004 a version switch resets the session history
+ *   7.9 REQ-BUR-005 schema designer: undo a field add, undo a discard,
+ *       save resets the schema session history
+ */
+
+import { test, expect, type Page } from '@playwright/test'
+
+const BASE_URL = process.env.NC_BASE_URL ?? 'http://localhost:8080'
+const APP_SLUG = 'pw-undo-redo'
+const SCHEMA_SLUG = 'undo-redo-record'
+
+/**
+ * Ensure the `pw-undo-redo` virtual app exists (idempotent across runs —
+ * matches the create-if-not-present convention every recent designer e2e
+ * spec uses, e.g. `schema-access-scopes.spec.ts`).
+ *
+ * @param page Playwright page.
+ */
+async function ensureApp(page: Page): Promise<void> {
+	await page.goto(`${BASE_URL}/apps/openbuild/applications`, { waitUntil: 'domcontentloaded' })
+	const addAppButton = page.getByRole('button', { name: /add application/i })
+	if (await addAppButton.isVisible().catch(() => false)) {
+		await addAppButton.click()
+		await page.getByLabel(/slug/i).fill(APP_SLUG)
+		await page.getByLabel(/title/i).fill('PW Undo Redo')
+		await page.getByRole('button', { name: /save|create/i }).click()
+		await page.waitForLoadState('networkidle')
+	}
+}
+
+/**
+ * Locate a toolbar tool button by its visible label ("Undo" / "Redo") in
+ * the page designer — the buttons render `↶ Undo` / `↷ Redo`.
+ *
+ * @param page Playwright page.
+ * @param label "Undo" or "Redo".
+ */
+function pageDesignerButton(page: Page, label: 'Undo' | 'Redo') {
+	return page.locator('.page-designer__tool-btn').filter({ hasText: new RegExp(label, 'i') })
+}
+
+// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+test.describe.skip('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
+	test.beforeEach(async ({ page }) => {
+		await ensureApp(page)
+	})
+
+	test('REQ-BUR-001: undo restores the previous draft state, redo re-applies it, no network write', async ({ page }) => {
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
+		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
+
+		const writes: string[] = []
+		page.on('request', (req) => {
+			if (['PUT', 'PATCH', 'POST'].includes(req.method()) && req.url().includes('/apps/openregister/')) {
+				writes.push(`${req.method()} ${req.url()}`)
+			}
+		})
+
+		const initialCount = await page.locator('.page-list-editor__row').count()
+
+		await page.locator('.page-list-editor__add').click()
+		await page.locator('.page-list-editor__select').selectOption('index')
+		await page.getByRole('button', { name: /^confirm$/i }).click()
+		await expect(page.locator('.page-list-editor__row')).toHaveCount(initialCount + 1)
+
+		await pageDesignerButton(page, 'Undo').click()
+		await expect(page.locator('.page-list-editor__row')).toHaveCount(initialCount)
+
+		await pageDesignerButton(page, 'Redo').click()
+		await expect(page.locator('.page-list-editor__row')).toHaveCount(initialCount + 1)
+
+		expect(writes, 'undo/redo must never issue a PUT/PATCH/POST').toHaveLength(0)
+	})
+
+	test('REQ-BUR-001: a new edit after undo truncates the redo tail', async ({ page }) => {
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
+		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
+
+		await page.locator('.page-list-editor__add').click()
+		await page.locator('.page-list-editor__select').selectOption('index')
+		await page.getByRole('button', { name: /^confirm$/i }).click()
+
+		await pageDesignerButton(page, 'Undo').click()
+		await expect(pageDesignerButton(page, 'Redo')).toBeEnabled()
+
+		// A different new edit — add a page of a different type — must
+		// discard the undone branch.
+		await page.locator('.page-list-editor__add').click()
+		await page.locator('.page-list-editor__select').selectOption('form')
+		await page.getByRole('button', { name: /^confirm$/i }).click()
+
+		await expect(pageDesignerButton(page, 'Redo')).toBeDisabled()
+	})
+
+	test('REQ-BUR-002: toolbar disabled states across the edit/undo cycle', async ({ page }) => {
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
+		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
+
+		await expect(pageDesignerButton(page, 'Undo')).toBeDisabled()
+		await expect(pageDesignerButton(page, 'Redo')).toBeDisabled()
+
+		await page.locator('.page-list-editor__add').click()
+		await page.locator('.page-list-editor__select').selectOption('index')
+		await page.getByRole('button', { name: /^confirm$/i }).click()
+
+		await expect(pageDesignerButton(page, 'Undo')).toBeEnabled()
+		await expect(pageDesignerButton(page, 'Redo')).toBeDisabled()
+
+		await pageDesignerButton(page, 'Undo').click()
+		await expect(pageDesignerButton(page, 'Undo')).toBeDisabled()
+		await expect(pageDesignerButton(page, 'Redo')).toBeEnabled()
+	})
+
+	test('REQ-BUR-003: Ctrl+Z / Ctrl+Shift+Z drive undo and redo outside editable fields', async ({ page }) => {
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
+		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
+
+		const initialCount = await page.locator('.page-list-editor__row').count()
+
+		await page.locator('.page-list-editor__add').click()
+		await page.locator('.page-list-editor__select').selectOption('index')
+		await page.getByRole('button', { name: /^confirm$/i }).click()
+		await expect(page.locator('.page-list-editor__row')).toHaveCount(initialCount + 1)
+
+		// Blur into empty space (not an editable field) before dispatching
+		// the chord, matching the editable-target guard's contract.
+		await page.locator('.page-designer__left').click({ position: { x: 2, y: 2 } })
+		await page.keyboard.press('Control+z')
+		await expect(page.locator('.page-list-editor__row')).toHaveCount(initialCount)
+
+		await page.keyboard.press('Control+Shift+z')
+		await expect(page.locator('.page-list-editor__row')).toHaveCount(initialCount + 1)
+
+		await page.keyboard.press('Control+z')
+		await page.keyboard.press('Control+y')
+		await expect(page.locator('.page-list-editor__row')).toHaveCount(initialCount + 1)
+	})
+
+	test('REQ-BUR-003: Ctrl+Z inside a text field leaves draft-level history untouched', async ({ page }) => {
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
+		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
+
+		const initialCount = await page.locator('.page-list-editor__row').count()
+
+		// A draft-level edit — the state we must NOT lose.
+		await page.locator('.page-list-editor__add').click()
+		await page.locator('.page-list-editor__select').selectOption('index')
+		await page.getByRole('button', { name: /^confirm$/i }).click()
+		await expect(page.locator('.page-list-editor__row')).toHaveCount(initialCount + 1)
+
+		// Focus a text field belonging to the new row and type + Ctrl+Z.
+		const idField = page.locator('.page-list-editor__row').last().locator('.page-list-editor__field').first()
+		await idField.click()
+		await idField.type('typo')
+		await page.keyboard.press('Control+z')
+
+		// The draft-level edit (the added row) must still be present — only
+		// the native text-field undo (if any) should have fired.
+		await expect(page.locator('.page-list-editor__row')).toHaveCount(initialCount + 1)
+	})
+
+	test('REQ-BUR-004: history survives a sub-editor (page) switch', async ({ page }) => {
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
+		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
+
+		const rows = page.locator('.page-list-editor__row')
+		const initialCount = await rows.count()
+
+		// Edit A: add a page (mounts its sub-editor via SUB_EDITOR_MAP).
+		await page.locator('.page-list-editor__add').click()
+		await page.locator('.page-list-editor__select').selectOption('detail')
+		await page.getByRole('button', { name: /^confirm$/i }).click()
+		await expect(rows).toHaveCount(initialCount + 1)
+
+		// Select a different page — pure navigation, must not touch history.
+		if (initialCount > 0) {
+			await rows.first().click()
+		}
+		await expect(pageDesignerButton(page, 'Undo')).toBeEnabled()
+
+		await pageDesignerButton(page, 'Undo').click()
+		await expect(rows).toHaveCount(initialCount)
+	})
+
+	test('REQ-BUR-004: a successful save resets the session history', async ({ page }) => {
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
+		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
+
+		await page.locator('.page-list-editor__add').click()
+		await page.locator('.page-list-editor__select').selectOption('index')
+		await page.getByRole('button', { name: /^confirm$/i }).click()
+		await expect(pageDesignerButton(page, 'Undo')).toBeEnabled()
+
+		await page.getByRole('button', { name: /save pages/i }).click()
+		await expect(page.locator('.page-designer-host__toast')).toBeVisible({ timeout: 10_000 })
+
+		await expect(pageDesignerButton(page, 'Undo')).toBeDisabled()
+		await expect(pageDesignerButton(page, 'Redo')).toBeDisabled()
+
+		const countAfterSave = await page.locator('.page-list-editor__row').count()
+		await page.keyboard.press('Control+z')
+		await expect(page.locator('.page-list-editor__row')).toHaveCount(countAfterSave)
+	})
+
+	test('REQ-BUR-004: a version switch resets the session history', async ({ page }) => {
+		// Requires a second seeded ApplicationVersion (e.g. "staging") for
+		// pw-undo-redo, same precondition class as versionRouting.spec.ts's
+		// 9.1/9.3 — skip gracefully rather than fail when it isn't seeded.
+		const versionCheck = await page.request.get(
+			`${BASE_URL}/index.php/apps/openbuild/api/applications/${APP_SLUG}/versions/staging`,
+		).catch(() => null)
+		if (!versionCheck || versionCheck.status() !== 200) {
+			test.skip(true, `SKIP: ApplicationVersion "staging" not seeded for ${APP_SLUG} — seed one to exercise this scenario`)
+			return
+		}
+
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
+		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
+
+		await page.locator('.page-list-editor__add').click()
+		await page.locator('.page-list-editor__select').selectOption('index')
+		await page.getByRole('button', { name: /^confirm$/i }).click()
+		await expect(pageDesignerButton(page, 'Undo')).toBeEnabled()
+
+		await page.goto(
+			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages?_version=staging`,
+			{ waitUntil: 'domcontentloaded' },
+		)
+		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
+
+		await expect(pageDesignerButton(page, 'Undo')).toBeDisabled()
+		await expect(pageDesignerButton(page, 'Redo')).toBeDisabled()
+	})
+})
+
+// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+test.describe.skip('builder-undo-redo — schema designer (REQ-BUR-005)', () => {
+	test.beforeEach(async ({ page }) => {
+		await ensureApp(page)
+	})
+
+	test('REQ-BUR-005: undo a field add, undo a discard, and a save resets the schema session history', async ({ page }) => {
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas`, { waitUntil: 'domcontentloaded' })
+		await expect(page.locator('.openbuild-schema-list')).toBeVisible({ timeout: 10_000 })
+
+		const existingRow = page.locator('.openbuild-schema-list__row').filter({ hasText: SCHEMA_SLUG })
+		if ((await existingRow.count()) === 0) {
+			await page.getByRole('button', { name: /add schema/i }).first().click()
+			await page.getByLabel(/slug/i).fill(SCHEMA_SLUG)
+			await page.getByLabel(/title/i).fill('Undo Redo Record')
+			await page.getByRole('button', { name: /add schema|save/i }).last().click()
+		} else {
+			await existingRow.click()
+		}
+		await expect(page.getByRole('button', { name: /back to schemas/i })).toBeVisible({ timeout: 10_000 })
+
+		const undoBtn = page.getByRole('button', { name: /^undo/i })
+		const redoBtn = page.getByRole('button', { name: /^redo/i })
+		await expect(undoBtn).toBeDisabled()
+		await expect(redoBtn).toBeDisabled()
+
+		// Add a field → undo → field gone.
+		const fieldRows = page.locator('.openbuild-field-editor__row')
+		const initialFieldCount = await fieldRows.count()
+		await page.getByRole('button', { name: /add field/i }).click()
+		await expect(fieldRows).toHaveCount(initialFieldCount + 1)
+		await expect(undoBtn).toBeEnabled()
+
+		await undoBtn.click()
+		await expect(fieldRows).toHaveCount(initialFieldCount)
+
+		// Re-add, then Discard staged edits → undo → the discarded field
+		// edit comes back.
+		await page.getByRole('button', { name: /add field/i }).click()
+		await expect(fieldRows).toHaveCount(initialFieldCount + 1)
+
+		const discardBtn = page.getByRole('button', { name: /discard staged edits/i })
+		await expect(discardBtn).toBeEnabled()
+		await discardBtn.click()
+		await expect(fieldRows).toHaveCount(initialFieldCount)
+
+		await expect(undoBtn).toBeEnabled()
+		await undoBtn.click()
+		await expect(fieldRows).toHaveCount(initialFieldCount + 1)
+
+		// Save → both buttons disabled (new baseline).
+		await page.getByRole('button', { name: /^save$/i }).click()
+		await page.waitForLoadState('networkidle')
+		await expect(undoBtn).toBeDisabled()
+		await expect(redoBtn).toBeDisabled()
+	})
+})
