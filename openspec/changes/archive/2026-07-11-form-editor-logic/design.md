@@ -69,6 +69,26 @@ authors against. Task 1.1 re-verifies it against the leaf's actual
 schema delta before implementation; any drift is resolved in the leaf's
 favour (the schema is canonical, per the schedules-editor precedent).
 
+**Re-verified against installed `@conduction/nextcloud-vue@1.0.0-beta.173`
+(tasks 1.1/1.2):** the contract below is confirmed byte-for-byte.
+Two corrections to this document's original assumptions, resolved in the
+leaf's favour:
+
+1. The canonical `validateManifest` (installed) already implements the
+   complete-partition, duplicate-id, dangling-reference, `min`≤`max` and
+   pattern-compile checks itself (`utils/validateManifest.js` §7,
+   "Form logic"), confirming there is **no renderer fail-safe** — an
+   incomplete partition is a hard validation error, never silently
+   patched at render time.
+2. `CnFormPage` does **NOT** honour the legacy flat `field.required` /
+   `field.pattern` keys — `utils/formValidation.js`'s
+   `validateFieldValue()` reads only `field.validation`. The "Validation
+   plumbing" and Decision 4 text below describing them as
+   "renderer-supported for back-compat" / "still honoured" is
+   superseded by this finding: flat-only fields are silently
+   unenforced at runtime today, which makes this editor's migrate-on-edit
+   behaviour a correctness fix, not a cosmetic one.
+
 ```jsonc
 {
   "type": "form",
