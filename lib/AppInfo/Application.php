@@ -381,6 +381,10 @@ class Application extends App implements IBootstrap
         } catch (\Throwable $e) {
             // Boot must never throw — log and continue.
             // OpenRegister may not be installed on this instance.
+            \OCP\Server::get(LoggerInterface::class)->warning(
+                'OpenBuild: nav-entry registration failed during boot: '.$e->getMessage(),
+                ['exception' => $e]
+            );
         }//end try
     }//end boot()
 }//end class
