@@ -6,6 +6,11 @@
   - property count, and lifecycle-state count. Owns the Add Schema and
   - per-row Open / Rename / Delete actions. Delete is gated by the
   - DeleteSchemaDialog modal (REQ-OBSD-008).
+  -
+  - Rows also show a "Restricted" badge (REQ-OBDSA-005) for any schema
+  - carrying a schema-level `authorization` block — the compact summary
+  - is derived by the pure exported `scopeSummary()` helper so it stays
+  - unit-testable without mounting.
   -->
 <template>
 	<div class="openbuild-schema-list">
@@ -55,6 +60,12 @@
 						<span>{{ t('openbuild', 'v{version}', { version: schema.version || '—' }) }}</span>
 						<span>{{ n('openbuild', '{n} property', '{n} properties', propertyCount(schema), { n: propertyCount(schema) }) }}</span>
 						<span>{{ lifecycleLabel(schema) }}</span>
+						<span
+							v-if="scopeSummary(schema)"
+							class="openbuild-schema-list__badge"
+							:title="scopeSummary(schema).title">
+							{{ scopeSummary(schema).label }}
+						</span>
 					</span>
 				</button>
 				<NcActions>
@@ -101,6 +112,46 @@ import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import AddSchemaDialog from '../../modals/AddSchemaDialog.vue'
 import DeleteSchemaDialog from '../../modals/DeleteSchemaDialog.vue'
 
+/** Operations summarised by `scopeSummary`, in display order. */
+const SCOPE_OPS = ['read', 'create', 'update', 'delete']
+
+/**
+ * Derive a compact "Restricted" badge for a schema carrying a
+ * schema-level `authorization` block (REQ-OBDSA-005). Pure and
+ * exported so it is unit-testable without mounting the panel.
+ *
+ * Returns `null` for a schema with no `authorization` block (or an
+ * empty one). Otherwise returns `{ label, title }` where `title` is a
+ * semicolon-joined per-operation summary (e.g. `read: vets; delete:
+ * admin`) suitable for the badge's accessible title attribute — every
+ * scope kind the Access sub-editor can produce is covered: plain group
+ * lists, the `@creator` sentinel, and `authorization.conditions.<op>`.
+ *
+ * @param {object} schema Schema record (may carry `authorization`).
+ * @return {{label: string, title: string}|null} Badge, or null.
+ * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-005
+ */
+export function scopeSummary(schema) {
+	const auth = schema && schema.authorization
+	if (!auth || typeof auth !== 'object' || Object.keys(auth).length === 0) {
+		return null
+	}
+	const parts = []
+	SCOPE_OPS.forEach((op) => {
+		const list = auth[op]
+		if (Array.isArray(list) && list.length > 0) {
+			parts.push(`${op}: ${list.join(', ')}`)
+			return
+		}
+		const condition = auth.conditions && auth.conditions[op]
+		if (condition) {
+			parts.push(`${op}: condition(${(condition && condition.field) || '?'})`)
+		}
+	})
+	const title = parts.length > 0 ? parts.join('; ') : 'Custom authorization metadata'
+	return { label: 'Restricted', title }
+}
+
 export default {
 	name: 'SchemaListPanel',
 	components: {
@@ -133,6 +184,17 @@ export default {
 	methods: {
 		getSlug(schema) {
 			return schema.slug || (schema['@self'] && schema['@self'].slug) || schema.id || ''
+		},
+		/**
+		 * Expose the pure `scopeSummary` helper as an instance method so
+		 * the template can call it directly (REQ-OBDSA-005).
+		 *
+		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-005
+		 * @param {object} schema Schema record.
+		 * @return {{label: string, title: string}|null} Badge, or null.
+		 */
+		scopeSummary(schema) {
+			return scopeSummary(schema)
 		},
 		/**
 		 * Count the declared properties on a schema row.
@@ -312,5 +374,13 @@ export default {
 
 .openbuild-schema-list__row-meta code {
 	font-family: monospace;
+}
+
+.openbuild-schema-list__badge {
+	padding: 0 6px;
+	border-radius: var(--border-radius-pill, 10px);
+	background: var(--color-warning, #ffbb33);
+	color: var(--color-main-background, #fff);
+	font-weight: 600;
 }
 </style>
