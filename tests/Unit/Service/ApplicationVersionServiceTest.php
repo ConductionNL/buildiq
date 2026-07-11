@@ -95,6 +95,7 @@ class ApplicationVersionServiceTest extends TestCase
             objectService: $this->objectService,
             registerService: $this->registerService,
             registerMapper: $this->registerMapper,
+            automationCompiler: $this->createMock(\OCA\OpenBuild\Service\AutomationCompilerService::class),
         );
     }//end setUp()
 

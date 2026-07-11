@@ -30,6 +30,7 @@ namespace OCA\OpenBuild\Tests\Unit\Service;
 use OCA\OpenBuild\Service\ConditionActionExecutor;
 use OCA\OpenBuild\Service\DecisionTableEvaluator;
 use OCA\OpenBuild\Service\ExpressionEvaluator;
+use OCA\OpenBuild\Service\RuleActionDispatcher;
 use OCA\OpenBuild\Service\RuleEngineService;
 use OCA\OpenBuild\Service\RuleSetCacheManager;
 use OCA\OpenRegister\Service\ObjectService;
@@ -75,6 +76,13 @@ final class RuleEngineServiceTest extends TestCase
     private RuleEngineService $service;
 
     /**
+     * Mock wired action dispatcher (spec REQ-AUTD-010).
+     *
+     * @var RuleActionDispatcher&MockObject
+     */
+    private RuleActionDispatcher&MockObject $actionDispatcher;
+
+    /**
      * Wire the service with real evaluators and mocked boundaries.
      *
      * @return void
@@ -92,13 +100,15 @@ final class RuleEngineServiceTest extends TestCase
         $this->userSession->method('getUser')->willReturn($user);
 
         $evaluator = new ExpressionEvaluator();
+        $this->actionDispatcher = $this->createMock(RuleActionDispatcher::class);
         $this->service = new RuleEngineService(
             $this->objectService,
             new DecisionTableEvaluator($evaluator),
             new ConditionActionExecutor($evaluator),
             $this->cacheManager,
             $this->userSession,
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $this->actionDispatcher
         );
 
     }//end setUp()
@@ -215,4 +225,77 @@ final class RuleEngineServiceTest extends TestCase
         $this->assertSame('***', $capturedLog['inputPayload']['bsn']);
 
     }//end testPiiMasking()
+
+    /**
+     * Build a condition-action RuleSet + one unconditional rule carrying a
+     * send-notification action.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function conditionActionFindAllResults(string $schema): array
+    {
+        if ($schema === 'rule-set') {
+            return [['slug' => 'escalate', 'versie' => '1.0.0', 'ruleType' => 'condition-action']];
+        }
+
+        if ($schema === 'condition-action-rule') {
+            return [
+                [
+                    'ruleSetId' => 'escalate',
+                    'naam'      => 'always-notify',
+                    'conditie'  => '',
+                    'acties'    => [
+                        ['type' => 'send-notification', 'parameters' => ['subject' => 'hello', 'recipientUid' => 'alice']],
+                    ],
+                    'actief'    => true,
+                ],
+            ];
+        }
+
+        return [];
+
+    }//end conditionActionFindAllResults()
+
+    /**
+     * REQ-AUTD-010: a wet (non-dry-run) evaluation invokes the wired dispatcher
+     * for a triggered rule's side-effecting action.
+     *
+     * @return void
+     */
+    public function testWetEvaluationInvokesDispatcher(): void
+    {
+        $this->objectService->method('findAll')->willReturnCallback(
+            function (array $config): array {
+                return $this->conditionActionFindAllResults((string) $config['filters']['schema']);
+            }
+        );
+
+        $this->actionDispatcher->expects($this->once())
+            ->method('__invoke')
+            ->with('send-notification', $this->anything(), $this->anything());
+
+        $outcome = $this->service->evaluate('escalate', [], null, false);
+
+        $this->assertContains('always-notify', $outcome['geraaktRegels'] ?? [], 'sanity: rule fired');
+
+    }//end testWetEvaluationInvokesDispatcher()
+
+    /**
+     * REQ-AUTD-010: a dry-run evaluation never invokes the dispatcher.
+     *
+     * @return void
+     */
+    public function testDryRunDoesNotInvokeDispatcher(): void
+    {
+        $this->objectService->method('findAll')->willReturnCallback(
+            function (array $config): array {
+                return $this->conditionActionFindAllResults((string) $config['filters']['schema']);
+            }
+        );
+
+        $this->actionDispatcher->expects($this->never())->method('__invoke');
+
+        $this->service->evaluate('escalate', [], null, true);
+
+    }//end testDryRunDoesNotInvokeDispatcher()
 }//end class

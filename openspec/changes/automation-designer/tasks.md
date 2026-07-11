@@ -14,12 +14,12 @@
 
 ## 2. Compiler & dispatcher (backend)
 
-- [ ] 2.1 Add `lib/Service/AutomationCompilerService.php` — pure `compile(array $automation): array` producing the CompiledPlan per design Decision 3 (dialect backend: `x-openregister-notifications` entries keyed `aut-<slug>-<n>` with trigger mapping created/updated/deleted/transition; lifecycle backend: `related-object-upsert`/`webhook-dispatch` records with `aut-<slug>` marker; schedules backend: `schedules[]` entry valid against `src/services/manifestValidation/schedules.js` rules; rules backend: RuleSet `aut-<uuid8>` + ConditionActionRule) plus canonical-JSON `compiledHash`; enforce the v1 matrix fail-closed (typed exception naming the unsupported combination)
-- [ ] 2.2 In `AutomationCompilerService` add `apply(plan)` / `remove(provenance)` / `status(automation)` — idempotent upsert/delete of plan artifacts through the real OR `ObjectService` and the existing ApplicationVersion manifest PUT path (ADR-022; no new persistence layer); `status` recomputes the hash against live artifacts for drift; never touch non-`aut-` prefixed entries
-- [ ] 2.3 Add `lib/Service/RuleActionDispatcher.php` — implements the executor's `fn(string $type, array $params, array $payload)` contract: `send-notification` → `OCP\Notification\IManager`, `object-op` → `ObjectService::saveObject` (use `JobOwnerImpersonator` when no session user), `webhook` → POST via `OCP\Http\Client\IClientService`, `start-workflow`/`call-rule-set` kept
-- [ ] 2.4 Edit `lib/Service/ConditionActionExecutor.php` — add `object-op` and `webhook` to `SIDE_EFFECT_ACTIONS`; dry-run suppression unchanged
-- [ ] 2.5 Edit `lib/Service/RuleEngineService.php` — pass the wired `RuleActionDispatcher` callable at the `ConditionActionExecutor::execute()` call site (line ~142; fixes the verified silent no-op of side-effect actions in wet runs); constructor gains the dispatcher dependency
-- [ ] 2.6 Edit `lib/Service/ApplicationVersionService.php` — in the version-branch/copy flow, clone the source version's automations to the new version (new uuids, recompiled with fresh `aut-<uuid8>` rule-set slugs) per design Decision 6
+- [x] 2.1 Add `lib/Service/AutomationCompilerService.php` — pure `compile(array $automation): array` producing the CompiledPlan per design Decision 3 (dialect backend: `x-openregister-notifications` entries keyed `aut-<slug>-<n>` with trigger mapping created/updated/deleted/transition; lifecycle backend: `related-object-upsert`/`webhook-dispatch` records with `aut-<slug>` marker; schedules backend: `schedules[]` entry valid against `src/services/manifestValidation/schedules.js` rules; rules backend: RuleSet `aut-<uuid8>` + ConditionActionRule) plus canonical-JSON `compiledHash`; enforce the v1 matrix fail-closed (typed exception naming the unsupported combination)
+- [x] 2.2 In `AutomationCompilerService` add `apply(plan)` / `remove(provenance)` / `status(automation)` — idempotent upsert/delete of plan artifacts through the real OR `ObjectService` and the existing ApplicationVersion manifest PUT path (ADR-022; no new persistence layer); `status` recomputes the hash against live artifacts for drift; never touch non-`aut-` prefixed entries
+- [x] 2.3 Add `lib/Service/RuleActionDispatcher.php` — implements the executor's `fn(string $type, array $params, array $payload)` contract: `send-notification` → `OCP\Notification\IManager`, `object-op` → `ObjectService::saveObject` (use `JobOwnerImpersonator` when no session user), `webhook` → POST via `OCP\Http\Client\IClientService`, `start-workflow`/`call-rule-set` kept
+- [x] 2.4 Edit `lib/Service/ConditionActionExecutor.php` — add `object-op` and `webhook` to `SIDE_EFFECT_ACTIONS`; dry-run suppression unchanged
+- [x] 2.5 Edit `lib/Service/RuleEngineService.php` — pass the wired `RuleActionDispatcher` callable at the `ConditionActionExecutor::execute()` call site (line ~142; fixes the verified silent no-op of side-effect actions in wet runs); constructor gains the dispatcher dependency
+- [x] 2.6 Edit `lib/Service/ApplicationVersionService.php` — in the version-branch/copy flow, clone the source version's automations to the new version (new uuids, recompiled with fresh `aut-<uuid8>` rule-set slugs) per design Decision 6
 
 ## 3. Controller & routes
 
@@ -29,10 +29,10 @@
 
 ## 4. Backend unit tests (PHPUnit)
 
-- [ ] 4.1 Add `tests/Unit/Service/AutomationCompilerServiceTest.php` — one test per matrix ✅ cell asserting exact artifact shape (REQ-AUTD-004 scenarios); determinism (same input → same plan + hash); idempotent recompile; unsupported cells throw with the combination named; delete removes only provenance-listed artifacts (hand-authored key untouched); drift hash mismatch detected
-- [ ] 4.2 Add `tests/Unit/Service/RuleActionDispatcherTest.php` — send-notification hits IManager, object-op hits ObjectService::saveObject with mapped fields, webhook POSTs the compiled target, unknown type surfaces an error
-- [ ] 4.3 Extend `tests/Unit/Service/` coverage for `RuleEngineService` — wet run invokes the dispatcher, dry-run does not (REQ-AUTD-010 scenarios); existing tests stay green
-- [ ] 4.4 Add `tests/Unit/Service/ApplicationVersionServiceAutomationCloneTest.php` — branch clones automations with new uuids + distinct `aut-` slugs; disabling the clone leaves the source version's artifacts unchanged (REQ-AUTD-009 scenario)
+- [x] 4.1 Add `tests/Unit/Service/AutomationCompilerServiceTest.php` — one test per matrix ✅ cell asserting exact artifact shape (REQ-AUTD-004 scenarios); determinism (same input → same plan + hash); idempotent recompile; unsupported cells throw with the combination named; delete removes only provenance-listed artifacts (hand-authored key untouched); drift hash mismatch detected
+- [x] 4.2 Add `tests/Unit/Service/RuleActionDispatcherTest.php` — send-notification hits IManager, object-op hits ObjectService::saveObject with mapped fields, webhook POSTs the compiled target, unknown type surfaces an error
+- [x] 4.3 Extend `tests/Unit/Service/` coverage for `RuleEngineService` — wet run invokes the dispatcher, dry-run does not (REQ-AUTD-010 scenarios); existing tests stay green
+- [x] 4.4 Add `tests/Unit/Service/ApplicationVersionServiceAutomationCloneTest.php` — branch clones automations with new uuids + distinct `aut-` slugs; disabling the clone leaves the source version's artifacts unchanged (REQ-AUTD-009 scenario)
 
 ## 5. Frontend — Automations surface
 
