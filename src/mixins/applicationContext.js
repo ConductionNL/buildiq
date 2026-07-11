@@ -50,8 +50,17 @@ export default {
 		this.obLoadApp()
 	},
 	methods: {
-		async obLoadApp() {
-			if (this.object && (this.object.manifest !== undefined || this.object.slug !== undefined)) {
+		/**
+		 * Resolve the Application record. By default the full `object` prop (when
+		 * CnDetailPage passed one) is used as-is; pass `force` to always refetch
+		 * from OR — the prop is a render-time snapshot and goes stale after
+		 * server-side mutations like publish/unpublish.
+		 *
+		 * @param {boolean} force Skip the object-prop shortcut and refetch by uuid.
+		 * @return {Promise<void>}
+		 */
+		async obLoadApp(force = false) {
+			if (!force && this.object && (this.object.manifest !== undefined || this.object.slug !== undefined)) {
 				this.obApp = this.object
 				return
 			}
