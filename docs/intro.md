@@ -29,6 +29,9 @@ export it. No code, no second platform.
   reaches OpenBuild (see [GitHub store](./github-store.md)).
 - RBAC: administrators control who can build, and per-record access is
   enforced through OpenRegister.
+- **AI copilot**: describe the app you want in a sentence or two, review the
+  proposed schemas, pages, and widgets, and approve before anything is
+  created — see [AI Copilot](./ai-copilot.md).
 
 ## Getting started
 
