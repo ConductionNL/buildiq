@@ -63,6 +63,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Service;
 
+use DateTime;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
@@ -84,14 +85,14 @@ class RuleActionDispatcher
     /**
      * Constructor.
      *
-     * @param ObjectService        $objectService     OpenRegister object service (object-op).
+     * @param ObjectService        $objectService       OpenRegister object service (object-op).
      * @param IManager             $notificationManager NC notification manager (send-notification).
-     * @param IClientService       $httpClientService  NC HTTP client factory (webhook).
-     * @param IUserSession         $userSession        Current NC user session (notification actor + object-op attribution).
-     * @param JobOwnerImpersonator $ownerImpersonator  Impersonates an object's owner for owner-less write contexts.
-     * @param ContainerInterface   $container          PSR container — lazily resolves RuleEngineService for
-     *                                                 `call-rule-set` to avoid a constructor cycle.
-     * @param LoggerInterface      $logger             PSR logger.
+     * @param IClientService       $httpClientService   NC HTTP client factory (webhook).
+     * @param IUserSession         $userSession         Current NC user session (notification actor + object-op attribution).
+     * @param JobOwnerImpersonator $ownerImpersonator   Impersonates an object's owner for owner-less write contexts.
+     * @param ContainerInterface   $container           PSR container — lazily resolves RuleEngineService
+     *                                                  for `call-rule-set` to avoid a constructor cycle.
+     * @param LoggerInterface      $logger              PSR logger.
      *
      * @return void
      */
@@ -138,7 +139,7 @@ class RuleActionDispatcher
     }//end __invoke()
 
     /**
-     * send-notification — create an NC notification for the resolved recipient(s).
+     * Send-notification — create an NC notification for the resolved recipient(s).
      *
      * @param array<string,mixed> $params Action parameters.
      *
@@ -174,7 +175,7 @@ class RuleActionDispatcher
             $notification = $this->notificationManager->createNotification();
             $notification->setApp(self::NOTIFICATION_APP)
                 ->setUser($uid)
-                ->setDateTime(new \DateTime())
+                ->setDateTime(new DateTime())
                 ->setObject('automation', (string) ($params['objectId'] ?? 'n/a'))
                 ->setSubject('automation-action', ['subject' => $subject]);
 
@@ -187,7 +188,7 @@ class RuleActionDispatcher
     }//end dispatchNotification()
 
     /**
-     * object-op — create or update an object via OpenRegister's ObjectService.
+     * Object-op — create or update an object via OpenRegister's ObjectService.
      *
      * @param array<string,mixed> $params Action parameters.
      *
@@ -203,8 +204,12 @@ class RuleActionDispatcher
 
         $register  = (string) ($params['register'] ?? 'openbuild');
         $operation = (string) ($params['operation'] ?? 'create');
-        $object    = is_array($params['object'] ?? null) ? $params['object'] : [];
-        $id        = (string) ($params['id'] ?? '');
+        $object    = [];
+        if (is_array($params['object'] ?? null) === true) {
+            $object = $params['object'];
+        }
+
+        $id = (string) ($params['id'] ?? '');
 
         if ($operation === 'update' && $id === '') {
             $this->logger->warning('OpenBuild: object-op update action missing "id" — skipped.');
@@ -230,7 +235,7 @@ class RuleActionDispatcher
     }//end dispatchObjectOp()
 
     /**
-     * webhook — POST the compiled target via NC's HTTP client service.
+     * Webhook — POST the compiled target via NC's HTTP client service.
      *
      * @param array<string,mixed> $params Action parameters.
      *
@@ -244,7 +249,10 @@ class RuleActionDispatcher
             return null;
         }
 
-        $payload = is_array($params['payload'] ?? null) ? $params['payload'] : [];
+        $payload = [];
+        if (is_array($params['payload'] ?? null) === true) {
+            $payload = $params['payload'];
+        }
 
         $client   = $this->httpClientService->newClient();
         $response = $client->post($url, ['json' => $payload, 'timeout' => 10]);
@@ -254,7 +262,7 @@ class RuleActionDispatcher
     }//end dispatchWebhook()
 
     /**
-     * start-workflow — reserved: no workflow engine exists in openbuild
+     * Start-workflow — reserved: no workflow engine exists in openbuild
      * (design.md non-goal). Logged, never throws.
      *
      * @param array<string,mixed> $params Action parameters.
@@ -272,7 +280,7 @@ class RuleActionDispatcher
     }//end dispatchStartWorkflow()
 
     /**
-     * call-rule-set — recursively evaluate the referenced RuleSet.
+     * Call-rule-set — recursively evaluate the referenced RuleSet.
      *
      * Resolved lazily via the PSR container to avoid a constructor cycle
      * with RuleEngineService (mirrors JobOwnerImpersonator's pattern).
@@ -295,7 +303,9 @@ class RuleActionDispatcher
             return null;
         }
 
-        /** @var RuleEngineService $engine */
+        // phpcs:ignore -- inline @var hint for the container's untyped get().
+        /* @var RuleEngineService $engine */
+
         $engine = $this->container->get(RuleEngineService::class);
         return $engine->evaluate(ruleSetSlug: $ruleSetSlug, payload: $payload);
 

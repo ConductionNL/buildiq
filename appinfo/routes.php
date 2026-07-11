@@ -179,6 +179,19 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'rules#schema',   'url' => '/api/rules/{ruleSetSlug}/schema',   'verb' => 'GET',  'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#testAll',  'url' => '/api/rules/{ruleSetSlug}/test-all', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // Automation designer (spec automation-designer REQ-AUTD-005/006/007/008).
+        // Thin, value-adding routes only — CRUD on the `automation` object itself
+        // stays on OR REST per ADR-022; these five uuid-addressed routes are the
+        // security boundary (AutomationsController enforces RBAC via
+        // PermissionResolver before any compile side effect, no admin bypass).
+        // All POST except the read-only `status` GET; uuid requirement guards
+        // against a kebab-case slug accidentally matching another route.
+        ['name' => 'automations#compile',  'url' => '/api/automations/{uuid}/compile',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#enable',   'url' => '/api/automations/{uuid}/enable',   'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#disable',  'url' => '/api/automations/{uuid}/disable',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#dryRun',   'url' => '/api/automations/{uuid}/dry-run',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#status',   'url' => '/api/automations/{uuid}/status',   'verb' => 'GET',  'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+
         // App-override store-and-serve (openbuild-inline-edit-persistence,
         // spec app-override-persistence). Per-instance shared manifest delta for
         // an EXISTING fleet app, keyed by `appId`. GET returns the raw stored

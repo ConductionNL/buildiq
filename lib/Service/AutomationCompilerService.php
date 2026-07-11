@@ -138,6 +138,62 @@ class AutomationCompilerService
     }//end __construct()
 
     /**
+     * Return `$value` when it is an array, otherwise `$default`.
+     *
+     * PHPCS in this codebase disallows inline ternaries; this single helper
+     * replaces the repeated `is_array($x) === true ? $x : $default` idiom
+     * used throughout compile()/apply()/remove()/status().
+     *
+     * @param mixed        $value   The candidate value.
+     * @param array<mixed> $default The fallback when `$value` is not an array.
+     *
+     * @return array<mixed>
+     */
+    private function orArray(mixed $value, array $default=[]): array
+    {
+        if (is_array($value) === true) {
+            return $value;
+        }
+
+        return $default;
+
+    }//end orArray()
+
+    /**
+     * Return `$value` when it is a non-empty string, otherwise null.
+     *
+     * @param mixed $value The candidate value.
+     *
+     * @return string|null
+     */
+    private function orNullString(mixed $value): ?string
+    {
+        if (is_string($value) === true && $value !== '') {
+            return $value;
+        }
+
+        return null;
+
+    }//end orNullString()
+
+    /**
+     * Return `$value` when it is an array, otherwise null.
+     *
+     * @param mixed $value The candidate value.
+     *
+     * @return array<mixed>|null
+     */
+    private function orNullArray(mixed $value): ?array
+    {
+        if (is_array($value) === true) {
+            return $value;
+        }
+
+        return null;
+
+    }//end orNullArray()
+
+    /**
      * Compile an automation to its CompiledPlan (pure — no I/O).
      *
      * @param array<string,mixed> $automation The Automation object.
@@ -145,14 +201,17 @@ class AutomationCompilerService
      * @return array{notifications:array<int,array<string,mixed>>,lifecycleActions:array<int,array<string,mixed>>,schedules:array<int,array<string,mixed>>,ruleSet:?array<string,mixed>,conditionActionRule:?array<string,mixed>,hash:string}
      *
      * @throws UnsupportedAutomationCombinationException When the matrix (or condition placement) rejects the shape.
+     *
+     * @spec openspec/changes/automation-designer/tasks.md#2.1
+     * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-004
      */
     public function compile(array $automation): array
     {
         $slug        = (string) ($automation['slug'] ?? '');
-        $trigger     = is_array($automation['trigger'] ?? null) ? $automation['trigger'] : [];
+        $trigger     = $this->orArray(value: $automation['trigger'] ?? null);
         $triggerType = (string) ($trigger['type'] ?? '');
         $condition   = $automation['condition'] ?? null;
-        $actions     = is_array($automation['actions'] ?? null) ? array_values($automation['actions']) : [];
+        $actions     = array_values($this->orArray(value: $automation['actions'] ?? null));
         $enabled     = (bool) ($automation['enabled'] ?? true);
 
         $this->assertMatrix(triggerType: $triggerType, condition: $condition, actions: $actions);
@@ -165,13 +224,28 @@ class AutomationCompilerService
             'conditionActionRule' => null,
         ];
 
-        if (in_array($triggerType, ['object-created', 'object-updated', 'object-deleted', 'lifecycle-transition'], true) === true) {
-            $this->compileDialectBackend(slug: $slug, trigger: $trigger, triggerType: $triggerType, actions: $actions, enabled: $enabled, plan: $plan);
+        $dialectTriggers = ['object-created', 'object-updated', 'object-deleted', 'lifecycle-transition'];
+        if (in_array($triggerType, $dialectTriggers, true) === true) {
+            $this->compileDialectBackend(
+                slug: $slug,
+                trigger: $trigger,
+                triggerType: $triggerType,
+                actions: $actions,
+                enabled: $enabled,
+                plan: $plan
+            );
         } else if ($triggerType === 'schedule') {
             $this->compileSchedulesBackend(slug: $slug, trigger: $trigger, actions: $actions, enabled: $enabled, plan: $plan);
         } else if ($triggerType === 'manual') {
-            $this->compileRulesBackend(automation: $automation, slug: $slug, condition: $condition, actions: $actions, enabled: $enabled, plan: $plan);
-        }
+            $this->compileRulesBackend(
+                automation: $automation,
+                slug: $slug,
+                condition: $condition,
+                actions: $actions,
+                enabled: $enabled,
+                plan: $plan
+            );
+        }//end if
 
         $plan['hash'] = $this->hashPlan(plan: $plan);
         return $plan;
@@ -187,6 +261,8 @@ class AutomationCompilerService
      * @param array<string,mixed> $priorProvenance The automation's PREVIOUS `provenance` block (empty on first compile).
      *
      * @return array<string,mixed> The new `provenance` block.
+     *
+     * @spec openspec/changes/automation-designer/tasks.md#2.2
      */
     public function apply(array $automation, array $plan, array $priorProvenance=[]): array
     {
@@ -195,25 +271,25 @@ class AutomationCompilerService
 
         $notificationKeys = $this->applyNotifications(
             planned: $plan['notifications'],
-            priorKeys: (is_array($priorProvenance['notificationKeys'] ?? null) ? $priorProvenance['notificationKeys'] : [])
+            priorKeys: $this->orArray(value: $priorProvenance['notificationKeys'] ?? null)
         );
 
         $lifecycleActions = $this->applyLifecycleActions(
             slug: $slug,
             planned: $plan['lifecycleActions'],
-            priorActions: (is_array($priorProvenance['lifecycleActions'] ?? null) ? $priorProvenance['lifecycleActions'] : [])
+            priorActions: $this->orArray(value: $priorProvenance['lifecycleActions'] ?? null)
         );
 
         $scheduleIds = $this->applySchedules(
             versionUuid: $versionUuid,
             plannedEntries: $plan['schedules'],
-            priorScheduleIds: (is_array($priorProvenance['scheduleIds'] ?? null) ? $priorProvenance['scheduleIds'] : [])
+            priorScheduleIds: $this->orArray(value: $priorProvenance['scheduleIds'] ?? null)
         );
 
         $ruleSetSlug = $this->applyRuleSet(
             ruleSet: $plan['ruleSet'],
             conditionActionRule: $plan['conditionActionRule'],
-            priorRuleSetSlug: (is_string($priorProvenance['ruleSetSlug'] ?? null) ? $priorProvenance['ruleSetSlug'] : null)
+            priorRuleSetSlug: $this->orNullString(value: $priorProvenance['ruleSetSlug'] ?? null)
         );
 
         return [
@@ -231,23 +307,26 @@ class AutomationCompilerService
      * Remove exactly the provenance-listed artifacts (design.md Decision 4 —
      * hand-authored non-`aut-` entries are never touched).
      *
-     * @param array<string,mixed> $automation  The Automation object.
-     * @param array<string,mixed> $provenance  The automation's `provenance` block.
+     * @param array<string,mixed> $automation The Automation object.
+     * @param array<string,mixed> $provenance The automation's `provenance` block.
      *
      * @return void
+     *
+     * @spec openspec/changes/automation-designer/tasks.md#2.2
+     * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-005
      */
     public function remove(array $automation, array $provenance): void
     {
-        $this->applyNotifications(planned: [], priorKeys: (is_array($provenance['notificationKeys'] ?? null) ? $provenance['notificationKeys'] : []));
+        $this->applyNotifications(planned: [], priorKeys: $this->orArray(value: $provenance['notificationKeys'] ?? null));
         $this->applyLifecycleActions(
             slug: (string) ($automation['slug'] ?? ''),
             planned: [],
-            priorActions: (is_array($provenance['lifecycleActions'] ?? null) ? $provenance['lifecycleActions'] : [])
+            priorActions: $this->orArray(value: $provenance['lifecycleActions'] ?? null)
         );
         $this->applySchedules(
             versionUuid: (string) ($automation['versionUuid'] ?? ''),
             plannedEntries: [],
-            priorScheduleIds: (is_array($provenance['scheduleIds'] ?? null) ? $provenance['scheduleIds'] : [])
+            priorScheduleIds: $this->orArray(value: $provenance['scheduleIds'] ?? null)
         );
 
         $ruleSetSlug = ($provenance['ruleSetSlug'] ?? null);
@@ -265,6 +344,9 @@ class AutomationCompilerService
      * @param array<string,mixed> $provenance The automation's `provenance` block.
      *
      * @return array{drift:bool,compiledHash:?string,liveHash:?string}
+     *
+     * @spec openspec/changes/automation-designer/tasks.md#2.2
+     * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-005
      */
     public function status(array $automation, array $provenance): array
     {
@@ -276,15 +358,15 @@ class AutomationCompilerService
         try {
             $live = [
                 'notifications'       => $this->fetchLiveNotifications(
-                    keys: (is_array($provenance['notificationKeys'] ?? null) ? $provenance['notificationKeys'] : [])
+                    keys: $this->orArray(value: $provenance['notificationKeys'] ?? null)
                 ),
                 'lifecycleActions'    => $this->fetchLiveLifecycleActions(
                     slug: (string) ($automation['slug'] ?? ''),
-                    marked: (is_array($provenance['lifecycleActions'] ?? null) ? $provenance['lifecycleActions'] : [])
+                    marked: $this->orArray(value: $provenance['lifecycleActions'] ?? null)
                 ),
                 'schedules'           => $this->fetchLiveSchedules(
                     versionUuid: (string) ($automation['versionUuid'] ?? ''),
-                    ids: (is_array($provenance['scheduleIds'] ?? null) ? $provenance['scheduleIds'] : [])
+                    ids: $this->orArray(value: $provenance['scheduleIds'] ?? null)
                 ),
                 'ruleSet'             => $this->fetchLiveRuleSet(ruleSetSlug: ($provenance['ruleSetSlug'] ?? null)),
                 'conditionActionRule' => $this->fetchLiveConditionActionRule(ruleSetSlug: ($provenance['ruleSetSlug'] ?? null)),
@@ -295,7 +377,7 @@ class AutomationCompilerService
             // recompile rather than trusting a possibly-stale badge.
             $this->logger->warning('OpenBuild: AutomationCompilerService::status() live fetch failed: '.$e->getMessage());
             return ['drift' => true, 'compiledHash' => $expectedHash, 'liveHash' => null];
-        }
+        }//end try
 
         $liveHash = $this->hashPlan(plan: $live);
 
@@ -310,9 +392,9 @@ class AutomationCompilerService
     /**
      * Enforce the v1 matrix fail-closed.
      *
-     * @param string               $triggerType The trigger type.
-     * @param mixed                $condition   The condition block (or null).
-     * @param array<int,mixed>     $actions     The action records.
+     * @param string           $triggerType The trigger type.
+     * @param mixed            $condition   The condition block (or null).
+     * @param array<int,mixed> $actions     The action records.
      *
      * @return void
      *
@@ -322,27 +404,31 @@ class AutomationCompilerService
     {
         $allowedActions = (self::MATRIX[$triggerType] ?? null);
         if ($allowedActions === null) {
-            throw new UnsupportedAutomationCombinationException('Unknown or unsupported trigger type "'.$triggerType.'".');
+            throw new UnsupportedAutomationCombinationException(message: 'Unknown or unsupported trigger type "'.$triggerType.'".');
         }
 
         foreach ($actions as $action) {
-            $type = (string) ((is_array($action) ? $action['type'] : null) ?? '');
+            $type = '';
+            if (is_array($action) === true) {
+                $type = (string) ($action['type'] ?? '');
+            }
+
             if ($type === 'approval') {
                 throw new UnsupportedAutomationCombinationException(
-                    'The "approval" action is reserved for a future human-task primitive and is not yet expressible declaratively.'
+                    message: 'The "approval" action is reserved for a future human-task primitive and is not yet expressible declaratively.'
                 );
             }
 
             if (in_array($type, $allowedActions, true) === false) {
                 throw new UnsupportedAutomationCombinationException(
-                    'Trigger "'.$triggerType.'" + action "'.$type.'" is not yet expressible declaratively.'
+                    message: 'Trigger "'.$triggerType.'" + action "'.$type.'" is not yet expressible declaratively.'
                 );
             }
         }
 
         if (is_array($condition) === true && in_array($triggerType, self::CONDITION_ALLOWED_TRIGGERS, true) === false) {
             throw new UnsupportedAutomationCombinationException(
-                'A condition is only supported on the "manual" trigger in v1 (trigger "'.$triggerType.'" given).'
+                message: 'A condition is only supported on the "manual" trigger in v1 (trigger "'.$triggerType.'" given).'
             );
         }
 
@@ -351,30 +437,31 @@ class AutomationCompilerService
     /**
      * Dialect backend: event/lifecycle-transition triggers.
      *
-     * @param string               $slug        Automation slug.
-     * @param array<string,mixed>  $trigger     Trigger block.
-     * @param string               $triggerType Trigger type.
-     * @param array<int,mixed>     $actions     Action records.
-     * @param bool                 $enabled     Automation enabled flag.
-     * @param array<string,mixed>  $plan        The plan being built (by reference).
+     * @param string              $slug        Automation slug.
+     * @param array<string,mixed> $trigger     Trigger block.
+     * @param string              $triggerType Trigger type.
+     * @param array<int,mixed>    $actions     Action records.
+     * @param bool                $enabled     Automation enabled flag.
+     * @param array<string,mixed> $plan        The plan being built (by reference).
      *
      * @return void
      */
     private function compileDialectBackend(string $slug, array $trigger, string $triggerType, array $actions, bool $enabled, array &$plan): void
     {
-        $schema      = (string) ($trigger['schema'] ?? '');
-        $transition  = (string) ($trigger['transition'] ?? '');
-        $marker      = 'aut-'.$slug;
-        $notifIndex  = 0;
+        $schema     = (string) ($trigger['schema'] ?? '');
+        $transition = (string) ($trigger['transition'] ?? '');
+        $marker     = 'aut-'.$slug;
+        $notifIndex = 0;
 
         foreach ($actions as $action) {
             $type = (string) ($action['type'] ?? '');
 
             if ($type === 'send-notification') {
                 $notifIndex++;
-                $dialectTrigger = ($triggerType === 'lifecycle-transition')
-                    ? ['type' => 'transition', 'action' => $transition]
-                    : ['type' => $this->dialectEventType(triggerType: $triggerType)];
+                $dialectTrigger = ['type' => $this->dialectEventType(triggerType: $triggerType)];
+                if ($triggerType === 'lifecycle-transition') {
+                    $dialectTrigger = ['type' => 'transition', 'action' => $transition];
+                }
 
                 $plan['notifications'][] = [
                     'schema' => $schema,
@@ -421,7 +508,7 @@ class AutomationCompilerService
                         'marker'          => $marker,
                     ],
                 ];
-            }
+            }//end if
         }//end foreach
 
     }//end compileDialectBackend()
@@ -481,7 +568,7 @@ class AutomationCompilerService
             }
 
             $plan['schedules'][] = $entry;
-        }
+        }//end foreach
 
     }//end compileSchedulesBackend()
 
@@ -499,30 +586,8 @@ class AutomationCompilerService
      */
     private function compileRulesBackend(array $automation, string $slug, mixed $condition, array $actions, bool $enabled, array &$plan): void
     {
-        $ruleSetSlug   = 'aut-'.$this->shortUuid(automation: $automation);
-        $conditie      = '';
-        $mappedActions = [];
-
-        if (is_array($condition) === true) {
-            $conditionType = (string) ($condition['type'] ?? '');
-            if ($conditionType === 'feel') {
-                $conditie = (string) ($condition['expression'] ?? '');
-            } else if ($conditionType === 'rule-set') {
-                $refSlug = (string) ($condition['ruleSetSlug'] ?? '');
-                if ($refSlug !== '') {
-                    // No existing primitive gates our own actions on a
-                    // referenced RuleSet's boolean result (documented v1
-                    // simplification) — the reference is dispatched
-                    // fire-and-forget ahead of the mapped actions, which
-                    // always run unconditionally in this shape.
-                    $mappedActions[] = ['type' => 'call-rule-set', 'parameters' => ['ruleSetSlug' => $refSlug]];
-                }
-            }
-        }
-
-        foreach ($actions as $action) {
-            $mappedActions[] = $this->mapActionToRuleAction(action: $action);
-        }
+        $ruleSetSlug = 'aut-'.$this->shortUuid(automation: $automation);
+        ['conditie' => $conditie, 'acties' => $mappedActions] = $this->buildConditionAndActions(condition: $condition, actions: $actions);
 
         $plan['ruleSet'] = [
             'slug'        => $ruleSetSlug,
@@ -544,6 +609,79 @@ class AutomationCompilerService
     }//end compileRulesBackend()
 
     /**
+     * Compile an automation IN-MEMORY to a rules-backend-shaped
+     * ConditionActionRule for the dry-run test panel (design.md Decision 9) —
+     * unlike {@see compile()}, this does NOT enforce the matrix by trigger
+     * type and never mints/persists a RuleSet: every matrix cell's actions
+     * map 1:1 onto the executor's typed action records so the SAME dry-run
+     * panel works for every trigger, without requiring a persisted RuleSet
+     * (event/schedule automations never have one).
+     *
+     * @param array<string,mixed> $automation The Automation object.
+     *
+     * @return array<string,mixed> A synthetic ConditionActionRule-shaped record.
+     *
+     * @spec openspec/changes/automation-designer/tasks.md#3.1
+     * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-007
+     */
+    public function compileDryRunRule(array $automation): array
+    {
+        $condition = ($automation['condition'] ?? null);
+        $actions   = array_values($this->orArray(value: $automation['actions'] ?? null));
+
+        ['conditie' => $conditie, 'acties' => $mappedActions] = $this->buildConditionAndActions(condition: $condition, actions: $actions);
+
+        return [
+            'naam'       => (string) ($automation['name'] ?? ($automation['slug'] ?? '')),
+            'conditie'   => $conditie,
+            'acties'     => $mappedActions,
+            'actief'     => true,
+            'prioriteit' => 0,
+            'salience'   => 0,
+        ];
+
+    }//end compileDryRunRule()
+
+    /**
+     * Shared condition→`conditie` + actions→`acties` mapping used by both the
+     * rules backend and the dry-run panel.
+     *
+     * @param mixed            $condition Condition block (or null).
+     * @param array<int,mixed> $actions   Automation action records.
+     *
+     * @return array{conditie:string,acties:array<int,array<string,mixed>>}
+     */
+    private function buildConditionAndActions(mixed $condition, array $actions): array
+    {
+        $conditie      = '';
+        $mappedActions = [];
+
+        if (is_array($condition) === true) {
+            $conditionType = (string) ($condition['type'] ?? '');
+            if ($conditionType === 'feel') {
+                $conditie = (string) ($condition['expression'] ?? '');
+            } else if ($conditionType === 'rule-set') {
+                $refSlug = (string) ($condition['ruleSetSlug'] ?? '');
+                if ($refSlug !== '') {
+                    // No existing primitive gates our own actions on a
+                    // referenced RuleSet's boolean result (documented v1
+                    // simplification) — the reference is dispatched
+                    // fire-and-forget ahead of the mapped actions, which
+                    // always run unconditionally in this shape.
+                    $mappedActions[] = ['type' => 'call-rule-set', 'parameters' => ['ruleSetSlug' => $refSlug]];
+                }
+            }
+        }
+
+        foreach ($actions as $action) {
+            $mappedActions[] = $this->mapActionToRuleAction(action: $this->orArray(value: $action));
+        }
+
+        return ['conditie' => $conditie, 'acties' => $mappedActions];
+
+    }//end buildConditionAndActions()
+
+    /**
      * Map one Automation action record to a ConditionActionRule typed action.
      *
      * @param array<string,mixed> $action The Automation action record.
@@ -558,17 +696,17 @@ class AutomationCompilerService
             'send-notification' => [
                 'type'       => 'send-notification',
                 'parameters' => [
-                    'subject'      => (string) ((is_array($action['subject'] ?? null) ? ($action['subject']['en'] ?? '') : ($action['subject'] ?? ''))),
+                    'subject'      => $this->subjectText(action: $action),
                     'recipientUid' => (string) ($action['recipientUid'] ?? ''),
                 ],
             ],
             'object-op' => [
                 'type'       => 'object-op',
                 'parameters' => [
-                    'schema'       => (string) ($action['schema'] ?? ''),
-                    'operation'    => (string) ($action['operation'] ?? 'create'),
-                    'object'       => (array) ($action['fieldMapping'] ?? []),
-                    'register'     => self::REGISTER_SLUG,
+                    'schema'    => (string) ($action['schema'] ?? ''),
+                    'operation' => (string) ($action['operation'] ?? 'create'),
+                    'object'    => (array) ($action['fieldMapping'] ?? []),
+                    'register'  => self::REGISTER_SLUG,
                 ],
             ],
             'webhook' => [
@@ -579,9 +717,29 @@ class AutomationCompilerService
                 ],
             ],
             default => ['type' => $type, 'parameters' => []],
-        };
+        };//end match
 
     }//end mapActionToRuleAction()
+
+    /**
+     * Resolve a send-notification action's subject text: the English
+     * localized subject when `subject` is a `{nl,en}` map, or the raw value
+     * when it is a plain string.
+     *
+     * @param array<string,mixed> $action The Automation action record.
+     *
+     * @return string
+     */
+    private function subjectText(array $action): string
+    {
+        $subject = ($action['subject'] ?? '');
+        if (is_array($subject) === true) {
+            return (string) ($subject['en'] ?? '');
+        }
+
+        return (string) $subject;
+
+    }//end subjectText()
 
     /**
      * Derive the first 8 hex characters of the automation's own uuid
@@ -682,13 +840,13 @@ class AutomationCompilerService
     private function applyNotifications(array $planned, array $priorKeys): array
     {
         $bySchema = [];
-        foreach ($planned as $p) {
-            $bySchema[(string) $p['schema']][] = $p;
+        foreach ($planned as $entry) {
+            $bySchema[(string) $entry['schema']][] = $entry;
         }
 
         $priorBySchema = [];
-        foreach ($priorKeys as $p) {
-            $priorBySchema[(string) ($p['schema'] ?? '')][] = (string) ($p['key'] ?? '');
+        foreach ($priorKeys as $entry) {
+            $priorBySchema[(string) ($entry['schema'] ?? '')][] = (string) ($entry['key'] ?? '');
         }
 
         $result  = [];
@@ -705,18 +863,18 @@ class AutomationCompilerService
             }
 
             $config = ($schema->getConfiguration() ?? []);
-            $map    = (is_array($config['x-openregister-notifications'] ?? null) ? $config['x-openregister-notifications'] : []);
+            $map    = $this->orArray(value: $config['x-openregister-notifications'] ?? null);
 
-            $keepKeys = array_map(static fn (array $p): string => (string) $p['key'], ($bySchema[$schemaSlug] ?? []));
+            $keepKeys = array_map(static fn (array $entry): string => (string) $entry['key'], ($bySchema[$schemaSlug] ?? []));
             foreach (($priorBySchema[$schemaSlug] ?? []) as $oldKey) {
                 if (in_array($oldKey, $keepKeys, true) === false) {
                     unset($map[$oldKey]);
                 }
             }
 
-            foreach (($bySchema[$schemaSlug] ?? []) as $p) {
-                $map[$p['key']] = $p['entry'];
-                $result[]       = ['schema' => $schemaSlug, 'key' => $p['key']];
+            foreach (($bySchema[$schemaSlug] ?? []) as $entry) {
+                $map[$entry['key']] = $entry['entry'];
+                $result[]           = ['schema' => $schemaSlug, 'key' => $entry['key']];
             }
 
             $config['x-openregister-notifications'] = $map;
@@ -733,9 +891,9 @@ class AutomationCompilerService
      * stripping every marker-tagged action first (handles a transition change
      * between compiles) then re-adding the planned ones.
      *
-     * @param string                          $slug         Automation slug (derives the `aut-<slug>` marker).
-     * @param array<int,array<string,mixed>>  $planned      Planned `{schema,transition,marker,action}` records.
-     * @param array<int,array<string,mixed>>  $priorActions Prior-provenance `{schema,transition,marker}` records.
+     * @param string                         $slug         Automation slug (derives the `aut-<slug>` marker).
+     * @param array<int,array<string,mixed>> $planned      Planned `{schema,transition,marker,action}` records.
+     * @param array<int,array<string,mixed>> $priorActions Prior-provenance `{schema,transition,marker}` records.
      *
      * @return array<int,array<string,mixed>> The new provenance `lifecycleActions` list.
      */
@@ -744,14 +902,14 @@ class AutomationCompilerService
         $marker = 'aut-'.$slug;
 
         $plannedBySchema = [];
-        foreach ($planned as $p) {
-            $plannedBySchema[(string) $p['schema']][] = $p;
+        foreach ($planned as $entry) {
+            $plannedBySchema[(string) $entry['schema']][] = $entry;
         }
 
         $schemas = array_unique(
             array_merge(
                 array_keys($plannedBySchema),
-                array_map(static fn (array $p): string => (string) ($p['schema'] ?? ''), $priorActions)
+                array_map(static fn (array $entry): string => (string) ($entry['schema'] ?? ''), $priorActions)
             )
         );
 
@@ -767,15 +925,15 @@ class AutomationCompilerService
             }
 
             $config    = ($schema->getConfiguration() ?? []);
-            $lifecycle = (is_array($config['x-openregister-lifecycle'] ?? null) ? $config['x-openregister-lifecycle'] : null);
+            $lifecycle = $this->orNullArray(value: $config['x-openregister-lifecycle'] ?? null);
             if ($lifecycle === null) {
                 continue;
             }
 
-            $transitions = (is_array($lifecycle['transitions'] ?? null) ? $lifecycle['transitions'] : []);
+            $transitions = $this->orArray(value: $lifecycle['transitions'] ?? null);
 
             foreach ($transitions as $tName => $t) {
-                $actions = (is_array($t['actions'] ?? null) ? $t['actions'] : []);
+                $actions = $this->orArray(value: $t['actions'] ?? null);
                 $transitions[$tName]['actions'] = array_values(
                     array_filter(
                         $actions,
@@ -784,20 +942,20 @@ class AutomationCompilerService
                 );
             }
 
-            foreach (($plannedBySchema[$schemaSlug] ?? []) as $p) {
-                $tName = (string) $p['transition'];
+            foreach (($plannedBySchema[$schemaSlug] ?? []) as $entry) {
+                $tName = (string) $entry['transition'];
                 if (isset($transitions[$tName]) === false) {
                     continue;
                 }
 
-                $actions   = (is_array($transitions[$tName]['actions'] ?? null) ? $transitions[$tName]['actions'] : []);
-                $actions[] = $p['action'];
+                $actions   = $this->orArray(value: $transitions[$tName]['actions'] ?? null);
+                $actions[] = $entry['action'];
                 $transitions[$tName]['actions'] = $actions;
                 $result[] = ['schema' => $schemaSlug, 'transition' => $tName, 'marker' => $marker];
             }
 
-            $lifecycle['transitions']                = $transitions;
-            $config['x-openregister-lifecycle']       = $lifecycle;
+            $lifecycle['transitions']           = $transitions;
+            $config['x-openregister-lifecycle'] = $lifecycle;
             $schema->setConfiguration($config);
             $this->schemaMapper->update($schema);
         }//end foreach
@@ -810,9 +968,9 @@ class AutomationCompilerService
      * Upsert planned schedules entries into the target ApplicationVersion's
      * manifest, removing any prior-provenance id no longer planned.
      *
-     * @param string                          $versionUuid      Target ApplicationVersion uuid.
-     * @param array<int,array<string,mixed>>  $plannedEntries   Planned schedules entries.
-     * @param array<int,string>               $priorScheduleIds Prior-provenance schedule ids.
+     * @param string                         $versionUuid      Target ApplicationVersion uuid.
+     * @param array<int,array<string,mixed>> $plannedEntries   Planned schedules entries.
+     * @param array<int,string>              $priorScheduleIds Prior-provenance schedule ids.
      *
      * @return array<int,string> The new provenance `scheduleIds` list.
      */
@@ -828,16 +986,20 @@ class AutomationCompilerService
             return [];
         }
 
-        $manifest  = (is_array($version['manifest'] ?? null) ? $version['manifest'] : []);
-        $schedules = (is_array($manifest['schedules'] ?? null) ? $manifest['schedules'] : []);
+        $manifest  = $this->orArray(value: $version['manifest'] ?? null);
+        $schedules = $this->orArray(value: $manifest['schedules'] ?? null);
 
         $plannedIds = array_map(static fn (array $e): string => (string) $e['id'], $plannedEntries);
 
         $schedules = array_values(
             array_filter(
                 $schedules,
-                static function ($s) use ($priorScheduleIds, $plannedIds): bool {
-                    $id = (string) ((is_array($s) ? $s['id'] : null) ?? '');
+                static function ($scheduleRow) use ($priorScheduleIds, $plannedIds): bool {
+                    $id = '';
+                    if (is_array($scheduleRow) === true) {
+                        $id = (string) ($scheduleRow['id'] ?? '');
+                    }
+
                     return in_array($id, $priorScheduleIds, true) === false || in_array($id, $plannedIds, true) === true;
                 }
             )
@@ -845,8 +1007,13 @@ class AutomationCompilerService
 
         foreach ($plannedEntries as $entry) {
             $idx = null;
-            foreach ($schedules as $i => $s) {
-                if ((is_array($s) ? ($s['id'] ?? null) : null) === $entry['id']) {
+            foreach ($schedules as $i => $scheduleRow) {
+                $rowId = null;
+                if (is_array($scheduleRow) === true) {
+                    $rowId = ($scheduleRow['id'] ?? null);
+                }
+
+                if ($rowId === $entry['id']) {
                     $idx = $i;
                     break;
                 }
@@ -870,7 +1037,9 @@ class AutomationCompilerService
         try {
             $this->objectService->saveObject(object: $version, register: self::REGISTER_SLUG, schema: 'applicationVersion', uuid: $versionUuid);
         } catch (Throwable $e) {
-            $this->logger->error('OpenBuild: AutomationCompilerService failed to save schedules onto ApplicationVersion "'.$versionUuid.'": '.$e->getMessage());
+            $this->logger->error(
+                'OpenBuild: AutomationCompilerService failed to save schedules onto ApplicationVersion "'.$versionUuid.'": '.$e->getMessage()
+            );
         }
 
         return $plannedIds;
@@ -884,7 +1053,7 @@ class AutomationCompilerService
      *
      * @param array<string,mixed>|null $ruleSet             Planned RuleSet fields, or null.
      * @param array<string,mixed>|null $conditionActionRule Planned ConditionActionRule fields, or null.
-     * @param string|null               $priorRuleSetSlug    Prior-provenance RuleSet slug, if any.
+     * @param string|null              $priorRuleSetSlug    Prior-provenance RuleSet slug, if any.
      *
      * @return string|null The applied RuleSet slug, or null.
      */
@@ -902,7 +1071,12 @@ class AutomationCompilerService
         try {
             if ($existingRuleSet !== null) {
                 $id = (string) ($existingRuleSet['id'] ?? $existingRuleSet['uuid'] ?? '');
-                $this->objectService->saveObject(object: $ruleSet, register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA, uuid: $id);
+                $this->objectService->saveObject(
+                    object: $ruleSet,
+                    register: self::REGISTER_SLUG,
+                    schema: RuleEngineService::RULE_SET_SCHEMA,
+                    uuid: $id
+                );
             } else {
                 $this->objectService->saveObject(object: $ruleSet, register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA);
             }
@@ -914,13 +1088,24 @@ class AutomationCompilerService
         try {
             if ($existingRule !== null) {
                 $id = (string) ($existingRule['id'] ?? $existingRule['uuid'] ?? '');
-                $this->objectService->saveObject(object: $conditionActionRule, register: self::REGISTER_SLUG, schema: RuleEngineService::CONDITION_RULE_SCHEMA, uuid: $id);
+                $this->objectService->saveObject(
+                    object: $conditionActionRule,
+                    register: self::REGISTER_SLUG,
+                    schema: RuleEngineService::CONDITION_RULE_SCHEMA,
+                    uuid: $id
+                );
             } else {
-                $this->objectService->saveObject(object: $conditionActionRule, register: self::REGISTER_SLUG, schema: RuleEngineService::CONDITION_RULE_SCHEMA);
+                $this->objectService->saveObject(
+                    object: $conditionActionRule,
+                    register: self::REGISTER_SLUG,
+                    schema: RuleEngineService::CONDITION_RULE_SCHEMA
+                );
             }
         } catch (Throwable $e) {
-            $this->logger->error('OpenBuild: AutomationCompilerService failed to save ConditionActionRule for "'.$ruleSet['slug'].'": '.$e->getMessage());
-        }
+            $this->logger->error(
+                'OpenBuild: AutomationCompilerService failed to save ConditionActionRule for "'.$ruleSet['slug'].'": '.$e->getMessage()
+            );
+        }//end try
 
         return (string) $ruleSet['slug'];
 
@@ -994,7 +1179,7 @@ class AutomationCompilerService
             }
 
             $config = ($schema->getConfiguration() ?? []);
-            $map    = (is_array($config['x-openregister-notifications'] ?? null) ? $config['x-openregister-notifications'] : []);
+            $map    = $this->orArray(value: $config['x-openregister-notifications'] ?? null);
 
             $result[] = ['schema' => $schemaSlug, 'key' => $key, 'entry' => ($map[$key] ?? null)];
         }
@@ -1006,8 +1191,8 @@ class AutomationCompilerService
     /**
      * Fetch the live marker-tagged lifecycle actions.
      *
-     * @param string                          $slug   Automation slug.
-     * @param array<int,array<string,mixed>>  $marked `{schema,transition}` records.
+     * @param string                         $slug   Automation slug.
+     * @param array<int,array<string,mixed>> $marked `{schema,transition}` records.
      *
      * @return array<int,array<string,mixed>>
      */
@@ -1028,16 +1213,16 @@ class AutomationCompilerService
             }
 
             $config      = ($schema->getConfiguration() ?? []);
-            $lifecycle   = (is_array($config['x-openregister-lifecycle'] ?? null) ? $config['x-openregister-lifecycle'] : []);
-            $transitions = (is_array($lifecycle['transitions'] ?? null) ? $lifecycle['transitions'] : []);
-            $actions     = (is_array($transitions[$tName]['actions'] ?? null) ? $transitions[$tName]['actions'] : []);
+            $lifecycle   = $this->orArray(value: $config['x-openregister-lifecycle'] ?? null);
+            $transitions = $this->orArray(value: $lifecycle['transitions'] ?? null);
+            $actions     = $this->orArray(value: $transitions[$tName]['actions'] ?? null);
 
             foreach ($actions as $a) {
                 if (is_array($a) === true && ($a['marker'] ?? null) === $marker) {
                     $result[] = ['schema' => $schemaSlug, 'transition' => $tName, 'marker' => $marker, 'action' => $a];
                 }
             }
-        }
+        }//end foreach
 
         return $result;
 
@@ -1046,8 +1231,8 @@ class AutomationCompilerService
     /**
      * Fetch the live schedules entries for a set of provenance ids.
      *
-     * @param string             $versionUuid Target ApplicationVersion uuid.
-     * @param array<int,string>  $ids         Provenance schedule ids.
+     * @param string            $versionUuid Target ApplicationVersion uuid.
+     * @param array<int,string> $ids         Provenance schedule ids.
      *
      * @return array<int,array<string,mixed>>
      */
@@ -1062,12 +1247,16 @@ class AutomationCompilerService
             return [];
         }
 
-        $manifest  = (is_array($version['manifest'] ?? null) ? $version['manifest'] : []);
-        $schedules = (is_array($manifest['schedules'] ?? null) ? $manifest['schedules'] : []);
+        $manifest  = $this->orArray(value: $version['manifest'] ?? null);
+        $schedules = $this->orArray(value: $manifest['schedules'] ?? null);
 
         $result = [];
         foreach ($schedules as $s) {
-            $id = (is_array($s) ? ($s['id'] ?? null) : null);
+            $id = null;
+            if (is_array($s) === true) {
+                $id = ($s['id'] ?? null);
+            }
+
             if (is_string($id) === true && in_array($id, $ids, true) === true) {
                 $result[] = $s;
             }
