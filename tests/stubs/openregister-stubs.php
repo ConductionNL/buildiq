@@ -229,6 +229,17 @@ namespace OCA\OpenRegister\Db {
             protected ?string $version = null;
 
             /**
+             * Stub configuration column — holds `x-openregister-*` extension
+             * annotations (e.g. `x-openregister-notifications`,
+             * `x-openregister-lifecycle`) exactly like the real OR Schema
+             * entity (automation-designer AutomationCompilerService reads
+             * and rewrites this map in place).
+             *
+             * @var array<string, mixed>|null
+             */
+            protected ?array $configuration = null;
+
+            /**
              * Return the entity id.
              *
              * @return int
@@ -237,6 +248,35 @@ namespace OCA\OpenRegister\Db {
             {
                 return (int) ($this->id ?? 0);
             }//end getId()
+
+            /**
+             * Return the schema's `configuration` map (mirrors the real OR
+             * Schema::getConfiguration()).
+             *
+             * @return array<string, mixed>|null
+             */
+            public function getConfiguration(): ?array
+            {
+                return $this->configuration;
+            }//end getConfiguration()
+
+            /**
+             * Set the schema's `configuration` map (mirrors the real OR
+             * Schema::setConfiguration() — no validation in the stub).
+             *
+             * @param array<string, mixed>|string|null $configuration Configuration payload.
+             *
+             * @return void
+             */
+            public function setConfiguration($configuration): void
+            {
+                if (is_string($configuration) === true) {
+                    $decoded = json_decode($configuration, true);
+                    $configuration = (json_last_error() === JSON_ERROR_NONE) ? $decoded : null;
+                }
+
+                $this->configuration = is_array($configuration) ? $configuration : null;
+            }//end setConfiguration()
 
             /**
              * Return the schema slug.
@@ -399,6 +439,21 @@ namespace OCA\OpenRegister\Db {
             {
                 return new Schema();
             }//end delete()
+
+            /**
+             * Update a schema entity (mirrors the real SchemaMapper::update
+             * signature — used by AutomationCompilerService to rewrite a
+             * schema's `configuration['x-openregister-notifications'/
+             * 'x-openregister-lifecycle']` in place).
+             *
+             * @param \OCP\AppFramework\Db\Entity $entity The schema entity.
+             *
+             * @return \OCP\AppFramework\Db\Entity
+             */
+            public function update(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
+            {
+                return $entity;
+            }//end update()
         }//end class
     }//end if
 
@@ -542,7 +597,7 @@ namespace OCA\OpenRegister\Service {
             /**
              * @return array<string, mixed>
              */
-            public function lockObject(string $identifier, ?string $process=null, ?int $duration=null): array
+            public function lockObject(string $identifier, ?string $process=null, ?int $duration=null, bool $advisory=false): array
             {
                 return [];
             }//end lockObject()
@@ -944,6 +999,28 @@ namespace OCA\OpenRegister\Event {
             {
                 return $this->errors;
             }//end getErrors()
+        }//end class
+    }//end if
+
+    if (class_exists(ObjectDeletedEvent::class, autoload: false) === false) {
+        /**
+         * Stub ObjectDeletedEvent — post-delete notification (non-cancellable,
+         * mirrors the real OR class: `__construct(ObjectEntity $object)`, only
+         * `getObject()`). Used by AutomationCleanupListener (automation-designer
+         * REQ-AUTD-005) to remove compiled artifacts after the OR object itself
+         * has already been deleted.
+         */
+        class ObjectDeletedEvent extends \OCP\EventDispatcher\Event
+        {
+            public function __construct(private readonly \OCA\OpenRegister\Db\ObjectEntity $object)
+            {
+                parent::__construct();
+            }//end __construct()
+
+            public function getObject(): \OCA\OpenRegister\Db\ObjectEntity
+            {
+                return $this->object;
+            }//end getObject()
         }//end class
     }//end if
 

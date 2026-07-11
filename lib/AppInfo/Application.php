@@ -29,6 +29,7 @@ use OCA\OpenBuild\Controller\DashboardController;
 use OCA\OpenBuild\Controller\PreferencesController;
 use OCA\OpenBuild\Controller\SettingsController;
 use OCA\OpenBuild\Lifecycle\ApplicationVersionOwnerGuard;
+use OCA\OpenBuild\Listener\AutomationCleanupListener;
 use OCA\OpenBuild\Listener\HybridMetadataLockListener;
 use OCA\OpenBuild\Listener\ProductionVersionGuardListener;
 use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
@@ -40,6 +41,7 @@ use OCA\OpenBuild\Service\SettingsService;
 use OCA\OpenBuild\Settings\AdminSettings;
 use OCA\OpenRegister\AppHost\Bootstrap;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
+use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
@@ -302,6 +304,17 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(
             event: ObjectUpdatingEvent::class,
             listener: HybridMetadataLockListener::class
+        );
+
+        // Automation-designer artifact cleanup (spec REQ-AUTD-005). Automation
+        // CRUD (including delete) stays on OR REST per ADR-022 — no delete
+        // route on AutomationsController — so removing exactly the
+        // provenance-listed compiled artifacts on delete is realized here as
+        // the imperative companion to that declarative delete (ADR-031
+        // §Exceptions(1)), mirroring the two listeners registered above.
+        $context->registerEventListener(
+            event: ObjectDeletedEvent::class,
+            listener: AutomationCleanupListener::class
         );
 
         // Register OpenBuildToolProvider as the MCP tool provider for the AI Chat Companion.

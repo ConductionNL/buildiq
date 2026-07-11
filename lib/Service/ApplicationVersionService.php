@@ -120,10 +120,13 @@ class ApplicationVersionService
     /**
      * Constructor.
      *
-     * @param LoggerInterface $logger          PSR logger for diagnostics
-     * @param ObjectService   $objectService   OpenRegister object service
-     * @param RegisterService $registerService OpenRegister register-level service
-     * @param RegisterMapper  $registerMapper  Resolves register slugs to entities
+     * @param LoggerInterface           $logger             PSR logger for diagnostics
+     * @param ObjectService             $objectService      OpenRegister object service
+     * @param RegisterService           $registerService    OpenRegister register-level service
+     * @param RegisterMapper            $registerMapper     Resolves register slugs to entities
+     * @param AutomationCompilerService $automationCompiler Recompiles a cloned automation's
+     *                                                      artifacts into the new version
+     *                                                      (automation-designer design.md Decision 6).
      *
      * @return void
      */
@@ -132,6 +135,7 @@ class ApplicationVersionService
         private readonly ObjectService $objectService,
         private readonly RegisterService $registerService,
         private readonly RegisterMapper $registerMapper,
+        private readonly AutomationCompilerService $automationCompiler,
     ) {
     }//end __construct()
 
@@ -943,6 +947,138 @@ class ApplicationVersionService
 
         return $out;
     }//end canonicaliseValue()
+
+    /**
+     * Clone every `automation` object belonging to a source ApplicationVersion
+     * onto a newly-created version (automation-designer design.md Decision 6).
+     *
+     * Each clone gets a fresh object uuid and is recompiled from scratch
+     * (fresh `aut-<uuid8>` rule-set slug when it compiles to the rules
+     * backend) so `promotesTo` chain members never share a mutable compiled
+     * artifact. A per-automation failure is logged and skipped — it must not
+     * abort the rest of the clone batch or the version-creation flow itself.
+     *
+     * @param string $applicationSlug   The owning Application's slug.
+     * @param string $sourceVersionUuid The ApplicationVersion being branched from.
+     * @param string $newVersionUuid    The freshly-created ApplicationVersion's uuid.
+     *
+     * @return int The number of automations successfully cloned.
+     *
+     * @spec openspec/changes/automation-designer/tasks.md#2.6
+     * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-009
+     */
+    public function cloneAutomationsToVersion(string $applicationSlug, string $sourceVersionUuid, string $newVersionUuid): int
+    {
+        if ($sourceVersionUuid === '' || $newVersionUuid === '' || $sourceVersionUuid === $newVersionUuid) {
+            return 0;
+        }
+
+        $automations = $this->findAutomationsForVersion(applicationSlug: $applicationSlug, versionUuid: $sourceVersionUuid);
+
+        $cloned = 0;
+        foreach ($automations as $source) {
+            try {
+                $this->cloneOneAutomation(source: $source, newVersionUuid: $newVersionUuid);
+                $cloned++;
+            } catch (Throwable $e) {
+                $sourceSlug = (string) ($source['slug'] ?? '');
+                $this->logger->error(
+                    'OpenBuild: failed to clone automation "'.$sourceSlug.'" onto new version '.$newVersionUuid.': '.$e->getMessage()
+                );
+            }
+        }
+
+        return $cloned;
+    }//end cloneAutomationsToVersion()
+
+    /**
+     * Find every `automation` object for an Application scoped to one version.
+     *
+     * @param string $applicationSlug The owning Application's slug.
+     * @param string $versionUuid     The ApplicationVersion uuid to filter on.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function findAutomationsForVersion(string $applicationSlug, string $versionUuid): array
+    {
+        try {
+            $results = $this->objectService->findAll(
+                config: [
+                    'filters' => [
+                        'register'        => self::REGISTER_SLUG,
+                        'schema'          => 'automation',
+                        'applicationSlug' => $applicationSlug,
+                        'versionUuid'     => $versionUuid,
+                    ],
+                ]
+            );
+        } catch (Throwable $e) {
+            $this->logger->warning('OpenBuild: cloneAutomationsToVersion lookup failed: '.$e->getMessage());
+            return [];
+        }
+
+        if (is_array($results) === false) {
+            return [];
+        }
+
+        $normalised = [];
+        foreach ($results as $row) {
+            $normalised[] = $this->normaliseObjectArray(object: $row);
+        }
+
+        return $normalised;
+    }//end findAutomationsForVersion()
+
+    /**
+     * Clone one automation object onto the new version and recompile it there.
+     *
+     * @param array<string,mixed> $source         The source automation object.
+     * @param string              $newVersionUuid The target ApplicationVersion uuid.
+     *
+     * @return void
+     */
+    private function cloneOneAutomation(array $source, string $newVersionUuid): void
+    {
+        $payload = $source;
+        unset($payload['id'], $payload['uuid'], $payload['@self'], $payload['provenance']);
+        $payload['versionUuid'] = $newVersionUuid;
+
+        $created      = $this->objectService->saveObject(object: $payload, register: self::REGISTER_SLUG, schema: 'automation');
+        $createdArray = $this->normaliseObjectArray(object: $created);
+
+        // Prefer the entity's own uuid (NC Entity's magic getUuid() — not
+        // detectable via method_exists(), same reasoning as
+        // JobOwnerImpersonator::impersonate()) since jsonSerialize()/getObject()
+        // do not reliably merge the uuid into an `id` key on every OR entity shape.
+        $newUuid = '';
+        if (is_object($created) === true) {
+            try {
+                $newUuid = (string) $created->getUuid();
+            } catch (Throwable $e) {
+                $newUuid = '';
+            }
+        }
+
+        if ($newUuid === '') {
+            $newUuid = (string) ($createdArray['id'] ?? $createdArray['uuid'] ?? '');
+        }
+
+        if ($newUuid === '') {
+            $sourceSlug = (string) ($source['slug'] ?? '');
+            $this->logger->warning(
+                'OpenBuild: cloned automation "'.$sourceSlug.'" did not yield a new uuid — skipping recompile.'
+            );
+            return;
+        }
+
+        $createdArray['id'] = $newUuid;
+
+        $plan       = $this->automationCompiler->compile(automation: $createdArray);
+        $provenance = $this->automationCompiler->apply(automation: $createdArray, plan: $plan, priorProvenance: []);
+
+        $createdArray['provenance'] = $provenance;
+        $this->objectService->saveObject(object: $createdArray, register: self::REGISTER_SLUG, schema: 'automation', uuid: $newUuid);
+    }//end cloneOneAutomation()
 
     /**
      * Describe a Register entity for diagnostic strings.
