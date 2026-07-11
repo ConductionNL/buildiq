@@ -97,6 +97,17 @@
 					:schema-slugs="otherSchemaSlugs"
 					@update:relations="onRelationsChange" />
 
+				<NcNoteCard v-if="authorLockedOut" type="warning">
+					{{ t('openbuild', 'Saving this read scope will make this schema\'s records invisible to you. Save remains available — this may be an intentional admin-assisted handover.') }}
+				</NcNoteCard>
+
+				<AccessEditor
+					:access="staged.access"
+					:field-names="fieldNames"
+					:available-groups="availableGroups"
+					:read-only="accessReadOnly"
+					@update:access="onAccessChange" />
+
 				<WidgetEditor
 					:widgets="staged.widgets"
 					@update:widgets="onWidgetsChange" />
@@ -140,6 +151,7 @@ import SchemaHeaderForm from '../components/schema-editor/SchemaHeaderForm.vue'
 import FieldEditor, { fieldsToSchema, schemaToFields } from '../components/schema-editor/FieldEditor.vue'
 import LifecycleEditor, { editorToLifecycle, lifecycleToEditor } from '../components/schema-editor/LifecycleEditor.vue'
 import RelationEditor, { editorToRelations, relationsToEditor } from '../components/schema-editor/RelationEditor.vue'
+import AccessEditor, { accessToEditor, editorToAccess } from '../components/schema-editor/AccessEditor.vue'
 import WidgetEditor, { editorToWidgets, widgetsToEditor } from '../components/schema-editor/WidgetEditor.vue'
 import AggregationEditor from '../components/schema-editor/AggregationEditor.vue'
 import CalculationEditor from '../components/schema-editor/CalculationEditor.vue'
@@ -149,7 +161,7 @@ import ImportDataWizard from '../dialogs/ImportDataWizard.vue'
 
 import { useSchemasStore, registerSlugForApp } from '../store/schemas.js'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
-import { useRole } from '../composables/useRole.js'
+import { useRole, getCurrentUserGroups } from '../composables/useRole.js'
 import { buildVersionedRoute } from '../router/helpers.js'
 
 /**
@@ -161,6 +173,7 @@ const SCHEMA_TYPE = 'schema'
 export default {
 	name: 'SchemaDesigner',
 	components: {
+		AccessEditor,
 		AggregationEditor,
 		ArrowLeftIcon,
 		CalculationEditor,
@@ -293,6 +306,103 @@ export default {
 		},
 		hasLifecycleStates() {
 			return this.staged && this.staged.states && this.staged.states.length > 0
+		},
+		/**
+		 * Field names from the staged FieldEditor model, fed to
+		 * `AccessEditor`'s condition-row field picker.
+		 *
+		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-001
+		 * @return {string[]} Staged field names.
+		 */
+		fieldNames() {
+			if (!this.staged) {
+				return []
+			}
+			return this.staged.fields.map((f) => f.name).filter((name) => !!name)
+		},
+		/**
+		 * Group ids already referenced by the Application's `permissions`
+		 * block, seeding the AccessEditor group picker without a new
+		 * full-group-directory endpoint (design.md Decision 2).
+		 *
+		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-001
+		 * @return {string[]} Deduplicated group ids.
+		 */
+		availableGroups() {
+			const perms = (this.applicationRecord && this.applicationRecord.permissions) || {}
+			const all = [
+				...(Array.isArray(perms.owners) ? perms.owners : []),
+				...(Array.isArray(perms.editors) ? perms.editors : []),
+				...(Array.isArray(perms.viewers) ? perms.viewers : []),
+			]
+			const groups = all.filter((p) => typeof p === 'string' && !p.startsWith('user:'))
+			return [...new Set(groups)]
+		},
+		/**
+		 * Whether the caller is a Nextcloud admin (bypasses OR enforcement,
+		 * so admins are never subject to the author lock-out warning).
+		 *
+		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-004
+		 * @return {boolean}
+		 */
+		isNcAdmin() {
+			return !!(typeof OC !== 'undefined' && OC.isUserAdmin && OC.isUserAdmin())
+		},
+		/**
+		 * Whether the active ApplicationVersion is the Application's
+		 * `productionVersion`.
+		 *
+		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-007
+		 * @return {boolean}
+		 */
+		isProductionVersion() {
+			if (!this.applicationVersion || !this.applicationRecord) {
+				return false
+			}
+			const pv = this.applicationRecord.productionVersion
+			const productionUuid = typeof pv === 'string' ? pv : ((pv && (pv.uuid || pv.id)) || null)
+			return !!productionUuid && productionUuid === this.applicationVersion.uuid
+		},
+		/**
+		 * Gate the Access sub-editor read-only on the production version
+		 * for editors — owners and NC admins retain edit access
+		 * (REQ-OBDSA-007). Mirrors the owner-only release rule
+		 * (REQ-OBRBAC-004 / `ApplicationVersionOwnerGuard`); the
+		 * authoritative write gate remains OR's register manage-permission
+		 * plus the publish guard, this is a consistency surface only.
+		 *
+		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-007
+		 * @return {boolean}
+		 */
+		accessReadOnly() {
+			if (!this.isProductionVersion) {
+				return false
+			}
+			return useRole(this.applicationRecord) === 'editor'
+		},
+		/**
+		 * Advisory warning: the staged `read` scope is group-based, the
+		 * groups do not intersect the caller's own groups, and the caller
+		 * is not an NC admin — saving would hide this schema's own records
+		 * from the author. Save stays enabled regardless (REQ-OBDSA-004).
+		 *
+		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-004
+		 * @return {boolean}
+		 */
+		authorLockedOut() {
+			if (!this.staged || !this.staged.access || this.isNcAdmin) {
+				return false
+			}
+			const readRow = this.staged.access.rows.find((r) => r.op === 'read')
+			if (!readRow || readRow.kind !== 'group') {
+				return false
+			}
+			const groups = Array.isArray(readRow.groups) ? readRow.groups : []
+			if (groups.length === 0) {
+				return false
+			}
+			const userGroups = getCurrentUserGroups()
+			return !groups.some((g) => userGroups.includes(g))
 		},
 		/**
 		 * Validate that exactly one initial lifecycle state is set.
@@ -572,6 +682,13 @@ export default {
 				states,
 				transitions,
 				relations: relationsToEditor(body['x-openregister-relations']),
+				// REQ-OBDSA-002: preserve the raw persisted `authorization` block
+				// alongside the parsed editor rows so composeSchemaBody() can
+				// merge edits back over it losslessly — this is also the fix
+				// for the pre-existing strip-on-save bug (composeSchemaBody()
+				// used to never carry `authorization` through at all).
+				access: accessToEditor(body.authorization),
+				rawAuthorization: body.authorization || null,
 				widgets: widgetsToEditor(body['x-openregister-widgets']),
 				aggregations: body['x-openregister-aggregations'] || null,
 				calculations: body['x-openregister-calculations'] || null,
@@ -604,6 +721,14 @@ export default {
 			const relations = editorToRelations(staged.relations)
 			if (relations) {
 				body['x-openregister-relations'] = relations
+			}
+			// REQ-OBDSA-002: compile the Access sub-editor rows back over the
+			// preserved raw block so a Save never strips or reorders an
+			// `authorization` block set outside the designer (fixes the
+			// pre-existing strip bug — this used to be entirely absent).
+			const authorization = editorToAccess(staged.access, staged.rawAuthorization)
+			if (authorization) {
+				body.authorization = authorization
 			}
 			const widgets = editorToWidgets(staged.widgets)
 			if (widgets) {
@@ -676,6 +801,16 @@ export default {
 		 */
 		onRelationsChange(relations) {
 			this.staged = { ...this.staged, relations }
+		},
+		/**
+		 * Apply an Access sub-editor change into the staged model.
+		 *
+		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-001
+		 * @param {object} access Updated access editor model ({ rows, extraKeys }).
+		 * @return {void}
+		 */
+		onAccessChange(access) {
+			this.staged = { ...this.staged, access }
 		},
 		/**
 		 * Apply a widgets change into the staged model.
