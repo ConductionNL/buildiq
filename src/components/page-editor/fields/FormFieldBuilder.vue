@@ -3,6 +3,16 @@
   - FormFieldBuilder — authors the `formField` $def with validation rules.
   - Used by FormPageEditor AND SettingsPageEditor's flat-field section bodies.
   - REQ-OBPD-006.
+  -
+  - `show-logic` (default false, opt-in) gates the manifest-form-logic
+  - additions (REQ-OBFEL-002/003/004): a per-row expandable details area
+  - with a Conditions (`VisibleWhenBuilder`) and Validation
+  - (`FieldValidationBuilder`) section, replacing the collapsed row's flat
+  - `required` checkbox / `pattern` input with a compact summary. Only
+  - `FormPageEditor` passes `show-logic`; `SettingsSectionBuilder`'s
+  - settings-page fields keep the original flat inline inputs unchanged —
+  - visibleWhen/validation authoring is form-page-only by design (design.md
+  - Non-Goals).
   -->
 <template>
 	<div class="form-field-builder">
@@ -27,19 +37,33 @@
 					{{ t }}
 				</option>
 			</select>
-			<label class="form-field-builder__inline">
+
+			<template v-if="!showLogic">
+				<label class="form-field-builder__inline">
+					<input
+						type="checkbox"
+						:checked="!!field.required"
+						@change="updateField(index, 'required', $event.target.checked)">
+					{{ t('openbuild', 'Required') }}
+				</label>
 				<input
-					type="checkbox"
-					:checked="!!field.required"
-					@change="updateField(index, 'required', $event.target.checked)">
-				{{ t('openbuild', 'Required') }}
-			</label>
-			<input
-				:value="field.pattern || ''"
-				type="text"
-				class="form-field-builder__field form-field-builder__field--narrow"
-				:placeholder="t('openbuild', 'Pattern')"
-				@input="updateField(index, 'pattern', $event.target.value)">
+					:value="field.pattern || ''"
+					type="text"
+					class="form-field-builder__field form-field-builder__field--narrow"
+					:placeholder="t('openbuild', 'Pattern')"
+					@input="updateField(index, 'pattern', $event.target.value)">
+			</template>
+			<template v-else>
+				<span class="form-field-builder__summary">{{ summaryFor(field) }}</span>
+				<button
+					type="button"
+					class="form-field-builder__disclosure"
+					:aria-expanded="isExpanded(index)"
+					@click="toggleExpanded(index)">
+					{{ isExpanded(index) ? '▲' : '▼' }} {{ t('openbuild', 'Details') }}
+				</button>
+			</template>
+
 			<button
 				type="button"
 				class="form-field-builder__remove"
@@ -47,6 +71,25 @@
 				@click="removeField(index)">
 				✕
 			</button>
+
+			<div v-if="showLogic && isExpanded(index)" class="form-field-builder__details">
+				<div class="form-field-builder__section">
+					<span class="form-field-builder__section-label">{{ t('openbuild', 'Conditions') }}</span>
+					<VisibleWhenBuilder
+						:model-value="field.visibleWhen || null"
+						:field-options="siblingKeys(index)"
+						@update:modelValue="updateVisibleWhen(index, $event)" />
+					<InlineFieldMark :error="danglingConditionMark(field)" />
+				</div>
+				<div class="form-field-builder__section">
+					<span class="form-field-builder__section-label">{{ t('openbuild', 'Validation') }}</span>
+					<FieldValidationBuilder
+						:model-value="field.validation || null"
+						:legacy-required="!!field.required"
+						:legacy-pattern="field.pattern || ''"
+						@update:modelValue="updateValidation(index, $event)" />
+				</div>
+			</div>
 		</div>
 		<button type="button" class="form-field-builder__add" @click="addField">
 			+ {{ t('openbuild', 'Add field') }}
@@ -55,19 +98,34 @@
 </template>
 
 <script>
+import VisibleWhenBuilder from './VisibleWhenBuilder.vue'
+import FieldValidationBuilder from './FieldValidationBuilder.vue'
+import InlineFieldMark from './InlineFieldMark.vue'
+
 const FIELD_TYPES = ['string', 'number', 'boolean', 'select', 'textarea', 'date']
 
 export default {
 	name: 'FormFieldBuilder',
+	components: { VisibleWhenBuilder, FieldValidationBuilder, InlineFieldMark },
 	props: {
 		modelValue: {
 			type: Array,
 			default: () => [],
 		},
+		// Opt-in (REQ-OBFEL-002/003/004): mount the Conditions/Validation
+		// details area. Only FormPageEditor sets this; SettingsSectionBuilder
+		// keeps the original flat required/pattern inputs unchanged.
+		showLogic: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	emits: ['update:modelValue'],
 	data() {
-		return { FIELD_TYPES }
+		return {
+			FIELD_TYPES,
+			expandedIndices: [],
+		}
 	},
 	computed: {
 		/**
@@ -77,6 +135,17 @@ export default {
 		 */
 		localFields() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
+		},
+		/**
+		 * Every declared `key` across the field list (used for the
+		 * dangling-condition-reference check, REQ-OBFEL-004).
+		 *
+		 * @return {string[]}
+		 */
+		declaredKeys() {
+			return this.localFields
+				.map((f) => f && f.key)
+				.filter((k) => typeof k === 'string' && k !== '')
 		},
 	},
 	methods: {
@@ -94,6 +163,49 @@ export default {
 			} else {
 				next[index] = { ...current, [key]: value }
 			}
+			this.$emit('update:modelValue', next)
+		},
+		/**
+		 * Write (or delete, on `null`) one field's `visibleWhen` — the
+		 * `VisibleWhenBuilder` output (REQ-OBFEL-002). Unknown sibling keys
+		 * on the field survive via the shallow spread.
+		 *
+		 * @param {number} index - the field index.
+		 * @param {?object} value - the next `visibleWhen`, or `null` to clear.
+		 * @return {void}
+		 */
+		updateVisibleWhen(index, value) {
+			const next = this.localFields.slice()
+			const current = { ...next[index] }
+			if (value === null) {
+				delete current.visibleWhen
+			} else {
+				current.visibleWhen = value
+			}
+			next[index] = current
+			this.$emit('update:modelValue', next)
+		},
+		/**
+		 * Write (or delete, on `null`) one field's structured `validation`
+		 * object (REQ-OBFEL-003). Per Decision 4, writing `validation` also
+		 * migrates away THIS field's legacy flat `required` / `pattern`
+		 * keys — sibling fields that are never edited keep theirs.
+		 *
+		 * @param {number} index - the field index.
+		 * @param {?object} value - the next `validation`, or `null` to clear.
+		 * @return {void}
+		 */
+		updateValidation(index, value) {
+			const next = this.localFields.slice()
+			const current = { ...next[index] }
+			if (value === null) {
+				delete current.validation
+			} else {
+				current.validation = value
+			}
+			delete current.required
+			delete current.pattern
+			next[index] = current
 			this.$emit('update:modelValue', next)
 		},
 		/**
@@ -115,6 +227,88 @@ export default {
 			const next = this.localFields.slice()
 			next.splice(index, 1)
 			this.$emit('update:modelValue', next)
+		},
+		/**
+		 * Sibling `key` values available to the Conditions field picker —
+		 * every declared key EXCEPT the field currently being edited
+		 * (REQ-OBFEL-002).
+		 *
+		 * @param {number} index - the field index being edited.
+		 * @return {string[]}
+		 */
+		siblingKeys(index) {
+			return this.localFields
+				.map((f, i) => (i === index ? null : f && f.key))
+				.filter((k) => typeof k === 'string' && k !== '')
+		},
+		/**
+		 * The `{ hasError, message }` bag for a field's dangling LOCAL
+		 * `visibleWhen.field` reference (REQ-OBFEL-004) — never mutates,
+		 * purely a live, read-only warning (Decision 5).
+		 *
+		 * @param {object} field - the field entry.
+		 * @return {{hasError: boolean, message: string}}
+		 */
+		danglingConditionMark(field) {
+			const vw = field && field.visibleWhen
+			if (!vw || vw.endpoint || vw.source || typeof vw.field !== 'string') {
+				return { hasError: false, message: '' }
+			}
+			if (this.declaredKeys.includes(vw.field)) {
+				return { hasError: false, message: '' }
+			}
+			return {
+				hasError: true,
+				message: t('openbuild', "Condition references removed field '{key}'", { key: vw.field }),
+			}
+		},
+		/**
+		 * A compact collapsed-row summary of a field's logic, e.g.
+		 * "required · pattern · 1 condition" (task 4.3).
+		 *
+		 * @param {object} field - the field entry.
+		 * @return {string}
+		 */
+		summaryFor(field) {
+			const validation = field && field.validation
+			const parts = []
+			const hasRequired = validation ? !!validation.required : !!(field && field.required)
+			if (hasRequired) {
+				parts.push(t('openbuild', 'required'))
+			}
+			const hasPattern = validation && validation.pattern !== undefined
+				? true
+				: !!(field && field.pattern)
+			if (hasPattern) {
+				parts.push(t('openbuild', 'pattern'))
+			}
+			if (field && field.visibleWhen) {
+				parts.push(t('openbuild', '1 condition'))
+			}
+			return parts.join(' · ')
+		},
+		/**
+		 * Whether a field row's details area is expanded.
+		 *
+		 * @param {number} index - the field index.
+		 * @return {boolean}
+		 */
+		isExpanded(index) {
+			return this.expandedIndices.includes(index)
+		},
+		/**
+		 * Toggle a field row's details-area disclosure.
+		 *
+		 * @param {number} index - the field index.
+		 * @return {void}
+		 */
+		toggleExpanded(index) {
+			const at = this.expandedIndices.indexOf(index)
+			if (at === -1) {
+				this.expandedIndices.push(index)
+			} else {
+				this.expandedIndices.splice(at, 1)
+			}
 		},
 	},
 }
@@ -153,6 +347,21 @@ export default {
 	align-items: center;
 }
 
+.form-field-builder__summary {
+	flex: 1 1 auto;
+	font-size: 11px;
+	color: var(--color-text-maxcontrast);
+}
+
+.form-field-builder__disclosure {
+	background: transparent;
+	border: 1px solid var(--color-border);
+	color: var(--color-main-text);
+	padding: 4px 8px;
+	border-radius: var(--border-radius);
+	cursor: pointer;
+}
+
 .form-field-builder__remove {
 	background: transparent;
 	border: 1px solid var(--color-border);
@@ -170,5 +379,30 @@ export default {
 	padding: 4px 10px;
 	border-radius: var(--border-radius);
 	cursor: pointer;
+}
+
+.form-field-builder__details {
+	flex-basis: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 8px;
+	margin-top: 4px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	background: var(--color-background-hover);
+}
+
+.form-field-builder__section {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.form-field-builder__section-label {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--color-text-maxcontrast);
+	text-transform: uppercase;
 }
 </style>
