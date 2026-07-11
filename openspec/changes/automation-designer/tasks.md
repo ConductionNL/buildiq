@@ -51,13 +51,13 @@
 
 ## 7. E2E (Playwright — every non-excluded spec scenario)
 
-- [ ] 7.1 Add `tests/e2e/automations.spec.ts` — REQ-AUTD-001: list renders for a seeded version, empty state on a fresh version, version selector switches the list
-- [ ] 7.2 In `tests/e2e/automations.spec.ts` — REQ-AUTD-002: compose event+notification, schedule+run-synchronization, manual+condition+object-op through the dialog and assert the saved rows
-- [ ] 7.3 In `tests/e2e/automations.spec.ts` — REQ-AUTD-003: event trigger + webhook action blocked with message; condition on schedule trigger blocked
-- [ ] 7.4 In `tests/e2e/automations.spec.ts` — REQ-AUTD-005: delete removes the compiled schedules entry from the page designer's Schedules section while a hand-authored schedule survives; hand-edit a compiled schedule → drift badge → Recompile restores it
-- [ ] 7.5 In `tests/e2e/automations.spec.ts` — REQ-AUTD-006: disable flips the schedules entry to disabled (visible in SchedulesSection) and the row badge; re-enable restores it
-- [ ] 7.6 In `tests/e2e/automations.spec.ts` — REQ-AUTD-007: test panel dry-run shows would-be actions for a matching payload and "condition did not match" for a non-matching one
-- [ ] 7.7 Add `tests/e2e/automations-rbac.spec.ts` — REQ-AUTD-008 (pattern of `rbac-403.spec.ts`): editor authors + enables on draft; editor gets 403 enabling on production; owner succeeds
+- [x] 7.1 Add `tests/e2e/automations.spec.ts` — REQ-AUTD-001: list renders for a seeded version, empty state on a fresh version, version selector switches the list
+- [x] 7.2 In `tests/e2e/automations.spec.ts` — REQ-AUTD-002: compose event+notification, schedule+run-synchronization, manual+condition+object-op through the dialog and assert the saved rows
+- [x] 7.3 In `tests/e2e/automations.spec.ts` — REQ-AUTD-003: event trigger + webhook action blocked with message; condition on schedule trigger blocked
+- [x] 7.4 In `tests/e2e/automations.spec.ts` — REQ-AUTD-005: delete removes the compiled schedules entry from the page designer's Schedules section while a hand-authored schedule survives; hand-edit a compiled schedule → drift badge → Recompile restores it
+- [x] 7.5 In `tests/e2e/automations.spec.ts` — REQ-AUTD-006: disable flips the schedules entry to disabled (visible in SchedulesSection) and the row badge; re-enable restores it
+- [x] 7.6 In `tests/e2e/automations.spec.ts` — REQ-AUTD-007: test panel dry-run shows would-be actions for a matching payload and "condition did not match" for a non-matching one
+- [x] 7.7 Add `tests/e2e/automations-rbac.spec.ts` — REQ-AUTD-008 (pattern of `rbac-403.spec.ts`): editor authors + enables on draft; editor gets 403 enabling on production; owner succeeds
 
 ## 8. i18n, quality & docs
 
