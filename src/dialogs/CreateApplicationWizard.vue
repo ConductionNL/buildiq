@@ -34,7 +34,10 @@
 		@submit="onSubmit"
 		@close="onClose">
 		<template #step-basics="{ stepData, setStepData }">
-			<Step1Basics :payload="stepData" @update:payload="setStepData" />
+			<Step1Basics
+				:payload="stepData"
+				@update:payload="setStepData"
+				@ai-app-created="onAiAppCreated" />
 		</template>
 
 		<template #step-preset="{ stepData, setStepData }">
@@ -293,6 +296,26 @@ export default {
 		onClose() {
 			this.presetSelected = ''
 			this.$emit('update:show', false)
+		},
+
+		/**
+		 * Handle a copilot-created app (spec ai-copilot REQ-OBAIC-006): close
+		 * the wizard and route to the new application's page designer, mirroring
+		 * the manual-creation `created` event's "route to it" contract.
+		 *
+		 * @param {string} appSlug - the newly-created app's slug.
+		 * @return {void}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 */
+		onAiAppCreated(appSlug) {
+			this.onClose()
+			if (this.$router && appSlug) {
+				this.$router.push({ name: 'PageDesigner', params: { slug: appSlug } }).catch(() => {})
+			}
+			// Emit with no uuid so a parent's `created(applicationUuid)` handler
+			// (e.g. DashboardIndex.onAppCreated) refreshes its listing instead of
+			// navigating a second time with a slug where it expects a UUID.
+			this.$emit('created')
 		},
 	},
 }
