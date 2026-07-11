@@ -102,20 +102,31 @@
 			<legend>{{ t('openbuild', 'Fields') }}</legend>
 			<FormFieldBuilder
 				:model-value="config.fields || []"
+				show-logic
 				@update:modelValue="update('fields', $event)" />
 			<InlineFieldMark :error="markFor('fields')" />
+		</fieldset>
+
+		<fieldset class="form-page-editor__fieldset">
+			<legend>{{ t('openbuild', 'Steps') }}</legend>
+			<FormStepsManager
+				:steps="config.steps || []"
+				:fields="config.fields || []"
+				@update:steps="update('steps', $event)" />
+			<InlineFieldMark :error="markFor('steps')" />
 		</fieldset>
 	</div>
 </template>
 
 <script>
 import FormFieldBuilder from './fields/FormFieldBuilder.vue'
+import FormStepsManager from './fields/FormStepsManager.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'FormPageEditor',
-	components: { FormFieldBuilder, InlineFieldMark },
+	components: { FormFieldBuilder, FormStepsManager, InlineFieldMark },
 	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
@@ -139,11 +150,14 @@ export default {
 	computed: {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
+		 * `steps` added by REQ-OBFEL-001 so `formLogic.js` / the canonical
+		 * validator's `/pages/<n>/config/steps` errors mark inline.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/form-editor-logic/specs/form-editor-logic/spec.md#req-obfel-001
 		 */
 		validatedConfigKeys() {
-			return ['submitHandler', 'submitEndpoint', 'submitMethod', 'mode', 'submitLabel', 'successMessage', 'fields', 'initialValue']
+			return ['submitHandler', 'submitEndpoint', 'submitMethod', 'mode', 'submitLabel', 'successMessage', 'fields', 'initialValue', 'steps']
 		},
 		/**
 		 * Observed behaviour of `submitShape` (retrofit annotation).
