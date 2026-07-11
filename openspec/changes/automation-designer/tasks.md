@@ -61,9 +61,9 @@
 
 ## 8. i18n, quality & docs
 
-- [ ] 8.1 Wrap all user-facing strings in `t('openbuild', ...)` with English source keys + Dutch translations (hydra ADR-007)
-- [ ] 8.2 `eslint` + `stylelint` clean on new/changed frontend files; `composer check:strict` clean on new/changed PHP (fix any pre-existing issues encountered in touched files)
-- [ ] 8.3 Update `docs/` — new "Automations" feature page: what compiles to what (the matrix), provenance/drift semantics, RBAC (editor authors, owner enables on production), dry-run panel; cross-link from the business-rules and schedules docs pages
+- [x] 8.1 Wrap all user-facing strings in `t('openbuild', ...)` with English source keys + Dutch translations (hydra ADR-007)
+- [x] 8.2 `eslint` + `stylelint` clean on new/changed frontend files; `composer check:strict` clean on new/changed PHP (fix any pre-existing issues encountered in touched files)
+- [x] 8.3 Update `docs/` — new "Automations" feature page: what compiles to what (the matrix), provenance/drift semantics, RBAC (editor authors, owner enables on production), dry-run panel; cross-link from the business-rules and schedules docs pages
 
 ## Quality reminders (run before requesting review — not tracked as tasks)
 
