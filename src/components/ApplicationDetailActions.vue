@@ -6,7 +6,9 @@
   - (`type: detail`) page (`config.actionsComponent: "ApplicationDetailActions"`).
   - Surfaces a primary "Open app" button (the app's own manifest runtime), an
   - Export button, and a "··· Actions" overflow menu (Settings — incl.
-  - publish/unpublish — Design pages, permissions, Save as template, Delete).
+  - publish/unpublish — GitHub, permissions, Save as template, Delete).
+  - Page/walkthrough design happens inside the running app via the in-app
+  - OpenBuild edit menu (CnOpenBuildEditButton, ADR-041), not from here.
   - Reads/writes the Application via OR's REST API (ADR-022) + the dedicated
   - publish/delete endpoints, using the applicationContext mixin. Modals/dialogs
   - live in their own files per ADR-004 gate-modal-isolation.
@@ -63,18 +65,6 @@
 					<CogOutline :size="20" />
 				</template>
 				{{ t('openbuild', 'Settings') }}
-			</NcActionButton>
-			<NcActionButton v-if="obApp && obApp.slug" :to="{ name: 'PageDesigner', params: { slug: obApp.slug } }">
-				<template #icon>
-					<PencilRulerOutline :size="20" />
-				</template>
-				{{ t('openbuild', 'Design pages') }}
-			</NcActionButton>
-			<NcActionButton v-if="obApp && obApp.slug" :to="{ name: 'WalkthroughDesigner', params: { slug: obApp.slug } }">
-				<template #icon>
-					<MapMarkerPath :size="20" />
-				</template>
-				{{ t('openbuild', 'Design walkthrough') }}
 			</NcActionButton>
 			<NcActionButton v-if="obApp && obApp.slug" :disabled="!obApp" @click="githubOpen = true">
 				<template #icon>
@@ -176,7 +166,6 @@ import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import PencilRulerOutline from 'vue-material-design-icons/PencilRulerOutline.vue'
-import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
 import History from 'vue-material-design-icons/History.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
@@ -207,7 +196,6 @@ export default {
 		CogOutline,
 		DeleteOutline,
 		PencilRulerOutline,
-		MapMarkerPath,
 		AccountMultipleOutline,
 		History,
 		ContentSaveOutline,
@@ -436,7 +424,10 @@ export default {
 			try {
 				const action = shouldPublish ? 'publish' : 'unpublish'
 				await axios.post(generateUrl(`/apps/openbuild/api/applications/${this.obAppUuid}/${action}`), {})
-				await this.obLoadApp()
+				// Force a refetch — the `object` prop snapshot still carries the
+				// pre-publish status, so the default load path would keep the
+				// toggle/badge stale until a full page reload.
+				await this.obLoadApp(true)
 				this.toast = shouldPublish
 					? t('openbuild', 'App published — it now appears in the app menu.')
 					: t('openbuild', 'App unpublished — removed from the app menu.')

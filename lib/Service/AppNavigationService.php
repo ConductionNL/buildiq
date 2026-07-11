@@ -42,6 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Service;
 
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\INavigationManager;
 use OCP\IURLGenerator;
@@ -85,6 +86,18 @@ class AppNavigationService
     private const WILDCARD = 'group:*';
 
     /**
+     * App-config key overriding the base nav order of virtual-app entries.
+     */
+    private const ORDER_BASE_CONFIG_KEY = 'nav_order_base';
+
+    /**
+     * Default base order for virtual-app entries. Nextcloud gives apps without
+     * an explicit order 100, so published virtual apps land right after the
+     * default-ordered apps instead of dead last in the menu.
+     */
+    private const ORDER_BASE_DEFAULT = 100;
+
+    /**
      * Cache of published applications fetched this request (per-request).
      *
      * @var array<array<string,mixed>>|null
@@ -98,6 +111,7 @@ class AppNavigationService
      * @param IURLGenerator   $urlGenerator  URL generator
      * @param IUserSession    $userSession   User session
      * @param IGroupManager   $groupManager  Group manager
+     * @param IAppConfig      $appConfig     App config (nav order base override)
      * @param LoggerInterface $logger        PSR logger
      *
      * @return void
@@ -107,6 +121,7 @@ class AppNavigationService
         private readonly IURLGenerator $urlGenerator,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
+        private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
@@ -134,6 +149,12 @@ class AppNavigationService
             );
             return;
         }
+
+        $orderBase = $this->appConfig->getValueInt(
+            'openbuild',
+            self::ORDER_BASE_CONFIG_KEY,
+            self::ORDER_BASE_DEFAULT
+        );
 
         foreach ($applications as $application) {
             $slug = ($application['slug'] ?? null);
@@ -163,7 +184,7 @@ class AppNavigationService
             // route and fell through to OpenBuild's own shell.
             $appUrl  = '/apps/openbuild/builder/'.$slug;
             $entryId = self::ENTRY_ID_PREFIX.$slug;
-            $order   = 1000 + (abs(crc32($slug)) % 1000);
+            $order   = $orderBase + (abs(crc32($slug)) % 100);
 
             // Capture variables for the closure — PHP closures close over
             // variables by reference unless 'use' explicitly binds them by value.
@@ -188,13 +209,17 @@ class AppNavigationService
                         groupManager: $groupManager
                         );
 
+                        // NavigationManager has no 'enabled' concept — entries
+                        // are filtered by 'type' (getAll('link')). Returning a
+                        // non-'link' type is the only way a closure entry can
+                        // hide itself from the app menu per user.
                         return [
                             'id'      => $entryId,
                             'name'    => $name,
                             'href'    => $appUrl,
                             'icon'    => $iconUrl,
                             'order'   => $order,
-                            'type'    => 'link',
+                            'type'    => ($visible === true) ? 'link' : 'openbuild-hidden',
                             'active'  => false,
                             'classes' => '',
                             'enabled' => $visible,
@@ -337,6 +362,13 @@ class AppNavigationService
             return $this->cachedApplications;
         }
 
+        // RBAC + multitenancy are disabled here on purpose: this runs during
+        // app boot, where the user session is often NOT yet resolved (OCS
+        // navigation requests, WebDAV, cron). With the default filters the
+        // query silently returned 0 rows on those requests and no nav entries
+        // were ever registered. Per-user visibility is enforced later, inside
+        // each entry's closure (isVisibleForCurrentUser, REQ-OBNAV-002), which
+        // runs when the user IS known.
         $results = $this->objectService->findAll(
             config: [
                 'filters' => [
@@ -345,7 +377,9 @@ class AppNavigationService
                     'status'   => self::STATUS_PUBLISHED,
                 ],
                 'limit'   => 1000,
-            ]
+            ],
+            _rbac: false,
+            _multitenancy: false
         );
 
         $applications = [];
