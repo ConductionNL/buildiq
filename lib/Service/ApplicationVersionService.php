@@ -120,13 +120,13 @@ class ApplicationVersionService
     /**
      * Constructor.
      *
-     * @param LoggerInterface           $logger          PSR logger for diagnostics
-     * @param ObjectService             $objectService   OpenRegister object service
-     * @param RegisterService           $registerService OpenRegister register-level service
-     * @param RegisterMapper            $registerMapper  Resolves register slugs to entities
+     * @param LoggerInterface           $logger             PSR logger for diagnostics
+     * @param ObjectService             $objectService      OpenRegister object service
+     * @param RegisterService           $registerService    OpenRegister register-level service
+     * @param RegisterMapper            $registerMapper     Resolves register slugs to entities
      * @param AutomationCompilerService $automationCompiler Recompiles a cloned automation's
-     *                                                       artifacts into the new version
-     *                                                       (automation-designer design.md Decision 6).
+     *                                                      artifacts into the new version
+     *                                                      (automation-designer design.md Decision 6).
      *
      * @return void
      */
@@ -981,8 +981,9 @@ class ApplicationVersionService
                 $this->cloneOneAutomation(source: $source, newVersionUuid: $newVersionUuid);
                 $cloned++;
             } catch (Throwable $e) {
+                $sourceSlug = (string) ($source['slug'] ?? '');
                 $this->logger->error(
-                    'OpenBuild: failed to clone automation "'.(string) ($source['slug'] ?? '').'" onto new version '.$newVersionUuid.': '.$e->getMessage()
+                    'OpenBuild: failed to clone automation "'.$sourceSlug.'" onto new version '.$newVersionUuid.': '.$e->getMessage()
                 );
             }
         }
@@ -1032,7 +1033,7 @@ class ApplicationVersionService
      * Clone one automation object onto the new version and recompile it there.
      *
      * @param array<string,mixed> $source         The source automation object.
-     * @param string               $newVersionUuid The target ApplicationVersion uuid.
+     * @param string              $newVersionUuid The target ApplicationVersion uuid.
      *
      * @return void
      */
@@ -1063,7 +1064,10 @@ class ApplicationVersionService
         }
 
         if ($newUuid === '') {
-            $this->logger->warning('OpenBuild: cloned automation "'.(string) ($source['slug'] ?? '').'" did not yield a new uuid — skipping recompile.');
+            $sourceSlug = (string) ($source['slug'] ?? '');
+            $this->logger->warning(
+                'OpenBuild: cloned automation "'.$sourceSlug.'" did not yield a new uuid — skipping recompile.'
+            );
             return;
         }
 

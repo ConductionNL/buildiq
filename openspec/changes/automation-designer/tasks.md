@@ -23,9 +23,9 @@
 
 ## 3. Controller & routes
 
-- [ ] 3.1 Add `lib/Controller/AutomationsController.php` — `#[NoAdminRequired]` routes `compile`, `enable`, `disable`, `dryRun`, `status` (uuid-addressed); each resolves the automation + Application, then enforces RBAC per design Decision 7 via `PermissionResolver::matchesCaller()` (`['owners','editors']`; production-version enable = `['owners']`, `allowAdminBypass: false`) returning 403 JSON before any compile side effect; no CRUD pass-throughs (redundant-controller gate)
-- [ ] 3.2 Edit `appinfo/routes.php` — register the five `automations#*` routes beside the `rules#*` block with uuid requirements
-- [ ] 3.3 Add `tests/Unit/Controller/AutomationsControllerTest.php` — 403 for non-member, editor allowed on draft version, editor 403 / owner 200 for production enable, admin-bypass NOT honoured on production enable
+- [x] 3.1 Add `lib/Controller/AutomationsController.php` — `#[NoAdminRequired]` routes `compile`, `enable`, `disable`, `dryRun`, `status` (uuid-addressed); each resolves the automation + Application, then enforces RBAC per design Decision 7 via `PermissionResolver::matchesCaller()` (`['owners','editors']`; production-version enable = `['owners']`, `allowAdminBypass: false`) returning 403 JSON before any compile side effect; no CRUD pass-throughs (redundant-controller gate)
+- [x] 3.2 Edit `appinfo/routes.php` — register the five `automations#*` routes beside the `rules#*` block with uuid requirements
+- [x] 3.3 Add `tests/Unit/Controller/AutomationsControllerTest.php` — 403 for non-member, editor allowed on draft version, editor 403 / owner 200 for production enable, admin-bypass NOT honoured on production enable
 
 ## 4. Backend unit tests (PHPUnit)
 
