@@ -133,6 +133,7 @@ import { useAppStatus } from '../composables/useAppStatus.js'
 import { useAppTheme } from '../composables/useAppTheme.js'
 import { useCopilot } from '../composables/useCopilot.js'
 import { reconcileWorkflowDependency, reconcileConnectorDependency, reconcileDocumentDependency, stripDependencyMarker } from '../services/manifestDependencies.js'
+import { assignUnassignedFieldsToFinalStep } from '../services/manifestValidation/formLogic.js'
 import PageDesigner from './PageDesigner.vue'
 import WorkflowAttachmentsSection from '../components/WorkflowAttachmentsSection.vue'
 import ThemeSection from '../components/ThemeSection.vue'
@@ -516,6 +517,12 @@ export default {
 					),
 				),
 			)
+			// REQ-OBFEL-001: the unassigned-fields pool is transient editor
+			// state — any form-page field key still unassigned to a step at
+			// save time is appended to that page's FINAL step so the written
+			// manifest always satisfies the leaf validator's complete-partition
+			// rule (no renderer fail-safe exists for an incomplete partition).
+			this.manifest = assignUnassignedFieldsToFinalStep(this.manifest)
 			try {
 				// ADR-002 / REQ-OBPD-009 (design.md Decision 6): persist the manifest
 				// onto the active ApplicationVersion when one is resolved. Use a
