@@ -304,4 +304,67 @@ describe('PageDesignerHost', () => {
 		wrapper.destroy()
 		expect(appThemeMock.teardown).toHaveBeenCalledWith('petstore')
 	})
+
+	// --- builder-undo-redo: REQ-BUR-004 session boundaries ------------------
+
+	describe('sessionKey / saveCounter (REQ-BUR-004)', () => {
+		it('composes slug:versionSlug:saveCounter and changes on a successful save', async () => {
+			const version = { '@self': { id: 'ver-uuid' }, manifest: {} }
+			const wrapper = mountHost({
+				slug: 'petstore',
+				query: { _version: 'staging' },
+				version,
+				appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
+			})
+			await flush(wrapper)
+			expect(wrapper.vm.sessionKey).toBe('petstore:staging:0')
+			axiosPatchMock.mockResolvedValueOnce({ data: { '@self': { id: 'ver-uuid' } } })
+			await wrapper.vm.save()
+			expect(wrapper.vm.saveCounter).toBe(1)
+			expect(wrapper.vm.sessionKey).toBe('petstore:staging:1')
+		})
+
+		it('increments saveCounter on the Application PUT fallback branch too', async () => {
+			const wrapper = mountHost({
+				version: null,
+				appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
+			})
+			await flush(wrapper)
+			axiosPutMock.mockResolvedValueOnce({ data: { '@self': { id: 'app-1' } } })
+			await wrapper.vm.save()
+			expect(wrapper.vm.saveCounter).toBe(1)
+		})
+
+		it('does NOT increment saveCounter on a failed save', async () => {
+			const wrapper = mountHost({
+				version: null,
+				appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
+			})
+			await flush(wrapper)
+			axiosPutMock.mockRejectedValueOnce(new Error('put failed'))
+			await wrapper.vm.save()
+			expect(wrapper.vm.saveCounter).toBe(0)
+		})
+
+		it('a versionSlug change reloads the manifest — fixes the HEAD gap where only resolveVersion() ran', async () => {
+			const wrapper = mountHost({
+				slug: 'petstore',
+				query: {},
+				version: { manifest: { version: '1.0.0', pages: [] } },
+				appList: [{ slug: 'petstore', '@self': { id: 'app-1' }, manifest: { version: '0.0.1' } }],
+			})
+			await flush(wrapper)
+			expect(wrapper.vm.manifest.version).toBe('1.0.0')
+			// Simulate the resolved version changing for the new ?_version=.
+			versionHolder = { manifest: { version: '2.0.0', pages: [{ id: 'staged' }] } }
+			wrapper.vm.$route.query._version = 'staging'
+			// Invoke the versionSlug watcher directly — the static `mocks.$route`
+			// harness isn't reactive, so this proves the watcher body itself
+			// (resolveVersion() + load()) reloads the manifest, not just that
+			// some other reactive path happens to.
+			wrapper.vm.$options.watch.versionSlug.call(wrapper.vm)
+			await flush(wrapper)
+			expect(wrapper.vm.manifest.version).toBe('2.0.0')
+		})
+	})
 })

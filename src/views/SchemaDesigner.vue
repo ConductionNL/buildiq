@@ -51,6 +51,26 @@
 					</h2>
 				</div>
 				<div class="openbuild-schema-designer__detail-actions">
+					<NcButton
+						type="tertiary"
+						:disabled="!canUndo"
+						:title="t('openbuild', 'Undo (Ctrl+Z)')"
+						@click="undo">
+						<template #icon>
+							<UndoIcon :size="20" />
+						</template>
+						{{ t('openbuild', 'Undo') }}
+					</NcButton>
+					<NcButton
+						type="tertiary"
+						:disabled="!canRedo"
+						:title="t('openbuild', 'Redo (Ctrl+Shift+Z / Ctrl+Y)')"
+						@click="redo">
+						<template #icon>
+							<RedoIcon :size="20" />
+						</template>
+						{{ t('openbuild', 'Redo') }}
+					</NcButton>
 					<NcButton :disabled="!hasStagedChanges || saving" @click="discardChanges">
 						{{ t('openbuild', 'Discard staged edits') }}
 					</NcButton>
@@ -145,6 +165,8 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import ArrowLeftIcon from 'vue-material-design-icons/ArrowLeft.vue'
+import UndoIcon from 'vue-material-design-icons/Undo.vue'
+import RedoIcon from 'vue-material-design-icons/Redo.vue'
 
 import SchemaListPanel from '../components/schema-editor/SchemaListPanel.vue'
 import SchemaHeaderForm from '../components/schema-editor/SchemaHeaderForm.vue'
@@ -162,6 +184,8 @@ import ImportDataWizard from '../dialogs/ImportDataWizard.vue'
 import { useSchemasStore, registerSlugForApp } from '../store/schemas.js'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useRole, getCurrentUserGroups } from '../composables/useRole.js'
+import { useSessionHistory } from '../composables/useSessionHistory.js'
+import { isEditableTarget } from '../utils/isEditableTarget.js'
 import { buildVersionedRoute } from '../router/helpers.js'
 
 /**
@@ -176,6 +200,8 @@ export default {
 		AccessEditor,
 		AggregationEditor,
 		ArrowLeftIcon,
+		UndoIcon,
+		RedoIcon,
 		CalculationEditor,
 		FieldEditor,
 		LifecycleEditor,
@@ -189,6 +215,17 @@ export default {
 		SchemaListPanel,
 		WidgetEditor,
 		ImportDataWizard,
+	},
+	/**
+	 * REQ-BUR-005: the same shared nc-vue history engine (depth 100) the
+	 * page designer uses, here operating over the staged editor model
+	 * (design.md D5) rather than the composed JSON-Schema body.
+	 *
+	 * @return {object}
+	 */
+	setup() {
+		const history = useSessionHistory(null, { limit: 100 })
+		return { history }
 	},
 	data() {
 		return {
@@ -473,6 +510,22 @@ export default {
 			return JSON.stringify(this.composeSchemaBody(this.staged))
 				!== JSON.stringify(this.persisted)
 		},
+		/**
+		 * REQ-BUR-002 / REQ-BUR-005: whether an earlier staged state exists.
+		 *
+		 * @return {boolean}
+		 */
+		canUndo() {
+			return !!(this.history && this.history.canUndo.value)
+		},
+		/**
+		 * REQ-BUR-002 / REQ-BUR-005: whether an undone staged state exists.
+		 *
+		 * @return {boolean}
+		 */
+		canRedo() {
+			return !!(this.history && this.history.canRedo.value)
+		},
 	},
 	watch: {
 		schemaId: {
@@ -489,25 +542,37 @@ export default {
 		appSlug: {
 			/**
 			 * Re-resolve version and refresh the list when the app changes.
+			 * REQ-BUR-004: an app switch is a session boundary — reset the
+			 * undo/redo history (design.md D3/D5).
 			 *
 			 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+			 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-005
 			 * @return {void}
 			 */
 			handler() {
 				this.resolveVersion()
 				this.refreshList()
+				if (this.history) {
+					this.history.reset(this.staged)
+				}
 			},
 		},
 		versionSlug: {
 			/**
 			 * Re-resolve version and refresh the list when the version changes.
+			 * REQ-BUR-004: a version switch is a session boundary — reset the
+			 * undo/redo history (design.md D3/D5).
 			 *
 			 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+			 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-005
 			 * @return {void}
 			 */
 			handler() {
 				this.resolveVersion()
 				this.refreshList()
+				if (this.history) {
+					this.history.reset(this.staged)
+				}
 			},
 		},
 	},
@@ -526,6 +591,14 @@ export default {
 		if (this.schemaId) {
 			await this.loadDetail()
 		}
+		// REQ-BUR-003/-005: document-level undo/redo shortcuts. `onKeydown`
+		// itself no-ops outside detail mode (no staged model to act on), so
+		// the listener is safe to keep attached across list/detail navigation
+		// on this same component instance.
+		document.addEventListener('keydown', this.onKeydown)
+	},
+	beforeDestroy() {
+		document.removeEventListener('keydown', this.onKeydown)
 	},
 	methods: {
 		/**
@@ -637,6 +710,10 @@ export default {
 			if (!this.schemaId) {
 				this.staged = null
 				this.persisted = null
+				// REQ-BUR-005: no schema selected — reset to an empty session.
+				if (this.history) {
+					this.history.reset(null)
+				}
 				return
 			}
 			this.loadingDetail = true
@@ -660,6 +737,13 @@ export default {
 				showError(this.t('openbuild', 'Failed to load schema: {error}', { error: this.errorMessage(e) }))
 			} finally {
 				this.loadingDetail = false
+				// REQ-BUR-005: a `schemaId` route change is a session boundary —
+				// re-baseline the undo/redo history to the freshly staged model
+				// (or `null` on a load failure / not-found) regardless of which
+				// branch above ran.
+				if (this.history) {
+					this.history.reset(this.staged)
+				}
 			}
 		},
 		/**
@@ -747,6 +831,22 @@ export default {
 			return body
 		},
 		/**
+		 * REQ-BUR-005 (design.md D5): the single commit point every staged
+		 * mutation — and `discardChanges()` — routes through. Replaces
+		 * `this.staged` and pushes the new snapshot onto the undo/redo
+		 * history in one step, so a discard is recorded as exactly one
+		 * history entry alongside every other staged edit.
+		 *
+		 * @param {object} next The new staged editor model.
+		 * @return {void}
+		 */
+		commitStaged(next) {
+			this.staged = next
+			if (this.history) {
+				this.history.push(next)
+			}
+		},
+		/**
 		 * Apply a header-form change into the staged model (slug locked).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
@@ -754,13 +854,13 @@ export default {
 		 * @return {void}
 		 */
 		onHeaderChange(value) {
-			this.staged = {
+			this.commitStaged({
 				...this.staged,
 				title: value.title,
 				description: value.description,
 				version: value.version,
 				// slug is locked on detail view
-			}
+			})
 		},
 		/**
 		 * Apply a fields-editor change into the staged model.
@@ -770,7 +870,7 @@ export default {
 		 * @return {void}
 		 */
 		onFieldsChange(fields) {
-			this.staged = { ...this.staged, fields }
+			this.commitStaged({ ...this.staged, fields })
 		},
 		/**
 		 * Apply a states change into the staged model.
@@ -780,7 +880,7 @@ export default {
 		 * @return {void}
 		 */
 		onStatesChange(states) {
-			this.staged = { ...this.staged, states }
+			this.commitStaged({ ...this.staged, states })
 		},
 		/**
 		 * Apply a transitions change into the staged model.
@@ -790,7 +890,7 @@ export default {
 		 * @return {void}
 		 */
 		onTransitionsChange(transitions) {
-			this.staged = { ...this.staged, transitions }
+			this.commitStaged({ ...this.staged, transitions })
 		},
 		/**
 		 * Apply a relations change into the staged model.
@@ -800,17 +900,23 @@ export default {
 		 * @return {void}
 		 */
 		onRelationsChange(relations) {
-			this.staged = { ...this.staged, relations }
+			this.commitStaged({ ...this.staged, relations })
 		},
 		/**
-		 * Apply an Access sub-editor change into the staged model.
+		 * Apply an Access sub-editor change into the staged model. Routed
+		 * through `commitStaged` (builder-undo-redo) like every other
+		 * staged mutation, even though AccessEditor postdates the original
+		 * design.md D5 list — data-scopes-authoring landed after that spec
+		 * was written, and an access-scope edit is a staged-model mutation
+		 * like any other; leaving it out of undo/redo would be an
+		 * inconsistent gap in the same feature.
 		 *
 		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-001
 		 * @param {object} access Updated access editor model ({ rows, extraKeys }).
 		 * @return {void}
 		 */
 		onAccessChange(access) {
-			this.staged = { ...this.staged, access }
+			this.commitStaged({ ...this.staged, access })
 		},
 		/**
 		 * Apply a widgets change into the staged model.
@@ -820,7 +926,7 @@ export default {
 		 * @return {void}
 		 */
 		onWidgetsChange(widgets) {
-			this.staged = { ...this.staged, widgets }
+			this.commitStaged({ ...this.staged, widgets })
 		},
 		/**
 		 * Create a new schema via the store, surfacing duplicate-slug errors.
@@ -938,6 +1044,12 @@ export default {
 				}
 				this.persisted = data
 				this.staged = this.bodyToStaged(data)
+				// REQ-BUR-005: a successful save is a session boundary —
+				// re-baseline the undo/redo history to the freshly saved
+				// staged model, disabling both Undo and Redo.
+				if (this.history) {
+					this.history.reset(this.staged)
+				}
 				showSuccess(this.t('openbuild', 'Schema saved.'))
 			} catch (e) {
 				this.saveError = this.errorMessage(e)
@@ -946,15 +1058,75 @@ export default {
 			}
 		},
 		/**
-		 * Revert staged edits back to the persisted body.
+		 * Revert staged edits back to the persisted body. Routed through
+		 * `commitStaged` (REQ-BUR-005 / design.md D5) so the discard itself
+		 * is recorded as exactly one history entry — a single undo brings
+		 * the discarded staged edits back.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-005
 		 * @return {void}
 		 */
 		discardChanges() {
 			if (this.persisted) {
-				this.staged = this.bodyToStaged(this.persisted)
+				this.commitStaged(this.bodyToStaged(this.persisted))
 				this.saveError = ''
+			}
+		},
+		/**
+		 * REQ-BUR-005: step back one staged state (or no-op at the bottom).
+		 *
+		 * @return {void}
+		 */
+		undo() {
+			if (!this.history) {
+				return
+			}
+			const prev = this.history.undo()
+			if (prev !== null) {
+				this.staged = prev
+			}
+		},
+		/**
+		 * REQ-BUR-005: step forward one staged state (or no-op at the top).
+		 *
+		 * @return {void}
+		 */
+		redo() {
+			if (!this.history) {
+				return
+			}
+			const next = this.history.redo()
+			if (next !== null) {
+				this.staged = next
+			}
+		},
+		/**
+		 * REQ-BUR-003: document-level Undo/Redo shortcut handler, mirroring
+		 * `PageDesigner.vue`'s guard (design.md D4). No-ops outside detail
+		 * mode (no staged model to act on) and inside editable fields.
+		 *
+		 * @param {KeyboardEvent} event - the keydown event.
+		 * @return {void}
+		 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-003
+		 */
+		onKeydown(event) {
+			if (!this.schemaId || !this.staged) {
+				return
+			}
+			if (!event || !(event.ctrlKey || event.metaKey)) {
+				return
+			}
+			if (isEditableTarget(event)) {
+				return
+			}
+			const key = (event.key || '').toLowerCase()
+			if (key === 'z' && !event.shiftKey) {
+				event.preventDefault()
+				this.undo()
+			} else if ((key === 'z' && event.shiftKey) || key === 'y') {
+				event.preventDefault()
+				this.redo()
 			}
 		},
 		/**

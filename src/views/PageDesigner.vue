@@ -150,8 +150,9 @@ import WikiPageEditor from '../components/page-editor/WikiPageEditor.vue'
 import StubPageEditor from '../components/page-editor/StubPageEditor.vue'
 import { useLivePreview } from '../composables/useLivePreview.js'
 import { useManifestValidator } from '../composables/useManifestValidator.js'
-import { useManifestHistory } from '../composables/useManifestHistory.js'
+import { useSessionHistory } from '../composables/useSessionHistory.js'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
+import { isEditableTarget } from '../utils/isEditableTarget.js'
 
 // Mapping of page.type → sub-editor component, covering every canonical v2
 // page type that ships a renderer component (REQ-PEC-001). Adding a new
@@ -225,6 +226,18 @@ export default {
 			type: String,
 			default: '',
 		},
+		/**
+		 * Session-boundary key (REQ-BUR-004, design.md D3). Owned by the
+		 * host (`PageDesignerHost.vue`), derived from slug + version slug +
+		 * a save counter. A change re-baselines the undo/redo history to
+		 * the then-current manifest with both Undo and Redo disabled —
+		 * fixing the cross-version undo-bleed at HEAD, where the local
+		 * composable's `reset()` had no callers.
+		 */
+		sessionKey: {
+			type: String,
+			default: '',
+		},
 	},
 	emits: ['update:manifest', 'save-and-preview'],
 	/**
@@ -235,7 +248,9 @@ export default {
 	setup(props) {
 		const { available: previewAvailable, previewProps } = useLivePreview()
 		const validator = useManifestValidator()
-		const history = useManifestHistory(props.manifest)
+		// REQ-BUR-001 / REQ-BUR-007: shared nc-vue history engine (depth
+		// 100), seeded with the incoming manifest as the session baseline.
+		const history = useSessionHistory(props.manifest, { limit: 100 })
 		return { previewAvailable, previewProps, validator, history }
 	},
 	data() {
@@ -407,6 +422,19 @@ export default {
 					this.history.push(m)
 				}
 			},
+		},
+		/**
+		 * REQ-BUR-004: a session-key change (save / app-slug / version
+		 * switch, owned by the host) re-baselines the undo/redo history to
+		 * the then-current manifest, disabling both Undo and Redo.
+		 *
+		 * @param {string} newKey - the new session key.
+		 * @param {string} oldKey - the previous session key.
+		 */
+		sessionKey(newKey, oldKey) {
+			if (newKey !== oldKey && this.history) {
+				this.history.reset(this.manifest)
+			}
 		},
 	},
 	/**
@@ -598,12 +626,20 @@ export default {
 			}
 		},
 		/**
-		 * Observed behaviour of `onKeydown` (retrofit annotation).
+		 * REQ-BUR-003: document-level Undo/Redo shortcut handler with an
+		 * editable-target guard — chords are ignored while focus is inside
+		 * an input/textarea/select/contenteditable element, so the
+		 * browser's native text-field undo wins there instead of stacking a
+		 * manifest-level revert on top of it (design.md D4).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-003
 		 */
 		onKeydown(event) {
 			if (!event || !(event.ctrlKey || event.metaKey)) {
+				return
+			}
+			if (isEditableTarget(event)) {
 				return
 			}
 			const key = (event.key || '').toLowerCase()

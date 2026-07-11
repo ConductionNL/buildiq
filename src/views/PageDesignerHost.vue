@@ -75,6 +75,7 @@
 			v-else
 			:manifest="manifest"
 			:slug="routeSlug"
+			:session-key="sessionKey"
 			@update:manifest="onManifestUpdate"
 			@save-and-preview="save" />
 
@@ -182,6 +183,10 @@ export default {
 			docudeskAvailable: true,
 			// spec ai-copilot REQ-OBAIC-007: builder copilot panel toggle.
 			showCopilotPanel: false,
+			// REQ-BUR-004: incremented after each successful save; feeds
+			// `sessionKey` so a save re-baselines the designer's undo/redo
+			// history (design.md D3). A failed save does NOT increment this.
+			saveCounter: 0,
 		}
 	},
 
@@ -281,6 +286,21 @@ export default {
 			const published = this.application.currentVersion || this.application.status === 'published'
 			return published ? generateUrl(`/apps/openbuild/builder/${this.application.slug}`) : ''
 		},
+
+		/**
+		 * REQ-BUR-004 / design.md D3: the designer's session-boundary key —
+		 * a slug change, a `?_version=` switch, or a successful save each
+		 * change this value, which the designer watches to reset its
+		 * undo/redo history to the then-current manifest. Fixes the
+		 * cross-version undo-bleed at HEAD (the local composable's
+		 * `reset()` had no callers).
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-004
+		 */
+		sessionKey() {
+			return `${this.routeSlug}:${this.versionSlug || ''}:${this.saveCounter}`
+		},
 	},
 
 	watch: {
@@ -294,12 +314,20 @@ export default {
 			this.load()
 		},
 		/**
-		 * Observed behaviour of `versionSlug` (retrofit annotation).
+		 * A `?_version=` switch must reload the manifest from the newly
+		 * resolved ApplicationVersion — pre-existing gap fixed here
+		 * (builder-undo-redo): at HEAD this handler only re-resolved the
+		 * version and never called `load()`, so the displayed/edited
+		 * manifest silently kept showing the previous version after a
+		 * version switch. `load()` reads `this.applicationVersion`, so
+		 * `resolveVersion()` must run first.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-004
 		 */
 		versionSlug() {
 			this.resolveVersion()
+			this.load()
 		},
 	},
 
@@ -509,6 +537,10 @@ export default {
 						this.applicationVersion = data
 					}
 					this.toast = t('openbuild', 'Pages saved.')
+					// REQ-BUR-004: a successful save is a session boundary — bump
+					// the counter so `sessionKey` changes and the designer resets
+					// its undo/redo history to the just-saved manifest.
+					this.saveCounter += 1
 					return
 				}
 				const url = generateUrl(`/apps/openregister/api/objects/openbuild/application/${this.applicationUuid}`)
@@ -517,6 +549,8 @@ export default {
 					this.application = data
 				}
 				this.toast = t('openbuild', 'Pages saved.')
+				// REQ-BUR-004: see the PATCH branch above — same session-boundary bump.
+				this.saveCounter += 1
 			} catch (e) {
 				this.error = t('openbuild', 'Failed to save: {error}', { error: (e && e.message) || String(e) })
 			} finally {
