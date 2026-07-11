@@ -42,4 +42,6 @@ For the step-by-step walkthroughs, see the **Tutorials** in the sidebar — the
 **User guide** covers building an app, the **Admin guide** covers RBAC,
 the template catalogue, and OpenBuild settings. The `integrator-guide`,
 `openbuild-rbac`, and `openbuild-runtime` reference pages cover the deeper
-mechanics.
+mechanics, and [Form logic](./form-logic-authoring.md) covers authoring
+multi-step wizards, conditional visibility, and validation rules on form
+pages.
