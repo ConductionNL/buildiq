@@ -13,6 +13,26 @@
 			{{ t('openbuild', 'App basics') }}
 		</h3>
 
+		<!-- Generate with AI (spec ai-copilot REQ-OBAIC-006) — health-gated;
+		     hidden entirely when no TaskProcessing provider is configured. -->
+		<div v-if="copilotAvailable" class="wizard-step1__ai-row">
+			<NcButton
+				data-testid="copilot-generate-button"
+				type="secondary"
+				@click="showCopilotDialog = true">
+				{{ t('openbuild', 'Generate with AI') }}
+			</NcButton>
+		</div>
+		<p
+			v-else-if="showAdminHint"
+			data-testid="copilot-admin-hint"
+			class="wizard-step1__ai-hint">
+			{{ t('openbuild', 'Tip: configure an AI provider in the Nextcloud AI settings to unlock "Generate with AI".') }}
+			<a :href="aiSettingsUrl">{{ t('openbuild', 'Open AI settings') }}</a>
+		</p>
+
+		<CopilotGenerateDialog :open.sync="showCopilotDialog" @created="onAiAppCreated" />
+
 		<!-- Name input -->
 		<div class="wizard-step1__field">
 			<label class="wizard-step1__label" for="wizard-app-name">
@@ -146,15 +166,21 @@
 </template>
 
 <script>
+import { NcButton } from '@nextcloud/vue'
 import { CnIconPicker } from '@conduction/nextcloud-vue'
+import { generateUrl } from '@nextcloud/router'
 import { toKebabCase, validateSlug } from '../../utils/slugPattern.js'
 import { ICON_SOURCES, buildIconCatalogues, resolveAppIcon } from '../../utils/iconCatalogues.js'
+import { useCopilot } from '../../composables/useCopilot.js'
+import CopilotGenerateDialog from '../CopilotGenerateDialog.vue'
 
 export default {
 	name: 'Step1Basics',
 
 	components: {
 		CnIconPicker,
+		NcButton,
+		CopilotGenerateDialog,
 	},
 
 	props: {
@@ -167,7 +193,11 @@ export default {
 		},
 	},
 
-	emits: ['update:payload'],
+	emits: ['update:payload', 'ai-app-created'],
+
+	setup() {
+		return { copilot: useCopilot() }
+	},
 
 	data() {
 		return {
@@ -178,10 +208,43 @@ export default {
 			iconSources: ICON_SOURCES,
 			// Frozen so Vue doesn't deep-observe ~7.7k catalogue entries.
 			iconCatalogues: Object.freeze(buildIconCatalogues()),
+			showCopilotDialog: false,
 		}
 	},
 
 	computed: {
+		/**
+		 * Whether the AI copilot's "Generate with AI" entry point should render
+		 * (spec ai-copilot REQ-OBAIC-001 — hidden entirely when unavailable).
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 */
+		copilotAvailable() {
+			return this.copilot.isAvailable.value
+		},
+
+		/**
+		 * Whether the muted admin hint should render — only for NC admins, and
+		 * only once the health probe has resolved to unavailable.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 */
+		showAdminHint() {
+			const isAdmin = !!(typeof OC !== 'undefined' && OC.isUserAdmin && OC.isUserAdmin())
+			return isAdmin && !!this.copilot.health.value && this.copilot.health.value.available === false
+		},
+
+		/**
+		 * Deep link to the Nextcloud AI provider settings.
+		 *
+		 * @return {string}
+		 */
+		aiSettingsUrl() {
+			return generateUrl('/settings/admin/ai')
+		},
+
 		/**
 		 * The resolved light app icon (white glyph) for the preview box, or ''.
 		 *
@@ -234,7 +297,30 @@ export default {
 		},
 	},
 
+	/**
+	 * Probe copilot availability (spec ai-copilot REQ-OBAIC-001) — cached
+	 * per session by `useCopilot`, so re-entering this step is cheap.
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 */
+	created() {
+		this.copilot.checkHealth()
+	},
+
 	methods: {
+		/**
+		 * Bubble the copilot-created app slug up to the wizard so it can close
+		 * itself and route to the new application (spec ai-copilot REQ-OBAIC-006).
+		 *
+		 * @param {string} appSlug - the newly-created app's slug.
+		 * @return {void}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 */
+		onAiAppCreated(appSlug) {
+			this.$emit('ai-app-created', appSlug)
+		},
+
 		/**
 		 * Observed behaviour of `onNameInput` (retrofit annotation).
 		 *
@@ -408,6 +494,16 @@ export default {
 	color: var(--color-error, #e9322d);
 	font-size: 0.8rem;
 	margin: 4px 0 0;
+}
+
+.wizard-step1__ai-row {
+	display: flex;
+}
+
+.wizard-step1__ai-hint {
+	color: var(--color-text-maxcontrast, #888);
+	font-size: 0.85rem;
+	margin: 0;
 }
 
 .wizard-step1__icon-row {
