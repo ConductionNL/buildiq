@@ -43,13 +43,38 @@ export default {
 	props: {
 		slug: {
 			type: String,
-			required: true,
+			default: '',
 		},
 		from: {
 			type: String,
 			default: 'draft',
 		},
 		to: {
+			type: String,
+			default: '',
+		},
+		/**
+		 * Static mode (spec ai-copilot REQ-OBAIC-003/007): when either of
+		 * `fromManifest`/`toManifest` is provided the component diffs those
+		 * blobs directly instead of fetching `slug`'s stored versions —
+		 * used by the copilot's proposal card to preview a not-yet-saved
+		 * predicted manifest.
+		 */
+		fromManifest: {
+			type: Object,
+			default: null,
+		},
+		toManifest: {
+			type: Object,
+			default: null,
+		},
+		/** Label shown for `from` in static mode (ignored otherwise). */
+		fromLabelText: {
+			type: String,
+			default: '',
+		},
+		/** Label shown for `to` in static mode (ignored otherwise). */
+		toLabelText: {
 			type: String,
 			default: '',
 		},
@@ -64,11 +89,24 @@ export default {
 	},
 	computed: {
 		/**
+		 * Static mode (spec ai-copilot REQ-OBAIC-003/007): diff two in-memory
+		 * manifest blobs instead of fetching stored versions by slug.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 */
+		isStaticMode() {
+			return this.fromManifest !== null || this.toManifest !== null
+		},
+		/**
 		 * Observed behaviour of `fromLabel` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		fromLabel() {
+			if (this.isStaticMode) {
+				return this.fromLabelText || t('openbuild', 'Current')
+			}
 			return this.from === 'draft' ? t('openbuild', 'Current draft') : (this.from.slice(0, 8) + '…')
 		},
 		/**
@@ -77,9 +115,15 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		toLabel() {
+			if (this.isStaticMode) {
+				return this.toLabelText || t('openbuild', 'Predicted')
+			}
 			return this.to === 'draft' ? t('openbuild', 'Current draft') : (this.to ? this.to.slice(0, 8) + '…' : '—')
 		},
 		hasAnyContent() {
+			if (this.isStaticMode) {
+				return this.fromManifest !== null || this.toManifest !== null
+			}
 			return this.fromBlob !== null || this.toBlob !== null
 		},
 		/**
@@ -88,8 +132,10 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		diffParts() {
-			const fromText = this.prettyManifest(this.fromBlob?.manifest)
-			const toText = this.prettyManifest(this.toBlob?.manifest)
+			const fromSource = this.isStaticMode ? this.fromManifest : this.fromBlob?.manifest
+			const toSource = this.isStaticMode ? this.toManifest : this.toBlob?.manifest
+			const fromText = this.prettyManifest(fromSource)
+			const toText = this.prettyManifest(toSource)
 			if (!fromText && !toText) {
 				return []
 			}
@@ -128,6 +174,9 @@ export default {
 	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 	 */
 	mounted() {
+		if (this.isStaticMode) {
+			return
+		}
 		if (this.slug && this.to) {
 			this.fetch()
 		}
@@ -139,7 +188,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		async fetch() {
-			if (!this.slug || !this.to) {
+			if (this.isStaticMode || !this.slug || !this.to) {
 				return
 			}
 			this.loading = true
