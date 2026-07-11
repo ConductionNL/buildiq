@@ -53,7 +53,11 @@
 				<!-- Hybrid apps ARE the live installed Nextcloud app — surface a
 				     direct "Open app" link so it's obvious it's accessible. -->
 				<p v-if="isHybrid && installedAppUrl" class="ob-detail-header__open-app">
-					<a class="ob-detail-header__open-app-link" :href="installedAppUrl" target="_blank" rel="noopener noreferrer">
+					<a
+						class="ob-detail-header__open-app-link"
+						:href="installedAppUrl"
+						target="_blank"
+						rel="noopener noreferrer">
 						<OpenInNew :size="16" class="ob-detail-header__open-app-icon" />
 						{{ t('openbuild', 'Open {name}', { name: applicationName }) }}
 					</a>
