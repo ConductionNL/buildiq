@@ -32,6 +32,16 @@
 				<a v-if="builderUrl" class="page-designer-host__link" :href="builderUrl">
 					{{ t('openbuild', 'Open app') }}
 				</a>
+				<!-- AI copilot panel toggle (spec ai-copilot REQ-OBAIC-007) —
+				     health-gated, hidden for hybrid apps (copilot edits virtual
+				     apps only). -->
+				<NcButton
+					v-if="copilotToggleVisible"
+					data-testid="copilot-panel-toggle"
+					:pressed="showCopilotPanel"
+					@click="showCopilotPanel = !showCopilotPanel">
+					{{ t('openbuild', 'AI copilot') }}
+				</NcButton>
 				<NcButton
 					v-if="application"
 					type="primary"
@@ -103,6 +113,13 @@
 			v-if="application"
 			:manifest="manifest"
 			@update:manifest="onManifestUpdate" />
+
+		<!-- AI copilot side panel (spec ai-copilot REQ-OBAIC-007) — proposes
+		     reviewable operations with a manifest diff; approve applies via
+		     the same MCP handler layer and refreshes the designer's manifest. -->
+		<aside v-if="copilotToggleVisible && showCopilotPanel" class="page-designer-host__copilot">
+			<CopilotPanel :app-slug="routeSlug" @executed="load" />
+		</aside>
 	</div>
 </template>
 
@@ -113,12 +130,14 @@ import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useAppStatus } from '../composables/useAppStatus.js'
 import { useAppTheme } from '../composables/useAppTheme.js'
+import { useCopilot } from '../composables/useCopilot.js'
 import { reconcileWorkflowDependency, reconcileConnectorDependency, reconcileDocumentDependency, stripDependencyMarker } from '../services/manifestDependencies.js'
 import PageDesigner from './PageDesigner.vue'
 import WorkflowAttachmentsSection from '../components/WorkflowAttachmentsSection.vue'
 import ThemeSection from '../components/ThemeSection.vue'
 import DocumentAttachmentsSection from '../components/DocumentAttachmentsSection.vue'
 import SchedulesSection from '../components/SchedulesSection.vue'
+import CopilotPanel from '../components/copilot/CopilotPanel.vue'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
 
@@ -134,6 +153,11 @@ export default {
 		ThemeSection,
 		DocumentAttachmentsSection,
 		SchedulesSection,
+		CopilotPanel,
+	},
+
+	setup() {
+		return { copilot: useCopilot() }
 	},
 
 	data() {
@@ -156,10 +180,24 @@ export default {
 			appTheme: useAppTheme(),
 			// REQ-DDT-005: soft capability check for Docudesk (graceful absence).
 			docudeskAvailable: true,
+			// spec ai-copilot REQ-OBAIC-007: builder copilot panel toggle.
+			showCopilotPanel: false,
 		}
 	},
 
 	computed: {
+		/**
+		 * Whether the AI copilot toolbar toggle should render — health-gated
+		 * and hidden for hybrid apps (the copilot edits virtual apps only).
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 */
+		copilotToggleVisible() {
+			const isHybrid = !!(this.application && this.application.appType === 'hybrid')
+			return this.copilot.isAvailable.value && !isHybrid
+		},
+
 		/**
 		 * The app's schemas normalized to `[{ slug, title, properties }]` for
 		 * the Workflows section's pickers. Reads the manifest's embedded
@@ -294,6 +332,9 @@ export default {
 		docudeskStatus.check().then(() => {
 			this.docudeskAvailable = docudeskStatus.available.value
 		})
+		// spec ai-copilot REQ-OBAIC-001/007: probe copilot availability
+		// (cached per session by useCopilot) so the panel toggle is health-gated.
+		this.copilot.checkHealth()
 	},
 
 	/**
@@ -537,5 +578,19 @@ export default {
 	display: flex;
 	justify-content: center;
 	padding: 48px 0;
+}
+
+.page-designer-host__copilot {
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: 360px;
+	max-width: 100%;
+	background: var(--color-main-background);
+	border-left: 1px solid var(--color-border);
+	padding: 12px;
+	z-index: 50;
+	box-sizing: border-box;
 }
 </style>
