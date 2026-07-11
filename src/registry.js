@@ -113,6 +113,12 @@ import { CnAuditTrailCard } from '@conduction/nextcloud-vue'
 // condition-action editors and the test sandbox (spec business-rules-engine).
 import RuleSetsPageView from './views/RuleSetsPage.vue'
 
+// Automation designer — the unified "when X happens, do Y" surface composing
+// trigger + optional condition + actions, compiled to the existing
+// notifications/lifecycle/schedules/rules-engine primitives (spec
+// automation-designer).
+import AutomationsPageView from './views/AutomationsPage.vue'
+
 // Export jobs tab — wraps ExportJobsList as the "Exports" sidebar tab on the
 // VirtualAppDetail page (spec openbuild-exporter task 9.2).
 import ExportJobsTab from './components/tabs/ExportJobsTab.vue'
@@ -241,6 +247,9 @@ export default {
 
 	// Business-rules engine dashboard (type:"custom" page).
 	RuleSetsPageView: page(RuleSetsPageView),
+
+	// Automation designer dashboard (type:"custom" page).
+	AutomationsPageView: page(AutomationsPageView),
 
 	// Export jobs sidebar tab on VirtualAppDetail (spec openbuild-exporter task 9.2).
 	ExportJobsTab: tab(ExportJobsTab),

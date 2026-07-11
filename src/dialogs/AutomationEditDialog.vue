@@ -1,0 +1,811 @@
+<!-- SPDX-License-Identifier: EUPL-1.2 -->
+<!--
+  - AutomationEditDialog — standalone dialog (modal-isolation rule) composing
+  - TRIGGER + optional CONDITION + ACTIONS for one automation (spec
+  - automation-designer REQ-AUTD-002 / REQ-AUTD-003).
+  -
+  - Schema, transition and synchronization pickers are populated from
+  - OpenRegister REST and degrade to free-text ids when a list cannot load
+  - (mirrors ConnectorSourcePicker / ScheduleEditDialog). Matrix-invalid
+  - combinations (design.md Decision 2 / src/services/automationMatrix.js)
+  - are blocked inline with an explanatory message — the automation cannot
+  - be saved in an unsupported shape.
+  -->
+<template>
+	<NcModal
+		v-if="open"
+		size="large"
+		:name="editing ? t('openbuild', 'Edit automation') : t('openbuild', 'New automation')"
+		@close="onClose">
+		<div class="automation-edit">
+			<h2 class="automation-edit__title">
+				{{ editing ? t('openbuild', 'Edit automation') : t('openbuild', 'New automation') }}
+			</h2>
+
+			<NcTextField
+				:value="name"
+				:label="t('openbuild', 'Name')"
+				@update:value="onNameInput" />
+			<p class="automation-edit__hint">
+				{{ t('openbuild', 'Identifier') }}: <code>{{ derivedSlug || '—' }}</code>
+			</p>
+			<NcTextField
+				:value="description"
+				:label="t('openbuild', 'Description (optional)')"
+				@update:value="description = $event" />
+
+			<!-- Trigger -->
+			<section class="automation-edit__section">
+				<h3>{{ t('openbuild', 'Trigger') }}</h3>
+				<NcSelect
+					v-model="triggerOption"
+					:input-label="t('openbuild', 'When')"
+					:options="triggerOptions"
+					:clearable="false"
+					label="label"
+					@input="onTriggerChange" />
+
+				<template v-if="isObjectTrigger || triggerType === 'lifecycle-transition'">
+					<NcSelect
+						v-if="schemaPickerAvailable"
+						v-model="schemaOption"
+						:input-label="t('openbuild', 'Schema')"
+						:options="schemaOptions"
+						:loading="schemaLoading"
+						label="label"
+						@input="onSchemaSelect" />
+					<NcTextField
+						v-else
+						:value="triggerSchema"
+						:label="t('openbuild', 'Schema slug')"
+						@update:value="triggerSchema = $event" />
+				</template>
+
+				<template v-if="triggerType === 'lifecycle-transition'">
+					<NcSelect
+						v-if="transitionPickerAvailable"
+						v-model="transitionOption"
+						:input-label="t('openbuild', 'Transition')"
+						:options="transitionOptions"
+						:loading="transitionLoading"
+						label="label" />
+					<NcTextField
+						v-else
+						:value="triggerTransition"
+						:label="t('openbuild', 'Transition action name')"
+						@update:value="triggerTransition = $event" />
+				</template>
+
+				<template v-if="triggerType === 'schedule'">
+					<NcSelect
+						v-model="cadenceOption"
+						:input-label="t('openbuild', 'Cadence')"
+						:options="cadenceOptions"
+						:clearable="false"
+						label="label" />
+					<NcTextField
+						v-if="isCustomCron"
+						:value="triggerCron"
+						:label="t('openbuild', 'Cron expression (5 fields)')"
+						@update:value="triggerCron = $event" />
+					<NcTextField
+						v-if="isCustomInterval"
+						:value="String(triggerInterval)"
+						type="number"
+						:label="t('openbuild', 'Interval (seconds)')"
+						@update:value="triggerInterval = Number($event)" />
+				</template>
+			</section>
+
+			<!-- Condition -->
+			<section class="automation-edit__section">
+				<h3>{{ t('openbuild', 'Condition (optional)') }}</h3>
+				<NcNoteCard v-if="conditionBlockedReason" type="warning" data-testid="condition-blocked">
+					{{ conditionBlockedReason }}
+				</NcNoteCard>
+				<template v-else>
+					<NcSelect
+						v-model="conditionKindOption"
+						:input-label="t('openbuild', 'Condition type')"
+						:options="conditionKindOptions"
+						label="label" />
+					<NcTextField
+						v-if="conditionKind === 'feel'"
+						:value="conditionExpression"
+						:label="t('openbuild', 'FEEL expression')"
+						placeholder="payload.amount > 1000"
+						@update:value="conditionExpression = $event" />
+					<NcTextField
+						v-if="conditionKind === 'rule-set'"
+						:value="conditionRuleSetSlug"
+						:label="t('openbuild', 'Rule set slug')"
+						@update:value="conditionRuleSetSlug = $event" />
+				</template>
+			</section>
+
+			<!-- Actions -->
+			<section class="automation-edit__section">
+				<div class="automation-edit__section-header">
+					<h3>{{ t('openbuild', 'Actions') }}</h3>
+					<NcButton @click="addAction">
+						{{ t('openbuild', 'Add action') }}
+					</NcButton>
+				</div>
+
+				<p v-if="actions.length === 0" class="automation-edit__hint">
+					{{ t('openbuild', 'No actions yet.') }}
+				</p>
+
+				<div
+					v-for="(action, index) in actions"
+					:key="action._key"
+					class="automation-edit__action"
+					data-testid="action-row">
+					<NcSelect
+						:value="actionTypeOption(action.type)"
+						:input-label="t('openbuild', 'Action type')"
+						:options="actionTypeOptions"
+						:clearable="false"
+						label="label"
+						@input="onActionTypeChange(index, $event)" />
+
+					<NcNoteCard
+						v-if="actionBlockedReason(action.type)"
+						type="warning"
+						data-testid="action-blocked">
+						{{ actionBlockedReason(action.type) }}
+					</NcNoteCard>
+
+					<template v-else-if="action.type === 'send-notification'">
+						<NcTextField
+							:value="action.subjectEn"
+							:label="t('openbuild', 'Subject (English)')"
+							@update:value="updateAction(index, 'subjectEn', $event)" />
+						<NcTextField
+							:value="action.subjectNl"
+							:label="t('openbuild', 'Subject (Dutch)')"
+							@update:value="updateAction(index, 'subjectNl', $event)" />
+					</template>
+
+					<template v-else-if="action.type === 'run-synchronization'">
+						<NcSelect
+							v-if="syncPickerAvailable"
+							:value="syncOption(action.synchronizationId)"
+							:input-label="t('openbuild', 'Synchronization')"
+							:options="syncOptions"
+							:loading="syncLoading"
+							label="label"
+							@input="onSyncSelect(index, $event)" />
+						<NcTextField
+							v-else
+							:value="action.synchronizationId"
+							:label="t('openbuild', 'Synchronization id')"
+							@update:value="updateAction(index, 'synchronizationId', $event)" />
+					</template>
+
+					<template v-else-if="action.type === 'object-op'">
+						<NcSelect
+							v-model="objectOpOperationOption[index]"
+							:input-label="t('openbuild', 'Operation')"
+							:options="objectOpOperationOptions"
+							:clearable="false"
+							label="label"
+							@input="updateAction(index, 'operation', $event ? $event.value : 'create')" />
+						<NcTextField
+							:value="action.schema"
+							:label="t('openbuild', 'Target schema')"
+							@update:value="updateAction(index, 'schema', $event)" />
+						<NcTextArea
+							:value="action.fieldMappingText"
+							:label="t('openbuild', 'Field mapping (JSON)')"
+							@update:value="updateAction(index, 'fieldMappingText', $event)" />
+					</template>
+
+					<template v-else-if="action.type === 'webhook'">
+						<NcTextField
+							:value="action.url"
+							:label="t('openbuild', 'Webhook URL')"
+							@update:value="updateAction(index, 'url', $event)" />
+						<NcTextArea
+							:value="action.payloadTemplateText"
+							:label="t('openbuild', 'Payload template (JSON)')"
+							@update:value="updateAction(index, 'payloadTemplateText', $event)" />
+					</template>
+
+					<NcButton type="error" :aria-label="t('openbuild', 'Remove action')" @click="removeAction(index)">
+						{{ t('openbuild', 'Remove') }}
+					</NcButton>
+				</div>
+			</section>
+
+			<p v-if="showValidation && !valid" class="automation-edit__error" role="alert">
+				{{ validationMessage }}
+			</p>
+			<NcNoteCard v-if="errorMessage" type="error">
+				{{ errorMessage }}
+			</NcNoteCard>
+
+			<div class="automation-edit__actions">
+				<NcButton @click="onClose">
+					{{ t('openbuild', 'Cancel') }}
+				</NcButton>
+				<NcButton type="primary" :disabled="saving" @click="onSave">
+					{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
+				</NcButton>
+			</div>
+		</div>
+	</NcModal>
+</template>
+
+<script>
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+import { NcButton, NcModal, NcNoteCard, NcSelect, NcTextArea, NcTextField } from '@nextcloud/vue'
+import { isActionAllowed, isConditionAllowed, blockedActionReason, blockedConditionReason } from '../services/automationMatrix.js'
+
+const INTERVAL_PRESETS = Object.freeze([
+	{ id: 'hourly', interval: 3600 },
+	{ id: 'daily', interval: 86400 },
+	{ id: 'weekly', interval: 604800 },
+	{ id: 'monthly', interval: 2592000 },
+])
+
+let keyCounter = 0
+function nextKey() {
+	keyCounter += 1
+	return `aut-action-${keyCounter}`
+}
+
+/**
+ * Derive a kebab-case slug from a human label.
+ *
+ * @param {string} label - the human label.
+ * @return {string}
+ */
+function slugify(label) {
+	return String(label || '')
+		.toLowerCase()
+		.trim()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '')
+}
+
+export default {
+	name: 'AutomationEditDialog',
+	components: { NcButton, NcModal, NcNoteCard, NcSelect, NcTextArea, NcTextField },
+	props: {
+		open: { type: Boolean, default: false },
+		automation: { type: Object, default: null },
+		register: { type: String, default: '' },
+	},
+	emits: ['update:open', 'saved'],
+	data() {
+		return {
+			id: null,
+			slug: '',
+			name: '',
+			description: '',
+			triggerType: 'manual',
+			triggerSchema: '',
+			triggerTransition: '',
+			triggerInterval: 86400,
+			triggerCron: '',
+			cadenceOption: null,
+			conditionKindOption: null,
+			conditionExpression: '',
+			conditionRuleSetSlug: '',
+			actions: [],
+			objectOpOperationOption: [],
+			schemaOptions: [],
+			schemaOption: null,
+			schemaLoading: false,
+			schemaFetchFailed: false,
+			transitionOptions: [],
+			transitionOption: null,
+			transitionLoading: false,
+			transitionFetchFailed: false,
+			syncOptions: [],
+			syncLoading: false,
+			syncFetchFailed: false,
+			saving: false,
+			showValidation: false,
+			errorMessage: '',
+		}
+	},
+	computed: {
+		editing() {
+			return !!(this.automation && this.automation.slug)
+		},
+		derivedSlug() {
+			if (this.editing) {
+				return this.slug
+			}
+			return slugify(this.name)
+		},
+		triggerOptions() {
+			return [
+				{ value: 'object-created', label: t('openbuild', 'Object created') },
+				{ value: 'object-updated', label: t('openbuild', 'Object updated') },
+				{ value: 'object-deleted', label: t('openbuild', 'Object deleted') },
+				{ value: 'lifecycle-transition', label: t('openbuild', 'Lifecycle transition') },
+				{ value: 'schedule', label: t('openbuild', 'Cron schedule') },
+				{ value: 'manual', label: t('openbuild', 'Manual') },
+			]
+		},
+		triggerOption: {
+			get() {
+				return this.triggerOptions.find((o) => o.value === this.triggerType) || this.triggerOptions[5]
+			},
+			set(option) {
+				this.triggerType = option ? option.value : 'manual'
+			},
+		},
+		isObjectTrigger() {
+			return ['object-created', 'object-updated', 'object-deleted'].includes(this.triggerType)
+		},
+		cadenceOptions() {
+			return [
+				{ id: 'hourly', label: t('openbuild', 'Hourly') },
+				{ id: 'daily', label: t('openbuild', 'Daily') },
+				{ id: 'weekly', label: t('openbuild', 'Weekly') },
+				{ id: 'monthly', label: t('openbuild', 'Monthly') },
+				{ id: 'custom-cron', label: t('openbuild', 'Custom (cron)') },
+				{ id: 'custom-interval', label: t('openbuild', 'Custom interval (seconds)') },
+			]
+		},
+		isCustomCron() {
+			return this.cadenceOption && this.cadenceOption.id === 'custom-cron'
+		},
+		isCustomInterval() {
+			return this.cadenceOption && this.cadenceOption.id === 'custom-interval'
+		},
+		conditionKindOptions() {
+			return [
+				{ value: 'none', label: t('openbuild', 'None') },
+				{ value: 'feel', label: t('openbuild', 'FEEL expression') },
+				{ value: 'rule-set', label: t('openbuild', 'Reference a rule set') },
+			]
+		},
+		conditionKind() {
+			return this.conditionKindOption ? this.conditionKindOption.value : 'none'
+		},
+		conditionBlockedReason() {
+			return blockedConditionReason(this.triggerType)
+		},
+		actionTypeOptions() {
+			return [
+				{ value: 'send-notification', label: t('openbuild', 'Send notification') },
+				{ value: 'run-synchronization', label: t('openbuild', 'Run a synchronization') },
+				{ value: 'object-op', label: t('openbuild', 'Create/update an object') },
+				{ value: 'webhook', label: t('openbuild', 'Webhook') },
+			]
+		},
+		objectOpOperationOptions() {
+			return [
+				{ value: 'create', label: t('openbuild', 'Create') },
+				{ value: 'update', label: t('openbuild', 'Update') },
+			]
+		},
+		schemaPickerAvailable() {
+			return !this.schemaFetchFailed && this.schemaOptions.length > 0
+		},
+		transitionPickerAvailable() {
+			return !this.transitionFetchFailed && this.transitionOptions.length > 0
+		},
+		syncPickerAvailable() {
+			return !this.syncFetchFailed && this.syncOptions.length > 0
+		},
+		/**
+		 * Whether the current shape (trigger + condition + every action) is
+		 * savable per the v1 matrix (REQ-AUTD-003).
+		 *
+		 * @return {boolean}
+		 */
+		valid() {
+			if (this.derivedSlug === '' || this.name.trim() === '') {
+				return false
+			}
+			if (this.conditionKind !== 'none' && !isConditionAllowed(this.triggerType)) {
+				return false
+			}
+			if (this.actions.length === 0) {
+				return false
+			}
+			return this.actions.every((a) => isActionAllowed(this.triggerType, a.type))
+		},
+		validationMessage() {
+			if (this.derivedSlug === '' || this.name.trim() === '') {
+				return t('openbuild', 'Please enter a name.')
+			}
+			if (this.actions.length === 0) {
+				return t('openbuild', 'Add at least one action.')
+			}
+			return t('openbuild', 'Please resolve the highlighted blocked combination(s) before saving.')
+		},
+	},
+	watch: {
+		open(isOpen) {
+			if (isOpen) {
+				this.hydrate()
+				this.fetchSchemas()
+				this.fetchSynchronizations()
+			}
+		},
+	},
+	methods: {
+		/** @spec openspec/changes/automation-designer/tasks.md#5.2 */
+		hydrate() {
+			this.showValidation = false
+			this.errorMessage = ''
+			const a = this.automation || {}
+			this.id = a.id || a.uuid || null
+			this.slug = a.slug || ''
+			this.name = a.name || ''
+			this.description = a.description || ''
+
+			const trigger = a.trigger || { type: 'manual' }
+			this.triggerType = trigger.type || 'manual'
+			this.triggerSchema = trigger.schema || ''
+			this.triggerTransition = trigger.transition || ''
+			this.triggerCron = trigger.cron || ''
+			this.triggerInterval = trigger.interval || 86400
+			const preset = INTERVAL_PRESETS.find((p) => p.interval === trigger.interval)
+			if (trigger.cron) {
+				this.cadenceOption = this.cadenceOptions.find((o) => o.id === 'custom-cron')
+			} else if (preset) {
+				this.cadenceOption = this.cadenceOptions.find((o) => o.id === preset.id)
+			} else {
+				this.cadenceOption = this.cadenceOptions.find((o) => o.id === 'custom-interval')
+			}
+
+			const condition = a.condition || null
+			if (!condition) {
+				this.conditionKindOption = this.conditionKindOptions[0]
+			} else if (condition.type === 'feel') {
+				this.conditionKindOption = this.conditionKindOptions[1]
+				this.conditionExpression = condition.expression || ''
+			} else {
+				this.conditionKindOption = this.conditionKindOptions[2]
+				this.conditionRuleSetSlug = condition.ruleSetSlug || ''
+			}
+
+			this.actions = (Array.isArray(a.actions) ? a.actions : []).map((action) => this.actionToEditor(action))
+			this.objectOpOperationOption = this.actions.map((action) => (
+				this.objectOpOperationOptions.find((o) => o.value === action.operation) || this.objectOpOperationOptions[0]
+			))
+		},
+		/**
+		 * Convert a stored action record into the editor's flat working shape.
+		 *
+		 * @param {object} action - the stored action record.
+		 * @return {object}
+		 */
+		actionToEditor(action) {
+			const subject = action.subject || {}
+			return {
+				_key: nextKey(),
+				type: action.type,
+				subjectEn: subject.en || '',
+				subjectNl: subject.nl || '',
+				channels: action.channels || ['nc-notification'],
+				recipients: action.recipients || [{ kind: 'object-acl', permission: 'manage' }],
+				synchronizationId: (action.synchronizationId) || '',
+				operation: action.operation || 'create',
+				schema: action.schema || '',
+				fieldMappingText: JSON.stringify(action.fieldMapping || {}, null, 2),
+				url: action.url || '',
+				payloadTemplateText: JSON.stringify(action.payloadTemplate || {}, null, 2),
+			}
+		},
+		/**
+		 * Load the version register's schemas for the schema picker; degrades
+		 * to free-text on failure (mirrors BuilderHost's picker).
+		 *
+		 * @return {Promise<void>}
+		 */
+		async fetchSchemas() {
+			if (!this.register) {
+				this.schemaFetchFailed = true
+				return
+			}
+			this.schemaLoading = true
+			this.schemaFetchFailed = false
+			try {
+				const url = generateUrl(`/apps/openregister/api/registers/${encodeURIComponent(this.register)}/schemas`)
+				const { data } = await axios.get(url)
+				const list = Array.isArray(data) ? data : (data && Array.isArray(data.results) ? data.results : [])
+				this.schemaOptions = list.map((s) => ({ value: s.slug || s.id, label: s.title || s.slug || String(s.id) }))
+				this.schemaOption = this.schemaOptions.find((o) => o.value === this.triggerSchema) || null
+				if (this.schemaOptions.length === 0) {
+					this.schemaFetchFailed = true
+				} else if (this.triggerType === 'lifecycle-transition' && this.triggerSchema) {
+					this.fetchTransitions()
+				}
+			} catch (error) {
+				this.schemaFetchFailed = true
+				this.schemaOptions = []
+			} finally {
+				this.schemaLoading = false
+			}
+		},
+		/**
+		 * Handle a schema selection from the live picker.
+		 *
+		 * @param {?object} option - the selected option.
+		 * @return {void}
+		 */
+		onSchemaSelect(option) {
+			this.triggerSchema = option ? option.value : ''
+			if (this.triggerType === 'lifecycle-transition' && this.triggerSchema) {
+				this.fetchTransitions()
+			}
+		},
+		/**
+		 * Load the selected schema's `x-openregister-lifecycle` transitions;
+		 * degrades to free-text on failure.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async fetchTransitions() {
+			this.transitionLoading = true
+			this.transitionFetchFailed = false
+			this.transitionOptions = []
+			try {
+				const url = generateUrl(`/apps/openregister/api/schemas/${encodeURIComponent(this.triggerSchema)}`)
+				const { data } = await axios.get(url)
+				const lifecycle = (data && data['x-openregister-lifecycle']) || {}
+				const transitions = (lifecycle && lifecycle.transitions) || {}
+				this.transitionOptions = Object.keys(transitions).map((name) => ({ value: name, label: name }))
+				this.transitionOption = this.transitionOptions.find((o) => o.value === this.triggerTransition) || null
+				if (this.transitionOptions.length === 0) {
+					this.transitionFetchFailed = true
+				}
+			} catch (error) {
+				this.transitionFetchFailed = true
+			} finally {
+				this.transitionLoading = false
+			}
+		},
+		/**
+		 * Load OpenConnector synchronizations for the run-synchronization
+		 * action picker; degrades to free-text on failure.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async fetchSynchronizations() {
+			this.syncLoading = true
+			this.syncFetchFailed = false
+			try {
+				const url = generateUrl('/apps/openregister/api/objects/openconnector/synchronization')
+				const { data } = await axios.get(url, { params: { limit: 500 } })
+				const list = Array.isArray(data && data.results) ? data.results : (Array.isArray(data) ? data : [])
+				this.syncOptions = list.map((sync) => ({
+					id: String(sync.id || sync.uuid),
+					label: sync.name || sync.title || sync.id,
+				})).filter((o) => o.id && o.id !== 'undefined')
+				if (this.syncOptions.length === 0) {
+					this.syncFetchFailed = true
+				}
+			} catch (error) {
+				this.syncFetchFailed = true
+				this.syncOptions = []
+			} finally {
+				this.syncLoading = false
+			}
+		},
+		/**
+		 * Resolve the selected sync option for an action row.
+		 *
+		 * @param {string} syncId - the stored synchronization id.
+		 * @return {?object}
+		 */
+		syncOption(syncId) {
+			return this.syncOptions.find((o) => o.id === syncId) || null
+		},
+		onSyncSelect(index, option) {
+			this.updateAction(index, 'synchronizationId', option ? option.id : '')
+		},
+		onNameInput(value) {
+			this.name = value
+		},
+		onTriggerChange() {
+			if (this.triggerType === 'lifecycle-transition' && this.triggerSchema) {
+				this.fetchTransitions()
+			}
+		},
+		actionTypeOption(type) {
+			return this.actionTypeOptions.find((o) => o.value === type) || this.actionTypeOptions[0]
+		},
+		actionBlockedReason(type) {
+			return blockedActionReason(this.triggerType, type)
+		},
+		addAction() {
+			this.actions.push(this.actionToEditor({ type: 'send-notification' }))
+			this.objectOpOperationOption.push(null)
+		},
+		removeAction(index) {
+			this.actions.splice(index, 1)
+			this.objectOpOperationOption.splice(index, 1)
+		},
+		onActionTypeChange(index, option) {
+			this.updateAction(index, 'type', option ? option.value : 'send-notification')
+		},
+		updateAction(index, key, value) {
+			const next = this.actions.slice()
+			next[index] = { ...next[index], [key]: value }
+			this.actions = next
+		},
+		/**
+		 * Assemble the persisted `condition` block from the working state.
+		 *
+		 * @return {?object}
+		 */
+		buildCondition() {
+			if (this.conditionKind === 'feel') {
+				return { type: 'feel', expression: this.conditionExpression }
+			}
+			if (this.conditionKind === 'rule-set') {
+				return { type: 'rule-set', ruleSetSlug: this.conditionRuleSetSlug }
+			}
+			return null
+		},
+		/**
+		 * Assemble the persisted `trigger` block from the working state.
+		 *
+		 * @return {object}
+		 */
+		buildTrigger() {
+			const trigger = { type: this.triggerType }
+			if (this.isObjectTrigger || this.triggerType === 'lifecycle-transition') {
+				trigger.schema = this.triggerSchema
+			}
+			if (this.triggerType === 'lifecycle-transition') {
+				trigger.transition = this.triggerTransition
+			}
+			if (this.triggerType === 'schedule') {
+				if (this.isCustomCron) {
+					trigger.cron = this.triggerCron
+				} else if (this.isCustomInterval) {
+					trigger.interval = this.triggerInterval
+				} else {
+					const preset = INTERVAL_PRESETS.find((p) => p.id === (this.cadenceOption && this.cadenceOption.id))
+					trigger.interval = preset ? preset.interval : 86400
+				}
+			}
+			return trigger
+		},
+		/**
+		 * Assemble the persisted `actions[]` from the working state.
+		 *
+		 * @return {Array}
+		 */
+		buildActions() {
+			return this.actions.map((action) => {
+				if (action.type === 'send-notification') {
+					return {
+						type: 'send-notification',
+						channels: action.channels,
+						recipients: action.recipients,
+						subject: { en: action.subjectEn, nl: action.subjectNl },
+					}
+				}
+				if (action.type === 'run-synchronization') {
+					return { type: 'run-synchronization', synchronizationId: action.synchronizationId }
+				}
+				if (action.type === 'object-op') {
+					let fieldMapping = {}
+					try {
+						fieldMapping = JSON.parse(action.fieldMappingText || '{}')
+					} catch (e) {
+						fieldMapping = {}
+					}
+					return { type: 'object-op', operation: action.operation, schema: action.schema, fieldMapping }
+				}
+				let payloadTemplate = {}
+				try {
+					payloadTemplate = JSON.parse(action.payloadTemplateText || '{}')
+				} catch (e) {
+					payloadTemplate = {}
+				}
+				return { type: 'webhook', url: action.url, payloadTemplate }
+			})
+		},
+		async onSave() {
+			this.showValidation = true
+			if (!this.valid) {
+				return
+			}
+			this.saving = true
+			this.errorMessage = ''
+			const payload = {
+				slug: this.derivedSlug,
+				name: this.name,
+				description: this.description,
+				applicationSlug: this.automation.applicationSlug,
+				versionUuid: this.automation.versionUuid,
+				enabled: this.automation.enabled !== false,
+				trigger: this.buildTrigger(),
+				condition: this.buildCondition(),
+				actions: this.buildActions(),
+			}
+			try {
+				const base = generateUrl('/apps/openregister/api/objects/openbuild/automation')
+				let uuid = this.id
+				if (this.editing && this.id) {
+					await axios.put(`${base}/${this.id}`, payload)
+				} else {
+					const { data } = await axios.post(base, payload)
+					uuid = data && (data.id || data.uuid)
+				}
+				if (uuid) {
+					await axios.post(generateUrl(`/apps/openbuild/api/automations/${uuid}/compile`), {})
+				}
+				this.$emit('saved')
+			} catch (error) {
+				this.errorMessage = t('openbuild', 'Could not save the automation.')
+			} finally {
+				this.saving = false
+			}
+		},
+		onClose() {
+			this.$emit('update:open', false)
+		},
+	},
+}
+</script>
+
+<style scoped>
+.automation-edit {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 20px;
+	min-width: 420px;
+}
+
+.automation-edit__title {
+	margin: 0;
+}
+
+.automation-edit__hint {
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+	font-size: 0.9em;
+}
+
+.automation-edit__section {
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.automation-edit__section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.automation-edit__action {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 8px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+}
+
+.automation-edit__error {
+	color: var(--color-error);
+	margin: 0;
+}
+
+.automation-edit__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 8px;
+}
+</style>

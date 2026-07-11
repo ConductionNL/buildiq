@@ -37,17 +37,17 @@
 
 ## 5. Frontend — Automations surface
 
-- [ ] 5.1 Add `src/views/AutomationsPage.vue` — per-version list (name, trigger summary, action summary, enabled `NcCheckboxRadioSwitch`, drift badge with "Recompile (overwrite)" confirm), version selector, empty state, "New automation"; CRUD via OR REST (`/apps/openregister/api/objects/openbuild/automation`), effectual calls via the automations routes
-- [ ] 5.2 Add `src/dialogs/AutomationEditDialog.vue` — standalone `NcModal`: trigger picker (object created/updated/deleted with schema picker; lifecycle transition with schema + transition pickers read from the version register's `x-openregister-lifecycle`; schedule reusing the schedules-editor cadence presets/custom-cron UX; manual), optional condition (FEEL `NcTextField` or rule-set `NcSelect`), actions list with per-type sub-forms (notification subject/channels/recipients; synchronization picker with free-text fallback mirroring `ScheduleEditDialog`; object-op schema + field mapping; webhook url + payload template); every `NcSelect` carries `:input-label`; matrix-invalid combinations disabled inline with the explanatory message (REQ-AUTD-003)
-- [ ] 5.3 Add `src/modals/AutomationTestPanelModal.vue` — mirror `RuleSetTestSandboxModal.vue`: sample-payload `NcTextArea`, Run button → `POST /api/automations/{uuid}/dry-run`, render condition outcome + would-be actions (dry-run/skipped) + errors + duration; `data-testid` hooks for e2e
-- [ ] 5.4 Add `src/services/automationMatrix.js` — the single shared v1 matrix constant (trigger × action × condition support) consumed by the dialog, list badges and (as fixture) unit tests, so lighting up a cell later is data-only
-- [ ] 5.5 Edit `src/registry.js` + add `src/manifest.d/40-automations.json` — register `AutomationsPageView` as a `type: "custom"` page (route `/automations`, no top-level menu entry, mirroring `20-business-rules.json`'s off-nav posture)
+- [x] 5.1 Add `src/views/AutomationsPage.vue` — per-version list (name, trigger summary, action summary, enabled `NcCheckboxRadioSwitch`, drift badge with "Recompile (overwrite)" confirm), version selector, empty state, "New automation"; CRUD via OR REST (`/apps/openregister/api/objects/openbuild/automation`), effectual calls via the automations routes
+- [x] 5.2 Add `src/dialogs/AutomationEditDialog.vue` — standalone `NcModal`: trigger picker (object created/updated/deleted with schema picker; lifecycle transition with schema + transition pickers read from the version register's `x-openregister-lifecycle`; schedule reusing the schedules-editor cadence presets/custom-cron UX; manual), optional condition (FEEL `NcTextField` or rule-set `NcSelect`), actions list with per-type sub-forms (notification subject/channels/recipients; synchronization picker with free-text fallback mirroring `ScheduleEditDialog`; object-op schema + field mapping; webhook url + payload template); every `NcSelect` carries `:input-label`; matrix-invalid combinations disabled inline with the explanatory message (REQ-AUTD-003)
+- [x] 5.3 Add `src/modals/AutomationTestPanelModal.vue` — mirror `RuleSetTestSandboxModal.vue`: sample-payload `NcTextArea`, Run button → `POST /api/automations/{uuid}/dry-run`, render condition outcome + would-be actions (dry-run/skipped) + errors + duration; `data-testid` hooks for e2e
+- [x] 5.4 Add `src/services/automationMatrix.js` — the single shared v1 matrix constant (trigger × action × condition support) consumed by the dialog, list badges and (as fixture) unit tests, so lighting up a cell later is data-only
+- [x] 5.5 Edit `src/registry.js` + add `src/manifest.d/40-automations.json` — register `AutomationsPageView` as a `type: "custom"` page (route `/automations`, no top-level menu entry, mirroring `20-business-rules.json`'s off-nav posture)
 
 ## 6. Frontend unit tests (vitest)
 
-- [ ] 6.1 Add `tests/components/AutomationsPage.spec.js` — list render per version, empty state, enable/disable emits the controller call, drift badge renders, version switch refetches (REQ-AUTD-001/006 scenarios)
-- [ ] 6.2 Add `tests/dialogs/AutomationEditDialog.spec.js` — the three compose scenarios of REQ-AUTD-002 produce the expected object shapes; matrix-blocked combination shows the message and prevents save (REQ-AUTD-003)
-- [ ] 6.3 Add `tests/services/automationMatrix.spec.js` — matrix constant matches design Decision 2 cell-for-cell; condition allowed only on manual
+- [x] 6.1 Add `tests/components/AutomationsPage.spec.js` — list render per version, empty state, enable/disable emits the controller call, drift badge renders, version switch refetches (REQ-AUTD-001/006 scenarios)
+- [x] 6.2 Add `tests/dialogs/AutomationEditDialog.spec.js` — the three compose scenarios of REQ-AUTD-002 produce the expected object shapes; matrix-blocked combination shows the message and prevents save (REQ-AUTD-003)
+- [x] 6.3 Add `tests/services/automationMatrix.spec.js` — matrix constant matches design Decision 2 cell-for-cell; condition allowed only on manual
 
 ## 7. E2E (Playwright — every non-excluded spec scenario)
 
