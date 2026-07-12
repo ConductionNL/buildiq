@@ -37,6 +37,20 @@ webpackConfig.entry = {
 	},
 }
 
+// @nextcloud/webpack-vue-config hardcodes `publicPath: /apps/<appId>/js/`, but an
+// app installed under custom_apps is served from `/custom_apps/<appId>/js/`. Async
+// chunks therefore resolve to a path Nextcloud routes back into the app, which
+// answers with its HTML shell — the browser refuses it ("MIME type ('text/html')
+// is not executable") and the component silently never mounts, with no JS
+// exception to point at. Latent for a long time (only rarely-used components were
+// chunked), it turns fatal as soon as an always-rendered component gets split out,
+// which is what @conduction/nextcloud-vue's chunked-ESM `module` entry does to
+// CnDetailPage / CnAdvancedFormDialog / CnActionButtons.
+//
+// `auto` makes webpack derive the base from the URL of the executing script at
+// runtime, which is correct under either apps path.
+webpackConfig.output.publicPath = 'auto'
+
 // Use local source when available (monorepo dev), otherwise fall back to npm
 // package. A local checkout is only used when its version satisfies this app's
 // declared @conduction/nextcloud-vue range — otherwise a STALE local checkout
