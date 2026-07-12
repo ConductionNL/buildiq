@@ -26,6 +26,7 @@ import {
 	CnAppRoot,
 	CnPageRenderer,
 	defaultPageTypes,
+	registerBuiltinDashboardWidgets,
 	registerIcons,
 	registerTranslations,
 } from '@conduction/nextcloud-vue'
@@ -44,6 +45,12 @@ Vue.use(VueRouter)
 registerDirectives()
 
 registerIcons()
+// Populate the dashboard widget catalog (stat / delta / gauge / chart / table …).
+// The library self-registers these via bare side-effect imports in its barrel;
+// webpack is free to drop those, and does here — leaving the registry empty, so
+// every manifest widget rendered "Widget not available" and the Add-widget picker
+// came up with no types. This exported no-op forces the module to be evaluated.
+registerBuiltinDashboardWidgets()
 try {
 	registerTranslations()
 } catch (e) {
