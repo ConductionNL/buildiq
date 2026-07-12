@@ -32,7 +32,8 @@ import {
 import pinia from './pinia.js'
 import { runtimeRegistry } from './runtimeRegistry.js'
 import { registerDirectives } from './registerDirectives.js'
-import { useRegisterPicker } from './composables/useRegisterPicker.js'
+import { useRegisterPicker, registerScope } from './composables/useRegisterPicker.js'
+import { registerSlugForApp } from './store/schemas.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
 import './assets/app.css'
@@ -274,19 +275,15 @@ async function boot() {
 	// Normalise pages (config-as-object guard + inline page titles for data pages).
 	normalizeManifestPages(manifest)
 
-	// Registers/schemas (+ columns) for the in-app pages editor. Provided to
-	// CnAppRoot as `dataSources` so the edit-pages / page-config modals show
-	// searchable Register / Schema / Columns dropdowns instead of free-text slug
-	// inputs. Awaited before mount so the value is fully populated when
-	// CnAppRoot's provide() captures it (provide runs once, non-reactively).
-	// Best-effort: on failure the editor keeps its free-text fallback.
-	let dataSources = { registers: [] }
-	try {
-		dataSources = await useRegisterPicker({ appSlug: slug }).fetchDataSources()
-	} catch (e) {
-		// eslint-disable-next-line no-console
-		console.warn('[openbuild:builder] failed to load data sources for the pages editor', e)
-	}
+	// Registers/schemas (+ columns) for the in-app pages editor, passed to CnAppRoot
+	// as a LOADER rather than a pre-fetched snapshot. The modals re-invoke it every
+	// time they open, so a schema created after boot shows up without a reload — a
+	// snapshot captured here could not, because provide() runs once.
+	//
+	// It also stops the fetch happening at boot at all: this list is only ever read
+	// inside an editor modal, which most users never open.
+	const dataSourcesLoader = () => useRegisterPicker({ appSlug: slug })
+		.fetchDataSources(registerScope(registerSlugForApp(slug, versionSlug), manifest))
 
 	const router = new VueRouter({
 		mode: 'history',
@@ -323,8 +320,9 @@ async function boot() {
 				registry: { ...runtimeRegistry },
 				pageTypes: { ...defaultPageTypes },
 				// App registers/schemas so the Edit-pages modal offers Register /
-				// Schema / Columns dropdowns for index/detail pages (null → free text).
-				dataSources,
+				// Schema / Columns dropdowns for index/detail pages. Re-run on every
+				// modal open, so schemas created after boot appear without a reload.
+				dataSourcesLoader,
 				translate: translateForApp,
 				// Persist in-app edits (pages / menu / settings / sidebar / actions)
 				// back to the app's manifest. CnAppRoot's useManifestEditor mutates

@@ -71,6 +71,46 @@ export const defaultPageTypes = {}
 export function registerIcons() {}
 export function registerTranslations() {}
 
+// Icon-catalogue adapters (src/utils/iconCatalogues.js). The library ships no
+// icon pack — OpenBuild owns the data and feeds it through these. Behaviour
+// mirrors the real adapters closely enough for the wizard suite: each maps a
+// source pack to `{ key, value, label }` entries.
+export function fromMdiJs(mdiModule) {
+	return Object.keys(mdiModule || {})
+		.filter((key) => key.startsWith('mdi') && typeof mdiModule[key] === 'string')
+		.map((key) => ({ key, value: mdiModule[key], label: key }))
+}
+export function fromOpenGemeenten(list = []) {
+	return (Array.isArray(list) ? list : [])
+		.filter((item) => item && typeof item === 'object')
+		.map((item) => ({
+			key: item.key || item.name,
+			value: item.value || item.path || item.svg,
+			label: item.label || item.name || item.key,
+		}))
+		.filter((entry) => entry.value)
+}
+export function fromFontAwesome(packs = {}) {
+	return Object.values(packs || {})
+		.flatMap((pack) => Object.values(pack || {}))
+		.filter((def) => def && typeof def === 'object' && 'iconName' in def)
+		.map((def) => ({
+			key: def.iconName,
+			value: def.icon && def.icon[4],
+			label: def.iconName,
+		}))
+		.filter((entry) => entry.value)
+}
+export function dedupeCatalogue(entries) {
+	const seen = new Set()
+	return (entries || []).filter((entry) => {
+		if (!entry || entry.value == null || entry.value === '') return false
+		if (seen.has(entry.value)) return false
+		seen.add(entry.value)
+		return true
+	})
+}
+
 /**
  * Lightweight stand-in for the lib's manifest validator. The unit suite
  * only needs it to be callable; the structural manifest checks live in
