@@ -146,16 +146,34 @@ final class ExportsControllerTest extends TestCase
              */
             public function searchObjectsBySlug(string $register, string $schema, array $query): array
             {
+                // OpenRegister returns ObjectEntity OBJECTS here, not arrays, and keys the
+                // id as `id` (not `uuid`). This stub used to return a plain array keyed by
+                // `uuid`, which is why the controller's `is_array($app)` guard looked
+                // correct in tests while never once being true in production.
                 return [
-                    [
-                        'uuid'        => 'app-uuid-1',
-                        'slug'        => $query['slug'] ?? 'hello-world',
-                        'permissions' => [
-                            'owners'  => ['user:alice'],
-                            'editors' => [],
-                            'viewers' => [],
-                        ],
-                    ],
+                    new class ($query['slug'] ?? 'hello-world') implements \JsonSerializable {
+
+                        public function __construct(private string $slug)
+                        {
+                        }//end __construct()
+
+                        /**
+                         * @return array<string,mixed>
+                         */
+                        public function jsonSerialize(): array
+                        {
+                            return [
+                                'id'          => 'app-uuid-1',
+                                'slug'        => $this->slug,
+                                'permissions' => [
+                                    'owners'  => ['user:alice'],
+                                    'editors' => [],
+                                    'viewers' => [],
+                                ],
+                                '@self'       => ['id' => 'app-uuid-1'],
+                            ];
+                        }//end jsonSerialize()
+                    },
                 ];
             }//end searchObjectsBySlug()
 

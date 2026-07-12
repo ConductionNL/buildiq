@@ -67,8 +67,9 @@ class RunExportJob extends QueuedJob
      * Execute the job.
      *
      * NEVER auto-retries — failures escalate via the ExportJob's
-     * status=failed + errorMessage. The PAT is fetched once at the GitHub
-     * phase and deleted from ICredentialsManager on every terminal state.
+     * status=failed + errorMessage. The GitHub phase holds no token: it hands the
+     * broker a credential UUID and the queueing user's UID, and the broker injects
+     * the secret. There is nothing to clear on a terminal state.
      *
      * @param mixed $argument Job argument injected by Nextcloud:
      *                        ['jobUuid' => string].
@@ -105,9 +106,6 @@ class RunExportJob extends QueuedJob
                 action: 'fail',
                 extraFields: ['errorMessage' => $e->getMessage()]
             );
-        } finally {
-            // Always clear the PAT — both success and failure are terminal.
-            $this->exportJobService->clearPat(jobUuid: $jobUuid);
         }//end try
     }//end run()
 
@@ -222,16 +220,23 @@ class RunExportJob extends QueuedJob
     }//end slugToLabel()
 
     /**
-     * Fetch the PAT once and push to GitHub if one was supplied.
+     * Push to GitHub through the credential broker, if this is a GitHub export.
      *
      * The generated tree lives in the exporter's work scratch dir keyed by
      * job UUID (see ExportService::prepareScratchDir); we hand that to the
      * GitHub push service so it can blob/tree/commit each file.
      *
+     * `requestedBy` travels on the record because this is a cron-driven job with no
+     * HTTP session, and the broker's owner guard needs an identity to check the
+     * credential against. Without it there is nothing to authorise, so we fail the
+     * job rather than push unauthenticated.
+     *
      * @param string              $jobUuid Job UUID.
      * @param array<string,mixed> $job     Loaded ExportJob record.
      *
      * @return array{repoUrl?:string,pullRequestUrl?:string}|null
+     *
+     * @throws RuntimeException When a GitHub export has no broker credential.
      *
      * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
      */
@@ -241,9 +246,22 @@ class RunExportJob extends QueuedJob
             return null;
         }
 
-        $pat = $this->exportJobService->fetchPat(jobUuid: $jobUuid);
-        if ($pat === null || $pat === '') {
-            return null;
+        $credentialId = (string) ($job['githubCredentialId'] ?? '');
+        if ($credentialId === '') {
+            throw new RuntimeException(
+                'OpenBuild RunExportJob: a GitHub export needs a broker credential; '
+                .'ExportJob '.$jobUuid.' has none.'
+            );
+        }
+
+        $requestedBy = (string) ($job['requestedBy'] ?? '');
+        if ($requestedBy === '') {
+            $requestedBy = (string) ($job['owner'] ?? '');
+        }
+
+        $actingUserId = null;
+        if ($requestedBy !== '') {
+            $actingUserId = $requestedBy;
         }
 
         $treeDir = $this->exportService->scratchTreeDir(jobUuid: $jobUuid);
@@ -251,10 +269,11 @@ class RunExportJob extends QueuedJob
         return $this->githubPushService->push(
             jobUuid: $jobUuid,
             treeDir: $treeDir,
-            pat: $pat,
+            credentialId: $credentialId,
             org: (string) ($job['githubOrg'] ?? ''),
             repo: (string) ($job['githubRepo'] ?? ''),
-            visibility: (string) ($job['githubVisibility'] ?? 'private')
+            visibility: (string) ($job['githubVisibility'] ?? 'private'),
+            actingUserId: $actingUserId
         );
     }//end maybePush()
 

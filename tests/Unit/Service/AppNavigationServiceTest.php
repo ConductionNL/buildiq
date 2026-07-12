@@ -28,6 +28,7 @@ namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\AppNavigationService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\IAppConfig;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\INavigationManager;
@@ -72,6 +73,13 @@ class AppNavigationServiceTest extends TestCase
     private IGroupManager&MockObject $groupManager;
 
     /**
+     * Mock app config — the nav-order base override.
+     *
+     * @var IAppConfig&MockObject
+     */
+    private IAppConfig&MockObject $appConfig;
+
+    /**
      * Mock logger.
      *
      * @var LoggerInterface&MockObject
@@ -96,17 +104,22 @@ class AppNavigationServiceTest extends TestCase
         $this->urlGenerator  = $this->createMock(IURLGenerator::class);
         $this->userSession   = $this->createMock(IUserSession::class);
         $this->groupManager  = $this->createMock(IGroupManager::class);
+        $this->appConfig     = $this->createMock(IAppConfig::class);
         $this->logger        = $this->createMock(LoggerInterface::class);
 
         $this->urlGenerator
             ->method('linkToRouteAbsolute')
             ->willReturnCallback(fn ($route, $params) => '/icon/'.$params['slug'].'.svg');
 
+        // Pre-existing break, fixed here: AppNavigationService gained an $appConfig
+        // constructor parameter (the nav-order base override) and this test was never
+        // updated, so all 11 of its cases have simply been erroring on a TypeError.
         $this->service = new AppNavigationService(
             $this->objectService,
             $this->urlGenerator,
             $this->userSession,
             $this->groupManager,
+            $this->appConfig,
             $this->logger
         );
     }//end setUp()

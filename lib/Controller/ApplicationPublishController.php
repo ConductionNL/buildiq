@@ -143,7 +143,7 @@ class ApplicationPublishController extends Controller
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 10, period: 60)]
-    public function destroy(string $appUuid, bool $deleteData = false): JSONResponse
+    public function destroy(string $appUuid, bool $deleteData=false): JSONResponse
     {
         $user = $this->userSession->getUser();
         if ($user === null) {

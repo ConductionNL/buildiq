@@ -213,13 +213,18 @@ class AppNavigationService
                         // are filtered by 'type' (getAll('link')). Returning a
                         // non-'link' type is the only way a closure entry can
                         // hide itself from the app menu per user.
+                        $entryType = 'openbuild-hidden';
+                        if ($visible === true) {
+                            $entryType = 'link';
+                        }
+
                         return [
                             'id'      => $entryId,
                             'name'    => $name,
                             'href'    => $appUrl,
                             'icon'    => $iconUrl,
                             'order'   => $order,
-                            'type'    => ($visible === true) ? 'link' : 'openbuild-hidden',
+                            'type'    => $entryType,
                             'active'  => false,
                             'classes' => '',
                             'enabled' => $visible,

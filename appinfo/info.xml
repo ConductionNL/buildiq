@@ -22,7 +22,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
 
 **Ondersteuning:** Voor ondersteuning, neem contact op via support@conduction.nl.
     ]]></description>
-    <version>0.7.1</version>
+    <version>0.7.2</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenBuild</namespace>
@@ -95,6 +95,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
             <step>OCA\OpenBuild\Repair\MigrateAppOverridesToHybrid</step>
             <step>OCA\OpenBuild\Repair\PopulateApplicationPermissions</step>
             <step>OCA\OpenBuild\Repair\SeedApplicationTemplates</step>
+            <step>OCA\OpenBuild\Repair\FlagRegistryTokenSensitive</step>
         </post-migration>
     </repair-steps>
 

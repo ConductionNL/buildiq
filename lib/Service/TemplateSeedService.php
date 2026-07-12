@@ -96,7 +96,11 @@ class TemplateSeedService
      * Seed each bundled ApplicationTemplate fixture whose slug is not already
      * present. Idempotent by slug — never overwrites an existing record.
      *
-     * @return array{seeded:int,skipped:int,errors:array<int,string>} Per-run counts and collected errors.
+     * @return array{seeded:int,skipped:int,errors:array<int,string>,deferred?:bool} Per-run counts and
+     *         collected errors. `deferred` is set when the register/schema is not provisioned yet
+     *         (install ordering) — the caller re-runs on the next repair rather than failing the
+     *         install. It was returned but never declared, so SeedApplicationTemplates' check for it
+     *         read as statically impossible.
      *
      * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-11
      */
