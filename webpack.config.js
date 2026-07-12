@@ -20,6 +20,16 @@ webpackConfig.stats = {
 	modules: false,
 }
 
+// @nextcloud/webpack-vue-config hardcodes publicPath to `/apps/{appId}/js/`, but an
+// app installed under custom_apps is served from `/custom_apps/{appId}/js/`. Async
+// chunks were therefore requested from a path that routes into the app and returns
+// HTML, so the browser refused them on MIME grounds and the component never mounted.
+// This stayed latent while only rarely-used components were code-split; it turns
+// fatal as soon as an always-rendered one (CnDashboardPage) lands in a chunk.
+// `'auto'` derives the path from the executing script's own URL, so it is correct
+// under both apps/ and custom_apps/.
+webpackConfig.output = { ...webpackConfig.output, publicPath: 'auto' }
+
 const appId = 'openbuild'
 webpackConfig.entry = {
 	main: {

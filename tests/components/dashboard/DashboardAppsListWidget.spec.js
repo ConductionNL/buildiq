@@ -20,6 +20,7 @@ vi.mock('@nextcloud/axios', () => ({
 }))
 vi.mock('@nextcloud/router', () => ({
 	generateUrl: (p) => p,
+	imagePath: (app, file) => `/apps/${app}/img/${file}`,
 }))
 
 const DashboardAppsListWidget = (await import('../../../src/components/dashboard/DashboardAppsListWidget.vue')).default
