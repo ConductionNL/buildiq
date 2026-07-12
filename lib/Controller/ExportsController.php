@@ -130,12 +130,12 @@ class ExportsController extends Controller
                 return false;
             }
 
-            $app = $apps[0];
-            if (is_array($app) === true) {
-                $permissions = ($app['permissions'] ?? []);
-            } else {
-                $permissions = [];
-            }
+            // OpenRegister hands back ObjectEntity objects here. This used to read the
+            // permissions only `if (is_array($app))` — which is never true — so every
+            // non-admin fell through to an empty bucket list and was denied. The admin
+            // bypass above masked it.
+            $app         = $this->toArray(object: $apps[0]);
+            $permissions = ($app['permissions'] ?? []);
 
             if (is_array($permissions) === false) {
                 $permissions = [];
@@ -241,6 +241,80 @@ class ExportsController extends Controller
     }//end isAuthorisedForJob()
 
     /**
+     * Resolve an Application's UUID from its slug.
+     *
+     * The ExportJob record needs the UUID, and the client does not send one. Taking it
+     * from the same slug lookup the authorisation check uses means a queued job can
+     * never name an application other than the one the caller was cleared for.
+     *
+     * @param string $applicationSlug Application slug.
+     *
+     * @return string The UUID, or '' when the slug does not resolve.
+     *
+     * @spec openspec/changes/export-github-broker/tasks.md#task-9-fix-the-unpersistable-export-job
+     */
+    private function resolveApplicationUuid(string $applicationSlug): string
+    {
+        try {
+            if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
+                return '';
+            }
+
+            $service = $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
+            if (method_exists($service, 'searchObjectsBySlug') === false) {
+                return '';
+            }
+
+            $apps = $service->searchObjectsBySlug('openbuild', 'application', ['slug' => $applicationSlug]);
+            if (is_array($apps) === false || $apps === []) {
+                return '';
+            }
+
+            $app = $this->toArray(object: $apps[0]);
+
+            // OR serialises the object id both at the top level and under `@self`.
+            $uuid = ($app['id'] ?? ($app['@self']['id'] ?? ''));
+            if (is_string($uuid) === false) {
+                return '';
+            }
+
+            return $uuid;
+        } catch (\Throwable $e) {
+            $this->logger->warning('OpenBuild export: could not resolve application UUID: '.$e->getMessage());
+            return '';
+        }//end try
+    }//end resolveApplicationUuid()
+
+    /**
+     * Normalise an OpenRegister search hit to a plain array.
+     *
+     * `searchObjectsBySlug()` returns ObjectEntity OBJECTS, not arrays. Both call sites
+     * here used to guard with `is_array($app)` and fall through on failure — which meant
+     * they never actually read the object. In `isAuthorisedForApplication()` that
+     * silently produced an empty permissions set, so every non-admin was denied; only
+     * the admin bypass above it kept the endpoint working at all.
+     *
+     * @param mixed $object An ObjectEntity, or an already-plain array.
+     *
+     * @return array<string,mixed> The serialised object, or [] when it is neither.
+     */
+    private function toArray(mixed $object): array
+    {
+        if (is_array($object) === true) {
+            return $object;
+        }
+
+        if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
+            $serialised = $object->jsonSerialize();
+            if (is_array($serialised) === true) {
+                return $serialised;
+            }
+        }
+
+        return [];
+    }//end toArray()
+
+    /**
      * Validate the submit() request body.
      *
      * @param array<string,mixed> $body Decoded body params.
@@ -322,12 +396,13 @@ class ExportsController extends Controller
      *
      * @return JSONResponse 202 Accepted with `{ uuid }` on success.
      *
-     * State-changing POST that carries a PAT: `#[NoCSRFRequired]` is
-     * DELIBERATELY NOT applied here. The SPA posts via `@nextcloud/axios`,
-     * which attaches the `requesttoken` header automatically, so the CSRF
-     * check costs the legitimate caller nothing while blocking a forged
-     * cross-site POST that could queue an export (and exfiltrate a PAT)
-     * on behalf of an authenticated user.
+     * State-changing POST: `#[NoCSRFRequired]` is DELIBERATELY NOT applied here.
+     * The SPA posts via `@nextcloud/axios`, which attaches the `requesttoken`
+     * header automatically, so the CSRF check costs the legitimate caller nothing
+     * while blocking a forged cross-site POST that could queue an export on behalf
+     * of an authenticated user. The body no longer carries a PAT (it names a broker
+     * credential instead), but it can still push a repository into existence under
+     * the user's GitHub identity, so it stays CSRF-protected.
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
      * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-11
@@ -350,20 +425,48 @@ class ExportsController extends Controller
             return $validationError;
         }
 
-        // The PAT is handed straight to the credentials manager — never logged
-        // and removed from the request payload before further processing.
-        $pat = null;
-        if (is_string($body['githubPat'] ?? null) === true) {
-            $pat = (string) $body['githubPat'];
+        // No secret is accepted here any more. A rejected legacy client may still
+        // send `githubPat`; drop it defensively so it can never reach a log or the
+        // job record. The push path authenticates via `githubCredentialId` (a broker
+        // credential UUID) carried in the body and validated by the broker.
+        unset($body['githubPat']);
+
+        // Resolve applicationUuid from the slug SERVER-SIDE.
+        //
+        // Pre-existing bug: ExportDialog.vue never sent `applicationUuid`, but
+        // ExportJobService::queue() reads it straight off the payload — so it persisted
+        // as '', OR rejected the record ("Property 'applicationUuid' should match format
+        // 'uuid'"), and queue() logged the failure and returned a job UUID anyway. The
+        // caller got a cheerful 202 for an export that had not been recorded and would
+        // never run.
+        //
+        // Resolving it here rather than adding the field to the dialog is also the safer
+        // shape: the slug is already the authorisation subject just checked above, so
+        // taking the UUID from the same lookup means the record cannot name a different
+        // application than the one the caller was authorised for.
+        $applicationUuid = $this->resolveApplicationUuid(applicationSlug: $slug);
+        if ($applicationUuid === '') {
+            return new JSONResponse(
+                ['error' => 'Unknown application: '.$slug],
+                Http::STATUS_UNPROCESSABLE_ENTITY
+            );
         }
 
-        unset($body['githubPat']);
+        $body['applicationUuid'] = $applicationUuid;
+
+        // The queueing user's UID travels to the session-less background job so the
+        // broker's ownership guard has an identity to check the credential against.
+        $requestedBy = null;
+        $user        = $this->userSession->getUser();
+        if ($user !== null) {
+            $requestedBy = $user->getUID();
+        }
 
         try {
             $jobUuid = $this->exportJobService->queue(
                 applicationSlug: $slug,
                 payload: $body,
-                githubPat: $pat
+                requestedBy: $requestedBy
             );
         } catch (\InvalidArgumentException $e) {
             return new JSONResponse(

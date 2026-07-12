@@ -81,10 +81,12 @@ class IconService
     /**
      * Constructor.
      *
-     * @param ObjectService   $objectService OpenRegister object service
-     * @param FileService     $fileService   OpenRegister file service
-     * @param LoggerInterface $logger        PSR logger
-     * @param string|null     $serverRoot    Server root override (defaults to \OC::$SERVERROOT)
+     * @param ObjectService    $objectService OpenRegister object service
+     * @param FileService      $fileService   OpenRegister file service
+     * @param LoggerInterface  $logger        PSR logger
+     * @param string|null      $serverRoot    Server root override (defaults to \OC::$SERVERROOT)
+     * @param IAppManager|null $appManager    App manager, used to resolve app paths; optional so
+     *                                        the service stays constructible in unit tests
      *
      * @return void
      */

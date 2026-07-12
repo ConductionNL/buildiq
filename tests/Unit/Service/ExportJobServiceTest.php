@@ -3,10 +3,13 @@
 /**
  * OpenBuild ExportJobService unit tests
  *
- * Covers the PAT-handling surface (ICredentialsManager wiring), queue
- * semantics (ZIP vs. GitHub targets), and the credential-key format.
- * These tests are security-critical: a failure here means the PAT could
- * either leak into the OR record or fail to clear on terminal state.
+ * Covers queue semantics (ZIP vs. GitHub targets) and the no-secret contract.
+ *
+ * These tests used to cover "the PAT-handling surface (ICredentialsManager wiring)
+ * and the credential-key format" — careful handling of a secret OpenBuild should
+ * never have held. It no longer holds one: a GitHub export names a broker credential
+ * by UUID and the token is injected server-side. What is security-critical now is the
+ * ABSENCE of that surface, which `testPatSurfaceDoesNotExist()` pins.
  *
  * @category Test
  * @package  OCA\OpenBuild\Tests\Unit\Service
@@ -33,7 +36,6 @@ use OCA\OpenBuild\Service\JobOwnerImpersonator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\BackgroundJob\IJobList;
-use OCP\Security\ICredentialsManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -58,7 +60,7 @@ interface FakeTransitionEngineForTest
 }
 
 /**
- * Tests for {@see ExportJobService} — PAT handling + queue semantics.
+ * Tests for {@see ExportJobService} — the no-secret contract + queue semantics.
  */
 final class ExportJobServiceTest extends TestCase
 {
@@ -68,13 +70,6 @@ final class ExportJobServiceTest extends TestCase
      * @var ContainerInterface&MockObject
      */
     private ContainerInterface&MockObject $container;
-
-    /**
-     * Credentials manager mock.
-     *
-     * @var ICredentialsManager&MockObject
-     */
-    private ICredentialsManager&MockObject $credentialsManager;
 
     /**
      * Job list mock — used to verify the background job is scheduled.
@@ -109,9 +104,8 @@ final class ExportJobServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->container           = $this->createMock(ContainerInterface::class);
-        $this->credentialsManager  = $this->createMock(ICredentialsManager::class);
-        $this->jobList             = $this->createMock(IJobList::class);
+        $this->container            = $this->createMock(ContainerInterface::class);
+        $this->jobList              = $this->createMock(IJobList::class);
         $this->jobOwnerImpersonator = $this->createMock(JobOwnerImpersonator::class);
 
         // Default: OR not available — keeps the unit isolated from the
@@ -127,7 +121,6 @@ final class ExportJobServiceTest extends TestCase
         // run its callback configures that behaviour itself.
         $this->service = new ExportJobService(
             $this->container,
-            $this->credentialsManager,
             $this->jobList,
             new NullLogger(),
             $this->jobOwnerImpersonator
@@ -135,41 +128,64 @@ final class ExportJobServiceTest extends TestCase
     }//end setUp()
 
     /**
-     * queue() with target=github + PAT stores the credential under the
-     * deterministic key and never persists the PAT in the in-memory job.
+     * queue() with target=github records a broker credential REFERENCE and the
+     * queueing user's UID — and no secret anywhere on the record.
      *
-     * Security-critical: a regression here would either leak the PAT into
-     * the OR audit trail or fail to associate it with the job UUID.
+     * This inverts what this file used to assert. The old tests pinned that the PAT
+     * was stored under `openbuild.export.<uuid>.pat` and cleared on every terminal
+     * state — careful handling of a secret the app should never have held. It no
+     * longer holds one: `githubCredentialId` is a UUID whose token lives in the vault
+     * and is injected by the broker server-side.
      *
      * @return void
      */
-    public function testQueueStoresPatOnlyForGithubTarget(): void
+    public function testQueueRecordsCredentialReferenceForGithubTarget(): void
     {
-        $payload = [
-            'target'             => 'github',
-            'applicationVersion' => '1.0.0',
-            'githubOrg'          => 'acme-co',
-            'githubRepo'         => 'hello-world',
-            'githubVisibility'   => 'private',
-        ];
+        $container     = $this->createMock(ContainerInterface::class);
+        $objectService = $this->createMock(ObjectService::class);
+        $container->method('has')->willReturn(true);
+        $container->method('get')->willReturn($objectService);
 
-        // Assert the credentials manager is called exactly once with the
-        // expected APP_ID + key suffix + PAT.
-        $this->credentialsManager
-            ->expects(self::once())
-            ->method('store')
-            ->with(
-                self::equalTo(Application::APP_ID),
-                self::matchesRegularExpression('/^openbuild\.export\.[0-9a-f-]+\.pat$/'),
-                self::equalTo('ghp_super_secret_pat')
-            );
+        $captured = null;
+        $objectService
+            ->method('saveObject')
+            ->willReturnCallback(function ($job) use (&$captured): ObjectEntity {
+                $captured = $job;
+                return new ObjectEntity();
+            });
+
+        $service = new ExportJobService(
+            $container,
+            $this->jobList,
+            new NullLogger(),
+            $this->jobOwnerImpersonator
+        );
 
         $this->jobList->expects(self::once())->method('add');
 
-        $jobUuid = $this->service->queue(
+        $jobUuid = $service->queue(
             applicationSlug: 'hello-world',
-            payload: $payload,
-            githubPat: 'ghp_super_secret_pat'
+            payload: [
+                'target'             => 'github',
+                'applicationVersion' => '1.0.0',
+                'githubOrg'          => 'acme-co',
+                'githubRepo'         => 'hello-world',
+                'githubVisibility'   => 'private',
+                'githubCredentialId' => 'cred-uuid-1234',
+            ],
+            requestedBy: 'alice'
+        );
+
+        self::assertIsArray($captured);
+        self::assertSame('cred-uuid-1234', $captured['githubCredentialId']);
+        self::assertSame('alice', $captured['requestedBy']);
+
+        // Nothing token-shaped may reach the record — it lands in OR's audit trail.
+        $serialised = json_encode($captured);
+        self::assertDoesNotMatchRegularExpression(
+            '/gh[pousr]_[A-Za-z0-9]{10,}/',
+            (string) $serialised,
+            'No GitHub token may ever appear on the ExportJob record'
         );
 
         // #104 fix: uuid4() previously discarded the last 3 of 8 hex groups
@@ -182,102 +198,86 @@ final class ExportJobServiceTest extends TestCase
             $jobUuid,
             'Returned UUID should be a canonical RFC 4122 v4 UUID'
         );
-        self::assertNotEmpty($jobUuid, 'queue() must return a non-empty UUID');
-    }//end testQueueStoresPatOnlyForGithubTarget()
+    }//end testQueueRecordsCredentialReferenceForGithubTarget()
 
     /**
-     * queue() with target=zip MUST NOT call ICredentialsManager::store —
-     * ZIP-only jobs never see a PAT, and storing one would be a leak.
+     * A job that cannot be recorded must NOT be reported as queued.
+     *
+     * persistJob() used to warn-and-return on failure, so queue() carried on: it
+     * scheduled the background job and returned a UUID, and the controller answered
+     * 202 Accepted — for a record that did not exist. The background job then could not
+     * load it and died, and the user saw an export that had simply vanished. Fail loudly
+     * instead, and do not schedule anything.
      *
      * @return void
      */
-    public function testQueueDoesNotStorePatForZipTarget(): void
+    public function testQueueThrowsAndSchedulesNothingWhenTheRecordCannotBePersisted(): void
     {
-        $payload = [
-            'target'             => 'zip',
-            'applicationVersion' => '1.0.0',
-        ];
+        $container     = $this->createMock(ContainerInterface::class);
+        $objectService = $this->createMock(ObjectService::class);
+        $container->method('has')->willReturn(true);
+        $container->method('get')->willReturn($objectService);
 
-        $this->credentialsManager
-            ->expects(self::never())
-            ->method('store');
-
-        $this->jobList->expects(self::once())->method('add');
-
-        $this->service->queue(
-            applicationSlug: 'hello-world',
-            payload: $payload,
-            githubPat: null
-        );
-    }//end testQueueDoesNotStorePatForZipTarget()
-
-    /**
-     * fetchPat() returns null when no credential is stored for the job —
-     * the canonical state for ZIP-only jobs.
-     *
-     * @return void
-     */
-    public function testFetchPatReturnsNullForZipOnlyJob(): void
-    {
-        $this->credentialsManager
-            ->expects(self::once())
-            ->method('retrieve')
-            ->willReturn(null);
-
-        $result = $this->service->fetchPat('some-job-uuid');
-        self::assertNull($result, 'fetchPat() must return null when no credential is stored');
-    }//end testFetchPatReturnsNullForZipOnlyJob()
-
-    /**
-     * clearPat() is idempotent — calling it twice (e.g. once on success
-     * in the finally block and again during a manual cleanup) must not
-     * throw. Even when the credentials manager throws, the service must
-     * swallow the error rather than block a terminal transition.
-     *
-     * Security-critical: a failure to clear the PAT on terminal state
-     * would leave it lingering in the credentials store indefinitely.
-     *
-     * @return void
-     */
-    public function testClearPatIsIdempotent(): void
-    {
-        // First call succeeds; second call simulates an underlying
-        // "credential not found" — both must complete without throwing.
-        $this->credentialsManager
-            ->expects(self::exactly(2))
-            ->method('delete')
-            ->willReturnOnConsecutiveCalls(
-                null,
-                self::throwException(new \RuntimeException('Not found'))
+        $objectService
+            ->method('saveObject')
+            ->willThrowException(
+                new \RuntimeException("Property 'applicationUuid' should match format 'uuid'")
             );
 
-        $this->service->clearPat('some-job-uuid');
-        $this->service->clearPat('some-job-uuid');
+        $service = new ExportJobService(
+            $container,
+            $this->jobList,
+            new NullLogger(),
+            $this->jobOwnerImpersonator
+        );
 
-        // Reaching this line proves no exception escaped.
-        self::assertTrue(true);
-    }//end testClearPatIsIdempotent()
+        // The whole point: no phantom background job for a record that was never written.
+        $this->jobList->expects(self::never())->method('add');
+
+        $this->expectException(\RuntimeException::class);
+
+        $service->queue(
+            applicationSlug: 'hello-world',
+            payload: ['target' => 'zip', 'applicationVersion' => '1.0.0'],
+            requestedBy: 'alice'
+        );
+    }//end testQueueThrowsAndSchedulesNothingWhenTheRecordCannotBePersisted()
 
     /**
-     * credentialKey() yields the documented deterministic format —
-     * `openbuild.export.<uuid>.pat`. Tests both the prefix and the
-     * suffix so a regression in either is caught.
+     * The PAT surface is GONE, not deprecated.
      *
-     * The format is a security boundary: a change here would orphan
-     * existing stored credentials and could lead to PAT reuse across
-     * jobs.
+     * A `fetchPat()`/`clearPat()`/`credentialKey()` reappearing — or an
+     * `ICredentialsManager` back in the constructor — means the app has taken custody
+     * of the user's token again, which is the whole thing this change removes.
      *
      * @return void
      */
-    public function testCredentialKeyFormatIsDeterministic(): void
+    public function testPatSurfaceDoesNotExist(): void
     {
-        $key = $this->service->credentialKey('abc-123-def-456');
-        self::assertSame('openbuild.export.abc-123-def-456.pat', $key);
+        $reflection = new \ReflectionClass(ExportJobService::class);
 
-        // Empty UUID still produces a stable shape (no string concat bugs).
-        $emptyKey = $this->service->credentialKey('');
-        self::assertSame('openbuild.export..pat', $emptyKey);
-    }//end testCredentialKeyFormatIsDeterministic()
+        foreach (['fetchPat', 'clearPat', 'credentialKey'] as $method) {
+            self::assertFalse(
+                $reflection->hasMethod($method),
+                $method.'() must not exist — OpenBuild holds no GitHub token'
+            );
+        }
+
+        foreach ($reflection->getConstructor()->getParameters() as $parameter) {
+            self::assertStringNotContainsString(
+                'ICredentialsManager',
+                (string) $parameter->getType(),
+                'ExportJobService must not depend on ICredentialsManager — it stores no secrets'
+            );
+        }
+
+        $names = array_map(
+            static fn ($p) => $p->getName(),
+            (new \ReflectionMethod(ExportJobService::class, 'queue'))->getParameters()
+        );
+        self::assertNotContains('githubPat', $names, 'queue() must not accept a PAT');
+        self::assertContains('requestedBy', $names, 'queue() must carry the queueing UID for the broker');
+    }//end testPatSurfaceDoesNotExist()
 
     /**
      * queue() persists a normalised `dataRegisters` array — mirrors the
@@ -304,7 +304,6 @@ final class ExportJobServiceTest extends TestCase
 
         $service = new ExportJobService(
             $container,
-            $this->credentialsManager,
             $this->jobList,
             new NullLogger(),
             $this->jobOwnerImpersonator
@@ -323,7 +322,7 @@ final class ExportJobServiceTest extends TestCase
                     'not-an-array',
                 ],
             ],
-            githubPat: null
+            requestedBy: null
         );
 
         self::assertIsArray($captured);
@@ -360,7 +359,6 @@ final class ExportJobServiceTest extends TestCase
 
         $service = new ExportJobService(
             $container,
-            $this->credentialsManager,
             $this->jobList,
             new NullLogger(),
             $this->jobOwnerImpersonator
@@ -369,7 +367,7 @@ final class ExportJobServiceTest extends TestCase
         $service->queue(
             applicationSlug: 'hello-world',
             payload: ['target' => 'zip', 'applicationVersion' => '1.0.0'],
-            githubPat: null
+            requestedBy: null
         );
 
         self::assertSame([], $captured['dataRegisters']);
@@ -430,7 +428,6 @@ final class ExportJobServiceTest extends TestCase
 
         $service = new ExportJobService(
             $container,
-            $this->credentialsManager,
             $this->jobList,
             new NullLogger(),
             $this->jobOwnerImpersonator
@@ -490,7 +487,6 @@ final class ExportJobServiceTest extends TestCase
 
         $service = new ExportJobService(
             $container,
-            $this->credentialsManager,
             $this->jobList,
             new NullLogger(),
             $this->jobOwnerImpersonator
@@ -552,7 +548,6 @@ final class ExportJobServiceTest extends TestCase
 
         $service = new ExportJobService(
             $this->containerResolvingEngine($engine),
-            $this->credentialsManager,
             $this->jobList,
             new NullLogger(),
             $this->jobOwnerImpersonator
@@ -612,7 +607,6 @@ final class ExportJobServiceTest extends TestCase
 
         $service = new ExportJobService(
             $container,
-            $this->credentialsManager,
             $this->jobList,
             new NullLogger(),
             $this->jobOwnerImpersonator
@@ -650,7 +644,6 @@ final class ExportJobServiceTest extends TestCase
 
         $service = new ExportJobService(
             $this->containerResolvingEngine($engine),
-            $this->credentialsManager,
             $this->jobList,
             new NullLogger(),
             $this->jobOwnerImpersonator

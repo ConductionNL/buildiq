@@ -4,14 +4,21 @@
  * OpenBuild GitHub Push Service
  *
  * Pushes the generated app tree to a new GitHub repository and opens a
- * placeholder pull request. The PAT is method-scoped — never persisted on
- * the service instance, never logged, never echoed (Decision 3).
+ * placeholder pull request, over the GitHub REST + Git Data API (create-repo,
+ * create-blob, create-tree, create-commit, create-ref, create-pull).
  *
- * Uses Nextcloud's built-in IClientService against the GitHub REST + Git
- * Data API directly (create-repo, create-blob, create-tree, create-commit,
- * create-ref, create-pull). This avoids pulling knplabs/github-api onto the
- * lockfile while keeping the wire surface stable (design.md Risks: "swap to
- * direct cURL in GitHubPushService — no architectural change").
+ * OpenBuild holds NO GitHub token. Decision 3 originally said the PAT was
+ * "method-scoped — never persisted on the service instance", but the PAT was
+ * still typed into an OpenBuild dialog, POSTed to an OpenBuild controller,
+ * persisted by OpenBuild for the duration of the job, and replayed by OpenBuild
+ * against api.github.com. Method scope is not custody: the app could read the
+ * secret, so the app was the trust boundary.
+ *
+ * Every call now goes through OpenRegister's credential broker. This service
+ * sends {method, path, body} plus a credential UUID; the broker checks the
+ * owner, the allowed-app grant and the allow-rules, then injects the token
+ * server-side. The token never enters this process. When the broker is absent
+ * we fail closed — there is no token-bearing fallback left to fall back to.
  *
  * @category Service
  * @package  OCA\OpenBuild\Service
@@ -35,7 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Service;
 
 use FilesystemIterator;
-use OCP\Http\Client\IClientService;
+use OCP\Server;
 use Psr\Log\LoggerInterface;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -48,18 +55,52 @@ use RuntimeException;
  */
 class GitHubPushService
 {
-    private const API_BASE = 'https://api.github.com';
+    /**
+     * OpenRegister's credential broker.
+     *
+     * This service used to take the user's GitHub Personal Access Token: the PAT was
+     * typed into an OpenBuild dialog, POSTed to an OpenBuild controller, persisted by
+     * OpenBuild, and replayed by OpenBuild against api.github.com. Encryption at rest
+     * did not change that — custody was the app's, which is exactly what the broker
+     * exists to prevent.
+     *
+     * Every GitHub call now goes through the broker: OpenBuild sends {method, path,
+     * body} plus a credential UUID, and the broker injects the token. The token never
+     * reaches this process. Resolved lazily (class_exists + Server::get), mirroring
+     * GitHubAppSyncService; when the broker is absent we fail closed rather than fall
+     * back to any token-bearing path.
+     *
+     * @var string
+     */
+    private const BROKER_CLASS = 'OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService';
 
+    /**
+     * The broker `appId` OpenBuild identifies itself with.
+     *
+     * @var string
+     */
+    private const APP_ID = 'openbuild';
+
+    /**
+     * The branch the generated tree is pushed to, before the PR is opened against the
+     * repo's default branch.
+     *
+     * There is deliberately no API_BASE const: https://api.github.com is the broker's
+     * host-lock, and the broker is the one place it may be asserted. A service that can
+     * name the host can name a different one.
+     *
+     * @var string
+     */
     private const BOOTSTRAP_BRANCH = 'bootstrap';
 
     /**
      * Constructor.
      *
-     * @param IClientService  $clientService Nextcloud HTTP client factory.
-     * @param LoggerInterface $logger        Logger.
+     * No HTTP client: this service no longer makes outbound calls of its own.
+     *
+     * @param LoggerInterface $logger Logger.
      */
     public function __construct(
-        private IClientService $clientService,
         private LoggerInterface $logger,
     ) {
     }//end __construct()
@@ -67,19 +108,19 @@ class GitHubPushService
     /**
      * Push the generated tree to a new GitHub repo + open a placeholder PR.
      *
-     * The PAT is method-scoped: it is read here, passed to the per-call
-     * request builder, and never stored on `$this` or logged.
+     * @param string      $jobUuid      Export job UUID — correlation key in audit logs.
+     * @param string      $treeDir      Absolute path to the generated tree on disk.
+     * @param string      $credentialId Broker credential UUID for a `github` provider
+     *                                  credential. Not a token: this service cannot
+     *                                  read the secret behind it.
+     * @param string      $org          Target GitHub organisation/owner.
+     * @param string      $repo         Target repository name.
+     * @param string      $visibility   Repository visibility (`public`|`private`).
+     * @param string|null $actingUserId Credential owner. Required on the background-job
+     *                                  path, where there is no user session for the
+     *                                  broker's ownership guard to read.
      *
-     * @param string $jobUuid    Export job UUID — correlation key in audit
-     *                           logs.
-     * @param string $treeDir    Absolute path to the generated tree on disk.
-     * @param string $pat        GitHub PAT — method-scoped, never
-     *                           persisted.
-     * @param string $org        Target GitHub organisation/owner.
-     * @param string $repo       Target repository name.
-     * @param string $visibility Repository visibility (`public`|`private`).
-     *
-     * @return array{repoUrl:string,pullRequestUrl:string} URLs of repo + PR.
+     * @return array{repoUrl:string,pullRequestUrl:string,commitSha:string} URLs of repo + PR.
      *
      * @throws RuntimeException On any GitHub API failure (auth, repo-exists, …).
      *
@@ -88,16 +129,29 @@ class GitHubPushService
     public function push(
         string $jobUuid,
         string $treeDir,
-        string $pat,
+        string $credentialId,
         string $org='',
         string $repo='',
         string $visibility='private',
+        ?string $actingUserId=null,
     ): array {
-        // Audit log names only the job + repo — never the PAT, never tree contents.
+        // Audit log names only the job + repo — never the credential, never tree contents.
         $this->logger->info(
             'OpenBuild GitHub push: creating repository',
             ['jobUuid' => $jobUuid, 'org' => $org, 'repo' => $repo]
         );
+
+        if ($this->isBrokerAvailable() === false) {
+            // Fail closed. There is deliberately no token-bearing fallback: the whole
+            // point of this change is that OpenBuild can no longer hold a PAT.
+            throw new RuntimeException(
+                'GitHub push requires the OpenRegister credential broker, which is not available.'
+            );
+        }
+
+        if ($credentialId === '') {
+            throw new RuntimeException('GitHub push requires a broker credential.');
+        }
 
         if ($org === '' || $repo === '') {
             throw new RuntimeException('GitHub push requires both an organisation and a repository name.');
@@ -107,11 +161,26 @@ class GitHubPushService
             throw new RuntimeException('GitHub push: generated tree directory is missing: '.$treeDir);
         }
 
-        $this->assertRepoAbsent(org: $org, repo: $repo, pat: $pat);
-        $repoData = $this->createRepo(org: $org, repo: $repo, visibility: $visibility, pat: $pat);
+        $this->assertRepoAbsent(org: $org, repo: $repo, credentialId: $credentialId, actingUserId: $actingUserId);
+        $repoData = $this->createRepo(
+            org: $org,
+            repo: $repo,
+            visibility: $visibility,
+            credentialId: $credentialId,
+            actingUserId: $actingUserId
+        );
 
-        $defaultBranch = (string) ($repoData['default_branch'] ?? $this->resolveDefaultBranch(org: $org, pat: $pat));
-        $commitSha     = $this->pushTree(org: $org, repo: $repo, branch: self::BOOTSTRAP_BRANCH, treeDir: $treeDir, pat: $pat);
+        // The created repo reports its own default branch; `auto_init` guarantees one,
+        // so there is no separate lookup (and GET /user is not needed at all).
+        $defaultBranch = (string) ($repoData['default_branch'] ?? 'main');
+        $commitSha     = $this->pushTree(
+            org: $org,
+            repo: $repo,
+            branch: self::BOOTSTRAP_BRANCH,
+            treeDir: $treeDir,
+            credentialId: $credentialId,
+            actingUserId: $actingUserId
+        );
 
         $prUrl = $this->openPullRequest(
             org: $org,
@@ -121,10 +190,9 @@ class GitHubPushService
             title: 'chore: bootstrap from OpenBuild',
             body: 'This repository was bootstrapped from an OpenBuild application export. '
                 .'Review the tree, then run `composer install` and `npm install` locally before merging.',
-            pat: $pat
+            credentialId: $credentialId,
+            actingUserId: $actingUserId
         );
-
-        unset($pat);
 
         return [
             'repoUrl'        => (string) ($repoData['html_url'] ?? ('https://github.com/'.$org.'/'.$repo)),
@@ -136,33 +204,33 @@ class GitHubPushService
     /**
      * Fail fast when the target repository already exists (REQ-OBEX-007).
      *
-     * @param string $org  Organisation/owner.
-     * @param string $repo Repository name.
-     * @param string $pat  GitHub PAT — method-scoped.
+     * @param string      $org          Organisation/owner.
+     * @param string      $repo         Repository name.
+     * @param string      $credentialId Broker credential UUID.
+     * @param string|null $actingUserId Owner of the credential (background context).
      *
      * @return void
      *
      * @throws RuntimeException When the repo already exists.
      */
-    private function assertRepoAbsent(string $org, string $repo, string $pat): void
-    {
-        $client   = $this->clientService->newClient();
-        $existing = false;
-        try {
-            $response = $client->get(
-                self::API_BASE.'/repos/'.rawurlencode($org).'/'.rawurlencode($repo),
-                $this->requestOptions(pat: $pat)
-            );
-            $existing = ($response->getStatusCode() === 200);
-        } catch (\Throwable $e) {
-            // A 404 is the desired "absent" outcome; the NC client throws on
-            // non-2xx, so a thrown 404 here means the repo is absent.
-            if (str_contains($e->getMessage(), '404') === false) {
-                throw new RuntimeException('GitHub auth failure: '.$this->scrub(message: $e->getMessage()));
-            }
-        }
+    private function assertRepoAbsent(
+        string $org,
+        string $repo,
+        string $credentialId,
+        ?string $actingUserId
+    ): void {
+        // Absent is the desired outcome, so a broker denial/404 here is NOT an error —
+        // only a successful 200 means the repo already exists.
+        $existing = $this->brokerCall(
+            method: 'GET',
+            path: '/repos/'.rawurlencode($org).'/'.rawurlencode($repo),
+            body: null,
+            credentialId: $credentialId,
+            actingUserId: $actingUserId,
+            failQuietly: true
+        );
 
-        if ($existing === true) {
+        if ($existing !== null) {
             throw new RuntimeException(
                 sprintf('Repository %s/%s already exists', $org, $repo)
             );
@@ -172,10 +240,11 @@ class GitHubPushService
     /**
      * Create a new GitHub repository under the given org.
      *
-     * @param string $org        Organisation/owner.
-     * @param string $repo       Repository name.
-     * @param string $visibility `public`|`private`.
-     * @param string $pat        GitHub PAT — method-scoped.
+     * @param string      $org          Organisation/owner.
+     * @param string      $repo         Repository name.
+     * @param string      $visibility   `public`|`private`.
+     * @param string      $credentialId Broker credential UUID.
+     * @param string|null $actingUserId Owner of the credential (background context).
      *
      * @return array<string,mixed> Decoded repo payload.
      *
@@ -183,26 +252,31 @@ class GitHubPushService
      *
      * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
      */
-    public function createRepo(string $org, string $repo, string $visibility, string $pat): array
-    {
-        $client = $this->clientService->newClient();
-        $body   = [
-            'name'        => $repo,
-            'private'     => ($visibility === 'private'),
-            'auto_init'   => true,
-            'description' => 'Bootstrapped from OpenBuild',
-        ];
+    public function createRepo(
+        string $org,
+        string $repo,
+        string $visibility,
+        string $credentialId,
+        ?string $actingUserId=null
+    ): array {
+        $created = $this->brokerCall(
+            method: 'POST',
+            path: '/orgs/'.rawurlencode($org).'/repos',
+            body: [
+                'name'        => $repo,
+                'private'     => ($visibility === 'private'),
+                'auto_init'   => true,
+                'description' => 'Bootstrapped from OpenBuild',
+            ],
+            credentialId: $credentialId,
+            actingUserId: $actingUserId
+        );
 
-        try {
-            $response = $client->post(
-                self::API_BASE.'/orgs/'.rawurlencode($org).'/repos',
-                $this->requestOptions(pat: $pat, body: $body)
-            );
-        } catch (\Throwable $e) {
-            throw new RuntimeException('GitHub create-repo failed: '.$this->scrub(message: $e->getMessage()));
+        if ($created === null) {
+            throw new RuntimeException('GitHub create-repo failed.');
         }
 
-        return $this->decode(body: (string) $response->getBody());
+        return $created;
     }//end createRepo()
 
     /**
@@ -211,11 +285,12 @@ class GitHubPushService
      * Walks the on-disk tree, creates a blob per file via the Git Data API,
      * assembles a tree + commit, and points a new ref at it.
      *
-     * @param string $org     Organisation/owner.
-     * @param string $repo    Repository name.
-     * @param string $branch  Branch to create (e.g. `bootstrap`).
-     * @param string $treeDir Absolute path to the generated tree.
-     * @param string $pat     GitHub PAT — method-scoped.
+     * @param string      $org          Organisation/owner.
+     * @param string      $repo         Repository name.
+     * @param string      $branch       Branch to create (e.g. `bootstrap`).
+     * @param string      $treeDir      Absolute path to the generated tree.
+     * @param string      $credentialId Broker credential UUID.
+     * @param string|null $actingUserId Owner of the credential (background context).
      *
      * @return string Commit SHA.
      *
@@ -223,42 +298,59 @@ class GitHubPushService
      *
      * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
      */
-    public function pushTree(string $org, string $repo, string $branch, string $treeDir, string $pat): string
-    {
-        $base    = self::API_BASE.'/repos/'.rawurlencode($org).'/'.rawurlencode($repo);
+    public function pushTree(
+        string $org,
+        string $repo,
+        string $branch,
+        string $treeDir,
+        string $credentialId,
+        ?string $actingUserId=null
+    ): string {
+        $base    = '/repos/'.rawurlencode($org).'/'.rawurlencode($repo);
         $entries = [];
 
         foreach ($this->walkTree(root: $treeDir) as $relativePath) {
             $contents  = (string) file_get_contents($treeDir.'/'.$relativePath);
-            $blobSha   = $this->createBlob(base: $base, contents: $contents, pat: $pat);
             $entries[] = [
                 'path' => $relativePath,
                 'mode' => '100644',
                 'type' => 'blob',
-                'sha'  => $blobSha,
+                'sha'  => $this->createBlob(
+                    base: $base,
+                    contents: $contents,
+                    credentialId: $credentialId,
+                    actingUserId: $actingUserId
+                ),
             ];
         }
 
-        $tree    = $this->postJson(url: $base.'/git/trees', body: ['tree' => $entries], pat: $pat);
+        $tree    = $this->postJson(
+            path: $base.'/git/trees',
+            body: ['tree' => $entries],
+            credentialId: $credentialId,
+            actingUserId: $actingUserId
+        );
         $treeSha = (string) ($tree['sha'] ?? '');
 
         $commit    = $this->postJson(
-            url: $base.'/git/commits',
+            path: $base.'/git/commits',
             body: [
                 'message' => 'chore: bootstrap from OpenBuild',
                 'tree'    => $treeSha,
             ],
-            pat: $pat
+            credentialId: $credentialId,
+            actingUserId: $actingUserId
         );
         $commitSha = (string) ($commit['sha'] ?? '');
 
         $this->postJson(
-            url: $base.'/git/refs',
+            path: $base.'/git/refs',
             body: [
                 'ref' => 'refs/heads/'.$branch,
                 'sha' => $commitSha,
             ],
-            pat: $pat
+            credentialId: $credentialId,
+            actingUserId: $actingUserId
         );
 
         return $commitSha;
@@ -267,13 +359,14 @@ class GitHubPushService
     /**
      * Open a pull request from one branch to another.
      *
-     * @param string $org        Organisation/owner.
-     * @param string $repo       Repository name.
-     * @param string $fromBranch Source branch.
-     * @param string $toBranch   Target branch.
-     * @param string $title      PR title.
-     * @param string $body       PR body.
-     * @param string $pat        GitHub PAT — method-scoped.
+     * @param string      $org          Organisation/owner.
+     * @param string      $repo         Repository name.
+     * @param string      $fromBranch   Source branch.
+     * @param string      $toBranch     Target branch.
+     * @param string      $title        PR title.
+     * @param string      $body         PR body.
+     * @param string      $credentialId Broker credential UUID.
+     * @param string|null $actingUserId Owner of the credential (background context).
      *
      * @return string PR URL.
      *
@@ -288,120 +381,164 @@ class GitHubPushService
         string $toBranch,
         string $title,
         string $body,
-        string $pat,
+        string $credentialId,
+        ?string $actingUserId=null,
     ): string {
         $pullRequest = $this->postJson(
-            url: self::API_BASE.'/repos/'.rawurlencode($org).'/'.rawurlencode($repo).'/pulls',
+            path: '/repos/'.rawurlencode($org).'/'.rawurlencode($repo).'/pulls',
             body: [
                 'title' => $title,
                 'head'  => $fromBranch,
                 'base'  => $toBranch,
                 'body'  => $body,
             ],
-            pat: $pat
+            credentialId: $credentialId,
+            actingUserId: $actingUserId
         );
 
         return (string) ($pullRequest['html_url'] ?? '');
     }//end openPullRequest()
 
     /**
-     * Resolve the default branch for an org's repos.
-     *
-     * `development` when the Conduction ruleset applies (heuristic: org name
-     * contains "conduction"), else `main` (OQ-2).
-     *
-     * @param string $org Target organisation.
-     * @param string $pat GitHub PAT — method-scoped.
-     *
-     * @return string Default branch name.
-     *
-     * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
-     */
-    public function resolveDefaultBranch(string $org, string $pat): string
-    {
-        unset($pat);
-        // Heuristic: Conduction orgs use `development` as integration branch.
-        if (stripos($org, 'conduction') !== false) {
-            return 'development';
-        }
-
-        return 'main';
-    }//end resolveDefaultBranch()
-
-    /**
      * Create a base64 blob and return its SHA.
      *
-     * @param string $base     Repo API base URL.
-     * @param string $contents Raw file contents.
-     * @param string $pat      GitHub PAT — method-scoped.
+     * @param string      $base         Repo-relative API path prefix.
+     * @param string      $contents     Raw file contents.
+     * @param string      $credentialId Broker credential UUID.
+     * @param string|null $actingUserId Owner of the credential (background context).
      *
      * @return string Blob SHA.
      */
-    private function createBlob(string $base, string $contents, string $pat): string
-    {
+    private function createBlob(
+        string $base,
+        string $contents,
+        string $credentialId,
+        ?string $actingUserId
+    ): string {
         $blob = $this->postJson(
-            url: $base.'/git/blobs',
+            path: $base.'/git/blobs',
             body: [
                 'content'  => base64_encode($contents),
                 'encoding' => 'base64',
             ],
-            pat: $pat
+            credentialId: $credentialId,
+            actingUserId: $actingUserId
         );
 
         return (string) ($blob['sha'] ?? '');
     }//end createBlob()
 
     /**
-     * POST a JSON body and decode the response.
+     * POST a JSON body through the broker and decode the response.
      *
-     * @param string              $url  Absolute API URL.
-     * @param array<string,mixed> $body Request body.
-     * @param string              $pat  GitHub PAT — method-scoped.
+     * @param string              $path         GitHub-relative path (host comes from the
+     *                                          broker's host-lock, not from us).
+     * @param array<string,mixed> $body         Request body.
+     * @param string              $credentialId Broker credential UUID.
+     * @param string|null         $actingUserId Owner of the credential (background context).
      *
      * @return array<string,mixed> Decoded response payload.
      *
      * @throws RuntimeException On API failure.
      */
-    private function postJson(string $url, array $body, string $pat): array
+    private function postJson(string $path, array $body, string $credentialId, ?string $actingUserId): array
     {
-        $client = $this->clientService->newClient();
-        try {
-            $response = $client->post($url, $this->requestOptions(pat: $pat, body: $body));
-        } catch (\Throwable $e) {
-            throw new RuntimeException('GitHub API call failed: '.$this->scrub(message: $e->getMessage()));
+        $decoded = $this->brokerCall(
+            method: 'POST',
+            path: $path,
+            body: $body,
+            credentialId: $credentialId,
+            actingUserId: $actingUserId
+        );
+
+        if ($decoded === null) {
+            throw new RuntimeException('GitHub API call failed: POST '.$path);
         }
 
-        return $this->decode(body: (string) $response->getBody());
+        return $decoded;
     }//end postJson()
 
     /**
-     * Build the request options array (headers + optional JSON body).
+     * Route one GitHub call through OpenRegister's credential broker.
      *
-     * The PAT lives only inside the returned array, scoped to a single call.
+     * We send only {method, path, body}: the base URL is the broker's host-lock and
+     * the Authorization header is injected there from the vault. This process never
+     * sees the token, so there is nothing here to leak into a log or an exception.
      *
-     * @param string                   $pat  GitHub PAT — method-scoped.
-     * @param array<string,mixed>|null $body Optional JSON body.
+     * A non-2xx (including a broker 403 for an unlisted method/path) returns `null`
+     * rather than throwing, because the one caller that needs to tell "absent" from
+     * "error" — assertRepoAbsent() — treats absence as the happy path. Every other
+     * caller turns `null` into a RuntimeException.
      *
-     * @return array<string,mixed> Guzzle-compatible options.
+     * @param string                   $method       HTTP method.
+     * @param string                   $path         GitHub-relative path.
+     * @param array<string,mixed>|null $body         Optional JSON body.
+     * @param string                   $credentialId Broker credential UUID.
+     * @param string|null              $actingUserId Owner of the credential (background context).
+     * @param bool                     $failQuietly  Suppress the error log on failure.
+     *
+     * @return array<string,mixed>|null Decoded payload, or null on any non-2xx.
      */
-    private function requestOptions(string $pat, ?array $body=null): array
-    {
-        $options = [
-            'headers' => [
-                'Authorization' => 'Bearer '.$pat,
-                'Accept'        => 'application/vnd.github+json',
-                'User-Agent'    => 'OpenBuild-Exporter',
-            ],
-            'timeout' => 30,
-        ];
-
+    private function brokerCall(
+        string $method,
+        string $path,
+        ?array $body,
+        string $credentialId,
+        ?string $actingUserId,
+        bool $failQuietly=false
+    ): ?array {
+        $encoded = null;
         if ($body !== null) {
-            $options['body'] = json_encode($body);
-            $options['headers']['Content-Type'] = 'application/json';
+            $encoded = (string) json_encode($body);
         }
 
-        return $options;
-    }//end requestOptions()
+        try {
+            $broker   = Server::get(self::BROKER_CLASS);
+            $response = $broker->request(
+                $credentialId,
+                self::APP_ID,
+                $method,
+                $path,
+                ['Accept' => 'application/vnd.github+json', 'Content-Type' => 'application/json'],
+                $encoded,
+                $actingUserId
+            );
+        } catch (\Throwable $e) {
+            if ($failQuietly === false) {
+                // The broker never puts the secret in its exception messages, but this
+                // path is also reached for transport errors, so scrub anyway.
+                $this->logger->warning(
+                    'OpenBuild GitHub push: broker call failed for '.$method.' '.$path
+                    .': '.$this->scrub(message: $e->getMessage())
+                );
+            }
+
+            return null;
+        }//end try
+
+        $status = (int) ($response['status'] ?? 0);
+        if ($status < 200 || $status >= 300) {
+            if ($failQuietly === false) {
+                $this->logger->warning(
+                    'OpenBuild GitHub push: '.$method.' '.$path.' returned HTTP '.$status
+                );
+            }
+
+            return null;
+        }
+
+        return $this->decode(body: (string) ($response['body'] ?? ''));
+    }//end brokerCall()
+
+    /**
+     * Whether OpenRegister's credential broker is installed.
+     *
+     * @return bool True when the broker class can be resolved.
+     */
+    public function isBrokerAvailable(): bool
+    {
+        return class_exists(self::BROKER_CLASS) === true;
+    }//end isBrokerAvailable()
 
     /**
      * Decode a JSON response body into an array.

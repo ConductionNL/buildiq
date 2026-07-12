@@ -57,14 +57,18 @@
 					:input-label="t('openbuild', 'Visibility')"
 					:options="visibilityOptions"
 					:disabled="submitting" />
-				<NcTextField
-					v-model="form.githubPat"
-					type="password"
-					autocomplete="off"
-					:label="t('openbuild', 'GitHub personal access token')"
-					:disabled="submitting" />
-				<p class="export-dialog__scope-hint">
-					{{ t('openbuild', 'The token needs the `repo` scope. It is sent once over your Nextcloud session, stored encrypted via the credentials manager, and deleted automatically when the export finishes.') }}
+				<NcSelect
+					v-model="form.githubCredential"
+					:input-label="t('openbuild', 'GitHub credential')"
+					:options="githubCredentials"
+					:loading="loadingCredentials"
+					:disabled="submitting"
+					:placeholder="t('openbuild', 'Select a credential')" />
+				<p v-if="!loadingCredentials && !githubCredentials.length" class="export-dialog__scope-hint">
+					{{ t('openbuild', 'You have no GitHub credential yet. Add one under Personal settings → Additional settings, then reopen this dialog. OpenBuild never sees the token itself — it asks the credential broker to make each GitHub call on your behalf.') }}
+				</p>
+				<p v-else class="export-dialog__scope-hint">
+					{{ t('openbuild', 'The token stays in your credential vault. OpenBuild sends only the request it wants made, and the broker injects the token and refuses anything outside the allowed GitHub calls.') }}
 				</p>
 			</template>
 
@@ -126,6 +130,10 @@ export default {
 		return {
 			submitting: false,
 			errorMessage: '',
+			// The user's `github` broker credentials, as NcSelect options.
+			// OpenBuild only ever learns their UUIDs — never the tokens behind them.
+			githubCredentials: [],
+			loadingCredentials: false,
 			form: {
 				version: this.availableVersions[0] || { label: '0.1.0', value: '0.1.0' },
 				target: { label: this.t('openbuild', 'ZIP download'), value: 'zip' },
@@ -134,7 +142,7 @@ export default {
 				githubOrg: '',
 				githubRepo: '',
 				githubVisibility: { label: this.t('openbuild', 'Private'), value: 'private' },
-				githubPat: '',
+				githubCredential: null,
 			},
 			// Per-binding includeData choice, unchecked by default. Built
 			// once from the dataRegisters prop — mirrors `form`'s own
@@ -190,7 +198,41 @@ export default {
 			]
 		},
 	},
+	mounted() {
+		this.fetchGithubCredentials()
+	},
 	methods: {
+		/**
+		 * Load the user's `github` credentials from OpenRegister's broker.
+		 *
+		 * We deliberately ask for the whole personal wallet and filter client-side:
+		 * the endpoint already scopes to the caller's own credentials, and the
+		 * response carries no secrets — only names, providers and UUIDs.
+		 *
+		 * A failure here is not fatal. It leaves the list empty, which the template
+		 * renders as "you have no GitHub credential yet", and submit() still refuses
+		 * to queue a GitHub export without one.
+		 *
+		 * @spec openspec/changes/export-github-broker/tasks.md#task-4-credential-picker-in-the-export-dialog
+		 */
+		async fetchGithubCredentials() {
+			this.loadingCredentials = true
+			try {
+				const url = generateUrl('/apps/openregister/api/credentials')
+				const response = await axios.get(url)
+				const results = response.data.results || []
+				this.githubCredentials = results
+					.filter((cred) => cred.provider === 'github')
+					.map((cred) => ({ label: cred.name || cred.id, value: cred.id }))
+				if (this.githubCredentials.length === 1) {
+					this.form.githubCredential = this.githubCredentials[0]
+				}
+			} catch (error) {
+				this.githubCredentials = []
+			} finally {
+				this.loadingCredentials = false
+			}
+		},
 		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
 		 *
@@ -225,10 +267,16 @@ export default {
 					})),
 				}
 				if (this.form.target.value === 'github') {
+					if (!this.form.githubCredential) {
+						this.errorMessage = this.t('openbuild', 'Pick a GitHub credential to push with.')
+						this.submitting = false
+						return
+					}
 					payload.githubOrg = this.form.githubOrg
 					payload.githubRepo = this.form.githubRepo
 					payload.githubVisibility = this.form.githubVisibility.value
-					payload.githubPat = this.form.githubPat
+					// A broker credential UUID, not a token. The secret never leaves the vault.
+					payload.githubCredentialId = this.form.githubCredential.value
 				}
 				const url = generateUrl(`/apps/openbuild/api/applications/${encodeURIComponent(this.applicationSlug)}/exports`)
 				const response = await axios.post(url, payload)
