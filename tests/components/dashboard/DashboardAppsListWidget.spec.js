@@ -163,10 +163,24 @@ describe('DashboardAppsListWidget', () => {
 			expect(vm.appUpdated({ '@self': { updated: '2026-03-15T00:00:00Z' } })).not.toBe('—')
 		})
 
+		// A real <img>, not a bare `{ src }` stub: onIconError reads the LITERAL
+		// src attribute (`getAttribute`) rather than the resolved `.src` property,
+		// which the DOM makes absolute.
 		it('onIconError swaps in the fallback icon', () => {
-			const target = { src: '/index.php/apps/openbuild/icons/foo-dark.svg' }
+			const target = document.createElement('img')
+			target.setAttribute('src', '/index.php/apps/openbuild/icons/foo-dark.svg')
 			vm.onIconError({ target })
-			expect(target.src).toBe('/apps/openbuild/img/app-dark.svg')
+			expect(target.getAttribute('src')).toBe('/apps/openbuild/img/app-dark.svg')
+		})
+
+		it('onIconError does not re-swap once the fallback itself is showing', () => {
+			// If the fallback also 404s, the error event re-fires on the same node.
+			// Without the guard the handler would re-set the same failing src forever,
+			// spamming requests — so it must swap at most once.
+			const target = document.createElement('img')
+			target.setAttribute('src', '/apps/openbuild/img/app-dark.svg')
+			vm.onIconError({ target })
+			expect(target.getAttribute('src')).toBe('/apps/openbuild/img/app-dark.svg')
 		})
 	})
 
