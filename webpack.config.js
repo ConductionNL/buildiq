@@ -69,6 +69,12 @@ if (useLocalLib && fs.existsSync(localLibPkg)) {
 
 webpackConfig.resolve = {
 	extensions: ['.vue', '.js'],
+	// @conduction/nextcloud-vue deliberately bundles @nextcloud/dialogs v6 into
+	// its dist (to pin `spawnDialog` across consumers that alias an older
+	// dialogs). That bundled FilePicker chunk imports node's `path`, and
+	// webpack 5 no longer polyfills node builtins automatically — without this
+	// fallback the build fails with "Can't resolve 'path'".
+	fallback: { path: require.resolve('path-browserify') },
 	alias: {
 		'@': path.resolve(__dirname, 'src'),
 		...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),
