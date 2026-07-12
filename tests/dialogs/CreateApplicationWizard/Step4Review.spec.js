@@ -255,49 +255,43 @@ describe('Step4Review.vue — spec task 6.5', () => {
 	// Icon previews
 	// -------------------------------------------------------------------------
 
+	// The wizard no longer carries Blob/File uploads through the payload: the icon
+	// picker stores a VALUE (`iconValue` / `iconDarkValue`) — raw SVG, or a glyph
+	// key — which Step4Review resolves to SVG markup via `resolveAppIcon`. These
+	// tests drive that contract; there is no `URL.createObjectURL` in the path.
+	const LIGHT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z"/></svg>'
+	const DARK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>'
+
 	it('does not render icons section when neither icon nor iconDark provided', () => {
-		const wrapper = mountStep4({ icon: null, iconDark: null })
+		const wrapper = mountStep4({ iconValue: null, iconDarkValue: null })
 		expect(wrapper.find('.wizard-step4__icons').exists()).toBe(false)
 	})
 
 	it('renders icons section when icon (light) is provided', () => {
-		// Simulate a Blob / File object with a fake URL; URL.createObjectURL
-		// is not available in jsdom, so we mock it minimally.
-		const fakeBlob = new Blob(['<svg/>'], { type: 'image/svg+xml' })
-		// Patch createObjectURL for this test
-		const originalCreate = URL.createObjectURL
-		URL.createObjectURL = () => 'blob:fake-light-url'
-
-		const wrapper = mountStep4({ icon: fakeBlob, iconDark: null })
+		const wrapper = mountStep4({ iconValue: LIGHT_SVG, iconDarkValue: null })
 		expect(wrapper.find('.wizard-step4__icons').exists()).toBe(true)
 		expect(wrapper.find('figure.wizard-step4__icon-preview').exists()).toBe(true)
+		expect(wrapper.vm.lightIconSvg).toBe(LIGHT_SVG)
+	})
 
-		URL.createObjectURL = originalCreate
+	it('falls back to the light icon for dark when no dark icon is chosen', () => {
+		// Mirrors what the wizard actually attaches on submit.
+		const wrapper = mountStep4({ iconValue: LIGHT_SVG, iconDarkValue: null })
+		expect(wrapper.vm.darkIconSvg).toBe(LIGHT_SVG)
 	})
 
 	it('renders dark icon preview with --dark modifier class when iconDark provided', () => {
-		const fakeBlob = new Blob(['<svg/>'], { type: 'image/svg+xml' })
-		const originalCreate = URL.createObjectURL
-		URL.createObjectURL = () => 'blob:fake-dark-url'
-
-		const wrapper = mountStep4({ icon: null, iconDark: fakeBlob })
+		const wrapper = mountStep4({ iconValue: null, iconDarkValue: DARK_SVG })
 		expect(wrapper.find('.wizard-step4__icon-preview--dark').exists()).toBe(true)
-
-		URL.createObjectURL = originalCreate
+		expect(wrapper.vm.darkIconSvg).toBe(DARK_SVG)
 	})
 
 	it('renders both light and dark previews when both icons provided', () => {
-		const fakeLightBlob = new Blob(['<svg/>'], { type: 'image/svg+xml' })
-		const fakeDarkBlob = new Blob(['<svg/>'], { type: 'image/svg+xml' })
-		const originalCreate = URL.createObjectURL
-		let callCount = 0
-		URL.createObjectURL = () => `blob:fake-url-${++callCount}`
-
-		const wrapper = mountStep4({ icon: fakeLightBlob, iconDark: fakeDarkBlob })
+		const wrapper = mountStep4({ iconValue: LIGHT_SVG, iconDarkValue: DARK_SVG })
 		const figures = wrapper.findAll('figure.wizard-step4__icon-preview')
 		expect(figures.length).toBe(2)
-
-		URL.createObjectURL = originalCreate
+		expect(wrapper.vm.lightIconSvg).toBe(LIGHT_SVG)
+		expect(wrapper.vm.darkIconSvg).toBe(DARK_SVG)
 	})
 
 	// -------------------------------------------------------------------------
