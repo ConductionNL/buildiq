@@ -90,7 +90,7 @@ class ApplicationDeletionService
      *
      * @return array<int,string> Resources that could not be removed (orphaned).
      */
-    public function deleteApplication(string $appUuid, string $appSlug, bool $deleteData = false): array
+    public function deleteApplication(string $appUuid, string $appSlug, bool $deleteData=false): array
     {
         $orphaned = [];
 

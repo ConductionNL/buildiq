@@ -259,6 +259,11 @@ class RunExportJob extends QueuedJob
             $requestedBy = (string) ($job['owner'] ?? '');
         }
 
+        $actingUserId = null;
+        if ($requestedBy !== '') {
+            $actingUserId = $requestedBy;
+        }
+
         $treeDir = $this->exportService->scratchTreeDir(jobUuid: $jobUuid);
 
         return $this->githubPushService->push(
@@ -268,7 +273,7 @@ class RunExportJob extends QueuedJob
             org: (string) ($job['githubOrg'] ?? ''),
             repo: (string) ($job['githubRepo'] ?? ''),
             visibility: (string) ($job['githubVisibility'] ?? 'private'),
-            actingUserId: ($requestedBy !== '') ? $requestedBy : null
+            actingUserId: $actingUserId
         );
     }//end maybePush()
 
