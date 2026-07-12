@@ -22,8 +22,10 @@ webpackConfig.stats = {
 
 // @nextcloud/webpack-vue-config hardcodes publicPath to `/apps/{appId}/js/`, but an
 // app installed under custom_apps is served from `/custom_apps/{appId}/js/`. Async
-// chunks were therefore requested from a path that routes into the app and returns
-// HTML, so the browser refused them on MIME grounds and the component never mounted.
+// chunks — which @conduction/nextcloud-vue's chunked-ESM entry makes webpack emit —
+// were therefore requested from a path Nextcloud routes into the app, which answers
+// with HTML. The browser refused them on MIME grounds and the component silently
+// never mounted (blank page, no exception).
 // This stayed latent while only rarely-used components were code-split; it turns
 // fatal as soon as an always-rendered one (CnDashboardPage) lands in a chunk.
 // `'auto'` derives the path from the executing script's own URL, so it is correct
@@ -46,14 +48,6 @@ webpackConfig.entry = {
 		filename: appId + '-builder.js',
 	},
 }
-
-// @nextcloud/webpack-vue-config hardcodes publicPath to `/apps/<app>/js/`, but an
-// app installed under custom_apps is served from `/custom_apps/<app>/js/`. Async
-// chunks — which @conduction/nextcloud-vue's chunked-ESM entry makes webpack emit —
-// then resolve to a path Nextcloud routes to index.php, so the browser is handed
-// HTML where it expected JavaScript and the page renders blank. `auto` derives the
-// base from the executing script's own URL, which is correct under either apps path.
-webpackConfig.output.publicPath = 'auto'
 
 // Use local source when available (monorepo dev), otherwise fall back to npm
 // package. A local checkout is only used when its version satisfies this app's
