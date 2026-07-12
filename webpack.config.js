@@ -47,6 +47,14 @@ webpackConfig.entry = {
 	},
 }
 
+// @nextcloud/webpack-vue-config hardcodes publicPath to `/apps/<app>/js/`, but an
+// app installed under custom_apps is served from `/custom_apps/<app>/js/`. Async
+// chunks — which @conduction/nextcloud-vue's chunked-ESM entry makes webpack emit —
+// then resolve to a path Nextcloud routes to index.php, so the browser is handed
+// HTML where it expected JavaScript and the page renders blank. `auto` derives the
+// base from the executing script's own URL, which is correct under either apps path.
+webpackConfig.output.publicPath = 'auto'
+
 // Use local source when available (monorepo dev), otherwise fall back to npm
 // package. A local checkout is only used when its version satisfies this app's
 // declared @conduction/nextcloud-vue range — otherwise a STALE local checkout

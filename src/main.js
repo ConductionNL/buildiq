@@ -8,6 +8,7 @@ import {
 	CnPageRenderer,
 	buildManifest,
 	defaultPageTypes,
+	registerBuiltinDashboardWidgets,
 	registerIcons,
 	registerTranslations,
 } from '@conduction/nextcloud-vue'
@@ -31,6 +32,11 @@ registerDirectives()
 
 // Library-side icon set + lib translations (best effort).
 registerIcons()
+// Populate the dashboard widget catalog. The library self-registers its widgets
+// via bare side-effect imports in the barrel, which webpack may drop — leaving
+// the registry empty, so widgets render "Widget not available". This exported
+// no-op forces the registration module to be evaluated.
+registerBuiltinDashboardWidgets()
 try {
 	registerTranslations()
 } catch (e) {
