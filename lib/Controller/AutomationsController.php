@@ -218,7 +218,10 @@ class AutomationsController extends Controller
             uuid: $uuid,
             roles: self::WRITE_ROLES,
             productionRoles: null,
-            action: function (array $automation): JSONResponse {
+            // `use ($uuid)`: the closure logs $uuid on failure, but never captured it —
+            // so the one line that tells you WHICH automation blew up was reading an
+            // undefined variable. Pre-existing; caught by Psalm.
+            action: function (array $automation) use ($uuid): JSONResponse {
                 $params  = $this->request->getParams();
                 $payload = ($params['payload'] ?? []);
                 if (is_array($payload) === false) {

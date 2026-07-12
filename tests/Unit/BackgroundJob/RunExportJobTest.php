@@ -169,18 +169,13 @@ final class RunExportJobTest extends TestCase
                 return true;
             });
 
-        $this->exportJobService->method('fetchPat')->willReturn(null);
-
         $this->exportService
             ->expects(self::once())
             ->method('generateAppZip')
             ->willReturn('/tmp/openbuild-exports/'.$jobUuid.'.zip');
 
-        // GitHub push must NOT fire when no PAT is present (ZIP-only).
+        // GitHub push must NOT fire for a ZIP-only job.
         $this->githubPushService->expects(self::never())->method('push');
-
-        // Terminal-state clear MUST fire even on success.
-        $this->exportJobService->expects(self::once())->method('clearPat')->with($jobUuid);
 
         $this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
     }//end testRunTransitionsThroughRunningToSucceeded()
@@ -217,66 +212,98 @@ final class RunExportJobTest extends TestCase
                 return true;
             });
 
-        // PAT cleared even on failure.
-        $this->exportJobService->expects(self::once())->method('clearPat')->with($jobUuid);
-
         $this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
 
         self::assertTrue($sawFail, 'fail transition MUST be invoked on exception');
     }//end testRunTransitionsToFailedOnException()
 
     /**
-     * The clearPat() call MUST fire on the success path — wired through
-     * the `finally` block so it executes regardless of pipeline outcome.
+     * A GitHub export with no broker credential fails closed — it does NOT push.
      *
-     * This is the security-critical PAT-leak guard: a regression here
-     * would leave a long-lived PAT in ICredentialsManager after every
-     * successful GitHub export.
+     * This replaces the old pair of `clearPat()` tests. Those guaranteed the PAT was
+     * deleted from ICredentialsManager on every terminal state, which mattered only
+     * because OpenBuild held a PAT at all. It no longer does, so there is nothing to
+     * clear; what matters now is that a job which cannot authenticate through the
+     * broker refuses to run rather than proceeding.
      *
      * @return void
      */
-    public function testClearPatAlwaysCalledOnSuccess(): void
+    public function testGithubExportWithoutCredentialFailsClosed(): void
     {
-        $jobUuid = 'pat-cleanup-success';
-        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
-        $this->exportService->method('generateAppZip')->willReturn('/tmp/x.zip');
-        $this->exportJobService->method('fetchPat')->willReturn(null);
-        $this->exportJobService->method('transitionJob')->willReturn(true);
+        $jobUuid = 'github-no-credential';
 
+        $job                       = $this->jobFixture();
+        $job['target']             = 'github';
+        $job['githubOrg']          = 'acme-co';
+        $job['githubRepo']         = 'hello-world';
+        $job['githubCredentialId'] = '';
+
+        $this->exportJobService->method('loadJob')->willReturn($job);
+        $this->exportService->method('generateAppZip')->willReturn('/tmp/x.zip');
+
+        // The whole point: no push is attempted without a credential.
+        $this->githubPushService->expects(self::never())->method('push');
+
+        $sawFail = false;
         $this->exportJobService
-            ->expects(self::once())
-            ->method('clearPat')
-            ->with(self::equalTo($jobUuid));
+            ->method('transitionJob')
+            ->willReturnCallback(function (string $uuid, string $action, array $extra=[]) use (&$sawFail): bool {
+                if ($action === 'fail') {
+                    $sawFail = true;
+                    self::assertStringContainsString('broker credential', (string) $extra['errorMessage']);
+                }
+
+                return true;
+            });
 
         $this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
-    }//end testClearPatAlwaysCalledOnSuccess()
+
+        self::assertTrue($sawFail, 'a GitHub export without a credential MUST fail');
+    }//end testGithubExportWithoutCredentialFailsClosed()
 
     /**
-     * Symmetric guarantee on the failure path: clearPat() MUST still fire.
-     *
-     * Without this, a failed export leaves the PAT in ICredentialsManager
-     * indefinitely — the exact security incident Decision 3 is designed to
-     * prevent.
+     * A GitHub export hands the push service the credential UUID and the queueing
+     * user's UID — never a token, which this process does not have.
      *
      * @return void
      */
-    public function testClearPatAlwaysCalledOnFailure(): void
+    public function testGithubExportPassesCredentialAndActingUserToPush(): void
     {
-        $jobUuid = 'pat-cleanup-failure';
+        $jobUuid = 'github-with-credential';
 
-        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
-        $this->exportService
-            ->method('generateAppZip')
-            ->willThrowException(new \RuntimeException('boom'));
+        $job                       = $this->jobFixture();
+        $job['target']             = 'github';
+        $job['githubOrg']          = 'acme-co';
+        $job['githubRepo']         = 'hello-world';
+        $job['githubCredentialId'] = 'cred-uuid-1234';
+        $job['requestedBy']        = 'alice';
+
+        $this->exportJobService->method('loadJob')->willReturn($job);
         $this->exportJobService->method('transitionJob')->willReturn(true);
+        $this->exportService->method('generateAppZip')->willReturn('/tmp/x.zip');
+        $this->exportService->method('scratchTreeDir')->willReturn('/tmp/tree');
 
-        $this->exportJobService
+        $this->githubPushService
             ->expects(self::once())
-            ->method('clearPat')
-            ->with(self::equalTo($jobUuid));
+            ->method('push')
+            ->with(
+                self::anything(),
+                self::anything(),
+                self::equalTo('cred-uuid-1234'),
+                self::equalTo('acme-co'),
+                self::equalTo('hello-world'),
+                self::anything(),
+                self::equalTo('alice')
+            )
+            ->willReturn(
+                [
+                    'repoUrl'        => 'https://github.com/acme-co/hello-world',
+                    'pullRequestUrl' => 'https://github.com/acme-co/hello-world/pull/1',
+                ]
+            );
 
         $this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
-    }//end testClearPatAlwaysCalledOnFailure()
+    }//end testGithubExportPassesCredentialAndActingUserToPush()
 
     /**
      * Re-running a job with the same UUID must invoke the pipeline with
@@ -313,7 +340,6 @@ final class RunExportJobTest extends TestCase
 
                 return '/tmp/out.zip';
             });
-        $this->exportJobService->method('fetchPat')->willReturn(null);
         $this->exportJobService->method('transitionJob')->willReturn(true);
 
         $job = $this->buildJob();
@@ -342,7 +368,6 @@ final class RunExportJobTest extends TestCase
         $job                   = $this->jobFixture();
         $job['dataRegisters']  = $dataRegisters;
         $this->exportJobService->method('loadJob')->willReturn($job);
-        $this->exportJobService->method('fetchPat')->willReturn(null);
         $this->exportJobService->method('transitionJob')->willReturn(true);
 
         $captured = null;
@@ -370,7 +395,6 @@ final class RunExportJobTest extends TestCase
         $jobUuid = 'job-no-data-registers-uuid';
 
         $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
-        $this->exportJobService->method('fetchPat')->willReturn(null);
         $this->exportJobService->method('transitionJob')->willReturn(true);
 
         $captured = null;
@@ -388,19 +412,18 @@ final class RunExportJobTest extends TestCase
     }//end testForwardsEmptyDataRegistersWhenJobRecordPredatesTheProperty()
 
     /**
-     * The PAT MUST NEVER appear in a log line. This test captures every
-     * log line emitted during a run that fetches a PAT and dispatches a
-     * push, then asserts the PAT marker is absent across all of them.
+     * Nothing token-shaped may reach a log line.
      *
-     * Security-critical: even a debug-level log of the PAT defeats the
-     * Decision 3 contract.
+     * This used to inject a real PAT via `fetchPat()` and assert it never surfaced.
+     * The job no longer has a token to leak, so the test now drives a full GitHub run
+     * and asserts no GitHub-token-shaped string appears anywhere in the log — a guard
+     * that stays meaningful if someone reintroduces a secret on this path.
      *
      * @return void
      */
-    public function testCredentialNeverLogged(): void
+    public function testNoTokenShapedStringIsEverLogged(): void
     {
-        $jobUuid = 'pat-no-log-uuid';
-        $pat     = 'ghp_marker_token_must_not_appear';
+        $jobUuid = 'github-log-scan';
 
         $captured = [];
         $logger   = new class ($captured) extends AbstractLogger {
@@ -420,9 +443,16 @@ final class RunExportJobTest extends TestCase
             }
         };
 
-        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
+        $job                       = $this->jobFixture();
+        $job['target']             = 'github';
+        $job['githubOrg']          = 'acme-co';
+        $job['githubRepo']         = 'hello-world';
+        $job['githubCredentialId'] = 'cred-uuid-1234';
+        $job['requestedBy']        = 'alice';
+
+        $this->exportJobService->method('loadJob')->willReturn($job);
         $this->exportService->method('generateAppZip')->willReturn('/tmp/out.zip');
-        $this->exportJobService->method('fetchPat')->willReturn($pat);
+        $this->exportService->method('scratchTreeDir')->willReturn('/tmp/tree');
         $this->exportJobService->method('transitionJob')->willReturn(true);
         $this->githubPushService
             ->method('push')
@@ -430,12 +460,14 @@ final class RunExportJobTest extends TestCase
 
         $this->invokeRun($this->buildJob($logger), ['jobUuid' => $jobUuid]);
 
+        self::assertNotEmpty($captured, 'the run must emit at least one log line for this scan to mean anything');
+
         foreach ($captured as $line) {
-            self::assertStringNotContainsString(
-                $pat,
+            self::assertDoesNotMatchRegularExpression(
+                '/gh[pousr]_[A-Za-z0-9]{10,}/',
                 $line,
-                'PAT must NEVER appear in any log line — found in: '.$line
+                'No GitHub token may ever appear in a log line — found in: '.$line
             );
         }
-    }//end testCredentialNeverLogged()
+    }//end testNoTokenShapedStringIsEverLogged()
 }//end class
