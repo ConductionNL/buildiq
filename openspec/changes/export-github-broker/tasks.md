@@ -61,6 +61,21 @@
 - [x] 7.2 Hydra gates: no new failure attributable to this change.
 - [ ] 7.3 Playwright: the export dialog renders the credential picker and no token field.
 
+## Task 9: Fix the unpersistable export job
+
+Found while live-verifying the credential picker: submitting a GitHub export returned a
+cheerful `202 Accepted` with a job UUID, and nothing was ever recorded.
+
+- [x] 9.1 `ExportsController::submit()` resolves `applicationUuid` from the slug
+      server-side. `ExportDialog.vue` never sent one, so `queue()` read `''` off the
+      payload and OpenRegister rejected the record. Resolving it from the same slug
+      lookup the authorisation check uses also means a queued job cannot name a different
+      application than the one the caller was cleared for.
+- [x] 9.2 `ExportJobService::persistJob()` now throws instead of warning-and-returning.
+      It used to swallow the failure, so `queue()` went on to schedule the background job
+      and hand back a job UUID for a record that did not exist — the job then could not
+      load it and died, and the user saw an export that had simply vanished.
+
 ## Task 8: Pre-existing issues fixed along the way
 
 - [x] 8.1 `AppNavigationServiceTest` — the service gained an `IAppConfig` constructor

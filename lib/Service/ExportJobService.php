@@ -40,6 +40,7 @@ namespace OCA\OpenBuild\Service;
 use OCP\BackgroundJob\IJobList;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Bridges the ExportsController to the OR ExportJob record + RunExportJob.
@@ -247,7 +248,13 @@ class ExportJobService
                 );
             }
         } catch (\Throwable $e) {
-            $this->logger->warning('Could not persist ExportJob to OR: '.$e->getMessage());
+            // Loud, not lossy. This used to warn and return, so queue() went on to
+            // schedule the background job and hand the caller a 202 with a job UUID for
+            // a record that did not exist — the job then failed to load it and died, and
+            // the user saw an export that had simply vanished. If we cannot record the
+            // job, the submit has not succeeded and the caller must be told.
+            $this->logger->error('Could not persist ExportJob to OR: '.$e->getMessage());
+            throw new RuntimeException('Could not record the export job: '.$e->getMessage(), 0, $e);
         }//end try
     }//end persistJob()
 
@@ -438,9 +445,9 @@ class ExportJobService
         ];
     }//end resolveDownload()
 
-    // fetchPat()/clearPat()/credentialKey() were removed with the PAT itself. There is
-    // no OpenBuild-held GitHub secret any more, so there is nothing to fetch, nothing
-    // to remember to delete on a terminal state, and no key to build.
+    // The fetchPat()/clearPat()/credentialKey() trio was removed with the PAT itself.
+    // There is no OpenBuild-held GitHub secret any more, so there is nothing to fetch,
+    // nothing to remember to delete on a terminal state, and no key to build.
 
     /**
      * Load an ExportJob record from OR by its UUID.

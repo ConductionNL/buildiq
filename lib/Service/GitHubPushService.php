@@ -81,10 +81,16 @@ class GitHubPushService
      */
     private const APP_ID = 'openbuild';
 
-    // No API_BASE any more: https://api.github.com is the broker's host-lock, and the
-    // one place it may be asserted. If this service could name the host, it could name
-    // a different one.
-
+    /**
+     * The branch the generated tree is pushed to, before the PR is opened against the
+     * repo's default branch.
+     *
+     * There is deliberately no API_BASE const: https://api.github.com is the broker's
+     * host-lock, and the broker is the one place it may be asserted. A service that can
+     * name the host can name a different one.
+     *
+     * @var string
+     */
     private const BOOTSTRAP_BRANCH = 'bootstrap';
 
     /**
@@ -508,7 +514,7 @@ class GitHubPushService
             }
 
             return null;
-        }
+        }//end try
 
         $status = (int) ($response['status'] ?? 0);
         if ($status < 200 || $status >= 300) {

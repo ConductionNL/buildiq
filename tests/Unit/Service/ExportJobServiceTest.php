@@ -201,6 +201,49 @@ final class ExportJobServiceTest extends TestCase
     }//end testQueueRecordsCredentialReferenceForGithubTarget()
 
     /**
+     * A job that cannot be recorded must NOT be reported as queued.
+     *
+     * persistJob() used to warn-and-return on failure, so queue() carried on: it
+     * scheduled the background job and returned a UUID, and the controller answered
+     * 202 Accepted — for a record that did not exist. The background job then could not
+     * load it and died, and the user saw an export that had simply vanished. Fail loudly
+     * instead, and do not schedule anything.
+     *
+     * @return void
+     */
+    public function testQueueThrowsAndSchedulesNothingWhenTheRecordCannotBePersisted(): void
+    {
+        $container     = $this->createMock(ContainerInterface::class);
+        $objectService = $this->createMock(ObjectService::class);
+        $container->method('has')->willReturn(true);
+        $container->method('get')->willReturn($objectService);
+
+        $objectService
+            ->method('saveObject')
+            ->willThrowException(
+                new \RuntimeException("Property 'applicationUuid' should match format 'uuid'")
+            );
+
+        $service = new ExportJobService(
+            $container,
+            $this->jobList,
+            new NullLogger(),
+            $this->jobOwnerImpersonator
+        );
+
+        // The whole point: no phantom background job for a record that was never written.
+        $this->jobList->expects(self::never())->method('add');
+
+        $this->expectException(\RuntimeException::class);
+
+        $service->queue(
+            applicationSlug: 'hello-world',
+            payload: ['target' => 'zip', 'applicationVersion' => '1.0.0'],
+            requestedBy: 'alice'
+        );
+    }//end testQueueThrowsAndSchedulesNothingWhenTheRecordCannotBePersisted()
+
+    /**
      * The PAT surface is GONE, not deprecated.
      *
      * A `fetchPat()`/`clearPat()`/`credentialKey()` reappearing — or an
