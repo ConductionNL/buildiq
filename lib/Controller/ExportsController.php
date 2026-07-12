@@ -322,12 +322,13 @@ class ExportsController extends Controller
      *
      * @return JSONResponse 202 Accepted with `{ uuid }` on success.
      *
-     * State-changing POST that carries a PAT: `#[NoCSRFRequired]` is
-     * DELIBERATELY NOT applied here. The SPA posts via `@nextcloud/axios`,
-     * which attaches the `requesttoken` header automatically, so the CSRF
-     * check costs the legitimate caller nothing while blocking a forged
-     * cross-site POST that could queue an export (and exfiltrate a PAT)
-     * on behalf of an authenticated user.
+     * State-changing POST: `#[NoCSRFRequired]` is DELIBERATELY NOT applied here.
+     * The SPA posts via `@nextcloud/axios`, which attaches the `requesttoken`
+     * header automatically, so the CSRF check costs the legitimate caller nothing
+     * while blocking a forged cross-site POST that could queue an export on behalf
+     * of an authenticated user. The body no longer carries a PAT (it names a broker
+     * credential instead), but it can still push a repository into existence under
+     * the user's GitHub identity, so it stays CSRF-protected.
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
      * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-11
@@ -350,20 +351,25 @@ class ExportsController extends Controller
             return $validationError;
         }
 
-        // The PAT is handed straight to the credentials manager — never logged
-        // and removed from the request payload before further processing.
-        $pat = null;
-        if (is_string($body['githubPat'] ?? null) === true) {
-            $pat = (string) $body['githubPat'];
-        }
-
+        // No secret is accepted here any more. A rejected legacy client may still
+        // send `githubPat`; drop it defensively so it can never reach a log or the
+        // job record. The push path authenticates via `githubCredentialId` (a broker
+        // credential UUID) carried in the body and validated by the broker.
         unset($body['githubPat']);
+
+        // The queueing user's UID travels to the session-less background job so the
+        // broker's ownership guard has an identity to check the credential against.
+        $requestedBy = null;
+        $user        = $this->userSession->getUser();
+        if ($user !== null) {
+            $requestedBy = $user->getUID();
+        }
 
         try {
             $jobUuid = $this->exportJobService->queue(
                 applicationSlug: $slug,
                 payload: $body,
-                githubPat: $pat
+                requestedBy: $requestedBy
             );
         } catch (\InvalidArgumentException $e) {
             return new JSONResponse(

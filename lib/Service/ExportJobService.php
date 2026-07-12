@@ -4,8 +4,13 @@
  * OpenBuild Export Job Service
  *
  * Orchestration helper between the HTTP controller and the OR-backed
- * ExportJob record + the imperative ExportService pipeline. Persists the
- * GitHub PAT via ICredentialsManager (Decision 3) and never logs it.
+ * ExportJob record + the imperative ExportService pipeline.
+ *
+ * It used to take custody of the user's GitHub Personal Access Token: Decision 3
+ * had it stored under ICredentialsManager keyed by job UUID and deleted on every
+ * terminal state. That is gone. The record now carries only `githubCredentialId`
+ * — a UUID pointing at a credential in OpenRegister's broker — so there is no
+ * OpenBuild-held secret left to store, to forget to delete, or to leak.
  *
  * @category Service
  * @package  OCA\OpenBuild\Service
@@ -32,9 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Service;
 
-use OCA\OpenBuild\AppInfo\Application;
 use OCP\BackgroundJob\IJobList;
-use OCP\Security\ICredentialsManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -45,9 +48,6 @@ use Psr\Log\LoggerInterface;
  */
 class ExportJobService
 {
-    private const PAT_CREDENTIAL_PREFIX = 'openbuild.export.';
-    private const PAT_CREDENTIAL_SUFFIX = '.pat';
-
     /**
      * OR register slug hosting the ExportJob schema (#104).
      */
@@ -70,7 +70,6 @@ class ExportJobService
      *
      * @param ContainerInterface   $container            Container — used to lazily fetch OR
      *                                                   services.
-     * @param ICredentialsManager  $credentialsManager   Nextcloud credentials manager.
      * @param IJobList             $jobList              Background job list.
      * @param LoggerInterface      $logger               Logger.
      * @param JobOwnerImpersonator $jobOwnerImpersonator Impersonates the ExportJob owner for the
@@ -79,7 +78,6 @@ class ExportJobService
      */
     public function __construct(
         private ContainerInterface $container,
-        private ICredentialsManager $credentialsManager,
         private IJobList $jobList,
         private LoggerInterface $logger,
         private JobOwnerImpersonator $jobOwnerImpersonator,
@@ -89,13 +87,13 @@ class ExportJobService
     /**
      * Create an ExportJob record in OR and schedule the background job.
      *
-     * The PAT (when supplied) is stored under
-     * `openbuild.export.<jobUuid>.pat` and stripped from the in-memory payload
-     * before any logging.
+     * No secret is accepted or stored here. A GitHub export carries only
+     * `githubCredentialId` — a broker credential UUID — plus `requestedBy`, the UID
+     * the session-less background job hands the broker as the claimed owner.
      *
      * @param string              $applicationSlug Source Application slug.
-     * @param array<string,mixed> $payload         Sanitised payload (no PAT).
-     * @param string|null         $githubPat       GitHub PAT, if any.
+     * @param array<string,mixed> $payload         Sanitised payload.
+     * @param string|null         $requestedBy     UID of the queueing user.
      *
      * @return string Job UUID (UUIDv4).
      *
@@ -107,7 +105,7 @@ class ExportJobService
     public function queue(
         string $applicationSlug,
         array $payload,
-        ?string $githubPat=null,
+        ?string $requestedBy=null,
     ): string {
         $jobUuid = $this->uuid4();
         $target  = (string) ($payload['target'] ?? 'zip');
@@ -137,20 +135,14 @@ class ExportJobService
             'githubOrg'          => $githubOrg,
             'githubRepo'         => $githubRepo,
             'githubVisibility'   => $githubVisibility,
+            // A broker credential UUID, not a token — safe on the record by construction.
+            'githubCredentialId' => (string) ($payload['githubCredentialId'] ?? ''),
+            'requestedBy'        => (string) ($requestedBy ?? ''),
             'includeSeedData'    => (bool) ($payload['includeSeedData'] ?? false),
             'dataRegisters'      => $this->sanitiseDataRegisters(raw: $payload['dataRegisters'] ?? []),
             'license'            => (string) ($payload['license'] ?? 'EUPL-1.2'),
             'log'                => [],
         ];
-
-        if ($githubPat !== null && $githubPat !== '') {
-            // Store PAT keyed by job UUID; never persist it in the OR record.
-            $this->credentialsManager->store(
-                Application::APP_ID,
-                $this->credentialKey(jobUuid: $jobUuid),
-                $githubPat
-            );
-        }
 
         $this->persistJob(job: $job);
         $this->jobList->add(
@@ -446,56 +438,9 @@ class ExportJobService
         ];
     }//end resolveDownload()
 
-    /**
-     * Fetch the stored PAT for a job, if any.
-     *
-     * @param string $jobUuid Job UUID.
-     *
-     * @return string|null PAT or null when none was stored.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
-     */
-    public function fetchPat(string $jobUuid): ?string
-    {
-        $value = $this->credentialsManager->retrieve(Application::APP_ID, $this->credentialKey(jobUuid: $jobUuid));
-        if (is_string($value) === true && $value !== '') {
-            return $value;
-        }
-
-        return null;
-    }//end fetchPat()
-
-    /**
-     * Delete the stored PAT for a job. Safe to call multiple times.
-     *
-     * @param string $jobUuid Job UUID.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
-     */
-    public function clearPat(string $jobUuid): void
-    {
-        try {
-            $this->credentialsManager->delete(Application::APP_ID, $this->credentialKey(jobUuid: $jobUuid));
-        } catch (\Throwable $e) {
-            $this->logger->debug('PAT delete returned no-op: '.$e->getMessage());
-        }
-    }//end clearPat()
-
-    /**
-     * Build the ICredentialsManager key for a job's PAT.
-     *
-     * @param string $jobUuid Job UUID.
-     *
-     * @return string Credentials key.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
-     */
-    public function credentialKey(string $jobUuid): string
-    {
-        return self::PAT_CREDENTIAL_PREFIX.$jobUuid.self::PAT_CREDENTIAL_SUFFIX;
-    }//end credentialKey()
+    // fetchPat()/clearPat()/credentialKey() were removed with the PAT itself. There is
+    // no OpenBuild-held GitHub secret any more, so there is nothing to fetch, nothing
+    // to remember to delete on a terminal state, and no key to build.
 
     /**
      * Load an ExportJob record from OR by its UUID.

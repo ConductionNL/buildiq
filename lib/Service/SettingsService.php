@@ -163,9 +163,20 @@ class SettingsService
         // Write-only secrets (registry_token): an empty submitted value means
         // "leave the stored token unchanged" so re-saving the form does not wipe
         // a previously-stored token (the form never receives the value back).
+        //
+        // `sensitive: true` is the half that was missing. The token was already never
+        // returned to the browser, but it was written as an ordinary appconfig string —
+        // so it sat in cleartext in `occ config:app:get openbuild registry_token`, in
+        // `occ config:list`, and in every support/status dump those feed. The flag makes
+        // Nextcloud encrypt it at rest and redact it from that output.
         foreach (self::SECRET_KEYS as $key) {
             if (isset($data[$key]) === true && (string) $data[$key] !== '') {
-                $this->appConfig->setValueString(Application::APP_ID, $key, (string) $data[$key]);
+                $this->appConfig->setValueString(
+                    Application::APP_ID,
+                    $key,
+                    (string) $data[$key],
+                    sensitive: true
+                );
             }
         }
 
