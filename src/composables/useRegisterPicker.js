@@ -22,6 +22,41 @@
 import { generateUrl } from '@nextcloud/router'
 import { getRequestToken } from '@nextcloud/auth'
 
+/**
+ * The registers the pages editor can bind a page to: the app's own register,
+ * plus any register an existing page already points at, plus any declared
+ * `dataRegisters` binding.
+ *
+ * Passed to `fetchDataSources()` so it fans schema requests out over a handful of
+ * registers instead of every register on the instance. Shared by both hosts
+ * (builder.js and BuilderHost.vue) so the two cannot drift apart again.
+ *
+ * Take `perAppRegister` from `registerSlugForApp(slug, versionSlug)` — the app's
+ * register is per-VERSION (`openbuild-{slug}-{version}`), so the bare
+ * `openbuild-{slug}` is usually not a register at all.
+ *
+ * @param {string} perAppRegister - the app's own (per-version) register slug.
+ * @param {?object} manifest - the resolved manifest (its pages' `config.register`).
+ * @param {Array<{register: string}>} [dataRegisters] - declared shared-register bindings.
+ * @return {string[]} - deduped register slugs.
+ */
+export function registerScope(perAppRegister, manifest, dataRegisters = []) {
+	const scope = new Set()
+	if (perAppRegister) scope.add(perAppRegister)
+
+	const pages = (manifest && Array.isArray(manifest.pages)) ? manifest.pages : []
+	pages.forEach((p) => {
+		const register = p && p.config && p.config.register
+		if (register) scope.add(register)
+	})
+
+	;(Array.isArray(dataRegisters) ? dataRegisters : []).forEach((b) => {
+		if (b && b.register) scope.add(b.register)
+	})
+
+	return [...scope]
+}
+
 const PICKER_HEADERS = () => ({
 	'Content-Type': 'application/json',
 	Accept: 'application/json',
@@ -215,25 +250,32 @@ export function useRegisterPicker(opts = {}) {
 
 	/**
 	 * Build the `dataSources` object consumed by the library's page-config /
-	 * edit-pages modals (provided down as `cnDataSources` by CnAppRoot). Its
-	 * presence flips the Register / Schema / Columns fields from free-text slug
-	 * inputs to searchable NcSelect dropdowns.
+	 * edit-pages modals (CnAppRoot's `dataSourcesLoader`). Its presence flips the
+	 * Register / Schema / Columns fields from free-text slug inputs to searchable
+	 * NcSelect dropdowns.
 	 *
-	 * Fetches every register and, in parallel, each register's schemas. The
-	 * schemas endpoint returns each schema's `properties` inline (see
+	 * The schemas endpoint returns each schema's `properties` inline (see
 	 * OpenRegister `Schema::jsonSerialize`), so column names come for free from
 	 * the property keys — no extra per-schema request.
 	 *
+	 * @param {string[]} [scope] - Register slugs to fan schema requests out over,
+	 *   from `registerScope(...)`. Without it EVERY register on the instance is
+	 *   queried, one schema request each — dozens on a populated instance. The
+	 *   pages editor only ever needs a handful, so its hosts pass an explicit scope.
 	 * @return {Promise<{registers: Array<{value: string, label: string,
 	 *   schemas: Array<{value: string, label: string, columns: string[]}>}>}>}
 	 *   - the data-sources map (empty `registers` on failure).
 	 */
-	async function fetchDataSources() {
+	async function fetchDataSources(scope = null) {
 		const registers = await fetchRegisters()
 		if (!Array.isArray(registers) || registers.length === 0) {
 			return { registers: [] }
 		}
-		const mapped = await Promise.all(registers.map(async (r) => {
+		const wanted = Array.isArray(scope) && scope.length ? scope.filter(Boolean) : null
+		const inScope = wanted
+			? registers.filter((r) => wanted.includes(r.slug || r.id))
+			: registers
+		const mapped = await Promise.all(inScope.map(async (r) => {
 			const registerSlug = r.slug || r.id
 			const schemas = await fetchSchemas(registerSlug)
 			return {
