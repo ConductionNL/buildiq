@@ -31,6 +31,7 @@
 // VirtualApps index card — name, status pill, version, "live" marker, caller's
 // role; click navigates to VirtualAppDetail.
 import ApplicationCard from './components/ApplicationCard.vue'
+import AppDeleteDialogSlot from './components/AppDeleteDialogSlot.vue'
 
 // ── Virtual apps — detail sidebar tabs ───────────────────────────────────────
 
@@ -107,7 +108,6 @@ import TemplateGalleryView from './views/TemplateGallery.vue'
 // integration), so the consuming app must register them. CnWidgetGrid resolves
 // a widgetKey against this registry before falling back to its built-ins.
 //   - audit-trail: recent audit entries for the object (detail sidebar).
-import { CnAuditTrailCard } from '@conduction/nextcloud-vue'
 
 // Business-rules engine dashboard — lists RuleSets, opens the decision-table /
 // condition-action editors and the test sandbox (spec business-rules-engine).
@@ -212,11 +212,40 @@ function actions(component) {
 	return { kind: 'actions', component }
 }
 
+/**
+ * Wrap a dialog component that fills a named page slot (e.g. CnIndexPage's
+ * `#delete-dialog`, referenced from the manifest as
+ * `page.slots["delete-dialog"]`).
+ *
+ * Resolved via the slot-override path, which accepts any `kind` as long as a
+ * `component` is present (ADR-036 kind-agnostic slot resolver). `kind: "modal"`
+ * states the intent and keeps the entry out of page dispatch; `propsSchema` is
+ * the metadata field CnAppRoot's registry validator expects for that kind.
+ *
+ * @param {object} component Vue component options.
+ * @param {object} [propsSchema] Slot-binding props the dialog receives.
+ *
+ * @return {object} A `{ kind: "modal", component, propsSchema }` registry entry.
+ */
+function modal(component, propsSchema = {}) {
+	return { kind: 'modal', component, propsSchema }
+}
+
 // ── Registry export ──────────────────────────────────────────────────────────
 
 export default {
 	// VirtualApps index card component (kind "page" — resolved as a card slot).
 	ApplicationCard: page(ApplicationCard),
+
+	// Fills CnIndexPage's `#delete-dialog` slot on the VirtualApps index
+	// (manifest `page.slots["delete-dialog"]`). Lives here rather than in
+	// App.vue's legacy `customComponents` map so the manifest has ONE
+	// registration path — CnAppRoot warns that customComponents is deprecated,
+	// and the split let the manifest reference a name the registry never knew.
+	AppDeleteDialogSlot: modal(AppDeleteDialogSlot, {
+		item: { type: 'object', description: 'The row targeted for deletion; null when closed.' },
+		close: { type: 'function', description: 'Closes the delete dialog.' },
+	}),
 
 	// VirtualAppDetail sidebar tabs (kind "tab" — resolved via slot-override path).
 	ApplicationManifestTab: tab(ApplicationManifestTab),
@@ -242,8 +271,10 @@ export default {
 	DashboardIndex: page(DashboardIndex),
 	TemplateGallery: page(TemplateGalleryView),
 
-	// Dashboard widgets — resolved by CnWidgetGrid by manifest widgetKey.
-	'audit-trail': widget(CnAuditTrailCard, ['sidebar', 'body']),
+	// NOTE: no `audit-trail` entry. VirtualAppDetail's `audit` sidebar tab
+	// declares no `component`, so it resolves to nc-vue's built-in audit tab —
+	// the app-level registration this used to carry has been dead since that
+	// normalisation. Re-register only if a manifest names `audit-trail` again.
 
 	// Business-rules engine dashboard (type:"custom" page).
 	RuleSetsPageView: page(RuleSetsPageView),
