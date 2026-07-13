@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
+use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -45,6 +46,19 @@ use RuntimeException;
  */
 class MigrateToVersionedModelTest extends TestCase
 {
+    /**
+     * Terminal state: every pre-migration row was migrated (or none existed).
+     * Mirrors the SUT's private `STATE_DONE` constant.
+     */
+    private const STATE_DONE = 'done';
+
+    /**
+     * Terminal state: a row still failed to migrate while running with
+     * system-context elevation active. Mirrors the SUT's private
+     * `STATE_FAILED` constant.
+     */
+    private const STATE_FAILED = 'failed';
+
     /**
      * Mock logger.
      *
@@ -88,6 +102,13 @@ class MigrateToVersionedModelTest extends TestCase
     private IOutput&MockObject $output;
 
     /**
+     * Mock NC IAppConfig.
+     *
+     * @var IAppConfig&MockObject
+     */
+    private IAppConfig&MockObject $appConfig;
+
+    /**
      * Set up mocks.
      *
      * @return void
@@ -102,6 +123,18 @@ class MigrateToVersionedModelTest extends TestCase
         $this->registerMapper  = $this->createMock(RegisterMapper::class);
         $this->schemaMapper    = $this->createMock(SchemaMapper::class);
         $this->output          = $this->createMock(IOutput::class);
+        $this->appConfig       = $this->createMock(IAppConfig::class);
+
+        // No prior run persisted a state marker, by default.
+        $this->appConfig->method('getValueString')->willReturn('');
+
+        // `ObjectService::runAsSystem()` really invokes the given callable and
+        // returns its result — mirrors the real elevation, which is transparent
+        // to the caller. Individual tests may override this to simulate an
+        // OpenRegister release that predates the elevation API.
+        $this->objectService->method('runAsSystem')->willReturnCallback(
+            static fn (callable $operation) => $operation()
+        );
     }//end setUp()
 
     /**
@@ -117,6 +150,7 @@ class MigrateToVersionedModelTest extends TestCase
             registerService: $this->registerService,
             registerMapper: $this->registerMapper,
             schemaMapper: $this->schemaMapper,
+            appConfig: $this->appConfig,
         );
     }//end step()
 
@@ -285,11 +319,120 @@ class MigrateToVersionedModelTest extends TestCase
             $warningCalls++;
         });
 
+        // A row failed while running WITH system-context elevation active
+        // (the mocked ObjectService always exposes runAsSystem()) — this is
+        // operator-facing, so the terminal `failed` state is persisted and
+        // the next invocation will short-circuit instead of retrying app-b
+        // forever. Must be configured BEFORE run() executes — a mock
+        // expectation only counts invocations that happen after it is set up.
+        $this->assertPersistedState(self::STATE_FAILED);
+
         $this->step()->run($this->output);
 
         self::assertSame(['uuid-a', 'uuid-c'], $deletedUuids, 'Only the rows whose register-delete succeeded are removed.');
         self::assertGreaterThanOrEqual(1, $warningCalls, 'Failure for app-b is surfaced via $output->warning.');
     }//end testPartialFailurePreservesRowOnFailedRegisterDelete()
+
+    /**
+     * A previous run already completed (`done` persisted) → `run()`
+     * short-circuits before touching either OpenRegister service, and does
+     * not re-persist the state (spec: converge — stop re-attempting).
+     *
+     * @return void
+     */
+    public function testSkipsWhenPreviouslyCompleted(): void
+    {
+        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->appConfig->method('getValueString')->willReturn(self::STATE_DONE);
+
+        $this->registerMapper->expects(self::never())->method('find');
+        $this->objectService->expects(self::never())->method('findAll');
+        $this->registerService->expects(self::never())->method('delete');
+        $this->appConfig->expects(self::never())->method('setValueString');
+
+        $this->output->expects(self::once())
+            ->method('info')
+            ->with(self::stringContains('previously completed'));
+
+        $this->step()->run($this->output);
+    }//end testSkipsWhenPreviouslyCompleted()
+
+    /**
+     * A previous run persisted the terminal `failed` state → `run()`
+     * short-circuits and tells the operator how to re-arm it, instead of
+     * re-attempting the same doomed delete on every invocation (the bug
+     * behind the 306x/2h error-log flood).
+     *
+     * @return void
+     */
+    public function testSkipsWhenPreviouslyFailed(): void
+    {
+        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->appConfig->method('getValueString')->willReturn(self::STATE_FAILED);
+
+        $this->registerMapper->expects(self::never())->method('find');
+        $this->objectService->expects(self::never())->method('findAll');
+        $this->appConfig->expects(self::never())->method('setValueString');
+
+        $this->output->expects(self::once())
+            ->method('info')
+            ->with(self::stringContains('previously failed'));
+
+        $this->step()->run($this->output);
+    }//end testSkipsWhenPreviouslyFailed()
+
+    /**
+     * Every row migrates cleanly → the aggregate outcome persisted is
+     * `done`, so the next invocation (whatever re-triggers it) short-circuits
+     * at the top of `run()` instead of re-running the destructive migration.
+     *
+     * @return void
+     */
+    public function testPersistsDoneStateAfterFullSuccess(): void
+    {
+        $this->schemaMapper->method('find')
+            ->willReturnCallback(function (string|int $slug) {
+                if ($slug === 'applicationVersion') {
+                    throw new RuntimeException(message: 'not found');
+                }
+
+                return $this->getMockBuilder(Schema::class)
+                    ->disableOriginalConstructor()
+                    ->onlyMethods(['getId'])
+                    ->getMock();
+            });
+
+        $register = $this->getMockBuilder(Register::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getId'])
+            ->getMock();
+        $register->method('getId')->willReturn(1);
+        $this->registerMapper->method('find')->willReturn($register);
+
+        $this->objectService->method('findAll')->willReturn(
+            [$this->mockEntity(['id' => 'uuid-a', 'slug' => 'app-a', 'currentVersion' => 'old-cv-a'])]
+        );
+
+        $this->assertPersistedState(self::STATE_DONE);
+
+        $this->step()->run($this->output);
+    }//end testPersistsDoneStateAfterFullSuccess()
+
+    /**
+     * Configure `$this->appConfig` to expect exactly one `setValueString`
+     * call persisting the given migration state, scoped to the app's own
+     * config key.
+     *
+     * @param string $expectedState The state value expected to be persisted
+     *
+     * @return void
+     */
+    private function assertPersistedState(string $expectedState): void
+    {
+        $this->appConfig->expects(self::once())
+            ->method('setValueString')
+            ->with(self::anything(), self::anything(), $expectedState);
+    }//end assertPersistedState()
 
     /**
      * Build a stand-in ObjectEntity mock that exposes `jsonSerialize` returning the given payload.
