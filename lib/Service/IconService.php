@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Service;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
@@ -149,28 +150,36 @@ class IconService
      */
     public function getIconStream(string $slug, bool $dark): array
     {
-        $application = $this->fetchApplication(slug: $slug);
-
-        if ($dark === true) {
-            return $this->resolveIconDark(application: $application);
+        // Keep the entity, not just its serialized form. fetchAttachedFileStream()
+        // hands it straight back to OpenRegister, which saves OR from having to work
+        // out which magic table the object lives in — see fetchAttachedFileStream().
+        $entity      = $this->fetchApplicationEntity(slug: $slug);
+        $application = null;
+        if ($entity !== null) {
+            $application = $this->normaliseObject(object: $entity);
         }
 
-        return $this->resolveIconLight(application: $application);
+        if ($dark === true) {
+            return $this->resolveIconDark(application: $application, entity: $entity);
+        }
+
+        return $this->resolveIconLight(application: $application, entity: $entity);
     }//end getIconStream()
 
     /**
-     * Fetch the Application object by slug.
+     * Fetch the Application entity by slug, as OpenRegister returned it.
      *
-     * Returns the decoded array on success; null when OR is unavailable or
-     * the slug does not match any Application.
+     * Returns the entity itself (an ObjectEntity in practice) rather than a decoded
+     * array, so callers can hand it back to OR instead of a bare UUID string.
      *
      * @param string $slug The Application slug.
      *
-     * @return array<string,mixed>|null Application data array, or null.
+     * @return mixed The Application entity, or null when OR is unavailable or the
+     *               slug matches no Application.
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-1
      */
-    private function fetchApplication(string $slug): ?array
+    private function fetchApplicationEntity(string $slug): mixed
     {
         try {
             $results = $this->objectService->findAll(
@@ -188,16 +197,14 @@ class IconService
                 return null;
             }
 
-            $first = reset($results);
-
-            return $this->normaliseObject(object: $first);
+            return reset($results);
         } catch (\Throwable $e) {
             $this->logger->warning(
                 'IconService: failed to fetch Application for slug "'.$slug.'": '.$e->getMessage()
             );
             return null;
         }//end try
-    }//end fetchApplication()
+    }//end fetchApplicationEntity()
 
     /**
      * Resolve the light-icon fallback chain.
@@ -205,12 +212,13 @@ class IconService
      * Chain: icon.ref → /img/app.svg
      *
      * @param array<string,mixed>|null $application Application data or null.
+     * @param mixed                    $entity      The Application entity, when known.
      *
      * @return array{stream: resource|null, mimeType: string}
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
      */
-    private function resolveIconLight(?array $application): array
+    private function resolveIconLight(?array $application, mixed $entity=null): array
     {
         if ($application !== null) {
             $icon = ($application['icon'] ?? null);
@@ -219,7 +227,8 @@ class IconService
                 if (is_string($ref) === true && $ref !== '') {
                     $stream = $this->fetchAttachedFileStream(
                         application: $application,
-                        filename: $ref
+                        filename: $ref,
+                        entity: $entity
                     );
                     if ($stream !== null) {
                         return ['stream' => $stream, 'mimeType' => 'image/svg+xml'];
@@ -237,22 +246,23 @@ class IconService
      * Chain: iconDark.ref → icon.ref → /img/app-dark.svg → /img/app.svg
      *
      * @param array<string,mixed>|null $application Application data or null.
+     * @param mixed                    $entity      The Application entity, when known.
      *
      * @return array{stream: resource|null, mimeType: string}
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
      */
-    private function resolveIconDark(?array $application): array
+    private function resolveIconDark(?array $application, mixed $entity=null): array
     {
         if ($application !== null) {
             // Step 1: iconDark.ref.
-            $stream = $this->streamForIconField(application: $application, field: 'iconDark');
+            $stream = $this->streamForIconField(application: $application, field: 'iconDark', entity: $entity);
             if ($stream !== null) {
                 return ['stream' => $stream, 'mimeType' => 'image/svg+xml'];
             }
 
             // Step 2: icon.ref (light icon as dark fallback).
-            $stream = $this->streamForIconField(application: $application, field: 'icon');
+            $stream = $this->streamForIconField(application: $application, field: 'icon', entity: $entity);
             if ($stream !== null) {
                 return ['stream' => $stream, 'mimeType' => 'image/svg+xml'];
             }
@@ -275,10 +285,11 @@ class IconService
      *
      * @param array<string,mixed> $application Application data array.
      * @param string              $field       The icon field name (e.g. `iconDark`, `icon`).
+     * @param mixed               $entity      The Application entity, when known.
      *
      * @return resource|null A readable PHP stream, or null on failure.
      */
-    private function streamForIconField(array $application, string $field): mixed
+    private function streamForIconField(array $application, string $field, mixed $entity=null): mixed
     {
         $iconField = ($application[$field] ?? null);
         if (is_array($iconField) === false) {
@@ -290,7 +301,7 @@ class IconService
             return null;
         }
 
-        return $this->fetchAttachedFileStream(application: $application, filename: $ref);
+        return $this->fetchAttachedFileStream(application: $application, filename: $ref, entity: $entity);
     }//end streamForIconField()
 
     /**
@@ -301,18 +312,38 @@ class IconService
      *
      * @param array<string,mixed> $application Application data array.
      * @param string              $filename    The attached file name.
+     * @param mixed               $entity      The Application entity, when known. Passing
+     *                                         it avoids a scan of every magic table.
      *
      * @return resource|null A readable PHP stream, or null on failure.
      */
-    private function fetchAttachedFileStream(array $application, string $filename): mixed
+    private function fetchAttachedFileStream(array $application, string $filename, mixed $entity=null): mixed
     {
         try {
-            $uuid = $this->extractUuid(application: $application);
-            if ($uuid === null) {
+            // Hand OR the entity back when we actually have one. FileService::getFile()
+            // takes an ObjectEntity or a UUID string — but given a STRING it calls
+            // objectMapper->find($uuid), and a bare UUID carries no register/schema, so OR
+            // has to search every magic table to work out which one owns the object. On
+            // this instance that is ~1,960 tables, and it cost ~2s PER ICON, twice per page
+            // load. We already hold the entity; passing it skips the search entirely.
+            //
+            // Only an ObjectEntity may be passed through: findAll() can also yield plain
+            // arrays, and getFile() would reject one with a TypeError. Anything else falls
+            // back to the UUID string (correct, just slow).
+            $target = null;
+            if ($entity instanceof ObjectEntity) {
+                $target = $entity;
+            }
+
+            if ($target === null) {
+                $target = $this->extractUuid(application: $application);
+            }
+
+            if ($target === null) {
                 return null;
             }
 
-            $file = $this->fileService->getFile(object: $uuid, file: $filename);
+            $file = $this->fileService->getFile(object: $target, file: $filename);
             if ($file === null) {
                 return null;
             }
