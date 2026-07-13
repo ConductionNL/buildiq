@@ -67,6 +67,13 @@ class PopulateApplicationPermissionsTest extends TestCase
         $this->logger        = $this->createMock(LoggerInterface::class);
         $this->output        = $this->createMock(IOutput::class);
         $this->objectService = $this->createMock(ObjectService::class);
+
+        // `ObjectService::runAsSystem()` really invokes the given callable and
+        // returns its result — mirrors the real elevation, which is
+        // transparent to the caller.
+        $this->objectService->method('runAsSystem')->willReturnCallback(
+            static fn (callable $operation) => $operation()
+        );
     }//end setUp()
 
     /**
@@ -208,4 +215,37 @@ class PopulateApplicationPermissionsTest extends TestCase
         );
         $step->run($this->output);
     }//end testRunSucceedsOnEmptyApplicationList()
+
+    /**
+     * The find-and-patch body runs elevated: the repair step has no user
+     * session (Anonymous), and without `runAsSystem()` OpenRegister RBAC
+     * denies the `find`/`update` calls outright ("User 'Anonymous' does not
+     * have permission to ... objects in schema 'Application'").
+     *
+     * @return void
+     */
+    public function testRunWrapsFindAndPatchInSystemContext(): void
+    {
+        // Fresh mock, scoped to this test: a single matcher owns both the
+        // "called exactly once" assertion and the invoke-the-callable
+        // behaviour, so there is no ambiguity with setUp()'s default stub.
+        $this->objectService = $this->createMock(ObjectService::class);
+
+        $missing = [
+            '@self' => ['id' => 'uuid-missing'],
+            'slug'  => 'legacy',
+        ];
+        $this->objectService->method('findAll')->willReturn([$missing]);
+        $this->objectService->expects(self::once())->method('saveObject');
+
+        $this->objectService->expects(self::once())
+            ->method('runAsSystem')
+            ->willReturnCallback(static fn (callable $operation) => $operation());
+
+        $step = new PopulateApplicationPermissions(
+            logger: $this->logger,
+            objectService: $this->objectService
+        );
+        $step->run($this->output);
+    }//end testRunWrapsFindAndPatchInSystemContext()
 }//end class
