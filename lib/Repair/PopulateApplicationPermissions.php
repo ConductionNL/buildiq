@@ -29,6 +29,14 @@
  *
  * @link https://conduction.nl
  *
+ * Runs without a Nextcloud user session (Anonymous), which OpenRegister RBAC
+ * denies read/write access to by default. The find-and-patch body runs inside
+ * `ObjectService::runAsSystem()` when the installed OpenRegister ships it,
+ * elevating the caller to a trusted system principal for the callable only.
+ * Guarded with `method_exists()` for back-compat with an OpenRegister release
+ * that predates the elevation API — the pre-existing `_rbac`/`_multitenancy`
+ * bypass on the save call remains as the fallback path.
+ *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
  */
 
@@ -90,52 +98,20 @@ class PopulateApplicationPermissions implements IRepairStep
         $output->info('Populating permissions on pre-existing Applications...');
 
         try {
-            $applications = $this->objectService->findAll(
-                config: [
-                    'filters' => [
-                        'register' => 'openbuild',
-                        'schema'   => 'application',
-                    ],
-                    'limit'   => 1000,
-                ]
-            );
+            $hasSystemContext = method_exists($this->objectService, 'runAsSystem') === true;
 
-            if (empty($applications) === true) {
+            if ($hasSystemContext === true) {
+                $patched = $this->objectService->runAsSystem(
+                    fn (): ?int => $this->patchApplicationsMissingPermissions(output: $output)
+                );
+            } else {
+                $patched = $this->patchApplicationsMissingPermissions(output: $output);
+            }
+
+            if ($patched === null) {
                 $output->info('No Applications found; nothing to migrate.');
                 return;
             }
-
-            $patched = 0;
-            foreach ($applications as $applicationEntry) {
-                $applicationArray = $this->normaliseObject(object: $applicationEntry);
-                if ($this->needsMigration(application: $applicationArray) === false) {
-                    continue;
-                }
-
-                $uuid = $this->extractUuid(application: $applicationArray);
-                if ($uuid === null) {
-                    $output->warning('Skipping an Application without a resolvable UUID.');
-                    continue;
-                }
-
-                $applicationArray['permissions'] = [
-                    'owners'  => [self::FALLBACK_OWNER_GROUP],
-                    'editors' => [],
-                    'viewers' => [],
-                ];
-
-                // Repair runs as the Anonymous system user, which cannot satisfy
-                // the Application schema's update:[admin] guard — write in system
-                // context (OR RBAC + multitenancy bypassed).
-                $this->objectService->saveObject(
-                    object: $applicationArray,
-                    register: 'openbuild',
-                    schema: 'application',
-                    _rbac: false,
-                    _multitenancy: false
-                );
-                $patched++;
-            }//end foreach
 
             $output->info('Permissions populated on '.$patched.' Application(s).');
             $this->logger->info(
@@ -150,6 +126,71 @@ class PopulateApplicationPermissions implements IRepairStep
             );
         }//end try
     }//end run()
+
+    /**
+     * Find every Application row and patch the ones missing `permissions`.
+     *
+     * Split out of `run()` so the whole find-and-patch body can be handed to
+     * `ObjectService::runAsSystem()` as a single callable (see class docblock
+     * for why elevation is needed at all).
+     *
+     * @param IOutput $output Output channel for progress reporting
+     *
+     * @return integer|null Number of Applications patched, or null when none were found
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
+     */
+    private function patchApplicationsMissingPermissions(IOutput $output): ?int
+    {
+        $applications = $this->objectService->findAll(
+            config: [
+                'filters' => [
+                    'register' => 'openbuild',
+                    'schema'   => 'application',
+                ],
+                'limit'   => 1000,
+            ]
+        );
+
+        if (empty($applications) === true) {
+            return null;
+        }
+
+        $patched = 0;
+        foreach ($applications as $applicationEntry) {
+            $applicationArray = $this->normaliseObject(object: $applicationEntry);
+            if ($this->needsMigration(application: $applicationArray) === false) {
+                continue;
+            }
+
+            $uuid = $this->extractUuid(application: $applicationArray);
+            if ($uuid === null) {
+                $output->warning('Skipping an Application without a resolvable UUID.');
+                continue;
+            }
+
+            $applicationArray['permissions'] = [
+                'owners'  => [self::FALLBACK_OWNER_GROUP],
+                'editors' => [],
+                'viewers' => [],
+            ];
+
+            // Kept as a defence-in-depth fallback for an OpenRegister release
+            // that predates runAsSystem(): the Application schema's
+            // update:[admin] guard would otherwise deny the Anonymous
+            // repair-step caller.
+            $this->objectService->saveObject(
+                object: $applicationArray,
+                register: 'openbuild',
+                schema: 'application',
+                _rbac: false,
+                _multitenancy: false
+            );
+            $patched++;
+        }//end foreach
+
+        return $patched;
+    }//end patchApplicationsMissingPermissions()
 
     /**
      * Decide whether an Application needs the permissions migration.

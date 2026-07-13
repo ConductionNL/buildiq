@@ -40,11 +40,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Repair;
 
+use OCA\OpenBuild\AppInfo\Application;
 use OCA\OpenBuild\Service\ApplicationVersionService;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
+use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -61,6 +63,53 @@ class MigrateToVersionedModel implements IRepairStep
     private const VERSIONED_SCHEMA = 'applicationVersion';
 
     /**
+     * IAppConfig key persisting the migration outcome so a finished (or
+     * permanently blocked) migration is never re-attempted on every
+     * repair run. Re-arm manually via
+     * `occ config:app:delete openbuild repair_migrate_versioned_model`.
+     */
+    private const STATE_KEY = 'repair_migrate_versioned_model';
+
+    /**
+     * Terminal state: every pre-migration row was migrated (or none existed).
+     * `run()` short-circuits immediately once this is persisted.
+     */
+    private const STATE_DONE = 'done';
+
+    /**
+     * Waiting state: a row could not be deleted while running WITHOUT
+     * system-context elevation (the installed OpenRegister predates
+     * `ObjectService::runAsSystem()`). Not terminal — `run()` retries on
+     * every subsequent invocation until the OpenRegister upgrade ships,
+     * logging at debug level rather than error since the precondition
+     * (elevation support) is expected to still be missing.
+     */
+    private const STATE_BLOCKED = 'blocked';
+
+    /**
+     * Terminal state: a row still failed to migrate while running WITH
+     * system-context elevation active — an operator-facing problem, not
+     * an RBAC gap. `run()` stops retrying; re-arm via the occ command above.
+     */
+    private const STATE_FAILED = 'failed';
+
+    /**
+     * Per-row outcome: migrated (or nothing to migrate for this row).
+     */
+    private const ROW_OK = 'row_ok';
+
+    /**
+     * Per-row outcome: failed without elevation available (see STATE_BLOCKED).
+     */
+    private const ROW_BLOCKED = 'row_blocked';
+
+    /**
+     * Per-row outcome: failed with elevation active, or unresolvable data
+     * (missing slug/uuid) — always operator-facing (see STATE_FAILED).
+     */
+    private const ROW_FAILED = 'row_failed';
+
+    /**
      * Constructor.
      *
      * @param LoggerInterface $logger          PSR logger for diagnostics
@@ -68,6 +117,7 @@ class MigrateToVersionedModel implements IRepairStep
      * @param RegisterService $registerService OpenRegister register service
      * @param RegisterMapper  $registerMapper  Resolves register slugs
      * @param SchemaMapper    $schemaMapper    Resolves schema slugs
+     * @param IAppConfig      $appConfig       Persists the migration state marker
      *
      * @return void
      */
@@ -77,6 +127,7 @@ class MigrateToVersionedModel implements IRepairStep
         private readonly RegisterService $registerService,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
+        private readonly IAppConfig $appConfig,
     ) {
     }//end __construct()
 
@@ -94,11 +145,20 @@ class MigrateToVersionedModel implements IRepairStep
      * Execute the migration.
      *
      * Logic:
+     *   0. Short-circuit when a previous run already persisted a terminal
+     *      outcome (`done` or `failed`) — see the STATE_* constants. This is
+     *      what makes the step converge: without it, a repair step that runs
+     *      on every app-upgrade cycle re-attempts the identical doomed
+     *      operation forever, flooding the log with the same error.
      *   1. Short-circuit when the schema is already in versioned shape.
      *   2. Enumerate every Application row.
-     *   3. For each row: drop the per-app register; on success delete the
-     *      Application row; emit one info-line; on register-delete failure
-     *      log the error and skip the Application row.
+     *   3. For each row: drop the per-app register (elevated via
+     *      `ObjectService::runAsSystem()` when available — repair steps run
+     *      without a user session, so RBAC otherwise denies every write as
+     *      "Anonymous"); on success delete the Application row; emit one
+     *      info-line; on failure log and skip the Application row.
+     *   4. Persist the aggregate outcome so the next invocation short-circuits
+     *      instead of re-attempting rows that are known done/blocked/failed.
      *
      * @param IOutput $output The output channel for progress reporting
      *
@@ -108,15 +168,33 @@ class MigrateToVersionedModel implements IRepairStep
      */
     public function run(IOutput $output): void
     {
+        $state = $this->appConfig->getValueString(Application::APP_ID, self::STATE_KEY, '');
+        if ($state === self::STATE_DONE) {
+            $this->logger->debug('OpenBuild: MigrateToVersionedModel already completed; skipping.');
+            $output->info('Migrated-to-versioned-model: previously completed, skipping.');
+            return;
+        }
+
+        if ($state === self::STATE_FAILED) {
+            $this->logger->debug('OpenBuild: MigrateToVersionedModel previously failed under system context; skipping until re-armed.');
+            $output->info(
+                'Migrated-to-versioned-model: previously failed and needs operator attention;'
+                .' skipping (re-arm via `occ config:app:delete openbuild '.self::STATE_KEY.'`).'
+            );
+            return;
+        }
+
         try {
             if ($this->isAlreadyVersioned() === true) {
                 $output->info('Migrated-to-versioned-model: schema already in versioned shape, skipping');
+                $this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, self::STATE_DONE);
                 return;
             }
         } catch (Throwable $e) {
             // If we cannot even read the schema state we cannot safely
             // continue — assume the worst and skip rather than blow away
-            // data that we may not own.
+            // data that we may not own. Not persisted: a transient read
+            // failure (e.g. DB hiccup) should not become a permanent skip.
             $output->warning(
                 'Migrated-to-versioned-model: could not determine schema state ('.$e->getMessage().'); skipping for safety.'
             );
@@ -130,11 +208,34 @@ class MigrateToVersionedModel implements IRepairStep
         $applications = $this->enumerateApplications();
         if ($applications === []) {
             $output->info('Migrated-to-versioned-model: no pre-migration Application rows found.');
+            $this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, self::STATE_DONE);
             return;
         }
 
+        $hasSystemContext = method_exists($this->objectService, 'runAsSystem') === true;
+        $sawBlocked       = false;
+        $sawFailed        = false;
+
         foreach ($applications as $application) {
-            $this->migrateOne(application: $application, output: $output);
+            $rowOutcome = $this->migrateOne(
+                application: $application,
+                output: $output,
+                hasSystemContext: $hasSystemContext
+            );
+
+            if ($rowOutcome === self::ROW_FAILED) {
+                $sawFailed = true;
+            } else if ($rowOutcome === self::ROW_BLOCKED) {
+                $sawBlocked = true;
+            }
+        }
+
+        if ($sawFailed === true) {
+            $this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, self::STATE_FAILED);
+        } else if ($sawBlocked === true) {
+            $this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, self::STATE_BLOCKED);
+        } else {
+            $this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, self::STATE_DONE);
         }
     }//end run()
 
@@ -248,15 +349,24 @@ class MigrateToVersionedModel implements IRepairStep
      * the operator can retry on the next upgrade after fixing the
      * underlying issue (spec REQ-OBGFM-004).
      *
-     * @param array<string,mixed> $application Application row data
-     * @param IOutput             $output      Output channel for progress
+     * The repair step runs without a Nextcloud user session (Anonymous),
+     * which OpenRegister RBAC denies write access to by default. Both
+     * OpenRegister mutations are wrapped in `ObjectService::runAsSystem()`
+     * when the installed OpenRegister ships it, elevating the caller to a
+     * trusted system principal for the duration of the callable only.
+     * Guarded with `method_exists()` for back-compat with an OpenRegister
+     * release that predates the elevation API.
      *
-     * @return void
+     * @param array<string,mixed> $application      Application row data
+     * @param IOutput             $output           Output channel for progress
+     * @param bool                $hasSystemContext Whether `runAsSystem()` is available on the installed OpenRegister
+     *
+     * @return string One of self::ROW_OK, self::ROW_BLOCKED, self::ROW_FAILED
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-28
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-29
      */
-    private function migrateOne(array $application, IOutput $output): void
+    private function migrateOne(array $application, IOutput $output, bool $hasSystemContext): string
     {
         $slug = (string) ($application['slug'] ?? '');
         if ($slug === '') {
@@ -264,7 +374,7 @@ class MigrateToVersionedModel implements IRepairStep
                 'OpenBuild: MigrateToVersionedModel skipped Application without slug',
                 ['application' => $application]
             );
-            return;
+            return self::ROW_FAILED;
         }
 
         $perAppRegisterSlug = ApplicationVersionService::REGISTER_SLUG.'-'.$slug;
@@ -281,8 +391,38 @@ class MigrateToVersionedModel implements IRepairStep
 
         if ($register !== null) {
             try {
-                $this->registerService->delete(register: $register);
+                if ($hasSystemContext === true) {
+                    $this->objectService->runAsSystem(
+                        function () use ($register): void {
+                            $this->registerService->delete(register: $register);
+                        }
+                    );
+                } else {
+                    $this->registerService->delete(register: $register);
+                }
             } catch (Throwable $e) {
+                if ($hasSystemContext === false) {
+                    // Expected/precondition-absent: no elevation available on
+                    // this OpenRegister release. Log at debug — this is not
+                    // an operator-facing error, it self-resolves on upgrade.
+                    $this->logger->debug(
+                        'OpenBuild: MigrateToVersionedModel: register-delete failed without system-context elevation available',
+                        [
+                            'slug'      => $slug,
+                            'register'  => $perAppRegisterSlug,
+                            'exception' => $e->getMessage(),
+                        ]
+                    );
+                    $output->info(
+                        sprintf(
+                            'Migrated-to-versioned-model: register \'%s\' delete needs OpenRegister system-context'
+                            .' elevation, not yet available; will retry on a later run.',
+                            $perAppRegisterSlug
+                        )
+                    );
+                    return self::ROW_BLOCKED;
+                }//end if
+
                 $output->warning(
                     sprintf(
                         'Migrated-to-versioned-model: FAILED to drop register \'%s\''
@@ -300,7 +440,7 @@ class MigrateToVersionedModel implements IRepairStep
                         'exception' => $e->getMessage(),
                     ]
                 );
-                return;
+                return self::ROW_FAILED;
             }//end try
         }//end if
 
@@ -309,12 +449,35 @@ class MigrateToVersionedModel implements IRepairStep
             $this->logger->warning(
                 'OpenBuild: MigrateToVersionedModel: Application \''.$slug.'\' has no UUID; cannot delete row.'
             );
-            return;
+            return self::ROW_FAILED;
         }
 
         try {
-            $this->objectService->deleteObject(uuid: $applicationUuid);
+            if ($hasSystemContext === true) {
+                $this->objectService->runAsSystem(
+                    function () use ($applicationUuid): void {
+                        $this->objectService->deleteObject(uuid: $applicationUuid);
+                    }
+                );
+            } else {
+                $this->objectService->deleteObject(uuid: $applicationUuid);
+            }
         } catch (Throwable $e) {
+            if ($hasSystemContext === false) {
+                $this->logger->debug(
+                    'OpenBuild: MigrateToVersionedModel: row-delete failed without system-context elevation available',
+                    ['slug' => $slug, 'exception' => $e->getMessage()]
+                );
+                $output->info(
+                    sprintf(
+                        'Migrated-to-versioned-model: dropped register \'%s\' but Application row delete'
+                        .' needs OpenRegister system-context elevation, not yet available; will retry on a later run.',
+                        $perAppRegisterSlug
+                    )
+                );
+                return self::ROW_BLOCKED;
+            }
+
             $output->warning(
                 sprintf(
                     'Migrated-to-versioned-model: dropped register \'%s\''
@@ -328,12 +491,13 @@ class MigrateToVersionedModel implements IRepairStep
                 'OpenBuild: MigrateToVersionedModel: row-delete failed after register dropped',
                 ['slug' => $slug, 'exception' => $e->getMessage()]
             );
-            return;
-        }
+            return self::ROW_FAILED;
+        }//end try
 
         $output->info(
             "Migrated-to-versioned-model: dropped Application '".$slug."' and register 'openbuild-".$slug."'"
         );
+        return self::ROW_OK;
     }//end migrateOne()
 
     /**

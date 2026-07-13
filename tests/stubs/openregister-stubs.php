@@ -647,6 +647,23 @@ namespace OCA\OpenRegister\Service {
             {
                 return 0;
             }//end count()
+
+            /**
+             * Stub system-context elevation. Mirrors the real OR
+             * `ObjectService::runAsSystem(callable): mixed` — the stub simply
+             * invokes the callable and returns its result, matching the real
+             * implementation's contract from the caller's point of view (no
+             * elevation is actually enforced by the stub since it has no RBAC
+             * to bypass).
+             *
+             * @param callable $operation The trusted operation to execute.
+             *
+             * @return mixed Whatever the callable returns.
+             */
+            public function runAsSystem(callable $operation): mixed
+            {
+                return $operation();
+            }//end runAsSystem()
         }//end class
     }//end if
 
