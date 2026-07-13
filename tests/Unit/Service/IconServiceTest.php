@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\IconService;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Files\File;
@@ -307,4 +308,94 @@ class IconServiceTest extends TestCase
             fclose($result['stream']);
         }
     }//end testGetIconStreamFallsBackWhenFileServiceThrows()
+
+    // -------------------------------------------------------------------------
+    // Performance contract — do not hand OR a bare UUID
+    // -------------------------------------------------------------------------
+
+    /**
+     * When OR returns an ObjectEntity, hand THAT to getFile() — never its UUID.
+     *
+     * FileService::getFile() accepts an ObjectEntity or a UUID string. Given a string it
+     * calls objectMapper->find($uuid), and a bare UUID carries no register/schema — so OR
+     * has to search every magic table to find which one owns the object. On a dev instance
+     * that is ~1,960 tables: the icon endpoint took ~2s, and the page requests it twice.
+     *
+     * The entity is already in hand, so passing it skips the search entirely.
+     *
+     * @return void
+     */
+    public function testPassesTheEntityToGetFileRatherThanABareUuid(): void
+    {
+        $entity = $this->createMock(ObjectEntity::class);
+        $entity->method('jsonSerialize')->willReturn(
+            [
+                'slug' => 'hello-world',
+                'uuid' => 'app-uuid-1',
+                'icon' => ['ref' => 'app-icon.svg'],
+            ]
+        );
+
+        $this->objectService->method('findAll')->willReturn([$entity]);
+
+        $fileMock = $this->createMock(File::class);
+        $fileMock->method('getContent')->willReturn('<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+
+        // Capture rather than ->with(): IconService catches \Throwable, so a failed
+        // argument matcher would be swallowed into the fallback and the test would
+        // report a confusing null stream instead of the real mismatch.
+        $passed = null;
+        $this->fileService
+            ->expects($this->once())
+            ->method('getFile')
+            ->willReturnCallback(
+                function ($object, $file) use (&$passed, $fileMock) {
+                    $passed = $object;
+                    return $fileMock;
+                }
+            );
+
+        $result = $this->service->getIconStream(slug: 'hello-world', dark: false);
+
+        // The ENTITY, not 'app-uuid-1'. A string here means OR must search every
+        // magic table to find the object again.
+        $this->assertSame($entity, $passed);
+        $this->assertIsNotString($passed);
+
+        $this->assertSame('image/svg+xml', $result['mimeType']);
+        fclose($result['stream']);
+    }//end testPassesTheEntityToGetFileRatherThanABareUuid()
+
+    /**
+     * findAll() can also yield plain arrays. getFile() would reject one with a TypeError,
+     * so a non-entity must still fall back to the UUID string — correct, just slow.
+     *
+     * @return void
+     */
+    public function testFallsBackToTheUuidWhenOrReturnsAPlainArray(): void
+    {
+        $this->objectService->method('findAll')->willReturn(
+            [
+                [
+                    'slug' => 'hello-world',
+                    'uuid' => 'app-uuid-1',
+                    'icon' => ['ref' => 'app-icon.svg'],
+                ],
+            ]
+        );
+
+        $fileMock = $this->createMock(File::class);
+        $fileMock->method('getContent')->willReturn('<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+
+        $this->fileService
+            ->expects($this->once())
+            ->method('getFile')
+            ->with('app-uuid-1', 'app-icon.svg')
+            ->willReturn($fileMock);
+
+        $result = $this->service->getIconStream(slug: 'hello-world', dark: false);
+
+        $this->assertSame('image/svg+xml', $result['mimeType']);
+        fclose($result['stream']);
+    }//end testFallsBackToTheUuidWhenOrReturnsAPlainArray()
 }//end class
