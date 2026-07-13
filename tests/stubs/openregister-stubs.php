@@ -772,12 +772,19 @@ namespace OCA\OpenRegister\Service {
             /**
              * Retrieve a file attached to an object.
              *
-             * @param string $object UUID of the owning object.
-             * @param string $file   File name / path to retrieve.
+             * Signature mirrors the real OCA\OpenRegister\Service\FileService::getFile:
+             * `$object` is an ObjectEntity OR a UUID string (passing the entity lets OR
+             * skip a scan of every magic table), and the return is nullable. The stub
+             * previously declared `string $object`, so passing the entity — the whole
+             * point of the performance fix — threw a TypeError in tests only while prod
+             * worked. A stub that narrows the real signature hides the bug it should catch.
              *
-             * @return \OCP\Files\File The file node.
+             * @param \OCA\OpenRegister\Db\ObjectEntity|string|null $object The owning object or its UUID.
+             * @param string|int                                    $file   File name / path, or NC file id.
+             *
+             * @return \OCP\Files\File|null The file node, or null when not found.
              */
-            public function getFile(string $object, string $file): \OCP\Files\File
+            public function getFile(\OCA\OpenRegister\Db\ObjectEntity|string|null $object=null, string|int $file=''): ?\OCP\Files\File
             {
                 // Stub — tests mock this method; real implementation is in OR.
                 throw new \RuntimeException('FileService::getFile stub — must be mocked in tests.');
