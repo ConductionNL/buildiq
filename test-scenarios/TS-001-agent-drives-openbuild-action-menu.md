@@ -32,10 +32,29 @@ the API endpoint that sits under each UI action where a tool call is the honest 
 The two things under test are **coverage** (can the agent do each capability at all) and
 **page understanding** (does it know what it is looking at, and via which channel).
 
+## Scope: virtual apps only
+
+This scenario targets **virtual OpenBuild apps** — apps whose manifest is a set of OpenRegister
+objects (schemas, pages, deltas). **Hybrid apps are out of scope** for the OpenBuild MCP surface
+for now: a hybrid app's core manifest is an actual, often large, JSON file, so exposing it as MCP
+tool metadata is neither cheap nor useful — keep hybrid apps out of the MCP scope until that is
+revisited. Only run this scenario against a virtual app fixture.
+
+**Two channels are BOTH first-class here, not either/or.** OpenRegister already supports RAG, so
+for a virtual app the agent has:
+- **MCP** — governed tools for structural reads/writes (add schema, add field, create page, import,
+  publish, switch version, override, permissions).
+- **RAG** — retrieval over the app's manifest objects + data, for understanding current page/layout
+  and item *content* (the `cnAiContext` snapshot gives the agent the item's identity — appId,
+  objectUuid, register/schema slug, route — but not its field values; RAG is how it reads them).
+
+The assessment below therefore measures **which channel the agent chose and whether that was the
+right one**, not whether RAG "exists" — it does, next to MCP, by design.
+
 ## Preconditions
 
-- Logged in as a Nextcloud user who owns at least one OpenBuild app (e.g. the `CowBoy` demo app,
-  `owner` role, one published version, one register with ≥1 schema).
+- Logged in as a Nextcloud user who owns at least one **virtual** OpenBuild app (e.g. the `CowBoy`
+  demo app, `owner` role, one published version, one register with ≥1 schema).
 - Hermiq engine enabled (`hermiq.engine.enabled = true`) with a chat provider configured that is
   capable of tool use — either the `anthropic` provider (Claude, per
   `anthropic-agent-provider`) or a tool-capable Ollama model. **A non-tool-capable model will
@@ -86,17 +105,23 @@ This is the point of the scenario, not a side note. Capture, per capability:
 - **API dependency** — Did the agent fall back to a raw OpenRegister API call
   (`/apps/openregister/api/...`) to read or write because no MCP tool covered it? List the
   endpoints. These are candidate gaps to promote to MCP tools.
-- **RAG dependency** — Did the agent need retrieved page/manifest content (RAG over the app's
-  manifest/objects) to understand the layout before it could design a page? Note where MCP
-  metadata was too thin and RAG carried the understanding.
-- **Blind spots** — Capabilities the agent could neither perceive nor perform. Each is a
-  concrete backlog item (missing MCP tool, missing field projection, or missing RAG source).
+- **RAG usage (channel available by design, not a gap)** — OpenRegister already supports RAG, so
+  for a virtual app it is a first-class channel alongside MCP. Did the agent use RAG over the
+  app's manifest objects/data to understand the current page/layout or to read the viewed item's
+  *field values* (which the `cnAiContext` snapshot does not carry — it gives identity only)? Note
+  where RAG carried the understanding and whether MCP metadata could reasonably have. RAG being
+  used is a success, not a shortfall.
+- **Blind spots** — Capabilities the agent could neither perceive nor perform via MCP *or* RAG.
+  Each is a concrete backlog item (missing MCP tool, missing field projection, or missing RAG
+  source).
 
 Expected shape of the finding (hypothesis to confirm/refute): **structural** actions with a
 clear verb+target (add schema, add field, import data, publish, switch version) are doable
-**MCP-only**; **design** actions (lay out / arrange a page) most likely need **RAG** over the
-manifest because the current page structure isn't fully expressible as MCP tool metadata; some
-reads still fall through to the **OR API**. Confirm or refute with the actual transcript.
+**MCP-only**; **design** actions (lay out / arrange a page) and any **read of the viewed item's
+content** are best served by **RAG** over the manifest/objects (the current page structure and
+object field values aren't fully expressible as MCP tool metadata); a raw **OR API** fall-through
+is a gap to close (promote to an MCP tool or a RAG source). Confirm or refute with the actual
+transcript. Reminder: this holds for virtual apps only — hybrid apps stay out of the MCP scope.
 
 ## Test Data
 
