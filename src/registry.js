@@ -141,31 +141,6 @@ function page(component) {
 }
 
 /**
- * Wrap a dashboard widget component into the v2 registry shape.
- *
- * CnWidgetGrid resolves a manifest `widgetKey` against this registry (then its
- * built-ins) and renders `entry.component`. `kind: "widget"` carries the
- * editor metadata fields CnAppRoot's registry validator expects
- * (defaultSize / minSize / maxSize / allowedSlots / propsSchema).
- *
- * @param {object} component Vue component options.
- * @param {string[]} allowedSlots Manifest slots this widget may be placed in.
- *
- * @return {object} A `{ kind: "widget", component, … }` registry entry.
- */
-function widget(component, allowedSlots) {
-	return {
-		kind: 'widget',
-		component,
-		defaultSize: { w: 3, h: 2 },
-		minSize: { w: 1, h: 1 },
-		maxSize: { w: 12, h: 8 },
-		allowedSlots,
-		propsSchema: {},
-	}
-}
-
-/**
  * Wrap a sidebar tab component into the v2 registry shape.
  *
  * Sidebar tab components are resolved via the slot-override path of
