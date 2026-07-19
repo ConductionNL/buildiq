@@ -54,10 +54,16 @@ webpackConfig.entry = {
 // declared @conduction/nextcloud-vue range — otherwise a STALE local checkout
 // (e.g. beta.7 when the app needs ^beta.101) would be silently bundled instead
 // of the resolved node_modules package, producing wrong/broken builds.
-const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
+// LOCAL_LIB_PATH repoints the lib alias at another checkout of the library's `src`
+// (e.g. the Vue-3 feat/vue-3 worktree) — see procest. When set it also bypasses the
+// semver gate below (an explicit override is trusted), so the app builds against the
+// migrated SOURCE, not the published Vue-2 dist/esm bundle.
+const localLib = process.env.LOCAL_LIB_PATH
+	? path.resolve(process.env.LOCAL_LIB_PATH)
+	: path.resolve(__dirname, '../nextcloud-vue/src')
 const localLibPkg = path.resolve(__dirname, '../nextcloud-vue/package.json')
 let useLocalLib = process.env.USE_LOCAL_LIB !== 'false' && fs.existsSync(localLib)
-if (useLocalLib && fs.existsSync(localLibPkg)) {
+if (useLocalLib && !process.env.LOCAL_LIB_PATH && fs.existsSync(localLibPkg)) {
 	try {
 		// semver is an optional transitive dep — the try/catch degrades
 		// gracefully when it is absent, so it is intentionally not declared
@@ -92,9 +98,15 @@ webpackConfig.resolve = {
 		...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),
 		// Deduplicate shared packages so the aliased library source uses
 		// the same instances as the app (prevents dual-Pinia / dual-Vue bugs).
-		vue$: path.resolve(__dirname, 'node_modules/vue'),
+		// VUE 3 (ADR-066): vue -> @vue/compat as ONE absolute file (a bare alias
+		// resolves to TWO copies — the aliased lib worktree + this app — giving two
+		// currentRenderingInstance states → CnAppRoot null-instance crash). @nextcloud/vue
+		// v9 is ESM-only (exports './components/*'; no main/module) so alias the entry
+		// file. vue-router deduped to one copy (lib ships its own major).
+		vue$: path.resolve(__dirname, 'node_modules/@vue/compat/dist/vue.esm-bundler.js'),
 		pinia$: path.resolve(__dirname, 'node_modules/pinia'),
-		'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue'),
+		'vue-router$': path.resolve(__dirname, 'node_modules/vue-router/dist/vue-router.mjs'),
+		'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue/dist/index.mjs'),
 	},
 }
 
@@ -103,6 +115,13 @@ webpackConfig.module = {
 		{
 			test: /\.vue$/,
 			loader: 'vue-loader',
+			options: {
+				// VUE 3 STAGING (ADR-066): keep un-migrated Vue-2 templates (.sync,
+				// {{x|f}} filters) semantically correct under Vue 3 + @vue/compat.
+				compilerOptions: {
+					compatConfig: { MODE: 2, COMPILER_FILTERS: true },
+				},
+			},
 		},
 		{
 			test: /\.css$/,

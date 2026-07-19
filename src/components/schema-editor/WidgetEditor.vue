@@ -33,19 +33,19 @@
 				:key="widget._key"
 				class="openbuild-widget-editor__row">
 				<NcTextField
-					:value="widget.slot"
+					:model-value="widget.slot"
 					:label="t('openbuild', 'Slot')"
-					@update:value="updateWidget(index, 'slot', $event)" />
+					@update:model-value="updateWidget(index, 'slot', $event)" />
 				<NcTextField
-					:value="widget.widget"
+					:model-value="widget.widget"
 					:label="t('openbuild', 'Widget id')"
-					@update:value="updateWidget(index, 'widget', $event)" />
+					@update:model-value="updateWidget(index, 'widget', $event)" />
 				<NcTextField
-					:value="widget.configJson"
+					:model-value="widget.configJson"
 					:label="t('openbuild', 'Config (JSON)')"
 					:error="!!widget.configError"
 					:helper-text="widget.configError"
-					@update:value="updateConfig(index, $event)" />
+					@update:model-value="updateConfig(index, $event)" />
 				<NcButton
 					type="error"
 					:aria-label="t('openbuild', 'Remove widget')"

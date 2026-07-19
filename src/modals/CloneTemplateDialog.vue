@@ -14,15 +14,15 @@
 				{{ t('openbuild', 'You can edit everything after cloning.') }}
 			</p>
 			<NcTextField
-				:value="localName"
+				:model-value="localName"
 				:label="t('openbuild', 'Application name')"
 				:placeholder="t('openbuild', 'My permits')"
-				@update:value="localName = $event" />
+				@update:model-value="localName = $event" />
 			<NcTextField
-				:value="localSlug"
+				:model-value="localSlug"
 				:label="t('openbuild', 'Slug (kebab-case, max 32 chars)')"
 				:placeholder="t('openbuild', 'my-permits')"
-				@update:value="localSlug = $event" />
+				@update:model-value="localSlug = $event" />
 			<p v-if="error" class="clone-dialog__error" role="alert">
 				{{ error }}
 			</p>

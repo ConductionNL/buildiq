@@ -11,39 +11,39 @@
 	<form class="openbuild-schema-header-form" @submit.prevent>
 		<div class="openbuild-schema-header-form__row">
 			<NcTextField
-				:value="value.slug"
+				:model-value="value.slug"
 				:label="t('openbuild', 'Schema slug')"
 				:placeholder="t('openbuild', 'kebab-case, e.g. customer')"
 				:disabled="lockedSlug"
 				:error="!!slugError || (touched.slug && !slugValid)"
 				:helper-text="slugError || (touched.slug && !slugValid ? t('openbuild', 'Slug must be kebab-case (lowercase letters, digits, hyphens) and start with a letter.') : '')"
-				@update:value="onChange('slug', $event)"
+				@update:model-value="onChange('slug', $event)"
 				@blur="touched.slug = true" />
 		</div>
 		<div class="openbuild-schema-header-form__row">
 			<NcTextField
-				:value="value.title"
+				:model-value="value.title"
 				:label="t('openbuild', 'Title')"
 				:error="touched.title && !titleValid"
 				:helper-text="touched.title && !titleValid ? t('openbuild', 'Title is required.') : ''"
-				@update:value="onChange('title', $event)"
+				@update:model-value="onChange('title', $event)"
 				@blur="touched.title = true" />
 		</div>
 		<div class="openbuild-schema-header-form__row">
 			<NcTextField
-				:value="value.description || ''"
+				:model-value="value.description || ''"
 				:label="t('openbuild', 'Description')"
 				:placeholder="t('openbuild', 'Optional')"
-				@update:value="onChange('description', $event)" />
+				@update:model-value="onChange('description', $event)" />
 		</div>
 		<div class="openbuild-schema-header-form__row">
 			<NcTextField
-				:value="value.version"
+				:model-value="value.version"
 				:label="t('openbuild', 'Version (semver)')"
 				:placeholder="'0.1.0'"
 				:error="touched.version && !versionValid"
 				:helper-text="touched.version && !versionValid ? t('openbuild', 'Version must follow semver MAJOR.MINOR.PATCH.') : ''"
-				@update:value="onChange('version', $event)"
+				@update:model-value="onChange('version', $event)"
 				@blur="touched.version = true" />
 		</div>
 	</form>

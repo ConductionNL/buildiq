@@ -37,22 +37,22 @@
 					class="openbuild-lifecycle-editor__state-row">
 					<NcCheckboxRadioSwitch
 						type="radio"
-						:checked="state.initial"
+						:model-value="state.initial"
 						:value="state._key"
 						name="lifecycle-initial-state"
-						@update:checked="setInitial(sIndex)">
+						@update:model-value="setInitial(sIndex)">
 						{{ t('openbuild', 'Initial') }}
 					</NcCheckboxRadioSwitch>
 					<NcTextField
-						:value="state.name"
+						:model-value="state.name"
 						:label="t('openbuild', 'State slug')"
 						:error="!stateNameValid(state, sIndex)"
 						:helper-text="!stateNameValid(state, sIndex) ? t('openbuild', 'State slug must be kebab-case and unique.') : ''"
-						@update:value="updateState(sIndex, 'name', $event)" />
+						@update:model-value="updateState(sIndex, 'name', $event)" />
 					<NcTextField
-						:value="state.label"
+						:model-value="state.label"
 						:label="t('openbuild', 'Label')"
-						@update:value="updateState(sIndex, 'label', $event)" />
+						@update:model-value="updateState(sIndex, 'label', $event)" />
 					<NcButton
 						type="error"
 						:aria-label="t('openbuild', 'Remove state')"
@@ -90,24 +90,24 @@
 					<div class="openbuild-lifecycle-editor__transition-grid">
 						<NcSelect
 							:input-label="t('openbuild', 'From')"
-							:value="stateOption(transition.from)"
+							:model-value="stateOption(transition.from)"
 							:options="stateOptions"
 							:clearable="false"
 							label="label"
 							track-by="value"
-							@input="updateTransition(tIndex, 'from', $event ? $event.value : '')" />
+							@update:model-value="updateTransition(tIndex, 'from', $event ? $event.value : '')" />
 						<NcSelect
 							:input-label="t('openbuild', 'To')"
-							:value="stateOption(transition.to)"
+							:model-value="stateOption(transition.to)"
 							:options="stateOptions"
 							:clearable="false"
 							label="label"
 							track-by="value"
-							@input="updateTransition(tIndex, 'to', $event ? $event.value : '')" />
+							@update:model-value="updateTransition(tIndex, 'to', $event ? $event.value : '')" />
 						<NcTextField
-							:value="transition.label || ''"
+							:model-value="transition.label || ''"
 							:label="t('openbuild', 'Label (optional)')"
-							@update:value="updateTransition(tIndex, 'label', $event)" />
+							@update:model-value="updateTransition(tIndex, 'label', $event)" />
 						<NcButton
 							type="error"
 							:aria-label="t('openbuild', 'Remove transition')"
@@ -139,17 +139,17 @@
 								class="openbuild-lifecycle-editor__action-row">
 								<NcSelect
 									:input-label="t('openbuild', 'Action type')"
-									:value="actionOption(action.type)"
+									:model-value="actionOption(action.type)"
 									:options="actionOptions"
 									:clearable="false"
 									label="label"
 									track-by="value"
-									@input="updateAction(tIndex, aIndex, 'type', $event ? $event.value : 'audit-event-emit')" />
+									@update:model-value="updateAction(tIndex, aIndex, 'type', $event ? $event.value : 'audit-event-emit')" />
 								<NcTextField
-									:value="action.payload || ''"
+									:model-value="action.payload || ''"
 									:label="t('openbuild', 'Payload key (declarative)')"
 									:placeholder="t('openbuild', 'e.g. event name, template slug')"
-									@update:value="updateAction(tIndex, aIndex, 'payload', $event)" />
+									@update:model-value="updateAction(tIndex, aIndex, 'payload', $event)" />
 								<NcButton
 									type="error"
 									:aria-label="t('openbuild', 'Remove action')"

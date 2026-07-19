@@ -17,26 +17,26 @@
 		@closing="onClose">
 		<div class="ob-edit-template">
 			<NcTextField
-				:value="form.title"
+				:model-value="form.title"
 				:label="t('openbuild', 'Template title')"
-				@update:value="form.title = $event" />
+				@update:model-value="form.title = $event" />
 			<NcTextField
-				:value="form.useCase"
+				:model-value="form.useCase"
 				:label="t('openbuild', 'Use case (one line)')"
-				@update:value="form.useCase = $event" />
+				@update:model-value="form.useCase = $event" />
 			<NcTextArea
-				:value="form.description"
+				:model-value="form.description"
 				:label="t('openbuild', 'Description')"
-				@update:value="form.description = $event" />
+				@update:model-value="form.description = $event" />
 			<NcSelect
 				v-model="categoryOption"
 				:input-label="t('openbuild', 'Category')"
 				:options="categoryOptions"
 				:clearable="false" />
 			<NcTextField
-				:value="form.sourceUrl"
+				:model-value="form.sourceUrl"
 				:label="t('openbuild', 'Source URL (optional)')"
-				@update:value="form.sourceUrl = $event" />
+				@update:model-value="form.sourceUrl = $event" />
 			<p v-if="saveError" class="ob-edit-template__error" role="alert">
 				{{ saveError }}
 			</p>

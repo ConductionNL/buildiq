@@ -16,10 +16,10 @@
 			{{ t('openbuild', 'You are about to delete the schema {slug}. All objects of this schema may be affected. Type the schema slug below to confirm.', { slug: schemaSlug }) }}
 		</p>
 		<NcTextField
-			:value="typed"
+			:model-value="typed"
 			:label="t('openbuild', 'Type the slug to confirm')"
 			:placeholder="schemaSlug"
-			@update:value="typed = $event" />
+			@update:model-value="typed = $event" />
 		<template #actions>
 			<NcButton @click="onCancel">
 				{{ t('openbuild', 'Cancel') }}

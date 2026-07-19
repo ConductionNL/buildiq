@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: EUPL-1.2
-import Vue from 'vue'
-import VueRouter from 'vue-router'
-import { PiniaVuePlugin } from 'pinia'
+import { createApp, h, configureCompat } from 'vue'
+import { createRouter, createWebHistory } from 'vue-router'
+
+// ADR-066 compat flags (see procest main.js for the full rationale):
+// - RENDER_FUNCTION:false — MODE 2 else wraps pure-v9 renders in compatRender,
+//   dropping scoped-slot props (NcAppNavigationItem <router-link> {href} crash).
+// - COMPONENT_V_MODEL:false — MODE 2 else rewrites v-model to the Vue-2 value/@input
+//   convention, breaking v9 defineModel()/useModel components (NcTextField) →
+//   modelValue undefined → toString() crash on every input page.
+configureCompat({ RENDER_FUNCTION: false, COMPONENT_V_MODEL: false })
 import { translate as t, translatePlural as n, loadTranslations } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
@@ -25,9 +32,8 @@ import '@conduction/nextcloud-vue/css/index.css'
 // Global (unscoped) app styles.
 import './assets/app.css'
 
-Vue.mixin({ methods: { t, n } })
-Vue.use(PiniaVuePlugin)
-Vue.use(VueRouter)
+// Vue 3 (ADR-066): global t/n install via app.config.globalProperties after
+// createApp (below); pinia + router install via app.use.
 registerDirectives()
 
 // Library-side icon set + lib translations (best effort).
@@ -102,20 +108,19 @@ function routesFromManifest(manifest) {
 		component: RoutePageRenderer,
 		props: page.route.includes(':'),
 	}))
-	// Catch-all redirect to the dashboard.
-	routes.push({ path: '*', redirect: '/' })
+	// Catch-all redirect to the dashboard (vue-router 4 param-matcher syntax).
+	routes.push({ path: '/:pathMatch(.*)*', redirect: '/' })
 	return routes
 }
 
-const router = new VueRouter({
+const router = createRouter({
 	// History mode (clean path URLs + working deep-links e.g.
 	// /apps/openbuild/applications/{id}). This relies on the AppHost engine's
 	// SPA catch-all (\OCA\OpenRegister\AppHost\Routes::standard adds
 	// dashboard#catchAll for `/{path}`) serving the SPA index on any sub-path —
 	// without it, history-mode deep-links 404 at the server (the reason the app
 	// previously fell back to hash mode, fleet #133).
-	mode: 'history',
-	base: generateUrl('/apps/openbuild'),
+	history: createWebHistory(generateUrl('/apps/openbuild')),
 	routes: routesFromManifest(mergedManifest),
 })
 
@@ -133,14 +138,20 @@ const registryProp = { ...registry }
 // Pinia stores are usable from App.vue's created() hook. App.vue runs
 // initializeStores() there (idempotent). Mount immediately so the App
 // renders (NC32 needs #content to be taken over).
-new Vue({
-	pinia,
-	router,
-	render: h => h(App, {
-		props: {
-			manifest: mergedManifest,
-			registry: registryProp,
-			pageTypes: pageTypesProp,
-		},
+const app = createApp({
+	// Vue 3: props pass FLAT (no `props:` wrapper in the h() data object).
+	render: () => h(App, {
+		manifest: mergedManifest,
+		registry: registryProp,
+		pageTypes: pageTypesProp,
 	}),
-}).$mount('#content')
+})
+
+// Vue 3 global install contract (ADR-066 task 4.5): t/n move from Vue.mixin to
+// app.config.globalProperties.
+app.config.globalProperties.t = t
+app.config.globalProperties.n = n
+
+app.use(pinia)
+app.use(router)
+app.mount('#content')

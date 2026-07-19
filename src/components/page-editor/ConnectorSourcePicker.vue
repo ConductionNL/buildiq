@@ -16,13 +16,13 @@
 	<div class="connector-source-picker">
 		<div v-if="appAvailable" class="connector-source-picker__live">
 			<NcSelect
-				:value="selectedOption"
+				:model-value="selectedOption"
 				:options="endpointOptions"
 				:loading="loading"
 				:input-label="t('openbuild', 'OpenConnector endpoint')"
 				:placeholder="t('openbuild', 'Select an endpoint')"
 				label="label"
-				@input="onSelect" />
+				@update:model-value="onSelect" />
 			<p v-if="error" class="connector-source-picker__error">
 				{{ t('openbuild', 'Could not load OpenConnector endpoints.') }}
 			</p>

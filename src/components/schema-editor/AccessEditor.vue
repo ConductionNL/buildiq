@@ -46,50 +46,50 @@
 				<template v-if="isRepresentable(row)">
 					<NcSelect
 						:input-label="t('openbuild', 'Scope')"
-						:value="kindOption(row.kind)"
+						:model-value="kindOption(row.kind)"
 						:options="kindOptions"
 						:clearable="false"
 						:disabled="readOnly"
 						label="label"
 						track-by="value"
-						@input="onKindChange(row.op, $event ? $event.value : 'everyone')" />
+						@update:model-value="onKindChange(row.op, $event ? $event.value : 'everyone')" />
 
 					<NcSelect
 						v-if="row.kind === 'group'"
 						:input-label="t('openbuild', 'Groups')"
-						:value="groupOptionsFor(row.groups)"
+						:model-value="groupOptionsFor(row.groups)"
 						:options="availableGroupOptions"
 						:multiple="true"
 						:taggable="true"
 						:disabled="readOnly"
 						label="label"
 						track-by="value"
-						@input="onGroupsChange(row.op, $event)"
+						@update:model-value="onGroupsChange(row.op, $event)"
 						@tag="onGroupTag(row.op, $event)" />
 
 					<div v-if="row.kind === 'condition'" class="openbuild-access-editor__condition">
 						<NcSelect
 							:input-label="t('openbuild', 'Field')"
-							:value="fieldOption(row.condition && row.condition.field)"
+							:model-value="fieldOption(row.condition && row.condition.field)"
 							:options="fieldOptions"
 							:clearable="false"
 							:disabled="readOnly"
 							label="label"
 							track-by="value"
-							@input="onConditionFieldChange(row.op, $event ? $event.value : '')" />
+							@update:model-value="onConditionFieldChange(row.op, $event ? $event.value : '')" />
 						<NcSelect
 							:input-label="t('openbuild', 'Operator')"
-							:value="{ value: 'equals', label: t('openbuild', 'equals') }"
+							:model-value="{ value: 'equals', label: t('openbuild', 'equals') }"
 							:options="[{ value: 'equals', label: t('openbuild', 'equals') }]"
 							:clearable="false"
 							:disabled="true"
 							label="label"
 							track-by="value" />
 						<NcTextField
-							:value="(row.condition && row.condition.value) || ''"
+							:model-value="(row.condition && row.condition.value) || ''"
 							:label="t('openbuild', 'Value (@user.uid or a literal)')"
 							:disabled="readOnly"
-							@update:value="onConditionValueChange(row.op, $event)" />
+							@update:model-value="onConditionValueChange(row.op, $event)" />
 					</div>
 				</template>
 

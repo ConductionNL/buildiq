@@ -48,10 +48,10 @@
 			</div>
 
 			<NcTextField
-				:value="descriptionTemplate"
+				:model-value="descriptionTemplate"
 				:label="t('openbuild', 'Description template (optional)')"
 				:placeholder="t('openbuild', 'e.g. Application for {{title}}')"
-				@update:value="descriptionTemplate = $event" />
+				@update:model-value="descriptionTemplate = $event" />
 
 			<label class="ob-workflow-attach__toggle">
 				<input v-model="addStatusTab" type="checkbox">

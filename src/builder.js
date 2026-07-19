@@ -14,9 +14,12 @@
 // Designer surfaces (/builder/{slug}/pages, /schemas) stay in the OpenBuild SPA;
 // only the bare /builder/{slug} runtime is served by this entry.
 
-import Vue from 'vue'
-import VueRouter from 'vue-router'
-import { PiniaVuePlugin } from 'pinia'
+import { createApp, h, reactive, configureCompat } from 'vue'
+import { createRouter, createWebHistory } from 'vue-router'
+
+// ADR-066 compat flags (see main.js): RENDER_FUNCTION:false (pure-v9 scoped slots),
+// COMPONENT_V_MODEL:false (v9 defineModel inputs).
+configureCompat({ RENDER_FUNCTION: false, COMPONENT_V_MODEL: false })
 import { translate as t, translatePlural as n, loadTranslations } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { loadState } from '@nextcloud/initial-state'
@@ -39,9 +42,7 @@ import { registerSlugForApp } from './store/schemas.js'
 import '@conduction/nextcloud-vue/css/index.css'
 import './assets/app.css'
 
-Vue.mixin({ methods: { t, n } })
-Vue.use(PiniaVuePlugin)
-Vue.use(VueRouter)
+// Vue 3 (ADR-066): global t/n install via app.config.globalProperties (below).
 registerDirectives()
 
 registerIcons()
@@ -111,11 +112,11 @@ function routesFromManifest(manifest) {
 	if (pages.length === 0) {
 		// No pages → no real home route. A `* → '/'` redirect would loop
 		// forever (`/` matches `*` again), so render a clean not-found screen.
-		routes.push({ path: '*', component: AppNotFound })
+		routes.push({ path: '/:pathMatch(.*)*', component: AppNotFound })
 		return routes
 	}
 	const home = pages[0].route || '/'
-	routes.push({ path: '*', redirect: home })
+	routes.push({ path: '/:pathMatch(.*)*', redirect: home })
 	return routes
 }
 
@@ -292,9 +293,8 @@ async function boot() {
 	const dataSourcesLoader = () => useRegisterPicker({ appSlug: slug })
 		.fetchDataSources(registerScope(registerSlugForApp(slug, versionSlug), manifest))
 
-	const router = new VueRouter({
-		mode: 'history',
-		base: generateUrl(`/apps/openbuild/builder/${slug}`),
+	const router = createRouter({
+		history: createWebHistory(generateUrl(`/apps/openbuild/builder/${slug}`)),
 		routes: routesFromManifest(manifest),
 	})
 
@@ -306,18 +306,16 @@ async function boot() {
 	// cache. Only the routed view remounts — the shell and its teleported modals
 	// stay put — and only when pages actually change, so menu / settings / sidebar
 	// edits never disturb it.
-	const shellState = Vue.observable({ routerEpoch: 0 })
+	const shellState = reactive({ routerEpoch: 0 })
 	const pageSignature = () => (Array.isArray(manifest.pages)
 		? manifest.pages.map((p) => `${p && p.id}:${p && p.route}`).join('|')
 		: '')
 	let lastPageSig = pageSignature()
 
-	new Vue({
-		pinia,
-		router,
-		render: (h) => h(CnAppRoot, {
-			props: {
-				appId: `openbuild-${slug}`,
+	const app = createApp({
+		// Vue 3: props pass FLAT (no `props:` wrapper in the h() data object).
+		render: () => h(CnAppRoot, {
+			appId: `openbuild-${slug}`,
 				routerViewKey: shellState.routerEpoch,
 				// The app's display name — drives the support dialog title etc.
 				// Without it CnAppRoot falls back to the appId ("openbuild-{slug}").
@@ -353,12 +351,12 @@ async function boot() {
 					// so a router-build error here (e.g. a duplicate route the user
 					// created) must NOT reject the save — log and move on.
 					try {
-						const fresh = new VueRouter({
-							mode: 'history',
-							base: generateUrl(`/apps/openbuild/builder/${slug}`),
-							routes: routesFromManifest(manifest),
-						})
-						router.matcher = fresh.matcher
+						// vue-router 4 has no matcher swap; addRoute() replaces a route
+						// with the same name and adds new ones (a removed page leaves a
+						// harmless stale record until reload).
+						for (const r of routesFromManifest(manifest)) {
+							router.addRoute(r)
+						}
 					} catch (e) {
 						// eslint-disable-next-line no-console
 						console.warn('[openbuild:builder] router rebuild after save failed (edit is saved; reload to pick up new routes)', e)
@@ -367,9 +365,14 @@ async function boot() {
 					// the added/removed page routes (see shellState / routerViewKey).
 					shellState.routerEpoch++
 				},
-			},
 		}),
-	}).$mount('#content')
+	})
+
+	app.config.globalProperties.t = t
+	app.config.globalProperties.n = n
+	app.use(pinia)
+	app.use(router)
+	app.mount('#content')
 }
 
 boot()

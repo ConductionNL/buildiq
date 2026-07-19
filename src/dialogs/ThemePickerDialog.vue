@@ -43,10 +43,10 @@
 			<!-- (c) validated free-text fallback (non-admin / no list) -->
 			<div v-else class="ob-theme-picker__freetext">
 				<NcTextField
-					:value="freeTextId"
+					:model-value="freeTextId"
 					:label="t('openbuild', 'Token set id')"
 					:placeholder="t('openbuild', 'e.g. rijkshuisstijl')"
-					@update:value="onFreeTextInput" />
+					@update:model-value="onFreeTextInput" />
 				<p class="ob-theme-picker__hint">
 					{{ t('openbuild', 'A visual token-set list is only available to administrators today. Enter an NL Design token-set id; it is validated against the published stylesheet.') }}
 				</p>

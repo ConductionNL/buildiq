@@ -11,10 +11,10 @@
 		<!-- GitHub store: server-backed search against topic:openbuild-app. -->
 		<div class="template-gallery__filters">
 			<NcTextField
-				:value="githubQuery"
+				:model-value="githubQuery"
 				:label="t('openbuild', 'Search GitHub')"
 				:placeholder="t('openbuild', 'Search apps published to GitHub (topic: openbuild-app)')"
-				@update:value="onGithubQuery" />
+				@update:model-value="onGithubQuery" />
 		</div>
 
 		<NcNoteCard v-if="githubUnavailable" type="warning" class="template-gallery__github-hint">
