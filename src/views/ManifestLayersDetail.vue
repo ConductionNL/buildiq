@@ -144,7 +144,7 @@
 		</section>
 
 		<UserDeltaEditModal
-			:open.sync="showEditModal"
+			v-model:open="showEditModal"
 			:app-slug="appSlug"
 			:delta="userDelta.manifestDelta"
 			@saved="onUserDeltaSaved" />

@@ -217,7 +217,7 @@
 		</section>
 
 		<UserDeltaEditModal
-			:open.sync="showUserDeltaModal"
+			v-model:open="showUserDeltaModal"
 			:app-slug="appSlug"
 			:delta="userDeltaContent"
 			@saved="onUserDeltaChanged" />

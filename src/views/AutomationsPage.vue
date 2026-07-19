@@ -99,7 +99,7 @@
 		</NcNoteCard>
 
 		<AutomationEditDialog
-			:open.sync="editDialogOpen"
+			v-model:open="editDialogOpen"
 			:automation="editingAutomation"
 			:register="selectedVersion ? selectedVersion.register : ''"
 			@saved="onDialogSaved" />

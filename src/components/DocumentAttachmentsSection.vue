@@ -52,7 +52,7 @@
 		</ul>
 
 		<DocumentTemplateAttachmentDialog
-			:open.sync="dialogOpen"
+			v-model:open="dialogOpen"
 			:schemas="schemas"
 			:attachments="attachments"
 			:attachment="editingAttachment"

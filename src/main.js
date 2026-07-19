@@ -1,14 +1,7 @@
 // SPDX-License-Identifier: EUPL-1.2
-import { createApp, h, configureCompat } from 'vue'
+import { createApp, h } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
-// ADR-066 compat flags (see procest main.js for the full rationale):
-// - RENDER_FUNCTION:false — MODE 2 else wraps pure-v9 renders in compatRender,
-//   dropping scoped-slot props (NcAppNavigationItem <router-link> {href} crash).
-// - COMPONENT_V_MODEL:false — MODE 2 else rewrites v-model to the Vue-2 value/@input
-//   convention, breaking v9 defineModel()/useModel components (NcTextField) →
-//   modelValue undefined → toString() crash on every input page.
-configureCompat({ RENDER_FUNCTION: false, COMPONENT_V_MODEL: false })
 import { translate as t, translatePlural as n, loadTranslations } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {

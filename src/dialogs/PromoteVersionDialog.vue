@@ -27,7 +27,7 @@
 				</legend>
 
 				<NcCheckboxRadioSwitch
-					:checked.sync="selectedStrategy"
+					v-model="selectedStrategy"
 					value="start-with-source-data"
 					name="promote-strategy"
 					type="radio">
@@ -38,7 +38,7 @@
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:checked.sync="selectedStrategy"
+					v-model="selectedStrategy"
 					value="migrate-existing-data"
 					name="promote-strategy"
 					type="radio">
@@ -49,7 +49,7 @@
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:checked.sync="selectedStrategy"
+					v-model="selectedStrategy"
 					value="empty-start"
 					name="promote-strategy"
 					type="radio">

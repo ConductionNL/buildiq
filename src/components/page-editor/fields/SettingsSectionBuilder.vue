@@ -246,8 +246,8 @@ export default {
 				current.widgets = []
 			}
 			next[index] = current
-			this.$set(this.propsDraft, index, undefined)
-			this.$set(this.propsError, index, '')
+			this.propsDraft[index] = undefined
+			this.propsError[index] = ''
 			this.emit(next)
 		},
 		/**
@@ -256,19 +256,19 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onPropsInput(index, value) {
-			this.$set(this.propsDraft, index, value)
+			this.propsDraft[index] = value
 			const trimmed = (value || '').trim()
 			if (trimmed === '') {
-				this.$set(this.propsError, index, '')
+				this.propsError[index] = ''
 				this.updateField(index, 'props', undefined)
 				return
 			}
 			try {
 				const parsed = JSON.parse(trimmed)
-				this.$set(this.propsError, index, '')
+				this.propsError[index] = ''
 				this.updateField(index, 'props', parsed)
 			} catch (e) {
-				this.$set(this.propsError, index, (e && e.message) || String(e))
+				this.propsError[index] = (e && e.message) || String(e)
 			}
 		},
 		/**

@@ -1,17 +1,13 @@
 // SPDX-License-Identifier: EUPL-1.2
-import Vue from 'vue'
-import { Tooltip } from '@nextcloud/vue'
-
 /**
- * Register @nextcloud/vue's global directives once per entry bootstrap.
+ * No-op (Vue 3 / @nextcloud/vue v9, ADR-066).
  *
- * Library components (CnCard, CnSchemaFormDialog, CnTabbedFormDialog, …) use
- * `v-tooltip` without registering the directive locally, so the host app must
- * install it globally. Each webpack entry bundles its own Vue constructor, so
- * this must run in every bootstrap (main / builder / settings), not just once.
+ * v9 removed the `Tooltip` directive and the library migrated every `v-tooltip`
+ * to a native `:title` attribute; openbuild uses no `v-tooltip` of its own. There
+ * is therefore no global directive to install, and Vue 3 has no `Vue.directive`
+ * global anyway (directives register per-app via `app.directive`). Kept as a no-op
+ * so the main / builder / settings bootstraps don't need touching.
  *
  * @return {void}
  */
-export function registerDirectives() {
-	Vue.directive('tooltip', Tooltip)
-}
+export function registerDirectives() {}

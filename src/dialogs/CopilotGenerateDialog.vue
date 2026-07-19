@@ -27,7 +27,7 @@
 				</p>
 				<NcTextArea
 					data-testid="copilot-brief-input"
-					:value.sync="brief"
+					v-model="brief"
 					:label="t('openbuild', 'Describe your app')"
 					:disabled="state === 'planning'"
 					:placeholder="t('openbuild', 'e.g. A tool library where members can borrow and return tools')"

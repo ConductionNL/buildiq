@@ -103,7 +103,7 @@ webpackConfig.resolve = {
 		// currentRenderingInstance states → CnAppRoot null-instance crash). @nextcloud/vue
 		// v9 is ESM-only (exports './components/*'; no main/module) so alias the entry
 		// file. vue-router deduped to one copy (lib ships its own major).
-		vue$: path.resolve(__dirname, 'node_modules/@vue/compat/dist/vue.esm-bundler.js'),
+		vue$: path.resolve(__dirname, 'node_modules/vue/dist/vue.runtime.esm-bundler.js'),
 		pinia$: path.resolve(__dirname, 'node_modules/pinia'),
 		'vue-router$': path.resolve(__dirname, 'node_modules/vue-router/dist/vue-router.mjs'),
 		'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue/dist/index.mjs'),
@@ -115,13 +115,6 @@ webpackConfig.module = {
 		{
 			test: /\.vue$/,
 			loader: 'vue-loader',
-			options: {
-				// VUE 3 STAGING (ADR-066): keep un-migrated Vue-2 templates (.sync,
-				// {{x|f}} filters) semantically correct under Vue 3 + @vue/compat.
-				compilerOptions: {
-					compatConfig: { MODE: 2, COMPILER_FILTERS: true },
-				},
-			},
 		},
 		{
 			test: /\.css$/,

@@ -46,7 +46,7 @@
 		</p>
 
 		<ThemePickerDialog
-			:open.sync="dialogOpen"
+			v-model:open="dialogOpen"
 			:theme="theme"
 			:nldesign-available="nldesignAvailable"
 			@save="onSave"

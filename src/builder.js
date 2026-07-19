@@ -14,12 +14,9 @@
 // Designer surfaces (/builder/{slug}/pages, /schemas) stay in the OpenBuild SPA;
 // only the bare /builder/{slug} runtime is served by this entry.
 
-import { createApp, h, reactive, configureCompat } from 'vue'
+import { createApp, h, reactive } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
-// ADR-066 compat flags (see main.js): RENDER_FUNCTION:false (pure-v9 scoped slots),
-// COMPONENT_V_MODEL:false (v9 defineModel inputs).
-configureCompat({ RENDER_FUNCTION: false, COMPONENT_V_MODEL: false })
 import { translate as t, translatePlural as n, loadTranslations } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { loadState } from '@nextcloud/initial-state'
@@ -83,12 +80,10 @@ const RoutePageRenderer = { ...CnPageRenderer }
 // `/` → …) and overflowed the call stack.
 const AppNotFound = {
 	name: 'AppNotFound',
-	render(h) {
+	render() {
 		return h(NcEmptyContent, {
-			props: {
-				name: t('openbuild', 'App not found'),
-				description: t('openbuild', 'This app could not be loaded — it may have been deleted, or it has no pages yet.'),
-			},
+			name: t('openbuild', 'App not found'),
+			description: t('openbuild', 'This app could not be loaded — it may have been deleted, or it has no pages yet.'),
 		})
 	},
 }
