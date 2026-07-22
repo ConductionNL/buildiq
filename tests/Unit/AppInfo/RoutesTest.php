@@ -220,4 +220,71 @@ class RoutesTest extends TestCase
             $this->assertSame($expectedName, $this->resolve($path), sprintf('GET %s should resolve to %s', $path, $expectedName));
         }
     }//end testResolutionMatrix()
+
+    // -------------------------------------------------------------------------
+    // Durability guard — designer regex vs the frontend's source of truth.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Extract the designer sub-routes ('/builder/:slug/<sub>') declared in the
+     * frontend SPA's single source of truth, src/manifest.json — the runtime
+     * BuilderHost wildcard ('/builder/:slug/:pathMatch(.*)') is excluded, since
+     * it is the standalone runtime, not a designer surface. Each simple :param
+     * segment is substituted with a concrete sample so the result can be
+     * resolved against the backend route matrix.
+     *
+     * @return array<int,string> Concrete designer sub-paths, e.g. 'schemas/sample-id'.
+     */
+    private function manifestDesignerSubRoutes(): array
+    {
+        $manifest  = json_decode((string) file_get_contents(__DIR__ . '/../../../src/manifest.json'), true);
+        $subRoutes = [];
+        foreach (($manifest['pages'] ?? []) as $page) {
+            if (preg_match('#^/builder/:slug/(.+)$#', (string) ($page['route'] ?? ''), $m) !== 1) {
+                continue;
+            }
+
+            // Skip the runtime host's catch-all wildcard (e.g. ':pathMatch(.*)?')
+            // — it is served by the generic builderPath route by design.
+            if (str_contains($m[1], '(') === true) {
+                continue;
+            }
+
+            // Substitute simple :param segments with a concrete sample value.
+            $subRoutes[] = preg_replace('#:[A-Za-z0-9_]+#', 'sample-id', $m[1]);
+        }
+
+        return $subRoutes;
+    }//end manifestDesignerSubRoutes()
+
+    /**
+     * DURABILITY GUARD (route maintenance-trap): every designer surface declared
+     * under /builder/:slug/ in src/manifest.json MUST resolve to
+     * dashboard#builderDesigner (the OpenBuild SPA shell), NOT fall through to
+     * the standalone-runtime builderPath route. Because the expected list is
+     * DERIVED from the manifest rather than hardcoded, adding a designer page
+     * there without extending builderDesigner's `designerPath` requirement in
+     * appinfo/routes.php fails HERE — instead of silently rendering the runtime
+     * at that URL until a user reports it.
+     *
+     * @return void
+     */
+    public function testManifestDesignerRoutesAllResolveToTheDesigner(): void
+    {
+        $subRoutes = $this->manifestDesignerSubRoutes();
+        $this->assertNotEmpty($subRoutes, 'expected at least one /builder/:slug/* designer page in src/manifest.json');
+
+        foreach ($subRoutes as $sub) {
+            $path = '/builder/spectr/' . $sub;
+            $this->assertSame(
+                'dashboard#builderDesigner',
+                $this->resolve($path),
+                sprintf(
+                    'Designer route "%s" (from src/manifest.json) must resolve to the designer shell, not the '
+                    . 'standalone runtime — add it to builderDesigner\'s designerPath requirement in appinfo/routes.php.',
+                    $path
+                )
+            );
+        }
+    }//end testManifestDesignerRoutesAllResolveToTheDesigner()
 }//end class

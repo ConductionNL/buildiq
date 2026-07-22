@@ -306,11 +306,11 @@ class ApplicationPublishControllerTest extends TestCase
     }//end testPublishForbiddenForNonOwner()
 
     /**
-     * destroy() deletes via the service and returns 200 with orphaned list.
+     * Arrange a signed-in owner ('alice') with a deletable app 'u-app'/'demo'.
      *
      * @return void
      */
-    public function testDestroyDeletesForOwner(): void
+    private function arrangeOwnedDeletableApp(): void
     {
         $this->signInAs(uid: 'alice');
         $app = $this->buildEntity(payload: [
@@ -319,15 +319,119 @@ class ApplicationPublishControllerTest extends TestCase
             'permissions' => ['owners' => ['user:alice'], 'editors' => [], 'viewers' => []],
         ]);
         $this->objectService->method('find')->willReturn($app);
+    }//end arrangeOwnedDeletableApp()
+
+    /**
+     * Stub the raw `deleteData` request param destroy() reads (safe-by-default
+     * parsing lives in the controller, not the dispatcher's bool coercion).
+     *
+     * @param mixed $raw The value getParam('deleteData', ...) should return.
+     *
+     * @return void
+     */
+    private function requestDeleteData(mixed $raw): void
+    {
+        $this->request->method('getParam')->willReturnCallback(
+            static fn (string $key, mixed $default=null): mixed => ($key === 'deleteData' ? $raw : $default)
+        );
+    }//end requestDeleteData()
+
+    /**
+     * With no deleteData param the underlying data is preserved: the service is
+     * called with deleteData=false. Positional ->with() constrains all three
+     * args so the third is actually verified.
+     *
+     * @return void
+     */
+    public function testDestroyPreservesDataByDefault(): void
+    {
+        $this->arrangeOwnedDeletableApp();
         $this->deletionService->expects($this->once())
             ->method('deleteApplication')
-            ->with(appUuid: 'u-app', appSlug: 'demo')
+            ->with('u-app', 'demo', false)
             ->willReturn([]);
 
         $response = $this->controller->destroy('u-app');
         self::assertSame(Http::STATUS_OK, $response->getStatus());
         self::assertTrue($response->getData()['deleted']);
-    }//end testDestroyDeletesForOwner()
+    }//end testDestroyPreservesDataByDefault()
+
+    /**
+     * An explicit deleteData=1 opts into a destructive data purge: the service
+     * is called with deleteData=true.
+     *
+     * @return void
+     */
+    public function testDestroyPurgesDataWhenOptedIn(): void
+    {
+        $this->arrangeOwnedDeletableApp();
+        $this->requestDeleteData('1');
+        $this->deletionService->expects($this->once())
+            ->method('deleteApplication')
+            ->with('u-app', 'demo', true)
+            ->willReturn([]);
+
+        $response = $this->controller->destroy('u-app');
+        self::assertSame(Http::STATUS_OK, $response->getStatus());
+        self::assertTrue($response->getData()['deleted']);
+    }//end testDestroyPurgesDataWhenOptedIn()
+
+    /**
+     * The literal string "false" MUST preserve data — a hand-crafted
+     * `?deleteData=false` is a reasonable-looking URL and must never wipe.
+     * (Guards against relying on PHP's stringy-bool coercion.)
+     *
+     * @return void
+     */
+    public function testDestroyTreatsStringFalseAsPreserve(): void
+    {
+        $this->arrangeOwnedDeletableApp();
+        $this->requestDeleteData('false');
+        $this->deletionService->expects($this->once())
+            ->method('deleteApplication')
+            ->with('u-app', 'demo', false)
+            ->willReturn([]);
+
+        $response = $this->controller->destroy('u-app');
+        self::assertSame(Http::STATUS_OK, $response->getStatus());
+    }//end testDestroyTreatsStringFalseAsPreserve()
+
+    /**
+     * Any ambiguous/unexpected value (e.g. "no") preserves data rather than
+     * purging — the safe default for an irreversible action.
+     *
+     * @return void
+     */
+    public function testDestroyTreatsAmbiguousValueAsPreserve(): void
+    {
+        $this->arrangeOwnedDeletableApp();
+        $this->requestDeleteData('no');
+        $this->deletionService->expects($this->once())
+            ->method('deleteApplication')
+            ->with('u-app', 'demo', false)
+            ->willReturn([]);
+
+        $response = $this->controller->destroy('u-app');
+        self::assertSame(Http::STATUS_OK, $response->getStatus());
+    }//end testDestroyTreatsAmbiguousValueAsPreserve()
+
+    /**
+     * The explicit affirmative string "true" opts into the purge.
+     *
+     * @return void
+     */
+    public function testDestroyTreatsStringTrueAsPurge(): void
+    {
+        $this->arrangeOwnedDeletableApp();
+        $this->requestDeleteData('true');
+        $this->deletionService->expects($this->once())
+            ->method('deleteApplication')
+            ->with('u-app', 'demo', true)
+            ->willReturn([]);
+
+        $response = $this->controller->destroy('u-app');
+        self::assertSame(Http::STATUS_OK, $response->getStatus());
+    }//end testDestroyTreatsStringTrueAsPurge()
 
     /**
      * destroy() is forbidden for a non-owner and never calls the service.

@@ -93,27 +93,33 @@ class TemplateSeedService
     }//end __construct()
 
     /**
-     * Seed each bundled ApplicationTemplate fixture whose slug is not already
-     * present. Idempotent by slug — never overwrites an existing record.
+     * Seed each bundled ApplicationTemplate fixture. A slug that is not present
+     * is created; an already-seeded slug is re-written in place only when the
+     * bundled fixture carries a newer `version` (semver) — so curated template
+     * improvements propagate to upgraded installs instead of being frozen at
+     * the first-seeded version. Admin-created rows (isSeeded !== true) are never
+     * touched. A slug at or below the stored version is skipped (idempotent).
      *
-     * @return array{seeded:int,skipped:int,errors:array<int,string>,deferred?:bool} Per-run counts and
-     *         collected errors. `deferred` is set when the register/schema is not provisioned yet
-     *         (install ordering) — the caller re-runs on the next repair rather than failing the
-     *         install. It was returned but never declared, so SeedApplicationTemplates' check for it
-     *         read as statically impossible.
+     * @return array{seeded:int,updated:int,skipped:int,errors:array<int,string>,deferred?:bool} Per-run
+     *         counts and collected errors. `seeded` counts new rows, `updated` counts in-place version
+     *         upgrades, `skipped` counts up-to-date/admin rows. `deferred` is set when the register/schema
+     *         is not provisioned yet (install ordering) — the caller re-runs on the next repair rather than
+     *         failing the install. It was returned but never declared, so SeedApplicationTemplates' check
+     *         for it read as statically impossible.
      *
      * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-11
      */
     public function seed(): array
     {
         $seeded  = 0;
+        $updated = 0;
         $skipped = 0;
         $errors  = [];
 
         $fixturesDir = $this->appManager->getAppPath('openbuild').'/lib/Settings/templates';
         if (is_dir($fixturesDir) === false) {
             $errors[] = 'Template fixtures directory missing: '.$fixturesDir;
-            return ['seeded' => $seeded, 'skipped' => $skipped, 'errors' => $errors];
+            return ['seeded' => $seeded, 'updated' => $updated, 'skipped' => $skipped, 'errors' => $errors];
         }
 
         foreach (self::TEMPLATE_SLUGS as $slug) {
@@ -136,24 +142,51 @@ class TemplateSeedService
                 continue;
             }
 
-            if ($this->findBySlug(slug: $slug) !== null) {
-                ++$skipped;
-                continue;
+            // Upsert semantics: a brand-new slug is created; an already-seeded
+            // slug is re-written in place ONLY when the bundled fixture carries a
+            // newer version, so curated template improvements reach upgraded
+            // installs instead of being frozen at their first-seeded version.
+            $existing     = $this->findBySlug(slug: $slug);
+            $existingUuid = null;
+            if ($existing !== null) {
+                if ($this->fixtureIsNewer(fixture: $data, stored: $existing) === false) {
+                    ++$skipped;
+                    continue;
+                }
+
+                $existingUuid = (string) ($existing['id'] ?? ($existing['uuid'] ?? ($existing['@self']['id'] ?? '')));
+                if ($existingUuid === '') {
+                    // Cannot target the existing row for an in-place update;
+                    // skip rather than risk creating a duplicate-slug row.
+                    $this->logger->warning(
+                        'OpenBuild: cannot resolve uuid for existing template — skipping update',
+                        ['slug' => $slug]
+                    );
+                    ++$skipped;
+                    continue;
+                }
             }
 
             try {
                 // Runs as a system/anonymous or admin user which cannot satisfy
                 // the ApplicationTemplate schema's create:[admin] guard from the
                 // repair context — write in system context (OR RBAC +
-                // multitenancy bypassed), matching the repair step.
+                // multitenancy bypassed), matching the repair step. Passing the
+                // existing uuid updates the stored row in place; omitting it
+                // (uuid null) creates a new row.
                 $this->objectService->saveObject(
                     object: $data,
                     register: 'openbuild',
                     schema: 'application-template',
+                    uuid: $existingUuid,
                     _rbac: false,
                     _multitenancy: false
                 );
-                ++$seeded;
+                if ($existing === null) {
+                    ++$seeded;
+                } else {
+                    ++$updated;
+                }
             } catch (DoesNotExistException $e) {
                 // The openbuild register / application-template schema is not
                 // provisioned yet — the configuration import (InitializeSettings)
@@ -161,11 +194,22 @@ class TemplateSeedService
                 // seeding rather than failing the install: a subsequent
                 // `occ maintenance:repair` (or the admin re-import) runs the
                 // seeding again once the register exists. Non-fatal by design.
+                //
+                // Returning (not `continue`) is deliberate: every slug targets
+                // the SAME hardcoded register+schema below, so a missing schema
+                // fails identically for all of them — deferring the whole batch
+                // is correct, and the `deferred` flag is how the caller knows to
+                // re-run rather than falsely reporting "seeding complete".
+                // NOTE: if fixtures ever target heterogeneous schemas (i.e. the
+                // register/schema is read per-fixture instead of hardcoded),
+                // revisit this — a per-slug `continue` that still surfaces
+                // `deferred` would then be needed so one missing schema does not
+                // hide seedable slugs.
                 $this->logger->warning(
                     'OpenBuild: register/application-template schema not available yet — deferring template seeding',
                     ['slug' => $slug, 'exception' => $e->getMessage()]
                 );
-                return ['seeded' => $seeded, 'skipped' => $skipped, 'errors' => [], 'deferred' => true];
+                return ['seeded' => $seeded, 'updated' => $updated, 'skipped' => $skipped, 'errors' => [], 'deferred' => true];
             } catch (Throwable $e) {
                 $this->logger->error(
                     'OpenBuild: failed to seed template',
@@ -175,8 +219,42 @@ class TemplateSeedService
             }//end try
         }//end foreach
 
-        return ['seeded' => $seeded, 'skipped' => $skipped, 'errors' => $errors];
+        return ['seeded' => $seeded, 'updated' => $updated, 'skipped' => $skipped, 'errors' => $errors];
     }//end seed()
+
+    /**
+     * Decide whether a bundled fixture should overwrite the stored template row.
+     *
+     * True only when the stored row is one we seeded (isSeeded) AND the fixture
+     * version is strictly newer than the stored version. A stored row with no
+     * version predates versioning and is treated as older, so the first
+     * versioned fixture upgrades it. A fixture with no version is never
+     * propagated (nothing to compare — leave the existing row untouched).
+     *
+     * @param array<string,mixed> $fixture The bundled fixture data.
+     * @param array<string,mixed> $stored  The existing stored template row.
+     *
+     * @return bool True when the stored row should be updated from the fixture.
+     */
+    private function fixtureIsNewer(array $fixture, array $stored): bool
+    {
+        // Never clobber a template an admin created themselves.
+        if (($stored['isSeeded'] ?? false) !== true) {
+            return false;
+        }
+
+        $fixtureVersion = (string) ($fixture['version'] ?? '');
+        if ($fixtureVersion === '') {
+            return false;
+        }
+
+        $storedVersion = (string) ($stored['version'] ?? '');
+        if ($storedVersion === '') {
+            return true;
+        }
+
+        return version_compare($fixtureVersion, $storedVersion, '>');
+    }//end fixtureIsNewer()
 
     /**
      * Count how many of the bundled template slugs already exist in OpenRegister.
