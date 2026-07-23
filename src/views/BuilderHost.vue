@@ -38,6 +38,7 @@
 			v-else
 			:key="cacheKey"
 			:app-id="appId"
+			:ai-companion="true"
 			:bundled-manifest="placeholderManifest"
 			:registry="runtimeRegistry"
 			:data-sources-loader="dataSourcesLoader"
