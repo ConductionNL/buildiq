@@ -155,7 +155,7 @@
       "id": 11,
       "title": "Add dompurify dependency",
       "description": "Add dompurify as a pinned dependency; confirm it resolves and the SBOM/CI picks it up.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "docudesk-document-templates",
       "acceptance_criteria": [
         "dompurify present in package.json + lockfile"
@@ -169,7 +169,7 @@
       "id": 12,
       "title": "Sanitize Docudesk preview",
       "description": "Route DocumentTemplateAttachmentDialog.vue previewContent through DOMPurify.sanitize (full HTML profile) before the v-html binding.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "docudesk-document-templates",
       "acceptance_criteria": [
         "injected script/iframe neutralized",
@@ -183,7 +183,7 @@
       "id": 13,
       "title": "Sanitize author SVG",
       "description": "Sanitize the verbatim-<svg> branch in iconCatalogues.js::resolveAppIcon with the SVG profile, before preview and before persistence.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "app-icon-management",
       "acceptance_criteria": [
         "malicious SVG sanitized before preview",
@@ -197,7 +197,7 @@
       "id": 14,
       "title": "XSS sanitization tests (vitest)",
       "description": "Vitest: an injected <script>/onerror in a Docudesk preview and in an author SVG is neutralized; benign markup/SVG preserved.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "docudesk-document-templates",
       "acceptance_criteria": [
         "script neutralized in preview + svg",

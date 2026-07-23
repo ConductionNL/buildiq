@@ -26,6 +26,7 @@
 
 import * as mdiJs from '@mdi/js'
 import { fromMdiJs, fromOpenGemeenten } from '@conduction/nextcloud-vue'
+import DOMPurify from 'dompurify'
 import openGemeentenIcons from './openGemeentenIcons.json'
 
 /**
@@ -106,8 +107,10 @@ export function resolveAppIcon(value, { dark = false } = {}) {
 	}
 	const trimmed = value.trim()
 	if (trimmed.startsWith('<svg')) {
-		// Raw SVG (custom editor / uploaded file) — the author owns its styling.
-		return trimmed
+		// Raw SVG (custom editor / uploaded file) — sanitize before use so an
+		// author-supplied <script>/event-handler cannot execute in a preview or
+		// once persisted and served (harden-xss-dos-csrf).
+		return DOMPurify.sanitize(trimmed, { USE_PROFILES: { svg: true, svgFilters: true } })
 	}
 	const glyph = lookupGlyph(trimmed)
 	if (!glyph) {

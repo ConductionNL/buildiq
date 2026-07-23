@@ -30,10 +30,10 @@ so the checkbox count stays within the supervisor cap.
 
 ## 4. XSS — sanitize the sinks
 
-- [ ] 4.1 Add `dompurify` as a dependency (pin; confirm it resolves and the SBOM/CI picks it up).
-- [ ] 4.2 Route `DocumentTemplateAttachmentDialog.vue` `previewContent` through `DOMPurify.sanitize(...)` (full HTML profile) before the `v-html` binding.
-- [ ] 4.3 Sanitize the verbatim-`<svg>` branch in `iconCatalogues.js::resolveAppIcon` with the SVG profile, before preview and before persistence.
-- [ ] 4.4 Vitest: an injected `<script>`/`onerror` in a Docudesk preview and in an author SVG is neutralized; benign markup/SVG is preserved.
+- [x] 4.1 Add `dompurify` as a dependency (pin; confirm it resolves and the SBOM/CI picks it up).
+- [x] 4.2 Route `DocumentTemplateAttachmentDialog.vue` `previewContent` through `DOMPurify.sanitize(...)` (full HTML profile) before the `v-html` binding.
+- [x] 4.3 Sanitize the verbatim-`<svg>` branch in `iconCatalogues.js::resolveAppIcon` with the SVG profile, before preview and before persistence.
+- [x] 4.4 Vitest: an injected `<script>`/`onerror` in a Docudesk preview and in an author SVG is neutralized; benign markup/SVG is preserved.
 
 ## 5. Wrap-up
 

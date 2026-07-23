@@ -97,6 +97,7 @@
 import { NcDialog, NcButton, NcSelect, NcTextField } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import DOMPurify from 'dompurify'
 import { DOCUMENT_FORMATS } from '../services/manifestValidation/documentAttachments.js'
 
 export default {
@@ -305,7 +306,11 @@ export default {
 			try {
 				const url = generateUrl(`/apps/docudesk/api/templates/${this.selectedTemplateId}/preview`)
 				const { data } = await axios.post(url, {})
-				this.previewContent = (data && (data.html || data.content || data.preview)) || ''
+				const raw = (data && (data.html || data.content || data.preview)) || ''
+				// Sanitize before the v-html binding: the preview is authored in a
+				// (possibly shared) Docudesk template and renders in this user's
+				// session, so it is an untrusted cross-user XSS sink (harden-xss-dos-csrf).
+				this.previewContent = DOMPurify.sanitize(raw)
 			} catch {
 				this.previewError = true
 			} finally {
