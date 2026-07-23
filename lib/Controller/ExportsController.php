@@ -186,9 +186,10 @@ class ExportsController extends Controller
     /**
      * Authorize the caller for an ExportJob UUID.
      *
-     * Looks up the ExportJob record and verifies the `submittedBy` field
-     * matches the calling user's UID, or the caller is an NC admin.
-     * Existence alone is not sufficient authorisation (IDOR, issue #158).
+     * Looks up the ExportJob record and verifies the persisted `requestedBy`
+     * field (fallback `@self.owner`) matches the calling user's UID, or the
+     * caller is an NC admin. Existence alone is not sufficient authorisation
+     * (IDOR, issue #158).
      *
      * @param string $jobUuid ExportJob UUID.
      *
@@ -223,7 +224,7 @@ class ExportsController extends Controller
                 return false;
             }
 
-            // Verify the job was submitted by this user.
+            // Verify the job was requested by this user.
             if (is_array($found) === true) {
                 $job = $found;
             } else if (method_exists($found, 'jsonSerialize') === true) {
@@ -232,8 +233,13 @@ class ExportsController extends Controller
                 $job = (array) $found;
             }
 
-            $submittedBy = (string) ($job['submittedBy'] ?? ($job['@self']['owner'] ?? ''));
-            return $submittedBy === $uid;
+            // Read the requester identity actually persisted on the record
+            // (`requestedBy`, set by ExportJobService::queue), falling back to the
+            // OR owner. The previous `submittedBy` key was never written, so the
+            // check silently always fell through to `@self.owner`
+            // (harden-rules-authz-and-audit-parity, L8).
+            $requestedBy = (string) ($job['requestedBy'] ?? ($job['@self']['owner'] ?? ''));
+            return $requestedBy !== '' && $requestedBy === $uid;
         } catch (\Throwable $e) {
             $this->logger->debug('OpenBuild export: job authz lookup failed: '.$e->getMessage());
             return false;

@@ -57,7 +57,7 @@
       "id": 4,
       "title": "Export download authz reads requestedBy",
       "description": "In ExportsController::isAuthorisedForJob read requestedBy ?? @self.owner instead of the never-written submittedBy.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "openbuild-exporter",
       "acceptance_criteria": [
         "persisted requester authorized",
@@ -71,7 +71,7 @@
       "id": 5,
       "title": "Export download authz test",
       "description": "Test the persisted requestedBy user may download and a stranger is denied (404-masked).",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "openbuild-exporter",
       "acceptance_criteria": [
         "requester allowed",

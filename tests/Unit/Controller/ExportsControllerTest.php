@@ -184,7 +184,9 @@ final class ExportsControllerTest extends TestCase
              */
             public function find(string $id): array
             {
-                return ['uuid' => $id, 'submittedBy' => 'alice'];
+                // The record persists `requestedBy` (not the never-written
+                // `submittedBy`); download authz must key on it (L8).
+                return ['uuid' => $id, 'requestedBy' => 'alice'];
             }//end find()
         };
 

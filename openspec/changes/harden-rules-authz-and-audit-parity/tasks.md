@@ -12,8 +12,8 @@ so the checkbox count stays within the supervisor cap.
 
 ## 2. L8 — export download authorization field mismatch
 
-- [ ] 2.1 In `ExportsController::isAuthorisedForJob`, read `requestedBy ?? @self.owner` (the persisted identity) instead of the never-written `submittedBy`.
-- [ ] 2.2 Test: the persisted `requestedBy` user may download; a stranger is denied (404-masked).
+- [x] 2.1 In `ExportsController::isAuthorisedForJob`, read `requestedBy ?? @self.owner` (the persisted identity) instead of the never-written `submittedBy`.
+- [x] 2.2 Test: the persisted `requestedBy` user may download; a stranger is denied (404-masked).
 
 ## 3. L2 — MCP admin-bypass audit-trail parity
 
