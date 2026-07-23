@@ -1,0 +1,184 @@
+{
+  "change": "harden-rules-authz-and-audit-parity",
+  "project": "openbuild",
+  "repo": "ConductionNL/openbuild",
+  "base_branch": "development",
+  "feature_branch": "feature/4/harden-rules-authz-and-audit-parity",
+  "created": "2026-07-23",
+  "tracking_issue": 4,
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Resolve rule-sets via searchObjects (RBAC/org scoped)",
+      "description": "Replace raw findAll rule-set/decision-table/test-case resolution with searchObjects in RuleEngineService (loadBundle/findMany) and RulesController (findRuleSet/findTestCases).",
+      "status": "done",
+      "spec_ref": "business-rules-engine",
+      "acceptance_criteria": [
+        "out-of-scope slug resolves to not-found on evaluate/schema/test-all",
+        "in-scope rule-set still evaluates unchanged"
+      ],
+      "files_likely_affected": [
+        "lib/Service/RuleEngineService.php",
+        "lib/Controller/RulesController.php"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Correct false 'no IDOR' docblocks",
+      "description": "Correct the isolation/no-IDOR docblocks in RuleEngineService::loadBundle, RulesController, and appinfo/routes.php to state the real org + schema-RBAC boundary.",
+      "status": "done",
+      "spec_ref": "business-rules-engine",
+      "acceptance_criteria": [
+        "docblocks describe org + schema-RBAC scope",
+        "no untrue 'foreign slug -> 404 / no IDOR' wording remains"
+      ],
+      "files_likely_affected": [
+        "lib/Service/RuleEngineService.php",
+        "lib/Controller/RulesController.php",
+        "appinfo/routes.php"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "M1 authorization tests",
+      "description": "Tests that an out-of-scope rule-set slug resolves to not-found on evaluate/schema/test-all and an in-scope rule-set still evaluates.",
+      "status": "done",
+      "spec_ref": "business-rules-engine",
+      "acceptance_criteria": [
+        "foreign-scope slug denied on all three routes",
+        "in-scope evaluation unchanged"
+      ],
+      "files_likely_affected": [
+        "tests/Unit/Service/RuleEngineServiceTest.php",
+        "tests/Unit/Controller/RulesControllerTest.php"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Export download authz reads requestedBy",
+      "description": "In ExportsController::isAuthorisedForJob read requestedBy ?? @self.owner instead of the never-written submittedBy.",
+      "status": "pending",
+      "spec_ref": "openbuild-exporter",
+      "acceptance_criteria": [
+        "persisted requester authorized",
+        "no reliance on accidental @self.owner-only fallback"
+      ],
+      "files_likely_affected": [
+        "lib/Controller/ExportsController.php"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Export download authz test",
+      "description": "Test the persisted requestedBy user may download and a stranger is denied (404-masked).",
+      "status": "pending",
+      "spec_ref": "openbuild-exporter",
+      "acceptance_criteria": [
+        "requester allowed",
+        "stranger denied"
+      ],
+      "files_likely_affected": [
+        "tests/Unit/Controller/ExportsControllerTest.php"
+      ]
+    },
+    {
+      "id": 6,
+      "title": "MCP admin-bypass audit-trail parity",
+      "description": "Inject AuditTrailMapper into AbstractToolHandler and record the admin bypass via recordAdminBypass (fail-soft); same for CopilotService.",
+      "status": "pending",
+      "spec_ref": "openbuild-rbac",
+      "acceptance_criteria": [
+        "MCP admin bypass writes an audit-trail entry",
+        "write failure fails soft (logged, non-aborting)"
+      ],
+      "files_likely_affected": [
+        "lib/Mcp/Handler/AbstractToolHandler.php",
+        "lib/Service/CopilotService.php"
+      ]
+    },
+    {
+      "id": 7,
+      "title": "MCP audit-trail test",
+      "description": "Test that an MCP admin bypass writes an audit-trail entry.",
+      "status": "pending",
+      "spec_ref": "openbuild-rbac",
+      "acceptance_criteria": [
+        "audit-trail entry created on MCP bypass"
+      ],
+      "files_likely_affected": [
+        "tests/Unit/Mcp/Handler/WriteHandlerValidationTest.php"
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Group-aware insights role check",
+      "description": "Make ApplicationInsightsService::callerInAnyRole honour group: principals by reusing PermissionResolver::matchesCaller.",
+      "status": "pending",
+      "spec_ref": "application-insights",
+      "acceptance_criteria": [
+        "group-only-authorized caller granted",
+        "unmatched caller denied (fail-closed)"
+      ],
+      "files_likely_affected": [
+        "lib/Service/ApplicationInsightsService.php"
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Insights group test",
+      "description": "Test a group-only-authorized caller is granted insights and an unmatched caller is denied.",
+      "status": "pending",
+      "spec_ref": "application-insights",
+      "acceptance_criteria": [
+        "group caller granted",
+        "unmatched denied"
+      ],
+      "files_likely_affected": [
+        "tests/Unit/Service/ApplicationInsightsServiceTest.php"
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Icon documentation honesty",
+      "description": "Correct the IconController docblock/Cache-Control rationale to state session-only enforcement (or add the claimed per-app viewer check).",
+      "status": "pending",
+      "spec_ref": "app-icon-management",
+      "acceptance_criteria": [
+        "docblock states actual (session-only) enforcement"
+      ],
+      "files_likely_affected": [
+        "lib/Controller/IconController.php"
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Register change in capability specs",
+      "description": "Add this change to the five capability specs' OpenSpec changes list and set status in-progress.",
+      "status": "pending",
+      "spec_ref": null,
+      "acceptance_criteria": [
+        "five specs list this change and are in-progress"
+      ],
+      "files_likely_affected": [
+        "openspec/specs/business-rules-engine/spec.md",
+        "openspec/specs/openbuild-rbac/spec.md",
+        "openspec/specs/openbuild-exporter/spec.md",
+        "openspec/specs/application-insights/spec.md",
+        "openspec/specs/app-icon-management/spec.md"
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Run gates + lint + unit suite",
+      "description": "Run the Hydra mechanical gates, PHP lint (phpcs/psalm/phpstan), and PHP unit suite; confirm green.",
+      "status": "pending",
+      "spec_ref": null,
+      "acceptance_criteria": [
+        "gates green",
+        "no lint regressions",
+        "unit suite green"
+      ],
+      "files_likely_affected": []
+    }
+  ]
+}

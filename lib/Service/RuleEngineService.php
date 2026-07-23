@@ -271,9 +271,12 @@ class RuleEngineService
     /**
      * Load (and cache) a RuleSet bundle: the RuleSet plus its tables/rules.
      *
-     * Enforces multi-tenant isolation implicitly — the ObjectService query runs
-     * under the current user's tenant scope, so a slug owned by another tenant
-     * resolves to an empty result (treated as not found).
+     * Resolution is scoped to the caller's authorization: {@see findMany()} uses
+     * OpenRegister `searchObjectsBySlug`, which applies the caller's schema-RBAC
+     * and organisation scope. A rule-set the caller cannot access resolves to an
+     * empty result (treated as not found). NOTE: this is organisation + schema-RBAC
+     * scope, NOT per-owner isolation — a same-organisation caller with schema read
+     * access can still resolve a rule-set by slug.
      *
      * @param string      $slug    The RuleSet slug.
      * @param string|null $version Optional pinned version.
@@ -443,18 +446,16 @@ class RuleEngineService
      */
     private function findMany(string $schema, array $filters, ?int $limit=null): array
     {
-        $config = [
-            'filters' => array_merge(['register' => self::REGISTER_SLUG, 'schema' => $schema], $filters),
-        ];
-        if ($limit !== null) {
-            $config['limit'] = $limit;
-        }
-
+        // Authorization-scoped resolution (harden-rules-authz-and-audit-parity,
+        // M1): searchObjectsBySlug applies the caller's RBAC + organisation scope,
+        // so a rule-set / decision-table / rule the caller is not authorised to
+        // access resolves to an empty result — it is never read or evaluated by
+        // slug via an unscoped findAll.
         try {
-            $results = $this->objectService->findAll(config: $config);
+            $results = $this->objectService->searchObjectsBySlug(self::REGISTER_SLUG, $schema, $filters);
         } catch (Throwable $e) {
             $this->logger->warning(
-                'OpenBuild: rule-engine findAll failed',
+                'OpenBuild: rule-engine searchObjects failed',
                 ['schema' => $schema, 'exception' => $e->getMessage()]
             );
             return [];
@@ -467,6 +468,12 @@ class RuleEngineService
         $normalised = [];
         foreach ($results as $row) {
             $normalised[] = $this->normalise(object: $row);
+        }
+
+        // The slug variant has no server-side limit param; apply the caller's
+        // cap (used by findOne) client-side.
+        if ($limit !== null && count($normalised) > $limit) {
+            $normalised = array_slice($normalised, 0, $limit);
         }
 
         return $normalised;

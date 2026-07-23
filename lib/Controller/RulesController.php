@@ -11,9 +11,11 @@
  *   - POST /api/rules/{ruleSetSlug}/test-all   — run every TestCase for the RuleSet
  *
  * All endpoints carry `#[NoAdminRequired]` per ADR-005: any authenticated user
- * may evaluate a RuleSet, but multi-tenant isolation is enforced server-side —
- * the RuleEngineService resolves the RuleSet under the caller's tenant scope, so
- * a slug owned by another tenant resolves to a 404 (no IDOR). The endpoints are
+ * may evaluate a RuleSet within their authorization scope. Resolution runs through
+ * OpenRegister `searchObjectsBySlug`, which applies the caller's schema-RBAC and
+ * organisation scope — a RuleSet outside that scope resolves to a 404. NOTE: this
+ * is organisation + schema-RBAC scope, NOT per-owner isolation: a same-organisation
+ * caller with schema read access can resolve any RuleSet by slug. The endpoints are
  * NOT public; an unauthenticated request is rejected by the NC middleware before
  * reaching the controller. No secrets are returned; errors are uniform envelopes
  * with no stack traces.
@@ -292,24 +294,22 @@ class RulesController extends Controller
      */
     private function query(string $schema, array $filters, ?int $limit): array
     {
-        $config = [
-            'filters' => array_merge(
-                ['register' => RuleEngineService::REGISTER_SLUG, 'schema' => $schema],
-                $filters
-            ),
-        ];
-        if ($limit !== null) {
-            $config['limit'] = $limit;
-        }
-
+        // Authorization-scoped resolution (harden-rules-authz-and-audit-parity,
+        // M1): searchObjectsBySlug applies the caller's schema-RBAC + organisation
+        // scope, so a rule-set / test-case the caller cannot access resolves to an
+        // empty result rather than being read by slug via an unscoped findAll.
         try {
-            $results = $this->objectService->findAll(config: $config);
+            $results = $this->objectService->searchObjectsBySlug(RuleEngineService::REGISTER_SLUG, $schema, $filters);
         } catch (Throwable $e) {
             $this->logger->warning(
                 'OpenBuild: RulesController query failed',
                 ['schema' => $schema, 'exception' => $e->getMessage()]
             );
             return [];
+        }
+
+        if (is_array($results) === true && $limit !== null && count($results) > $limit) {
+            $results = array_slice($results, 0, $limit);
         }
 
         if (is_array($results) === false) {
