@@ -15,9 +15,9 @@ configured. Two entry points share this contract: the creation wizard's
 "Generate with AI" flow and a chat-style copilot panel in the page
 designer.
 
-**OpenSpec changes**: [ai-copilot-prompt-to-app](../../changes/archive/2026-07-11-ai-copilot-prompt-to-app/) _(archived 2026-07-11)_
+**OpenSpec changes**: [ai-copilot-prompt-to-app](../../changes/archive/2026-07-11-ai-copilot-prompt-to-app/) _(archived 2026-07-11)_, [agent-workspace](../../changes/agent-workspace/)
 
-**Status**: done
+**Status**: in-progress
 
 ## Requirements
 ### Requirement: Copilot availability is probed and the feature degrades gracefully

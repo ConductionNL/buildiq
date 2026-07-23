@@ -1,8 +1,12 @@
 ---
-status: done
+status: in-progress
 ---
 
 # openbuild-template-catalogue Specification
+
+**OpenSpec changes**: [component-blocks](../../changes/component-blocks/)
+
+**Status**: in-progress
 
 ## Purpose
 
