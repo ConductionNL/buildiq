@@ -142,6 +142,7 @@ class ApplicationInsightsService
         private readonly RegisterMapper $registerMapper,
         ICacheFactory $cacheFactory,
         private readonly LoggerInterface $logger,
+        private readonly ?PermissionResolver $permissionResolver=null,
     ) {
         $this->cache = $cacheFactory->createDistributed('openbuild_insights');
     }//end __construct()
@@ -636,19 +637,17 @@ class ApplicationInsightsService
             return false;
         }
 
-        $callerUid = $caller->getUID();
-
         if ($isProduction === true) {
             return $this->callerInAnyRole(
                 permissions: $permissions,
-                callerUid: $callerUid,
+                caller: $caller,
                 roles: ['owners', 'editors', 'viewers']
             );
         }
 
         return $this->callerInAnyRole(
             permissions: $permissions,
-            callerUid: $callerUid,
+            caller: $caller,
             roles: ['owners', 'editors']
         );
     }//end isAuthorised()
@@ -665,8 +664,25 @@ class ApplicationInsightsService
      *
      * @return bool True when the caller is found in any of the listed buckets.
      */
-    private function callerInAnyRole(array $permissions, string $callerUid, array $roles): bool
+    private function callerInAnyRole(array $permissions, IUser $caller, array $roles): bool
     {
+        // Delegate to the shared PermissionResolver so insights authorization is
+        // consistent with every other guard — including `group:` principals,
+        // which the previous user-only matcher ignored (fail-closed) —
+        // (harden-rules-authz-and-audit-parity, L9). No admin bypass: insights
+        // access still requires an explicit role match.
+        if ($this->permissionResolver !== null) {
+            return $this->permissionResolver->matchesCaller(
+                permissions: $permissions,
+                caller: $caller,
+                userGroups: $this->permissionResolver->resolveUserGroups($caller),
+                allowAdminBypass: false,
+                roles: $roles
+            );
+        }
+
+        // Fallback (no resolver injected): user-principal match only.
+        $callerUid = $caller->getUID();
         foreach ($roles as $role) {
             $bucket = ($permissions[$role] ?? []);
             if (is_array($bucket) === false) {

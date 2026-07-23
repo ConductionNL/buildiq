@@ -113,7 +113,7 @@
       "id": 8,
       "title": "Group-aware insights role check",
       "description": "Make ApplicationInsightsService::callerInAnyRole honour group: principals by reusing PermissionResolver::matchesCaller.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "application-insights",
       "acceptance_criteria": [
         "group-only-authorized caller granted",
@@ -127,7 +127,7 @@
       "id": 9,
       "title": "Insights group test",
       "description": "Test a group-only-authorized caller is granted insights and an unmatched caller is denied.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "application-insights",
       "acceptance_criteria": [
         "group caller granted",
@@ -141,7 +141,7 @@
       "id": 10,
       "title": "Icon documentation honesty",
       "description": "Correct the IconController docblock/Cache-Control rationale to state session-only enforcement (or add the claimed per-app viewer check).",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "app-icon-management",
       "acceptance_criteria": [
         "docblock states actual (session-only) enforcement"

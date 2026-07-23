@@ -22,12 +22,12 @@ so the checkbox count stays within the supervisor cap.
 
 ## 4. L9 — insights role check honours group principals
 
-- [ ] 4.1 Make `ApplicationInsightsService::callerInAnyRole` handle `group:` principals by reusing `PermissionResolver::matchesCaller`.
-- [ ] 4.2 Test: a group-only-authorized caller is granted insights; an unmatched caller is denied.
+- [x] 4.1 Make `ApplicationInsightsService::callerInAnyRole` handle `group:` principals by reusing `PermissionResolver::matchesCaller`.
+- [x] 4.2 Test: a group-only-authorized caller is granted insights; an unmatched caller is denied.
 
 ## 5. L4 — icon endpoint documentation honesty
 
-- [ ] 5.1 Correct the `IconController` docblock / `Cache-Control` rationale to state session-only enforcement (or add the claimed per-app viewer check).
+- [x] 5.1 Correct the `IconController` docblock / `Cache-Control` rationale to state session-only enforcement (or add the claimed per-app viewer check).
 
 ## 6. Wrap-up
 
