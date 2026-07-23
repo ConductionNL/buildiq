@@ -310,9 +310,9 @@ export default {
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
-		routeSlug() {
-			this.resolveVersion()
-			this.load()
+		async routeSlug() {
+			await this.resolveVersion()
+			await this.load()
 		},
 		/**
 		 * A `?_version=` switch must reload the manifest from the newly
@@ -321,14 +321,17 @@ export default {
 		 * version and never called `load()`, so the displayed/edited
 		 * manifest silently kept showing the previous version after a
 		 * version switch. `load()` reads `this.applicationVersion`, so
-		 * `resolveVersion()` must run first.
+		 * `resolveVersion()` must run first — and be AWAITED (#174): calling the
+		 * two in order without awaiting satisfied the sentence above only on
+		 * paper, since resolveVersion() returned while its fetch was still in
+		 * flight.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-004
 		 */
-		versionSlug() {
-			this.resolveVersion()
-			this.load()
+		async versionSlug() {
+			await this.resolveVersion()
+			await this.load()
 		},
 	},
 
@@ -337,12 +340,16 @@ export default {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 	 */
-	created() {
+	async created() {
 		// REQ-OBVR-004: resolve the active ApplicationVersion on created.
 		// NOTE: we do NOT call $router.replace() or $router.push() here — that
 		// would strip ?_version= and break bookmarkability (REQ-OBVR-008).
-		this.resolveVersion()
-		this.load()
+		//
+		// AWAITED, in this order, deliberately (#174): load() seeds the editor
+		// manifest from the resolved version exactly once, so it must not start
+		// until resolveVersion() has actually settled.
+		await this.resolveVersion()
+		await this.load()
 		// REQ-PWA-006: soft-check Procest so the Workflows section degrades
 		// gracefully when it is absent.
 		const status = useAppStatus('procest')
@@ -421,9 +428,9 @@ export default {
 		 * @return {void}
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
-		resolveVersion() {
+		async resolveVersion() {
 			this.versionError = null
-			const { applicationVersion, loading, error } = useApplicationVersion(
+			const { applicationVersion, loading, error, ready } = useApplicationVersion(
 				this.routeSlug,
 				this.versionSlug,
 			)
@@ -440,6 +447,16 @@ export default {
 					this.versionError = error.value
 				}
 			})
+			// AWAIT the in-flight fetch (#174). Every caller pairs this with load(),
+			// which seeds the editor manifest FROM `applicationVersion` exactly once
+			// — so returning before it settles left the designer showing "No pages
+			// yet" for an app whose manifest had pages, and offering to Save that
+			// emptiness over the real one. The watchers above keep the value fresh
+			// for later changes; this makes the FIRST read correct.
+			await ready
+			this.applicationVersion = applicationVersion.value
+			this.versionLoading = false
+			this.versionError = error.value
 		},
 
 		/**
