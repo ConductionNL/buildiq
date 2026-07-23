@@ -147,4 +147,47 @@ describe('FormPageEditor', () => {
 		expect(next.fields).toHaveLength(1)
 		expect(next.fields[0].key).toBe('name')
 	})
+
+	// public-forms-runtime: "Public access" fieldset.
+	describe('public access block', () => {
+		it('checkbox is unchecked when config.public is absent', () => {
+			const wrapper = mountEditor({})
+			const checkbox = wrapper.find('input[type="checkbox"]')
+			expect(checkbox.element.checked).toBe(false)
+		})
+
+		it('checking the box sets config.public.enabled = true', async () => {
+			const wrapper = mountEditor({})
+			wrapper.vm.setPublicEnabled(true)
+			await wrapper.vm.$nextTick()
+			const next = wrapper.emitted('update:config')[0][0]
+			expect(next.public.enabled).toBe(true)
+		})
+
+		it('extra fields (mode / prefill / requireEmailVerification) only render when enabled', async () => {
+			const disabled = mountEditor({})
+			expect(disabled.text()).not.toContain('Default link mode')
+
+			const enabled = mountEditor({ public: { enabled: true } })
+			expect(enabled.text()).toContain('Default link mode')
+		})
+
+		it('setAllowedPrefillFields parses a comma-separated list, trimming and dropping blanks', async () => {
+			const wrapper = mountEditor({ public: { enabled: true } })
+			wrapper.vm.setAllowedPrefillFields(' postcode ,, straat ,huisnummer')
+			await wrapper.vm.$nextTick()
+			const next = wrapper.emitted('update:config')[0][0]
+			expect(next.public.allowedPrefillFields).toEqual(['postcode', 'straat', 'huisnummer'])
+		})
+
+		it('updatePublic preserves other public keys when patching one', async () => {
+			const wrapper = mountEditor({ public: { enabled: true, mode: 'submit' } })
+			wrapper.vm.updatePublic('requireEmailVerification', true)
+			await wrapper.vm.$nextTick()
+			const next = wrapper.emitted('update:config')[0][0]
+			expect(next.public.enabled).toBe(true)
+			expect(next.public.mode).toBe('submit')
+			expect(next.public.requireEmailVerification).toBe(true)
+		})
+	})
 })

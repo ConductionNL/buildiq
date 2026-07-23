@@ -35,6 +35,7 @@ use OCA\OpenBuild\Service\AppNavigationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IGroupManager;
@@ -44,6 +45,8 @@ use OCP\IUserSession;
 
 /**
  * Controller for the main OpenBuild dashboard page.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
  */
 class DashboardController extends Controller
 {
@@ -231,6 +234,35 @@ class DashboardController extends Controller
     {
         return $this->catchAll();
     }//end builderDesigner()
+
+    /**
+     * Serve the anonymous public-form runtime shell for a share token
+     * (public-forms-runtime).
+     *
+     * Deliberately a SEPARATE template + JS entry from `builder` — the
+     * standalone virtual-app runtime assumes an authenticated NC session
+     * (top-bar branding, Pinia auth-store-adjacent composables). This route
+     * carries NO session assumptions: `#[PublicPage]` + `#[NoCSRFRequired]`
+     * (no NC session exists to carry a CSRF token, identical justification
+     * to `PublicFormController`'s API routes). The token itself is the only
+     * piece of state handed to the client — published via `IInitialState`
+     * (ADR-004 hard rule `gate-initial-state`, not a DOM data-attribute
+     * read) so the bootstrap JS knows which token to resolve without
+     * parsing the URL itself.
+     *
+     * @param string $token The opaque public share token (path param).
+     *
+     * @return TemplateResponse
+     *
+     * @spec openspec/changes/public-forms-runtime/specs/public-form-access/spec.md#requirement-public-render-endpoint-resolves-a-token-to-exactly-its-bound-page
+     */
+    #[PublicPage]
+    #[NoCSRFRequired]
+    public function publicForm(string $token): TemplateResponse
+    {
+        $this->initialState->provideInitialState('publicFormToken', $token);
+        return new TemplateResponse(Application::APP_ID, 'public-form', [], TemplateResponse::RENDER_AS_PUBLIC);
+    }//end publicForm()
 
     /**
      * Publish the caller's group IDs via IInitialState.
