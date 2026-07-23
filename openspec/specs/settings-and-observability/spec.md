@@ -4,6 +4,8 @@ retrofit: true
 
 # settings-and-observability Specification
 
+**OpenSpec changes**: [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/)
+
 ## Purpose
 
 OpenBuild exposes a small administrative surface that lets the frontend

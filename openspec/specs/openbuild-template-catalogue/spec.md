@@ -1,8 +1,10 @@
 ---
-status: done
+status: in-progress
 ---
 
 # openbuild-template-catalogue Specification
+
+**OpenSpec changes**: [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/)
 
 ## Purpose
 

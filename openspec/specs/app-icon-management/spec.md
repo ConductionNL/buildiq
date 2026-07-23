@@ -1,10 +1,12 @@
 ---
-status: done
+status: in-progress
 retrofit_extensions:
   - REQ-OBICON-005
 ---
 
 # app-icon-management Specification
+
+**OpenSpec changes**: [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/)
 
 ## Purpose
 

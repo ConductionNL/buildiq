@@ -267,31 +267,35 @@ describe('Step4Review.vue — spec task 6.5', () => {
 		expect(wrapper.find('.wizard-step4__icons').exists()).toBe(false)
 	})
 
+	// resolveAppIcon now DOMPurify-sanitizes author SVG (harden-xss-dos-csrf),
+	// which normalizes markup (e.g. `<path/>` → `<path></path>`), so these assert
+	// on the preserved path data rather than a byte-exact match of the raw SVG.
 	it('renders icons section when icon (light) is provided', () => {
 		const wrapper = mountStep4({ iconValue: LIGHT_SVG, iconDarkValue: null })
 		expect(wrapper.find('.wizard-step4__icons').exists()).toBe(true)
 		expect(wrapper.find('figure.wizard-step4__icon-preview').exists()).toBe(true)
-		expect(wrapper.vm.lightIconSvg).toBe(LIGHT_SVG)
+		expect(wrapper.vm.lightIconSvg).toContain('d="M0 0h24v24H0z"')
 	})
 
 	it('falls back to the light icon for dark when no dark icon is chosen', () => {
-		// Mirrors what the wizard actually attaches on submit.
+		// Mirrors what the wizard actually attaches on submit: dark resolves to
+		// the same sanitized SVG as light.
 		const wrapper = mountStep4({ iconValue: LIGHT_SVG, iconDarkValue: null })
-		expect(wrapper.vm.darkIconSvg).toBe(LIGHT_SVG)
+		expect(wrapper.vm.darkIconSvg).toBe(wrapper.vm.lightIconSvg)
 	})
 
 	it('renders dark icon preview with --dark modifier class when iconDark provided', () => {
 		const wrapper = mountStep4({ iconValue: null, iconDarkValue: DARK_SVG })
 		expect(wrapper.find('.wizard-step4__icon-preview--dark').exists()).toBe(true)
-		expect(wrapper.vm.darkIconSvg).toBe(DARK_SVG)
+		expect(wrapper.vm.darkIconSvg).toContain('d="M4 4h16v16H4z"')
 	})
 
 	it('renders both light and dark previews when both icons provided', () => {
 		const wrapper = mountStep4({ iconValue: LIGHT_SVG, iconDarkValue: DARK_SVG })
 		const figures = wrapper.findAll('figure.wizard-step4__icon-preview')
 		expect(figures.length).toBe(2)
-		expect(wrapper.vm.lightIconSvg).toBe(LIGHT_SVG)
-		expect(wrapper.vm.darkIconSvg).toBe(DARK_SVG)
+		expect(wrapper.vm.lightIconSvg).toContain('d="M0 0h24v24H0z"')
+		expect(wrapper.vm.darkIconSvg).toContain('d="M4 4h16v16H4z"')
 	})
 
 	// -------------------------------------------------------------------------

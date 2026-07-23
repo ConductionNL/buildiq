@@ -1,5 +1,7 @@
 # business-rules-engine Specification
 
+**OpenSpec changes**: [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/)
+
 ## Purpose
 TBD - created by archiving change business-rules-engine. Update Purpose after archive.
 ## Requirements
