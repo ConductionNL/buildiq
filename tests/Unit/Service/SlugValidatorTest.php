@@ -136,6 +136,37 @@ class SlugValidatorTest extends TestCase
         self::assertNotEmpty($result);
     }//end appSlugEndingWithHyphenIsRejected()
 
+    /**
+     * An app slug ending in `-dark` is reserved — it collides with the
+     * dark-variant icon route /icons/{slug}-dark.svg.
+     *
+     * @test
+     *
+     * @return void
+     */
+    public function appSlugEndingInDarkIsReserved(): void
+    {
+        $result = $this->validator->validateAppSlug('my-app-dark');
+        self::assertSame('slug_reserved_dark_suffix', $result['code']);
+        self::assertStringContainsString('-dark', $result['message']);
+    }//end appSlugEndingInDarkIsReserved()
+
+    /**
+     * Only the exact `-dark` SUFFIX is reserved: 'dark' elsewhere in the slug
+     * (or as a hyphenless substring) is fine.
+     *
+     * @test
+     *
+     * @return void
+     */
+    public function appSlugWithDarkNotAsSuffixIsAllowed(): void
+    {
+        self::assertSame([], $this->validator->validateAppSlug('dark-mode'));
+        self::assertSame([], $this->validator->validateAppSlug('mydark'));
+        self::assertSame([], $this->validator->validateAppSlug('dark'));
+        self::assertSame([], $this->validator->validateAppSlug('dark-theme-app'));
+    }//end appSlugWithDarkNotAsSuffixIsAllowed()
+
     // -------------------------------------------------------------------------
     // validateVersionSlug
     // -------------------------------------------------------------------------
@@ -151,6 +182,19 @@ class SlugValidatorTest extends TestCase
         self::assertSame([], $this->validator->validateVersionSlug('development'));
         self::assertSame([], $this->validator->validateVersionSlug('dev-staging'));
     }//end validVersionSlugReturnsEmptyArray()
+
+    /**
+     * The `-dark` reservation is APP-slug-specific: version slugs never appear
+     * in icon routes, so a `-dark`-suffixed version slug stays valid.
+     *
+     * @test
+     *
+     * @return void
+     */
+    public function versionSlugEndingInDarkIsAllowed(): void
+    {
+        self::assertSame([], $this->validator->validateVersionSlug('v1-dark'));
+    }//end versionSlugEndingInDarkIsAllowed()
 
     /**
      * @test

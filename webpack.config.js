@@ -131,13 +131,10 @@ webpackConfig.plugins = [
 webpackConfig.resolve.alias['@nextcloud/dialogs/style.css$'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs/dist/style.css')
 webpackConfig.resolve.alias['@nextcloud/dialogs'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs')
 
-// dialogs v6 drags in a FilePicker chunk that imports node's `path`, and webpack 5 no
-// longer auto-polyfills node core modules — without this the bundle fails to emit with
-// "Can't resolve 'path'". This app only uses the toast APIs (showError/showSuccess), so
-// the FilePicker code path never runs and an empty module is safe.
-webpackConfig.resolve.fallback = {
-	...(webpackConfig.resolve.fallback || {}),
-	path: false,
-}
+// NOTE: `resolve.fallback.path` is set to `path-browserify` above (see the
+// resolve block). The FilePicker DOES run in this app — nextcloud-vue's
+// CnFilesWidgetForm opens it via `pickNodes()`, which calls `path.join` — so
+// `path` must be a real polyfill, not `false`. An empty stub makes
+// `path.join` undefined and the picker throws at runtime.
 
 module.exports = webpackConfig

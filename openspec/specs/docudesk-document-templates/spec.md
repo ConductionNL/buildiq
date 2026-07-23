@@ -1,6 +1,8 @@
 # docudesk-document-templates Specification
 
-**OpenSpec changes**: [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/)
+**OpenSpec changes**: [automation-document-action](../../changes/automation-document-action/), [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/)
+
+**Status**: in-progress
 
 ## Purpose
 TBD - created by archiving change docudesk-document-templates. Update Purpose after archive.

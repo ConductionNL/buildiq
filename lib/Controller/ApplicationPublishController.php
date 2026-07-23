@@ -130,20 +130,24 @@ class ApplicationPublishController extends Controller
     }//end unpublish()
 
     /**
-     * Delete an Application and the app wrapper it owns (versions, routes). When
-     * $deleteData is true, also delete the per-version registers and all their
-     * data; otherwise that data is preserved. Owner-only (admin bypass). Wired
-     * as `applicationPublish#destroy`.
+     * Delete an Application and the app wrapper it owns (versions, routes). The
+     * optional `deleteData` request param opts into ALSO deleting the
+     * per-version registers and every object stored in them; by default that
+     * data is preserved. Owner-only (admin bypass). Wired as
+     * `applicationPublish#destroy`.
      *
-     * @param string $appUuid    Parent Application UUID (path param)
-     * @param bool   $deleteData When true, also delete the underlying registers
-     *                           and every object stored in them (query param)
+     * `deleteData` is read from the request (not a typed bool method arg) and
+     * resolved safe-by-default via {@see wantsDataPurge()}: only an explicit
+     * affirmative purges. This deliberately does NOT rely on PHP/Nextcloud
+     * stringy-bool coercion for an irreversible action.
+     *
+     * @param string $appUuid Parent Application UUID (path param)
      *
      * @return JSONResponse 200 + `{deleted, orphanedResources}`, or an error envelope
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 10, period: 60)]
-    public function destroy(string $appUuid, bool $deleteData=false): JSONResponse
+    public function destroy(string $appUuid): JSONResponse
     {
         $user = $this->userSession->getUser();
         if ($user === null) {
@@ -167,7 +171,7 @@ class ApplicationPublishController extends Controller
             $orphaned = $this->deletionService->deleteApplication(
                 appUuid: $appUuid,
                 appSlug: (string) ($application['slug'] ?? ''),
-                deleteData: $deleteData
+                deleteData: $this->wantsDataPurge()
             );
 
             return new JSONResponse(
@@ -190,6 +194,30 @@ class ApplicationPublishController extends Controller
             );
         }//end try
     }//end destroy()
+
+    /**
+     * Resolve the destructive data-purge opt-in from the request, safe-by-default.
+     *
+     * The `deleteData` flag is read raw here rather than as a typed `bool`
+     * method argument, so it does NOT inherit PHP/Nextcloud stringy-bool
+     * coercion (where any non-empty, non-'false' string casts to true) for an
+     * IRREVERSIBLE action. Only an explicit affirmative — the string '1'/'true'
+     * or a literal true/1 from a JSON body — opts into the purge; every other,
+     * ambiguous, empty, or absent value preserves the data. So a hand-crafted
+     * `?deleteData=no` / `off` / `preview` can never trigger a wipe. The
+     * frontend's `deleteData: 1|0` contract maps cleanly onto this.
+     *
+     * @return bool True only when the caller explicitly opted into a data purge.
+     */
+    private function wantsDataPurge(): bool
+    {
+        $raw = $this->request->getParam('deleteData', false);
+        if (is_string($raw) === true) {
+            $raw = strtolower(trim($raw));
+        }
+
+        return ($raw === true || $raw === 1 || $raw === '1' || $raw === 'true');
+    }//end wantsDataPurge()
 
     /**
      * Flip an Application's status after an owner-only RBAC check.

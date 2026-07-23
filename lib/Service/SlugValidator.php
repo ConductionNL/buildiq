@@ -58,6 +58,19 @@ class SlugValidator
     public const SLUG_PATTERN = '^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$';
 
     /**
+     * Reserved Application-slug suffix. An app slug ending in `-dark` collides
+     * with the dark-variant icon route `/icons/{slug}-dark.svg`: a request for
+     * the LIGHT icon of an app named `foo-dark` (`/icons/foo-dark.svg`) matches
+     * the dark route first (slug="foo"), silently breaking that app's icon
+     * resolution (appinfo/routes.php icon#iconDark/iconLight ordering note).
+     * Reserved for APPLICATION slugs only — version slugs never appear in icon
+     * routes, so {@see validateVersionSlug()} does not apply it.
+     *
+     * @var string
+     */
+    private const RESERVED_APP_SLUG_SUFFIX = '-dark';
+
+    /**
      * Validate a proposed Application slug.
      *
      * Application slugs follow the same pattern as version slugs but do
@@ -93,6 +106,14 @@ class SlugValidator
                     'Slug must match `%s` — lowercase letters, digits, and hyphens only.',
                     self::SLUG_PATTERN
                 ),
+            ];
+        }
+
+        if (str_ends_with($slug, self::RESERVED_APP_SLUG_SUFFIX) === true) {
+            return [
+                'code'    => 'slug_reserved_dark_suffix',
+                'message' => 'Application slugs cannot end in `-dark` — reserved for the dark-variant '
+                    .'icon route `/icons/{slug}-dark.svg`.',
             ];
         }
 

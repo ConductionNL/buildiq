@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\TemplateSeedService;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -320,4 +321,182 @@ class TemplateSeedServiceTest extends TestCase
 
         self::assertSame(3, $this->service()->countSeeded());
     }//end testCountSeededReportsExisting()
+
+    // -------------------------------------------------------------------------
+    // Version-based upsert (template-staleness fix)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Build a valid fixture with a specific version.
+     *
+     * @param string $slug    The fixture slug.
+     * @param string $version The semver version to stamp.
+     *
+     * @return array<string,mixed>
+     */
+    private function versionedFixture(string $slug, string $version): array
+    {
+        $fixture            = $this->validFixture($slug);
+        $fixture['version'] = $version;
+        return $fixture;
+    }//end versionedFixture()
+
+    /**
+     * Write all four bundled fixtures at the given version into the temp dir.
+     *
+     * @param string $version The semver version to stamp on every fixture.
+     *
+     * @return void
+     */
+    private function seedAllFixturesAtVersion(string $version): void
+    {
+        $fixtures = [];
+        foreach (self::EXPECTED_SLUGS as $slug) {
+            $fixtures[$slug] = $this->versionedFixture($slug, $version);
+        }
+
+        $this->seedFixturesDir($fixtures);
+    }//end seedAllFixturesAtVersion()
+
+    /**
+     * Make findAll return, for every slug, a stored row with the given version
+     * / isSeeded flag (uuid = "uuid-<slug>"). An empty version omits the field.
+     *
+     * @param string|null $storedVersion Stored semver, or null to omit the field.
+     * @param bool        $isSeeded      Whether the stored row is flagged seeded.
+     *
+     * @return void
+     */
+    private function stubStoredRows(?string $storedVersion, bool $isSeeded): void
+    {
+        $this->objectService->method('findAll')->willReturnCallback(
+            static function (array $config) use ($storedVersion, $isSeeded): array {
+                $slug = $config['filters']['slug'] ?? '';
+                $row  = ['slug' => $slug, 'isSeeded' => $isSeeded, '@self' => ['id' => 'uuid-'.$slug]];
+                if ($storedVersion !== null) {
+                    $row['version'] = $storedVersion;
+                }
+
+                return [$row];
+            }
+        );
+    }//end stubStoredRows()
+
+    /**
+     * A bundled fixture newer than the stored seeded row is re-written in place.
+     *
+     * @return void
+     */
+    public function testNewerFixtureVersionUpdatesSeededRow(): void
+    {
+        $this->seedAllFixturesAtVersion('1.1.0');
+        $this->stubStoredRows(storedVersion: '1.0.0', isSeeded: true);
+        $this->objectService->expects(self::exactly(4))->method('saveObject');
+
+        $result = $this->service()->seed();
+
+        self::assertSame(0, $result['seeded']);
+        self::assertSame(4, $result['updated']);
+        self::assertSame(0, $result['skipped']);
+        self::assertSame([], $result['errors']);
+    }//end testNewerFixtureVersionUpdatesSeededRow()
+
+    /**
+     * A fixture at the same version as the stored seeded row is left untouched.
+     *
+     * @return void
+     */
+    public function testSameVersionSkipsUpdate(): void
+    {
+        $this->seedAllFixturesAtVersion('1.0.0');
+        $this->stubStoredRows(storedVersion: '1.0.0', isSeeded: true);
+        $this->objectService->expects(self::never())->method('saveObject');
+
+        $result = $this->service()->seed();
+
+        self::assertSame(0, $result['updated']);
+        self::assertSame(4, $result['skipped']);
+    }//end testSameVersionSkipsUpdate()
+
+    /**
+     * A fixture OLDER than the stored seeded row never downgrades it.
+     *
+     * @return void
+     */
+    public function testOlderFixtureVersionSkipsUpdate(): void
+    {
+        $this->seedAllFixturesAtVersion('0.9.0');
+        $this->stubStoredRows(storedVersion: '1.0.0', isSeeded: true);
+        $this->objectService->expects(self::never())->method('saveObject');
+
+        $result = $this->service()->seed();
+
+        self::assertSame(0, $result['updated']);
+        self::assertSame(4, $result['skipped']);
+    }//end testOlderFixtureVersionSkipsUpdate()
+
+    /**
+     * An admin-created row (isSeeded !== true) is never overwritten, even when
+     * the bundled fixture is newer.
+     *
+     * @return void
+     */
+    public function testAdminCreatedRowNeverUpdated(): void
+    {
+        $this->seedAllFixturesAtVersion('2.0.0');
+        $this->stubStoredRows(storedVersion: '1.0.0', isSeeded: false);
+        $this->objectService->expects(self::never())->method('saveObject');
+
+        $result = $this->service()->seed();
+
+        self::assertSame(0, $result['updated']);
+        self::assertSame(4, $result['skipped']);
+    }//end testAdminCreatedRowNeverUpdated()
+
+    /**
+     * A stored seeded row with no version predates versioning, so the first
+     * versioned fixture upgrades it.
+     *
+     * @return void
+     */
+    public function testUnversionedStoredRowIsUpgraded(): void
+    {
+        $this->seedAllFixturesAtVersion('1.0.0');
+        $this->stubStoredRows(storedVersion: null, isSeeded: true);
+        $this->objectService->expects(self::exactly(4))->method('saveObject');
+
+        $result = $this->service()->seed();
+
+        self::assertSame(4, $result['updated']);
+        self::assertSame(0, $result['skipped']);
+    }//end testUnversionedStoredRowIsUpgraded()
+
+    /**
+     * An in-place update passes the EXISTING row's uuid to saveObject (so it
+     * updates rather than creating a duplicate-slug row).
+     *
+     * @return void
+     */
+    public function testUpdateTargetsExistingUuid(): void
+    {
+        $this->seedAllFixturesAtVersion('1.1.0');
+        $this->stubStoredRows(storedVersion: '1.0.0', isSeeded: true);
+
+        $entity   = $this->createMock(ObjectEntity::class);
+        $captured = [];
+        $this->objectService->method('saveObject')->willReturnCallback(
+            function (...$args) use (&$captured, $entity): ObjectEntity {
+                $captured[] = $args;
+                return $entity;
+            }
+        );
+
+        $this->service()->seed();
+
+        // Every call must carry its stored row's uuid somewhere in the args.
+        $flat = array_merge(...$captured);
+        foreach (self::EXPECTED_SLUGS as $slug) {
+            self::assertContains('uuid-'.$slug, $flat, 'update must target the existing uuid for '.$slug);
+        }
+    }//end testUpdateTargetsExistingUuid()
 }//end class

@@ -33,12 +33,41 @@ vi.mock('@nextcloud/router', () => ({
 }))
 
 let versionHolder = null
+// When true, the fake behaves like the REAL composable: it starts an async fetch
+// and populates `applicationVersion` LATER. The default (false) keeps the old
+// synchronous shape so the pre-existing specs read unchanged.
+//
+// The synchronous default is exactly why this suite passed while the designer was
+// broken in production: `load()` seeds the editor FROM `applicationVersion`, and a
+// fake that is already resolved at mount time can never reproduce the window in
+// which it is still null. See the async spec below.
+let versionResolvesAsync = false
 vi.mock('../../src/composables/useApplicationVersion.js', () => ({
-	useApplicationVersion: () => ({
-		applicationVersion: ref(versionHolder),
-		loading: ref(false),
-		error: ref(null),
-	}),
+	useApplicationVersion: () => {
+		if (versionResolvesAsync === false) {
+			return {
+				applicationVersion: ref(versionHolder),
+				loading: ref(false),
+				error: ref(null),
+				ready: Promise.resolve(),
+			}
+		}
+		const applicationVersion = ref(null)
+		const loading = ref(true)
+		// Resolve on a MACROtask. The real composable's fetchDefaultVersion() makes
+		// TWO sequential round trips (/versions, then /objects?slug=) while load()
+		// makes one, so in production the version reliably lands AFTER load() has
+		// already seeded. A microtask fake would resolve inside load()'s own await
+		// and hide the bug — which is precisely what the synchronous fake did.
+		const ready = new Promise((resolve) => {
+			setTimeout(() => {
+				applicationVersion.value = versionHolder
+				loading.value = false
+				resolve()
+			}, 10)
+		})
+		return { applicationVersion, loading, error: ref(null), ready }
+	},
 }))
 
 let statusAvailable = true
@@ -97,9 +126,37 @@ function mountHost({ slug = 'petstore', query = {}, version = null, appList = []
 describe('PageDesignerHost', () => {
 	beforeEach(() => {
 		versionHolder = null
+		versionResolvesAsync = false
 		statusAvailable = true
 		appThemeMock.apply.mockClear()
 		appThemeMock.teardown.mockClear()
+	})
+
+	it('seeds the manifest from a version that resolves ASYNCHRONOUSLY', async () => {
+		// Regression (#174). The real useApplicationVersion kicks off an HTTP fetch
+		// and fills `applicationVersion` only when it returns — so at the moment
+		// created() runs, it is null. load() seeded EMPTY_MANIFEST from that null and
+		// nothing re-seeded when the version arrived, so the designer rendered "No
+		// pages yet" for an app whose manifest carried pages, and offered to Save
+		// that emptiness over the real thing.
+		versionResolvesAsync = true
+		const version = { manifest: { version: '2.0.0', menu: [{ label: 'Dashboard' }], pages: [{ id: 'Dashboard' }, { id: 'MessagesIndex' }] } }
+		const wrapper = mountHost({
+			version,
+			// The versioned model keeps NO manifest on the Application itself, so
+			// there is nothing to fall back to — the version is the only source.
+			appList: [{ slug: 'petstore', name: 'Pet Store', '@self': { id: 'app-1' } }],
+		})
+		// Long enough for the version's (macrotask) resolution to land.
+		await new Promise((resolve) => setTimeout(resolve, 40))
+		await flush(wrapper)
+
+		expect(wrapper.vm.applicationVersion).not.toBe(null)
+		expect(wrapper.vm.manifest.pages).toHaveLength(2)
+		expect(wrapper.vm.manifest.menu).toHaveLength(1)
+		expect(wrapper.vm.manifest.version).toBe('2.0.0')
+		// A deep copy, never the caller's object.
+		expect(wrapper.vm.manifest).not.toBe(version.manifest)
 	})
 
 	it('loads the app and seeds the manifest from the version manifest', async () => {

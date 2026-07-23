@@ -41,14 +41,14 @@
           "slug": {
             "title": "Application Slug",
             "type": "string",
-            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "pattern": "^(?!.*-dark$)[a-z0-9][a-z0-9-]*[a-z0-9]$",
             "minLength": 2,
             "maxLength": 48,
             "x-openregister-readonly-when": {
               "field": "appType",
               "equals": "hybrid"
             },
-            "description": "Kebab-case slug; uniquely identifies the virtual app within its organisation. Drives the runtime path /builder/{slug}/*. Max 48 chars so the synthetic appId `openbuild-{slug}` fits NC appId caps (per design.md OQ-4). READ-ONLY on a hybrid app (it mirrors the installed Nextcloud app it customizes) — enforced by HybridMetadataLockListener + the abstract data widget's x-openregister-readonly-when honouring."
+            "description": "Kebab-case slug; uniquely identifies the virtual app within its organisation. Drives the runtime path /builder/{slug}/*. Max 48 chars so the synthetic appId `openbuild-{slug}` fits NC appId caps (per design.md OQ-4). READ-ONLY on a hybrid app (it mirrors the installed Nextcloud app it customizes) — enforced by HybridMetadataLockListener + the abstract data widget's x-openregister-readonly-when honouring. A `-dark` suffix is RESERVED and rejected by the pattern: it would collide with the dark-variant icon route /icons/{slug}-dark.svg (a `foo-dark` app's light-icon request matches the dark route first), silently breaking that app's icon resolution (see appinfo/routes.php icon#iconDark/iconLight ordering; SlugValidator::RESERVED_APP_SLUG_SUFFIX)."
           },
           "name": {
             "title": "Application Name",
