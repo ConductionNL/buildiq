@@ -24,9 +24,9 @@ so the checkbox count stays within the supervisor cap.
 
 ## 3. CSRF — remove unjustified NoCSRFRequired
 
-- [ ] 3.1 Remove `#[NoCSRFRequired]` from `SettingsController::create` and `::load`.
-- [ ] 3.2 Remove the `@NoCSRFRequired` docblock from `PreferencesController::setPreference` (keep `@NoAdminRequired`).
-- [ ] 3.3 Test: create / load / setPreference reject a request without a valid Nextcloud request token; the SPA path (token present) still succeeds.
+- [x] 3.1 Remove `#[NoCSRFRequired]` from `SettingsController::create` and `::load`.
+- [x] 3.2 Remove the `@NoCSRFRequired` docblock from `PreferencesController::setPreference` (keep `@NoAdminRequired`).
+- [x] 3.3 Test: create / load / setPreference reject a request without a valid Nextcloud request token; the SPA path (token present) still succeeds.
 
 ## 4. XSS — sanitize the sinks
 

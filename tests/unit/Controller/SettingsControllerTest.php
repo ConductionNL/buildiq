@@ -25,6 +25,8 @@ namespace OCA\OpenBuild\Tests\Unit\Controller;
 use OCA\OpenBuild\Controller\SettingsController;
 use OCA\OpenBuild\Service\SettingsService;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -32,6 +34,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 /**
  * Tests for SettingsController.
@@ -253,4 +256,46 @@ class SettingsControllerTest extends TestCase
         self::assertSame(Http::STATUS_FORBIDDEN, $result->getStatus());
 
     }//end testLoadReturns403WhenCallerIsNotAdmin()
+
+    /**
+     * CSRF hardening: the state-changing `create` POST must NOT carry
+     * `#[NoCSRFRequired]` (it must be CSRF-protected), while remaining
+     * `#[NoAdminRequired]`.
+     *
+     * @return void
+     */
+    public function testCreateEnforcesCsrf(): void
+    {
+        $method = new ReflectionMethod(SettingsController::class, 'create');
+        self::assertCount(0, $method->getAttributes(NoCSRFRequired::class));
+        self::assertCount(1, $method->getAttributes(NoAdminRequired::class));
+
+    }//end testCreateEnforcesCsrf()
+
+    /**
+     * CSRF hardening: the state-changing `load` POST must NOT carry
+     * `#[NoCSRFRequired]`.
+     *
+     * @return void
+     */
+    public function testLoadEnforcesCsrf(): void
+    {
+        $method = new ReflectionMethod(SettingsController::class, 'load');
+        self::assertCount(0, $method->getAttributes(NoCSRFRequired::class));
+        self::assertCount(1, $method->getAttributes(NoAdminRequired::class));
+
+    }//end testLoadEnforcesCsrf()
+
+    /**
+     * Regression guard: the read-only `index` GET legitimately keeps
+     * `#[NoCSRFRequired]` (a browser navigation cannot send a request token).
+     *
+     * @return void
+     */
+    public function testIndexKeepsNoCsrf(): void
+    {
+        $method = new ReflectionMethod(SettingsController::class, 'index');
+        self::assertCount(1, $method->getAttributes(NoCSRFRequired::class));
+
+    }//end testIndexKeepsNoCsrf()
 }//end class

@@ -101,7 +101,6 @@ class SettingsController extends Controller
      * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-2
      */
     #[NoAdminRequired]
-    #[NoCSRFRequired]
     public function create(): JSONResponse
     {
         $user = $this->userSession->getUser();
@@ -141,7 +140,6 @@ class SettingsController extends Controller
      * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
      */
     #[NoAdminRequired]
-    #[NoCSRFRequired]
     public function load(): JSONResponse
     {
         $user = $this->userSession->getUser();

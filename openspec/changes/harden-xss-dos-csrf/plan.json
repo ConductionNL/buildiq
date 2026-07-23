@@ -114,7 +114,7 @@
       "id": 8,
       "title": "Remove NoCSRFRequired from SettingsController create/load",
       "description": "Delete #[NoCSRFRequired] from SettingsController::create and ::load.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "settings-and-observability",
       "acceptance_criteria": [
         "create/load reject a request without a valid token"
@@ -127,7 +127,7 @@
       "id": 9,
       "title": "Remove NoCSRFRequired from setPreference",
       "description": "Remove the @NoCSRFRequired docblock from PreferencesController::setPreference (keep @NoAdminRequired).",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "settings-and-observability",
       "acceptance_criteria": [
         "setPreference rejects a request without a valid token"
@@ -140,7 +140,7 @@
       "id": 10,
       "title": "CSRF tests",
       "description": "Test create/load/setPreference reject a missing token; the SPA path (token present) still succeeds.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "settings-and-observability",
       "acceptance_criteria": [
         "missing-token requests rejected",
