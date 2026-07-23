@@ -31,6 +31,6 @@ so the checkbox count stays within the supervisor cap.
 
 ## 6. Wrap-up
 
-- [ ] 6.1 Register this change in the five capability specs (`business-rules-engine`, `openbuild-rbac`, `openbuild-exporter`, `application-insights`, `app-icon-management`): add to the `OpenSpec changes` list and set status `in-progress`.
-- [ ] 6.2 Run the Hydra mechanical gates + PHP lint (phpcs/psalm/phpstan) + PHP unit suite; confirm green.
+- [x] 6.1 Register this change in the five capability specs (`business-rules-engine`, `openbuild-rbac`, `openbuild-exporter`, `application-insights`, `app-icon-management`): add to the `OpenSpec changes` list and set status `in-progress`.
+- [x] 6.2 Run the Hydra mechanical gates + PHP lint (phpcs/psalm/phpstan) + PHP unit suite; confirm green.
   - No OR schema/seed changes (per design.md); L8 reads the existing `requestedBy` field.

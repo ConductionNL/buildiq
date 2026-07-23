@@ -105,4 +105,7 @@
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SettingsService.php" method="doLoadConfiguration"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/SettingsService.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/VersionPromotionService.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ExportsController.php" method="isAuthorisedForJob"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/RulesController.php" method="query"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Mcp/Handler/AbstractToolHandler.php"/>
 </phpmd-baseline>

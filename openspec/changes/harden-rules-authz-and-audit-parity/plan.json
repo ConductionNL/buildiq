@@ -154,7 +154,7 @@
       "id": 11,
       "title": "Register change in capability specs",
       "description": "Add this change to the five capability specs' OpenSpec changes list and set status in-progress.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": null,
       "acceptance_criteria": [
         "five specs list this change and are in-progress"
@@ -171,7 +171,7 @@
       "id": 12,
       "title": "Run gates + lint + unit suite",
       "description": "Run the Hydra mechanical gates, PHP lint (phpcs/psalm/phpstan), and PHP unit suite; confirm green.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": null,
       "acceptance_criteria": [
         "gates green",
