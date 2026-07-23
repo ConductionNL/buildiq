@@ -35,6 +35,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 /**
  * Unit tests for PreferencesController.
@@ -317,5 +318,33 @@ class PreferencesControllerTest extends TestCase
         $this->controller->getPreference(key: 'Hello World!');
 
     }//end testSanitisedKeyIsLowercasedAndStripsBadChars()
+
+    /**
+     * CSRF hardening: the state-changing `setPreference` write must no longer
+     * declare `@NoCSRFRequired` (so it is CSRF-protected), while keeping
+     * `@NoAdminRequired`.
+     *
+     * @return void
+     */
+    public function testSetPreferenceEnforcesCsrf(): void
+    {
+        $doc = (string) (new ReflectionMethod(PreferencesController::class, 'setPreference'))->getDocComment();
+        self::assertStringNotContainsString('@NoCSRFRequired', $doc);
+        self::assertStringContainsString('@NoAdminRequired', $doc);
+
+    }//end testSetPreferenceEnforcesCsrf()
+
+    /**
+     * Regression guard: the read-only `getPreference` GET legitimately keeps
+     * `@NoCSRFRequired`.
+     *
+     * @return void
+     */
+    public function testGetPreferenceKeepsNoCsrf(): void
+    {
+        $doc = (string) (new ReflectionMethod(PreferencesController::class, 'getPreference'))->getDocComment();
+        self::assertStringContainsString('@NoCSRFRequired', $doc);
+
+    }//end testGetPreferenceKeepsNoCsrf()
 
 }//end class

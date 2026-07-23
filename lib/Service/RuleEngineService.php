@@ -68,11 +68,42 @@ class RuleEngineService
     public const TIMEOUT_MS = 500;
 
     /**
+     * Maximum `call-rule-set` chain depth (DoS hardening, harden-xss-dos-csrf).
+     *
+     * A condition-action rule may dispatch a `call-rule-set` action that
+     * re-enters {@see evaluate()} via RuleActionDispatcher. Without a bound a
+     * self- or mutually-referential rule set recurses until the worker crashes,
+     * writing a log row and firing side effects at every level. Legitimate
+     * nesting is shallow, so 10 is generous.
+     */
+    private const MAX_CALL_DEPTH = 10;
+
+    /**
+     * Maximum recursion depth of {@see maskPii()} (defence-in-depth against a
+     * deeply-nested payload; primary bound is the controller's payload cap).
+     */
+    private const MAX_MASK_DEPTH = 64;
+
+    /**
      * Fields masked in RuleExecutionLog input when masking is enabled.
      *
      * @var array<int,string>
      */
     private const PII_FIELDS = ['bsn', 'ssn', 'email', 'phone', 'iban'];
+
+    /**
+     * Current `call-rule-set` chain depth (re-entry guard, harden-xss-dos-csrf).
+     *
+     * @var integer
+     */
+    private int $callDepth = 0;
+
+    /**
+     * Rule-set slugs currently active in the evaluation chain (cycle guard).
+     *
+     * @var array<int,string>
+     */
+    private array $activeSlugs = [];
 
     /**
      * Constructor.
@@ -116,6 +147,61 @@ class RuleEngineService
      * @throws RuntimeException When the RuleSet is not found / not owned, or on timeout.
      */
     public function evaluate(
+        string $ruleSetSlug,
+        array $payload,
+        ?string $version=null,
+        bool $dryRun=false,
+        bool $maskPii=true
+    ): array {
+        // Re-entry cycle guard: a rule set already active in this chain must not
+        // be re-evaluated (self- or mutually-referential call-rule-set). Thrown
+        // before any state mutation, log write, or side effect for this level.
+        if (in_array($ruleSetSlug, $this->activeSlugs, true) === true) {
+            throw new RuntimeException(
+                'Rule-set cycle detected: "'.$ruleSetSlug.'" is already being evaluated in this chain.',
+                508
+            );
+        }
+
+        // Depth guard: bound the call-rule-set chain length.
+        if ($this->callDepth >= self::MAX_CALL_DEPTH) {
+            throw new RuntimeException(
+                'Rule-set call chain exceeded the maximum depth of '.self::MAX_CALL_DEPTH.'.',
+                508
+            );
+        }
+
+        ++$this->callDepth;
+        $this->activeSlugs[] = $ruleSetSlug;
+        try {
+            return $this->evaluateChain(
+                ruleSetSlug: $ruleSetSlug,
+                payload: $payload,
+                version: $version,
+                dryRun: $dryRun,
+                maskPii: $maskPii
+            );
+        } finally {
+            --$this->callDepth;
+            array_pop($this->activeSlugs);
+        }
+
+    }//end evaluate()
+
+    /**
+     * Run a single RuleSet evaluation (re-entry-guarded by {@see evaluate()}).
+     *
+     * @param string              $ruleSetSlug The RuleSet slug.
+     * @param array<string,mixed> $payload     The input payload.
+     * @param string|null         $version     Optional pinned version (default: active).
+     * @param bool                $dryRun      When true, side-effecting actions are suppressed.
+     * @param bool                $maskPii     When true, mask PII fields in the audit log.
+     *
+     * @return array{result:array<string,mixed>,geraaktRegels:array<int,mixed>,executieDuur:int,fouten:array<int,string>}
+     *
+     * @throws RuntimeException When the RuleSet is not found / not owned, or on timeout.
+     */
+    private function evaluateChain(
         string $ruleSetSlug,
         array $payload,
         ?string $version=null,
@@ -180,7 +266,7 @@ class RuleEngineService
             'fouten'        => $errors,
         ];
 
-    }//end evaluate()
+    }//end evaluateChain()
 
     /**
      * Load (and cache) a RuleSet bundle: the RuleSet plus its tables/rules.
@@ -295,15 +381,23 @@ class RuleEngineService
      * Recursively mask configured PII fields in a payload.
      *
      * @param array<string,mixed> $payload The payload to mask.
+     * @param int                 $depth   Current recursion depth (guards against a deeply-nested payload).
      *
      * @return array<string,mixed> A masked copy.
      */
-    private function maskPii(array $payload): array
+    private function maskPii(array $payload, int $depth=0): array
     {
+        // Defence-in-depth: a payload nested beyond the cap is redacted wholesale
+        // rather than recursed into, so a pathological structure cannot exhaust
+        // the stack while building the audit record.
+        if ($depth >= self::MAX_MASK_DEPTH) {
+            return ['***' => '***'];
+        }
+
         $masked = [];
         foreach ($payload as $key => $value) {
             if (is_array($value) === true) {
-                $masked[$key] = $this->maskPii(payload: $value);
+                $masked[$key] = $this->maskPii(payload: $value, depth: ($depth + 1));
                 continue;
             }
 

@@ -4,7 +4,7 @@ status: in-progress
 
 # openbuild-template-catalogue Specification
 
-**OpenSpec changes**: [component-blocks](../../changes/component-blocks/)
+**OpenSpec changes**: [component-blocks](../../changes/component-blocks/), [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/)
 
 **Status**: in-progress
 

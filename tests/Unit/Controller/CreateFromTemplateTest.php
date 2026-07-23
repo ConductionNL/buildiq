@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -48,6 +49,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use ReflectionMethod;
 
 /**
  * Tests for ApplicationsController::createFromTemplate.
@@ -260,15 +262,26 @@ class CreateFromTemplateTest extends TestCase
     /**
      * Register an authenticated user for the test.
      *
-     * @param string $uid The UID to return from getUID.
+     * Cloning a template provisions an OpenRegister register (admin-only,
+     * issue #157), so createFromTemplate is admin-gated. The default caller is
+     * an admin (the legitimate authoring flow); pass $admin=false to exercise
+     * the 403 gate.
+     *
+     * @param string $uid   The UID to return from getUID.
+     * @param bool   $admin Whether the caller is in the `admin` group.
      *
      * @return void
      */
-    private function authenticateAs(string $uid): void
+    private function authenticateAs(string $uid, bool $admin=true): void
     {
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn($uid);
         $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isInGroup')->willReturnCallback(
+            static function (string $u, string $g) use ($uid, $admin): bool {
+                return ($admin === true && $u === $uid && $g === 'admin');
+            }
+        );
     }//end authenticateAs()
 
     /**
@@ -508,4 +521,35 @@ class CreateFromTemplateTest extends TestCase
         $body = $result->getData();
         self::assertSame('slug_collision', $body['error'], 'Cross-user slug squatting must be rejected');
     }//end testCrossUserSlugCollisionIsRejected()
+
+    /**
+     * DoS/authz hardening (harden-xss-dos-csrf): a non-admin caller is rejected
+     * with 403 before any clone/provisioning work, mirroring the creation
+     * wizard's admin gate.
+     *
+     * @return void
+     */
+    public function testNonAdminIsForbidden(): void
+    {
+        $this->authenticateAs(uid: 'bob', admin: false);
+        $this->withRequestParams(['name' => 'My permits', 'slug' => 'my-permits']);
+
+        // No provisioning may happen for a rejected caller.
+        $this->objectService->expects(self::never())->method('saveObject');
+
+        $result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+        self::assertSame(Http::STATUS_FORBIDDEN, $result->getStatus());
+    }//end testNonAdminIsForbidden()
+
+    /**
+     * The endpoint carries a UserRateLimit attribute (amplification guard).
+     *
+     * @return void
+     */
+    public function testCreateFromTemplateHasRateLimit(): void
+    {
+        $method     = new ReflectionMethod(ApplicationsController::class, 'createFromTemplate');
+        $attributes = $method->getAttributes(UserRateLimit::class);
+        self::assertCount(1, $attributes);
+    }//end testCreateFromTemplateHasRateLimit()
 }//end class

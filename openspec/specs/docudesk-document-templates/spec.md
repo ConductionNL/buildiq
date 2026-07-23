@@ -1,6 +1,6 @@
 # docudesk-document-templates Specification
 
-**OpenSpec changes**: [automation-document-action](../../changes/automation-document-action/)
+**OpenSpec changes**: [automation-document-action](../../changes/automation-document-action/), [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/)
 
 **Status**: in-progress
 

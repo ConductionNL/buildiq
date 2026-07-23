@@ -62,6 +62,29 @@ class FeelParser
 {
 
     /**
+     * Maximum source length in characters (DoS hardening, harden-xss-dos-csrf).
+     *
+     * A FEEL expression is authored rule metadata, so 4 KiB is generous for any
+     * legitimate condition while rejecting a multi-megabyte string that would
+     * build an unbounded token array.
+     */
+    private const MAX_SOURCE_LENGTH = 4096;
+
+    /**
+     * Maximum token count. Also bounds the AST node count (nodes <= tokens), so
+     * a flat but enormous chain (`a or a or a …`) cannot build a deep tree that
+     * would overflow the evaluator's recursion.
+     */
+    private const MAX_TOKENS = 512;
+
+    /**
+     * Maximum recursion depth across the re-entrant parse methods. Bounds the
+     * PHP call stack against pathological nesting (`((((…))))`, `not not …`,
+     * `- - …`) which would otherwise recurse without limit.
+     */
+    private const MAX_DEPTH = 128;
+
+    /**
      * The tokens produced by the lexer for the expression under parse.
      *
      * @var array<int,array{kind:string,value:mixed,pos:int}>
@@ -74,6 +97,13 @@ class FeelParser
      * @var integer
      */
     private int $cursor = 0;
+
+    /**
+     * Current recursion depth across the re-entrant parse methods.
+     *
+     * @var integer
+     */
+    private int $depth = 0;
 
     /**
      * Parse a FEEL-subset expression into an AST.
@@ -89,11 +119,27 @@ class FeelParser
      */
     public function parse(string $expression): array
     {
+        // DoS guard: reject an over-length source before tokenising it.
+        if (strlen($expression) > self::MAX_SOURCE_LENGTH) {
+            throw new InvalidArgumentException(
+                'Syntax error: expression exceeds the maximum length of '.self::MAX_SOURCE_LENGTH.' characters.'
+            );
+        }
+
         $this->tokens = $this->tokenize(src: $expression);
         $this->cursor = 0;
+        $this->depth  = 0;
 
         if ($this->tokens === []) {
             throw new InvalidArgumentException('Syntax error: empty expression.');
+        }
+
+        // DoS guard: cap the token count (the `eof` token is always present, so
+        // allow MAX_TOKENS + 1). This transitively bounds the AST node count.
+        if (count($this->tokens) > (self::MAX_TOKENS + 1)) {
+            throw new InvalidArgumentException(
+                'Syntax error: expression has too many tokens (max '.self::MAX_TOKENS.').'
+            );
         }
 
         $node = $this->parseOr();
@@ -274,20 +320,46 @@ class FeelParser
     }//end next()
 
     /**
+     * Enter a recursive parse step, enforcing the maximum nesting depth.
+     *
+     * Call once at the top of each re-entrant parse method and pair with a
+     * `--$this->depth` in a `finally` so the counter tracks live stack depth.
+     *
+     * @return void
+     *
+     * @throws InvalidArgumentException When the nesting depth cap is exceeded.
+     */
+    private function enterDepth(): void
+    {
+        ++$this->depth;
+        if ($this->depth > self::MAX_DEPTH) {
+            throw new InvalidArgumentException(
+                'Syntax error: expression nesting exceeds the maximum depth of '.self::MAX_DEPTH.'.'
+            );
+        }
+
+    }//end enterDepth()
+
+    /**
      * Parse an `or`-precedence expression (lowest binding).
      *
      * @return array<string,mixed>
      */
     private function parseOr(): array
     {
-        $left = $this->parseAnd();
-        while ($this->peek()['kind'] === 'keyword' && $this->peek()['value'] === 'or') {
-            $this->next();
-            $right = $this->parseAnd();
-            $left  = ['type' => 'logical', 'op' => 'or', 'left' => $left, 'right' => $right];
-        }
+        $this->enterDepth();
+        try {
+            $left = $this->parseAnd();
+            while ($this->peek()['kind'] === 'keyword' && $this->peek()['value'] === 'or') {
+                $this->next();
+                $right = $this->parseAnd();
+                $left  = ['type' => 'logical', 'op' => 'or', 'left' => $left, 'right' => $right];
+            }
 
-        return $left;
+            return $left;
+        } finally {
+            --$this->depth;
+        }
 
     }//end parseOr()
 
@@ -316,12 +388,17 @@ class FeelParser
      */
     private function parseNot(): array
     {
-        if ($this->peek()['kind'] === 'keyword' && $this->peek()['value'] === 'not') {
-            $this->next();
-            return ['type' => 'not', 'operand' => $this->parseNot()];
-        }
+        $this->enterDepth();
+        try {
+            if ($this->peek()['kind'] === 'keyword' && $this->peek()['value'] === 'not') {
+                $this->next();
+                return ['type' => 'not', 'operand' => $this->parseNot()];
+            }
 
-        return $this->parseComparison();
+            return $this->parseComparison();
+        } finally {
+            --$this->depth;
+        }
 
     }//end parseNot()
 
@@ -450,6 +527,24 @@ class FeelParser
      */
     private function parsePrimary(): array
     {
+        $this->enterDepth();
+        try {
+            return $this->parsePrimaryInner();
+        } finally {
+            --$this->depth;
+        }
+
+    }//end parsePrimary()
+
+    /**
+     * Inner body of {@see parsePrimary()} (depth-guarded by its caller).
+     *
+     * @return array<string,mixed>
+     *
+     * @throws InvalidArgumentException On an unexpected token.
+     */
+    private function parsePrimaryInner(): array
+    {
         $tok = $this->next();
 
         switch ($tok['kind']) {
@@ -498,7 +593,7 @@ class FeelParser
             'Syntax error at position '.$tok['pos'].': unexpected token "'.(string) $tok['value'].'".'
         );
 
-    }//end parsePrimary()
+    }//end parsePrimaryInner()
 
     /**
      * Consume an expected punctuation token or fail.

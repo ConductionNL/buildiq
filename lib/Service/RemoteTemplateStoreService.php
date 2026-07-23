@@ -200,6 +200,13 @@ class RemoteTemplateStoreService
             'timeout'         => self::TIMEOUT,
             'connect_timeout' => self::TIMEOUT,
             'query'           => $params,
+            // SSRF hardening: never follow redirects. assertSafe() validates the
+            // URL at a single point in time; following a 3xx would let a public
+            // host redirect to a private/link-local/metadata address (or exploit
+            // DNS rebinding between validation and connect) with the registry
+            // Bearer token attached. A redirect instead surfaces as a non-2xx
+            // status below and is handled as OUTCOME_UNREACHABLE.
+            'allow_redirects' => false,
         ];
 
         $token = trim($this->appConfig->getValueString(Application::APP_ID, 'registry_token', ''));

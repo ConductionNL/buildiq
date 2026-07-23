@@ -298,4 +298,103 @@ final class RuleEngineServiceTest extends TestCase
         $this->service->evaluate('escalate', [], null, true);
 
     }//end testDryRunDoesNotInvokeDispatcher()
+
+    /**
+     * DoS guard: a rule set whose evaluation re-enters itself (a self-referential
+     * call-rule-set) is refused as a cycle rather than recursing forever.
+     *
+     * @return void
+     */
+    public function testCallRuleSetSelfReferenceIsRefused(): void
+    {
+        $conditionExecutor = $this->createMock(ConditionActionExecutor::class);
+        $service           = new RuleEngineService(
+            $this->objectService,
+            $this->createMock(DecisionTableEvaluator::class),
+            $conditionExecutor,
+            $this->cacheManager,
+            $this->userSession,
+            $this->createMock(LoggerInterface::class),
+            $this->actionDispatcher
+        );
+
+        $this->objectService->method('findAll')->willReturnCallback(
+            function (array $config): array {
+                $schema = (string) ($config['filters']['schema'] ?? '');
+                if ($schema === RuleEngineService::RULE_SET_SCHEMA) {
+                    return [['slug' => 'loop', 'versie' => '1.0', 'ruleType' => 'condition-action']];
+                }
+
+                if ($schema === RuleEngineService::CONDITION_RULE_SCHEMA) {
+                    return [['name' => 'r1']];
+                }
+
+                return [];
+            }
+        );
+
+        // The executor re-enters the engine with the SAME slug (a call-rule-set
+        // action pointing at its own rule set) — the nested call is refused and
+        // surfaced as an evaluation error.
+        $conditionExecutor->method('execute')->willReturnCallback(
+            function () use ($service): array {
+                $service->evaluate(ruleSetSlug: 'loop', payload: []);
+                return ['result' => [], 'errors' => [], 'triggeredRules' => []];
+            }
+        );
+
+        $outcome = $service->evaluate(ruleSetSlug: 'loop', payload: []);
+        $this->assertStringContainsStringIgnoringCase('cycle', implode(' ', $outcome['fouten']));
+
+    }//end testCallRuleSetSelfReferenceIsRefused()
+
+    /**
+     * DoS guard: a chain of distinct rule sets calling one another is bounded by
+     * the maximum call depth — the executor fires at most MAX_CALL_DEPTH times.
+     *
+     * @return void
+     */
+    public function testCallRuleSetDepthIsBounded(): void
+    {
+        $conditionExecutor = $this->createMock(ConditionActionExecutor::class);
+        $service           = new RuleEngineService(
+            $this->objectService,
+            $this->createMock(DecisionTableEvaluator::class),
+            $conditionExecutor,
+            $this->cacheManager,
+            $this->userSession,
+            $this->createMock(LoggerInterface::class),
+            $this->actionDispatcher
+        );
+
+        $this->objectService->method('findAll')->willReturnCallback(
+            function (array $config): array {
+                $schema = (string) ($config['filters']['schema'] ?? '');
+                if ($schema === RuleEngineService::RULE_SET_SCHEMA) {
+                    return [['slug' => 'chain', 'versie' => '1.0', 'ruleType' => 'condition-action']];
+                }
+
+                if ($schema === RuleEngineService::CONDITION_RULE_SCHEMA) {
+                    return [['name' => 'r1']];
+                }
+
+                return [];
+            }
+        );
+
+        $calls = 0;
+        $conditionExecutor->method('execute')->willReturnCallback(
+            function () use ($service, &$calls): array {
+                ++$calls;
+                // Distinct slug each level (not a cycle) — the depth guard stops it.
+                $service->evaluate(ruleSetSlug: 'chain-'.$calls, payload: []);
+                return ['result' => [], 'errors' => [], 'triggeredRules' => []];
+            }
+        );
+
+        $service->evaluate(ruleSetSlug: 'chain-0', payload: []);
+        $this->assertGreaterThan(1, $calls);
+        $this->assertLessThanOrEqual(10, $calls);
+
+    }//end testCallRuleSetDepthIsBounded()
 }//end class
