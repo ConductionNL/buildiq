@@ -28,6 +28,9 @@ import './assets/app.css'
 Vue.mixin({ methods: { t, n } })
 Vue.use(PiniaVuePlugin)
 Vue.use(VueRouter)
+// Global directives (e.g. v-tooltip) live in registerDirectives.js — add new
+// ones there rather than registering per-component, and keep this call in every
+// entry (main / builder / settings) since each bundles its own Vue constructor.
 registerDirectives()
 
 // Library-side icon set + lib translations (best effort).

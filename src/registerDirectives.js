@@ -13,5 +13,7 @@ import { Tooltip } from '@nextcloud/vue'
  * @return {void}
  */
 export function registerDirectives() {
+	// Add any further global directives here — this is the single place the app
+	// installs them, so components can use them without a local registration.
 	Vue.directive('tooltip', Tooltip)
 }

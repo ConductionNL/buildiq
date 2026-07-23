@@ -302,6 +302,20 @@ class ApplicationDeletionService
                 return;
             }
         }//end for
+
+        // Every other exit above returns early; reaching here means the loop ran
+        // the full MAX_PURGE_ROUNDS and still drained a complete batch each round,
+        // so the register was NOT emptied. deleteRegister() will now fail the
+        // register-delete guard ("objects still attached") and orphan the
+        // register — log the true root cause here so that downstream failure is
+        // diagnosable instead of surfacing as an unexplained duplicate-key
+        // rollback on the next same-slug re-create.
+        $this->logger->warning(
+            'OpenBuild: purgeRegisterSchema hit MAX_PURGE_ROUNDS cap for register {slug} '
+            .'schema {schema} — register may still hold objects; downstream '
+            .'register-delete will orphan',
+            ['slug' => $registerSlug, 'schema' => (string) $schemaId, 'batch' => self::PURGE_BATCH_LIMIT, 'rounds' => self::MAX_PURGE_ROUNDS]
+        );
     }//end purgeRegisterSchema()
 
     /**

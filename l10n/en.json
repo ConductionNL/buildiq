@@ -660,7 +660,6 @@
         "Payload path": "Payload path",
         "Per-user overrides are turned off for this app": "Per-user overrides are turned off for this app",
         "Per-user overrides are turned off for this app.": "Per-user overrides are turned off for this app.",
-        "Permanently delete \"{name}\" and all of its versions and data? This cannot be undone.": "Permanently delete \"{name}\" and all of its versions and data? This cannot be undone.",
         "Permission history": "Permission history",
         "Permissions": "Permissions",
         "Permissions changed": "Permissions changed",
@@ -1262,7 +1261,10 @@
         "This form renders as a single step. Add a step to build a multi-step wizard.": "This form renders as a single step. Add a step to build a multi-step wizard.",
         "This pattern is not a valid regular expression.": "This pattern is not a valid regular expression.",
         "Unassigned fields are automatically added to the last step when you save.": "Unassigned fields are automatically added to the last step when you save.",
-        "Unassigned fields:": "Unassigned fields:"
+        "Unassigned fields:": "Unassigned fields:",
+        "Pick a GitHub credential to push with.": "Pick a GitHub credential to push with.",
+        "The token stays in your credential vault. OpenBuild sends only the request it wants made, and the broker injects the token and refuses anything outside the allowed GitHub calls.": "The token stays in your credential vault. OpenBuild sends only the request it wants made, and the broker injects the token and refuses anything outside the allowed GitHub calls.",
+        "You have no GitHub credential yet. Add one under Personal settings → Additional settings, then reopen this dialog. OpenBuild never sees the token itself — it asks the credential broker to make each GitHub call on your behalf.": "You have no GitHub credential yet. Add one under Personal settings → Additional settings, then reopen this dialog. OpenBuild never sees the token itself — it asks the credential broker to make each GitHub call on your behalf."
     },
     "plurals": ""
 }

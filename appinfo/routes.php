@@ -138,6 +138,14 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // runtime that dashboard#builderPath now serves below. MUST precede
         // builderPath so this more-specific literal alternation wins
         // (NC/Symfony route matching is order-sensitive, first-match-wins).
+        //
+        // MAINTENANCE: this alternation duplicates the /builder/:slug/* designer
+        // pages declared in src/manifest.json. When you add a designer surface
+        // there, extend this `designerPath` requirement too, or the new URL
+        // silently falls through to the runtime (builderPath). RoutesTest
+        // (testManifestDesignerRoutesAllResolveToTheDesigner) derives the list
+        // from src/manifest.json and FAILS if the two drift, so the omission is
+        // caught in CI rather than by a user report.
         ['name' => 'dashboard#builderDesigner', 'url' => '/builder/{slug}/{designerPath}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'designerPath' => 'pages|schemas|schemas/[^/]+|walkthrough']],
 
         // ANY OTHER /builder/{slug}/... sub-path is a page defined by the
