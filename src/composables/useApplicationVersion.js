@@ -170,12 +170,19 @@ export function useApplicationVersion(appSlug, versionSlug) {
 		}
 	}
 
-	// Kick off the appropriate fetch immediately.
-	if (versionSlug && versionSlug !== '') {
-		fetchBySlug()
-	} else {
-		fetchDefaultVersion()
-	}
+	// Kick off the appropriate fetch immediately, and KEEP the promise. Callers
+	// that must read `applicationVersion` (rather than merely render it
+	// reactively) have to know when it is settled: `PageDesignerHost.load()`
+	// seeds the editor FROM this value exactly once, so consuming it while the
+	// fetch is still in flight silently yields an empty manifest.
+	//
+	// `fetchDefaultVersion()` makes TWO sequential round trips (/versions, then
+	// the Application record for productionVersion), so it reliably settles LATER
+	// than a single-request caller — the race is not theoretical, it is the
+	// common case (#174).
+	const ready = (versionSlug && versionSlug !== '')
+		? fetchBySlug()
+		: fetchDefaultVersion()
 
-	return { applicationVersion, loading, error }
+	return { applicationVersion, loading, error, ready }
 }
