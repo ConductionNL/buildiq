@@ -86,7 +86,7 @@
       "id": 6,
       "title": "createFromTemplate rate limit + gate",
       "description": "Add #[UserRateLimit] and the creation-wizard authorization gate to ApplicationsController::createFromTemplate.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "openbuild-template-catalogue",
       "acceptance_criteria": [
         "excess calls throttled",
@@ -100,7 +100,7 @@
       "id": 7,
       "title": "createFromTemplate parity test",
       "description": "Test excess createFromTemplate calls are throttled and an unauthorized caller gets 403.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "openbuild-template-catalogue",
       "acceptance_criteria": [
         "rate limit enforced",

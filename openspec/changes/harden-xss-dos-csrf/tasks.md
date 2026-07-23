@@ -19,8 +19,8 @@ so the checkbox count stays within the supervisor cap.
 
 ## 2. DoS — createFromTemplate parity
 
-- [ ] 2.1 Add `#[UserRateLimit]` and the creation-wizard authorization gate to `ApplicationsController::createFromTemplate`.
-- [ ] 2.2 Test: excess `createFromTemplate` calls are throttled; an unauthorized caller gets 403.
+- [x] 2.1 Add `#[UserRateLimit]` and the creation-wizard authorization gate to `ApplicationsController::createFromTemplate`.
+- [x] 2.2 Test: excess `createFromTemplate` calls are throttled; an unauthorized caller gets 403.
 
 ## 3. CSRF — remove unjustified NoCSRFRequired
 

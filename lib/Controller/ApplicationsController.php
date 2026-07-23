@@ -63,6 +63,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -1075,6 +1076,7 @@ class ApplicationsController extends Controller
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     #[NoAdminRequired]
+    #[UserRateLimit(limit: 10, period: 3600)]
     public function createFromTemplate(string $templateSlug): JSONResponse
     {
         // 1. Auth + request validation.
@@ -1084,6 +1086,20 @@ class ApplicationsController extends Controller
         }
 
         $ownerUid = $user->getUID();
+
+        // Parity with ApplicationCreationController::wizard: cloning an app
+        // provisions an OpenRegister register (an admin-only operation in OR,
+        // issue #157), so this fan-out is admin-gated too. Without the gate a
+        // non-admin fails opaquely deep in provisioning; with it they get a
+        // clear 403, and the endpoint cannot be used as an unthrottled
+        // register/schema-sprawl amplifier (paired with the rate limit above).
+        if ($this->groupManager->isInGroup($ownerUid, self::ADMIN_GROUP) === false) {
+            return $this->errorResponse(
+                code: 'forbidden',
+                detail: 'Cloning an app from a template requires Nextcloud admin privileges.',
+                status: Http::STATUS_FORBIDDEN
+            );
+        }
 
         $validation = $this->validateCloneRequest(body: $this->request->getParams());
         if (isset($validation['error']) === true) {
