@@ -1,5 +1,9 @@
 # automation-designer Specification
 
+**OpenSpec changes**: [automation-approval-steps](../../changes/automation-approval-steps/), [automation-document-action](../../changes/automation-document-action/)
+
+**Status**: in-progress
+
 ## Purpose
 TBD - created by archiving change automation-designer. Update Purpose after archive.
 ## Requirements

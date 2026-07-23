@@ -1,5 +1,9 @@
 # docudesk-document-templates Specification
 
+**OpenSpec changes**: [automation-document-action](../../changes/automation-document-action/)
+
+**Status**: in-progress
+
 ## Purpose
 TBD - created by archiving change docudesk-document-templates. Update Purpose after archive.
 ## Requirements

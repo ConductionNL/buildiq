@@ -8,6 +8,10 @@ retrofit_extensions:
 
 # openbuild-runtime Specification
 
+**OpenSpec changes**: [public-forms-runtime](../../changes/public-forms-runtime/)
+
+**Status**: in-progress
+
 ## Purpose
 
 The OpenBuild runtime: foundational shell + per-slug manifest serving, plus every
