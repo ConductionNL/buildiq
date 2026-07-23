@@ -59,6 +59,16 @@ use Throwable;
  */
 class RulesController extends Controller
 {
+
+    /**
+     * Maximum evaluate payload size in bytes (DoS hardening, harden-xss-dos-csrf).
+     *
+     * The payload is logged verbatim into a RuleExecutionLog, so an unbounded
+     * body is an unbounded DB write repeatable up to the rate-limit ceiling.
+     * 64 KiB is generous for any legitimate rule input.
+     */
+    private const MAX_PAYLOAD_BYTES = 65536;
+
     /**
      * Constructor.
      *
@@ -104,6 +114,16 @@ class RulesController extends Controller
         $payload = ($params['payload'] ?? []);
         if (is_array($payload) === false) {
             return $this->error(code: 'invalid_payload', detail: 'payload must be an object', status: Http::STATUS_UNPROCESSABLE_ENTITY);
+        }
+
+        // DoS guard: reject an oversized payload before evaluation or logging.
+        $encoded = json_encode($payload);
+        if ($encoded === false || strlen($encoded) > self::MAX_PAYLOAD_BYTES) {
+            return $this->error(
+                code: 'payload_too_large',
+                detail: 'payload exceeds the maximum size of '.self::MAX_PAYLOAD_BYTES.' bytes',
+                status: Http::STATUS_REQUEST_ENTITY_TOO_LARGE
+            );
         }
 
         $dryRun  = (bool) ($params['dryRun'] ?? false);

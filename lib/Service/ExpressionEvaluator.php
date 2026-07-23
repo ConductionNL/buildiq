@@ -41,11 +41,27 @@ class ExpressionEvaluator
 {
 
     /**
+     * Maximum AST recursion depth during evaluation (DoS hardening,
+     * harden-xss-dos-csrf). The parser's token cap already bounds the AST size,
+     * so this is a defence-in-depth backstop that trips only on a
+     * pathologically deep tree; it is set well above any tree a within-limits
+     * expression can produce.
+     */
+    private const MAX_EVAL_DEPTH = 512;
+
+    /**
      * Parser used to compile string expressions on demand.
      *
      * @var FeelParser
      */
     private FeelParser $parser;
+
+    /**
+     * Current recursion depth of {@see evaluate()}.
+     *
+     * @var integer
+     */
+    private int $depth = 0;
 
     /**
      * Constructor.
@@ -93,6 +109,33 @@ class ExpressionEvaluator
      */
     public function evaluate(array $node, array $context): mixed
     {
+        ++$this->depth;
+        try {
+            if ($this->depth > self::MAX_EVAL_DEPTH) {
+                throw new InvalidArgumentException(
+                    'Expression is too deeply nested to evaluate (max depth '.self::MAX_EVAL_DEPTH.').'
+                );
+            }
+
+            return $this->evaluateNode(node: $node, context: $context);
+        } finally {
+            --$this->depth;
+        }
+
+    }//end evaluate()
+
+    /**
+     * Dispatch a single AST node (depth-guarded by {@see evaluate()}).
+     *
+     * @param array<string,mixed> $node    The AST node.
+     * @param array<string,mixed> $context The data payload.
+     *
+     * @return mixed The evaluation result.
+     *
+     * @throws InvalidArgumentException On an unknown node type.
+     */
+    private function evaluateNode(array $node, array $context): mixed
+    {
         switch (($node['type'] ?? '')) {
             case 'literal':
                 return $node['value'];
@@ -134,7 +177,7 @@ class ExpressionEvaluator
                 throw new InvalidArgumentException('Unknown AST node type: '.(string) ($node['type'] ?? 'null'));
         }//end switch
 
-    }//end evaluate()
+    }//end evaluateNode()
 
     /**
      * Resolve a dot-notation field path against the context.

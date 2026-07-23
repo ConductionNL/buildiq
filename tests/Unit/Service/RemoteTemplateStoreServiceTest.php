@@ -207,6 +207,35 @@ class RemoteTemplateStoreServiceTest extends TestCase
     }//end testSearchTermIsForwardedAsSearchQuery()
 
     /**
+     * SSRF hardening (H2): the registry fetch MUST NOT follow redirects, so a
+     * public host cannot 302-redirect to a private/link-local/metadata address
+     * (or exploit DNS rebinding) with the Bearer token attached.
+     *
+     * @return void
+     */
+    public function testFetchDisablesRedirectFollowing(): void
+    {
+        $this->configure(url: 'https://store.example.test');
+
+        $captured = null;
+        $client   = $this->createMock(IClient::class);
+        $client->method('get')->willReturnCallback(
+            function (string $url, array $options) use (&$captured): IResponse {
+                $captured = $options;
+                return $this->mockResponse(status: 200, body: ['results' => []]);
+            }
+        );
+        $this->clientService->method('newClient')->willReturn($client);
+
+        $this->service()->searchTemplates(query: 'anything');
+
+        self::assertIsArray($captured);
+        self::assertArrayHasKey('allow_redirects', $captured);
+        self::assertFalse($captured['allow_redirects'], 'registry fetch must not follow redirects');
+
+    }//end testFetchDisablesRedirectFollowing()
+
+    /**
      * A thrown client error (registry unreachable / timeout) → outcome
      * `store_unreachable` and empty cards.
      *

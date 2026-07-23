@@ -174,4 +174,29 @@ final class ExpressionEvaluatorTest extends TestCase
         $this->assertTrue($this->evaluator->evaluateExpression('not (age >= 18)', ['age' => 10]));
 
     }//end testNotNegation()
+
+    /**
+     * DoS backstop: a hand-built AST nested beyond the evaluator's maximum depth
+     * is refused rather than recursing until the stack is exhausted.
+     *
+     * @return void
+     */
+    public function testRejectsDeeplyNestedAst(): void
+    {
+        // Raise Xdebug's dev-only stack-depth abort so the evaluator's OWN depth
+        // guard is what trips (production has no Xdebug nesting limit).
+        if (extension_loaded('xdebug') === true) {
+            @ini_set('xdebug.max_nesting_level', '100000');
+        }
+
+        $node = ['type' => 'literal', 'value' => true];
+        for ($i = 0; $i < 600; $i++) {
+            $node = ['type' => 'not', 'operand' => $node];
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('too deeply nested');
+        $this->evaluator->evaluate($node, []);
+
+    }//end testRejectsDeeplyNestedAst()
 }//end class

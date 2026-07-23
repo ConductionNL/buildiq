@@ -196,4 +196,25 @@ final class RulesControllerTest extends TestCase
         $this->assertCount(1, $attributes);
 
     }//end testEvaluateIsNoAdminRequired()
+
+    /**
+     * DoS guard: an evaluate payload larger than the maximum size is rejected
+     * with 413 before it reaches the engine or the audit log.
+     *
+     * @return void
+     */
+    public function testEvaluateRejectsOversizedPayload(): void
+    {
+        $this->authenticate();
+        $this->request->method('getParams')->willReturn(
+            ['payload' => ['blob' => str_repeat('a', 70000)]]
+        );
+
+        // The engine must never be reached for an oversized payload.
+        $this->ruleEngine->expects($this->never())->method('evaluate');
+
+        $response = $this->controller()->evaluate('loan-eligibility');
+        $this->assertSame(Http::STATUS_REQUEST_ENTITY_TOO_LARGE, $response->getStatus());
+
+    }//end testEvaluateRejectsOversizedPayload()
 }//end class
