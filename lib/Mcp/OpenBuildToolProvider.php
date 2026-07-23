@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Mcp;
 
 use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -233,6 +234,7 @@ class OpenBuildToolProvider implements IMcpToolProvider
         private readonly ContainerInterface $container,
         private readonly LoggerInterface $logger,
         private readonly ?PermissionResolver $permissionResolver=null,
+        private readonly ?AuditTrailMapper $auditTrailMapper=null,
     ) {
     }//end __construct()
 
@@ -330,6 +332,7 @@ class OpenBuildToolProvider implements IMcpToolProvider
             $this->logger,
             $this->groupManager,
             $this->permissionResolver,
+            $this->auditTrailMapper,
         );
 
     }//end makeHandler()

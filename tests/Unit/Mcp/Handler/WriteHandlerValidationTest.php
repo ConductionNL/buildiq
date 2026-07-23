@@ -35,7 +35,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Tests\Unit\Mcp\Handler;
 
+use OCA\OpenBuild\Mcp\Handler\AbstractToolHandler;
 use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -720,4 +723,61 @@ class WriteHandlerValidationTest extends TestCase
         return $objectService;
 
     }//end buildOwnerObjectService()
+
+    /**
+     * Build an AbstractToolHandler exposing recordAdminBypass for testing.
+     *
+     * @param AuditTrailMapper|null $auditMapper The audit-trail mapper (or null).
+     *
+     * @return object A handler with a public callRecordAdminBypass() shim.
+     */
+    private function bypassHandler(?AuditTrailMapper $auditMapper): object
+    {
+        return new class($this->userSession, $this->container, $this->logger, $this->groupManager, null, $auditMapper) extends AbstractToolHandler {
+            public function handle(array $args): array
+            {
+                return [];
+            }
+
+            public function callRecordAdminBypass(mixed $entity, string $slug, string $uid): void
+            {
+                $this->recordAdminBypass(appEntity: $entity, appSlug: $slug, uid: $uid);
+            }
+        };
+    }//end bypassHandler()
+
+    /**
+     * L2: an MCP admin-bypass with the audit mapper + app entity available
+     * writes an audit-trail entry (parity with the HTTP path).
+     *
+     * @return void
+     */
+    public function testAdminBypassWritesAuditTrail(): void
+    {
+        $auditMapper = $this->createMock(AuditTrailMapper::class);
+        $entity      = $this->createMock(ObjectEntity::class);
+
+        $auditMapper->expects($this->once())
+            ->method('createAuditTrailEntry')
+            ->with($entity, 'rbac.admin_bypass', $this->anything());
+
+        $this->bypassHandler($auditMapper)->callRecordAdminBypass($entity, 'my-app', 'admin-user');
+
+    }//end testAdminBypassWritesAuditTrail()
+
+    /**
+     * L2: with no audit mapper injected, the bypass falls back to a PSR log and
+     * does not attempt an audit write (best-effort, non-aborting).
+     *
+     * @return void
+     */
+    public function testAdminBypassFallsBackToLogWhenNoMapper(): void
+    {
+        $entity = $this->createMock(ObjectEntity::class);
+        $this->logger->expects($this->once())->method('info')
+            ->with('OpenBuild MCP: rbac.admin_bypass', $this->anything());
+
+        $this->bypassHandler(null)->callRecordAdminBypass($entity, 'my-app', 'admin-user');
+
+    }//end testAdminBypassFallsBackToLogWhenNoMapper()
 }//end class

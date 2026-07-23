@@ -41,6 +41,8 @@ use OCA\OpenBuild\Exception\CopilotException;
 use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
 use OCA\OpenBuild\Service\Copilot\CopilotPlanValidator;
 use OCA\OpenBuild\Service\Copilot\CopilotPromptBuilder;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -160,6 +162,7 @@ class CopilotService
         private readonly CopilotPlanValidator $planValidator,
         private readonly CopilotPromptBuilder $promptBuilder,
         private readonly ApplicationDeletionService $applicationDeletionService,
+        private readonly ?AuditTrailMapper $auditTrailMapper=null,
     ) {
     }//end __construct()
 
@@ -521,7 +524,39 @@ class CopilotService
         }
 
         if ($this->groupManager->isAdmin($userId) === true) {
-            $this->logger->info('OpenBuild Copilot: rbac.admin_bypass', ['actor' => $userId, 'appSlug' => (string) ($app['slug'] ?? '')]);
+            $context = [
+                'event'   => 'rbac.admin_bypass',
+                'actor'   => $userId,
+                'appSlug' => (string) ($app['slug'] ?? ''),
+                'channel' => 'copilot',
+            ];
+
+            // Audit-trail parity with the HTTP/MCP paths (REQ-OBRBAC-007): record
+            // the bypass to the OR per-object audit trail when the mapper + app
+            // entity are available; fail soft to a PSR log otherwise
+            // (harden-rules-authz-and-audit-parity, L2).
+            $entity = null;
+            try {
+                $entity = $this->objectService->find((string) ($app['uuid'] ?? ($app['id'] ?? '')));
+            } catch (\Throwable $e) {
+                $entity = null;
+            }
+
+            if ($this->auditTrailMapper !== null && $entity instanceof ObjectEntity) {
+                try {
+                    $this->auditTrailMapper->createAuditTrailEntry(object: $entity, action: 'rbac.admin_bypass', context: $context);
+                    $this->logger->info('OpenBuild Copilot: rbac.admin_bypass', $context);
+                    return;
+                } catch (\Throwable $e) {
+                    $this->logger->critical(
+                        'OpenBuild Copilot: rbac.admin_bypass audit-trail write failed',
+                        array_merge($context, ['exception' => $e->getMessage()])
+                    );
+                    return;
+                }
+            }
+
+            $this->logger->info('OpenBuild Copilot: rbac.admin_bypass', $context);
         }
     }//end assertWriteRoleOnApp()
 

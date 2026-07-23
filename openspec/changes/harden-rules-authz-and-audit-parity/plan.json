@@ -85,7 +85,7 @@
       "id": 6,
       "title": "MCP admin-bypass audit-trail parity",
       "description": "Inject AuditTrailMapper into AbstractToolHandler and record the admin bypass via recordAdminBypass (fail-soft); same for CopilotService.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "openbuild-rbac",
       "acceptance_criteria": [
         "MCP admin bypass writes an audit-trail entry",
@@ -100,7 +100,7 @@
       "id": 7,
       "title": "MCP audit-trail test",
       "description": "Test that an MCP admin bypass writes an audit-trail entry.",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "openbuild-rbac",
       "acceptance_criteria": [
         "audit-trail entry created on MCP bypass"

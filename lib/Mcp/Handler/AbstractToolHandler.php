@@ -27,6 +27,8 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Mcp\Handler;
 
 use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -67,6 +69,7 @@ abstract class AbstractToolHandler
         protected readonly LoggerInterface $logger,
         protected readonly IGroupManager $groupManager,
         protected readonly ?PermissionResolver $permissionResolver=null,
+        protected readonly ?AuditTrailMapper $auditTrailMapper=null,
     ) {
     }//end __construct()
 
@@ -179,10 +182,7 @@ abstract class AbstractToolHandler
 
         if ($this->callerHasWriteRole(app: $app, uid: $uid, allowAdminBypass: $allowAdminBypass) === true) {
             if ($allowAdminBypass === true && $this->groupManager->isAdmin($uid) === true) {
-                $this->logger->info(
-                    'OpenBuild MCP: rbac.admin_bypass',
-                    ['actor' => $uid, 'appSlug' => $appSlug]
-                );
+                $this->recordAdminBypass(appEntity: $apps[0], appSlug: $appSlug, uid: $uid);
             }
 
             return null;
@@ -194,6 +194,54 @@ abstract class AbstractToolHandler
         );
 
     }//end requireWriteRole()
+
+    /**
+     * Record an MCP admin-bypass to the OpenRegister per-object audit trail, at
+     * parity with the HTTP path (REQ-OBRBAC-007). Falls back to a PSR info log
+     * when the audit mapper or the app ObjectEntity is unavailable; an
+     * audit-write failure is logged at critical (a compliance gap) but never
+     * aborts the bypassed operation (harden-rules-authz-and-audit-parity, L2).
+     *
+     * @param mixed  $appEntity The resolved Application (an ObjectEntity when available).
+     * @param string $appSlug   The app slug.
+     * @param string $uid       The admin actor UID.
+     *
+     * @return void
+     */
+    protected function recordAdminBypass(mixed $appEntity, string $appSlug, string $uid): void
+    {
+        $context = [
+            'event'   => 'rbac.admin_bypass',
+            'actor'   => $uid,
+            'appSlug' => $appSlug,
+            'channel' => 'mcp',
+        ];
+
+        if ($this->auditTrailMapper !== null && $appEntity instanceof ObjectEntity) {
+            try {
+                $this->auditTrailMapper->createAuditTrailEntry(
+                    object: $appEntity,
+                    action: 'rbac.admin_bypass',
+                    context: $context
+                );
+                // Mirror to PSR at info so the bypass is also visible in log streams.
+                $this->logger->info('OpenBuild MCP: rbac.admin_bypass', $context);
+                return;
+            } catch (\Throwable $e) {
+                // Audit-trail write failure is a compliance gap (system of record),
+                // not a routine warning — emit at critical for ops alerting.
+                $this->logger->critical(
+                    'OpenBuild MCP: rbac.admin_bypass audit-trail write failed',
+                    array_merge($context, ['exception' => $e->getMessage()])
+                );
+                return;
+            }
+        }
+
+        // No audit mapper / entity available — best-effort PSR log only.
+        $this->logger->info('OpenBuild MCP: rbac.admin_bypass', $context);
+
+    }//end recordAdminBypass()
 
     /**
      * Verify the current user holds ANY role (owner, editor, or viewer) on the Application.

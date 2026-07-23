@@ -17,8 +17,8 @@ so the checkbox count stays within the supervisor cap.
 
 ## 3. L2 — MCP admin-bypass audit-trail parity
 
-- [ ] 3.1 Inject `AuditTrailMapper` into `AbstractToolHandler` and record the admin bypass via `recordAdminBypass` in the MCP bypass branch (fail-soft on write failure); apply the same to `CopilotService`.
-- [ ] 3.2 Test: an MCP admin bypass writes an audit-trail entry.
+- [x] 3.1 Inject `AuditTrailMapper` into `AbstractToolHandler` and record the admin bypass via `recordAdminBypass` in the MCP bypass branch (fail-soft on write failure); apply the same to `CopilotService`.
+- [x] 3.2 Test: an MCP admin bypass writes an audit-trail entry.
 
 ## 4. L9 — insights role check honours group principals
 
