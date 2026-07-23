@@ -32,6 +32,15 @@
 			</div>
 			<div class="page-designer__toolbar-group">
 				<button
+					v-if="selectedPage"
+					type="button"
+					class="page-designer__tool-btn"
+					:disabled="!isSelectedPagePublic"
+					:title="isSelectedPagePublic ? t('openbuild', 'Manage share links for this page') : t('openbuild', 'Enable \'Public access\' in this page\'s config first')"
+					@click="shareTokensOpen = true">
+					{{ t('openbuild', 'Share') }}
+				</button>
+				<button
 					type="button"
 					class="page-designer__tool-btn page-designer__tool-btn--primary"
 					:disabled="!canSaveAndPreview"
@@ -40,6 +49,14 @@
 				</button>
 			</div>
 		</header>
+
+		<ShareTokenDialog
+			v-if="selectedPage"
+			:open="shareTokensOpen"
+			:app-slug="slug"
+			:page-id="selectedPage.id"
+			:pages="pages"
+			@update:open="shareTokensOpen = $event" />
 
 		<div class="page-designer__panes">
 			<aside class="page-designer__left">
@@ -148,6 +165,7 @@ import RoadmapPageEditor from '../components/page-editor/RoadmapPageEditor.vue'
 import SearchPageEditor from '../components/page-editor/SearchPageEditor.vue'
 import WikiPageEditor from '../components/page-editor/WikiPageEditor.vue'
 import StubPageEditor from '../components/page-editor/StubPageEditor.vue'
+import ShareTokenDialog from '../dialogs/ShareTokenDialog.vue'
 import { useLivePreview } from '../composables/useLivePreview.js'
 import { useManifestValidator } from '../composables/useManifestValidator.js'
 import { useSessionHistory } from '../composables/useSessionHistory.js'
@@ -196,6 +214,7 @@ export default {
 		SearchPageEditor,
 		WikiPageEditor,
 		StubPageEditor,
+		ShareTokenDialog,
 	},
 	/**
 	 * Observed behaviour of `provide` (retrofit annotation).
@@ -266,6 +285,8 @@ export default {
 			// small, dedicated fetch (see fetchApplicationDataRegisters()) and
 			// threaded down to the mounted sub-editor's register picker.
 			applicationDataRegisters: [],
+			// public-forms-runtime: ShareTokenDialog open state (toolbar "Share" button).
+			shareTokensOpen: false,
 		}
 	},
 	computed: {
@@ -311,6 +332,20 @@ export default {
 		 */
 		canSaveAndPreview() {
 			return !!this.slug && this.validatorErrors.length === 0
+		},
+		/**
+		 * Whether the currently-selected page has opted into public sharing
+		 * (`config.public.enabled`) — gates the toolbar "Share" button so a
+		 * link can't be requested for a page ShareTokenService would reject.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/public-forms-runtime/specs/public-form-access/spec.md#requirement-public-page-can-only-be-issued-a-token-when-its-config-declares-publicenabled
+		 */
+		isSelectedPagePublic() {
+			return !!(this.selectedPage
+				&& this.selectedPage.config
+				&& this.selectedPage.config.public
+				&& this.selectedPage.config.public.enabled === true)
 		},
 		/**
 		 * Observed behaviour of `canUndo` (retrofit annotation).

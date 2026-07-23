@@ -55,6 +55,8 @@ use Throwable;
 /**
  * Resolves application slug + optional version slug to a manifest payload,
  * enforcing RBAC for non-production versions.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
  */
 class ManifestResolverService
 {
@@ -265,6 +267,27 @@ class ManifestResolverService
             return null;
         }//end try
     }//end findApplicationBySlug()
+
+    /**
+     * Resolve an Application's production manifest from an ALREADY-FETCHED
+     * Application record (no slug lookup).
+     *
+     * Thin public wrapper around {@see resolveProductionManifest()} so callers
+     * that already hold the Application (e.g. `PublicFormController`, which
+     * resolves it by UUID via `ShareTokenService::resolve()`, not by slug) do
+     * not have to duplicate the productionVersion → manifest walk.
+     *
+     * @param array<string, mixed> $application The normalised Application data.
+     * @param string               $appSlug     Optional slug for logging only.
+     *
+     * @return array<string, mixed>|null
+     *
+     * @spec openspec/changes/public-forms-runtime/specs/openbuild-runtime/spec.md#requirement-public-manifest-resolution-never-uses-sessionorganisation-authorization
+     */
+    public function resolveProductionManifestForApplication(array $application, string $appSlug=''): ?array
+    {
+        return $this->resolveProductionManifest(application: $application, appSlug: $appSlug);
+    }//end resolveProductionManifestForApplication()
 
     /**
      * Resolve the production version manifest from Application.productionVersion.

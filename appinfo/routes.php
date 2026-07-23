@@ -252,6 +252,43 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'copilot#plan',    'url' => '/api/copilot/plan',    'verb' => 'POST'],
         ['name' => 'copilot#execute', 'url' => '/api/copilot/execute', 'verb' => 'POST'],
 
+        // Share-token management (public-forms-runtime, public-form-access
+        // "Token management UI in the page designer and app settings").
+        // Authenticated, owner/editor-only — SAME RBAC posture as
+        // applications#saveManifest (session/organisation, NOT a token).
+        // `{slug}` is the OWNING Application's slug, never the token itself.
+        // Specific-first: `/share-tokens` and `/share-tokens/{tokenUuid}` are
+        // strictly more specific than the `/api/applications/{slug}/manifest`
+        // route above, so ordering relative to it is immaterial, but both are
+        // still declared before the engine-appended SPA catch-all.
+        ['name' => 'shareToken#index',  'url' => '/api/applications/{slug}/share-tokens',             'verb' => 'GET',    'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'shareToken#create', 'url' => '/api/applications/{slug}/share-tokens',             'verb' => 'POST',   'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'shareToken#revoke', 'url' => '/api/applications/{slug}/share-tokens/{tokenUuid}', 'verb' => 'DELETE', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
+        // Anonymous public render + submit (public-forms-runtime,
+        // public-form-access "Public render endpoint resolves a token to
+        // exactly its bound page" / "Anonymous submission writes via
+        // owner-context service"). `#[PublicPage]` on both controller
+        // methods — resolves SOLELY through the `{token}` path param, never
+        // session/organisation (openbuild-runtime "Public manifest
+        // resolution never uses session/organisation authorization"). The
+        // `/submit` suffix disambiguates the two verbs on the same resource
+        // without relying on verb-only dispatch. Registered before the SPA
+        // catch-all; the `/api/public/...` prefix is disjoint from every
+        // other route in this file so ordering relative to them is
+        // immaterial.
+        ['name' => 'publicForm#render', 'url' => '/api/public/forms/{token}',        'verb' => 'GET'],
+        ['name' => 'publicForm#submit', 'url' => '/api/public/forms/{token}/submit', 'verb' => 'POST'],
+
+        // Anonymous public-form SHELL page (serves the bootstrap HTML/JS —
+        // see DashboardController::publicForm()). A page route (not
+        // `/api/...`), deliberately outside `/builder/{slug}` — a share
+        // token names an Application + page, not a slug, and the shell must
+        // carry zero session assumptions (own template + own JS entry,
+        // `openbuild-public-form`). `#[PublicPage]` on the controller
+        // method. Specific-first, before the SPA catch-all.
+        ['name' => 'dashboard#publicForm', 'url' => '/public/forms/{token}', 'verb' => 'GET'],
+
         // NB: the SPA catch-all (dashboard#catchAll) is appended by
         // \OCA\OpenRegister\AppHost\Routes::standard() — do NOT add it here.
     ]
