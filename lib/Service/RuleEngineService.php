@@ -381,6 +381,7 @@ class RuleEngineService
      * Recursively mask configured PII fields in a payload.
      *
      * @param array<string,mixed> $payload The payload to mask.
+     * @param int                 $depth   Current recursion depth (guards against a deeply-nested payload).
      *
      * @return array<string,mixed> A masked copy.
      */
