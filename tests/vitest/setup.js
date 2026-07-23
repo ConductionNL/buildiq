@@ -14,7 +14,7 @@
  * on `globalThis` so direct script-level calls resolve.
  */
 
-import Vue from 'vue'
+import { config } from '@vue/test-utils'
 
 const tStub = (_app, key, _vars) => key
 const nStub = (_app, singular, plural, count) => (count === 1 ? singular : plural)
@@ -22,9 +22,16 @@ const nStub = (_app, singular, plural, count) => (count === 1 ? singular : plura
 globalThis.t = tStub
 globalThis.n = nStub
 
-Vue.mixin({
-	methods: {
-		t: tStub,
-		n: nStub,
+// Vue 3: register the translation stubs as a global mixin for every mounted
+// component (Vue 2's `Vue.mixin()` is gone — Test Utils' config.global is the
+// idiomatic replacement, and covers both `_vm.t(...)` template calls and
+// `this.t(...)` script calls).
+config.global.mixins = [
+	...(config.global.mixins || []),
+	{
+		methods: {
+			t: tStub,
+			n: nStub,
+		},
 	},
-})
+]
