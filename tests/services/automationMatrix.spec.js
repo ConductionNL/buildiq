@@ -5,7 +5,8 @@
  * Vitest spec for the automation-designer v1 compilation matrix.
  *
  * Spec: automation-designer (REQ-AUTD-003 / design.md Decision 2), extended
- * by automation-approval-steps (REQ-AUTD-003 / design.md Decision 1).
+ * by automation-approval-steps (REQ-AUTD-003 / design.md Decision 1) and
+ * automation-document-action (REQ-AUTD-003 / design.md Decision 2).
  */
 import { describe, it, expect } from 'vitest'
 import {
@@ -20,14 +21,14 @@ import {
 } from '../../src/services/automationMatrix.js'
 
 describe('automationMatrix — MATRIX cell-for-cell', () => {
-	it('object-created/updated/deleted allow send-notification and approval', () => {
-		expect(MATRIX['object-created']).toEqual(['send-notification', 'approval'])
-		expect(MATRIX['object-updated']).toEqual(['send-notification', 'approval'])
-		expect(MATRIX['object-deleted']).toEqual(['send-notification', 'approval'])
+	it('object-created/updated/deleted allow send-notification, approval and generateDocument', () => {
+		expect(MATRIX['object-created']).toEqual(['send-notification', 'approval', 'generateDocument'])
+		expect(MATRIX['object-updated']).toEqual(['send-notification', 'approval', 'generateDocument'])
+		expect(MATRIX['object-deleted']).toEqual(['send-notification', 'approval', 'generateDocument'])
 	})
 
-	it('lifecycle-transition allows send-notification, object-op, webhook, approval', () => {
-		expect(MATRIX['lifecycle-transition']).toEqual(['send-notification', 'object-op', 'webhook', 'approval'])
+	it('lifecycle-transition allows send-notification, object-op, webhook, approval, generateDocument', () => {
+		expect(MATRIX['lifecycle-transition']).toEqual(['send-notification', 'object-op', 'webhook', 'approval', 'generateDocument'])
 	})
 
 	it('schedule allows only run-synchronization', () => {
@@ -77,6 +78,15 @@ describe('isActionAllowed', () => {
 		expect(isActionAllowed('manual', 'approval')).toBe(false)
 	})
 
+	it('generateDocument is allowed on event/lifecycle-transition triggers, blocked on schedule/manual', () => {
+		expect(isActionAllowed('object-created', 'generateDocument')).toBe(true)
+		expect(isActionAllowed('object-updated', 'generateDocument')).toBe(true)
+		expect(isActionAllowed('object-deleted', 'generateDocument')).toBe(true)
+		expect(isActionAllowed('lifecycle-transition', 'generateDocument')).toBe(true)
+		expect(isActionAllowed('schedule', 'generateDocument')).toBe(false)
+		expect(isActionAllowed('manual', 'generateDocument')).toBe(false)
+	})
+
 	it('blocks an unknown trigger type', () => {
 		expect(isActionAllowed('not-a-real-trigger', 'send-notification')).toBe(false)
 	})
@@ -105,6 +115,7 @@ describe('blockedActionReason / blockedConditionReason', () => {
 	it('returns a non-empty reason for a blocked combination', () => {
 		expect(blockedActionReason('object-created', 'webhook')).not.toBe('')
 		expect(blockedActionReason('manual', 'approval')).not.toBe('')
+		expect(blockedActionReason('schedule', 'generateDocument')).not.toBe('')
 		expect(blockedConditionReason('schedule')).not.toBe('')
 	})
 })

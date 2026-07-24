@@ -43,6 +43,22 @@
  *     via the shared {@see RuleActionDispatcher}, exactly mirroring how the
  *     rules backend's `manual` trigger dispatches its own actions.
  *
+ *   - Document-generation backend (automation-document-action) — the same
+ *     four triggers + `generateDocument` require NO compile-time upsert
+ *     (unlike `approval`'s `ApprovalChain`) — Docudesk's
+ *     `correspondence/generate` route is stateless, so {@see compile()} only
+ *     validates the action's config (`templateId` present, `output` a
+ *     known, non-empty set, `notify` never alone) and, when Docudesk is
+ *     absent at compile time, throws
+ *     {@see UnsupportedAutomationCombinationException} naming the missing
+ *     dependency (mirrors `docudesk-document-templates` REQ-DDT-005's
+ *     editor-side degradation). Dispatching the actual owner-impersonated
+ *     Docudesk call against a concretely fired object is an imperative,
+ *     per-event side effect realized OUT of this pure compiler, in
+ *     {@see \OCA\OpenBuild\Listener\DocumentGenerationListener} →
+ *     {@see \OCA\OpenBuild\Service\DocumentGenerationService} — the same
+ *     compile/dispatch split the approval backend above already uses.
+ *
  * DEVIATION FROM design.md (documented, not silent — tasks.md apply-notes
  * instruct flagging rather than inventing a runner): design.md's Decision 2
  * matrix table marks `manual` + `run-synchronization` as a ✅ "rules backend"
@@ -85,6 +101,10 @@
  * @spec openspec/changes/automation-approval-steps/tasks.md#1.1
  * @spec openspec/changes/automation-approval-steps/tasks.md#1.2
  * @spec openspec/changes/automation-approval-steps/specs/automation-designer/spec.md#req-autd-004
+ * @spec openspec/changes/automation-document-action/tasks.md#1.1
+ * @spec openspec/changes/automation-document-action/tasks.md#1.2
+ * @spec openspec/changes/automation-document-action/tasks.md#1.3
+ * @spec openspec/changes/automation-document-action/specs/automation-designer/spec.md#req-autd-004
  */
 
 declare(strict_types=1);
@@ -98,6 +118,7 @@ use OCA\OpenRegister\Db\ApprovalStepMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -128,13 +149,34 @@ class AutomationCompilerService
      * @var array<string,array<int,string>>
      */
     private const MATRIX = [
-        'object-created'       => ['send-notification', 'approval'],
-        'object-updated'       => ['send-notification', 'approval'],
-        'object-deleted'       => ['send-notification', 'approval'],
-        'lifecycle-transition' => ['send-notification', 'object-op', 'webhook', 'approval'],
+        'object-created'       => ['send-notification', 'approval', 'generateDocument'],
+        'object-updated'       => ['send-notification', 'approval', 'generateDocument'],
+        'object-deleted'       => ['send-notification', 'approval', 'generateDocument'],
+        'lifecycle-transition' => ['send-notification', 'object-op', 'webhook', 'approval', 'generateDocument'],
         'schedule'             => ['run-synchronization'],
         'manual'               => ['send-notification', 'object-op', 'webhook'],
     ];
+
+    /**
+     * Docudesk app id — presence-checked at compile time for a
+     * `generateDocument` action (design.md Decision 3 of automation-document-
+     * action, mirrors `docudesk-document-templates` REQ-DDT-005's
+     * missing-dependency posture).
+     */
+    private const DOCUDESK_APP_ID = 'docudesk';
+
+    /**
+     * Valid `generateDocument` `output` values (matches
+     * {@see \OCA\OpenBuild\Service\DocumentGenerationService::OUTPUT_MODES}
+     * — kept as an independent literal rather than a cross-class constant
+     * reference so the compiler never has to construct/inject
+     * `DocumentGenerationService` merely to validate config, mirroring how
+     * `RuleActionDispatcher`'s side-effect action list is documented, not
+     * imported, in {@see mapActionToRuleAction()}).
+     *
+     * @var array<int,string>
+     */
+    private const GENERATE_DOCUMENT_OUTPUT_MODES = ['attach', 'download-link', 'notify'];
 
     /**
      * Trigger types on which a condition is v1-supported (design.md Decision 2
@@ -156,6 +198,8 @@ class AutomationCompilerService
      *                                                 `approval` action (ADR-022 boundary; automation-approval-steps).
      * @param ApprovalStepMapper  $approvalStepMapper  OR approval-step mapper — reads the live aggregate
      *                                                 `approvalState()` for the status/dry-run surface.
+     * @param IAppManager         $appManager          Presence-checks Docudesk at compile time for a
+     *                                                 `generateDocument` action (automation-document-action).
      * @param LoggerInterface     $logger              PSR logger.
      *
      * @return void
@@ -165,6 +209,7 @@ class AutomationCompilerService
         private readonly SchemaMapper $schemaMapper,
         private readonly ApprovalChainMapper $approvalChainMapper,
         private readonly ApprovalStepMapper $approvalStepMapper,
+        private readonly IAppManager $appManager,
         private readonly LoggerInterface $logger,
     ) {
 
@@ -248,6 +293,7 @@ class AutomationCompilerService
         $enabled     = (bool) ($automation['enabled'] ?? true);
 
         $this->assertMatrix(triggerType: $triggerType, condition: $condition, actions: $actions);
+        $this->assertGenerateDocumentActions(actions: $actions);
 
         $plan = [
             'notifications'       => [],
@@ -569,6 +615,100 @@ class AutomationCompilerService
     }//end assertMatrix()
 
     /**
+     * Compile-time validation for every `generateDocument` action
+     * (automation-document-action tasks 1.2/1.3 — no compile-time Docudesk
+     * upsert, config validation only): `templateId` present, `output` a
+     * known non-empty set with `notify` never alone, and Docudesk present on
+     * this instance.
+     *
+     * @param array<int,mixed> $actions The automation's action records (already matrix-checked).
+     *
+     * @return void
+     *
+     * @throws UnsupportedAutomationCombinationException On any invalid `generateDocument` config
+     *                                                    or when Docudesk is absent.
+     *
+     * @spec openspec/changes/automation-document-action/tasks.md#1.2
+     * @spec openspec/changes/automation-document-action/tasks.md#1.3
+     */
+    private function assertGenerateDocumentActions(array $actions): void
+    {
+        $generateDocumentActions = array_values(
+            array_filter(
+                $actions,
+                static fn ($action): bool => is_array($action) === true && ($action['type'] ?? '') === 'generateDocument'
+            )
+        );
+
+        if ($generateDocumentActions === []) {
+            return;
+        }
+
+        if ($this->appManager->isEnabledForUser(self::DOCUDESK_APP_ID) === false) {
+            throw new UnsupportedAutomationCombinationException(
+                message: 'The "generateDocument" action requires the "'.self::DOCUDESK_APP_ID.'" app, '
+                .'which is not installed or enabled on this instance.'
+            );
+        }
+
+        foreach ($generateDocumentActions as $action) {
+            $templateId = (string) ($action['templateId'] ?? '');
+            if ($templateId === '') {
+                throw new UnsupportedAutomationCombinationException(
+                    message: 'A "generateDocument" action is missing a required "templateId".'
+                );
+            }
+
+            $outputModes = $this->normaliseGenerateDocumentOutput(raw: $action['output'] ?? null);
+            if ($outputModes === []) {
+                throw new UnsupportedAutomationCombinationException(
+                    message: 'A "generateDocument" action must set "output" to one or more of "'
+                    .implode('", "', self::GENERATE_DOCUMENT_OUTPUT_MODES).'".'
+                );
+            }
+
+            $hasNotify       = in_array('notify', $outputModes, true);
+            $hasDeliveryMode = in_array('attach', $outputModes, true) === true || in_array('download-link', $outputModes, true) === true;
+            if ($hasNotify === true && $hasDeliveryMode === false) {
+                throw new UnsupportedAutomationCombinationException(
+                    message: 'A "generateDocument" action with "output: notify" must also set "attach" '
+                    .'and/or "download-link" — "notify" alone is incomplete.'
+                );
+            }
+        }//end foreach
+
+    }//end assertGenerateDocumentActions()
+
+    /**
+     * Normalise a `generateDocument` action's `output` field to a
+     * deduplicated list of known modes (tolerates the single-string
+     * shorthand shown in design.md's seed data example).
+     *
+     * @param mixed $raw The action's raw `output` value.
+     *
+     * @return array<int,string>
+     */
+    private function normaliseGenerateDocumentOutput(mixed $raw): array
+    {
+        $modes = [];
+        if (is_array($raw) === true) {
+            $modes = $raw;
+        } else if (is_string($raw) === true && $raw !== '') {
+            $modes = [$raw];
+        }
+
+        return array_values(
+            array_unique(
+                array_filter(
+                    $modes,
+                    static fn ($m): bool => is_string($m) === true && in_array($m, self::GENERATE_DOCUMENT_OUTPUT_MODES, true) === true
+                )
+            )
+        );
+
+    }//end normaliseGenerateDocumentOutput()
+
+    /**
      * Dialect backend: event/lifecycle-transition triggers.
      *
      * @param string              $slug        Automation slug.
@@ -622,6 +762,18 @@ class AutomationCompilerService
                     'assigneeGroup' => (string) ($action['assigneeGroup'] ?? ''),
                     'enabled'       => $enabled,
                 ];
+                continue;
+            }
+
+            if ($type === 'generateDocument') {
+                // No compile-time plan entry (design.md Decision 2 of
+                // automation-document-action — Docudesk's generate route is
+                // stateless; already config-validated by
+                // {@see assertGenerateDocumentActions()}). The
+                // owner-impersonated Docudesk call happens at trigger-fire
+                // time in {@see \OCA\OpenBuild\Listener\DocumentGenerationListener},
+                // reading the action straight off the stored `Automation`
+                // object — the compiler has nothing to provision or upsert.
                 continue;
             }
 
@@ -879,6 +1031,13 @@ class AutomationCompilerService
                 'type'       => 'approval',
                 'parameters' => [
                     'assigneeGroup' => (string) ($action['assigneeGroup'] ?? ''),
+                ],
+            ],
+            'generateDocument' => [
+                'type'       => 'generateDocument',
+                'parameters' => [
+                    'templateId' => (string) ($action['templateId'] ?? ''),
+                    'output'     => $this->normaliseGenerateDocumentOutput(raw: $action['output'] ?? null),
                 ],
             ],
             default => ['type' => $type, 'parameters' => []],

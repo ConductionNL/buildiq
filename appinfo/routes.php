@@ -297,6 +297,15 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // method. Specific-first, before the SPA catch-all.
         ['name' => 'dashboard#publicForm', 'url' => '/public/forms/{token}', 'verb' => 'GET'],
 
+        // Anonymous download-link resolver for the `generateDocument`
+        // automation action's `download-link` output mode
+        // (automation-document-action, `GeneratedDocumentController`).
+        // `#[PublicPage]` — the random token IS the authorization, mirroring
+        // the ShareToken/publicForm routes above. `/api/generated-documents/`
+        // is disjoint from every other route in this file so ordering
+        // relative to them is immaterial; declared before the SPA catch-all.
+        ['name' => 'generatedDocument#download', 'url' => '/api/generated-documents/{token}', 'verb' => 'GET'],
+
         // NB: the SPA catch-all (dashboard#catchAll) is appended by
         // \OCA\OpenRegister\AppHost\Routes::standard() — do NOT add it here.
     ]

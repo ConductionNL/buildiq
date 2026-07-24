@@ -1,20 +1,20 @@
 ## 1. Compiler: generateDocument action kind
 
-- [ ] 1.1 Extend the v1 matrix: `object-created|object-updated|object-deleted|lifecycle-transition` + `generateDocument` is supported; `schedule`/`manual` + `generateDocument` stay fail-closed.
-- [ ] 1.2 Compile-time validation only (no Docudesk-side artifact to upsert): `templateId` present, `output` a known value, `notify`-only rejected as incomplete.
-- [ ] 1.3 Throw `UnsupportedAutomationCombinationException` naming the missing `docudesk` dependency when Docudesk is absent at compile time.
+- [x] 1.1 Extend the v1 matrix: `object-created|object-updated|object-deleted|lifecycle-transition` + `generateDocument` is supported; `schedule`/`manual` + `generateDocument` stay fail-closed.
+- [x] 1.2 Compile-time validation only (no Docudesk-side artifact to upsert): `templateId` present, `output` a known value, `notify`-only rejected as incomplete.
+- [x] 1.3 Throw `UnsupportedAutomationCombinationException` naming the missing `docudesk` dependency when Docudesk is absent at compile time.
 
 ## 2. DocumentGenerationService
 
-- [ ] 2.1 Owner-impersonated internal HTTP call to `POST /apps/docudesk/api/correspondence/generate`, reusing `JobOwnerImpersonator` — no `OCA\DocuDesk\*` class import anywhere in the call path.
-- [ ] 2.2 `dataRefs` carries exactly the triggering object's `{register, schema, id}` — no field flattening in OpenBuild.
-- [ ] 2.3 `attach` output: write bytes to Nextcloud Files via `IRootFolder`, set `{ "ref": "<fileId>" }` on the object's attachment field.
-- [ ] 2.4 `download-link` output: short-lived signed URL, no persisted file.
-- [ ] 2.5 `notify` output: dispatches a notification referencing the generated document (paired with attach/download-link).
+- [x] 2.1 Owner-impersonated internal HTTP call to `POST /apps/docudesk/api/correspondence/generate`, reusing `JobOwnerImpersonator` — no `OCA\DocuDesk\*` class import anywhere in the call path.
+- [x] 2.2 `dataRefs` carries exactly the triggering object's `{register, schema, id}` — no field flattening in OpenBuild.
+- [x] 2.3 `attach` output: write bytes to Nextcloud Files via `IRootFolder`, set `{ "ref": "<fileId>" }` on the object's attachment field.
+- [x] 2.4 `download-link` output: short-lived signed URL, no persisted file.
+- [x] 2.5 `notify` output: dispatches a notification referencing the generated document (paired with attach/download-link).
 
 ## 3. Trigger-fire dispatch
 
-- [ ] 3.1 `DocumentGenerationListener` on the trigger's event calls `DocumentGenerationService::generate()`.
+- [x] 3.1 `DocumentGenerationListener` on the trigger's event calls `DocumentGenerationService::generate()`.
 
 ## 4. Editor UI
 
