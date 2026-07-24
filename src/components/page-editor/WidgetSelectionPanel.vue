@@ -95,9 +95,14 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * Drop any selection that no longer exists on the (possibly
+		 * re-fetched) page.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 */
 		widgets() {
-			// Drop any selection that no longer exists on the (possibly
-			// re-fetched) page.
 			const ids = new Set(this.widgets.map((w) => w.id))
 			this.selectedIds = this.selectedIds.filter((id) => ids.has(id))
 		},
@@ -117,6 +122,7 @@ export default {
 		 *
 		 * @param {string} id - the widget id.
 		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		toggle(id) {
 			this.selectedIds = this.isSelected(id)
@@ -127,6 +133,7 @@ export default {
 		 * Open `SaveBlockDialog` for the current selection.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		openSaveDialog() {
 			if (this.captureFragment) {
@@ -138,6 +145,7 @@ export default {
 		 *
 		 * @param {object} payload - `{ slug }` of the saved block.
 		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		onSaved(payload) {
 			this.selectedIds = []

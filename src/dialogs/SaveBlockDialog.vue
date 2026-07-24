@@ -155,6 +155,7 @@ export default {
 		 * Suggested category examples shown in the field label.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		categoryHint() {
 			return BLOCK_CATEGORIES.join(', ')
@@ -186,6 +187,7 @@ export default {
 		 * The source Application's slug (used for de-namespacing).
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		appSlug() {
 			return (this.application && this.application.slug) || ''
@@ -194,6 +196,7 @@ export default {
 		 * The current Nextcloud user id, recorded as `createdBy`.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		currentUserId() {
 			const user = getCurrentUser()
@@ -212,6 +215,7 @@ export default {
 		 * Slug well-formedness (mirrors the schema's `^[a-z0-9][a-z0-9-]*[a-z0-9]$`).
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		slugValid() {
 			return /^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(this.form.slug) && this.form.slug.length <= 48
@@ -222,6 +226,7 @@ export default {
 		 * chain" non-goal).
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		slugTakenError() {
 			return this.existingBlocks.some((b) => b && b.slug === this.form.slug)
@@ -230,6 +235,7 @@ export default {
 		 * Whether Save is allowed.
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		canSave() {
 			return this.form.name.trim().length > 0
@@ -243,18 +249,33 @@ export default {
 		 * Save button label.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		saveLabel() {
 			return this.saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save block')
 		},
 	},
 	watch: {
+		/**
+		 * Reset the form each time the dialog opens.
+		 *
+		 * @param {boolean} value - the new `open` prop value.
+		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 */
 		open(value) {
 			if (value) {
 				this.resetForm()
 			}
 		},
 		fragment: {
+			/**
+			 * Re-check the de-namespace collision whenever the selected
+			 * fragment changes.
+			 *
+			 * @return {void}
+			 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+			 */
 			handler() {
 				this.recomputeCollision()
 			},
@@ -264,6 +285,13 @@ export default {
 			this.slugEditedManually = true
 		},
 	},
+	/**
+	 * Prefill on mount when already open (the parent renders the dialog
+	 * with `v-if="open"`, so `created` fires with `open: true`).
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+	 */
 	created() {
 		if (this.open) {
 			this.resetForm()
@@ -274,6 +302,7 @@ export default {
 		 * Reset the form, prefilled from the selected fragment.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		resetForm() {
 			const first = this.isSection
@@ -297,6 +326,7 @@ export default {
 		 *
 		 * @param {string} value - the new name value.
 		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		onNameInput(value) {
 			this.form.name = value
@@ -310,6 +340,7 @@ export default {
 		 * capture; `SlugCollisionError` names both colliding schemas.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		recomputeCollision() {
 			if (!this.fragment) {
@@ -335,6 +366,7 @@ export default {
 		 * Close the dialog.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		onClose() {
 			if (this.saving) {

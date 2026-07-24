@@ -130,6 +130,7 @@ export default {
 		 * Distinct categories present across the loaded blocks, for the filter.
 		 *
 		 * @return {Array<{id: string, label: string}>}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		categoryOptions() {
 			const seen = new Set()
@@ -142,6 +143,7 @@ export default {
 		 * The visible blocks after the category filter is applied.
 		 *
 		 * @return {Array<object>}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		filteredBlocks() {
 			const selected = this.categoryFilter && (this.categoryFilter.id ?? this.categoryFilter)
@@ -152,12 +154,25 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * Fetch the block list whenever the sidebar panel is opened.
+		 *
+		 * @param {boolean} value - the new `open` prop value.
+		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 */
 		open(value) {
 			if (value) {
 				this.fetchBlocks()
 			}
 		},
 	},
+	/**
+	 * Fetch the block list when already open on mount.
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+	 */
 	mounted() {
 		if (this.open) {
 			this.fetchBlocks()
@@ -187,6 +202,7 @@ export default {
 		 *
 		 * @param {object} block - a `ComponentBlock` record.
 		 * @return {string}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		previewLabel(block) {
 			const fragment = block && block.fragment
@@ -222,6 +238,7 @@ export default {
 		 * @param {object} block - the block being inserted.
 		 * @param {{remapMap?: object, unresolvedDependencies?: string[]}} resolution - the resolved remap.
 		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		emitInsert(block, resolution) {
 			const widgets = insertBlock(block, {
@@ -236,6 +253,7 @@ export default {
 		 *
 		 * @param {object} block - the block to export.
 		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		onExport(block) {
 			downloadBlockExport(block)
@@ -279,6 +297,7 @@ export default {
 		 *
 		 * @param {{remapMap: object, unresolvedDependencies: string[]}} resolution - the resolved remap.
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		async onRemapResolved(resolution) {
 			const pending = this.pendingRemap
@@ -298,6 +317,7 @@ export default {
 		 *
 		 * @param {object} record - the block record to create.
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		async createBlock(record) {
 			try {
@@ -313,6 +333,7 @@ export default {
 		 *
 		 * @param {object} block - the block to delete.
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		async onDelete(block) {
 			this.confirmDeleteSlug = ''

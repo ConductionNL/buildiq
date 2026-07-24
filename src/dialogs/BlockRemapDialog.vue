@@ -73,21 +73,41 @@ export default {
 		 * Options offered in every remap picker.
 		 *
 		 * @return {Array<{id: string, label: string}>}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		schemaOptions() {
 			return this.targetSchemaSlugs.map((slug) => ({ id: slug, label: slug }))
 		},
 	},
 	watch: {
+		/**
+		 * Reset every dependency's picker whenever the dialog opens.
+		 *
+		 * @param {boolean} value - the new `open` prop value.
+		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 */
 		open(value) {
 			if (value) {
 				this.resetSelections()
 			}
 		},
+		/**
+		 * Reset the picker state whenever the mismatched-dependency list changes.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 */
 		dependencies() {
 			this.resetSelections()
 		},
 	},
+	/**
+	 * Reset the picker state when already open on mount.
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+	 */
 	created() {
 		if (this.open) {
 			this.resetSelections()
@@ -98,6 +118,7 @@ export default {
 		 * Reset every dependency's picker to unresolved (null).
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		resetSelections() {
 			const next = {}
@@ -110,6 +131,7 @@ export default {
 		 * Close without resolving anything.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		onClose() {
 			this.$emit('update:open', false)
