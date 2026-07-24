@@ -51,6 +51,7 @@ test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 		await page.waitForLoadState('networkidle')
 	})
 
+	// @e2e ai-copilot::approving-a-proposal-applies-it-to-the-open-app
 	test('Approving a proposal applies it to the open app (spec: ai-copilot)', async ({ page, request }) => {
 		const health = await request.get(HEALTH_URL)
 		test.skip(health.status() === 503, 'No AI provider configured — copilot panel intentionally hidden')
@@ -75,6 +76,7 @@ test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 		await expect(page.locator('text=Suppliers').first()).toBeVisible({ timeout: 15_000 })
 	})
 
+	// @e2e ai-copilot::discarding-a-proposal-changes-nothing
 	test('Discarding a proposal changes nothing (spec: ai-copilot)', async ({ page, request }) => {
 		const health = await request.get(HEALTH_URL)
 		test.skip(health.status() === 503, 'No AI provider configured')
@@ -102,6 +104,7 @@ test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 		await expect(page.locator('text=Suppliers')).toHaveCount(0)
 	})
 
+	// @e2e ai-copilot::no-write-happens-before-approval
 	test('No write happens before approval (spec: ai-copilot)', async ({ page, request }) => {
 		const health = await request.get(HEALTH_URL)
 		test.skip(health.status() === 503, 'No AI provider configured')

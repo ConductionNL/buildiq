@@ -119,6 +119,11 @@ import RuleSetsPageView from './views/RuleSetsPage.vue'
 // automation-designer).
 import AutomationsPageView from './views/AutomationsPage.vue'
 
+// Agent workspace — named, tool-scoped AI agents reusing the ai-copilot
+// plan/execute engine + CopilotPanel chat UX, with a transparent per-run
+// tool-call log (spec agent-workspace).
+import AgentsPageView from './views/AgentsPage.vue'
+
 // Export jobs tab — wraps ExportJobsList as the "Exports" sidebar tab on the
 // VirtualAppDetail page (spec openbuild-exporter task 9.2).
 import ExportJobsTab from './components/tabs/ExportJobsTab.vue'
@@ -256,6 +261,9 @@ export default {
 
 	// Automation designer dashboard (type:"custom" page).
 	AutomationsPageView: page(AutomationsPageView),
+
+	// Agent workspace dashboard (type:"custom" page).
+	AgentsPageView: page(AgentsPageView),
 
 	// Export jobs sidebar tab on VirtualAppDetail (spec openbuild-exporter task 9.2).
 	ExportJobsTab: tab(ExportJobsTab),

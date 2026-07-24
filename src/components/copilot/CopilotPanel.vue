@@ -7,11 +7,24 @@
   version. Every user message produces one assistant turn whose proposed
   operations render as a CopilotProposal card (step list + manifest diff).
   The panel sends an execute request ONLY on Approve — no request is ever
-  sent before an explicit approval, and a Discarded proposal leaves no
-  trace: the input is simply re-enabled for the next message.
+  sent before an explicit approval, and a bare-copilot Discarded proposal
+  leaves no trace: the input is simply re-enabled for the next message.
+
+  Optional agent-scoping props (spec `agent-workspace` design.md Decision 3)
+  — `agentId`/`instructions`/`enabledTools` — let this SAME component serve
+  as the per-agent chat surface on AgentsPage.vue. Omitted entirely (the
+  bare copilot's page-designer usage), the panel behaves exactly as before
+  this change: `enabledTools` is a client-side HINT only (e.g. a future
+  greyed-out affordance) — never the security boundary, which is always the
+  server-side allow-list check in CopilotService.
 -->
 <template>
 	<div data-testid="copilot-panel" class="copilot-panel">
+		<div v-if="agentId" data-testid="copilot-acting-as" class="copilot-panel__acting-as">
+			<strong>{{ t('openbuild', 'Acting as:') }} {{ name || agentId }}</strong>
+			<span v-if="instructions" class="copilot-panel__acting-as-instructions">{{ instructions }}</span>
+		</div>
+
 		<div class="copilot-panel__messages">
 			<div
 				v-for="message in messages"
@@ -65,6 +78,35 @@ export default {
 		appSlug: {
 			type: String,
 			required: true,
+		},
+		/**
+		 * Optional Agent id (spec `agent-workspace` design.md Decision 3).
+		 * Omitted entirely, this panel behaves exactly as the bare copilot
+		 * does today — this is the ONLY prop that changes server-side
+		 * behaviour; `name`/`instructions`/`enabledTools` below are display-only.
+		 */
+		agentId: {
+			type: String,
+			default: '',
+		},
+		/** The agent's name, shown in the "Acting as" header when `agentId` is set. */
+		name: {
+			type: String,
+			default: '',
+		},
+		/** The agent's instructions, shown as a hint under the "Acting as" header. */
+		instructions: {
+			type: String,
+			default: '',
+		},
+		/**
+		 * The agent's effective enabled tools — a client-side HINT only
+		 * (e.g. future greyed-out affordance). Never the security boundary,
+		 * which is always the server-side allow-list check in CopilotService.
+		 */
+		enabledTools: {
+			type: Array,
+			default: () => [],
 		},
 	},
 
@@ -145,7 +187,7 @@ export default {
 			this.messages.push({ id: this.nextMessageId++, role: 'user', text })
 			this.draft = ''
 
-			await this.copilot.generatePlan(text, this.appSlug)
+			await this.copilot.generatePlan(text, this.appSlug, this.agentId || undefined)
 
 			const assistantId = this.nextMessageId++
 			if (this.copilot.state.value === 'review') {
@@ -167,7 +209,7 @@ export default {
 			if (!this.isPendingProposal(message)) {
 				return
 			}
-			await this.copilot.approve()
+			await this.copilot.approve(this.agentId || undefined)
 			if (this.copilot.state.value === 'done') {
 				this.pendingMessageId = null
 				this.copilot.discard()
@@ -187,7 +229,7 @@ export default {
 				return
 			}
 			this.pendingMessageId = null
-			this.copilot.discard()
+			this.copilot.discard(this.agentId || undefined)
 		},
 	},
 }
@@ -207,6 +249,20 @@ export default {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
+}
+
+.copilot-panel__acting-as {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 6px 10px;
+	border-radius: var(--border-radius);
+	background: var(--color-background-hover);
+	font-size: 0.85em;
+}
+
+.copilot-panel__acting-as-instructions {
+	color: var(--color-text-maxcontrast);
 }
 
 .copilot-panel__bubble {

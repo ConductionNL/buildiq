@@ -250,15 +250,27 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'gitHubSync#pull',   'url' => '/api/applications/{slug}/github/pull',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'gitHubSync#status', 'url' => '/api/applications/{slug}/github/status', 'verb' => 'GET',  'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
-        // AI copilot / prompt-to-app (spec `ai-copilot` REQ-OBAIC-001/002/004).
-        // All three #[NoAdminRequired]; per-object RBAC (existing-app owners/
-        // editors, hybrid-app rejection) is enforced inside CopilotService, not
-        // via a route attribute. `plan` performs zero writes; `execute` re-
-        // validates and dispatches through OpenBuildToolProvider::invokeTool().
+        // AI copilot / prompt-to-app (spec `ai-copilot` REQ-OBAIC-001/002/004),
+        // extended with optional agent-scoping (spec `agent-workspace`). All
+        // four #[NoAdminRequired]; per-object RBAC (existing-app owners/
+        // editors, hybrid-app rejection, agent resolution) is enforced inside
+        // CopilotService, not via a route attribute. `plan` performs zero
+        // builder writes; `execute` re-validates and dispatches through
+        // OpenBuildToolProvider::invokeTool(); `discard` only ever runs for
+        // the agent-scoped chat surface (logs a discarded AgentRun).
         // Specific-first, before the engine-appended SPA catch-all.
         ['name' => 'copilot#health',  'url' => '/api/copilot/health',  'verb' => 'GET'],
         ['name' => 'copilot#plan',    'url' => '/api/copilot/plan',    'verb' => 'POST'],
         ['name' => 'copilot#execute', 'url' => '/api/copilot/execute', 'verb' => 'POST'],
+        ['name' => 'copilot#discard', 'url' => '/api/copilot/discard', 'verb' => 'POST'],
+
+        // Agent run-history (spec `agent-workspace`). #[NoAdminRequired] with a
+        // per-object owners/editors guard enforced inside AgentsController —
+        // AgentRun rows are NEVER served through the generic OpenRegister REST
+        // surface (no row-level RBAC there; see AgentsController docblock).
+        // Agent CRUD itself rides OR's generic REST surface (ADR-022), mirroring
+        // AutomationsController's posture for the `automation` object.
+        ['name' => 'agents#runs', 'url' => '/api/agents/{uuid}/runs', 'verb' => 'GET'],
 
         // Share-token management (public-forms-runtime, public-form-access
         // "Token management UI in the page designer and app settings").

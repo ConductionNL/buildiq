@@ -12,7 +12,7 @@
  */
 import { ref, computed } from 'vue'
 import { validateManifest } from '@conduction/nextcloud-vue'
-import { fetchCopilotHealth, requestPlan, executePlan } from '../services/copilot.js'
+import { fetchCopilotHealth, requestPlan, executePlan, discardRun } from '../services/copilot.js'
 
 /** @type {{available: boolean, reason?: string}|null} */
 let healthCache = null
@@ -68,6 +68,10 @@ export function useCopilot() {
 	const manifestErrors = ref(new Map())
 	const errorMessage = ref('')
 	const executeResult = ref(null)
+	// The brief that produced the current/last plan — carried through to
+	// execute()/discard() so an agent-scoped AgentRun record captures the
+	// original prompt (spec `agent-workspace`).
+	const lastPrompt = ref('')
 
 	const isAvailable = computed(() => !!(health.value && health.value.available))
 
@@ -110,17 +114,23 @@ export function useCopilot() {
 	 * Request a plan for a brief, moving to the `review` state on success.
 	 *
 	 * @param {string} brief - natural-language brief.
-	 * @param {string} [appSlug] - optional existing target app slug.
+	 * @param {string} [appSlug] - optional existing target app slug. Ignored
+	 *   server-side when `agentId` is given.
+	 * @param {string} [agentId] - optional Agent id narrowing the effective tool
+	 *   allow-list and prefixing its instructions onto the system prompt
+	 *   (spec `agent-workspace`).
 	 * @return {Promise<void>}
 	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
-	async function generatePlan(brief, appSlug) {
+	async function generatePlan(brief, appSlug, agentId) {
 		state.value = 'planning'
 		errorMessage.value = ''
 		plan.value = null
 		manifestErrors.value = new Map()
+		lastPrompt.value = brief
 		try {
-			const result = await requestPlan({ brief, appSlug })
+			const result = await requestPlan({ brief, appSlug, agentId })
 			plan.value = result
 			manifestErrors.value = validatePredictedManifests(result && result.manifests)
 			state.value = 'review'
@@ -134,17 +144,24 @@ export function useCopilot() {
 	 * Approve the reviewed plan — sends the execute request. No-op unless
 	 * `canApprove` is true (guards against a stale/invalid plan being applied).
 	 *
+	 * @param {string} [agentId] - optional Agent id this plan was planned with
+	 *   (spec `agent-workspace`) — threaded through so the resulting AgentRun
+	 *   record captures the full turn.
 	 * @return {Promise<void>}
 	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
-	async function approve() {
+	async function approve(agentId) {
 		if (!canApprove.value || !plan.value) {
 			return
 		}
 		state.value = 'executing'
 		errorMessage.value = ''
 		try {
-			const result = await executePlan({ summary: plan.value.summary, steps: plan.value.steps })
+			const result = await executePlan(
+				{ summary: plan.value.summary, steps: plan.value.steps },
+				{ agentId, prompt: lastPrompt.value },
+			)
 			executeResult.value = result
 			state.value = 'done'
 		} catch (err) {
@@ -154,12 +171,21 @@ export function useCopilot() {
 	}
 
 	/**
-	 * Discard the current proposal without sending any request — resets to `idle`.
+	 * Discard the current proposal — resets to `idle`. Sends no request for
+	 * the bare copilot path (`agentId` omitted, unchanged from before this
+	 * change); for an agent-scoped chat, best-effort logs the discarded turn
+	 * as an AgentRun (spec `agent-workspace` "A discarded proposal is still
+	 * logged").
 	 *
+	 * @param {string} [agentId] - optional Agent id this plan was planned with.
 	 * @return {void}
 	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
 	 */
-	function discard() {
+	function discard(agentId) {
+		if (agentId && plan.value) {
+			discardRun({ agentId, prompt: lastPrompt.value, plan: { summary: plan.value.summary, steps: plan.value.steps } })
+		}
 		state.value = 'idle'
 		plan.value = null
 		manifestErrors.value = new Map()

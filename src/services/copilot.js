@@ -50,15 +50,21 @@ export async function fetchCopilotHealth() {
  *
  * @param {object} params - request params.
  * @param {string} params.brief - natural-language brief (1-2000 chars).
- * @param {string} [params.appSlug] - optional existing target app slug.
+ * @param {string} [params.appSlug] - optional existing target app slug. Ignored
+ *   server-side (overridden by the resolved agent's applicationSlug) when
+ *   `agentId` is given.
+ * @param {string} [params.agentId] - optional Agent id narrowing the effective
+ *   tool allow-list and prefixing its instructions onto the system prompt
+ *   (spec `agent-workspace`).
  * @return {Promise<{summary: string, steps: Array, manifests: object}>}
  * @throws {{status: number, error: string, message: string}} Normalised error envelope.
  * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
-export async function requestPlan({ brief, appSlug } = {}) {
+export async function requestPlan({ brief, appSlug, agentId } = {}) {
 	try {
 		const url = generateUrl('/apps/openbuild/api/copilot/plan')
-		const { data } = await axios.post(url, { brief, appSlug })
+		const { data } = await axios.post(url, { brief, appSlug, agentId })
 		return data
 	} catch (err) {
 		throw normaliseError(err)
@@ -69,16 +75,45 @@ export async function requestPlan({ brief, appSlug } = {}) {
  * POST /api/copilot/execute — execute a reviewed plan atomically.
  *
  * @param {{summary: string, steps: Array}} plan - the reviewed plan, echoed back verbatim.
+ * @param {object} [options] - agent-scoping options.
+ * @param {string} [options.agentId] - optional Agent id this plan was planned with.
+ * @param {string} [options.prompt] - the original brief for this turn, needed to write
+ *   a complete AgentRun record. Ignored server-side when `agentId` is omitted.
  * @return {Promise<{results: Array}>}
  * @throws {{status: number, error: string, message: string}} Normalised error envelope.
  * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
-export async function executePlan(plan) {
+export async function executePlan(plan, { agentId, prompt } = {}) {
 	try {
 		const url = generateUrl('/apps/openbuild/api/copilot/execute')
-		const { data } = await axios.post(url, plan)
+		const { data } = await axios.post(url, { ...plan, agentId, prompt })
 		return data
 	} catch (err) {
 		throw normaliseError(err)
+	}
+}
+
+/**
+ * POST /api/copilot/discard — log a discarded agent-chat proposal.
+ *
+ * Only ever called for the agent-scoped chat surface — the bare copilot
+ * panel discards without sending any request (unchanged from before this
+ * change).
+ *
+ * @param {object} params - request params.
+ * @param {string} params.agentId - the Agent id this turn belongs to.
+ * @param {string} params.prompt - the user's brief for this turn.
+ * @param {{summary: string, steps: Array}} params.plan - the reviewed-then-discarded plan.
+ * @return {Promise<void>} Resolves even on failure — a lost audit-log write must
+ *   never block the user's discard action.
+ * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
+ */
+export async function discardRun({ agentId, prompt, plan } = {}) {
+	try {
+		const url = generateUrl('/apps/openbuild/api/copilot/discard')
+		await axios.post(url, { agentId, prompt, ...plan })
+	} catch (err) {
+		// Best-effort: a failed audit-log write must not surface as a user-facing error.
 	}
 }
