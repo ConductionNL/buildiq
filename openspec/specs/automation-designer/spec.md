@@ -1,6 +1,6 @@
 # automation-designer Specification
 
-**OpenSpec changes**: [automation-approval-steps](../../changes/automation-approval-steps/), [automation-document-action](../../changes/automation-document-action/)
+**OpenSpec changes**: [automation-approval-steps](../../changes/archive/2026-07-23-automation-approval-steps/) _(archived 2026-07-23)_, [automation-document-action](../../changes/automation-document-action/)
 
 **Status**: in-progress
 
@@ -51,9 +51,11 @@ cron schedule reusing the schedules-editor cadence presets / manual), an
 optional CONDITION (a FEEL-subset expression or a reference to an existing
 rule set), and one or more typed ACTIONS (`send-notification`,
 `run-synchronization`, `object-op` create/update on a schema, `webhook`
-POST). Schema, transition and synchronization pickers SHALL be populated from
-OpenRegister REST and degrade to free-text ids when a list cannot load. All
-selects SHALL carry `:input-label`.
+POST, `approval` — assignee is an NC group, with optional on-approve and
+on-reject follow-up action lists composed from the same typed-action
+vocabulary). Schema, transition, synchronization and NC-group pickers SHALL
+be populated from OpenRegister/Nextcloud REST and degrade to free-text ids
+when a list cannot load. All selects SHALL carry `:input-label`.
 
 **ID:** REQ-AUTD-002
 
@@ -83,15 +85,28 @@ selects SHALL carry `:input-label`.
 - **THEN** the persisted automation carries the FEEL condition and the typed
   `object-op` action
 
+#### Scenario: Compose an approval action with on-approve and on-reject follow-ups
+
+- **WHEN** the editor creates an automation with trigger "object created" on
+  schema `permit-application`, an `approval` action assigned to NC group
+  `permit-reviewers`, an on-approve `object-op` status update, and an
+  on-reject `send-notification`, and saves
+- **THEN** the persisted automation carries the typed `approval` action with
+  `assigneeGroup: "permit-reviewers"` and both follow-up action lists
+
 ### Requirement: Unsupported trigger and action combinations are blocked fail-closed
 
-The system SHALL enforce the v1 compilation matrix (design.md Decision 2) in
-both the editor and the compiler: a trigger/action combination or a condition
-placement that no existing declarative primitive can express (e.g. object
-created + `object-op`, a condition on a plain object-event or schedule
-trigger, any approval-step action) SHALL be blocked with an explicit message
-naming the unsupported combination. The system SHALL NOT silently drop,
-stub, or partially compile an unsupported automation.
+The system SHALL enforce the v1 compilation matrix (design.md Decision 2 of
+`automation-designer`, extended by design.md Decision 1 of
+`automation-approval-steps`) in both the editor and the compiler: a
+trigger/action combination or a condition placement that no existing
+declarative primitive can express (e.g. object created + `object-op`, a
+condition on a plain object-event or schedule trigger, an `approval` action on
+a `schedule` or `manual` trigger) SHALL be blocked with an explicit message
+naming the unsupported combination. The system SHALL NOT silently drop, stub,
+or partially compile an unsupported automation. `approval` on an
+event/lifecycle-transition trigger IS supported (see the compilation
+requirement below) and SHALL NOT be blocked.
 
 **ID:** REQ-AUTD-003
 
@@ -109,6 +124,20 @@ stub, or partially compile an unsupported automation.
 - **THEN** validation reports that conditions are only supported on manual
   triggers in v1 and the automation cannot be saved with the condition
 
+#### Scenario: Approval action on a schedule trigger is blocked
+
+- **WHEN** the editor selects trigger "schedule" and attempts to add an
+  `approval` action
+- **THEN** the editor blocks the combination with a message stating approval
+  actions are only supported on object-event and lifecycle-transition
+  triggers in v1
+
+#### Scenario: Approval action on an event trigger is accepted
+
+- **WHEN** the editor selects trigger "object created" and adds an `approval`
+  action with an assignee group
+- **THEN** the editor accepts the combination and the automation can be saved
+
 ### Requirement: Automations compile deterministically to existing declarative primitives
 
 The system SHALL compile a saved automation (`AutomationCompilerService`)
@@ -121,10 +150,17 @@ tagged with an `aut-<slug>` marker; schedule + `run-synchronization` → a
 `manifest.schedules[]` entry with id `aut-<slug>-<n>` and action
 `openconnector:synchronization`, valid against the existing schedules
 validator; manual → a namespaced RuleSet (`aut-<uuid8>`) plus
-ConditionActionRule evaluated by the existing rules engine. Compilation SHALL
-be deterministic (identical automation → identical artifacts) and idempotent
-(recompiling an unchanged automation changes nothing). No new imperative
-execution engine is introduced in openbuild.
+ConditionActionRule evaluated by the existing rules engine;
+event/lifecycle-transition + `approval` → an OpenRegister `ApprovalChain`
+named `aut-<slug>` (one step, `role` = the assignee group), upserted via OR's
+approval-chains API and instantiated against the trigger object's uuid via
+`ApprovalService::initializeChain()` at trigger-fire time; on-approve/
+on-reject follow-up actions dispatch through a typed listener on OR's
+`ApprovalStepApprovedEvent`/`ApprovalStepRejectedEvent`, never a new
+approval engine. Compilation SHALL be deterministic (identical automation →
+identical artifacts) and idempotent (recompiling an unchanged automation
+changes nothing). No new imperative execution engine is introduced in
+openbuild.
 
 @e2e exclude backend compilation contract — artifact shapes are asserted by
 PHPUnit against `AutomationCompilerService` (unit) and the OR round-trip
@@ -165,6 +201,29 @@ the existing SchedulesSection e2e surface
 - **WHEN** an unchanged automation is compiled twice
 - **THEN** the second compile produces byte-identical artifacts and the
   `provenance.compiledHash` is unchanged
+
+#### Scenario: Approval action compiles to an OR approval chain
+
+- **WHEN** an enabled automation with trigger "object created" on
+  `permit-application` and one `approval` action assigned to group
+  `permit-reviewers` is compiled
+- **THEN** an OR `ApprovalChain` named `aut-<slug>` exists with one step
+  `{order: 1, role: "permit-reviewers"}`
+- **AND** the automation's `provenance.approvalChainName` names it
+
+#### Scenario: Trigger firing initialises an approval step
+
+- **WHEN** an object is created that matches an enabled automation's
+  `approval` action trigger
+- **THEN** `ApprovalService::initializeChain()` is called for that object's
+  uuid against the compiled chain, creating a `pending` `ApprovalStep`
+
+#### Scenario: Approval outcome dispatches the configured follow-up
+
+- **WHEN** an `ApprovalStep` compiled from an automation's `approval` action
+  is approved
+- **THEN** the automation's on-approve follow-up actions are dispatched
+- **AND** no on-reject follow-up action is dispatched
 
 ### Requirement: An automation is managed as one unit with provenance
 
@@ -228,8 +287,13 @@ JSON payload and calls `POST /api/automations/{uuid}/dry-run`. The endpoint
 SHALL compile the automation in-memory to its rules-backend representation
 and evaluate it through the existing rule engine with `dryRun: true`,
 returning whether the condition matched, the would-be actions (marked
-dry-run/skipped), errors, and duration. A dry run SHALL NOT dispatch any side
-effect and SHALL NOT modify any compiled artifact.
+dry-run/skipped), errors, and duration. For an automation carrying an
+`approval` action, the dry-run response and `AutomationsController::status()`
+SHALL additionally report the aggregate state (`none|pending|approved
+|rejected`) of the automation's most recently initialised approval chain
+instantiation, read from OR's `ApprovalStep`s for the compiled chain. A dry
+run SHALL NOT dispatch any side effect, SHALL NOT initialise a real approval
+step, and SHALL NOT modify any compiled artifact.
 
 **ID:** REQ-AUTD-007
 
@@ -248,6 +312,21 @@ effect and SHALL NOT modify any compiled artifact.
   automation's condition
 - **THEN** the panel reports the condition did not match and lists no
   would-be actions
+
+#### Scenario: Dry-run of an approval automation reports would-be approval, not a real step
+
+- **WHEN** the editor runs a dry-run test of an automation with an `approval`
+  action against a matching sample payload
+- **THEN** the panel lists the `approval` action as would-be executed
+  (dry-run, skipped)
+- **AND** no `ApprovalStep` is created in OpenRegister
+
+#### Scenario: Status reports the live approval state
+
+- **WHEN** an automation's compiled `approval` action has an in-flight
+  `pending` `ApprovalStep` for the most recently triggered object
+- **THEN** `AutomationsController::status()` reports `approvalState:
+  "pending"` for that automation
 
 ### Requirement: RBAC — editors author and test, owners enable on production
 

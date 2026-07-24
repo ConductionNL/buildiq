@@ -73,6 +73,13 @@
 							{{ t('openbuild', 'Recompile (overwrite)') }}
 						</NcButton>
 					</span>
+					<span
+						v-if="approvalStateFor(automation.id)"
+						class="automations-page__approval-badge"
+						:class="`automations-page__approval-badge--${approvalStateFor(automation.id)}`"
+						data-testid="approval-state-badge">
+						{{ approvalStateLabel(approvalStateFor(automation.id)) }}
+					</span>
 				</div>
 				<div class="automations-page__item-side">
 					<NcCheckboxRadioSwitch
@@ -277,6 +284,34 @@ export default {
 		driftFor(uuid) {
 			const status = this.statusByUuid[uuid]
 			return !!(status && status.drift === true)
+		},
+		/**
+		 * The automation's live aggregate approval state, or '' when none/absent
+		 * (spec REQ-AUTD-007 — status surfaces approval state).
+		 *
+		 * @param {string} uuid - the automation's uuid.
+		 * @return {string}
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
+		 */
+		approvalStateFor(uuid) {
+			const status = this.statusByUuid[uuid]
+			const state = status && status.approvalState
+			return (state && state !== 'none') ? state : ''
+		},
+		/**
+		 * Human label for an approval state value.
+		 *
+		 * @param {string} state - one of pending|approved|rejected.
+		 * @return {string}
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
+		 */
+		approvalStateLabel(state) {
+			const labels = {
+				pending: t('openbuild', 'Approval pending'),
+				approved: t('openbuild', 'Approved'),
+				rejected: t('openbuild', 'Rejected'),
+			}
+			return labels[state] || state
 		},
 		/**
 		 * Human trigger summary for a row.
@@ -502,5 +537,25 @@ export default {
 	gap: 6px;
 	color: var(--color-warning-text, var(--color-warning));
 	font-size: 0.85em;
+}
+
+.automations-page__approval-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 0.85em;
+	font-weight: bold;
+}
+
+.automations-page__approval-badge--pending {
+	color: var(--color-warning-text, var(--color-warning));
+}
+
+.automations-page__approval-badge--approved {
+	color: var(--color-success-text, var(--color-success));
+}
+
+.automations-page__approval-badge--rejected {
+	color: var(--color-error-text, var(--color-error));
 }
 </style>

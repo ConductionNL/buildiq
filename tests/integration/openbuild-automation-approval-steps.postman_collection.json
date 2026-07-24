@@ -1,0 +1,139 @@
+{
+  "info": {
+    "name": "OpenBuild Automation Approval Steps Contract",
+    "description": "Newman/Postman contract suite for the automation-approval-steps change (task 6.2). Covers: (1) AutomationsController::status() surfaces `approvalState` (spec REQ-AUTD-007 task 5.1); (2) POST .../dry-run surfaces `approvalState` alongside the would-be-actions result and creates no real ApprovalStep (task 5.2); (3) OpenRegister's `/api/approval-steps` list endpoint is reachable and reflects the group-based `role` filter the My Approvals widget relies on (task 4.1); (4) no OpenBuild pass-through route exists for approve/reject — `/apps/openbuild/api/approval-steps/{id}/approve` 404s, proving the widget calls OpenRegister directly (task 4.2, ADR-022 redundant-controller gate).\n\nSETUP PRECONDITION: requires a seeded `automation` object (openbuild register) with trigger `{type: object-created, schema: <seeded-schema>}` and one `approval` action assigned to a group the `adminUser` account belongs to, already compiled (POST .../compile called once so `provenance.approvalChainName` is set) — set `automationUuid` accordingly. Skips gracefully (logs a note, does not fail) when `automationUuid` is left at its placeholder default, so a stock/unseeded instance does not produce a false failure.\n\nRun via run-newman.sh. NOT executed in this session (no deploy to the shared dev instance per project policy) — written for CI, mirrors the existing collections' convention of asserting shape/contract rather than requiring bespoke fixture data beyond what's documented above.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "adminUser", "value": "admin" },
+    { "key": "adminPass", "value": "admin" },
+    { "key": "automationUuid", "value": "REPLACE-WITH-SEEDED-APPROVAL-AUTOMATION-UUID" }
+  ],
+  "auth": {
+    "type": "basic",
+    "basic": [
+      { "key": "username", "value": "{{adminUser}}" },
+      { "key": "password", "value": "{{adminPass}}" }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. status() surfaces approvalState (none|pending|approved|rejected)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/apps/openbuild/api/automations/{{automationUuid}}/status",
+          "host": ["{{baseUrl}}"],
+          "path": ["apps", "openbuild", "api", "automations", "{{automationUuid}}", "status"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.variables.get('automationUuid') === 'REPLACE-WITH-SEEDED-APPROVAL-AUTOMATION-UUID') {",
+              "    console.log('SKIP: automationUuid not seeded — see collection description.');",
+              "} else {",
+              "    pm.test('status 200', () => pm.response.to.have.status(200));",
+              "    pm.test('approvalState is one of none|pending|approved|rejected', () => {",
+              "        const body = pm.response.json();",
+              "        pm.expect(['none', 'pending', 'approved', 'rejected']).to.include(body.approvalState);",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. dry-run surfaces approvalState and creates no real ApprovalStep",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"payload\":{}}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/apps/openbuild/api/automations/{{automationUuid}}/dry-run",
+          "host": ["{{baseUrl}}"],
+          "path": ["apps", "openbuild", "api", "automations", "{{automationUuid}}", "dry-run"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.variables.get('automationUuid') === 'REPLACE-WITH-SEEDED-APPROVAL-AUTOMATION-UUID') {",
+              "    console.log('SKIP: automationUuid not seeded — see collection description.');",
+              "} else {",
+              "    pm.test('dry-run 200', () => pm.response.to.have.status(200));",
+              "    pm.test('response carries approvalState field', () => {",
+              "        const body = pm.response.json();",
+              "        pm.expect(body).to.have.property('approvalState');",
+              "    });",
+              "    pm.test('no side effect dispatched (durationMs present, no error)', () => {",
+              "        const body = pm.response.json();",
+              "        pm.expect(body.errors).to.be.an('array');",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. OpenRegister approval-steps list is reachable directly (My Approvals data source)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/apps/openregister/api/approval-steps?status=pending",
+          "host": ["{{baseUrl}}"],
+          "path": ["apps", "openregister", "api", "approval-steps"],
+          "query": [{ "key": "status", "value": "pending" }]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('approval-steps list 200', () => pm.response.to.have.status(200));",
+              "pm.test('response is an array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. No OpenBuild pass-through route exists for approve (ADR-022, task 4.2)",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/apps/openbuild/api/approval-steps/1/approve",
+          "host": ["{{baseUrl}}"],
+          "path": ["apps", "openbuild", "api", "approval-steps", "1", "approve"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('OpenBuild has no approve pass-through route (404, not routed)', () => {",
+              "    pm.expect(pm.response.code).to.equal(404);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ]
+}

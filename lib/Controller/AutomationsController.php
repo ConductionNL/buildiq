@@ -43,6 +43,8 @@
  * @spec openspec/changes/automation-designer/tasks.md#3.1
  * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-007
  * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-008
+ * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
+ * @spec openspec/changes/automation-approval-steps/tasks.md#5.2
  */
 
 declare(strict_types=1);
@@ -67,6 +69,8 @@ use Throwable;
 
 /**
  * Controller serving the automation compile/enable/disable/dry-run/status API.
+ *
+ * @spec openspec/changes/automation-designer/tasks.md#3.1
  */
 class AutomationsController extends Controller
 {
@@ -209,6 +213,7 @@ class AutomationsController extends Controller
      * @return JSONResponse
      *
      * @spec openspec/changes/automation-designer/tasks.md#3.1
+     * @spec openspec/changes/automation-approval-steps/tasks.md#5.2
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 60, period: 60)]
@@ -240,12 +245,21 @@ class AutomationsController extends Controller
 
                 $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
 
+                // Automation-approval-steps REQ-AUTD-007: an automation
+                // carrying an `approval` action reports its live aggregate
+                // approval state alongside the dry-run result (never a real
+                // ApprovalStep — compileDryRunRule()/the executor above never
+                // touch OR's approval tables, only ConditionActionExecutor's
+                // in-memory dry-run marking).
+                $provenance = $this->orArray(value: $automation['provenance'] ?? null);
+
                 return new JSONResponse(
                     data: [
                         'conditionMatched' => (count($outcome['triggeredRules']) > 0),
                         'actions'          => ($outcome['triggeredRules'][0]['actions_executed'] ?? []),
                         'errors'           => $outcome['errors'],
                         'durationMs'       => $durationMs,
+                        'approvalState'    => $this->compiler->approvalState(automation: $automation, provenance: $provenance),
                     ],
                     statusCode: Http::STATUS_OK
                 );
@@ -262,6 +276,7 @@ class AutomationsController extends Controller
      * @return JSONResponse
      *
      * @spec openspec/changes/automation-designer/tasks.md#3.1
+     * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
      */
     #[NoAdminRequired]
     public function status(string $uuid): JSONResponse
@@ -273,6 +288,10 @@ class AutomationsController extends Controller
             action: function (array $automation): JSONResponse {
                 $provenance = $this->orArray(value: $automation['provenance'] ?? null);
                 $status     = $this->compiler->status(automation: $automation, provenance: $provenance);
+                // Automation-approval-steps REQ-AUTD-007: aggregate approval
+                // state (none|pending|approved|rejected) for the automation's
+                // most recently initialised approval chain instantiation.
+                $status['approvalState'] = $this->compiler->approvalState(automation: $automation, provenance: $provenance);
                 return new JSONResponse(data: $status, statusCode: Http::STATUS_OK);
             }
         );

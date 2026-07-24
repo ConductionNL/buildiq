@@ -27,6 +27,11 @@ import ConnectorDataView from './components/runtime/ConnectorDataView.vue'
 // action group `docudesk-document-actions`, REQ-DDT-004).
 import DocumentActions from './components/runtime/DocumentActions.vue'
 
+// Runtime widget — "My approvals" (automation-approval-steps task 4.1):
+// lists the viewer's pending OpenRegister ApprovalSteps with approve/reject
+// actions calling OR's REST API directly.
+import MyApprovalsWidget from './components/runtime/MyApprovalsWidget.vue'
+
 /**
  * Build a slot-override registry entry (CnPageRenderer resolves any `kind`
  * with a `component` via the slot-override path; `kind: "tab"` makes the
@@ -45,9 +50,11 @@ function tab(component) {
  *
  * @param {object} component - Vue component options.
  * @param {string[]} allowedSlots - manifest slots this widget may occupy.
+ * @param {string} [note] - ADR-049 `_note` justifying a custom widget when no
+ *   built-in type expresses the surface (gate-29 custom-widget-ratchet).
  * @return {object} - the registry entry.
  */
-function widget(component, allowedSlots) {
+function widget(component, allowedSlots, note) {
 	return {
 		kind: 'widget',
 		component,
@@ -56,6 +63,7 @@ function widget(component, allowedSlots) {
 		maxSize: { w: 12, h: 8 },
 		allowedSlots,
 		propsSchema: {},
+		...(note ? { _note: note } : {}),
 	}
 }
 
@@ -66,4 +74,15 @@ export const runtimeRegistry = {
 	'connector-data': widget(ConnectorDataView, ['body', 'sidebar']),
 	// Sidebar-tab / detail action group for Docudesk document generation.
 	'docudesk-document-actions': tab(DocumentActions),
+	// @custom-widget-ratchet exclude automation-approval-steps: "My approvals"
+	// calls OR's dedicated /api/approval-steps{,/approve,/reject} endpoints
+	// directly with client-side group filtering + per-row approve/reject
+	// actions — no built-in object-table/stats-block widget can express a
+	// non-object-service REST action target, so no built-in fits (ADR-049
+	// Decision 1).
+	'my-approvals': widget(
+		MyApprovalsWidget,
+		['body', 'sidebar'],
+		'Approve/reject calls target OpenRegister\'s dedicated approval-steps endpoints directly (not the generic object-service API a built-in object-table row action can express) — no built-in widget fits.'
+	),
 }

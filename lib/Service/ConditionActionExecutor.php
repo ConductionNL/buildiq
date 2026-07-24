@@ -32,6 +32,7 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/business-rules-engine/tasks.md#4.1
+ * @spec openspec/changes/automation-approval-steps/tasks.md#5.2
  */
 
 declare(strict_types=1);
@@ -42,6 +43,9 @@ use Throwable;
 
 /**
  * Synchronous condition-action rule chain executor.
+ *
+ * @spec openspec/changes/business-rules-engine/tasks.md#4.1
+ * @spec openspec/changes/automation-approval-steps/tasks.md#5.2
  */
 class ConditionActionExecutor
 {
@@ -57,9 +61,17 @@ class ConditionActionExecutor
      * (dry-run, skipped) when `$dryRun` is true, otherwise forwarded to the
      * wired `RuleActionDispatcher`.
      *
+     * `approval` was added by the automation-approval-steps change (spec
+     * REQ-AUTD-007) so {@see \OCA\OpenBuild\Service\AutomationCompilerService::compileDryRunRule()}'s
+     * synthetic rule marks it "dry-run, skipped" instead of an "unknown
+     * action type" error. The real compile path never hands this executor a
+     * ConditionActionRule containing an `approval` action — it is blocked on
+     * the `manual` trigger the rules backend serves — so the dry-run panel is
+     * the only caller that ever reaches this branch for `approval`.
+     *
      * @var array<int,string>
      */
-    private const SIDE_EFFECT_ACTIONS = ['send-notification', 'start-workflow', 'call-rule-set', 'object-op', 'webhook'];
+    private const SIDE_EFFECT_ACTIONS = ['send-notification', 'start-workflow', 'call-rule-set', 'object-op', 'webhook', 'approval'];
 
     /**
      * Constructor.
@@ -83,6 +95,8 @@ class ConditionActionExecutor
      * @param callable|null                  $dispatcher Optional fn(string $type, array $params, array $payload): mixed.
      *
      * @return array{triggeredRules:array<int,array<string,mixed>>,result:array<string,mixed>,errors:array<int,string>}
+     *
+     * @spec openspec/changes/business-rules-engine/tasks.md#4.1
      */
     public function execute(array $rules, array $payload, bool $dryRun=false, ?callable $dispatcher=null): array
     {

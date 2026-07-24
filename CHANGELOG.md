@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.4] - 2026-07-23
+
+### Added
+- **Approval automation action** (automation-approval-steps) — a new `approval`
+  action kind on `object-created`/`object-updated`/`object-deleted`/
+  `lifecycle-transition` triggers, group-only assignee, compiling to an
+  OpenRegister `ApprovalChain` instantiated against the trigger object
+  (consume-not-rebuild, ADR-022 — no new approval engine in OpenBuild).
+- On-approve/on-reject follow-up actions, composed from the same typed-action
+  vocabulary (send-notification/object-op/webhook), dispatched by a typed
+  listener on OR's `ApprovalStepApprovedEvent`/`ApprovalStepRejectedEvent`.
+- **"My approvals" runtime widget** — lists the viewer's pending approval
+  steps (filtered client-side by NC group membership) with approve/reject
+  actions calling OpenRegister's `/api/approval-steps` endpoints directly.
+- `AutomationsController::status()` and the dry-run test panel now report
+  `approvalState: none|pending|approved|rejected` for automations carrying an
+  `approval` action.
+
 ## [0.5.40] - 2026-06-26
 
 ### Added

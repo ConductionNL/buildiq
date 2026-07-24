@@ -126,10 +126,14 @@ class ProductionVersionGuardListenerTest extends TestCase
      */
     public function testStopsPropagationOnGuardFailure(): void
     {
+        // getUuid() is a real declared method on the OpenRegister test stub
+        // (added by automation-approval-steps for AutomationApprovalTriggerListenerTest
+        // — previously only resolved via Entity::__call magic) — must go
+        // through onlyMethods(), not addMethods() (PHPUnit 10 throws
+        // CannotUseAddMethodsException for a method that already exists).
         $entity = $this->getMockBuilder(ObjectEntity::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['jsonSerialize', 'getObject'])
-            ->addMethods(['getUuid'])
+            ->onlyMethods(['jsonSerialize', 'getObject', 'getUuid'])
             ->getMock();
         $entity->method('jsonSerialize')->willReturn([
             '@self' => ['schema' => 'application'],
