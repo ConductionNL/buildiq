@@ -21,12 +21,29 @@ menu entry, mirroring the Business rules page).
 
 ## What compiles to what
 
-| Trigger ↓ / Action → | Send notification | Run synchronization | Object-op | Webhook |
-| --- | --- | --- | --- | --- |
-| Object created / updated / deleted | ✅ notifications dialect entry | ⛔ v1.1 | ⛔ v1.1 | ⛔ v1.1 |
-| Lifecycle transition | ✅ notifications dialect entry | ⛔ v1.1 | ✅ lifecycle `related-object-upsert` action | ✅ lifecycle `webhook-dispatch` action |
-| Schedule | ⛔ v1.1 | ✅ `manifest.schedules[]` entry | ⛔ v1.1 | ⛔ v1.1 |
-| Manual | ✅ rules backend | ⛔ v1.1 (no verified "run now" API — see below) | ✅ rules backend | ✅ rules backend |
+| Trigger ↓ / Action → | Send notification | Run synchronization | Object-op | Webhook | Require approval | Generate document |
+| --- | --- | --- | --- | --- | --- | --- |
+| Object created / updated / deleted | ✅ notifications dialect entry | ⛔ v1.1 | ⛔ v1.1 | ⛔ v1.1 | ✅ OR `ApprovalChain` | ✅ owner-impersonated Docudesk call |
+| Lifecycle transition | ✅ notifications dialect entry | ⛔ v1.1 | ✅ lifecycle `related-object-upsert` action | ✅ lifecycle `webhook-dispatch` action | ✅ OR `ApprovalChain` | ✅ owner-impersonated Docudesk call |
+| Schedule | ⛔ v1.1 | ✅ `manifest.schedules[]` entry | ⛔ v1.1 | ⛔ v1.1 | ⛔ no bound object | ⛔ no bound object |
+| Manual | ✅ rules backend | ⛔ v1.1 (no verified "run now" API — see below) | ✅ rules backend | ✅ rules backend | ⛔ no bound object | ⛔ no bound object |
+
+**Require approval** compiles to an OpenRegister `ApprovalChain` (one step,
+group-only assignee) instantiated against the fired object's uuid at
+trigger-fire time; on-approve/on-reject follow-up actions dispatch through
+the same typed-action vocabulary as the top-level actions above.
+
+**Generate document** picks a Docudesk template and one or more output modes
+(`attach` — writes the rendered document to Nextcloud Files and sets a
+`{ "ref": "<fileId>" }` reference on the object; `download-link` — a
+short-lived, ~24h signed download URL; `notify` — a notification, must be
+paired with `attach` and/or `download-link`). Compiles to no persisted
+artifact (Docudesk's generate route is stateless) — a listener calls
+Docudesk's existing `correspondence/generate` route at trigger-fire time,
+impersonating the Application owner's session, never importing a Docudesk
+PHP class. Disabled with a missing-app hint when Docudesk is not installed.
+Both **Require approval** and **Generate document** need a concrete fired
+object to act on, so neither is expressible on `schedule`/`manual` triggers.
 
 A blocked (⛔) combination is refused **in the editor**, with a message
 naming the unsupported combination — nothing is ever silently dropped or
