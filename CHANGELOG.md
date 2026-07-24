@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.7] - 2026-07-24
 
 ### Added
+- **Agent workspace** (agent-workspace) — named, tool-scoped AI agents
+  layered on the existing `ai-copilot` plan/execute engine (ADR-022
+  consume-not-rebuild): an `Agent` (instructions, an explicit subset of the
+  eight `OpenBuildToolProvider` tools, `maxActionsPerRun`) is never a wider
+  capability surface than the bare copilot — enforced server-side as a
+  narrowed intersection of the existing eight-tool catalogue on every
+  plan/execute request, never trusted from the client.
+- Transparent per-run log (`AgentRun`): every plan+execute/discard turn
+  persists the prompt, plan, every tool call's arguments and result, and the
+  outcome (`applied`/`rolled-back`/`discarded`/`plan-rejected`) — the Retool
+  tool-chip transparency pattern, addressing the market-wide "trust gap"
+  evidence directly.
+- `AgentsPage.vue` (CRUD list), `AgentEditDialog.vue`, and a run-history
+  view (`AgentRunHistory.vue`) restricted server-side to owners/editors of
+  the agent's parent Application; `CopilotPanel.vue` gains optional
+  `agentId`/`name`/`instructions`/`enabledTools` props, fully
+  backwards-compatible with the existing bare-copilot surfaces.
+- No autonomous/automation-triggered agent runs in v1 — an agent acts only
+  inside a human-initiated chat turn.
 - **App theming** (app-theming) — a lightweight `runtime.appTheme` manifest
   block (logo + primary/secondary/accent colors + header style) for virtual
   apps not on a mandated NL Design System token set, reusing

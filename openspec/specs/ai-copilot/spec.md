@@ -15,9 +15,9 @@ configured. Two entry points share this contract: the creation wizard's
 "Generate with AI" flow and a chat-style copilot panel in the page
 designer.
 
-**OpenSpec changes**: [ai-copilot-prompt-to-app](../../changes/archive/2026-07-11-ai-copilot-prompt-to-app/) _(archived 2026-07-11)_, [agent-workspace](../../changes/agent-workspace/)
+**OpenSpec changes**: [ai-copilot-prompt-to-app](../../changes/archive/2026-07-11-ai-copilot-prompt-to-app/) _(archived 2026-07-11)_, [agent-workspace](../../changes/archive/2026-07-24-agent-workspace/) _(archived 2026-07-24)_
 
-**Status**: in-progress
+**Status**: done
 
 ## Requirements
 ### Requirement: Copilot availability is probed and the feature degrades gracefully
@@ -59,20 +59,27 @@ provider settings; non-admins see no copilot trace at all.
 
 ### Requirement: A natural-language brief produces a validated builder-operation plan
 
-`POST /api/copilot/plan` SHALL accept `{ brief, appSlug? }` (brief 1–2000
-chars; `appSlug` optional kebab-case slug of an existing target app), call
-the LLM through `OCP\TaskProcessing` (`TextToText`) with a constrained
-system prompt embedding the tool catalogue, and return a plan
-`{ summary, steps[] }` where every step is
-`{ tool, arguments }` with `tool` restricted to the eight allow-listed
-operations (`openbuild.createApp`, `openbuild.upsertSchema`,
-`openbuild.upsertPage`, `openbuild.addWidget`, `openbuild.upsertMenuItem`,
-`openbuild.promoteVersion`, `openbuild.listApps`,
-`openbuild.getAppManifest`) and `arguments` valid against that tool's
-`inputSchema` from `OpenBuildToolProvider::getToolDescriptors()`. Unparsable
-LLM output SHALL trigger exactly one repair round-trip; a second failure
-SHALL return **422** `plan_invalid` with a user-safe message. Planning SHALL
-perform **zero writes**.
+`POST /api/copilot/plan` SHALL accept `{ brief, appSlug?, agentId? }` (brief
+1–2000 chars; `appSlug` optional kebab-case slug of an existing target app;
+`agentId` optional reference to an `Agent`), call the LLM through
+`OCP\TaskProcessing` (`TextToText`) with a constrained system prompt
+embedding the tool catalogue (prefixed with the resolved agent's
+`instructions` when `agentId` is present), and return a plan
+`{ summary, steps[] }` where every step is `{ tool, arguments }` with `tool`
+restricted to the effective allow-list and `arguments` valid against that
+tool's `inputSchema` from `OpenBuildToolProvider::getToolDescriptors()`. The
+effective allow-list SHALL be the eight allow-listed operations
+(`openbuild.createApp`, `openbuild.upsertSchema`, `openbuild.upsertPage`,
+`openbuild.addWidget`, `openbuild.upsertMenuItem`, `openbuild.promoteVersion`,
+`openbuild.listApps`, `openbuild.getAppManifest`) when no `agentId` is given,
+or the server-side intersection of that catalogue with the resolved agent's
+`enabledTools` when `agentId` is given — an agent SHALL NEVER expand the
+allow-list beyond the eight-tool catalogue. Unparsable LLM output SHALL
+trigger exactly one repair round-trip; a second failure SHALL return **422**
+`plan_invalid` with a user-safe message. Planning SHALL perform **zero
+writes**. When `agentId` is present and the plan's step count would exceed
+the agent's `maxActionsPerRun`, the endpoint SHALL return **422** naming the
+violated `max_actions_per_run` cap.
 
 **ID:** REQ-OBAIC-002
 
@@ -106,6 +113,22 @@ REQ-OBAIC-006/007.
 - **WHEN** the LLM returns non-JSON prose twice in a row
 - **THEN** the service issues exactly one repair re-prompt, then returns 422
   `plan_invalid` — never a third LLM call
+
+#### Scenario: An agent-scoped plan step outside that agent's narrower list is rejected
+
+- **GIVEN** an `Agent` with `enabledTools: ["openbuild.upsertPage"]`
+- **WHEN** a plan request carries that agent's `agentId` and the LLM output
+  contains an `openbuild.upsertSchema` step
+- **THEN** the endpoint returns 422 `plan_invalid`, even though
+  `upsertSchema` is in the bare eight-tool catalogue
+
+#### Scenario: An agent-scoped plan exceeding maxActionsPerRun is rejected
+
+- **GIVEN** an `Agent` with `maxActionsPerRun: 3`
+- **WHEN** a plan request carrying that agent's `agentId` yields a 4-step
+  plan
+- **THEN** the endpoint returns 422 naming the violated `max_actions_per_run`
+  cap
 
 ### Requirement: The plan response carries a predicted manifest for review and validation
 
@@ -143,17 +166,23 @@ failed validation means nothing can be applied.
 
 ### Requirement: An approved plan executes atomically through the MCP handler layer
 
-`POST /api/copilot/execute` SHALL accept the reviewed plan verbatim,
-re-validate it server-side (allow-list, per-tool `inputSchema`, predicted
-caps — the server never trusts the client's review), snapshot the manifest
-of every ApplicationVersion the plan touches, and dispatch each step in
-order through `OpenBuildToolProvider::invokeTool()` — the same handler
-classes, RBAC checks, OR object locks and caps as the MCP surface, with no
-duplicated builder logic. On any step failure the service SHALL restore all
-snapshotted manifests, delete an application created by this plan (via
+`POST /api/copilot/execute` SHALL accept the reviewed plan verbatim plus the
+optional `agentId` it was planned with, re-validate it server-side
+(effective allow-list per the resolved agent when `agentId` is present,
+per-tool `inputSchema`, predicted caps — the server never trusts the
+client's review), snapshot the manifest of every ApplicationVersion the plan
+touches, and dispatch each step in order through
+`OpenBuildToolProvider::invokeTool()` — the same handler classes, RBAC
+checks, OR object locks and caps as the MCP surface, with no duplicated
+builder logic. On any step failure the service SHALL restore all snapshotted
+manifests, delete an application created by this plan (via
 `ApplicationDeletionService`), and return **422** with the failed step index
 and the handler's error envelope — a failed plan leaves no plan-created
-state behind. On success it SHALL return the ordered per-step results.
+state behind. On success it SHALL return the ordered per-step results. When
+`agentId` is present, the service SHALL persist an `AgentRun` record (see
+`agent-workspace`) capturing the prompt, plan, each tool call's arguments and
+result, and the final outcome, regardless of success, rollback, or
+plan-rejection.
 
 **ID:** REQ-OBAIC-004
 
@@ -184,6 +213,13 @@ Playwright specs under REQ-OBAIC-006/007, which create and mutate real apps.
 - **THEN** it is rejected by `UpsertPageHandler`'s own route-injection guard
   (issue #167) — proving the copilot path runs the identical handler
   validation
+
+#### Scenario: An agent-scoped execute persists a transparent run record
+
+- **GIVEN** an approved plan executed with `agentId` set
+- **WHEN** execution completes, whether successfully or via rollback
+- **THEN** an `AgentRun` record exists capturing the prompt, plan, every
+  tool call's arguments and result, and the final outcome
 
 ### Requirement: Copilot writes are RBAC-guarded like the wizard and the MCP tools
 
