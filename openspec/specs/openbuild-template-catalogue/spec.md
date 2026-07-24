@@ -4,7 +4,7 @@ status: in-progress
 
 # openbuild-template-catalogue Specification
 
-**OpenSpec changes**: [component-blocks](../../changes/component-blocks/), [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/)
+**OpenSpec changes**: [component-blocks](../../changes/archive/2026-07-24-component-blocks/) _(archived 2026-07-24)_, [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/)
 
 **Status**: in-progress
 
@@ -137,14 +137,20 @@ guarded by per-template `slug` existence checks (matching the
 
 The OpenBuild frontend SHALL register a Vue route `/templates` whose
 view (`src/views/TemplateGallery.vue`) lists every
-`ApplicationTemplate` visible to the caller via OR REST. The gallery
-SHALL:
+`ApplicationTemplate` visible to the caller via OR REST, plus every
+`ComponentBlock` visible to the caller under a distinct "Blocks" filter (see
+`component-blocks`). The gallery SHALL:
 
-- Show each template's `title`, `useCase`, `description`,
+- Show each `ApplicationTemplate`'s `title`, `useCase`, `description`,
   `category`, and `screenshotUrl` if present
+- Show each `ComponentBlock`'s `name`, `description`, `category`, and a
+  fragment preview
 - Provide filter controls for `category` and a free-text search over
-  `title` + `useCase` + `description`
-- Surface a "Use this template" action per card
+  `title`/`name` + `useCase` + `description`, plus a top-level toggle between
+  "Templates" and "Blocks"
+- Surface a "Use this template" action per `ApplicationTemplate` card; a
+  `ComponentBlock` card SHALL NOT offer "Use this template" — blocks insert
+  via the page designer's block library, not the gallery
 - Be reachable from a top-level OpenBuild left-nav entry and from a
   "Create from template" CTA on the empty-state of the Application
   list
@@ -169,6 +175,13 @@ CSS variables only (per ADR-010 — no hardcoded colours).
 - **THEN** the empty-state of the Application list shows a "Create
   from template" CTA
 - **AND** clicking the CTA navigates to `/templates`
+
+#### Scenario: Blocks filter shows blocks without the clone action
+
+- **WHEN** a user opens `/templates` and switches to the "Blocks" filter
+- **THEN** the gallery lists `ComponentBlock` entries with name, description,
+  category and a preview
+- **AND** no card in the "Blocks" filter offers a "Use this template" action
 
 ### Requirement: "Use this template" clones into a new Application
 
