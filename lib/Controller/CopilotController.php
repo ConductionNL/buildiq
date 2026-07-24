@@ -90,6 +90,8 @@ class CopilotController extends Controller
      * @return JSONResponse 200 `{status: "ok"}` when available, 503 `{status, reason}` otherwise.
      *
      * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+     * @no-admin-idor-exempt Server-wide TaskProcessing availability probe — takes no caller-supplied
+     *                       object id and reads no per-object data; there is nothing to gate per-caller.
      */
     #[NoAdminRequired]
     public function health(): JSONResponse

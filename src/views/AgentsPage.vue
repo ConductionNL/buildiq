@@ -166,6 +166,7 @@ export default {
 		 * Handle an application selection: reset the agent list + selection, fetch agents.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
 		 */
 		onAppChange() {
 			this.agents = []
@@ -201,12 +202,16 @@ export default {
 		 *
 		 * @param {object} agent - the agent row.
 		 * @return {void}
+		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
 		 */
 		selectAgent(agent) {
 			this.selectedAgent = agent
 			this.activeTab = 'chat'
 		},
-		/** @return {void} */
+		/**
+		 * @return {void}
+		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 */
 		openNew() {
 			this.editingAgent = null
 			this.editDialogOpen = true
@@ -214,6 +219,7 @@ export default {
 		/**
 		 * @param {object} agent - the agent row to edit.
 		 * @return {void}
+		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
 		 */
 		openEdit(agent) {
 			this.editingAgent = agent
@@ -221,6 +227,7 @@ export default {
 		},
 		/**
 		 * @return {void}
+		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
 		 */
 		onDialogSaved() {
 			this.editDialogOpen = false
@@ -231,6 +238,7 @@ export default {
 		 *
 		 * @param {object} agent - the agent row to delete.
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
 		 */
 		async remove(agent) {
 			try {
@@ -249,6 +257,7 @@ export default {
 		 *
 		 * @param {Array|object} data - the raw response body.
 		 * @return {Array<object>}
+		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
 		 */
 		extractResults(data) {
 			if (Array.isArray(data)) {

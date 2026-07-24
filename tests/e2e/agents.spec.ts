@@ -4,6 +4,8 @@
 /**
  * Playwright e2e — Agent Workspace (spec: agent-workspace).
  *
+ * Drives `src/views/AgentsPage.vue` end to end (visual-coverage gate-26).
+ *
  * Implements tasks.md 5.2: create an agent scoped to two tools, chat with
  * it, approve a proposal, confirm the run appears in run-history with
  * tool-call detail; confirm a disallowed tool request is rejected.

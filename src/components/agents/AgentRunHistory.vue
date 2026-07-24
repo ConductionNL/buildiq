@@ -91,6 +91,12 @@ export default {
 	watch: {
 		agentId: {
 			immediate: true,
+			/**
+			 * Re-fetch the run history whenever the selected agent changes.
+			 *
+			 * @return {void}
+			 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+			 */
 			handler() {
 				if (this.agentId) {
 					this.fetchRuns()
@@ -124,6 +130,7 @@ export default {
 		 *
 		 * @param {string} outcome - one of applied|rolled-back|discarded|plan-rejected.
 		 * @return {string}
+		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
 		 */
 		outcomeLabel(outcome) {
 			const labels = {
@@ -139,6 +146,7 @@ export default {
 		 *
 		 * @param {object} value - the arguments or result object.
 		 * @return {string}
+		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
 		 */
 		formatJson(value) {
 			try {
