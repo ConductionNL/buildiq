@@ -79,7 +79,7 @@ export default {
 		 * Quick-pick options from `knownGroups`, deduplicated.
 		 *
 		 * @return {Array<{value: string, label: string}>}
-		 * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+		 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
 		 */
 		options() {
 			const seen = new Set()
@@ -96,7 +96,7 @@ export default {
 		 * The currently-selected option, derived from `permission`.
 		 *
 		 * @return {{value: string, label: string}|null}
-		 * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+		 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
 		 */
 		selectedOption() {
 			const gid = gidFromPermission(this.permission)
@@ -109,7 +109,7 @@ export default {
 		 *
 		 * @param {{value: string}|null} option Selected option, or null when cleared.
 		 * @return {void}
-		 * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+		 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
 		 */
 		onChange(option) {
 			if (!option || !option.value) {
@@ -123,7 +123,7 @@ export default {
 		 *
 		 * @param {string} tag Free-typed group id.
 		 * @return {void}
-		 * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+		 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
 		 */
 		onTag(tag) {
 			if (!tag) {

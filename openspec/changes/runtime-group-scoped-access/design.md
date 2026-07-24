@@ -53,3 +53,27 @@ navigation." This prevents authors from shipping client-only 'security'.
 No new schemas. The Pet Store demo manifest gains `permission: "group:vets"` on
 the medical menu item(s) and a vet dashboard page; `medicalRecord.authorization`
 is set in OpenRegister (already done in the demo).
+
+## Implementation notes (added at build time)
+
+Recorded here rather than silently diverging — see the tasks.md per-task notes
+for full detail:
+
+1. **Server-side enforcement, not client-only hiding.** This design originally
+   framed `permission` filtering as UX-only (Decision 4: "the runtime MUST NOT
+   rely on hidden navigation to protect objects" — true for OBJECT data, which
+   remains OpenRegister's job). The build elevates the MENU/PAGE filtering
+   itself to a server-side gate: `ManifestResolverService::filterManifestForCaller()`
+   strips gated `menu[]`/`pages[]` entries from the manifest response before it
+   ever reaches an out-of-group caller, in the same enforcement path as the
+   existing owner/editor/viewer RBAC (`ApplicationsController::getManifest()`).
+   The client-side `CnAppNav`/`permissions`-prop filtering described in
+   Decision 1 is kept as the defense-in-depth MIRROR, not the only defense.
+2. **Bypass extended to editors.** Decision "admins and application owners
+   MUST see all items" is implemented as admin OR owner OR **editor** —
+   an editor who cannot see a gated menu item/page cannot edit it either.
+3. **Permission-context delivery.** Decision 1 specified `IInitialState`
+   (`user-groups`). The build instead embeds the resolved, ready-to-use
+   permission set at `manifest.runtime.user.permissions`, reusing the existing
+   `manifest.runtime.user.isOwner` precedent (`admin-settings-owner-gating`).
+   Rationale + full detail in tasks.md task 1.1.

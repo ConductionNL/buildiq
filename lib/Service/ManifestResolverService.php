@@ -37,7 +37,7 @@
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
- * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+ * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
  */
 
 declare(strict_types=1);
@@ -613,8 +613,8 @@ class ManifestResolverService
      *                              dashboard the caller satisfies is promoted to
      *                              the landing position (first in `pages[]`).
      *
-     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
-     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-a-group-scoped-dashboard-may-be-the-landing-page-for-its-group
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-a-group-scoped-dashboard-may-be-the-landing-page-for-its-group
      */
     public function filterManifestForCaller(array $manifest, array $application, ?IUser $caller): array
     {
@@ -665,7 +665,7 @@ class ManifestResolverService
      *
      * @return array<int, string> Permission strings for the `permissions` prop.
      *
-     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
      */
     public function resolveCallerPermissionsForDisplay(array $application, ?IUser $caller): array
     {
@@ -698,7 +698,7 @@ class ManifestResolverService
      *
      * @return bool True when the caller is an owner or editor.
      *
-     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
      */
     private function hasWriteRole(array $application, IUser $caller): bool
     {
@@ -730,7 +730,7 @@ class ManifestResolverService
      *
      * @return array<int, string> Permission strings the caller holds.
      *
-     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
      */
     private function buildCallerPermissionSet(IUser $caller): array
     {
@@ -754,7 +754,7 @@ class ManifestResolverService
      *
      * @return array<int, array<string, mixed>> The filtered menu array.
      *
-     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
      */
     private function filterMenuEntries(array $entries, array $callerPermissions): array
     {
@@ -787,7 +787,7 @@ class ManifestResolverService
      *
      * @return array<int, array<string, mixed>> The filtered entries, reindexed.
      *
-     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
      */
     private function filterEntriesByPermission(array $entries, array $callerPermissions): array
     {
@@ -817,7 +817,7 @@ class ManifestResolverService
      *
      * @return bool True when the entry is visible to the caller.
      *
-     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
      */
     private function entryPasses(array $entry, array $callerPermissions): bool
     {
@@ -853,7 +853,7 @@ class ManifestResolverService
      *
      * @return array<int, array<string, mixed>> The pages array, reordered if needed.
      *
-     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-a-group-scoped-dashboard-may-be-the-landing-page-for-its-group
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-a-group-scoped-dashboard-may-be-the-landing-page-for-its-group
      */
     private function promoteLandingDashboard(array $pages): array
     {

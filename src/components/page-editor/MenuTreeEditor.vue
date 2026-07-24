@@ -185,7 +185,7 @@ export default {
 		 * retype a group id for every gated entry.
 		 *
 		 * @return {string[]}
-		 * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+		 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
 		 */
 		knownGroups() {
 			const gids = new Set()

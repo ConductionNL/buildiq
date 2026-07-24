@@ -8,7 +8,7 @@ retrofit_extensions:
 
 # openbuild-runtime Specification
 
-**OpenSpec changes**: [public-forms-runtime](../../changes/archive/2026-07-23-public-forms-runtime/) _(archived 2026-07-23)_
+**OpenSpec changes**: [public-forms-runtime](../../changes/archive/2026-07-23-public-forms-runtime/) _(archived 2026-07-23)_, [runtime-group-scoped-access](../../changes/archive/2026-07-24-runtime-group-scoped-access/) _(archived 2026-07-24)_
 
 **Status**: done
 
@@ -870,3 +870,75 @@ controller method with the authenticated manifest endpoint.
 - **THEN** the endpoint SHALL continue to resolve via the existing
   `BuiltAppRoute` + session/organisation posture exactly as before this
   change, with no token-based branch in that controller method
+
+### Requirement: The runtime MUST inject the current user's group context
+
+When rendering a virtual app, the OpenBuild runtime MUST resolve the current
+user's group memberships server-side and supply them to the manifest renderer
+as the set of permission strings the user holds (`group:<gid>`). When no
+permission context is available the renderer MUST fall back to showing all
+items (no regression for apps without permission fields).
+
+**ID:** REQ-OBR-014
+
+#### Scenario: A vet's group context reaches the renderer
+
+- **GIVEN** the current user is a member of the `vets` group
+- **WHEN** the virtual app is rendered
+- **THEN** the renderer receives a permissions set containing `group:vets`
+
+#### Scenario: Apps without permissions render unchanged
+
+- **GIVEN** a manifest whose menu items and pages declare no `permission`
+- **WHEN** any user opens the app
+- **THEN** every menu item and page renders regardless of the user's groups
+
+### Requirement: Menu items and pages MUST be filterable by permission
+
+A manifest `menu[]` item or `pages[]` entry MAY declare a `permission`
+(string or list). `ApplicationsController::getManifest` MUST, via
+`ManifestResolverService::filterManifestForCaller`, strip that item/page from
+the response payload SERVER-SIDE when the caller holds none of the declared
+permissions — the manifest is filtered before it leaves the server, not
+merely hidden client-side. Admins and callers holding an owner or editor role
+on the Application MUST receive the manifest unfiltered.
+
+**ID:** REQ-OBR-015
+
+#### Scenario: Vets-only medical menu and page
+
+- **GIVEN** the medical menu item and its page declare `permission: "group:vets"`
+- **WHEN** a user in `vets` requests the manifest
+- **THEN** the medical menu item and its page are present in the response
+- **AND WHEN** a user not in `vets` (non-admin, non-owner, non-editor) requests the manifest
+- **THEN** the medical menu item and its page are ABSENT from the response — not merely hidden client-side
+
+### Requirement: A group-scoped dashboard MAY be the landing page for its group
+
+When more than one dashboard-type page exists in `pages[]`, the filtered
+manifest MUST land the caller on the highest-priority dashboard page (index 0)
+whose `permission` the caller satisfies, falling back to the default
+dashboard when none match.
+
+**ID:** REQ-OBR-016
+
+#### Scenario: Vets land on the vet dashboard
+
+- **GIVEN** a default dashboard and a `MedicalDashboard` page with `permission: "group:vets"`
+- **WHEN** a user in `vets` requests the manifest
+- **THEN** `pages[0]` is the vet dashboard
+- **AND** a non-vet user's `pages[0]` is the default dashboard
+
+### Requirement: Navigation hiding MUST NOT be treated as object security
+
+Permission-based hiding of menus and pages remains a presentation concern;
+the authoritative access control for the data a page reads MUST be enforced
+by OpenRegister schema RBAC (`schema.authorization`).
+
+**ID:** REQ-OBR-017
+
+#### Scenario: Object access holds even if navigation is bypassed
+
+- **GIVEN** `medicalRecord.authorization.read = ["vets"]` in OpenRegister
+- **WHEN** a non-vet user requests medical objects directly
+- **THEN** OpenRegister returns no medical objects for that user

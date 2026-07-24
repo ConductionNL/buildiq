@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+ * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
  */
 
 declare(strict_types=1);
@@ -126,7 +126,7 @@ class ManifestResolverServicePermissionFilterTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
      */
     public function testOutOfGroupCallerNeverReceivesGatedMenuItemOrPage(): void
     {
