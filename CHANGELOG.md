@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.7] - 2026-07-24
 
 ### Added
+- **Runtime group-scoped access** (runtime-group-scoped-access) — a manifest
+  `menu[]`/`pages[]` entry may declare a `permission: "group:<gid>"`; the
+  runtime resolves the caller's Nextcloud group context server-side and
+  `ManifestResolverService::filterManifestForCaller()` strips any entry the
+  caller does not hold the permission for from the manifest response BEFORE
+  it leaves the server — the authoritative gate, not client-side hiding.
+  Admins and callers with an owner/editor role on the Application see the
+  manifest unfiltered. A group-scoped dashboard page is promoted to the
+  landing position for members who satisfy it, falling back to the default
+  dashboard otherwise. `PermissionGroupField.vue` adds a group picker to the
+  menu-item and page editors. Client-side `CnAppNav` filtering mirrors the
+  server decision as defense in depth, not the only defense. Documented
+  boundary: this hides navigation only — object-level access for the
+  underlying data remains OpenRegister schema `authorization`'s job.
+
 - **Agent workspace** (agent-workspace) — named, tool-scoped AI agents
   layered on the existing `ai-copilot` plan/execute engine (ADR-022
   consume-not-rebuild): an `Agent` (instructions, an explicit subset of the
