@@ -29,6 +29,8 @@ use OCA\OpenBuild\Controller\DashboardController;
 use OCA\OpenBuild\Controller\PreferencesController;
 use OCA\OpenBuild\Controller\SettingsController;
 use OCA\OpenBuild\Lifecycle\ApplicationVersionOwnerGuard;
+use OCA\OpenBuild\Listener\ApprovalOutcomeListener;
+use OCA\OpenBuild\Listener\AutomationApprovalTriggerListener;
 use OCA\OpenBuild\Listener\AutomationCleanupListener;
 use OCA\OpenBuild\Listener\HybridMetadataLockListener;
 use OCA\OpenBuild\Listener\ProductionVersionGuardListener;
@@ -40,8 +42,13 @@ use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenBuild\Service\SettingsService;
 use OCA\OpenBuild\Settings\AdminSettings;
 use OCA\OpenRegister\AppHost\Bootstrap;
+use OCA\OpenRegister\Event\ApprovalStepApprovedEvent;
+use OCA\OpenRegister\Event\ApprovalStepRejectedEvent;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Event\ObjectTransitionedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
@@ -315,6 +322,49 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(
             event: ObjectDeletedEvent::class,
             listener: AutomationCleanupListener::class
+        );
+
+        // Automation-approval-steps: trigger-fire half of the `approval`
+        // action kind (spec REQ-AUTD-004 approval scenarios). No declarative
+        // primitive already dispatches "start a compiled ApprovalChain
+        // instance when this object-event/lifecycle-transition fires" — OR's
+        // own AnnotationNotificationListener plays that role for the
+        // notifications dialect, but nothing analogous exists for approval
+        // chains started from a plain object event or a non-blocking
+        // transition side effect (ApprovalChainGateListener is a BLOCKING
+        // gate, a different use case). Registered for all four trigger-shape
+        // events the v1 matrix supports (design.md Decision 1 of
+        // automation-approval-steps).
+        $context->registerEventListener(
+            event: ObjectCreatedEvent::class,
+            listener: AutomationApprovalTriggerListener::class
+        );
+        $context->registerEventListener(
+            event: ObjectUpdatedEvent::class,
+            listener: AutomationApprovalTriggerListener::class
+        );
+        $context->registerEventListener(
+            event: ObjectDeletedEvent::class,
+            listener: AutomationApprovalTriggerListener::class
+        );
+        $context->registerEventListener(
+            event: ObjectTransitionedEvent::class,
+            listener: AutomationApprovalTriggerListener::class
+        );
+
+        // Automation-approval-steps: on-approve/on-reject follow-up dispatch
+        // (design.md Decision 3). OR's ApprovalService already dispatches
+        // these typed events for every approve/reject decision regardless of
+        // who started the chain; this listener resolves the originating
+        // automation by its `aut-<slug>` chain name and fires the configured
+        // follow-up actions through the shared RuleActionDispatcher.
+        $context->registerEventListener(
+            event: ApprovalStepApprovedEvent::class,
+            listener: ApprovalOutcomeListener::class
+        );
+        $context->registerEventListener(
+            event: ApprovalStepRejectedEvent::class,
+            listener: ApprovalOutcomeListener::class
         );
 
         // Register OpenBuildToolProvider as the MCP tool provider for the AI Chat Companion.

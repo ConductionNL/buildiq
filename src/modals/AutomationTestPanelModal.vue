@@ -46,6 +46,10 @@
 				<p class="automation-test-panel__duration">
 					{{ t('openbuild', 'Duration') }}: {{ result.durationMs }}ms
 				</p>
+
+				<p v-if="result.approvalState && result.approvalState !== 'none'" class="automation-test-panel__approval-state" data-testid="dry-run-approval-state">
+					{{ t('openbuild', 'Approval state') }}: {{ approvalStateLabel }}
+				</p>
 			</div>
 
 			<NcNoteCard v-if="errorMessage" type="error">
@@ -77,6 +81,24 @@ export default {
 			result: null,
 			errorMessage: '',
 		}
+	},
+	computed: {
+		/**
+		 * Human label for the automation's live approval state
+		 * (spec REQ-AUTD-007 — dry-run reports the aggregate state alongside
+		 * the would-be actions).
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#5.2
+		 */
+		approvalStateLabel() {
+			const labels = {
+				pending: t('openbuild', 'Pending'),
+				approved: t('openbuild', 'Approved'),
+				rejected: t('openbuild', 'Rejected'),
+			}
+			return (this.result && labels[this.result.approvalState]) || ''
+		},
 	},
 	methods: {
 		/**
@@ -144,5 +166,11 @@ export default {
 .automation-test-panel__duration {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.85em;
+}
+
+.automation-test-panel__approval-state {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.85em;
+	font-weight: bold;
 }
 </style>

@@ -177,4 +177,42 @@ describe('AutomationEditDialog', () => {
 
 		expect(wrapper.vm.conditionBlockedReason).not.toBe('')
 	})
+
+	it('automation-approval-steps: composes an approval action with on-approve and on-reject follow-ups', async () => {
+		const wrapper = factory()
+		await openDialog(wrapper)
+
+		wrapper.vm.name = 'Route permit application for approval'
+		wrapper.vm.triggerType = 'object-created'
+		wrapper.vm.triggerSchema = 'permit-application'
+		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'approval' })]
+		wrapper.vm.actions[0].assigneeGroup = 'permit-reviewers'
+		wrapper.vm.actions[0].onApprove = [{ type: 'object-op', operation: 'update', schema: 'permit-application', fieldMapping: { status: 'approved' } }]
+		wrapper.vm.actions[0].onReject = [{ type: 'send-notification', subject: { en: 'Rejected', nl: 'Afgewezen' } }]
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.vm.valid).toBe(true)
+		await wrapper.vm.onSave()
+
+		const [, payload] = axios.post.mock.calls.find(([url]) => url.includes('/automation'))
+		expect(payload.actions[0]).toEqual({
+			type: 'approval',
+			assigneeGroup: 'permit-reviewers',
+			onApprove: [{ type: 'object-op', operation: 'update', schema: 'permit-application', fieldMapping: { status: 'approved' } }],
+			onReject: [{ type: 'send-notification', subject: { en: 'Rejected', nl: 'Afgewezen' } }],
+		})
+	})
+
+	it('automation-approval-steps REQ-AUTD-003: approval action on a schedule trigger is blocked', async () => {
+		const wrapper = factory()
+		await openDialog(wrapper)
+
+		wrapper.vm.name = 'Bad approval automation'
+		wrapper.vm.triggerType = 'schedule'
+		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'approval' })]
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.vm.valid).toBe(false)
+		expect(wrapper.vm.actionBlockedReason('approval')).not.toBe('')
+	})
 })

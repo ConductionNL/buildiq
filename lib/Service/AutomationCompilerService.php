@@ -21,10 +21,27 @@
  *     namespaced RuleSet (`aut-<uuid8>`) plus one ConditionActionRule
  *     evaluated by the existing {@see RuleEngineService}.
  *
- * The v1 compilation matrix (design.md Decision 2) is enforced fail-closed —
- * {@see compile()} throws {@see UnsupportedAutomationCombinationException}
+ * The v1 compilation matrix (design.md Decision 2, extended by design.md
+ * Decision 1 of the automation-approval-steps change) is enforced fail-closed
+ * — {@see compile()} throws {@see UnsupportedAutomationCombinationException}
  * naming the unsupported trigger/action/condition combination; nothing is
  * ever stubbed, silently dropped, or partially compiled.
+ *
+ *   - Approval backend — `object-created|object-updated|object-deleted|
+ *     lifecycle-transition` + `approval` compiles to an OpenRegister
+ *     `ApprovalChain` (one step, `role` = the assignee group), upserted via
+ *     {@see \OCA\OpenRegister\Db\ApprovalChainMapper} under the `aut-<slug>`
+ *     provenance name. Instantiating a step against a fired object's uuid
+ *     (`ApprovalService::initializeChain()`) happens OUT of this pure
+ *     compiler, in {@see \OCA\OpenBuild\Listener\AutomationApprovalTriggerListener}
+ *     — consume-not-rebuild (ADR-022): OpenBuild never implements an approval
+ *     engine, only a compiler that provisions OR's existing one. On-approve/
+ *     on-reject follow-up actions are NOT compiled into a separate artifact —
+ *     they stay on the `Automation` object's own `actions[].onApprove/
+ *     onReject` and are dispatched by
+ *     {@see \OCA\OpenBuild\Listener\ApprovalOutcomeListener} at outcome time
+ *     via the shared {@see RuleActionDispatcher}, exactly mirroring how the
+ *     rules backend's `manual` trigger dispatches its own actions.
  *
  * DEVIATION FROM design.md (documented, not silent — tasks.md apply-notes
  * instruct flagging rather than inventing a runner): design.md's Decision 2
@@ -65,6 +82,9 @@
  * @spec openspec/changes/automation-designer/tasks.md#2.2
  * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-004
  * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-005
+ * @spec openspec/changes/automation-approval-steps/tasks.md#1.1
+ * @spec openspec/changes/automation-approval-steps/tasks.md#1.2
+ * @spec openspec/changes/automation-approval-steps/specs/automation-designer/spec.md#req-autd-004
  */
 
 declare(strict_types=1);
@@ -72,6 +92,9 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Service;
 
 use OCA\OpenBuild\Exception\UnsupportedAutomationCombinationException;
+use OCA\OpenRegister\Db\ApprovalChain;
+use OCA\OpenRegister\Db\ApprovalChainMapper;
+use OCA\OpenRegister\Db\ApprovalStepMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -81,6 +104,8 @@ use Throwable;
 
 /**
  * Pure compile() + I/O-performing apply()/remove()/status().
+ *
+ * @spec openspec/changes/automation-designer/tasks.md#2.1
  */
 class AutomationCompilerService
 {
@@ -103,10 +128,10 @@ class AutomationCompilerService
      * @var array<string,array<int,string>>
      */
     private const MATRIX = [
-        'object-created'       => ['send-notification'],
-        'object-updated'       => ['send-notification'],
-        'object-deleted'       => ['send-notification'],
-        'lifecycle-transition' => ['send-notification', 'object-op', 'webhook'],
+        'object-created'       => ['send-notification', 'approval'],
+        'object-updated'       => ['send-notification', 'approval'],
+        'object-deleted'       => ['send-notification', 'approval'],
+        'lifecycle-transition' => ['send-notification', 'object-op', 'webhook', 'approval'],
         'schedule'             => ['run-synchronization'],
         'manual'               => ['send-notification', 'object-op', 'webhook'],
     ];
@@ -122,16 +147,24 @@ class AutomationCompilerService
     /**
      * Constructor.
      *
-     * @param ObjectService   $objectService OpenRegister object service (ADR-022 boundary).
-     * @param SchemaMapper    $schemaMapper  OR schema mapper — mutates schema `configuration`
-     *                                       (`x-openregister-notifications` / `x-openregister-lifecycle`).
-     * @param LoggerInterface $logger        PSR logger.
+     * @param ObjectService       $objectService       OpenRegister object service (ADR-022 boundary).
+     * @param SchemaMapper        $schemaMapper        OR schema mapper — mutates schema
+     *                                                 `configuration` (`x-openregister-notifications` /
+     *                                                 `x-openregister-lifecycle`).
+     * @param ApprovalChainMapper $approvalChainMapper OR approval-chain mapper — upserts/removes the
+     *                                                 `aut-<slug>` `ApprovalChain` compiled from an
+     *                                                 `approval` action (ADR-022 boundary; automation-approval-steps).
+     * @param ApprovalStepMapper  $approvalStepMapper  OR approval-step mapper — reads the live aggregate
+     *                                                 `approvalState()` for the status/dry-run surface.
+     * @param LoggerInterface     $logger              PSR logger.
      *
      * @return void
      */
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly SchemaMapper $schemaMapper,
+        private readonly ApprovalChainMapper $approvalChainMapper,
+        private readonly ApprovalStepMapper $approvalStepMapper,
         private readonly LoggerInterface $logger,
     ) {
 
@@ -198,7 +231,7 @@ class AutomationCompilerService
      *
      * @param array<string,mixed> $automation The Automation object.
      *
-     * @return array{notifications:array<int,array<string,mixed>>,lifecycleActions:array<int,array<string,mixed>>,schedules:array<int,array<string,mixed>>,ruleSet:?array<string,mixed>,conditionActionRule:?array<string,mixed>,hash:string}
+     * @return array{notifications:array<int,array<string,mixed>>,lifecycleActions:array<int,array<string,mixed>>,schedules:array<int,array<string,mixed>>,ruleSet:?array<string,mixed>,conditionActionRule:?array<string,mixed>,approvalChain:?array<string,mixed>,hash:string}
      *
      * @throws UnsupportedAutomationCombinationException When the matrix (or condition placement) rejects the shape.
      *
@@ -222,6 +255,7 @@ class AutomationCompilerService
             'schedules'           => [],
             'ruleSet'             => null,
             'conditionActionRule' => null,
+            'approvalChain'       => null,
         ];
 
         $dialectTriggers = ['object-created', 'object-updated', 'object-deleted', 'lifecycle-transition'];
@@ -292,11 +326,18 @@ class AutomationCompilerService
             priorRuleSetSlug: $this->orNullString(value: $priorProvenance['ruleSetSlug'] ?? null)
         );
 
+        $approvalChainName = $this->applyApprovalChain(
+            planned: $plan['approvalChain'],
+            priorName: $this->orNullString(value: $priorProvenance['approvalChainName'] ?? null),
+            fallbackSchemaSlug: (string) ($automation['trigger']['schema'] ?? '')
+        );
+
         return [
             'notificationKeys'     => $notificationKeys,
             'lifecycleActions'     => $lifecycleActions,
             'scheduleIds'          => $scheduleIds,
             'ruleSetSlug'          => $ruleSetSlug,
+            'approvalChainName'    => $approvalChainName,
             'openconnectorObjects' => [],
             'compiledHash'         => (string) $plan['hash'],
         ];
@@ -332,6 +373,14 @@ class AutomationCompilerService
         $ruleSetSlug = ($provenance['ruleSetSlug'] ?? null);
         if (is_string($ruleSetSlug) === true && $ruleSetSlug !== '') {
             $this->removeRuleSet(ruleSetSlug: $ruleSetSlug);
+        }
+
+        $approvalChainName = ($provenance['approvalChainName'] ?? null);
+        if (is_string($approvalChainName) === true && $approvalChainName !== '') {
+            $this->removeApprovalChain(
+                name: $approvalChainName,
+                schemaSlug: (string) ($automation['trigger']['schema'] ?? '')
+            );
         }
 
     }//end remove()
@@ -370,6 +419,10 @@ class AutomationCompilerService
                 ),
                 'ruleSet'             => $this->fetchLiveRuleSet(ruleSetSlug: ($provenance['ruleSetSlug'] ?? null)),
                 'conditionActionRule' => $this->fetchLiveConditionActionRule(ruleSetSlug: ($provenance['ruleSetSlug'] ?? null)),
+                'approvalChain'       => $this->fetchLiveApprovalChain(
+                    schemaSlug: (string) ($automation['trigger']['schema'] ?? ''),
+                    name: ($provenance['approvalChainName'] ?? null)
+                ),
             ];
         } catch (Throwable $e) {
             // A fetch failure means live state cannot be confirmed —
@@ -388,6 +441,93 @@ class AutomationCompilerService
         ];
 
     }//end status()
+
+    /**
+     * Aggregate state of the automation's most recently initialised approval
+     * chain instantiation (spec REQ-AUTD-007 / task 5.1).
+     *
+     * Reads the compiled `ApprovalChain` (by provenance name + the
+     * automation's own `trigger.schema`) and returns the status of the
+     * most-recently-created `ApprovalStep` on it. v1 compiles exactly one
+     * step per `approval` action (design.md Decision 1), so that step's own
+     * `pending|approved|rejected` status IS the aggregate state.
+     *
+     * @param array<string,mixed> $automation The Automation object.
+     * @param array<string,mixed> $provenance The automation's `provenance` block.
+     *
+     * @return string One of `none|pending|approved|rejected`.
+     *
+     * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
+     * @spec openspec/changes/automation-approval-steps/specs/automation-designer/spec.md#req-autd-007
+     */
+    public function approvalState(array $automation, array $provenance): string
+    {
+        $chainName = (string) ($provenance['approvalChainName'] ?? '');
+        if ($chainName === '') {
+            return 'none';
+        }
+
+        $chain = $this->resolveApprovalChainForState(
+            schemaSlug: (string) ($automation['trigger']['schema'] ?? ''),
+            chainName: $chainName
+        );
+        if ($chain === null) {
+            return 'none';
+        }
+
+        try {
+            $steps = $this->approvalStepMapper->findAllFiltered(filters: ['chainId' => $chain->getId()]);
+        } catch (Throwable $e) {
+            return 'none';
+        }
+
+        if ($steps === []) {
+            return 'none';
+        }
+
+        // The mapper orders by `created` ASC — the last element is the
+        // most-recently-initialised step (most recently triggered object).
+        $latest = $steps[(count($steps) - 1)];
+        $status = (string) ($latest->getStatus() ?? 'pending');
+        if (in_array($status, ['pending', 'approved', 'rejected'], true) === true) {
+            return $status;
+        }
+
+        // 'waiting' (a later step of a multi-step chain hand-edited outside
+        // the automation editor — v1 only ever compiles one step) reads as
+        // pending from the caller's perspective.
+        return 'pending';
+
+    }//end approvalState()
+
+    /**
+     * Resolve the compiled `ApprovalChain` entity for {@see approvalState()},
+     * or null when the schema/chain cannot be resolved.
+     *
+     * @param string $schemaSlug The automation's `trigger.schema`.
+     * @param string $chainName  The `provenance.approvalChainName`.
+     *
+     * @return ApprovalChain|null
+     */
+    private function resolveApprovalChainForState(string $schemaSlug, string $chainName): ?ApprovalChain
+    {
+        $schema = $this->loadSchema(slug: $schemaSlug);
+        if ($schema === null) {
+            return null;
+        }
+
+        $schemaId = $schema->getId();
+        if ($schemaId === null) {
+            return null;
+        }
+
+        try {
+            return $this->approvalChainMapper->findBySchemaAndName(schemaId: (int) $schemaId, name: $chainName);
+        } catch (Throwable $e) {
+            return null;
+        }
+
+    }//end resolveApprovalChainForState()
 
     /**
      * Enforce the v1 matrix fail-closed.
@@ -411,12 +551,6 @@ class AutomationCompilerService
             $type = '';
             if (is_array($action) === true) {
                 $type = (string) ($action['type'] ?? '');
-            }
-
-            if ($type === 'approval') {
-                throw new UnsupportedAutomationCombinationException(
-                    message: 'The "approval" action is reserved for a future human-task primitive and is not yet expressible declaratively.'
-                );
             }
 
             if (in_array($type, $allowedActions, true) === false) {
@@ -473,6 +607,20 @@ class AutomationCompilerService
                         'recipients' => array_values((array) ($action['recipients'] ?? [])),
                         'subject'    => (array) ($action['subject'] ?? []),
                     ],
+                ];
+                continue;
+            }
+
+            if ($type === 'approval') {
+                // One `ApprovalChain` per automation (design.md Decision 2 of
+                // automation-approval-steps) — a second `approval` action in
+                // the same automation would overwrite this entry, matching
+                // the "exactly one step per approval action" v1 scope.
+                $plan['approvalChain'] = [
+                    'name'          => $marker,
+                    'schema'        => $schema,
+                    'assigneeGroup' => (string) ($action['assigneeGroup'] ?? ''),
+                    'enabled'       => $enabled,
                 ];
                 continue;
             }
@@ -684,11 +832,22 @@ class AutomationCompilerService
     /**
      * Map one Automation action record to a ConditionActionRule typed action.
      *
+     * PUBLIC (not merely an internal compile-time helper): also reused by
+     * {@see \OCA\OpenBuild\Listener\ApprovalOutcomeListener} to map an
+     * `approval` action's `onApprove`/`onReject` follow-up action records to
+     * the SAME typed-action shape {@see \OCA\OpenBuild\Service\RuleActionDispatcher}
+     * already dispatches — the follow-up fires once per approval outcome
+     * through the identical dispatch mechanism the rules backend uses, per
+     * design.md Decision 3 of automation-approval-steps ("through the same
+     * dialect/notification compilation the automation already uses").
+     *
      * @param array<string,mixed> $action The Automation action record.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/changes/automation-approval-steps/tasks.md#2.1
      */
-    private function mapActionToRuleAction(array $action): array
+    public function mapActionToRuleAction(array $action): array
     {
         $type = (string) ($action['type'] ?? '');
 
@@ -714,6 +873,12 @@ class AutomationCompilerService
                 'parameters' => [
                     'url'     => (string) ($action['url'] ?? ''),
                     'payload' => (array) ($action['payloadTemplate'] ?? []),
+                ],
+            ],
+            'approval' => [
+                'type'       => 'approval',
+                'parameters' => [
+                    'assigneeGroup' => (string) ($action['assigneeGroup'] ?? ''),
                 ],
             ],
             default => ['type' => $type, 'parameters' => []],
@@ -780,6 +945,7 @@ class AutomationCompilerService
             'schedules'           => ($plan['schedules'] ?? []),
             'ruleSet'             => ($plan['ruleSet'] ?? null),
             'conditionActionRule' => ($plan['conditionActionRule'] ?? null),
+            'approvalChain'       => ($plan['approvalChain'] ?? null),
         ];
 
         return 'sha256:'.hash(algo: 'sha256', data: $this->canonicalise(value: $hashable));
@@ -1139,6 +1305,151 @@ class AutomationCompilerService
     }//end removeRuleSet()
 
     /**
+     * Upsert the compiled `ApprovalChain` (event/lifecycle-transition +
+     * `approval`), or remove a prior one when the automation no longer
+     * compiles an approval action.
+     *
+     * Mirrors {@see applyRuleSet()}'s find-then-create/update shape,
+     * substituting OR's `ApprovalChainMapper` for `ObjectService` because
+     * approval chains are NOT OpenRegister objects — they live in their own
+     * `openregister_approval_chains` table, consumed the same way
+     * {@see \OCA\OpenRegister\Controller\ApprovalController::create()} does
+     * (direct mapper call, ADR-022 consume-not-rebuild).
+     *
+     * @param array<string,mixed>|null $planned            Planned `{name,schema,assigneeGroup,enabled}`, or null.
+     * @param string|null              $priorName          Prior-provenance `ApprovalChain` name, if any.
+     * @param string                   $fallbackSchemaSlug The automation's CURRENT `trigger.schema` — used to
+     *                                                     resolve `$priorName`'s schema when `$planned` is null
+     *                                                     (automation edited to drop the approval action) or when
+     *                                                     the name itself changed (slug rename).
+     *
+     * @return string|null The applied `ApprovalChain` name, or null.
+     *
+     * @spec openspec/changes/automation-approval-steps/tasks.md#1.2
+     * @spec openspec/changes/automation-approval-steps/tasks.md#1.4
+     */
+    private function applyApprovalChain(?array $planned, ?string $priorName, string $fallbackSchemaSlug): ?string
+    {
+        if ($planned === null) {
+            if ($priorName !== null && $priorName !== '') {
+                $this->removeApprovalChain(name: $priorName, schemaSlug: $fallbackSchemaSlug);
+            }
+
+            return null;
+        }
+
+        $schemaSlug = (string) ($planned['schema'] ?? '');
+        $schema     = $this->loadSchema(slug: $schemaSlug);
+        if ($schema === null) {
+            $this->logger->warning(
+                'OpenBuild: AutomationCompilerService could not load schema "'.$schemaSlug.'" to apply approval chain "'.$planned['name'].'".'
+            );
+            return null;
+        }
+
+        $schemaId = $schema->getId();
+        if ($schemaId === null) {
+            return null;
+        }
+
+        $payload = [
+            'name'     => (string) $planned['name'],
+            'schemaId' => (int) $schemaId,
+            'steps'    => [['order' => 1, 'role' => (string) ($planned['assigneeGroup'] ?? '')]],
+            'enabled'  => (bool) ($planned['enabled'] ?? true),
+        ];
+
+        $this->upsertApprovalChain(payload: $payload, schemaId: (int) $schemaId);
+        $this->cleanupStaleApprovalChain(priorName: $priorName, currentName: $payload['name'], schemaSlug: $schemaSlug);
+
+        return $payload['name'];
+
+    }//end applyApprovalChain()
+
+    /**
+     * Find-then-create/update the `ApprovalChain` row for one compiled plan.
+     *
+     * @param array<string,mixed> $payload  The chain payload (`name`,`schemaId`,`steps`,`enabled`).
+     * @param int                 $schemaId The owning schema id.
+     *
+     * @return void
+     */
+    private function upsertApprovalChain(array $payload, int $schemaId): void
+    {
+        try {
+            $existing = $this->approvalChainMapper->findBySchemaAndName(schemaId: $schemaId, name: $payload['name']);
+        } catch (Throwable $e) {
+            $this->logger->error('OpenBuild: AutomationCompilerService failed to look up ApprovalChain "'.$payload['name'].'": '.$e->getMessage());
+            return;
+        }
+
+        try {
+            if ($existing !== null) {
+                $this->approvalChainMapper->updateFromArray($existing->getId(), $payload);
+                return;
+            }
+
+            $this->approvalChainMapper->createFromArray($payload);
+        } catch (Throwable $e) {
+            $this->logger->error('OpenBuild: AutomationCompilerService failed to save ApprovalChain "'.$payload['name'].'": '.$e->getMessage());
+        }
+
+    }//end upsertApprovalChain()
+
+    /**
+     * Remove a prior-provenance chain whose name/schema changed since the
+     * last apply (automation slug or trigger.schema was edited) so recompile
+     * never leaves an orphan (design.md Decision 4 "managed as one unit").
+     *
+     * @param string|null $priorName   Prior-provenance `ApprovalChain` name, if any.
+     * @param string      $currentName The just-applied chain name.
+     * @param string      $schemaSlug  The schema slug the chain is scoped to.
+     *
+     * @return void
+     */
+    private function cleanupStaleApprovalChain(?string $priorName, string $currentName, string $schemaSlug): void
+    {
+        if ($priorName === null || $priorName === '' || $priorName === $currentName) {
+            return;
+        }
+
+        $this->removeApprovalChain(name: $priorName, schemaSlug: $schemaSlug);
+
+    }//end cleanupStaleApprovalChain()
+
+    /**
+     * Delete an `ApprovalChain` by schema + name. Best-effort — logs but
+     * never throws (mirrors {@see deleteObjectQuietly()}).
+     *
+     * @param string $name       The `ApprovalChain` name (`aut-<slug>`).
+     * @param string $schemaSlug The schema slug the chain is scoped to.
+     *
+     * @return void
+     */
+    private function removeApprovalChain(string $name, string $schemaSlug): void
+    {
+        $schema = $this->loadSchema(slug: $schemaSlug);
+        if ($schema === null) {
+            return;
+        }
+
+        $schemaId = $schema->getId();
+        if ($schemaId === null) {
+            return;
+        }
+
+        try {
+            $chain = $this->approvalChainMapper->findBySchemaAndName(schemaId: (int) $schemaId, name: $name);
+            if ($chain !== null) {
+                $this->approvalChainMapper->delete($chain);
+            }
+        } catch (Throwable $e) {
+            $this->logger->warning('OpenBuild: AutomationCompilerService failed to remove ApprovalChain "'.$name.'": '.$e->getMessage());
+        }
+
+    }//end removeApprovalChain()
+
+    /**
      * Best-effort object delete — logs but never throws.
      *
      * @param string $uuid   The object uuid.
@@ -1322,6 +1633,48 @@ class AutomationCompilerService
         ];
 
     }//end fetchLiveConditionActionRule()
+
+    /**
+     * Fetch the live `ApprovalChain`'s comparable fields (drift detection).
+     *
+     * @param string $schemaSlug The schema slug the chain is scoped to.
+     * @param mixed  $name       Provenance `ApprovalChain` name, or null.
+     *
+     * @return array<string,mixed>|null
+     */
+    private function fetchLiveApprovalChain(string $schemaSlug, mixed $name): ?array
+    {
+        if (is_string($name) === false || $name === '') {
+            return null;
+        }
+
+        $schema = $this->loadSchema(slug: $schemaSlug);
+        if ($schema === null) {
+            return null;
+        }
+
+        $schemaId = $schema->getId();
+        if ($schemaId === null) {
+            return null;
+        }
+
+        try {
+            $chain = $this->approvalChainMapper->findBySchemaAndName(schemaId: (int) $schemaId, name: $name);
+        } catch (Throwable $e) {
+            return null;
+        }
+
+        if ($chain === null) {
+            return null;
+        }
+
+        return [
+            'name'    => (string) $chain->getName(),
+            'steps'   => $chain->getStepsArray(),
+            'enabled' => $chain->getEnabled(),
+        ];
+
+    }//end fetchLiveApprovalChain()
 
     /**
      * Load a schema entity by slug.

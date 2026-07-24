@@ -132,6 +132,32 @@ final class ConditionActionExecutorTest extends TestCase
     }//end testDryRunSkipsSideEffects()
 
     /**
+     * automation-approval-steps REQ-AUTD-007: an `approval` action in a
+     * dry-run synthetic rule is marked "dry-run, skipped" (no "unknown
+     * action type" error, no ApprovalStep created — this executor never
+     * touches OR's approval tables at all).
+     *
+     * @return void
+     */
+    public function testDryRunSkipsApprovalAction(): void
+    {
+        $rules = [
+            [
+                'naam'     => 'route-for-approval',
+                'conditie' => '',
+                'acties'   => [['type' => 'approval', 'parameters' => ['assigneeGroup' => 'permit-reviewers']]],
+            ],
+        ];
+
+        $result = $this->executor->execute($rules, [], true, null);
+
+        $this->assertEmpty($result['errors']);
+        $this->assertStringContainsString('dry-run', $result['triggeredRules'][0]['actions_executed'][0]);
+        $this->assertStringContainsString('approval', $result['triggeredRules'][0]['actions_executed'][0]);
+
+    }//end testDryRunSkipsApprovalAction()
+
+    /**
      * Live mode dispatches side-effecting actions through the dispatcher.
      *
      * @return void

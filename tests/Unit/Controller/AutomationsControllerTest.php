@@ -413,4 +413,54 @@ final class AutomationsControllerTest extends TestCase
         $this->assertSame(['send-notification (dry-run, skipped)'], $data['actions']);
 
     }//end testDryRunReturnsWouldBeActionsWithoutSideEffects()
+
+    /**
+     * automation-approval-steps REQ-AUTD-007 task 5.2: dry-run response
+     * additionally reports the automation's live `approvalState`.
+     *
+     * @return void
+     */
+    public function testDryRunReportsApprovalState(): void
+    {
+        $this->wireUser(uid: 'bob');
+        $this->wireLookup(
+            automation: ['id' => 'a-1', 'applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version', 'trigger' => ['type' => 'object-created', 'schema' => 'permit-application'], 'provenance' => ['approvalChainName' => 'aut-x']],
+            application: ['id' => 'app-1', 'slug' => 'permit-tracker', 'permissions' => ['owners' => ['user:alice'], 'editors' => ['user:bob']]]
+        );
+
+        $this->request->method('getParams')->willReturn(['payload' => []]);
+        $this->compiler->method('compileDryRunRule')->willReturn(['naam' => 'a', 'conditie' => '', 'acties' => [], 'actief' => true]);
+        $this->conditionExecutor->method('execute')->willReturn(['triggeredRules' => [], 'result' => [], 'errors' => []]);
+        $this->compiler->expects($this->once())->method('approvalState')->willReturn('pending');
+
+        $response = $this->controller->dryRun(uuid: 'a-1');
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertSame('pending', $response->getData()['approvalState']);
+
+    }//end testDryRunReportsApprovalState()
+
+    /**
+     * automation-approval-steps REQ-AUTD-007 task 5.1: status() additionally
+     * reports the automation's live `approvalState`.
+     *
+     * @return void
+     */
+    public function testStatusReportsApprovalState(): void
+    {
+        $this->wireUser(uid: 'bob');
+        $this->wireLookup(
+            automation: ['id' => 'a-1', 'applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version', 'provenance' => ['approvalChainName' => 'aut-x']],
+            application: ['id' => 'app-1', 'slug' => 'permit-tracker', 'permissions' => ['owners' => ['user:alice'], 'editors' => ['user:bob']]]
+        );
+
+        $this->compiler->method('status')->willReturn(['drift' => false, 'compiledHash' => 'sha256:x', 'liveHash' => 'sha256:x']);
+        $this->compiler->expects($this->once())->method('approvalState')->willReturn('approved');
+
+        $response = $this->controller->status(uuid: 'a-1');
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertSame('approved', $response->getData()['approvalState']);
+
+    }//end testStatusReportsApprovalState()
 }//end class

@@ -1,5 +1,5 @@
 {
-	"_comment": "ADR-037 register fragment — automation-designer. Adds the `Automation` schema to the shared `openbuild` register: a single declarative object composing TRIGGER + optional CONDITION + ACTIONS, source-of-truth for `AutomationCompilerService`. Per design.md Decision 1 the designer always renders FROM this object, never by parsing compiled artifacts — the object IS the decompiled form, which is what makes compilation reversible. Compilation targets ONLY existing declarative primitives (ADR-031): `x-openregister-notifications` entries (see 10-business-rules.json:153 for the live dialect shape this compiler writes to), `x-openregister-lifecycle` typed transition actions, manifest `schedules[]` entries (existing `openconnector:synchronization` action only), and namespaced RuleSet/ConditionActionRule objects evaluated by the existing RuleEngineService. No new imperative engine is introduced in openbuild. Every artifact id/key the compiler mints carries the `aut-` prefix (rule-set slugs use `aut-<uuid8>`) so recompile/delete never touches hand-authored entries — see `provenance` below. Property names are English (new schema; unrelated to the pre-existing Dutch rules-engine schemas). The `approval` action type is reserved but not selectable in v1 (design.md Decision 8 — needs a new OR human-task primitive) so the schema does not need a breaking change when that primitive lands.",
+	"_comment": "ADR-037 register fragment — automation-designer, extended by automation-approval-steps. Adds the `Automation` schema to the shared `openbuild` register: a single declarative object composing TRIGGER + optional CONDITION + ACTIONS, source-of-truth for `AutomationCompilerService`. Per design.md Decision 1 the designer always renders FROM this object, never by parsing compiled artifacts — the object IS the decompiled form, which is what makes compilation reversible. Compilation targets ONLY existing declarative primitives (ADR-031): `x-openregister-notifications` entries (see 10-business-rules.json:153 for the live dialect shape this compiler writes to), `x-openregister-lifecycle` typed transition actions, manifest `schedules[]` entries (existing `openconnector:synchronization` action only), namespaced RuleSet/ConditionActionRule objects evaluated by the existing RuleEngineService, and — since automation-approval-steps — an OpenRegister `ApprovalChain` (one step, group-only `role`) upserted via OR's `ApprovalChainMapper`/`ApprovalService::initializeChain()`. No new imperative engine is introduced in openbuild. Every artifact id/key the compiler mints carries the `aut-` prefix (rule-set slugs use `aut-<uuid8>`, the approval chain name is `aut-<slug>`) so recompile/delete never touches hand-authored entries — see `provenance` below. Property names are English (new schema; unrelated to the pre-existing Dutch rules-engine schemas). `approval` is selectable in v1 ONLY on `object-created|object-updated|object-deleted|lifecycle-transition` triggers (design.md Decision 1 of automation-approval-steps); `schedule`/`manual` + `approval` remain blocked fail-closed. Assignee is group-only (OR's `ApprovalStep.role` has no per-user primitive — deferred, see automation-approval-steps design.md Open Questions); no escalation-timeout field is exposed (OR has no timeout primitive — omitted entirely from v1 rather than shipping an inert field).",
 	"components": {
 		"schemas": {
 			"Automation": {
@@ -154,7 +154,7 @@
 										"webhook",
 										"approval"
 									],
-									"description": "`approval` is reserved for a future OR human-task primitive (design.md Decision 8) and is not selectable in the v1 editor."
+									"description": "`approval` (automation-approval-steps) is selectable only on object-created|object-updated|object-deleted|lifecycle-transition triggers — compiles to an OpenRegister ApprovalChain; blocked fail-closed on schedule/manual."
 								},
 								"channels": {
 									"title": "Notification Channels",
@@ -226,6 +226,27 @@
 									"title": "Webhook Payload Template",
 									"type": "object",
 									"description": "webhook: payload body template with `{{payload}}` placeholders."
+								},
+								"assigneeGroup": {
+									"title": "Assignee Group",
+									"type": "string",
+									"description": "approval: Nextcloud group id the compiled ApprovalChain's single step is assigned to (group-only in v1 — OR's ApprovalStep.role has no per-user primitive)."
+								},
+								"onApprove": {
+									"title": "On Approve",
+									"type": "array",
+									"items": {
+										"type": "object"
+									},
+									"description": "approval: follow-up actions dispatched when the compiled ApprovalStep is approved, composed from the same typed-action vocabulary (send-notification/object-op/webhook) as the top-level actions[] array."
+								},
+								"onReject": {
+									"title": "On Reject",
+									"type": "array",
+									"items": {
+										"type": "object"
+									},
+									"description": "approval: follow-up actions dispatched when the compiled ApprovalStep is rejected, composed from the same typed-action vocabulary as onApprove."
 								}
 							}
 						}
@@ -285,6 +306,14 @@
 									"null"
 								],
 								"description": "The `aut-<uuid8>` RuleSet compiled for a manual-trigger automation, or null."
+							},
+							"approvalChainName": {
+								"title": "Approval Chain Name",
+								"type": [
+									"string",
+									"null"
+								],
+								"description": "The `aut-<slug>` OpenRegister ApprovalChain name compiled for an approval-action automation, or null. Enable/disable/delete removes exactly this provenance-listed chain (automation-approval-steps)."
 							},
 							"openconnectorObjects": {
 								"title": "OpenConnector Objects",

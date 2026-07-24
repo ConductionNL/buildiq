@@ -212,6 +212,33 @@
 							@update:value="updateAction(index, 'payloadTemplateText', $event)" />
 					</template>
 
+					<template v-else-if="action.type === 'approval'">
+						<NcSelect
+							v-if="groupPickerAvailable"
+							:value="groupOption(action.assigneeGroup)"
+							:input-label="t('openbuild', 'Assignee group')"
+							:options="groupOptions"
+							:loading="groupLoading"
+							label="label"
+							@input="onGroupSelect(index, $event)" />
+						<NcTextField
+							v-else
+							:value="action.assigneeGroup"
+							:label="t('openbuild', 'Assignee group id')"
+							@update:value="updateAction(index, 'assigneeGroup', $event)" />
+
+						<AutomationActionListEditor
+							:model-value="action.onApprove"
+							:label="t('openbuild', 'On approve')"
+							data-testid="on-approve-editor"
+							@update:model-value="updateAction(index, 'onApprove', $event)" />
+						<AutomationActionListEditor
+							:model-value="action.onReject"
+							:label="t('openbuild', 'On reject')"
+							data-testid="on-reject-editor"
+							@update:model-value="updateAction(index, 'onReject', $event)" />
+					</template>
+
 					<NcButton type="error" :aria-label="t('openbuild', 'Remove action')" @click="removeAction(index)">
 						{{ t('openbuild', 'Remove') }}
 					</NcButton>
@@ -242,6 +269,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcModal, NcNoteCard, NcSelect, NcTextArea, NcTextField } from '@nextcloud/vue'
 import { isActionAllowed, isConditionAllowed, blockedActionReason, blockedConditionReason } from '../services/automationMatrix.js'
+import AutomationActionListEditor from '../components/AutomationActionListEditor.vue'
 
 const INTERVAL_PRESETS = Object.freeze([
 	{ id: 'hourly', interval: 3600 },
@@ -272,7 +300,7 @@ function slugify(label) {
 
 export default {
 	name: 'AutomationEditDialog',
-	components: { NcButton, NcModal, NcNoteCard, NcSelect, NcTextArea, NcTextField },
+	components: { NcButton, NcModal, NcNoteCard, NcSelect, NcTextArea, NcTextField, AutomationActionListEditor },
 	props: {
 		open: { type: Boolean, default: false },
 		automation: { type: Object, default: null },
@@ -307,6 +335,9 @@ export default {
 			syncOptions: [],
 			syncLoading: false,
 			syncFetchFailed: false,
+			groupOptions: [],
+			groupLoading: false,
+			groupFetchFailed: false,
 			saving: false,
 			showValidation: false,
 			errorMessage: '',
@@ -372,12 +403,19 @@ export default {
 		conditionBlockedReason() {
 			return blockedConditionReason(this.triggerType)
 		},
+		/**
+		 * Action type options for the type picker on each action row.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 */
 		actionTypeOptions() {
 			return [
 				{ value: 'send-notification', label: t('openbuild', 'Send notification') },
 				{ value: 'run-synchronization', label: t('openbuild', 'Run a synchronization') },
 				{ value: 'object-op', label: t('openbuild', 'Create/update an object') },
 				{ value: 'webhook', label: t('openbuild', 'Webhook') },
+				{ value: 'approval', label: t('openbuild', 'Require approval') },
 			]
 		},
 		objectOpOperationOptions() {
@@ -394,6 +432,16 @@ export default {
 		},
 		syncPickerAvailable() {
 			return !this.syncFetchFailed && this.syncOptions.length > 0
+		},
+		/**
+		 * Whether the live NC-group picker is usable (loaded successfully with
+		 * at least one option), or the field should degrade to free-text.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 */
+		groupPickerAvailable() {
+			return !this.groupFetchFailed && this.groupOptions.length > 0
 		},
 		/**
 		 * Whether the current shape (trigger + condition + every action) is
@@ -424,11 +472,20 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * Re-hydrate and refresh every live picker's options whenever the
+		 * dialog opens.
+		 *
+		 * @param {boolean} isOpen - the dialog's new open state.
+		 * @return {void}
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 */
 		open(isOpen) {
 			if (isOpen) {
 				this.hydrate()
 				this.fetchSchemas()
 				this.fetchSynchronizations()
+				this.fetchGroups()
 			}
 		},
 	},
@@ -479,6 +536,7 @@ export default {
 		 *
 		 * @param {object} action - the stored action record.
 		 * @return {object}
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
 		 */
 		actionToEditor(action) {
 			const subject = action.subject || {}
@@ -495,6 +553,9 @@ export default {
 				fieldMappingText: JSON.stringify(action.fieldMapping || {}, null, 2),
 				url: action.url || '',
 				payloadTemplateText: JSON.stringify(action.payloadTemplate || {}, null, 2),
+				assigneeGroup: action.assigneeGroup || '',
+				onApprove: Array.isArray(action.onApprove) ? action.onApprove : [],
+				onReject: Array.isArray(action.onReject) ? action.onReject : [],
 			}
 		},
 		/**
@@ -605,6 +666,59 @@ export default {
 		onSyncSelect(index, option) {
 			this.updateAction(index, 'synchronizationId', option ? option.id : '')
 		},
+		/**
+		 * Load Nextcloud groups for the `approval` action's assignee-group
+		 * picker; degrades to free-text on failure (task 3.1). Mirrors the
+		 * OCS group-listing call already used elsewhere in the fleet
+		 * (e.g. openregister's EditSchema.vue).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 */
+		async fetchGroups() {
+			this.groupLoading = true
+			this.groupFetchFailed = false
+			try {
+				const response = await fetch('/ocs/v1.php/cloud/groups?format=json', {
+					headers: { 'OCS-APIRequest': 'true' },
+				})
+				if (!response.ok) {
+					throw new Error('OCS groups request failed')
+				}
+				const data = await response.json()
+				const groups = (data && data.ocs && data.ocs.data && data.ocs.data.groups) || []
+				this.groupOptions = groups.map((gid) => ({ value: gid, label: gid }))
+				if (this.groupOptions.length === 0) {
+					this.groupFetchFailed = true
+				}
+			} catch (error) {
+				this.groupFetchFailed = true
+				this.groupOptions = []
+			} finally {
+				this.groupLoading = false
+			}
+		},
+		/**
+		 * Resolve the selected group option for an approval action row.
+		 *
+		 * @param {string} groupId - the stored assignee group id.
+		 * @return {?object}
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 */
+		groupOption(groupId) {
+			return this.groupOptions.find((o) => o.value === groupId) || null
+		},
+		/**
+		 * Apply a group-picker selection to an approval action row.
+		 *
+		 * @param {number} index - the action's index in `actions`.
+		 * @param {?object} option - the selected group option.
+		 * @return {void}
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 */
+		onGroupSelect(index, option) {
+			this.updateAction(index, 'assigneeGroup', option ? option.value : '')
+		},
 		onNameInput(value) {
 			this.name = value
 		},
@@ -678,6 +792,7 @@ export default {
 		 * Assemble the persisted `actions[]` from the working state.
 		 *
 		 * @return {Array}
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
 		 */
 		buildActions() {
 			return this.actions.map((action) => {
@@ -700,6 +815,14 @@ export default {
 						fieldMapping = {}
 					}
 					return { type: 'object-op', operation: action.operation, schema: action.schema, fieldMapping }
+				}
+				if (action.type === 'approval') {
+					return {
+						type: 'approval',
+						assigneeGroup: action.assigneeGroup,
+						onApprove: Array.isArray(action.onApprove) ? action.onApprove : [],
+						onReject: Array.isArray(action.onReject) ? action.onReject : [],
+					}
 				}
 				let payloadTemplate = {}
 				try {

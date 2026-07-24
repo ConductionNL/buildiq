@@ -101,6 +101,84 @@ namespace OCA\OpenRegister\Db {
             {
                 return ($this->object ?? []);
             }//end jsonSerialize()
+
+            /**
+             * Declared explicitly (not left to Entity::__call magic) so
+             * PHPUnit 10's `createMock()->method('getUuid')` can configure it
+             * without `addMethods()` (removed in PHPUnit 10) — same rationale
+             * as Schema::getId()/Register::getId() above (automation-approval-
+             * steps AutomationApprovalTriggerListenerTest).
+             *
+             * @return string|null
+             */
+            public function getUuid(): ?string
+            {
+                return $this->uuid;
+            }//end getUuid()
+
+            /**
+             * @param string|null $uuid The object uuid.
+             *
+             * @return void
+             */
+            public function setUuid(?string $uuid): void
+            {
+                $this->uuid = $uuid;
+            }//end setUuid()
+
+            /**
+             * @return string|null
+             */
+            public function getRegister(): ?string
+            {
+                return $this->register;
+            }//end getRegister()
+
+            /**
+             * @param string|null $register The register slug.
+             *
+             * @return void
+             */
+            public function setRegister(?string $register): void
+            {
+                $this->register = $register;
+            }//end setRegister()
+
+            /**
+             * @return string|null
+             */
+            public function getSchema(): ?string
+            {
+                return $this->schema;
+            }//end getSchema()
+
+            /**
+             * @param string|null $schema The schema slug.
+             *
+             * @return void
+             */
+            public function setSchema(?string $schema): void
+            {
+                $this->schema = $schema;
+            }//end setSchema()
+
+            /**
+             * @return string|null
+             */
+            public function getOwner(): ?string
+            {
+                return $this->owner;
+            }//end getOwner()
+
+            /**
+             * @param string|null $owner The NC uid of the object's owner/creator.
+             *
+             * @return void
+             */
+            public function setOwner(?string $owner): void
+            {
+                $this->owner = $owner;
+            }//end setOwner()
         }//end class
     }//end if
 
@@ -515,6 +593,472 @@ namespace OCA\OpenRegister\Db {
             }//end getActionChartData()
         }//end class
     }//end if
+
+    if (class_exists(ApprovalChain::class, autoload: false) === false) {
+        /**
+         * Stub ApprovalChain (automation-approval-steps) — declares
+         * getId()/getName()/getStepsArray()/getEnabled() explicitly (real
+         * methods, not Entity::__call magic) so PHPUnit 10's
+         * `createMock()->method(...)` can configure them without
+         * `addMethods()` (removed in PHPUnit 10) — same rationale as
+         * Schema/Register above.
+         */
+        class ApprovalChain extends \OCP\AppFramework\Db\Entity
+        {
+            /**
+             * Stub name column.
+             *
+             * @var string|null
+             */
+            protected ?string $name = null;
+
+            /**
+             * Stub schema-id column.
+             *
+             * @var int|null
+             */
+            protected ?int $schemaId = null;
+
+            /**
+             * Stub steps column (JSON-encoded).
+             *
+             * @var string|null
+             */
+            protected ?string $steps = null;
+
+            /**
+             * Stub enabled column.
+             *
+             * @var bool
+             */
+            protected bool $enabled = true;
+
+            /**
+             * @return int
+             */
+            public function getId(): int
+            {
+                return (int) ($this->id ?? 0);
+            }//end getId()
+
+            /**
+             * @return string|null
+             */
+            public function getName(): ?string
+            {
+                return $this->name;
+            }//end getName()
+
+            /**
+             * @param string|null $name The chain name.
+             *
+             * @return void
+             */
+            public function setName(?string $name): void
+            {
+                $this->name = $name;
+            }//end setName()
+
+            /**
+             * @return int|null
+             */
+            public function getSchemaId(): ?int
+            {
+                return $this->schemaId;
+            }//end getSchemaId()
+
+            /**
+             * @param int|null $schemaId The owning schema id.
+             *
+             * @return void
+             */
+            public function setSchemaId(?int $schemaId): void
+            {
+                $this->schemaId = $schemaId;
+            }//end setSchemaId()
+
+            /**
+             * @return array<int, array<string, mixed>>
+             */
+            public function getStepsArray(): array
+            {
+                if ($this->steps === null) {
+                    return [];
+                }
+
+                return (json_decode($this->steps, true) ?? []);
+            }//end getStepsArray()
+
+            /**
+             * @param array<int, array<string, mixed>>|string|null $steps The chain's step definitions.
+             *
+             * @return void
+             */
+            public function setSteps($steps): void
+            {
+                $this->steps = is_array($steps) ? json_encode($steps) : $steps;
+            }//end setSteps()
+
+            /**
+             * @return bool
+             */
+            public function getEnabled(): bool
+            {
+                return $this->enabled;
+            }//end getEnabled()
+
+            /**
+             * @param bool $enabled Whether the chain is active.
+             *
+             * @return void
+             */
+            public function setEnabled(bool $enabled): void
+            {
+                $this->enabled = $enabled;
+            }//end setEnabled()
+        }//end class
+    }//end if
+
+    if (class_exists(ApprovalChainMapper::class, autoload: false) === false) {
+        /**
+         * Stub ApprovalChainMapper — call surface only; tests mock the methods.
+         */
+        class ApprovalChainMapper
+        {
+            /**
+             * @return ApprovalChain
+             */
+            public function find(int $id): ApprovalChain
+            {
+                return new ApprovalChain();
+            }//end find()
+
+            /**
+             * @return array<int, ApprovalChain>
+             */
+            public function findAll(?int $limit=null, ?int $offset=null): array
+            {
+                return [];
+            }//end findAll()
+
+            /**
+             * @return array<int, ApprovalChain>
+             */
+            public function findBySchema(int $schemaId): array
+            {
+                return [];
+            }//end findBySchema()
+
+            /**
+             * @return ApprovalChain|null
+             */
+            public function findBySchemaAndName(int $schemaId, string $name): ?ApprovalChain
+            {
+                return null;
+            }//end findBySchemaAndName()
+
+            /**
+             * @param array<string, mixed> $data
+             *
+             * @return ApprovalChain
+             */
+            public function createFromArray(array $data): ApprovalChain
+            {
+                return new ApprovalChain();
+            }//end createFromArray()
+
+            /**
+             * @param array<string, mixed> $data
+             *
+             * @return ApprovalChain
+             */
+            public function updateFromArray(int $id, array $data): ApprovalChain
+            {
+                return new ApprovalChain();
+            }//end updateFromArray()
+
+            /**
+             * @return ApprovalChain
+             */
+            public function delete(\OCP\AppFramework\Db\Entity $entity): ApprovalChain
+            {
+                return new ApprovalChain();
+            }//end delete()
+        }//end class
+    }//end if
+
+    if (class_exists(ApprovalStep::class, autoload: false) === false) {
+        /**
+         * Stub ApprovalStep (automation-approval-steps) — declares real
+         * getters (see ApprovalChain docblock above for rationale).
+         */
+        class ApprovalStep extends \OCP\AppFramework\Db\Entity
+        {
+            /**
+             * Stub chain-id column.
+             *
+             * @var int|null
+             */
+            protected ?int $chainId = null;
+
+            /**
+             * Stub object-uuid column.
+             *
+             * @var string|null
+             */
+            protected ?string $objectUuid = null;
+
+            /**
+             * Stub step-order column.
+             *
+             * @var int
+             */
+            protected int $stepOrder = 0;
+
+            /**
+             * Stub role column.
+             *
+             * @var string|null
+             */
+            protected ?string $role = null;
+
+            /**
+             * Stub status column.
+             *
+             * @var string|null
+             */
+            protected ?string $status = 'pending';
+
+            /**
+             * Stub decided-by column.
+             *
+             * @var string|null
+             */
+            protected ?string $decidedBy = null;
+
+            /**
+             * Stub comment column.
+             *
+             * @var string|null
+             */
+            protected ?string $comment = null;
+
+            /**
+             * Stub requester-id column.
+             *
+             * @var string|null
+             */
+            protected ?string $requesterId = null;
+
+            /**
+             * @return int
+             */
+            public function getId(): int
+            {
+                return (int) ($this->id ?? 0);
+            }//end getId()
+
+            /**
+             * @return int|null
+             */
+            public function getChainId(): ?int
+            {
+                return $this->chainId;
+            }//end getChainId()
+
+            /**
+             * @param int|null $chainId The owning chain id.
+             *
+             * @return void
+             */
+            public function setChainId(?int $chainId): void
+            {
+                $this->chainId = $chainId;
+            }//end setChainId()
+
+            /**
+             * @return string|null
+             */
+            public function getObjectUuid(): ?string
+            {
+                return $this->objectUuid;
+            }//end getObjectUuid()
+
+            /**
+             * @param string|null $objectUuid The target object's uuid.
+             *
+             * @return void
+             */
+            public function setObjectUuid(?string $objectUuid): void
+            {
+                $this->objectUuid = $objectUuid;
+            }//end setObjectUuid()
+
+            /**
+             * @return int
+             */
+            public function getStepOrder(): int
+            {
+                return $this->stepOrder;
+            }//end getStepOrder()
+
+            /**
+             * @param int $stepOrder The step's order within its chain.
+             *
+             * @return void
+             */
+            public function setStepOrder(int $stepOrder): void
+            {
+                $this->stepOrder = $stepOrder;
+            }//end setStepOrder()
+
+            /**
+             * @return string|null
+             */
+            public function getRole(): ?string
+            {
+                return $this->role;
+            }//end getRole()
+
+            /**
+             * @param string|null $role The required NC group id.
+             *
+             * @return void
+             */
+            public function setRole(?string $role): void
+            {
+                $this->role = $role;
+            }//end setRole()
+
+            /**
+             * @return string|null
+             */
+            public function getStatus(): ?string
+            {
+                return $this->status;
+            }//end getStatus()
+
+            /**
+             * @param string|null $status The step's decision status.
+             *
+             * @return void
+             */
+            public function setStatus(?string $status): void
+            {
+                $this->status = $status;
+            }//end setStatus()
+
+            /**
+             * @return string|null
+             */
+            public function getDecidedBy(): ?string
+            {
+                return $this->decidedBy;
+            }//end getDecidedBy()
+
+            /**
+             * @return string|null
+             */
+            public function getComment(): ?string
+            {
+                return $this->comment;
+            }//end getComment()
+
+            /**
+             * @return string|null
+             */
+            public function getRequesterId(): ?string
+            {
+                return $this->requesterId;
+            }//end getRequesterId()
+
+            /**
+             * @param string|null $requesterId Uid of the user whose transition provisioned this step.
+             *
+             * @return void
+             */
+            public function setRequesterId(?string $requesterId): void
+            {
+                $this->requesterId = $requesterId;
+            }//end setRequesterId()
+        }//end class
+    }//end if
+
+    if (class_exists(ApprovalStepMapper::class, autoload: false) === false) {
+        /**
+         * Stub ApprovalStepMapper — call surface only; tests mock the methods.
+         */
+        class ApprovalStepMapper
+        {
+            /**
+             * @return ApprovalStep
+             */
+            public function find(int $id): ApprovalStep
+            {
+                return new ApprovalStep();
+            }//end find()
+
+            /**
+             * @return array<int, ApprovalStep>
+             */
+            public function findByChainAndObject(int $chainId, string $objectUuid): array
+            {
+                return [];
+            }//end findByChainAndObject()
+
+            /**
+             * @return array<int, ApprovalStep>
+             */
+            public function findPendingByRole(string $role): array
+            {
+                return [];
+            }//end findPendingByRole()
+
+            /**
+             * @return array<int, ApprovalStep>
+             */
+            public function findByObjectUuid(string $objectUuid): array
+            {
+                return [];
+            }//end findByObjectUuid()
+
+            /**
+             * @param array<string, mixed> $filters
+             *
+             * @return array<int, ApprovalStep>
+             */
+            public function findAllFiltered(array $filters=[], ?int $limit=null, ?int $offset=null): array
+            {
+                return [];
+            }//end findAllFiltered()
+
+            /**
+             * @return array<int, ApprovalStep>
+             */
+            public function findByChain(int $chainId): array
+            {
+                return [];
+            }//end findByChain()
+
+            /**
+             * @param array<string, mixed> $data
+             *
+             * @return ApprovalStep
+             */
+            public function createFromArray(array $data): ApprovalStep
+            {
+                return new ApprovalStep();
+            }//end createFromArray()
+
+            /**
+             * @return int
+             */
+            public function deleteByChainAndObject(int $chainId, string $objectUuid): int
+            {
+                return 0;
+            }//end deleteByChainAndObject()
+        }//end class
+    }//end if
 }
 
 namespace OCA\OpenRegister\Service {
@@ -791,6 +1335,45 @@ namespace OCA\OpenRegister\Service {
             }//end getFile()
         }//end class
     }//end if
+
+    if (class_exists(ApprovalService::class, autoload: false) === false) {
+        /**
+         * Stub ApprovalService (automation-approval-steps) — call surface
+         * only; tests mock the methods.
+         */
+        class ApprovalService
+        {
+            /**
+             * @param array<int, array<string, mixed>>|null $stepsOverride
+             *
+             * @return array<int, \OCA\OpenRegister\Db\ApprovalStep>
+             */
+            public function initializeChain(
+                \OCA\OpenRegister\Db\ApprovalChain $chain,
+                string $objectUuid,
+                ?string $requesterId=null,
+                ?array $stepsOverride=null
+            ): array {
+                return [];
+            }//end initializeChain()
+
+            /**
+             * @return array{step: \OCA\OpenRegister\Db\ApprovalStep, nextStep: \OCA\OpenRegister\Db\ApprovalStep|null, statusOnApprove: string}
+             */
+            public function approveStep(int $stepId, string $userId, string $comment=''): array
+            {
+                return ['step' => new \OCA\OpenRegister\Db\ApprovalStep(), 'nextStep' => null, 'statusOnApprove' => 'approved'];
+            }//end approveStep()
+
+            /**
+             * @return array{step: \OCA\OpenRegister\Db\ApprovalStep, statusOnReject: string}
+             */
+            public function rejectStep(int $stepId, string $userId, string $comment=''): array
+            {
+                return ['step' => new \OCA\OpenRegister\Db\ApprovalStep(), 'statusOnReject' => 'rejected'];
+            }//end rejectStep()
+        }//end class
+    }//end if
 }
 
 namespace OCA\OpenRegister\Service\Credential {
@@ -1064,6 +1647,154 @@ namespace OCA\OpenRegister\Event {
             }//end register()
         }//end class
     }
+
+    if (class_exists(ObjectCreatedEvent::class, autoload: false) === false) {
+        /**
+         * Stub ObjectCreatedEvent (automation-approval-steps trigger-fire
+         * listener) — mirrors the real OR class: `__construct(ObjectEntity $object)`.
+         */
+        class ObjectCreatedEvent extends \OCP\EventDispatcher\Event
+        {
+            public function __construct(private readonly \OCA\OpenRegister\Db\ObjectEntity $object)
+            {
+                parent::__construct();
+            }//end __construct()
+
+            public function getObject(): \OCA\OpenRegister\Db\ObjectEntity
+            {
+                return $this->object;
+            }//end getObject()
+        }//end class
+    }//end if
+
+    if (class_exists(ObjectUpdatedEvent::class, autoload: false) === false) {
+        /**
+         * Stub ObjectUpdatedEvent (automation-approval-steps trigger-fire
+         * listener) — mirrors the real OR class:
+         * `__construct(ObjectEntity $newObject, ?ObjectEntity $oldObject = null)`.
+         */
+        class ObjectUpdatedEvent extends \OCP\EventDispatcher\Event
+        {
+            public function __construct(
+                private readonly \OCA\OpenRegister\Db\ObjectEntity $newObject,
+                private readonly ?\OCA\OpenRegister\Db\ObjectEntity $oldObject=null,
+            ) {
+                parent::__construct();
+            }//end __construct()
+
+            public function getObject(): \OCA\OpenRegister\Db\ObjectEntity
+            {
+                return $this->newObject;
+            }//end getObject()
+
+            public function getNewObject(): \OCA\OpenRegister\Db\ObjectEntity
+            {
+                return $this->newObject;
+            }//end getNewObject()
+
+            public function getOldObject(): ?\OCA\OpenRegister\Db\ObjectEntity
+            {
+                return $this->oldObject;
+            }//end getOldObject()
+        }//end class
+    }//end if
+
+    if (class_exists(ApprovalStepApprovedEvent::class, autoload: false) === false) {
+        /**
+         * Stub ApprovalStepApprovedEvent (automation-approval-steps
+         * ApprovalOutcomeListener) — mirrors the real OR class's accessors.
+         */
+        class ApprovalStepApprovedEvent extends \OCP\EventDispatcher\Event
+        {
+            public function __construct(
+                private readonly \OCA\OpenRegister\Db\ApprovalChain $chain,
+                private readonly \OCA\OpenRegister\Db\ApprovalStep $step,
+                private readonly string $userId,
+                private readonly string $statusOnApprove,
+                private readonly ?\OCA\OpenRegister\Db\ApprovalStep $nextStep=null,
+            ) {
+                parent::__construct();
+            }//end __construct()
+
+            public function getChain(): \OCA\OpenRegister\Db\ApprovalChain
+            {
+                return $this->chain;
+            }//end getChain()
+
+            public function getStep(): \OCA\OpenRegister\Db\ApprovalStep
+            {
+                return $this->step;
+            }//end getStep()
+
+            public function getUserId(): string
+            {
+                return $this->userId;
+            }//end getUserId()
+
+            public function getStatusOnApprove(): string
+            {
+                return $this->statusOnApprove;
+            }//end getStatusOnApprove()
+
+            public function getNextStep(): ?\OCA\OpenRegister\Db\ApprovalStep
+            {
+                return $this->nextStep;
+            }//end getNextStep()
+
+            public function isFinalStep(): bool
+            {
+                return $this->nextStep === null;
+            }//end isFinalStep()
+
+            public function getObjectUuid(): string
+            {
+                return ($this->step->getObjectUuid() ?? '');
+            }//end getObjectUuid()
+        }//end class
+    }//end if
+
+    if (class_exists(ApprovalStepRejectedEvent::class, autoload: false) === false) {
+        /**
+         * Stub ApprovalStepRejectedEvent (automation-approval-steps
+         * ApprovalOutcomeListener) — mirrors the real OR class's accessors.
+         */
+        class ApprovalStepRejectedEvent extends \OCP\EventDispatcher\Event
+        {
+            public function __construct(
+                private readonly \OCA\OpenRegister\Db\ApprovalChain $chain,
+                private readonly \OCA\OpenRegister\Db\ApprovalStep $step,
+                private readonly string $userId,
+                private readonly string $statusOnReject,
+            ) {
+                parent::__construct();
+            }//end __construct()
+
+            public function getChain(): \OCA\OpenRegister\Db\ApprovalChain
+            {
+                return $this->chain;
+            }//end getChain()
+
+            public function getStep(): \OCA\OpenRegister\Db\ApprovalStep
+            {
+                return $this->step;
+            }//end getStep()
+
+            public function getUserId(): string
+            {
+                return $this->userId;
+            }//end getUserId()
+
+            public function getStatusOnReject(): string
+            {
+                return $this->statusOnReject;
+            }//end getStatusOnReject()
+
+            public function getObjectUuid(): string
+            {
+                return ($this->step->getObjectUuid() ?? '');
+            }//end getObjectUuid()
+        }//end class
+    }//end if
 }
 
 namespace OCA\OpenRegister\Lifecycle {

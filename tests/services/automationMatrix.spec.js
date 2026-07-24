@@ -4,7 +4,8 @@
  *
  * Vitest spec for the automation-designer v1 compilation matrix.
  *
- * Spec: automation-designer (REQ-AUTD-003 / design.md Decision 2).
+ * Spec: automation-designer (REQ-AUTD-003 / design.md Decision 2), extended
+ * by automation-approval-steps (REQ-AUTD-003 / design.md Decision 1).
  */
 import { describe, it, expect } from 'vitest'
 import {
@@ -19,14 +20,14 @@ import {
 } from '../../src/services/automationMatrix.js'
 
 describe('automationMatrix — MATRIX cell-for-cell', () => {
-	it('object-created/updated/deleted allow only send-notification', () => {
-		expect(MATRIX['object-created']).toEqual(['send-notification'])
-		expect(MATRIX['object-updated']).toEqual(['send-notification'])
-		expect(MATRIX['object-deleted']).toEqual(['send-notification'])
+	it('object-created/updated/deleted allow send-notification and approval', () => {
+		expect(MATRIX['object-created']).toEqual(['send-notification', 'approval'])
+		expect(MATRIX['object-updated']).toEqual(['send-notification', 'approval'])
+		expect(MATRIX['object-deleted']).toEqual(['send-notification', 'approval'])
 	})
 
-	it('lifecycle-transition allows send-notification, object-op, webhook', () => {
-		expect(MATRIX['lifecycle-transition']).toEqual(['send-notification', 'object-op', 'webhook'])
+	it('lifecycle-transition allows send-notification, object-op, webhook, approval', () => {
+		expect(MATRIX['lifecycle-transition']).toEqual(['send-notification', 'object-op', 'webhook', 'approval'])
 	})
 
 	it('schedule allows only run-synchronization', () => {
@@ -67,11 +68,13 @@ describe('isActionAllowed', () => {
 		expect(isActionAllowed('manual', 'run-synchronization')).toBe(false)
 	})
 
-	it('always blocks the reserved approval action', () => {
-		ACTION_TYPES.concat(['approval']).forEach(() => {
-			expect(isActionAllowed('manual', 'approval')).toBe(false)
-			expect(isActionAllowed('lifecycle-transition', 'approval')).toBe(false)
-		})
+	it('approval is allowed on event/lifecycle-transition triggers, blocked on schedule/manual', () => {
+		expect(isActionAllowed('object-created', 'approval')).toBe(true)
+		expect(isActionAllowed('object-updated', 'approval')).toBe(true)
+		expect(isActionAllowed('object-deleted', 'approval')).toBe(true)
+		expect(isActionAllowed('lifecycle-transition', 'approval')).toBe(true)
+		expect(isActionAllowed('schedule', 'approval')).toBe(false)
+		expect(isActionAllowed('manual', 'approval')).toBe(false)
 	})
 
 	it('blocks an unknown trigger type', () => {
@@ -95,6 +98,7 @@ describe('isConditionAllowed — condition allowed only on manual', () => {
 describe('blockedActionReason / blockedConditionReason', () => {
 	it('returns empty string for an allowed combination', () => {
 		expect(blockedActionReason('object-created', 'send-notification')).toBe('')
+		expect(blockedActionReason('object-created', 'approval')).toBe('')
 		expect(blockedConditionReason('manual')).toBe('')
 	})
 

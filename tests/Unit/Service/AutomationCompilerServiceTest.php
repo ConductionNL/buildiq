@@ -29,6 +29,10 @@ namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Exception\UnsupportedAutomationCombinationException;
 use OCA\OpenBuild\Service\AutomationCompilerService;
+use OCA\OpenRegister\Db\ApprovalChain;
+use OCA\OpenRegister\Db\ApprovalChainMapper;
+use OCA\OpenRegister\Db\ApprovalStep;
+use OCA\OpenRegister\Db\ApprovalStepMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -53,6 +57,16 @@ final class AutomationCompilerServiceTest extends TestCase
     private SchemaMapper&MockObject $schemaMapper;
 
     /**
+     * @var ApprovalChainMapper&MockObject
+     */
+    private ApprovalChainMapper&MockObject $approvalChainMapper;
+
+    /**
+     * @var ApprovalStepMapper&MockObject
+     */
+    private ApprovalStepMapper&MockObject $approvalStepMapper;
+
+    /**
      * The service under test.
      *
      * @var AutomationCompilerService
@@ -66,9 +80,17 @@ final class AutomationCompilerServiceTest extends TestCase
      */
     protected function setUp(): void
     {
-        $this->objectService = $this->createMock(ObjectService::class);
-        $this->schemaMapper  = $this->createMock(SchemaMapper::class);
-        $this->compiler      = new AutomationCompilerService($this->objectService, $this->schemaMapper, new NullLogger());
+        $this->objectService       = $this->createMock(ObjectService::class);
+        $this->schemaMapper        = $this->createMock(SchemaMapper::class);
+        $this->approvalChainMapper = $this->createMock(ApprovalChainMapper::class);
+        $this->approvalStepMapper  = $this->createMock(ApprovalStepMapper::class);
+        $this->compiler            = new AutomationCompilerService(
+            $this->objectService,
+            $this->schemaMapper,
+            $this->approvalChainMapper,
+            $this->approvalStepMapper,
+            new NullLogger()
+        );
 
     }//end setUp()
 
@@ -357,23 +379,208 @@ final class AutomationCompilerServiceTest extends TestCase
     }//end testConditionOnScheduleTriggerIsBlocked()
 
     /**
-     * The reserved `approval` action is always blocked.
+     * automation-approval-steps REQ-AUTD-003: approval is blocked on
+     * `manual` and `schedule` triggers (D1 — only event/lifecycle-transition
+     * triggers bind to a concrete object instance).
      *
      * @return void
      */
-    public function testApprovalActionIsAlwaysBlocked(): void
+    public function testApprovalActionIsBlockedOnManualAndScheduleTriggers(): void
     {
-        $automation = [
+        $manual = [
             'id'      => 'auto-x',
             'slug'    => 'bad',
             'trigger' => ['type' => 'manual'],
-            'actions' => [['type' => 'approval']],
+            'actions' => [['type' => 'approval', 'assigneeGroup' => 'reviewers']],
+        ];
+
+        try {
+            $this->compiler->compile($manual);
+            $this->fail('Expected UnsupportedAutomationCombinationException for manual + approval.');
+        } catch (UnsupportedAutomationCombinationException $e) {
+            $this->assertStringContainsString('approval', $e->getMessage());
+        }
+
+        $schedule = [
+            'id'      => 'auto-y',
+            'slug'    => 'bad2',
+            'trigger' => ['type' => 'schedule', 'interval' => 3600],
+            'actions' => [['type' => 'approval', 'assigneeGroup' => 'reviewers']],
         ];
 
         $this->expectException(UnsupportedAutomationCombinationException::class);
-        $this->compiler->compile($automation);
+        $this->compiler->compile($schedule);
 
-    }//end testApprovalActionIsAlwaysBlocked()
+    }//end testApprovalActionIsBlockedOnManualAndScheduleTriggers()
+
+    /**
+     * automation-approval-steps REQ-AUTD-004: an approval action on
+     * `object-created` compiles to a planned `ApprovalChain` (one step,
+     * `role` = the assignee group), named `aut-<slug>`.
+     *
+     * @return void
+     */
+    public function testObjectCreatedPlusApprovalCompilesToApprovalChainPlan(): void
+    {
+        $automation = [
+            'id'              => 'auto-5',
+            'slug'            => 'route-permit-application-for-approval',
+            'name'            => 'Route permit application for approval',
+            'applicationSlug' => 'vergunning-app',
+            'versionUuid'     => 'version-1',
+            'enabled'         => true,
+            'trigger'         => ['type' => 'object-created', 'schema' => 'permit-application'],
+            'condition'       => null,
+            'actions'         => [
+                ['type' => 'approval', 'assigneeGroup' => 'permit-reviewers'],
+            ],
+        ];
+
+        $plan = $this->compiler->compile($automation);
+
+        $this->assertSame(
+            [
+                'name'          => 'aut-route-permit-application-for-approval',
+                'schema'        => 'permit-application',
+                'assigneeGroup' => 'permit-reviewers',
+                'enabled'       => true,
+            ],
+            $plan['approvalChain']
+        );
+        $this->assertSame([], $plan['notifications']);
+
+    }//end testObjectCreatedPlusApprovalCompilesToApprovalChainPlan()
+
+    /**
+     * automation-approval-steps REQ-AUTD-004: `lifecycle-transition` +
+     * `approval` is also supported (not just plain object events).
+     *
+     * @return void
+     */
+    public function testLifecycleTransitionPlusApprovalCompilesToApprovalChainPlan(): void
+    {
+        $automation = [
+            'id'              => 'auto-6',
+            'slug'            => 'activate-needs-approval',
+            'applicationSlug' => 'permit-tracker',
+            'versionUuid'     => 'version-1',
+            'enabled'         => true,
+            'trigger'         => ['type' => 'lifecycle-transition', 'schema' => 'permit', 'transition' => 'activate'],
+            'condition'       => null,
+            'actions'         => [
+                ['type' => 'approval', 'assigneeGroup' => 'ops'],
+            ],
+        ];
+
+        $plan = $this->compiler->compile($automation);
+
+        $this->assertSame(
+            ['name' => 'aut-activate-needs-approval', 'schema' => 'permit', 'assigneeGroup' => 'ops', 'enabled' => true],
+            $plan['approvalChain']
+        );
+
+    }//end testLifecycleTransitionPlusApprovalCompilesToApprovalChainPlan()
+
+    /**
+     * automation-approval-steps task 1.2 acceptance: recompiling an
+     * unchanged automation produces a byte-identical `ApprovalChain` upsert
+     * (idempotent) — the mapper is asked to upsert with the SAME payload
+     * both times, and `provenance.approvalChainName` is stable.
+     *
+     * @return void
+     */
+    public function testApplyIsIdempotentForApprovalChain(): void
+    {
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getId')->willReturn(42);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $this->approvalChainMapper->method('findBySchemaAndName')->willReturn(null);
+
+        $captured = [];
+        $this->approvalChainMapper->expects($this->exactly(2))
+            ->method('createFromArray')
+            ->willReturnCallback(function (array $payload) use (&$captured) {
+                $captured[] = $payload;
+                return $this->createMock(ApprovalChain::class);
+            });
+
+        $automation = [
+            'id'              => 'auto-5',
+            'slug'            => 'route-permit-application-for-approval',
+            'applicationSlug' => 'vergunning-app',
+            'versionUuid'     => 'version-1',
+            'enabled'         => true,
+            'trigger'         => ['type' => 'object-created', 'schema' => 'permit-application'],
+            'condition'       => null,
+            'actions'         => [['type' => 'approval', 'assigneeGroup' => 'permit-reviewers']],
+        ];
+
+        $plan        = $this->compiler->compile($automation);
+        $provenanceA = $this->compiler->apply($automation, $plan, []);
+        $provenanceB = $this->compiler->apply($automation, $plan, $provenanceA);
+
+        $this->assertSame('aut-route-permit-application-for-approval', $provenanceA['approvalChainName']);
+        $this->assertSame($provenanceA['approvalChainName'], $provenanceB['approvalChainName']);
+        $this->assertSame($captured[0], $captured[1]);
+
+    }//end testApplyIsIdempotentForApprovalChain()
+
+    /**
+     * automation-approval-steps REQ-AUTD-007: `approvalState()` returns
+     * `pending` for the most-recently-created step on the compiled chain.
+     *
+     * @return void
+     */
+    public function testApprovalStateReturnsLatestStepStatus(): void
+    {
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getId')->willReturn(42);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $chain = $this->createMock(ApprovalChain::class);
+        $chain->method('getId')->willReturn(7);
+        $this->approvalChainMapper->method('findBySchemaAndName')->willReturn($chain);
+
+        $step = $this->createMock(ApprovalStep::class);
+        $step->method('getStatus')->willReturn('pending');
+        $this->approvalStepMapper->method('findAllFiltered')->willReturn([$step]);
+
+        $automation = ['trigger' => ['type' => 'object-created', 'schema' => 'permit-application']];
+        $provenance = ['approvalChainName' => 'aut-route-permit-application-for-approval'];
+
+        $this->assertSame('pending', $this->compiler->approvalState($automation, $provenance));
+
+    }//end testApprovalStateReturnsLatestStepStatus()
+
+    /**
+     * `approvalState()` returns `none` when no chain was ever compiled.
+     *
+     * @return void
+     */
+    public function testApprovalStateReturnsNoneWhenNeverCompiled(): void
+    {
+        $this->assertSame('none', $this->compiler->approvalState(['trigger' => ['type' => 'object-created']], []));
+
+    }//end testApprovalStateReturnsNoneWhenNeverCompiled()
+
+    /**
+     * `mapActionToRuleAction()` maps an `approval` action to a typed
+     * `approval` rule action (used by `compileDryRunRule()` AND by
+     * `ApprovalOutcomeListener` to map on-approve/on-reject follow-ups).
+     *
+     * @return void
+     */
+    public function testMapActionToRuleActionMapsApproval(): void
+    {
+        $mapped = $this->compiler->mapActionToRuleAction(['type' => 'approval', 'assigneeGroup' => 'reviewers']);
+
+        $this->assertSame(
+            ['type' => 'approval', 'parameters' => ['assigneeGroup' => 'reviewers']],
+            $mapped
+        );
+
+    }//end testMapActionToRuleActionMapsApproval()
 
     /**
      * Documented deviation: manual + run-synchronization is blocked (no

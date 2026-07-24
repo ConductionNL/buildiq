@@ -100,6 +100,17 @@
                 <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatingEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectDeletedEvent"/>
+                <!-- automation-approval-steps: consumes OR's approval-chain
+                     engine directly (ApprovalChainMapper/ApprovalStepMapper/
+                     ApprovalService) per ADR-022 — never a new engine. -->
+                <referencedClass name="OCA\OpenRegister\Event\ObjectTransitionedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ApprovalStepApprovedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ApprovalStepRejectedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Db\ApprovalChain"/>
+                <referencedClass name="OCA\OpenRegister\Db\ApprovalChainMapper"/>
+                <referencedClass name="OCA\OpenRegister\Db\ApprovalStep"/>
+                <referencedClass name="OCA\OpenRegister\Db\ApprovalStepMapper"/>
+                <referencedClass name="OCA\OpenRegister\Service\ApprovalService"/>
                 <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
                 <referencedClass name="OCA\OpenRegister\Service\ConfigurationService"/>
                 <referencedClass name="OCA\OpenRegister\Service\RegisterService"/>
