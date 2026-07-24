@@ -160,6 +160,8 @@ export function useAppManifest(_appId) {
  */
 import { createManifestEditHistory as _createManifestEditHistory } from '@conduction/nextcloud-vue/dist/esm/utils/manifestEditHistory.js'
 import { useManifestEditHistory as _useManifestEditHistory } from '@conduction/nextcloud-vue/dist/esm/composables/useManifestEditHistory.js'
+import { mergeManifestDelta as _mergeManifestDelta } from '@conduction/nextcloud-vue/dist/esm/utils/mergeManifestDelta.js'
+import { diffManifest as _diffManifest } from '@conduction/nextcloud-vue/dist/esm/utils/diffManifest.js'
 
 /**
  * @param {object} [options] Forwarded verbatim to the leaf.
@@ -175,6 +177,31 @@ export function createManifestEditHistory(options) {
  */
 export function useManifestEditHistory(options) {
 	return _useManifestEditHistory(options)
+}
+
+/**
+ * `mergeManifestDelta` / `diffManifest` (app-delta-override,
+ * component-blocks' insert path) are likewise Vue-free pure functions, so
+ * they follow the exact same real-leaf-via-subpath-import pattern as
+ * `createManifestEditHistory` above rather than a hand-rolled fake —
+ * `PageDesigner.vue`'s block-insert merge exercises the real keyed-array
+ * merge semantics under test, not an approximation of them.
+ *
+ * @param {object} base - the base manifest.
+ * @param {object} delta - the delta payload to apply.
+ * @return {{manifest: object, orphanedDeltaPaths: string[]}} the merge result.
+ */
+export function mergeManifestDelta(base, delta) {
+	return _mergeManifestDelta(base, delta)
+}
+
+/**
+ * @param {object} base - the base manifest.
+ * @param {object} edited - the edited manifest.
+ * @return {object} the minimal delta.
+ */
+export function diffManifest(base, edited) {
+	return _diffManifest(base, edited)
 }
 
 export default {
@@ -198,4 +225,6 @@ export default {
 	useAppManifest,
 	createManifestEditHistory,
 	useManifestEditHistory,
+	mergeManifestDelta,
+	diffManifest,
 }

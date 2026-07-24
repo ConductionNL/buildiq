@@ -107,10 +107,14 @@ describe('TemplateGallery.vue — GitHub-only store', () => {
 		expect(cards.length).toBe(2)
 	})
 
-	it('renders no Local/Registry source tabs', async () => {
+	it('renders no legacy Local/Registry source tabs (component-blocks adds its own Templates/Blocks toggle)', async () => {
 		const wrapper = await mountGallery()
-		expect(wrapper.find('[role="tablist"]').exists()).toBe(false)
+		// The legacy Local/Registry source-tab strip is gone and stays gone.
 		expect(wrapper.find('.template-gallery__tabs').exists()).toBe(false)
+		// component-blocks REQ-OBTC-003 adds a NEW, unrelated top-level
+		// Templates/Blocks toggle — that one is expected to exist.
+		expect(wrapper.find('.template-gallery__view-toggle').exists()).toBe(true)
+		expect(wrapper.findAll('[role="tab"]').length).toBe(2)
 	})
 
 	it('does not fetch local application-template or registry store endpoints', async () => {
