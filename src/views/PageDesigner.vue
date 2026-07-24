@@ -42,6 +42,12 @@
 				</button>
 				<button
 					type="button"
+					class="page-designer__tool-btn"
+					@click="blocksSidebarOpen = true">
+					{{ t('openbuild', 'Blocks') }}
+				</button>
+				<button
+					type="button"
 					class="page-designer__tool-btn page-designer__tool-btn--primary"
 					:disabled="!canSaveAndPreview"
 					@click="saveAndPreview">
@@ -57,6 +63,23 @@
 			:page-id="selectedPage.id"
 			:pages="pages"
 			@update:open="shareTokensOpen = $event" />
+
+		<!-- component-blocks: block-library panel, an NcAppSidebar panel per
+		     design.md's Open Question (resolved: sidebar, not a designer tab).
+		     Insert deep-copies via BlockInsertService then merges the new
+		     widgetEntry objects onto the selected page through
+		     mergeManifestDelta — the app's existing keyed structural-merge
+		     engine — rather than splicing the manifest by hand. -->
+		<NcAppSidebar
+			v-if="blocksSidebarOpen"
+			:name="t('openbuild', 'Blocks')"
+			@close="blocksSidebarOpen = false">
+			<BlockLibraryPanel
+				:open="blocksSidebarOpen"
+				:target-schema-slugs="targetSchemaSlugs"
+				:target-widgets="(selectedPage && selectedPage.widgets) || []"
+				@insert-widgets="onInsertWidgets" />
+		</NcAppSidebar>
 
 		<div class="page-designer__panes">
 			<aside class="page-designer__left">
@@ -83,6 +106,14 @@
 						:title="t('openbuild', 'Unsupported page type: {type}', { type: selectedPage.type })"
 						:message="t('openbuild', 'No visual editor exists for this page type yet. Edit the raw config below; unknown keys are preserved.')"
 						@update:config="onConfigUpdate" />
+					<!-- component-blocks task 2.2: widget/section selection
+					     affordance feeding SaveBlockDialog. Operates on the
+					     page's uniform v2 widgets[] array. -->
+					<WidgetSelectionPanel
+						:widgets="selectedPage.widgets || []"
+						:application="{ slug }"
+						:existing-blocks="existingBlocks"
+						@saved="onBlockSaved" />
 				</div>
 				<div v-else class="page-designer__empty">
 					<p>{{ t('openbuild', 'Select a page on the left, or add one to start designing.') }}</p>
@@ -147,9 +178,12 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { translate as ncT } from '@nextcloud/l10n'
-import { CnAppRoot, defaultPageTypes } from '@conduction/nextcloud-vue'
+import { NcAppSidebar } from '@nextcloud/vue'
+import { CnAppRoot, defaultPageTypes, mergeManifestDelta } from '@conduction/nextcloud-vue'
 import registry from '../registry.js'
 import PageListEditor from '../components/page-editor/PageListEditor.vue'
+import BlockLibraryPanel from '../components/page-editor/BlockLibraryPanel.vue'
+import WidgetSelectionPanel from '../components/page-editor/WidgetSelectionPanel.vue'
 import MenuTreeEditor from '../components/page-editor/MenuTreeEditor.vue'
 import IndexPageEditor from '../components/page-editor/IndexPageEditor.vue'
 import DetailPageEditor from '../components/page-editor/DetailPageEditor.vue'
@@ -171,6 +205,7 @@ import { useManifestValidator } from '../composables/useManifestValidator.js'
 import { useSessionHistory } from '../composables/useSessionHistory.js'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
+import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 
 // Mapping of page.type → sub-editor component, covering every canonical v2
 // page type that ships a renderer component (REQ-PEC-001). Adding a new
@@ -198,6 +233,9 @@ export default {
 	name: 'PageDesigner',
 	components: {
 		CnAppRoot,
+		NcAppSidebar,
+		BlockLibraryPanel,
+		WidgetSelectionPanel,
 		PageListEditor,
 		MenuTreeEditor,
 		IndexPageEditor,
@@ -287,6 +325,13 @@ export default {
 			applicationDataRegisters: [],
 			// public-forms-runtime: ShareTokenDialog open state (toolbar "Share" button).
 			shareTokensOpen: false,
+			// component-blocks: block-library NcAppSidebar open state (toolbar
+			// "Blocks" button), the current app's companion schema slugs (for
+			// insert-time remap mismatch detection), and the blocks already
+			// visible to the caller (for SaveBlockDialog's slug-collision check).
+			blocksSidebarOpen: false,
+			targetSchemaSlugs: [],
+			existingBlocks: [],
 		}
 	},
 	computed: {
@@ -484,6 +529,7 @@ export default {
 	created() {
 		if (this.slug) {
 			this.fetchApplicationDataRegisters()
+			this.fetchBlockCaptureContext()
 		}
 	},
 	/**
@@ -544,6 +590,65 @@ export default {
 			} catch (e) {
 				this.applicationDataRegisters = []
 			}
+		},
+		/**
+		 * Resolve the current app's own companion schema slugs (via the same
+		 * `useRegisterPicker` composable `openSaveAsTemplate` already uses)
+		 * plus the blocks already visible to the caller — both consumed by
+		 * the component-blocks surfaces (`BlockLibraryPanel`'s remap
+		 * mismatch check, `SaveBlockDialog`'s slug-collision check). Failures
+		 * degrade to `[]` — a schema-fetch or block-list failure should never
+		 * block the rest of the page designer from rendering.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 */
+		async fetchBlockCaptureContext() {
+			try {
+				const picker = useRegisterPicker({ appSlug: this.slug, dataRegisters: this.applicationDataRegisters })
+				const schemas = await picker.fetchSchemas(picker.resolveAppRegister())
+				this.targetSchemaSlugs = Array.isArray(schemas) ? schemas.map((s) => s && s.slug).filter(Boolean) : []
+			} catch (e) {
+				this.targetSchemaSlugs = []
+			}
+			try {
+				const url = generateUrl('/apps/openregister/api/objects/openbuild/component-block')
+				const { data } = await axios.get(url)
+				this.existingBlocks = Array.isArray(data && data.results) ? data.results : (Array.isArray(data) ? data : [])
+			} catch (e) {
+				this.existingBlocks = []
+			}
+		},
+		/**
+		 * Merge freshly-inserted widgetEntry objects (from
+		 * `BlockLibraryPanel`'s `insert-widgets` event, already deep-copied
+		 * and freshly id-minted by `blockInsert.js#insertBlock`) onto the
+		 * selected page via `mergeManifestDelta` — the app's existing keyed
+		 * structural-merge engine (`widgets[]` merges by `id`, so this ADDS
+		 * the new entries without disturbing any existing widget).
+		 *
+		 * @param {Array<object>} widgets - the widgetEntry objects to insert.
+		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 */
+		onInsertWidgets(widgets) {
+			if (!this.selectedPage || !Array.isArray(widgets) || widgets.length === 0) {
+				return
+			}
+			const delta = { pages: [{ id: this.selectedPage.id, widgets }] }
+			const { manifest: merged } = mergeManifestDelta(this.manifest || {}, delta)
+			this.emitManifest(merged)
+		},
+		/**
+		 * Refresh the block-capture context after a block is saved from the
+		 * widget-selection affordance, so the block library reflects it
+		 * immediately.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 */
+		onBlockSaved() {
+			this.fetchBlockCaptureContext()
 		},
 		/**
 		 * Observed behaviour of `subEditorFor` (retrofit annotation).
