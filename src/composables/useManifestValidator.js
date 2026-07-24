@@ -26,11 +26,37 @@ import { validateManifest } from '@conduction/nextcloud-vue'
 import { validateWorkflowAttachments } from '../services/manifestValidation/workflowAttachments.js'
 import { validateManifestConnectors } from '../services/manifestValidation/connectorDataSource.js'
 import { validateTheme } from '../services/manifestValidation/theme.js'
+import { validateAppTheme } from '../services/manifestValidation/appTheme.js'
 import { validateDocumentAttachments } from '../services/manifestValidation/documentAttachments.js'
 import { validateSchedules } from '../services/manifestValidation/schedules.js'
 import { validateFormLogic } from '../services/manifestValidation/formLogic.js'
+import { checkThemeContrast } from '../services/checkThemeContrast.js'
 
 const DEBOUNCE_MS = 300
+
+/**
+ * WCAG contrast guardrail (app-theming, design.md Decision D2) surfaced
+ * through the same validator pipeline as shape validation, so a failing
+ * theme lights up the existing "Validation" side panel AND disables
+ * `PageDesigner`'s own `canSaveAndPreview` toolbar Save — the established
+ * no-bypass mechanism `runtime.theme`/other `additionalProperties: true`
+ * blocks already use here. `PageDesignerHost.save()` additionally re-checks
+ * this directly (belt-and-braces — see its docblock) since it persists via
+ * a second, independent Save action this shared panel does not gate.
+ *
+ * @param {object} manifest - the in-flight manifest.
+ * @return {string[]} - `<pointer>: <code>` error strings naming the failing
+ *   pair, computed ratio and required threshold.
+ * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-wcag-contrast-guardrail-blocks-saving-a-non-compliant-theme
+ */
+function contrastErrors(manifest) {
+	const theme = manifest && manifest.runtime && manifest.runtime.appTheme
+	if (!theme) {
+		return []
+	}
+	const result = checkThemeContrast(theme)
+	return result.failures.map((f) => `/runtime/appTheme/${f.pair.replace('-on-background', '')}: openbuild.appTheme.error.contrast-fail pair=${f.pair} ratio=${f.ratio} required=${f.required}`)
+}
 
 /**
  * Observed behaviour of `useManifestValidator` (retrofit annotation).
@@ -70,6 +96,8 @@ export function useManifestValidator() {
 				const appErrors = validateWorkflowAttachments(manifest)
 					.concat(validateManifestConnectors(manifest))
 					.concat(validateTheme(manifest))
+					.concat(validateAppTheme(manifest))
+					.concat(contrastErrors(manifest))
 					.concat(validateDocumentAttachments(manifest))
 					.concat(validateSchedules(manifest))
 					.concat(validateFormLogic(manifest))

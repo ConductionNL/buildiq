@@ -354,6 +354,66 @@ describe('PageDesignerHost', () => {
 		expect(wrapper.vm.error).toContain('Failed to save')
 	})
 
+	// app-theming / design.md Decision D2: the WCAG contrast guardrail is a
+	// hard block on the actual persist boundary — no bypass.
+	describe('save() WCAG contrast guardrail (app-theming)', () => {
+		it('blocks save() and never calls the API when appTheme fails contrast', async () => {
+			const version = {
+				'@self': { id: 'ver-uuid' },
+				manifest: { runtime: { appTheme: { primaryColor: '#E5E5E5', secondaryColor: '#0F172A', accentColor: '#B45309', headerStyle: 'default' } } },
+			}
+			const wrapper = mountHost({
+				version,
+				appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
+			})
+			await flush(wrapper)
+			await wrapper.vm.save()
+			expect(axiosPatchMock).not.toHaveBeenCalled()
+			expect(axiosPutMock).not.toHaveBeenCalled()
+			// The i18n `t()` test-stub does not interpolate `{failures}` (it
+			// returns the raw translation key) — the per-pair detail text
+			// itself is covered by checkThemeContrast.spec.js and
+			// AppCustomThemeSection.spec.js; this asserts the persist path
+			// was genuinely blocked with SOME error surfaced.
+			expect(wrapper.vm.error).toBeTruthy()
+		})
+
+		it('themeContrastBlocked computed reflects the failing theme', async () => {
+			const version = {
+				'@self': { id: 'ver-uuid' },
+				manifest: { runtime: { appTheme: { primaryColor: '#E5E5E5', secondaryColor: '#0F172A', accentColor: '#B45309', headerStyle: 'default' } } },
+			}
+			const wrapper = mountHost({
+				version,
+				appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
+			})
+			await flush(wrapper)
+			expect(wrapper.vm.themeContrastBlocked).toBe(true)
+		})
+
+		it('allows save() through when appTheme passes contrast', async () => {
+			const version = {
+				'@self': { id: 'ver-uuid' },
+				manifest: { runtime: { appTheme: { primaryColor: '#1D4ED8', secondaryColor: '#0F172A', accentColor: '#B45309', headerStyle: 'default' } } },
+			}
+			const wrapper = mountHost({
+				version,
+				appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
+			})
+			await flush(wrapper)
+			axiosPatchMock.mockResolvedValueOnce({ data: { '@self': { id: 'ver-uuid' }, saved: true } })
+			await wrapper.vm.save()
+			expect(axiosPatchMock).toHaveBeenCalled()
+			expect(wrapper.vm.themeContrastBlocked).toBe(false)
+		})
+
+		it('a themeless manifest is never contrast-blocked', async () => {
+			const wrapper = mountHost({ appList: [{ slug: 'petstore' }] })
+			await flush(wrapper)
+			expect(wrapper.vm.themeContrastBlocked).toBe(false)
+		})
+	})
+
 	it('beforeDestroy tears down the live-preview theme', async () => {
 		const wrapper = mountHost({ appList: [{ slug: 'petstore' }] })
 		await flush(wrapper)
