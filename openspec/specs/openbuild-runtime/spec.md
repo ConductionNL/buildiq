@@ -856,6 +856,8 @@ runtime. The public routes SHALL be registered in `appinfo/routes.php` as a
 distinct route group, before the SPA catch-all, and SHALL NOT share a
 controller method with the authenticated manifest endpoint.
 
+@e2e exclude pure-backend route-registration/auth-posture contract (public-forms-runtime) — token-only auth verified by PublicFormControllerTest; no distinct Playwright-testable UI surface beyond public-form-access's own coverage
+
 #### Scenario: Public route is reachable without an NC session
 
 - **WHEN** an anonymous, unauthenticated visitor (no NC session cookie)
@@ -878,6 +880,8 @@ user's group memberships server-side and supply them to the manifest renderer
 as the set of permission strings the user holds (`group:<gid>`). When no
 permission context is available the renderer MUST fall back to showing all
 items (no regression for apps without permission fields).
+
+@e2e exclude backend permission-context resolution verified by ManifestResolverServicePermissionFilterTest (testResolveCallerPermissionsForDisplayReturnsGroupSetForViewer, testUngatedManifestIsUnchanged); live E2E deferred per task constraints (no deploy to shared dev instance) — see Conduction/openbuild#41 quarantine pattern
 
 **ID:** REQ-OBR-014
 
@@ -903,6 +907,8 @@ permissions — the manifest is filtered before it leaves the server, not
 merely hidden client-side. Admins and callers holding an owner or editor role
 on the Application MUST receive the manifest unfiltered.
 
+@e2e exclude the server-side deny path is verified by ManifestResolverServicePermissionFilterTest::testOutOfGroupCallerNeverReceivesGatedMenuItemOrPage (the load-bearing proof) plus testGroupMemberReceivesGatedMenuItemAndPage / testAdminBypassesFiltering / testOwnerBypassesFiltering / testEditorBypassesFiltering; live E2E deferred per task constraints (no deploy to shared dev instance) — see Conduction/openbuild#41 quarantine pattern
+
 **ID:** REQ-OBR-015
 
 #### Scenario: Vets-only medical menu and page
@@ -920,6 +926,8 @@ manifest MUST land the caller on the highest-priority dashboard page (index 0)
 whose `permission` the caller satisfies, falling back to the default
 dashboard when none match.
 
+@e2e exclude backend reorder logic verified by ManifestResolverServicePermissionFilterTest (testGroupScopedDashboardIsPromotedToLandingForMatchingCaller, testNonMatchingCallerKeepsDefaultDashboardAsLanding); live E2E deferred per task constraints (no deploy to shared dev instance) — see Conduction/openbuild#41 quarantine pattern
+
 **ID:** REQ-OBR-016
 
 #### Scenario: Vets land on the vet dashboard
@@ -934,6 +942,8 @@ dashboard when none match.
 Permission-based hiding of menus and pages remains a presentation concern;
 the authoritative access control for the data a page reads MUST be enforced
 by OpenRegister schema RBAC (`schema.authorization`).
+
+@e2e exclude OpenRegister-side object-authorization behaviour, out of OpenBuild's own Playwright-testable surface — verified in OpenRegister's own test suite; this requirement documents the boundary, it does not add new OpenBuild-side behaviour
 
 **ID:** REQ-OBR-017
 
