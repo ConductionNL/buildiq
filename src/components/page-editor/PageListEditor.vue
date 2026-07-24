@@ -61,6 +61,12 @@
 					@click.stop
 					@input="updateField(index, 'route', $event.target.value)">
 				<span class="page-list-editor__type-tag">{{ page.type }}</span>
+				<PermissionGroupField
+					class="page-list-editor__permission"
+					:permission="page.permission || ''"
+					:known-groups="knownGroups"
+					@click.native.stop
+					@update:permission="updateField(index, 'permission', $event || '')" />
 				<button
 					type="button"
 					class="page-list-editor__remove"
@@ -84,6 +90,7 @@
 
 <script>
 import Draggable from 'vuedraggable'
+import PermissionGroupField from './fields/PermissionGroupField.vue'
 
 export const PAGE_TYPES = [
 	'index',
@@ -121,7 +128,7 @@ const DEFAULT_CONFIGS = {
 
 export default {
 	name: 'PageListEditor',
-	components: { Draggable },
+	components: { Draggable, PermissionGroupField },
 	props: {
 		pages: {
 			type: Array,
@@ -140,6 +147,22 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Group ids already referenced by any page's `permission` (spec
+		 * `runtime-group-scoped-access`) — offered as quick-pick options.
+		 *
+		 * @return {string[]}
+		 */
+		knownGroups() {
+			const gids = new Set()
+			for (const page of this.pages) {
+				const value = page && typeof page.permission === 'string' ? page.permission : ''
+				if (value.startsWith('group:')) {
+					gids.add(value.slice('group:'.length))
+				}
+			}
+			return Array.from(gids)
+		},
 		/**
 		 * Observed behaviour of `duplicateIds` (retrofit annotation).
 		 *
@@ -348,6 +371,10 @@ export default {
 	border-radius: var(--border-radius);
 	background: var(--color-main-background);
 	color: var(--color-main-text);
+}
+
+.page-list-editor__permission {
+	flex: 1 1 200px;
 }
 
 .page-list-editor__type-tag {

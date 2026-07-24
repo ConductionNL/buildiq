@@ -100,6 +100,10 @@
 				<p v-if="entry.action" class="menu-tree-editor__note">
 					{{ t('openbuild', 'Route and href are ignored when an action is set.') }}
 				</p>
+				<PermissionGroupField
+					:permission="entry.permission || ''"
+					:known-groups="knownGroups"
+					@update:permission="updateField(index, 'permission', $event || '')" />
 				<Draggable
 					v-if="entry.children && entry.children.length"
 					:value="entry.children"
@@ -156,10 +160,11 @@
 
 <script>
 import Draggable from 'vuedraggable'
+import PermissionGroupField from './fields/PermissionGroupField.vue'
 
 export default {
 	name: 'MenuTreeEditor',
-	components: { Draggable },
+	components: { Draggable, PermissionGroupField },
 	props: {
 		menu: {
 			type: Array,
@@ -171,6 +176,26 @@ export default {
 		return {
 			depthError: false,
 		}
+	},
+	computed: {
+		/**
+		 * Group ids already referenced by any menu entry's `permission`
+		 * (spec `runtime-group-scoped-access`) — offered as quick-pick
+		 * options in {@see PermissionGroupField} so authors do not need to
+		 * retype a group id for every gated entry.
+		 *
+		 * @return {string[]}
+		 */
+		knownGroups() {
+			const gids = new Set()
+			for (const entry of this.menu) {
+				const value = entry && typeof entry.permission === 'string' ? entry.permission : ''
+				if (value.startsWith('group:')) {
+					gids.add(value.slice('group:'.length))
+				}
+			}
+			return Array.from(gids)
+		},
 	},
 	methods: {
 		/**
