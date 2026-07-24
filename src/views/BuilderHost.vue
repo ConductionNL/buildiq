@@ -200,7 +200,7 @@ export default {
 		 * `appTheme.logoRef` — null defaults `AppBrandedHeader` to the app icon.
 		 *
 		 * @return {?object}
-		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-applications-existing-icon-fields
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
 		 */
 		appThemeLogoRef() {
 			return (this.appThemeBlock && this.appThemeBlock.logoRef) || null
@@ -210,7 +210,7 @@ export default {
 		 * falling back to the slug while the lazy Application fetch resolves.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-applications-existing-icon-fields
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
 		 */
 		appName() {
 			return (this.application && (this.application.name || this.application.slug)) || this.slug
@@ -219,7 +219,7 @@ export default {
 		 * The Application's OR uuid, needed to resolve a dedicated theme logo.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-applications-existing-icon-fields
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
 		 */
 		applicationUuid() {
 			const self = this.application && this.application['@self']
@@ -338,7 +338,7 @@ export default {
 		 *
 		 * @param {object} manifest - the resolved manifest.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-applications-existing-icon-fields
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
 		 */
 		async loadApplicationIfBranded(manifest) {
 			const headerStyle = manifest && manifest.runtime && manifest.runtime.appTheme && manifest.runtime.appTheme.headerStyle

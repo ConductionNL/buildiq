@@ -42,6 +42,7 @@ export const UI_MIN_RATIO = 3
  *
  * @param {string} hex - a hex color string, e.g. `#1D4ED8` or `#fff`.
  * @return {?{r: number, g: number, b: number}} - the parsed channels, or null when not a valid hex color.
+ * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-wcag-contrast-guardrail-blocks-saving-a-non-compliant-theme
  */
 export function parseHexColor(hex) {
 	if (typeof hex !== 'string') {
@@ -75,6 +76,7 @@ function srgbChannelToLinear(channel) {
  *
  * @param {{r: number, g: number, b: number}} rgb - the color channels.
  * @return {number} - the relative luminance (0-1).
+ * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-wcag-contrast-guardrail-blocks-saving-a-non-compliant-theme
  */
 export function relativeLuminance({ r, g, b }) {
 	const R = srgbChannelToLinear(r)
@@ -90,6 +92,7 @@ export function relativeLuminance({ r, g, b }) {
  * @param {string} hexA - the first hex color.
  * @param {string} hexB - the second hex color.
  * @return {?number} - the contrast ratio (≥1), or null when invalid input.
+ * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-wcag-contrast-guardrail-blocks-saving-a-non-compliant-theme
  */
 export function contrastRatio(hexA, hexB) {
 	const a = parseHexColor(hexA)
@@ -112,6 +115,7 @@ export function contrastRatio(hexA, hexB) {
  *
  * @param {string} hex - the background hex color the text sits on.
  * @return {string} - `#000000` or `#ffffff`, whichever contrasts more.
+ * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-theme-applies-via-the-existing-scoped-css-variable-mechanism
  */
 export function accessibleTextColor(hex) {
 	const black = contrastRatio(hex, '#000000') || 0

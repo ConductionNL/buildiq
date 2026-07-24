@@ -68,6 +68,7 @@ export { SCOPE_ATTR }
  * @param {object} theme - the `runtime.appTheme` object.
  * @param {string} scopeSelector - e.g. `[data-openbuild-theme-scope="kap"]`.
  * @return {string} - the scoped CSS text.
+ * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-theme-applies-via-the-existing-scoped-css-variable-mechanism
  */
 export function buildAppThemeCss(theme, scopeSelector) {
 	const primary = theme.primaryColor

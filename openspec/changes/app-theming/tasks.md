@@ -30,5 +30,5 @@
 
 ## 7. Verify
 
-- [x] 7.1 `vitest run` (1338/1338 passing, up from the 1268 baseline) and eslint/stylelint clean on the diff (0 errors). `composer check:strict` N/A — proposal.md scopes this change as frontend-only ("Backend: none beyond existing manifest validation"), no PHP files were added or modified.
+- [x] 7.1 `vitest run` (1338/1338 passing, up from the 1268 baseline), `phpunit -c phpunit-unit.xml` (699/699, unchanged — no PHP touched), eslint/stylelint clean on the diff (0 errors). Hydra mechanical gates (`run-hydra-gates.sh --scope-to-diff`): 38/39 green; the one failure (gate-46 spec-anchor-existence) is pre-existing dangling `@spec` references to now-archived change directories in `BuilderHost.vue`/`PageDesignerHost.vue`/`useManifestValidator.js`, verified byte-identical on `origin/development` before this change (not introduced here). `composer check:strict` N/A — proposal.md scopes this change as frontend-only ("Backend: none beyond existing manifest validation"), no PHP files were added or modified.
 - [ ] 7.2 `openspec validate "app-theming"` passes and `openspec status` shows all artifacts complete before archiving.

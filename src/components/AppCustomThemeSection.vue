@@ -27,7 +27,7 @@
   -
   - @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-apptheme-manifest-block-declares-logo-colors-and-header-style
   - @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-wcag-contrast-guardrail-blocks-saving-a-non-compliant-theme
-  - @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-applications-existing-icon-fields
+  - @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
   -->
 <template>
 	<section class="ob-app-theme-section">
@@ -184,6 +184,7 @@ export default {
 		theme() {
 			return (this.manifest && this.manifest.runtime && this.manifest.runtime.appTheme) || null
 		},
+		/** @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-apptheme-manifest-block-declares-logo-colors-and-header-style */
 		colorFields() {
 			return [
 				{ key: 'primaryColor', label: t('openbuild', 'Primary color') },
@@ -191,6 +192,7 @@ export default {
 				{ key: 'accentColor', label: t('openbuild', 'Accent color') },
 			]
 		},
+		/** @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-apptheme-manifest-block-declares-logo-colors-and-header-style */
 		headerStyleOptions() {
 			return [
 				{ id: 'default', label: t('openbuild', 'Default') },
@@ -199,17 +201,21 @@ export default {
 			]
 		},
 		headerStyleOption: {
+			/** @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-apptheme-manifest-block-declares-logo-colors-and-header-style */
 			get() {
 				const id = (this.theme && this.theme.headerStyle) || 'default'
 				return this.headerStyleOptions.find((o) => o.id === id) || this.headerStyleOptions[0]
 			},
+			/** @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-apptheme-manifest-block-declares-logo-colors-and-header-style */
 			set(option) {
 				this.updateTheme({ headerStyle: (option && option.id) || 'default' })
 			},
 		},
+		/** @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields */
 		defaultIconUrl() {
 			return this.appSlug ? generateUrl(`/apps/openbuild/icons/${this.appSlug}.svg`) : ''
 		},
+		/** @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields */
 		usesDedicatedLogo() {
 			return !!(this.theme && this.theme.logoRef && this.theme.logoRef.ref)
 		},
@@ -218,6 +224,7 @@ export default {
 		 * every edit (design.md Decision D2).
 		 *
 		 * @return {{passed: boolean, failures: Array}}
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-wcag-contrast-guardrail-blocks-saving-a-non-compliant-theme
 		 */
 		contrastResult() {
 			return checkThemeContrast(this.theme)
@@ -228,6 +235,7 @@ export default {
 		 * Start a new appTheme block from verified-passing defaults.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-apptheme-manifest-block-declares-logo-colors-and-header-style
 		 */
 		addTheme() {
 			this.$emit('update:manifest', this.withTheme({ ...DEFAULT_THEME }))
@@ -237,6 +245,7 @@ export default {
 		 * to a themeless app).
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-apptheme-manifest-block-declares-logo-colors-and-header-style
 		 */
 		removeTheme() {
 			this.$emit('update:manifest', this.withTheme(null))
@@ -246,6 +255,7 @@ export default {
 		 *
 		 * @param {object} patch - fields to merge onto the current theme.
 		 * @return {void}
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-apptheme-manifest-block-declares-logo-colors-and-header-style
 		 */
 		updateTheme(patch) {
 			if (!this.theme) {
@@ -271,6 +281,7 @@ export default {
 		 *
 		 * @param {?object} theme - the appTheme object, or null to clear.
 		 * @return {object}
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-apptheme-manifest-block-declares-logo-colors-and-header-style
 		 */
 		withTheme(theme) {
 			const next = { ...this.manifest }
@@ -295,7 +306,7 @@ export default {
 		 *
 		 * @param {Event} event - the file input change event.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-applications-existing-icon-fields
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
 		 */
 		async onLogoFileChange(event) {
 			this.logoUploadError = ''
@@ -332,6 +343,7 @@ export default {
 		 * deleting the previously uploaded file.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
 		 */
 		clearDedicatedLogo() {
 			this.updateTheme({ logoRef: null })

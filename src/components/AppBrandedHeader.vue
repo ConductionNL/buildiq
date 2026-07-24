@@ -31,7 +31,7 @@
   - inheritance from the ancestor `[data-openbuild-theme-scope]` element,
   - no prop plumbing needed.
   -
-  - @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-applications-existing-icon-fields
+  - @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
   - @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-an-active-nldesign-theme-takes-precedence-over-apptheme-colors
   -->
 <template>
@@ -73,6 +73,7 @@ export default {
 		 * IconController route.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
 		 */
 		defaultIconUrl() {
 			return generateUrl(`/apps/openbuild/icons/${this.appSlug}.svg`)
@@ -82,6 +83,7 @@ export default {
 		 * found, otherwise the app icon.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
 		 */
 		logoSrc() {
 			if (this.logoErrored) {
@@ -103,6 +105,7 @@ export default {
 		 * rest of this feature follows.
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
 		 */
 		async resolveDedicatedLogo() {
 			this.logoErrored = false
@@ -126,6 +129,7 @@ export default {
 		 * to load (broken/stale downloadUrl).
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
 		 */
 		onLogoError() {
 			if (!this.logoErrored) {
