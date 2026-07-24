@@ -115,7 +115,7 @@ class CopilotControllerTest extends TestCase
     public function testEveryActionHasNoAdminRequiredAttribute(): void
     {
         $reflection = new ReflectionClass(CopilotController::class);
-        foreach (['health', 'plan', 'execute'] as $method) {
+        foreach (['health', 'plan', 'execute', 'discard'] as $method) {
             $attributes = $reflection->getMethod($method)->getAttributes();
             $names      = array_map(static fn ($a) => $a->getName(), $attributes);
             self::assertContains(
@@ -180,10 +180,12 @@ class CopilotControllerTest extends TestCase
     public function testPlanMapsExceptionStatuses(): void
     {
         $this->wireUser(uid: 'alice');
-        $this->request->method('getParam')->willReturnMap([
-            ['brief', '', 'A tool library'],
-            ['appSlug', null, null],
-        ]);
+        $this->request->method('getParam')->willReturnMap(
+                [
+                    ['brief', '', 'A tool library'],
+                    ['appSlug', null, null],
+                ]
+                );
 
         $this->copilotService->method('plan')->willThrowException(
             new CopilotException(errorCode: 'plan_invalid', message: 'bad plan', httpStatus: 422)
@@ -202,10 +204,12 @@ class CopilotControllerTest extends TestCase
     public function testPlanReturns503WhenUnavailable(): void
     {
         $this->wireUser(uid: 'alice');
-        $this->request->method('getParam')->willReturnMap([
-            ['brief', '', 'A tool library'],
-            ['appSlug', null, null],
-        ]);
+        $this->request->method('getParam')->willReturnMap(
+                [
+                    ['brief', '', 'A tool library'],
+                    ['appSlug', null, null],
+                ]
+                );
         $this->copilotService->method('plan')->willThrowException(
             new CopilotException(errorCode: 'no_provider', message: 'unavailable', httpStatus: 503)
         );
@@ -222,16 +226,42 @@ class CopilotControllerTest extends TestCase
     public function testPlanReturns200OnSuccess(): void
     {
         $this->wireUser(uid: 'alice');
-        $this->request->method('getParam')->willReturnMap([
-            ['brief', '', 'A tool library'],
-            ['appSlug', null, null],
-        ]);
+        $this->request->method('getParam')->willReturnMap(
+                [
+                    ['brief', '', 'A tool library'],
+                    ['appSlug', null, null],
+                ]
+                );
         $this->copilotService->method('plan')->willReturn(['summary' => 'x', 'steps' => [], 'manifests' => []]);
 
         $response = $this->controller->plan();
         self::assertSame(Http::STATUS_OK, $response->getStatus());
         self::assertSame('x', $response->getData()['summary']);
     }//end testPlanReturns200OnSuccess()
+
+    /**
+     * plan() reads `agentId` from the request and passes it straight through to the service
+     * (agent-workspace REQ "Agents page provides CRUD and a per-agent chat panel").
+     *
+     * @return void
+     */
+    public function testPlanPassesAgentIdThrough(): void
+    {
+        $this->wireUser(uid: 'alice');
+        $this->request->method('getParam')->willReturnMap(
+                [
+                    ['brief', '', 'Add a page'],
+                    ['appSlug', null, null],
+                    ['agentId', null, 'agent-uuid-1'],
+                ]
+                );
+        $this->copilotService->expects(self::once())->method('plan')
+            ->with(brief: 'Add a page', appSlug: null, userId: 'alice', agentId: 'agent-uuid-1')
+            ->willReturn(['summary' => 'x', 'steps' => [], 'manifests' => []]);
+
+        $response = $this->controller->plan();
+        self::assertSame(Http::STATUS_OK, $response->getStatus());
+    }//end testPlanPassesAgentIdThrough()
 
     // -------------------------------------------------------------------
     // execute()
@@ -257,10 +287,12 @@ class CopilotControllerTest extends TestCase
     public function testExecuteReturns403ForViewerRole(): void
     {
         $this->wireUser(uid: 'bob');
-        $this->request->method('getParam')->willReturnMap([
-            ['summary', '', 'x'],
-            ['steps', [], [['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'hello']]]],
-        ]);
+        $this->request->method('getParam')->willReturnMap(
+                [
+                    ['summary', '', 'x'],
+                    ['steps', [], [['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'hello']]]],
+                ]
+                );
         $this->copilotService->method('execute')->willThrowException(
             new CopilotException(errorCode: 'forbidden', message: 'no access', httpStatus: 403)
         );
@@ -280,13 +312,17 @@ class CopilotControllerTest extends TestCase
     public function testExecuteSucceedsForCreateAppOnlyPlan(): void
     {
         $this->wireUser(uid: 'newcomer');
-        $this->request->method('getParam')->willReturnMap([
-            ['summary', '', 'x'],
-            ['steps', [], [['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'my-app', 'name' => 'My App']]]],
-        ]);
-        $this->copilotService->method('execute')->willReturn([
-            'results' => [['success' => true, 'created' => true, 'app' => ['uuid' => 'u1', 'slug' => 'my-app']]],
-        ]);
+        $this->request->method('getParam')->willReturnMap(
+                [
+                    ['summary', '', 'x'],
+                    ['steps', [], [['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'my-app', 'name' => 'My App']]]],
+                ]
+                );
+        $this->copilotService->method('execute')->willReturn(
+                [
+                    'results' => [['success' => true, 'created' => true, 'app' => ['uuid' => 'u1', 'slug' => 'my-app']]],
+                ]
+                );
 
         $response = $this->controller->execute();
         self::assertSame(Http::STATUS_OK, $response->getStatus());
@@ -301,10 +337,12 @@ class CopilotControllerTest extends TestCase
     public function testExecuteReturns422WithStepIndexOnFailure(): void
     {
         $this->wireUser(uid: 'alice');
-        $this->request->method('getParam')->willReturnMap([
-            ['summary', '', 'x'],
-            ['steps', [], [['tool' => 'openbuild.upsertPage', 'arguments' => []]]],
-        ]);
+        $this->request->method('getParam')->willReturnMap(
+                [
+                    ['summary', '', 'x'],
+                    ['steps', [], [['tool' => 'openbuild.upsertPage', 'arguments' => []]]],
+                ]
+                );
         $this->copilotService->method('execute')->willThrowException(
             new CopilotException(
                 errorCode: 'execution_failed',
@@ -328,14 +366,127 @@ class CopilotControllerTest extends TestCase
     public function testExecuteReturns500OnUnhandledException(): void
     {
         $this->wireUser(uid: 'alice');
-        $this->request->method('getParam')->willReturnMap([
-            ['summary', '', 'x'],
-            ['steps', [], []],
-        ]);
+        $this->request->method('getParam')->willReturnMap(
+                [
+                    ['summary', '', 'x'],
+                    ['steps', [], []],
+                ]
+                );
         $this->copilotService->method('execute')->willThrowException(new \RuntimeException('kaboom'));
 
         $response = $this->controller->execute();
         self::assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
         self::assertSame('internal_error', $response->getData()['error']);
     }//end testExecuteReturns500OnUnhandledException()
+
+    /**
+     * execute() reads `agentId`/`prompt` from the request and passes them straight
+     * through to the service (agent-workspace REQ "Every agent run is transparently
+     * logged and reviewable").
+     *
+     * @return void
+     */
+    public function testExecutePassesAgentIdAndPromptThrough(): void
+    {
+        $this->wireUser(uid: 'alice');
+        $this->request->method('getParam')->willReturnMap(
+                [
+                    ['summary', '', 'x'],
+                    ['steps', [], [['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'hello']]]],
+                    ['agentId', null, 'agent-uuid-1'],
+                    ['prompt', '', 'Add a page'],
+                ]
+                );
+        $this->copilotService->expects(self::once())->method('execute')
+            ->with(plan: self::anything(), userId: 'alice', agentId: 'agent-uuid-1', prompt: 'Add a page')
+            ->willReturn(['results' => []]);
+
+        $response = $this->controller->execute();
+        self::assertSame(Http::STATUS_OK, $response->getStatus());
+    }//end testExecutePassesAgentIdAndPromptThrough()
+
+    // -------------------------------------------------------------------
+    // discard()
+    // -------------------------------------------------------------------
+
+    /**
+     * discard() returns 401 when unauthenticated.
+     *
+     * @return void
+     */
+    public function testDiscardReturns401WhenUnauthenticated(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+        $response = $this->controller->discard();
+        self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+    }//end testDiscardReturns401WhenUnauthenticated()
+
+    /**
+     * discard() returns 422 when `agentId` is missing — it exists ONLY for the
+     * agent-scoped chat surface.
+     *
+     * @return void
+     */
+    public function testDiscardReturns422WhenAgentIdMissing(): void
+    {
+        $this->wireUser(uid: 'alice');
+        $this->request->method('getParam')->willReturnMap(
+                [
+                    ['agentId', '', ''],
+                ]
+                );
+
+        $response = $this->controller->discard();
+        self::assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+    }//end testDiscardReturns422WhenAgentIdMissing()
+
+    /**
+     * discard() calls the service and returns 200 `{status: "logged"}` on success.
+     *
+     * @return void
+     */
+    public function testDiscardReturns200OnSuccess(): void
+    {
+        $this->wireUser(uid: 'alice');
+        $this->request->method('getParam')->willReturnMap(
+                [
+                    ['agentId', '', 'agent-uuid-1'],
+                    ['prompt', '', 'Add a page'],
+                    ['summary', '', 'x'],
+                    ['steps', [], []],
+                ]
+                );
+        $this->copilotService->expects(self::once())->method('discard')
+            ->with(agentId: 'agent-uuid-1', userId: 'alice', prompt: 'Add a page', plan: ['summary' => 'x', 'steps' => []])
+            ->willReturn([]);
+
+        $response = $this->controller->discard();
+        self::assertSame(Http::STATUS_OK, $response->getStatus());
+        self::assertSame('logged', $response->getData()['status']);
+    }//end testDiscardReturns200OnSuccess()
+
+    /**
+     * discard() maps a CopilotException (e.g. unknown agent) onto the response.
+     *
+     * @return void
+     */
+    public function testDiscardMapsExceptionStatuses(): void
+    {
+        $this->wireUser(uid: 'alice');
+        $this->request->method('getParam')->willReturnMap(
+                [
+                    ['agentId', '', 'unknown-agent'],
+                    ['prompt', '', 'x'],
+                    ['summary', '', 'x'],
+                    ['steps', [], []],
+                ]
+                );
+        $this->copilotService->method('discard')->willThrowException(
+            new CopilotException(errorCode: 'not_found', message: 'no such agent', httpStatus: 404)
+        );
+
+        $response = $this->controller->discard();
+        self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+        self::assertSame('not_found', $response->getData()['error']);
+    }//end testDiscardMapsExceptionStatuses()
 }//end class

@@ -26,11 +26,13 @@ namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Exception\CopilotException;
 use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
+use OCA\OpenBuild\Service\AgentRunLogger;
 use OCA\OpenBuild\Service\ApplicationDeletionService;
 use OCA\OpenBuild\Service\Copilot\CopilotPlanValidator;
 use OCA\OpenBuild\Service\Copilot\CopilotPromptBuilder;
 use OCA\OpenBuild\Service\CopilotService;
 use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -85,6 +87,11 @@ class CopilotServiceTest extends TestCase
     private IManager&MockObject $taskManager;
 
     /**
+     * @var AgentRunLogger&MockObject
+     */
+    private AgentRunLogger&MockObject $agentRunLogger;
+
+    /**
      * Set up shared mocks + the SUT.
      *
      * @return void
@@ -93,16 +100,17 @@ class CopilotServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->container      = $this->createMock(ContainerInterface::class);
-        $this->objectService  = $this->createMock(ObjectService::class);
-        $this->userManager    = $this->createMock(IUserManager::class);
-        $this->groupManager   = $this->createMock(IGroupManager::class);
+        $this->container     = $this->createMock(ContainerInterface::class);
+        $this->objectService = $this->createMock(ObjectService::class);
+        $this->userManager   = $this->createMock(IUserManager::class);
+        $this->groupManager  = $this->createMock(IGroupManager::class);
         $this->groupManager->method('isAdmin')->willReturn(false);
         $this->groupManager->method('getUserGroups')->willReturn([]);
-        $this->toolProvider   = $this->createMock(OpenBuildToolProvider::class);
+        $this->toolProvider = $this->createMock(OpenBuildToolProvider::class);
         $this->toolProvider->method('getToolDescriptors')->willReturn($this->descriptors());
         $this->deletionService = $this->createMock(ApplicationDeletionService::class);
         $this->taskManager     = $this->createMock(IManager::class);
+        $this->agentRunLogger  = $this->createMock(AgentRunLogger::class);
     }//end setUp()
 
     /**
@@ -112,10 +120,10 @@ class CopilotServiceTest extends TestCase
      */
     private function makeService(): CopilotService
     {
-        $logger              = $this->createMock(LoggerInterface::class);
-        $permissionResolver   = new PermissionResolver(groupManager: $this->groupManager, logger: $this->createMock(LoggerInterface::class));
-        $planValidator        = new CopilotPlanValidator();
-        $promptBuilder        = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
+        $logger = $this->createMock(LoggerInterface::class);
+        $permissionResolver = new PermissionResolver(groupManager: $this->groupManager, logger: $this->createMock(LoggerInterface::class));
+        $planValidator      = new CopilotPlanValidator();
+        $promptBuilder      = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
 
         return new CopilotService(
             container: $this->container,
@@ -128,8 +136,61 @@ class CopilotServiceTest extends TestCase
             planValidator: $planValidator,
             promptBuilder: $promptBuilder,
             applicationDeletionService: $this->deletionService,
+            agentRunLogger: $this->agentRunLogger,
         );
     }//end makeService()
+
+    /**
+     * Wire `objectService->find()` to resolve an `Agent` by id (agent-workspace).
+     *
+     * @param string               $agentId The agent id/uuid.
+     * @param array<string, mixed> $agent   The agent record to return (merged over sensible defaults).
+     *
+     * @return void
+     */
+    private function wireAgent(string $agentId, array $agent=[]): void
+    {
+        $record = array_merge(
+            [
+                'id'               => $agentId,
+                'applicationSlug'  => 'tool-library',
+                'name'             => 'Page builder assistant',
+                'instructions'     => 'Be helpful.',
+                'enabledTools'     => ['openbuild.upsertPage'],
+                'maxActionsPerRun' => 10,
+            ],
+            $agent
+        );
+
+        $entity = $this->createMock(ObjectEntity::class);
+        $entity->method('jsonSerialize')->willReturn($record);
+
+        // `ObjectService::find()` has several interleaved optional params
+        // (extend/files/register/schema/rbac/multitenancy) — CopilotService
+        // calls it with named arguments, so match on the id only rather than
+        // risk a brittle positional `with()` against defaulted params.
+        $this->objectService->method('find')
+            ->willReturnCallback(
+                static fn (string|int $id, mixed ...$rest): ?ObjectEntity => ((string) $id === $agentId) ? $entity : null
+            );
+    }//end wireAgent()
+
+    /**
+     * Wire `userManager->get()` to resolve a uid to a real `IUser` mock —
+     * required whenever `assertWriteRoleOnApp()` is reached (any existing-app
+     * RBAC check), which every agent-scoped test wiring an EXISTING
+     * `applicationSlug` exercises.
+     *
+     * @param string $uid The uid to resolve.
+     *
+     * @return void
+     */
+    private function wireCaller(string $uid): void
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn($uid);
+        $this->userManager->method('get')->with($uid)->willReturn($user);
+    }//end wireCaller()
 
     /**
      * Minimal tool catalogue mirroring the real descriptors closely enough for validation.
@@ -190,9 +251,11 @@ class CopilotServiceTest extends TestCase
     private function wireSuccessfulLlmReply(string $outputText): void
     {
         $nextId = 1;
-        $this->taskManager->method('scheduleTask')->willReturnCallback(function (Task $task) use (&$nextId): void {
-            $task->setId($nextId++);
-        });
+        $this->taskManager->method('scheduleTask')->willReturnCallback(
+                function (Task $task) use (&$nextId): void {
+                    $task->setId($nextId++);
+                }
+                );
 
         $done = new Task(TextToText::ID, ['input' => 'x'], 'openbuild', 'alice');
         $done->setStatus(Task::STATUS_SUCCESSFUL);
@@ -262,12 +325,16 @@ class CopilotServiceTest extends TestCase
     {
         $this->wireTaskProcessingManager();
         $this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
-        $this->wireSuccessfulLlmReply(json_encode([
-            'summary' => 'A tool library',
-            'steps'   => [
-                ['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
-            ],
-        ]));
+        $this->wireSuccessfulLlmReply(
+                json_encode(
+                [
+                    'summary' => 'A tool library',
+                    'steps'   => [
+                        ['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+                    ],
+                ]
+                )
+                );
 
         $this->objectService->expects(self::never())->method('saveObject');
         $this->toolProvider->expects(self::never())->method('invokeTool');
@@ -310,10 +377,14 @@ class CopilotServiceTest extends TestCase
     {
         $this->wireTaskProcessingManager();
         $this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
-        $this->wireSuccessfulLlmReply(json_encode([
-            'summary' => 'x',
-            'steps'   => [['tool' => 'openbuild.deleteApp', 'arguments' => []]],
-        ]));
+        $this->wireSuccessfulLlmReply(
+                json_encode(
+                [
+                    'summary' => 'x',
+                    'steps'   => [['tool' => 'openbuild.deleteApp', 'arguments' => []]],
+                ]
+                )
+                );
 
         $this->expectException(CopilotException::class);
         try {
@@ -335,9 +406,11 @@ class CopilotServiceTest extends TestCase
         $this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
         $this->taskManager->expects(self::never())->method('scheduleTask');
 
-        $this->objectService->method('searchObjectsBySlug')->willReturn([
-            ['id' => 'app-1', 'slug' => 'installed-app', 'appType' => 'hybrid', 'permissions' => ['owners' => ['user:alice']]],
-        ]);
+        $this->objectService->method('searchObjectsBySlug')->willReturn(
+                [
+                    ['id' => 'app-1', 'slug' => 'installed-app', 'appType' => 'hybrid', 'permissions' => ['owners' => ['user:alice']]],
+                ]
+                );
 
         $this->expectException(CopilotException::class);
         try {
@@ -380,9 +453,11 @@ class CopilotServiceTest extends TestCase
     {
         $this->wireTaskProcessingManager();
         $this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
-        $this->objectService->method('searchObjectsBySlug')->willReturn([
-            ['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice'], 'viewers' => ['user:bob']]],
-        ]);
+        $this->objectService->method('searchObjectsBySlug')->willReturn(
+                [
+                    ['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice'], 'viewers' => ['user:bob']]],
+                ]
+                );
         $bob = $this->createMock(IUser::class);
         $bob->method('getUID')->willReturn('bob');
         $this->userManager->method('get')->with('bob')->willReturn($bob);
@@ -414,6 +489,351 @@ class CopilotServiceTest extends TestCase
             throw $e;
         }
     }//end testPlanThrows503WhenUnavailable()
+
+    // -------------------------------------------------------------------
+    // plan() — agent scoping (agent-workspace)
+    // -------------------------------------------------------------------
+
+    /**
+     * An agent-scoped plan step outside that agent's narrower enabledTools
+     * list is rejected — even though the tool IS in the bare eight-tool
+     * catalogue (agent-workspace spec "An agent's tool scope can never
+     * exceed the base copilot catalogue"). Also verifies exactly one
+     * AgentRun is logged with outcome `plan-rejected`.
+     *
+     * @return void
+     */
+    public function testPlanRejectsStepOutsideAgentsNarrowerAllowList(): void
+    {
+        $this->wireTaskProcessingManager();
+        $this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+        $this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['openbuild.upsertPage']]);
+        $this->wireCaller(uid: 'alice');
+        $this->objectService->method('searchObjectsBySlug')->willReturn(
+                [
+                    ['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
+                ]
+                );
+        // createApp IS in the base catalogue but NOT in this agent's enabledTools.
+        $this->wireSuccessfulLlmReply(
+                json_encode(
+                [
+                    'summary' => 'x',
+                    'steps'   => [['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'x', 'name' => 'X']]],
+                ]
+                )
+                );
+
+        $this->agentRunLogger->expects(self::once())->method('log')
+            ->with(
+                agent: self::callback(static fn (array $agent): bool => $agent['id'] === 'agent-1'),
+                userId: 'alice',
+                prompt: 'x',
+                plan: [],
+                toolCalls: [],
+                outcome: 'plan-rejected'
+            );
+
+        $this->expectException(CopilotException::class);
+        try {
+            $this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice', agentId: 'agent-1');
+        } catch (CopilotException $e) {
+            self::assertSame('plan_invalid', $e->getErrorCode());
+            throw $e;
+        }
+    }//end testPlanRejectsStepOutsideAgentsNarrowerAllowList()
+
+    /**
+     * A plan whose step count exceeds the agent's `maxActionsPerRun` is
+     * rejected with 422 naming the violated cap (agent-workspace design.md
+     * Decision 4).
+     *
+     * @return void
+     */
+    public function testPlanRejectsWhenMaxActionsPerRunExceeded(): void
+    {
+        $this->wireTaskProcessingManager();
+        $this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+        $this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['openbuild.upsertPage'], 'maxActionsPerRun' => 1]);
+        $this->wireCaller(uid: 'alice');
+        $this->objectService->method('searchObjectsBySlug')->willReturn(
+                [
+                    ['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
+                ]
+                );
+        $this->wireSuccessfulLlmReply(
+                json_encode(
+                [
+                    'summary' => 'x',
+                    'steps'   => [
+                        ['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'a', 'title' => 'A', 'type' => 'index', 'route' => '/a']],
+                        ['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'b', 'title' => 'B', 'type' => 'index', 'route' => '/b']],
+                    ],
+                ]
+                )
+                );
+
+        $this->agentRunLogger->expects(self::once())->method('log')
+            ->with(self::anything(), 'alice', 'x', [], [], 'plan-rejected');
+
+        $this->expectException(CopilotException::class);
+        try {
+            $this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice', agentId: 'agent-1');
+        } catch (CopilotException $e) {
+            self::assertSame('plan_invalid', $e->getErrorCode());
+            self::assertStringContainsString('max_actions_per_run', $e->getMessage());
+            throw $e;
+        }
+    }//end testPlanRejectsWhenMaxActionsPerRunExceeded()
+
+    /**
+     * plan() throws 404 for an unknown agentId, before any LLM call is made.
+     *
+     * @return void
+     */
+    public function testPlanRejectsUnknownAgent(): void
+    {
+        $this->wireTaskProcessingManager();
+        $this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+        $this->taskManager->expects(self::never())->method('scheduleTask');
+        $this->objectService->method('find')->willReturn(null);
+
+        $this->expectException(CopilotException::class);
+        try {
+            $this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice', agentId: 'does-not-exist');
+        } catch (CopilotException $e) {
+            self::assertSame('not_found', $e->getErrorCode());
+            self::assertSame(404, $e->getHttpStatus());
+            throw $e;
+        }
+    }//end testPlanRejectsUnknownAgent()
+
+    /**
+     * The bare (non-agent) copilot path never writes an AgentRun — bare-copilot-path
+     * regression (agent-workspace tasks.md 3.2).
+     *
+     * @return void
+     */
+    public function testPlanBareCopilotPathNeverLogsAgentRun(): void
+    {
+        $this->wireTaskProcessingManager();
+        $this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+        $this->wireSuccessfulLlmReply(
+                json_encode(
+                [
+                    'summary' => 'A tool library',
+                    'steps'   => [['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]],
+                ]
+                )
+                );
+
+        $this->agentRunLogger->expects(self::never())->method('log');
+
+        $result = $this->makeService()->plan(brief: 'A tool library', appSlug: null, userId: 'alice');
+        self::assertSame('A tool library', $result['summary']);
+    }//end testPlanBareCopilotPathNeverLogsAgentRun()
+
+    // -------------------------------------------------------------------
+    // execute() — agent scoping (agent-workspace)
+    // -------------------------------------------------------------------
+
+    /**
+     * A successful agent-scoped execute persists an AgentRun with outcome
+     * `applied` capturing every tool call's arguments and result
+     * (agent-workspace spec "Every agent run is transparently logged and reviewable").
+     *
+     * @return void
+     */
+    public function testExecuteLogsAppliedOutcomeForAgentScopedRun(): void
+    {
+        $this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['openbuild.upsertPage']]);
+        $this->wireCaller(uid: 'alice');
+
+        $plan = [
+            'summary' => 'x',
+            'steps'   => [
+                ['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
+            ],
+        ];
+
+        $this->objectService->method('searchObjectsBySlug')->willReturn(
+                [
+                    ['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
+                ]
+                );
+        $this->toolProvider->method('invokeTool')->willReturn(['success' => true, 'action' => 'created']);
+
+        $this->agentRunLogger->expects(self::once())->method('log')
+            ->with(
+                self::callback(static fn (array $agent): bool => $agent['id'] === 'agent-1'),
+                'alice',
+                'Add a home page',
+                $plan,
+                self::callback(static fn (array $calls): bool => count($calls) === 1 && $calls[0]['tool'] === 'openbuild.upsertPage'),
+                'applied'
+            );
+
+        $result = $this->makeService()->execute(plan: $plan, userId: 'alice', agentId: 'agent-1', prompt: 'Add a home page');
+        self::assertCount(1, $result['results']);
+    }//end testExecuteLogsAppliedOutcomeForAgentScopedRun()
+
+    /**
+     * An agent-scoped execute that rolls back mid-plan still persists a
+     * transparent AgentRun, with outcome `rolled-back` (agent-workspace spec
+     * "An agent-scoped execute persists a transparent run record").
+     *
+     * @return void
+     */
+    public function testExecuteLogsRolledBackOutcomeForAgentScopedRun(): void
+    {
+        $this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['openbuild.upsertPage']]);
+        $this->wireCaller(uid: 'alice');
+
+        $plan = [
+            'summary' => 'x',
+            'steps'   => [
+                ['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
+            ],
+        ];
+
+        $this->objectService->method('searchObjectsBySlug')->willReturn(
+                [
+                    ['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
+                ]
+                );
+        $this->toolProvider->method('invokeTool')->willReturn(['isError' => true, 'error' => 'upsert_failed', 'message' => 'boom']);
+
+        $this->agentRunLogger->expects(self::once())->method('log')
+            ->with(self::anything(), 'alice', 'x', $plan, self::anything(), 'rolled-back');
+
+        $this->expectException(CopilotException::class);
+        try {
+            $this->makeService()->execute(plan: $plan, userId: 'alice', agentId: 'agent-1', prompt: 'x');
+        } catch (CopilotException $e) {
+            self::assertSame('execution_failed', $e->getErrorCode());
+            throw $e;
+        }
+    }//end testExecuteLogsRolledBackOutcomeForAgentScopedRun()
+
+    /**
+     * execute() re-validates against the agent's narrower allow-list too —
+     * a step outside it is rejected and logged `plan-rejected` even at
+     * execute time (defence in depth against a stale client-side plan).
+     *
+     * @return void
+     */
+    public function testExecuteRejectsStepOutsideAgentsAllowList(): void
+    {
+        $this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['openbuild.upsertPage']]);
+
+        $plan = [
+            'summary' => 'x',
+            'steps'   => [['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'x', 'name' => 'X']]],
+        ];
+
+        $this->toolProvider->expects(self::never())->method('invokeTool');
+        $this->agentRunLogger->expects(self::once())->method('log')
+            ->with(self::anything(), 'alice', 'x', $plan, [], 'plan-rejected');
+
+        $this->expectException(CopilotException::class);
+        try {
+            $this->makeService()->execute(plan: $plan, userId: 'alice', agentId: 'agent-1', prompt: 'x');
+        } catch (CopilotException $e) {
+            self::assertSame('plan_invalid', $e->getErrorCode());
+            throw $e;
+        }
+    }//end testExecuteRejectsStepOutsideAgentsAllowList()
+
+    /**
+     * The bare (non-agent) copilot execute path never writes an AgentRun —
+     * bare-copilot-path regression (agent-workspace tasks.md 3.2).
+     *
+     * @return void
+     */
+    public function testExecuteBareCopilotPathNeverLogsAgentRun(): void
+    {
+        $plan = [
+            'summary' => 'x',
+            'steps'   => [['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]],
+        ];
+        $this->toolProvider->method('invokeTool')->willReturn(
+                [
+                    'success' => true,
+                    'created' => true,
+                    'app'     => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library'],
+                ]
+                );
+
+        $this->agentRunLogger->expects(self::never())->method('log');
+
+        $result = $this->makeService()->execute(plan: $plan, userId: 'alice');
+        self::assertCount(1, $result['results']);
+    }//end testExecuteBareCopilotPathNeverLogsAgentRun()
+
+    // -------------------------------------------------------------------
+    // discard() (agent-workspace)
+    // -------------------------------------------------------------------
+
+    /**
+     * discard() persists an AgentRun with outcome `discarded` and an empty
+     * toolCalls list (agent-workspace spec "A discarded proposal is still logged").
+     *
+     * @return void
+     */
+    public function testDiscardLogsDiscardedOutcome(): void
+    {
+        $this->wireAgent(agentId: 'agent-1');
+        $this->wireCaller(uid: 'alice');
+        $this->objectService->method('searchObjectsBySlug')->willReturn(
+                [
+                    ['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
+                ]
+                );
+
+        $plan = ['summary' => 'x', 'steps' => [['tool' => 'openbuild.upsertPage', 'arguments' => []]]];
+
+        $this->agentRunLogger->expects(self::once())->method('log')
+            ->with(
+                self::callback(static fn (array $agent): bool => $agent['id'] === 'agent-1'),
+                'alice',
+                'Add a page',
+                $plan,
+                [],
+                'discarded'
+            )
+            ->willReturn(['id' => 'run-1', 'outcome' => 'discarded']);
+
+        $result = $this->makeService()->discard(agentId: 'agent-1', userId: 'alice', prompt: 'Add a page', plan: $plan);
+        self::assertSame('discarded', $result['outcome']);
+    }//end testDiscardLogsDiscardedOutcome()
+
+    /**
+     * discard() denies a viewer-only caller against the agent's owning application.
+     *
+     * @return void
+     */
+    public function testDiscardDeniesViewerOnlyCaller(): void
+    {
+        $this->wireAgent(agentId: 'agent-1');
+        $this->objectService->method('searchObjectsBySlug')->willReturn(
+                [
+                    ['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice'], 'viewers' => ['user:bob']]],
+                ]
+                );
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $this->userManager->method('get')->with('bob')->willReturn($bob);
+
+        $this->agentRunLogger->expects(self::never())->method('log');
+
+        $this->expectException(CopilotException::class);
+        try {
+            $this->makeService()->discard(agentId: 'agent-1', userId: 'bob', prompt: 'x', plan: []);
+        } catch (CopilotException $e) {
+            self::assertSame('forbidden', $e->getErrorCode());
+            throw $e;
+        }
+    }//end testDiscardDeniesViewerOnlyCaller()
 
     // -------------------------------------------------------------------
     // predictManifests()
@@ -458,6 +878,7 @@ class CopilotServiceTest extends TestCase
                 if ($schema === 'application') {
                     return [['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => []]];
                 }
+
                 return [['id' => 'ver-1', 'slug' => 'development', 'application' => 'app-1', 'manifest' => ['version' => '1.0.0', 'menu' => [], 'pages' => $existingPages]]];
             }
         );
@@ -500,13 +921,16 @@ class CopilotServiceTest extends TestCase
         ];
 
         $invokedOrder = [];
-        $this->toolProvider->method('invokeTool')->willReturnCallback(function (string $tool) use (&$invokedOrder): array {
-            $invokedOrder[] = $tool;
-            if ($tool === 'openbuild.createApp') {
-                return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
-            }
-            return ['success' => true, 'action' => 'created'];
-        });
+        $this->toolProvider->method('invokeTool')->willReturnCallback(
+                function (string $tool) use (&$invokedOrder): array {
+                    $invokedOrder[] = $tool;
+                    if ($tool === 'openbuild.createApp') {
+                        return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+                    }
+
+                    return ['success' => true, 'action' => 'created'];
+                }
+                );
 
         $result = $this->makeService()->execute(plan: $plan, userId: 'alice');
 
@@ -529,12 +953,15 @@ class CopilotServiceTest extends TestCase
             ],
         ];
 
-        $this->toolProvider->method('invokeTool')->willReturnCallback(function (string $tool): array {
-            if ($tool === 'openbuild.createApp') {
-                return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
-            }
-            return ['isError' => true, 'error' => 'upsert_failed', 'message' => 'boom'];
-        });
+        $this->toolProvider->method('invokeTool')->willReturnCallback(
+                function (string $tool): array {
+                    if ($tool === 'openbuild.createApp') {
+                        return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+                    }
+
+                    return ['isError' => true, 'error' => 'upsert_failed', 'message' => 'boom'];
+                }
+                );
 
         $this->deletionService->expects(self::once())
             ->method('deleteApplication')
@@ -558,9 +985,11 @@ class CopilotServiceTest extends TestCase
      */
     public function testExecuteDeniesViewerOnlyCaller(): void
     {
-        $this->objectService->method('searchObjectsBySlug')->willReturn([
-            ['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice'], 'viewers' => ['user:bob']]],
-        ]);
+        $this->objectService->method('searchObjectsBySlug')->willReturn(
+                [
+                    ['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice'], 'viewers' => ['user:bob']]],
+                ]
+                );
         $bob = $this->createMock(IUser::class);
         $bob->method('getUID')->willReturn('bob');
         $this->userManager->method('get')->with('bob')->willReturn($bob);
@@ -594,11 +1023,13 @@ class CopilotServiceTest extends TestCase
     {
         $this->objectService->expects(self::never())->method('searchObjectsBySlug');
 
-        $this->toolProvider->method('invokeTool')->willReturn([
-            'success' => true,
-            'created' => true,
-            'app'     => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library'],
-        ]);
+        $this->toolProvider->method('invokeTool')->willReturn(
+                [
+                    'success' => true,
+                    'created' => true,
+                    'app'     => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library'],
+                ]
+                );
 
         $plan = [
             'summary' => 'x',

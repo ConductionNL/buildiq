@@ -155,4 +155,64 @@ describe('useCopilot — spec ai-copilot REQ-OBAIC-001/002/003', () => {
 		expect(copilot.plan.value).toBeNull()
 		expect(axiosPost).not.toHaveBeenCalled()
 	})
+
+	// -------------------------------------------------------------------
+	// Agent-scoping (spec agent-workspace)
+	// -------------------------------------------------------------------
+
+	it('generatePlan() sends agentId when given', async () => {
+		axiosPost.mockResolvedValueOnce({ data: { summary: 'x', steps: [], manifests: {} } })
+		const copilot = useCopilot()
+		await copilot.generatePlan('add a page', 'tool-library', 'agent-1')
+
+		expect(axiosPost).toHaveBeenCalledWith(
+			'/apps/openbuild/api/copilot/plan',
+			expect.objectContaining({ brief: 'add a page', appSlug: 'tool-library', agentId: 'agent-1' }),
+		)
+	})
+
+	it('approve() forwards agentId and the original prompt to the execute request', async () => {
+		axiosPost
+			.mockResolvedValueOnce({ data: { summary: 'x', steps: [{ tool: 'openbuild.createApp', arguments: {} }], manifests: {} } })
+			.mockResolvedValueOnce({ data: { results: [{ success: true }] } })
+
+		const copilot = useCopilot()
+		await copilot.generatePlan('add a page', undefined, 'agent-1')
+		await copilot.approve('agent-1')
+
+		expect(axiosPost).toHaveBeenNthCalledWith(
+			2,
+			'/apps/openbuild/api/copilot/execute',
+			expect.objectContaining({ agentId: 'agent-1', prompt: 'add a page' }),
+		)
+		expect(copilot.state.value).toBe('done')
+	})
+
+	it('discard(agentId) posts to the discard endpoint for an agent-scoped plan', async () => {
+		axiosPost.mockResolvedValueOnce({ data: { summary: 'x', steps: [], manifests: {} } })
+		const copilot = useCopilot()
+		await copilot.generatePlan('add a page', undefined, 'agent-1')
+		axiosPost.mockClear()
+		axiosPost.mockResolvedValueOnce({ data: { status: 'logged' } })
+
+		copilot.discard('agent-1')
+		await Promise.resolve()
+
+		expect(axiosPost).toHaveBeenCalledWith(
+			'/apps/openbuild/api/copilot/discard',
+			expect.objectContaining({ agentId: 'agent-1', prompt: 'add a page' }),
+		)
+		expect(copilot.state.value).toBe('idle')
+	})
+
+	it('discard() without agentId still sends no request (bare copilot, unchanged)', async () => {
+		axiosPost.mockResolvedValueOnce({ data: { summary: 'x', steps: [], manifests: {} } })
+		const copilot = useCopilot()
+		await copilot.generatePlan('x')
+		axiosPost.mockClear()
+
+		copilot.discard()
+
+		expect(axiosPost).not.toHaveBeenCalled()
+	})
 })

@@ -57,17 +57,28 @@ class CopilotPromptBuilder
     /**
      * Build the initial system prompt for a brief.
      *
-     * @param string                    $brief         The user's natural-language brief.
-     * @param array<string, mixed>|null $targetContext Optional `{appSlug, manifestSummary}` context
-     *                                                 for a plan that targets an existing app.
+     * @param string                                $brief              The user's natural-language brief.
+     * @param array<string, mixed>|null             $targetContext      Optional `{appSlug, manifestSummary}` context
+     *                                                                  for a plan that targets an existing app.
+     * @param array<int, array<string, mixed>>|null $toolDescriptors    Optional narrowed tool catalogue (agent-workspace
+     *                                                                  design.md Decision 1) — defaults to the full
+     *                                                                  `OpenBuildToolProvider` catalogue when null.
+     * @param string|null                           $instructionsPrefix Optional agent `instructions` text prefixed onto the
+     *                                                                  prompt (agent-workspace design.md Decision 1).
      *
      * @return string
      *
      * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+     * @spec openspec/changes/agent-workspace/specs/ai-copilot/spec.md
      */
-    public function build(string $brief, ?array $targetContext=null): string
-    {
-        return $this->header().$this->targetSection(targetContext: $targetContext)
+    public function build(
+        string $brief,
+        ?array $targetContext=null,
+        ?array $toolDescriptors=null,
+        ?string $instructionsPrefix=null,
+    ): string {
+        return $this->instructionsSection(instructionsPrefix: $instructionsPrefix)
+            .$this->header(toolDescriptors: $toolDescriptors).$this->targetSection(targetContext: $targetContext)
             ."\nUser brief:\n".$brief."\n\n"
             .'Respond with the JSON plan now, and nothing else.';
     }//end build()
@@ -75,22 +86,28 @@ class CopilotPromptBuilder
     /**
      * Build the single-repair re-prompt, embedding the previous parse error.
      *
-     * @param string                    $brief          The original user brief.
-     * @param string                    $previousOutput The LLM's previous (unparsable) output.
-     * @param string                    $parseError     The parse error encountered.
-     * @param array<string, mixed>|null $targetContext  Optional target-app context (see {@see build()}).
+     * @param string                                $brief              The original user brief.
+     * @param string                                $previousOutput     The LLM's previous (unparsable) output.
+     * @param string                                $parseError         The parse error encountered.
+     * @param array<string, mixed>|null             $targetContext      Optional target-app context (see {@see build()}).
+     * @param array<int, array<string, mixed>>|null $toolDescriptors    Optional narrowed tool catalogue (see {@see build()}).
+     * @param string|null                           $instructionsPrefix Optional agent instructions prefix (see {@see build()}).
      *
      * @return string
      *
      * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+     * @spec openspec/changes/agent-workspace/specs/ai-copilot/spec.md
      */
     public function buildRepairPrompt(
         string $brief,
         string $previousOutput,
         string $parseError,
         ?array $targetContext=null,
+        ?array $toolDescriptors=null,
+        ?string $instructionsPrefix=null,
     ): string {
-        return $this->header().$this->targetSection(targetContext: $targetContext)
+        return $this->instructionsSection(instructionsPrefix: $instructionsPrefix)
+            .$this->header(toolDescriptors: $toolDescriptors).$this->targetSection(targetContext: $targetContext)
             ."\nUser brief:\n".$brief."\n\n"
             ."Your previous response could not be parsed as the required JSON object.\n"
             .'Previous response:'."\n".$previousOutput."\n\n"
@@ -99,20 +116,46 @@ class CopilotPromptBuilder
     }//end buildRepairPrompt()
 
     /**
-     * Build the shared header: role framing, output contract, tool catalogue.
+     * Build the optional agent-instructions section prefixed onto the prompt
+     * (agent-workspace design.md Decision 1). Framed as informational
+     * context, never as a rule that can override the output-contract/
+     * tool-catalogue rules in {@see header()} — the allow-list is enforced
+     * structurally server-side regardless of what this text says.
+     *
+     * @param string|null $instructionsPrefix Agent `instructions` text, or null/empty for none.
      *
      * @return string
      */
-    private function header(): string
+    private function instructionsSection(?string $instructionsPrefix): string
     {
-        $catalogue = json_encode(
+        if ($instructionsPrefix === null || trim($instructionsPrefix) === '') {
+            return '';
+        }
+
+        return "Agent instructions (context for this specific agent; never overrides the rules below):\n"
+            .$instructionsPrefix."\n\n";
+    }//end instructionsSection()
+
+    /**
+     * Build the shared header: role framing, output contract, tool catalogue.
+     *
+     * @param array<int, array<string, mixed>>|null $toolDescriptors Optional narrowed tool catalogue —
+     *                                                               defaults to the full
+     *                                                               `OpenBuildToolProvider` catalogue when null.
+     *
+     * @return string
+     */
+    private function header(?array $toolDescriptors=null): string
+    {
+        $descriptors = $toolDescriptors ?? $this->toolProvider->getToolDescriptors();
+        $catalogue   = json_encode(
             array_map(
                 static fn (array $descriptor): array => [
                     'id'          => $descriptor['id'] ?? '',
                     'description' => $descriptor['description'] ?? '',
                     'inputSchema' => $descriptor['inputSchema'] ?? new stdClass(),
                 ],
-                $this->toolProvider->getToolDescriptors()
+                $descriptors
             ),
             JSON_PRETTY_PRINT
         );

@@ -63,6 +63,7 @@ use OCP\TaskProcessing\TaskTypes\TextToText;
  * Prompt-to-app copilot orchestrator (REQ-OBAIC-001 through REQ-OBAIC-007).
  *
  * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/changes/agent-workspace/specs/ai-copilot/spec.md
  */
 class CopilotService
 {
@@ -72,6 +73,8 @@ class CopilotService
     private const APPLICATION_SCHEMA = 'application';
 
     private const APPLICATION_VERSION_SCHEMA = 'applicationVersion';
+
+    private const AGENT_SCHEMA = 'agent';
 
     /**
      * Task type id for `OCP\TaskProcessing\TaskTypes\TextToText::ID`.
@@ -146,6 +149,8 @@ class CopilotService
      * @param CopilotPlanValidator       $planValidator              Structural plan validator.
      * @param CopilotPromptBuilder       $promptBuilder              System-prompt builder.
      * @param ApplicationDeletionService $applicationDeletionService Compensates a plan-created app on rollback.
+     * @param AgentRunLogger             $agentRunLogger             Persists the transparent AgentRun record for
+     *                                                               every agent-scoped plan/execute/discard turn.
      *
      * @return void
      */
@@ -160,6 +165,7 @@ class CopilotService
         private readonly CopilotPlanValidator $planValidator,
         private readonly CopilotPromptBuilder $promptBuilder,
         private readonly ApplicationDeletionService $applicationDeletionService,
+        private readonly AgentRunLogger $agentRunLogger,
     ) {
     }//end __construct()
 
@@ -196,23 +202,73 @@ class CopilotService
     }//end health()
 
     /**
-     * Turn a natural-language brief into a validated plan. Performs zero writes.
+     * Turn a natural-language brief into a validated plan. Performs zero
+     * builder writes (an agent-scoped rejected plan still writes exactly
+     * one `AgentRun` audit record — never an Application/ApplicationVersion/
+     * schema/manifest write).
      *
      * @param string      $brief   User's natural-language brief (1-2000 chars).
-     * @param string|null $appSlug Optional target app slug.
+     * @param string|null $appSlug Optional target app slug. Ignored (overridden by the resolved
+     *                             agent's `applicationSlug`) when `$agentId` is given — an agent's
+     *                             app scope is never taken from client input (agent-workspace
+     *                             design.md "scoped to the Application the agent belongs to").
      * @param string      $userId  Acting user's UID.
+     * @param string|null $agentId Optional `Agent` id narrowing the effective tool allow-list and
+     *                             prefixing the agent's instructions onto the system prompt
+     *                             (agent-workspace design.md Decision 1).
      *
      * @return array{summary: string, steps: array<int, array<string, mixed>>, manifests: array<string, array{current: array, predicted: array}>}
      *
-     * @throws CopilotException On unavailability, invalid input, RBAC denial, or an unparsable/invalid plan.
+     * @throws CopilotException On unavailability, invalid input, RBAC denial, an unknown agent, or an unparsable/invalid plan.
      *
      * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+     * @spec openspec/changes/agent-workspace/specs/ai-copilot/spec.md
      */
-    public function plan(string $brief, ?string $appSlug, string $userId): array
+    public function plan(string $brief, ?string $appSlug, string $userId, ?string $agentId=null): array
     {
         $this->assertAvailable();
         $this->assertValidBrief(brief: $brief);
 
+        $agent = null;
+        if ($agentId !== null && $agentId !== '') {
+            $agent   = $this->requireAgent(agentId: $agentId);
+            $appSlug = (string) ($agent['applicationSlug'] ?? '');
+        }
+
+        try {
+            return $this->planWithinContext(brief: $brief, appSlug: $appSlug, userId: $userId, agent: $agent);
+        } catch (CopilotException $e) {
+            if ($agent !== null) {
+                $this->agentRunLogger->log(
+                    agent: $agent,
+                    userId: $userId,
+                    prompt: $brief,
+                    plan: [],
+                    toolCalls: [],
+                    outcome: 'plan-rejected'
+                );
+            }
+
+            throw $e;
+        }//end try
+    }//end plan()
+
+    /**
+     * Core plan logic, wrapped by {@see plan()} so an agent-scoped failure
+     * can be logged exactly once regardless of which validation layer rejects it.
+     *
+     * @param string                    $brief   User's natural-language brief.
+     * @param string|null               $appSlug Resolved target app slug (already overridden from the
+     *                                           agent when `$agent` is non-null).
+     * @param string                    $userId  Acting user's UID.
+     * @param array<string, mixed>|null $agent   The resolved `Agent` record, or null for the bare copilot path.
+     *
+     * @return array{summary: string, steps: array<int, array<string, mixed>>, manifests: array<string, array{current: array, predicted: array}>}
+     *
+     * @throws CopilotException On RBAC denial or an unparsable/invalid/over-cap plan.
+     */
+    private function planWithinContext(string $brief, ?string $appSlug, string $userId, ?array $agent): array
+    {
         $targetContext = null;
         if ($appSlug !== null && $appSlug !== '') {
             $app = $this->requireExistingVirtualApp(appSlug: $appSlug);
@@ -223,9 +279,24 @@ class CopilotService
             ];
         }
 
-        $plan = $this->requestPlanFromLlm(brief: $brief, appSlug: $appSlug, userId: $userId, targetContext: $targetContext);
+        $effectiveDescriptors = $this->toolProvider->getToolDescriptors();
+        $instructionsPrefix   = null;
+        if ($agent !== null) {
+            $agentEnabledTools    = (array) ($agent['enabledTools'] ?? []);
+            $effectiveDescriptors = $this->narrowDescriptors(descriptors: $effectiveDescriptors, enabledTools: $agentEnabledTools);
+            $instructionsPrefix   = (string) ($agent['instructions'] ?? '');
+        }
 
-        $violations = $this->planValidator->validate(plan: $plan, toolDescriptors: $this->toolProvider->getToolDescriptors());
+        $plan = $this->requestPlanFromLlm(
+            brief: $brief,
+            appSlug: $appSlug,
+            userId: $userId,
+            targetContext: $targetContext,
+            toolDescriptors: $effectiveDescriptors,
+            instructionsPrefix: $instructionsPrefix
+        );
+
+        $violations = $this->planValidator->validate(plan: $plan, toolDescriptors: $effectiveDescriptors);
         if ($violations !== []) {
             throw new CopilotException(
                 errorCode: 'plan_invalid',
@@ -235,6 +306,10 @@ class CopilotService
             );
         }
 
+        if ($agent !== null) {
+            $this->assertWithinMaxActionsPerRun(agent: $agent, plan: $plan);
+        }
+
         $manifests = $this->predictManifests(plan: $plan, appSlug: $appSlug);
 
         return [
@@ -242,7 +317,43 @@ class CopilotService
             'steps'     => (array) ($plan['steps'] ?? []),
             'manifests' => $manifests,
         ];
-    }//end plan()
+    }//end planWithinContext()
+
+    /**
+     * Discard a reviewed proposal without executing it — still writes a transparent
+     * `AgentRun` record (agent-workspace spec "A discarded proposal is still logged").
+     * Only meaningful for the agent-scoped chat surface: the bare copilot panel
+     * never calls this (D3 — omitted agent props, zero behavioural change).
+     *
+     * @param string               $agentId The `Agent` id this turn belongs to.
+     * @param string               $userId  Acting user's UID.
+     * @param string               $prompt  The user's natural-language brief for this turn.
+     * @param array<string, mixed> $plan    The plan `{summary, steps[]}` that was reviewed and discarded.
+     *
+     * @return array<string, mixed> The persisted `AgentRun` record.
+     *
+     * @throws CopilotException On an unknown agent or RBAC denial.
+     *
+     * @spec openspec/changes/agent-workspace/specs/agent-workspace/spec.md
+     */
+    public function discard(string $agentId, string $userId, string $prompt, array $plan): array
+    {
+        $agent   = $this->requireAgent(agentId: $agentId);
+        $appSlug = (string) ($agent['applicationSlug'] ?? '');
+        if ($appSlug !== '') {
+            $app = $this->requireExistingVirtualApp(appSlug: $appSlug);
+            $this->assertWriteRoleOnApp(app: $app, userId: $userId);
+        }
+
+        return $this->agentRunLogger->log(
+            agent: $agent,
+            userId: $userId,
+            prompt: $prompt,
+            plan: $plan,
+            toolCalls: [],
+            outcome: 'discarded'
+        );
+    }//end discard()
 
     /**
      * Predict the manifest impact of a plan without writing anything.
@@ -306,28 +417,29 @@ class CopilotService
      * snapshots every touched version's manifest, dispatches each step in
      * order (createApp first, promoteVersion last) through
      * `OpenBuildToolProvider::invokeTool()`, and on any step failure rolls
-     * every snapshot back and deletes a plan-created application.
+     * every snapshot back and deletes a plan-created application. When
+     * `$agentId` is given, the resolved agent's tool allow-list is
+     * re-applied to the revalidation and a transparent `AgentRun` record is
+     * persisted regardless of outcome (agent-workspace design.md Decision 2).
      *
-     * @param array<string, mixed> $plan   The reviewed plan `{summary, steps[]}`, echoed back verbatim.
-     * @param string               $userId Acting user's UID.
+     * @param array<string, mixed> $plan    The reviewed plan `{summary, steps[]}`, echoed back verbatim.
+     * @param string               $userId  Acting user's UID.
+     * @param string|null          $agentId Optional `Agent` id this plan was planned with — re-resolved
+     *                                      server-side, never trusted from the client beyond the id.
+     * @param string               $prompt  The original user brief for this turn, echoed back so the
+     *                                      resulting `AgentRun` record carries it. Ignored when
+     *                                      `$agentId` is null.
      *
      * @return array{results: array<int, array<string, mixed>>}
      *
-     * @throws CopilotException On revalidation failure, RBAC denial, or a mid-plan step failure.
+     * @throws CopilotException On revalidation failure, an unknown agent, RBAC denial, or a mid-plan step failure.
      *
      * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+     * @spec openspec/changes/agent-workspace/specs/ai-copilot/spec.md
      */
-    public function execute(array $plan, string $userId): array
+    public function execute(array $plan, string $userId, ?string $agentId=null, string $prompt=''): array
     {
-        $violations = $this->planValidator->validate(plan: $plan, toolDescriptors: $this->toolProvider->getToolDescriptors());
-        if ($violations !== []) {
-            throw new CopilotException(
-                errorCode: 'plan_invalid',
-                message: (string) ($violations[0]['message'] ?? 'The plan is invalid.'),
-                httpStatus: 422,
-                context: ['violations' => $violations]
-            );
-        }
+        $agent = $this->resolveAgentForExecute(plan: $plan, userId: $userId, prompt: $prompt, agentId: $agentId);
 
         $steps = (array) ($plan['steps'] ?? []);
 
@@ -341,15 +453,101 @@ class CopilotService
         $snapshots = $this->snapshotTouchedVersions(steps: $steps, createdAppSlugs: $createdAppSlugs);
         $ordered   = $this->orderSteps(steps: $steps);
 
+        return $this->dispatchOrderedSteps(
+            ordered: $ordered,
+            snapshots: $snapshots,
+            agent: $agent,
+            userId: $userId,
+            prompt: $prompt,
+            plan: $plan
+        );
+    }//end execute()
+
+    /**
+     * Resolve+revalidate the optional agent scope for an execute() call
+     * (narrowed allow-list re-check, `maxActionsPerRun` re-check), logging a
+     * `plan-rejected` AgentRun on any rejection before rethrowing. Split out
+     * of {@see execute()} to keep its own complexity within the project's
+     * PHPMD thresholds.
+     *
+     * @param array<string, mixed> $plan    The reviewed plan `{summary, steps[]}`.
+     * @param string               $userId  Acting user's UID.
+     * @param string               $prompt  The original user brief for this turn (for the AgentRun log).
+     * @param string|null          $agentId Optional `Agent` id this plan was planned with.
+     *
+     * @return array<string, mixed>|null The resolved `Agent` record, or null for the bare copilot path.
+     *
+     * @throws CopilotException On an unknown agent or a revalidation failure.
+     */
+    private function resolveAgentForExecute(array $plan, string $userId, string $prompt, ?string $agentId): ?array
+    {
+        $agent = null;
+        if ($agentId !== null && $agentId !== '') {
+            $agent = $this->requireAgent(agentId: $agentId);
+        }
+
+        $effectiveDescriptors = $this->toolProvider->getToolDescriptors();
+        if ($agent !== null) {
+            $agentEnabledTools    = (array) ($agent['enabledTools'] ?? []);
+            $effectiveDescriptors = $this->narrowDescriptors(descriptors: $effectiveDescriptors, enabledTools: $agentEnabledTools);
+        }
+
+        try {
+            $violations = $this->planValidator->validate(plan: $plan, toolDescriptors: $effectiveDescriptors);
+            if ($violations !== []) {
+                throw new CopilotException(
+                    errorCode: 'plan_invalid',
+                    message: (string) ($violations[0]['message'] ?? 'The plan is invalid.'),
+                    httpStatus: 422,
+                    context: ['violations' => $violations]
+                );
+            }
+
+            if ($agent !== null) {
+                $this->assertWithinMaxActionsPerRun(agent: $agent, plan: $plan);
+            }
+        } catch (CopilotException $e) {
+            if ($agent !== null) {
+                $this->agentRunLogger->log(agent: $agent, userId: $userId, prompt: $prompt, plan: $plan, toolCalls: [], outcome: 'plan-rejected');
+            }
+
+            throw $e;
+        }//end try
+
+        return $agent;
+    }//end resolveAgentForExecute()
+
+    /**
+     * Dispatch every ordered step through `invokeTool()`, collecting results
+     * + tool calls, and on any failure roll back every snapshot. When
+     * `$agent` is non-null, persists the transparent `AgentRun` record
+     * (outcome `applied` or `rolled-back`). Split out of {@see execute()} to
+     * keep its own complexity within the project's PHPMD thresholds.
+     *
+     * @param array<int, array<string, mixed>> $ordered   Plan steps in dispatch order.
+     * @param array<int, array<string, mixed>> $snapshots Manifest snapshots to restore on failure.
+     * @param array<string, mixed>|null        $agent     The resolved `Agent` record, or null for the bare copilot path.
+     * @param string                           $userId    Acting user's UID.
+     * @param string                           $prompt    The original user brief for this turn (for the AgentRun log).
+     * @param array<string, mixed>             $plan      The reviewed plan (for the AgentRun log).
+     *
+     * @return array{results: array<int, array<string, mixed>>}
+     *
+     * @throws CopilotException On a mid-plan step failure.
+     */
+    private function dispatchOrderedSteps(array $ordered, array $snapshots, ?array $agent, string $userId, string $prompt, array $plan): array
+    {
         $results        = [];
+        $toolCalls      = [];
         $createdAppUuid = null;
         $createdAppSlug = null;
 
         try {
             foreach ($ordered as $index => $step) {
-                $tool   = (string) ($step['tool'] ?? '');
-                $args   = (array) ($step['arguments'] ?? []);
-                $result = $this->toolProvider->invokeTool($tool, $args);
+                $tool        = (string) ($step['tool'] ?? '');
+                $args        = (array) ($step['arguments'] ?? []);
+                $result      = $this->toolProvider->invokeTool($tool, $args);
+                $toolCalls[] = ['tool' => $tool, 'arguments' => $args, 'result' => $result];
 
                 if (($result['isError'] ?? false) === true) {
                     throw new CopilotException(
@@ -369,9 +567,24 @@ class CopilotService
                 $results[] = $result;
             }//end foreach
 
+            if ($agent !== null) {
+                $this->agentRunLogger->log(agent: $agent, userId: $userId, prompt: $prompt, plan: $plan, toolCalls: $toolCalls, outcome: 'applied');
+            }
+
             return ['results' => $results];
         } catch (Throwable $e) {
             $this->rollback(snapshots: $snapshots, createdAppUuid: $createdAppUuid, createdAppSlug: $createdAppSlug);
+
+            if ($agent !== null) {
+                $this->agentRunLogger->log(
+                    agent: $agent,
+                    userId: $userId,
+                    prompt: $prompt,
+                    plan: $plan,
+                    toolCalls: $toolCalls,
+                    outcome: 'rolled-back'
+                );
+            }
 
             if ($e instanceof CopilotException) {
                 throw $e;
@@ -385,7 +598,7 @@ class CopilotService
                 previous: $e
             );
         }//end try
-    }//end execute()
+    }//end dispatchOrderedSteps()
 
     /**
      * Assert the copilot is available, throwing the health-mapped exception otherwise.
@@ -485,6 +698,87 @@ class CopilotService
     }//end resolveApplicationBySlug()
 
     /**
+     * Resolve an `Agent` by id server-side, or throw. Never trusts anything
+     * about the agent beyond the id the client supplied — every other field
+     * (`applicationSlug`, `enabledTools`, `instructions`, `maxActionsPerRun`)
+     * is read from the resolved record (agent-workspace design.md Decision 1).
+     *
+     * @param string $agentId The `Agent` object id/uuid.
+     *
+     * @return array<string, mixed>
+     *
+     * @throws CopilotException (404 not_found) When no such agent exists.
+     */
+    private function requireAgent(string $agentId): array
+    {
+        try {
+            $entity = $this->objectService->find(id: $agentId, register: self::REGISTER_SLUG, schema: self::AGENT_SCHEMA);
+        } catch (Throwable $e) {
+            $entity = null;
+        }
+
+        if ($entity === null) {
+            throw new CopilotException(
+                errorCode: 'not_found',
+                message: "No agent found for id '{$agentId}'.",
+                httpStatus: 404
+            );
+        }
+
+        return $this->toArray(item: $entity);
+    }//end requireAgent()
+
+    /**
+     * Narrow the full tool catalogue to the server-side intersection with an
+     * agent's `enabledTools` — the ONLY place the effective allow-list is
+     * computed. Can only ever shrink the catalogue, never add to it
+     * (agent-workspace design.md Decision 1 / spec "An agent's tool scope
+     * can never exceed the base copilot catalogue").
+     *
+     * @param array<int, array<string, mixed>> $descriptors  Full tool catalogue.
+     * @param array<int, mixed>                $enabledTools Agent's `enabledTools` list.
+     *
+     * @return array<int, array<string, mixed>> The narrowed descriptor list.
+     */
+    private function narrowDescriptors(array $descriptors, array $enabledTools): array
+    {
+        $enabledSet = array_flip(array_map('strval', $enabledTools));
+
+        return array_values(
+            array_filter(
+                $descriptors,
+                static fn (array $descriptor): bool => isset($enabledSet[(string) ($descriptor['id'] ?? '')]) === true
+            )
+        );
+    }//end narrowDescriptors()
+
+    /**
+     * Enforce `maxActionsPerRun` at plan-acceptance time (agent-workspace
+     * design.md Decision 4) — the same 422-with-named-violated-cap shape the
+     * existing manifest-cap rejection uses.
+     *
+     * @param array<string, mixed> $agent The resolved `Agent` record.
+     * @param array<string, mixed> $plan  Decoded plan `{summary, steps[]}`.
+     *
+     * @return void
+     *
+     * @throws CopilotException (422 plan_invalid) When the step count exceeds the cap.
+     */
+    private function assertWithinMaxActionsPerRun(array $agent, array $plan): void
+    {
+        $cap   = (int) ($agent['maxActionsPerRun'] ?? 10);
+        $steps = (array) ($plan['steps'] ?? []);
+        if ($cap > 0 && count($steps) > $cap) {
+            throw new CopilotException(
+                errorCode: 'plan_invalid',
+                message: "Plan exceeds this agent's cap of {$cap} action(s) per run (max_actions_per_run).",
+                httpStatus: 422,
+                context: ['violatedCap' => 'max_actions_per_run']
+            );
+        }
+    }//end assertWithinMaxActionsPerRun()
+
+    /**
      * Verify the caller holds an owners/editors role on the Application
      * (admin bypass permitted and logged, mirroring `AbstractToolHandler::requireWriteRole`).
      *
@@ -542,23 +836,38 @@ class CopilotService
     /**
      * Request a plan from the LLM, with exactly one repair round-trip on parse failure.
      *
-     * @param string                    $brief         User's brief.
-     * @param string|null               $appSlug       Optional target app slug (for the task's customId).
-     * @param string                    $userId        Acting user's UID.
-     * @param array<string, mixed>|null $targetContext Optional target-app context for the prompt.
+     * @param string                                $brief              User's brief.
+     * @param string|null                           $appSlug            Optional target app slug (for the task's customId).
+     * @param string                                $userId             Acting user's UID.
+     * @param array<string, mixed>|null             $targetContext      Optional target-app context for the prompt.
+     * @param array<int, array<string, mixed>>|null $toolDescriptors    Optional narrowed tool catalogue (agent-workspace
+     *                                                                  design.md Decision 1) — defaults to the full
+     *                                                                  catalogue when null.
+     * @param string|null                           $instructionsPrefix Optional agent instructions prefixed onto the prompt.
      *
      * @return array<string, mixed> Decoded plan.
      *
      * @throws CopilotException (422 plan_invalid) When both attempts fail to parse.
      */
-    private function requestPlanFromLlm(string $brief, ?string $appSlug, string $userId, ?array $targetContext): array
-    {
+    private function requestPlanFromLlm(
+        string $brief,
+        ?string $appSlug,
+        string $userId,
+        ?array $targetContext,
+        ?array $toolDescriptors=null,
+        ?string $instructionsPrefix=null,
+    ): array {
         $manager = $this->resolveTaskProcessingManager();
         if ($manager === null) {
             throw new CopilotException(errorCode: 'unsupported_server', message: 'The AI copilot is not available.', httpStatus: 503);
         }
 
-        $prompt = $this->promptBuilder->build(brief: $brief, targetContext: $targetContext);
+        $prompt = $this->promptBuilder->build(
+            brief: $brief,
+            targetContext: $targetContext,
+            toolDescriptors: $toolDescriptors,
+            instructionsPrefix: $instructionsPrefix
+        );
         [$plan, $raw, $parseError] = $this->runPlanAttempt(manager: $manager, prompt: $prompt, userId: $userId, appSlug: $appSlug);
         if ($plan !== null) {
             return $plan;
@@ -569,7 +878,9 @@ class CopilotService
             brief: $brief,
             previousOutput: $raw,
             parseError: $parseError,
-            targetContext: $targetContext
+            targetContext: $targetContext,
+            toolDescriptors: $toolDescriptors,
+            instructionsPrefix: $instructionsPrefix
         );
         [$plan, , $parseError] = $this->runPlanAttempt(manager: $manager, prompt: $repairPrompt, userId: $userId, appSlug: $appSlug);
         if ($plan !== null) {
