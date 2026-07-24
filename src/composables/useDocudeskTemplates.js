@@ -43,6 +43,7 @@ export async function fetchDocudeskTemplates(opts = {}) {
  *
  * @param {object} tpl - the raw template record.
  * @return {{label: string, uuid: string, name: string}}
+ * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
  */
 export function templateToOption(tpl) {
 	return {

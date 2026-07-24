@@ -221,7 +221,7 @@ class SetupController extends Controller
         return new JSONResponse(
             [
                 'success' => true,
-                'message' => 'Seeded '.$result['seeded'].' template(s), updated '.$result['updated']
+                'message' => 'Seeded '.$result['seeded'].' template(s), updated '.($result['updated'] ?? 0)
                     .', skipped '.$result['skipped'].' already present.',
                 'detail'  => $result,
             ]
