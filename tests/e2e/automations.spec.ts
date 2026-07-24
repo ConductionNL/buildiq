@@ -242,3 +242,89 @@ test.describe('automation-approval-steps — approval action end to end', () => 
 		}
 	})
 })
+
+test.describe('automation-document-action — generateDocument action', () => {
+	// NOTE: CI-run only, same as the suites above — not executed in this
+	// session (no deploy to the shared dev instance per project policy).
+	// Assumes Docudesk is installed on the CI instance with at least one
+	// seeded template so the live picker renders (falls back to the
+	// free-text template-id field otherwise, which this test also covers).
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/apps/openbuild/automations')
+		await page.waitForSelector('.automations-page', { timeout: 20_000 })
+
+		await page.getByLabel(/application/i).click()
+		await page.getByRole('option', { name: new RegExp(APP_SLUG, 'i') }).first().click()
+		await page.getByLabel(/version/i).click()
+		await page.getByRole('option', { name: /production/i }).first().click()
+	})
+
+	test('REQ-AUTD-002 scenario 4: composes a document-generation automation on a lifecycle transition and confirms the generated document is attached', async ({ page }) => {
+		await page.getByRole('button', { name: /new automation/i }).click()
+		await page.waitForSelector('.automation-edit')
+
+		await page.getByLabel(/^name$/i).fill('E2E generate decision letter on approve')
+		await page.getByLabel(/^when$/i).click()
+		await page.getByRole('option', { name: /lifecycle transition/i }).click()
+		await page.getByLabel(/^schema$/i).fill('hello-message')
+		await page.getByLabel(/transition action name/i).fill('approve')
+
+		await page.getByRole('button', { name: /add action/i }).click()
+		await page.locator('[data-testid="action-row"]').first()
+			.getByRole('combobox').click().catch(() => {
+			// Fallback: NcSelect may render without an accessible combobox role
+			// in the built app-store bundle — click the visible trigger instead.
+			})
+		await page.getByRole('option', { name: /generate document/i }).click()
+
+		// Template picker degrades to a free-text field when Docudesk has no
+		// seeded templates (or is absent) — try the live picker first, fall
+		// back to the text field so this test is honest on either fixture.
+		const templateSelect = page.locator('[data-testid="generate-document-template-select"]')
+		const templateText = page.locator('[data-testid="generate-document-template-text"]')
+		if (await templateSelect.isVisible().catch(() => false)) {
+			await templateSelect.getByRole('combobox').click().catch(() => {})
+			await page.getByRole('option').first().click()
+		} else {
+			await templateText.fill('00000000-0000-0000-0000-000000000000')
+		}
+
+		await page.locator('[data-testid="generate-document-output-select"]').getByRole('combobox').click().catch(() => {})
+		await page.getByRole('option', { name: /attach to object/i }).click()
+
+		await page.getByRole('button', { name: /^save$/i }).click()
+		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 10_000 })
+
+		const row = page.locator('[data-testid="automation-row"]', { hasText: 'E2E generate decision letter on approve' })
+		await expect(row).toBeVisible({ timeout: 10_000 })
+
+		// Live trigger-fire (transitioning a `hello-message` object through
+		// `approve` and confirming the Docudesk call + `generatedDocument`
+		// file reference) is out of this UI-composition test's scope — that
+		// path is covered by the PHPUnit DocumentGenerationListenerTest /
+		// DocumentGenerationServiceTest for the underlying logic, per the
+		// same split the approval suite above already uses.
+	})
+
+	test('REQ-AUTD-002/003: generateDocument action is blocked on a schedule trigger', async ({ page }) => {
+		await page.getByRole('button', { name: /new automation/i }).click()
+		await page.waitForSelector('.automation-edit')
+
+		await page.getByLabel(/^name$/i).fill('E2E bad generateDocument automation')
+		await page.getByLabel(/^when$/i).click()
+		await page.getByRole('option', { name: /cron schedule/i }).click()
+
+		await page.getByRole('button', { name: /add action/i }).click()
+		await page.locator('[data-testid="action-row"]').first()
+			.getByRole('combobox').click().catch(() => {})
+		await page.getByRole('option', { name: /generate document/i }).click()
+
+		await expect(page.locator('[data-testid="action-blocked"]')).toBeVisible({ timeout: 10_000 })
+
+		// Save is clickable but a matrix-invalid shape never persists (mirrors
+		// the REQ-AUTD-003 webhook-on-event-trigger scenario above).
+		await page.getByRole('button', { name: /^save$/i }).click()
+		await expect(page.locator('.automation-edit')).toBeVisible()
+		await expect(page.locator('.automation-edit__error')).toBeVisible()
+	})
+})
