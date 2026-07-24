@@ -37,6 +37,7 @@
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
+ * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
  */
 
 declare(strict_types=1);
@@ -570,6 +571,313 @@ class ManifestResolverService
             roles: ['owners', 'editors']
         );
     }//end isCallerAuthorised()
+
+    /**
+     * Filter a resolved manifest's `menu[]` / `pages[]` entries by the caller's
+     * group-scoped `permission` (spec `runtime-group-scoped-access`
+     * REQ-runtime-group-scoped-access-2).
+     *
+     * This is the SERVER-SIDE enforcement point: an out-of-group caller never
+     * receives the gated menu item / page in the manifest payload at all, so
+     * the standalone runtime's vue-router (built entirely from `manifest.pages`
+     * in `src/builder.js::routesFromManifest()`) never registers a route for
+     * it — "not routable" is achieved by the data simply not being present,
+     * not by a client-side route guard that a determined client could bypass.
+     * The frontend ALSO mirrors this filtering via `CnAppNav`'s own
+     * `permissions` prop (defense in depth per design.md Decision 4), but this
+     * method is the authoritative gate.
+     *
+     * Bypass: Nextcloud admins and any caller holding an owner or editor role
+     * on the Application (the existing `permissions.owners` /
+     * `permissions.editors` buckets — the "write role" grouping used
+     * throughout this codebase, e.g. {@see isCallerAuthorised()} and
+     * `ApplicationsController::filterApplicationsByRole()`) see the manifest
+     * completely unfiltered. The spec text names only "admins and application
+     * owners"; this extends the bypass to editors too because an editor who
+     * cannot see a group-gated menu item/page cannot edit it either — a real
+     * functional regression the spec did not anticipate. Documented deviation,
+     * see the PR description.
+     *
+     * Fail-closed: an unauthenticated caller (`null`) is treated as holding NO
+     * permissions — every gated entry is stripped.
+     *
+     * @param array<string, mixed> $manifest    The resolved manifest payload.
+     * @param array<string, mixed> $application The normalised Application data
+     *                                          (source of `permissions`, for the
+     *                                          write-role bypass check).
+     * @param IUser|null           $caller      The authenticated caller, or null.
+     *
+     * @return array<string, mixed> The manifest, with gated `menu[]` / `pages[]`
+     *                              entries stripped for callers who lack the
+     *                              declared `permission`. A group-scoped
+     *                              dashboard the caller satisfies is promoted to
+     *                              the landing position (first in `pages[]`).
+     *
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-a-group-scoped-dashboard-may-be-the-landing-page-for-its-group
+     */
+    public function filterManifestForCaller(array $manifest, array $application, ?IUser $caller): array
+    {
+        if ($caller !== null && $this->permissionResolver->isAdmin($caller) === true) {
+            return $manifest;
+        }
+
+        if ($caller !== null && $this->hasWriteRole(application: $application, caller: $caller) === true) {
+            return $manifest;
+        }
+
+        $callerPermissions = [];
+        if ($caller !== null) {
+            $callerPermissions = $this->buildCallerPermissionSet(caller: $caller);
+        }
+
+        if (isset($manifest['menu']) === true && is_array($manifest['menu']) === true) {
+            $manifest['menu'] = $this->filterMenuEntries(entries: $manifest['menu'], callerPermissions: $callerPermissions);
+        }
+
+        if (isset($manifest['pages']) === true && is_array($manifest['pages']) === true) {
+            $pages = $this->filterEntriesByPermission(entries: $manifest['pages'], callerPermissions: $callerPermissions);
+            $manifest['pages'] = $this->promoteLandingDashboard(pages: $pages);
+        }
+
+        return $manifest;
+    }//end filterManifestForCaller()
+
+    /**
+     * Resolve the permission-string array the CLIENT should pass to
+     * `CnAppRoot`'s `permissions` prop (forwarded to `CnAppNav` /
+     * `CnPageRenderer`) so client-side rendering mirrors the server's own
+     * filtering decision (design.md Decision 4, defense in depth — the
+     * server-side {@see filterManifestForCaller()} filter remains the
+     * authoritative gate).
+     *
+     * Returns an EMPTY array for admins and owner/editor write-role holders —
+     * `CnAppNav.passesPermission()` already treats an empty/absent
+     * `permissions` prop as "show everything" (see the component's own
+     * default), which is exactly correct here: {@see filterManifestForCaller()}
+     * sent them the FULL unfiltered manifest, so nothing should be hidden
+     * client-side either. Everyone else gets their real `group:<gid>` set, so
+     * `CnAppNav`'s own filter reaches the identical verdict the server already
+     * enforced.
+     *
+     * @param array<string, mixed> $application The normalised Application data.
+     * @param IUser|null           $caller      The authenticated caller, or null.
+     *
+     * @return array<int, string> Permission strings for the `permissions` prop.
+     *
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
+     */
+    public function resolveCallerPermissionsForDisplay(array $application, ?IUser $caller): array
+    {
+        if ($caller === null) {
+            return [];
+        }
+
+        if ($this->permissionResolver->isAdmin($caller) === true) {
+            return [];
+        }
+
+        if ($this->hasWriteRole(application: $application, caller: $caller) === true) {
+            return [];
+        }
+
+        return $this->buildCallerPermissionSet(caller: $caller);
+    }//end resolveCallerPermissionsForDisplay()
+
+    /**
+     * Whether the caller holds an owner or editor role on the Application —
+     * the "write role" bucket used throughout this codebase to mean "can
+     * manage this app" (see {@see isCallerAuthorised()},
+     * `ApplicationsController::filterApplicationsByRole()`).
+     *
+     * NC admin bypass is deliberately NOT checked here — callers pass through
+     * {@see filterManifestForCaller()}'s own admin check first.
+     *
+     * @param array<string, mixed> $application The normalised Application data.
+     * @param IUser                $caller      The authenticated caller.
+     *
+     * @return bool True when the caller is an owner or editor.
+     *
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+     */
+    private function hasWriteRole(array $application, IUser $caller): bool
+    {
+        $permissions = ($application['permissions'] ?? []);
+        if (is_array($permissions) === false) {
+            return false;
+        }
+
+        $userGroups = $this->permissionResolver->resolveUserGroups($caller);
+
+        return $this->permissionResolver->matchesCaller(
+            permissions: $permissions,
+            caller: $caller,
+            userGroups: $userGroups,
+            allowAdminBypass: false,
+            roles: ['owners', 'editors']
+        );
+    }//end hasWriteRole()
+
+    /**
+     * Build the caller's permission-string set for `permission`-tag matching:
+     * `group:<gid>` for every Nextcloud group the caller belongs to.
+     *
+     * Deliberately does NOT include an `admin` or `owner` marker — those
+     * callers never reach this method ({@see filterManifestForCaller()}
+     * returns the unfiltered manifest for them before this is called).
+     *
+     * @param IUser $caller The authenticated caller.
+     *
+     * @return array<int, string> Permission strings the caller holds.
+     *
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
+     */
+    private function buildCallerPermissionSet(IUser $caller): array
+    {
+        $groups = $this->permissionResolver->resolveUserGroups($caller);
+
+        $permissions = [];
+        foreach ($groups as $gid) {
+            $permissions[] = 'group:'.$gid;
+        }
+
+        return $permissions;
+    }//end buildCallerPermissionSet()
+
+    /**
+     * Filter a `menu[]` array by `permission`, recursing one level into each
+     * entry's `children[]` (mirrors `CnAppNav`'s own one-level nesting
+     * support).
+     *
+     * @param array<int, mixed>  $entries           The manifest `menu[]` array.
+     * @param array<int, string> $callerPermissions The caller's permission strings.
+     *
+     * @return array<int, array<string, mixed>> The filtered menu array.
+     *
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+     */
+    private function filterMenuEntries(array $entries, array $callerPermissions): array
+    {
+        $filtered = [];
+        foreach ($entries as $entry) {
+            if (is_array($entry) === false) {
+                continue;
+            }
+
+            if ($this->entryPasses(entry: $entry, callerPermissions: $callerPermissions) === false) {
+                continue;
+            }
+
+            if (isset($entry['children']) === true && is_array($entry['children']) === true) {
+                $entry['children'] = $this->filterEntriesByPermission(entries: $entry['children'], callerPermissions: $callerPermissions);
+            }
+
+            $filtered[] = $entry;
+        }//end foreach
+
+        return $filtered;
+    }//end filterMenuEntries()
+
+    /**
+     * Filter an array of entries (menu children or pages) by `permission`,
+     * without recursing further.
+     *
+     * @param array<int, mixed>  $entries           The entries to filter.
+     * @param array<int, string> $callerPermissions The caller's permission strings.
+     *
+     * @return array<int, array<string, mixed>> The filtered entries, reindexed.
+     *
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+     */
+    private function filterEntriesByPermission(array $entries, array $callerPermissions): array
+    {
+        $filtered = [];
+        foreach ($entries as $entry) {
+            if (is_array($entry) === false) {
+                continue;
+            }
+
+            if ($this->entryPasses(entry: $entry, callerPermissions: $callerPermissions) === true) {
+                $filtered[] = $entry;
+            }
+        }
+
+        return array_values($filtered);
+    }//end filterEntriesByPermission()
+
+    /**
+     * Whether a single menu/page entry's `permission` (string, list, or
+     * absent) is satisfied by the caller's permission set. Multiple
+     * permissions on an item = visible if the caller holds ANY of them (OR
+     * semantics), matching `CnAppNav.passesPermission`. An absent/empty
+     * `permission` always passes (back-compat default-open).
+     *
+     * @param array<string, mixed> $entry             The menu item or page entry.
+     * @param array<int, string>   $callerPermissions The caller's permission strings.
+     *
+     * @return bool True when the entry is visible to the caller.
+     *
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
+     */
+    private function entryPasses(array $entry, array $callerPermissions): bool
+    {
+        $required = ($entry['permission'] ?? null);
+        if ($required === null || $required === '' || $required === []) {
+            return true;
+        }
+
+        $requiredList = $required;
+        if (is_array($requiredList) === false) {
+            $requiredList = [$requiredList];
+        }
+
+        return array_intersect($requiredList, $callerPermissions) !== [];
+    }//end entryPasses()
+
+    /**
+     * Promote the landing dashboard: the FIRST already-filtered `pages[]`
+     * entry with `type === 'dashboard'` AND a non-empty `permission` (i.e. a
+     * group-scoped dashboard the caller satisfies — it would not have
+     * survived {@see filterEntriesByPermission()} otherwise) is moved to
+     * index 0, ahead of the default dashboard. `src/builder.js`'s
+     * `routesFromManifest()` treats `pages[0]` as the app's home route, so
+     * this is what actually lands the caller on their group dashboard.
+     *
+     * A caller who does not satisfy any group-scoped dashboard's permission
+     * never has one in the filtered array, so this is a no-op for them — they
+     * keep the manifest author's original page order (default dashboard
+     * first, per REQ "falling back to the default dashboard when none
+     * match").
+     *
+     * @param array<int, array<string, mixed>> $pages The already permission-filtered pages array.
+     *
+     * @return array<int, array<string, mixed>> The pages array, reordered if needed.
+     *
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-a-group-scoped-dashboard-may-be-the-landing-page-for-its-group
+     */
+    private function promoteLandingDashboard(array $pages): array
+    {
+        $landingIndex = null;
+        foreach ($pages as $index => $page) {
+            $isDashboard = (($page['type'] ?? null) === 'dashboard');
+            $permission  = ($page['permission'] ?? null);
+            $isScoped    = ($permission !== null && $permission !== '' && $permission !== []);
+            if ($isDashboard === true && $isScoped === true) {
+                $landingIndex = $index;
+                break;
+            }
+        }
+
+        if ($landingIndex === null || $landingIndex === 0) {
+            return $pages;
+        }
+
+        $landing = $pages[$landingIndex];
+        unset($pages[$landingIndex]);
+        array_unshift($pages, $landing);
+
+        return array_values($pages);
+    }//end promoteLandingDashboard()
 
     /**
      * Coerce an OR result entry (ObjectEntity or array) to a plain associative array.

@@ -267,6 +267,14 @@ async function boot() {
 		if (data && typeof data === 'object' && Array.isArray(data.pages)) {
 			manifest = data
 		}
+		// runtime-group-scoped-access REQ-1/REQ-2: the server already computed
+		// and filtered the caller's view (ManifestResolverService::
+		// filterManifestForCaller / injectPermissionsSignal) — `menu`/`pages`
+		// entries the caller lacks `permission` for are already stripped, and
+		// `manifest.runtime.user.permissions` carries the ready-to-forward set
+		// (empty for admins/owners/editors, who received the FULL manifest and
+		// so must see everything client-side too — CnAppNav treats an empty
+		// array as "show everything").
 		// Reflect the app's identity in the browser tab and the global NC top-bar.
 		const appName = (manifest.name || manifest.title || slug)
 		if (appName) {
@@ -323,6 +331,10 @@ async function boot() {
 				// Without it CnAppRoot falls back to the appId ("openbuild-{slug}").
 				appName: manifest.name || manifest.title || slug,
 				manifest,
+				// runtime-group-scoped-access REQ-1: forwarded to CnAppNav /
+				// CnPageRenderer's permission filter — client-side mirror of the
+				// server-side filtering already applied to `manifest.menu`/`pages`.
+				permissions: (manifest.runtime && manifest.runtime.user && manifest.runtime.user.permissions) || [],
 				isLoading: false,
 				registry: { ...runtimeRegistry },
 				pageTypes: { ...defaultPageTypes },
