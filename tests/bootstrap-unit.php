@@ -53,6 +53,11 @@ foreach ($orCandidates as $orPath) {
 // register a stub set so type-hinted parameters resolve.
 require_once __DIR__ . '/stubs/openregister-stubs.php';
 
+// OCP\Files\IRootFolder extends OC\Hooks\Emitter (NC server core, not part
+// of the nextcloud/ocp stub package) — see the stub's own docblock for why
+// this is needed to mock IRootFolder in this out-of-container run.
+require_once __DIR__ . '/stubs/nc-hooks-emitter.stub.php';
+
 // OpenRegister's IMcpToolProvider interface ships in PR #1466 (ai-chat
 // companion orchestrator). Until that merges, the interface may not be
 // loadable in unit-test isolation — load the stub so `implements

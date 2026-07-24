@@ -14,10 +14,11 @@ vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn(), post: vi.fn(), put
 
 import axios from '@nextcloud/axios'
 import AutomationEditDialog from '../../src/dialogs/AutomationEditDialog.vue'
+import { clearAppStatusCache } from '../../src/composables/useAppStatus.js'
 
 const NcSelectStub = {
 	name: 'NcSelect',
-	props: ['value', 'options', 'loading', 'inputLabel', 'label', 'clearable', 'disabled'],
+	props: ['value', 'options', 'loading', 'inputLabel', 'label', 'clearable', 'disabled', 'multiple'],
 	template: '<div class="ncselect-stub" :data-label="inputLabel" />',
 }
 const NcTextFieldStub = {
@@ -87,6 +88,7 @@ describe('AutomationEditDialog', () => {
 		axios.put.mockReset()
 		axios.get.mockResolvedValue({ data: { results: [] } })
 		axios.post.mockResolvedValue({ data: { id: 'new-uuid' } })
+		clearAppStatusCache()
 	})
 
 	it('REQ-AUTD-002 scenario 1: composes an event-triggered notification', async () => {
@@ -214,5 +216,83 @@ describe('AutomationEditDialog', () => {
 
 		expect(wrapper.vm.valid).toBe(false)
 		expect(wrapper.vm.actionBlockedReason('approval')).not.toBe('')
+	})
+
+	it('automation-document-action REQ-AUTD-002 scenario 4: composes a document-generation action', async () => {
+		const wrapper = factory()
+		await openDialog(wrapper)
+
+		wrapper.vm.name = 'Generate decision letter on approval'
+		wrapper.vm.triggerType = 'lifecycle-transition'
+		wrapper.vm.triggerSchema = 'permit-application'
+		wrapper.vm.triggerTransition = 'approve'
+		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'generateDocument' })]
+		wrapper.vm.actions[0].templateId = 'tpl-uuid-1'
+		wrapper.vm.actions[0].output = ['attach']
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.vm.valid).toBe(true)
+		await wrapper.vm.onSave()
+
+		const [, payload] = axios.post.mock.calls.find(([url]) => url.includes('/automation'))
+		expect(payload.actions[0]).toEqual({
+			type: 'generateDocument',
+			templateId: 'tpl-uuid-1',
+			output: ['attach'],
+		})
+	})
+
+	it('automation-document-action REQ-AUTD-002/003: generateDocument on a schedule trigger is blocked', async () => {
+		const wrapper = factory()
+		await openDialog(wrapper)
+
+		wrapper.vm.name = 'Bad generateDocument automation'
+		wrapper.vm.triggerType = 'schedule'
+		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'generateDocument' })]
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.vm.valid).toBe(false)
+		expect(wrapper.vm.actionBlockedReason('generateDocument')).not.toBe('')
+	})
+
+	it('automation-document-action design.md D3: notify-only output (no attach/download-link) is rejected', async () => {
+		const wrapper = factory()
+		await openDialog(wrapper)
+
+		wrapper.vm.name = 'Notify-only automation'
+		wrapper.vm.triggerType = 'object-created'
+		wrapper.vm.triggerSchema = 'permit-application'
+		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'generateDocument' })]
+		wrapper.vm.actions[0].templateId = 'tpl-uuid-1'
+		wrapper.vm.actions[0].output = ['notify']
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.vm.valid).toBe(false)
+	})
+
+	it('automation-document-action REQ-AUTD-002: generateDocument action is disabled without Docudesk', async () => {
+		axios.get.mockImplementation((url) => {
+			if (String(url).includes('/apps/docudesk/api')) {
+				const error = new Error('not found')
+				error.response = { status: 404 }
+				return Promise.reject(error)
+			}
+			return Promise.resolve({ data: { results: [] } })
+		})
+
+		const wrapper = factory()
+		await openDialog(wrapper)
+
+		wrapper.vm.name = 'No docudesk automation'
+		wrapper.vm.triggerType = 'object-created'
+		wrapper.vm.triggerSchema = 'permit-application'
+		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'generateDocument' })]
+		wrapper.vm.actions[0].templateId = 'tpl-uuid-1'
+		wrapper.vm.actions[0].output = ['attach']
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.vm.docudeskAvailable).toBe(false)
+		expect(wrapper.vm.actionBlockedReason('generateDocument')).not.toBe('')
+		expect(wrapper.vm.valid).toBe(false)
 	})
 })

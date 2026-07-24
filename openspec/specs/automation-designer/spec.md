@@ -1,8 +1,8 @@
 # automation-designer Specification
 
-**OpenSpec changes**: [automation-approval-steps](../../changes/archive/2026-07-23-automation-approval-steps/) _(archived 2026-07-23)_, [automation-document-action](../../changes/automation-document-action/)
+**OpenSpec changes**: [automation-approval-steps](../../changes/archive/2026-07-23-automation-approval-steps/) _(archived 2026-07-23)_, [automation-document-action](../../changes/archive/2026-07-24-automation-document-action/) _(archived 2026-07-24)_
 
-**Status**: in-progress
+**Status**: done
 
 ## Purpose
 TBD - created by archiving change automation-designer. Update Purpose after archive.
@@ -53,9 +53,15 @@ rule set), and one or more typed ACTIONS (`send-notification`,
 `run-synchronization`, `object-op` create/update on a schema, `webhook`
 POST, `approval` — assignee is an NC group, with optional on-approve and
 on-reject follow-up action lists composed from the same typed-action
-vocabulary). Schema, transition, synchronization and NC-group pickers SHALL
-be populated from OpenRegister/Nextcloud REST and degrade to free-text ids
-when a list cannot load. All selects SHALL carry `:input-label`.
+vocabulary; `generateDocument` — a Docudesk `templateId` picked from the same
+template list the Documents section already renders, plus an `output` mode
+of `attach`, `download-link`, or `notify`). Schema, transition,
+synchronization, NC-group and Docudesk-template pickers SHALL be populated
+from OpenRegister/Nextcloud/Docudesk REST and degrade to free-text ids when
+a list cannot load. All selects SHALL carry `:input-label`. The
+`generateDocument` action SHALL render disabled with the missing-app hint
+when `useAppStatus('docudesk')` reports Docudesk absent, mirroring
+`docudesk-document-templates` REQ-DDT-005.
 
 **ID:** REQ-AUTD-002
 
@@ -94,19 +100,38 @@ when a list cannot load. All selects SHALL carry `:input-label`.
 - **THEN** the persisted automation carries the typed `approval` action with
   `assigneeGroup: "permit-reviewers"` and both follow-up action lists
 
+#### Scenario: Compose a document-generation action
+
+- **WHEN** the editor creates an automation with trigger "lifecycle
+  transition" on schema `permit-application` transition `approve`, a
+  `generateDocument` action with a picked template and `output: "attach"`,
+  and saves
+- **THEN** the persisted automation carries the typed `generateDocument`
+  action with `templateId` and `output: "attach"`
+
+#### Scenario: Document-generation action is disabled without Docudesk
+
+@e2e exclude covered by tests/dialogs/AutomationEditDialog.spec.js ("generateDocument action is disabled without Docudesk") — a component-level render assertion; no distinct live-browser affordance beyond the disabled-state styling REQ-DDT-005's own e2e coverage already exercises for the sibling Documents-section surface.
+
+- **GIVEN** Docudesk is not installed
+- **WHEN** the editor opens the action-type picker
+- **THEN** `generateDocument` renders disabled with the missing-app hint
+
 ### Requirement: Unsupported trigger and action combinations are blocked fail-closed
 
 The system SHALL enforce the v1 compilation matrix (design.md Decision 2 of
 `automation-designer`, extended by design.md Decision 1 of
-`automation-approval-steps`) in both the editor and the compiler: a
+`automation-approval-steps` and design.md Decision 2 of
+`automation-document-action`) in both the editor and the compiler: a
 trigger/action combination or a condition placement that no existing
 declarative primitive can express (e.g. object created + `object-op`, a
-condition on a plain object-event or schedule trigger, an `approval` action on
-a `schedule` or `manual` trigger) SHALL be blocked with an explicit message
+condition on a plain object-event or schedule trigger, an `approval` action
+on a `schedule` or `manual` trigger, a `generateDocument` action on a
+`schedule` or `manual` trigger) SHALL be blocked with an explicit message
 naming the unsupported combination. The system SHALL NOT silently drop, stub,
-or partially compile an unsupported automation. `approval` on an
-event/lifecycle-transition trigger IS supported (see the compilation
-requirement below) and SHALL NOT be blocked.
+or partially compile an unsupported automation. `approval` and
+`generateDocument` on an event/lifecycle-transition trigger ARE supported
+(see the compilation requirement below) and SHALL NOT be blocked.
 
 **ID:** REQ-AUTD-003
 
@@ -138,29 +163,44 @@ requirement below) and SHALL NOT be blocked.
   action with an assignee group
 - **THEN** the editor accepts the combination and the automation can be saved
 
+#### Scenario: generateDocument action on a schedule trigger is blocked
+
+- **WHEN** the editor selects trigger "schedule" and attempts to add a
+  `generateDocument` action
+- **THEN** the editor blocks the combination with a message stating
+  document-generation actions are only supported on object-event and
+  lifecycle-transition triggers in v1
+
 ### Requirement: Automations compile deterministically to existing declarative primitives
 
 The system SHALL compile a saved automation (`AutomationCompilerService`)
-exclusively to existing declarative primitives per the matrix:
-event/transition + `send-notification` → an `x-openregister-notifications`
-entry on the target schema keyed `aut-<slug>-<n>`; lifecycle transition +
-`object-op`/`webhook` → typed `related-object-upsert`/`webhook-dispatch`
-records appended to that transition's `x-openregister-lifecycle` actions,
-tagged with an `aut-<slug>` marker; schedule + `run-synchronization` → a
-`manifest.schedules[]` entry with id `aut-<slug>-<n>` and action
-`openconnector:synchronization`, valid against the existing schedules
-validator; manual → a namespaced RuleSet (`aut-<uuid8>`) plus
-ConditionActionRule evaluated by the existing rules engine;
-event/lifecycle-transition + `approval` → an OpenRegister `ApprovalChain`
-named `aut-<slug>` (one step, `role` = the assignee group), upserted via OR's
-approval-chains API and instantiated against the trigger object's uuid via
-`ApprovalService::initializeChain()` at trigger-fire time; on-approve/
-on-reject follow-up actions dispatch through a typed listener on OR's
-`ApprovalStepApprovedEvent`/`ApprovalStepRejectedEvent`, never a new
-approval engine. Compilation SHALL be deterministic (identical automation →
-identical artifacts) and idempotent (recompiling an unchanged automation
-changes nothing). No new imperative execution engine is introduced in
-openbuild.
+exclusively to existing declarative primitives or a listener-backed external
+integration per the matrix: event/transition + `send-notification` → an
+`x-openregister-notifications` entry on the target schema keyed
+`aut-<slug>-<n>`; lifecycle transition + `object-op`/`webhook` → typed
+`related-object-upsert`/`webhook-dispatch` records appended to that
+transition's `x-openregister-lifecycle` actions, tagged with an `aut-<slug>`
+marker; schedule + `run-synchronization` → a `manifest.schedules[]` entry
+with id `aut-<slug>-<n>` and action `openconnector:synchronization`, valid
+against the existing schedules validator; manual → a namespaced RuleSet
+(`aut-<uuid8>`) plus ConditionActionRule evaluated by the existing rules
+engine; event/lifecycle-transition + `approval` → an OpenRegister
+`ApprovalChain` named `aut-<slug>` (one step, `role` = the assignee group),
+upserted via OR's approval-chains API and instantiated against the trigger
+object's uuid via `ApprovalService::initializeChain()` at trigger-fire time;
+on-approve/on-reject follow-up actions dispatch through a typed listener on
+OR's `ApprovalStepApprovedEvent`/`ApprovalStepRejectedEvent`, never a new
+approval engine; event/lifecycle-transition + `generateDocument` → a
+validated action config (no compile-time Docudesk-side artifact — Docudesk's
+`correspondence/generate` call is stateless) dispatched at trigger-fire time
+by `DocumentGenerationListener` through `DocumentGenerationService`, which
+calls Docudesk's existing `POST /apps/docudesk/api/correspondence/generate`
+route impersonating the Application owner's session — never a Docudesk PHP
+class import (see `automation-document-action` and the modified
+`docudesk-document-templates` REQ-DDT-006). Compilation SHALL be
+deterministic (identical automation → identical artifacts) and idempotent
+(recompiling an unchanged automation changes nothing). No new imperative
+execution engine is introduced in openbuild.
 
 @e2e exclude backend compilation contract — artifact shapes are asserted by
 PHPUnit against `AutomationCompilerService` (unit) and the OR round-trip
@@ -224,6 +264,23 @@ the existing SchedulesSection e2e surface
   is approved
 - **THEN** the automation's on-approve follow-up actions are dispatched
 - **AND** no on-reject follow-up action is dispatched
+
+#### Scenario: Document-generation action fires via the pinned Docudesk route
+
+- **WHEN** an object matching an enabled automation's `generateDocument`
+  trigger is created/transitioned
+- **THEN** `DocumentGenerationService` calls
+  `POST /apps/docudesk/api/correspondence/generate` with `dataRefs` naming
+  that object, impersonating the Application owner
+- **AND** no Docudesk PHP class is imported anywhere in the call path
+
+#### Scenario: Missing Docudesk fails the compile, not the runtime
+
+- **WHEN** an automation carrying a `generateDocument` action is compiled on
+  an instance where Docudesk is absent
+- **THEN** `AutomationCompilerService` throws
+  `UnsupportedAutomationCombinationException` naming the missing `docudesk`
+  dependency
 
 ### Requirement: An automation is managed as one unit with provenance
 

@@ -99,6 +99,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import DOMPurify from 'dompurify'
 import { DOCUMENT_FORMATS } from '../services/manifestValidation/documentAttachments.js'
+import { fetchDocudeskTemplates, templateToOption } from '../composables/useDocudeskTemplates.js'
 
 export default {
 	name: 'DocumentTemplateAttachmentDialog',
@@ -151,13 +152,12 @@ export default {
 		editing() {
 			return !!this.attachment
 		},
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+		/**
+		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+		 */
 		templateOptions() {
-			return this.templates.map((tpl) => ({
-				label: tpl.name || tpl.title || tpl.id,
-				uuid: tpl.id || tpl.uuid,
-				name: tpl.name || tpl.title || '',
-			}))
+			return this.templates.map(templateToOption)
 		},
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		schemaOptions() {
@@ -245,23 +245,18 @@ export default {
 			}
 		},
 		/**
-		 * Load templates from Docudesk's template index.
+		 * Load templates from Docudesk's template index — the SHARED fetch
+		 * also used by AutomationEditDialog's `generateDocument` template
+		 * picker (automation-document-action).
 		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
 		 */
 		async fetchTemplates() {
 			this.loadingTemplates = true
-			try {
-				const url = generateUrl('/apps/docudesk/api/templates')
-				const { data } = await axios.get(url)
-				const list = (data && (data.results || data.templates || data)) || []
-				this.templates = Array.isArray(list) ? list : []
-			} catch {
-				this.templates = []
-			} finally {
-				this.loadingTemplates = false
-			}
+			this.templates = await fetchDocudeskTemplates()
+			this.loadingTemplates = false
 		},
 		/**
 		 * On edit, refresh the template-name snapshot via the show endpoint and

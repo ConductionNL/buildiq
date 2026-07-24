@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -67,6 +68,11 @@ final class AutomationCompilerServiceTest extends TestCase
     private ApprovalStepMapper&MockObject $approvalStepMapper;
 
     /**
+     * @var IAppManager&MockObject
+     */
+    private IAppManager&MockObject $appManager;
+
+    /**
      * The service under test.
      *
      * @var AutomationCompilerService
@@ -84,11 +90,14 @@ final class AutomationCompilerServiceTest extends TestCase
         $this->schemaMapper        = $this->createMock(SchemaMapper::class);
         $this->approvalChainMapper = $this->createMock(ApprovalChainMapper::class);
         $this->approvalStepMapper  = $this->createMock(ApprovalStepMapper::class);
+        $this->appManager          = $this->createMock(IAppManager::class);
+        $this->appManager->method('isEnabledForUser')->willReturn(true);
         $this->compiler            = new AutomationCompilerService(
             $this->objectService,
             $this->schemaMapper,
             $this->approvalChainMapper,
             $this->approvalStepMapper,
+            $this->appManager,
             new NullLogger()
         );
 
@@ -722,4 +731,194 @@ final class AutomationCompilerServiceTest extends TestCase
         $this->assertCount(1, $captured['x-openregister-notifications']);
 
     }//end testApplyIsIdempotentOnUnchangedPlan()
+
+    /**
+     * automation-document-action REQ-AUTD-004: `generateDocument` is
+     * supported on every event/lifecycle-transition trigger and compiles
+     * (no exception, empty plan side effects — no compile-time upsert).
+     *
+     * @return void
+     */
+    public function testGenerateDocumentIsSupportedOnEventAndLifecycleTransitionTriggers(): void
+    {
+        foreach (['object-created', 'object-updated', 'object-deleted'] as $triggerType) {
+            $automation = [
+                'id'      => 'auto-'.$triggerType,
+                'slug'    => 'gen-'.$triggerType,
+                'trigger' => ['type' => $triggerType, 'schema' => 'permit'],
+                'actions' => [['type' => 'generateDocument', 'templateId' => 'tpl-1', 'output' => ['attach']]],
+            ];
+
+            $plan = $this->compiler->compile($automation);
+            $this->assertNull($plan['approvalChain']);
+            $this->assertSame([], $plan['lifecycleActions']);
+        }
+
+        $lifecycle = [
+            'id'      => 'auto-lifecycle',
+            'slug'    => 'gen-lifecycle',
+            'trigger' => ['type' => 'lifecycle-transition', 'schema' => 'permit', 'transition' => 'approve'],
+            'actions' => [['type' => 'generateDocument', 'templateId' => 'tpl-1', 'output' => ['attach']]],
+        ];
+
+        $plan = $this->compiler->compile($lifecycle);
+        $this->assertSame([], $plan['lifecycleActions']);
+
+    }//end testGenerateDocumentIsSupportedOnEventAndLifecycleTransitionTriggers()
+
+    /**
+     * automation-document-action REQ-AUTD-003: `generateDocument` is
+     * blocked fail-closed on `manual` and `schedule` triggers.
+     *
+     * @return void
+     */
+    public function testGenerateDocumentIsBlockedOnManualAndScheduleTriggers(): void
+    {
+        $manual = [
+            'id'      => 'auto-x',
+            'slug'    => 'bad',
+            'trigger' => ['type' => 'manual'],
+            'actions' => [['type' => 'generateDocument', 'templateId' => 'tpl-1', 'output' => ['attach']]],
+        ];
+
+        try {
+            $this->compiler->compile($manual);
+            $this->fail('Expected UnsupportedAutomationCombinationException for manual + generateDocument.');
+        } catch (UnsupportedAutomationCombinationException $e) {
+            $this->assertStringContainsString('generateDocument', $e->getMessage());
+        }
+
+        $schedule = [
+            'id'      => 'auto-y',
+            'slug'    => 'bad2',
+            'trigger' => ['type' => 'schedule', 'interval' => 3600],
+            'actions' => [['type' => 'generateDocument', 'templateId' => 'tpl-1', 'output' => ['attach']]],
+        ];
+
+        $this->expectException(UnsupportedAutomationCombinationException::class);
+        $this->compiler->compile($schedule);
+
+    }//end testGenerateDocumentIsBlockedOnManualAndScheduleTriggers()
+
+    /**
+     * automation-document-action task 1.2: a `generateDocument` action
+     * missing `templateId` is rejected at compile time.
+     *
+     * @return void
+     */
+    public function testGenerateDocumentMissingTemplateIdIsRejected(): void
+    {
+        $automation = [
+            'id'      => 'auto-1',
+            'slug'    => 'gen-missing-template',
+            'trigger' => ['type' => 'object-created', 'schema' => 'permit'],
+            'actions' => [['type' => 'generateDocument', 'output' => ['attach']]],
+        ];
+
+        try {
+            $this->compiler->compile($automation);
+            $this->fail('Expected UnsupportedAutomationCombinationException for a missing templateId.');
+        } catch (UnsupportedAutomationCombinationException $e) {
+            $this->assertStringContainsString('templateId', $e->getMessage());
+        }
+
+    }//end testGenerateDocumentMissingTemplateIdIsRejected()
+
+    /**
+     * automation-document-action task 1.2 / design.md Decision 3:
+     * `notify`-only (no `attach`/`download-link`) is rejected as incomplete.
+     *
+     * @return void
+     */
+    public function testGenerateDocumentNotifyOnlyIsRejected(): void
+    {
+        $automation = [
+            'id'      => 'auto-1',
+            'slug'    => 'gen-notify-only',
+            'trigger' => ['type' => 'object-created', 'schema' => 'permit'],
+            'actions' => [['type' => 'generateDocument', 'templateId' => 'tpl-1', 'output' => ['notify']]],
+        ];
+
+        try {
+            $this->compiler->compile($automation);
+            $this->fail('Expected UnsupportedAutomationCombinationException for notify-only output.');
+        } catch (UnsupportedAutomationCombinationException $e) {
+            $this->assertStringContainsString('notify', $e->getMessage());
+        }
+
+    }//end testGenerateDocumentNotifyOnlyIsRejected()
+
+    /**
+     * automation-document-action task 1.2: an unknown/empty `output` is
+     * rejected.
+     *
+     * @return void
+     */
+    public function testGenerateDocumentUnknownOutputIsRejected(): void
+    {
+        $automation = [
+            'id'      => 'auto-1',
+            'slug'    => 'gen-bad-output',
+            'trigger' => ['type' => 'object-created', 'schema' => 'permit'],
+            'actions' => [['type' => 'generateDocument', 'templateId' => 'tpl-1', 'output' => ['bogus']]],
+        ];
+
+        $this->expectException(UnsupportedAutomationCombinationException::class);
+        $this->compiler->compile($automation);
+
+    }//end testGenerateDocumentUnknownOutputIsRejected()
+
+    /**
+     * automation-document-action task 1.3 / D2 of design.md: missing
+     * Docudesk fails the COMPILE, not the runtime.
+     *
+     * @return void
+     */
+    public function testGenerateDocumentMissingDocudeskFailsCompile(): void
+    {
+        $this->appManager = $this->createMock(IAppManager::class);
+        $this->appManager->method('isEnabledForUser')->willReturn(false);
+        $compiler = new AutomationCompilerService(
+            $this->objectService,
+            $this->schemaMapper,
+            $this->approvalChainMapper,
+            $this->approvalStepMapper,
+            $this->appManager,
+            new NullLogger()
+        );
+
+        $automation = [
+            'id'      => 'auto-1',
+            'slug'    => 'gen-no-docudesk',
+            'trigger' => ['type' => 'object-created', 'schema' => 'permit'],
+            'actions' => [['type' => 'generateDocument', 'templateId' => 'tpl-1', 'output' => ['attach']]],
+        ];
+
+        try {
+            $compiler->compile($automation);
+            $this->fail('Expected UnsupportedAutomationCombinationException naming the missing docudesk dependency.');
+        } catch (UnsupportedAutomationCombinationException $e) {
+            $this->assertStringContainsString('docudesk', $e->getMessage());
+        }
+
+    }//end testGenerateDocumentMissingDocudeskFailsCompile()
+
+    /**
+     * `mapActionToRuleAction()` maps a `generateDocument` action to a typed
+     * rule action (dry-run panel traceability).
+     *
+     * @return void
+     */
+    public function testMapActionToRuleActionMapsGenerateDocument(): void
+    {
+        $mapped = $this->compiler->mapActionToRuleAction(
+            ['type' => 'generateDocument', 'templateId' => 'tpl-1', 'output' => ['attach', 'notify']]
+        );
+
+        $this->assertSame(
+            ['type' => 'generateDocument', 'parameters' => ['templateId' => 'tpl-1', 'output' => ['attach', 'notify']]],
+            $mapped
+        );
+
+    }//end testMapActionToRuleActionMapsGenerateDocument()
 }//end class

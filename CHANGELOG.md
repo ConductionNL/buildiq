@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.5] - 2026-07-24
+
+### Added
+- **Document-generation automation action** (automation-document-action) — a
+  new `generateDocument` action kind on `object-created`/`object-updated`/
+  `object-deleted`/`lifecycle-transition` triggers, compiling to no
+  compile-time artifact (Docudesk's `correspondence/generate` route is
+  stateless) and dispatching at trigger-fire time through a new
+  `DocumentGenerationListener` → `DocumentGenerationService`.
+- `DocumentGenerationService` calls Docudesk's existing, Newman-pinned
+  `POST /apps/docudesk/api/correspondence/generate` route — never a
+  `OCA\DocuDesk\*` PHP class import — impersonating the owning
+  Application's owner (via the existing `JobOwnerImpersonator`) for the
+  duration of exactly one internal call, authenticated with a short-lived
+  Nextcloud login token minted through `OC\Authentication\Token\IProvider`
+  and invalidated immediately after use.
+- Three output modes: `attach` (writes the generated document to Nextcloud
+  Files and sets a `{ "ref": "<fileId>" }` reference on the triggering
+  object's `generatedDocument` field), `download-link` (a short-lived,
+  ~24h signed URL served by the new `GeneratedDocumentController` from
+  OpenBuild's own app-private storage — never the user's Files tree), and
+  `notify` (reuses the existing `RuleActionDispatcher` send-notification
+  path; must be paired with `attach` and/or `download-link`).
+- `AutomationEditDialog` gains the `generateDocument` action editor: a
+  Docudesk template picker (via the new shared `useDocudeskTemplates.js`
+  composable, also adopted by `DocumentTemplateAttachmentDialog` so the
+  template-list fetch has exactly one implementation) and an output-mode
+  multi-select, disabled with a missing-app hint when Docudesk is absent.
+- Compile-time validation (`AutomationCompilerService`): `templateId`
+  required, `output` a known non-empty set, `notify` never alone, and a
+  fail-closed `UnsupportedAutomationCombinationException` naming the
+  missing `docudesk` dependency when Docudesk is not installed.
+
 ## [0.7.4] - 2026-07-23
 
 ### Added
