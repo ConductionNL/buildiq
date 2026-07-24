@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.7] - 2026-07-24
+
+### Added
+- **Component blocks** (component-blocks) — capture a configured widget, or
+  a selected multi-widget page section, from the page designer into a
+  named, reusable `ComponentBlock` (new `componentBlock` OR schema,
+  `lib/Settings/register.d/60-component-blocks.json`).
+- Block-library panel (`NcAppSidebar`) in the page designer listing every
+  org-wide block, filterable by category, with insert support.
+- Insert deep-copies the fragment and mints fresh widget ids, so repeated
+  insertions never collide and editing the source block never affects an
+  already-inserted copy.
+- Schema-dependency remap prompt (`BlockRemapDialog.vue`) on a cross-app
+  insert whose schemas don't exact-match — never a silent guess, never a
+  silently dropped binding.
+- Blocks export/import as standalone JSON.
+- Template-catalogue gallery gains a "Blocks" filter alongside full-app
+  templates.
+
 ## [0.7.5] - 2026-07-24
 
 ### Added
