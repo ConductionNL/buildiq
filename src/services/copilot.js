@@ -59,7 +59,7 @@ export async function fetchCopilotHealth() {
  * @return {Promise<{summary: string, steps: Array, manifests: object}>}
  * @throws {{status: number, error: string, message: string}} Normalised error envelope.
  * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
- * @spec openspec/changes/agent-workspace/specs/ai-copilot/spec.md
+ * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
 export async function requestPlan({ brief, appSlug, agentId } = {}) {
 	try {
@@ -82,7 +82,7 @@ export async function requestPlan({ brief, appSlug, agentId } = {}) {
  * @return {Promise<{results: Array}>}
  * @throws {{status: number, error: string, message: string}} Normalised error envelope.
  * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
- * @spec openspec/changes/agent-workspace/specs/ai-copilot/spec.md
+ * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
 export async function executePlan(plan, { agentId, prompt } = {}) {
 	try {
@@ -107,7 +107,7 @@ export async function executePlan(plan, { agentId, prompt } = {}) {
  * @param {{summary: string, steps: Array}} params.plan - the reviewed-then-discarded plan.
  * @return {Promise<void>} Resolves even on failure — a lost audit-log write must
  *   never block the user's discard action.
- * @spec openspec/changes/agent-workspace/specs/agent-workspace/spec.md
+ * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
  */
 export async function discardRun({ agentId, prompt, plan } = {}) {
 	try {

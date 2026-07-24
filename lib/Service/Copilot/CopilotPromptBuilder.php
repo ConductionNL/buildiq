@@ -69,7 +69,7 @@ class CopilotPromptBuilder
      * @return string
      *
      * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
-     * @spec openspec/changes/agent-workspace/specs/ai-copilot/spec.md
+     * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
      */
     public function build(
         string $brief,
@@ -96,7 +96,7 @@ class CopilotPromptBuilder
      * @return string
      *
      * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
-     * @spec openspec/changes/agent-workspace/specs/ai-copilot/spec.md
+     * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
      */
     public function buildRepairPrompt(
         string $brief,

@@ -27,6 +27,11 @@ eight `OpenBuildToolProvider` tool names), and `maxActionsPerRun` (positive
 integer). `enabledTools` SHALL be validated against the eight-tool catalogue
 at save time — an unknown tool name SHALL be rejected.
 
+@e2e exclude declarative OR schema-level enum validation
+(`lib/Settings/register.d/70-agent-workspace.json`) — save-time rejection is
+OpenRegister's own JSON-Schema validator, not app UI logic; no Playwright
+surface exercises it distinctly from any other schema-validated save.
+
 #### Scenario: Agent with a valid tool subset saves
 
 - **WHEN** an editor creates an `Agent` with
@@ -71,6 +76,12 @@ to owners/editors of the agent's parent Application, matching the existing
 
 #### Scenario: A discarded proposal is still logged
 
+@e2e exclude backend audit-log contract — verified by PHPUnit
+(`CopilotServiceTest::testDiscardLogsDiscardedOutcome`,
+`AgentRunLoggerTest`); the discard UI flow itself (no execute request sent)
+is the same panel path REQ-OBAIC-007's "Discarding a proposal changes
+nothing" e2e scenario already exercises.
+
 - **WHEN** a developer discards a proposal in an agent's chat panel
 - **THEN** an `AgentRun` record exists with `outcome: "discarded"` and an
   empty `toolCalls[]`
@@ -84,6 +95,12 @@ to owners/editors of the agent's parent Application, matching the existing
 
 #### Scenario: A non-owner/non-editor cannot read an agent's run history
 
+@e2e exclude authorization matrix — role-denied 403 is verified by PHPUnit
+(`AgentsControllerTest::testRunsReturns403ForViewerOnlyCaller`) with role
+fixtures Playwright's single-admin global-setup cannot represent, matching
+REQ-OBAIC-005's identical exclusion rationale for the bare copilot's
+viewer-denial scenario.
+
 - **WHEN** a caller who holds neither an owners nor an editors role on the
   agent's parent Application requests `GET /api/agents/{uuid}/runs`
 - **THEN** the endpoint returns 403 and no run row is returned
@@ -95,6 +112,12 @@ every plan/execute request time, as a subset of the eight-tool
 `OpenBuildToolProvider` catalogue. No configuration path, prompt content, or
 client request SHALL be able to grant an agent a tool outside that
 catalogue.
+
+@e2e exclude backend allow-list-narrowing contract — verified by PHPUnit
+with a mocked TaskProcessing manager
+(`CopilotServiceTest::testPlanRejectsStepOutsideAgentsNarrowerAllowList`,
+`testExecuteRejectsStepOutsideAgentsAllowList`), matching REQ-OBAIC-002's
+identical nondeterministic-LLM exclusion rationale.
 
 #### Scenario: Agent-scoped requests never exceed the base allow-list
 
@@ -109,6 +132,12 @@ The system SHALL NOT provide any mechanism, in this change, for an
 automation, schedule, webhook, or other non-chat trigger to invoke an
 `Agent`'s plan/execute path. Automation-triggered agent invocation is
 explicitly deferred to a follow-up change.
+
+@e2e exclude negative/absence assertion — verified by static inspection of
+the automation action-type enum (`AutomationCompilerService`/
+`AutomationEditDialog.vue`'s fixed `send-notification|run-synchronization|
+object-op|webhook|approval|generateDocument` list has no `invokeAgent` kind);
+there is no UI state to drive in a browser to prove an absence.
 
 #### Scenario: No automation action kind can invoke an agent
 

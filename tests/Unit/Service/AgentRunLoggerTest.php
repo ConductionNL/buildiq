@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/agent-workspace/specs/agent-workspace/spec.md
+ * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
  */
 
 declare(strict_types=1);

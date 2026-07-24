@@ -73,6 +73,8 @@ test.describe('agent-workspace — Agents page', () => {
 		await expect(row).toContainText('2 tool(s) enabled')
 	})
 
+	// @e2e agent-workspace::agent-chat-plans-and-executes-scoped-to-that-agent
+	// @e2e agent-workspace::run-history-shows-every-tool-calls-arguments-and-result
 	test('chat with an agent, approve a proposal, confirm the run appears in run-history with tool-call detail', async ({ page, request }) => {
 		const health = await request.get(HEALTH_URL)
 		test.skip(health.status() === 503, 'No AI provider configured — copilot chat intentionally hidden')

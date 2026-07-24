@@ -121,7 +121,7 @@ export function useCopilot() {
 	 *   (spec `agent-workspace`).
 	 * @return {Promise<void>}
 	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
-	 * @spec openspec/changes/agent-workspace/specs/ai-copilot/spec.md
+	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
 	async function generatePlan(brief, appSlug, agentId) {
 		state.value = 'planning'
@@ -149,7 +149,7 @@ export function useCopilot() {
 	 *   record captures the full turn.
 	 * @return {Promise<void>}
 	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
-	 * @spec openspec/changes/agent-workspace/specs/ai-copilot/spec.md
+	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
 	async function approve(agentId) {
 		if (!canApprove.value || !plan.value) {
@@ -180,7 +180,7 @@ export function useCopilot() {
 	 * @param {string} [agentId] - optional Agent id this plan was planned with.
 	 * @return {void}
 	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
-	 * @spec openspec/changes/agent-workspace/specs/agent-workspace/spec.md
+	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
 	 */
 	function discard(agentId) {
 		if (agentId && plan.value) {

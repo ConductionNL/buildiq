@@ -95,7 +95,7 @@ export default {
 			 * Re-fetch the run history whenever the selected agent changes.
 			 *
 			 * @return {void}
-			 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+			 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 			 */
 			handler() {
 				if (this.agentId) {
@@ -110,7 +110,7 @@ export default {
 		 * Load this agent's run history, newest first.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/agent-workspace/specs/agent-workspace/spec.md
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
 		 */
 		async fetchRuns() {
 			this.loading = true
@@ -130,7 +130,7 @@ export default {
 		 *
 		 * @param {string} outcome - one of applied|rolled-back|discarded|plan-rejected.
 		 * @return {string}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		outcomeLabel(outcome) {
 			const labels = {
@@ -146,7 +146,7 @@ export default {
 		 *
 		 * @param {object} value - the arguments or result object.
 		 * @return {string}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		formatJson(value) {
 			try {

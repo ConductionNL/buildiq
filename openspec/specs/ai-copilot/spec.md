@@ -33,6 +33,14 @@ provider settings; non-admins see no copilot trace at all.
 
 **ID:** REQ-OBAIC-001
 
+@e2e exclude provider-availability probe — the 200/503 branches and the
+admin-vs-non-admin hint are verified by PHPUnit
+(`CopilotServiceTest::testHealthReports*`); a Playwright run against the
+seeded e2e fixture always sees health()===200 (a real TaskProcessing
+provider is configured for the other REQ-OBAIC-006/007 specs to run at
+all), so the 503-hidden-UI branch has no environment to exercise in this
+harness.
+
 #### Scenario: Health reports 200 with a configured provider
 
 - **WHEN** the server runs NC 30+ and a `TextToText` TaskProcessing provider
@@ -143,6 +151,15 @@ keep the Approve action disabled while any predicted manifest is invalid —
 failed validation means nothing can be applied.
 
 **ID:** REQ-OBAIC-003
+
+@e2e exclude manifest-cap + validator backend contract — the 256KB/100-page/
+30-menu-item/50-widget caps and the predicted-manifest computation are
+verified by PHPUnit (`CopilotServiceTest::testPredictManifests*`); the
+step-list + manifest-diff render (this requirement's UI surface) is
+implicitly exercised whenever REQ-OBAIC-006/007's e2e specs render a
+`CopilotProposal`/`copilot-plan-review` card, but no scenario there asserts
+the diff area specifically, so this scenario stays excluded rather than
+falsely claimed.
 
 #### Scenario: Review shows the operations and a manifest diff
 

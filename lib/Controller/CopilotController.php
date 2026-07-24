@@ -117,7 +117,7 @@ class CopilotController extends Controller
      * @return JSONResponse 200 `{summary, steps, manifests}`, or an error envelope.
      *
      * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
-     * @spec openspec/changes/agent-workspace/specs/ai-copilot/spec.md
+     * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 20, period: 3600)]
@@ -157,7 +157,7 @@ class CopilotController extends Controller
      * @return JSONResponse 200 `{results}`, or an error envelope.
      *
      * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
-     * @spec openspec/changes/agent-workspace/specs/ai-copilot/spec.md
+     * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 20, period: 3600)]
@@ -197,7 +197,7 @@ class CopilotController extends Controller
      *
      * @return JSONResponse 200 `{status: "logged"}`, or an error envelope.
      *
-     * @spec openspec/changes/agent-workspace/specs/agent-workspace/spec.md
+     * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 30, period: 3600)]

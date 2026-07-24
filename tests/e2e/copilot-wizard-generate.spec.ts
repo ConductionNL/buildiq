@@ -53,6 +53,7 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		await page.waitForLoadState('networkidle')
 	})
 
+	// @e2e ai-copilot::generate-with-ai-creates-the-described-app-after-confirmation
 	test('Generate with AI creates the described app after confirmation (spec: ai-copilot)', async ({ page, request }) => {
 		const health = await request.get(HEALTH_URL)
 		test.skip(health.status() === 503, 'No AI provider configured — copilot intentionally hidden')
@@ -80,6 +81,7 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		await expect(page).toHaveURL(/e2e-copilot-tool-library/, { timeout: 15_000 })
 	})
 
+	// @e2e ai-copilot::cancelling-the-review-applies-nothing
 	test('Cancelling the review applies nothing (spec: ai-copilot)', async ({ page, request }) => {
 		const health = await request.get(HEALTH_URL)
 		test.skip(health.status() === 503, 'No AI provider configured')
@@ -104,6 +106,7 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		expect(executeCalled, 'execute must never be called after Cancel').toBe(false)
 	})
 
+	// @e2e ai-copilot::the-button-is-absent-without-a-provider
 	test('The button is absent without a provider (spec: ai-copilot)', async ({ page }) => {
 		// Force the 503 path regardless of the real server's configuration so
 		// this scenario is deterministic in CI.

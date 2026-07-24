@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/agent-workspace/specs/agent-workspace/spec.md
+ * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Throwable;
  * Persists `AgentRun` records (agent-workspace REQ "Every agent run is
  * transparently logged and reviewable").
  *
- * @spec openspec/changes/agent-workspace/specs/agent-workspace/spec.md
+ * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
  */
 class AgentRunLogger
 {
@@ -83,7 +83,7 @@ class AgentRunLogger
      *
      * @return array<string, mixed> The persisted `AgentRun` record (normalised), or an empty array on a swallowed failure.
      *
-     * @spec openspec/changes/agent-workspace/specs/agent-workspace/spec.md
+     * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
      */
     public function log(array $agent, string $userId, string $prompt, array $plan, array $toolCalls, string $outcome): array
     {

@@ -147,7 +147,7 @@ export default {
 		 * Load the caller's Applications for the picker.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/agent-workspace/specs/agent-workspace/spec.md
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
 		 */
 		async fetchApplications() {
 			this.loadingApplications = true
@@ -166,7 +166,7 @@ export default {
 		 * Handle an application selection: reset the agent list + selection, fetch agents.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		onAppChange() {
 			this.agents = []
@@ -181,7 +181,7 @@ export default {
 		 * generic OR REST list).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/agent-workspace/specs/agent-workspace/spec.md
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
 		 */
 		async fetchAgents() {
 			this.loading = true
@@ -202,7 +202,7 @@ export default {
 		 *
 		 * @param {object} agent - the agent row.
 		 * @return {void}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		selectAgent(agent) {
 			this.selectedAgent = agent
@@ -210,7 +210,7 @@ export default {
 		},
 		/**
 		 * @return {void}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		openNew() {
 			this.editingAgent = null
@@ -219,7 +219,7 @@ export default {
 		/**
 		 * @param {object} agent - the agent row to edit.
 		 * @return {void}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		openEdit(agent) {
 			this.editingAgent = agent
@@ -227,7 +227,7 @@ export default {
 		},
 		/**
 		 * @return {void}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		onDialogSaved() {
 			this.editDialogOpen = false
@@ -238,7 +238,7 @@ export default {
 		 *
 		 * @param {object} agent - the agent row to delete.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		async remove(agent) {
 			try {
@@ -257,7 +257,7 @@ export default {
 		 *
 		 * @param {Array|object} data - the raw response body.
 		 * @return {Array<object>}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		extractResults(data) {
 			if (Array.isArray(data)) {

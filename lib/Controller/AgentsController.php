@@ -37,7 +37,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/agent-workspace/specs/agent-workspace/spec.md
+ * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
  */
 
 declare(strict_types=1);
@@ -62,7 +62,7 @@ use Throwable;
 /**
  * Controller serving the Agent run-history read surface.
  *
- * @spec openspec/changes/agent-workspace/specs/agent-workspace/spec.md
+ * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
  */
 class AgentsController extends Controller
 {
@@ -126,7 +126,7 @@ class AgentsController extends Controller
      *
      * @return JSONResponse 200 with the ordered `AgentRun` list, or an error envelope.
      *
-     * @spec openspec/changes/agent-workspace/specs/agent-workspace/spec.md
+     * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
      */
     #[NoAdminRequired]
     public function runs(string $uuid): JSONResponse

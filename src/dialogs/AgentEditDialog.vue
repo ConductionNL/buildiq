@@ -118,7 +118,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/agent-workspace/tasks.md#4-frontend */
+		/** @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend */
 		editing() {
 			return !!this.id
 		},
@@ -126,7 +126,7 @@ export default {
 		 * The eight OpenBuildToolProvider tool ids, mirrored 1:1 with the schema enum.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		toolOptions() {
 			return [
@@ -144,7 +144,7 @@ export default {
 		 * v1 exposes exactly one task type — schema field kept for a v1.1 follow-up (design.md Open Questions).
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		modelTaskTypeOptions() {
 			return [{ value: 'TextToText', label: t('openbuild', 'Text to text') }]
@@ -153,21 +153,21 @@ export default {
 		 * Selected NcSelect option objects for `enabledTools`.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		enabledToolsSelection() {
 			return this.toolOptions.filter((o) => this.enabledTools.includes(o.value))
 		},
 		/**
 		 * @return {boolean} Whether the form can be saved.
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		valid() {
 			return this.name.trim().length >= 2 && this.enabledTools.length > 0 && this.maxActionsPerRun >= 1
 		},
 		/**
 		 * @return {string} The first-violated validation message.
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		validationMessage() {
 			if (this.name.trim().length < 2) {
@@ -186,7 +186,7 @@ export default {
 		 *
 		 * @param {boolean} isOpen - the dialog's new open state.
 		 * @return {void}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		open(isOpen) {
 			if (isOpen) {
@@ -200,7 +200,7 @@ export default {
 		 * Populate local reactive fields from the `agent` prop (edit) or defaults (new).
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		hydrate() {
 			this.showValidation = false
@@ -219,7 +219,7 @@ export default {
 		 *
 		 * @param {?Array<object>} options - the selected tool options.
 		 * @return {void}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		onEnabledToolsSelect(options) {
 			this.enabledTools = Array.isArray(options) ? options.map((o) => o.value) : []
@@ -229,7 +229,7 @@ export default {
 		 *
 		 * @param {string} value - the raw field value.
 		 * @return {void}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		onMaxActionsInput(value) {
 			const parsed = parseInt(value, 10)
@@ -239,7 +239,7 @@ export default {
 		 * Persist the agent via OpenRegister's generic REST surface (ADR-022).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		async onSave() {
 			this.showValidation = true
@@ -272,7 +272,7 @@ export default {
 		},
 		/**
 		 * @return {void}
-		 * @spec openspec/changes/agent-workspace/tasks.md#4-frontend
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		onClose() {
 			this.$emit('update:open', false)
