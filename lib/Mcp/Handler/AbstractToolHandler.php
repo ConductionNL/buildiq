@@ -57,11 +57,12 @@ abstract class AbstractToolHandler
     /**
      * Constructor.
      *
-     * @param IUserSession       $userSession        User session used to resolve the current authenticated user.
-     * @param ContainerInterface $container          DI container used to resolve OpenRegister services lazily.
-     * @param LoggerInterface    $logger             PSR logger used for non-fatal warnings and error logging.
-     * @param IGroupManager      $groupManager       Group manager used for admin and group membership checks.
-     * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (H1 fix).
+     * @param IUserSession          $userSession        User session used to resolve the current authenticated user.
+     * @param ContainerInterface    $container          DI container used to resolve OpenRegister services lazily.
+     * @param LoggerInterface       $logger             PSR logger used for non-fatal warnings and error logging.
+     * @param IGroupManager         $groupManager       Group manager used for admin and group membership checks.
+     * @param PermissionResolver    $permissionResolver Shared permission-grammar resolver (H1 fix).
+     * @param AuditTrailMapper|null $auditTrailMapper   Optional OR audit-trail writer for admin-bypass parity (L2).
      */
     public function __construct(
         protected readonly IUserSession $userSession,

@@ -148,6 +148,7 @@ class CopilotService
      * @param CopilotPlanValidator       $planValidator              Structural plan validator.
      * @param CopilotPromptBuilder       $promptBuilder              System-prompt builder.
      * @param ApplicationDeletionService $applicationDeletionService Compensates a plan-created app on rollback.
+     * @param AuditTrailMapper|null      $auditTrailMapper           Optional OR audit-trail writer for admin-bypass parity (L2).
      *
      * @return void
      */
@@ -554,10 +555,10 @@ class CopilotService
                     );
                     return;
                 }
-            }
+            }//end if
 
             $this->logger->info('OpenBuild Copilot: rbac.admin_bypass', $context);
-        }
+        }//end if
     }//end assertWriteRoleOnApp()
 
     /**

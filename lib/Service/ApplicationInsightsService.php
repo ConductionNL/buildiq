@@ -126,12 +126,13 @@ class ApplicationInsightsService
      * Per ADR-022 — no app-local DB access; everything flows through
      * OpenRegister abstractions.
      *
-     * @param ObjectService    $objectService    OR object surface
-     * @param AuditTrailMapper $auditTrailMapper Audit-trail aggregations (chart + actors + counts)
-     * @param SchemaMapper     $schemaMapper     Schema slug-to-integer-ID resolver
-     * @param RegisterMapper   $registerMapper   Register lookup (installed-app footprint for hybrid apps)
-     * @param ICacheFactory    $cacheFactory     Distributed-cache factory (memoises computed payloads)
-     * @param LoggerInterface  $logger           PSR logger
+     * @param ObjectService           $objectService      OR object surface
+     * @param AuditTrailMapper        $auditTrailMapper   Audit-trail aggregations (chart + actors + counts)
+     * @param SchemaMapper            $schemaMapper       Schema slug-to-integer-ID resolver
+     * @param RegisterMapper          $registerMapper     Register lookup (installed-app footprint for hybrid apps)
+     * @param ICacheFactory           $cacheFactory       Distributed-cache factory (memoises computed payloads)
+     * @param LoggerInterface         $logger             PSR logger
+     * @param PermissionResolver|null $permissionResolver Shared role/group matcher (group-aware insights authz, L9)
      *
      * @return void
      */
@@ -659,7 +660,7 @@ class ApplicationInsightsService
      * with pre-RBAC-canonicalisation manifests (mirrors VersionPromotionService).
      *
      * @param array<string, mixed> $permissions The Application's permissions block.
-     * @param string               $callerUid   The caller's NC UID.
+     * @param IUser                $caller      The authenticated caller.
      * @param array<int, string>   $roles       Roles to check (e.g. ['owners', 'editors']).
      *
      * @return bool True when the caller is found in any of the listed buckets.

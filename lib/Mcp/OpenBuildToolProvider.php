@@ -222,11 +222,12 @@ class OpenBuildToolProvider implements IMcpToolProvider
     /**
      * Constructor.
      *
-     * @param IUserSession       $userSession        User session used to resolve the current authenticated user.
-     * @param IGroupManager      $groupManager       Group manager used for admin checks.
-     * @param ContainerInterface $container          DI container used to resolve OpenRegister and OpenBuild services lazily.
-     * @param LoggerInterface    $logger             PSR logger used for non-fatal warnings and error logging.
-     * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (H1 fix).
+     * @param IUserSession          $userSession        User session used to resolve the current authenticated user.
+     * @param IGroupManager         $groupManager       Group manager used for admin checks.
+     * @param ContainerInterface    $container          DI container used to resolve OpenRegister and OpenBuild services lazily.
+     * @param LoggerInterface       $logger             PSR logger used for non-fatal warnings and error logging.
+     * @param PermissionResolver    $permissionResolver Shared permission-grammar resolver (H1 fix).
+     * @param AuditTrailMapper|null $auditTrailMapper   Optional OR audit-trail writer threaded to handlers (L2).
      */
     public function __construct(
         private readonly IUserSession $userSession,
