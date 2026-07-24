@@ -152,6 +152,7 @@ export default {
 		 * `runtime-group-scoped-access`) — offered as quick-pick options.
 		 *
 		 * @return {string[]}
+		 * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
 		 */
 		knownGroups() {
 			const gids = new Set()

@@ -42,7 +42,7 @@
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-69
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
- * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-users-group-context
+ * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
  * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
  */
 
@@ -991,7 +991,7 @@ class ApplicationsController extends Controller
      *
      * @return array<string, mixed> The manifest with `runtime.user.permissions` set.
      *
-     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-users-group-context
+     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
      */
     private function injectPermissionsSignal(array $manifest, array $applicationArray, ?IUser $caller): array
     {

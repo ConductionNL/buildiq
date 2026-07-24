@@ -665,7 +665,7 @@ class ManifestResolverService
      *
      * @return array<int, string> Permission strings for the `permissions` prop.
      *
-     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-users-group-context
+     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
      */
     public function resolveCallerPermissionsForDisplay(array $application, ?IUser $caller): array
     {
@@ -730,7 +730,7 @@ class ManifestResolverService
      *
      * @return array<int, string> Permission strings the caller holds.
      *
-     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-users-group-context
+     * @spec openspec/changes/runtime-group-scoped-access/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
      */
     private function buildCallerPermissionSet(IUser $caller): array
     {
