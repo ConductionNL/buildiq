@@ -271,12 +271,13 @@ class RuleEngineService
     /**
      * Load (and cache) a RuleSet bundle: the RuleSet plus its tables/rules.
      *
-     * Resolution is scoped to the caller's authorization: {@see findMany()} uses
-     * OpenRegister `searchObjectsBySlug`, which applies the caller's schema-RBAC
-     * and organisation scope. A rule-set the caller cannot access resolves to an
-     * empty result (treated as not found). NOTE: this is organisation + schema-RBAC
-     * scope, NOT per-owner isolation — a same-organisation caller with schema read
-     * access can still resolve a rule-set by slug.
+     * Resolution runs through OpenRegister `searchObjectsBySlug` (see
+     * {@see findMany()}), which applies the schema's RBAC. IMPORTANT: `openbuild`
+     * is a system-wide register (not org-scoped), so multitenancy is intentionally
+     * bypassed and this is NOT per-owner or per-organisation read isolation — with
+     * a read-open rule-set schema, any authenticated caller can resolve a rule-set
+     * by slug. Write operations (create/update/delete) remain admin-gated at the
+     * schema. (No false "foreign slug → 404 / no IDOR" guarantee is implied.)
      *
      * @param string      $slug    The RuleSet slug.
      * @param string|null $version Optional pinned version.
@@ -446,13 +447,22 @@ class RuleEngineService
      */
     private function findMany(string $schema, array $filters, ?int $limit=null): array
     {
-        // Authorization-scoped resolution (harden-rules-authz-and-audit-parity,
-        // M1): searchObjectsBySlug applies the caller's RBAC + organisation scope,
-        // so a rule-set / decision-table / rule the caller is not authorised to
-        // access resolves to an empty result — it is never read or evaluated by
-        // slug via an unscoped findAll.
+        // Authorization-aware resolution (harden-rules-authz-and-audit-parity,
+        // M1): resolve through searchObjectsBySlug (which applies the schema's
+        // RBAC) rather than a raw findAll. `openbuild` is a SYSTEM-WIDE register
+        // (not org-scoped) — mirror ListAppsHandler and pass _multitenancy:false
+        // so cross-org callers still resolve it (a true org filter would make
+        // registerMapper->find() throw and break evaluation). Note: for a
+        // read-open rule-set schema this does not isolate reads per owner/org;
+        // write operations remain admin-gated at the schema.
         try {
-            $results = $this->objectService->searchObjectsBySlug(self::REGISTER_SLUG, $schema, $filters);
+            $results = $this->objectService->searchObjectsBySlug(
+                self::REGISTER_SLUG,
+                $schema,
+                $filters,
+                _rbac: true,
+                _multitenancy: false
+            );
         } catch (Throwable $e) {
             $this->logger->warning(
                 'OpenBuild: rule-engine searchObjects failed',
