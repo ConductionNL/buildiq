@@ -16,6 +16,8 @@ Newman-pinned Docudesk contract unchanged, only naming a second caller shape
 
 ## Requirements
 
+@e2e exclude every scenario in this spec is a backend/service-level contract (owner-impersonated Docudesk call, output-mode dispatch, single-dataRefs-entry shape, shared-fetch reuse) covered by PHPUnit (`DocumentGenerationServiceTest`, `DocumentGenerationNoDocudeskImportTest`) and the Newman collection (`tests/integration/openbuild-docudesk-documents.postman_collection.json` item 6) — the one genuinely UI-observable behaviour (composing and saving a `generateDocument` action) is the `automation-designer` spec's "Compose a document-generation action" scenario, which carries its own `@e2e automation-designer::compose-a-document-generation-action` Playwright coverage.
+
 ### Requirement: DocumentGenerationService dispatches attach, download-link, and notify output modes
 
 `DocumentGenerationService::generate()` SHALL, given a triggering object and

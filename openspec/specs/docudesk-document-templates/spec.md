@@ -171,6 +171,8 @@ OpenBuild's Docudesk integration SHALL call exactly the following existing Docud
 
 #### Scenario: Automation-triggered call uses the owner-impersonated session, not a PHP import
 
+@e2e exclude backend contract — impersonation + HTTP-vs-PHP-import assertions are covered by PHPUnit (`DocumentGenerationServiceTest`, `DocumentGenerationNoDocudeskImportTest`) and Newman (`openbuild-docudesk-documents.postman_collection.json` item 6); no distinct browser-observable behaviour beyond the `automation-designer::compose-a-document-generation-action` e2e coverage.
+
 - **WHEN** an automation's `generateDocument` action fires
 - **THEN** `DocumentGenerationService` issues an HTTP request to
   `POST /apps/docudesk/api/correspondence/generate` with the Application

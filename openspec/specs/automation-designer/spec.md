@@ -111,6 +111,8 @@ when `useAppStatus('docudesk')` reports Docudesk absent, mirroring
 
 #### Scenario: Document-generation action is disabled without Docudesk
 
+@e2e exclude covered by tests/dialogs/AutomationEditDialog.spec.js ("generateDocument action is disabled without Docudesk") — a component-level render assertion; no distinct live-browser affordance beyond the disabled-state styling REQ-DDT-005's own e2e coverage already exercises for the sibling Documents-section surface.
+
 - **GIVEN** Docudesk is not installed
 - **WHEN** the editor opens the action-type picker
 - **THEN** `generateDocument` renders disabled with the missing-app hint

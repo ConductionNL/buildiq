@@ -259,6 +259,7 @@ test.describe('automation-document-action — generateDocument action', () => {
 		await page.getByRole('option', { name: /production/i }).first().click()
 	})
 
+	// @e2e automation-designer::compose-a-document-generation-action
 	test('REQ-AUTD-002 scenario 4: composes a document-generation automation on a lifecycle transition and confirms the generated document is attached', async ({ page }) => {
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
@@ -306,6 +307,7 @@ test.describe('automation-document-action — generateDocument action', () => {
 		// same split the approval suite above already uses.
 	})
 
+	// @e2e automation-designer::generatedocument-action-on-a-schedule-trigger-is-blocked
 	test('REQ-AUTD-002/003: generateDocument action is blocked on a schedule trigger', async ({ page }) => {
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
