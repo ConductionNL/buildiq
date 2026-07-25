@@ -24,8 +24,7 @@
 <template>
 	<div
 		class="openbuild-builder-host"
-		data-testid="openbuild-builder-host"
-		:data-openbuild-theme-scope="slug">
+		data-testid="openbuild-builder-host">
 		<!-- REQ-OBVR-009: show version-not-found when useApplicationVersion resolved to 404 -->
 		<div
 			v-if="versionNotFound"
@@ -51,7 +50,6 @@ import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { generateUrl } from '@nextcloud/router'
 
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
-import { useAppTheme } from '../composables/useAppTheme.js'
 import { useRegisterPicker, registerScope } from '../composables/useRegisterPicker.js'
 import { runtimeRegistry } from '../runtimeRegistry.js'
 import { registerSlugForApp } from '../store/schemas.js'
@@ -64,9 +62,6 @@ export default {
 	},
 	data() {
 		return {
-			// REQ-NTS-003: scoped NL Design theme applier. Bound once; apply()
-			// runs against the resolved version manifest, teardown() on leave.
-			appTheme: useAppTheme(),
 			// REQ-OBVR-004: reactive version state from useApplicationVersion.
 			applicationVersion: null,
 			versionLoading: false,
@@ -179,15 +174,9 @@ export default {
 		// and break bookmarkability (REQ-OBVR-008).
 		this.resolveVersion()
 	},
-	/**
-	 * REQ-NTS-003: remove the managed scoped-theme style element when leaving
-	 * the app, so the previous app's theme never bleeds into the next one.
-	 *
-	 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-003
-	 */
-	beforeDestroy() {
-		this.appTheme.teardown(this.slug)
-	},
+	// REQ-NTS-003: no beforeDestroy teardown needed — CnAppRoot owns its own
+	// scoped-theme lifecycle (mount-apply/unmount-teardown) via `useScopedTheme`,
+	// with zero OpenBuild-side wiring (theme-picker-consumes-nldesign).
 	methods: {
 		/**
 		 * Kick off useApplicationVersion and mirror reactive state into component data.
@@ -203,12 +192,13 @@ export default {
 			)
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
-			this.applyTheme(applicationVersion.value)
+			// REQ-NTS-003/004: no app-side theme apply call here — CnAppRoot's own
+			// `useScopedTheme` watcher re-applies `runtime.theme` whenever the
+			// manifest it receives changes, including a version switch.
 			// No data-source prefetch here: `dataSourcesLoader` reads the current
 			// manifest when an editor modal actually opens.
 			const unwatch = this.$watch(() => applicationVersion.value, (v) => {
 				this.applicationVersion = v
-				this.applyTheme(v)
 			})
 			const unwatchLoading = this.$watch(() => loading.value, (v) => {
 				this.versionLoading = v
@@ -218,28 +208,6 @@ export default {
 					this.versionError = error.value
 				}
 			})
-		},
-
-		/**
-		 * REQ-NTS-003 / REQ-NTS-004: apply the resolved version's NL Design
-		 * theme to this app's scoped render root. The version object carries
-		 * the resolved (possibly `?_version=`-routed) manifest, so version
-		 * preview renders the previewed version's theme. nldesign absent ⇒ the
-		 * applier's fetch fails and it degrades to default styling (no gate).
-		 *
-		 * @param {?object} version - the resolved ApplicationVersion.
-		 * @return {void}
-		 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-003
-		 */
-		applyTheme(version) {
-			const manifest = version && version.manifest && typeof version.manifest === 'object'
-				? version.manifest
-				: null
-			if (!manifest) {
-				this.appTheme.teardown(this.slug)
-				return
-			}
-			this.appTheme.apply(manifest, this.slug)
 		},
 		/**
 		 * Load the `dataSources` for the nested CnAppRoot's in-app pages editor

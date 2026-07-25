@@ -204,6 +204,28 @@ export function diffManifest(base, edited) {
 	return _diffManifest(base, edited)
 }
 
+/**
+ * `useScopedTheme` (scoped-theme-applier, consumed here by
+ * theme-picker-consumes-nldesign) is likewise a Vue-free pure composable —
+ * no `.vue` SFC dependency, just plain JS over `@nextcloud/axios` /
+ * `@nextcloud/router` — so it follows the same real-leaf-via-subpath-import
+ * pattern as `createManifestEditHistory` above rather than a hand-rolled
+ * fake. `ThemePickerDialog.vue`'s vitest suite therefore exercises the
+ * REAL published `apply`/`teardown`/`listTokenSets`/`evaluateContrast`
+ * logic under test (with `@nextcloud/axios` mocked at the HTTP boundary),
+ * not an approximation of it — proof the published beta ships and runs a
+ * working `useScopedTheme`, not just that it can be imported.
+ */
+import { useScopedTheme as _useScopedTheme } from '@conduction/nextcloud-vue/dist/esm/composables/useScopedTheme.js'
+
+/**
+ * @param {object} [opts] - forwarded verbatim to the leaf.
+ * @return {{apply: Function, teardown: Function, fetchTokenCss: Function, listTokenSets: Function, evaluateContrast: Function}}
+ */
+export function useScopedTheme(opts) {
+	return _useScopedTheme(opts)
+}
+
 export default {
 	NcModal,
 	NcDialog,
@@ -227,4 +249,5 @@ export default {
 	useManifestEditHistory,
 	mergeManifestDelta,
 	diffManifest,
+	useScopedTheme,
 }
