@@ -34,62 +34,39 @@
 			aria-live="polite">
 			{{ t('openbuild', 'Version not found') }}
 		</div>
-		<template v-else>
-			<!-- app-theming: OpenBuild-side branded-header binding — CnAppRoot
-			     exposes no dedicated logo/branding slot (see
-			     AppBrandedHeader.vue docblock for the full rationale).
-			     Rendered inside the same [data-openbuild-theme-scope]
-			     wrapper, above CnAppRoot, so it inherits
-			     --ob-theme-secondary/--ob-theme-accent via plain CSS
-			     inheritance and applies regardless of an active nldesign
-			     theme (REQ "appTheme header style still applies alongside
-			     an nldesign theme"). -->
-			<AppBrandedHeader
-				v-if="appThemeHeaderStyle === 'branded'"
-				:app-slug="slug"
-				:app-name="appName"
-				:logo-ref="appThemeLogoRef"
-				:application-uuid="applicationUuid" />
-			<CnAppRoot
-				:key="cacheKey"
-				:app-id="appId"
-				:ai-companion="true"
-				:bundled-manifest="placeholderManifest"
-				:registry="runtimeRegistry"
-				:data-sources-loader="dataSourcesLoader"
-				:options="manifestOptions" />
-		</template>
+		<CnAppRoot
+			v-else
+			:key="cacheKey"
+			:app-id="appId"
+			:ai-companion="true"
+			:bundled-manifest="placeholderManifest"
+			:registry="runtimeRegistry"
+			:data-sources-loader="dataSourcesLoader"
+			:options="manifestOptions" />
 	</div>
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
 import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { generateUrl } from '@nextcloud/router'
 
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useAppTheme } from '../composables/useAppTheme.js'
-import { useAppCustomTheme } from '../composables/useAppCustomTheme.js'
 import { useRegisterPicker, registerScope } from '../composables/useRegisterPicker.js'
 import { runtimeRegistry } from '../runtimeRegistry.js'
 import { registerSlugForApp } from '../store/schemas.js'
 import placeholderManifest from '../manifests/placeholder.json'
-import AppBrandedHeader from '../components/AppBrandedHeader.vue'
 
 export default {
 	name: 'BuilderHost',
 	components: {
 		CnAppRoot,
-		AppBrandedHeader,
 	},
 	data() {
 		return {
 			// REQ-NTS-003: scoped NL Design theme applier. Bound once; apply()
 			// runs against the resolved version manifest, teardown() on leave.
 			appTheme: useAppTheme(),
-			// app-theming: scoped appTheme applier, applied BEFORE appTheme
-			// (nldesign) in applyTheme() — design.md Decision D3.
-			appCustomTheme: useAppCustomTheme(),
 			// REQ-OBVR-004: reactive version state from useApplicationVersion.
 			applicationVersion: null,
 			versionLoading: false,
@@ -99,10 +76,6 @@ export default {
 			// (spec procest-workflow-attachments REQ-PWA-004) and
 			// `connector-data` (spec openconnector-api-sources REQ-OCAS-006).
 			runtimeRegistry,
-			// app-theming: the Application record, fetched lazily — only when
-			// `headerStyle: "branded"` is resolved — so the common (unthemed)
-			// case never pays for an extra request (see applyTheme()).
-			application: null,
 		}
 	},
 	computed: {
@@ -176,55 +149,6 @@ export default {
 					: endpoint,
 			}
 		},
-		/**
-		 * The resolved `runtime.appTheme` block, or null when the app has no
-		 * app-theming set.
-		 *
-		 * @return {?object}
-		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-theme-applies-via-the-existing-scoped-css-variable-mechanism
-		 */
-		appThemeBlock() {
-			const manifest = this.applicationVersion && this.applicationVersion.manifest
-			return (manifest && manifest.runtime && manifest.runtime.appTheme) || null
-		},
-		/**
-		 * `appTheme.headerStyle` — drives whether `AppBrandedHeader` renders.
-		 *
-		 * @return {string}
-		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-theme-applies-via-the-existing-scoped-css-variable-mechanism
-		 */
-		appThemeHeaderStyle() {
-			return (this.appThemeBlock && this.appThemeBlock.headerStyle) || 'default'
-		},
-		/**
-		 * `appTheme.logoRef` — null defaults `AppBrandedHeader` to the app icon.
-		 *
-		 * @return {?object}
-		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
-		 */
-		appThemeLogoRef() {
-			return (this.appThemeBlock && this.appThemeBlock.logoRef) || null
-		},
-		/**
-		 * Display name for the branded header — the Application's own name,
-		 * falling back to the slug while the lazy Application fetch resolves.
-		 *
-		 * @return {string}
-		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
-		 */
-		appName() {
-			return (this.application && (this.application.name || this.application.slug)) || this.slug
-		},
-		/**
-		 * The Application's OR uuid, needed to resolve a dedicated theme logo.
-		 *
-		 * @return {string}
-		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
-		 */
-		applicationUuid() {
-			const self = this.application && this.application['@self']
-			return (self && self.id) || (this.application && this.application.uuid) || ''
-		},
 	},
 	watch: {
 		/**
@@ -263,7 +187,6 @@ export default {
 	 */
 	beforeDestroy() {
 		this.appTheme.teardown(this.slug)
-		this.appCustomTheme.teardown(this.slug)
 	},
 	methods: {
 		/**
@@ -304,17 +227,9 @@ export default {
 		 * preview renders the previewed version's theme. nldesign absent ⇒ the
 		 * applier's fetch fails and it degrades to default styling (no gate).
 		 *
-		 * app-theming / design.md Decision D3: `appCustomTheme` is applied
-		 * FIRST, then `appTheme` (nldesign) SECOND, so an active nldesign
-		 * theme's colors resolve via the `var(--nldesign-color-*, …)`
-		 * fallback chain `useAppCustomTheme.js` builds (see its docblock for
-		 * why injection order alone is not sufficient against the real
-		 * fetched nldesign token CSS).
-		 *
 		 * @param {?object} version - the resolved ApplicationVersion.
 		 * @return {void}
 		 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-003
-		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-an-active-nldesign-theme-takes-precedence-over-apptheme-colors
 		 */
 		applyTheme(version) {
 			const manifest = version && version.manifest && typeof version.manifest === 'object'
@@ -322,37 +237,9 @@ export default {
 				: null
 			if (!manifest) {
 				this.appTheme.teardown(this.slug)
-				this.appCustomTheme.teardown(this.slug)
 				return
 			}
-			this.appCustomTheme.apply(manifest, this.slug)
 			this.appTheme.apply(manifest, this.slug)
-			this.loadApplicationIfBranded(manifest)
-		},
-		/**
-		 * Lazily fetch the Application record (name + uuid, for
-		 * `AppBrandedHeader`) — only when the resolved manifest actually
-		 * declares `headerStyle: "branded"`, so the common (unthemed) case
-		 * never pays for the extra request. Same GET+filter-by-slug pattern
-		 * `PageDesignerHost.load()` already uses.
-		 *
-		 * @param {object} manifest - the resolved manifest.
-		 * @return {Promise<void>}
-		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-logo-defaults-to-the-application-s-existing-icon-fields
-		 */
-		async loadApplicationIfBranded(manifest) {
-			const headerStyle = manifest && manifest.runtime && manifest.runtime.appTheme && manifest.runtime.appTheme.headerStyle
-			if (headerStyle !== 'branded' || this.application) {
-				return
-			}
-			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/application')
-				const { data } = await axios.get(url, { params: { _limit: 100 } })
-				const apps = (data && data.results) ? data.results : (Array.isArray(data) ? data : [])
-				this.application = apps.find((a) => a && a.slug === this.slug) || null
-			} catch {
-				this.application = null
-			}
 		},
 		/**
 		 * Load the `dataSources` for the nested CnAppRoot's in-app pages editor

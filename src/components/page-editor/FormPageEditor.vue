@@ -115,50 +115,6 @@
 				@update:steps="update('steps', $event)" />
 			<InlineFieldMark :error="markFor('steps')" />
 		</fieldset>
-
-		<fieldset class="form-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Public access') }}</legend>
-			<label class="form-page-editor__inline">
-				<input
-					type="checkbox"
-					:checked="publicConfig.enabled === true"
-					@change="setPublicEnabled($event.target.checked)">
-				{{ t('openbuild', 'Allow this page to be shared publicly (anonymous, no login)') }}
-			</label>
-			<p class="form-page-editor__hint">
-				{{ t('openbuild', 'A page must be marked public here before a share link can be created for it (page designer toolbar or App settings).') }}
-			</p>
-			<template v-if="publicConfig.enabled === true">
-				<label class="form-page-editor__group-row">
-					{{ t('openbuild', 'Default link mode') }}
-					<select
-						:value="publicConfig.mode || 'submit'"
-						@change="updatePublic('mode', $event.target.value)">
-						<option value="submit">
-							{{ t('openbuild', 'submit — anonymous create form') }}
-						</option>
-						<option value="edit">
-							{{ t('openbuild', 'edit — per-record edit link') }}
-						</option>
-					</select>
-				</label>
-				<label class="form-page-editor__group-row">
-					{{ t('openbuild', 'Allowed prefill fields (comma-separated)') }}
-					<input
-						type="text"
-						:value="(publicConfig.allowedPrefillFields || []).join(', ')"
-						:placeholder="t('openbuild', 'e.g. postcode, straat')"
-						@change="setAllowedPrefillFields($event.target.value)">
-				</label>
-				<label class="form-page-editor__inline">
-					<input
-						type="checkbox"
-						:checked="publicConfig.requireEmailVerification === true"
-						@change="updatePublic('requireEmailVerification', $event.target.checked)">
-					{{ t('openbuild', 'Flag submissions as unverified until the visitor confirms their email (accept-then-flag)') }}
-				</label>
-			</template>
-		</fieldset>
 	</div>
 </template>
 
@@ -216,16 +172,6 @@ export default {
 				return 'endpoint'
 			}
 			return 'handler'
-		},
-		/**
-		 * The page config's `public` block (public-forms-runtime), normalised
-		 * to a plain object so template bindings never dereference undefined.
-		 *
-		 * @return {object}
-		 * @spec openspec/changes/public-forms-runtime/specs/public-form-access/spec.md#requirement-public-page-can-only-be-issued-a-token-when-its-config-declares-publicenabled
-		 */
-		publicConfig() {
-			return (this.config.public && typeof this.config.public === 'object') ? this.config.public : {}
 		},
 	},
 	methods: {
@@ -288,44 +234,6 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
-		/**
-		 * Patch a single key on `config.public`, creating the block when absent.
-		 *
-		 * @param {string} key The `public` block key to set.
-		 * @param {*} value The new value.
-		 * @return {void}
-		 * @spec openspec/changes/public-forms-runtime/specs/public-form-access/spec.md#requirement-public-page-can-only-be-issued-a-token-when-its-config-declares-publicenabled
-		 */
-		updatePublic(key, value) {
-			const next = { ...this.config }
-			next.public = { ...this.publicConfig, [key]: value }
-			this.$emit('update:config', next)
-		},
-		/**
-		 * Toggle `config.public.enabled`. Unlike other `public` keys, turning
-		 * this OFF does not delete the rest of the block — a previously
-		 * configured mode/prefill list is preserved so re-enabling restores it.
-		 *
-		 * @param {boolean} value Checkbox state.
-		 * @return {void}
-		 */
-		setPublicEnabled(value) {
-			this.updatePublic('enabled', value === true)
-		},
-		/**
-		 * Parse the comma-separated prefill-fields input into a trimmed,
-		 * non-empty string array.
-		 *
-		 * @param {string} value Raw comma-separated input value.
-		 * @return {void}
-		 */
-		setAllowedPrefillFields(value) {
-			const fields = String(value || '')
-				.split(',')
-				.map((f) => f.trim())
-				.filter((f) => f !== '')
-			this.updatePublic('allowedPrefillFields', fields)
-		},
 	},
 }
 </script>
@@ -386,11 +294,5 @@ export default {
 	flex-direction: column;
 	gap: 2px;
 	font-size: 13px;
-}
-
-.form-page-editor__hint {
-	margin: 0;
-	font-size: 12px;
-	color: var(--color-text-maxcontrast);
 }
 </style>
