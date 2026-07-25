@@ -88,7 +88,10 @@
 						:parent-route="selectedPage.route || ''"
 						:title="t('openbuild', 'Unsupported page type: {type}', { type: selectedPage.type })"
 						:message="t('openbuild', 'No visual editor exists for this page type yet. Edit the raw config below; unknown keys are preserved.')"
-						@update:config="onConfigUpdate" />
+						:page-id="selectedPage.id || ''"
+						:runtime-external-forms="externalForms"
+						@update:config="onConfigUpdate"
+						@update:runtimeExternalForms="onExternalFormsUpdate" />
 					<!-- component-blocks task 2.2: widget/section selection
 					     affordance feeding SaveBlockDialog. Operates on the
 					     page's uniform v2 widgets[] array. -->
@@ -329,6 +332,19 @@ export default {
 		 */
 		menu() {
 			return Array.isArray(this.manifest && this.manifest.menu) ? this.manifest.menu : []
+		},
+		/**
+		 * `runtime.externalForms[]` (REQ-EFP-001/002) — read here so
+		 * FormPageEditor can filter to the selected page's entry without
+		 * needing the whole manifest.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-001
+		 */
+		externalForms() {
+			return Array.isArray(this.manifest && this.manifest.runtime && this.manifest.runtime.externalForms)
+				? this.manifest.runtime.externalForms
+				: []
 		},
 		/**
 		 * Observed behaviour of `selectedPage` (retrofit annotation).
@@ -678,6 +694,33 @@ export default {
 			const pages = this.pages.slice()
 			pages[this.selectedIndex] = { ...pages[this.selectedIndex], config }
 			const next = { ...(this.manifest || {}), pages }
+			this.emitManifest(next)
+		},
+		/**
+		 * Persist an updated `runtime.externalForms[]` array from
+		 * FormPageEditor's ExternalFormAccessDialog (REQ-EFP-001). Deletes the
+		 * `runtime.externalForms` key entirely when the array empties out so an
+		 * app that has never used the feature (or has fully reverted it)
+		 * serializes byte-identically to the pre-feature baseline — same
+		 * pattern as `ThemeSection.withTheme()`.
+		 *
+		 * @param {Array<object>} list - the full updated `externalForms` array.
+		 * @return {void}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-001
+		 */
+		onExternalFormsUpdate(list) {
+			const next = { ...(this.manifest || {}) }
+			const runtime = { ...(next.runtime || {}) }
+			if (Array.isArray(list) && list.length) {
+				runtime.externalForms = list
+			} else {
+				delete runtime.externalForms
+			}
+			if (Object.keys(runtime).length === 0) {
+				delete next.runtime
+			} else {
+				next.runtime = runtime
+			}
 			this.emitManifest(next)
 		},
 		/**

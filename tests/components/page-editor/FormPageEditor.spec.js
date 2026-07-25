@@ -26,6 +26,17 @@ vi.mock('../../../src/components/page-editor/fields/FormFieldBuilder.vue', () =>
 	},
 }))
 
+// External access (REQ-EFP-002) pulls in the real NcDialog tree via
+// ExternalFormAccessDialog; stubbed here so these submit-shape/config tests
+// stay isolated. See FormPageEditor.externalAccess.spec.js for the dialog wiring.
+vi.mock('../../../src/dialogs/ExternalFormAccessDialog.vue', () => ({
+	default: {
+		name: 'ExternalFormAccessDialog',
+		props: ['open', 'register', 'schema', 'pageId', 'entry'],
+		render(h) { return h('div', { staticClass: 'external-form-access-dialog-stub' }) },
+	},
+}))
+
 const FormPageEditor = (await import('../../../src/components/page-editor/FormPageEditor.vue')).default
 
 function mountEditor(config = {}) {
