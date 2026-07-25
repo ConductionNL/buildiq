@@ -1,5 +1,7 @@
 # nldesign-theme-selection Specification
 
+**OpenSpec changes**: [theme-picker-consumes-nldesign](../../changes/archive/2026-07-25-theme-picker-consumes-nldesign/) _(archived 2026-07-25)_
+
 ## Purpose
 TBD - created by archiving change nldesign-theme-selection. Update Purpose after archive.
 ## Requirements
@@ -41,73 +43,90 @@ OpenBuild's manifest validation layer SHALL reject: an unknown `source`, a missi
 
 ### Requirement: REQ-NTS-002 Builder UI: visual theme picker
 
-The system SHALL provide `ThemePickerDialog.vue` (standalone dialog in `src/dialogs/` per the modal-isolation rule), opened from a "Theme" section on the application-detail/designer surface that shows the current theme (swatches + name) or "Default (Nextcloud)". The dialog SHALL populate its token-set list by, in order: (a) `GET /apps/nldesign/settings/tokensets` when the session is admin (the route is `AuthorizedAdminSetting` today — a 403 is treated as "list unavailable", probed once per session, never surfaced as an error); (b) the flagged non-admin nldesign list endpoint once it exists, detected via a cached feature probe; (c) a **validated free-text fallback**: a token-set id input that verifies the id by fetching the static `css/tokens/<id>.css` asset (404 ⇒ inline "unknown token set" error) and derives swatches by parsing the fetched variables. When a list IS available, each entry SHALL render name, description, and colour swatches. The dialog SHALL offer "Default (Nextcloud)" to remove the theme (deleting `runtime.theme` entirely) and a **live preview toggle** that applies the candidate theme to the designer's preview surface via the same applier as REQ-NTS-003 before saving. Saving SHALL write/refresh `tokenSet`, `tokenSetName`, and `preview` snapshots. All `NcSelect`s carry `inputLabel`; every user-visible string uses English-source i18n keys under `openbuild.theme.*` with nl translations.
+The system SHALL provide `ThemePickerDialog.vue` (standalone dialog in `src/dialogs/` per
+the modal-isolation rule), opened from a "Theme" section on the application-detail/designer
+surface that shows the current theme (swatches + name) or "Default (Nextcloud)". The dialog
+SHALL populate its token-set list via a single call to
+`@conduction/nextcloud-vue`'s `useScopedTheme().listTokenSets()`, which itself wraps
+nldesign's real non-admin `GET /api/token-sets` catalogue endpoint
+(`app-token-set-selection` change) and resolves `[]` on any failure (missing app, network
+error, non-2xx, malformed body) rather than throwing. When the resolved list is non-empty,
+each entry SHALL render name, design system, and colour swatches (`theming.primary_color`,
+`theming.background_color`). When the resolved list is empty, the dialog SHALL render the
+existing REQ-NTS-005 disabled-with-hint state (`openbuild.theme.hint.nldesign-missing`) —
+there is no other fallback tier. The three-tier fallback this requirement previously
+specified (admin `GET /apps/nldesign/settings/tokensets`, a feature-probed non-admin
+endpoint, and a validated free-text `css/tokens/<id>.css` input) is REMOVED in full; none
+of those calls or that input exist in the dialog. The dialog SHALL offer "Default
+(Nextcloud)" to remove the theme (deleting `runtime.theme` entirely) and a **live preview
+toggle** that, instead of driving a separate OpenBuild-owned applier, mutates the in-flight
+manifest object already bound to the page-designer live-preview-pane's sandboxed
+`CnAppRoot` instance — that instance re-applies the candidate theme itself per
+`scoped-theme-applier` REQ-STA-3. Saving SHALL write/refresh `tokenSet`, `tokenSetName`,
+and `preview` snapshots exactly as before. All `NcSelect`s carry `inputLabel`; every
+user-visible string uses English-source i18n keys under `openbuild.theme.*` with nl
+translations.
 
-#### Scenario: Admin builder picks a theme from the visual list
+#### Scenario: Builder picks a theme from the visual list
 
-- **GIVEN** nldesign is installed and the builder's session is admin
+- **GIVEN** nldesign is installed and `useScopedTheme().listTokenSets()` resolves a non-empty array
 - **WHEN** the builder opens the Theme section, clicks Change, picks "Gemeente Amsterdam" from the list, and saves
 - **THEN** the in-flight manifest gains `runtime.theme` with `tokenSet: "amsterdam"` and refreshed name + preview snapshots
 - **AND** the Theme section shows the Amsterdam swatches
+- **AND** no admin-only or free-text endpoint was ever called
 
-#### Scenario: Non-admin builder uses the validated free-text fallback
+#### Scenario: Empty catalogue renders the absence hint, not a free-text fallback
 
-- **GIVEN** nldesign is installed, the session is non-admin, and the flagged non-admin list endpoint does not exist
+- **GIVEN** `listTokenSets()` resolves `[]` (nldesign absent, unreachable, or genuinely empty)
 - **WHEN** the builder opens the dialog
-- **THEN** no error toast appears and the free-text token-set input is offered
-- **WHEN** the builder enters `rijkshuisstijl`
-- **THEN** the dialog validates it by fetching `css/tokens/rijkshuisstijl.css`, renders derived swatches, and enables Save
+- **THEN** the change action is disabled with `openbuild.theme.hint.nldesign-missing`
+- **AND** no free-text token-set id input is rendered
 
-#### Scenario: Unknown token-set id is rejected inline
+#### Scenario: Live preview applies via the sandboxed live-preview-pane CnAppRoot and reverts on cancel
 
-- **WHEN** the builder enters `not-a-real-set` in the free-text input
-- **THEN** the asset fetch returns 404 and the dialog shows `openbuild.theme.error.unknown-token-set` inline
-- **AND** Save remains disabled
-
-#### Scenario: Live preview applies before saving and reverts on cancel
-
-- **GIVEN** the dialog is open with "Rijkshuisstijl" selected and the preview toggle on
-- **WHEN** the designer preview surface re-renders
-- **THEN** it renders with the Rijkshuisstijl variables scoped to the preview root
+- **GIVEN** the dialog is open with "Rijkshuisstijl" selected and the preview toggle on, and the page-designer live-preview-pane's `CnAppRoot` instance is mounted
+- **WHEN** the candidate theme changes
+- **THEN** the live-preview-pane's bound manifest's `runtime.theme` updates to the candidate
+- **AND** that `CnAppRoot` instance re-applies the theme itself (no OpenBuild-owned applier call)
 - **WHEN** the builder cancels the dialog
-- **THEN** the preview surface reverts to the previously saved theme (or default) and the manifest is unchanged
+- **THEN** the live-preview-pane's manifest reverts to the previously saved theme (or default) and the saved manifest is unchanged
 
-### Requirement: REQ-NTS-003 Runtime: scoped theme application
+### Requirement: REQ-NTS-003 Runtime: theme application delegates entirely to `CnAppRoot`/`useScopedTheme`
 
-The virtual-app runtime host SHALL carry a `data-openbuild-theme-scope="<appSlug>"` attribute on its root element. The system SHALL provide `useAppTheme.js`, which, when the resolved manifest declares `runtime.theme`: (1) fetches the static asset `generateFilePath('nldesign', 'css', 'tokens/<tokenSet>.css')`; (2) rewrites every `:root` selector in the fetched text to `[data-openbuild-theme-scope="<appSlug>"]` (mechanical selector-prefix transform; no style values are altered or user-authored); (3) injects the result as exactly one managed `<style data-openbuild-theme="<appSlug>">` element; and (4) removes that element on app leave/teardown. Fetched CSS SHALL be cached per token set for the session. The transform SHALL be defensive: if the fetched text contains constructs the rewriter does not positively recognise (e.g. nested at-rules), the applier SHALL inject nothing and degrade to default styling with one console warning — never partially-rewritten CSS. Theme application SHALL NOT modify any nldesign appconfig, SHALL NOT inject unscoped (`:root`) rules, and SHALL NOT affect the NC header/chrome, other apps, or other virtual apps.
+OpenBuild SHALL own no runtime theme applier. `src/composables/useAppTheme.js` — the
+`:root`-rewrite/inject/teardown implementation this requirement previously specified — is
+DELETED in full. `@conduction/nextcloud-vue`'s `CnAppRoot` SHALL carry
+`data-nldesign-theme-scope="<appId>"` on its own root element and SHALL self-apply
+`manifest.runtime.theme` (fetch, verify-flat-`:root`, rewrite, inject one managed
+`<style data-nldesign-theme="<appId>">`, teardown on unmount) per that library's
+`scoped-theme-applier` REQ-STA-1/REQ-STA-3, with zero OpenBuild-side wiring.
+`src/views/BuilderHost.vue`'s nested `CnAppRoot` mount SHALL require no
+`data-openbuild-theme-scope` attribute and no `useAppTheme()` call to render correctly; the
+same applies to any other `CnAppRoot` mount OpenBuild hosts.
 
-#### Scenario: Themed app renders scoped variables
+#### Scenario: Themed app renders via CnAppRoot's own applier, no OpenBuild composable involved
 
 - **GIVEN** a published virtual app whose manifest declares `tokenSet: "amsterdam"`
-- **WHEN** an end user opens the app
-- **THEN** a single `<style data-openbuild-theme>` element exists containing `[data-openbuild-theme-scope=...]`-scoped declarations and no `:root` rule
+- **WHEN** an end user opens the app (mounted through `BuilderHost.vue`'s nested `CnAppRoot`)
+- **THEN** a single `<style data-nldesign-theme="...">` element exists, scoped by `[data-nldesign-theme-scope="..."]`
 - **AND** `--nldesign-color-primary` computed inside the app root is `#004699`
-- **AND** the same variable computed on the NC header is unchanged
+- **AND** no `useAppTheme.js` file, no `data-openbuild-theme-scope` attribute, and no `data-openbuild-theme` style element exist anywhere
 
-#### Scenario: Leaving the app removes the injected style
+#### Scenario: Leaving the app removes the injected style (via CnAppRoot's own teardown)
 
 - **GIVEN** the themed app is open
-- **WHEN** the user navigates away and the runtime tears down
+- **WHEN** the user navigates away and `CnAppRoot` tears down
 - **THEN** the managed `<style>` element is removed from the document
+- **AND** no OpenBuild-owned teardown call was involved
 
-#### Scenario: Missing token asset degrades to default styling
+#### Scenario: Missing token asset degrades to default styling (unchanged end-user behaviour)
 
-<!-- @e2e exclude applier 404-degradation, covered by vitest tests/composables/useAppTheme.spec.js. -->
+<!-- @e2e exclude applier 404-degradation now lives entirely in @conduction/nextcloud-vue (scoped-theme-applier); covered against the REAL published dist by tests/composables/nextcloud-vue-useScopedTheme.spec.js, not vitest tests/composables/useAppTheme.spec.js (deleted). -->
 
-- **GIVEN** a manifest referencing a token set whose CSS asset returns 404 (set removed/renamed in nldesign)
+- **GIVEN** a manifest referencing a token set whose CSS asset is unreachable
 - **WHEN** the app renders
 - **THEN** the app renders fully functional in default styling
-- **AND** exactly one console warning notes the failed theme load
-- **AND** no error surface is shown to the end user
-
-#### Scenario: Unrecognised CSS constructs inject nothing
-
-<!-- @e2e exclude applier at-rule bail-out, covered by vitest tests/composables/useAppTheme.spec.js + rewriteRootScope unit tests. -->
-
-- **GIVEN** a token CSS payload containing a nested `@media` block the rewriter does not positively recognise
-- **WHEN** the applier processes it
-- **THEN** no style element is injected and default styling applies
-- **AND** one console warning identifies the token set
+- **AND** the degrade decision is made entirely inside `useScopedTheme`/`CnAppRoot`, not OpenBuild code
 
 ### Requirement: REQ-NTS-004 Theme travels with versioning, promotion, and export
 
@@ -154,24 +173,72 @@ At design time, when `useAppStatus('nldesign')` reports the app missing or disab
 - **WHEN** the builder saves a manifest after picking a theme
 - **THEN** the persisted `dependencies[]` array is unchanged from before the pick
 
-### Requirement: REQ-NTS-006 Integration contract pinned to nldesign's existing surface
+### Requirement: REQ-NTS-006 Integration contract pinned to nldesign's real, published surface
 
-OpenBuild's nldesign integration SHALL call exactly: the static asset `css/tokens/{tokenSet}.css` (runtime + free-text validation + swatch derivation), `GET /apps/nldesign/settings/tokensets` (builder list, admin sessions only, 403-tolerant), and `GET /apps/nldesign/settings/tokenset-preview/{tokenSetId}` (builder swatches, admin sessions only, 403-tolerant) — plus, once it exists, the flagged non-admin list endpoint. OpenBuild SHALL NOT write to any nldesign endpoint or appconfig, SHALL NOT import nldesign PHP classes or read its tables, and SHALL NOT bundle a copy of nldesign's token catalogue. The static-asset contract SHALL be pinned by a Newman assertion (asset returns 200, `text/css`, contains a `:root` block declaring `--nldesign-color-primary`) so nldesign-side drift fails CI rather than production. A Codeberg issue against `Conduction/nldesign` MUST be filed during apply requesting (a) a `#[NoAdminRequired]` read-only token-set list endpoint and (b) documentation of `css/tokens/*.css` as a consumable contract; the issue URL is recorded in tasks.md.
+OpenBuild's nldesign integration SHALL call exactly: `@conduction/nextcloud-vue`'s
+`useScopedTheme()` — `apply`, `teardown`, `listTokenSets`, `evaluateContrast` — and,
+through it only, nldesign's `GET /api/token-sets` and `POST /api/contrast/evaluate`
+(`app-token-set-selection` change). OpenBuild SHALL NOT call
+`/apps/nldesign/settings/tokensets`, `/apps/nldesign/settings/tokenset-preview/{id}`, or
+any other `/settings/*` nldesign route. OpenBuild SHALL NOT fetch
+`css/tokens/{tokenSet}.css` directly — that fetch is `useScopedTheme().apply()`'s internal
+concern. OpenBuild SHALL NOT import nldesign PHP classes or read its tables, and SHALL NOT
+bundle a copy of nldesign's token catalogue or WCAG contrast math. The previously-flagged
+Codeberg dependency issue (REQ-NTS-006's original text: "requesting a
+`#[NoAdminRequired]` read-only token-set list endpoint") is RESOLVED by
+`app-token-set-selection` shipping; no further issue-filing task remains open for this
+capability.
 
-#### Scenario: Contract surface is closed
+#### Scenario: Contract surface is closed to the published, non-admin endpoints only
 
-<!-- @e2e exclude static source-tree assertion + Newman contract; pinned by tests/integration/openbuild-nldesign-theme.postman_collection.json, not a browser flow. -->
+<!-- @e2e exclude static source-tree assertion, pinned by grep during apply/verify (no /settings/tokensets, /settings/tokenset-preview, or css/tokens/*.css reference in src/) and by ThemePickerDialog.spec.js's "never calls any nldesign settings/* route or a direct css/tokens fetch" test; not a browser flow. -->
 
-- **WHEN** the openbuild source tree is scanned for `/apps/nldesign/` and `nldesign` asset references
-- **THEN** every call target is one of the listed reads (or the feature-probed non-admin list endpoint)
-- **AND** no nldesign PHP namespace is imported anywhere in openbuild
-- **AND** no POST/PUT/DELETE to nldesign exists
+- **WHEN** the OpenBuild source tree is scanned for `/apps/nldesign/` references
+- **THEN** every reference resolves inside `node_modules/@conduction/nextcloud-vue`'s `useScopedTheme` implementation, never in OpenBuild's own `src/`
+- **AND** no `/settings/tokensets` or `/settings/tokenset-preview` call exists anywhere in OpenBuild's own code
+- **AND** no direct `css/tokens/*.css` fetch exists in OpenBuild's own code
 
-#### Scenario: Newman pins the token asset shape
+### Requirement: REQ-NTS-007 `@conduction/nextcloud-vue` dependency bump gates every deletion
 
-<!-- @e2e exclude Newman asset-contract scenario; pinned by tests/integration/openbuild-nldesign-theme.postman_collection.json, not a browser flow. -->
+OpenBuild's `package.json` `@conduction/nextcloud-vue` dependency SHALL be bumped to the
+first published version that exports `useScopedTheme`, wires `CnAppRoot`'s
+`runtime.theme` self-application, and carries the `app-manifest-v2.schema.json` 2.20.0+
+`$defs/runtimeTheme` field, BEFORE `src/composables/useAppTheme.js` or
+`src/services/manifestValidation/theme.js` is deleted. An apply run that finds the
+installed `node_modules/@conduction/nextcloud-vue` missing `useScopedTheme` SHALL NOT
+proceed with either deletion.
 
-- **GIVEN** the Newman collection's token-asset request for `rijkshuisstijl`
-- **WHEN** the collection runs against the dev instance
-- **THEN** the response is 200 with a CSS body containing `:root` and `--nldesign-color-primary`
+#### Scenario: Deletions are blocked until the bump is confirmed installed
 
+<!-- @e2e exclude one-time apply-time prerequisite check (task 0.2), not a recurring runtime scenario: `node_modules/@conduction/nextcloud-vue/dist/esm/composables/useScopedTheme.js` was verified present BEFORE useAppTheme.js/manifestValidation/theme.js were deleted in this change; there is no ongoing UI to regress-test. -->
+
+- **GIVEN** the installed `@conduction/nextcloud-vue` does not export `useScopedTheme`
+- **WHEN** this change is applied
+- **THEN** `useAppTheme.js` and `manifestValidation/theme.js` are NOT deleted
+- **AND** the apply run reports the unmet prerequisite explicitly
+
+### Requirement: REQ-NTS-008 Warn-only contrast preview, no local WCAG math
+
+Any WCAG contrast display `ThemePickerDialog.vue` offers for a candidate theme SHALL be
+sourced only from `useScopedTheme().evaluateContrast(candidates, background)`. Results
+SHALL be displayed as informational only and SHALL NEVER block Save — consistent with
+nldesign's own non-blocking selection policy. OpenBuild SHALL contain no relative-luminance or
+contrast-ratio computation of its own; `checkThemeContrast.js` (the `app-theming` change's
+duplicate, already removed by the PR #20 revert) SHALL NOT be reintroduced in any form.
+
+#### Scenario: Contrast facts display without blocking save
+
+<!-- @e2e exclude covered by vitest tests/components/ThemePickerDialog.spec.js "shows warn-only contrast facts without disabling Save", exercising the real published useScopedTheme.evaluateContrast() via the vitest stub's subpath re-export; not a browser flow. -->
+
+- **GIVEN** `evaluateContrast()` resolves a result with `pass: false` for the candidate theme
+- **WHEN** the dialog renders that result
+- **THEN** the ratio/level/pass facts are shown
+- **AND** the Save button remains enabled
+
+#### Scenario: No local contrast math exists anywhere in OpenBuild
+
+<!-- @e2e exclude static source-tree assertion, pinned by grep during apply/verify (no checkThemeContrast.js, no relative-luminance/contrast-ratio computation in src/); not a browser flow. -->
+
+- **WHEN** the OpenBuild source tree is scanned for relative-luminance or contrast-ratio computation
+- **THEN** none exists anywhere in `src/`
+- **AND** no file named `checkThemeContrast.js` (or functional equivalent) exists
