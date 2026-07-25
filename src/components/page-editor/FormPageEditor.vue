@@ -115,6 +115,35 @@
 				@update:steps="update('steps', $event)" />
 			<InlineFieldMark :error="markFor('steps')" />
 		</fieldset>
+
+		<!-- REQ-EFP-002: External access — provisions OR schema authorization
+		     (+ optional Portaliq portalPage) via ExternalFormAccessDialog. Only
+		     offered for endpoint-shaped forms whose submitEndpoint resolves to
+		     an OR `/api/objects/{register}/{schema}` target; OpenBuild never
+		     hosts the anonymous surface itself (design.md, thin-leaf rule). -->
+		<fieldset class="form-page-editor__fieldset">
+			<legend>{{ t('openbuild', 'External access') }}</legend>
+			<template v-if="externalTarget">
+				<p class="form-page-editor__external-status">
+					{{ externalFormEntry && externalFormEntry.status === 'enabled'
+						? t('openbuild', 'Externally fillable ({register}/{schema})', externalTarget)
+						: t('openbuild', 'Not externally fillable yet ({register}/{schema})', externalTarget) }}
+				</p>
+				<button type="button" class="form-page-editor__external-btn" @click="externalDialogOpen = true">
+					{{ t('openbuild', 'Configure') }}
+				</button>
+				<ExternalFormAccessDialog
+					:open.sync="externalDialogOpen"
+					:register="externalTarget.register"
+					:schema="externalTarget.schema"
+					:page-id="pageId"
+					:entry="externalFormEntry"
+					@save="onExternalFormSave" />
+			</template>
+			<p v-else class="form-page-editor__hint">
+				{{ t('openbuild', 'External access requires a submitEndpoint shaped like /api/objects/{register}/{schema}.') }}
+			</p>
+		</fieldset>
 	</div>
 </template>
 
@@ -122,11 +151,12 @@
 import FormFieldBuilder from './fields/FormFieldBuilder.vue'
 import FormStepsManager from './fields/FormStepsManager.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import ExternalFormAccessDialog from '../../dialogs/ExternalFormAccessDialog.vue'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'FormPageEditor',
-	components: { FormFieldBuilder, FormStepsManager, InlineFieldMark },
+	components: { FormFieldBuilder, FormStepsManager, InlineFieldMark, ExternalFormAccessDialog },
 	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
@@ -145,9 +175,56 @@ export default {
 			type: String,
 			default: '',
 		},
+		// The selected page's `id` (mergeManifestDelta's page key) — the
+		// `runtime.externalForms[].pageId` this editor writes/reads
+		// (REQ-EFP-001/002).
+		pageId: {
+			type: String,
+			default: '',
+		},
+		// The manifest's full `runtime.externalForms[]` array — this editor
+		// filters to the entry (if any) owned by `pageId`.
+		runtimeExternalForms: {
+			type: Array,
+			default: () => [],
+		},
 	},
-	emits: ['update:config'],
+	emits: ['update:config', 'update:runtimeExternalForms'],
+	data() {
+		return {
+			externalDialogOpen: false,
+		}
+	},
 	computed: {
+		/**
+		 * `{register, schema}` resolved from `config.submitEndpoint` when it
+		 * matches OR's `/api/objects/{register}/{schema}` shape; null
+		 * otherwise (handler-shaped forms, or an endpoint that isn't an OR
+		 * objects target) — gates the External access section (REQ-EFP-002).
+		 *
+		 * @return {?{register: string, schema: string}}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 */
+		externalTarget() {
+			if (this.submitShape !== 'endpoint') {
+				return null
+			}
+			const endpoint = this.config.submitEndpoint || ''
+			const match = /^\/(?:apps\/openregister\/)?api\/objects\/([^/]+)\/([^/]+)\/?$/.exec(endpoint)
+			return match ? { register: match[1], schema: match[2] } : null
+		},
+		/**
+		 * The existing `runtime.externalForms[]` entry for THIS page, if any.
+		 *
+		 * @return {?object}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-001
+		 */
+		externalFormEntry() {
+			if (!this.pageId) {
+				return null
+			}
+			return (this.runtimeExternalForms || []).find((e) => e && e.pageId === this.pageId) || null
+		},
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 * `steps` added by REQ-OBFEL-001 so `formLogic.js` / the canonical
@@ -234,6 +311,26 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/**
+		 * Persist the provisioned/revoked entry from ExternalFormAccessDialog
+		 * into `runtime.externalForms[]` (find-or-append by pageId, per
+		 * design.md Decision 1). Emitted up to PageDesigner, which merges it
+		 * onto the manifest — this editor never writes the manifest directly.
+		 *
+		 * @param {object} entry - the resolved `runtime.externalForms[]` entry.
+		 * @return {void}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 */
+		onExternalFormSave(entry) {
+			const list = (this.runtimeExternalForms || []).slice()
+			const idx = list.findIndex((e) => e && e.pageId === this.pageId)
+			if (idx >= 0) {
+				list[idx] = entry
+			} else {
+				list.push(entry)
+			}
+			this.$emit('update:runtimeExternalForms', list)
+		},
 	},
 }
 </script>
@@ -294,5 +391,22 @@ export default {
 	flex-direction: column;
 	gap: 2px;
 	font-size: 13px;
+}
+
+.form-page-editor__hint,
+.form-page-editor__external-status {
+	color: var(--color-text-maxcontrast);
+	font-size: 13px;
+	margin: 0;
+}
+
+.form-page-editor__external-btn {
+	align-self: flex-start;
+	padding: 4px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	background: var(--color-main-background);
+	color: var(--color-main-text);
+	cursor: pointer;
 }
 </style>

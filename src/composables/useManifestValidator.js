@@ -29,6 +29,7 @@ import { validateTheme } from '../services/manifestValidation/theme.js'
 import { validateDocumentAttachments } from '../services/manifestValidation/documentAttachments.js'
 import { validateSchedules } from '../services/manifestValidation/schedules.js'
 import { validateFormLogic } from '../services/manifestValidation/formLogic.js'
+import { validateExternalForms } from '../services/manifestValidation/externalForms.js'
 
 const DEBOUNCE_MS = 300
 
@@ -73,6 +74,7 @@ export function useManifestValidator() {
 					.concat(validateDocumentAttachments(manifest))
 					.concat(validateSchedules(manifest))
 					.concat(validateFormLogic(manifest))
+					.concat(validateExternalForms(manifest))
 				errors.value = libErrors.concat(appErrors)
 			} catch (e) {
 				errors.value = [`validator threw: ${e && e.message ? e.message : e}`]

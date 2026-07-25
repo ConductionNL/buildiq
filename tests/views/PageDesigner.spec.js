@@ -70,7 +70,7 @@ function stub(name) {
 	return {
 		default: {
 			name,
-			props: ['config', 'pageType', 'appSlug', 'dataRegisters', 'parentRoute'],
+			props: ['config', 'pageType', 'appSlug', 'dataRegisters', 'parentRoute', 'pageId', 'runtimeExternalForms'],
 			render(h) { return h('div', { staticClass: `${name.toLowerCase()}-stub` }, name) },
 		},
 	}
@@ -306,6 +306,42 @@ describe('PageDesigner', () => {
 		const next = emitted[emitted.length - 1][0]
 		expect(next.pages[0].config).toEqual({ register: 'r2', schema: 's2' })
 		expect(next.pages[1].config).toEqual({})
+	})
+
+	// external-form-provisioning REQ-EFP-001/002: FormPageEditor is handed the
+	// selected page's id + the manifest's runtime.externalForms[] so it can
+	// filter to the entry it owns, and its update:runtimeExternalForms is
+	// merged back onto manifest.runtime.externalForms — never onto pages[].config.
+	it('binds page-id + runtime-external-forms to the dispatched sub-editor', async () => {
+		const wrapper = mountDesigner({
+			pages: [{ id: 'form-page-1', type: 'form', config: {} }],
+			menu: [],
+			runtime: { externalForms: [{ id: 'ef-1', pageId: 'form-page-1', register: 'intake', schema: 'report', status: 'enabled' }] },
+		})
+		wrapper.vm.selectPage(0)
+		await wrapper.vm.$nextTick()
+		const sub = wrapper.findComponent({ name: 'FormPageEditor' })
+		expect(sub.props('pageId')).toBe('form-page-1')
+		expect(sub.props('runtimeExternalForms')).toEqual([{ id: 'ef-1', pageId: 'form-page-1', register: 'intake', schema: 'report', status: 'enabled' }])
+	})
+
+	it('onExternalFormsUpdate merges the array onto manifest.runtime.externalForms', async () => {
+		const wrapper = mountDesigner({ pages: [], menu: [] })
+		const list = [{ id: 'ef-1', pageId: 'p1', register: 'intake', schema: 'report', status: 'enabled' }]
+		wrapper.vm.onExternalFormsUpdate(list)
+		await wrapper.vm.$nextTick()
+		const emitted = wrapper.emitted('update:manifest')
+		const next = emitted[emitted.length - 1][0]
+		expect(next.runtime.externalForms).toEqual(list)
+	})
+
+	it('onExternalFormsUpdate([]) deletes runtime.externalForms — byte-identical when never used', async () => {
+		const wrapper = mountDesigner({ pages: [], menu: [], runtime: { externalForms: [{ id: 'ef-1' }] } })
+		wrapper.vm.onExternalFormsUpdate([])
+		await wrapper.vm.$nextTick()
+		const emitted = wrapper.emitted('update:manifest')
+		const next = emitted[emitted.length - 1][0]
+		expect(next.runtime).toBeUndefined()
 	})
 
 	it('onConfigUpdate is a no-op when nothing is selected', () => {

@@ -32,6 +32,14 @@ import DocumentActions from './components/runtime/DocumentActions.vue'
 // actions calling OR's REST API directly.
 import MyApprovalsWidget from './components/runtime/MyApprovalsWidget.vue'
 
+// Runtime action — Detail-page `actionsComponent` letting staff mint a
+// "track your case" link for the object they are viewing
+// (external-form-provisioning REQ-EFP-006). Owner-context only; self-gates
+// on the BUILT app's own `runtime.externalForms[]` via the `cnManifest`
+// injection CnAppRoot provides, rendering nothing when not enabled for the
+// object's schema.
+import TrackLinkAction from './components/runtime/TrackLinkAction.vue'
+
 /**
  * Build a slot-override registry entry (CnPageRenderer resolves any `kind`
  * with a `component` via the slot-override path; `kind: "tab"` makes the
@@ -67,6 +75,18 @@ function widget(component, allowedSlots, note) {
 	}
 }
 
+/**
+ * Build a `kind: "actions"` registry entry (Detail-page `config.
+ * actionsComponent` slot-override — resolved the same way as `tab()`, any
+ * `kind` is accepted by the slot-override path; `"actions"` states intent).
+ *
+ * @param {object} component - Vue component options.
+ * @return {object} - the registry entry.
+ */
+function actions(component) {
+	return { kind: 'actions', component }
+}
+
 export const runtimeRegistry = {
 	// Sidebar-tab widgetKey for a detail page's `sidebarProps.tabs`.
 	'procest-case-status': tab(ProcestCaseStatusPanel),
@@ -85,4 +105,7 @@ export const runtimeRegistry = {
 		['body', 'sidebar'],
 		'Approve/reject calls target OpenRegister\'s dedicated approval-steps endpoints directly (not the generic object-service API a built-in object-table row action can express) — no built-in widget fits.'
 	),
+	// Detail-page `config.actionsComponent: "TrackLinkAction"` — mint a
+	// "track your case" link (external-form-provisioning REQ-EFP-006).
+	TrackLinkAction: actions(TrackLinkAction),
 }
