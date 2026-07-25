@@ -162,11 +162,17 @@ export default {
 		CopilotPanel,
 	},
 
+	/**
+	 * REQ-NTS-002 (design.md OQ-1 / Decision 3): `livePreview` exposes the
+	 * same feature-detected `useLivePreview()` composable PageDesigner.vue's
+	 * own live-preview pane uses, so this host's `livePreviewAvailable`
+	 * computed can gate the theme dialog's preview toggle on whether that
+	 * pane is actually mounted.
+	 *
+	 * @return {{copilot: object, livePreview: object}}
+	 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+	 */
 	setup() {
-		// REQ-NTS-002 (design.md OQ-1 / Decision 3): the live-preview toggle
-		// only makes sense while the sandboxed live-preview-pane CnAppRoot
-		// (PageDesigner.vue's `previewAvailable`) is actually mounted — same
-		// feature-detected composable both hosts share.
 		return { copilot: useCopilot(), livePreview: useLivePreview() }
 	},
 
