@@ -167,6 +167,7 @@ export default {
 		 * Whether a previously-enabled entry exists to offer the Disable action.
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-005
 		 */
 		hadEnabledEntry() {
 			return !!(this.entry && this.entry.status === 'enabled')
@@ -176,6 +177,7 @@ export default {
 		 * into an external form/website (REQ-EFP-002).
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		rawSubmitUrl() {
 			if (!this.register || !this.schema) {
@@ -187,6 +189,7 @@ export default {
 		 * The Portaliq portal URL, when provisioned.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
 		 */
 		portalUrl() {
 			if (this.savedPortalUrl) {
@@ -202,12 +205,20 @@ export default {
 		 * completed or an entry already exists (reopen case).
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		showUrls() {
 			return this.enabled && (this.saved || this.hadEnabledEntry)
 		},
 	},
 	watch: {
+		/**
+		 * Re-hydrate the form from `entry` each time the dialog (re)opens.
+		 *
+		 * @param {boolean} isOpen - the new `open` prop value.
+		 * @return {void}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 */
 		open(isOpen) {
 			if (isOpen) {
 				this.hydrate()
@@ -219,6 +230,7 @@ export default {
 		 * Seed the form from the current entry when (re)opening.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		hydrate() {
 			this.errorMessage = ''
@@ -331,13 +343,17 @@ export default {
 		 *
 		 * @param {boolean} value - the new open state.
 		 * @return {void}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		onDialogOpenChange(value) {
 			if (!value) {
 				this.onClose()
 			}
 		},
-		/** @return {void} */
+		/**
+		 * @return {void}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 */
 		onClose() {
 			this.$emit('update:open', false)
 		},

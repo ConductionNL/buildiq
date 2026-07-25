@@ -67,6 +67,7 @@ export default {
 		 * The object's OR register slug, read off the `@self` envelope.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		register() {
 			return (this.object && this.object['@self'] && this.object['@self'].register) || (this.object && this.object.register) || ''
@@ -75,6 +76,7 @@ export default {
 		 * The object's OR schema slug, read off the `@self` envelope.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		schema() {
 			return (this.object && this.object['@self'] && this.object['@self'].schema) || (this.object && this.object.schema) || ''
@@ -85,6 +87,7 @@ export default {
 		 * object's own envelope.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		resolvedObjectId() {
 			return this.objectId || (this.object && this.object['@self'] && this.object['@self'].id) || ''
@@ -94,6 +97,7 @@ export default {
 		 * this object's `(register, schema)`.
 		 *
 		 * @return {?object}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		externalFormEntry() {
 			const list = this.cnManifest && this.cnManifest.runtime && this.cnManifest.runtime.externalForms
@@ -141,6 +145,7 @@ export default {
 		 * Copy the minted link to the clipboard.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		copy() {
 			if (!this.link) {

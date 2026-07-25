@@ -75,6 +75,8 @@ with nl translations.
 
 #### Scenario: Builder enables external access from the Form page editor
 
+<!-- @e2e exclude live E2E against a running instance deferred (no shared-dev deploy per workflow); the dialog-open/save flow is covered by ExternalFormAccessDialog.spec.js + FormPageEditor.externalAccess.spec.js (Vitest); verify live before general availability. -->
+
 - **GIVEN** a Form page whose `submitEndpoint` is `/api/objects/intake/report`
 - **WHEN** the builder opens the "External access" section and clicks "Configure"
 - **THEN** `ExternalFormAccessDialog` opens showing the resolved `register: "intake"`, `schema: "report"`
@@ -135,12 +137,16 @@ public POST URL) remains fully functional. Disabling the toggle SHALL PUT the li
 
 #### Scenario: First save creates a portalPage object
 
+<!-- @e2e exclude live E2E against a running instance deferred (no shared-dev deploy per workflow; also depends on Portaliq's portal-page-provisioning schema being present in the target env); the create-vs-update payload shape is covered by externalFormProvisioningService.spec.js (Vitest). -->
+
 - **GIVEN** the `portaliq`/`portalPage` schema exists and no `portalPage.objectId` is stored yet
 - **WHEN** the builder saves the dialog with public create enabled
 - **THEN** a new `portalPage` object is created with an `anonymous: true` create action targeting the toggle's `(register, schema)`
 - **AND** the returned object uuid is stored as `runtime.externalForms[].portalPage.objectId`
 
 #### Scenario: Portaliq schema not yet available degrades gracefully
+
+<!-- @e2e exclude live E2E against a running instance deferred (no shared-dev deploy per workflow); the 404-degrade branch is covered by externalFormProvisioningService.spec.js's "degrades gracefully" test (Vitest) plus ExternalFormAccessDialog.spec.js's Portaliq-unavailable test. -->
 
 - **GIVEN** the `portaliq`/`portalPage` schema does not exist on the instance
 - **WHEN** the builder saves the dialog with public create enabled
@@ -149,6 +155,8 @@ public POST URL) remains fully functional. Disabling the toggle SHALL PUT the li
 - **AND** the dialog shows the "Portaliq rendering not available on this instance yet" hint alongside the working raw public-create URL
 
 #### Scenario: Disabling sets the portalPage to draft, not deleted
+
+<!-- @e2e exclude live E2E against a running instance deferred (no shared-dev deploy per workflow); the GET-merge-PUT status-only-change behaviour is covered by externalFormProvisioningService.spec.js's draftPortalPage tests (Vitest). -->
 
 - **GIVEN** an enabled toggle with a linked `portalPage` object
 - **WHEN** the builder disables external access
@@ -183,6 +191,8 @@ object being created. It SHALL be offered on a schema's object views only when t
 schema's `runtime.externalForms` entry has `trackLinkAction.enabled: true`.
 
 #### Scenario: Staff member mints a track-link for a submitted object
+
+<!-- @e2e exclude live E2E against a running instance deferred (no shared-dev deploy per workflow); the mint request/response shape is covered by useTrackLinkAction.spec.js and TrackLinkAction.spec.js (Vitest). -->
 
 - **GIVEN** an authenticated OpenBuild session viewing an object of a schema whose external-form entry has `trackLinkAction.enabled: true`
 - **WHEN** the staff member clicks "Mint track-link"
