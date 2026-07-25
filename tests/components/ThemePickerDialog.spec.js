@@ -4,12 +4,20 @@
  *
  * Vitest spec for ThemePickerDialog.vue.
  *
- * Spec: nldesign-theme-selection (REQ-NTS-002).
+ * Spec: theme-picker-consumes-nldesign, delta of nldesign-theme-selection
+ * (REQ-NTS-002, REQ-NTS-006, REQ-NTS-008).
+ *
+ * `useScopedTheme` is imported from `@conduction/nextcloud-vue`, which
+ * vitest aliases to `tests/vitest/stubs/conduction-nextcloud-vue.js` — that
+ * stub re-exports the REAL published `useScopedTheme` leaf (subpath import,
+ * bypassing the alias), so these mounts exercise the actual beta.221
+ * `listTokenSets`/`evaluateContrast` logic against a mocked `@nextcloud/axios`
+ * HTTP boundary, not a hand-rolled fake.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-const { axiosMock } = vi.hoisted(() => ({ axiosMock: { get: vi.fn() } }))
+const { axiosMock } = vi.hoisted(() => ({ axiosMock: { get: vi.fn(), post: vi.fn() } }))
 vi.mock('@nextcloud/axios', () => ({ default: axiosMock }))
 vi.mock('@nextcloud/router', () => ({
 	generateUrl: (p) => p,
@@ -22,25 +30,27 @@ const stubs = {
 	NcDialog: { name: 'NcDialog', template: '<div><slot /><slot name="actions" /></div>' },
 	NcButton: { name: 'NcButton', props: ['type', 'disabled'], template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>' },
 	NcSelect: { name: 'NcSelect', props: ['value', 'options', 'inputLabel'], template: '<div class="select-stub" />' },
-	NcTextField: { name: 'NcTextField', props: ['value', 'label'], template: '<input class="text-stub" @input="$emit(\'update:value\', $event.target.value)" >' },
 }
 
-const adminList = [
-	{ id: 'amsterdam', name: 'Gemeente Amsterdam', description: 'A', theming: { primary_color: '#004699', background_color: '#FFF' } },
-	{ id: 'rijkshuisstijl', name: 'Rijkshuisstijl', theming: { primary_color: '#154273' } },
+const catalogue = [
+	{ id: 'amsterdam', name: 'Gemeente Amsterdam', design_system: 'nldesign', theming: { primary_color: '#004699', background_color: '#FFFFFF' } },
+	{ id: 'rijkshuisstijl', name: 'Rijkshuisstijl', design_system: 'nldesign', theming: { primary_color: '#154273' } },
 ]
 
 const factory = (props = {}) => mount(ThemePickerDialog, { propsData: { open: false, ...props }, stubs })
 
 describe('ThemePickerDialog', () => {
-	beforeEach(() => { axiosMock.get.mockReset() })
+	beforeEach(() => {
+		axiosMock.get.mockReset()
+		axiosMock.post.mockReset()
+	})
 
-	it('populates the admin list and builds a theme on save', async () => {
-		axiosMock.get.mockResolvedValueOnce({ data: adminList })
+	it('populates the catalogue via listTokenSets() and builds a theme on save (REQ-NTS-002)', async () => {
+		axiosMock.get.mockResolvedValueOnce({ data: { tokenSets: catalogue } })
 		const wrapper = factory()
 		await wrapper.setProps({ open: true })
 		await new Promise((r) => setTimeout(r, 0))
-		expect(wrapper.vm.listAvailable).toBe(true)
+		expect(wrapper.vm.tokenSetOptions).toHaveLength(2)
 		wrapper.vm.selectedOption = wrapper.vm.tokenSetOptions[0]
 		await wrapper.vm.$nextTick()
 		wrapper.vm.onSave()
@@ -49,25 +59,25 @@ describe('ThemePickerDialog', () => {
 		expect(saved.preview.primaryColor).toBe('#004699')
 	})
 
-	it('falls back to validated free-text on a 403 list probe', async () => {
-		// Reset the module-level session probe by validating the asset fetch path.
-		axiosMock.get.mockRejectedValueOnce({ response: { status: 403 } }) // list 403
-		axiosMock.get.mockResolvedValueOnce({ data: ':root { --nldesign-color-primary: #154273; }' }) // asset 200
+	it('renders the absence hint (not a free-text fallback) when listTokenSets() resolves [] (REQ-NTS-002/005)', async () => {
+		axiosMock.get.mockResolvedValueOnce({ data: { tokenSets: [] } })
 		const wrapper = factory()
 		await wrapper.setProps({ open: true })
 		await new Promise((r) => setTimeout(r, 0))
-		expect(wrapper.vm.listAvailable).toBe(false)
-		await wrapper.vm.onFreeTextInput('rijkshuisstijl')
-		expect(wrapper.vm.freeTextError).toBe(false)
-		expect(wrapper.vm.candidate).toMatchObject({ tokenSet: 'rijkshuisstijl', primaryColor: '#154273' })
+		expect(wrapper.vm.tokenSetOptions).toHaveLength(0)
+		expect(wrapper.find('.ob-theme-picker__hint').exists()).toBe(true)
+		expect(wrapper.find('.text-stub').exists()).toBe(false)
+		expect(wrapper.find('.select-stub').exists()).toBe(false)
+		expect(wrapper.vm.candidate).toBeNull()
 	})
 
-	it('rejects an unknown free-text id (404) inline', async () => {
-		axiosMock.get.mockRejectedValueOnce({ response: { status: 404 } }) // asset 404
+	it('renders the absence hint when listTokenSets() fails (network error collapses to the same [] state)', async () => {
+		axiosMock.get.mockRejectedValueOnce(new Error('network down'))
 		const wrapper = factory()
-		await wrapper.vm.onFreeTextInput('not-a-real-set')
-		expect(wrapper.vm.freeTextError).toBe(true)
-		expect(wrapper.vm.candidate).toBeNull()
+		await wrapper.setProps({ open: true })
+		await new Promise((r) => setTimeout(r, 0))
+		expect(wrapper.vm.tokenSetOptions).toHaveLength(0)
+		expect(wrapper.find('.ob-theme-picker__hint').exists()).toBe(true)
 	})
 
 	it('emits clear for Default (Nextcloud)', () => {
@@ -76,10 +86,49 @@ describe('ThemePickerDialog', () => {
 		expect(wrapper.emitted().clear).toBeTruthy()
 	})
 
-	it('emits a preview revert (null) on cancel after a live preview', async () => {
+	it('emits the candidate on preview toggle and a revert (null) on cancel', async () => {
+		axiosMock.get.mockResolvedValueOnce({ data: { tokenSets: catalogue } })
 		const wrapper = factory()
+		await wrapper.setProps({ open: true })
+		await new Promise((r) => setTimeout(r, 0))
+		wrapper.vm.selectedOption = wrapper.vm.tokenSetOptions[0]
 		wrapper.vm.livePreview = true
+		wrapper.vm.onPreviewToggle()
+		expect(wrapper.emitted().preview[0][0]).toMatchObject({ tokenSet: 'amsterdam' })
 		wrapper.vm.onClose()
 		expect(wrapper.emitted().preview.at(-1)[0]).toBeNull()
+	})
+
+	it('disables the preview toggle with a hint when previewAvailable is false (design.md OQ-1, task 3.3)', () => {
+		const wrapper = factory({ previewAvailable: false })
+		const checkbox = wrapper.find('.ob-theme-picker__toggle input')
+		expect(checkbox.attributes('disabled')).toBeDefined()
+		expect(wrapper.text()).toContain('Live preview is not available in this designer session.')
+	})
+
+	it('shows warn-only contrast facts without disabling Save (REQ-NTS-008)', async () => {
+		axiosMock.get.mockResolvedValueOnce({ data: { tokenSets: catalogue } })
+		axiosMock.post.mockResolvedValueOnce({ data: { results: [{ name: 'Primary', ratio: 2.1, level: 'fail', pass: false }] } })
+		const wrapper = factory()
+		await wrapper.setProps({ open: true })
+		await new Promise((r) => setTimeout(r, 0))
+		wrapper.vm.selectedOption = wrapper.vm.tokenSetOptions[0]
+		await new Promise((r) => setTimeout(r, 0))
+		await wrapper.vm.$nextTick()
+		expect(wrapper.vm.contrastResults).toEqual([{ name: 'Primary', ratio: 2.1, level: 'fail', pass: false }])
+		const saveBtn = wrapper.findAll('button').at(2)
+		expect(saveBtn.attributes('disabled')).toBeUndefined()
+	})
+
+	it('never calls any nldesign settings/* route or a direct css/tokens fetch (REQ-NTS-006)', async () => {
+		axiosMock.get.mockResolvedValueOnce({ data: { tokenSets: catalogue } })
+		const wrapper = factory()
+		await wrapper.setProps({ open: true })
+		await new Promise((r) => setTimeout(r, 0))
+		wrapper.vm.selectedOption = wrapper.vm.tokenSetOptions[0]
+		await new Promise((r) => setTimeout(r, 0))
+		for (const call of axiosMock.get.mock.calls) {
+			expect(String(call[0])).not.toMatch(/\/settings\/tokensets|\/settings\/tokenset-preview|css\/tokens\//)
+		}
 	})
 })

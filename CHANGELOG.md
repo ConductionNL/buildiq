@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-07-25
+
+### Changed
+- **Theme picker now consumes nldesign's published catalogue**
+  (theme-picker-consumes-nldesign) — bumps `@conduction/nextcloud-vue` to
+  `^1.0.0-beta.221`, which ships `useScopedTheme()` and wires `CnAppRoot` to
+  self-apply `manifest.runtime.theme`. `ThemePickerDialog.vue` collapses its
+  old three-tier admin/probe/free-text catalogue fallback to a single
+  `useScopedTheme().listTokenSets()` call against nldesign's real non-admin
+  `GET /api/token-sets` endpoint, and adds a warn-only WCAG contrast preview
+  via `evaluateContrast()` that never blocks Save. Live theme preview now
+  retargets the page-designer's sandboxed live-preview-pane `CnAppRoot`
+  instance instead of a separate OpenBuild-owned applier.
+
+### Removed
+- `src/composables/useAppTheme.js` — OpenBuild's own scoped-CSS
+  `:root`-rewriter and injector; `CnAppRoot`'s own `useScopedTheme` watcher
+  now owns runtime theme application end-to-end, with zero OpenBuild-side
+  wiring in `BuilderHost.vue` or `PageDesignerHost.vue`.
+- `src/services/manifestValidation/theme.js` — OpenBuild's own
+  `runtime.theme` shape validator; `@conduction/nextcloud-vue`'s
+  `validateManifest()` (schema 2.21.0, `$defs/runtimeTheme`) is now the
+  single source for this validation.
+
 ## [0.7.7] - 2026-07-24
 
 ### Added

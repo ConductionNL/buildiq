@@ -1,45 +1,4 @@
-# nldesign-theme-selection Specification
-
-**OpenSpec changes**: [theme-picker-consumes-nldesign](../../changes/archive/2026-07-25-theme-picker-consumes-nldesign/) _(archived 2026-07-25)_
-
-## Purpose
-TBD - created by archiving change nldesign-theme-selection. Update Purpose after archive.
-## Requirements
-### Requirement: REQ-NTS-001 Theme declaration in the v2 manifest
-
-The system SHALL support an optional `theme` object in the manifest v2 `runtime` block. The object SHALL carry:
-
-- `source` (closed enum `nldesign`, required) — theme provider; only nldesign is supported in v1.
-- `tokenSet` (string, required, kebab-case id) — the nldesign token-set id (e.g. `rijkshuisstijl`, `amsterdam`).
-- `tokenSetName` (string, required) — display snapshot of the set's name at pick time (refreshed on edit).
-- `preview` (object, optional) — `{ primaryColor, backgroundColor }` hex snapshots for swatch rendering without an nldesign call.
-
-OpenBuild's manifest validation layer SHALL reject: an unknown `source`, a missing or non-kebab-case `tokenSet`, non-hex `preview` colours, and unknown keys. At most one `theme` object exists per app (it is a single object, not an array); per-page themes are not supported in v1. Apps without a theme SHALL serialize byte-identical manifests (purely additive). Codification into the canonical `app-manifest-v2.schema.json` is an external `nextcloud-vue` follow-up, not part of this requirement.
-
-#### Scenario: Valid theme declaration passes validation
-
-<!-- @e2e exclude pure app-side manifest validation, covered by vitest tests/services/themeValidation.spec.js. -->
-
-- **GIVEN** a virtual app manifest
-- **WHEN** it declares `runtime.theme: { source: "nldesign", tokenSet: "amsterdam", tokenSetName: "Gemeente Amsterdam", preview: { primaryColor: "#004699", backgroundColor: "#FFFFFF" } }`
-- **THEN** the validator pass reports no errors
-- **AND** the saved manifest round-trips the block losslessly
-
-#### Scenario: Unknown source is rejected
-
-<!-- @e2e exclude pure app-side manifest validation, covered by vitest tests/services/themeValidation.spec.js. -->
-
-- **WHEN** the manifest declares `runtime.theme.source: "material"`
-- **THEN** the validator reports `openbuild.theme.error.unknown-source` against the theme block
-- **AND** the Save button is disabled
-
-#### Scenario: Themeless app serializes byte-identically
-
-<!-- @e2e exclude serialization-regression assertion, covered by vitest tests/components/ThemeSection.spec.js. -->
-
-- **GIVEN** a virtual app that has never had a theme set
-- **WHEN** the app is saved through a build containing this feature
-- **THEN** the persisted manifest is byte-identical to the pre-feature baseline
+## MODIFIED Requirements
 
 ### Requirement: REQ-NTS-002 Builder UI: visual theme picker
 
@@ -128,51 +87,6 @@ same applies to any other `CnAppRoot` mount OpenBuild hosts.
 - **THEN** the app renders fully functional in default styling
 - **AND** the degrade decision is made entirely inside `useScopedTheme`/`CnAppRoot`, not OpenBuild code
 
-### Requirement: REQ-NTS-004 Theme travels with versioning, promotion, and export
-
-Because `runtime.theme` lives in the manifest, it SHALL be captured in ApplicationVersion snapshots, carried by version promotion (all strategies), included verbatim in the exporter's bundled manifest, and applied by the exported app through the same `useAppTheme` path. Builder preview of a non-production version via `?_version=` SHALL render that version's theme (which may differ from production's).
-
-#### Scenario: Promotion carries the theme
-
-<!-- @e2e exclude version-promotion exercised by the existing promoteDestructive/version e2e; theme is a plain manifest field carried losslessly, asserted by applier vitest. -->
-
-- **GIVEN** a development version themed `rijkshuisstijl` and a production version themed `nextcloud`-default
-- **WHEN** the development version is promoted to production
-- **THEN** the production manifest's `runtime.theme.tokenSet` is `rijkshuisstijl`
-
-#### Scenario: Version preview renders the version's own theme
-
-<!-- @e2e exclude version-routing covered by the existing versionRouting e2e; theme-per-version selection covered by useAppTheme applyTheme(version) vitest. -->
-
-- **GIVEN** the same two versions
-- **WHEN** an editor opens the app with `?_version=` targeting the development version
-- **THEN** the rendered app is scoped to the Rijkshuisstijl variables while production users continue to see the default
-
-### Requirement: REQ-NTS-005 Capability check and graceful absence of nldesign
-
-At design time, when `useAppStatus('nldesign')` reports the app missing or disabled, the Theme section SHALL render its change action disabled with the i18n hint `openbuild.theme.hint.nldesign-missing` (an existing theme remains visible and removable). At runtime on an instance without nldesign, a themed manifest SHALL render in default styling with one console warning. The theme SHALL NOT add `"nldesign"` to the manifest `dependencies[]` array and SHALL NOT trigger CnAppRoot's dependency gate — theming is a progressive enhancement, never a gate. No openbuild surface SHALL hard-fail, blank, or throw because nldesign is absent.
-
-#### Scenario: Designer degrades when nldesign is missing
-
-- **GIVEN** nldesign is not installed
-- **WHEN** the builder opens the Theme section
-- **THEN** the change action is disabled with the missing-app hint
-- **AND** an existing theme declaration can still be removed
-
-#### Scenario: Themed app still renders without nldesign
-
-- **GIVEN** a published app themed `amsterdam`, on an instance where nldesign was uninstalled after publication
-- **WHEN** an end user opens the app
-- **THEN** the app renders fully functional in default styling
-- **AND** no dependency-gate block is shown
-
-#### Scenario: Saving a theme never edits dependencies
-
-<!-- @e2e exclude dependencies-untouched assertion, covered by vitest tests/components/ThemeSection.spec.js. -->
-
-- **WHEN** the builder saves a manifest after picking a theme
-- **THEN** the persisted `dependencies[]` array is unchanged from before the pick
-
 ### Requirement: REQ-NTS-006 Integration contract pinned to nldesign's real, published surface
 
 OpenBuild's nldesign integration SHALL call exactly: `@conduction/nextcloud-vue`'s
@@ -197,6 +111,8 @@ capability.
 - **THEN** every reference resolves inside `node_modules/@conduction/nextcloud-vue`'s `useScopedTheme` implementation, never in OpenBuild's own `src/`
 - **AND** no `/settings/tokensets` or `/settings/tokenset-preview` call exists anywhere in OpenBuild's own code
 - **AND** no direct `css/tokens/*.css` fetch exists in OpenBuild's own code
+
+## ADDED Requirements
 
 ### Requirement: REQ-NTS-007 `@conduction/nextcloud-vue` dependency bump gates every deletion
 

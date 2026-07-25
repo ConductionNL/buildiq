@@ -12,7 +12,9 @@
  *    versionNotFound, applicationUuid, builderUrl.
  *  - onManifestUpdate / onThemePreview / onCreateLinkProperty.
  *  - save(): guard, version PUT, application PUT, and the failure path.
- *  - beforeDestroy tears down the live preview theme.
+ *  - onThemePreview retargets the in-flight manifest (no OpenBuild-owned
+ *    applier, theme-picker-consumes-nldesign REQ-NTS-002/003) and
+ *    livePreviewAvailable gates the toggle (design.md OQ-1, task 3.3).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -82,9 +84,17 @@ vi.mock('../../src/composables/useAppStatus.js', () => ({
 	},
 }))
 
-const appThemeMock = { apply: vi.fn(), teardown: vi.fn() }
-vi.mock('../../src/composables/useAppTheme.js', () => ({
-	useAppTheme: () => appThemeMock,
+// REQ-NTS-002 (design.md OQ-1, task 3.3): PageDesignerHost's own
+// `livePreviewAvailable` computed reads `useLivePreview().available` —
+// default true so the pre-existing onThemePreview specs (written before
+// this gate existed) keep exercising the toggle unchanged; the dedicated
+// task-3.3 spec below flips it to false.
+let livePreviewAvailableValue = true
+vi.mock('../../src/composables/useLivePreview.js', () => ({
+	useLivePreview: () => ({
+		available: { get value() { return livePreviewAvailableValue } },
+		previewProps: () => null,
+	}),
 }))
 
 function childStub(name) {
@@ -128,8 +138,7 @@ describe('PageDesignerHost', () => {
 		versionHolder = null
 		versionResolvesAsync = false
 		statusAvailable = true
-		appThemeMock.apply.mockClear()
-		appThemeMock.teardown.mockClear()
+		livePreviewAvailableValue = true
 	})
 
 	it('seeds the manifest from a version that resolves ASYNCHRONOUSLY', async () => {
@@ -274,15 +283,34 @@ describe('PageDesignerHost', () => {
 		expect(wrapper.vm.manifest.version).toBe('4.0.0')
 	})
 
-	it('onThemePreview applies a theme and reverts on null', async () => {
+	it('onThemePreview mutates the in-flight manifest and reverts to the pre-preview baseline on null (design.md Decision 3)', async () => {
 		const wrapper = mountHost({ appList: [{ slug: 'petstore' }] })
 		await flush(wrapper)
-		appThemeMock.apply.mockClear()
-		appThemeMock.teardown.mockClear()
+		wrapper.vm.manifest = { version: '1.0.0', runtime: { theme: { source: 'nldesign', tokenSet: 'saved-theme' } } }
 		wrapper.vm.onThemePreview({ primaryColor: '#123' })
-		expect(appThemeMock.apply).toHaveBeenCalledWith({ runtime: { theme: { primaryColor: '#123' } } }, 'petstore')
+		// Mutates THIS SAME manifest object (the one bound to PageDesigner's
+		// prop, and therefore the live-preview-pane's CnAppRoot) — no
+		// OpenBuild-owned applier call, per REQ-STA-3.
+		expect(wrapper.vm.manifest.runtime.theme).toEqual({ primaryColor: '#123' })
 		wrapper.vm.onThemePreview(null)
-		expect(appThemeMock.teardown).toHaveBeenCalledWith('petstore')
+		// Reverts to the theme that was persisted BEFORE the first preview
+		// mutation this session — not simply "whatever was there a moment ago".
+		expect(wrapper.vm.manifest.runtime.theme).toEqual({ source: 'nldesign', tokenSet: 'saved-theme' })
+	})
+
+	it('onThemePreview(null) with no active preview is a no-op', async () => {
+		const wrapper = mountHost({ appList: [{ slug: 'petstore' }] })
+		await flush(wrapper)
+		wrapper.vm.manifest = { version: '1.0.0' }
+		wrapper.vm.onThemePreview(null)
+		expect(wrapper.vm.manifest).toEqual({ version: '1.0.0' })
+	})
+
+	it('livePreviewAvailable reflects useLivePreview().available and is forwarded to ThemeSection (design.md OQ-1, task 3.3)', async () => {
+		livePreviewAvailableValue = false
+		const wrapper = mountHost({ appList: [{ slug: 'petstore' }] })
+		await flush(wrapper)
+		expect(wrapper.vm.livePreviewAvailable).toBe(false)
 	})
 
 	it('onCreateLinkProperty deep-links to the schema designer (and no-ops on empty)', async () => {
@@ -354,12 +382,11 @@ describe('PageDesignerHost', () => {
 		expect(wrapper.vm.error).toContain('Failed to save')
 	})
 
-	it('beforeDestroy tears down the live-preview theme', async () => {
+	it('unmounts cleanly with no OpenBuild-owned theme teardown call (REQ-NTS-003 — CnAppRoot tears itself down)', async () => {
 		const wrapper = mountHost({ appList: [{ slug: 'petstore' }] })
 		await flush(wrapper)
-		appThemeMock.teardown.mockClear()
-		wrapper.destroy()
-		expect(appThemeMock.teardown).toHaveBeenCalledWith('petstore')
+		expect(wrapper.vm.appTheme).toBeUndefined()
+		expect(() => wrapper.destroy()).not.toThrow()
 	})
 
 	// --- builder-undo-redo: REQ-BUR-004 session boundaries ------------------
