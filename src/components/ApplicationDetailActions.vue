@@ -66,12 +66,6 @@
 				</template>
 				{{ t('openbuild', 'Settings') }}
 			</NcActionButton>
-			<NcActionButton v-if="obAppRole === 'owner' || obAppRole === 'editor'" :disabled="!obApp" @click="shareTokensOpen = true">
-				<template #icon>
-					<LinkVariant :size="20" />
-				</template>
-				{{ t('openbuild', 'Share links') }}
-			</NcActionButton>
 			<NcActionButton v-if="obApp && obApp.slug" :disabled="!obApp" @click="githubOpen = true">
 				<template #icon>
 					<Github :size="20" />
@@ -152,11 +146,6 @@
 			:open="historyOpen"
 			:application-uuid="obAppUuid"
 			@update:open="historyOpen = $event" />
-		<ShareTokenDialog
-			v-if="obApp && obApp.slug"
-			:open="shareTokensOpen"
-			:app-slug="obApp.slug"
-			@update:open="shareTokensOpen = $event" />
 		<SaveAsTemplateDialog
 			v-if="saveTemplateOpen && obApp"
 			:open="saveTemplateOpen"
@@ -182,14 +171,12 @@ import History from 'vue-material-design-icons/History.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import HelpCircleOutline from 'vue-material-design-icons/HelpCircleOutline.vue'
 import Github from 'vue-material-design-icons/Github.vue'
-import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import PermissionsModal from '../modals/PermissionsModal.vue'
 import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
 import AppSettingsModal from '../modals/AppSettingsModal.vue'
 import GitHubSyncModal from '../modals/GitHubSyncModal.vue'
 import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
 import SaveAsTemplateDialog from '../dialogs/SaveAsTemplateDialog.vue'
-import ShareTokenDialog from '../dialogs/ShareTokenDialog.vue'
 import { getCurrentUserGroups } from '../composables/useRole.js'
 import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import applicationContext from '../mixins/applicationContext.js'
@@ -214,14 +201,12 @@ export default {
 		ContentSaveOutline,
 		HelpCircleOutline,
 		Github,
-		LinkVariant,
 		PermissionsModal,
 		PermissionHistoryModal,
 		AppSettingsModal,
 		GitHubSyncModal,
 		DeleteAppDialog,
 		SaveAsTemplateDialog,
-		ShareTokenDialog,
 		ExportDialog,
 	},
 	mixins: [applicationContext],
@@ -235,7 +220,6 @@ export default {
 			deleteOpen: false,
 			permissionsOpen: false,
 			historyOpen: false,
-			shareTokensOpen: false,
 			exportOpen: false,
 			saveTemplateOpen: false,
 			saveTemplateLoading: false,

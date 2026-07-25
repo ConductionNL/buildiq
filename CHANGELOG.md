@@ -42,21 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   backwards-compatible with the existing bare-copilot surfaces.
 - No autonomous/automation-triggered agent runs in v1 — an agent acts only
   inside a human-initiated chat turn.
-- **App theming** (app-theming) — a lightweight `runtime.appTheme` manifest
-  block (logo + primary/secondary/accent colors + header style) for virtual
-  apps not on a mandated NL Design System token set, reusing
-  nldesign-theme-selection's scoped `[data-openbuild-theme-scope]` CSS
-  applier and app-icon-management's `icon`/`iconDark` fields unmodified.
-- WCAG contrast guardrail (`checkThemeContrast`) — hard, non-bypassable
-  block on saving a theme whose primary/secondary/accent colors fail the
-  4.5:1 (text) / 3:1 (UI element) thresholds, with an inline per-pair
-  explanation.
-- `AppCustomThemeSection.vue` theme editor (color pickers, header-style
-  select, logo picker with opt-in dedicated upload, live swatch preview)
-  and `AppBrandedHeader.vue` (the `headerStyle: "branded"` logo strip),
-  wired into the page designer and the app runtime host.
-- An active nldesign theme takes precedence over `appTheme` colors for any
-  shared CSS variable.
 - **Component blocks** (component-blocks) — capture a configured widget, or
   a selected multi-widget page section, from the page designer into a
   named, reusable `ComponentBlock` (new `componentBlock` OR schema,

@@ -45,8 +45,7 @@
 				<NcButton
 					v-if="application"
 					type="primary"
-					:disabled="saving || themeContrastBlocked"
-					:title="themeContrastBlocked ? t('openbuild', 'The app theme fails WCAG contrast — fix the colors in the App theme section before saving.') : ''"
+					:disabled="saving"
 					@click="save">
 					{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save pages') }}
 				</NcButton>
@@ -99,15 +98,6 @@
 			@update:manifest="onManifestUpdate"
 			@preview="onThemePreview" />
 
-		<!-- app-theming: lightweight logo + 3-color + header-style theme,
-		     reusing the nldesign-theme-selection scoped applier mechanism. -->
-		<AppCustomThemeSection
-			v-if="application"
-			:manifest="manifest"
-			:app-slug="routeSlug"
-			:application-uuid="applicationUuid"
-			@update:manifest="onManifestUpdate" />
-
 		<!-- REQ-DDT-002: Documents section — attach Docudesk templates to the
 		     app's schemas. Soft-checks Docudesk availability for graceful absence. -->
 		<DocumentAttachmentsSection
@@ -141,15 +131,12 @@ import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useAppStatus } from '../composables/useAppStatus.js'
 import { useAppTheme } from '../composables/useAppTheme.js'
-import { useAppCustomTheme } from '../composables/useAppCustomTheme.js'
 import { useCopilot } from '../composables/useCopilot.js'
 import { reconcileWorkflowDependency, reconcileConnectorDependency, reconcileDocumentDependency, stripDependencyMarker } from '../services/manifestDependencies.js'
 import { assignUnassignedFieldsToFinalStep } from '../services/manifestValidation/formLogic.js'
-import { checkThemeContrast } from '../services/checkThemeContrast.js'
 import PageDesigner from './PageDesigner.vue'
 import WorkflowAttachmentsSection from '../components/WorkflowAttachmentsSection.vue'
 import ThemeSection from '../components/ThemeSection.vue'
-import AppCustomThemeSection from '../components/AppCustomThemeSection.vue'
 import DocumentAttachmentsSection from '../components/DocumentAttachmentsSection.vue'
 import SchedulesSection from '../components/SchedulesSection.vue'
 import CopilotPanel from '../components/copilot/CopilotPanel.vue'
@@ -166,7 +153,6 @@ export default {
 		PageDesigner,
 		WorkflowAttachmentsSection,
 		ThemeSection,
-		AppCustomThemeSection,
 		DocumentAttachmentsSection,
 		SchedulesSection,
 		CopilotPanel,
@@ -194,10 +180,6 @@ export default {
 			nldesignAvailable: true,
 			// REQ-NTS-002: scoped theme applier for the designer live preview.
 			appTheme: useAppTheme(),
-			// app-theming: scoped appTheme applier for the designer live
-			// preview — applied BEFORE appTheme (nldesign) per design.md
-			// Decision D3 (see onManifestUpdate() / onThemePreview()).
-			appCustomTheme: useAppCustomTheme(),
 			// REQ-DDT-005: soft capability check for Docudesk (graceful absence).
 			docudeskAvailable: true,
 			// spec ai-copilot REQ-OBAIC-007: builder copilot panel toggle.
@@ -320,21 +302,6 @@ export default {
 		sessionKey() {
 			return `${this.routeSlug}:${this.versionSlug || ''}:${this.saveCounter}`
 		},
-
-		/**
-		 * app-theming / design.md Decision D2: true when the manifest's
-		 * `runtime.appTheme` fails the WCAG contrast guardrail — disables
-		 * the "Save pages" button (no bypass). `save()` re-checks this
-		 * directly as the actual hard gate; this computed only drives the
-		 * button's disabled/title affordance.
-		 *
-		 * @return {boolean}
-		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-wcag-contrast-guardrail-blocks-saving-a-non-compliant-theme
-		 */
-		themeContrastBlocked() {
-			const theme = this.manifest && this.manifest.runtime && this.manifest.runtime.appTheme
-			return !checkThemeContrast(theme).passed
-		},
 	},
 
 	watch: {
@@ -414,7 +381,6 @@ export default {
 	 */
 	beforeDestroy() {
 		this.appTheme.teardown(this.routeSlug)
-		this.appCustomTheme.teardown(this.routeSlug)
 	},
 
 	methods: {
@@ -423,17 +389,11 @@ export default {
 		 * the designer surface (the same scope attribute the runtime host uses,
 		 * carried on this view's root). `null` reverts to default styling.
 		 *
-		 * app-theming / design.md Decision D3: appCustomTheme is (re-)applied
-		 * FIRST, then the nldesign preview second, so the designer surface
-		 * exercises the same precedence order the runtime host uses.
-		 *
 		 * @param {?object} theme - the candidate runtime.theme, or null to revert.
 		 * @return {void}
 		 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002
-		 * @spec openspec/changes/app-theming/specs/app-theming/spec.md#requirement-an-active-nldesign-theme-takes-precedence-over-apptheme-colors
 		 */
 		onThemePreview(theme) {
-			this.appCustomTheme.apply(this.manifest, this.routeSlug)
 			if (theme) {
 				this.appTheme.apply({ runtime: { theme } }, this.routeSlug)
 			} else {
@@ -546,10 +506,6 @@ export default {
 		 */
 		onManifestUpdate(next) {
 			this.manifest = next
-			// app-theming: keep the designer live preview in sync with every
-			// edit (not just the nldesign picker's explicit preview toggle),
-			// injected before appTheme per design.md Decision D3.
-			this.appCustomTheme.apply(this.manifest, this.routeSlug)
 		},
 
 		/**
@@ -560,19 +516,6 @@ export default {
 		 */
 		async save() {
 			if (!this.application || !this.applicationUuid || this.saving) {
-				return
-			}
-			// app-theming / design.md Decision D2: hard WCAG-contrast gate on
-			// the actual persist boundary — no override or bypass. The
-			// `themeContrastBlocked` computed already disables the button;
-			// this direct re-check is the load-bearing guard (defence in depth
-			// against any future caller of save() that bypasses the button,
-			// e.g. a keyboard shortcut or another future entry point).
-			const contrastResult = checkThemeContrast(this.manifest && this.manifest.runtime && this.manifest.runtime.appTheme)
-			if (!contrastResult.passed) {
-				this.error = t('openbuild', 'Cannot save: the app theme fails WCAG contrast — {failures}', {
-					failures: contrastResult.failures.map((f) => `${f.pair} ${f.ratio}:1 (requires ${f.required}:1)`).join('; '),
-				})
 				return
 			}
 			this.saving = true
