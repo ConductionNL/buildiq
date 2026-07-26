@@ -91,7 +91,7 @@
 					},
 					"einddatum": {
 						"title": "End Date",
-						"type": ["string", "null"],
+						"type": "string",
 						"format": "date",
 						"description": "Optional end-of-validity date."
 					},
