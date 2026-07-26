@@ -108,10 +108,7 @@
 					},
 					"condition": {
 						"title": "Condition",
-						"type": [
-							"object",
-							"null"
-						],
+						"type": "object",
 						"description": "Optional condition, v1-supported only on the `manual` trigger (design.md Decision 2 — the rules backend is the only existing primitive that evaluates FEEL). Either a FEEL-subset expression or a reference to an existing rule set.",
 						"properties": {
 							"type": {
@@ -322,18 +319,12 @@
 							},
 							"ruleSetSlug": {
 								"title": "Rule Set Slug",
-								"type": [
-									"string",
-									"null"
-								],
+								"type": "string",
 								"description": "The `aut-<uuid8>` RuleSet compiled for a manual-trigger automation, or null."
 							},
 							"approvalChainName": {
 								"title": "Approval Chain Name",
-								"type": [
-									"string",
-									"null"
-								],
+								"type": "string",
 								"description": "The `aut-<slug>` OpenRegister ApprovalChain name compiled for an approval-action automation, or null. Enable/disable/delete removes exactly this provenance-listed chain (automation-approval-steps)."
 							},
 							"openconnectorObjects": {
