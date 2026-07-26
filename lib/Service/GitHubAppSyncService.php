@@ -43,6 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Service;
 
 use OCA\OpenBuild\Exception\AppRepoParseException;
+use OCA\OpenBuild\Service\ExportService;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -126,6 +127,7 @@ class GitHubAppSyncService
      * @param AppRepoSerializer    $serializer     Local → repo file map (change 1).
      * @param AppRepoParser        $parser         Repo file map → clone-seam array (change 1).
      * @param GitHubCatalogService $catalogService Repo fetch + commit-sha resolution (change 2).
+     * @param ExportService        $exportService  Builds the installable NC-app scaffold folded into the repo.
      * @param LoggerInterface      $logger         PSR logger (secret-free diagnostics only).
      *
      * @return void
@@ -137,6 +139,7 @@ class GitHubAppSyncService
         private readonly AppRepoSerializer $serializer,
         private readonly AppRepoParser $parser,
         private readonly GitHubCatalogService $catalogService,
+        private readonly ExportService $exportService,
         private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
@@ -223,7 +226,14 @@ class GitHubAppSyncService
             return ['outcome' => 'version_not_found'];
         }
 
-        $files = $this->serializer->serialize(application: $application, version: $version);
+        // The published repo is BOTH a config-set store AND an installable,
+        // standalone nc-vue app: fold the resolved app scaffold (info.xml, the
+        // manifest runtime, package.json pinning nc-vue) under the config triad.
+        // Config files win on any path collision.
+        $files = array_merge(
+            $this->scaffoldFor(application: $application, version: $version),
+            $this->serializer->serialize(application: $application, version: $version)
+        );
 
         $repo = $this->ensureRepo(
             application: $application,
@@ -252,6 +262,78 @@ class GitHubAppSyncService
 
         return $result;
     }//end push()
+
+    /**
+     * Build the installable app scaffold for a published app, with the app's own
+     * manifest wired into the standalone runtime.
+     *
+     * @param array<string,mixed> $application The Application object.
+     * @param array<string,mixed> $version     The chosen ApplicationVersion object.
+     *
+     * @return array<string,string> The scaffold `path => contents` map (empty on failure).
+     */
+    private function scaffoldFor(array $application, array $version): array
+    {
+        $slug     = (string) ($application['slug'] ?? '');
+        $manifest = [];
+        if (is_array($version['manifest'] ?? null) === true) {
+            $manifest = $version['manifest'];
+        }
+
+        $context = [
+            'appId'        => $slug,
+            'appNamespace' => $this->slugToNamespace(slug: $slug),
+            'appName'      => (string) ($application['name'] ?? $this->slugToLabel(slug: $slug)),
+            'appVersion'   => (string) ($version['version'] ?? ($version['semver'] ?? '0.1.0')),
+            'authorName'   => 'OpenBuild Citizen Developer',
+            'authorEmail'  => 'dev@conduction.nl',
+            'license'      => 'agpl',
+        ];
+
+        try {
+            $scaffold = $this->exportService->buildScaffoldMap(context: $context);
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                'OpenBuild publish: scaffold build failed; publishing config-only',
+                ['error' => $e->getMessage()]
+            );
+            return [];
+        }
+
+        // Make the standalone runtime render THIS app: its own manifest replaces
+        // the template's placeholder src/manifest.json.
+        if ($manifest !== []) {
+            $scaffold['src/manifest.json'] = (string) json_encode($manifest, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        }
+
+        return $scaffold;
+    }//end scaffoldFor()
+
+    /**
+     * Convert a kebab/space slug to a PascalCase namespace.
+     *
+     * @param string $slug The slug.
+     *
+     * @return string The namespace.
+     */
+    private function slugToNamespace(string $slug): string
+    {
+        $parts = array_filter((array) preg_split('/[^a-z0-9]+/i', $slug));
+        return implode('', array_map('ucfirst', $parts));
+    }//end slugToNamespace()
+
+    /**
+     * Convert a kebab slug to a human label.
+     *
+     * @param string $slug The slug.
+     *
+     * @return string The label.
+     */
+    private function slugToLabel(string $slug): string
+    {
+        $parts = array_filter((array) preg_split('/[^a-z0-9]+/i', $slug));
+        return implode(' ', array_map('ucfirst', $parts));
+    }//end slugToLabel()
 
     /**
      * Serialize a seeded template and publish it to GitHub as an `openbuild-app`

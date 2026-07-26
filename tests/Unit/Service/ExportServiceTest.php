@@ -84,6 +84,34 @@ final class ExportServiceTest extends TestCase
         self::assertSame('world', $contents);
     }//end testPackageZipProducesReadableArchive()
 
+    public function testBuildScaffoldMapProducesAnInstallableStandaloneApp(): void
+    {
+        $map = $this->buildService()->buildScaffoldMap(
+            context: [
+                'appId'        => 'demo-app',
+                'appNamespace' => 'DemoApp',
+                'appName'      => 'Demo App',
+                'appVersion'   => '1.2.3',
+                'authorName'   => 'Dev',
+                'authorEmail'  => 'dev@conduction.nl',
+                'license'      => 'agpl',
+            ]
+        );
+
+        // The scaffold carries the NC-app files that make the config-set repo
+        // app-store installable + standalone on nc-vue.
+        $this->assertArrayHasKey('appinfo/info.xml', $map);
+        $this->assertArrayHasKey('package.json', $map);
+        $this->assertArrayHasKey('src/main.js', $map);
+
+        // Placeholders resolved to the app.
+        $this->assertStringContainsString('demo-app', $map['appinfo/info.xml']);
+        // The build packages the nc-vue stack itself.
+        $this->assertStringContainsString('@conduction/nextcloud-vue', $map['package.json']);
+        // OpenRegister is declared its data-layer dependency.
+        $this->assertStringContainsString('OpenRegister', $map['appinfo/info.xml']);
+    }
+
     private function buildService(
         ?RegisterMapper $registerMapper=null,
         ?SchemaMapper $schemaMapper=null,
