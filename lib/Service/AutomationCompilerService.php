@@ -378,15 +378,26 @@ class AutomationCompilerService
             fallbackSchemaSlug: (string) ($automation['trigger']['schema'] ?? '')
         );
 
-        return [
+        // `ruleSetSlug` / `approvalChainName` are null when the automation has
+        // no rule set / approval chain. Their register properties are typed
+        // `string` (a bare `["string","null"]` union is rejected by the
+        // OpenRegister importer), so persisting an explicit null fails schema
+        // validation on the compile re-save with a 500. Every consumer already
+        // reads these with `?? null`, so omit them entirely when absent.
+        $provenance = [
             'notificationKeys'     => $notificationKeys,
             'lifecycleActions'     => $lifecycleActions,
             'scheduleIds'          => $scheduleIds,
-            'ruleSetSlug'          => $ruleSetSlug,
-            'approvalChainName'    => $approvalChainName,
             'openconnectorObjects' => [],
             'compiledHash'         => (string) $plan['hash'],
         ];
+        if ($ruleSetSlug !== null) {
+            $provenance['ruleSetSlug'] = $ruleSetSlug;
+        }
+        if ($approvalChainName !== null) {
+            $provenance['approvalChainName'] = $approvalChainName;
+        }
+        return $provenance;
 
     }//end apply()
 
