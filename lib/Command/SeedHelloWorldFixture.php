@@ -131,6 +131,17 @@ class SeedHelloWorldFixture extends Command
                     'slug'        => self::SEED_SLUG,
                     'name'        => 'Hello World',
                     'description' => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
+                    // Grant the admin user owner rights so automation ops
+                    // (compile/enable/dry-run — WRITE_ROLES ['owners','editors'])
+                    // are permitted. Wizard-created apps set this; the seed ran
+                    // in system context with permissions=null, which makes
+                    // matchesCaller() deny everyone (empty-permissions = deny,
+                    // allowAdminBypass=false) and 403s every automation op.
+                    'permissions' => [
+                        'owners'  => ['user:admin'],
+                        'editors' => [],
+                        'viewers' => [],
+                    ],
                 ]
             );
             $applicationUuid = $application->getUuid();
