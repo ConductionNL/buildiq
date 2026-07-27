@@ -17,7 +17,7 @@
   Tracks issue #26 (PageDesigner used to render with an empty manifest).
 -->
 <template>
-	<div class="page-designer-host" :data-openbuild-theme-scope="routeSlug">
+	<div class="page-designer-host">
 		<header class="page-designer-host__header">
 			<div class="page-designer-host__title">
 				<h2>{{ application ? application.name : t('openbuild', 'Page designer') }}</h2>
@@ -90,11 +90,15 @@
 			@create-link-property="onCreateLinkProperty" />
 
 		<!-- REQ-NTS-002: Theme section — pick an NL Design token set for this
-		     app. Soft-checks nldesign availability for graceful absence. -->
+		     app. Soft-checks nldesign availability for graceful absence.
+		     `preview-available` gates the live-preview toggle on whether the
+		     sandboxed live-preview-pane CnAppRoot is mounted (design.md OQ-1 /
+		     Decision 3, task 3.3). -->
 		<ThemeSection
 			v-if="application"
 			:manifest="manifest"
 			:nldesign-available="nldesignAvailable"
+			:preview-available="livePreviewAvailable"
 			@update:manifest="onManifestUpdate"
 			@preview="onThemePreview" />
 
@@ -130,7 +134,7 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useAppStatus } from '../composables/useAppStatus.js'
-import { useAppTheme } from '../composables/useAppTheme.js'
+import { useLivePreview } from '../composables/useLivePreview.js'
 import { useCopilot } from '../composables/useCopilot.js'
 import { reconcileWorkflowDependency, reconcileConnectorDependency, reconcileDocumentDependency, stripDependencyMarker } from '../services/manifestDependencies.js'
 import { assignUnassignedFieldsToFinalStep } from '../services/manifestValidation/formLogic.js'
@@ -158,8 +162,18 @@ export default {
 		CopilotPanel,
 	},
 
+	/**
+	 * REQ-NTS-002 (design.md OQ-1 / Decision 3): `livePreview` exposes the
+	 * same feature-detected `useLivePreview()` composable PageDesigner.vue's
+	 * own live-preview pane uses, so this host's `livePreviewAvailable`
+	 * computed can gate the theme dialog's preview toggle on whether that
+	 * pane is actually mounted.
+	 *
+	 * @return {{copilot: object, livePreview: object}}
+	 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+	 */
 	setup() {
-		return { copilot: useCopilot() }
+		return { copilot: useCopilot(), livePreview: useLivePreview() }
 	},
 
 	data() {
@@ -178,8 +192,11 @@ export default {
 			procestAvailable: true,
 			// REQ-NTS-005: soft capability check for nldesign (graceful absence).
 			nldesignAvailable: true,
-			// REQ-NTS-002: scoped theme applier for the designer live preview.
-			appTheme: useAppTheme(),
+			// REQ-NTS-002/OQ-1: the theme dialog's pre-preview baseline —
+			// `undefined` when no preview is active; the theme (or null) that
+			// was persisted before the FIRST preview mutation this dialog
+			// session, restored when the preview reverts (onThemePreview(null)).
+			themePreviewBaseline: undefined,
 			// REQ-DDT-005: soft capability check for Docudesk (graceful absence).
 			docudeskAvailable: true,
 			// spec ai-copilot REQ-OBAIC-007: builder copilot panel toggle.
@@ -302,6 +319,20 @@ export default {
 		sessionKey() {
 			return `${this.routeSlug}:${this.versionSlug || ''}:${this.saveCounter}`
 		},
+
+		/**
+		 * REQ-NTS-002 (design.md OQ-1 / Decision 3, task 3.3): whether the
+		 * page-designer live-preview-pane's sandboxed CnAppRoot is available
+		 * to retarget a theme preview into. Gates the ThemePickerDialog's
+		 * live-preview toggle so it disables with a hint instead of silently
+		 * no-op'ing when the pane cannot be mounted.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 */
+		livePreviewAvailable() {
+			return this.livePreview.available.value
+		},
 	},
 
 	watch: {
@@ -373,32 +404,70 @@ export default {
 		this.copilot.checkHealth()
 	},
 
-	/**
-	 * REQ-NTS-002: tear down any live designer-preview theme on leave so it
-	 * never lingers after navigation.
-	 *
-	 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002
-	 */
-	beforeDestroy() {
-		this.appTheme.teardown(this.routeSlug)
-	},
+	// REQ-NTS-002/STA-3: no beforeDestroy teardown needed — the live-preview
+	// pane's sandboxed CnAppRoot (like every CnAppRoot) tears down its own
+	// managed style element on unmount via `useScopedTheme`, and it unmounts
+	// along with the rest of this view when the designer is left.
 
 	methods: {
 		/**
-		 * REQ-NTS-002: apply or revert the candidate theme as a live preview on
-		 * the designer surface (the same scope attribute the runtime host uses,
-		 * carried on this view's root). `null` reverts to default styling.
+		 * REQ-NTS-002 (design.md Decision 3, OQ-1): retarget the theme dialog's
+		 * live-preview toggle at the sandboxed live-preview-pane CnAppRoot
+		 * (PageDesigner.vue's `livePreviewProps.manifest`, which IS this same
+		 * `manifest` object by reference) instead of a separate OpenBuild-owned
+		 * applier. Mutating `runtime.theme` here is picked up by that CnAppRoot
+		 * instance's own `useScopedTheme` watcher (REQ-STA-3) with no further
+		 * wiring. The FIRST candidate mutation snapshots the pre-preview theme
+		 * into `themePreviewBaseline`; reverting (`theme === null`) restores
+		 * exactly that snapshot rather than whatever the manifest most recently
+		 * held, so cancelling always returns to the previously SAVED theme
+		 * (never a different mid-session preview) and clears the baseline.
 		 *
 		 * @param {?object} theme - the candidate runtime.theme, or null to revert.
 		 * @return {void}
-		 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
 		 */
 		onThemePreview(theme) {
 			if (theme) {
-				this.appTheme.apply({ runtime: { theme } }, this.routeSlug)
-			} else {
-				this.appTheme.teardown(this.routeSlug)
+				if (this.themePreviewBaseline === undefined) {
+					this.themePreviewBaseline = (this.manifest.runtime && this.manifest.runtime.theme) || null
+				}
+				this.manifest = this.withRuntimeTheme(this.manifest, theme)
+				return
 			}
+			if (this.themePreviewBaseline === undefined) {
+				// No preview was ever started this session — nothing to revert.
+				return
+			}
+			this.manifest = this.withRuntimeTheme(this.manifest, this.themePreviewBaseline)
+			this.themePreviewBaseline = undefined
+		},
+		/**
+		 * Return a manifest copy with `runtime.theme` set (or removed when
+		 * `theme` is falsy, so a themeless revert serializes byte-identically).
+		 * Mirrors `ThemeSection.withTheme()`'s immutable-replace shape so Vue 2's
+		 * reactivity picks up the change through the prop chain into the
+		 * live-preview pane.
+		 *
+		 * @param {object} manifest - the manifest to copy.
+		 * @param {?object} theme - the theme object, or null/undefined to clear.
+		 * @return {object}
+		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 */
+		withRuntimeTheme(manifest, theme) {
+			const next = { ...manifest }
+			const runtime = { ...(next.runtime || {}) }
+			if (theme) {
+				runtime.theme = theme
+			} else {
+				delete runtime.theme
+			}
+			if (Object.keys(runtime).length === 0) {
+				delete next.runtime
+			} else {
+				next.runtime = runtime
+			}
+			return next
 		},
 		/**
 		 * Delegate one-click link-property creation to the schema designer.

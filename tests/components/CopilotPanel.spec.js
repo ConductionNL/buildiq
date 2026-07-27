@@ -104,4 +104,76 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 
 		expect(wrapper.find('[data-testid="copilot-message-input"]').attributes('disabled')).toBeTruthy()
 	})
+
+	// -------------------------------------------------------------------
+	// Agent-scoping (spec agent-workspace design.md Decision 3)
+	// -------------------------------------------------------------------
+
+	it('omitting agentId renders no "acting as" header (bare copilot, unchanged)', () => {
+		const wrapper = mount(CopilotPanel, { propsData: { appSlug: 'tool-library' } })
+		expect(wrapper.find('[data-testid="copilot-acting-as"]').exists()).toBe(false)
+	})
+
+	it('an agentId renders the "acting as" header with the agent name', () => {
+		const wrapper = mount(CopilotPanel, {
+			propsData: { appSlug: 'tool-library', agentId: 'agent-1', name: 'Page builder assistant', instructions: 'Be helpful.' },
+		})
+		const header = wrapper.find('[data-testid="copilot-acting-as"]')
+		expect(header.exists()).toBe(true)
+		expect(header.text()).toContain('Page builder assistant')
+		expect(header.text()).toContain('Be helpful.')
+	})
+
+	it('sending a message with an agentId includes it in the plan request', async () => {
+		axiosPost.mockReturnValueOnce(new Promise(() => {}))
+		const wrapper = mount(CopilotPanel, { propsData: { appSlug: 'tool-library', agentId: 'agent-1' } })
+		await wrapper.find('[data-testid="copilot-message-input"]').setValue('add a page')
+		await wrapper.find('[data-testid="copilot-message-input"]').trigger('keydown.enter')
+
+		expect(axiosPost).toHaveBeenCalledWith(
+			'/apps/openbuild/api/copilot/plan',
+			expect.objectContaining({ brief: 'add a page', appSlug: 'tool-library', agentId: 'agent-1' }),
+		)
+	})
+
+	it('approving a proposal with an agentId includes it in the execute request', async () => {
+		axiosPost
+			.mockResolvedValueOnce({ data: { summary: 'x', steps: [{ tool: 'openbuild.upsertPage', arguments: {} }], manifests: {} } })
+			.mockResolvedValueOnce({ data: { results: [{ success: true }] } })
+
+		const wrapper = mount(CopilotPanel, { propsData: { appSlug: 'tool-library', agentId: 'agent-1' } })
+		await wrapper.find('[data-testid="copilot-message-input"]').setValue('add a page')
+		await wrapper.find('[data-testid="copilot-message-input"]').trigger('keydown.enter')
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		await wrapper.findComponent({ name: 'CopilotProposal' }).vm.$emit('approve')
+		await flush()
+
+		expect(axiosPost).toHaveBeenNthCalledWith(
+			2,
+			'/apps/openbuild/api/copilot/execute',
+			expect.objectContaining({ agentId: 'agent-1', prompt: 'add a page' }),
+		)
+	})
+
+	it('discarding a proposal with an agentId logs it via the discard endpoint', async () => {
+		axiosPost.mockResolvedValueOnce({ data: { summary: 'x', steps: [{ tool: 'openbuild.upsertPage', arguments: {} }], manifests: {} } })
+
+		const wrapper = mount(CopilotPanel, { propsData: { appSlug: 'tool-library', agentId: 'agent-1' } })
+		await wrapper.find('[data-testid="copilot-message-input"]').setValue('add a page')
+		await wrapper.find('[data-testid="copilot-message-input"]').trigger('keydown.enter')
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		axiosPost.mockClear()
+		axiosPost.mockResolvedValueOnce({ data: { status: 'logged' } })
+		await wrapper.findComponent({ name: 'CopilotProposal' }).vm.$emit('discard')
+		await flush()
+
+		expect(axiosPost).toHaveBeenCalledWith(
+			'/apps/openbuild/api/copilot/discard',
+			expect.objectContaining({ agentId: 'agent-1', prompt: 'add a page' }),
+		)
+	})
 })

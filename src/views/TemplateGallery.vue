@@ -8,71 +8,129 @@
 			</p>
 		</header>
 
-		<!-- GitHub store: server-backed search against topic:openbuild-app. -->
-		<div class="template-gallery__filters">
-			<NcTextField
-				:value="githubQuery"
-				:label="t('openbuild', 'Search GitHub')"
-				:placeholder="t('openbuild', 'Search apps published to GitHub (topic: openbuild-app)')"
-				@update:value="onGithubQuery" />
+		<!-- component-blocks REQ-OBTC-003: top-level Templates/Blocks toggle. -->
+		<div class="template-gallery__view-toggle" role="tablist">
+			<button
+				type="button"
+				role="tab"
+				:aria-selected="viewMode === 'templates'"
+				:class="['template-gallery__view-btn', { 'template-gallery__view-btn--active': viewMode === 'templates' }]"
+				@click="viewMode = 'templates'">
+				{{ t('openbuild', 'Templates') }}
+			</button>
+			<button
+				type="button"
+				role="tab"
+				:aria-selected="viewMode === 'blocks'"
+				:class="['template-gallery__view-btn', { 'template-gallery__view-btn--active': viewMode === 'blocks' }]"
+				@click="onSelectBlocksTab">
+				{{ t('openbuild', 'Blocks') }}
+			</button>
 		</div>
 
-		<NcNoteCard v-if="githubUnavailable" type="warning" class="template-gallery__github-hint">
-			{{ githubRateLimited
-				? t('openbuild', 'GitHub is rate-limiting anonymous browsing right now. Try again shortly.')
-				: t('openbuild', 'GitHub could not be reached right now. Try again shortly.') }}
-			<span v-if="githubRateLimited && !hasGithubCredential">
-				{{ t('openbuild', 'Add a GitHub credential in your OpenRegister credentials settings to raise the rate limit and browse private repositories.') }}
-			</span>
-		</NcNoteCard>
+		<template v-if="viewMode === 'templates'">
+			<!-- GitHub store: server-backed search against topic:openbuild-app. -->
+			<div class="template-gallery__filters">
+				<NcTextField
+					:value="githubQuery"
+					:label="t('openbuild', 'Search GitHub')"
+					:placeholder="t('openbuild', 'Search apps published to GitHub (topic: openbuild-app)')"
+					@update:value="onGithubQuery" />
+			</div>
 
-		<div v-if="githubLoading" class="template-gallery__loading">
-			<NcLoadingIcon :size="32" />
-			<span>{{ t('openbuild', 'Searching GitHub…') }}</span>
-		</div>
+			<NcNoteCard v-if="githubUnavailable" type="warning" class="template-gallery__github-hint">
+				{{ githubRateLimited
+					? t('openbuild', 'GitHub is rate-limiting anonymous browsing right now. Try again shortly.')
+					: t('openbuild', 'GitHub could not be reached right now. Try again shortly.') }}
+				<span v-if="githubRateLimited && !hasGithubCredential">
+					{{ t('openbuild', 'Add a GitHub credential in your OpenRegister credentials settings to raise the rate limit and browse private repositories.') }}
+				</span>
+			</NcNoteCard>
 
-		<div v-else-if="githubCards.length === 0 && githubSearched" class="template-gallery__empty">
-			<NcEmptyContent :name="t('openbuild', 'No GitHub apps match your search')" />
-		</div>
+			<div v-if="githubLoading" class="template-gallery__loading">
+				<NcLoadingIcon :size="32" />
+				<span>{{ t('openbuild', 'Searching GitHub…') }}</span>
+			</div>
 
-		<ul v-else class="template-gallery__grid" data-walkthrough-id="templates-grid">
-			<li v-for="card in githubCards" :key="card.owner + '/' + card.repo" class="template-card">
-				<div class="template-card__body">
-					<h2 class="template-card__title">
-						{{ card.name || card.slug || card.repo }}
-					</h2>
-					<span v-if="card.unparseable || !card.installable" class="template-card__badge template-card__badge--warn">
-						{{ t('openbuild', 'Unreadable app descriptor') }}
-					</span>
-					<span v-if="card.category" class="template-card__category">{{ categoryLabel(card.category) }}</span>
-					<p class="template-card__description">
-						{{ card.description || '' }}
-					</p>
-					<div class="template-card__github-meta">
-						<span class="template-card__chip">{{ card.owner }}/{{ card.repo }}</span>
-						<span v-if="card.appType" class="template-card__chip">{{ card.appType }}</span>
-						<span v-if="card.version" class="template-card__chip">v{{ card.version }}</span>
-						<span v-if="card.stars" class="template-card__chip">★ {{ card.stars }}</span>
+			<div v-else-if="githubCards.length === 0 && githubSearched" class="template-gallery__empty">
+				<NcEmptyContent :name="t('openbuild', 'No GitHub apps match your search')" />
+			</div>
+
+			<ul v-else class="template-gallery__grid" data-walkthrough-id="templates-grid">
+				<li v-for="card in githubCards" :key="card.owner + '/' + card.repo" class="template-card">
+					<div class="template-card__body">
+						<h2 class="template-card__title">
+							{{ card.name || card.slug || card.repo }}
+						</h2>
+						<span v-if="card.unparseable || !card.installable" class="template-card__badge template-card__badge--warn">
+							{{ t('openbuild', 'Unreadable app descriptor') }}
+						</span>
+						<span v-if="card.category" class="template-card__category">{{ categoryLabel(card.category) }}</span>
+						<p class="template-card__description">
+							{{ card.description || '' }}
+						</p>
+						<div class="template-card__github-meta">
+							<span class="template-card__chip">{{ card.owner }}/{{ card.repo }}</span>
+							<span v-if="card.appType" class="template-card__chip">{{ card.appType }}</span>
+							<span v-if="card.version" class="template-card__chip">v{{ card.version }}</span>
+							<span v-if="card.stars" class="template-card__chip">★ {{ card.stars }}</span>
+						</div>
+						<div v-if="card.credentials && card.credentials.length" class="template-card__github-meta">
+							<span v-for="cred in card.credentials" :key="cred" class="template-card__chip template-card__chip--muted">
+								{{ t('openbuild', 'Needs credential: {name}', { name: cred }) }}
+							</span>
+						</div>
 					</div>
-					<div v-if="card.credentials && card.credentials.length" class="template-card__github-meta">
-						<span v-for="cred in card.credentials" :key="cred" class="template-card__chip template-card__chip--muted">
-							{{ t('openbuild', 'Needs credential: {name}', { name: cred }) }}
+					<div class="template-card__actions">
+						<NcButton
+							v-if="card.installable && !card.unparseable"
+							type="primary"
+							@click="openGithubInstall(card)">
+							{{ t('openbuild', 'Install') }}
+						</NcButton>
+						<span v-else class="template-card__disabled-hint">
+							{{ t('openbuild', 'This repository has no readable OpenBuild descriptor and cannot be installed.') }}
 						</span>
 					</div>
-				</div>
-				<div class="template-card__actions">
-					<NcButton
-						v-if="card.installable && !card.unparseable"
-						type="primary"
-						@click="openGithubInstall(card)">
-						{{ t('openbuild', 'Install') }}
-					</NcButton>
-					<span v-else class="template-card__disabled-hint">
-						{{ t('openbuild', 'This repository has no readable OpenBuild descriptor and cannot be installed.') }}
-					</span>
-				</div>
-			</li>
-		</ul>
+				</li>
+			</ul>
+		</template>
+
+		<!-- component-blocks: "Blocks" filter — browse-only, no clone action
+		     (blocks insert via the page designer's block library, per
+		     REQ "Blocks filter shows blocks without the clone action"). -->
+		<template v-else>
+			<div class="template-gallery__filters">
+				<NcSelect
+					v-model="blockCategoryFilter"
+					:input-label="t('openbuild', 'Filter by category')"
+					:options="blockCategoryOptions"
+					:clearable="true"
+					:placeholder="t('openbuild', 'All categories')" />
+			</div>
+
+			<div v-if="blocksLoading" class="template-gallery__loading">
+				<NcLoadingIcon :size="32" />
+			</div>
+
+			<div v-else-if="filteredBlocks.length === 0" class="template-gallery__empty">
+				<NcEmptyContent :name="t('openbuild', 'No blocks yet')" :description="t('openbuild', 'Save a widget or section from a page designer to build your first block.')" />
+			</div>
+
+			<ul v-else class="template-gallery__grid">
+				<li v-for="block in filteredBlocks" :key="block.slug" class="template-card">
+					<div class="template-card__body">
+						<h2 class="template-card__title">
+							{{ block.name }}
+						</h2>
+						<span v-if="block.category" class="template-card__category">{{ block.category }}</span>
+						<p class="template-card__description">
+							{{ block.description }}
+						</p>
+					</div>
+				</li>
+			</ul>
+		</template>
 
 		<CloneTemplateDialog
 			:open="cloneOpen"
@@ -87,8 +145,10 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard, NcTextField } from '@nextcloud/vue'
+import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard, NcSelect, NcTextField } from '@nextcloud/vue'
 import CloneTemplateDialog from '../modals/CloneTemplateDialog.vue'
+
+const OR_BLOCKS = '/apps/openregister/api/objects/openbuild/component-block'
 
 const CATEGORY_LABELS = {
 	'government-services': 'Government services',
@@ -104,6 +164,7 @@ export default {
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcNoteCard,
+		NcSelect,
 		NcTextField,
 		CloneTemplateDialog,
 	},
@@ -123,6 +184,12 @@ export default {
 			githubCredentialId: null,
 			hasGithubCredential: false,
 			githubDebounce: null,
+			// component-blocks REQ-OBTC-003: Templates/Blocks toggle + block list.
+			viewMode: 'templates',
+			blocks: [],
+			blocksLoading: false,
+			blocksLoaded: false,
+			blockCategoryFilter: null,
 		}
 	},
 	computed: {
@@ -135,6 +202,32 @@ export default {
 		 */
 		githubUnavailable() {
 			return this.githubRateLimited || (this.githubOutcome !== '' && this.githubOutcome !== 'ok')
+		},
+		/**
+		 * Distinct categories present across the loaded blocks, for the filter.
+		 *
+		 * @return {Array<{id: string, label: string}>}
+		 * @spec openspec/changes/component-blocks/specs/openbuild-template-catalogue/spec.md
+		 */
+		blockCategoryOptions() {
+			const seen = new Set()
+			return this.blocks
+				.map((b) => b && b.category)
+				.filter((c) => c && !seen.has(c) && seen.add(c))
+				.map((c) => ({ id: c, label: c }))
+		},
+		/**
+		 * The visible blocks after the category filter is applied.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/component-blocks/specs/openbuild-template-catalogue/spec.md
+		 */
+		filteredBlocks() {
+			const selected = this.blockCategoryFilter && (this.blockCategoryFilter.id ?? this.blockCategoryFilter)
+			if (!selected) {
+				return this.blocks
+			}
+			return this.blocks.filter((b) => b && b.category === selected)
 		},
 	},
 	mounted() {
@@ -285,6 +378,38 @@ export default {
 			const routes = this.$router?.options?.routes || []
 			return routes.some((route) => route.name === name)
 		},
+		/**
+		 * Switch to the "Blocks" filter, lazily fetching the block list the
+		 * first time it is opened.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/component-blocks/specs/openbuild-template-catalogue/spec.md
+		 */
+		onSelectBlocksTab() {
+			this.viewMode = 'blocks'
+			if (!this.blocksLoaded) {
+				this.fetchBlocks()
+			}
+		},
+		/**
+		 * Fetch every `ComponentBlock` visible to the caller (org-scoped, same
+		 * OR REST listing the page designer's block-library panel uses).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/component-blocks/specs/openbuild-template-catalogue/spec.md
+		 */
+		async fetchBlocks() {
+			this.blocksLoading = true
+			try {
+				const { data } = await axios.get(generateUrl(OR_BLOCKS))
+				this.blocks = Array.isArray(data && data.results) ? data.results : (Array.isArray(data) ? data : [])
+			} catch (e) {
+				this.blocks = []
+			} finally {
+				this.blocksLoading = false
+				this.blocksLoaded = true
+			}
+		},
 	},
 }
 </script>
@@ -311,6 +436,27 @@ export default {
 	display: flex;
 	gap: 16px;
 	flex-wrap: wrap;
+}
+
+.template-gallery__view-toggle {
+	display: flex;
+	gap: 4px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.template-gallery__view-btn {
+	padding: 8px 16px;
+	border: none;
+	background: transparent;
+	color: var(--color-text-maxcontrast);
+	cursor: pointer;
+	border-bottom: 2px solid transparent;
+}
+
+.template-gallery__view-btn--active {
+	color: var(--color-main-text);
+	border-bottom-color: var(--color-primary-element);
+	font-weight: 600;
 }
 
 .template-gallery__github-hint {

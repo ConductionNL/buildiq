@@ -119,7 +119,7 @@ class SeedApplicationTemplates implements IRepairStep
 
         $output->info(
             'OpenBuild template seeding complete. New: '.$result['seeded']
-            .', updated: '.($result['updated'] ?? 0).', skipped: '.$result['skipped']
+            .', updated: '.$result['updated'].', skipped: '.$result['skipped']
         );
     }//end run()
 }//end class

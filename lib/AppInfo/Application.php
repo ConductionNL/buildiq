@@ -32,6 +32,7 @@ use OCA\OpenBuild\Lifecycle\ApplicationVersionOwnerGuard;
 use OCA\OpenBuild\Listener\ApprovalOutcomeListener;
 use OCA\OpenBuild\Listener\AutomationApprovalTriggerListener;
 use OCA\OpenBuild\Listener\AutomationCleanupListener;
+use OCA\OpenBuild\Listener\DocumentGenerationListener;
 use OCA\OpenBuild\Listener\HybridMetadataLockListener;
 use OCA\OpenBuild\Listener\ProductionVersionGuardListener;
 use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
@@ -365,6 +366,31 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(
             event: ApprovalStepRejectedEvent::class,
             listener: ApprovalOutcomeListener::class
+        );
+
+        // Automation-document-action: trigger-fire half of the
+        // `generateDocument` action kind (spec REQ-AUTD-004 generateDocument
+        // scenarios). Mirrors AutomationApprovalTriggerListener exactly —
+        // AutomationCompilerService compiles no artifact for this action
+        // kind (Docudesk's generate route is stateless), so the actual
+        // owner-impersonated call happens here, at trigger-fire time.
+        // Registered for the same four trigger-shape events the v1 matrix
+        // supports (design.md Decision 2 of automation-document-action).
+        $context->registerEventListener(
+            event: ObjectCreatedEvent::class,
+            listener: DocumentGenerationListener::class
+        );
+        $context->registerEventListener(
+            event: ObjectUpdatedEvent::class,
+            listener: DocumentGenerationListener::class
+        );
+        $context->registerEventListener(
+            event: ObjectDeletedEvent::class,
+            listener: DocumentGenerationListener::class
+        );
+        $context->registerEventListener(
+            event: ObjectTransitionedEvent::class,
+            listener: DocumentGenerationListener::class
         );
 
         // Register OpenBuildToolProvider as the MCP tool provider for the AI Chat Companion.

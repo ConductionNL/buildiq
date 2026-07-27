@@ -239,6 +239,33 @@
 							@update:model-value="updateAction(index, 'onReject', $event)" />
 					</template>
 
+					<template v-else-if="action.type === 'generateDocument'">
+						<NcSelect
+							v-if="templatePickerAvailable"
+							:value="templateOption(action.templateId)"
+							:input-label="t('openbuild', 'Document template')"
+							:options="docudeskTemplateOptions"
+							:loading="docudeskTemplatesLoading"
+							label="label"
+							data-testid="generate-document-template-select"
+							@input="onTemplateSelect(index, $event)" />
+						<NcTextField
+							v-else
+							:value="action.templateId"
+							:label="t('openbuild', 'Template id')"
+							data-testid="generate-document-template-text"
+							@update:value="updateAction(index, 'templateId', $event)" />
+						<NcSelect
+							:value="outputModeSelection(action)"
+							:input-label="t('openbuild', 'Output')"
+							:options="outputModeOptions"
+							:multiple="true"
+							:clearable="false"
+							label="label"
+							data-testid="generate-document-output-select"
+							@input="onOutputModesSelect(index, $event)" />
+					</template>
+
 					<NcButton type="error" :aria-label="t('openbuild', 'Remove action')" @click="removeAction(index)">
 						{{ t('openbuild', 'Remove') }}
 					</NcButton>
@@ -269,6 +296,8 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcModal, NcNoteCard, NcSelect, NcTextArea, NcTextField } from '@nextcloud/vue'
 import { isActionAllowed, isConditionAllowed, blockedActionReason, blockedConditionReason } from '../services/automationMatrix.js'
+import { useAppStatus } from '../composables/useAppStatus.js'
+import { fetchDocudeskTemplates, templateToOption } from '../composables/useDocudeskTemplates.js'
 import AutomationActionListEditor from '../components/AutomationActionListEditor.vue'
 
 const INTERVAL_PRESETS = Object.freeze([
@@ -307,6 +336,17 @@ export default {
 		register: { type: String, default: '' },
 	},
 	emits: ['update:open', 'saved'],
+	/**
+	 * Soft capability check for Docudesk (automation-document-action,
+	 * mirrors `docudesk-document-templates` REQ-DDT-005's editor-side
+	 * degradation and `ConnectorSourcePicker`'s existing `setup()` usage).
+	 *
+	 * @spec openspec/changes/automation-document-action/tasks.md#4.2
+	 */
+	setup() {
+		const docudeskStatus = useAppStatus('docudesk')
+		return { docudeskStatus }
+	},
 	data() {
 		return {
 			id: null,
@@ -338,6 +378,9 @@ export default {
 			groupOptions: [],
 			groupLoading: false,
 			groupFetchFailed: false,
+			docudeskTemplateOptions: [],
+			docudeskTemplatesLoading: false,
+			docudeskTemplatesFetchFailed: false,
 			saving: false,
 			showValidation: false,
 			errorMessage: '',
@@ -416,7 +459,43 @@ export default {
 				{ value: 'object-op', label: t('openbuild', 'Create/update an object') },
 				{ value: 'webhook', label: t('openbuild', 'Webhook') },
 				{ value: 'approval', label: t('openbuild', 'Require approval') },
+				{ value: 'generateDocument', label: t('openbuild', 'Generate document') },
 			]
+		},
+		/**
+		 * Whether Docudesk is available; assume available until the async
+		 * soft-check resolves so the live UI does not flash (mirrors
+		 * `ConnectorSourcePicker::appAvailable`).
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/automation-document-action/tasks.md#4.2
+		 */
+		docudeskAvailable() {
+			return !this.docudeskStatus.checked.value || this.docudeskStatus.available.value
+		},
+		/**
+		 * Output-mode options for the `generateDocument` action's multi-select
+		 * (design.md Decision 3 of automation-document-action).
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 */
+		outputModeOptions() {
+			return [
+				{ value: 'attach', label: t('openbuild', 'Attach to object') },
+				{ value: 'download-link', label: t('openbuild', 'Download link') },
+				{ value: 'notify', label: t('openbuild', 'Notify') },
+			]
+		},
+		/**
+		 * Whether the live Docudesk template picker is usable, or the field
+		 * should degrade to a free-text template id.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 */
+		templatePickerAvailable() {
+			return !this.docudeskTemplatesFetchFailed && this.docudeskTemplateOptions.length > 0
 		},
 		objectOpOperationOptions() {
 			return [
@@ -445,9 +524,12 @@ export default {
 		},
 		/**
 		 * Whether the current shape (trigger + condition + every action) is
-		 * savable per the v1 matrix (REQ-AUTD-003).
+		 * savable per the v1 matrix (REQ-AUTD-003), extended by the
+		 * `generateDocument` availability + completeness checks
+		 * (automation-document-action).
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
 		 */
 		valid() {
 			if (this.derivedSlug === '' || this.name.trim() === '') {
@@ -459,7 +541,15 @@ export default {
 			if (this.actions.length === 0) {
 				return false
 			}
-			return this.actions.every((a) => isActionAllowed(this.triggerType, a.type))
+			if (!this.actions.every((a) => isActionAllowed(this.triggerType, a.type))) {
+				return false
+			}
+			if (!this.actions.every((a) => this.actionBlockedReason(a.type) === '')) {
+				return false
+			}
+			return this.actions
+				.filter((a) => a.type === 'generateDocument')
+				.every((a) => this.generateDocumentActionValid(a))
 		},
 		validationMessage() {
 			if (this.derivedSlug === '' || this.name.trim() === '') {
@@ -486,6 +576,8 @@ export default {
 				this.fetchSchemas()
 				this.fetchSynchronizations()
 				this.fetchGroups()
+				this.docudeskStatus.check()
+				this.fetchDocudeskTemplateOptions()
 			}
 		},
 	},
@@ -556,6 +648,8 @@ export default {
 				assigneeGroup: action.assigneeGroup || '',
 				onApprove: Array.isArray(action.onApprove) ? action.onApprove : [],
 				onReject: Array.isArray(action.onReject) ? action.onReject : [],
+				templateId: action.templateId || '',
+				output: Array.isArray(action.output) ? action.output : (action.output ? [action.output] : []),
 			}
 		},
 		/**
@@ -719,6 +813,96 @@ export default {
 		onGroupSelect(index, option) {
 			this.updateAction(index, 'assigneeGroup', option ? option.value : '')
 		},
+		/**
+		 * Load Docudesk's template list for the `generateDocument` action's
+		 * template picker — the SAME shared fetch the Documents-section
+		 * builder UI uses (`useDocudeskTemplates.js`), degrading to free-text
+		 * on failure/absence.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 */
+		async fetchDocudeskTemplateOptions() {
+			if (!this.docudeskAvailable) {
+				this.docudeskTemplatesFetchFailed = true
+				return
+			}
+			this.docudeskTemplatesLoading = true
+			const templates = await fetchDocudeskTemplates()
+			this.docudeskTemplateOptions = templates.map(templateToOption)
+			this.docudeskTemplatesFetchFailed = this.docudeskTemplateOptions.length === 0
+			this.docudeskTemplatesLoading = false
+		},
+		/**
+		 * Resolve the selected template option for a `generateDocument`
+		 * action row.
+		 *
+		 * @param {string} templateId - the stored template uuid.
+		 * @return {?object}
+		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 */
+		templateOption(templateId) {
+			return this.docudeskTemplateOptions.find((o) => o.uuid === templateId) || null
+		},
+		/**
+		 * Apply a template-picker selection to a `generateDocument` action row.
+		 *
+		 * @param {number} index - the action's index in `actions`.
+		 * @param {?object} option - the selected template option.
+		 * @return {void}
+		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 */
+		onTemplateSelect(index, option) {
+			this.updateAction(index, 'templateId', option ? option.uuid : '')
+		},
+		/**
+		 * Resolve the selected output-mode options for a `generateDocument`
+		 * action row's multi-select.
+		 *
+		 * @param {object} action - the editor-shape action row.
+		 * @return {Array<object>}
+		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 */
+		outputModeSelection(action) {
+			const modes = Array.isArray(action.output) ? action.output : []
+			return this.outputModeOptions.filter((o) => modes.includes(o.value))
+		},
+		/**
+		 * Apply an output-mode multi-select change to a `generateDocument`
+		 * action row.
+		 *
+		 * @param {number} index - the action's index in `actions`.
+		 * @param {?Array<object>} options - the selected output-mode options.
+		 * @return {void}
+		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 */
+		onOutputModesSelect(index, options) {
+			const modes = Array.isArray(options) ? options.map((o) => o.value) : []
+			this.updateAction(index, 'output', modes)
+		},
+		/**
+		 * Mirrors `AutomationCompilerService::assertGenerateDocumentActions()`
+		 * — `templateId` present, `output` non-empty, `notify` never alone —
+		 * so the editor blocks an incomplete save with the SAME rule the
+		 * backend compiler enforces, rather than only discovering it on a
+		 * failed compile.
+		 *
+		 * @param {object} action - the editor-shape `generateDocument` action.
+		 * @return {boolean}
+		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 */
+		generateDocumentActionValid(action) {
+			if (!action.templateId) {
+				return false
+			}
+			const modes = Array.isArray(action.output) ? action.output : []
+			if (modes.length === 0) {
+				return false
+			}
+			const hasNotify = modes.includes('notify')
+			const hasDeliveryMode = modes.includes('attach') || modes.includes('download-link')
+			return !hasNotify || hasDeliveryMode
+		},
 		onNameInput(value) {
 			this.name = value
 		},
@@ -730,8 +914,26 @@ export default {
 		actionTypeOption(type) {
 			return this.actionTypeOptions.find((o) => o.value === type) || this.actionTypeOptions[0]
 		},
+		/**
+		 * Blocked-combination reason for an action row: the matrix
+		 * (trigger/action) reason, OR — for `generateDocument` specifically —
+		 * the missing-Docudesk hint (mirrors `docudesk-document-templates`
+		 * REQ-DDT-005's degradation posture).
+		 *
+		 * @param {string} type - the action's type.
+		 * @return {string}
+		 * @spec openspec/changes/automation-document-action/tasks.md#4.2
+		 * @spec openspec/changes/automation-document-action/tasks.md#4.3
+		 */
 		actionBlockedReason(type) {
-			return blockedActionReason(this.triggerType, type)
+			const matrixReason = blockedActionReason(this.triggerType, type)
+			if (matrixReason !== '') {
+				return matrixReason
+			}
+			if (type === 'generateDocument' && !this.docudeskAvailable) {
+				return t('openbuild', 'Docudesk is not installed — document-generation actions are unavailable.')
+			}
+			return ''
 		},
 		addAction() {
 			this.actions.push(this.actionToEditor({ type: 'send-notification' }))
@@ -808,13 +1010,21 @@ export default {
 					return { type: 'run-synchronization', synchronizationId: action.synchronizationId }
 				}
 				if (action.type === 'object-op') {
-					let fieldMapping = {}
+					// OpenRegister rejects BOTH an empty object ({}) and null for this
+					// nested (array-item) object property, so an object-op with no
+					// field mapping must OMIT the key entirely rather than send {}/null.
+					let fieldMapping = null
 					try {
-						fieldMapping = JSON.parse(action.fieldMappingText || '{}')
+						const parsed = JSON.parse(action.fieldMappingText || 'null')
+						fieldMapping = (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) ? parsed : null
 					} catch (e) {
-						fieldMapping = {}
+						fieldMapping = null
 					}
-					return { type: 'object-op', operation: action.operation, schema: action.schema, fieldMapping }
+					const objectOp = { type: 'object-op', operation: action.operation, schema: action.schema }
+					if (fieldMapping !== null) {
+						objectOp.fieldMapping = fieldMapping
+					}
+					return objectOp
 				}
 				if (action.type === 'approval') {
 					return {
@@ -824,13 +1034,27 @@ export default {
 						onReject: Array.isArray(action.onReject) ? action.onReject : [],
 					}
 				}
-				let payloadTemplate = {}
-				try {
-					payloadTemplate = JSON.parse(action.payloadTemplateText || '{}')
-				} catch (e) {
-					payloadTemplate = {}
+				if (action.type === 'generateDocument') {
+					return {
+						type: 'generateDocument',
+						templateId: action.templateId,
+						output: Array.isArray(action.output) ? action.output : [],
+					}
 				}
-				return { type: 'webhook', url: action.url, payloadTemplate }
+				// Same OpenRegister nested-object rule as object-op above: an empty
+				// payload template must OMIT the key rather than send {}/null.
+				let payloadTemplate = null
+				try {
+					const parsed = JSON.parse(action.payloadTemplateText || 'null')
+					payloadTemplate = (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) ? parsed : null
+				} catch (e) {
+					payloadTemplate = null
+				}
+				const webhook = { type: 'webhook', url: action.url }
+				if (payloadTemplate !== null) {
+					webhook.payloadTemplate = payloadTemplate
+				}
+				return webhook
 			})
 		},
 		async onSave() {

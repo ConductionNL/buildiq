@@ -5,6 +5,116 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-07-25
+
+### Changed
+- **Theme picker now consumes nldesign's published catalogue**
+  (theme-picker-consumes-nldesign) — bumps `@conduction/nextcloud-vue` to
+  `^1.0.0-beta.221`, which ships `useScopedTheme()` and wires `CnAppRoot` to
+  self-apply `manifest.runtime.theme`. `ThemePickerDialog.vue` collapses its
+  old three-tier admin/probe/free-text catalogue fallback to a single
+  `useScopedTheme().listTokenSets()` call against nldesign's real non-admin
+  `GET /api/token-sets` endpoint, and adds a warn-only WCAG contrast preview
+  via `evaluateContrast()` that never blocks Save. Live theme preview now
+  retargets the page-designer's sandboxed live-preview-pane `CnAppRoot`
+  instance instead of a separate OpenBuild-owned applier.
+
+### Removed
+- `src/composables/useAppTheme.js` — OpenBuild's own scoped-CSS
+  `:root`-rewriter and injector; `CnAppRoot`'s own `useScopedTheme` watcher
+  now owns runtime theme application end-to-end, with zero OpenBuild-side
+  wiring in `BuilderHost.vue` or `PageDesignerHost.vue`.
+- `src/services/manifestValidation/theme.js` — OpenBuild's own
+  `runtime.theme` shape validator; `@conduction/nextcloud-vue`'s
+  `validateManifest()` (schema 2.21.0, `$defs/runtimeTheme`) is now the
+  single source for this validation.
+
+## [0.7.7] - 2026-07-24
+
+### Added
+- **Runtime group-scoped access** (runtime-group-scoped-access) — a manifest
+  `menu[]`/`pages[]` entry may declare a `permission: "group:<gid>"`; the
+  runtime resolves the caller's Nextcloud group context server-side and
+  `ManifestResolverService::filterManifestForCaller()` strips any entry the
+  caller does not hold the permission for from the manifest response BEFORE
+  it leaves the server — the authoritative gate, not client-side hiding.
+  Admins and callers with an owner/editor role on the Application see the
+  manifest unfiltered. A group-scoped dashboard page is promoted to the
+  landing position for members who satisfy it, falling back to the default
+  dashboard otherwise. `PermissionGroupField.vue` adds a group picker to the
+  menu-item and page editors. Client-side `CnAppNav` filtering mirrors the
+  server decision as defense in depth, not the only defense. Documented
+  boundary: this hides navigation only — object-level access for the
+  underlying data remains OpenRegister schema `authorization`'s job.
+
+- **Agent workspace** (agent-workspace) — named, tool-scoped AI agents
+  layered on the existing `ai-copilot` plan/execute engine (ADR-022
+  consume-not-rebuild): an `Agent` (instructions, an explicit subset of the
+  eight `OpenBuildToolProvider` tools, `maxActionsPerRun`) is never a wider
+  capability surface than the bare copilot — enforced server-side as a
+  narrowed intersection of the existing eight-tool catalogue on every
+  plan/execute request, never trusted from the client.
+- Transparent per-run log (`AgentRun`): every plan+execute/discard turn
+  persists the prompt, plan, every tool call's arguments and result, and the
+  outcome (`applied`/`rolled-back`/`discarded`/`plan-rejected`) — the Retool
+  tool-chip transparency pattern, addressing the market-wide "trust gap"
+  evidence directly.
+- `AgentsPage.vue` (CRUD list), `AgentEditDialog.vue`, and a run-history
+  view (`AgentRunHistory.vue`) restricted server-side to owners/editors of
+  the agent's parent Application; `CopilotPanel.vue` gains optional
+  `agentId`/`name`/`instructions`/`enabledTools` props, fully
+  backwards-compatible with the existing bare-copilot surfaces.
+- No autonomous/automation-triggered agent runs in v1 — an agent acts only
+  inside a human-initiated chat turn.
+- **Component blocks** (component-blocks) — capture a configured widget, or
+  a selected multi-widget page section, from the page designer into a
+  named, reusable `ComponentBlock` (new `componentBlock` OR schema,
+  `lib/Settings/register.d/60-component-blocks.json`).
+- Block-library panel (`NcAppSidebar`) in the page designer listing every
+  org-wide block, filterable by category, with insert support.
+- Insert deep-copies the fragment and mints fresh widget ids, so repeated
+  insertions never collide and editing the source block never affects an
+  already-inserted copy.
+- Schema-dependency remap prompt (`BlockRemapDialog.vue`) on a cross-app
+  insert whose schemas don't exact-match — never a silent guess, never a
+  silently dropped binding.
+- Blocks export/import as standalone JSON.
+- Template-catalogue gallery gains a "Blocks" filter alongside full-app
+  templates.
+
+## [0.7.5] - 2026-07-24
+
+### Added
+- **Document-generation automation action** (automation-document-action) — a
+  new `generateDocument` action kind on `object-created`/`object-updated`/
+  `object-deleted`/`lifecycle-transition` triggers, compiling to no
+  compile-time artifact (Docudesk's `correspondence/generate` route is
+  stateless) and dispatching at trigger-fire time through a new
+  `DocumentGenerationListener` → `DocumentGenerationService`.
+- `DocumentGenerationService` calls Docudesk's existing, Newman-pinned
+  `POST /apps/docudesk/api/correspondence/generate` route — never a
+  `OCA\DocuDesk\*` PHP class import — impersonating the owning
+  Application's owner (via the existing `JobOwnerImpersonator`) for the
+  duration of exactly one internal call, authenticated with a short-lived
+  Nextcloud login token minted through `OC\Authentication\Token\IProvider`
+  and invalidated immediately after use.
+- Three output modes: `attach` (writes the generated document to Nextcloud
+  Files and sets a `{ "ref": "<fileId>" }` reference on the triggering
+  object's `generatedDocument` field), `download-link` (a short-lived,
+  ~24h signed URL served by the new `GeneratedDocumentController` from
+  OpenBuild's own app-private storage — never the user's Files tree), and
+  `notify` (reuses the existing `RuleActionDispatcher` send-notification
+  path; must be paired with `attach` and/or `download-link`).
+- `AutomationEditDialog` gains the `generateDocument` action editor: a
+  Docudesk template picker (via the new shared `useDocudeskTemplates.js`
+  composable, also adopted by `DocumentTemplateAttachmentDialog` so the
+  template-list fetch has exactly one implementation) and an output-mode
+  multi-select, disabled with a missing-app hint when Docudesk is absent.
+- Compile-time validation (`AutomationCompilerService`): `templateId`
+  required, `output` a known non-empty set, `notify` never alone, and a
+  fail-closed `UnsupportedAutomationCombinationException` naming the
+  missing `docudesk` dependency when Docudesk is not installed.
+
 ## [0.7.4] - 2026-07-23
 
 ### Added

@@ -108,10 +108,7 @@
 					},
 					"condition": {
 						"title": "Condition",
-						"type": [
-							"object",
-							"null"
-						],
+						"type": "object",
 						"description": "Optional condition, v1-supported only on the `manual` trigger (design.md Decision 2 — the rules backend is the only existing primitive that evaluates FEEL). Either a FEEL-subset expression or a reference to an existing rule set.",
 						"properties": {
 							"type": {
@@ -152,9 +149,10 @@
 										"run-synchronization",
 										"object-op",
 										"webhook",
-										"approval"
+										"approval",
+										"generateDocument"
 									],
-									"description": "`approval` (automation-approval-steps) is selectable only on object-created|object-updated|object-deleted|lifecycle-transition triggers — compiles to an OpenRegister ApprovalChain; blocked fail-closed on schedule/manual."
+									"description": "`approval` (automation-approval-steps) is selectable only on object-created|object-updated|object-deleted|lifecycle-transition triggers — compiles to an OpenRegister ApprovalChain; blocked fail-closed on schedule/manual. `generateDocument` (automation-document-action) is selectable on the same four event/lifecycle-transition triggers — dispatches an owner-impersonated call to Docudesk's pinned `correspondence/generate` route; blocked fail-closed on schedule/manual."
 								},
 								"channels": {
 									"title": "Notification Channels",
@@ -247,6 +245,26 @@
 										"type": "object"
 									},
 									"description": "approval: follow-up actions dispatched when the compiled ApprovalStep is rejected, composed from the same typed-action vocabulary as onApprove."
+								},
+								"templateId": {
+									"title": "Document Template",
+									"type": "string",
+									"format": "uuid",
+									"description": "generateDocument: UUID of the Docudesk template to render, picked from the same `GET /apps/docudesk/api/templates` list the Documents-section builder UI uses."
+								},
+								"output": {
+									"title": "Output Mode(s)",
+									"type": "array",
+									"minItems": 1,
+									"items": {
+										"type": "string",
+										"enum": [
+											"attach",
+											"download-link",
+											"notify"
+										]
+									},
+									"description": "generateDocument: one or more of `attach` (writes the rendered document to Nextcloud Files and sets a `{ ref: <fileId> }` reference on the triggering object's `generatedDocument` field), `download-link` (generates a short-lived, ~24h, signed download URL without persisting a file) and `notify` (dispatches a notification referencing the generated document). `notify` MUST be combined with `attach` and/or `download-link` — `[\"notify\"]` alone is rejected as incomplete."
 								}
 							}
 						}
@@ -301,18 +319,12 @@
 							},
 							"ruleSetSlug": {
 								"title": "Rule Set Slug",
-								"type": [
-									"string",
-									"null"
-								],
+								"type": "string",
 								"description": "The `aut-<uuid8>` RuleSet compiled for a manual-trigger automation, or null."
 							},
 							"approvalChainName": {
 								"title": "Approval Chain Name",
-								"type": [
-									"string",
-									"null"
-								],
+								"type": "string",
 								"description": "The `aut-<slug>` OpenRegister ApprovalChain name compiled for an approval-action automation, or null. Enable/disable/delete removes exactly this provenance-listed chain (automation-approval-steps)."
 							},
 							"openconnectorObjects": {

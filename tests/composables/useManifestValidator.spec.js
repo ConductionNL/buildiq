@@ -152,6 +152,37 @@ describe('useManifestValidator', () => {
 		expect(v.errorsByPrefix.value.has('/pages/0/config/columns')).toBe(false)
 	})
 
+	it('an invalid runtime.theme surfaces from the single library validateManifest() call alone (theme-picker-consumes-nldesign, REQ-NTS-001/007, design.md Decision 5)', () => {
+		// `manifestValidation/theme.js` (the local duplicate) is deleted — this
+		// asserts the library mock alone is what the composable now relies on
+		// for shape errors the library's own `$defs/runtimeTheme` schema
+		// covers (unknown source, non-kebab tokenSet, unknown key). No local
+		// `validateTheme` call exists anymore to ALSO surface these; if it
+		// somehow did, `validateSpy` (the only mocked source of truth here)
+		// would still be the sole origin of the assertions below either way,
+		// so this test's real job is proving the composable no longer imports
+		// a module named `manifestValidation/theme.js` at all — see the
+		// static grep assertion in tasks.md 5.3 / the PR description for the
+		// complementary "no import exists" half of this guarantee.
+		validateSpy.mockImplementationOnce(() => ({
+			valid: false,
+			errors: [
+				'/runtime/theme: openbuild.theme.error.unknown-source',
+				'/runtime/theme: openbuild.theme.error.token-set-not-kebab',
+				'/runtime/theme/logo: openbuild.theme.error.unknown-key',
+			],
+		}))
+		const v = useManifestValidator()
+		v.validate({ runtime: { theme: { source: 'material', tokenSet: 'Den Haag', logo: 'x' } } })
+		vi.advanceTimersByTime(300)
+		expect(v.hasErrors.value).toBe(true)
+		expect(v.errors.value).toEqual([
+			'/runtime/theme: openbuild.theme.error.unknown-source',
+			'/runtime/theme: openbuild.theme.error.token-set-not-kebab',
+			'/runtime/theme/logo: openbuild.theme.error.unknown-key',
+		])
+	})
+
 	it('edge case: empty manifest still triggers validation', () => {
 		const v = useManifestValidator()
 		v.validate({})

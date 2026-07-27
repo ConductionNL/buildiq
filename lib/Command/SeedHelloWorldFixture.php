@@ -113,7 +113,11 @@ class SeedHelloWorldFixture extends Command
         $register = ApplicationVersionService::REGISTER_SLUG;
 
         try {
-            if ($this->routeExists(register: $register) === true) {
+            // Guard on the Application object (survives disable/enable), not just
+            // the built-app-route (cleared on disable) — otherwise re-seeding
+            // accumulates duplicate hello-world apps that make loadApplication()
+            // 404 on the ambiguous slug.
+            if ($this->applicationExists(register: $register) === true || $this->routeExists(register: $register) === true) {
                 $output->writeln('<info>hello-world fixture already present — skipping the virtual app.</info>');
                 $this->seedHybridExample(register: $register, output: $output);
                 return Command::SUCCESS;
@@ -127,6 +131,17 @@ class SeedHelloWorldFixture extends Command
                     'slug'        => self::SEED_SLUG,
                     'name'        => 'Hello World',
                     'description' => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
+                    // Grant the admin user owner rights so automation ops
+                    // (compile/enable/dry-run — WRITE_ROLES ['owners','editors'])
+                    // are permitted. Wizard-created apps set this; the seed ran
+                    // in system context with permissions=null, which makes
+                    // matchesCaller() deny everyone (empty-permissions = deny,
+                    // allowAdminBypass=false) and 403s every automation op.
+                    'permissions' => [
+                        'owners'  => ['user:admin'],
+                        'editors' => [],
+                        'viewers' => [],
+                    ],
                 ]
             );
             $applicationUuid = $application->getUuid();
@@ -331,6 +346,32 @@ class SeedHelloWorldFixture extends Command
         );
         return empty($routes) === false;
     }//end routeExists()
+
+    /**
+     * Whether the hello-world Application object already exists in the register.
+     *
+     * Unlike routeExists(), an Application object survives an app disable/enable
+     * cycle (the built-app-route registration does not). Guarding the seed on the
+     * Application's existence is what keeps re-running truly idempotent: without
+     * it, every disable/enable + re-seed created a NEW duplicate hello-world
+     * Application, and loadApplication() (which resolves a single object by slug)
+     * then 404s on the ambiguous set.
+     *
+     * @param string $register The OpenBuild register slug.
+     *
+     * @return bool True when a hello-world Application object already exists.
+     */
+    private function applicationExists(string $register): bool
+    {
+        $registerId = $this->registerMapper->find($register, _multitenancy: false)->getId();
+        $appSchema  = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_SCHEMA, _multitenancy: false)->getId();
+        $apps       = $this->objectService->searchObjects(
+            ['@self' => ['register' => $registerId, 'schema' => $appSchema], 'slug' => self::SEED_SLUG],
+            _rbac: false,
+            _multitenancy: false
+        );
+        return empty($apps) === false;
+    }//end applicationExists()
 
     /**
      * The canonical hello-world manifest — index + detail + form pages over

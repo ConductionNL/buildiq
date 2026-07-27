@@ -9,8 +9,8 @@ const buildMode = process.env.NODE_ENV
 const isDev = buildMode === 'development'
 // Production builds disable source maps entirely. The full `source-map` devtool
 // (and Terser's own source-map generation) added significant memory and time on
-// top of compilation, and emitted large .map files into js/ (openbuild has four
-// entries — main/settings/builder/publicForm — each bundling the shared nextcloud-vue lib).
+// top of compilation, and emitted large .map files into js/ (openbuild has three
+// entries — main/settings/builder — each bundling the shared nextcloud-vue lib).
 // Dropping them keeps the output minified while lowering peak memory. Dev keeps
 // cheap, fast line-level maps. Mirrors pipelinq/openregister.
 webpackConfig.devtool = isDev ? 'cheap-source-map' : false
@@ -46,13 +46,6 @@ webpackConfig.entry = {
 	builder: {
 		import: path.join(__dirname, 'src', 'builder.js'),
 		filename: appId + '-builder.js',
-	},
-	// Anonymous public-forms-runtime share-link entry (/apps/openbuild/public/forms/{token}).
-	// Deliberately its own entry — carries NO session/Pinia-auth-store assumptions,
-	// unlike `builder` (see src/public-form.js's header comment).
-	publicForm: {
-		import: path.join(__dirname, 'src', 'public-form.js'),
-		filename: appId + '-public-form.js',
 	},
 }
 

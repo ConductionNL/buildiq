@@ -20,6 +20,16 @@ vi.mock('../../../src/components/page-editor/fields/FormFieldBuilder.vue', () =>
 	},
 }))
 
+// See FormPageEditor.spec.js — stubbed to keep these Steps-focused tests
+// isolated from the real NcDialog tree pulled in by external access (REQ-EFP-002).
+vi.mock('../../../src/dialogs/ExternalFormAccessDialog.vue', () => ({
+	default: {
+		name: 'ExternalFormAccessDialog',
+		props: ['open', 'register', 'schema', 'pageId', 'entry'],
+		render(h) { return h('div', { staticClass: 'external-form-access-dialog-stub' }) },
+	},
+}))
+
 const FormPageEditor = (await import('../../../src/components/page-editor/FormPageEditor.vue')).default
 
 function mountEditor(config = {}, provide) {

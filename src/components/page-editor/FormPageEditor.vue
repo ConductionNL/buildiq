@@ -116,48 +116,33 @@
 			<InlineFieldMark :error="markFor('steps')" />
 		</fieldset>
 
+		<!-- REQ-EFP-002: External access — provisions OR schema authorization
+		     (+ optional Portaliq portalPage) via ExternalFormAccessDialog. Only
+		     offered for endpoint-shaped forms whose submitEndpoint resolves to
+		     an OR `/api/objects/{register}/{schema}` target; OpenBuild never
+		     hosts the anonymous surface itself (design.md, thin-leaf rule). -->
 		<fieldset class="form-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Public access') }}</legend>
-			<label class="form-page-editor__inline">
-				<input
-					type="checkbox"
-					:checked="publicConfig.enabled === true"
-					@change="setPublicEnabled($event.target.checked)">
-				{{ t('openbuild', 'Allow this page to be shared publicly (anonymous, no login)') }}
-			</label>
-			<p class="form-page-editor__hint">
-				{{ t('openbuild', 'A page must be marked public here before a share link can be created for it (page designer toolbar or App settings).') }}
-			</p>
-			<template v-if="publicConfig.enabled === true">
-				<label class="form-page-editor__group-row">
-					{{ t('openbuild', 'Default link mode') }}
-					<select
-						:value="publicConfig.mode || 'submit'"
-						@change="updatePublic('mode', $event.target.value)">
-						<option value="submit">
-							{{ t('openbuild', 'submit — anonymous create form') }}
-						</option>
-						<option value="edit">
-							{{ t('openbuild', 'edit — per-record edit link') }}
-						</option>
-					</select>
-				</label>
-				<label class="form-page-editor__group-row">
-					{{ t('openbuild', 'Allowed prefill fields (comma-separated)') }}
-					<input
-						type="text"
-						:value="(publicConfig.allowedPrefillFields || []).join(', ')"
-						:placeholder="t('openbuild', 'e.g. postcode, straat')"
-						@change="setAllowedPrefillFields($event.target.value)">
-				</label>
-				<label class="form-page-editor__inline">
-					<input
-						type="checkbox"
-						:checked="publicConfig.requireEmailVerification === true"
-						@change="updatePublic('requireEmailVerification', $event.target.checked)">
-					{{ t('openbuild', 'Flag submissions as unverified until the visitor confirms their email (accept-then-flag)') }}
-				</label>
+			<legend>{{ t('openbuild', 'External access') }}</legend>
+			<template v-if="externalTarget">
+				<p class="form-page-editor__external-status">
+					{{ externalFormEntry && externalFormEntry.status === 'enabled'
+						? t('openbuild', 'Externally fillable ({register}/{schema})', externalTarget)
+						: t('openbuild', 'Not externally fillable yet ({register}/{schema})', externalTarget) }}
+				</p>
+				<button type="button" class="form-page-editor__external-btn" @click="externalDialogOpen = true">
+					{{ t('openbuild', 'Configure') }}
+				</button>
+				<ExternalFormAccessDialog
+					:open.sync="externalDialogOpen"
+					:register="externalTarget.register"
+					:schema="externalTarget.schema"
+					:page-id="pageId"
+					:entry="externalFormEntry"
+					@save="onExternalFormSave" />
 			</template>
+			<p v-else class="form-page-editor__hint">
+				{{ t('openbuild', 'External access requires a submitEndpoint shaped like /api/objects/{register}/{schema}.') }}
+			</p>
 		</fieldset>
 	</div>
 </template>
@@ -166,11 +151,12 @@
 import FormFieldBuilder from './fields/FormFieldBuilder.vue'
 import FormStepsManager from './fields/FormStepsManager.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import ExternalFormAccessDialog from '../../dialogs/ExternalFormAccessDialog.vue'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'FormPageEditor',
-	components: { FormFieldBuilder, FormStepsManager, InlineFieldMark },
+	components: { FormFieldBuilder, FormStepsManager, InlineFieldMark, ExternalFormAccessDialog },
 	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
@@ -189,9 +175,56 @@ export default {
 			type: String,
 			default: '',
 		},
+		// The selected page's `id` (mergeManifestDelta's page key) — the
+		// `runtime.externalForms[].pageId` this editor writes/reads
+		// (REQ-EFP-001/002).
+		pageId: {
+			type: String,
+			default: '',
+		},
+		// The manifest's full `runtime.externalForms[]` array — this editor
+		// filters to the entry (if any) owned by `pageId`.
+		runtimeExternalForms: {
+			type: Array,
+			default: () => [],
+		},
 	},
-	emits: ['update:config'],
+	emits: ['update:config', 'update:runtimeExternalForms'],
+	data() {
+		return {
+			externalDialogOpen: false,
+		}
+	},
 	computed: {
+		/**
+		 * `{register, schema}` resolved from `config.submitEndpoint` when it
+		 * matches OR's `/api/objects/{register}/{schema}` shape; null
+		 * otherwise (handler-shaped forms, or an endpoint that isn't an OR
+		 * objects target) — gates the External access section (REQ-EFP-002).
+		 *
+		 * @return {?{register: string, schema: string}}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 */
+		externalTarget() {
+			if (this.submitShape !== 'endpoint') {
+				return null
+			}
+			const endpoint = this.config.submitEndpoint || ''
+			const match = /^\/(?:apps\/openregister\/)?api\/objects\/([^/]+)\/([^/]+)\/?$/.exec(endpoint)
+			return match ? { register: match[1], schema: match[2] } : null
+		},
+		/**
+		 * The existing `runtime.externalForms[]` entry for THIS page, if any.
+		 *
+		 * @return {?object}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-001
+		 */
+		externalFormEntry() {
+			if (!this.pageId) {
+				return null
+			}
+			return (this.runtimeExternalForms || []).find((e) => e && e.pageId === this.pageId) || null
+		},
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 * `steps` added by REQ-OBFEL-001 so `formLogic.js` / the canonical
@@ -216,16 +249,6 @@ export default {
 				return 'endpoint'
 			}
 			return 'handler'
-		},
-		/**
-		 * The page config's `public` block (public-forms-runtime), normalised
-		 * to a plain object so template bindings never dereference undefined.
-		 *
-		 * @return {object}
-		 * @spec openspec/changes/public-forms-runtime/specs/public-form-access/spec.md#requirement-public-page-can-only-be-issued-a-token-when-its-config-declares-publicenabled
-		 */
-		publicConfig() {
-			return (this.config.public && typeof this.config.public === 'object') ? this.config.public : {}
 		},
 	},
 	methods: {
@@ -289,42 +312,24 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Patch a single key on `config.public`, creating the block when absent.
+		 * Persist the provisioned/revoked entry from ExternalFormAccessDialog
+		 * into `runtime.externalForms[]` (find-or-append by pageId, per
+		 * design.md Decision 1). Emitted up to PageDesigner, which merges it
+		 * onto the manifest — this editor never writes the manifest directly.
 		 *
-		 * @param {string} key The `public` block key to set.
-		 * @param {*} value The new value.
+		 * @param {object} entry - the resolved `runtime.externalForms[]` entry.
 		 * @return {void}
-		 * @spec openspec/changes/public-forms-runtime/specs/public-form-access/spec.md#requirement-public-page-can-only-be-issued-a-token-when-its-config-declares-publicenabled
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
-		updatePublic(key, value) {
-			const next = { ...this.config }
-			next.public = { ...this.publicConfig, [key]: value }
-			this.$emit('update:config', next)
-		},
-		/**
-		 * Toggle `config.public.enabled`. Unlike other `public` keys, turning
-		 * this OFF does not delete the rest of the block — a previously
-		 * configured mode/prefill list is preserved so re-enabling restores it.
-		 *
-		 * @param {boolean} value Checkbox state.
-		 * @return {void}
-		 */
-		setPublicEnabled(value) {
-			this.updatePublic('enabled', value === true)
-		},
-		/**
-		 * Parse the comma-separated prefill-fields input into a trimmed,
-		 * non-empty string array.
-		 *
-		 * @param {string} value Raw comma-separated input value.
-		 * @return {void}
-		 */
-		setAllowedPrefillFields(value) {
-			const fields = String(value || '')
-				.split(',')
-				.map((f) => f.trim())
-				.filter((f) => f !== '')
-			this.updatePublic('allowedPrefillFields', fields)
+		onExternalFormSave(entry) {
+			const list = (this.runtimeExternalForms || []).slice()
+			const idx = list.findIndex((e) => e && e.pageId === this.pageId)
+			if (idx >= 0) {
+				list[idx] = entry
+			} else {
+				list.push(entry)
+			}
+			this.$emit('update:runtimeExternalForms', list)
 		},
 	},
 }
@@ -388,9 +393,20 @@ export default {
 	font-size: 13px;
 }
 
-.form-page-editor__hint {
-	margin: 0;
-	font-size: 12px;
+.form-page-editor__hint,
+.form-page-editor__external-status {
 	color: var(--color-text-maxcontrast);
+	font-size: 13px;
+	margin: 0;
+}
+
+.form-page-editor__external-btn {
+	align-self: flex-start;
+	padding: 4px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	background: var(--color-main-background);
+	color: var(--color-main-text);
+	cursor: pointer;
 }
 </style>

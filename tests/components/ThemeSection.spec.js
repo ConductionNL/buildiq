@@ -18,7 +18,11 @@ const NcButtonStub = {
 
 const stubs = {
 	NcButton: NcButtonStub,
-	ThemePickerDialog: { name: 'ThemePickerDialog', template: '<div class="picker-stub" />' },
+	ThemePickerDialog: {
+		name: 'ThemePickerDialog',
+		props: ['open', 'theme', 'nldesignAvailable', 'previewAvailable'],
+		template: '<div class="picker-stub" />',
+	},
 }
 
 const theme = { source: 'nldesign', tokenSet: 'amsterdam', tokenSetName: 'Gemeente Amsterdam', preview: { primaryColor: '#004699', backgroundColor: '#FFFFFF' } }
@@ -69,5 +73,10 @@ describe('ThemeSection', () => {
 		const wrapper = factory({})
 		wrapper.vm.$emit('preview', theme)
 		expect(wrapper.emitted().preview[0][0]).toEqual(theme)
+	})
+
+	it('forwards previewAvailable to ThemePickerDialog (design.md OQ-1, task 3.3)', () => {
+		const wrapper = factory({}, { previewAvailable: false })
+		expect(wrapper.findComponent({ name: 'ThemePickerDialog' }).props('previewAvailable')).toBe(false)
 	})
 })

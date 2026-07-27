@@ -49,6 +49,7 @@
 			:open.sync="dialogOpen"
 			:theme="theme"
 			:nldesign-available="nldesignAvailable"
+			:preview-available="previewAvailable"
 			@save="onSave"
 			@clear="removeTheme"
 			@preview="$emit('preview', $event)" />
@@ -68,6 +69,14 @@ export default {
 			default: () => ({}),
 		},
 		nldesignAvailable: {
+			type: Boolean,
+			default: true,
+		},
+		// REQ-NTS-002 (design.md OQ-1, task 3.3): whether the page-designer
+		// live-preview-pane's sandboxed CnAppRoot is mounted — forwarded to
+		// ThemePickerDialog so its live-preview toggle disables with a hint
+		// rather than silently no-op'ing when the pane is unavailable.
+		previewAvailable: {
 			type: Boolean,
 			default: true,
 		},

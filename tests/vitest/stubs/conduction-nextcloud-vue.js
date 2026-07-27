@@ -160,6 +160,8 @@ export function useAppManifest(_appId) {
  */
 import { createManifestEditHistory as _createManifestEditHistory } from '@conduction/nextcloud-vue/dist/esm/utils/manifestEditHistory.js'
 import { useManifestEditHistory as _useManifestEditHistory } from '@conduction/nextcloud-vue/dist/esm/composables/useManifestEditHistory.js'
+import { mergeManifestDelta as _mergeManifestDelta } from '@conduction/nextcloud-vue/dist/esm/utils/mergeManifestDelta.js'
+import { diffManifest as _diffManifest } from '@conduction/nextcloud-vue/dist/esm/utils/diffManifest.js'
 
 /**
  * @param {object} [options] Forwarded verbatim to the leaf.
@@ -175,6 +177,53 @@ export function createManifestEditHistory(options) {
  */
 export function useManifestEditHistory(options) {
 	return _useManifestEditHistory(options)
+}
+
+/**
+ * `mergeManifestDelta` / `diffManifest` (app-delta-override,
+ * component-blocks' insert path) are likewise Vue-free pure functions, so
+ * they follow the exact same real-leaf-via-subpath-import pattern as
+ * `createManifestEditHistory` above rather than a hand-rolled fake —
+ * `PageDesigner.vue`'s block-insert merge exercises the real keyed-array
+ * merge semantics under test, not an approximation of them.
+ *
+ * @param {object} base - the base manifest.
+ * @param {object} delta - the delta payload to apply.
+ * @return {{manifest: object, orphanedDeltaPaths: string[]}} the merge result.
+ */
+export function mergeManifestDelta(base, delta) {
+	return _mergeManifestDelta(base, delta)
+}
+
+/**
+ * @param {object} base - the base manifest.
+ * @param {object} edited - the edited manifest.
+ * @return {object} the minimal delta.
+ */
+export function diffManifest(base, edited) {
+	return _diffManifest(base, edited)
+}
+
+/**
+ * `useScopedTheme` (scoped-theme-applier, consumed here by
+ * theme-picker-consumes-nldesign) is likewise a Vue-free pure composable —
+ * no `.vue` SFC dependency, just plain JS over `@nextcloud/axios` /
+ * `@nextcloud/router` — so it follows the same real-leaf-via-subpath-import
+ * pattern as `createManifestEditHistory` above rather than a hand-rolled
+ * fake. `ThemePickerDialog.vue`'s vitest suite therefore exercises the
+ * REAL published `apply`/`teardown`/`listTokenSets`/`evaluateContrast`
+ * logic under test (with `@nextcloud/axios` mocked at the HTTP boundary),
+ * not an approximation of it — proof the published beta ships and runs a
+ * working `useScopedTheme`, not just that it can be imported.
+ */
+import { useScopedTheme as _useScopedTheme } from '@conduction/nextcloud-vue/dist/esm/composables/useScopedTheme.js'
+
+/**
+ * @param {object} [opts] - forwarded verbatim to the leaf.
+ * @return {{apply: Function, teardown: Function, fetchTokenCss: Function, listTokenSets: Function, evaluateContrast: Function}}
+ */
+export function useScopedTheme(opts) {
+	return _useScopedTheme(opts)
 }
 
 export default {
@@ -198,4 +247,7 @@ export default {
 	useAppManifest,
 	createManifestEditHistory,
 	useManifestEditHistory,
+	mergeManifestDelta,
+	diffManifest,
+	useScopedTheme,
 }

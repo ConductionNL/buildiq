@@ -39,6 +39,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { ensureApp } from './support/appFixture'
 
 const BASE_URL = process.env.NC_BASE_URL ?? 'http://localhost:8080'
 const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
@@ -47,7 +48,26 @@ const ADMIN_PASS = process.env.NC_ADMIN_PASS ?? 'admin'
 const APP_SLUG = 'pw-hello'
 const SCHEMA_SLUG = 'message'
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+// PARTIALLY UNBLOCKED — still quarantined, but for a much narrower reason than
+// the original "#41: admin UI not functional".
+//
+// Fixed and live-verified since that quarantine was written:
+//   - /builder/:slug/schemas renders SchemaDesignerView (was the generic
+//     CnIndexPage listing Applications) — PR #30.
+//   - schemas created in the designer are namespaced + attached to the app's
+//     per-version register, so they now appear in the list they were created
+//     from (verified: list went from 0 rows to 2) — this change.
+//   - the spec's app-creation step no longer drives the removed flat
+//     "Add application" form; it uses the wizard endpoint via ensureApp().
+//   - globalSetup no longer silently leaves the suite unauthenticated.
+//
+// REMAINING: after Add-schema the designer navigates to the new schema's detail
+// route but renders the "Schema not found" empty state (two "Back to schemas"
+// buttons — the header one plus the empty-state one — which is what the
+// assertion below trips over). Reproduced on a healthy, authenticated instance,
+// so it is a real create -> detail-load defect, not test flake; it needs its own
+// change with the SchemaDesigner.loadDetail/store fetch path in scope. Re-enable
+// this describe once that lands.
 test.describe.skip('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', () => {
 	test.beforeEach(async ({ page }) => {
 		// Session is established by globalSetup (tests/e2e/global-setup.ts)
@@ -62,26 +82,19 @@ test.describe.skip('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)
 	})
 
 	test('create virtual app → add schema → add 2 fields → save → edit → delete', async ({ page }) => {
-		// Step 1 — open the OpenBuild app at the Applications page.
-		await page.goto(`${BASE_URL}/apps/openbuild/applications`, {
-			waitUntil: 'domcontentloaded',
-		})
-
-		// Step 2 — create the virtual app via the existing manifest editor
-		// (bootstrap-openbuild spec covers UX). We do this via the
-		// application editor's primary action; if the app already exists
-		// from a previous run, the test continues idempotently.
-		const addAppButton = page.getByRole('button', { name: /add application/i })
-		if (await addAppButton.isVisible().catch(() => false)) {
-			await addAppButton.click()
-			await page.getByLabel(/slug/i).fill(APP_SLUG)
-			await page.getByLabel(/title/i).fill('PW Hello')
-			await page.getByRole('button', { name: /save|create/i }).click()
-			await page.waitForLoadState('networkidle')
-		}
+		// Steps 1–2 — ensure the virtual app exists (idempotent). App creation
+		// moved to the multi-step wizard; the old flat "Add application" form no
+		// longer exists, so create via the atomic wizard endpoint instead.
+		await ensureApp(page, APP_SLUG, 'PW Hello')
 
 		// Step 3 — navigate to the Schema Designer for this virtual app.
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas`, {
+		// The `?_version=production` marker targets the app's per-version
+		// register (`openbuild-{slug}-production`) that the wizard creates —
+		// without it SchemaDesigner falls back to the legacy `openbuild-{slug}`
+		// register (which wizard-created apps don't have), so schemas would be
+		// written to / read from the wrong namespace and never resolve. The real
+		// in-app nav carries the same marker via buildVersionedRoute().
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`, {
 			waitUntil: 'domcontentloaded',
 		})
 

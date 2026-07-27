@@ -85,6 +85,18 @@ class ApplicationsControllerTest extends TestCase
     private AuditTrailMapper&MockObject $auditTrailMapper;
 
     /**
+     * Mock manifest resolver — stubbed in {@see buildController()} so
+     * `filterManifestForCaller()` / `resolveCallerPermissionsForDisplay()`
+     * (spec `runtime-group-scoped-access`) behave as pass-through / empty by
+     * default, matching this file's existing tests which exercise the RBAC
+     * gate, not the group-scoped filter (covered separately in
+     * `ManifestResolverServicePermissionFilterTest`).
+     *
+     * @var ManifestResolverService&MockObject
+     */
+    private ManifestResolverService&MockObject $manifestResolver;
+
+    /**
      * Set up test fixtures.
      *
      * @return void
@@ -98,6 +110,9 @@ class ApplicationsControllerTest extends TestCase
         $this->userSession      = $this->createMock(IUserSession::class);
         $this->groupManager     = $this->createMock(IGroupManager::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+        $this->manifestResolver = $this->createMock(ManifestResolverService::class);
+        $this->manifestResolver->method('filterManifestForCaller')->willReturnArgument(0);
+        $this->manifestResolver->method('resolveCallerPermissionsForDisplay')->willReturn([]);
     }//end setUp()
 
     /**
@@ -156,7 +171,7 @@ class ApplicationsControllerTest extends TestCase
             schemaMapper: $schemaMapper,
             userSession: $this->userSession,
             groupManager: $this->groupManager,
-            manifestResolver: $this->createMock(ManifestResolverService::class),
+            manifestResolver: $this->manifestResolver,
             permissionResolver: $permissionResolver,
             auditTrailMapper: $this->auditTrailMapper,
         );

@@ -20,15 +20,22 @@
  * Path mapping convention: validateManifest emits paths in JSON Pointer
  * shorthand like `/pages/1/config/columns/0`. Sub-editors register a
  * prefix string matching the same shape, e.g. `/pages/1/config/columns`.
+ *
+ * `runtime.theme` shape validation (REQ-NTS-001) is NOT app-side here —
+ * `@conduction/nextcloud-vue`'s own `validateManifest()` call below is the
+ * single source of truth for it once the library ships the
+ * `$defs/runtimeTheme` schema field (scoped-theme-applier REQ-STA-4, schema
+ * 2.20.0+); the local `manifestValidation/theme.js` duplicate is deleted
+ * (design.md Decision 5, theme-picker-consumes-nldesign).
  */
 import { ref, reactive, computed } from 'vue'
 import { validateManifest } from '@conduction/nextcloud-vue'
 import { validateWorkflowAttachments } from '../services/manifestValidation/workflowAttachments.js'
 import { validateManifestConnectors } from '../services/manifestValidation/connectorDataSource.js'
-import { validateTheme } from '../services/manifestValidation/theme.js'
 import { validateDocumentAttachments } from '../services/manifestValidation/documentAttachments.js'
 import { validateSchedules } from '../services/manifestValidation/schedules.js'
 import { validateFormLogic } from '../services/manifestValidation/formLogic.js'
+import { validateExternalForms } from '../services/manifestValidation/externalForms.js'
 
 const DEBOUNCE_MS = 300
 
@@ -61,18 +68,20 @@ export function useManifestValidator() {
 				const libErrors = Array.isArray(result.errors) ? result.errors.slice() : []
 				// App-side strict checks for forms the canonical schema carries
 				// under `additionalProperties: true` (workflow attachments,
-				// REQ-PWA-001; connector data sources, REQ-OCAS-001; theme
-				// selection, REQ-NTS-001; document attachments, REQ-DDT-001) plus
-				// the manifest-form-logic semantic rules the app owns even once
-				// the leaf schema ships shape validation (form steps/conditions/
-				// validation, REQ-OBFEL-005). Merged so the side panel + inline
-				// marks light up uniformly.
+				// REQ-PWA-001; connector data sources, REQ-OCAS-001; document
+				// attachments, REQ-DDT-001) plus the manifest-form-logic semantic
+				// rules the app owns even once the leaf schema ships shape
+				// validation (form steps/conditions/validation, REQ-OBFEL-005).
+				// `runtime.theme` (REQ-NTS-001) is NOT app-validated here — the
+				// library `validateManifest()` call above is now the single
+				// source (design.md Decision 5, theme-picker-consumes-nldesign).
+				// Merged so the side panel + inline marks light up uniformly.
 				const appErrors = validateWorkflowAttachments(manifest)
 					.concat(validateManifestConnectors(manifest))
-					.concat(validateTheme(manifest))
 					.concat(validateDocumentAttachments(manifest))
 					.concat(validateSchedules(manifest))
 					.concat(validateFormLogic(manifest))
+					.concat(validateExternalForms(manifest))
 				errors.value = libErrors.concat(appErrors)
 			} catch (e) {
 				errors.value = [`validator threw: ${e && e.message ? e.message : e}`]

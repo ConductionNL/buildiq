@@ -2,13 +2,17 @@
 /**
  * automationMatrix — the single shared v1 compilation matrix constant
  * (design.md Decision 2 of the automation-designer change, extended by
- * design.md Decision 1 of automation-approval-steps): which ACTION types are
- * expressible for a given TRIGGER type, and whether a CONDITION may be
- * attached. Consumed by `AutomationEditDialog` (inline validation +
- * disabling unsupported combinations), the Automations list (badge text)
- * and `AutomationCompilerService`'s PHP-side enforcement — the two must be
+ * design.md Decision 1 of automation-approval-steps and design.md Decision 2
+ * of automation-document-action): which ACTION types are expressible for a
+ * given TRIGGER type, and whether a CONDITION may be attached. Consumed by
+ * `AutomationEditDialog` (inline validation + disabling unsupported
+ * combinations), the Automations list (badge text) and
+ * `AutomationCompilerService`'s PHP-side enforcement — the two must be
  * kept in sync by hand (no cross-language codegen exists), so this file's
  * shape is the canonical reference the PHP docblock cites back to.
+ *
+ * @spec openspec/changes/automation-document-action/tasks.md#4.3
+ * @spec openspec/changes/automation-document-action/specs/automation-designer/spec.md#req-autd-003
  *
  * DEVIATION FROM design.md (documented, mirrored from the backend — see
  * `lib/Service/AutomationCompilerService.php` class docblock): design.md's
@@ -42,6 +46,7 @@ export const ACTION_TYPES = Object.freeze([
 	'object-op',
 	'webhook',
 	'approval',
+	'generateDocument',
 ])
 
 /**
@@ -49,13 +54,16 @@ export const ACTION_TYPES = Object.freeze([
  * `AutomationCompilerService::MATRIX` exactly). `approval` (automation-
  * approval-steps) is expressible only on the event/lifecycle-transition
  * triggers — an approval step binds to a concrete object instance, which
- * only those triggers carry (design.md Decision 1).
+ * only those triggers carry (design.md Decision 1). `generateDocument`
+ * (automation-document-action) is expressible on the SAME four triggers for
+ * the identical reason — Docudesk generates a document FOR a concrete
+ * object instance, which a `schedule`/`manual` trigger does not carry.
  */
 export const MATRIX = Object.freeze({
-	'object-created': Object.freeze(['send-notification', 'approval']),
-	'object-updated': Object.freeze(['send-notification', 'approval']),
-	'object-deleted': Object.freeze(['send-notification', 'approval']),
-	'lifecycle-transition': Object.freeze(['send-notification', 'object-op', 'webhook', 'approval']),
+	'object-created': Object.freeze(['send-notification', 'approval', 'generateDocument']),
+	'object-updated': Object.freeze(['send-notification', 'approval', 'generateDocument']),
+	'object-deleted': Object.freeze(['send-notification', 'approval', 'generateDocument']),
+	'lifecycle-transition': Object.freeze(['send-notification', 'object-op', 'webhook', 'approval', 'generateDocument']),
 	schedule: Object.freeze(['run-synchronization']),
 	manual: Object.freeze(['send-notification', 'object-op', 'webhook']),
 })
@@ -104,6 +112,9 @@ export function blockedActionReason(triggerType, actionType) {
 	}
 	if (actionType === 'approval') {
 		return t('openbuild', 'Approval actions are only supported on object-event and lifecycle-transition triggers in v1.')
+	}
+	if (actionType === 'generateDocument') {
+		return t('openbuild', 'Document-generation actions are only supported on object-event and lifecycle-transition triggers in v1.')
 	}
 	return t(
 		'openbuild',

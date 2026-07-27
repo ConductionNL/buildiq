@@ -83,7 +83,17 @@
 				</div>
 			</header>
 
-			<div v-if="loadingDetail" class="openbuild-schema-designer__loading">
+			<!--
+				Show the spinner until the detail load has actually been ATTEMPTED,
+				not merely while its request is in flight. `mounted()` awaits
+				refreshList() before calling loadDetail(), so there is a window
+				where a schemaId is present, `staged` is still null and
+				`loadingDetail` is still false — during which the v-else below
+				rendered "Schema not found" for a schema that exists and is about
+				to load. That false empty state is what a freshly created schema
+				lands on right after Add-schema navigates here.
+			-->
+			<div v-if="loadingDetail || !detailAttempted" class="openbuild-schema-designer__loading">
 				<NcLoadingIcon :size="32" />
 			</div>
 
@@ -232,6 +242,11 @@ export default {
 			schemas: [],
 			loadingList: false,
 			loadingDetail: false,
+			// Whether loadDetail() has run to completion for the current
+			// schemaId. Distinct from `loadingDetail` (which only covers the
+			// request itself) so the "Schema not found" empty state can never be
+			// shown before the load has actually been attempted.
+			detailAttempted: false,
 			saving: false,
 			saveError: '',
 			staged: null,
@@ -536,6 +551,10 @@ export default {
 			 * @return {void}
 			 */
 			handler() {
+				// New schemaId — the previous attempt says nothing about this one,
+				// so fall back to the spinner rather than briefly showing the old
+				// state or a false "Schema not found".
+				this.detailAttempted = false
 				this.loadDetail()
 			},
 		},
@@ -737,6 +756,10 @@ export default {
 				showError(this.t('openbuild', 'Failed to load schema: {error}', { error: this.errorMessage(e) }))
 			} finally {
 				this.loadingDetail = false
+				// The load has now been attempted for this schemaId — from here on
+				// a null `staged` genuinely means "not found" and the empty state
+				// may render.
+				this.detailAttempted = true
 				// REQ-BUR-005: a `schemaId` route change is a session boundary —
 				// re-baseline the undo/redo history to the freshly staged model
 				// (or `null` on a load failure / not-found) regardless of which
@@ -929,6 +952,69 @@ export default {
 			this.commitStaged({ ...this.staged, widgets })
 		},
 		/**
+		 * Namespace a user-typed schema slug to this app+version, matching the
+		 * convention the creation wizard seeds with (`{appSlug}-{versionSlug}-X`,
+		 * or `{appSlug}-X` on the legacy no-version register) and which
+		 * refreshList() filters the global schema collection by. Already-prefixed
+		 * input is returned unchanged so re-entering a full slug is idempotent.
+		 *
+		 * @param {string} slug The user-typed slug.
+		 * @return {string} The namespaced slug.
+		 */
+		namespacedSlug(slug) {
+			const raw = String(slug || '').trim()
+			const prefix = this.versionSlug
+				? `${this.appSlug}-${this.versionSlug}-`
+				: `${this.appSlug}-`
+			if (raw === '' || raw.startsWith(prefix)) {
+				return raw
+			}
+			return `${prefix}${raw}`
+		},
+		/**
+		 * Attach a freshly created schema to this app+version's OpenRegister
+		 * register, so it is owned by the app rather than floating in the
+		 * organisation. OpenRegister exposes the register-scoped schema route
+		 * read-only (POST is 405), so association is done by PATCHing the
+		 * register's `schemas` array — the same shape the creation wizard writes.
+		 *
+		 * @param {object} data The created schema as returned by the store.
+		 * @return {Promise<void>}
+		 */
+		async attachSchemaToRegister(data) {
+			const schemaId = (data && (data.id || (data['@self'] && data['@self'].id))) || null
+			if (schemaId === null) {
+				return
+			}
+			const register = this.importRegisterId
+			try {
+				// OpenRegister resolves GET /api/registers/{id} by slug, but its
+				// PATCH counterpart resolves ONLY by the numeric id (slug and uuid
+				// both 404), so read the register by slug first and PATCH by id.
+				const readUrl = generateUrl(`/apps/openregister/api/registers/${encodeURIComponent(register)}`)
+				const { data: current } = await axios.get(readUrl)
+				const existing = Array.isArray(current && current.schemas) ? current.schemas : []
+				// Compare as strings — the array mixes numeric ids and uuids.
+				if (existing.some((id) => String(id) === String(schemaId))) {
+					return
+				}
+				const numericId = current && current.id
+				if (numericId === undefined || numericId === null) {
+					throw new Error('register has no id')
+				}
+				const writeUrl = generateUrl(`/apps/openregister/api/registers/${encodeURIComponent(numericId)}`)
+				await axios.patch(writeUrl, { schemas: [...existing, schemaId] })
+			} catch (e) {
+				// Non-fatal: the schema exists and is editable; it just is not
+				// listed on the register yet. Surface it so the builder knows.
+				showError(this.t(
+					'openbuild',
+					'Schema created, but could not be attached to register {register}: {error}',
+					{ register, error: this.errorMessage(e) },
+				))
+			}
+		},
+		/**
 		 * Create a new schema via the store, surfacing duplicate-slug errors.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
@@ -936,8 +1022,17 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async addSchema(payload) {
+			// The designer's list is the global schema collection filtered to the
+			// slugs owned by this app+version (see refreshList()'s `prefix`), and
+			// OpenRegister only exposes the register-scoped schema route for
+			// reading (GET /api/registers/{register}/schemas — POST there is 405).
+			// So a schema created with the raw user-typed slug was invisible in
+			// the list it was created from AND unattached to the app's register,
+			// leaving the follow-on detail navigation on "Schema not found"
+			// (openbuild#41). Namespace the slug to the same convention the
+			// wizard uses, then attach the new schema to the app's register.
 			const body = {
-				slug: payload.slug,
+				slug: this.namespacedSlug(payload.slug),
 				title: payload.title,
 				description: payload.description || '',
 				version: payload.version,
@@ -957,7 +1052,8 @@ export default {
 				}
 				throw new Error(typeof err === 'string' ? err : this.t('openbuild', 'Failed to create schema'))
 			}
-			const newSlug = (data && (data.slug || (data['@self'] && data['@self'].slug))) || payload.slug
+			const newSlug = (data && (data.slug || (data['@self'] && data['@self'].slug))) || body.slug
+			await this.attachSchemaToRegister(data)
 			await this.refreshList()
 			// REQ-OBVR-006: use buildVersionedRoute to forward ?_version= on navigation.
 			this.$router.push(buildVersionedRoute(

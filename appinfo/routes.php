@@ -251,52 +251,36 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'gitHubSync#pull',   'url' => '/api/applications/{slug}/github/pull',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'gitHubSync#status', 'url' => '/api/applications/{slug}/github/status', 'verb' => 'GET',  'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
-        // AI copilot / prompt-to-app (spec `ai-copilot` REQ-OBAIC-001/002/004).
-        // All three #[NoAdminRequired]; per-object RBAC (existing-app owners/
-        // editors, hybrid-app rejection) is enforced inside CopilotService, not
-        // via a route attribute. `plan` performs zero writes; `execute` re-
-        // validates and dispatches through OpenBuildToolProvider::invokeTool().
+        // AI copilot / prompt-to-app (spec `ai-copilot` REQ-OBAIC-001/002/004),
+        // extended with optional agent-scoping (spec `agent-workspace`). All
+        // four #[NoAdminRequired]; per-object RBAC (existing-app owners/
+        // editors, hybrid-app rejection, agent resolution) is enforced inside
+        // CopilotService, not via a route attribute. `plan` performs zero
+        // builder writes; `execute` re-validates and dispatches through
+        // OpenBuildToolProvider::invokeTool(); `discard` only ever runs for
+        // the agent-scoped chat surface (logs a discarded AgentRun).
         // Specific-first, before the engine-appended SPA catch-all.
         ['name' => 'copilot#health',  'url' => '/api/copilot/health',  'verb' => 'GET'],
         ['name' => 'copilot#plan',    'url' => '/api/copilot/plan',    'verb' => 'POST'],
         ['name' => 'copilot#execute', 'url' => '/api/copilot/execute', 'verb' => 'POST'],
+        ['name' => 'copilot#discard', 'url' => '/api/copilot/discard', 'verb' => 'POST'],
 
-        // Share-token management (public-forms-runtime, public-form-access
-        // "Token management UI in the page designer and app settings").
-        // Authenticated, owner/editor-only — SAME RBAC posture as
-        // applications#saveManifest (session/organisation, NOT a token).
-        // `{slug}` is the OWNING Application's slug, never the token itself.
-        // Specific-first: `/share-tokens` and `/share-tokens/{tokenUuid}` are
-        // strictly more specific than the `/api/applications/{slug}/manifest`
-        // route above, so ordering relative to it is immaterial, but both are
-        // still declared before the engine-appended SPA catch-all.
-        ['name' => 'shareToken#index',  'url' => '/api/applications/{slug}/share-tokens',             'verb' => 'GET',    'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
-        ['name' => 'shareToken#create', 'url' => '/api/applications/{slug}/share-tokens',             'verb' => 'POST',   'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
-        ['name' => 'shareToken#revoke', 'url' => '/api/applications/{slug}/share-tokens/{tokenUuid}', 'verb' => 'DELETE', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // Agent run-history (spec `agent-workspace`). #[NoAdminRequired] with a
+        // per-object owners/editors guard enforced inside AgentsController —
+        // AgentRun rows are NEVER served through the generic OpenRegister REST
+        // surface (no row-level RBAC there; see AgentsController docblock).
+        // Agent CRUD itself rides OR's generic REST surface (ADR-022), mirroring
+        // AutomationsController's posture for the `automation` object.
+        ['name' => 'agents#runs', 'url' => '/api/agents/{uuid}/runs', 'verb' => 'GET'],
 
-        // Anonymous public render + submit (public-forms-runtime,
-        // public-form-access "Public render endpoint resolves a token to
-        // exactly its bound page" / "Anonymous submission writes via
-        // owner-context service"). `#[PublicPage]` on both controller
-        // methods — resolves SOLELY through the `{token}` path param, never
-        // session/organisation (openbuild-runtime "Public manifest
-        // resolution never uses session/organisation authorization"). The
-        // `/submit` suffix disambiguates the two verbs on the same resource
-        // without relying on verb-only dispatch. Registered before the SPA
-        // catch-all; the `/api/public/...` prefix is disjoint from every
-        // other route in this file so ordering relative to them is
-        // immaterial.
-        ['name' => 'publicForm#render', 'url' => '/api/public/forms/{token}',        'verb' => 'GET'],
-        ['name' => 'publicForm#submit', 'url' => '/api/public/forms/{token}/submit', 'verb' => 'POST'],
-
-        // Anonymous public-form SHELL page (serves the bootstrap HTML/JS —
-        // see DashboardController::publicForm()). A page route (not
-        // `/api/...`), deliberately outside `/builder/{slug}` — a share
-        // token names an Application + page, not a slug, and the shell must
-        // carry zero session assumptions (own template + own JS entry,
-        // `openbuild-public-form`). `#[PublicPage]` on the controller
-        // method. Specific-first, before the SPA catch-all.
-        ['name' => 'dashboard#publicForm', 'url' => '/public/forms/{token}', 'verb' => 'GET'],
+        // Anonymous download-link resolver for the `generateDocument`
+        // automation action's `download-link` output mode
+        // (automation-document-action, `GeneratedDocumentController`).
+        // `#[PublicPage]` — the random token IS the authorization.
+        // `/api/generated-documents/` is disjoint from every other route in
+        // this file so ordering relative to them is immaterial; declared
+        // before the SPA catch-all.
+        ['name' => 'generatedDocument#download', 'url' => '/api/generated-documents/{token}', 'verb' => 'GET'],
 
         // NB: the SPA catch-all (dashboard#catchAll) is appended by
         // \OCA\OpenRegister\AppHost\Routes::standard() — do NOT add it here.

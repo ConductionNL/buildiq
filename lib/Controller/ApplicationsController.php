@@ -42,6 +42,8 @@
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-69
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+ * @spec openspec/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
+ * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
  */
 
 declare(strict_types=1);
@@ -253,8 +255,29 @@ class ApplicationsController extends Controller
                     applicationArray: $applicationArray,
                     caller: $this->userSession->getUser()
                 );
+                // Group-scoped runtime access (spec runtime-group-scoped-access
+                // REQ-2): strip menu/page entries the caller's `permission` set
+                // does not satisfy BEFORE the response leaves the server — the
+                // authoritative server-side gate, not just client-side hiding.
+                // MUST run before `permissions` is stripped below: the filter
+                // reads `applicationArray['permissions']` for the owner/editor
+                // write-role bypass.
+                $manifest = $this->manifestResolver->filterManifestForCaller(
+                    manifest: $manifest,
+                    application: $applicationArray,
+                    caller: $this->userSession->getUser()
+                );
+                // Client-side mirror (design.md Decision 4, defense in depth):
+                // hand the runtime host the same permission set the server
+                // just enforced, ready to forward to CnAppRoot's `permissions`
+                // prop — no client-side group/role derivation needed.
+                $manifest = $this->injectPermissionsSignal(
+                    manifest: $manifest,
+                    applicationArray: $applicationArray,
+                    caller: $this->userSession->getUser()
+                );
                 unset($manifest['permissions']);
-            }
+            }//end if
 
             // Return the manifest UNWRAPPED — useAppManifest expects the bare object.
             return new JSONResponse(data: $manifest, statusCode: Http::STATUS_OK);
@@ -445,6 +468,28 @@ class ApplicationsController extends Controller
             return new JSONResponse(
                 data: ['status' => Http::STATUS_NOT_FOUND, 'message' => 'Version not found'],
                 statusCode: Http::STATUS_NOT_FOUND
+            );
+        }
+
+        // Group-scoped runtime access (spec runtime-group-scoped-access REQ-2):
+        // same server-side filter as the production path. Non-production
+        // access already required an owner/editor role (checkNonProductionAccess
+        // in ManifestResolverService::resolve()), so this is a no-op for the
+        // only callers who can reach this branch today — kept for symmetry and
+        // so a future loosening of the version-access gate does not silently
+        // skip permission filtering.
+        $resolved = $this->resolveApplicationBySlug(slug: $slug);
+        if (is_array($resolved) === true) {
+            [, $applicationArray] = $resolved;
+            $manifest = $this->manifestResolver->filterManifestForCaller(
+                manifest: $manifest,
+                application: $applicationArray,
+                caller: $caller
+            );
+            $manifest = $this->injectPermissionsSignal(
+                manifest: $manifest,
+                applicationArray: $applicationArray,
+                caller: $caller
             );
         }
 
@@ -925,6 +970,52 @@ class ApplicationsController extends Controller
 
         return $manifest;
     }//end injectOwnerSignal()
+
+    /**
+     * Project the caller's `permissions` array onto `runtime.user.permissions`
+     * (spec `runtime-group-scoped-access` REQ-1) — the ready-to-use set the
+     * runtime host forwards to `CnAppRoot`'s `permissions` prop.
+     *
+     * Additive-only, same pattern as {@see injectOwnerSignal()}: any existing
+     * `runtime`/`runtime.user` fields (including the `isOwner` just set) are
+     * preserved; only `permissions` is set/overwritten. Delegates the actual
+     * computation to {@see ManifestResolverService::resolveCallerPermissionsForDisplay()}
+     * so the client-mirror set and the server's own authoritative filter
+     * ({@see \OCA\OpenBuild\Service\ManifestResolverService::filterManifestForCaller()})
+     * are derived from the exact same admin/write-role/group logic — they
+     * cannot drift apart into two different permission grammars.
+     *
+     * @param array<string, mixed> $manifest         The manifest payload (mutated copy is returned).
+     * @param array<string, mixed> $applicationArray The normalised Application data.
+     * @param IUser|null           $caller           The authenticated caller, or null.
+     *
+     * @return array<string, mixed> The manifest with `runtime.user.permissions` set.
+     *
+     * @spec openspec/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
+     */
+    private function injectPermissionsSignal(array $manifest, array $applicationArray, ?IUser $caller): array
+    {
+        $permissions = $this->manifestResolver->resolveCallerPermissionsForDisplay(
+            application: $applicationArray,
+            caller: $caller
+        );
+
+        $runtime = ($manifest['runtime'] ?? []);
+        if (is_array($runtime) === false) {
+            $runtime = [];
+        }
+
+        $runtimeUser = ($runtime['user'] ?? []);
+        if (is_array($runtimeUser) === false) {
+            $runtimeUser = [];
+        }
+
+        $runtimeUser['permissions'] = $permissions;
+        $runtime['user']            = $runtimeUser;
+        $manifest['runtime']        = $runtime;
+
+        return $manifest;
+    }//end injectPermissionsSignal()
 
     /**
      * Enforce the per-Application RBAC permissions block.
