@@ -1010,13 +1010,21 @@ export default {
 					return { type: 'run-synchronization', synchronizationId: action.synchronizationId }
 				}
 				if (action.type === 'object-op') {
-					let fieldMapping = {}
+					// OpenRegister rejects BOTH an empty object ({}) and null for this
+					// nested (array-item) object property, so an object-op with no
+					// field mapping must OMIT the key entirely rather than send {}/null.
+					let fieldMapping = null
 					try {
-						fieldMapping = JSON.parse(action.fieldMappingText || '{}')
+						const parsed = JSON.parse(action.fieldMappingText || 'null')
+						fieldMapping = (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) ? parsed : null
 					} catch (e) {
-						fieldMapping = {}
+						fieldMapping = null
 					}
-					return { type: 'object-op', operation: action.operation, schema: action.schema, fieldMapping }
+					const objectOp = { type: 'object-op', operation: action.operation, schema: action.schema }
+					if (fieldMapping !== null) {
+						objectOp.fieldMapping = fieldMapping
+					}
+					return objectOp
 				}
 				if (action.type === 'approval') {
 					return {
@@ -1033,13 +1041,20 @@ export default {
 						output: Array.isArray(action.output) ? action.output : [],
 					}
 				}
-				let payloadTemplate = {}
+				// Same OpenRegister nested-object rule as object-op above: an empty
+				// payload template must OMIT the key rather than send {}/null.
+				let payloadTemplate = null
 				try {
-					payloadTemplate = JSON.parse(action.payloadTemplateText || '{}')
+					const parsed = JSON.parse(action.payloadTemplateText || 'null')
+					payloadTemplate = (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) ? parsed : null
 				} catch (e) {
-					payloadTemplate = {}
+					payloadTemplate = null
 				}
-				return { type: 'webhook', url: action.url, payloadTemplate }
+				const webhook = { type: 'webhook', url: action.url }
+				if (payloadTemplate !== null) {
+					webhook.payloadTemplate = payloadTemplate
+				}
+				return webhook
 			})
 		},
 		async onSave() {
