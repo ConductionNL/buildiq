@@ -60,8 +60,15 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	const context = await browser.newContext({ baseURL })
 	const page = await context.newPage()
 
+	// Retry the whole login: this dev instance is shared, and a concurrent
+	// build/test run or an app upgrade elsewhere can make even the login page
+	// exceed Playwright's 30s default navigation timeout. A single timeout used
+	// to leave EVERY spec unauthenticated (whole-suite false red), so give the
+	// slow path an explicit budget and two more attempts before giving up.
+	const LOGIN_ATTEMPTS = 3
+	for (let attempt = 1; attempt <= LOGIN_ATTEMPTS; attempt++) {
 	try {
-		await page.goto('/index.php/login', { waitUntil: 'domcontentloaded' })
+		await page.goto('/index.php/login', { waitUntil: 'domcontentloaded', timeout: 90_000 })
 		await page.locator('input[name="user"]').fill(adminUser)
 		await page.locator('input[name="password"]').fill(adminPassword)
 		// Submit via the form rather than a button click: on a slow/loaded
@@ -80,16 +87,43 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 		})
 		// Accept both pretty + index.php-prefixed redirects. Generous
 		// timeout for slow dev instances.
-		await page.waitForURL(/\/apps\//, { timeout: 45_000 })
+		//
+		// Do NOT treat the post-login URL as the success signal on its own: on a
+		// loaded dev instance the redirect chain (login -> apps/<default app>)
+		// can outlast any reasonable timeout while the session cookie is in fact
+		// already set, which used to abort setup and leave EVERY spec running
+		// unauthenticated (a whole-suite false red). Wait for the URL, but fall
+		// back to probing an authenticated API endpoint and accept the session
+		// whenever that probe succeeds.
+		await page.waitForURL(/\/apps\//, { timeout: 60_000 }).catch(() => {})
+		const authed = await page.evaluate(async () => {
+			try {
+				const resp = await fetch('/index.php/apps/openbuild/api/applications', {
+					headers: { 'OCS-APIRequest': 'true' },
+				})
+				return resp.status !== 401
+			} catch {
+				return false
+			}
+		})
+		if (authed === false) {
+			throw new Error('session cookie not accepted by an authenticated endpoint (401)')
+		}
 		await context.storageState({ path: storagePath })
 		// eslint-disable-next-line no-console
 		console.log(`[globalSetup] authenticated session stored at ${storagePath}`)
+		break
 	} catch (e) {
+		if (attempt < LOGIN_ATTEMPTS) {
+			// eslint-disable-next-line no-console
+			console.warn(`[globalSetup] login attempt ${attempt}/${LOGIN_ATTEMPTS} failed (${(e as Error).message}) — retrying`)
+			continue
+		}
 		// eslint-disable-next-line no-console
-		console.warn(`[globalSetup] login failed — specs will run unauthenticated: ${(e as Error).message}`)
-	} finally {
-		await browser.close()
+		console.warn(`[globalSetup] login failed after ${LOGIN_ATTEMPTS} attempts — specs will run unauthenticated: ${(e as Error).message}`)
 	}
+	}
+	await browser.close()
 
 	// Seed the hello-world fixture the specs run against (idempotent).
 	seedHelloWorldFixture()
