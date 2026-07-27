@@ -47,29 +47,29 @@ const ADMIN_PASS = process.env.NC_ADMIN_PASS ?? 'admin'
 
 const APP_SLUG = 'pw-hello'
 const SCHEMA_SLUG = 'message'
+// SchemaDesigner namespaces a newly created schema to `{app}-{version}-{slug}`
+// so it lands in (and is listed from) the app's per-version register.
+const NAMESPACED_SLUG = `${APP_SLUG}-production-${SCHEMA_SLUG}`
 
-// STILL QUARANTINED — but for a far narrower reason than the original
-// "#41: admin UI not functional". Everything up to and including opening the
-// freshly created schema now works end to end and is live-verified:
-//   - /builder/:slug/schemas renders SchemaDesignerView (PR #30).
-//   - created schemas are namespaced + attached to the app's per-version
-//     register, so they appear in the list they were created from (PR #33).
-//   - the detail view no longer shows a false "Schema not found" while the
-//     load is still in flight (PR #34), and the schema's own (fast) request is
-//     no longer queued behind a ~1900-row organisation-wide collection fetch.
-//   - the create flow stages the object the POST returned, so the detail view
-//     renders from it instead of a re-fetch the shared object store does not
-//     service after a save+collection round-trip.
+// UN-QUARANTINED 2026-07-28 — openbuild#41 is fixed and this suite is green
+// end to end against a live instance (create app → add schema → add 2 fields →
+// save → reload → edit title → save → delete).
 //
-// REMAINING (needs its own change): the Schemas page is a `type:"detail"`
-// manifest page bound to the `application` schema, so CnDetailPage brings its
-// own form dialog (`data-testid-modal="cn-form-dialog"`) and an Application
-// form. That dialog mounts over the designer after Add-schema and its wrapper
-// intercepts every click on the editor beneath it, so "Add field" is never
-// actionable. Fixing it means revisiting the page-type choice for this route
-// (a registry-backed custom page instead of detail+slot), not another locator
-// tweak. Re-enable this describe once that lands.
-test.describe.skip('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', () => {
+// What it took (each was a real defect, not test debt):
+//   - /builder/:slug/schemas rendered the generic app-list, not the designer (#30).
+//   - created schemas were written with a raw slug the designer's own list filter
+//     hides, and were never attached to the app's per-version register (#33).
+//   - "Schema not found" rendered while the detail was still loading (#34).
+//   - the detail request queued behind a ~1900-row organisation-wide collection
+//     fetch, and after create the store never issued it at all (#41).
+//   - CnDetailPage mounted its create-archetype form dialog over the designer
+//     because its "does the page have a body?" guard missed scoped slots
+//     (nc-vue #544/#545 → beta.225; these pages now declare config.createForm
+//     "never" — openbuild #42/#43).
+//   - 🔑 OpenRegister's schema API is READ-BY-SLUG but WRITE-BY-ID: PUT/DELETE
+//     on a slug (or a uuid) 404 "Schema not found". Saving and deleting by slug
+//     silently did nothing — the toast fired, the change never landed.
+test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', () => {
 	test.beforeEach(async ({ page }) => {
 		// Session is established by globalSetup (tests/e2e/global-setup.ts)
 		// which writes storageState that every spec inherits via the
@@ -161,19 +161,34 @@ test.describe.skip('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)
 
 		// Step 7 — delete the schema via the per-row action; confirm in
 		// the dialog (REQ-OBSD-008).
+		//
+		// Open / Rename / Delete live inside the row's collapsed `NcActions`
+		// menu, so the Delete button only exists once that menu's toggle is
+		// clicked — the toggle itself carries no "delete" in its accessible
+		// name, which is why looking for Delete on the row directly never
+		// resolves.
+		// Match on the FULL namespaced slug: the designer namespaces a new
+		// schema to `{app}-{version}-{slug}`, and a bare "message" also matches
+		// the seeded "…-hello-message" row.
 		const row = page
 			.locator('.openbuild-schema-list__row')
-			.filter({ hasText: SCHEMA_SLUG })
-		await row.getByRole('button', { name: /delete/i }).click()
-		// Confirm dialog asks for explicit confirmation.
-		const confirmButton = page
-			.locator('.delete-schema-dialog, [role="dialog"]')
-			.getByRole('button', { name: /delete|confirm/i })
-		await confirmButton.click()
+			.filter({ hasText: NAMESPACED_SLUG })
+		await row.getByRole('button', { name: /actions|more/i }).first().click()
+		await page.getByRole('menuitem', { name: /delete/i })
+			.or(page.getByRole('button', { name: /^delete$/i }))
+			.first()
+			.click()
+		// REQ-OBSD-008: deletion is gated — the confirm button stays disabled
+		// until the exact schema slug is typed, so a stray click cannot destroy
+		// a schema. Type it, then confirm.
+		const confirmDialog = page.locator('[role="dialog"]').filter({ hasText: /delete schema/i }).first()
+		await expect(confirmDialog).toBeVisible({ timeout: 15_000 })
+		await confirmDialog.getByRole('textbox', { name: /type the slug to confirm/i }).fill(NAMESPACED_SLUG)
+		await confirmDialog.getByRole('button', { name: /^delete schema$/i }).click()
 
 		// Row disappears from the list.
 		await expect(
-			page.locator('.openbuild-schema-list__row').filter({ hasText: SCHEMA_SLUG }),
+			page.locator('.openbuild-schema-list__row').filter({ hasText: NAMESPACED_SLUG }),
 		).toHaveCount(0, { timeout: 45_000 })
 	})
 })
