@@ -970,6 +970,20 @@ export default {
 			this.commitStaged({ ...this.staged, widgets })
 		},
 		/**
+		 * The numeric id of the currently loaded (persisted) schema — the only
+		 * identifier OpenRegister's schema PUT resolves (slug and uuid both 404).
+		 *
+		 * @return {number|string|null} The numeric id, or null when unknown.
+		 */
+		persistedNumericId() {
+			const p = this.persisted
+			if (!p) {
+				return null
+			}
+			const id = p.id ?? (p['@self'] && p['@self'].id)
+			return (id === undefined || id === null || id === '') ? null : id
+		},
+		/**
 		 * The slug of the currently loaded (persisted) schema, if any.
 		 *
 		 * @return {string} The persisted schema's slug, or '' when none is loaded.
@@ -1151,7 +1165,17 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async deleteSchema(slug) {
-			const ok = await this.store.deleteObject(SCHEMA_TYPE, slug)
+			// Delete by NUMERIC id, not the slug — OpenRegister's schema API is
+			// read-by-slug but write-by-id (`PUT`/`DELETE` on a slug or uuid both
+			// 404 "Schema not found"). Deleting by slug silently no-op'd: the
+			// success toast fired but the schema stayed. Resolve the id from the
+			// list row we were asked to delete; fall back to the slug so an
+			// unlisted schema still attempts a delete rather than doing nothing.
+			const target = (this.schemas || []).find(
+				(s) => (s.slug || (s['@self'] && s['@self'].slug)) === slug,
+			)
+			const targetId = target ? (target.id ?? (target['@self'] && target['@self'].id)) : null
+			const ok = await this.store.deleteObject(SCHEMA_TYPE, targetId ?? slug)
 			if (!ok) {
 				const err = this.store.errors[SCHEMA_TYPE]
 				showError(this.t('openbuild', 'Failed to delete schema: {error}', { error: err || '' }))
@@ -1178,10 +1202,18 @@ export default {
 			this.saveError = ''
 			try {
 				const body = this.composeSchemaBody(this.staged)
-				// `saveObject` switches to PUT when `id` is present.
-				// We piggyback the current `schemaId` as `id` so the
-				// store's `_buildUrl` puts it on the URL tail.
-				const data = await this.store.saveObject(SCHEMA_TYPE, { ...body, id: this.schemaId })
+				// `saveObject` switches to PUT when `id` is present, and the
+				// store's `_buildUrl` puts that `id` on the URL tail.
+				//
+				// It MUST be the schema's numeric id, not the route's slug:
+				// OpenRegister's schema API is read-by-slug but write-by-id —
+				// `GET /api/schemas/{slug}` is 200 while `PUT /api/schemas/{slug}`
+				// (and `PUT /api/schemas/{uuid}`) both 404 "Schema not found";
+				// only `PUT /api/schemas/{numericId}` succeeds. Sending the slug
+				// meant every save in the designer 404'd, so no schema edit —
+				// fields, lifecycle, relations, access — ever persisted.
+				const writeId = this.persistedNumericId() ?? this.schemaId
+				const data = await this.store.saveObject(SCHEMA_TYPE, { ...body, id: writeId })
 				if (!data) {
 					const err = this.store.errors[SCHEMA_TYPE]
 					this.saveError = typeof err === 'string'
