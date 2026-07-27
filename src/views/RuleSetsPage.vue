@@ -175,7 +175,7 @@ export default {
 			try {
 				const url = generateUrl(`/apps/openbuild/api/rules/${ruleSet.slug}/test-all`)
 				const { data } = await axios.post(url, {})
-				this.$set(this.testResults, ruleSet.slug, data)
+				this.testResults[ruleSet.slug] = data
 			} catch (error) {
 				this.errorMessage = t('openbuild', 'Test run failed.')
 			}

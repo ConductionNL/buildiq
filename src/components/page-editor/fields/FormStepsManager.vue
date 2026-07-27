@@ -380,7 +380,7 @@ export default {
 			const next = this.localSteps.slice()
 			const step = next[index] || {}
 			next[index] = { ...step, fields: [...(step.fields || []), key] }
-			this.$set(this.pendingAssignment, index, '')
+			this.pendingAssignment[index] = ''
 			this.emitSteps(next)
 		},
 		/**

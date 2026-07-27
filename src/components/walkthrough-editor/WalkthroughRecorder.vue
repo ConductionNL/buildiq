@@ -72,7 +72,7 @@ export default {
 		this.boundClick = null
 	},
 
-	beforeDestroy() {
+	beforeUnmount() {
 		this.detach()
 	},
 

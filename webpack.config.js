@@ -129,7 +129,23 @@ webpackConfig.plugins = [
 // nextcloud-vue's useAppInstaller) would resolve to a non-existent root style.css.
 // dialogs v6 ships the stylesheet at dist/style.css behind its "exports" map.
 webpackConfig.resolve.alias['@nextcloud/dialogs/style.css$'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs/dist/style.css')
-webpackConfig.resolve.alias['@nextcloud/dialogs'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs')
+
+// The Vue-3 lines of @nextcloud/vue (v9) and @nextcloud/dialogs (v7) are
+// ESM-only: neither package.json has `main`/`module`, only an `exports` map
+// exposing a single "import" condition. Two consequences:
+//
+//  1. The previous `@nextcloud/dialogs` -> package DIRECTORY alias no longer
+//     works. A directory alias bypasses `exports` entirely and looks for
+//     main/index.js, which these packages do not have.
+//  2. Setting `resolve.conditionNames` at the top level is not enough —
+//     webpack's `byDependency` defaults override it per dependency type.
+//
+// Aliasing both packages to their concrete ESM entry sidesteps both: the
+// specifier resolves to a real file, no condition matching involved. The
+// exact-match (`$`) form is used so deep imports (e.g.
+// `@nextcloud/vue/components/NcButton`) still go through the exports map.
+webpackConfig.resolve.alias['@nextcloud/dialogs$'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs/dist/index.mjs')
+webpackConfig.resolve.alias['@nextcloud/vue$'] = path.resolve(__dirname, 'node_modules/@nextcloud/vue/dist/index.mjs')
 
 // NOTE: `resolve.fallback.path` is set to `path-browserify` above (see the
 // resolve block). The FilePicker DOES run in this app — nextcloud-vue's

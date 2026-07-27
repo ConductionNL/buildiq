@@ -14,7 +14,7 @@
  *
  * The sub-editor declares `validatedConfigKeys` (an array of the
  * top-level config keys it surfaces); on `mounted` the mixin registers
- * them all, on `beforeDestroy` it unregisters them. Templates call
+ * them all, on `beforeUnmount` it unregisters them. Templates call
  * `markFor(key)` to get the `{ hasError, message }` bag for an
  * `<InlineFieldMark>` and `isInvalid(key)` for the `aria-invalid` binding.
  *
@@ -36,7 +36,7 @@ export const pageEditorValidationMixin = {
 			v.register(key)
 		}
 	},
-	beforeDestroy() {
+	beforeUnmount() {
 		const v = this.pageEditorValidator
 		if (!v || typeof v.unregister !== 'function') {
 			return

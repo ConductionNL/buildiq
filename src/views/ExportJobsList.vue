@@ -90,7 +90,7 @@ export default {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 	 */
-	beforeDestroy() {
+	beforeUnmount() {
 		if (this.poller) {
 			clearInterval(this.poller)
 		}

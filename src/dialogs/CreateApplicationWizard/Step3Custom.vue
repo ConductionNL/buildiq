@@ -289,7 +289,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		toggleAdvanced(index) {
-			this.$set(this.advancedOpen, index, !this.advancedOpen[index])
+			this.advancedOpen[index] = !this.advancedOpen[index]
 		},
 
 		/**

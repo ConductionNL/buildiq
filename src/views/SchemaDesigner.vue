@@ -597,7 +597,7 @@ export default {
 		// on this same component instance.
 		document.addEventListener('keydown', this.onKeydown)
 	},
-	beforeDestroy() {
+	beforeUnmount() {
 		document.removeEventListener('keydown', this.onKeydown)
 	},
 	methods: {
