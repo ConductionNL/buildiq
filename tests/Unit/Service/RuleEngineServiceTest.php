@@ -158,9 +158,9 @@ final class RuleEngineServiceTest extends TestCase
      */
     public function testEvaluateLoanApprove(): void
     {
-        $this->objectService->method('findAll')->willReturnCallback(
-            function (array $config): array {
-                return $this->loanFindAllResults((string) $config['filters']['schema']);
+        $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+            function (string $registerSlug, string $schema, array $filters = []): array {
+                return $this->loanFindAllResults($schema);
             }
         );
 
@@ -185,7 +185,7 @@ final class RuleEngineServiceTest extends TestCase
      */
     public function testEvaluateNotFound(): void
     {
-        $this->objectService->method('findAll')->willReturn([]);
+        $this->objectService->method('searchObjectsBySlug')->willReturn([]);
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(404);
         $this->service->evaluate('does-not-exist', []);
@@ -199,9 +199,9 @@ final class RuleEngineServiceTest extends TestCase
      */
     public function testPiiMasking(): void
     {
-        $this->objectService->method('findAll')->willReturnCallback(
-            function (array $config): array {
-                return $this->loanFindAllResults((string) $config['filters']['schema']);
+        $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+            function (string $registerSlug, string $schema, array $filters = []): array {
+                return $this->loanFindAllResults($schema);
             }
         );
 
@@ -264,9 +264,9 @@ final class RuleEngineServiceTest extends TestCase
      */
     public function testWetEvaluationInvokesDispatcher(): void
     {
-        $this->objectService->method('findAll')->willReturnCallback(
-            function (array $config): array {
-                return $this->conditionActionFindAllResults((string) $config['filters']['schema']);
+        $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+            function (string $registerSlug, string $schema, array $filters = []): array {
+                return $this->conditionActionFindAllResults($schema);
             }
         );
 
@@ -287,9 +287,9 @@ final class RuleEngineServiceTest extends TestCase
      */
     public function testDryRunDoesNotInvokeDispatcher(): void
     {
-        $this->objectService->method('findAll')->willReturnCallback(
-            function (array $config): array {
-                return $this->conditionActionFindAllResults((string) $config['filters']['schema']);
+        $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+            function (string $registerSlug, string $schema, array $filters = []): array {
+                return $this->conditionActionFindAllResults($schema);
             }
         );
 
@@ -318,9 +318,8 @@ final class RuleEngineServiceTest extends TestCase
             $this->actionDispatcher
         );
 
-        $this->objectService->method('findAll')->willReturnCallback(
-            function (array $config): array {
-                $schema = (string) ($config['filters']['schema'] ?? '');
+        $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+            function (string $registerSlug, string $schema, array $filters = []): array {
                 if ($schema === RuleEngineService::RULE_SET_SCHEMA) {
                     return [['slug' => 'loop', 'versie' => '1.0', 'ruleType' => 'condition-action']];
                 }
@@ -367,9 +366,8 @@ final class RuleEngineServiceTest extends TestCase
             $this->actionDispatcher
         );
 
-        $this->objectService->method('findAll')->willReturnCallback(
-            function (array $config): array {
-                $schema = (string) ($config['filters']['schema'] ?? '');
+        $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+            function (string $registerSlug, string $schema, array $filters = []): array {
                 if ($schema === RuleEngineService::RULE_SET_SCHEMA) {
                     return [['slug' => 'chain', 'versie' => '1.0', 'ruleType' => 'condition-action']];
                 }
@@ -397,4 +395,42 @@ final class RuleEngineServiceTest extends TestCase
         $this->assertLessThanOrEqual(10, $calls);
 
     }//end testCallRuleSetDepthIsBounded()
+
+    /**
+     * M1: rule-set resolution is authorization-scoped — it uses
+     * `searchObjectsBySlug` (RBAC + org) and never the unscoped `findAll`.
+     *
+     * @return void
+     */
+    public function testResolutionUsesAuthorizationScopedSearch(): void
+    {
+        $this->objectService->expects($this->never())->method('findAll');
+        $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+            function (string $registerSlug, string $schema, array $filters = []): array {
+                return $this->loanFindAllResults($schema);
+            }
+        );
+
+        $outcome = $this->service->evaluate(
+            'loan-eligibility',
+            ['applicant' => ['age' => 30, 'monthlyIncome' => 3000, 'creditScore' => 700]]
+        );
+        $this->assertSame('approve', $outcome['result']['decision']);
+
+    }//end testResolutionUsesAuthorizationScopedSearch()
+
+    /**
+     * M1: a rule-set outside the caller's authorization scope (searchObjects
+     * returns nothing) resolves to a 404 — it is not evaluated by slug.
+     *
+     * @return void
+     */
+    public function testOutOfScopeRuleSetResolvesNotFound(): void
+    {
+        $this->objectService->method('searchObjectsBySlug')->willReturn([]);
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(404);
+        $this->service->evaluate('foreign-rule-set', []);
+
+    }//end testOutOfScopeRuleSetResolvesNotFound()
 }//end class

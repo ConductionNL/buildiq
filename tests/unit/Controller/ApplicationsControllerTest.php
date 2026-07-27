@@ -207,6 +207,39 @@ class ApplicationsControllerTest extends TestCase
     }//end wireApplication()
 
     /**
+     * Variant of wireApplication that also sets the Application's authoritative
+     * display `name` and the (possibly divergent) manifest-blob `name` — used by
+     * the getManifest name-authority tests (#32 Fix B).
+     *
+     * @param string      $appName      The Application entity's authoritative display name.
+     * @param string|null $manifestName The stored manifest blob's own name (null = absent).
+     *
+     * @return void
+     */
+    private function wireApplicationWithName(string $appName, ?string $manifestName): void
+    {
+        $manifest = [
+            'version' => '1.0.0',
+            'menu'    => [],
+            'pages'   => [['id' => 'p1', 'route' => '/', 'type' => 'index']],
+        ];
+        if ($manifestName !== null) {
+            $manifest['name'] = $manifestName;
+        }
+
+        $this->objectService->method('searchObjects')
+            ->willReturn([['applicationUuid' => 'abc-123']]);
+
+        $applicationEntity = $this->createMock(ObjectEntity::class);
+        $applicationEntity->method('jsonSerialize')->willReturn([
+            'name'        => $appName,
+            'manifest'    => $manifest,
+            'permissions' => ['owners' => ['user:bob'], 'editors' => [], 'viewers' => []],
+        ]);
+        $this->objectService->method('find')->willReturn($applicationEntity);
+    }//end wireApplicationWithName()
+
+    /**
      * Happy path — slug resolves to a published Application; manifest is returned unwrapped
      * to a caller whose group is in `permissions.viewers`.
      *
@@ -568,4 +601,58 @@ class ApplicationsControllerTest extends TestCase
         self::assertIsArray($result);
         self::assertFalse($result['runtime']['user']['isOwner']);
     }//end testGetManifestOwnerSignalDegradesGracefullyWithoutApplicationContext()
+
+    /**
+     * #32 Fix B (openbuild-runtime REQ-OBR-001): a stale, lower-cased manifest
+     * blob `name` MUST be overridden by the Application's authoritative cased
+     * `name`, so the runtime top-bar shows "Pet Store", not the raw slug.
+     *
+     * @return void
+     */
+    public function testGetManifestOverridesStaleBlobNameWithApplicationName(): void
+    {
+        $controller = $this->buildController(uid: 'bob');
+        $this->wireApplicationWithName(appName: 'Pet Store', manifestName: 'pet-store');
+
+        $result = $controller->getManifest(slug: 'pet-store');
+
+        self::assertSame(Http::STATUS_OK, $result->getStatus());
+        self::assertSame('Pet Store', $result->getData()['name']);
+    }//end testGetManifestOverridesStaleBlobNameWithApplicationName()
+
+    /**
+     * #32 Fix B: when the manifest blob has no `name` at all, getManifest still
+     * supplies the Application's authoritative name (rather than leaving it
+     * absent, which caused the runtime to fall back to the raw slug).
+     *
+     * @return void
+     */
+    public function testGetManifestSuppliesNameWhenBlobHasNone(): void
+    {
+        $controller = $this->buildController(uid: 'bob');
+        $this->wireApplicationWithName(appName: 'Pet Store', manifestName: null);
+
+        $result = $controller->getManifest(slug: 'pet-store');
+
+        self::assertSame(Http::STATUS_OK, $result->getStatus());
+        self::assertArrayHasKey('name', $result->getData());
+        self::assertSame('Pet Store', $result->getData()['name']);
+    }//end testGetManifestSuppliesNameWhenBlobHasNone()
+
+    /**
+     * #32 Fix B: an already-consistent name (Application name == blob name) is
+     * returned unchanged.
+     *
+     * @return void
+     */
+    public function testGetManifestKeepsConsistentName(): void
+    {
+        $controller = $this->buildController(uid: 'bob');
+        $this->wireApplicationWithName(appName: 'Pet Store', manifestName: 'Pet Store');
+
+        $result = $controller->getManifest(slug: 'pet-store');
+
+        self::assertSame(Http::STATUS_OK, $result->getStatus());
+        self::assertSame('Pet Store', $result->getData()['name']);
+    }//end testGetManifestKeepsConsistentName()
 }//end class

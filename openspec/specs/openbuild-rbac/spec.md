@@ -1,6 +1,6 @@
 # openbuild-rbac Specification
 
-**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/)
+**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/), [harden-rules-authz-and-audit-parity](../../changes/harden-rules-authz-and-audit-parity/)
 
 **Status**: in-progress
 

@@ -32,6 +32,7 @@
     "vue-router": "^3.6.5"
   },
   "overrides": {
+    "libxmljs2": "^0.37.0",
     "@nextcloud/axios": "~2.5.0"
   },
   "devDependencies": {

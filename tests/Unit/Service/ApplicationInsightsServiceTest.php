@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\ApplicationInsightsService;
+use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -40,10 +41,13 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IGroup;
+use OCP\IGroupManager;
 use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use ReflectionMethod;
 
 /**
  * Tests for ApplicationInsightsService.
@@ -447,4 +451,76 @@ class ApplicationInsightsServiceTest extends TestCase
         $user->method('getUID')->willReturn($uid);
         return $user;
     }//end mockUser()
+
+    /**
+     * Build an insights service wired with a real PermissionResolver over the
+     * given group manager (for the L9 group-principal tests).
+     *
+     * @param IGroupManager $groupManager The group manager backing the resolver.
+     *
+     * @return ApplicationInsightsService
+     */
+    private function serviceWithResolver(IGroupManager $groupManager): ApplicationInsightsService
+    {
+        $cache        = $this->createMock(ICache::class);
+        $cache->method('get')->willReturn(null);
+        $cacheFactory = $this->createMock(ICacheFactory::class);
+        $cacheFactory->method('createDistributed')->willReturn($cache);
+
+        return new ApplicationInsightsService(
+            objectService: $this->objectService,
+            auditTrailMapper: $this->auditTrailMapper,
+            schemaMapper: $this->schemaMapper,
+            registerMapper: $this->registerMapper,
+            cacheFactory: $cacheFactory,
+            logger: $this->logger,
+            permissionResolver: new PermissionResolver($groupManager, $this->logger)
+        );
+    }//end serviceWithResolver()
+
+    /**
+     * L9: a caller authorized only via a `group:` principal is granted (the
+     * previous user-only matcher wrongly denied group-only members).
+     *
+     * @return void
+     */
+    public function testCallerInAnyRoleHonoursGroupPrincipal(): void
+    {
+        $groupManager = $this->createMock(IGroupManager::class);
+        $group        = $this->createMock(IGroup::class);
+        $group->method('getGID')->willReturn('vets');
+        $groupManager->method('getUserGroups')->willReturn([$group]);
+        $groupManager->method('isAdmin')->willReturn(false);
+
+        $service = $this->serviceWithResolver($groupManager);
+        $method  = new ReflectionMethod(ApplicationInsightsService::class, 'callerInAnyRole');
+        $method->setAccessible(true);
+
+        $permissions = ['owners' => ['group:vets'], 'editors' => [], 'viewers' => []];
+        self::assertTrue(
+            $method->invoke($service, $permissions, $this->mockUser('bob'), ['owners', 'editors'])
+        );
+    }//end testCallerInAnyRoleHonoursGroupPrincipal()
+
+    /**
+     * L9: a caller matching neither a user nor a group principal (and not an
+     * admin) is denied (fail-closed).
+     *
+     * @return void
+     */
+    public function testCallerInAnyRoleDeniesUnmatchedCaller(): void
+    {
+        $groupManager = $this->createMock(IGroupManager::class);
+        $groupManager->method('getUserGroups')->willReturn([]);
+        $groupManager->method('isAdmin')->willReturn(false);
+
+        $service = $this->serviceWithResolver($groupManager);
+        $method  = new ReflectionMethod(ApplicationInsightsService::class, 'callerInAnyRole');
+        $method->setAccessible(true);
+
+        $permissions = ['owners' => ['group:vets', 'user:alice'], 'editors' => [], 'viewers' => []];
+        self::assertFalse(
+            $method->invoke($service, $permissions, $this->mockUser('mallory'), ['owners', 'editors'])
+        );
+    }//end testCallerInAnyRoleDeniesUnmatchedCaller()
 }//end class

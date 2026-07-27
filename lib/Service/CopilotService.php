@@ -41,6 +41,8 @@ use OCA\OpenBuild\Exception\CopilotException;
 use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
 use OCA\OpenBuild\Service\Copilot\CopilotPlanValidator;
 use OCA\OpenBuild\Service\Copilot\CopilotPromptBuilder;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -151,6 +153,7 @@ class CopilotService
      * @param ApplicationDeletionService $applicationDeletionService Compensates a plan-created app on rollback.
      * @param AgentRunLogger             $agentRunLogger             Persists the transparent AgentRun record for
      *                                                               every agent-scoped plan/execute/discard turn.
+     * @param AuditTrailMapper|null      $auditTrailMapper           Optional OR audit-trail writer for admin-bypass parity (L2).
      *
      * @return void
      */
@@ -166,6 +169,7 @@ class CopilotService
         private readonly CopilotPromptBuilder $promptBuilder,
         private readonly ApplicationDeletionService $applicationDeletionService,
         private readonly AgentRunLogger $agentRunLogger,
+        private readonly ?AuditTrailMapper $auditTrailMapper=null,
     ) {
     }//end __construct()
 
@@ -814,9 +818,55 @@ class CopilotService
             );
         }
 
-        if ($this->groupManager->isAdmin($userId) === true) {
-            $this->logger->info('OpenBuild Copilot: rbac.admin_bypass', ['actor' => $userId, 'appSlug' => (string) ($app['slug'] ?? '')]);
-        }
+        // Record only a *genuine* admin bypass: an admin who would NOT pass the
+        // owner/editor check without admin-group membership. An admin who also
+        // holds a real role is exercising a legitimate grant, not a bypass —
+        // auditing it would produce false compliance records
+        // (harden-rules-authz-and-audit-parity, L2 / #5).
+        $genuineBypass = $this->groupManager->isAdmin($userId) === true
+            && $this->permissionResolver->matchesCaller(
+                permissions: $permissions,
+                caller: $caller,
+                userGroups: $userGroups,
+                allowAdminBypass: false,
+                roles: self::WRITE_ROLES
+            ) === false;
+
+        if ($genuineBypass === true) {
+            $context = [
+                'event'   => 'rbac.admin_bypass',
+                'actor'   => $userId,
+                'appSlug' => (string) ($app['slug'] ?? ''),
+                'channel' => 'copilot',
+            ];
+
+            // Audit-trail parity with the HTTP/MCP paths (REQ-OBRBAC-007): record
+            // the bypass to the OR per-object audit trail when the mapper + app
+            // entity are available; fail soft to a PSR log otherwise
+            // (harden-rules-authz-and-audit-parity, L2).
+            $entity = null;
+            try {
+                $entity = $this->objectService->find((string) ($app['uuid'] ?? ($app['id'] ?? '')));
+            } catch (\Throwable $e) {
+                $entity = null;
+            }
+
+            if ($this->auditTrailMapper !== null && $entity instanceof ObjectEntity) {
+                try {
+                    $this->auditTrailMapper->createAuditTrailEntry(object: $entity, action: 'rbac.admin_bypass', context: $context);
+                    $this->logger->info('OpenBuild Copilot: rbac.admin_bypass', $context);
+                    return;
+                } catch (\Throwable $e) {
+                    $this->logger->critical(
+                        'OpenBuild Copilot: rbac.admin_bypass audit-trail write failed',
+                        array_merge($context, ['exception' => $e->getMessage()])
+                    );
+                    return;
+                }
+            }//end if
+
+            $this->logger->info('OpenBuild Copilot: rbac.admin_bypass', $context);
+        }//end if
     }//end assertWriteRoleOnApp()
 
     /**

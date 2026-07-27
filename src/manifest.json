@@ -243,6 +243,7 @@
 			"config": {
 				"register": "openbuild",
 				"schema": "application",
+				"createForm": "never",
 				"sidebar": {
 					"enabled": false
 				},
@@ -274,6 +275,7 @@
 			"config": {
 				"register": "openbuild",
 				"schema": "application",
+				"createForm": "never",
 				"sidebar": {
 					"enabled": false
 				},
@@ -289,6 +291,7 @@
 			"config": {
 				"register": "openbuild",
 				"schema": "application",
+				"createForm": "never",
 				"sidebar": {
 					"enabled": true,
 					"showMetadata": true
@@ -307,6 +310,7 @@
 			"config": {
 				"register": "openbuild",
 				"schema": "application",
+				"createForm": "never",
 				"sidebar": {
 					"enabled": true,
 					"showMetadata": true
@@ -325,6 +329,7 @@
 			"config": {
 				"register": "openbuild",
 				"schema": "application",
+				"createForm": "never",
 				"sidebar": {
 					"enabled": true,
 					"showMetadata": true

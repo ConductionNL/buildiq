@@ -606,10 +606,18 @@ export default {
 		// REQ-OBVR-004: resolve the active ApplicationVersion via useApplicationVersion.
 		this.resolveVersion()
 		this.loadApplicationRecord()
-		await this.refreshList()
+		// Load the SELECTED SCHEMA FIRST, then the list. refreshList() pulls the
+		// whole organisation's schema collection (~1900 rows on the shared dev
+		// instance) and filters it down to this app; awaiting that before the
+		// detail delayed the detail's own single-row request by ~13s, so opening
+		// a schema — including the one you just created — sat on a spinner for
+		// well over ten seconds. The two cannot be run concurrently: they share
+		// one object-store entry for the `schema` type, and an in-flight
+		// collection fetch leaves the concurrent object fetch unresolved.
 		if (this.schemaId) {
 			await this.loadDetail()
 		}
+		await this.refreshList()
 		// REQ-BUR-003/-005: document-level undo/redo shortcuts. `onKeydown`
 		// itself no-ops outside detail mode (no staged model to act on), so
 		// the listener is safe to keep attached across list/detail navigation
@@ -733,6 +741,16 @@ export default {
 				if (this.history) {
 					this.history.reset(null)
 				}
+				return
+			}
+			// Already holding exactly this schema — skip the re-fetch. This is the
+			// state straight after Add-schema, which stages the object the create
+			// call returned and then navigates here: re-fetching it is redundant,
+			// and on that path the shared object store (which has just serviced a
+			// saveObject + fetchCollection for the same type) never issues the
+			// request at all, leaving the view spinning indefinitely.
+			if (this.staged !== null && this.persistedSlug() === this.schemaId) {
+				this.detailAttempted = true
 				return
 			}
 			this.loadingDetail = true
@@ -952,6 +970,18 @@ export default {
 			this.commitStaged({ ...this.staged, widgets })
 		},
 		/**
+		 * The slug of the currently loaded (persisted) schema, if any.
+		 *
+		 * @return {string} The persisted schema's slug, or '' when none is loaded.
+		 */
+		persistedSlug() {
+			const p = this.persisted
+			if (!p) {
+				return ''
+			}
+			return p.slug || (p['@self'] && p['@self'].slug) || ''
+		},
+		/**
 		 * Namespace a user-typed schema slug to this app+version, matching the
 		 * convention the creation wizard seeds with (`{appSlug}-{versionSlug}-X`,
 		 * or `{appSlug}-X` on the legacy no-version register) and which
@@ -1055,6 +1085,27 @@ export default {
 			const newSlug = (data && (data.slug || (data['@self'] && data['@self'].slug))) || body.slug
 			await this.attachSchemaToRegister(data)
 			await this.refreshList()
+			// Stage what the create call just returned, so the detail view we are
+			// about to navigate to renders immediately from it instead of issuing
+			// a redundant fetch for an object we already hold (see loadDetail()).
+			// Best-effort: if the returned body cannot be staged, fall through to
+			// the normal fetch-on-navigate path rather than blocking navigation.
+			try {
+				const stagedFromCreate = this.bodyToStaged(data)
+				this.persisted = data
+				this.staged = stagedFromCreate
+				this.detailAttempted = true
+				if (this.history) {
+					this.history.reset(this.staged)
+				}
+			} catch (e) {
+				this.persisted = null
+				this.staged = null
+			}
+			// Give the Add-schema dialog a tick to close before navigating: this
+			// navigation unmounts SchemaListPanel (`v-if="!schemaId"`), which owns
+			// that dialog.
+			await this.$nextTick()
 			// REQ-OBVR-006: use buildVersionedRoute to forward ?_version= on navigation.
 			this.$router.push(buildVersionedRoute(
 				'SchemaDesigner',
