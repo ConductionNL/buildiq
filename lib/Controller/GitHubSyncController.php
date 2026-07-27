@@ -316,6 +316,10 @@ class GitHubSyncController extends Controller
             GitHubAppSyncService::OUTCOME_NOT_LINKED, 'version_not_found' => Http::STATUS_BAD_REQUEST,
             GitHubAppSyncService::OUTCOME_PUSH_CONFLICT => Http::STATUS_CONFLICT,
             GitHubAppSyncService::OUTCOME_BROKER_UNAVAILABLE, GitHubAppSyncService::OUTCOME_BROKER_DENIED => Http::STATUS_FORBIDDEN,
+            // GitHub refused on permissions grounds — a 403 answer, not a 502
+            // transport failure. Reporting it as a gateway error is what sends
+            // the reader at the network instead of at the token's scopes.
+            GitHubAppSyncService::OUTCOME_FORBIDDEN => Http::STATUS_FORBIDDEN,
             default => Http::STATUS_BAD_GATEWAY,
         };
 
