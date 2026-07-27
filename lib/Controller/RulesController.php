@@ -11,9 +11,12 @@
  *   - POST /api/rules/{ruleSetSlug}/test-all   — run every TestCase for the RuleSet
  *
  * All endpoints carry `#[NoAdminRequired]` per ADR-005: any authenticated user
- * may evaluate a RuleSet, but multi-tenant isolation is enforced server-side —
- * the RuleEngineService resolves the RuleSet under the caller's tenant scope, so
- * a slug owned by another tenant resolves to a 404 (no IDOR). The endpoints are
+ * may evaluate a RuleSet. Resolution runs through OpenRegister
+ * `searchObjectsBySlug`, which applies the schema's RBAC. IMPORTANT: `openbuild`
+ * is a system-wide register (not org-scoped), so this is NOT per-owner or
+ * per-organisation read isolation — with a read-open rule-set schema, any
+ * authenticated caller can resolve a RuleSet by slug; write operations stay
+ * admin-gated at the schema. (No "foreign slug → 404 / no IDOR" guarantee.) The endpoints are
  * NOT public; an unauthenticated request is rejected by the NC middleware before
  * reaching the controller. No secrets are returned; errors are uniform envelopes
  * with no stack traces.
@@ -292,24 +295,30 @@ class RulesController extends Controller
      */
     private function query(string $schema, array $filters, ?int $limit): array
     {
-        $config = [
-            'filters' => array_merge(
-                ['register' => RuleEngineService::REGISTER_SLUG, 'schema' => $schema],
-                $filters
-            ),
-        ];
-        if ($limit !== null) {
-            $config['limit'] = $limit;
-        }
-
+        // Authorization-aware resolution (harden-rules-authz-and-audit-parity,
+        // M1): resolve through searchObjectsBySlug (which applies the schema's
+        // RBAC) rather than a raw findAll. `openbuild` is a SYSTEM-WIDE register
+        // (not org-scoped) — mirror ListAppsHandler and pass _multitenancy:false
+        // so cross-org callers still resolve it (a true org filter would throw
+        // and break resolution).
         try {
-            $results = $this->objectService->findAll(config: $config);
+            $results = $this->objectService->searchObjectsBySlug(
+                RuleEngineService::REGISTER_SLUG,
+                $schema,
+                $filters,
+                _rbac: true,
+                _multitenancy: false
+            );
         } catch (Throwable $e) {
             $this->logger->warning(
                 'OpenBuild: RulesController query failed',
                 ['schema' => $schema, 'exception' => $e->getMessage()]
             );
             return [];
+        }
+
+        if (is_array($results) === true && $limit !== null && count($results) > $limit) {
+            $results = array_slice($results, 0, $limit);
         }
 
         if (is_array($results) === false) {

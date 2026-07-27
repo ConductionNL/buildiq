@@ -126,12 +126,13 @@ class ApplicationInsightsService
      * Per ADR-022 — no app-local DB access; everything flows through
      * OpenRegister abstractions.
      *
-     * @param ObjectService    $objectService    OR object surface
-     * @param AuditTrailMapper $auditTrailMapper Audit-trail aggregations (chart + actors + counts)
-     * @param SchemaMapper     $schemaMapper     Schema slug-to-integer-ID resolver
-     * @param RegisterMapper   $registerMapper   Register lookup (installed-app footprint for hybrid apps)
-     * @param ICacheFactory    $cacheFactory     Distributed-cache factory (memoises computed payloads)
-     * @param LoggerInterface  $logger           PSR logger
+     * @param ObjectService           $objectService      OR object surface
+     * @param AuditTrailMapper        $auditTrailMapper   Audit-trail aggregations (chart + actors + counts)
+     * @param SchemaMapper            $schemaMapper       Schema slug-to-integer-ID resolver
+     * @param RegisterMapper          $registerMapper     Register lookup (installed-app footprint for hybrid apps)
+     * @param ICacheFactory           $cacheFactory       Distributed-cache factory (memoises computed payloads)
+     * @param LoggerInterface         $logger             PSR logger
+     * @param PermissionResolver|null $permissionResolver Shared role/group matcher (group-aware insights authz, L9)
      *
      * @return void
      */
@@ -142,6 +143,7 @@ class ApplicationInsightsService
         private readonly RegisterMapper $registerMapper,
         ICacheFactory $cacheFactory,
         private readonly LoggerInterface $logger,
+        private readonly ?PermissionResolver $permissionResolver=null,
     ) {
         $this->cache = $cacheFactory->createDistributed('openbuild_insights');
     }//end __construct()
@@ -636,19 +638,17 @@ class ApplicationInsightsService
             return false;
         }
 
-        $callerUid = $caller->getUID();
-
         if ($isProduction === true) {
             return $this->callerInAnyRole(
                 permissions: $permissions,
-                callerUid: $callerUid,
+                caller: $caller,
                 roles: ['owners', 'editors', 'viewers']
             );
         }
 
         return $this->callerInAnyRole(
             permissions: $permissions,
-            callerUid: $callerUid,
+            caller: $caller,
             roles: ['owners', 'editors']
         );
     }//end isAuthorised()
@@ -660,13 +660,30 @@ class ApplicationInsightsService
      * with pre-RBAC-canonicalisation manifests (mirrors VersionPromotionService).
      *
      * @param array<string, mixed> $permissions The Application's permissions block.
-     * @param string               $callerUid   The caller's NC UID.
+     * @param IUser                $caller      The authenticated caller.
      * @param array<int, string>   $roles       Roles to check (e.g. ['owners', 'editors']).
      *
      * @return bool True when the caller is found in any of the listed buckets.
      */
-    private function callerInAnyRole(array $permissions, string $callerUid, array $roles): bool
+    private function callerInAnyRole(array $permissions, IUser $caller, array $roles): bool
     {
+        // Delegate to the shared PermissionResolver so insights authorization is
+        // consistent with every other guard — including `group:` principals,
+        // which the previous user-only matcher ignored (fail-closed) —
+        // (harden-rules-authz-and-audit-parity, L9). No admin bypass: insights
+        // access still requires an explicit role match.
+        if ($this->permissionResolver !== null) {
+            return $this->permissionResolver->matchesCaller(
+                permissions: $permissions,
+                caller: $caller,
+                userGroups: $this->permissionResolver->resolveUserGroups($caller),
+                allowAdminBypass: false,
+                roles: $roles
+            );
+        }
+
+        // Fallback (no resolver injected): user-principal match only.
+        $callerUid = $caller->getUID();
         foreach ($roles as $role) {
             $bucket = ($permissions[$role] ?? []);
             if (is_array($bucket) === false) {

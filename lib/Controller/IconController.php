@@ -16,8 +16,10 @@
  *   - Set Content-Security-Policy: default-src 'none' to neutralise
  *     any scripts/resources embedded in user-supplied SVG payloads (#164).
  *   - Set X-Content-Type-Options: nosniff (#164).
- *   - Set Cache-Control: private, max-age=60 (private per #164 — icons
- *     are personalised to the caller's app access, not globally cacheable).
+ *   - Set Cache-Control: private, max-age=60. NOTE: these endpoints enforce
+ *     session-only access (any authenticated user; there is NO per-app viewer
+ *     check), so `private` is a conservative no-shared-cache default rather than
+ *     a per-caller access-scoping guarantee (harden-rules-authz-and-audit-parity, L4).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.

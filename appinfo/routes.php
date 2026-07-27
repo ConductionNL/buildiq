@@ -178,9 +178,10 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'exports#download', 'url' => '/api/exports/{uuid}/download',     'verb' => 'GET'],
 
         // Business-rules engine (spec business-rules-engine REQ-BRE-006 / REQ-BRE-004).
-        // All three carry #[NoAdminRequired] on the controller; multi-tenant isolation
-        // is enforced server-side in RuleEngineService (a slug owned by another tenant
-        // resolves to 404 — no IDOR). evaluate/test-all are POST so they cannot collide
+        // All three carry #[NoAdminRequired] on the controller; resolution goes
+        // through searchObjectsBySlug (schema RBAC applied). `openbuild` is a
+        // system-wide register, so this is NOT per-owner/per-org read isolation
+        // (writes stay admin-gated at the schema). evaluate/test-all are POST so they cannot collide
         // with the GET SPA catch-all; the GET schema route's `/schema` suffix makes it
         // strictly more specific than `/{path}`. Slugs are kebab-case.
         ['name' => 'rules#evaluate', 'url' => '/api/rules/{ruleSetSlug}/evaluate', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],

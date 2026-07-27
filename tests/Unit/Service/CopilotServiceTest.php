@@ -32,6 +32,7 @@ use OCA\OpenBuild\Service\Copilot\CopilotPlanValidator;
 use OCA\OpenBuild\Service\Copilot\CopilotPromptBuilder;
 use OCA\OpenBuild\Service\CopilotService;
 use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
@@ -139,6 +140,93 @@ class CopilotServiceTest extends TestCase
             agentRunLogger: $this->agentRunLogger,
         );
     }//end makeService()
+
+    /**
+     * Build the SUT with a caller-supplied group manager (so a test can make the
+     * actor an admin, which the shared setUp fixes to non-admin) and an optional
+     * audit-trail mapper. Used by the admin-bypass audit tests (#11-#5).
+     *
+     * @param IGroupManager         $groupManager The group manager driving admin/role checks.
+     * @param AuditTrailMapper|null $auditMapper  The audit-trail mapper (or null).
+     *
+     * @return CopilotService
+     */
+    private function makeServiceWith(IGroupManager $groupManager, ?AuditTrailMapper $auditMapper): CopilotService
+    {
+        $permissionResolver = new PermissionResolver(groupManager: $groupManager, logger: $this->createMock(LoggerInterface::class));
+
+        return new CopilotService(
+            container: $this->container,
+            logger: $this->createMock(LoggerInterface::class),
+            objectService: $this->objectService,
+            userManager: $this->userManager,
+            groupManager: $groupManager,
+            permissionResolver: $permissionResolver,
+            toolProvider: $this->toolProvider,
+            planValidator: new CopilotPlanValidator(),
+            promptBuilder: new CopilotPromptBuilder(toolProvider: $this->toolProvider),
+            applicationDeletionService: $this->deletionService,
+            agentRunLogger: $this->agentRunLogger,
+            auditTrailMapper: $auditMapper,
+        );
+    }//end makeServiceWith()
+
+    /**
+     * L2 / #11-#5: assertWriteRoleOnApp records an admin_bypass audit entry only
+     * for a GENUINE bypass — an admin with no owner/editor role on the app. An
+     * admin who also holds a real role is authorised, not bypassing, and must NOT
+     * produce a false compliance record.
+     *
+     * @return void
+     */
+    public function testAdminBypassAuditedOnlyWhenAdminLacksRealRole(): void
+    {
+        $admin = $this->createMock(IUser::class);
+        $admin->method('getUID')->willReturn('admin-user');
+        $this->userManager->method('get')->with('admin-user')->willReturn($admin);
+
+        $groupManager = $this->createMock(IGroupManager::class);
+        $groupManager->method('isAdmin')->with('admin-user')->willReturn(true);
+        $groupManager->method('getUserGroups')->willReturn([]);
+
+        $entity = $this->createMock(ObjectEntity::class);
+        $this->objectService->method('find')->willReturn($entity);
+
+        // Genuine bypass: admin is NOT an owner/editor → audit MUST fire once.
+        $genuineMapper = $this->createMock(AuditTrailMapper::class);
+        $genuineMapper->expects($this->once())
+            ->method('createAuditTrailEntry')
+            ->with($entity, 'rbac.admin_bypass', $this->anything());
+
+        $appBypass = ['slug' => 'my-app', 'uuid' => 'app-uuid-1', 'permissions' => ['owners' => ['user:someone-else'], 'editors' => [], 'viewers' => []]];
+        $this->invokeAssertWriteRole($this->makeServiceWith($groupManager, $genuineMapper), $appBypass, 'admin-user');
+
+        // Legitimate admin-owner: NOT a bypass → audit MUST NOT fire.
+        $ownerMapper = $this->createMock(AuditTrailMapper::class);
+        $ownerMapper->expects($this->never())->method('createAuditTrailEntry');
+
+        $appOwner = ['slug' => 'my-app', 'uuid' => 'app-uuid-1', 'permissions' => ['owners' => ['user:admin-user'], 'editors' => [], 'viewers' => []]];
+        $this->invokeAssertWriteRole($this->makeServiceWith($groupManager, $ownerMapper), $appOwner, 'admin-user');
+
+    }//end testAdminBypassAuditedOnlyWhenAdminLacksRealRole()
+
+    /**
+     * Reflection shim to drive the private assertWriteRoleOnApp() without the
+     * heavy public generate() path (LLM/task-manager wiring).
+     *
+     * @param CopilotService       $service The service under test.
+     * @param array<string, mixed> $app     The application data.
+     * @param string               $userId  The acting user UID.
+     *
+     * @return void
+     */
+    private function invokeAssertWriteRole(CopilotService $service, array $app, string $userId): void
+    {
+        $method = new \ReflectionMethod(CopilotService::class, 'assertWriteRoleOnApp');
+        $method->setAccessible(true);
+        $method->invoke($service, $app, $userId);
+
+    }//end invokeAssertWriteRole()
 
     /**
      * Wire `objectService->find()` to resolve an `Agent` by id (agent-workspace).
