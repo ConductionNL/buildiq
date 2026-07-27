@@ -83,7 +83,17 @@
 				</div>
 			</header>
 
-			<div v-if="loadingDetail" class="openbuild-schema-designer__loading">
+			<!--
+				Show the spinner until the detail load has actually been ATTEMPTED,
+				not merely while its request is in flight. `mounted()` awaits
+				refreshList() before calling loadDetail(), so there is a window
+				where a schemaId is present, `staged` is still null and
+				`loadingDetail` is still false — during which the v-else below
+				rendered "Schema not found" for a schema that exists and is about
+				to load. That false empty state is what a freshly created schema
+				lands on right after Add-schema navigates here.
+			-->
+			<div v-if="loadingDetail || !detailAttempted" class="openbuild-schema-designer__loading">
 				<NcLoadingIcon :size="32" />
 			</div>
 
@@ -232,6 +242,11 @@ export default {
 			schemas: [],
 			loadingList: false,
 			loadingDetail: false,
+			// Whether loadDetail() has run to completion for the current
+			// schemaId. Distinct from `loadingDetail` (which only covers the
+			// request itself) so the "Schema not found" empty state can never be
+			// shown before the load has actually been attempted.
+			detailAttempted: false,
 			saving: false,
 			saveError: '',
 			staged: null,
@@ -536,6 +551,10 @@ export default {
 			 * @return {void}
 			 */
 			handler() {
+				// New schemaId — the previous attempt says nothing about this one,
+				// so fall back to the spinner rather than briefly showing the old
+				// state or a false "Schema not found".
+				this.detailAttempted = false
 				this.loadDetail()
 			},
 		},
@@ -737,6 +756,10 @@ export default {
 				showError(this.t('openbuild', 'Failed to load schema: {error}', { error: this.errorMessage(e) }))
 			} finally {
 				this.loadingDetail = false
+				// The load has now been attempted for this schemaId — from here on
+				// a null `staged` genuinely means "not found" and the empty state
+				// may render.
+				this.detailAttempted = true
 				// REQ-BUR-005: a `schemaId` route change is a session boundary —
 				// re-baseline the undo/redo history to the freshly staged model
 				// (or `null` on a load failure / not-found) regardless of which
