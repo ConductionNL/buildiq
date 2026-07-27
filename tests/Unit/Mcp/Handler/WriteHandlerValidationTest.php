@@ -780,4 +780,122 @@ class WriteHandlerValidationTest extends TestCase
         $this->bypassHandler(null)->callRecordAdminBypass($entity, 'my-app', 'admin-user');
 
     }//end testAdminBypassFallsBackToLogWhenNoMapper()
+
+    /**
+     * Build an AbstractToolHandler exposing requireWriteRole, wired to a container
+     * whose ObjectService returns $searchResult from searchObjectsBySlug and
+     * $findEntity from find().
+     *
+     * @param AuditTrailMapper|null $auditMapper The audit mapper (or null).
+     * @param array<int,mixed>      $searchResult What searchObjectsBySlug returns (may be rendered arrays).
+     * @param mixed                 $findEntity   What ObjectService::find() returns (an ObjectEntity when hydrated).
+     *
+     * @return object A handler with a public callRequireWriteRole() shim.
+     */
+    private function writeRoleHandler(?AuditTrailMapper $auditMapper, array $searchResult, mixed $findEntity): object
+    {
+        $objectService = new class ($searchResult, $findEntity) {
+            /**
+             * @param array<int,mixed> $searchResult The search result.
+             * @param mixed            $findEntity   The find() return value.
+             */
+            public function __construct(private array $searchResult, private mixed $findEntity)
+            {
+            }//end __construct()
+
+            /**
+             * @return array<int,mixed>
+             */
+            public function searchObjectsBySlug(string $register, string $schema, array $filters=[], bool $_rbac=true, bool $_multitenancy=true): array
+            {
+                return $this->searchResult;
+            }//end searchObjectsBySlug()
+
+            /**
+             * @return mixed
+             */
+            public function find(string $id): mixed
+            {
+                return $this->findEntity;
+            }//end find()
+        };
+
+        $this->container->method('get')
+            ->with('OCA\OpenRegister\Service\ObjectService')
+            ->willReturn($objectService);
+
+        return new class($this->userSession, $this->container, $this->logger, $this->groupManager, null, $auditMapper) extends AbstractToolHandler {
+            public function handle(array $args): array
+            {
+                return [];
+            }
+
+            /**
+             * @return array<string,mixed>|null
+             */
+            public function callRequireWriteRole(string $appSlug): ?array
+            {
+                return $this->requireWriteRole(appSlug: $appSlug);
+            }
+        };
+    }//end writeRoleHandler()
+
+    /**
+     * L2 / #11-#3: the MCP admin-bypass audit write MUST fire even when
+     * searchObjectsBySlug returns a rendered ARRAY (which OpenRegister does when
+     * the schema has property-level authorization or _extend/_fields are set).
+     * requireWriteRole re-resolves the app via ObjectService::find() to obtain a
+     * hydrated ObjectEntity, so the audit is written regardless of render shape —
+     * closing the silent-skip gap where `$apps[0] instanceof ObjectEntity` was
+     * false and the audit degraded to a PSR log.
+     *
+     * @return void
+     */
+    public function testAdminBypassAuditsEvenWhenSearchReturnsRenderedArray(): void
+    {
+        $this->userSession->method('getUser')->willReturn($this->adminUser);
+        $this->groupManager->method('isAdmin')->with('admin-user')->willReturn(true);
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+
+        // searchObjectsBySlug returns a rendered ARRAY (no owner/editor for the
+        // admin) — the pre-fix instanceof gate would have skipped the audit.
+        $renderedArray = [['id' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:someone-else']]]];
+        // find() returns a hydrated ObjectEntity for the audit write.
+        $entity = $this->createMock(ObjectEntity::class);
+
+        $auditMapper = $this->createMock(AuditTrailMapper::class);
+        $auditMapper->expects($this->once())
+            ->method('createAuditTrailEntry')
+            ->with($entity, 'rbac.admin_bypass', $this->anything());
+
+        $result = $this->writeRoleHandler($auditMapper, $renderedArray, $entity)->callRequireWriteRole('my-app');
+        $this->assertNull($result, 'admin bypass grants write access (null = authorised)');
+
+    }//end testAdminBypassAuditsEvenWhenSearchReturnsRenderedArray()
+
+    /**
+     * L2 / #11-#5: no admin_bypass audit is recorded when the admin ALSO holds a
+     * genuine owner/editor role on the app — that is authorised access, not a
+     * bypass, and auditing it would produce false compliance records. Only a
+     * genuine bypass (admin with no role) is audited.
+     *
+     * @return void
+     */
+    public function testNoBypassAuditWhenAdminAlsoHoldsRealRole(): void
+    {
+        $this->userSession->method('getUser')->willReturn($this->adminUser);
+        $this->groupManager->method('isAdmin')->with('admin-user')->willReturn(true);
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+
+        // The admin is ALSO an owner (user:admin-user) — a real role, not a bypass.
+        $app     = [['id' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:admin-user']]]];
+        $entity  = $this->createMock(ObjectEntity::class);
+
+        $auditMapper = $this->createMock(AuditTrailMapper::class);
+        $auditMapper->expects($this->never())->method('createAuditTrailEntry');
+
+        $result = $this->writeRoleHandler($auditMapper, $app, $entity)->callRequireWriteRole('my-app');
+        $this->assertNull($result, 'owner is authorised (null), and no bypass is audited');
+
+    }//end testNoBypassAuditWhenAdminAlsoHoldsRealRole()
 }//end class

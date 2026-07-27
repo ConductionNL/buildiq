@@ -369,6 +369,83 @@ final class ExportsControllerTest extends TestCase
     }//end testDownloadReturnsZipForOwner()
 
     /**
+     * L8 / #11-#4: when a job persisted `requestedBy` as an empty string (queued
+     * without a resolvable requester), authorization MUST fall back to the OR
+     * `@self.owner`. A plain `??` treats '' as present and never reaches the
+     * fallback, so the legitimate owner would be denied — this test locks in the
+     * empty-string-aware coalesce.
+     *
+     * @return void
+     */
+    public function testDownloadFallsBackToOwnerWhenRequestedByEmpty(): void
+    {
+        // ObjectService::find returns a record whose requestedBy is '' but whose
+        // @self.owner is the caller (alice) — the owner fallback must authorise.
+        $objectService = new class () {
+            /**
+             * @param string              $register Register slug.
+             * @param string              $schema   Schema slug.
+             * @param array<string,mixed> $query    Search parameters.
+             *
+             * @return array<int, object>
+             */
+            public function searchObjectsBySlug(string $register, string $schema, array $query): array
+            {
+                return [
+                    new class implements \JsonSerializable {
+                        /**
+                         * @return array<string,mixed>
+                         */
+                        public function jsonSerialize(): array
+                        {
+                            return [
+                                'id'          => 'app-uuid-1',
+                                'slug'        => 'hello-world',
+                                'permissions' => ['owners' => ['user:alice'], 'editors' => [], 'viewers' => []],
+                                '@self'       => ['id' => 'app-uuid-1'],
+                            ];
+                        }//end jsonSerialize()
+                    },
+                ];
+            }//end searchObjectsBySlug()
+
+            /**
+             * @param string $id UUID to look up.
+             *
+             * @return array<string, mixed>
+             */
+            public function find(string $id): array
+            {
+                // requestedBy persisted empty (null requester → (string) null === '');
+                // owner is alice on the @self envelope.
+                return ['uuid' => $id, 'requestedBy' => '', '@self' => ['owner' => 'alice']];
+            }//end find()
+        };
+
+        $this->container->method('has')->willReturnCallback(
+            static function (string $class): bool {
+                return $class === 'OCA\\OpenRegister\\Service\\ObjectService';
+            }
+        );
+        $this->container->method('get')->willReturn($objectService);
+
+        $tmpZip = sys_get_temp_dir().'/openbuild-controller-test-'.uniqid().'.zip';
+        file_put_contents($tmpZip, 'PK fake zip bytes');
+
+        try {
+            $this->exportJobService
+                ->method('resolveDownload')
+                ->willReturn(['path' => $tmpZip, 'expired' => false]);
+
+            $response = $this->buildController()->download('owned-uuid');
+            self::assertInstanceOf(DataDownloadResponse::class, $response);
+            self::assertSame(Http::STATUS_OK, $response->getStatus());
+        } finally {
+            @unlink($tmpZip);
+        }
+    }//end testDownloadFallsBackToOwnerWhenRequestedByEmpty()
+
+    /**
      * Test 8: download() preserves the original filename via
      * Content-Disposition (DataDownloadResponse derives it from the
      * second constructor arg; we assert the basename of the resolved

@@ -524,7 +524,21 @@ class CopilotService
             );
         }
 
-        if ($this->groupManager->isAdmin($userId) === true) {
+        // Record only a *genuine* admin bypass: an admin who would NOT pass the
+        // owner/editor check without admin-group membership. An admin who also
+        // holds a real role is exercising a legitimate grant, not a bypass —
+        // auditing it would produce false compliance records
+        // (harden-rules-authz-and-audit-parity, L2 / #5).
+        $genuineBypass = $this->groupManager->isAdmin($userId) === true
+            && $this->permissionResolver->matchesCaller(
+                permissions: $permissions,
+                caller: $caller,
+                userGroups: $userGroups,
+                allowAdminBypass: false,
+                roles: self::WRITE_ROLES
+            ) === false;
+
+        if ($genuineBypass === true) {
             $context = [
                 'event'   => 'rbac.admin_bypass',
                 'actor'   => $userId,

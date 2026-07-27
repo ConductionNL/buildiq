@@ -182,12 +182,33 @@ abstract class AbstractToolHandler
         $app = $this->toArray(item: $apps[0]);
 
         if ($this->callerHasWriteRole(app: $app, uid: $uid, allowAdminBypass: $allowAdminBypass) === true) {
-            if ($allowAdminBypass === true && $this->groupManager->isAdmin($uid) === true) {
-                $this->recordAdminBypass(appEntity: $apps[0], appSlug: $appSlug, uid: $uid);
+            // Record only a *genuine* admin bypass: an admin who would NOT pass
+            // without admin-group membership (no owner/editor role on this app).
+            // An admin who also holds a real role is exercising a legitimate grant,
+            // not a bypass — auditing it would produce false compliance records
+            // (harden-rules-authz-and-audit-parity, L2 / #5).
+            $genuineBypass = $allowAdminBypass === true
+                && $this->groupManager->isAdmin($uid) === true
+                && $this->callerHasWriteRole(app: $app, uid: $uid, allowAdminBypass: false) === false;
+            if ($genuineBypass === true) {
+                // Re-resolve the app as an ObjectEntity for the audit write.
+                // searchObjectsBySlug returns rendered arrays (not ObjectEntity)
+                // when the schema has property-level authorization or _extend/
+                // _fields are in play, which would otherwise skip the audit; find()
+                // returns a hydrated ObjectEntity regardless, at parity with the
+                // Copilot path (harden-rules-authz-and-audit-parity, L2 / #3).
+                $appEntity = null;
+                try {
+                    $appEntity = $objectService->find((string) ($app['uuid'] ?? ($app['id'] ?? '')));
+                } catch (\Throwable $e) {
+                    $appEntity = null;
+                }
+
+                $this->recordAdminBypass(appEntity: $appEntity, appSlug: $appSlug, uid: $uid);
             }
 
             return null;
-        }
+        }//end if
 
         return $this->errorResult(
             error: 'forbidden',

@@ -235,10 +235,17 @@ class ExportsController extends Controller
 
             // Read the requester identity actually persisted on the record
             // (`requestedBy`, set by ExportJobService::queue), falling back to the
-            // OR owner. The previous `submittedBy` key was never written, so the
-            // check silently always fell through to `@self.owner`
+            // OR owner. ExportJobService::queue persists `requestedBy` as a string,
+            // so a job queued without a resolvable requester stores '' (not null) —
+            // a plain `??` would treat that '' as present and never reach the owner
+            // fallback, denying the legitimate owner. Coalesce on emptiness, not just
+            // null, so the documented `@self.owner` fallback actually fires
             // (harden-rules-authz-and-audit-parity, L8).
-            $requestedBy = (string) ($job['requestedBy'] ?? ($job['@self']['owner'] ?? ''));
+            $requestedBy = (string) ($job['requestedBy'] ?? '');
+            if ($requestedBy === '') {
+                $requestedBy = (string) ($job['@self']['owner'] ?? '');
+            }
+
             return $requestedBy !== '' && $requestedBy === $uid;
         } catch (\Throwable $e) {
             $this->logger->debug('OpenBuild export: job authz lookup failed: '.$e->getMessage());
