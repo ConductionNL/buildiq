@@ -15,14 +15,19 @@
 		<p v-if="depthError" class="menu-tree-editor__error" role="alert">
 			{{ t('openbuild', 'Maximum nesting depth is two levels.') }}
 		</p>
+		<!-- vuedraggable v4 (Vue 3): v-model instead of :value/@input, sortable
+		     options as plain props, and rows from the `#item` scoped slot — a
+		     v-for in the default slot throws "draggable element must have an
+		     item slot" at render. -->
 		<Draggable
-			:value="menu"
-			:options="{ handle: '.menu-tree-editor__drag-handle', animation: 150 }"
+			:model-value="menu"
+			handle=".menu-tree-editor__drag-handle"
+			:animation="150"
+			item-key="id"
 			class="menu-tree-editor__list"
-			@input="onTopLevelReorder">
+			@update:model-value="onTopLevelReorder">
+			<template #item="{ element: entry, index }">
 			<div
-				v-for="(entry, index) in menu"
-				:key="entry.id || `entry-${index}`"
 				class="menu-tree-editor__entry">
 				<div class="menu-tree-editor__row">
 					<span class="menu-tree-editor__drag-handle" :title="t('openbuild', 'Drag to reorder')">
@@ -106,13 +111,14 @@
 					@update:permission="updateField(index, 'permission', $event || '')" />
 				<Draggable
 					v-if="entry.children && entry.children.length"
-					:value="entry.children"
-					:options="{ handle: '.menu-tree-editor__drag-handle', animation: 150 }"
+					:model-value="entry.children"
+					handle=".menu-tree-editor__drag-handle"
+					:animation="150"
+					item-key="id"
 					class="menu-tree-editor__children"
-					@input="onChildrenReorder(index, $event)">
+					@update:model-value="onChildrenReorder(index, $event)">
+					<template #item="{ element: child, index: cIndex }">
 					<div
-						v-for="(child, cIndex) in entry.children"
-						:key="child.id || `child-${cIndex}`"
 						class="menu-tree-editor__row menu-tree-editor__row--child">
 						<span class="menu-tree-editor__drag-handle">
 							⠿
@@ -149,8 +155,10 @@
 							✕
 						</button>
 					</div>
+					</template>
 				</Draggable>
 			</div>
+			</template>
 		</Draggable>
 		<p v-if="!menu.length" class="menu-tree-editor__empty">
 			{{ t('openbuild', 'No menu entries yet. Click "Add menu entry" to start.') }}

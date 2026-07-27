@@ -29,52 +29,61 @@
 				{{ t('openbuild', 'Cancel') }}
 			</button>
 		</div>
+		<!-- vuedraggable v4 (Vue 3): the list is bound with v-model rather than
+		     `:value`/`@input`, sortable options are plain props instead of an
+		     `:options` object, and rows MUST come from the `#item` scoped slot —
+		     a v-for in the default slot throws "draggable element must have an
+		     item slot" at render. -->
 		<Draggable
-			:value="pages"
-			:options="{ handle: '.page-list-editor__drag-handle', animation: 150 }"
+			:model-value="pages"
+			handle=".page-list-editor__drag-handle"
+			:animation="150"
+			item-key="id"
 			class="page-list-editor__list"
-			@input="onReorder">
-			<div
-				v-for="(page, index) in pages"
-				:key="page.id || `page-${index}`"
-				class="page-list-editor__row"
-				:class="{
-					'page-list-editor__row--selected': index === selectedIndex,
-					'page-list-editor__row--error': hasError(page, index),
-				}"
-				@click="$emit('select', index)">
-				<span class="page-list-editor__drag-handle" :title="t('openbuild', 'Drag to reorder')">
-					⠿
-				</span>
-				<input
-					:value="page.id || ''"
-					type="text"
-					class="page-list-editor__field"
-					:placeholder="t('openbuild', 'page id')"
-					@click.stop
-					@input="updateField(index, 'id', $event.target.value)">
-				<input
-					:value="page.route || ''"
-					type="text"
-					class="page-list-editor__field"
-					:placeholder="t('openbuild', '/route/:param')"
-					@click.stop
-					@input="updateField(index, 'route', $event.target.value)">
-				<span class="page-list-editor__type-tag">{{ page.type }}</span>
-				<PermissionGroupField
-					class="page-list-editor__permission"
-					:permission="page.permission || ''"
-					:known-groups="knownGroups"
-					@click.native.stop
-					@update:permission="updateField(index, 'permission', $event || '')" />
-				<button
-					type="button"
-					class="page-list-editor__remove"
-					:title="t('openbuild', 'Remove page')"
-					@click.stop="removePage(index)">
-					✕
-				</button>
-			</div>
+			@update:model-value="onReorder">
+			<template #item="{ element: page, index }">
+				<div
+					class="page-list-editor__row"
+					:class="{
+						'page-list-editor__row--selected': index === selectedIndex,
+						'page-list-editor__row--error': hasError(page, index),
+					}"
+					@click="$emit('select', index)">
+					<span class="page-list-editor__drag-handle" :title="t('openbuild', 'Drag to reorder')">
+						⠿
+					</span>
+					<input
+						:value="page.id || ''"
+						type="text"
+						class="page-list-editor__field"
+						:placeholder="t('openbuild', 'page id')"
+						@click.stop
+						@input="updateField(index, 'id', $event.target.value)">
+					<input
+						:value="page.route || ''"
+						type="text"
+						class="page-list-editor__field"
+						:placeholder="t('openbuild', '/route/:param')"
+						@click.stop
+						@input="updateField(index, 'route', $event.target.value)">
+					<span class="page-list-editor__type-tag">{{ page.type }}</span>
+					<!-- `.native` was removed in Vue 3; a plain listener falls
+					     through to the component's root element via $attrs. -->
+					<PermissionGroupField
+						class="page-list-editor__permission"
+						:permission="page.permission || ''"
+						:known-groups="knownGroups"
+						@click.stop
+						@update:permission="updateField(index, 'permission', $event || '')" />
+					<button
+						type="button"
+						class="page-list-editor__remove"
+						:title="t('openbuild', 'Remove page')"
+						@click.stop="removePage(index)">
+						✕
+					</button>
+				</div>
+			</template>
 		</Draggable>
 		<p v-if="!pages.length" class="page-list-editor__empty">
 			{{ t('openbuild', 'No pages yet. Click "Add page" to start.') }}
