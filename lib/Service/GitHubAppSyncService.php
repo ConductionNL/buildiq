@@ -118,6 +118,16 @@ class GitHubAppSyncService
     public const OUTCOME_UNREACHABLE = 'github_unreachable';
 
     /**
+     * Outcome: GitHub refused the call on permissions grounds (HTTP 403).
+     *
+     * Distinct from a transport failure. Publishing a generated app needs a
+     * credential carrying the `workflow` permission, because the scaffold always
+     * emits `.github/workflows/*` and GitHub rejects a tree containing those
+     * without it.
+     */
+    public const OUTCOME_FORBIDDEN = 'github_forbidden';
+
+    /**
      * Constructor.
      *
      * @param ObjectService        $objectService  OR object CRUD (load/save Application + versions).
@@ -1199,7 +1209,13 @@ class GitHubAppSyncService
                 $actingUserId
             );
         } catch (Throwable $e) {
-            $this->logger->debug('OpenBuild GitHub sync: broker call denied/failed for '.$method.' '.$path);
+            // At `debug` this is invisible on any instance running a normal
+            // loglevel, which leaves an operator with a bare 502 and nothing to
+            // go on. The exception message is the whole diagnosis; log it.
+            $this->logger->warning(
+                'OpenBuild GitHub sync: broker call failed for '.$method.' '.$path
+                .' — '.get_class($e).': '.$e->getMessage()
+            );
             return ['ok' => false, 'denied' => true, 'status' => 0, 'data' => []];
         }
 
@@ -1207,6 +1223,17 @@ class GitHubAppSyncService
         $decoded = json_decode((string) ($response['body'] ?? ''), true);
         if (is_array($decoded) === false) {
             $decoded = [];
+        }
+
+        if ($status < 200 || $status >= 300) {
+            // GitHub's own message is precise and actionable ("Resource not
+            // accessible by personal access token", "Not Found", a rate-limit
+            // notice); discarding it and reporting only `github_unreachable`
+            // sends the reader at the network instead of the real cause.
+            $this->logger->warning(
+                'OpenBuild GitHub sync: '.$method.' '.$path.' returned '.$status
+                .' — '.substr((string) ($response['body'] ?? ''), 0, 300)
+            );
         }
 
         return [
@@ -1228,6 +1255,15 @@ class GitHubAppSyncService
     {
         if ($result['denied'] === true) {
             return self::OUTCOME_BROKER_DENIED;
+        }
+
+        // A 403 from GitHub is a permissions answer, not a transport failure.
+        // The common case is a token without the `workflow` permission: the
+        // generated scaffold ships `.github/workflows/*`, and GitHub refuses the
+        // whole tree with "Resource not accessible by personal access token".
+        // Reporting that as "unreachable" is what makes it hard to diagnose.
+        if ($result['status'] === 403) {
+            return self::OUTCOME_FORBIDDEN;
         }
 
         return self::OUTCOME_UNREACHABLE;
