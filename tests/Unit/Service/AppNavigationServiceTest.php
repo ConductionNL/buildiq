@@ -111,6 +111,13 @@ class AppNavigationServiceTest extends TestCase
             ->method('linkToRouteAbsolute')
             ->willReturnCallback(fn ($route, $params) => '/icon/'.$params['slug'].'.svg');
 
+        // The nav entry href is generated via linkToRoute (not a hand-built
+        // string); mock it to return an /index.php-prefixed path, as a
+        // front-controller-required instance would produce.
+        $this->urlGenerator
+            ->method('linkToRoute')
+            ->willReturnCallback(fn ($route, $params) => '/index.php/apps/openbuild/builder/'.$params['slug']);
+
         // Pre-existing break, fixed here: AppNavigationService gained an $appConfig
         // constructor parameter (the nav-order base override) and this test was never
         // updated, so all 11 of its cases have simply been erroring on a TypeError.
@@ -462,4 +469,74 @@ class AppNavigationServiceTest extends TestCase
         $this->assertArrayHasKey('order', $entry);
         $this->assertArrayHasKey('enabled', $entry);
     }//end testRegisteredClosureReturnsExpectedShape()
+
+    /**
+     * REQ-OBNAV-001 / #32-Fix-A: the nav entry `href` is generated via
+     * `IURLGenerator::linkToRoute('openbuild.dashboard.builder', ...)`, NOT a
+     * hand-built string. This makes the link include the `/index.php`
+     * front-controller segment on instances that require it (no URL rewriting),
+     * so the top-bar menu link does not 404 there.
+     *
+     * @return void
+     */
+    public function testNavEntryHrefIsGeneratedViaLinkToRoute(): void
+    {
+        $publishedApp = [
+            'slug'        => 'hello-world',
+            'name'        => 'Hello World',
+            'status'      => 'published',
+            'permissions' => ['owners' => ['group:*'], 'editors' => [], 'viewers' => []],
+        ];
+
+        $this->objectService->method('findAll')->willReturn([$publishedApp]);
+
+        // Capture the linkToRoute arguments to prove the correct route + slug are used.
+        $capturedRoute  = null;
+        $capturedParams = null;
+        $urlGenerator   = $this->createMock(IURLGenerator::class);
+        $urlGenerator->method('linkToRouteAbsolute')
+            ->willReturnCallback(fn ($route, $params) => '/icon/'.$params['slug'].'.svg');
+        $urlGenerator->method('linkToRoute')
+            ->willReturnCallback(
+                function (string $route, array $params) use (&$capturedRoute, &$capturedParams): string {
+                    $capturedRoute  = $route;
+                    $capturedParams = $params;
+                    return '/index.php/apps/openbuild/builder/'.$params['slug'];
+                }
+            );
+
+        $service = new AppNavigationService(
+            $this->objectService,
+            $urlGenerator,
+            $this->userSession,
+            $this->groupManager,
+            $this->appConfig,
+            $this->logger
+        );
+
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('getUserGroupIds')->willReturn([]);
+        $this->groupManager->method('isAdmin')->willReturn(false);
+
+        $registeredClosures = [];
+        $nav = $this->createMock(INavigationManager::class);
+        $nav->method('add')->willReturnCallback(
+            function ($callable) use (&$registeredClosures): void {
+                $registeredClosures[] = $callable;
+            }
+        );
+
+        $service->registerNavEntries($nav);
+        $entry = ($registeredClosures[0])();
+
+        // Route + slug forwarded correctly to linkToRoute.
+        $this->assertSame('openbuild.dashboard.builder', $capturedRoute);
+        $this->assertSame(['slug' => 'hello-world'], $capturedParams);
+        // The href IS the linkToRoute output (includes the /index.php segment),
+        // not a hand-built '/apps/openbuild/builder/...' string.
+        $this->assertSame('/index.php/apps/openbuild/builder/hello-world', $entry['href']);
+        $this->assertStringStartsWith('/index.php/', $entry['href']);
+    }//end testNavEntryHrefIsGeneratedViaLinkToRoute()
 }//end class

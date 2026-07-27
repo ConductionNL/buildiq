@@ -255,6 +255,19 @@ class ApplicationsController extends Controller
                     applicationArray: $applicationArray,
                     caller: $this->userSession->getUser()
                 );
+                // Project the Application's authoritative display `name` onto the
+                // manifest so the /builder/{slug} runtime top-bar always shows the
+                // cased name, not the raw slug. The stored manifest blob's own
+                // `name` can be absent or stale (it is not re-synced when the
+                // Application is renamed), so the Application entity's `name` is the
+                // single source of truth. Additive projection, same pattern as
+                // injectOwnerSignal above; only overwrite when the Application
+                // actually carries a non-empty name.
+                $authoritativeName = (string) ($applicationArray['name'] ?? '');
+                if ($authoritativeName !== '') {
+                    $manifest['name'] = $authoritativeName;
+                }
+
                 // Group-scoped runtime access (spec runtime-group-scoped-access
                 // REQ-2): strip menu/page entries the caller's `permission` set
                 // does not satisfy BEFORE the response leaves the server — the
