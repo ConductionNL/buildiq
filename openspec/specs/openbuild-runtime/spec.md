@@ -8,9 +8,9 @@ retrofit_extensions:
 
 # openbuild-runtime Specification
 
-**OpenSpec changes**: [runtime-group-scoped-access](../../changes/archive/2026-07-24-runtime-group-scoped-access/) _(archived 2026-07-24)_
+**OpenSpec changes**: [public-forms-runtime](../../changes/archive/2026-07-23-public-forms-runtime/) _(archived 2026-07-23)_, [fix-builder-nav-route-and-identity](../../changes/fix-builder-nav-route-and-identity/)
 
-**Status**: done
+**Status**: in-progress
 
 ## Purpose
 

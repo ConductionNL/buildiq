@@ -1,8 +1,10 @@
 ---
-status: done
+status: in-progress
 ---
 
 # app-nav-entries Specification
+
+**OpenSpec changes**: [fix-builder-nav-route-and-identity](../../changes/fix-builder-nav-route-and-identity/)
 
 ## Purpose
 

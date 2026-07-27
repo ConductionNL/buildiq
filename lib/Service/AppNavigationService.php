@@ -178,11 +178,11 @@ class AppNavigationService
                 ['slug' => $slug]
             );
 
-            // Point at the virtual-app runtime host (/builder/{slug}) which mounts
-            // a nested CnAppRoot rendering THIS app's own manifest (menu + pages),
-            // not OpenBuild's apps list. The bare `/apps/openbuild/{slug}` had no
-            // route and fell through to OpenBuild's own shell.
-            $appUrl  = '/apps/openbuild/builder/'.$slug;
+            // Point at the virtual-app runtime host (/builder/{slug}). Generate the
+            // href via IURLGenerator (not a hand-built string) so linkToRoute adds
+            // the `/index.php` front-controller segment exactly when the instance
+            // requires it — the link then resolves on both instance kinds.
+            $appUrl  = $this->urlGenerator->linkToRoute('openbuild.dashboard.builder', ['slug' => $slug]);
             $entryId = self::ENTRY_ID_PREFIX.$slug;
             $order   = $orderBase + (abs(crc32($slug)) % 100);
 
