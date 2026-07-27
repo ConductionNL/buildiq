@@ -59,3 +59,30 @@ export async function ensureApp(page: Page, slug: string, name: string): Promise
 		throw new Error(`ensureApp(${slug}) failed — ${result}`)
 	}
 }
+
+/**
+ * Dismiss any modal that is overlaying the page — in practice the manifest's
+ * onboarding tour (`manifest.tours`), which mounts a `.modal-mask` a beat after
+ * the page settles. It is not part of what these specs exercise, but its
+ * wrapper swallows pointer events, so a click on the page underneath retries
+ * until the test times out ("<div class=modal-wrapper> … subtree intercepts
+ * pointer events"). Safe to call unconditionally: a no-op when nothing is open.
+ *
+ * @param page Playwright page.
+ * @return {Promise<void>}
+ */
+export async function dismissOverlays(page: Page): Promise<void> {
+	for (let i = 0; i < 3; i++) {
+		const mask = page.locator('.modal-mask').first()
+		if (await mask.count() === 0 || await mask.isVisible().catch(() => false) === false) {
+			return
+		}
+		const closer = page.getByRole('button', { name: /close tour|close|dismiss/i }).first()
+		if (await closer.count() > 0) {
+			await closer.click({ timeout: 5_000 }).catch(() => {})
+		} else {
+			await page.keyboard.press('Escape').catch(() => {})
+		}
+		await page.waitForTimeout(700)
+	}
+}
