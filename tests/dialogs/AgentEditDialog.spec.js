@@ -15,24 +15,33 @@ vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn(), post: vi.fn(), put
 import axios from '@nextcloud/axios'
 import AgentEditDialog from '../../src/dialogs/AgentEditDialog.vue'
 
+// Vue 3 model API throughout: `modelValue` in, `update:modelValue` out. The
+// Vue 2 `value` / `update:value` pair the dialog used to bind is gone.
 const NcSelectStub = {
 	name: 'NcSelect',
-	props: ['value', 'options', 'inputLabel', 'clearable', 'multiple', 'label'],
-	template: '<div class="ncselect-stub" :data-label="inputLabel" :data-count="(value || []).length || (value ? 1 : 0)" />',
+	props: ['modelValue', 'options', 'inputLabel', 'clearable', 'multiple', 'label'],
+	emits: ['update:modelValue'],
+	template: '<div class="ncselect-stub" :data-label="inputLabel" :data-count="(modelValue || []).length || (modelValue ? 1 : 0)" />',
 }
 const NcTextFieldStub = {
 	name: 'NcTextField',
-	props: ['value', 'label', 'type'],
-	template: '<input class="nctextfield-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)">',
+	props: ['modelValue', 'label', 'type'],
+	emits: ['update:modelValue'],
+	template: '<input class="nctextfield-stub" :data-label="label" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">',
 }
 const NcTextAreaStub = {
 	name: 'NcTextArea',
-	props: ['value', 'label', 'placeholder'],
-	template: '<textarea class="nctextarea-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
+	props: ['modelValue', 'label', 'placeholder'],
+	emits: ['update:modelValue'],
+	template: '<textarea class="nctextarea-stub" :data-label="label" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
 }
+// `emits: ['click']` is load-bearing: without it Vue 3 leaves the parent's
+// `@click` in `$attrs`, it falls through onto the root <button>, and one user
+// click fires the handler twice (here: two axios saves).
 const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled'],
+	emits: ['click'],
 	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 const NcModalStub = {

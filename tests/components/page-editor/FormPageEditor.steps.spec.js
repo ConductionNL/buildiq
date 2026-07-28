@@ -12,23 +12,32 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-vi.mock('../../../src/components/page-editor/fields/FormFieldBuilder.vue', () => ({
-	default: {
-		name: 'FormFieldBuilder',
-		props: ['modelValue', 'showLogic'],
-		render(h) { return h('div', { staticClass: 'form-field-builder-stub' }) },
-	},
-}))
+// `vi.mock` factories are hoisted above the imports, so `h` is pulled in with
+// a lazy dynamic import inside the (async) factory. Vue 3 does not pass `h`
+// into render(), and vnode classes use `class`, not Vue 2's `staticClass`.
+vi.mock('../../../src/components/page-editor/fields/FormFieldBuilder.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'FormFieldBuilder',
+			props: ['modelValue', 'showLogic'],
+			render() { return h('div', { class: 'form-field-builder-stub' }) },
+		},
+	}
+})
 
 // See FormPageEditor.spec.js — stubbed to keep these Steps-focused tests
 // isolated from the real NcDialog tree pulled in by external access (REQ-EFP-002).
-vi.mock('../../../src/dialogs/ExternalFormAccessDialog.vue', () => ({
-	default: {
-		name: 'ExternalFormAccessDialog',
-		props: ['open', 'register', 'schema', 'pageId', 'entry'],
-		render(h) { return h('div', { staticClass: 'external-form-access-dialog-stub' }) },
-	},
-}))
+vi.mock('../../../src/dialogs/ExternalFormAccessDialog.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'ExternalFormAccessDialog',
+			props: ['open', 'register', 'schema', 'pageId', 'entry'],
+			render() { return h('div', { class: 'external-form-access-dialog-stub' }) },
+		},
+	}
+})
 
 const FormPageEditor = (await import('../../../src/components/page-editor/FormPageEditor.vue')).default
 

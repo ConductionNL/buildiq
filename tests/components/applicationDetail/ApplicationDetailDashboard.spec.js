@@ -62,7 +62,9 @@ describe('ApplicationDetailDashboard', () => {
 		// formatted byte size; before data loads it is the loading variant.)
 		const kpis = wrapper.findAll('.ob-detail-dashboard__kpi')
 		expect(kpis.length).toBe(4)
-		const titles = kpis.wrappers.map((w) => w.attributes('title'))
+		// VTU v2 returns a plain array from findAll(); the v1 `.wrappers`
+		// accessor no longer exists.
+		const titles = kpis.map((w) => w.attributes('title'))
 		expect(titles).toEqual(['Active users', 'Object count', 'Storage', 'Audit events'])
 	})
 

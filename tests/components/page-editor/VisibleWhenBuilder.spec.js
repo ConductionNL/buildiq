@@ -27,7 +27,9 @@ describe('VisibleWhenBuilder', () => {
 
 	it('the field picker only offers the field-options prop (caller excludes the edited field)', () => {
 		const wrapper = mountBuilder(null, ['wantsContact', 'phone'])
-		const options = wrapper.findAll('option').wrappers.map((o) => o.element.value)
+		// VTU v2 returns a plain array from findAll() — the v1 `.wrappers`
+		// property no longer exists.
+		const options = wrapper.findAll('option').map((o) => o.element.value)
 		expect(options).toEqual(['', 'wantsContact', 'phone'])
 	})
 

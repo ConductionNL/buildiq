@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
+import { h } from 'vue'
 import { mount } from '@vue/test-utils'
 import InlineFieldMark from '../../../src/components/page-editor/fields/InlineFieldMark.vue'
 import { pageEditorValidationMixin } from '../../../src/mixins/pageEditorValidation.js'
@@ -43,7 +44,8 @@ describe('pageEditorValidation mixin', () => {
 		computed: {
 			validatedConfigKeys() { return ['register', 'schema'] },
 		},
-		render(h) { return h('div') },
+		// Vue 3 does not pass `h` into render(); it is imported instead.
+		render() { return h('div') },
 	}
 
 	it('registers each validated config key on mount and unregisters on destroy', () => {
@@ -55,7 +57,7 @@ describe('pageEditorValidation mixin', () => {
 		})
 		expect(register).toHaveBeenCalledWith('register')
 		expect(register).toHaveBeenCalledWith('schema')
-		wrapper.destroy()
+		wrapper.unmount()
 		expect(unregister).toHaveBeenCalledWith('register')
 		expect(unregister).toHaveBeenCalledWith('schema')
 	})
@@ -80,6 +82,6 @@ describe('pageEditorValidation mixin', () => {
 		const wrapper = mount(Host, { propsData: { config: {} } })
 		expect(wrapper.vm.markFor('register')).toBeNull()
 		expect(wrapper.vm.isInvalid('register')).toBe(false)
-		wrapper.destroy() // must not throw
+		wrapper.unmount() // must not throw
 	})
 })

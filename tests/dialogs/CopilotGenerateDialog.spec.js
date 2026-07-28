@@ -23,6 +23,36 @@ import { clearCopilotHealthCache } from '../../src/composables/useCopilot.js'
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
 
+// `NcModal` in @nextcloud/vue 9 renders its body through `<Teleport to="body">`,
+// so under VTU v2 none of the dialog's markup lives inside `wrapper.element`
+// and every `wrapper.find(...)` comes back empty. Stubbing the modal keeps the
+// content in-tree, which is what the sibling dialog specs here already do.
+//
+// `emits: ['click']` on the button stub is likewise load-bearing: without it
+// Vue 3 leaves the parent's `@click` in `$attrs`, it falls through onto the
+// root <button>, and one click fires the handler twice. The real NcButton
+// declares `emits: ['click', 'update:pressed']`.
+const stubs = {
+	NcModal: {
+		name: 'NcModal',
+		props: ['name', 'canClose'],
+		template: '<div class="ncmodal-stub"><slot /></div>',
+	},
+	NcButton: {
+		name: 'NcButton',
+		props: ['type', 'disabled'],
+		emits: ['click'],
+		template: '<button :disabled="disabled || false" :data-type="type" @click="$emit(\'click\')"><slot /></button>',
+	},
+	// Vue 3 model API: `modelValue` in, `update:modelValue` out.
+	NcTextArea: {
+		name: 'NcTextArea',
+		props: ['modelValue', 'label', 'placeholder', 'disabled', 'rows'],
+		emits: ['update:modelValue'],
+		template: '<textarea class="nctextarea-stub" :value="modelValue" :disabled="disabled || false" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+	},
+}
+
 describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () => {
 	beforeEach(() => {
 		axiosGet.mockReset()
@@ -32,7 +62,7 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 	})
 
 	it('renders nothing when open is false', () => {
-		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: false } })
+		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: false }, stubs })
 		expect(wrapper.find('[data-testid="copilot-brief-input"]').exists()).toBe(false)
 	})
 
@@ -49,7 +79,7 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 				data: { results: [{ success: true, created: true, app: { uuid: 'u1', slug: 'tool-library', name: 'Tool Library' } }] },
 			})
 
-		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true } })
+		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
 		await wrapper.find('[data-testid="copilot-brief-input"]').setValue('A tool library where members borrow tools')
 		await wrapper.vm.onGenerate()
 		await flush()
@@ -71,7 +101,7 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 			data: { summary: 'x', steps: [{ tool: 'openbuild.createApp', arguments: { slug: 'x', name: 'X' } }], manifests: {} },
 		})
 
-		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true } })
+		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
 		await wrapper.find('[data-testid="copilot-brief-input"]').setValue('x')
 		await wrapper.vm.onGenerate()
 		await flush()
@@ -86,15 +116,18 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 	})
 
 	it('Generate is disabled with a blank brief', () => {
-		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true } })
-		const generateButton = wrapper.findAll('button').wrappers.find((b) => b.text().includes('Generate'))
-		expect(generateButton.attributes('disabled')).toBeTruthy()
+		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
+		// VTU v2 `findAll` returns a plain Array — v1's `.wrappers` is gone.
+		const generateButton = wrapper.findAll('button').find((b) => b.text().includes('Generate'))
+		// Vue 3 renders a true boolean attribute as `disabled=""` — a falsy
+		// empty string — so presence is the signal, not truthiness.
+		expect(generateButton.attributes('disabled')).toBeDefined()
 	})
 
 	it('Generate is enabled once a brief is entered', async () => {
-		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true } })
+		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
 		await wrapper.find('[data-testid="copilot-brief-input"]').setValue('A tool library')
-		const generateButton = wrapper.findAll('button').wrappers.find((b) => b.text().includes('Generate'))
-		expect(generateButton.attributes('disabled')).toBeFalsy()
+		const generateButton = wrapper.findAll('button').find((b) => b.text().includes('Generate'))
+		expect(generateButton.attributes('disabled')).toBeUndefined()
 	})
 })

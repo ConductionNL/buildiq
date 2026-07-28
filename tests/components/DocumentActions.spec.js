@@ -10,9 +10,14 @@ import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import DocumentActions from '../../src/components/runtime/DocumentActions.vue'
 
+// `emits: ['click']` is load-bearing under Vue 3: an undeclared emit leaves the
+// parent's `@click` in `$attrs`, which falls through onto the root <button>, so
+// one click runs the handler twice. The real NcButton declares
+// `emits: ['click', 'update:pressed']` and therefore fires exactly once.
 const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled'],
+	emits: ['click'],
 	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 

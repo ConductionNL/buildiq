@@ -4,63 +4,71 @@
 /**
  * Playwright e2e — wizard "Generate with AI" flow (spec: ai-copilot).
  *
- * Follows the skip-on-503 pattern from tests/e2e/chat-companion-streaming.spec.ts:
- * every test probes `/api/copilot/health` first and skips cleanly when no
- * TaskProcessing provider is configured (or the server predates NC 30).
+ * WHY THESE NO LONGER SKIP ON 503
+ * -------------------------------
+ * These specs used to probe `/api/copilot/health` and skip when it returned
+ * 503 ("no AI provider configured"). That gate hid the part of the flow that
+ * is actually deterministic and worth asserting — see the long note in
+ * tests/e2e/copilot-panel.spec.ts.
  *
- * Scenarios (spec: ai-copilot REQ-OBAIC-001/006):
- *   1. Generate with AI creates the described app after confirmation — the
- *      plan call is stubbed via `page.route` with a fixed, deterministic
- *      plan (LLM output is inherently non-deterministic and out of scope
- *      for e2e — see spec.md's `@e2e exclude` on REQ-OBAIC-002/004); the
- *      execute call hits the REAL backend so the app is genuinely created.
- *   2. Cancelling the review applies nothing — no execute request is sent.
- *   3. The button is absent without a provider — health routed to 503.
+ * OpenBuild is the MCP **provider**: `CopilotService::execute()` is a pure
+ * dispatcher over `lib/Mcp/OpenBuildToolProvider`'s handlers and never calls
+ * `assertAvailable()`, so it needs no AI. Only `plan()` talks to an LLM.
+ *
+ *   - `/api/copilot/health` is stubbed 200 — an environment probe that gates
+ *     whether the UI renders, not an assertion target. Scenario 3 below is
+ *     the deliberate other side of that gate and stubs it 503.
+ *   - `/api/copilot/plan` is stubbed — LLM output is non-deterministic and
+ *     explicitly out of scope (spec.md `@e2e exclude` on REQ-OBAIC-002/004).
+ *   - `/api/copilot/execute` is NOT stubbed — it hits the real backend and
+ *     drives the real `openbuild.createApp` / `openbuild.upsertPage` MCP
+ *     handlers, so a real Application is genuinely created.
  *
  * Preconditions:
- *   - Nextcloud reachable at PLAYWRIGHT_BASE_URL (default localhost:8080).
+ *   - Nextcloud reachable at PLAYWRIGHT_BASE_URL.
  *   - openbuild enabled, openregister enabled.
  *   - Authenticated browser context from global-setup.
- *
- * CI-run only: this spec is written but not executed against the shared
- * dev instance as part of this change (per task instructions) — it runs
- * under the project's normal `npm run test:e2e` CI job.
  */
 import { test, expect } from '@playwright/test'
 
-const HEALTH_URL = '/index.php/apps/openbuild/api/copilot/health'
+const HEALTH_URL = '**/apps/openbuild/api/copilot/health'
 const PLAN_URL = '**/apps/openbuild/api/copilot/plan'
 
-/** A fixed, deterministic plan the stubbed `/api/copilot/plan` route returns. */
-const STUBBED_PLAN = {
+/**
+ * `openbuild.createApp` rejects a slug that already exists, so a fixed slug
+ * would pass once and fail on every re-run. Each run gets its own slug.
+ * Must satisfy the tool's `^[a-z0-9][a-z0-9-]*[a-z0-9]$` pattern, max 48.
+ */
+const APP_SLUG = `e2e-copilot-lib-${Date.now().toString(36)}`
+
+const stubbedPlan = (slug: string) => ({
 	summary: 'A tool library where members can borrow and return tools.',
 	steps: [
-		{ tool: 'openbuild.createApp', arguments: { slug: 'e2e-copilot-tool-library', name: 'E2E Copilot Tool Library', preset: 'dev-prod' } },
-		{ tool: 'openbuild.upsertPage', arguments: { appSlug: 'e2e-copilot-tool-library', pageId: 'home', title: 'Home', type: 'index', route: '/' } },
+		{ tool: 'openbuild.createApp', arguments: { slug, name: 'E2E Copilot Tool Library', preset: 'dev-prod' } },
+		{ tool: 'openbuild.upsertPage', arguments: { appSlug: slug, pageId: 'home', title: 'Home', type: 'index', route: '/' } },
 	],
 	manifests: {
-		'e2e-copilot-tool-library@development': {
+		[`${slug}@development`]: {
 			current: { version: '1.0.0', menu: [], pages: [] },
 			predicted: { version: '1.0.0', menu: [], pages: [{ id: 'home', route: '/', type: 'index', title: 'Home', config: {} }] },
 		},
 	},
-}
+})
 
 test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 
-	test.beforeEach(async ({ page }) => {
+	// @e2e ai-copilot::generate-with-ai-creates-the-described-app-after-confirmation
+	test('Generate with AI creates the described app after confirmation (spec: ai-copilot)', async ({ page }) => {
+		// Health gates `copilotAvailable`, probed from mounted() — route it
+		// before the first navigation.
+		await page.route(HEALTH_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ available: true }) }))
 		await page.goto('/apps/openbuild/')
 		await page.waitForLoadState('networkidle')
-	})
 
-	// @e2e ai-copilot::generate-with-ai-creates-the-described-app-after-confirmation
-	test('Generate with AI creates the described app after confirmation (spec: ai-copilot)', async ({ page, request }) => {
-		const health = await request.get(HEALTH_URL)
-		test.skip(health.status() === 503, 'No AI provider configured — copilot intentionally hidden')
+		await page.route(PLAN_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(stubbedPlan(APP_SLUG)) }))
 
-		// Stub the plan call so the review step is deterministic; the execute
-		// call is NOT stubbed — it hits the real backend and creates a real app.
-		await page.route(PLAN_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(STUBBED_PLAN) }))
+		// Surface a backend rejection by name rather than as a URL timeout.
+		const executeResponse = page.waitForResponse((r) => r.url().includes('/api/copilot/execute'))
 
 		await page.getByRole('button', { name: /create app|add application/i }).first().click()
 		await page.waitForSelector('[data-testid="copilot-generate-button"]', { timeout: 10_000 })
@@ -77,16 +85,22 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 
 		await page.locator('[data-testid="copilot-confirm"]').click()
 
+		const res = await executeResponse
+		expect(res.status(), `execute must succeed — body: ${await res.text()}`).toBe(200)
+
 		// On success the wizard closes and the browser navigates to the new app.
-		await expect(page).toHaveURL(/e2e-copilot-tool-library/, { timeout: 15_000 })
+		await expect(page).toHaveURL(new RegExp(APP_SLUG), { timeout: 15_000 })
 	})
 
 	// @e2e ai-copilot::cancelling-the-review-applies-nothing
-	test('Cancelling the review applies nothing (spec: ai-copilot)', async ({ page, request }) => {
-		const health = await request.get(HEALTH_URL)
-		test.skip(health.status() === 503, 'No AI provider configured')
+	test('Cancelling the review applies nothing (spec: ai-copilot)', async ({ page }) => {
+		await page.route(HEALTH_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ available: true }) }))
+		await page.goto('/apps/openbuild/')
+		await page.waitForLoadState('networkidle')
 
-		await page.route(PLAN_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(STUBBED_PLAN) }))
+		// A distinct slug: this test must never create an app, so if the guard
+		// regresses the stray Application is unambiguously traceable here.
+		await page.route(PLAN_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(stubbedPlan(`${APP_SLUG}-cancel`)) }))
 
 		let executeCalled = false
 		await page.route('**/apps/openbuild/api/copilot/execute', (route) => {
@@ -108,14 +122,14 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 
 	// @e2e ai-copilot::the-button-is-absent-without-a-provider
 	test('The button is absent without a provider (spec: ai-copilot)', async ({ page }) => {
-		// Force the 503 path regardless of the real server's configuration so
-		// this scenario is deterministic in CI.
-		await page.route('**/apps/openbuild/api/copilot/health', (route) => route.fulfill({
+		// The deliberate 503 side of the health gate: with no provider the
+		// entry point must not render at all.
+		await page.route(HEALTH_URL, (route) => route.fulfill({
 			status: 503,
 			contentType: 'application/json',
 			body: JSON.stringify({ status: 'unavailable', reason: 'no_provider' }),
 		}))
-		await page.reload()
+		await page.goto('/apps/openbuild/')
 		await page.waitForLoadState('networkidle')
 
 		await page.getByRole('button', { name: /create app|add application/i }).first().click()

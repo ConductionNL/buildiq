@@ -4,33 +4,48 @@
 /**
  * Playwright e2e — builder copilot side panel (spec: ai-copilot).
  *
- * Same skip-on-503 / route-stub approach as
- * tests/e2e/copilot-wizard-generate.spec.ts, exercised against the seeded
- * `hello-world` virtual app (see tests/e2e/global-setup.ts).
+ * Exercised against the seeded `hello-world` virtual app (see
+ * tests/e2e/global-setup.ts).
  *
- * Scenarios (spec: ai-copilot REQ-OBAIC-007):
- *   1. Approving a proposal applies it to the open app — the plan call is
- *      stubbed; the execute call hits the real backend and the designer's
- *      manifest gains the new page.
- *   2. Discarding a proposal changes nothing.
- *   3. No write happens before approval — zero requests to
- *      `/api/copilot/execute` (and zero manifest PUTs) between the
- *      proposal rendering and the user acting on it.
+ * WHY THESE NO LONGER SKIP ON 503
+ * -------------------------------
+ * These specs used to probe `/api/copilot/health` and skip the whole test
+ * when it returned 503 ("no AI provider configured"). That gate was wrong,
+ * and it hid the only part of this flow worth asserting.
  *
- * CI-run only: written but not executed against the shared dev instance as
- * part of this change (per task instructions).
+ * OpenBuild is the MCP **provider**, not an AI consumer: the deterministic
+ * authoring surface is `lib/Mcp/OpenBuildToolProvider` and its handlers
+ * (CreateApp, UpsertPage, AddWidget, …). `CopilotService::execute()` is a
+ * pure dispatcher over those handlers — it never calls `assertAvailable()`
+ * and needs no AI at all. Only `plan()` talks to an LLM.
+ *
+ * So the split is:
+ *   - `/api/copilot/health` is stubbed 200. It is an *environment probe*
+ *     that decides whether the UI renders, not an assertion target. The
+ *     dedicated "hidden without a provider" scenario in
+ *     copilot-wizard-generate.spec.ts stubs it 503 and covers the other side.
+ *   - `/api/copilot/plan` is stubbed with a fixed plan. LLM output is
+ *     non-deterministic and explicitly out of scope (see the spec's own
+ *     `@e2e exclude` on REQ-OBAIC-002/004).
+ *   - `/api/copilot/execute` is NOT stubbed. It hits the real backend and
+ *     drives the real MCP handlers, so the manifest genuinely changes.
+ *
+ * The result is a fully deterministic run with no AI provider installed.
  */
 import { test, expect } from '@playwright/test'
 
-const HEALTH_URL = '/index.php/apps/openbuild/api/copilot/health'
+const HEALTH_URL = '**/apps/openbuild/api/copilot/health'
 const PLAN_URL = '**/apps/openbuild/api/copilot/plan'
 const EXECUTE_URL = '**/apps/openbuild/api/copilot/execute'
+
+/** Page id the stubbed plan creates. Upsert semantics make re-runs idempotent. */
+const SUPPLIERS_PAGE_ID = 'e2e-suppliers'
 
 const STUBBED_PLAN = {
 	summary: 'Adds a suppliers page with a table widget.',
 	steps: [
-		{ tool: 'openbuild.upsertPage', arguments: { appSlug: 'hello-world', pageId: 'e2e-suppliers', title: 'Suppliers', type: 'index', route: '/e2e-suppliers' } },
-		{ tool: 'openbuild.addWidget', arguments: { appSlug: 'hello-world', pageId: 'e2e-suppliers', widgetType: 'table', widgetConfig: {} } },
+		{ tool: 'openbuild.upsertPage', arguments: { appSlug: 'hello-world', pageId: SUPPLIERS_PAGE_ID, title: 'Suppliers', type: 'index', route: '/e2e-suppliers' } },
+		{ tool: 'openbuild.addWidget', arguments: { appSlug: 'hello-world', pageId: SUPPLIERS_PAGE_ID, widgetType: 'table', widgetConfig: {} } },
 	],
 	manifests: {
 		'hello-world@development': {
@@ -38,7 +53,7 @@ const STUBBED_PLAN = {
 			predicted: {
 				version: '1.0.0',
 				menu: [],
-				pages: [{ id: 'e2e-suppliers', route: '/e2e-suppliers', type: 'index', title: 'Suppliers', config: { widgets: [{ type: 'table', config: {} }] } }],
+				pages: [{ id: SUPPLIERS_PAGE_ID, route: '/e2e-suppliers', type: 'index', title: 'Suppliers', config: { widgets: [{ type: 'table', config: {} }] } }],
 			},
 		},
 	},
@@ -47,16 +62,25 @@ const STUBBED_PLAN = {
 test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 
 	test.beforeEach(async ({ page }) => {
+		// Health drives `copilotToggleVisible`, and the composable probes it
+		// from `mounted()` and caches the result for the page's lifetime — so
+		// the route MUST be installed before the first navigation.
+		await page.route(HEALTH_URL, (route) => route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({ available: true }),
+		}))
 		await page.goto('/apps/openbuild/builder/hello-world/pages')
 		await page.waitForLoadState('networkidle')
 	})
 
 	// @e2e ai-copilot::approving-a-proposal-applies-it-to-the-open-app
-	test('Approving a proposal applies it to the open app (spec: ai-copilot)', async ({ page, request }) => {
-		const health = await request.get(HEALTH_URL)
-		test.skip(health.status() === 503, 'No AI provider configured — copilot panel intentionally hidden')
-
+	test('Approving a proposal applies it to the open app (spec: ai-copilot)', async ({ page }) => {
 		await page.route(PLAN_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(STUBBED_PLAN) }))
+
+		// Capture the real execute response so a backend rejection surfaces as
+		// a named failure instead of a mute "Suppliers never appeared".
+		const executeResponse = page.waitForResponse((r) => r.url().includes('/api/copilot/execute'))
 
 		await page.locator('[data-testid="copilot-panel-toggle"]').click()
 		const panel = page.locator('[data-testid="copilot-panel"]')
@@ -71,16 +95,18 @@ test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 
 		await proposal.locator('[data-testid="copilot-approve"]').click()
 
-		// The designer's manifest now contains the new page — reload and confirm.
+		const res = await executeResponse
+		expect(res.status(), `execute must succeed — body: ${await res.text()}`).toBe(200)
+
+		// The write must be PERSISTED, not merely painted: reload the designer
+		// from the server and confirm the manifest carries the new page.
+		await page.reload()
 		await page.waitForLoadState('networkidle')
-		await expect(page.locator('text=Suppliers').first()).toBeVisible({ timeout: 15_000 })
+		await expect(page.locator(`text=${SUPPLIERS_PAGE_ID}`).first()).toBeVisible({ timeout: 15_000 })
 	})
 
 	// @e2e ai-copilot::discarding-a-proposal-changes-nothing
-	test('Discarding a proposal changes nothing (spec: ai-copilot)', async ({ page, request }) => {
-		const health = await request.get(HEALTH_URL)
-		test.skip(health.status() === 503, 'No AI provider configured')
-
+	test('Discarding a proposal changes nothing (spec: ai-copilot)', async ({ page }) => {
 		await page.route(PLAN_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(STUBBED_PLAN) }))
 
 		let executeCalled = false
@@ -101,14 +127,11 @@ test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 		await proposal.locator('[data-testid="copilot-discard"]').click()
 
 		expect(executeCalled, 'execute must never be called after Discard').toBe(false)
-		await expect(page.locator('text=Suppliers')).toHaveCount(0)
+		await expect(proposal, 'the proposal must be dismissed').toHaveCount(0)
 	})
 
 	// @e2e ai-copilot::no-write-happens-before-approval
-	test('No write happens before approval (spec: ai-copilot)', async ({ page, request }) => {
-		const health = await request.get(HEALTH_URL)
-		test.skip(health.status() === 503, 'No AI provider configured')
-
+	test('No write happens before approval (spec: ai-copilot)', async ({ page }) => {
 		await page.route(PLAN_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(STUBBED_PLAN) }))
 
 		const writeRequests: string[] = []

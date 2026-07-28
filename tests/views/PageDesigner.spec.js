@@ -66,12 +66,13 @@ vi.mock('../../src/composables/useLivePreview.js', () => ({
 
 // Stub the sub-editors so the dispatcher contract is observable without
 // dragging the whole picker + fields chain in.
-function stub(name) {
+async function stub(name) {
+	const { h } = await import('vue')
 	return {
 		default: {
 			name,
 			props: ['config', 'pageType', 'appSlug', 'dataRegisters', 'parentRoute', 'pageId', 'runtimeExternalForms'],
-			render(h) { return h('div', { staticClass: `${name.toLowerCase()}-stub` }, name) },
+			render() { return h('div', { class: `${name.toLowerCase()}-stub` }, name) },
 		},
 	}
 }
@@ -91,39 +92,48 @@ vi.mock('../../src/components/page-editor/WikiPageEditor.vue', () => stub('WikiP
 // StubPageEditor keeps its real required-prop contract (title/message) so
 // the dispatch-binding tests below can assert PageDesigner actually binds
 // them (REQ-PEC-001) rather than stubbing that contract away.
-vi.mock('../../src/components/page-editor/StubPageEditor.vue', () => ({
-	default: {
-		name: 'StubPageEditor',
-		props: {
-			title: { type: String, required: true },
-			message: { type: String, required: true },
-			config: { type: Object, default: () => ({}) },
+vi.mock('../../src/components/page-editor/StubPageEditor.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'StubPageEditor',
+			props: {
+				title: { type: String, required: true },
+				message: { type: String, required: true },
+				config: { type: Object, default: () => ({}) },
+			},
+			render() {
+				return h('div', { class: 'stubpageeditor-stub' }, [
+					h('h3', this.title),
+					h('p', this.message),
+				])
+			},
 		},
-		render(h) {
-			return h('div', { staticClass: 'stubpageeditor-stub' }, [
-				h('h3', this.title),
-				h('p', this.message),
-			])
-		},
-	},
-}))
+	}
+})
 
 // PageListEditor + MenuTreeEditor are stubbed so we can fire their
 // emitted events directly without rendering the whole tree.
-vi.mock('../../src/components/page-editor/PageListEditor.vue', () => ({
-	default: {
-		name: 'PageListEditor',
-		props: ['pages', 'selectedIndex'],
-		render(h) { return h('div', { staticClass: 'page-list-editor-stub' }) },
-	},
-}))
-vi.mock('../../src/components/page-editor/MenuTreeEditor.vue', () => ({
-	default: {
-		name: 'MenuTreeEditor',
-		props: ['menu'],
-		render(h) { return h('div', { staticClass: 'menu-tree-editor-stub' }) },
-	},
-}))
+vi.mock('../../src/components/page-editor/PageListEditor.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'PageListEditor',
+			props: ['pages', 'selectedIndex'],
+			render() { return h('div', { class: 'page-list-editor-stub' }) },
+		},
+	}
+})
+vi.mock('../../src/components/page-editor/MenuTreeEditor.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'MenuTreeEditor',
+			props: ['menu'],
+			render() { return h('div', { class: 'menu-tree-editor-stub' }) },
+		},
+	}
+})
 
 const PageDesigner = (await import('../../src/views/PageDesigner.vue')).default
 

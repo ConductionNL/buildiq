@@ -19,12 +19,10 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import MenuTreeEditor from '../../../src/components/page-editor/MenuTreeEditor.vue'
-
-const stubDraggable = {
-	name: 'Draggable',
-	props: ['value', 'options'],
-	render(h) { return h('div', { staticClass: 'vuedraggable-stub' }, this.$slots.default) },
-}
+// The shared stub mirrors vuedraggable v4 (`modelValue` + `#item` scoped
+// slot), which is what MenuTreeEditor is written against. The v2-shaped local
+// stub this replaced never invoked `#item`, so every row vanished.
+import stubDraggable from '../../vitest/stubs/vuedraggable.js'
 
 function mountEditor(menu = []) {
 	return mount(MenuTreeEditor, {

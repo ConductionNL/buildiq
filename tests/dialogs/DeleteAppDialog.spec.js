@@ -25,15 +25,25 @@ const baseStubs = {
 		props: ['name', 'noClose'],
 		template: '<div class="nc-dialog-stub"><slot /><div class="nc-dialog-actions"><slot name="actions" /></div></div>',
 	},
+	// `emits: ['click']` is load-bearing under Vue 3: without it the parent's
+	// `@click` stays in `$attrs` and falls through onto the root <button>, so a
+	// native click fires the parent handler AND the explicit `$emit('click')`
+	// — a phantom double emit. The real NcButton declares
+	// `emits: ['click', 'update:pressed']`, so it never fires twice.
 	NcButton: {
 		name: 'NcButton',
 		props: ['type', 'disabled'],
+		emits: ['click'],
 		template: '<button :disabled="disabled" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
 	},
+	// Vue 3 `v-model` on a component means `modelValue` / `update:modelValue`.
+	// The real NcCheckboxRadioSwitch (@nextcloud/vue 9) follows that; the Vue 2
+	// `checked` / `update:checked` pair is gone.
 	NcCheckboxRadioSwitch: {
 		name: 'NcCheckboxRadioSwitch',
-		props: ['checked', 'disabled'],
-		template: '<label class="nc-checkbox-stub"><input type="checkbox" :checked="checked" :disabled="disabled" @change="$emit(\'update:checked\', $event.target.checked)"><slot /></label>',
+		props: ['modelValue', 'disabled'],
+		emits: ['update:modelValue'],
+		template: '<label class="nc-checkbox-stub"><input type="checkbox" :checked="modelValue" :disabled="disabled" @change="$emit(\'update:modelValue\', $event.target.checked)"><slot /></label>',
 	},
 	NcLoadingIcon: { name: 'NcLoadingIcon', template: '<span class="nc-loading-stub" />' },
 }

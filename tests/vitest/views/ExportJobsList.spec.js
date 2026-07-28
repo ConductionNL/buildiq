@@ -51,7 +51,8 @@ describe('ExportJobsList — #104 schema-slug fix', () => {
 		expect(requestedUrl).toContain('/apps/openregister/api/objects/openbuild/export-job')
 		expect(requestedUrl).not.toContain('exportJob')
 
-		wrapper.destroy()
+		// VTU v1's `destroy()` is `unmount()` in v2.
+		wrapper.unmount()
 	})
 
 	it('filters by the applicationSlug prop', async () => {
@@ -63,7 +64,7 @@ describe('ExportJobsList — #104 schema-slug fix', () => {
 		const requestedUrl = global.fetch.mock.calls[0][0]
 		expect(requestedUrl).toContain('filter[applicationSlug]=my-app')
 
-		wrapper.destroy()
+		wrapper.unmount()
 	})
 
 	it('renders fetched jobs in the table', async () => {
@@ -82,6 +83,6 @@ describe('ExportJobsList — #104 schema-slug fix', () => {
 		await flushFetch(wrapper)
 
 		expect(wrapper.text()).toContain('1.0.0')
-		wrapper.destroy()
+		wrapper.unmount()
 	})
 })

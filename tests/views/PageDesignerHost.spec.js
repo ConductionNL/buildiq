@@ -97,12 +97,13 @@ vi.mock('../../src/composables/useLivePreview.js', () => ({
 	}),
 }))
 
-function childStub(name) {
+async function childStub(name) {
+	const { h } = await import('vue')
 	return {
 		default: {
 			name,
 			props: ['manifest', 'slug', 'schemas', 'procestAvailable', 'nldesignAvailable', 'docudeskAvailable'],
-			render(h) { return h('div', { staticClass: `${name.toLowerCase()}-stub` }) },
+			render() { return h('div', { class: `${name.toLowerCase()}-stub` }) },
 		},
 	}
 }
@@ -386,7 +387,7 @@ describe('PageDesignerHost', () => {
 		const wrapper = mountHost({ appList: [{ slug: 'petstore' }] })
 		await flush(wrapper)
 		expect(wrapper.vm.appTheme).toBeUndefined()
-		expect(() => wrapper.destroy()).not.toThrow()
+		expect(() => wrapper.unmount()).not.toThrow()
 	})
 
 	// --- builder-undo-redo: REQ-BUR-004 session boundaries ------------------

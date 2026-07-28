@@ -161,7 +161,10 @@ describe('PromoteVersionDialog.vue (spec D task 4.9)', () => {
 		// selectedStrategy defaults to start-with-source-data
 		const confirmBtn = wrapper.find('button[data-type="primary"]')
 		expect(confirmBtn.exists()).toBe(true)
-		expect(confirmBtn.attributes('disabled')).toBeFalsy()
+		// `toBeUndefined`, not `toBeFalsy`: under Vue 3 a *disabled* button
+		// renders `disabled=""`, which is itself falsy — only absence proves
+		// the button is enabled.
+		expect(confirmBtn.attributes('disabled')).toBeUndefined()
 	})
 
 	it('isDestructiveGateMet is false for empty-start with empty typedSlug', () => {
@@ -198,7 +201,10 @@ describe('PromoteVersionDialog.vue (spec D task 4.9)', () => {
 		wrapper.vm.typedSlug = ''
 		await wrapper.vm.$nextTick()
 		const confirmBtn = wrapper.find('button[data-type="primary"]')
-		expect(confirmBtn.attributes('disabled')).toBeTruthy()
+		// Vue 3 renders a true boolean attribute as `disabled=""`, not Vue 2's
+		// `disabled="disabled"`, so the value is the falsy empty string —
+		// presence, not truthiness, is what says "disabled".
+		expect(confirmBtn.attributes('disabled')).toBeDefined()
 	})
 
 	it('Confirm button enables when empty-start selected and exact slug typed', async () => {
@@ -207,7 +213,10 @@ describe('PromoteVersionDialog.vue (spec D task 4.9)', () => {
 		wrapper.vm.typedSlug = 'hello-world'
 		await wrapper.vm.$nextTick()
 		const confirmBtn = wrapper.find('button[data-type="primary"]')
-		expect(confirmBtn.attributes('disabled')).toBeFalsy()
+		// `toBeUndefined`, not `toBeFalsy`: under Vue 3 a *disabled* button
+		// renders `disabled=""`, which is itself falsy — only absence proves
+		// the button is enabled.
+		expect(confirmBtn.attributes('disabled')).toBeUndefined()
 	})
 
 	// -----------------------------------------------------------------------

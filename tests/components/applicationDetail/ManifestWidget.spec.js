@@ -41,8 +41,21 @@ const stubs = {
 	NcLoadingIcon: { template: '<span class="ncloading" />' },
 }
 
+/*
+ * Drain the pending async work AND the render that follows it.
+ *
+ * Vue 2 flushed its watcher queue from the same microtask that `nextTick()`
+ * resolved on, so `await Promise.resolve(); await $nextTick()` was enough to
+ * see the DOM produced by a fetch that settled during `mounted()`. Vue 3's
+ * scheduler chains an extra promise hop (`currentFlushPromise = p.then(flushJobs)`),
+ * so the component state was already updated while the DOM still showed the
+ * loading branch — the assertions read a one-frame-stale render.
+ *
+ * A macrotask boundary drains the whole microtask queue regardless of how
+ * many hops the scheduler takes, so this is stable rather than tick-counted.
+ */
 const flush = async (wrapper) => {
-	await Promise.resolve()
+	await new Promise((resolve) => setTimeout(resolve, 0))
 	await wrapper.vm.$nextTick()
 }
 

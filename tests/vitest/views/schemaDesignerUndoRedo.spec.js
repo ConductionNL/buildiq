@@ -296,7 +296,9 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 		const wrapper = mountDetail()
 		await flush(wrapper)
 		const buttons = wrapper.findAll('.nc-button-stub')
-		const titles = buttons.wrappers.map((w) => w.attributes('title'))
+		// VTU v2 returns a plain array from findAll(); the v1 `.wrappers`
+		// accessor no longer exists.
+		const titles = buttons.map((w) => w.attributes('title'))
 		expect(titles).toContain('Undo (Ctrl+Z)')
 		expect(titles).toContain('Redo (Ctrl+Shift+Z / Ctrl+Y)')
 	})

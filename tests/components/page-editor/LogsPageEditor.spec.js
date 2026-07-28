@@ -28,13 +28,19 @@ const fetchSchemaProperties = vi.fn(async () => ({ action: { type: 'string' } })
 vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
 	useRegisterPicker: () => ({ fetchRegisters, fetchSchemas, fetchSchemaProperties, resolveAppRegister: () => '' }),
 }))
-vi.mock('../../../src/components/page-editor/fields/ColumnBuilder.vue', () => ({
-	default: {
-		name: 'ColumnBuilder',
-		props: ['modelValue', 'schemaProperties'],
-		render(h) { return h('div', { staticClass: 'column-builder-stub' }) },
-	},
-}))
+// `vi.mock` factories are hoisted above the imports, so `h` is pulled in with
+// a lazy dynamic import inside the (async) factory. Vue 3 does not pass `h`
+// into render(), and vnode classes use `class`, not Vue 2's `staticClass`.
+vi.mock('../../../src/components/page-editor/fields/ColumnBuilder.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'ColumnBuilder',
+			props: ['modelValue', 'schemaProperties'],
+			render() { return h('div', { class: 'column-builder-stub' }) },
+		},
+	}
+})
 
 const LogsPageEditor = (await import('../../../src/components/page-editor/LogsPageEditor.vue')).default
 

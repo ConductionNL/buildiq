@@ -51,13 +51,16 @@ describe('CopilotProposal.vue — spec ai-copilot REQ-OBAIC-003/007', () => {
 	it('Approve is disabled while canApprove is false', () => {
 		const wrapper = mount(CopilotProposal, { propsData: { plan: makePlan(), canApprove: false } })
 		const approve = wrapper.find('[data-testid="copilot-approve"]')
-		expect(approve.attributes('disabled')).toBeTruthy()
+		// Vue 3 renders a true boolean attribute as `disabled=""` (Vue 2 used
+		// `disabled="disabled"`), so the value is the falsy empty string —
+		// presence, not truthiness, is what says "disabled".
+		expect(approve.attributes('disabled')).toBeDefined()
 	})
 
 	it('Approve is enabled when canApprove is true', () => {
 		const wrapper = mount(CopilotProposal, { propsData: { plan: makePlan(), canApprove: true } })
 		const approve = wrapper.find('[data-testid="copilot-approve"]')
-		expect(approve.attributes('disabled')).toBeFalsy()
+		expect(approve.attributes('disabled')).toBeUndefined()
 	})
 
 	it('shows the validation-failed hint when canApprove is false', () => {

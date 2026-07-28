@@ -10,9 +10,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ConnectorFieldMapper from '../../src/components/page-editor/ConnectorFieldMapper.vue'
 
+// `emits: ['click']` keeps the parent's `@click` out of `$attrs` so it does not
+// also fall through onto the root <button> and fire the handler twice.
 const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled'],
+	emits: ['click'],
 	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 
@@ -31,7 +34,9 @@ describe('ConnectorFieldMapper', () => {
 			binding: { fields: {} },
 			sample: { resultaten: [{ naam: 'Acme' }], totaal: 1 },
 		})
-		const arrayBtn = wrapper.findAll('button').wrappers.find((b) => b.text().includes('resultaten'))
+		// VTU v2 `findAll` returns a plain Array, not a v1 WrapperArray — the
+		// `.wrappers` accessor is gone and reads as undefined.
+		const arrayBtn = wrapper.findAll('button').find((b) => b.text().includes('resultaten'))
 		await arrayBtn.trigger('click')
 		expect(wrapper.emitted()['update:itemsPath'][0]).toEqual(['resultaten'])
 	})
@@ -41,7 +46,7 @@ describe('ConnectorFieldMapper', () => {
 			binding: { itemsPath: 'resultaten', fields: {} },
 			sample: { resultaten: [{ naam: 'Acme', kvkNummer: '123' }] },
 		})
-		const leaf = wrapper.findAll('button').wrappers.find((b) => b.text().includes('naam'))
+		const leaf = wrapper.findAll('button').find((b) => b.text().includes('naam'))
 		await leaf.trigger('click')
 		expect(wrapper.emitted()['update:fields'][0][0]).toEqual({ naam: 'naam' })
 	})
