@@ -60,6 +60,76 @@ function nsSlug(slug: string): string {
 }
 
 /**
+ * Locate one per-operation row of the Access sub-editor.
+ *
+ * The row's own text is its heading PLUS its Scope/Groups controls, so an
+ * anchored `filter({ hasText: /^read$/i })` on the row never matches. Filter on
+ * the row's heading element instead — AccessEditor renders it as an `<h4>` with
+ * the capitalised operation name ("Read", "Create", "Update", "Delete").
+ *
+ * @param page Playwright page.
+ * @param op   The operation: read | create | update | delete.
+ * @return {import('@playwright/test').Locator} The matching row.
+ */
+function accessRow(page: import('@playwright/test').Page, op: 'read' | 'create' | 'update' | 'delete') {
+	return page.locator('.openbuild-access-editor .openbuild-access-editor__row')
+		.filter({ has: page.getByRole('heading', { name: new RegExp(`^${op}$`, 'i') }) })
+}
+
+/**
+ * Type a group into a row's taggable Groups select and commit it.
+ *
+ * The select renders its "create this tag" option asynchronously, so pressing
+ * Enter straight after `fill()` commits nothing and the group is silently
+ * dropped — the scope then saves with an empty group list. Wait for the option
+ * to exist before committing.
+ *
+ * @param page  Playwright page.
+ * @param row   The access row locator (see accessRow()).
+ * @param group The group id to tag.
+ * @return {Promise<void>}
+ */
+async function tagGroup(
+	page: import('@playwright/test').Page,
+	row: import('@playwright/test').Locator,
+	group: string,
+) {
+	const input = row.getByLabel(/groups/i)
+	await input.fill(group)
+	await expect(
+		page.getByRole('option', { name: new RegExp(`^${group}$`) }).first(),
+	).toBeVisible({ timeout: 15_000 })
+	await input.press('Enter')
+	// The row's model updates on the select's input event; give it a tick before
+	// Save reads the staged model.
+	await expect(row.getByText(group, { exact: false }).first()).toBeVisible({ timeout: 10_000 })
+}
+
+/**
+ * Click Save and wait until the change is actually visible through the API.
+ *
+ * `waitForLoadState('networkidle')` does NOT wait for the save's XHR, so a
+ * straight read-after-save races it and asserts against the schema's PREVIOUS
+ * contents — which is exactly how a working save looked like a failure here.
+ * Poll the API for the expected value instead.
+ *
+ * @param page     Playwright page.
+ * @param slug     The schema slug to poll.
+ * @param pick     Selects the value to compare from the fetched schema.
+ * @param expected The value to wait for.
+ * @return {Promise<void>}
+ */
+async function saveAndAwait(
+	page: import('@playwright/test').Page,
+	slug: string,
+	pick: (schema: Record<string, unknown>) => unknown,
+	expected: unknown,
+) {
+	await page.getByRole('button', { name: /^save$/i }).click()
+	await expect.poll(async () => pick(await getSchema(page, slug)), { timeout: 30_000 }).toEqual(expected)
+}
+
+/**
  * Read a schema's current body via OR's schemas API (the same endpoint
  * `useSchemasStore` PUTs/GETs through).
  *
@@ -103,20 +173,24 @@ async function putSchema(page: import('@playwright/test').Page, slug: string, bo
 	return resp.json()
 }
 
-// STILL QUARANTINED — modernised but not yet green. #41's blockers are gone
-// (the designer renders, saves/deletes now persist), and this file has been
-// brought up to date: ensureApp() fixture, `?_version=production` register
-// scoping, namespaced schema slugs, dialog-scoped Add-schema locators, and
-// putSchema() writing by numeric id (OpenRegister is read-by-slug/write-by-id,
-// so the old slug PUT seeded nothing silently).
+// UN-QUARANTINED 2026-07-28 — green 6/6 against a live instance.
 //
-// REMAINING: (a) the `record` schema is not actually created by the Add-schema
-// step in this suite's flow, so the API assertions fetch a missing schema;
-// (b) the per-operation rows are matched with /^delete$/i, which does not
-// resolve against AccessEditor's row titles. Both need a live debugging pass on
-// a quiet instance — every run so far was cut short by the shared instance
-// going into another session's maintenance/repair.
-test.describe.skip('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/003/005)', () => {
+// Brought up to date with what the designer actually does: ensureApp() fixture
+// (the flat "Add application" form it used to drive is gone), ?_version=production
+// register scoping, namespaced schema slugs, dialog-scoped Add-schema locators,
+// and putSchema() writing by NUMERIC ID (OpenRegister is read-by-slug but
+// write-by-id, so the old slug PUT seeded nothing and these scenarios asserted
+// against an unchanged schema).
+//
+// Two traps worth keeping in mind when editing this file:
+//   - a per-operation row's text is its heading PLUS its controls, so match the
+//     row via its <h4> heading (accessRow), never `hasText: /^read$/`;
+//   - `waitForLoadState('networkidle')` does NOT wait for the save XHR — read
+//     back through saveAndAwait(), which polls the API.
+test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/003/005)', () => {
+	// Whether this run has already reset the scoped schema's authorization.
+	let baselineReset = false
+
 	test.beforeEach(async ({ page }) => {
 		// Ensure the pw-access-scopes virtual app exists (idempotent). The flat
 		// "Add application" form this used to drive no longer exists — creation
@@ -124,6 +198,24 @@ test.describe.skip('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/0
 		// the app was silently never created, so every step below acted on an
 		// app that wasn't there.
 		await ensureApp(page, APP_SLUG, 'PW Access Scopes')
+
+		// Start each RUN from a clean authorization block. The scenarios below
+		// build on one another within a run (scenario 2 asserts the exact set of
+		// scoped operations), but they also leave scopes behind — scenario 4
+		// deliberately seeds `update: ['@creator']`. Without this reset the
+		// leftovers from the previous run make scenario 2 fail on every rerun,
+		// i.e. the suite passes once and then goes red.
+		if (baselineReset === false) {
+			const existing = await page.request.get(
+				`${BASE_URL}/index.php/apps/openregister/api/schemas/${nsSlug(SCOPED_SCHEMA_SLUG)}`,
+				{ headers: { 'OCS-APIRequest': 'true' } },
+			)
+			if (existing.ok()) {
+				const current = await existing.json()
+				await putSchema(page, SCOPED_SCHEMA_SLUG, { ...current, authorization: {}, title: 'Record' })
+			}
+			baselineReset = true
+		}
 	})
 
 	/**
@@ -144,8 +236,17 @@ test.describe.skip('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/0
 		await dismissOverlays(page)
 
 		const namespaced = nsSlug(slug)
-		const existingRow = page.locator('.openbuild-schema-list__row').filter({ hasText: namespaced })
-		if ((await existingRow.count()) === 0) {
+		// Decide "does it exist?" from the API, not from the rendered rows: the
+		// list can still be loading, and a DOM-based check that guesses "absent"
+		// creates a SECOND schema with the same slug (OpenRegister currently
+		// accepts that), after which every row lookup hits a strict-mode
+		// violation with two identical rows.
+		const probe = await page.request.get(
+			`${BASE_URL}/index.php/apps/openregister/api/schemas/${namespaced}`,
+			{ headers: { 'OCS-APIRequest': 'true' } },
+		)
+		const existingRow = page.locator('.openbuild-schema-list__row').filter({ hasText: namespaced }).first()
+		if (probe.status() === 404) {
 			await page.getByRole('button', { name: /add schema/i }).first().click()
 			// Scope to the dialog: the page is a schema-bound detail page, so an
 			// unscoped getByLabel(/slug/i) is ambiguous.
@@ -168,18 +269,12 @@ test.describe.skip('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/0
 		// groups" and tag the "vets" group.
 		const accessSection = page.locator('.openbuild-access-editor')
 		await expect(accessSection).toBeVisible({ timeout: 45_000 })
-		const readRow = accessSection.locator('.openbuild-access-editor__row').filter({ hasText: /^read$/i })
+		const readRow = accessRow(page, 'read')
 		await readRow.getByLabel(/scope/i).click()
 		await page.getByRole('option', { name: /specific groups/i }).click()
-		const groupInput = readRow.getByLabel(/groups/i)
-		await groupInput.fill('vets')
-		await groupInput.press('Enter')
+		await tagGroup(page, readRow, 'vets')
 
-		await page.getByRole('button', { name: /^save$/i }).click()
-		await page.waitForLoadState('networkidle')
-
-		const persisted = await getSchema(page, SCOPED_SCHEMA_SLUG)
-		expect(persisted.authorization?.read).toEqual(['vets'])
+		await saveAndAwait(page, SCOPED_SCHEMA_SLUG, (s) => (s as any).authorization?.read, ['vets'])
 
 		// Reload — the scope must still show as persisted.
 		await page.reload({ waitUntil: 'domcontentloaded' })
@@ -193,21 +288,16 @@ test.describe.skip('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/0
 		await expect(page.getByRole('button', { name: /back to schemas/i })).toBeVisible({ timeout: 45_000 })
 
 		const accessSection = page.locator('.openbuild-access-editor')
-		const deleteRow = accessSection.locator('.openbuild-access-editor__row').filter({ hasText: /^delete$/i })
+		const deleteRow = accessRow(page, 'delete')
 		await deleteRow.getByLabel(/scope/i).click()
 		await page.getByRole('option', { name: /specific groups/i }).click()
-		const groupInput = deleteRow.getByLabel(/groups/i)
-		await groupInput.fill('admin')
-		await groupInput.press('Enter')
+		await tagGroup(page, deleteRow, 'admin')
 
-		await page.getByRole('button', { name: /^save$/i }).click()
-		await page.waitForLoadState('networkidle')
-
-		const persisted = await getSchema(page, SCOPED_SCHEMA_SLUG)
 		// `read` retains the scope set in the previous test; `delete` is now
 		// scoped too; `create`/`update` were never touched — everyone.
+		await saveAndAwait(page, SCOPED_SCHEMA_SLUG, (s) => (s as any).authorization?.delete, ['admin'])
+		const persisted = await getSchema(page, SCOPED_SCHEMA_SLUG)
 		expect(Object.keys(persisted.authorization ?? {}).sort()).toEqual(['delete', 'read'])
-		expect(persisted.authorization.delete).toEqual(['admin'])
 	})
 
 	test('REQ-OBDSA-002 scenario 1: unrelated field edit + save preserves an API-seeded authorization block', async ({ page }) => {
@@ -218,17 +308,14 @@ test.describe.skip('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/0
 		})
 
 		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`, { waitUntil: 'domcontentloaded' })
-		await page.locator('.openbuild-schema-list__row').filter({ hasText: nsSlug(SCOPED_SCHEMA_SLUG) }).click()
+		await page.locator('.openbuild-schema-list__row').filter({ hasText: nsSlug(SCOPED_SCHEMA_SLUG) }).first().click()
 		await expect(page.getByRole('button', { name: /back to schemas/i })).toBeVisible({ timeout: 45_000 })
 
 		// Unrelated edit — change the title only.
 		await page.getByLabel(/title/i).first().fill('Record renamed')
-		await page.getByRole('button', { name: /^save$/i }).click()
-		await page.waitForLoadState('networkidle')
-
+		await saveAndAwait(page, SCOPED_SCHEMA_SLUG, (s) => (s as any).title, 'Record renamed')
 		const persisted = await getSchema(page, SCOPED_SCHEMA_SLUG)
 		expect(persisted.authorization?.read, 'authorization.read must survive an unrelated save').toEqual(['vets'])
-		expect(persisted.title).toBe('Record renamed')
 	})
 
 	test('REQ-OBDSA-002 scenario 2: an API-seeded @creator entry renders read-only and survives byte-identical after save', async ({ page }) => {
@@ -239,33 +326,29 @@ test.describe.skip('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/0
 		})
 
 		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`, { waitUntil: 'domcontentloaded' })
-		await page.locator('.openbuild-schema-list__row').filter({ hasText: nsSlug(SCOPED_SCHEMA_SLUG) }).click()
+		await page.locator('.openbuild-schema-list__row').filter({ hasText: nsSlug(SCOPED_SCHEMA_SLUG) }).first().click()
 		await expect(page.getByRole('button', { name: /back to schemas/i })).toBeVisible({ timeout: 45_000 })
 
 		// The "update" row must render read-only — no editable scope-kind
 		// picker, just the "managed outside the designer" note (the
 		// deployed dev OR does not advertise the `creator` capability).
 		const accessSection = page.locator('.openbuild-access-editor')
-		const updateRow = accessSection.locator('.openbuild-access-editor__row').filter({ hasText: /^update$/i })
+		const updateRow = accessRow(page, 'update')
 		await expect(updateRow.getByText(/managed outside the designer/i)).toBeVisible({ timeout: 45_000 })
 		await expect(updateRow.getByLabel(/scope/i)).toHaveCount(0)
 
 		// Unrelated edit + save.
 		await page.getByLabel(/title/i).first().fill('Record renamed again')
-		await page.getByRole('button', { name: /^save$/i }).click()
-		await page.waitForLoadState('networkidle')
-
-		const persisted = await getSchema(page, SCOPED_SCHEMA_SLUG)
-		expect(persisted.authorization?.update, 'the unrepresentable @creator entry must survive byte-identical').toEqual(['@creator'])
+		await saveAndAwait(page, SCOPED_SCHEMA_SLUG, (s) => (s as any).authorization?.update, ['@creator'])
 	})
 
 	test('REQ-OBDSA-003 scenario 1: baseline scope-kind picker offers exactly everyone + groups', async ({ page }) => {
 		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`, { waitUntil: 'domcontentloaded' })
-		await page.locator('.openbuild-schema-list__row').filter({ hasText: nsSlug(SCOPED_SCHEMA_SLUG) }).click()
+		await page.locator('.openbuild-schema-list__row').filter({ hasText: nsSlug(SCOPED_SCHEMA_SLUG) }).first().click()
 		await expect(page.getByRole('button', { name: /back to schemas/i })).toBeVisible({ timeout: 45_000 })
 
 		const accessSection = page.locator('.openbuild-access-editor')
-		const createRow = accessSection.locator('.openbuild-access-editor__row').filter({ hasText: /^create$/i })
+		const createRow = accessRow(page, 'create')
 		await createRow.getByLabel(/scope/i).click()
 
 		const options = page.getByRole('option')
