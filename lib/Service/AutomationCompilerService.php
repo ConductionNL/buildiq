@@ -378,15 +378,39 @@ class AutomationCompilerService
             fallbackSchemaSlug: (string) ($automation['trigger']['schema'] ?? '')
         );
 
-        return [
+        $provenance = [
             'notificationKeys'     => $notificationKeys,
             'lifecycleActions'     => $lifecycleActions,
             'scheduleIds'          => $scheduleIds,
-            'ruleSetSlug'          => $ruleSetSlug,
-            'approvalChainName'    => $approvalChainName,
             'openconnectorObjects' => [],
             'compiledHash'         => (string) $plan['hash'],
         ];
+
+        // `ruleSetSlug` and `approvalChainName` are declared `"type": "string"`
+        // in 40-automations.json even though both descriptions say "or null",
+        // and both applyX() helpers legitimately return null — approvalChainName
+        // for every automation without an approval action, which is the common
+        // case. OpenRegister validates strictly and rejects a null against a
+        // `string` property, so emitting the key with a null value made
+        // POST /api/automations/{uuid}/compile fail with a 500
+        // ("Property 'provenance.approvalChainName' should be type 'string' but
+        // is 'null'") for essentially every automation. The dialog then stayed
+        // open on "Could not save the automation" even though the automation
+        // object itself had already been created.
+        //
+        // OMIT the key rather than sending null: OpenRegister rejects both
+        // `null` and `{}` for a typed property, and every reader of these two
+        // fields already goes through `?? null` / `?? ''`, so an absent key is
+        // the shape they all expect.
+        if ($ruleSetSlug !== null) {
+            $provenance['ruleSetSlug'] = $ruleSetSlug;
+        }
+
+        if ($approvalChainName !== null) {
+            $provenance['approvalChainName'] = $approvalChainName;
+        }
+
+        return $provenance;
 
     }//end apply()
 
