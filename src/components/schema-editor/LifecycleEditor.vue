@@ -37,8 +37,8 @@
 					class="openbuild-lifecycle-editor__state-row">
 					<NcCheckboxRadioSwitch
 						type="radio"
-						:model-value="state.initial"
-						:model-value="state._key"
+						:model-value="state.initial ? state._key : null"
+						:value="state._key"
 						name="lifecycle-initial-state"
 						@update:modelValue="setInitial(sIndex)">
 						{{ t('openbuild', 'Initial') }}
