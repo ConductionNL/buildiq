@@ -46,14 +46,14 @@
 					{{ t('openbuild', 'Where should the data go?') }}
 				</h3>
 				<NcCheckboxRadioSwitch
-					:checked.sync="targetMode"
+					v-model="targetMode"
 					value="existing"
 					name="ob-import-target"
 					type="radio">
 					{{ t('openbuild', 'Add rows to an existing schema') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked.sync="targetMode"
+					v-model="targetMode"
 					value="create"
 					name="ob-import-target"
 					type="radio">

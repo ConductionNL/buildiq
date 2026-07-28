@@ -57,15 +57,15 @@
 
 				<div class="openbuild-field-editor__row-grid">
 					<NcTextField
-						:value="field.name"
+						:model-value="field.name"
 						:label="t('openbuild', 'Name')"
 						:error="!!nameError(field, index)"
 						:helper-text="nameError(field, index)"
-						@update:value="updateField(index, 'name', $event)" />
+						@update:modelValue="updateField(index, 'name', $event)" />
 
 					<NcSelect
 						:input-label="t('openbuild', 'Type')"
-						:value="typeOption(field.type)"
+						:model-value="typeOption(field.type)"
 						:options="typeOptions"
 						:clearable="false"
 						label="label"
@@ -73,81 +73,81 @@
 						@input="updateField(index, 'type', $event ? $event.value : 'string')" />
 
 					<NcCheckboxRadioSwitch
-						:checked="!!field.required"
+						:model-value="!!field.required"
 						type="switch"
-						@update:checked="updateField(index, 'required', $event)">
+						@update:modelValue="updateField(index, 'required', $event)">
 						{{ t('openbuild', 'Required') }}
 					</NcCheckboxRadioSwitch>
 
 					<NcTextField
-						:value="field.description || ''"
+						:model-value="field.description || ''"
 						:label="t('openbuild', 'Description')"
-						@update:value="updateField(index, 'description', $event)" />
+						@update:modelValue="updateField(index, 'description', $event)" />
 				</div>
 
 				<div class="openbuild-field-editor__validation">
 					<!-- string -->
 					<template v-if="field.type === 'string'">
 						<NcTextField
-							:value="field.validation.format || ''"
+							:model-value="field.validation.format || ''"
 							:label="t('openbuild', 'Format (optional)')"
 							:placeholder="'email, uri, date, …'"
-							@update:value="updateValidation(index, 'format', $event)" />
+							@update:modelValue="updateValidation(index, 'format', $event)" />
 						<NcTextField
-							:value="field.validation.pattern || ''"
+							:model-value="field.validation.pattern || ''"
 							:label="t('openbuild', 'Pattern (regex, optional)')"
-							@update:value="updateValidation(index, 'pattern', $event)" />
+							@update:modelValue="updateValidation(index, 'pattern', $event)" />
 						<NcTextField
-							:value="field.validation.minLength != null ? String(field.validation.minLength) : ''"
+							:model-value="field.validation.minLength != null ? String(field.validation.minLength) : ''"
 							:label="t('openbuild', 'Min length')"
-							@update:value="updateValidation(index, 'minLength', toIntOrNull($event))" />
+							@update:modelValue="updateValidation(index, 'minLength', toIntOrNull($event))" />
 						<NcTextField
-							:value="field.validation.maxLength != null ? String(field.validation.maxLength) : ''"
+							:model-value="field.validation.maxLength != null ? String(field.validation.maxLength) : ''"
 							:label="t('openbuild', 'Max length')"
-							@update:value="updateValidation(index, 'maxLength', toIntOrNull($event))" />
+							@update:modelValue="updateValidation(index, 'maxLength', toIntOrNull($event))" />
 					</template>
 
 					<!-- number / integer -->
 					<template v-else-if="field.type === 'number' || field.type === 'integer'">
 						<NcTextField
-							:value="field.validation.minimum != null ? String(field.validation.minimum) : ''"
+							:model-value="field.validation.minimum != null ? String(field.validation.minimum) : ''"
 							:label="t('openbuild', 'Minimum')"
-							@update:value="updateValidation(index, 'minimum', toNumberOrNull($event))" />
+							@update:modelValue="updateValidation(index, 'minimum', toNumberOrNull($event))" />
 						<NcTextField
-							:value="field.validation.maximum != null ? String(field.validation.maximum) : ''"
+							:model-value="field.validation.maximum != null ? String(field.validation.maximum) : ''"
 							:label="t('openbuild', 'Maximum')"
-							@update:value="updateValidation(index, 'maximum', toNumberOrNull($event))" />
+							@update:modelValue="updateValidation(index, 'maximum', toNumberOrNull($event))" />
 						<NcTextField
-							:value="field.validation.multipleOf != null ? String(field.validation.multipleOf) : ''"
+							:model-value="field.validation.multipleOf != null ? String(field.validation.multipleOf) : ''"
 							:label="t('openbuild', 'Multiple of')"
-							@update:value="updateValidation(index, 'multipleOf', toNumberOrNull($event))" />
+							@update:modelValue="updateValidation(index, 'multipleOf', toNumberOrNull($event))" />
 					</template>
 
 					<!-- array -->
 					<template v-else-if="field.type === 'array'">
 						<NcSelect
 							:input-label="t('openbuild', 'Items type')"
-							:value="typeOption(field.validation.itemsType || 'string')"
+							:model-value="typeOption(field.validation.itemsType || 'string')"
 							:options="itemsTypeOptions"
 							:clearable="false"
 							label="label"
 							track-by="value"
 							@input="updateValidation(index, 'itemsType', $event ? $event.value : 'string')" />
 						<NcTextField
-							:value="field.validation.minItems != null ? String(field.validation.minItems) : ''"
+							:model-value="field.validation.minItems != null ? String(field.validation.minItems) : ''"
 							:label="t('openbuild', 'Min items')"
-							@update:value="updateValidation(index, 'minItems', toIntOrNull($event))" />
+							@update:modelValue="updateValidation(index, 'minItems', toIntOrNull($event))" />
 						<NcTextField
-							:value="field.validation.maxItems != null ? String(field.validation.maxItems) : ''"
+							:model-value="field.validation.maxItems != null ? String(field.validation.maxItems) : ''"
 							:label="t('openbuild', 'Max items')"
-							@update:value="updateValidation(index, 'maxItems', toIntOrNull($event))" />
+							@update:modelValue="updateValidation(index, 'maxItems', toIntOrNull($event))" />
 					</template>
 
 					<!-- relation -->
 					<template v-else-if="field.type === 'relation'">
 						<NcSelect
 							:input-label="t('openbuild', 'Target schema')"
-							:value="schemaOption(field.validation.target)"
+							:model-value="schemaOption(field.validation.target)"
 							:options="schemaOptions"
 							:clearable="false"
 							label="label"
@@ -155,16 +155,16 @@
 							@input="updateValidation(index, 'target', $event ? $event.value : '')" />
 						<NcSelect
 							:input-label="t('openbuild', 'Cardinality')"
-							:value="cardinalityOption(field.validation.cardinality || 'one')"
+							:model-value="cardinalityOption(field.validation.cardinality || 'one')"
 							:options="cardinalityOptions"
 							:clearable="false"
 							label="label"
 							track-by="value"
 							@input="updateValidation(index, 'cardinality', $event ? $event.value : 'one')" />
 						<NcTextField
-							:value="field.validation.inverseOf || ''"
+							:model-value="field.validation.inverseOf || ''"
 							:label="t('openbuild', 'Inverse-of property (optional)')"
-							@update:value="updateValidation(index, 'inverseOf', $event)" />
+							@update:modelValue="updateValidation(index, 'inverseOf', $event)" />
 					</template>
 				</div>
 

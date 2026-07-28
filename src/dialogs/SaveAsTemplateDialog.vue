@@ -25,30 +25,30 @@
 			</p>
 
 			<NcTextField
-				:value="form.title"
+				:model-value="form.title"
 				:label="t('openbuild', 'Template title')"
-				@update:value="onTitleInput" />
+				@update:modelValue="onTitleInput" />
 			<NcTextField
-				:value="form.slug"
+				:model-value="form.slug"
 				:label="t('openbuild', 'Slug (kebab-case, max 32 chars)')"
-				@update:value="form.slug = $event" />
+				@update:modelValue="form.slug = $event" />
 			<NcTextField
-				:value="form.useCase"
+				:model-value="form.useCase"
 				:label="t('openbuild', 'Use case (one line)')"
-				@update:value="form.useCase = $event" />
+				@update:modelValue="form.useCase = $event" />
 			<NcTextArea
-				:value="form.description"
+				:model-value="form.description"
 				:label="t('openbuild', 'Description')"
-				@update:value="form.description = $event" />
+				@update:modelValue="form.description = $event" />
 			<NcSelect
 				v-model="categoryOption"
 				:input-label="t('openbuild', 'Category')"
 				:options="categoryOptions"
 				:clearable="false" />
 			<NcTextField
-				:value="form.sourceUrl"
+				:model-value="form.sourceUrl"
 				:label="t('openbuild', 'Source URL (optional)')"
-				@update:value="form.sourceUrl = $event" />
+				@update:modelValue="form.sourceUrl = $event" />
 
 			<!-- Capture summary -->
 			<section class="ob-save-template__summary">

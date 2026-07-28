@@ -16,7 +16,7 @@
 	<div class="connector-source-picker">
 		<div v-if="appAvailable" class="connector-source-picker__live">
 			<NcSelect
-				:value="selectedOption"
+				:model-value="selectedOption"
 				:options="endpointOptions"
 				:loading="loading"
 				:input-label="t('openbuild', 'OpenConnector endpoint')"

@@ -133,7 +133,7 @@
 					{{ t('openbuild', 'Configure') }}
 				</button>
 				<ExternalFormAccessDialog
-					:open.sync="externalDialogOpen"
+					v-model:open="externalDialogOpen"
 					:register="externalTarget.register"
 					:schema="externalTarget.schema"
 					:page-id="pageId"

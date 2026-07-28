@@ -34,7 +34,7 @@
 		</NcButton>
 
 		<CreateApplicationWizard
-			:show.sync="showWizard"
+			v-model:show="showWizard"
 			@created="onWizardCreated" />
 	</div>
 </template>

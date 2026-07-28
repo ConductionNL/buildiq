@@ -98,7 +98,7 @@
 		</NcNoteCard>
 
 		<AgentEditDialog
-			:open.sync="editDialogOpen"
+			v-model:open="editDialogOpen"
 			:agent="editingAgent"
 			:application-slug="selectedApp ? selectedApp.slug : ''"
 			@saved="onDialogSaved" />

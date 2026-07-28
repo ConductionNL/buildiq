@@ -49,7 +49,7 @@
 		</ul>
 
 		<ScheduleEditDialog
-			:open.sync="dialogOpen"
+			v-model:open="dialogOpen"
 			:entry="editingEntry"
 			:existing-ids="otherIds"
 			@save="onDialogSave" />

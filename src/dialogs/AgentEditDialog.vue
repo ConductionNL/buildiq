@@ -23,17 +23,17 @@
 			</h2>
 
 			<NcTextField
-				:value="name"
+				:model-value="name"
 				:label="t('openbuild', 'Name')"
 				data-testid="agent-name-field"
-				@update:value="name = $event" />
+				@update:modelValue="name = $event" />
 
 			<NcTextArea
-				:value="instructions"
+				:model-value="instructions"
 				:label="t('openbuild', 'Instructions')"
 				:placeholder="t('openbuild', 'Tell this agent how it should help — prefixed onto its system prompt for every message.')"
 				data-testid="agent-instructions-field"
-				@update:value="instructions = $event" />
+				@update:modelValue="instructions = $event" />
 
 			<NcSelect
 				v-model="modelTaskTypeOption"
@@ -44,7 +44,7 @@
 				data-testid="agent-model-task-type-select" />
 
 			<NcSelect
-				:value="enabledToolsSelection"
+				:model-value="enabledToolsSelection"
 				:input-label="t('openbuild', 'Enabled tools')"
 				:options="toolOptions"
 				:multiple="true"
@@ -57,11 +57,11 @@
 			</p>
 
 			<NcTextField
-				:value="String(maxActionsPerRun)"
+				:model-value="String(maxActionsPerRun)"
 				type="number"
 				:label="t('openbuild', 'Max actions per run')"
 				data-testid="agent-max-actions-field"
-				@update:value="onMaxActionsInput" />
+				@update:modelValue="onMaxActionsInput" />
 
 			<p v-if="showValidation && !valid" class="agent-edit__error" role="alert">
 				{{ validationMessage }}

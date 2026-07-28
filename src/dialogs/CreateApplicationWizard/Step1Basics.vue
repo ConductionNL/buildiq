@@ -31,7 +31,7 @@
 			<a :href="aiSettingsUrl">{{ t('openbuild', 'Open AI settings') }}</a>
 		</p>
 
-		<CopilotGenerateDialog :open.sync="showCopilotDialog" @created="onAiAppCreated" />
+		<CopilotGenerateDialog v-model:open="showCopilotDialog" @created="onAiAppCreated" />
 
 		<!-- Name input -->
 		<div class="wizard-step1__field">

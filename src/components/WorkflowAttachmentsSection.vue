@@ -43,7 +43,7 @@
 		</ul>
 
 		<WorkflowAttachmentDialog
-			:open.sync="dialogOpen"
+			v-model:open="dialogOpen"
 			:schemas="schemas"
 			:attached-schemas="attachedSchemas"
 			:attachment="editingAttachment"

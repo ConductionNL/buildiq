@@ -17,9 +17,9 @@
 			<div class="app-settings__row">
 				<NcCheckboxRadioSwitch
 					type="switch"
-					:checked="isPublished"
+					:model-value="isPublished"
 					:disabled="busy"
-					@update:checked="$emit('set-published', $event)">
+					@update:modelValue="$emit('set-published', $event)">
 					{{ t('openbuild', 'Published') }}
 				</NcCheckboxRadioSwitch>
 				<p class="app-settings__hint">
@@ -30,9 +30,9 @@
 			<div class="app-settings__row">
 				<NcCheckboxRadioSwitch
 					type="switch"
-					:checked="allowUserOverrides"
+					:model-value="allowUserOverrides"
 					:disabled="busy"
-					@update:checked="$emit('update:allow-overrides', $event)">
+					@update:modelValue="$emit('update:allow-overrides', $event)">
 					{{ t('openbuild', 'Allow per-user customisation') }}
 				</NcCheckboxRadioSwitch>
 				<p class="app-settings__hint">
@@ -49,15 +49,15 @@
 				</p>
 				<div v-for="(row, index) in rows" :key="index" class="app-settings__data-register-row">
 					<NcTextField
-						:value="row.register"
+						:model-value="row.register"
 						:label="t('openbuild', 'Register slug')"
 						:disabled="busy"
-						@update:value="updateRow(index, 'register', $event)" />
+						@update:modelValue="updateRow(index, 'register', $event)" />
 					<NcTextField
-						:value="row.label"
+						:model-value="row.label"
 						:label="t('openbuild', 'Label (optional)')"
 						:disabled="busy"
-						@update:value="updateRow(index, 'label', $event)" />
+						@update:modelValue="updateRow(index, 'label', $event)" />
 					<NcButton
 						type="tertiary"
 						:disabled="busy"

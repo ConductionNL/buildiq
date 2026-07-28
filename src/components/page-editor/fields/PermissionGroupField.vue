@@ -20,7 +20,7 @@
 	<div class="permission-group-field">
 		<NcSelect
 			:input-label="t('openbuild', 'Visible only to group (optional)')"
-			:value="selectedOption"
+			:model-value="selectedOption"
 			:options="options"
 			:taggable="true"
 			:clearable="true"

@@ -43,10 +43,10 @@
 				label="label" />
 
 			<NcTextField
-				:value="label"
+				:model-value="label"
 				:label="t('openbuild', 'Action label')"
 				:placeholder="t('openbuild', 'e.g. Generate confirmation letter')"
-				@update:value="label = $event" />
+				@update:modelValue="label = $event" />
 
 			<NcSelect
 				v-model="formatOption"
@@ -55,10 +55,10 @@
 				label="label" />
 
 			<NcTextField
-				:value="filenameTemplate"
+				:model-value="filenameTemplate"
 				:label="t('openbuild', 'Filename template (optional)')"
 				:placeholder="t('openbuild', 'e.g. bevestiging-{{dossiernummer}}.pdf')"
-				@update:value="filenameTemplate = $event" />
+				@update:modelValue="filenameTemplate = $event" />
 
 			<label class="ob-document-attach__toggle">
 				<input v-model="addActionsTab" type="checkbox">

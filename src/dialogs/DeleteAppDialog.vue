@@ -18,7 +18,7 @@
 				{{ t('openbuild', 'Delete "{name}" and all of its versions? This cannot be undone.', { name: appName }) }}
 			</p>
 			<NcCheckboxRadioSwitch
-				:checked.sync="deleteData"
+				v-model="deleteData"
 				:disabled="busy">
 				{{ t('openbuild', 'Also permanently delete all data (the app\'s registers and everything stored in them)') }}
 			</NcCheckboxRadioSwitch>
