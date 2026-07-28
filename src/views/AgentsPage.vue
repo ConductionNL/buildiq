@@ -31,7 +31,7 @@
 				:loading="loadingApplications"
 				label="name"
 				track-by="slug"
-				@input="onAppChange" />
+				@update:modelValue="onAppChange" />
 		</div>
 
 		<NcLoadingIcon v-if="loading" :size="32" />

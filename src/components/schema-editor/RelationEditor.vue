@@ -37,7 +37,7 @@
 					:clearable="false"
 					label="label"
 					track-by="value"
-					@input="updateRelation(index, 'target', $event ? $event.value : '')" />
+					@update:modelValue="updateRelation(index, 'target', $event ? $event.value : '')" />
 				<NcSelect
 					:input-label="t('openbuild', 'Cardinality')"
 					:model-value="cardinalityOption(relation.cardinality)"
@@ -45,7 +45,7 @@
 					:clearable="false"
 					label="label"
 					track-by="value"
-					@input="updateRelation(index, 'cardinality', $event ? $event.value : 'one')" />
+					@update:modelValue="updateRelation(index, 'cardinality', $event ? $event.value : 'one')" />
 				<NcTextField
 					:model-value="relation.inverseOf || ''"
 					:label="t('openbuild', 'Inverse-of (optional)')"

@@ -29,7 +29,7 @@
 				:loading="loadingApplications"
 				label="name"
 				track-by="slug"
-				@input="onAppChange" />
+				@update:modelValue="onAppChange" />
 			<NcSelect
 				v-model="selectedVersion"
 				class="automations-page__picker"
@@ -39,7 +39,7 @@
 				:disabled="!selectedApp"
 				label="name"
 				track-by="id"
-				@input="onVersionChange" />
+				@update:modelValue="onVersionChange" />
 		</div>
 
 		<NcLoadingIcon v-if="loading" :size="32" />

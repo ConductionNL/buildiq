@@ -70,7 +70,7 @@
 						:clearable="false"
 						label="label"
 						track-by="value"
-						@input="updateField(index, 'type', $event ? $event.value : 'string')" />
+						@update:modelValue="updateField(index, 'type', $event ? $event.value : 'string')" />
 
 					<NcCheckboxRadioSwitch
 						:model-value="!!field.required"
@@ -132,7 +132,7 @@
 							:clearable="false"
 							label="label"
 							track-by="value"
-							@input="updateValidation(index, 'itemsType', $event ? $event.value : 'string')" />
+							@update:modelValue="updateValidation(index, 'itemsType', $event ? $event.value : 'string')" />
 						<NcTextField
 							:model-value="field.validation.minItems != null ? String(field.validation.minItems) : ''"
 							:label="t('openbuild', 'Min items')"
@@ -152,7 +152,7 @@
 							:clearable="false"
 							label="label"
 							track-by="value"
-							@input="updateValidation(index, 'target', $event ? $event.value : '')" />
+							@update:modelValue="updateValidation(index, 'target', $event ? $event.value : '')" />
 						<NcSelect
 							:input-label="t('openbuild', 'Cardinality')"
 							:model-value="cardinalityOption(field.validation.cardinality || 'one')"
@@ -160,7 +160,7 @@
 							:clearable="false"
 							label="label"
 							track-by="value"
-							@input="updateValidation(index, 'cardinality', $event ? $event.value : 'one')" />
+							@update:modelValue="updateValidation(index, 'cardinality', $event ? $event.value : 'one')" />
 						<NcTextField
 							:model-value="field.validation.inverseOf || ''"
 							:label="t('openbuild', 'Inverse-of property (optional)')"

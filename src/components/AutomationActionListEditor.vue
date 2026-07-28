@@ -37,7 +37,7 @@
 				:options="typeOptions"
 				:clearable="false"
 				label="label"
-				@input="onTypeChange(index, $event)" />
+				@update:modelValue="onTypeChange(index, $event)" />
 
 			<template v-if="item.type === 'send-notification'">
 				<NcTextField
@@ -57,7 +57,7 @@
 					:options="operationOptions"
 					:clearable="false"
 					label="label"
-					@input="updateItem(index, 'operation', $event ? $event.value : 'update')" />
+					@update:modelValue="updateItem(index, 'operation', $event ? $event.value : 'update')" />
 				<NcTextField
 					:model-value="item.schema"
 					:label="t('openbuild', 'Target schema')"

@@ -76,7 +76,7 @@
 					:options="syncOptions"
 					:loading="syncLoading"
 					label="label"
-					@input="onSyncSelect" />
+					@update:modelValue="onSyncSelect" />
 				<div v-else class="ob-schedule-edit__sync-manual">
 					<p class="ob-schedule-edit__hint ob-schedule-edit__hint--warning">
 						{{ t('openbuild', 'The synchronization list could not be loaded. Enter a synchronization id manually.') }}

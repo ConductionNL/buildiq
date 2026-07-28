@@ -52,7 +52,7 @@
 						:disabled="readOnly"
 						label="label"
 						track-by="value"
-						@input="onKindChange(row.op, $event ? $event.value : 'everyone')" />
+						@update:modelValue="onKindChange(row.op, $event ? $event.value : 'everyone')" />
 
 					<NcSelect
 						v-if="row.kind === 'group'"
@@ -64,7 +64,7 @@
 						:disabled="readOnly"
 						label="label"
 						track-by="value"
-						@input="onGroupsChange(row.op, $event)"
+						@update:modelValue="onGroupsChange(row.op, $event)"
 						@tag="onGroupTag(row.op, $event)" />
 
 					<div v-if="row.kind === 'condition'" class="openbuild-access-editor__condition">
@@ -76,7 +76,7 @@
 							:disabled="readOnly"
 							label="label"
 							track-by="value"
-							@input="onConditionFieldChange(row.op, $event ? $event.value : '')" />
+							@update:modelValue="onConditionFieldChange(row.op, $event ? $event.value : '')" />
 						<NcSelect
 							:input-label="t('openbuild', 'Operator')"
 							:model-value="{ value: 'equals', label: t('openbuild', 'equals') }"

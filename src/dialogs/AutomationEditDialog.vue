@@ -43,7 +43,7 @@
 					:options="triggerOptions"
 					:clearable="false"
 					label="label"
-					@input="onTriggerChange" />
+					@update:modelValue="onTriggerChange" />
 
 				<template v-if="isObjectTrigger || triggerType === 'lifecycle-transition'">
 					<NcSelect
@@ -53,7 +53,7 @@
 						:options="schemaOptions"
 						:loading="schemaLoading"
 						label="label"
-						@input="onSchemaSelect" />
+						@update:modelValue="onSchemaSelect" />
 					<NcTextField
 						v-else
 						:model-value="triggerSchema"
@@ -147,7 +147,7 @@
 						:options="actionTypeOptions"
 						:clearable="false"
 						label="label"
-						@input="onActionTypeChange(index, $event)" />
+						@update:modelValue="onActionTypeChange(index, $event)" />
 
 					<NcNoteCard
 						v-if="actionBlockedReason(action.type)"
@@ -175,7 +175,7 @@
 							:options="syncOptions"
 							:loading="syncLoading"
 							label="label"
-							@input="onSyncSelect(index, $event)" />
+							@update:modelValue="onSyncSelect(index, $event)" />
 						<NcTextField
 							v-else
 							:model-value="action.synchronizationId"
@@ -190,7 +190,7 @@
 							:options="objectOpOperationOptions"
 							:clearable="false"
 							label="label"
-							@input="updateAction(index, 'operation', $event ? $event.value : 'create')" />
+							@update:modelValue="updateAction(index, 'operation', $event ? $event.value : 'create')" />
 						<NcTextField
 							:model-value="action.schema"
 							:label="t('openbuild', 'Target schema')"
@@ -220,7 +220,7 @@
 							:options="groupOptions"
 							:loading="groupLoading"
 							label="label"
-							@input="onGroupSelect(index, $event)" />
+							@update:modelValue="onGroupSelect(index, $event)" />
 						<NcTextField
 							v-else
 							:model-value="action.assigneeGroup"
@@ -248,7 +248,7 @@
 							:loading="docudeskTemplatesLoading"
 							label="label"
 							data-testid="generate-document-template-select"
-							@input="onTemplateSelect(index, $event)" />
+							@update:modelValue="onTemplateSelect(index, $event)" />
 						<NcTextField
 							v-else
 							:model-value="action.templateId"
@@ -263,7 +263,7 @@
 							:clearable="false"
 							label="label"
 							data-testid="generate-document-output-select"
-							@input="onOutputModesSelect(index, $event)" />
+							@update:modelValue="onOutputModesSelect(index, $event)" />
 					</template>
 
 					<NcButton type="error" :aria-label="t('openbuild', 'Remove action')" @click="removeAction(index)">

@@ -95,7 +95,7 @@
 							:clearable="false"
 							label="label"
 							track-by="value"
-							@input="updateTransition(tIndex, 'from', $event ? $event.value : '')" />
+							@update:modelValue="updateTransition(tIndex, 'from', $event ? $event.value : '')" />
 						<NcSelect
 							:input-label="t('openbuild', 'To')"
 							:model-value="stateOption(transition.to)"
@@ -103,7 +103,7 @@
 							:clearable="false"
 							label="label"
 							track-by="value"
-							@input="updateTransition(tIndex, 'to', $event ? $event.value : '')" />
+							@update:modelValue="updateTransition(tIndex, 'to', $event ? $event.value : '')" />
 						<NcTextField
 							:model-value="transition.label || ''"
 							:label="t('openbuild', 'Label (optional)')"
@@ -144,7 +144,7 @@
 									:clearable="false"
 									label="label"
 									track-by="value"
-									@input="updateAction(tIndex, aIndex, 'type', $event ? $event.value : 'audit-event-emit')" />
+									@update:modelValue="updateAction(tIndex, aIndex, 'type', $event ? $event.value : 'audit-event-emit')" />
 								<NcTextField
 									:model-value="action.payload || ''"
 									:label="t('openbuild', 'Payload key (declarative)')"

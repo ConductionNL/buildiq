@@ -22,7 +22,7 @@
 				:input-label="t('openbuild', 'OpenConnector endpoint')"
 				:placeholder="t('openbuild', 'Select an endpoint')"
 				label="label"
-				@input="onSelect" />
+				@update:modelValue="onSelect" />
 			<p v-if="error" class="connector-source-picker__error">
 				{{ t('openbuild', 'Could not load OpenConnector endpoints.') }}
 			</p>

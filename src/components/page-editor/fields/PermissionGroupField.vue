@@ -27,7 +27,7 @@
 			:placeholder="t('openbuild', 'Everyone with app access')"
 			label="label"
 			track-by="value"
-			@input="onChange"
+			@update:modelValue="onChange"
 			@tag="onTag" />
 		<p class="permission-group-field__hint">
 			{{ t('openbuild', 'Hides this entry from members outside the group. This is navigation only — set OpenRegister schema authorization to actually restrict the underlying data.') }}

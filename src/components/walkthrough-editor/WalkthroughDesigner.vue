@@ -80,7 +80,7 @@
 						<NcSelect :input-label="t('openbuild', 'Type')"
 							:options="SETUP_TYPES"
 							:model-value="step.type || 'info'"
-							@input="v => setSetupStep(si, 'type', v)" />
+							@update:modelValue="v => setSetupStep(si, 'type', v)" />
 						<NcTextField :label="t('openbuild', 'Title')" :model-value="step.title || ''" @update:modelValue="v => setSetupStep(si, 'title', v)" />
 						<NcTextField :label="t('openbuild', 'Body')" :model-value="step.body || ''" @update:modelValue="v => setSetupStep(si, 'body', v)" />
 						<NcTextField v-if="step.type === 'choice' || step.type === 'config-fields'"
@@ -183,7 +183,7 @@
 					<NcSelect :input-label="t('openbuild', 'Trigger')"
 						:options="TRIGGERS"
 						:model-value="activeTour.trigger || 'manual'"
-						@input="v => setTour('trigger', v)" />
+						@update:modelValue="v => setTour('trigger', v)" />
 					<NcTextField :label="t('openbuild', 'Min app version')" :model-value="activeTour.minAppVersion || ''" @update:modelValue="v => setTour('minAppVersion', v)" />
 					<NcButton type="error" @click="deleteTour">
 						{{ t('openbuild', 'Delete tour') }}
@@ -242,16 +242,16 @@
 							<NcSelect :input-label="t('openbuild', 'Placement')"
 								:options="PLACEMENTS"
 								:model-value="step.placement || 'auto'"
-								@input="v => setStep(si, 'placement', v)" />
+								@update:modelValue="v => setStep(si, 'placement', v)" />
 							<NcSelect :input-label="t('openbuild', 'Target kind')"
 								:options="TARGET_KINDS"
 								:model-value="(step.target && step.target.kind) || 'nav-item'"
-								@input="v => setTarget(si, 'kind', v)" />
+								@update:modelValue="v => setTarget(si, 'kind', v)" />
 							<NcTextField :label="t('openbuild', 'Target ref (route / widgetKey / id)')" :model-value="(step.target && step.target.ref) || ''" @update:modelValue="v => setTarget(si, 'ref', v)" />
 							<NcSelect :input-label="t('openbuild', 'Advance on')"
 								:options="ADVANCE_TYPES"
 								:model-value="(step.advanceOn && step.advanceOn.type) || 'manual'"
-								@input="v => setAdvance(si, 'type', v)" />
+								@update:modelValue="v => setAdvance(si, 'type', v)" />
 							<NcTextField v-if="(step.advanceOn || {}).type === 'route-match'"
 								:label="t('openbuild', 'Route')"
 								:model-value="(step.advanceOn && step.advanceOn.route) || ''"

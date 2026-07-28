@@ -51,7 +51,7 @@
 				:clearable="false"
 				label="label"
 				data-testid="agent-enabled-tools-select"
-				@input="onEnabledToolsSelect" />
+				@update:modelValue="onEnabledToolsSelect" />
 			<p class="agent-edit__hint">
 				{{ t('openbuild', 'This agent can never use a tool outside this list — enforced server-side on every request.') }}
 			</p>
