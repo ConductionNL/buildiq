@@ -75,6 +75,12 @@
 				<p v-if="previewError" class="ob-document-attach__error" role="alert">
 					{{ t('openbuild', 'Preview failed. The template could not be rendered.') }}
 				</p>
+				<!-- Rendering a Docudesk template preview as markup is the point of
+				     this pane, so v-html is required. It is safe here because
+				     `previewContent` has exactly two assignments — `''` and
+				     `DOMPurify.sanitize(raw)` in onPreview() — so no unsanitised
+				     value can ever reach this binding. Verified, not assumed. -->
+				<!-- eslint-disable-next-line vue/no-v-html -->
 				<div v-if="previewContent" class="ob-document-attach__preview-body" v-html="previewContent" />
 			</div>
 
@@ -203,7 +209,13 @@ export default {
 		},
 	},
 	watch: {
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+		/**
+		 * @param {boolean} isOpen - The dialog's new `open` state. Opening re-seeds the
+		 *   form from the attachment being edited and (when Docudesk is installed)
+		 *   refetches the template list, so a template renamed or deleted since the
+		 *   last open is reflected. Closing is not acted on.
+		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 */
 		open(isOpen) {
 			if (isOpen) {
 				this.hydrate()

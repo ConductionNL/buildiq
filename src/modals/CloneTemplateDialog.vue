@@ -142,7 +142,10 @@ export default {
 		/**
 		 * Observed behaviour of `open` (retrofit annotation).
 		 *
-		 * @param value
+		 * @param {boolean} value - The dialog's new `open` state. Opening re-seeds the
+		 *   name/slug fields from the selected template and clears any error left over
+		 *   from a previous attempt; closing is ignored, so the fields survive until
+		 *   the next open.
 		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		open(value) {
@@ -280,7 +283,11 @@ export default {
 		/**
 		 * Observed behaviour of `setError` (retrofit annotation).
 		 *
-		 * @param message
+		 * Public method for a parent holding a `ref` to this dialog: shows a
+		 * server-side failure (e.g. "slug already in use") inside the still-open
+		 * dialog and re-enables the submit button so the user can correct and retry.
+		 *
+		 * @param {string} message - Already-translated error text to display.
 		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		setError(message) {

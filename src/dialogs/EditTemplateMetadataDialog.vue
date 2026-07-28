@@ -108,7 +108,9 @@ export default {
 	},
 	watch: {
 		/**
-		 * @param value
+		 * @param {boolean} value - The dialog's new `open` state. Only the transition
+		 *   into "open" is acted on: it re-prefills the form from the template being
+		 *   edited, discarding any edits abandoned on a previous open.
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
 		open(value) {

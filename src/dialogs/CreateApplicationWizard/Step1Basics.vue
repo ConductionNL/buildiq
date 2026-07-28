@@ -324,6 +324,12 @@ export default {
 		/**
 		 * Observed behaviour of `onNameInput` (retrofit annotation).
 		 *
+		 * Emits a partial payload patch carrying the new name, plus a freshly derived
+		 * slug for as long as the user has not overridden the slug by hand.
+		 *
+		 * @param {InputEvent} event - Native `input` event from the app-name field;
+		 *   `event.target.value` is the new display name (e.g. `Hello World`).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		onNameInput(event) {
@@ -341,6 +347,13 @@ export default {
 		/**
 		 * Observed behaviour of `onSlugInput` (retrofit annotation).
 		 *
+		 * Latches `slugManuallyEdited`, so the name field stops rewriting the slug for
+		 * the rest of the wizard session.
+		 *
+		 * @param {InputEvent} event - Native `input` event from the slug field;
+		 *   `event.target.value` is emitted verbatim (validated elsewhere, not
+		 *   kebab-cased here).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		onSlugInput(event) {
@@ -350,6 +363,9 @@ export default {
 
 		/**
 		 * Observed behaviour of `onDescriptionInput` (retrofit annotation).
+		 *
+		 * @param {InputEvent} event - Native `input` event from the description
+		 *   textarea; `event.target.value` is emitted as the payload's `description`.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */

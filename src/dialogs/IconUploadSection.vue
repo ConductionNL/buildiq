@@ -15,11 +15,12 @@
   -
   - Calls:
   -   - POST   /index.php/apps/openregister/api/objects/{register}/{schema}/{uuid}/files
-  -             — upload SVG as multipart/form-data
+  -             — upload the SVG as JSON { name, content }; OR writes content verbatim
   -   - DELETE /index.php/apps/openregister/api/objects/{register}/{schema}/{uuid}/files/{filename}
   -             — remove the attached file
-  -   - PUT    /index.php/apps/openregister/api/objects/{register}/{schema}/{uuid}
-  -             — patch icon / iconDark refs on the Application record
+  -   - PATCH  /index.php/apps/openregister/api/objects/{register}/{schema}/{uuid}
+  -             — partial-merge the icon / iconDark refs on the Application record
+  -             (a PUT would replace the whole object and fail validation)
   -
   - REQ-OBICON-004 / openbuild-nextcloud-nav
   -->
@@ -170,6 +171,12 @@ export default {
 			/**
 			 * Observed behaviour of `handler` (retrofit annotation).
 			 *
+			 * @param {{icon?: {ref: string}, iconDark?: {ref: string}}} app - The
+			 *   incoming `application` prop; only its two icon refs are mirrored into
+			 *   local state, so the Remove buttons track the server record. Runs
+			 *   immediately, and may receive `undefined` while the parent is still
+			 *   loading the record.
+			 *
 			 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 			 */
 			handler(app) {
@@ -183,6 +190,11 @@ export default {
 		/**
 		 * Observed behaviour of `onLightPreviewError` (retrofit annotation).
 		 *
+		 * @param {Event} e - The `<img>` `error` event fired when the light-icon
+		 *   preview URL 404s (no icon attached yet, or the app-icon route has not
+		 *   picked the upload up); `e.target` is the image, which is hidden so the
+		 *   broken-image glyph never shows.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		onLightPreviewError(e) {
@@ -190,6 +202,9 @@ export default {
 		},
 		/**
 		 * Observed behaviour of `onDarkPreviewError` (retrofit annotation).
+		 *
+		 * @param {Event} e - The `<img>` `error` event for the dark-icon preview; same
+		 *   contract as `onLightPreviewError`.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
@@ -199,6 +214,11 @@ export default {
 
 		/**
 		 * Observed behaviour of `validateSvgFile` (retrofit annotation).
+		 *
+		 * @param {File|undefined} file - The picked file, or `undefined` when the user
+		 *   dismissed the picker without choosing one.
+		 * @return {boolean} `true` when a file was picked and its name ends in `.svg`.
+		 *   Extension-only — the file's bytes and MIME type are not inspected here.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
@@ -212,6 +232,11 @@ export default {
 
 		/**
 		 * Observed behaviour of `onLightFileChange` (retrofit annotation).
+		 *
+		 * @param {Event} event - `change` event from the light-icon file input;
+		 *   `event.target.files[0]` is the picked SVG. A non-SVG pick is rejected
+		 *   inline and the input is cleared so the same file can be re-picked.
+		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
@@ -229,6 +254,10 @@ export default {
 		/**
 		 * Observed behaviour of `onDarkFileChange` (retrofit annotation).
 		 *
+		 * @param {Event} event - `change` event from the dark-icon file input; same
+		 *   contract as `onLightFileChange`, routed to the `dark` variant.
+		 * @return {Promise<void>}
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		async onDarkFileChange(event) {
@@ -244,6 +273,18 @@ export default {
 
 		/**
 		 * Observed behaviour of `uploadIcon` (retrofit annotation).
+		 *
+		 * Attaches the SVG to the Application in OpenRegister, points the matching ref
+		 * field at it, then bumps the preview nonce and emits `updated`. Never throws:
+		 * a failed request surfaces in `uploadError`.
+		 *
+		 * @param {File} file - The validated SVG; its text is read client-side and
+		 *   POSTed as the file's `content`.
+		 * @param {'light'|'dark'} variant - Which icon slot is being written. Picks
+		 *   both the stored filename (`app-icon.svg` / `app-icon-dark.svg`) and the
+		 *   Application field (`icon` / `iconDark`) — the filenames are fixed, so
+		 *   re-uploading replaces the previous icon rather than accumulating files.
+		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
@@ -313,6 +354,15 @@ export default {
 
 		/**
 		 * Observed behaviour of `removeIcon` (retrofit annotation).
+		 *
+		 * Detaches the stored SVG from the Application and clears the ref field, then
+		 * emits `updated` with a `null` ref. Never throws: a failed request surfaces in
+		 * `uploadError`.
+		 *
+		 * @param {'light'|'dark'} variant - Which icon slot to clear; selects both the
+		 *   attached filename to delete (`app-icon.svg` / `app-icon-dark.svg`) and the
+		 *   Application field to null out (`icon` / `iconDark`).
+		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */

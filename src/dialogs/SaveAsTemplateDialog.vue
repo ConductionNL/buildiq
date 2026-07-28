@@ -302,23 +302,14 @@ export default {
 			return this.updateMode ? t('openbuild', 'Update template') : t('openbuild', 'Save as template')
 		},
 	},
-	/**
-	 * Prefill on mount when already open (the parent renders the dialog
-	 * with `v-if="open"`, so `created` fires with `open: true`).
-	 *
-	 * @return {void}
-	 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
-	 */
-	created() {
-		if (this.open) {
-			this.resetForm()
-		}
-	},
 	watch: {
 		/**
 		 * Reset the form each time the dialog opens, prefilled from the app.
 		 *
-		 * @param value
+		 * @param {boolean} value - The dialog's new `open` state. Only the transition
+		 *   into "open" is acted on, so a close leaves the form untouched and the next
+		 *   open starts from the source Application again rather than from whatever
+		 *   the user last typed.
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
 		open(value) {
@@ -347,6 +338,18 @@ export default {
 		'form.slug'() {
 			this.slugEditedManually = true
 		},
+	},
+	/**
+	 * Prefill on mount when already open (the parent renders the dialog
+	 * with `v-if="open"`, so `created` fires with `open: true`).
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+	 */
+	created() {
+		if (this.open) {
+			this.resetForm()
+		}
 	},
 	methods: {
 		/**

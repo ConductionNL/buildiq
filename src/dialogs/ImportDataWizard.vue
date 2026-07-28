@@ -139,7 +139,9 @@
 						<table class="ob-import-wizard__sample">
 							<tbody>
 								<tr v-for="(row, ri) in sampleRows" :key="ri">
-									<td v-for="(cell, ci) in row" :key="ci">{{ cell }}</td>
+									<td v-for="(cell, ci) in row" :key="ci">
+										{{ cell }}
+									</td>
 								</tr>
 							</tbody>
 						</table>

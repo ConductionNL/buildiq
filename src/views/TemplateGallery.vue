@@ -342,7 +342,11 @@ export default {
 		/**
 		 * Observed behaviour of `redirectAfterClone` (retrofit annotation).
 		 *
-		 * @param created
+		 * @param {{slug: string}} created - The Application just cloned/installed from
+		 *   a template, as returned by the clone endpoint. Only its `slug` is used, to
+		 *   build the route params; a payload without one (a backend that answered 200
+		 *   with no body) leaves the user on the gallery rather than navigating
+		 *   nowhere.
 		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
 		 */
 		redirectAfterClone(created) {

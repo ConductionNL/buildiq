@@ -111,6 +111,12 @@ export default {
 			/**
 			 * Observed behaviour of `handler` (retrofit annotation).
 			 *
+			 * @param {{permissions?: {owners?: string[], editors?: string[],
+			 *   viewers?: string[]}}|null} app - The incoming `application` prop.
+			 *   Re-seeds the three group pickers from the server record whenever the
+			 *   modal is pointed at a different application. Runs immediately, and is
+			 *   `null` until the parent has a record.
+			 *
 			 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 			 */
 			handler(app) {
@@ -121,6 +127,15 @@ export default {
 	methods: {
 		/**
 		 * Observed behaviour of `syncFromApplication` (retrofit annotation).
+		 *
+		 * Rebuilds the local NcSelect models from the record and drops any unsaved
+		 * edit state (orphan warning, in-flight save flag).
+		 *
+		 * @param {{permissions?: {owners?: string[], editors?: string[],
+		 *   viewers?: string[]}}|null} app - The Application whose permissions to show.
+		 *   Its three role buckets hold plain Nextcloud group ids, which are wrapped
+		 *   into the `{label, value}` option objects NcSelect binds to. A `null` app
+		 *   (or one with no `permissions`) yields three empty pickers.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 		 */

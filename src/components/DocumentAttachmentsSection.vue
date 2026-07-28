@@ -105,7 +105,16 @@ export default {
 			this.editingAttachment = null
 			this.dialogOpen = true
 		},
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+		/**
+		 * Open the attachment dialog on an existing entry.
+		 *
+		 * @param {{id: string, schema: string, templateId: string,
+		 *   templateName: string, label: string, format?: string,
+		 *   filenameTemplate?: string}} doc - The `runtime.documents[]` entry the user
+		 *   clicked. Passed to the dialog as-is to prefill it; the edit is written back
+		 *   through `onDialogSave`, matched on `id`.
+		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 */
 		openEdit(doc) {
 			this.editingAttachment = doc
 			this.dialogOpen = true

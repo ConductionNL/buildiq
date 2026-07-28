@@ -162,7 +162,12 @@ export default {
 		},
 	},
 	watch: {
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/**
+		 * @param {boolean} isOpen - The dialog's new `open` state. Opening re-seeds the
+		 *   form from the attachment being edited and (when Procest is installed)
+		 *   refetches the selectable case types. Closing is not acted on.
+		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 */
 		open(isOpen) {
 			if (isOpen) {
 				this.hydrate()

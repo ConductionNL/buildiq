@@ -12,7 +12,9 @@
 <template>
 	<NcModal v-if="open" :name="t('openbuild', 'App settings')" @close="$emit('update:open', false)">
 		<div class="app-settings">
-			<h3 class="app-settings__title">{{ appName }}</h3>
+			<h3 class="app-settings__title">
+				{{ appName }}
+			</h3>
 
 			<div class="app-settings__row">
 				<NcCheckboxRadioSwitch

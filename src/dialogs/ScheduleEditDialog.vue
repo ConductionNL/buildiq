@@ -288,7 +288,13 @@ export default {
 		},
 	},
 	watch: {
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */
+		/**
+		 * @param {boolean} isOpen - The dialog's new `open` state. Opening re-seeds the
+		 *   form from the schedule entry being edited and refetches the selectable
+		 *   synchronizations. Closing is not acted on, so the form is only ever reset
+		 *   on the way in.
+		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001
+		 */
 		open(isOpen) {
 			if (isOpen) {
 				this.hydrate()

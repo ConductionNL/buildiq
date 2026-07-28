@@ -140,6 +140,12 @@ export default {
 		/**
 		 * Observed behaviour of `statusLabel` (retrofit annotation).
 		 *
+		 * @param {'queued'|'running'|'succeeded'|'failed'|string} status - The export
+		 *   job's raw `status` from the API.
+		 * @return {string} The translated label, or the raw status verbatim for a
+		 *   state this build does not know about (so a new backend state degrades to
+		 *   untranslated rather than to a blank cell).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 		 */
 		statusLabel(status) {
