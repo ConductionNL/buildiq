@@ -58,7 +58,7 @@ const BUILT_PAGE = (slug: string, route: string) => `${BASE}/apps/openbuild/buil
  */
 async function addPage(page: import('@playwright/test').Page, type: string) {
 	await page.goto(PAGE_DESIGNER(SLUG))
-	await expect(page.locator('.page-designer, [class*="page-designer"]')).toBeVisible({ timeout: 15_000 })
+	await expect(page.locator('.page-designer-host')).toBeVisible({ timeout: 15_000 })
 	await page.locator('.page-list-editor__add').click()
 	await expect(page.locator('.page-list-editor__add-row')).toBeVisible({ timeout: 5_000 })
 	await page.locator('.page-list-editor__select').selectOption(type)
@@ -91,7 +91,7 @@ test('REQ-PEC-002 — Add page lists the four new types', async ({ page }) => {
 	test.skip(!LIVE, 'Requires a live dev env with the page designer built and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1')
 
 	await page.goto(PAGE_DESIGNER(SLUG))
-	await expect(page.locator('.page-designer, [class*="page-designer"]')).toBeVisible({ timeout: 15_000 })
+	await expect(page.locator('.page-designer-host')).toBeVisible({ timeout: 15_000 })
 	await page.locator('.page-list-editor__add').click()
 
 	const select = page.locator('.page-list-editor__select')

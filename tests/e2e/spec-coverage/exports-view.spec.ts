@@ -23,9 +23,10 @@
 import { test, expect } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-// The app router runs in hash mode — deep-link via the hash fragment so the
-// SPA mounts the Exports view instead of booting at the default Dashboard.
-const ROUTE = `${BASE}/apps/openbuild/#/exports`
+// The app router runs in path mode (not hash mode — that assumption was
+// stale; live-verified http://localhost:8099/apps/openbuild/exports renders
+// the Exports view directly, no #/ fragment).
+const ROUTE = `${BASE}/apps/openbuild/exports`
 
 test.describe('OpenBuild Exports view', () => {
 	test('renders the Exports heading and the Add Export Job action', async ({ page }) => {
