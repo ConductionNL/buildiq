@@ -72,6 +72,11 @@ export default {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the tab in the `tabs` array.
+		 * @param {'id'|'label'|'icon'|'component'} key - the sidebarTab property the bound input edits.
+		 * @param {string} value - the input's new text. An empty value DELETES the
+		 *   key — unlike ActionBuilder this also applies to `id`, so clearing every
+		 *   input leaves the tab as an empty object.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
@@ -98,6 +103,7 @@ export default {
 		/**
 		 * Observed behaviour of `removeTab` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the tab to drop from the `tabs` array.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeTab(index) {

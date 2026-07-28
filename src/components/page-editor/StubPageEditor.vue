@@ -53,8 +53,12 @@ export default {
 		config: {
 			deep: true,
 			/**
-			 * Observed behaviour of `handler` (retrofit annotation).
+			 * Re-seed the JSON textarea when the config changes from the
+			 * outside (page switch, manifest reload). The re-stringified text
+			 * is compared against the current draft first, so the author's
+			 * caret and half-typed JSON survive their own keystrokes.
 			 *
+			 * @param {?object} val - the new raw config block for the page; nullish renders as `{}`.
 			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 			 */
 			handler(val) {
@@ -71,8 +75,11 @@ export default {
 	},
 	methods: {
 		/**
-		 * Observed behaviour of `onInput` (retrofit annotation).
+		 * Parse the raw-config textarea on every keystroke. Invalid JSON only
+		 * sets `parseError` and does NOT emit, so a half-typed config never
+		 * replaces the page's config block; the last valid parse stands.
 		 *
+		 * @param {string} value - the raw textarea contents; must parse to the whole replacement config block for this page (note that `''` is invalid JSON, so clearing the textarea shows an error rather than emptying the config).
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		onInput(value) {

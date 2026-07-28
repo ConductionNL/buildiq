@@ -176,6 +176,12 @@ export default {
 		/**
 		 * Observed behaviour of `bodyKind` (retrofit annotation).
 		 *
+		 * @param {?{fields?: object[], component?: string, widgets?: object[]}} section - one
+		 *   entry of the sections list; only `widgets` (must be an array) and `component`
+		 *   (must be a string) are probed, in that precedence order.
+		 * @return {'fields'|'component'|'widgets'} which of the three mutually-exclusive
+		 *   bodies the section declares — `'fields'` is also the fallback for a section
+		 *   that declares no body at all.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		bodyKind(section) {
@@ -190,6 +196,10 @@ export default {
 		/**
 		 * Observed behaviour of `stringifyProps` (retrofit annotation).
 		 *
+		 * @param {?object} value - a section's or a widget's `props` bag as it sits in the
+		 *   manifest; absent props arrive as `undefined`/`null`.
+		 * @return {string} the JSON text to seed the props textarea/input with — `''` when
+		 *   there are no props, or when they cannot be serialised (e.g. a cycle).
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		stringifyProps(value) {
@@ -205,6 +215,9 @@ export default {
 		/**
 		 * Observed behaviour of `emit` (retrofit annotation).
 		 *
+		 * @param {object[]} sections - the COMPLETE next sections list. Every mutator here
+		 *   clones the list plus the one section it touches and hands the whole array up,
+		 *   so extra keys the editor does not surface (icon, order, …) round-trip intact.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		emit(sections) {
@@ -213,6 +226,14 @@ export default {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the section in the sections list.
+		 * @param {'title'|'id'|'component'|'fields'|'props'} key - the section property to
+		 *   write: `title`/`id` from the head inputs, `component` from the component input,
+		 *   `fields` from the nested FormFieldBuilder, `props` from `onPropsInput`.
+		 * @param {string|object|object[]|undefined} value - the new value: input text for
+		 *   `title`/`id`/`component`, the emitted formField list for `fields`, or the parsed
+		 *   JSON object for `props`. An empty string, `null`, `undefined` or an empty array
+		 *   DELETES the key so the manifest never carries an empty body.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
@@ -230,6 +251,12 @@ export default {
 		/**
 		 * Observed behaviour of `setBodyKind` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the section whose body kind is switched.
+		 * @param {'fields'|'component'|'widgets'} kind - the body picked by the radio group.
+		 *   All four BODY_KEYS (`fields`, `component`, `props`, `widgets`) are dropped first
+		 *   and only the chosen body is seeded empty, so the XOR invariant holds; any value
+		 *   other than `'fields'`/`'component'` falls through to `widgets`. The section's
+		 *   non-body keys (title, id, …) survive.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		setBodyKind(index, kind) {
@@ -253,6 +280,11 @@ export default {
 		/**
 		 * Observed behaviour of `onPropsInput` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the section whose props textarea changed; also
+		 *   the key into the `propsDraft` / `propsError` maps.
+		 * @param {string} value - the raw textarea text. Emptying it clears `props`; valid
+		 *   JSON is parsed and written; malformed JSON is only kept as a draft and reported
+		 *   through `propsError[index]`, leaving the manifest untouched mid-keystroke.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onPropsInput(index, value) {
@@ -274,6 +306,8 @@ export default {
 		/**
 		 * Observed behaviour of `addWidget` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the section to append a default
+		 *   `{ type: 'version-info' }` widget to.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		addWidget(index) {
@@ -286,6 +320,13 @@ export default {
 		/**
 		 * Observed behaviour of `updateWidget` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the owning section in the sections list.
+		 * @param {number} wIndex - position of the widget within that section's `widgets`.
+		 * @param {'type'|'componentName'|'props'} key - the widget property to write;
+		 *   `componentName` only applies to the `component` widget type.
+		 * @param {string|object|undefined} value - the new value: the selected widget
+		 *   `type`, the componentName text, or the parsed props object from
+		 *   `onWidgetPropsInput`. `''`, `null` and `undefined` DELETE the key.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateWidget(index, wIndex, key, value) {
@@ -306,6 +347,12 @@ export default {
 		/**
 		 * Observed behaviour of `onWidgetPropsInput` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the owning section in the sections list.
+		 * @param {number} wIndex - position of the widget within that section's `widgets`.
+		 * @param {string} value - the raw props text. Emptying it clears the widget's
+		 *   `props`; valid JSON is written; malformed JSON is silently ignored (unlike a
+		 *   section's props there is no per-widget error slot), so the last valid object
+		 *   stays in the manifest.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onWidgetPropsInput(index, wIndex, value) {
@@ -324,6 +371,10 @@ export default {
 		/**
 		 * Observed behaviour of `removeWidget` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the owning section in the sections list.
+		 * @param {number} wIndex - position of the widget to drop from that section's
+		 *   `widgets`; the (possibly empty) array is kept so the section stays a
+		 *   widgets-bodied section.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeWidget(index, wIndex) {
@@ -348,6 +399,9 @@ export default {
 		/**
 		 * Observed behaviour of `removeSection` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the section to drop from the sections list.
+		 *   The index-keyed `propsDraft` / `propsError` maps are NOT re-based, so a
+		 *   surviving section can inherit the removed one's draft slot.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeSection(index) {

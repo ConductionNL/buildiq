@@ -139,8 +139,12 @@ export default {
 	},
 	methods: {
 		/**
-		 * Observed behaviour of `update` (retrofit annotation).
+		 * Write one key on the page's `config` block. Only the named key is
+		 * touched, so config keys this editor does not surface round-trip
+		 * losslessly.
 		 *
+		 * @param {string} key - the config key being written: `folder` or `allowedTypes`.
+		 * @param {string|string[]} value - the new value: the folder path from the text input, or the full replacement tag list. An empty string or empty array deletes the key — that is how "allow everything" is expressed.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
@@ -166,8 +170,11 @@ export default {
 			this.update('allowedTypes', [...this.allowedTypes, value])
 		},
 		/**
-		 * Observed behaviour of `removeType` (retrofit annotation).
+		 * Remove one allowed-type tag. Removing the last one deletes
+		 * `allowedTypes` altogether (via `update`), which the runtime reads
+		 * as "allow everything".
 		 *
+		 * @param {number} index - position of the tag in `allowedTypes`, from the `v-for` over the tag chips.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		removeType(index) {

@@ -175,8 +175,14 @@ export default {
 	},
 	methods: {
 		/**
-		 * Observed behaviour of `update` (retrofit annotation).
+		 * Write one key on the page's `config` block. Only the named key is
+		 * touched, so config keys this editor does not surface round-trip
+		 * losslessly. An empty `sections` array is deliberately kept — the
+		 * sections/tabs XOR needs the key present to say which branch is
+		 * active, even before the first section is added.
 		 *
+		 * @param {string} key - the config key being written: `saveEndpoint` or `sections`.
+		 * @param {string|Array<object>} value - the new value: the free-text save endpoint, or the rebuilt section list from SettingsSectionBuilder. `''`, `null` and `undefined` delete the key.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
@@ -190,8 +196,13 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Observed behaviour of `setLayoutShape` (retrofit annotation).
+		 * Switch between the two mutually exclusive layouts, deleting the key
+		 * of the branch being left and seeding an empty array for the branch
+		 * being entered — so the config always satisfies exactly one half of
+		 * the sections/tabs XOR. Content authored under the abandoned branch
+		 * is dropped.
 		 *
+		 * @param {'sections'|'tabs'} shape - the radio's value: `tabs` drops `sections` and seeds `tabs: []`, anything else does the reverse.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setLayoutShape(shape) {
@@ -210,8 +221,12 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Observed behaviour of `updateTabField` (retrofit annotation).
+		 * Write one key on one tab of the tabbed layout, leaving that tab's
+		 * other keys and the rest of the tab list alone.
 		 *
+		 * @param {number} index - position of the tab in `config.tabs`.
+		 * @param {string} key - the tab key being written: `id`, `label`, `icon` or `sections`.
+		 * @param {string|Array<object>} value - the new value: text from the tab's header inputs, or that tab's rebuilt section list from SettingsSectionBuilder. `''`, `null` and `undefined` delete the key.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		updateTabField(index, key, value) {
@@ -239,8 +254,11 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Observed behaviour of `removeTab` (retrofit annotation).
+		 * Drop one tab, along with the sections authored under it. `tabs` is
+		 * kept even when the last tab goes, so the layout stays on the tabbed
+		 * branch of the XOR rather than silently flipping to flat sections.
 		 *
+		 * @param {number} index - position of the tab to remove in `config.tabs`.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		removeTab(index) {

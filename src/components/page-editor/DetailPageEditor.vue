@@ -152,8 +152,12 @@ export default {
 	},
 	emits: ['update:config'],
 	/**
-	 * Observed behaviour of `setup` (retrofit annotation).
+	 * Build the register/schema picker for this editor. Options-API `data`
+	 * cannot see props at construction time, so the picker is created here
+	 * from the resolved props and exposed as `this.picker`.
 	 *
+	 * @param {{appSlug: string, dataRegisters: Array<{register: string, label?: string}>, config: object, pageType: string, parentRoute: string}} props - the resolved component props; only `appSlug` (hoists `openbuild-{slug}` in the register list) and `dataRegisters` (labels/hoists the Application's declared bindings) are read.
+	 * @return {{picker: object}} - bindings merged into the instance; `picker` exposes fetchRegisters/fetchSchemas.
 	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1
 	 */
@@ -213,8 +217,10 @@ export default {
 		'config.register': {
 			immediate: true,
 			/**
-			 * Observed behaviour of `handler` (retrofit annotation).
+			 * Reload the schema dropdown whenever the bound register changes
+			 * (also fires immediately on mount for an already-bound page).
 			 *
+			 * @param {string} val - the newly selected register slug; empty when the binding was cleared, which empties the schema list instead of fetching.
 			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 			 */
 			handler(val) {
@@ -231,8 +237,12 @@ export default {
 	},
 	methods: {
 		/**
-		 * Observed behaviour of `update` (retrofit annotation).
+		 * Write one key on the page's `config` block and emit the whole block
+		 * back to PageDesigner. Only the named key is touched, so config keys
+		 * this editor does not surface round-trip losslessly.
 		 *
+		 * @param {string} key - the config key being written: `register`, `schema`, or `sidebar` in its legacy boolean form. Writing `register` also drops `schema`, since a schema is only meaningful inside its register.
+		 * @param {string|boolean} value - the new value: a slug from a `<select>`, or the checkbox state for the boolean-shaped sidebar. An empty string or `null` deletes the key; `false` is stored, so `sidebar: false` survives as an explicit "off".
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
@@ -248,8 +258,11 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Observed behaviour of `setSidebarShape` (retrofit annotation).
+		 * Switch `config.sidebar` between the three shapes the manifest
+		 * accepts. Switching discards whatever the previous shape held — the
+		 * object form's keys do not survive a trip through `boolean`/`none`.
 		 *
+		 * @param {'none'|'boolean'|'object'} shape - the radio's value: `none` deletes `sidebar`, `boolean` writes the legacy `true`, `object` seeds the preferred `{ enabled: true }`.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSidebarShape(shape) {
@@ -264,8 +277,11 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Observed behaviour of `updateSidebarKey` (retrofit annotation).
+		 * Write one key inside the object-shaped sidebar, promoting a legacy
+		 * boolean `sidebar: true` to `{ enabled: true }` on the way.
 		 *
+		 * @param {string} key - the sidebar key being written: `enabled`, `show` or `tabs`.
+		 * @param {boolean|Array<object>} value - the checkbox state for `enabled`/`show`, or the rebuilt tab list from SidebarTabBuilder for `tabs`. Falsy values are stored, not deleted, so `enabled: false` is preserved as an explicit "off".
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		updateSidebarKey(key, value) {
@@ -275,8 +291,12 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Observed behaviour of `updateSidebarPropsTabs` (retrofit annotation).
+		 * Write the alternate `config.sidebarProps.tabs` path. Emptying the
+		 * list removes just the `tabs` key, and removes `sidebarProps`
+		 * entirely when nothing else lived there — so a manifest that never
+		 * used this path round-trips byte-identically.
 		 *
+		 * @param {Array<{id: string, label: string, icon?: string, component?: string}>} tabs - the rebuilt tab list from SidebarTabBuilder; empty or missing means "no tabs".
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		updateSidebarPropsTabs(tabs) {
@@ -304,8 +324,10 @@ export default {
 			this.registers = await this.picker.fetchRegisters()
 		},
 		/**
-		 * Observed behaviour of `fetchSchemas` (retrofit annotation).
+		 * Load the schemas of one register into the schema dropdown.
 		 *
+		 * @param {string} register - slug of the register to list schemas for, i.e. `config.register`.
+		 * @return {Promise<void>} - resolves once `this.schemas` holds the result (`[]` when the request fails).
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		async fetchSchemas(register) {

@@ -61,6 +61,10 @@ export default {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the widget in the `widgets` array.
+		 * @param {'id'|'title'|'type'} key - the widgetDef property the edited input is bound to.
+		 * @param {string} value - the input's new text; written verbatim, so an
+		 *   emptied input keeps the key with an empty string rather than dropping it.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
@@ -82,6 +86,7 @@ export default {
 		/**
 		 * Observed behaviour of `removeWidget` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the widget to drop from the `widgets` array.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeWidget(index) {

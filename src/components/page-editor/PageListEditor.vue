@@ -239,8 +239,14 @@ export default {
 			this.addingType = null
 		},
 		/**
-		 * Observed behaviour of `updateField` (retrofit annotation).
+		 * Write one scalar key on one page. Clearing a field deletes the key
+		 * rather than storing `''`, so `manifest.pages[n]` never carries
+		 * empty-string noise. `type` and `config` are never written here —
+		 * `type` is fixed at add time and `config` belongs to the sub-editor.
 		 *
+		 * @param {number} index - position of the page in the `pages` prop, taken from the vuedraggable `#item` slot.
+		 * @param {string} key - the page key being written: `id`, `route` or `permission`.
+		 * @param {string} value - the new value from the bound input (for `permission` the `group:<gid>` string from PermissionGroupField); `''` deletes the key.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
@@ -255,8 +261,11 @@ export default {
 			this.$emit('update:pages', next)
 		},
 		/**
-		 * Observed behaviour of `removePage` (retrofit annotation).
+		 * Drop a page from the manifest. When the removed page was the
+		 * selected one, `select` is re-emitted with -1 so PageDesigner clears
+		 * the centre pane instead of pointing at a shifted neighbour.
 		 *
+		 * @param {number} index - position of the page to remove in the `pages` prop.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removePage(index) {
@@ -268,16 +277,24 @@ export default {
 			}
 		},
 		/**
-		 * Observed behaviour of `onReorder` (retrofit annotation).
+		 * Drag-reorder of the page list. vuedraggable v4 hands the whole
+		 * reordered array through `update:modelValue` rather than mutating
+		 * the `pages` prop, so it is forwarded up unchanged — pages carry no
+		 * order key, their array position IS their order in the manifest.
 		 *
+		 * @param {Array<{id: string, route: string, type: string, config: object}>} newOrder - the pages in their new visual order, as emitted by vuedraggable.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onReorder(newOrder) {
 			this.$emit('update:pages', newOrder)
 		},
 		/**
-		 * Observed behaviour of `hasError` (retrofit annotation).
+		 * Whether a row should be outlined red: its `id` collides with another
+		 * page's, or its `route` fails the route-pattern grammar.
 		 *
+		 * @param {{id?: string, route?: string, type: string, config?: object}} page - the page record for this row, from the vuedraggable `#item` slot.
+		 * @param {number} index - position of the page in the `pages` prop. It is only ever compared against -1, a value the `#item` slot cannot produce, so in practice it never makes a row invalid.
+		 * @return {boolean} - true when the row is invalid.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		hasError(page, index) {

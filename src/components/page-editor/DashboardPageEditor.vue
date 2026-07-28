@@ -73,8 +73,12 @@ export default {
 	},
 	methods: {
 		/**
-		 * Observed behaviour of `update` (retrofit annotation).
+		 * Write one key on the page's `config` block. Only the named key is
+		 * touched, so config keys this editor does not surface round-trip
+		 * losslessly.
 		 *
+		 * @param {string} key - the config key being written: `widgets` or `layout`.
+		 * @param {Array<object>} value - the rebuilt list from WidgetBuilder / LayoutItemBuilder. Any falsy value or an empty array deletes the key rather than storing `[]`.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {

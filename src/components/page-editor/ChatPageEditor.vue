@@ -128,8 +128,13 @@ export default {
 	},
 	methods: {
 		/**
-		 * Observed behaviour of `update` (retrofit annotation).
+		 * Write one key on the page's `config` block. Only the named key is
+		 * touched, so config keys this editor does not surface round-trip
+		 * losslessly. Transport keys go through `setTransport` instead, which
+		 * also enforces the one-of.
 		 *
+		 * @param {string} key - the config key being written; from the template only `schema`, the optional message-record schema slug.
+		 * @param {string} value - the new value from the bound input; `''` (or `null`) deletes the key.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
@@ -142,8 +147,12 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Observed behaviour of `setTransportShape` (retrofit annotation).
+		 * Switch between the two mutually exclusive transports by deleting
+		 * the key of the branch being left, so the emitted config never
+		 * carries both halves of the one-of. The value of the abandoned key
+		 * is lost.
 		 *
+		 * @param {'conversationSource'|'postUrl'} shape - the radio's value: `postUrl` drops `conversationSource`, anything else drops `postUrl`.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setTransportShape(shape) {
@@ -156,8 +165,12 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Observed behaviour of `setTransport` (retrofit annotation).
+		 * Write the active transport endpoint and clear its partner in the
+		 * same emit, so typing in one branch can never leave a stale value in
+		 * the other half of the one-of.
 		 *
+		 * @param {'conversationSource'|'postUrl'} key - which transport is being typed into; the other of the two is deleted.
+		 * @param {string} value - the endpoint / stream URL from the bound input; `''` deletes the key too, leaving neither branch set.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setTransport(key, value) {
