@@ -21,6 +21,15 @@ import { registerDirectives } from './registerDirectives.js'
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages).
 import '@conduction/nextcloud-vue/css/index.css'
 
+// nc-vue's CnDashboardGrid/CnWidgetGrid no longer bundle gridstack's JS or
+// CSS (nc-vue#557) — it is a peerDependency now, so this app must supply
+// both. Without this import every grid item renders 0px wide (height comes
+// from JS and is set correctly; width comes from this CSS via
+// `--gs-column-width`, so only a missing/mismatched stylesheet makes width
+// silently disagree with height). gridstack-extra.min.css does not exist in
+// v12 — the main stylesheet is all that is needed.
+import 'gridstack/dist/gridstack.min.css'
+
 // Global (unscoped) app styles.
 import './assets/app.css'
 

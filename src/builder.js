@@ -36,6 +36,12 @@ import { useRegisterPicker, registerScope } from './composables/useRegisterPicke
 import { registerSlugForApp } from './store/schemas.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
+// nc-vue's CnDashboardGrid/CnWidgetGrid no longer bundle gridstack's JS or
+// CSS (nc-vue#557) — it is a peerDependency now. A virtual app's manifest
+// can declare a type:"dashboard" page (this entry calls
+// registerBuiltinDashboardWidgets() below), so this runtime needs the same
+// stylesheet main.js does or that page's grid items render 0px wide.
+import 'gridstack/dist/gridstack.min.css'
 import './assets/app.css'
 
 // Vue 3 has no global Vue constructor — t/n, pinia, the router and the global
