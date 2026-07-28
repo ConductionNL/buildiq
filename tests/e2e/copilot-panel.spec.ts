@@ -61,6 +61,13 @@ const STUBBED_PLAN = {
 
 test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 
+	// These flows chain several deliberately generous waits (panel mount →
+	// proposal render → real execute → reload → manifest reload) that add up
+	// past the 30s project default on a loaded dev box. Raising the wall clock
+	// does not weaken any assertion; it stops a slow machine from reading as a
+	// product failure.
+	test.describe.configure({ timeout: 90_000 })
+
 	test.beforeEach(async ({ page }) => {
 		// Health drives `copilotToggleVisible`, and the composable probes it
 		// from `mounted()` and caches the result for the page's lifetime — so

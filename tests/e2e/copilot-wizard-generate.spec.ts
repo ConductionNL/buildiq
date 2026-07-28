@@ -57,6 +57,12 @@ const stubbedPlan = (slug: string) => ({
 
 test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 
+	// The confirm path runs a REAL createApp + upsertPage through the MCP
+	// handlers and then waits for the SPA to route to the new app, which
+	// exceeds the 30s project default on a loaded dev box. Wall clock only —
+	// no assertion is relaxed.
+	test.describe.configure({ timeout: 90_000 })
+
 	// @e2e ai-copilot::generate-with-ai-creates-the-described-app-after-confirmation
 	test('Generate with AI creates the described app after confirmation (spec: ai-copilot)', async ({ page }) => {
 		// Health gates `copilotAvailable`, probed from mounted() — route it

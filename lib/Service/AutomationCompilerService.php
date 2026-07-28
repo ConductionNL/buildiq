@@ -398,10 +398,15 @@ class AutomationCompilerService
         // open on "Could not save the automation" even though the automation
         // object itself had already been created.
         //
-        // OMIT the key rather than sending null: OpenRegister rejects both
-        // `null` and `{}` for a typed property, and every reader of these two
-        // fields already goes through `?? null` / `?? ''`, so an absent key is
-        // the shape they all expect.
+        // OMIT the key rather than sending null.
+        //
+        // DO NOT "tidy" this back into `'ruleSetSlug' => $ruleSetSlug` with a
+        // null value for readability — that is the obvious later cleanup and it
+        // silently re-breaks compile with a 500. This is a fleet-wide
+        // OpenRegister trap, not a local quirk: OpenRegister rejects BOTH
+        // `null` AND `{}` for a nested typed property. Omitting the key is the
+        // only accepted shape. Every reader of these two fields already goes
+        // through `?? null` / `?? ''`, so an absent key is what they all expect.
         if ($ruleSetSlug !== null) {
             $provenance['ruleSetSlug'] = $ruleSetSlug;
         }
