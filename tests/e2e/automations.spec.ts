@@ -84,7 +84,56 @@ async function automationSchemaIsUsable(request: APIRequestContext): Promise<boo
 	return schema?.properties?.trigger?.type === 'object'
 }
 
+/**
+ * Fixed names every automation-created-by-this-file scenario saves under.
+ * The suite runs against a persistent, non-reset-between-runs container
+ * (only the hello-world fixture is reseeded), so a prior run's rows are
+ * still there on the next run. Without cleanup, `[data-testid="automation-row"]`
+ * `.filter({ hasText: 'E2E nightly sync' })` starts resolving to 2+ elements
+ * — a strict-mode violation that looks like a selector bug but is really
+ * accumulated fixture data (same class of issue agents.spec.ts's
+ * `beforeAll` cleanup fixes for the `agent` schema).
+ */
+const FIXED_AUTOMATION_NAMES = [
+	'E2E notify on hello-message created',
+	'E2E nightly sync',
+	'E2E flag large claims',
+	'E2E route hello-message for approval',
+	'E2E generate decision letter on approve',
+	'E2E bad generateDocument automation',
+]
+
+/**
+ * Delete any pre-existing automation object whose name is one of
+ * FIXED_AUTOMATION_NAMES, so each full-suite run starts from a clean slate
+ * (see FIXED_AUTOMATION_NAMES docblock).
+ *
+ * @param request Playwright APIRequestContext (fixture-provided).
+ * @return {Promise<void>}
+ */
+async function deleteStaleAutomations(request: APIRequestContext): Promise<void> {
+	const resp = await request.get('/index.php/apps/openregister/api/objects/openbuild/automation', {
+		headers: { 'OCS-APIRequest': 'true' },
+	})
+	if (resp.ok() === false) {
+		return
+	}
+	const body = await resp.json()
+	const items = Array.isArray(body) ? body : (body.results ?? [])
+	for (const automation of items) {
+		if (FIXED_AUTOMATION_NAMES.includes(automation?.name) && automation?.id) {
+			await request.delete(`/index.php/apps/openregister/api/objects/openbuild/automation/${automation.id}`, {
+				headers: { 'OCS-APIRequest': 'true' },
+			}).catch(() => {})
+		}
+	}
+}
+
 test.describe('automation-designer — Automations page', () => {
+	test.beforeAll(async ({ request }) => {
+		await deleteStaleAutomations(request)
+	})
+
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/apps/openbuild/automations')
 		await page.waitForSelector('.automations-page', { timeout: 20_000 })
