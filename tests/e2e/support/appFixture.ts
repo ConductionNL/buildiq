@@ -38,10 +38,26 @@ export async function ensureApp(page: Page, slug: string, name: string): Promise
 			|| document.querySelector('head')?.getAttribute('data-requesttoken')
 			|| ''
 		const headers = { requesttoken: tok, 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' }
-		// Idempotency: if the app's manifest resolves, it already exists.
-		const existing = await fetch(`/index.php/apps/openbuild/api/applications/${slug}/manifest`, { headers })
-		if (existing.ok) {
-			return 'exists'
+		// Idempotency, via the applications LIST.
+		//
+		// Do NOT probe `/applications/{slug}/manifest` for this: it 404s for an
+		// app that exists but has no resolvable manifest yet, so the check said
+		// "absent" for an app that was right there and every run POSTed the
+		// wizard again. That left duplicate Application objects (4 after three
+		// runs), and re-creating an app whose register already exists takes the
+		// wizard ~180s before failing 500 — which then blows the test timeout
+		// rather than reporting anything useful.
+		const listResp = await fetch('/index.php/apps/openbuild/api/applications', { headers })
+		if (listResp.ok) {
+			const listed = await listResp.json().catch(() => null)
+			const rows = Array.isArray(listed) ? listed : (listed?.results ?? listed?.applications ?? [])
+			const found = Array.isArray(rows) && rows.some((a) => {
+				const s = a?.slug ?? a?.['@self']?.slug
+				return s === slug
+			})
+			if (found) {
+				return 'exists'
+			}
 		}
 		const resp = await fetch('/index.php/apps/openbuild/api/applications/wizard', {
 			method: 'POST',
