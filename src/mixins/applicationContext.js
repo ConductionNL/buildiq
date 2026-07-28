@@ -14,6 +14,7 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { useRole, getCurrentUserGroups } from '../composables/useRole.js'
+import { fetchApplicationRecord } from '../composables/useApplicationRecord.js'
 
 const OR_OBJECTS = '/apps/openregister/api/objects/openbuild/application'
 
@@ -77,7 +78,15 @@ export default {
 			}
 			this.obAppLoading = true
 			try {
-				const { data } = await axios.get(generateUrl(`${OR_OBJECTS}/${uuid}`))
+				// Shared in-flight fetch (#49). SIX components mix this in — the
+				// detail-page actions component and five sidebar tabs (Diff,
+				// Manifest, Export jobs, Icon, Versions) — and they all mount at
+				// once, each previously issuing its own GET for the same record.
+				// Together with the header and dashboard that produced ~10
+				// identical requests per page load, all within ~2ms of each
+				// other. Routing every consumer through one coalescing helper
+				// collapses the burst to a single round-trip.
+				const data = await fetchApplicationRecord(uuid)
 				this.obApp = (data && data.results) ? data.results : (data && data['@self'] ? data : data)
 			} catch (e) {
 				this.obAppError = `${t('openbuild', 'Failed to load application')}: ${e.message || e}`
