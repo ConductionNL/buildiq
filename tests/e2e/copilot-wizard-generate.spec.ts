@@ -31,6 +31,26 @@
  */
 import { test, expect } from '@playwright/test'
 
+/**
+ * Dismiss nc-vue's first-visit CnWalkthrough tour ("Welcome to OpenBuild")
+ * if it is open. Its `cn-walkthrough__dim` overlay covers the whole
+ * viewport and intercepts pointer events — live-verified as the actual
+ * cause behind every failure in this file: `getByRole('button', { name:
+ * /create app|add application/i }).first().click()` retried against the
+ * overlay for the full 90s describe timeout before failing. The tour's
+ * "seen" state does not persist across fresh contexts on this instance (its
+ * preferences write 404s), so it can reopen on every run.
+ *
+ * @param page Playwright page.
+ * @return {Promise<void>}
+ */
+async function dismissWalkthrough(page: import('@playwright/test').Page): Promise<void> {
+	const closeBtn = page.getByRole('button', { name: /close tour/i })
+	if (await closeBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+		await closeBtn.click()
+	}
+}
+
 const HEALTH_URL = '**/apps/openbuild/api/copilot/health'
 const PLAN_URL = '**/apps/openbuild/api/copilot/plan'
 
@@ -69,6 +89,7 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		// before the first navigation.
 		await page.route(HEALTH_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ available: true }) }))
 		await page.goto('/apps/openbuild/')
+		await dismissWalkthrough(page)
 		await page.waitForLoadState('networkidle')
 
 		await page.route(PLAN_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(stubbedPlan(APP_SLUG)) }))
@@ -102,6 +123,7 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 	test('Cancelling the review applies nothing (spec: ai-copilot)', async ({ page }) => {
 		await page.route(HEALTH_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ available: true }) }))
 		await page.goto('/apps/openbuild/')
+		await dismissWalkthrough(page)
 		await page.waitForLoadState('networkidle')
 
 		// A distinct slug: this test must never create an app, so if the guard
@@ -136,6 +158,7 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 			body: JSON.stringify({ status: 'unavailable', reason: 'no_provider' }),
 		}))
 		await page.goto('/apps/openbuild/')
+		await dismissWalkthrough(page)
 		await page.waitForLoadState('networkidle')
 
 		await page.getByRole('button', { name: /create app|add application/i }).first().click()

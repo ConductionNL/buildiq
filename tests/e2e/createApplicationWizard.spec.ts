@@ -58,7 +58,12 @@ const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
  * @param page Playwright page.
  */
 async function goToApps(page: Page): Promise<void> {
-	await page.goto(`${BASE_URL}/index.php/apps/openbuild/applications`)
+	// NOT `/index.php/apps/openbuild/applications` — live-verified that the
+	// `/index.php/`-prefixed form of this deep link redirects to the bare
+	// `/apps/openbuild/` Dashboard root, silently dropping the `/applications`
+	// sub-path, so `.ob-va-actions` never renders and this always timed out.
+	// The pretty-URL form (no `/index.php/` prefix) preserves the sub-path.
+	await page.goto(`${BASE_URL}/apps/openbuild/applications`)
 	// Wait for the app to mount; the actions bar must be visible.
 	await page.waitForSelector('.ob-va-actions, [data-cy="ob-actions"]', { timeout: 20_000 })
 }

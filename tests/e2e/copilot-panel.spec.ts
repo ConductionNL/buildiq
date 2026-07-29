@@ -34,6 +34,26 @@
  */
 import { test, expect } from '@playwright/test'
 
+/**
+ * Dismiss nc-vue's first-visit CnWalkthrough tour ("Welcome to OpenBuild")
+ * if it is open. Its `cn-walkthrough__dim` overlay covers the whole
+ * viewport and intercepts pointer events, and — worse for a `beforeEach`
+ * that only navigates and waits — the tour's own step-tracking fetch can
+ * keep the network non-idle, so `waitForLoadState('networkidle')` never
+ * resolves and the whole 90s describe timeout is spent inside the hook.
+ * The tour's "seen" state does not persist across fresh contexts on this
+ * instance (its preferences write 404s), so it can reopen on every run.
+ *
+ * @param page Playwright page.
+ * @return {Promise<void>}
+ */
+async function dismissWalkthrough(page: import('@playwright/test').Page): Promise<void> {
+	const closeBtn = page.getByRole('button', { name: /close tour/i })
+	if (await closeBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+		await closeBtn.click()
+	}
+}
+
 const HEALTH_URL = '**/apps/openbuild/api/copilot/health'
 const PLAN_URL = '**/apps/openbuild/api/copilot/plan'
 const EXECUTE_URL = '**/apps/openbuild/api/copilot/execute'
@@ -78,6 +98,7 @@ test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 			body: JSON.stringify({ available: true }),
 		}))
 		await page.goto('/apps/openbuild/builder/hello-world/pages')
+		await dismissWalkthrough(page)
 		await page.waitForLoadState('networkidle')
 	})
 
