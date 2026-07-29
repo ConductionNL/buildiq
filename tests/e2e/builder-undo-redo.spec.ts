@@ -30,28 +30,30 @@
  */
 
 import { test, expect, type Page } from '@playwright/test'
+import { ensureApp as ensureAppFixture } from './support/appFixture'
 
 const BASE_URL = process.env.NC_BASE_URL ?? 'http://localhost:8080'
 const APP_SLUG = 'pw-undo-redo'
 const SCHEMA_SLUG = 'undo-redo-record'
 
 /**
- * Ensure the `pw-undo-redo` virtual app exists (idempotent across runs —
- * matches the create-if-not-present convention every recent designer e2e
- * spec uses, e.g. `schema-access-scopes.spec.ts`).
+ * Ensure the `pw-undo-redo` virtual app exists (idempotent across runs).
+ *
+ * This used to be a local copy of the obsolete "Add application" button +
+ * flat slug/title form flow — the exact flow tests/e2e/support/appFixture.ts
+ * was introduced to replace. App creation moved to the multi-step wizard, the
+ * button is now labelled "Add app", and the `isVisible()` guard therefore
+ * always saw `false` and silently skipped creation, leaving the app absent.
+ * This file was missed when the other specs were migrated to the shared
+ * fixture (it is quarantined behind a describe.skip, so the dead flow never
+ * surfaced). Delegate to the shared helper, which calls the atomic wizard
+ * endpoint and checks the applications LIST for idempotency.
  *
  * @param page Playwright page.
+ * @return {Promise<void>}
  */
 async function ensureApp(page: Page): Promise<void> {
-	await page.goto(`${BASE_URL}/apps/openbuild/applications`, { waitUntil: 'domcontentloaded' })
-	const addAppButton = page.getByRole('button', { name: /add application/i })
-	if (await addAppButton.isVisible().catch(() => false)) {
-		await addAppButton.click()
-		await page.getByLabel(/slug/i).fill(APP_SLUG)
-		await page.getByLabel(/title/i).fill('PW Undo Redo')
-		await page.getByRole('button', { name: /save|create/i }).click()
-		await page.waitForLoadState('networkidle')
-	}
+	await ensureAppFixture(page, APP_SLUG, 'PW Undo Redo')
 }
 
 /**
