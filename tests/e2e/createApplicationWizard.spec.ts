@@ -69,13 +69,16 @@ async function goToApps(page: Page): Promise<void> {
 }
 
 /**
- * Open the wizard by clicking the "Add application" button.
+ * Open the wizard by clicking the "Add app" button.
  *
  * @param page Playwright page.
  */
 async function openWizard(page: Page): Promise<void> {
-	const addBtn = page.getByRole('button', { name: /add application/i }).first()
-	await expect(addBtn, '"Add application" button must be visible').toBeVisible({ timeout: 10_000 })
+	// VirtualAppsActions.vue's button reads "Add app", not "Add application"
+	// (src/components/VirtualAppsActions.vue) — live-verified against the
+	// rendered applications list.
+	const addBtn = page.getByRole('button', { name: /add app/i }).first()
+	await expect(addBtn, '"Add app" button must be visible').toBeVisible({ timeout: 10_000 })
 	await addBtn.click()
 	// The wizard modal should appear.
 	await page.waitForSelector('.nc-modal-stub, .modal-wrapper, [role="dialog"]', { timeout: 8_000 })

@@ -99,7 +99,13 @@ test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 		}))
 		await page.goto('/apps/openbuild/builder/hello-world/pages')
 		await dismissWalkthrough(page)
-		await page.waitForLoadState('networkidle')
+		// NOT waitForLoadState('networkidle') — this NC instance's own
+		// background chatter (notifications poll, user-status heartbeat) means
+		// the network is never idle for 500ms on an authenticated page, so
+		// networkidle never resolves and eats the whole 90s describe timeout
+		// (live-verified: still hung with the walkthrough dismissed). Wait for
+		// the page's real content instead — PageDesignerHost.vue's root.
+		await expect(page.locator('.page-designer-host'), 'page designer must load').toBeVisible({ timeout: 20_000 })
 	})
 
 	// @e2e ai-copilot::approving-a-proposal-applies-it-to-the-open-app
@@ -129,7 +135,7 @@ test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 		// The write must be PERSISTED, not merely painted: reload the designer
 		// from the server and confirm the manifest carries the new page.
 		await page.reload()
-		await page.waitForLoadState('networkidle')
+		await expect(page.locator('.page-designer-host'), 'page designer must reload').toBeVisible({ timeout: 20_000 })
 		await expect(page.locator(`text=${SUPPLIERS_PAGE_ID}`).first()).toBeVisible({ timeout: 15_000 })
 	})
 

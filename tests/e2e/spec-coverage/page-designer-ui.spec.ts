@@ -94,7 +94,12 @@ test('REQ-OBPDUI-002 — unknown ?_version shows version-not-found state', async
 	await expect(page.locator('main'), 'main must still render').toBeVisible({ timeout: 15_000 })
 
 	// The version-not-found state is rendered via NcEmptyContent or a div with "Version not found".
-	const notFound = page.locator('text=/Version not found/i, [class*="version-not-found"]').first()
+	// NOT the comma-joined 'text=/regex/flags, [selector]' form — Playwright's
+	// text engine parses everything after `text=` up to the next top-level
+	// comma as ONE pattern, so the trailing CSS selector got swallowed into
+	// the regex flags and threw "Invalid flags supplied to RegExp
+	// constructor". Combine the two locators with .or() instead.
+	const notFound = page.getByText(/Version not found/i).or(page.locator('[class*="version-not-found"]')).first()
 	await expect(notFound, 'version-not-found state must be displayed').toBeVisible({ timeout: 10_000 })
 })
 
@@ -110,8 +115,9 @@ test('REQ-OBPDUI-003 — centre pane renders a sub-editor when a page is selecte
 	await page.goto(PAGE_DESIGNER('hello-world'))
 	await expect(page.locator('.page-designer-host')).toBeVisible({ timeout: 15_000 })
 
-	// Click the first page entry in the left pane.
-	const firstPage = page.locator('.page-designer__left li, .page-list-editor li').first()
+	// Click the first page entry in the left pane. Rows are
+	// `.page-list-editor__row` divs, not `<li>` elements (PageListEditor.vue).
+	const firstPage = page.locator('.page-list-editor__row').first()
 	await expect(firstPage, 'at least one page must be listed').toBeVisible({ timeout: 5_000 })
 	await firstPage.click()
 

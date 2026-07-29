@@ -90,7 +90,13 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		await page.route(HEALTH_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ available: true }) }))
 		await page.goto('/apps/openbuild/')
 		await dismissWalkthrough(page)
-		await page.waitForLoadState('networkidle')
+		// NOT waitForLoadState('networkidle') — this NC instance's own
+		// background chatter (notifications poll, user-status heartbeat) means
+		// the network is never idle for 500ms on an authenticated page, so
+		// networkidle never resolves and eats the whole 90s describe timeout
+		// (live-verified: still hung with the walkthrough dismissed). Wait for
+		// the Dashboard's own "Create app" entry point instead.
+		await expect(page.getByRole('button', { name: /create app|add application/i }).first(), 'Dashboard must render its create-app entry point').toBeVisible({ timeout: 20_000 })
 
 		await page.route(PLAN_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(stubbedPlan(APP_SLUG)) }))
 
@@ -124,7 +130,13 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		await page.route(HEALTH_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ available: true }) }))
 		await page.goto('/apps/openbuild/')
 		await dismissWalkthrough(page)
-		await page.waitForLoadState('networkidle')
+		// NOT waitForLoadState('networkidle') — this NC instance's own
+		// background chatter (notifications poll, user-status heartbeat) means
+		// the network is never idle for 500ms on an authenticated page, so
+		// networkidle never resolves and eats the whole 90s describe timeout
+		// (live-verified: still hung with the walkthrough dismissed). Wait for
+		// the Dashboard's own "Create app" entry point instead.
+		await expect(page.getByRole('button', { name: /create app|add application/i }).first(), 'Dashboard must render its create-app entry point').toBeVisible({ timeout: 20_000 })
 
 		// A distinct slug: this test must never create an app, so if the guard
 		// regresses the stray Application is unambiguously traceable here.
@@ -159,7 +171,13 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		}))
 		await page.goto('/apps/openbuild/')
 		await dismissWalkthrough(page)
-		await page.waitForLoadState('networkidle')
+		// NOT waitForLoadState('networkidle') — this NC instance's own
+		// background chatter (notifications poll, user-status heartbeat) means
+		// the network is never idle for 500ms on an authenticated page, so
+		// networkidle never resolves and eats the whole 90s describe timeout
+		// (live-verified: still hung with the walkthrough dismissed). Wait for
+		// the Dashboard's own "Create app" entry point instead.
+		await expect(page.getByRole('button', { name: /create app|add application/i }).first(), 'Dashboard must render its create-app entry point').toBeVisible({ timeout: 20_000 })
 
 		await page.getByRole('button', { name: /create app|add application/i }).first().click()
 		await page.waitForSelector('.wizard-step1, [data-testid="copilot-brief-input"], body', { timeout: 10_000 })
