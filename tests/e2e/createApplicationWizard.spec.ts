@@ -32,7 +32,7 @@
  * for `playwright test --list`.
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Page, type APIRequestContext } from '@playwright/test'
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -41,6 +41,57 @@ import { test, expect, type Page } from '@playwright/test'
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASSWORD ?? 'admin'
+
+/**
+ * Application slugs this spec creates through the wizard.
+ *
+ * These are derived from the fixed app names passed to `fillStep1()`, whose
+ * slugs auto-derive as lower-kebab. They MUST be removed before the run: the
+ * wizard now correctly rejects an already-taken slug with 422
+ * app_slug_conflict, so a second run would fail at "Create" on every happy
+ * path. Previously the uniqueness check was broken (it never matched
+ * anything), so re-running silently minted duplicate Applications instead —
+ * which is what littered the e2e instance with three `hello-world` rows and,
+ * through OpenRegister's ambiguous find-by-slug, broke the whole automations
+ * suite. `hello-world` is deliberately NOT in this list: it is the canonical
+ * seeded fixture and the "slug already in use" test depends on it existing.
+ */
+const WIZARD_FIXTURE_SLUGS = [
+	'playwright-single-app',
+	'playwright-devprod-app',
+	'playwright-dsp-app',
+	'playwright-custom-app',
+	'playwright-validation-app',
+	'playwright-dup-slug-app',
+	'playwright-empty-name-app',
+]
+
+/**
+ * Delete the Applications this spec creates, so each run starts from a state
+ * where its slugs are genuinely free and "Create" really exercises creation.
+ *
+ * @param request Playwright API request context (carries the admin session).
+ * @return {Promise<void>}
+ */
+async function deleteWizardFixtureApps(request: APIRequestContext): Promise<void> {
+	const resp = await request.get('/index.php/apps/openregister/api/objects/openbuild/application?_limit=100', {
+		headers: { 'OCS-APIRequest': 'true' },
+	})
+	if (resp.ok() === false) {
+		return
+	}
+	const body = await resp.json()
+	const items = Array.isArray(body) ? body : (body.results ?? [])
+	for (const app of items) {
+		const slug = app?.slug ?? app?.['@self']?.slug
+		const id = app?.id ?? app?.['@self']?.id
+		if (WIZARD_FIXTURE_SLUGS.includes(slug) && id) {
+			await request.delete(`/index.php/apps/openregister/api/objects/openbuild/application/${id}`, {
+				headers: { 'OCS-APIRequest': 'true' },
+			}).catch(() => {})
+		}
+	}
+}
 
 /**
  * Whether a live dev environment is available.
@@ -130,6 +181,9 @@ async function clickCreate(page: Page): Promise<string> {
 // ---------------------------------------------------------------------------
 
 test.describe('Wizard — preset happy paths (task 8.5)', () => {
+	test.beforeAll(async ({ request }) => {
+		await deleteWizardFixtureApps(request)
+	})
 
 	test('single preset: name → slug auto-derives, Create lands on detail page', async ({ page }) => {
 		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
@@ -295,6 +349,9 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('Wizard — validation errors (task 8.6)', () => {
+	test.beforeAll(async ({ request }) => {
+		await deleteWizardFixtureApps(request)
+	})
 
 	test('leading-underscore version slug shows inline error and disables Create', async ({ page }) => {
 		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
