@@ -177,6 +177,15 @@ async function deleteStaleAutomations(request: APIRequestContext): Promise<void>
 }
 
 test.describe('automation-designer — Automations page', () => {
+	// Several saves below wait 30s for the compile POST to close the dialog —
+	// exactly the config's per-test budget, so the wait could never complete and
+	// the test always died first with a bare "Test timeout of 30000ms exceeded".
+	// That is how the genuine failure here stayed unreadable for so long: the
+	// dialog was reporting "Could not save the automation." but the run only
+	// ever showed a generic timeout. Budget > longest wait so the assertion can
+	// report itself; no assertion is relaxed.
+	test.describe.configure({ timeout: 60_000 })
+
 	test.beforeAll(async ({ request }) => {
 		await deleteStaleAutomations(request)
 	})

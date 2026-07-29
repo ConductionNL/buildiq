@@ -191,6 +191,17 @@ async function putSchema(page: import('@playwright/test').Page, slug: string, bo
 //   - `waitForLoadState('networkidle')` does NOT wait for the save XHR — read
 //     back through saveAndAwait(), which polls the API.
 test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/003/005)', () => {
+	// The waits below are deliberately 45s: the schema designer hydrates over
+	// several sequential OpenRegister round-trips and is genuinely slow on a
+	// loaded instance. But the config's per-test budget is 30s, so a 45s wait
+	// could never elapse — the test always died first with a bare "Test timeout
+	// of 30000ms exceeded" instead of the assertion's own message. A guard that
+	// cannot fire is worse than no guard: it hides which condition failed.
+	// Give the tests a budget larger than their longest wait so those waits mean
+	// what they say. This does not relax any assertion — each keeps its own
+	// timeout, and a real failure now reports itself instead of being masked.
+	test.describe.configure({ timeout: 90_000 })
+
 	// Whether this run has already reset the scoped schema's authorization.
 	let baselineReset = false
 

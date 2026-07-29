@@ -402,6 +402,31 @@ export default {
 
 .page-list-editor__permission {
 	flex: 1 1 200px;
+	/* Let this flex item shrink below its content's intrinsic width. Without
+	   it, `min-width: auto` keeps the item at the NcSelect's minimum and the
+	   row overflows instead of compressing. */
+	min-width: 0;
+}
+
+/* @nextcloud/vue sets `.v-select.select { min-width: 260px }` with no prop or
+   modifier to unset it on the root element (`select--no-wrap` only unsets it
+   on `.vs__selected-options`). This row lives in the page designer's LEFT
+   pane, a 280–320px grid column, so a 260px floor plus the drag handle, name
+   and type tag cannot fit: the select was laid out past the row's right edge
+   and, because the panes are `overflow: visible`, painted straight over the
+   centre pane.
+
+   Measured on /builder/:slug/pages before this fix: the row spanned
+   x=355..639 while the select rendered at x=704..964 — starting 65px BEYOND
+   its own row and 35px into the centre pane (which begins at x=669). It
+   swallowed every pointer event aimed at centre-pane controls, so clicking
+   "Add layer" and friends retried against `aside.page-designer__left` until
+   the test budget expired. Three page-editor-coverage specs failed on it.
+
+   Drop the floor for this narrow context only; the select still fills the
+   space its flex basis gives it. */
+.page-list-editor__permission :deep(.v-select.select) {
+	min-width: 0;
 }
 
 .page-list-editor__type-tag {

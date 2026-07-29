@@ -983,6 +983,12 @@ export default {
 	border-radius: var(--border-radius);
 	padding: 8px;
 	background: var(--color-main-background);
+	/* Grid items default to `min-width: auto` and so refuse to shrink below
+	   their content's intrinsic minimum, which lets a wide child push a pane
+	   past its own track. Defensive only — the actual overflow that painted the
+	   left pane over the centre one came from a hardcoded NcSelect min-width
+	   and is fixed in PageListEditor.vue, where that select lives. */
+	min-width: 0;
 }
 
 .page-designer__centre {

@@ -258,7 +258,12 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({ 
 	const editor = page.locator('.wiki-page-editor')
 	await expect(editor).toBeVisible({ timeout: 5_000 })
 
-	const registerSelect = editor.locator('.wiki-page-editor__group-row', { hasText: 'Register' }).locator('select')
+	// Anchor the row label. A plain `hasText: 'Register'` is a case-insensitive
+	// substring match, so it also matched the "Sidebar register" row and blew up
+	// with a strict-mode violation across two selects. Resolved by anchoring
+	// rather than by taking .first(), which would have silently picked whichever
+	// row happens to render first.
+	const registerSelect = editor.locator('.wiki-page-editor__group-row', { hasText: /^\s*Register\b/ }).locator('select')
 	await registerSelect.selectOption({ index: 1 })
 	const schemaSelect = editor.locator('.wiki-page-editor__group-row', { hasText: 'Schema' }).locator('select').first()
 	await schemaSelect.selectOption({ index: 1 })
