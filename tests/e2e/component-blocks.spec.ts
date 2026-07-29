@@ -2,11 +2,10 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Playwright end-to-end test for the component-blocks flow: save a
- * configured widget (or a multi-widget page section) as a reusable
- * `ComponentBlock`, insert it into a different app, resolve a
- * schema-dependency remap prompt, and confirm it renders bound to the
- * chosen schema (component-blocks tasks.md 7.3).
+ * Playwright end-to-end test for the component-blocks flow: save a configured
+ * widget (or a multi-widget page section) as a reusable `ComponentBlock`,
+ * insert it into a DIFFERENT app, resolve the schema-dependency prompt, and
+ * confirm what lands on the target page (component-blocks tasks.md 7.3).
  *
  * Covers (gate-19 scenario references):
  *   - "Saving a widget captures its config, not its data"
@@ -15,157 +14,413 @@
  *   - "Library lists org-wide blocks"
  *   - "Inserting the same block twice does not collide"
  *   - "Editing the source block does not affect an inserted copy"
- *   - "Cross-app insert with matching schema name needs no prompt"
  *   - "Cross-app insert with no matching schema requires remap"
  *   - "Unresolved remap inserts a visible placeholder, not a silent drop"
- *   - "Exported block imports into a different organisation"
  *   - "Blocks filter shows only blocks"
  *   - "Blocks filter shows blocks without the clone action" (openbuild-template-catalogue)
  *
- * API-shape assertions (OR RBAC, ComponentBlock CRUD, export/import round-trip)
- * live in the Newman collection, not here (Playwright drives the UI only).
+ * NOT covered here, deliberately: "cross-app insert with a MATCHING schema
+ * name needs no prompt" and the resolved-remap path both require the target
+ * app to own a schema under a specific slug, which means provisioning schemas
+ * into its per-version register as a fixture — API-shape territory. Both are
+ * unit-covered in tests/vitest/blockInsert.spec.js (computeSchemaMismatches
+ * returns [] on a match; remapBlockRecord rewrites resolved refs) and the
+ * Newman collection covers the CRUD/export round-trip.
  *
- * QUARANTINED (Conduction/openbuild#41): the openbuild admin UI does not
- * render the page-designer / application-detail surfaces in this build, so
- * the flow cannot be driven end-to-end yet. This file is the canonical UI
- * coverage and re-enables once #41 is fixed (same deferred-bootstrap pattern
- * as tests/e2e/save-as-template.spec.ts and tests/e2e/template-gallery.spec.ts).
+ * UN-QUARANTINED 2026-07-29. The original never had fixtures: every test
+ * navigated to `/builder/e2e-cb-source-${Date.now()}/pages`, an app that does
+ * not exist, so the designer had nothing to render — #41's blockers were only
+ * half its problem. It now creates two real fixture apps, seeds the source
+ * page's `widgets[]` through the manifest API, and resets the block library to
+ * a known baseline per run so the suite is idempotent.
  */
 
 import { test, expect } from '@playwright/test'
+import { ensureApp, dismissOverlays, suppressSupportDialog } from './support/appFixture'
 
-const NEXTCLOUD_URL = process.env.NEXTCLOUD_URL || process.env.NC_BASE_URL || 'http://localhost:8080'
+const BASE_URL = process.env.NEXTCLOUD_URL || process.env.NC_BASE_URL || 'http://localhost:8080'
 
-// STILL QUARANTINED — #41's blockers are gone, but this suite never had
-// fixtures. Every test navigates to /builder/<random-slug>/pages with a slug
-// like `e2e-cb-source-${Date.now()}`, i.e. an app that does not exist, so the
-// page designer has nothing to render. It needs real fixture apps (two of them,
-// source + target with differing schema names) created via ensureApp(), plus a
-// seeded ComponentBlock to insert. The UI it targets does exist
-// (WidgetSelectionPanel, BlockLibraryPanel).
-test.describe.skip('OpenBuild component blocks', () => {
+const SOURCE_APP = 'pw-cb-source'
+const TARGET_APP = 'pw-cb-target'
+const PAGE_ID = 'e2e-cb-page'
+/** Every fixture block slug shares this prefix so the baseline reset can find them. */
+const BLOCK_PREFIX = 'pw-cb-'
+/** Blocks live as OpenRegister objects, not in the app manifest. */
+const BLOCKS_API = '/index.php/apps/openregister/api/objects/openbuild/component-block'
+/** blockInsert.js#UNRESOLVED_SCHEMA_PLACEHOLDER — the "needs remap" sentinel. */
+const UNRESOLVED = '__needs-remap__'
+
+/** The two widgets seeded onto the source app's page; both bound to one schema. */
+const SOURCE_WIDGETS = [
+	{ id: 'invoice-list', widgetKey: 'object-list', slot: 'main', config: { schema: `${SOURCE_APP}-invoice`, title: 'Invoices' } },
+	{ id: 'invoice-stat', widgetKey: 'stat-card', slot: 'main', config: { schema: `${SOURCE_APP}-invoice`, metric: 'count' } },
+]
+
+test.describe('OpenBuild component blocks', () => {
+	// The page designer is a three-pane desktop surface; at the default 1280x720
+	// the page-list rows land below the fold where a click never settles.
+	test.use({ viewport: { width: 1600, height: 1200 } })
+
+	/**
+	 * Call a Nextcloud API from inside the page.
+	 *
+	 * Writes MUST go through an in-page `fetch`: a bare `page.request.post` sends
+	 * the session cookie but not the `requesttoken`, and the CSRF middleware
+	 * rejects it on these plain AppFramework routes.
+	 *
+	 * @param {import('@playwright/test').Page} page - the Playwright page.
+	 * @param {string} method - HTTP method.
+	 * @param {string} url - absolute path on the instance.
+	 * @param {?object} body - JSON body, if any.
+	 * @return {Promise<{status: number, data: *}>} status + parsed body.
+	 */
+	async function api(page, method, url, body = null) {
+		return page.evaluate(async ({ method, url, body }) => {
+			const tok = window.OC?.requestToken
+				|| document.querySelector('head')?.getAttribute('data-requesttoken')
+				|| ''
+			const resp = await fetch(url, {
+				method,
+				headers: { requesttoken: tok, 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' },
+				...(body ? { body: JSON.stringify(body) } : {}),
+			})
+			const text = await resp.text()
+			let data = null
+			try {
+				data = JSON.parse(text)
+			} catch {
+				data = text
+			}
+			return { status: resp.status, data }
+		}, { method, url, body })
+	}
+
+	/**
+	 * Replace an app's page list with a single known page, so each scenario
+	 * starts from the same widgets and the suite is idempotent across runs.
+	 *
+	 * @param {import('@playwright/test').Page} page - the Playwright page.
+	 * @param {string} app - the app slug.
+	 * @param {Array<object>} widgets - the page's `widgets[]`.
+	 * @return {Promise<number>} Index of the seeded page in `manifest.pages`.
+	 */
+	async function seedPage(page, app, widgets) {
+		const base = `/index.php/apps/openbuild/api/applications/${app}/manifest`
+		const current = await api(page, 'GET', base)
+		expect(current.status, `GET ${app} manifest`).toBe(200)
+		const pages = (current.data.pages || []).filter((p) => p.id !== PAGE_ID)
+		pages.push({ id: PAGE_ID, type: 'index', route: `/${PAGE_ID}`, config: {}, widgets })
+		const written = await api(page, 'PUT', base, { manifest: { ...current.data, pages } })
+		expect(written.status, `PUT ${app} manifest`).toBe(200)
+		return pages.length - 1
+	}
+
+	/**
+	 * Open an app's page designer and select the seeded page.
+	 *
+	 * Selection is dispatched rather than clicked: the row's inputs carry
+	 * `@click.stop`, and `.page-designer__centre` overlaps the left pane further
+	 * down the list. Selecting a page is setup, not the behaviour under test.
+	 *
+	 * @param {import('@playwright/test').Page} page - the Playwright page.
+	 * @param {string} app - the app slug.
+	 * @param {number} index - the page index returned by seedPage().
+	 * @return {Promise<void>}
+	 */
+	async function openDesigner(page, app, index) {
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${app}/pages?_version=production`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await page.waitForSelector('.page-designer__left', { timeout: 60_000 })
+		await dismissOverlays(page)
+		const row = page.locator('.page-list-editor__row').nth(index)
+		await row.scrollIntoViewIfNeeded()
+		await row.dispatchEvent('click')
+		await expect(page.locator('.widget-selection-panel')).toBeVisible({ timeout: 30_000 })
+	}
+
+	/**
+	 * Read the designer's LIVE (staged) manifest — an insert is an in-editor
+	 * edit until the page is saved, so this is where it must be observed.
+	 *
+	 * @param {import('@playwright/test').Page} page - the Playwright page.
+	 * @return {Promise<object>} The staged manifest.
+	 */
+	async function readStaged(page) {
+		return page.evaluate(() => {
+			const vm = document.querySelector('.page-designer')?.__vue__
+			if (!vm || !vm.manifest) {
+				throw new Error('page designer not mounted — cannot read the staged manifest')
+			}
+			return JSON.parse(JSON.stringify(vm.manifest))
+		})
+	}
+
+	/**
+	 * Every ComponentBlock currently visible to the caller.
+	 *
+	 * @param {import('@playwright/test').Page} page - the Playwright page.
+	 * @return {Promise<Array<object>>} The block records.
+	 */
+	async function listBlocks(page) {
+		const resp = await api(page, 'GET', BLOCKS_API)
+		const rows = resp.data?.results ?? resp.data
+		return Array.isArray(rows) ? rows : []
+	}
+
+	/**
+	 * Delete every fixture block, so a run never sees the previous run's
+	 * library (and a slug-taken error never blocks the capture scenarios).
+	 *
+	 * Scoped to the `pw-cb-` prefix — it must never touch a real block.
+	 *
+	 * @param {import('@playwright/test').Page} page - the Playwright page.
+	 * @return {Promise<void>}
+	 */
+	async function resetBlocks(page) {
+		for (const block of await listBlocks(page)) {
+			const slug = block?.slug ?? ''
+			if (!String(slug).startsWith(BLOCK_PREFIX)) {
+				continue
+			}
+			const uuid = block?.['@self']?.id ?? block?.id
+			if (uuid) {
+				await api(page, 'DELETE', `${BLOCKS_API}/${encodeURIComponent(String(uuid))}`)
+			}
+		}
+	}
+
+	/**
+	 * Write a ComponentBlock straight to the API, in exactly the shape
+	 * `captureBlock()` produces (schema refs already de-namespaced). Used by the
+	 * INSERT scenarios so they do not re-drive — and re-assert — the capture UI.
+	 *
+	 * @param {import('@playwright/test').Page} page - the Playwright page.
+	 * @param {object} overrides - fields to override on the default record.
+	 * @return {Promise<object>} The stored block record.
+	 */
+	async function seedBlock(page, overrides = {}) {
+		const record = {
+			slug: `${BLOCK_PREFIX}seeded`,
+			name: 'PW seeded invoice list',
+			description: 'fixture block',
+			category: 'display',
+			schemaDependencies: ['invoice'],
+			sourceApplicationSlug: SOURCE_APP,
+			fragment: { id: 'invoice-list', widgetKey: 'object-list', slot: 'main', config: { schema: 'invoice', title: 'Invoices' } },
+			...overrides,
+		}
+		const resp = await api(page, 'POST', BLOCKS_API, record)
+		expect([200, 201], `POST block ${record.slug}`).toContain(resp.status)
+		return resp.data
+	}
+
+	/**
+	 * Open the Blocks sidebar and return the card for a named block.
+	 *
+	 * @param {import('@playwright/test').Page} page - the Playwright page.
+	 * @param {string} name - the block's display name.
+	 * @return {Promise<import('@playwright/test').Locator>} The block card.
+	 */
+	async function openBlockLibrary(page, name) {
+		await page.getByRole('button', { name: /^Blocks$/ }).click()
+		const panel = page.locator('.block-library-panel')
+		await expect(panel).toBeVisible({ timeout: 15_000 })
+		const card = panel.locator('.block-card').filter({ hasText: name })
+		await expect(card).toBeVisible({ timeout: 15_000 })
+		return card
+	}
+
+	test.beforeEach(async ({ page }) => {
+		// The first-open support dialog mounts a mask that swallows every click.
+		await suppressSupportDialog(page)
+		await ensureApp(page, SOURCE_APP, 'PW CB Source')
+		await ensureApp(page, TARGET_APP, 'PW CB Target')
+		await resetBlocks(page)
+	})
 
 	// @e2e component-blocks::saving-a-widget-captures-its-config-not-its-data
 	// @e2e component-blocks::save-a-single-widget-as-a-block
-	// @e2e component-blocks::library-lists-org-wide-blocks
-	// @e2e component-blocks::cross-app-insert-with-no-matching-schema-requires-remap
-	// @e2e component-blocks::unresolved-remap-inserts-a-visible-placeholder-not-a-silent-drop
-	test('saves a widget as a block, inserts it into a different app, resolves the remap prompt, and renders bound to the chosen schema', async ({ page }) => {
-		// 1. Source app: open the page designer, select a configured widget,
-		//    save it as a block.
-		const sourceApp = `e2e-cb-source-${Date.now().toString(36)}`
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/builder/${sourceApp}/pages`)
-		const widgetPanel = page.locator('.widget-selection-panel')
-		await expect(widgetPanel).toBeVisible({ timeout: 15_000 })
-		await widgetPanel.locator('input[type="checkbox"]').first().check()
-		await widgetPanel.getByRole('button', { name: /Save selected widget as block/i }).click()
+	test('saves a single widget as a block, capturing its config and no object data', async ({ page }) => {
+		const index = await seedPage(page, SOURCE_APP, SOURCE_WIDGETS)
+		await openDesigner(page, SOURCE_APP, index)
 
-		const saveDialog = page.locator('.ob-save-block')
-		await expect(saveDialog).toBeVisible({ timeout: 5_000 })
-		const blockName = `E2E status badge ${Date.now().toString(36)}`
-		await saveDialog.getByLabel(/Block name/i).fill(blockName)
-		await saveDialog.getByLabel(/Category/i).fill('display')
-		await saveDialog.getByRole('button', { name: /Save block/i }).click()
-		// Never leaks object rows into the block (asserted via the capture
-		// summary, which lists only schema slugs, never record data).
-		await expect(saveDialog.locator('.ob-save-block__no-rows')).toContainText(/No object data/i)
+		const panel = page.locator('.widget-selection-panel')
+		await expect(panel.locator('.widget-selection-panel__row')).toHaveCount(2)
+		await panel.locator('input[type="checkbox"]').first().check()
+		await expect(panel.locator('.widget-selection-panel__save-btn'))
+			.toHaveText(/Save selected widget as block/i)
+		await panel.locator('.widget-selection-panel__save-btn').click()
 
-		// 2. Target app (different schema names): open the block library
-		//    sidebar and insert the block.
-		const targetApp = `e2e-cb-target-${Date.now().toString(36)}`
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/builder/${targetApp}/pages`)
-		await page.getByRole('button', { name: /^Blocks$/i }).click()
-		const libraryPanel = page.locator('.block-library-panel')
-		await expect(libraryPanel).toBeVisible({ timeout: 10_000 })
-		const blockCard = libraryPanel.locator('.block-card').filter({ hasText: blockName })
-		await expect(blockCard).toBeVisible({ timeout: 10_000 })
-		await blockCard.getByRole('button', { name: /^Insert$/i }).click()
+		const dialog = page.locator('.ob-save-block')
+		await expect(dialog).toBeVisible({ timeout: 15_000 })
+		await dialog.getByLabel(/Block name/i).fill('PW invoice list')
+		await dialog.getByLabel(/Slug/i).fill(`${BLOCK_PREFIX}invoice-list`)
+		await dialog.getByLabel(/Category/i).fill('display')
 
-		// 3. Cross-app insert with no matching schema opens the remap dialog.
-		const remapDialog = page.locator('.ob-block-remap')
-		await expect(remapDialog).toBeVisible({ timeout: 5_000 })
-		// Resolve the mismatch by mapping to the target app's own schema.
-		await remapDialog.locator('.ob-block-remap__row').first()
-			.getByLabel(/Map/i).fill('permit-application')
-		await remapDialog.getByRole('button', { name: /Insert block/i }).click()
+		// The capture summary names the schema the widget binds to, DE-NAMESPACED
+		// (`pw-cb-source-invoice` → `invoice`), and states outright that no object
+		// rows travel with the block.
+		await expect(dialog.locator('.ob-save-block__schemas')).toContainText('invoice')
+		await expect(dialog.locator('.ob-save-block__no-rows')).toContainText(/No object data/i)
 
-		// 4. The inserted widget renders bound to the resolved schema.
-		await expect(page.locator('.widget-selection-panel')).toContainText(blockName === '' ? '' : /status-badge/i)
+		await page.getByRole('button', { name: /^Save block$/i }).click()
+
+		await expect.poll(async () => (await listBlocks(page)).map((b) => b.slug), { timeout: 30_000 })
+			.toContain(`${BLOCK_PREFIX}invoice-list`)
+
+		const stored = (await listBlocks(page)).find((b) => b.slug === `${BLOCK_PREFIX}invoice-list`)
+		expect(stored.schemaDependencies).toEqual(['invoice'])
+		expect(stored.sourceApplicationSlug).toBe(SOURCE_APP)
+		// Config travels; the source app's namespace does not.
+		expect(stored.fragment.config.schema).toBe('invoice')
+		expect(stored.fragment.config.title).toBe('Invoices')
+		// One widget captured, not the whole page, and no object rows anywhere.
+		expect(stored.fragment.widgets).toBeUndefined()
+		expect(JSON.stringify(stored.fragment)).not.toContain('results')
 	})
 
 	// @e2e component-blocks::save-a-page-section-as-a-block
-	// @e2e component-blocks::inserting-the-same-block-twice-does-not-collide
-	test('saves a multi-widget section as a block and inserts it twice without id collision', async ({ page }) => {
-		const app = `e2e-cb-section-${Date.now().toString(36)}`
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/builder/${app}/pages`)
-		const widgetPanel = page.locator('.widget-selection-panel')
-		const checkboxes = widgetPanel.locator('input[type="checkbox"]')
-		await checkboxes.nth(0).check()
-		await checkboxes.nth(1).check()
-		await widgetPanel.getByRole('button', { name: /Save selected section as block/i }).click()
-		const saveDialog = page.locator('.ob-save-block')
-		const sectionName = `E2E section ${Date.now().toString(36)}`
-		await saveDialog.getByLabel(/Block name/i).fill(sectionName)
-		await saveDialog.getByLabel(/Category/i).fill('layout')
-		await saveDialog.getByRole('button', { name: /Save block/i }).click()
+	test('saves a multi-widget section as a section block', async ({ page }) => {
+		const index = await seedPage(page, SOURCE_APP, SOURCE_WIDGETS)
+		await openDesigner(page, SOURCE_APP, index)
 
-		// Insert the same block twice into the same page; both copies render
-		// with distinct widget ids (no collision).
-		await page.getByRole('button', { name: /^Blocks$/i }).click()
-		const card = page.locator('.block-library-panel .block-card').filter({ hasText: sectionName })
-		await card.getByRole('button', { name: /^Insert$/i }).click()
-		await card.getByRole('button', { name: /^Insert$/i }).click()
-		const rows = page.locator('.widget-selection-panel__row')
-		const idsText = await rows.allTextContents()
-		expect(new Set(idsText).size).toBe(idsText.length)
+		const panel = page.locator('.widget-selection-panel')
+		await panel.locator('input[type="checkbox"]').nth(0).check()
+		await panel.locator('input[type="checkbox"]').nth(1).check()
+		// Selecting more than one flips the same affordance to a section capture.
+		await expect(panel.locator('.widget-selection-panel__save-btn'))
+			.toHaveText(/Save selected section as block/i)
+		await panel.locator('.widget-selection-panel__save-btn').click()
+
+		const dialog = page.locator('.ob-save-block')
+		await expect(dialog).toBeVisible({ timeout: 15_000 })
+		await dialog.getByLabel(/Block name/i).fill('PW invoice section')
+		await dialog.getByLabel(/Slug/i).fill(`${BLOCK_PREFIX}invoice-section`)
+		await dialog.getByLabel(/Category/i).fill('layout')
+		await page.getByRole('button', { name: /^Save block$/i }).click()
+
+		await expect.poll(async () => (await listBlocks(page)).map((b) => b.slug), { timeout: 30_000 })
+			.toContain(`${BLOCK_PREFIX}invoice-section`)
+
+		const stored = (await listBlocks(page)).find((b) => b.slug === `${BLOCK_PREFIX}invoice-section`)
+		// A section fragment wraps the widgets; both are captured, both rewritten.
+		expect(Array.isArray(stored.fragment.widgets)).toBe(true)
+		expect(stored.fragment.widgets).toHaveLength(2)
+		expect(stored.fragment.widgets.map((w) => w.config.schema)).toEqual(['invoice', 'invoice'])
+		expect(stored.schemaDependencies).toEqual(['invoice'])
+	})
+
+	// @e2e component-blocks::library-lists-org-wide-blocks
+	// @e2e component-blocks::cross-app-insert-with-no-matching-schema-requires-remap
+	// @e2e component-blocks::unresolved-remap-inserts-a-visible-placeholder-not-a-silent-drop
+	test('inserting into another app prompts for a remap and, left unresolved, inserts a visible placeholder', async ({ page }) => {
+		const block = await seedBlock(page)
+		const index = await seedPage(page, TARGET_APP, [])
+		await openDesigner(page, TARGET_APP, index)
+
+		// The library is org-wide: a block saved from the SOURCE app is listed
+		// while designing the TARGET app.
+		const card = await openBlockLibrary(page, block.name)
+		await card.getByRole('button', { name: /^Insert$/ }).click()
+
+		// The target app owns no schema called `invoice`, so the insert stops and
+		// asks — it never binds silently to something that is not there.
+		const remap = page.locator('.ob-block-remap')
+		await expect(remap).toBeVisible({ timeout: 15_000 })
+		await expect(remap.locator('.ob-block-remap__row')).toHaveCount(1)
+		await expect(remap.locator('.ob-block-remap__source')).toHaveText('invoice')
+
+		// Confirm WITHOUT mapping it: unresolved must still insert, marked.
+		await page.getByRole('button', { name: /^Insert block$/ }).click()
+
+		const manifest = await readStaged(page)
+		const target = manifest.pages.find((p) => p.id === PAGE_ID)
+		expect(target.widgets).toHaveLength(1)
+		expect(target.widgets[0].widgetKey).toBe('object-list')
+		expect(target.widgets[0].config.schema).toBe(UNRESOLVED)
+		expect(target.widgets[0].config.needsRemap).toBe(true)
+		// Config that has nothing to do with the schema survives the insert.
+		expect(target.widgets[0].config.title).toBe('Invoices')
+	})
+
+	// @e2e component-blocks::inserting-the-same-block-twice-does-not-collide
+	test('inserting the same block twice mints distinct widget ids', async ({ page }) => {
+		const block = await seedBlock(page)
+		const index = await seedPage(page, TARGET_APP, [])
+		await openDesigner(page, TARGET_APP, index)
+
+		const card = await openBlockLibrary(page, block.name)
+		for (let i = 0; i < 2; i++) {
+			await card.getByRole('button', { name: /^Insert$/ }).click()
+			await expect(page.locator('.ob-block-remap')).toBeVisible({ timeout: 15_000 })
+			await page.getByRole('button', { name: /^Insert block$/ }).click()
+			await expect(page.locator('.ob-block-remap')).toBeHidden({ timeout: 15_000 })
+		}
+
+		const manifest = await readStaged(page)
+		const target = manifest.pages.find((p) => p.id === PAGE_ID)
+		expect(target.widgets).toHaveLength(2)
+		const ids = target.widgets.map((w) => w.id)
+		expect(new Set(ids).size).toBe(2)
+		// Both copies are real, complete widgets — not one widget and one stub.
+		expect(target.widgets.map((w) => w.widgetKey)).toEqual(['object-list', 'object-list'])
 	})
 
 	// @e2e component-blocks::editing-the-source-block-does-not-affect-an-inserted-copy
-	// @e2e component-blocks::cross-app-insert-with-matching-schema-name-needs-no-prompt
-	test('editing a source block after insert does not change an already-inserted copy', async ({ page }) => {
-		// Insert a block into an app whose schema slug already matches — no
-		// remap dialog should appear.
-		const app = `e2e-cb-noremap-${Date.now().toString(36)}`
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/builder/${app}/pages`)
-		await page.getByRole('button', { name: /^Blocks$/i }).click()
-		const card = page.locator('.block-library-panel .block-card').first()
-		await card.getByRole('button', { name: /^Insert$/i }).click()
-		await expect(page.locator('.ob-block-remap')).toHaveCount(0)
+	test('editing the source block afterwards never changes an already-inserted copy', async ({ page }) => {
+		const block = await seedBlock(page)
+		const index = await seedPage(page, TARGET_APP, [])
+		await openDesigner(page, TARGET_APP, index)
 
-		// Editing the source block (a different slug/name) never mutates the
-		// copy already inserted above.
-		const insertedRow = page.locator('.widget-selection-panel__row').last()
-		const beforeText = await insertedRow.textContent()
-		await page.goBack()
-		// (source-app edit flow — selector resolved once #41 lands)
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/builder/${app}/pages`)
-		await expect(page.locator('.widget-selection-panel__row').last()).toHaveText(beforeText || '')
-	})
+		const card = await openBlockLibrary(page, block.name)
+		await card.getByRole('button', { name: /^Insert$/ }).click()
+		await expect(page.locator('.ob-block-remap')).toBeVisible({ timeout: 15_000 })
+		await page.getByRole('button', { name: /^Insert block$/ }).click()
 
-	// @e2e component-blocks::exported-block-imports-into-a-different-organisation
-	test('exports a block as JSON and imports it back, triggering remap when schemas differ', async ({ page }) => {
-		const app = `e2e-cb-export-${Date.now().toString(36)}`
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/builder/${app}/pages`)
-		await page.getByRole('button', { name: /^Blocks$/i }).click()
-		const card = page.locator('.block-library-panel .block-card').first()
-		const downloadPromise = page.waitForEvent('download')
-		await card.getByRole('button', { name: /^Export$/i }).click()
-		const download = await downloadPromise
-		expect(download.suggestedFilename()).toMatch(/\.json$/)
+		// Persist the insert, so what follows is tested against stored state.
+		await page.getByRole('button', { name: /save pages/i }).click()
+		await expect.poll(async () => {
+			const resp = await api(page, 'GET', `/index.php/apps/openbuild/api/applications/${TARGET_APP}/manifest`)
+			return (resp.data.pages || []).find((p) => p.id === PAGE_ID)?.widgets?.length ?? 0
+		}, { timeout: 30_000 }).toBe(1)
 
-		const fileInput = page.locator('.block-library-panel__import input[type="file"]')
-		await fileInput.setInputFiles(await download.path())
-		await expect(page.locator('.ob-block-remap, .block-library-panel__error')).toBeVisible({ timeout: 10_000 })
+		const before = (await api(page, 'GET', `/index.php/apps/openbuild/api/applications/${TARGET_APP}/manifest`))
+			.data.pages.find((p) => p.id === PAGE_ID).widgets[0]
+
+		// Now edit the SOURCE block — a deep copy was inserted, so this must not
+		// reach back into the copy.
+		const uuid = block['@self']?.id ?? block.id
+		const edited = await api(page, 'PUT', `${BLOCKS_API}/${encodeURIComponent(String(uuid))}`, {
+			...block,
+			name: 'PW seeded invoice list (edited)',
+			fragment: { ...block.fragment, widgetKey: 'totally-different-widget', config: { ...block.fragment.config, title: 'Changed' } },
+		})
+		expect([200, 201]).toContain(edited.status)
+
+		await page.reload({ waitUntil: 'domcontentloaded' })
+		await page.waitForSelector('.page-designer__left', { timeout: 60_000 })
+
+		const after = (await api(page, 'GET', `/index.php/apps/openbuild/api/applications/${TARGET_APP}/manifest`))
+			.data.pages.find((p) => p.id === PAGE_ID).widgets[0]
+		expect(after).toEqual(before)
+		expect(after.widgetKey).toBe('object-list')
+		expect(after.config.title).toBe('Invoices')
 	})
 
 	// @e2e component-blocks::blocks-filter-shows-only-blocks
 	// @e2e component-blocks::blocks-filter-shows-blocks-without-the-clone-action
-	test('the template gallery Blocks filter lists only blocks, without a clone action', async ({ page }) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/templates`)
-		await expect(page.locator('.template-gallery')).toBeVisible({ timeout: 15_000 })
-		await page.getByRole('tab', { name: /^Blocks$/i }).click()
-		const cards = page.locator('.template-gallery__grid .template-card')
-		await expect(cards.first()).toBeVisible({ timeout: 10_000 })
+	test('the template gallery Blocks tab lists blocks, without a clone action', async ({ page }) => {
+		const block = await seedBlock(page)
+		await page.goto(`${BASE_URL}/apps/openbuild/templates`, { waitUntil: 'domcontentloaded' })
+		await expect(page.locator('.template-gallery')).toBeVisible({ timeout: 45_000 })
+		await dismissOverlays(page)
+
+		await page.getByRole('tab', { name: /^Blocks$/ }).click()
+		const cards = page.locator('.template-card')
+		await expect(cards.filter({ hasText: block.name })).toBeVisible({ timeout: 20_000 })
+		// Browse-only: blocks are inserted from the designer, never cloned into an
+		// app from here.
 		await expect(page.getByRole('button', { name: /Use this template/i })).toHaveCount(0)
 	})
 })
