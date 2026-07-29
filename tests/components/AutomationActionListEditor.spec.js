@@ -95,6 +95,11 @@ describe('AutomationActionListEditor', () => {
 		const emitted = wrapper.emitted('update:modelValue')
 		expect(emitted).toBeTruthy()
 		const last = emitted[emitted.length - 1][0]
-		expect(last[0]).toEqual({ type: 'object-op', operation: 'update', schema: 'permit', fieldMapping: {} })
+		// fieldMapping is OMITTED, not emitted as `{}` — OpenRegister rejects an
+		// empty object on a nested array-item object property ("expects object
+		// but got empty ({})"), so AutomationActionListEditor strips the key
+		// entirely when there is nothing in it (see AutomationEditDialog.vue's
+		// buildActions() for the matching fix on the main action list).
+		expect(last[0]).toEqual({ type: 'object-op', operation: 'update', schema: 'permit' })
 	})
 })
