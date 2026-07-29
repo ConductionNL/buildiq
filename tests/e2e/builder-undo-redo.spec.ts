@@ -32,7 +32,8 @@
 import { test, expect, type Page } from '@playwright/test'
 import { ensureApp as ensureAppFixture } from './support/appFixture'
 
-const BASE_URL = process.env.NC_BASE_URL ?? 'http://localhost:8080'
+// PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
 const APP_SLUG = 'pw-undo-redo'
 const SCHEMA_SLUG = 'undo-redo-record'
 

@@ -34,7 +34,8 @@
 
 import { test, expect, type Page } from '@playwright/test'
 
-const BASE_URL = process.env.NC_BASE_URL ?? process.env.NEXTCLOUD_URL ?? 'http://localhost:8080'
+// PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
 const APP_SLUG = process.env.NC_ACCESS_RBAC_SLUG ?? 'hello-world'
 const STAGING_VERSION = process.env.NC_STAGING_VERSION ?? 'staging'
 const PRODUCTION_VERSION = process.env.NC_PRODUCTION_VERSION ?? 'production'

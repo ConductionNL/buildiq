@@ -32,7 +32,8 @@
 
 import { test, expect, type Page } from '@playwright/test'
 
-const NEXTCLOUD_URL = process.env.NC_BASE_URL ?? process.env.NEXTCLOUD_URL ?? 'http://localhost:8080'
+// PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
+import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
 const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASS ?? 'admin'
 const TEST_SLUG = process.env.NC_VERSIONING_TEST_SLUG ?? 'hello-world'

@@ -42,7 +42,10 @@
 import { test, expect } from '@playwright/test'
 import { ensureApp, dismissOverlays } from './support/appFixture'
 
-const BASE_URL = process.env.NC_BASE_URL ?? 'http://localhost:8080'
+// PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts. This used to be
+// `NC_BASE_URL ?? 'http://localhost:8080'`, which pointed at the SHARED dev
+// instance while ensureApp() created the fixture on the e2e one.
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
 const APP_SLUG = 'pw-access-scopes'
 const SCOPED_SCHEMA_SLUG = 'record'
 const UNSCOPED_SCHEMA_SLUG = 'plain-record'

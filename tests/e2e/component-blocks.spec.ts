@@ -34,7 +34,8 @@
 
 import { test, expect } from '@playwright/test'
 
-const NEXTCLOUD_URL = process.env.NEXTCLOUD_URL || process.env.NC_BASE_URL || 'http://localhost:8080'
+// PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
+import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
 
 // STILL QUARANTINED — #41's blockers are gone, but this suite never had
 // fixtures. Every test navigates to /builder/<random-slug>/pages with a slug

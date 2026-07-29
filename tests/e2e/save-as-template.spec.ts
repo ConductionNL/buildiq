@@ -28,7 +28,8 @@
 
 import { test, expect } from '@playwright/test'
 
-const NEXTCLOUD_URL = process.env.NEXTCLOUD_URL || process.env.NC_BASE_URL || 'http://localhost:8080'
+// PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
+import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
 
 // QUARANTINED (Conduction/openbuild#41): admin UI not functional in this build.
 test.describe.skip('OpenBuild save as template', () => {
