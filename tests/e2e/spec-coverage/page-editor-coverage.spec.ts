@@ -52,6 +52,24 @@ const PAGE_DESIGNER = (slug: string) => `${BASE}/apps/openbuild/builder/${slug}/
 const BUILT_PAGE = (slug: string, route: string) => `${BASE}/apps/openbuild/builder/${slug}/${route}`
 
 /**
+ * Dismiss nc-vue's first-visit "Support Openbuild" (CnSupportDialog) modal
+ * if it is open. Its backdrop intercepts pointer events across the whole
+ * page — live-verified as the actual cause of every failure in this file:
+ * `.page-list-editor__add` retried against the overlay for the full 30s
+ * test timeout before failing. This instance does not persist the dialog's
+ * "seen" preference across fresh contexts, so it can reopen on every run.
+ *
+ * @param page Playwright page.
+ * @return {Promise<void>}
+ */
+async function dismissSupportDialog(page: import('@playwright/test').Page): Promise<void> {
+	const closeBtn = page.getByRole('button', { name: /^close$/i })
+	if (await closeBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+		await closeBtn.click()
+	}
+}
+
+/**
  * Open the page designer, click "Add page", pick `type`, and confirm.
  * Shared by every test below — the add-page picker itself is asserted
  * once (REQ-PEC-002) and then reused as setup for the per-type flows.
@@ -59,6 +77,7 @@ const BUILT_PAGE = (slug: string, route: string) => `${BASE}/apps/openbuild/buil
 async function addPage(page: import('@playwright/test').Page, type: string) {
 	await page.goto(PAGE_DESIGNER(SLUG))
 	await expect(page.locator('.page-designer-host')).toBeVisible({ timeout: 15_000 })
+	await dismissSupportDialog(page)
 	await page.locator('.page-list-editor__add').click()
 	await expect(page.locator('.page-list-editor__add-row')).toBeVisible({ timeout: 5_000 })
 	await page.locator('.page-list-editor__select').selectOption(type)
@@ -92,6 +111,7 @@ test('REQ-PEC-002 — Add page lists the four new types', async ({ page }) => {
 
 	await page.goto(PAGE_DESIGNER(SLUG))
 	await expect(page.locator('.page-designer-host')).toBeVisible({ timeout: 15_000 })
+	await dismissSupportDialog(page)
 	await page.locator('.page-list-editor__add').click()
 
 	const select = page.locator('.page-list-editor__select')
