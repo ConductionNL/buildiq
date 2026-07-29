@@ -491,7 +491,12 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 		await createBtn.click()
 
 		// Error banner should appear with a conflict message.
-		const errorBanner = page.locator('.wizard__error-banner').first()
+		// `.wizard__error-banner` does not exist anywhere in src/ — it never did.
+		// CreateApplicationWizard surfaces a recoverable submit failure through
+		// nc-vue's CnWizardDialog.setError(), which renders an NcNoteCard, i.e.
+		// `.notecard.notecard--error` with role="alert". Match the markup the
+		// component actually produces.
+		const errorBanner = page.locator('.notecard--error').first()
 		await expect(errorBanner, 'error banner must appear for slug conflict').toBeVisible({ timeout: 10_000 })
 		await expect(errorBanner).toContainText(/hello-world|already exists|conflict/i)
 
