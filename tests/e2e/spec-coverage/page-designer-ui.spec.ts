@@ -27,6 +27,12 @@
  */
 
 import { test, expect } from '@playwright/test'
+// nc-vue's first-visit CnSupportDialog renders a full-viewport backdrop that
+// swallows clicks. It appears only sometimes (its "have I been seen" check is an
+// async round-trip), which made REQ-OBPDUI-003 intermittent: it passed on one
+// full run and failed on the next with `cn-support-dialog` as the pointer-event
+// target. Dismissing it is a precondition, not a weakened assertion.
+import { dismissFirstVisitOverlays } from '../support/overlays'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
@@ -114,6 +120,8 @@ test('REQ-OBPDUI-003 — centre pane renders a sub-editor when a page is selecte
 
 	await page.goto(PAGE_DESIGNER('hello-world'))
 	await expect(page.locator('.page-designer-host')).toBeVisible({ timeout: 15_000 })
+	// This test clicks, so the first-visit overlays have to be cleared first.
+	await dismissFirstVisitOverlays(page)
 
 	// Click the first page entry in the left pane. Rows are
 	// `.page-list-editor__row` divs, not `<li>` elements (PageListEditor.vue).
