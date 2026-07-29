@@ -44,6 +44,53 @@ function seedHelloWorldFixture(): void {
 	}
 }
 
+/**
+ * Disable Nextcloud's rate-limit protection for the run.
+ *
+ * `ApplicationCreationController::wizard()` carries
+ * `#[UserRateLimit(limit: 10, period: 3600)]`, i.e. TEN app creations per hour
+ * per user. The suite creates far more than that — every `ensureApp()` in
+ * tests/e2e/support/appFixture.ts goes through the wizard endpoint, on top of
+ * createApplicationWizard / virtual-app-crud / build-workflow creating apps of
+ * their own. Past the tenth create the endpoint returns 429 and every later
+ * spec fails for a reason that has nothing to do with what it asserts. This is
+ * exactly why createApplicationWizard passed when run alone and failed in the
+ * full suite: an ordering-dependent 429, not a real defect.
+ *
+ * The limit is correct product behaviour and is deliberately NOT changed; it is
+ * turned off for the test instance only, which is Nextcloud's own supported
+ * switch for this (`ratelimit.protection.enabled`). Doing it here rather than
+ * by hand on a container makes it repo state, so CI and any fresh container get
+ * it too — a hand-set container value would make the suite green only on the
+ * machine where someone remembered to set it.
+ *
+ * `occ` is reached the same way the fixture seed reaches it; override with
+ * OPENBUILD_RATELIMIT_CMD for a non-docker CI. Non-fatal: on failure the run
+ * continues and the 429s simply reappear, with this warning explaining them.
+ */
+function disableRateLimitProtection(): void {
+	// The graceful reload is not optional on a warm container: config.php is
+	// opcached, and with the container default `opcache.revalidate_freq=60` the
+	// new value can be served stale for up to a minute — long enough for the
+	// first specs to 429 anyway. Measured: setting the value alone left the
+	// endpoint still returning 429; it only took effect after the reload.
+	const cmd = process.env.OPENBUILD_RATELIMIT_CMD
+		|| 'docker exec -u www-data nextcloud php occ config:system:set '
+		+ 'ratelimit.protection.enabled --value=false --type=boolean '
+		+ '&& docker exec nextcloud apache2ctl graceful'
+	try {
+		execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+		// eslint-disable-next-line no-console
+		console.log('[globalSetup] rate-limit protection disabled for this run')
+	} catch (e) {
+		// eslint-disable-next-line no-console
+		console.warn(
+			'[globalSetup] could not disable rate-limit protection — expect 429s '
+			+ `from the app-creation wizard after 10 creates: ${(e as Error).message}`,
+		)
+	}
+}
+
 export default async function globalSetup(config: FullConfig): Promise<void> {
 	const baseURL = (config.projects[0].use.baseURL as string)
 		|| process.env.PLAYWRIGHT_BASE_URL
@@ -55,6 +102,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	if (existsSync(dirname(storagePath)) === false) {
 		mkdirSync(dirname(storagePath), { recursive: true })
 	}
+
+	// Before anything else: the wizard endpoint's 10-per-hour user rate limit
+	// would otherwise 429 every app creation past the tenth, mid-run.
+	disableRateLimitProtection()
 
 	const browser = await chromium.launch()
 	const context = await browser.newContext({ baseURL })
