@@ -144,10 +144,10 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 		await page.waitForTimeout(200)
 		await clickNext(page)
 
-		// Step 2: Preset — select Single
-		const singleOption = page.getByRole('radio', { name: /single/i }).or(
-			page.locator('input[value="single"], label:has-text("Single")'),
-		).first()
+		// Step 2: Preset — select Single. Preset cards are plain
+		// `<button class="wizard-step2__preset-card">` elements (aria-pressed
+		// toggles, not role="radio" inputs) — Step2Preset.vue.
+		const singleOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /single/i }).first()
 		await expect(singleOption).toBeVisible({ timeout: 5_000 })
 		await singleOption.click()
 		await clickNext(page)
@@ -172,10 +172,9 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 		await fillStep1(page, 'Playwright DevProd App')
 		await clickNext(page)
 
-		// Step 2: Preset — select Development + Production
-		const devProdOption = page.getByRole('radio', { name: /dev.*prod|development.*production/i }).or(
-			page.locator('input[value="dev-prod"], label:has-text("Development + Production")'),
-		).first()
+		// Step 2: Preset — select Development + Production. See the Single
+		// case above for why this is a class-scoped button, not role="radio".
+		const devProdOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /development.*production/i }).first()
 		await expect(devProdOption).toBeVisible({ timeout: 5_000 })
 		await devProdOption.click()
 		await clickNext(page)
@@ -199,10 +198,9 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 		await fillStep1(page, 'Playwright DSP App')
 		await clickNext(page)
 
-		// Step 2: Preset — select three-tier
-		const dspOption = page.getByRole('radio', { name: /staging|dev.*staging.*prod/i }).or(
-			page.locator('input[value="dev-staging-prod"], label:has-text("Staging")'),
-		).first()
+		// Step 2: Preset — select three-tier. See the Single case above for
+		// why this is a class-scoped button, not role="radio".
+		const dspOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /staging/i }).first()
 		await expect(dspOption).toBeVisible({ timeout: 5_000 })
 		await dspOption.click()
 		await clickNext(page)
@@ -224,10 +222,9 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 		await fillStep1(page, 'Playwright Custom App')
 		await clickNext(page)
 
-		// Step 2: Preset — select Custom
-		const customOption = page.getByRole('radio', { name: /custom/i }).or(
-			page.locator('input[value="custom"], label:has-text("Custom")'),
-		).first()
+		// Step 2: Preset — select Custom. See the Single case above for why
+		// this is a class-scoped button, not role="radio".
+		const customOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /custom/i }).first()
 		await expect(customOption).toBeVisible({ timeout: 5_000 })
 		await customOption.click()
 		await clickNext(page)
@@ -298,9 +295,9 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 		await clickNext(page)
 
 		// Select custom preset so we can edit version slugs.
-		const customOption = page.getByRole('radio', { name: /custom/i }).or(
-			page.locator('input[value="custom"]'),
-		).first()
+		// Class-scoped button, not role="radio" — see the Single case in the
+		// preceding describe block.
+		const customOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /custom/i }).first()
 		await customOption.click()
 		await clickNext(page)
 
@@ -329,9 +326,9 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 		await fillStep1(page, 'Playwright Dup Slug App')
 		await clickNext(page)
 
-		const customOption = page.getByRole('radio', { name: /custom/i }).or(
-			page.locator('input[value="custom"]'),
-		).first()
+		// Class-scoped button, not role="radio" — see the Single case in the
+		// preceding describe block.
+		const customOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /custom/i }).first()
 		await customOption.click()
 		await clickNext(page)
 
@@ -369,9 +366,9 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 		await fillStep1(page, 'Playwright Empty Name App')
 		await clickNext(page)
 
-		const customOption = page.getByRole('radio', { name: /custom/i }).or(
-			page.locator('input[value="custom"]'),
-		).first()
+		// Class-scoped button, not role="radio" — see the Single case in the
+		// preceding describe block.
+		const customOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /custom/i }).first()
 		await customOption.click()
 		await clickNext(page)
 
@@ -412,10 +409,9 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 
 		await clickNext(page)
 
-		// Step 2: choose single preset.
-		const singleOption = page.getByRole('radio', { name: /single/i }).or(
-			page.locator('input[value="single"]'),
-		).first()
+		// Step 2: choose single preset. Class-scoped button, not role="radio"
+		// — see the Single case in the "preset happy paths" describe block.
+		const singleOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /single/i }).first()
 		await singleOption.click()
 		await clickNext(page)
 

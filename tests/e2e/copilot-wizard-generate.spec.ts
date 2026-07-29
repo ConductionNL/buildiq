@@ -51,6 +51,25 @@ async function dismissWalkthrough(page: import('@playwright/test').Page): Promis
 	}
 }
 
+/**
+ * Dismiss nc-vue's first-visit "Support Openbuild" (CnSupportDialog) modal
+ * if it is open. Its backdrop intercepts pointer events across the whole
+ * page — live-verified as the actual cause of this file's remaining
+ * failures (the "Create app" click retrying against the overlay for the
+ * full 90s timeout). This instance does not persist the dialog's "seen"
+ * preference across fresh contexts, so it can reopen on every run.
+ *
+ * @param page Playwright page.
+ * @return {Promise<void>}
+ */
+async function dismissSupportDialog(page: import('@playwright/test').Page): Promise<void> {
+	const closeBtn = page.getByRole('button', { name: /^close$/i })
+	// The dialog's own "have I been seen" check is an async round-trip, so it
+	// can pop up a beat AFTER this function's caller already moved on — an
+	// instantaneous isVisible() check races it and misses. waitFor() polls.
+	await closeBtn.waitFor({ state: 'visible', timeout: 4_000 }).then(() => closeBtn.click()).catch(() => {})
+}
+
 const HEALTH_URL = '**/apps/openbuild/api/copilot/health'
 const PLAN_URL = '**/apps/openbuild/api/copilot/plan'
 
@@ -90,6 +109,7 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		await page.route(HEALTH_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ available: true }) }))
 		await page.goto('/apps/openbuild/')
 		await dismissWalkthrough(page)
+		await dismissSupportDialog(page)
 		// NOT waitForLoadState('networkidle') — this NC instance's own
 		// background chatter (notifications poll, user-status heartbeat) means
 		// the network is never idle for 500ms on an authenticated page, so
@@ -130,6 +150,7 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		await page.route(HEALTH_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ available: true }) }))
 		await page.goto('/apps/openbuild/')
 		await dismissWalkthrough(page)
+		await dismissSupportDialog(page)
 		// NOT waitForLoadState('networkidle') — this NC instance's own
 		// background chatter (notifications poll, user-status heartbeat) means
 		// the network is never idle for 500ms on an authenticated page, so
@@ -171,6 +192,7 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		}))
 		await page.goto('/apps/openbuild/')
 		await dismissWalkthrough(page)
+		await dismissSupportDialog(page)
 		// NOT waitForLoadState('networkidle') — this NC instance's own
 		// background chatter (notifications poll, user-status heartbeat) means
 		// the network is never idle for 500ms on an authenticated page, so

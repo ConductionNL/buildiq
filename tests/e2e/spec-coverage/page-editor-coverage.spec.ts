@@ -64,9 +64,10 @@ const BUILT_PAGE = (slug: string, route: string) => `${BASE}/apps/openbuild/buil
  */
 async function dismissSupportDialog(page: import('@playwright/test').Page): Promise<void> {
 	const closeBtn = page.getByRole('button', { name: /^close$/i })
-	if (await closeBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-		await closeBtn.click()
-	}
+	// The dialog's own "have I been seen" check is an async round-trip, so it
+	// can pop up a beat AFTER this function's caller already moved on — an
+	// instantaneous isVisible() check races it and misses. waitFor() polls.
+	await closeBtn.waitFor({ state: 'visible', timeout: 4_000 }).then(() => closeBtn.click()).catch(() => {})
 }
 
 /**
