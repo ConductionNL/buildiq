@@ -33,45 +33,13 @@
  * The result is a fully deterministic run with no AI provider installed.
  */
 import { test, expect } from '@playwright/test'
-
-/**
- * Dismiss nc-vue's first-visit CnWalkthrough tour ("Welcome to OpenBuild")
- * if it is open. Its `cn-walkthrough__dim` overlay covers the whole
- * viewport and intercepts pointer events, and — worse for a `beforeEach`
- * that only navigates and waits — the tour's own step-tracking fetch can
- * keep the network non-idle, so `waitForLoadState('networkidle')` never
- * resolves and the whole 90s describe timeout is spent inside the hook.
- * The tour's "seen" state does not persist across fresh contexts on this
- * instance (its preferences write 404s), so it can reopen on every run.
- *
- * @param page Playwright page.
- * @return {Promise<void>}
- */
-async function dismissWalkthrough(page: import('@playwright/test').Page): Promise<void> {
-	const closeBtn = page.getByRole('button', { name: /close tour/i })
-	if (await closeBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-		await closeBtn.click()
-	}
-}
-
-/**
- * Dismiss nc-vue's first-visit "Support Openbuild" (CnSupportDialog) modal
- * if it is open. Its backdrop intercepts pointer events across the whole
- * page — live-verified as the actual cause of "Approving a proposal..."'s
- * click on `[data-testid="copilot-panel-toggle"]` retrying for the full 90s
- * timeout. This instance does not persist the dialog's "seen" preference
- * across fresh contexts, so it can reopen on every run.
- *
- * @param page Playwright page.
- * @return {Promise<void>}
- */
-async function dismissSupportDialog(page: import('@playwright/test').Page): Promise<void> {
-	const closeBtn = page.getByRole('button', { name: /^close$/i })
-	// The dialog's own "have I been seen" check is an async round-trip, so it
-	// can pop up a beat AFTER this function's caller already moved on — an
-	// instantaneous isVisible() check races it and misses. waitFor() polls.
-	await closeBtn.waitFor({ state: 'visible', timeout: 4_000 }).then(() => closeBtn.click()).catch(() => {})
-}
+// nc-vue's first-visit overlays (CnWalkthrough tour + CnSupportDialog) each
+// render a full-viewport backdrop that intercepts pointer events — live-verified
+// as the actual cause of "Approving a proposal..."'s click on
+// `[data-testid="copilot-panel-toggle"]` retrying for the full 90s timeout.
+// Neither persists its "seen" state on this instance, so both can reopen on
+// every run. Helpers shared with the other specs that hit the same overlays.
+import { dismissWalkthrough, dismissSupportDialog } from './support/overlays'
 
 const HEALTH_URL = '**/apps/openbuild/api/copilot/health'
 const PLAN_URL = '**/apps/openbuild/api/copilot/plan'
