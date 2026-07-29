@@ -377,7 +377,19 @@ test.describe('automation-approval-steps — approval action end to end', () => 
 			// in the built app-store bundle — click the visible trigger instead.
 			})
 		await page.getByRole('option', { name: looseOptionName('Require approval') }).click()
-		await page.getByRole('textbox', { name: /assignee group/i }).fill('admin')
+
+		// AutomationEditDialog.vue renders an NcSelect group picker (combobox,
+		// label "Assignee group") when this instance's group list loaded, or a
+		// plain NcTextField (textbox, label "Assignee group id") as a fallback
+		// when it did not. This instance has real NC groups, so the combobox
+		// path is live — try it first, fall back to the textbox.
+		const assigneeCombobox = page.getByRole('combobox', { name: /assignee group/i })
+		if (await assigneeCombobox.isVisible({ timeout: 3_000 }).catch(() => false)) {
+			await assigneeCombobox.click()
+			await page.getByRole('option', { name: looseOptionName('admin') }).first().click()
+		} else {
+			await page.getByRole('textbox', { name: /assignee group/i }).fill('admin')
+		}
 
 		await page.getByRole('button', { name: /^save$/i }).click()
 		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 10_000 })
