@@ -83,11 +83,16 @@ const SUPPLIERS_PAGE_ID = 'e2e-suppliers'
 const STUBBED_PLAN = {
 	summary: 'Adds a suppliers page with a table widget.',
 	steps: [
-		{ tool: 'openbuild.upsertPage', arguments: { appSlug: 'hello-world', pageId: SUPPLIERS_PAGE_ID, title: 'Suppliers', type: 'index', route: '/e2e-suppliers' } },
-		{ tool: 'openbuild.addWidget', arguments: { appSlug: 'hello-world', pageId: SUPPLIERS_PAGE_ID, widgetType: 'table', widgetConfig: {} } },
+		// versionSlug: 'production' — UpsertPageHandler/AddWidgetHandler default
+		// to 'development' when omitted, but the seeded hello-world fixture
+		// (SeedHelloWorldFixture::VERSION_SLUG) only ever creates a single
+		// 'production' version. Without this the real execute call 422s with
+		// "No version 'development' found for app 'hello-world'." — live-verified.
+		{ tool: 'openbuild.upsertPage', arguments: { appSlug: 'hello-world', versionSlug: 'production', pageId: SUPPLIERS_PAGE_ID, title: 'Suppliers', type: 'index', route: '/e2e-suppliers' } },
+		{ tool: 'openbuild.addWidget', arguments: { appSlug: 'hello-world', versionSlug: 'production', pageId: SUPPLIERS_PAGE_ID, widgetType: 'table', widgetConfig: {} } },
 	],
 	manifests: {
-		'hello-world@development': {
+		'hello-world@production': {
 			current: { version: '1.0.0', menu: [], pages: [] },
 			predicted: {
 				version: '1.0.0',

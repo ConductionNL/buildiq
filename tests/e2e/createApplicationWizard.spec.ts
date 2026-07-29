@@ -150,6 +150,11 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 		const singleOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /single/i }).first()
 		await expect(singleOption).toBeVisible({ timeout: 5_000 })
 		await singleOption.click()
+		// Settle: selectPreset()'s payload.versions update reaches the parent
+		// via an emit; clickNext()'s toBeEnabled() only proves `preset` landed,
+		// not that `versions` did too. Without this, Step4 can render before
+		// the versions array is the preset's, showing a stale/empty chain.
+		await page.waitForTimeout(300)
 		await clickNext(page)
 
 		// Step 4: Review (step 3 is skipped for non-custom presets)
@@ -177,6 +182,8 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 		const devProdOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /development.*production/i }).first()
 		await expect(devProdOption).toBeVisible({ timeout: 5_000 })
 		await devProdOption.click()
+		// Settle — see the identical note in the "single preset" test above.
+		await page.waitForTimeout(300)
 		await clickNext(page)
 
 		// Step 4: Review
@@ -203,6 +210,8 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 		const dspOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /staging/i }).first()
 		await expect(dspOption).toBeVisible({ timeout: 5_000 })
 		await dspOption.click()
+		// Settle — see the identical note in the "single preset" test above.
+		await page.waitForTimeout(300)
 		await clickNext(page)
 
 		// Step 4: Review
@@ -227,6 +236,8 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 		const customOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /custom/i }).first()
 		await expect(customOption).toBeVisible({ timeout: 5_000 })
 		await customOption.click()
+		// Settle — see the identical note in the "single preset" test above.
+		await page.waitForTimeout(300)
 		await clickNext(page)
 
 		// Step 3: Custom chain — should have one default row (Production).
@@ -413,6 +424,8 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 		// — see the Single case in the "preset happy paths" describe block.
 		const singleOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /single/i }).first()
 		await singleOption.click()
+		// Settle — see the identical note in the "single preset" test above.
+		await page.waitForTimeout(300)
 		await clickNext(page)
 
 		// Step 4: Review — click Create. Should hit a slug conflict (422).

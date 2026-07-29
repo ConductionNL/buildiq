@@ -130,6 +130,11 @@ test('REQ-OBWIZ-002 — selecting Custom preset shows the custom-chain composer 
 	const customCount = await customPreset.count()
 	if (customCount > 0) {
 		await customPreset.click()
+		// Settle: selectPreset()'s payload update reaches the parent via an
+		// emit; clicking Next immediately can outrace it and land on a stale
+		// step (Step2Preset.vue / createApplicationWizard.spec.ts hit the same
+		// race — see its "single preset" test for the live-verified writeup).
+		await page.waitForTimeout(300)
 		const nextBtn2 = modal.locator('button').filter({ hasText: /next|continue/i }).first()
 		await nextBtn2.click()
 		// Step 3 custom chain composer should be visible
@@ -190,6 +195,8 @@ test('REQ-OBWIZ-004 — custom chain composer allows adding and reordering versi
 	const customPreset = modal.locator('[class*="preset"], [data-preset]').filter({ hasText: /custom/i }).first()
 	if (await customPreset.count() > 0) {
 		await customPreset.click()
+		// Settle — see the identical note in the "selecting Custom preset" test above.
+		await page.waitForTimeout(300)
 		const nextBtn2 = modal.locator('button').filter({ hasText: /next|continue/i }).first()
 		await nextBtn2.click()
 
@@ -262,8 +269,15 @@ test('REQ-OBWIZ-005 — app name input auto-derives a kebab-case slug', async ({
 	await expect(modal).toBeVisible({ timeout: 10_000 })
 
 	// Type a multi-word name
-	const nameInput = modal.locator('input').filter({ hasAttribute: 'name', has: page.locator('[name*="name"]') }).first()
-		|| modal.locator('input[type="text"]').first()
+	// NOT `locator(...).filter(...) || locator(...)` — a Locator is always
+	// truthy, so `||` between two Locator objects always evaluates to the
+	// FIRST operand; the intended fallback was dead code. Worse, `hasAttribute`
+	// isn't a real Playwright filter option (only has/hasText/hasNotText/
+	// hasNot are), and `<input>` is a void element that can never contain a
+	// descendant, so `filter({ has: ... })` on it could never match anything
+	// — this locator was permanently empty. Match the plain-text-input
+	// pattern every other test in this file already uses.
+	const nameInput = modal.locator('input[type="text"]').first()
 	await nameInput.fill('My Cool App')
 
 	// A slug chip or slug input should show the derived value
