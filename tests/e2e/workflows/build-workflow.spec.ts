@@ -105,7 +105,9 @@ test.describe('Build workflow — compose a virtual app with a data model', () =
 		// 3-step wizard: App basics (name, slug auto-derives) → version preset
 		// → review and create (POSTs /api/applications/wizard).
 		await gotoAppBrowser(page)
-		await page.getByRole('button', { name: /add application/i }).first().click()
+		// The button reads "Add app" (src/components/VirtualAppsActions.vue),
+		// not "Add application" — live-verified.
+		await page.getByRole('button', { name: /add app/i }).first().click()
 		const dialog = page.locator('[role="dialog"], .modal-container').first()
 		await expect(dialog).toBeVisible({ timeout: 8_000 })
 
