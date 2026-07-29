@@ -1016,7 +1016,16 @@ export default {
 					} catch (e) {
 						fieldMapping = {}
 					}
-					return { type: 'object-op', operation: action.operation, schema: action.schema, fieldMapping }
+					const objectOp = { type: 'object-op', operation: action.operation, schema: action.schema }
+					// OpenRegister rejects `{}` (and `null`) for a nested array-item
+					// object property — "expects object but got empty ({})" — so an
+					// empty mapping must be OMITTED, not sent as an empty object.
+					// Live-verified: sending fieldMapping: {} 400s every object-op
+					// action that leaves the mapping textarea at its default '{}'.
+					if (Object.keys(fieldMapping).length > 0) {
+						objectOp.fieldMapping = fieldMapping
+					}
+					return objectOp
 				}
 				if (action.type === 'approval') {
 					return {
@@ -1039,7 +1048,12 @@ export default {
 				} catch (e) {
 					payloadTemplate = {}
 				}
-				return { type: 'webhook', url: action.url, payloadTemplate }
+				const webhook = { type: 'webhook', url: action.url }
+				// Same OpenRegister empty-nested-object rejection as fieldMapping above.
+				if (Object.keys(payloadTemplate).length > 0) {
+					webhook.payloadTemplate = payloadTemplate
+				}
+				return webhook
 			})
 		},
 		async onSave() {

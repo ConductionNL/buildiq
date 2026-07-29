@@ -196,7 +196,14 @@ export default {
 					} catch (e) {
 						fieldMapping = {}
 					}
-					return { type: 'object-op', operation: item.operation, schema: item.schema, fieldMapping }
+					const objectOp = { type: 'object-op', operation: item.operation, schema: item.schema }
+					// OpenRegister rejects `{}` (and `null`) for a nested array-item
+					// object property — "expects object but got empty ({})" — so an
+					// empty mapping must be OMITTED, not sent as an empty object.
+					if (Object.keys(fieldMapping).length > 0) {
+						objectOp.fieldMapping = fieldMapping
+					}
+					return objectOp
 				}
 				let payloadTemplate = {}
 				try {
@@ -204,7 +211,12 @@ export default {
 				} catch (e) {
 					payloadTemplate = {}
 				}
-				return { type: 'webhook', url: item.url, payloadTemplate }
+				const webhook = { type: 'webhook', url: item.url }
+				// Same OpenRegister empty-nested-object rejection as fieldMapping above.
+				if (Object.keys(payloadTemplate).length > 0) {
+					webhook.payloadTemplate = payloadTemplate
+				}
+				return webhook
 			})
 		},
 		emit() {
