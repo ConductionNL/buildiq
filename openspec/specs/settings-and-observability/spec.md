@@ -138,7 +138,10 @@ code chosen by the manifest's `statusCodePolicy` (`adr006`).
 
 `metrics#index` SHALL return a Prometheus text exposition (format 0.0.4,
 `Content-Type: text/plain; version=0.0.4`) rendering each gauge declared
-in `observability.metrics`, with HTTP 200 for an authorised caller.
+in `observability.metrics`, with HTTP 200 for an authorised caller. The
+engine namespaces every series with the app id, so the manifest's
+`applications_total` is exposed as `openbuild_applications_total`, and it
+adds the implicit `openbuild_info` and `openbuild_up` series.
 
 #### Scenario: Health probe
 
@@ -149,8 +152,9 @@ in `observability.metrics`, with HTTP 200 for an authorised caller.
 
 - **WHEN** an authenticated caller hits the metrics endpoint
 - **THEN** the response is a `text/plain` Prometheus exposition with HTTP
-  200, containing `# HELP` / `# TYPE` lines for `export_jobs_total`,
-  `applications_total` and `application_versions_total`
+  200, containing `# HELP` / `# TYPE` lines for `openbuild_export_jobs_total`,
+  `openbuild_applications_total` and `openbuild_application_versions_total`,
+  plus the implicit `openbuild_up` series
 
 **Notes:** This requirement previously described OpenBuild's own probe
 controllers returning a placeholder `{"metrics":[]}` JSON payload. That

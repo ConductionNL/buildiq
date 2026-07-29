@@ -138,9 +138,13 @@ test('REQ-OBS-005 — metrics endpoint returns a Prometheus exposition with 200'
 	const body = await res.text()
 	// Every gauge declared in src/manifest.json `observability.metrics` must be
 	// present with its HELP/TYPE metadata, proving the manifest was actually
-	// loaded and rendered rather than an empty body being returned.
+	// loaded and rendered rather than an empty body being returned. The engine
+	// namespaces each declared metric with the app id, so the manifest's
+	// `applications_total` is exposed as `openbuild_applications_total`.
 	for (const name of ['export_jobs_total', 'applications_total', 'application_versions_total']) {
-		expect(body).toContain(`# HELP ${name}`)
-		expect(body).toContain(`# TYPE ${name} gauge`)
+		expect(body).toContain(`# HELP openbuild_${name}`)
+		expect(body).toContain(`# TYPE openbuild_${name} gauge`)
 	}
+	// The engine's own implicit series, always present.
+	expect(body).toContain('openbuild_up 1')
 })
