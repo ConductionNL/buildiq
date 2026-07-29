@@ -175,7 +175,9 @@ describe('SchemaDesigner', () => {
 
 	it('REQ-OBSD-002: addSchema POSTs via store.saveObject and routes to the new detail page', async () => {
 		storeMocks.fetchCollection.mockResolvedValue([])
-		storeMocks.saveObject.mockResolvedValue({ slug: 'new', title: 'New', version: '0.1.0' })
+		// The store echoes back the namespaced slug the designer sent, which is
+		// what addSchema() then navigates to.
+		storeMocks.saveObject.mockResolvedValue({ slug: 'hello-world-new', title: 'New', version: '0.1.0' })
 		const push = vi.fn()
 		const wrapper = mount(SchemaDesigner, {
 			stubs: editorStubs,
@@ -193,7 +195,14 @@ describe('SchemaDesigner', () => {
 		const [type, body] = storeMocks.saveObject.mock.calls[0]
 		expect(type).toBe('schema')
 		expect(body).toMatchObject({
-			slug: 'new',
+			// NAMESPACED, not the raw user-typed "new" (openbuild#41). The
+			// designer's list is the global schema collection filtered to the
+			// slugs owned by this app+version, so a schema created with the raw
+			// slug was invisible in the list it was created from and unattached
+			// to the app's register — leaving the follow-on navigation on
+			// "Schema not found". This assertion previously encoded the
+			// pre-#41 behaviour and had been failing ever since that fix landed.
+			slug: 'hello-world-new',
 			title: 'New',
 			version: '0.1.0',
 			type: 'object',
@@ -202,7 +211,9 @@ describe('SchemaDesigner', () => {
 		expect(push).toHaveBeenCalled()
 		expect(push.mock.calls[0][0]).toMatchObject({
 			name: 'SchemaDesigner',
-			params: { slug: 'hello-world', schemaId: 'new' },
+			// Navigation must target the namespaced slug too — targeting the raw
+			// one is exactly the "Schema not found" landing #41 fixed.
+			params: { slug: 'hello-world', schemaId: 'hello-world-new' },
 		})
 	})
 

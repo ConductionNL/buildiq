@@ -1010,19 +1010,18 @@ export default {
 					return { type: 'run-synchronization', synchronizationId: action.synchronizationId }
 				}
 				if (action.type === 'object-op') {
-					let fieldMapping = {}
+					// OpenRegister rejects BOTH an empty object ({}) and null for this
+					// nested (array-item) object property, so an object-op with no
+					// field mapping must OMIT the key entirely rather than send {}/null.
+					let fieldMapping = null
 					try {
-						fieldMapping = JSON.parse(action.fieldMappingText || '{}')
+						const parsed = JSON.parse(action.fieldMappingText || 'null')
+						fieldMapping = (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) ? parsed : null
 					} catch (e) {
-						fieldMapping = {}
+						fieldMapping = null
 					}
 					const objectOp = { type: 'object-op', operation: action.operation, schema: action.schema }
-					// OpenRegister rejects `{}` (and `null`) for a nested array-item
-					// object property — "expects object but got empty ({})" — so an
-					// empty mapping must be OMITTED, not sent as an empty object.
-					// Live-verified: sending fieldMapping: {} 400s every object-op
-					// action that leaves the mapping textarea at its default '{}'.
-					if (Object.keys(fieldMapping).length > 0) {
+					if (fieldMapping !== null) {
 						objectOp.fieldMapping = fieldMapping
 					}
 					return objectOp
@@ -1042,15 +1041,17 @@ export default {
 						output: Array.isArray(action.output) ? action.output : [],
 					}
 				}
-				let payloadTemplate = {}
+				// Same OpenRegister nested-object rule as object-op above: an empty
+				// payload template must OMIT the key rather than send {}/null.
+				let payloadTemplate = null
 				try {
-					payloadTemplate = JSON.parse(action.payloadTemplateText || '{}')
+					const parsed = JSON.parse(action.payloadTemplateText || 'null')
+					payloadTemplate = (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) ? parsed : null
 				} catch (e) {
-					payloadTemplate = {}
+					payloadTemplate = null
 				}
 				const webhook = { type: 'webhook', url: action.url }
-				// Same OpenRegister empty-nested-object rejection as fieldMapping above.
-				if (Object.keys(payloadTemplate).length > 0) {
+				if (payloadTemplate !== null) {
 					webhook.payloadTemplate = payloadTemplate
 				}
 				return webhook

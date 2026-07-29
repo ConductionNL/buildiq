@@ -19,7 +19,7 @@
  * instance per project policy).
  */
 
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { test, expect, type APIRequestContext, type Page } from '@playwright/test'
 
 const APP_SLUG = process.env.NC_OPENBUILD_TEST_SLUG ?? 'hello-world'
 // The app-picker option's accessible name is the Application TITLE
@@ -71,6 +71,53 @@ const APP_TITLE_PATTERN = new RegExp(APP_SLUG.replace(/-/g, '.?'), 'i')
 function looseOptionName(text: string): RegExp {
 	const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 	return new RegExp(escaped.split('').join('\\s*'), 'i')
+}
+
+/**
+ * Fill the trigger "Schema" field, which is a dual control in
+ * AutomationEditDialog: an NcSelect combobox (`input-label="Schema"`) when the
+ * register's schema list loads (schemaPickerAvailable) — its options are
+ * labelled by the schema TITLE, e.g. "Hello Message" — and it degrades to a
+ * plain "Schema slug" NcTextField (`v-else`) only when the fetch returns
+ * nothing. On this instance the picker always loads, so a `getByRole('textbox',
+ * {name:/schema/i})` never matches (the control is a combobox, not a textbox).
+ * Prefer the picker; fall back to the slug field so the test stays honest on a
+ * fixture where the schema list is empty.
+ *
+ * @param page  The Playwright page.
+ * @param title The schema's display title (the combobox option text).
+ * @param slug  The schema slug (the fallback textbox value).
+ * @return {Promise<void>}
+ */
+async function selectTriggerSchema(page: Page, title: string, slug: string): Promise<void> {
+	const combo = page.getByRole('combobox', { name: /^schema$/i })
+	if (await combo.count() > 0) {
+		await combo.click()
+		await page.getByRole('option', { name: looseOptionName(title) }).first().click()
+		return
+	}
+	await page.getByRole('textbox', { name: /schema slug/i }).fill(slug)
+}
+
+/**
+ * Fill the approval action's "Assignee group" field — the same dual control as
+ * the trigger schema: an NcSelect combobox (`input-label="Assignee group"`) when
+ * the group list loads (groupPickerAvailable), degrading to an "Assignee group
+ * id" NcTextField (`v-else`) when it does not. A `getByRole('textbox',
+ * {name:/assignee group/i})` only matches the fallback, so prefer the picker.
+ *
+ * @param page  The Playwright page.
+ * @param group The group id / display name (combobox option text and textbox value).
+ * @return {Promise<void>}
+ */
+async function selectAssigneeGroup(page: Page, group: string): Promise<void> {
+	const combo = page.getByRole('combobox', { name: /^assignee group$/i })
+	if (await combo.count() > 0) {
+		await combo.click()
+		await page.getByRole('option', { name: looseOptionName(group) }).first().click()
+		return
+	}
+	await page.getByRole('textbox', { name: /assignee group/i }).fill(group)
 }
 
 async function automationSchemaIsUsable(request: APIRequestContext): Promise<boolean> {
@@ -176,13 +223,18 @@ test.describe('automation-designer — Automations page', () => {
 		await page.getByRole('textbox', { name: /^name$/i }).fill('E2E notify on hello-message created')
 		await page.getByRole('combobox', { name: /^when$/i }).click()
 		await page.getByRole('option', { name: looseOptionName('Object created') }).click()
-		await page.getByRole('textbox', { name: /schema/i }).fill('hello-message')
+		await selectTriggerSchema(page, 'Hello Message', 'hello-message')
 
 		await page.getByRole('button', { name: /add action/i }).click()
 		await page.getByRole('textbox', { name: /subject \(english\)/i }).fill('New hello-message')
 
 		await page.getByRole('button', { name: /^save$/i }).click()
-		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 10_000 })
+		// Save closes the dialog only after the compile POST returns. Compiling a
+		// notification/lifecycle action mutates the target schema (adds `aut-`
+		// markers), which fans out OpenRegister's schema-changed cascade
+		// (cross-ref resolution, webhooks, notifications) and can take well over
+		// 10s on a loaded shared instance — so allow 30s for the dialog to close.
+		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 30_000 })
 
 		const row = page.locator('[data-testid="automation-row"]', { hasText: 'E2E notify on hello-message created' })
 		await expect(row).toBeVisible()
@@ -219,7 +271,12 @@ test.describe('automation-designer — Automations page', () => {
 		await page.getByRole('textbox', { name: /synchronization id/i }).fill('00000000-0000-0000-0000-000000000000')
 
 		await page.getByRole('button', { name: /^save$/i }).click()
-		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 10_000 })
+		// Save closes the dialog only after the compile POST returns. Compiling a
+		// notification/lifecycle action mutates the target schema (adds `aut-`
+		// markers), which fans out OpenRegister's schema-changed cascade
+		// (cross-ref resolution, webhooks, notifications) and can take well over
+		// 10s on a loaded shared instance — so allow 30s for the dialog to close.
+		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 30_000 })
 		await expect(page.locator('[data-testid="automation-row"]', { hasText: 'E2E nightly sync' })).toBeVisible()
 	})
 
@@ -248,7 +305,12 @@ test.describe('automation-designer — Automations page', () => {
 		await page.getByRole('textbox', { name: /target schema/i }).fill('hello-message')
 
 		await page.getByRole('button', { name: /^save$/i }).click()
-		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 10_000 })
+		// Save closes the dialog only after the compile POST returns. Compiling a
+		// notification/lifecycle action mutates the target schema (adds `aut-`
+		// markers), which fans out OpenRegister's schema-changed cascade
+		// (cross-ref resolution, webhooks, notifications) and can take well over
+		// 10s on a loaded shared instance — so allow 30s for the dialog to close.
+		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 30_000 })
 		await expect(page.locator('[data-testid="automation-row"]', { hasText: 'E2E flag large claims' })).toBeVisible()
 	})
 
@@ -368,7 +430,7 @@ test.describe('automation-approval-steps — approval action end to end', () => 
 		await page.getByRole('textbox', { name: /^name$/i }).fill('E2E route hello-message for approval')
 		await page.getByRole('combobox', { name: /^when$/i }).click()
 		await page.getByRole('option', { name: looseOptionName('Object created') }).click()
-		await page.getByRole('textbox', { name: /schema/i }).fill('hello-message')
+		await selectTriggerSchema(page, 'Hello Message', 'hello-message')
 
 		await page.getByRole('button', { name: /add action/i }).click()
 		await page.locator('[data-testid="action-row"] .ncselect-stub, [data-testid="action-row"]').first()
@@ -377,22 +439,15 @@ test.describe('automation-approval-steps — approval action end to end', () => 
 			// in the built app-store bundle — click the visible trigger instead.
 			})
 		await page.getByRole('option', { name: looseOptionName('Require approval') }).click()
-
-		// AutomationEditDialog.vue renders an NcSelect group picker (combobox,
-		// label "Assignee group") when this instance's group list loaded, or a
-		// plain NcTextField (textbox, label "Assignee group id") as a fallback
-		// when it did not. This instance has real NC groups, so the combobox
-		// path is live — try it first, fall back to the textbox.
-		const assigneeCombobox = page.getByRole('combobox', { name: /assignee group/i })
-		if (await assigneeCombobox.isVisible({ timeout: 3_000 }).catch(() => false)) {
-			await assigneeCombobox.click()
-			await page.getByRole('option', { name: looseOptionName('admin') }).first().click()
-		} else {
-			await page.getByRole('textbox', { name: /assignee group/i }).fill('admin')
-		}
+		await selectAssigneeGroup(page, 'admin')
 
 		await page.getByRole('button', { name: /^save$/i }).click()
-		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 10_000 })
+		// Save closes the dialog only after the compile POST returns. Compiling a
+		// notification/lifecycle action mutates the target schema (adds `aut-`
+		// markers), which fans out OpenRegister's schema-changed cascade
+		// (cross-ref resolution, webhooks, notifications) and can take well over
+		// 10s on a loaded shared instance — so allow 30s for the dialog to close.
+		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 30_000 })
 
 		const row = page.locator('[data-testid="automation-row"]', { hasText: 'E2E route hello-message for approval' })
 		await expect(row).toBeVisible({ timeout: 10_000 })
@@ -461,7 +516,7 @@ test.describe('automation-document-action — generateDocument action', () => {
 		await page.getByRole('textbox', { name: /^name$/i }).fill('E2E generate decision letter on approve')
 		await page.getByRole('combobox', { name: /^when$/i }).click()
 		await page.getByRole('option', { name: looseOptionName('Lifecycle transition') }).click()
-		await page.getByRole('textbox', { name: /schema/i }).fill('hello-message')
+		await selectTriggerSchema(page, 'Hello Message', 'hello-message')
 		await page.getByRole('textbox', { name: /transition action name/i }).fill('approve')
 
 		await page.getByRole('button', { name: /add action/i }).click()
@@ -488,7 +543,12 @@ test.describe('automation-document-action — generateDocument action', () => {
 		await page.getByRole('option', { name: looseOptionName('Attach to object') }).click()
 
 		await page.getByRole('button', { name: /^save$/i }).click()
-		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 10_000 })
+		// Save closes the dialog only after the compile POST returns. Compiling a
+		// notification/lifecycle action mutates the target schema (adds `aut-`
+		// markers), which fans out OpenRegister's schema-changed cascade
+		// (cross-ref resolution, webhooks, notifications) and can take well over
+		// 10s on a loaded shared instance — so allow 30s for the dialog to close.
+		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 30_000 })
 
 		const row = page.locator('[data-testid="automation-row"]', { hasText: 'E2E generate decision letter on approve' })
 		await expect(row).toBeVisible({ timeout: 10_000 })

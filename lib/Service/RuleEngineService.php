@@ -271,9 +271,13 @@ class RuleEngineService
     /**
      * Load (and cache) a RuleSet bundle: the RuleSet plus its tables/rules.
      *
-     * Enforces multi-tenant isolation implicitly — the ObjectService query runs
-     * under the current user's tenant scope, so a slug owned by another tenant
-     * resolves to an empty result (treated as not found).
+     * Resolution runs through OpenRegister `searchObjectsBySlug` (see
+     * {@see findMany()}), which applies the schema's RBAC. IMPORTANT: `openbuild`
+     * is a system-wide register (not org-scoped), so multitenancy is intentionally
+     * bypassed and this is NOT per-owner or per-organisation read isolation — with
+     * a read-open rule-set schema, any authenticated caller can resolve a rule-set
+     * by slug. Write operations (create/update/delete) remain admin-gated at the
+     * schema. (No false "foreign slug → 404 / no IDOR" guarantee is implied.)
      *
      * @param string      $slug    The RuleSet slug.
      * @param string|null $version Optional pinned version.
@@ -443,18 +447,25 @@ class RuleEngineService
      */
     private function findMany(string $schema, array $filters, ?int $limit=null): array
     {
-        $config = [
-            'filters' => array_merge(['register' => self::REGISTER_SLUG, 'schema' => $schema], $filters),
-        ];
-        if ($limit !== null) {
-            $config['limit'] = $limit;
-        }
-
+        // Authorization-aware resolution (harden-rules-authz-and-audit-parity,
+        // M1): resolve through searchObjectsBySlug (which applies the schema's
+        // RBAC) rather than a raw findAll. `openbuild` is a SYSTEM-WIDE register
+        // (not org-scoped) — mirror ListAppsHandler and pass _multitenancy:false
+        // so cross-org callers still resolve it (a true org filter would make
+        // registerMapper->find() throw and break evaluation). Note: for a
+        // read-open rule-set schema this does not isolate reads per owner/org;
+        // write operations remain admin-gated at the schema.
         try {
-            $results = $this->objectService->findAll(config: $config);
+            $results = $this->objectService->searchObjectsBySlug(
+                self::REGISTER_SLUG,
+                $schema,
+                $filters,
+                _rbac: true,
+                _multitenancy: false
+            );
         } catch (Throwable $e) {
             $this->logger->warning(
-                'OpenBuild: rule-engine findAll failed',
+                'OpenBuild: rule-engine searchObjects failed',
                 ['schema' => $schema, 'exception' => $e->getMessage()]
             );
             return [];
@@ -467,6 +478,12 @@ class RuleEngineService
         $normalised = [];
         foreach ($results as $row) {
             $normalised[] = $this->normalise(object: $row);
+        }
+
+        // The slug variant has no server-side limit param; apply the caller's
+        // cap (used by findOne) client-side.
+        if ($limit !== null && count($normalised) > $limit) {
+            $normalised = array_slice($normalised, 0, $limit);
         }
 
         return $normalised;

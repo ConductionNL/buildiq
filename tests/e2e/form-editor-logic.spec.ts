@@ -18,7 +18,14 @@
 
 import { test, expect } from '@playwright/test'
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / editor / version pages render. Re-enable when #41 is fixed (same quarantine as page-designer.spec.ts).
+// STILL QUARANTINED — #41's blockers are gone, but this suite's seeding is
+// stale: it navigates to `/apps/openbuild/applications/{slug}/design`, which is
+// not a route in the manifest (the page designer lives at
+// `/builder/:slug/pages`), and it drives a "Raw JSON" tab plus an
+// `.application-editor__textarea` that do not exist anywhere in src. Its own
+// header records that it was authored without ever being run. Re-seeding the
+// form page through the manifest API and driving the real Page Designer is a
+// rewrite of its harness, not a locator fix.
 test.describe.skip('openbuild form-editor-logic', () => {
 	const APP_SLUG = 'hello-world'
 	const FORM_PAGE_ID = 'e2e-form-logic'

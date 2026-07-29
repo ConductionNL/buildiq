@@ -480,7 +480,18 @@ export default {
 		 * @return {void}
 		 */
 		onGroupsChange(op, options) {
-			const groups = Array.isArray(options) ? options.map((o) => o.value) : []
+			// A taggable NcSelect emits BOTH `@tag` (with the raw typed string)
+			// and `@input` (with the new selection). In that `@input` payload the
+			// freshly created entry is the raw STRING, not a `{ value, label }`
+			// option — so mapping `o.value` blindly turned every newly typed group
+			// into `undefined`, which persisted as `null`. The `@tag` handler had
+			// already stored the right value; this then clobbered it. Accept both
+			// shapes and drop anything empty.
+			const groups = Array.isArray(options)
+				? options
+					.map((o) => (typeof o === 'string' ? o : o?.value))
+					.filter((g) => g !== undefined && g !== null && g !== '')
+				: []
 			this.emitRowChange(op, { op, kind: 'group', groups })
 		},
 		/**

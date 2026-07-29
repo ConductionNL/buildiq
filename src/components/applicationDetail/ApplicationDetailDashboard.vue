@@ -242,6 +242,7 @@ import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import Harddisk from 'vue-material-design-icons/Harddisk.vue'
 import History from 'vue-material-design-icons/History.vue'
 
+import { fetchApplicationRecord } from '../../composables/useApplicationRecord.js'
 import GroupsWidget from './widgets/GroupsWidget.vue'
 import ManifestWidget from './widgets/ManifestWidget.vue'
 import RegisterWidget from './widgets/RegisterWidget.vue'
@@ -793,12 +794,21 @@ export default {
 		async refreshApplication() {
 			const uuid = this.objectId || (this.$route && this.$route.params && this.$route.params.objectId) || ''
 			if (!uuid) return
+
+			// Latest-request-wins if the uuid changes mid-flight (route change).
+			const seq = (this._appReqSeq || 0) + 1
+			this._appReqSeq = seq
+
 			try {
-				const url = generateUrl(`/apps/openregister/api/objects/openbuild/application/${encodeURIComponent(uuid)}`)
-				const { data } = await axios.get(url)
-				this.application = data ? { ...data, '@self': data['@self'] || {} } : null
+				// Shared with ApplicationDetailHeader — both components resolve
+				// the same record, and each has several triggers, so without
+				// coalescing one page load issued ten identical GETs (#49).
+				const record = await fetchApplicationRecord(uuid)
+				if (seq !== this._appReqSeq) return
+				this.application = record
 				this.loadVersions()
 			} catch (e) {
+				if (seq !== this._appReqSeq) return
 				this.error = e instanceof Error ? e : new Error(String(e))
 			}
 		},

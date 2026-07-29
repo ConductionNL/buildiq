@@ -102,6 +102,7 @@ import { generateUrl } from '@nextcloud/router'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 
 import { buildVersionedRoute } from '../../router/helpers.js'
+import { fetchApplicationRecord } from '../../composables/useApplicationRecord.js'
 
 export default {
 	name: 'ApplicationDetailHeader',
@@ -458,16 +459,23 @@ export default {
 		async refreshApplication() {
 			const uuid = this.objectId || (this.$route && this.$route.params && this.$route.params.objectId) || ''
 			if (!uuid) return
+
+			// Staleness token: if the uuid changes while a request is in flight
+			// (route change), the older response must not overwrite the newer
+			// record — latest-request-wins, not last-response-wins.
+			const seq = (this._appReqSeq || 0) + 1
+			this._appReqSeq = seq
+
 			try {
-				const url = generateUrl(`/apps/openregister/api/objects/openbuild/application/${encodeURIComponent(uuid)}`)
-				const { data } = await axios.get(url)
-				// Keep user-visible fields from `data` and stash OR's internal
-				// metadata block separately (see issue #73).
-				this.application = data
-					? { ...data, '@self': data['@self'] || {} }
-					: null
+				// Shared with ApplicationDetailDashboard so the two components —
+				// and this component's own three triggers — collapse onto ONE
+				// request instead of ten (#49).
+				const record = await fetchApplicationRecord(uuid)
+				if (seq !== this._appReqSeq) return // superseded — drop it
+				this.application = record
 				this.loadVersions()
 			} catch (e) {
+				if (seq !== this._appReqSeq) return
 				this.error = e instanceof Error ? e : new Error(String(e))
 			}
 		},

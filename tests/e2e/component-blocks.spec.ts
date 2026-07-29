@@ -36,7 +36,13 @@ import { test, expect } from '@playwright/test'
 
 const NEXTCLOUD_URL = process.env.NEXTCLOUD_URL || process.env.NC_BASE_URL || 'http://localhost:8080'
 
-// QUARANTINED (Conduction/openbuild#41): admin UI not functional in this build.
+// STILL QUARANTINED — #41's blockers are gone, but this suite never had
+// fixtures. Every test navigates to /builder/<random-slug>/pages with a slug
+// like `e2e-cb-source-${Date.now()}`, i.e. an app that does not exist, so the
+// page designer has nothing to render. It needs real fixture apps (two of them,
+// source + target with differing schema names) created via ensureApp(), plus a
+// seeded ComponentBlock to insert. The UI it targets does exist
+// (WidgetSelectionPanel, BlockLibraryPanel).
 test.describe.skip('OpenBuild component blocks', () => {
 
 	// @e2e component-blocks::saving-a-widget-captures-its-config-not-its-data

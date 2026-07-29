@@ -243,6 +243,7 @@
 			"config": {
 				"register": "openbuild",
 				"schema": "application",
+				"createForm": "never",
 				"sidebar": {
 					"enabled": false
 				},
@@ -266,19 +267,21 @@
 		{
 			"id": "SchemaDesignerList",
 			"route": "/builder/:slug/schemas",
-			"type": "index",
+			"type": "detail",
 			"title": "Schemas",
+			"slots": {
+				"default": "SchemaDesignerView"
+			},
 			"config": {
 				"register": "openbuild",
 				"schema": "application",
-				"viewMode": "cards",
+				"createForm": "never",
 				"sidebar": {
-					"enabled": true,
-					"showMetadata": true
+					"enabled": false
 				},
 				"documentationUrl": "https://openbuild.conduction.nl"
 			},
-			"_note": "Per-app schema list under the builder route. Scoped to the virtual app identified by :slug — the index page type's filter wiring kicks in via the route param."
+			"_note": "Per-app schema list under the builder route — renders SchemaDesignerView (list mode, since there is no :schemaId param) via the registry-backed `slots.default` override, scoped to the virtual app identified by :slug (SchemaDesigner.vue reads `$route.params.slug`). Previously type:\"index\" with no slot, which fell through to the generic CnIndexPage keyed on config.schema (\"application\") and so listed Applications instead of the app's schemas (openbuild#41). Mirrors the top-level `/schemas` page fix above; per-schema drill-down lives at /builder/:slug/schemas/:schemaId (SchemaDesigner, detail mode)."
 		},
 		{
 			"id": "SchemaDesigner",
@@ -288,6 +291,7 @@
 			"config": {
 				"register": "openbuild",
 				"schema": "application",
+				"createForm": "never",
 				"sidebar": {
 					"enabled": true,
 					"showMetadata": true
@@ -306,6 +310,7 @@
 			"config": {
 				"register": "openbuild",
 				"schema": "application",
+				"createForm": "never",
 				"sidebar": {
 					"enabled": true,
 					"showMetadata": true
@@ -324,6 +329,7 @@
 			"config": {
 				"register": "openbuild",
 				"schema": "application",
+				"createForm": "never",
 				"sidebar": {
 					"enabled": true,
 					"showMetadata": true

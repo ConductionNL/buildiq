@@ -8,6 +8,19 @@ define('PHPUNIT_RUN', 1);
 // Include Composer's autoloader.
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// `OCP\Files\IRootFolder` extends BOTH `OCP\Files\Folder` and Nextcloud CORE's
+// `OC\Hooks\Emitter`, which is not part of the `nextcloud/ocp` package. Loading
+// IRootFolder without it fatals mid-autoload, so the interface never becomes
+// defined and every `createMock(IRootFolder::class)` fails with a misleading
+// "Class or interface OCP\Files\IRootFolder does not exist" — 8 of this suite's
+// errors, from one missing symbol.
+//
+// The stub already existed and was wired into `bootstrap-unit.php`, but
+// `phpunit.xml` boots THIS file, so it never loaded here. It must come before
+// the OCP resolver below can be triggered, and it is `interface_exists`-guarded
+// so a real in-container Nextcloud still wins.
+require_once __DIR__ . '/stubs/nc-hooks-emitter.stub.php';
+
 // vendor/nextcloud/ocp doesn't ship an autoload entry — it's intended as
 // a PHPStan scan-only dependency. For unit tests outside the docker
 // container we want OCP\* stubs loadable so MockBuilder can resolve them.
