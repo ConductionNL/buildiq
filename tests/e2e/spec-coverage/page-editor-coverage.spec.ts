@@ -52,6 +52,35 @@ const PAGE_DESIGNER = (slug: string) => `${BASE}/apps/openbuild/builder/${slug}/
 const BUILT_PAGE = (slug: string, route: string) => `${BASE}/apps/openbuild/builder/${slug}/${route}`
 
 /**
+ * Click "Save & open preview" and wait for the save to actually land.
+ *
+ * These tests used `waitForLoadState('networkidle')` after the click, which
+ * never resolves on this surface — the designer keeps polling, so the network is
+ * never idle and the wait burned the whole test budget. Waiting for the write
+ * itself is both reliable and a STRONGER check: it asserts the request happened
+ * AND came back 2xx, which networkidle never did.
+ *
+ * PageDesignerHost.save() writes through OpenRegister directly, NOT through
+ * OpenBuild's own `applications/{slug}/manifest` route: it PATCHes
+ * `objects/openbuild/applicationVersion/{uuid}` and only falls back to PUTting
+ * `objects/openbuild/application/{uuid}` when there is no version. Match either,
+ * or this helper waits for a request that is never sent.
+ *
+ * @param page Playwright page.
+ * @return {Promise<void>}
+ */
+async function saveAndAwaitPersist(page: import('@playwright/test').Page): Promise<void> {
+	const saved = page.waitForResponse(
+		(r) => /\/api\/objects\/openbuild\/(applicationVersion|application)\/[^/]+$/.test(r.url())
+			&& ['PATCH', 'PUT'].includes(r.request().method()),
+		{ timeout: 20_000 },
+	)
+	await page.locator('.page-designer__tool-btn--primary', { hasText: 'Save' }).click()
+	const res = await saved
+	expect(res.ok(), `the manifest write must succeed, got HTTP ${res.status()}`).toBeTruthy()
+}
+
+/**
  * Dismiss nc-vue's first-visit "Support Openbuild" (CnSupportDialog) modal
  * if it is open. Its backdrop intercepts pointer events across the whole
  * page — live-verified as the actual cause of every failure in this file:
@@ -161,8 +190,7 @@ test('REQ-PEC-003 — Create, configure, save and render a map page', async ({ p
 	const markerUrlInput = editor.locator('.map-page-editor__group-row', { hasText: 'Marker source URL' }).locator('input')
 	await markerUrlInput.fill('https://example.test/markers.json')
 
-	await page.locator('.page-designer__tool-btn--primary', { hasText: 'Save' }).click()
-	await page.waitForLoadState('networkidle')
+	await saveAndAwaitPersist(page)
 
 	await page.goto(BUILT_PAGE(SLUG, 'map'))
 	await expect(page.locator('[data-testid="cn-map-page"]'), 'built map page must render').toBeVisible({ timeout: 15_000 })
@@ -191,8 +219,7 @@ test('REQ-PEC-004 — Create, configure, save and render a roadmap page', async 
 	await editor.locator('input[placeholder="owner/repo"]').fill('ConductionNL/openbuild')
 	await editor.locator('select').first().selectOption('github')
 
-	await page.locator('.page-designer__tool-btn--primary', { hasText: 'Save' }).click()
-	await page.waitForLoadState('networkidle')
+	await saveAndAwaitPersist(page)
 
 	await page.goto(BUILT_PAGE(SLUG, 'roadmap'))
 	await expect(page.locator('.cn-features-and-roadmap-view'), 'built roadmap page must render').toBeVisible({ timeout: 15_000 })
@@ -229,8 +256,7 @@ test('REQ-PEC-005 — Create, configure, save and render a search page', async (
 	await facetRow.locator('button', { hasText: 'Add option' }).click()
 	await facetRow.locator('.search-page-editor__options .search-page-editor__row').nth(1).locator('input').first().fill('films')
 
-	await page.locator('.page-designer__tool-btn--primary', { hasText: 'Save' }).click()
-	await page.waitForLoadState('networkidle')
+	await saveAndAwaitPersist(page)
 
 	await page.goto(BUILT_PAGE(SLUG, 'search'))
 	await expect(page.locator('[data-testid="cn-search-page"]'), 'built search page must render').toBeVisible({ timeout: 15_000 })
@@ -274,8 +300,7 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({ 
 	await selectOrFill(editor.locator('.wiki-page-editor__group-row', { hasText: 'Content field' }), 'body')
 	await selectOrFill(editor.locator('.wiki-page-editor__group-row', { hasText: 'Title field' }), 'title')
 
-	await page.locator('.page-designer__tool-btn--primary', { hasText: 'Save' }).click()
-	await page.waitForLoadState('networkidle')
+	await saveAndAwaitPersist(page)
 
 	await page.goto(BUILT_PAGE(SLUG, 'wiki'))
 	await expect(page.locator('[data-testid="cn-wiki-page"]'), 'built wiki page must render').toBeVisible({ timeout: 15_000 })
