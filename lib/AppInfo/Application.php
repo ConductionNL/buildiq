@@ -279,6 +279,49 @@ class Application extends App implements IBootstrap
             )
         );
 
+        // 5. Observability probes (health + metrics) — same load-order hazard as
+        // the settings section above, but with a worse symptom. `routes.php`
+        // calls \OCA\OpenRegister\AppHost\Routes::standard(), which emits
+        // `health#index` and `metrics#index` UNCONDITIONALLY. routes.php is
+        // evaluated at request-routing time, by which point OpenRegister's
+        // autoloader IS registered — so the routes always exist. The controllers
+        // behind them, however, are only bound by Bootstrap::register(), which
+        // the guard above skips because `openbuild` sorts before `openregister`
+        // and OR is not autoloadable that early. The result is a routed endpoint
+        // with no controller: GET /api/health and GET /api/metrics both 500.
+        //
+        // OpenBuild has no concrete Health/MetricsController of its own (ADR-040
+        // moved them to the AppHost engine), so bind the leaf class names to the
+        // generic implementations here, mirroring Bootstrap::registerControllers.
+        // The OpenRegister class names are referenced as STRINGS and every
+        // dependency is resolved INSIDE the closure, so nothing touches the
+        // OCA\OpenRegister namespace until the container resolves the controller
+        // at request time — deferring the binding instead of guarding at boot.
+        $context->registerService(
+            'OCA\\OpenBuild\\Controller\\HealthController',
+            static function ($c) {
+                $class = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController';
+                return new $class(
+                    appName: self::APP_ID,
+                    request: $c->get('OCP\\IRequest'),
+                    manifestLoader: $c->get('OCA\\OpenRegister\\AppHost\\Observability\\ManifestLoader'),
+                    executor: $c->get('OCA\\OpenRegister\\AppHost\\Observability\\HealthCheckExecutor')
+                );
+            }
+        );
+        $context->registerService(
+            'OCA\\OpenBuild\\Controller\\MetricsController',
+            static function ($c) {
+                $class = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericMetricsController';
+                return new $class(
+                    appName: self::APP_ID,
+                    request: $c->get('OCP\\IRequest'),
+                    manifestLoader: $c->get('OCA\\OpenRegister\\AppHost\\Observability\\ManifestLoader'),
+                    engine: $c->get('OCA\\OpenRegister\\AppHost\\Observability\\MetricsEngine')
+                );
+            }
+        );
+
         // Per ADR-002 the snapshot-on-publish writeback listener has been
         // retired. ApplicationVersion is now a first-class long-lived row,
         // not an append-only snapshot, and `Application.currentVersion` has

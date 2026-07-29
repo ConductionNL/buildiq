@@ -120,13 +120,27 @@ test('REQ-OBS-005 — health endpoint returns status:ok with 200', async ({ requ
 })
 
 // @e2e settings-and-observability::metrics-probe
-test('REQ-OBS-005 — metrics endpoint returns metrics array with 200', async ({ request }) => {
+// Contract note: this endpoint used to be OpenBuild's own MetricsController
+// returning the placeholder JSON `{"metrics":[]}`. ADR-040 (AppHost adoption)
+// replaced it with OpenRegister's GenericMetricsController, which renders the
+// declarative `observability.metrics` block of src/manifest.json as a
+// Prometheus text exposition (ADR-006) — not JSON. The assertions below follow
+// the real contract and are stricter than the old ones: the placeholder array
+// was always empty, whereas these require the manifest's gauges to be rendered.
+test('REQ-OBS-005 — metrics endpoint returns a Prometheus exposition with 200', async ({ request }) => {
 	// @e2e settings-and-observability::metrics-probe
 	const res = await request.get('/index.php/apps/openbuild/api/metrics', {
 		headers: { 'OCS-APIRequest': 'true' },
 	})
 	expect(res.status()).toBe(200)
-	const body = await res.json()
-	expect(body).toHaveProperty('metrics')
-	expect(Array.isArray(body.metrics)).toBe(true)
+	expect(res.headers()['content-type']).toContain('text/plain')
+
+	const body = await res.text()
+	// Every gauge declared in src/manifest.json `observability.metrics` must be
+	// present with its HELP/TYPE metadata, proving the manifest was actually
+	// loaded and rendered rather than an empty body being returned.
+	for (const name of ['export_jobs_total', 'applications_total', 'application_versions_total']) {
+		expect(body).toContain(`# HELP ${name}`)
+		expect(body).toContain(`# TYPE ${name} gauge`)
+	}
 })
