@@ -31,6 +31,19 @@
 			<a :href="aiSettingsUrl">{{ t('openbuild', 'Open AI settings') }}</a>
 		</p>
 
+		<!-- KNOWN DEFECT (openbuild): this dialog opens BEHIND the create-app
+		     wizard. Step1Basics renders inside the wizard's own NcModal, and the
+		     wizard's full-viewport `.modal-mask` paints over this nested modal, so
+		     every click aimed at the copilot dialog is received by the wizard's
+		     `#wizard-app-description` textarea instead. Live-verified from a
+		     failing run's accessibility snapshot: BOTH dialogs are present and
+		     visible (wizard + "Generate an app with AI" with its "Generate"
+		     button), yet the wizard's textarea is the pointer-event target. So
+		     "Generate with AI" is unusable for real users, not only in tests.
+		     Wrapping this in <Teleport to="body"> was tried and measured: it does
+		     NOT fix it, because the masks still stack in the wizard's favour. The
+		     fix belongs in NcModal's z-index handling for two concurrently-open
+		     modals, so it is recorded here rather than worked around. -->
 		<CopilotGenerateDialog v-model:open="showCopilotDialog" @created="onAiAppCreated" />
 
 		<!-- Name input -->
