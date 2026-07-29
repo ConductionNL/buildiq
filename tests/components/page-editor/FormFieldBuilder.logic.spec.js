@@ -114,6 +114,36 @@ describe('FormFieldBuilder (show-logic=true)', () => {
 		expect(mark.hasError).toBe(true)
 	})
 
+	it('keeps an open details panel pinned to its own field when an earlier row is removed', async () => {
+		// Regression: `expandedIndices` stores positions, so removing an earlier
+		// row used to leave the panel open on what is now a DIFFERENT field —
+		// the author edits conditions/validation believing they belong to the
+		// row they opened, and a dangling-reference warning on the shifted field
+		// disappears with it (REQ-OBFEL-004 warns inside the details area).
+		const wrapper = mountBuilder([
+			{ key: 'wantsContact', label: 'Wants contact', type: 'boolean' },
+			{ key: 'email', label: 'Email', type: 'string' },
+		])
+		// Open the SECOND row's details.
+		await wrapper.findAll('.form-field-builder__disclosure').at(1).trigger('click')
+		expect(wrapper.vm.expandedIndices).toEqual([1])
+
+		// Remove the FIRST row — email shifts to index 0 and must stay open.
+		wrapper.vm.removeField(0)
+		expect(wrapper.vm.expandedIndices).toEqual([0])
+	})
+
+	it('closes the details panel of the row that was removed', () => {
+		const wrapper = mountBuilder([
+			{ key: 'wantsContact', label: 'Wants contact', type: 'boolean' },
+			{ key: 'email', label: 'Email', type: 'string' },
+		])
+		wrapper.vm.toggleExpanded(0)
+		wrapper.vm.toggleExpanded(1)
+		wrapper.vm.removeField(0)
+		expect(wrapper.vm.expandedIndices).toEqual([0]) // was [0, 1]; row 0 gone, row 1 → 0
+	})
+
 	it('shows a compact summary in the collapsed row', () => {
 		const withLogic = [
 			{ key: 'email', label: 'Email', type: 'string', validation: { required: true, pattern: '^\\d+$' }, visibleWhen: { field: 'x', value: 1 } },

@@ -77,28 +77,71 @@ export async function ensureApp(page: Page, slug: string, name: string): Promise
 }
 
 /**
- * Dismiss any modal that is overlaying the page — in practice the manifest's
- * onboarding tour (`manifest.tours`), which mounts a `.modal-mask` a beat after
- * the page settles. It is not part of what these specs exercise, but its
- * wrapper swallows pointer events, so a click on the page underneath retries
- * until the test times out ("<div class=modal-wrapper> … subtree intercepts
- * pointer events"). Safe to call unconditionally: a no-op when nothing is open.
+ * Dismiss any modal overlaying the page — the manifest's onboarding tour
+ * (`manifest.tours`) and the first-open support dialog (`CnSupportDialog`), both
+ * of which mount a `.modal-mask` a beat after the page settles. Neither is what
+ * these specs exercise, but the mask swallows pointer events, so every click on
+ * the page underneath retries until the test times out ("<div class=modal-mask>
+ * … subtree intercepts pointer events"). Safe to call unconditionally.
+ *
+ * The closer MUST be looked up inside the mask: searching the whole page and
+ * taking `.first()` matches Nextcloud's own "Close navigation" chrome button, so
+ * the dialog stayed open while the sidebar toggled.
  *
  * @param page Playwright page.
  * @return {Promise<void>}
  */
 export async function dismissOverlays(page: Page): Promise<void> {
-	for (let i = 0; i < 3; i++) {
+	for (let i = 0; i < 4; i++) {
 		const mask = page.locator('.modal-mask').first()
 		if (await mask.count() === 0 || await mask.isVisible().catch(() => false) === false) {
 			return
 		}
-		const closer = page.getByRole('button', { name: /close tour|close|dismiss/i }).first()
+		const closer = mask.getByRole('button', { name: /close|dismiss|skip|later|not now/i }).first()
 		if (await closer.count() > 0) {
 			await closer.click({ timeout: 5_000 }).catch(() => {})
 		} else {
-			await page.keyboard.press('Escape').catch(() => {})
+			// NcDialog's close control is an icon button; fall back to its own
+			// header close, then to ESC.
+			const iconClose = mask.locator('.modal-container__close, button.icon-close').first()
+			if (await iconClose.count() > 0) {
+				await iconClose.click({ timeout: 5_000 }).catch(() => {})
+			} else {
+				await page.keyboard.press('Escape').catch(() => {})
+			}
 		}
 		await page.waitForTimeout(700)
 	}
+}
+
+/**
+ * Stop the first-open support dialog from ever mounting.
+ *
+ * `useSupportDialog` seeds its visibility from a `localStorage` flag keyed
+ * `cn-support-dialog-shown:{appSlug}`, and the builder mounts under a
+ * preview-scoped slug, so a single hard-coded key does not cover every route.
+ * Pre-set the flag for ANY such key before the app boots — far more reliable
+ * than racing a dialog that only appears once the page has settled.
+ *
+ * Call before the first navigation of a test; it applies to every later
+ * navigation on the same page.
+ *
+ * @param page Playwright page.
+ * @return {Promise<void>}
+ */
+export async function suppressSupportDialog(page: Page): Promise<void> {
+	await page.addInitScript(() => {
+		const prefix = 'cn-support-dialog-shown:'
+		try {
+			const original = Storage.prototype.getItem
+			Storage.prototype.getItem = function getItem(key: string) {
+				if (typeof key === 'string' && key.startsWith(prefix)) {
+					return '1'
+				}
+				return original.call(this, key)
+			}
+		} catch {
+			// Non-fatal: the dialog is then handled by dismissOverlays().
+		}
+	})
 }
