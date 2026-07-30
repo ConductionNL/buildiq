@@ -17,6 +17,7 @@ import App from './App.vue'
 import bundledManifest from './manifest.json'
 import menuLayout from './menu-layout.json'
 import registry from './registry.js'
+import appIcons from './icons.js'
 import { registerDirectives } from './registerDirectives.js'
 
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages).
@@ -34,7 +35,7 @@ Vue.use(VueRouter)
 registerDirectives()
 
 // Library-side icon set + lib translations (best effort).
-registerIcons()
+registerIcons(appIcons)
 // Populate the dashboard widget catalog. The library self-registers its widgets
 // via bare side-effect imports in the barrel, which webpack may drop — leaving
 // the registry empty, so widgets render "Widget not available". This exported
