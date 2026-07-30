@@ -29,9 +29,14 @@ const attachments = [
 	{ id: 'c', schema: 'andere', templateId: 'u3', templateName: 'C', label: 'Generate C' },
 ]
 
-const factory = (props = {}) => mount(DocumentActions, {
-	propsData: { object, attachments, ...props },
+// `docudeskAvailable` defaults to `null` = "probe the instance yourself". In
+// jsdom that probe has no server to reach, so it resolves ABSENT and the widget
+// correctly refuses to generate. Every test whose subject is NOT the capability
+// check therefore states its precondition explicitly.
+const factory = (props = {}, mountOptions = {}) => mount(DocumentActions, {
+	propsData: { object, attachments, docudeskAvailable: true, ...props },
 	stubs: { NcButton: NcButtonStub },
+	...mountOptions,
 })
 
 describe('DocumentActions', () => {
@@ -63,5 +68,37 @@ describe('DocumentActions', () => {
 		await wrapper.findAll('.ob-document-actions__row button').at(0).trigger('click')
 		expect(spy).toHaveBeenCalledTimes(1)
 		expect(spy.mock.calls[0][0].id).toBe('a')
+	})
+
+	// REQ-DDT-004 wiring. Nothing supplies `attachments` at runtime: the widget
+	// is resolved through CnPageRenderer's slot-override path, which hands it the
+	// detail surface's own props and has no way to know it wants a slice of the
+	// manifest. Without this fallback the runtime surface rendered NOTHING for
+	// every app — the buttons existed only where a test passed the prop by hand.
+	it('falls back to the built app manifest `runtime.documents[]` when no prop is supplied', () => {
+		const wrapper = mount(DocumentActions, {
+			propsData: { object, docudeskAvailable: true },
+			stubs: { NcButton: NcButtonStub },
+			global: { provide: { cnManifest: { runtime: { documents: attachments } } } },
+		})
+		const buttons = wrapper.findAll('.ob-document-actions__row button')
+		expect(buttons).toHaveLength(2)
+		expect(buttons.at(0).text()).toContain('Generate A')
+		expect(buttons.at(1).text()).toContain('Generate B')
+	})
+
+	it('prefers an explicit `attachments` prop over the injected manifest', () => {
+		const wrapper = mount(DocumentActions, {
+			propsData: {
+				object,
+				docudeskAvailable: true,
+				attachments: [{ id: 'z', schema: 'kapaanvraag', templateId: 'u9', templateName: 'Z', label: 'Generate Z' }],
+			},
+			stubs: { NcButton: NcButtonStub },
+			global: { provide: { cnManifest: { runtime: { documents: attachments } } } },
+		})
+		const buttons = wrapper.findAll('.ob-document-actions__row button')
+		expect(buttons).toHaveLength(1)
+		expect(buttons.at(0).text()).toContain('Generate Z')
 	})
 })

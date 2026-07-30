@@ -6,49 +6,351 @@
  * scenarios (REQ-DDT-002 builder attach + preview, REQ-DDT-003/004 runtime
  * generate + download, REQ-DDT-005 graceful absence).
  *
- * These scenarios drive the openbuild admin builder UI (Documents section +
- * attach dialog) and the runtime detail surface. The builder admin UI is
- * Conduction/openbuild#41-quarantined in this build (no application
- * detail / designer UI renders), so these tests are skipped with the same
- * recorded reason as the rest of tests/e2e/spec-coverage/. The pure API-shape
- * assertions live in Newman (openbuild-docudesk-documents.postman_collection.json)
- * and the behavioural logic is covered by the vitest suites
- * (DocumentAttachmentsSection, DocumentTemplateAttachmentDialog wiring,
- * useDocudeskDocument, DocumentActions). Backend validation scenarios
- * (REQ-DDT-001) and the closed-contract / Newman scenarios (REQ-DDT-006) are
- * excluded from e2e enforcement below.
+ * UN-QUARANTINED 2026-07-30 (builder scenarios). Every test in this file used
+ * to be an unconditional `test.skip` whose body was `goto('/applications')` +
+ * `expect(main).toBeVisible()` — the titles claimed to drive the Documents
+ * section and the runtime detail surface, but none of them did. Removing the
+ * `.skip` alone would have produced twelve green tests asserting nothing, so
+ * the builder scenarios below are written against the real surfaces instead.
+ *
+ * They need Docudesk installed AND its template register configured: until
+ * `template_register` / `template_schema` are set, `GET api/templates` answers
+ * `notConfigured` and the picker is permanently empty. globalSetup configures
+ * it and seeds the "Bevestigingsbrief" / "Besluit" fixtures — see
+ * tests/e2e/global-setup.ts.
+ *
+ * The runtime scenarios (REQ-DDT-003/004 and the runtime half of REQ-DDT-005)
+ * remain skipped, now with their REAL reason recorded rather than the stale
+ * "#41 builder UI not functional" one: `DocumentActions` filters attachments by
+ * `object['@self'].schema`, which OpenRegister returns as the NUMERIC schema id
+ * ("21"), while a `runtime.documents[]` entry declares a schema SLUG
+ * ("hello-message"). The two never match, so the surface renders nothing for
+ * every real object regardless of configuration. That is a product defect, not
+ * a test-harness one, and is reported rather than papered over. Their logic is
+ * covered by tests/components/DocumentActions.spec.js and
+ * tests/composables/useDocudeskDocument.spec.js in the meantime.
  */
 
 import { test, expect } from '@playwright/test'
+import { ensureApp, dismissOverlays, suppressSupportDialog } from '../support/appFixture'
+import { readStagedManifest } from '../support/stagedManifest'
+import { E2E_BASE_URL as BASE } from '../support/baseUrl'
 
-const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
+const APP_SLUG = 'pw-docudesk'
+const SCHEMA_SLUG = 'hello-message'
+const TEMPLATE_NAME = 'Bevestigingsbrief'
 
-// @e2e docudesk-document-templates::attaching-a-template-writes-the-manifest-entry
-// QUARANTINED (Conduction/openbuild#41): openbuild admin builder UI not functional in this build — the Documents section / attach dialog does not render. Re-enable when #41 is fixed. Logic covered by vitest (DocumentAttachmentsSection.spec.js).
-test.skip('REQ-DDT-002 — attach a Docudesk template via the Documents section', async ({ page }) => {
+test.describe('docudesk-document-templates — builder surfaces', () => {
+	// The designer is a three-pane desktop surface; at the default 1280x720 the
+	// Documents section lands well below the fold and its controls never settle.
+	test.use({ viewport: { width: 1600, height: 1200 } })
+
+	/**
+	 * Replace the fixture app's manifest with a known baseline.
+	 *
+	 * `PageDesignerHost.appSchemas` reads `manifest.schemas` (not the register),
+	 * so embedding one schema here is what makes the dialog's schema picker
+	 * offer anything at all.
+	 *
+	 * @param page Playwright page.
+	 * @param documents Seed value for `runtime.documents[]`.
+	 * @return {Promise<void>}
+	 */
+	async function seedManifest(page, documents: object[] = []): Promise<void> {
+		const base = `${BASE}/index.php/apps/openbuild/api/applications/${APP_SLUG}/manifest`
+		const current = await page.request.get(base, { headers: { 'OCS-APIRequest': 'true' } })
+		expect(current.ok(), 'GET fixture manifest must succeed').toBeTruthy()
+		const manifest = await current.json()
+		const next = {
+			...manifest,
+			schemas: [{ slug: SCHEMA_SLUG, title: 'Hello Message', properties: { title: { type: 'string' } } }],
+			runtime: { ...(manifest.runtime || {}), ...(documents.length ? { documents } : {}) },
+		}
+		if (documents.length === 0 && next.runtime) {
+			delete next.runtime.documents
+		}
+		const written = await page.request.put(base, {
+			headers: { 'OCS-APIRequest': 'true' },
+			data: { manifest: next },
+		})
+		expect(written.ok(), 'PUT fixture manifest must succeed').toBeTruthy()
+	}
+
+	/**
+	 * Open the fixture app's page designer and scroll the Documents section in.
+	 *
+	 * @param page Playwright page.
+	 * @return {Promise<void>}
+	 */
+	async function openDesigner(page): Promise<void> {
+		await page.goto(`${BASE}/apps/openbuild/builder/${APP_SLUG}/pages?_version=production`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await page.waitForSelector('.page-designer__left', { timeout: 60_000 })
+		await dismissOverlays(page)
+		await page.locator('.ob-documents-section').scrollIntoViewIfNeeded()
+		await expect(page.locator('.ob-documents-section')).toBeVisible({ timeout: 30_000 })
+	}
+
+	/**
+	 * Pick an option from one of the dialog's NcSelects by its input label.
+	 *
+	 * Options are matched on TEXT, not on accessible name: NcSelect wraps an
+	 * option's label in nested elements, and the accessible-name computation
+	 * joins those nodes with a space — the "Bevestigingsbrief" option computes
+	 * as "Bevestigi ngsbrief", so `getByRole('option', { name })` never matches.
+	 * `hasText` reads textContent, which has no such seam.
+	 *
+	 * @param page Playwright page.
+	 * @param inputLabel The select's `inputLabel` text.
+	 * @param optionText The option to choose.
+	 * @return {Promise<void>}
+	 */
+	async function pickOption(page, inputLabel: RegExp, optionText: RegExp): Promise<void> {
+		await page.getByRole('combobox', { name: inputLabel }).click()
+		await page.getByRole('option').filter({ hasText: optionText }).first().click()
+	}
+
+	/**
+	 * Open the attach/edit dialog and wait until its template list has actually
+	 * arrived.
+	 *
+	 * The dialog fetches `GET api/templates` from its `open` watcher, so the
+	 * picker renders "No results" until that resolves. Opening the dropdown
+	 * before then made the option locator time out on a list that was merely
+	 * late — observed intermittently, and it is a race, not a slow assertion, so
+	 * it is fixed by waiting for the precondition rather than by a longer wait.
+	 *
+	 * @param page Playwright page.
+	 * @param trigger Accessible name of the button that opens the dialog.
+	 * @return {Promise<void>}
+	 */
+	async function openDialog(page, trigger: RegExp): Promise<void> {
+		const templates = page.waitForResponse(
+			(resp) => /\/apps\/docudesk\/api\/templates(\?.*)?$/.test(resp.url()) && resp.request().method() === 'GET',
+			{ timeout: 20_000 },
+		)
+		await page.getByRole('button', { name: trigger }).click()
+		const resp = await templates
+		expect(resp.status(), 'the template list must load before picking one').toBe(200)
+		// The list is rendered from the resolved promise a tick later.
+		await expect(page.locator('.ob-document-attach')).toBeVisible()
+	}
+
+	test.beforeEach(async ({ page }) => {
+		await suppressSupportDialog(page)
+		await ensureApp(page, APP_SLUG, 'PW Docudesk')
+	})
+
 	// @e2e docudesk-document-templates::attaching-a-template-writes-the-manifest-entry
-	await page.goto(`${BASE}/apps/openbuild/applications`)
-	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
-})
+	test('REQ-DDT-002 — attach a Docudesk template via the Documents section', async ({ page }) => {
+		await seedManifest(page)
+		await openDesigner(page)
 
-// @e2e docudesk-document-templates::preview-renders-before-committing
-// QUARANTINED (Conduction/openbuild#41): builder UI not functional in this build. Logic covered by vitest (dialog onPreview wiring).
-test.skip('REQ-DDT-002 — preview renders the template before saving', async ({ page }) => {
+		await expect(page.locator('.ob-documents-section__empty')).toBeVisible()
+		await openDialog(page, /attach template/i)
+
+		await pickOption(page, /^template$/i, new RegExp(TEMPLATE_NAME, 'i'))
+		await pickOption(page, /^schema$/i, /hello message/i)
+		await page.getByRole('textbox', { name: /action label/i }).fill('Generate confirmation letter')
+		await page.getByRole('button', { name: /^save$/i }).click()
+
+		// The Documents section lists the new attachment.
+		const item = page.locator('.ob-documents-section__item')
+		await expect(item).toHaveCount(1)
+		await expect(item.first()).toContainText('Generate confirmation letter')
+		await expect(item.first()).toContainText(TEMPLATE_NAME)
+
+		// …and the in-flight manifest carries the entry, with the template's own
+		// UUID and name snapshot (not just the label the user typed).
+		const staged = await readStagedManifest(page)
+		const documents = staged.runtime.documents
+		expect(documents).toHaveLength(1)
+		expect(documents[0].schema).toBe(SCHEMA_SLUG)
+		expect(documents[0].label).toBe('Generate confirmation letter')
+		expect(documents[0].templateName).toBe(TEMPLATE_NAME)
+		expect(documents[0].templateId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+	})
+
 	// @e2e docudesk-document-templates::preview-renders-before-committing
-	await page.goto(`${BASE}/apps/openbuild/applications`)
-	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
+	test('REQ-DDT-002 — preview renders the template before saving', async ({ page }) => {
+		await seedManifest(page)
+		await openDesigner(page)
+
+		await openDialog(page, /attach template/i)
+		await pickOption(page, /^template$/i, new RegExp(TEMPLATE_NAME, 'i'))
+
+		// Assert the CONTRACT (REQ-DDT-006 pins preview to this exact route),
+		// then assert the result is presented without committing anything.
+		const previewRequest = page.waitForRequest(
+			(req) => /\/apps\/docudesk\/api\/templates\/[^/]+\/preview$/.test(req.url()) && req.method() === 'POST',
+			{ timeout: 20_000 },
+		)
+		await page.getByRole('button', { name: /preview with sample data/i }).click()
+		await previewRequest
+
+		// Either a rendered body or the explicit failure message — both are
+		// "presented", and neither may silently do nothing.
+		await expect(
+			page.locator('.ob-document-attach__preview-body, .ob-document-attach__preview .ob-document-attach__error'),
+		).toBeVisible({ timeout: 20_000 })
+
+		// Nothing was saved: the manifest is still attachment-free.
+		const staged = await readStagedManifest(page)
+		expect(staged.runtime?.documents ?? []).toHaveLength(0)
+	})
+
+	// @e2e docudesk-document-templates::edit-warns-about-a-deleted-template
+	test('REQ-DDT-002 — editing warns when the template was deleted', async ({ page }) => {
+		// An attachment whose template no longer exists in Docudesk: the UUID is
+		// well-formed but unknown, so the dialog's snapshot refresh 404s.
+		await seedManifest(page, [{
+			id: 'pw-gone',
+			schema: SCHEMA_SLUG,
+			templateId: '00000000-0000-4000-8000-000000000000',
+			templateName: 'Verwijderde brief',
+			label: 'Generate deleted letter',
+		}])
+		await openDesigner(page)
+
+		await expect(page.locator('.ob-documents-section__item')).toHaveCount(1)
+
+		// REQ-DDT-006 pins the existence check to `GET api/templates/{id}`.
+		// Assert the call AND its status, so a warning that fails to appear is
+		// distinguishable from a check that was never made.
+		const snapshotResponse = page.waitForResponse(
+			(resp) => /\/apps\/docudesk\/api\/templates\/00000000-0000-4000-8000-000000000000$/.test(resp.url()),
+			{ timeout: 20_000 },
+		)
+		await page.locator('.ob-documents-section__item').first().getByRole('button', { name: /^edit$/i }).click()
+		expect((await snapshotResponse).status(), 'a deleted template must 404').toBe(404)
+
+		await expect(page.locator('.ob-document-attach__warn')).toContainText(/no longer exists/i, { timeout: 20_000 })
+		// The builder can still recover — the template picker stays usable.
+		await expect(page.getByRole('combobox', { name: /^template$/i })).toBeVisible()
+	})
+
+	// @e2e docudesk-document-templates::dependency-auto-added-on-save
+	test('REQ-DDT-005 — docudesk dependency auto-added on save', async ({ page }) => {
+		await seedManifest(page, [{
+			id: 'pw-dep',
+			schema: SCHEMA_SLUG,
+			templateId: '11111111-1111-4111-8111-111111111111',
+			templateName: TEMPLATE_NAME,
+			label: 'Generate confirmation letter',
+		}])
+		await openDesigner(page)
+
+		/**
+		 * Read the persisted `dependencies` array.
+		 *
+		 * Fetched from inside the page rather than through `page.request`: the
+		 * poll below re-reads on every attempt, and a `page.request` response
+		 * object is disposed once a newer one supersedes it ("Response has been
+		 * disposed" on `.json()`). The in-page fetch also rides the session the
+		 * save itself used.
+		 *
+		 * @return {Promise<string[]>} The stored dependencies.
+		 */
+		const persistedDependencies = async (): Promise<string[]> => {
+			return page.evaluate(async (slug) => {
+				const resp = await fetch(`/index.php/apps/openbuild/api/applications/${slug}/manifest`, {
+					headers: { 'OCS-APIRequest': 'true' },
+				})
+				if (!resp.ok) {
+					return []
+				}
+				return (await resp.json()).dependencies || []
+			}, APP_SLUG)
+		}
+
+		await page.getByRole('button', { name: /save pages/i }).click()
+		await expect.poll(
+			async () => (await persistedDependencies()).filter((d) => d === 'docudesk').length,
+			{ timeout: 20_000 },
+		).toBe(1)
+
+		// Re-saving must not duplicate the entry.
+		await page.getByRole('button', { name: /save pages/i }).click()
+		await expect(page.locator('.page-designer-host__toast')).toBeVisible({ timeout: 20_000 })
+		expect((await persistedDependencies()).filter((d) => d === 'docudesk')).toHaveLength(1)
+	})
+
+	// @e2e docudesk-document-templates::designer-degrades-when-docudesk-is-missing
+	test('REQ-DDT-005 — designer degrades when Docudesk is missing', async ({ page }) => {
+		await seedManifest(page, [{
+			id: 'pw-existing',
+			schema: SCHEMA_SLUG,
+			templateId: '22222222-2222-4222-8222-222222222222',
+			templateName: TEMPLATE_NAME,
+			label: 'Generate confirmation letter',
+		}])
+
+		// Simulate absence the way `useAppStatus` actually decides it. It has TWO
+		// signals and both must say absent: first the server-injected
+		// `OC.appswebroots` map (a synchronous positive — Docudesk IS installed
+		// here, so routing alone left the Add button enabled), then a probe of
+		// `/apps/docudesk/api` where only 404/501 counts as absent. Removing the
+		// webroots entry and 404-ing the probe is exactly the state an
+		// uninstalled Docudesk produces, rather than a bespoke test flag.
+		await page.addInitScript(() => {
+			const install = () => {
+				const oc = (window as unknown as { OC?: { appswebroots?: Record<string, string> } }).OC
+				if (oc && oc.appswebroots) {
+					delete oc.appswebroots.docudesk
+				}
+			}
+			install()
+			document.addEventListener('DOMContentLoaded', install)
+		})
+		await page.route('**/apps/docudesk/api', (route) => route.fulfill({ status: 404, body: '' }))
+		await openDesigner(page)
+
+		// The Add action is disabled, with the missing-app hint.
+		await expect(page.getByRole('button', { name: /attach template/i })).toBeDisabled({ timeout: 20_000 })
+		await expect(page.locator('.ob-documents-section__hint')).toContainText(/not available/i)
+
+		// The existing attachment stays listed, and detachable.
+		const item = page.locator('.ob-documents-section__item')
+		await expect(item).toHaveCount(1)
+		await expect(item.first()).toContainText('Generate confirmation letter')
+		// Detaching asks for confirmation through `window.confirm`, which
+		// Playwright auto-DISMISSES unless a handler accepts it — without this
+		// the click is a no-op and the list never changes.
+		page.once('dialog', (dialog) => dialog.accept())
+		await item.first().getByRole('button', { name: /^detach$/i }).click()
+		await expect(page.locator('.ob-documents-section__item')).toHaveCount(0)
+	})
 })
 
-// @e2e docudesk-document-templates::edit-warns-about-a-deleted-template
-// QUARANTINED (Conduction/openbuild#41): builder UI not functional in this build. Logic covered by vitest (dialog refreshTemplateSnapshot 404 → templateMissing).
-test.skip('REQ-DDT-002 — editing warns when the template was deleted', async ({ page }) => {
-	// @e2e docudesk-document-templates::edit-warns-about-a-deleted-template
-	await page.goto(`${BASE}/apps/openbuild/applications`)
-	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
-})
+/*
+ * Runtime scenarios (REQ-DDT-003, REQ-DDT-004, and the runtime half of
+ * REQ-DDT-005).
+ *
+ * BLOCKED ON A PRODUCT DEFECT, recorded here with evidence rather than hidden
+ * behind the stale "#41 builder UI not functional" reason these carried:
+ *
+ *   `DocumentActions.schemaAttachments` filters on
+ *   `object['@self'].schema === attachment.schema`. OpenRegister returns
+ *   `@self.schema` as the NUMERIC schema id — measured on this instance, a
+ *   `hello-message` object carries `"@self": { "register": "15", "schema": "21" }`
+ *   — while a `runtime.documents[]` entry declares the schema SLUG
+ *   (`"hello-message"`), which is what the attach dialog's schema picker writes
+ *   and what REQ-DDT-001 specifies. The comparison can therefore never be true
+ *   for a real object, so the surface renders nothing no matter how it is
+ *   configured, and there is no browser-observable behaviour left to assert.
+ *
+ * Un-skipping these would produce five failures on a defect in the app, not in
+ * the tests. Fixing it means resolving the object's schema id to its slug (or
+ * matching on either form) in DocumentActions, which is a product change beyond
+ * this file. A separate wiring defect on the same surface — the widget never
+ * received `attachments` at all, because CnPageRenderer's slot-override path
+ * hands a registry component the detail surface's own props — IS fixed, in
+ * DocumentActions.vue, and covered by tests/components/DocumentActions.spec.js.
+ */
 
 // @e2e docudesk-document-templates::generate-downloads-the-document
-// QUARANTINED (Conduction/openbuild#41): runtime detail surface not reachable through the quarantined builder. Logic + request shape covered by vitest (useDocudeskDocument.spec.js) and Newman.
+// BLOCKED (product defect): `@self.schema` is a numeric id, `documents[].schema` a slug — see the note above. Logic + request shape covered by vitest (useDocudeskDocument.spec.js) and Newman.
 test.skip('REQ-DDT-003 — generate produces a download', async ({ page }) => {
 	// @e2e docudesk-document-templates::generate-downloads-the-document
 	await page.goto(`${BASE}/apps/openbuild/applications`)
@@ -56,7 +358,7 @@ test.skip('REQ-DDT-003 — generate produces a download', async ({ page }) => {
 })
 
 // @e2e docudesk-document-templates::filename-template-interpolates-object-properties
-// QUARANTINED (Conduction/openbuild#41): runtime surface not reachable. Logic covered by vitest (renderFilename + buildFilename).
+// BLOCKED (product defect): see the note above. Logic covered by vitest (renderFilename + buildFilename).
 test.skip('REQ-DDT-003 — filename template interpolates object properties', async ({ page }) => {
 	// @e2e docudesk-document-templates::filename-template-interpolates-object-properties
 	await page.goto(`${BASE}/apps/openbuild/applications`)
@@ -64,7 +366,7 @@ test.skip('REQ-DDT-003 — filename template interpolates object properties', as
 })
 
 // @e2e docudesk-document-templates::403-renders-a-no-access-toast-not-an-error
-// QUARANTINED (Conduction/openbuild#41): runtime surface not reachable. Logic covered by vitest (403 → no-access error code).
+// BLOCKED (product defect): see the note above. Logic covered by vitest (403 → no-access error code).
 test.skip('REQ-DDT-003 — a 403 renders the no-access message', async ({ page }) => {
 	// @e2e docudesk-document-templates::403-renders-a-no-access-toast-not-an-error
 	await page.goto(`${BASE}/apps/openbuild/applications`)
@@ -72,7 +374,7 @@ test.skip('REQ-DDT-003 — a 403 renders the no-access message', async ({ page }
 })
 
 // @e2e docudesk-document-templates::double-click-issues-one-request
-// QUARANTINED (Conduction/openbuild#41): runtime surface not reachable. Logic covered by vitest (in-flight guard test).
+// BLOCKED (product defect): see the note above. Logic covered by vitest (in-flight guard test).
 test.skip('REQ-DDT-003 — double-click issues exactly one request', async ({ page }) => {
 	// @e2e docudesk-document-templates::double-click-issues-one-request
 	await page.goto(`${BASE}/apps/openbuild/applications`)
@@ -80,7 +382,7 @@ test.skip('REQ-DDT-003 — double-click issues exactly one request', async ({ pa
 })
 
 // @e2e docudesk-document-templates::two-attachments-render-two-ordered-buttons
-// QUARANTINED (Conduction/openbuild#41): runtime surface not reachable. Logic covered by vitest (DocumentActions ordered-buttons test).
+// BLOCKED (product defect): see the note above. Logic covered by vitest (DocumentActions ordered-buttons test).
 test.skip('REQ-DDT-004 — two attachments render two ordered buttons', async ({ page }) => {
 	// @e2e docudesk-document-templates::two-attachments-render-two-ordered-buttons
 	await page.goto(`${BASE}/apps/openbuild/applications`)
@@ -88,31 +390,15 @@ test.skip('REQ-DDT-004 — two attachments render two ordered buttons', async ({
 })
 
 // @e2e docudesk-document-templates::no-attachments-renders-nothing
-// QUARANTINED (Conduction/openbuild#41): runtime surface not reachable. Logic covered by vitest (DocumentActions empty-render test).
+// BLOCKED (product defect): see the note above. Logic covered by vitest (DocumentActions empty-render test).
 test.skip('REQ-DDT-004 — no attachments renders nothing', async ({ page }) => {
 	// @e2e docudesk-document-templates::no-attachments-renders-nothing
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
 })
 
-// @e2e docudesk-document-templates::dependency-auto-added-on-save
-// QUARANTINED (Conduction/openbuild#41): builder save not reachable. Logic covered by vitest (manifestDependencies reconcileDocumentDependency).
-test.skip('REQ-DDT-005 — docudesk dependency auto-added on save', async ({ page }) => {
-	// @e2e docudesk-document-templates::dependency-auto-added-on-save
-	await page.goto(`${BASE}/apps/openbuild/applications`)
-	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
-})
-
-// @e2e docudesk-document-templates::designer-degrades-when-docudesk-is-missing
-// QUARANTINED (Conduction/openbuild#41): builder UI not functional. Logic covered by vitest (disabled-Add absent-app state).
-test.skip('REQ-DDT-005 — designer degrades when Docudesk is missing', async ({ page }) => {
-	// @e2e docudesk-document-templates::designer-degrades-when-docudesk-is-missing
-	await page.goto(`${BASE}/apps/openbuild/applications`)
-	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
-})
-
 // @e2e docudesk-document-templates::runtime-surface-degrades-without-requests
-// QUARANTINED (Conduction/openbuild#41): runtime surface not reachable. Logic covered by vitest (DocumentActions absent-app state issues no request).
+// BLOCKED (product defect): see the note above. Logic covered by vitest (DocumentActions absent-app state issues no request).
 test.skip('REQ-DDT-005 — runtime surface degrades without requests', async ({ page }) => {
 	// @e2e docudesk-document-templates::runtime-surface-degrades-without-requests
 	await page.goto(`${BASE}/apps/openbuild/applications`)
