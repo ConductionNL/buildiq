@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: EUPL-1.2
-import { createApp, reactive } from 'vue'
+import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import { translate as t, translatePlural as n, loadTranslations } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
@@ -84,11 +84,7 @@ const RoutePageRenderer = { ...CnPageRenderer }
 // pages/menu concatenation exactly.
 const manifestFragmentContext = require.context('./manifest.d/', false, /\.json$/)
 const manifestFragments = manifestFragmentContext.keys().sort().map((key) => manifestFragmentContext(key))
-// `reactive()` so BuilderHost can add/remove the builder-context "Schemas" nav
-// entry in place (REQ-OBR-007a, see src/store/builderMenu.js). CnAppRoot hands
-// CnAppNav the live manifest BY IDENTITY precisely so menu updates re-render;
-// without this wrapper the array edit would not be observed.
-const mergedManifest = reactive(buildManifest(bundledManifest, manifestFragments, menuLayout))
+const mergedManifest = buildManifest(bundledManifest, manifestFragments, menuLayout)
 
 /**
  * Build the vue-router config from the manifest. Each manifest page becomes
