@@ -228,17 +228,28 @@ export default {
 			this.$emit('update:modelValue', next)
 		},
 		/**
-		 * Observed behaviour of `removeField` (retrofit annotation).
+		 * Remove a field row, keeping the expanded-details state pinned to the
+		 * SAME fields it was pinned to before.
+		 *
+		 * `expandedIndices` holds positions, not identities, so a bare splice
+		 * silently re-points every open panel one field to the left: delete row
+		 * 0 while row 1 is open and the panel stays open showing what is now row
+		 * 1 — a different field. The author goes on editing conditions and
+		 * validation believing they belong to the row they opened, and a live
+		 * dangling-reference warning on the shifted field vanishes because its
+		 * panel is no longer the expanded one (REQ-OBFEL-004 warns *inside* the
+		 * details area). Remap instead: drop the removed index, shift the rest.
 		 *
 		 * @param {number} index - position of the field to drop from the `fields` array.
-		 *   Note that `expandedIndices` is NOT re-based, so the disclosure state below
-		 *   the removal point shifts by one row.
 		 * @return {void}
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeField(index) {
 			const next = this.localFields.slice()
 			next.splice(index, 1)
+			this.expandedIndices = this.expandedIndices
+				.filter((i) => i !== index)
+				.map((i) => (i > index ? i - 1 : i))
 			this.$emit('update:modelValue', next)
 		},
 		/**

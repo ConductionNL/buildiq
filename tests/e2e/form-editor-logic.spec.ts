@@ -11,79 +11,182 @@
  * NOTE: Playwright binaries are NOT installed by `npm install`. Run
  * `npm run test:e2e:install` once before invoking `npm run test:e2e`.
  *
- * These specs were authored and NOT run against the shared dev instance
- * (per task instructions); they follow the same structure/selectors as
- * `page-designer.spec.ts` and mirror the same #41 quarantine.
+ * UN-QUARANTINED 2026-07-29 — green end to end (5/5) against a live instance.
+ * The original was written blind against a surface that does not exist: it
+ * seeded through a "Raw JSON" tab on `/applications/{slug}/design` (the raw
+ * manifest editor is a sidebar tab on the app DETAIL page — the designer lives
+ * at `/builder/:slug/pages`), and located field rows by text when a row renders
+ * its key in an `<input :value>`. Both are rewritten below; REQ-OBFEL-005 has no
+ * UI surface of its own (schema-bound form defaults) and is covered by the
+ * FormPageEditor unit specs.
+ *
+ * Driving it for real also surfaced a product bug, now fixed: FormFieldBuilder
+ * tracked open details panels by INDEX, so deleting an earlier row left the
+ * panel open on a different field and swallowed its dangling-reference warning.
  */
 
 import { test, expect } from '@playwright/test'
+import { ensureApp, dismissOverlays, suppressSupportDialog } from './support/appFixture'
 
-// STILL QUARANTINED — #41's blockers are gone, but this suite's seeding is
-// stale: it navigates to `/apps/openbuild/applications/{slug}/design`, which is
-// not a route in the manifest (the page designer lives at
-// `/builder/:slug/pages`), and it drives a "Raw JSON" tab plus an
-// `.application-editor__textarea` that do not exist anywhere in src. Its own
-// header records that it was authored without ever being run. Re-seeding the
-// form page through the manifest API and driving the real Page Designer is a
-// rewrite of its harness, not a locator fix.
-test.describe.skip('openbuild form-editor-logic', () => {
-	const APP_SLUG = 'hello-world'
+// Merge note (development -> feat/vue-3-migration, 2026-07-30): arrived as
+// `process.env.NC_BASE_URL ?? 'http://localhost:8080'`, which ignores
+// PLAYWRIGHT_BASE_URL. With NC_BASE_URL unset — how this suite is driven — that
+// resolves to :8080, the SHARED `nextcloud` container. This spec PUTs the app
+// manifest, so it would have written fixtures to somebody else's instance while
+// `ensureApp()` (relative URL, config baseURL) created the app on :8099.
+// See tests/e2e/support/baseUrl.ts.
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
+
+// Harness rewritten 2026-07-28. The original seeded through a "Raw JSON" tab on
+// `/apps/openbuild/applications/{slug}/design` — neither the route nor the
+// textarea exists (the designer is `/builder/:slug/pages`, and its host is
+// PageDesignerHost). The form page is now seeded through the manifest API and
+// every assertion reads the PERSISTED manifest back, which is a truer end-to-end
+// check than inspecting an unsaved editor buffer.
+test.describe('openbuild form-editor-logic', () => {
+	// The page designer is a three-pane desktop surface: at Playwright's default
+	// 1280x720 the page-list rows land below the fold (measured y=728), where the
+	// click never settles. Give it a desktop viewport.
+	test.use({ viewport: { width: 1600, height: 1200 } })
+
+	const APP_SLUG = 'pw-form-logic'
 	const FORM_PAGE_ID = 'e2e-form-logic'
 
 	/**
-	 * Seed a `type: "form"` page (three fields: `wantsContact` boolean,
-	 * `email` string, `phone` string) via the Raw JSON tab, then switch back
-	 * to Design and select it. Every test starts from this state so each
-	 * scenario authors its own steps/conditions/validation from a known,
-	 * field-only (no steps yet) baseline.
+	 * The manifest endpoint reads plain but writes wrapped: GET returns the
+	 * manifest object itself, while PUT expects `{ manifest: {...} }` and
+	 * rejects a bare body with `bad_request: Missing or invalid manifest`.
 	 *
 	 * @param {import('@playwright/test').Page} page - the Playwright page.
-	 * @return {Promise<void>}
+	 * @return {Promise<object>} The persisted manifest.
 	 */
-	async function seedFormPageAndSelect(page) {
-		await page.goto(`/apps/openbuild/applications/${APP_SLUG}/design`)
-		await page.waitForSelector('.page-designer__left', { timeout: 20_000 })
-
-		await page.getByRole('button', { name: /raw json/i }).click()
-		const textarea = page.locator('.application-editor__textarea')
-		await expect(textarea).toBeVisible()
-
-		const raw = await textarea.inputValue()
-		const manifest = JSON.parse(raw)
-		manifest.pages = Array.isArray(manifest.pages) ? manifest.pages : []
-		manifest.pages = manifest.pages.filter((p) => p.id !== FORM_PAGE_ID)
-		manifest.pages.push({
-			id: FORM_PAGE_ID,
-			type: 'form',
-			route: `/${FORM_PAGE_ID}`,
-			config: {
-				fields: [
-					{ key: 'wantsContact', label: 'Wants contact', type: 'boolean' },
-					{ key: 'email', label: 'Email', type: 'string' },
-					{ key: 'phone', label: 'Phone', type: 'string' },
-				],
-			},
-		})
-		await textarea.fill(JSON.stringify(manifest, null, 2))
-
-		await page.getByRole('button', { name: /^design$/i }).click()
-		await page.waitForSelector('.page-designer__left', { timeout: 10_000 })
-		await page.getByText(FORM_PAGE_ID).first().click()
+	async function fetchManifest(page) {
+		const resp = await page.request.get(
+			`${BASE_URL}/index.php/apps/openbuild/api/applications/${APP_SLUG}/manifest`,
+			{ headers: { 'OCS-APIRequest': 'true' } },
+		)
+		expect(resp.ok(), 'GET manifest must succeed').toBeTruthy()
+		return resp.json()
 	}
 
 	/**
-	 * Read the manifest back out via the Raw JSON tab.
+	 * Replace the app's pages with a known baseline containing exactly one
+	 * `type: "form"` page (three fields, no steps yet), so each scenario authors
+	 * its own steps/conditions/validation from the same starting point and the
+	 * suite is idempotent across runs.
 	 *
 	 * @param {import('@playwright/test').Page} page - the Playwright page.
-	 * @return {Promise<object>}
+	 * @param {?Function} mutate - optional hook to shape the seeded page config
+	 *   before it is written, for shapes the Design surface cannot author.
+	 * @return {Promise<number>} Index of the seeded page in `manifest.pages`.
+	 */
+	async function seedFormPage(page, mutate = null) {
+		const manifest = await fetchManifest(page)
+		const pages = (manifest.pages || []).filter((p) => p.id !== FORM_PAGE_ID)
+		const config = {
+			fields: [
+				{ key: 'wantsContact', label: 'Wants contact', type: 'boolean' },
+				{ key: 'email', label: 'Email', type: 'string' },
+				{ key: 'phone', label: 'Phone', type: 'string' },
+			],
+		}
+		if (mutate) {
+			mutate(config)
+		}
+		pages.push({
+			id: FORM_PAGE_ID,
+			type: 'form',
+			route: `/${FORM_PAGE_ID}`,
+			config,
+		})
+		const resp = await page.request.put(
+			`${BASE_URL}/index.php/apps/openbuild/api/applications/${APP_SLUG}/manifest`,
+			{ headers: { 'OCS-APIRequest': 'true' }, data: { manifest: { ...manifest, pages } } },
+		)
+		expect(resp.ok(), 'seeding the form page via the manifest API must succeed').toBeTruthy()
+		return pages.length - 1
+	}
+
+	/**
+	 * Seed the form page and open it in the real Page Designer.
+	 *
+	 * Selection is by INDEX, not by text: a page-list row renders the page id in
+	 * an `<input value=…>`, and `hasText` matches text content, never input
+	 * values — the row's visible text is just its type tag. The seeded page is
+	 * appended last, and seedFormPage() returns that index.
+	 *
+	 * @param {import('@playwright/test').Page} page - the Playwright page.
+	 * @param {?Function} mutate - optional seeded-config hook, see seedFormPage().
+	 * @return {Promise<void>}
+	 */
+	async function seedFormPageAndSelect(page, mutate = null) {
+		const index = await seedFormPage(page, mutate)
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages?_version=production`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await page.waitForSelector('.page-designer__left', { timeout: 60_000 })
+		await dismissOverlays(page)
+		// Select by dispatching the row's own click event rather than a real
+		// mouse click. Two things get in the way of clicking it for real:
+		// the row's id/route inputs carry `@click.stop` (so a click landing on
+		// one never reaches the row's select handler), and further down the list
+		// `<section class="page-designer__centre">` overlaps the left pane and
+		// intercepts pointer events at the row's position. Selecting a page is
+		// setup here, not the behaviour under test, so dispatch it directly.
+		const row = page.locator('.page-list-editor__row').nth(index)
+		await row.scrollIntoViewIfNeeded()
+		await row.dispatchEvent('click')
+		await expect(page.locator('.form-page-editor')).toBeVisible({ timeout: 30_000 })
+	}
+
+	/**
+	 * Read the designer's LIVE (staged) manifest.
+	 *
+	 * The original read this from a "Raw JSON" tab, which does not exist. Read it
+	 * from the designer component instead — same thing the tab used to show: the
+	 * in-editor buffer, before any save. Deliberately NOT read back through the
+	 * API: the host treats a successful save as a session boundary and bumps its
+	 * session key, which resets the designer (and its selection) mid-scenario.
+	 *
+	 * @param {import('@playwright/test').Page} page - the Playwright page.
+	 * @return {Promise<object>} The staged manifest.
 	 */
 	async function readManifest(page) {
-		await page.getByRole('button', { name: /raw json/i }).click()
-		const textarea = page.locator('.application-editor__textarea')
-		const raw = await textarea.inputValue()
-		await page.getByRole('button', { name: /^design$/i }).click()
-		return JSON.parse(raw)
+		return page.evaluate(() => {
+			const el = document.querySelector('.page-designer')
+			const vm = el && el.__vue__
+			if (!vm || !vm.manifest) {
+				throw new Error('page designer not mounted — cannot read the staged manifest')
+			}
+			return JSON.parse(JSON.stringify(vm.manifest))
+		})
 	}
+
+	/**
+	 * A field row in the FormFieldBuilder, BY INDEX.
+	 *
+	 * Not by text: a row renders the field key in an `<input :value>`, which Vue
+	 * binds as a DOM property, so neither `hasText` nor an `[value=…]` attribute
+	 * selector matches it — `filter({ hasText: 'email' })` resolved to zero rows
+	 * and every scenario timed out on the first click. The seeded field order is
+	 * fixed (wantsContact, email, phone), so index is both stable and readable.
+	 *
+	 * @param {import('@playwright/test').Page} page - the Playwright page.
+	 * @param {number} index - zero-based row index.
+	 * @return {import('@playwright/test').Locator} The row locator.
+	 */
+	function fieldRow(page, index) {
+		return page.locator('.form-field-builder__row').nth(index)
+	}
+
+	test.beforeEach(async ({ page }) => {
+		// The first-open support dialog otherwise mounts a mask over the designer
+		// and swallows every click; suppress it before the first navigation.
+		await suppressSupportDialog(page)
+		// Dedicated fixture app: these scenarios rewrite the app's pages wholesale,
+		// which must not happen to the shared hello-world seed other suites rely on.
+		await ensureApp(page, APP_SLUG, 'PW Form Logic')
+	})
 
 	test('REQ-OBFEL-001: add/assign/reorder/delete steps', async ({ page }) => {
 		await seedFormPageAndSelect(page)
@@ -142,8 +245,7 @@ test.describe.skip('openbuild form-editor-logic', () => {
 	test('REQ-OBFEL-002: condition builder writes LOCAL visibleWhen', async ({ page }) => {
 		await seedFormPageAndSelect(page)
 
-		const fieldRows = page.locator('.form-field-builder__row')
-		const emailRow = fieldRows.filter({ hasText: 'email' })
+		const emailRow = fieldRow(page, 1)
 		await emailRow.locator('.form-field-builder__disclosure').click()
 
 		// eq (default, omitted) + boolean coercion.
@@ -167,31 +269,36 @@ test.describe.skip('openbuild form-editor-logic', () => {
 		email = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'email')
 		expect(email).not.toHaveProperty('visibleWhen')
 
-		// Advanced endpoint condition authored in Raw JSON passes through
-		// untouched — Design shows the read-only summary and an unrelated
-		// field edit leaves it byte-for-byte unchanged.
-		await page.getByRole('button', { name: /raw json/i }).click()
-		const textarea = page.locator('.application-editor__textarea')
-		manifest = JSON.parse(await textarea.inputValue())
-		const formPage = manifest.pages.find((p) => p.id === FORM_PAGE_ID)
-		formPage.config.fields.find((f) => f.key === 'email').visibleWhen = { endpoint: '/api/status', field: 'ready' }
-		await textarea.fill(JSON.stringify(manifest, null, 2))
-		await page.getByRole('button', { name: /^design$/i }).click()
+		// An advanced (endpoint-shaped) condition authored OUTSIDE the Design
+		// surface passes through untouched: Design renders a read-only summary
+		// and an unrelated edit to the same field leaves it byte-for-byte intact.
+		//
+		// The original authored this through a "Raw JSON" tab on the designer.
+		// There is no such tab — the raw manifest editor is a separate sidebar
+		// tab on the app detail page (ApplicationManifestTab), not part of the
+		// page designer — so seed the advanced condition through the manifest
+		// API instead. Same contract under test: a shape Design cannot author
+		// must survive Design editing the field around it.
+		await seedFormPageAndSelect(page, (config) => {
+			config.fields[1].visibleWhen = { endpoint: '/api/status', field: 'ready' }
+		})
+		const advancedRow = fieldRow(page, 1)
+		await advancedRow.locator('.form-field-builder__disclosure').click()
+		await expect(advancedRow.locator('.visible-when-builder__advanced')).toBeVisible()
 
-		await emailRow.locator('.form-field-builder__disclosure').click()
-		await expect(emailRow.getByText(/advanced condition/i)).toBeVisible()
-
-		await page.getByLabel(/^label$/i).first().fill('Email address')
+		// Edit the same field's label (the row's second input) — an edit Design
+		// DOES own, right next to the condition it must not touch.
+		await advancedRow.getByPlaceholder('Label').fill('Email address')
 		manifest = await readManifest(page)
-		email = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'email')
-		expect(email.visibleWhen).toEqual({ endpoint: '/api/status', field: 'ready' })
+		const advanced = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'email')
+		expect(advanced.label).toBe('Email address')
+		expect(advanced.visibleWhen).toEqual({ endpoint: '/api/status', field: 'ready' })
 	})
 
 	test('REQ-OBFEL-003: validation builder writes the structured object', async ({ page }) => {
 		await seedFormPageAndSelect(page)
 
-		const fieldRows = page.locator('.form-field-builder__row')
-		const emailRow = fieldRows.filter({ hasText: 'email' })
+		const emailRow = fieldRow(page, 1)
 		await emailRow.locator('.form-field-builder__disclosure').click()
 
 		await emailRow.locator('input[type="checkbox"]').check()
@@ -210,18 +317,24 @@ test.describe.skip('openbuild form-editor-logic', () => {
 			message: 'i18n.email-invalid',
 		})
 
-		// Seed a field with legacy flat required/pattern via Raw JSON, edit
-		// its validation, assert normalisation.
-		await page.getByRole('button', { name: /raw json/i }).click()
-		const textarea = page.locator('.application-editor__textarea')
-		manifest = JSON.parse(await textarea.inputValue())
-		const formPage = manifest.pages.find((p) => p.id === FORM_PAGE_ID)
-		formPage.config.fields.find((f) => f.key === 'phone').required = true
-		formPage.config.fields.find((f) => f.key === 'phone').pattern = '^\\d+$'
-		await textarea.fill(JSON.stringify(manifest, null, 2))
-		await page.getByRole('button', { name: /^design$/i }).click()
+		// A non-compiling pattern is rejected inline and is NEVER written — the
+		// last known-good pattern stays.
+		await emailRow.getByLabel(/^pattern$/i).fill('[a-')
+		await expect(emailRow.locator('.field-validation-builder__pattern-error')).toBeVisible()
+		manifest = await readManifest(page)
+		email = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'email')
+		expect(email.validation.pattern).toBe('^[^@]+@[^@]+$') // unchanged
 
-		const phoneRow = fieldRows.filter({ hasText: 'phone' })
+		// Legacy flat `required` / `pattern` (the pre-REQ-OBFEL-003 shape) is
+		// displayed by the builder and NORMALISED into `validation` the moment
+		// the field is edited, with the flat keys dropped. Seeded through the
+		// manifest API — the original drove a "Raw JSON" designer tab that does
+		// not exist (see REQ-OBFEL-002 for the same substitution).
+		await seedFormPageAndSelect(page, (config) => {
+			config.fields[2].required = true
+			config.fields[2].pattern = '^\\d+$'
+		})
+		const phoneRow = fieldRow(page, 2)
 		await phoneRow.locator('.form-field-builder__disclosure').click()
 		await expect(phoneRow.locator('input[type="checkbox"]')).toBeChecked()
 		await phoneRow.getByLabel(/^message$/i).fill('i18n.phone-invalid')
@@ -231,91 +344,84 @@ test.describe.skip('openbuild form-editor-logic', () => {
 		expect(phone.validation).toEqual({ required: true, pattern: '^\\d+$', message: 'i18n.phone-invalid' })
 		expect(phone).not.toHaveProperty('required')
 		expect(phone).not.toHaveProperty('pattern')
-		// The untouched sibling (email) keeps its structured object as authored above.
-		email = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'email')
-		expect(email.validation.pattern).toBe('^[^@]+@[^@]+$')
-
-		// A non-compiling pattern is rejected inline and never written.
-		await emailRow.getByLabel(/^pattern$/i).fill('[a-')
-		await expect(emailRow.locator('.field-validation-builder__pattern-error')).toBeVisible()
-		manifest = await readManifest(page)
-		email = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'email')
-		expect(email.validation.pattern).toBe('^[^@]+@[^@]+$') // unchanged
+		// The untouched sibling keeps its own shape — normalisation is per-field.
+		const sibling = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'email')
+		expect(sibling).not.toHaveProperty('validation')
 	})
 
 	test('REQ-OBFEL-004: dangling references warn live without deletion', async ({ page }) => {
 		await seedFormPageAndSelect(page)
 
-		const fieldRows = page.locator('.form-field-builder__row')
-		const emailRow = fieldRows.filter({ hasText: 'email' })
-		await emailRow.locator('.form-field-builder__disclosure').click()
-		await emailRow.getByLabel(/condition field/i).selectOption('wantsContact')
+		await fieldRow(page, 1).locator('.form-field-builder__disclosure').click()
+		await fieldRow(page, 1).getByLabel(/condition field/i).selectOption('wantsContact')
 
 		await page.locator('.form-steps-manager__add').click()
 		const stepRow = page.locator('.form-steps-manager__step').first()
 		await stepRow.locator('.form-steps-manager__select').selectOption('wantsContact')
 		await stepRow.locator('.form-steps-manager__assign button').click()
 
-		// Remove the wantsContact field.
-		const wantsContactRow = fieldRows.filter({ hasText: 'wantsContact' })
-		await wantsContactRow.locator('.form-field-builder__remove').click()
+		// Remove the wantsContact field (row 0) — email/phone shift up by one, so
+		// email is row 0 from here on.
+		await fieldRow(page, 0).locator('.form-field-builder__remove').click()
 
-		// Both warnings appear immediately.
-		await expect(emailRow.locator('[role="alert"]')).toBeVisible()
+		// Both warnings appear immediately, without deleting anything.
+		await expect(fieldRow(page, 0).locator('[role="alert"]')).toBeVisible()
 		await expect(stepRow.locator('[role="alert"]')).toBeVisible()
 
-		// Raw JSON still carries the stale visibleWhen and step entry.
+		// The manifest still carries the stale visibleWhen and step entry — a
+		// dangling reference WARNS, it never silently rewrites the author's data.
 		const manifest = await readManifest(page)
 		const formPage = manifest.pages.find((p) => p.id === FORM_PAGE_ID)
 		expect(formPage.config.fields.find((f) => f.key === 'email').visibleWhen.field).toBe('wantsContact')
 		expect(formPage.config.steps[0].fields).toContain('wantsContact')
 	})
 
-	test('REQ-OBFEL-006: raw JSON round-trip + save', async ({ page }) => {
-		await seedFormPageAndSelect(page)
+	test('REQ-OBFEL-006: externally-authored shapes round-trip through Design and survive save', async ({ page }) => {
+		// Author every shape Design cannot itself produce — an advanced condition,
+		// a pre-built steps array, a structured validation object, and a wholly
+		// unknown key — then edit ONE thing in Design and save. Nothing else may
+		// move, in the editor or in what lands on the server.
+		const steps = [{ id: 'contact', title: 'Contact', fields: ['wantsContact', 'email', 'phone'] }]
+		await seedFormPageAndSelect(page, (config) => {
+			config.steps = steps
+			config.fields[1].visibleWhen = { endpoint: '/api/status', field: 'ready' }
+			config.fields[2].validation = { required: true }
+			config.customUnknownKey = 'preserved'
+			config.submitLabel = 'form.submit'
+		})
+		const before = await readManifest(page)
+		const beforeOtherKeys = Object.keys(before).filter((k) => k !== 'pages').sort()
 
-		await page.getByRole('button', { name: /raw json/i }).click()
-		const textarea = page.locator('.application-editor__textarea')
-		const manifest = JSON.parse(await textarea.inputValue())
-		const formPage = manifest.pages.find((p) => p.id === FORM_PAGE_ID)
-		formPage.config.steps = [{ id: 'contact', title: 'Contact', fields: ['wantsContact', 'email', 'phone'] }]
-		formPage.config.fields.find((f) => f.key === 'email').visibleWhen = { endpoint: '/api/status', field: 'ready' }
-		formPage.config.fields.find((f) => f.key === 'phone').validation = { required: true }
-		formPage.config.customUnknownKey = 'preserved'
-		formPage.config.submitLabel = 'form.submit'
-		const beforeSnapshot = JSON.stringify(manifest)
-		await textarea.fill(JSON.stringify(manifest, null, 2))
-
-		// Edit the submit label in Design — byte-for-byte survival of
-		// everything else in Raw JSON afterwards.
-		await page.getByRole('button', { name: /^design$/i }).click()
 		await page.getByLabel(/submit label/i).fill('form.submit.updated')
 
-		const raw2 = await (async () => {
-			await page.getByRole('button', { name: /raw json/i }).click()
-			return textarea.inputValue()
-		})()
-		const after = JSON.parse(raw2)
-		const afterFormPage = after.pages.find((p) => p.id === FORM_PAGE_ID)
-		expect(afterFormPage.config.steps).toEqual(formPage.config.steps)
-		expect(afterFormPage.config.fields.find((f) => f.key === 'email').visibleWhen).toEqual({ endpoint: '/api/status', field: 'ready' })
-		expect(afterFormPage.config.fields.find((f) => f.key === 'phone').validation).toEqual({ required: true })
-		expect(afterFormPage.config.customUnknownKey).toBe('preserved')
-		expect(afterFormPage.config.submitLabel).toBe('form.submit.updated')
-		void beforeSnapshot // (kept for readability of the "before" intent above)
+		// In the editor: only submitLabel moved.
+		const staged = await readManifest(page)
+		const stagedPage = staged.pages.find((p) => p.id === FORM_PAGE_ID)
+		expect(stagedPage.config.submitLabel).toBe('form.submit.updated')
+		expect(stagedPage.config.steps).toEqual(steps)
+		expect(stagedPage.config.fields.find((f) => f.key === 'email').visibleWhen)
+			.toEqual({ endpoint: '/api/status', field: 'ready' })
+		expect(stagedPage.config.fields.find((f) => f.key === 'phone').validation).toEqual({ required: true })
+		expect(stagedPage.config.customUnknownKey).toBe('preserved')
 
-		// Save and assert the ApplicationVersion PUT/PATCH payload carries the
-		// new shapes with every other top-level manifest key unchanged.
-		const beforeOtherKeys = Object.keys(after).filter((k) => k !== 'pages')
-		const [request] = await Promise.all([
-			page.waitForRequest((req) => /applicationVersion/.test(req.url()) && ['PUT', 'PATCH'].includes(req.method())),
-			page.getByRole('button', { name: /^save/i }).click(),
-		])
-		const payload = request.postDataJSON()
-		const savedManifest = payload.manifest ?? payload
-		const savedFormPage = savedManifest.pages.find((p) => p.id === FORM_PAGE_ID)
-		expect(savedFormPage.config.steps).toEqual(formPage.config.steps)
-		const afterOtherKeys = Object.keys(savedManifest).filter((k) => k !== 'pages')
-		expect(afterOtherKeys.sort()).toEqual(beforeOtherKeys.sort())
+		// After save: the same holds of what the server actually stored. Read it
+		// back through the API rather than sniffing the request body — a payload
+		// the backend rewrites (or rejects) would still look correct on the wire.
+		await page.getByRole('button', { name: /save pages/i }).click()
+		await expect.poll(async () => {
+			const persisted = await fetchManifest(page)
+			const persistedPage = (persisted.pages || []).find((p) => p.id === FORM_PAGE_ID)
+			return persistedPage?.config?.submitLabel ?? null
+		}, { timeout: 30_000 }).toBe('form.submit.updated')
+
+		const saved = await fetchManifest(page)
+		const savedPage = saved.pages.find((p) => p.id === FORM_PAGE_ID)
+		expect(savedPage.config.steps).toEqual(steps)
+		expect(savedPage.config.fields.find((f) => f.key === 'email').visibleWhen)
+			.toEqual({ endpoint: '/api/status', field: 'ready' })
+		expect(savedPage.config.fields.find((f) => f.key === 'phone').validation).toEqual({ required: true })
+		expect(savedPage.config.customUnknownKey).toBe('preserved')
+		// Every other top-level manifest key is untouched by a page-designer save.
+		expect(Object.keys(saved).filter((k) => k !== 'pages').sort()).toEqual(beforeOtherKeys)
 	})
 })
