@@ -23,8 +23,12 @@ import { test, expect } from '@playwright/test'
  *     by design (spec C Decision 4). The test asserts the icon is present and
  *     the badge is NOT the pre-spec-A regression value "Live".
  */
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — builder host blank (BuilderHostView unresolved by nc-vue CnPageRenderer) / no detail/editor/version pages. Re-enable when #41 is fixed.
-test.describe.skip('ApplicationCard — icon + productionVersion fields (spec A / spec C)', () => {
+// UN-QUARANTINED 2026-07-30 — green 4/4 untouched, on both the Vue 2 build and
+// the Vue 3 one. This suite only ever reads the Applications INDEX, which the
+// #41 blockers (builder host / detail / editor / version pages) never affected,
+// so the quarantine was over-broad from the start: it was applied file-by-file
+// across the whole e2e directory rather than to the surfaces actually broken.
+test.describe('ApplicationCard — icon + productionVersion fields (spec A / spec C)', () => {
 
 	test('index page renders ApplicationCards with icon <img> elements', async ({ page }) => {
 		await page.goto('/apps/openbuild/applications')
