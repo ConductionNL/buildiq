@@ -52,11 +52,19 @@ import {
  * application list request to settle.
  */
 async function gotoAppBrowser(page: Page): Promise<void> {
-	// The app router runs in hash mode; the virtual-app list lives on the
-	// "Virtual apps" / applications route (the Schemas route lists schemas,
-	// not apps, and carries no "Add application" action). Deep-link via the
-	// hash so the SPA mounts the applications index directly.
-	await page.goto('/index.php/apps/openbuild/#/applications')
+	// The app router runs in HISTORY mode (`createWebHistory(generateUrl('/apps/openbuild'))`
+	// in src/main.js), NOT hash mode. Two consequences, both live-verified on
+	// this instance:
+	//   - a `#/applications` hash is not a route: vue-router matches path `/`
+	//     and mounts the Dashboard, so the applications actions bar (and its
+	//     "Add app" button) is never rendered;
+	//   - the `/index.php/`-prefixed form does not match the router base
+	//     (`htaccess.RewriteBase` is `/`, so `generateUrl` emits the pretty
+	//     `/apps/openbuild`), so the router replaces the URL with the bare
+	//     app root — again the Dashboard.
+	// The pretty-URL path form is the only form that actually mounts the
+	// applications index.
+	await page.goto('/apps/openbuild/applications')
 	await page
 		.waitForResponse(
 			(r) => r.url().includes('/objects/openbuild/application') && r.status() === 200,
