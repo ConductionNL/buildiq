@@ -81,28 +81,28 @@
 		{
 			"id": "Dashboard",
 			"label": "Dashboard",
-			"icon": "icon-category-dashboard",
+			"icon": "ViewDashboardOutline",
 			"route": "Dashboard",
 			"order": 10
 		},
 		{
 			"id": "VirtualApps",
 			"label": "Apps",
-			"icon": "icon-category-app-bundles",
+			"icon": "ViewGridOutline",
 			"route": "VirtualApps",
 			"order": 20
 		},
 		{
 			"id": "Store",
 			"label": "Store",
-			"icon": "icon-category-organization",
+			"icon": "StoreOutline",
 			"route": "Templates",
 			"order": 30
 		},
 		{
 			"id": "Documentation",
 			"label": "Documentation",
-			"icon": "icon-info",
+			"icon": "BookOpenVariantOutline",
 			"href": "https://openbuild.conduction.nl",
 			"section": "footer",
 			"order": 90
@@ -110,7 +110,7 @@
 		{
 			"id": "FeaturesRoadmapMenu",
 			"label": "Features & roadmap",
-			"icon": "icon-toggle",
+			"icon": "MapMarkerPath",
 			"route": "FeaturesRoadmap",
 			"section": "footer",
 			"order": 95
