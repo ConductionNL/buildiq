@@ -30,7 +30,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test'
-import { ensureApp as ensureAppFixture } from './support/appFixture'
+import { ensureApp as ensureAppFixture, dismissOverlays, suppressSupportDialog } from './support/appFixture'
 
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
 import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
@@ -68,9 +68,21 @@ function pageDesignerButton(page: Page, label: 'Undo' | 'Redo') {
 	return page.locator('.page-designer__tool-btn').filter({ hasText: new RegExp(label, 'i') })
 }
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
-test.describe.skip('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
+// UN-QUARANTINED 2026-07-30. #41 is fixed and both of this file's remaining
+// blockers were harness debt, not product debt:
+//   - app creation went through a local copy of the obsolete "Add application"
+//     form whose isVisible() guard silently skipped creation (fixed above, by
+//     delegating to the shared wizard fixture);
+//   - the first-open support dialog mounts a `.modal-mask` over the whole
+//     designer, and `.page-list-editor__add` sits underneath it — every click
+//     retried against `<h2 class="dialog__name">` until the test timed out.
+//     Measured directly: elementFromPoint over the Add button returned the
+//     support dialog, not the button.
+test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 	test.beforeEach(async ({ page }) => {
+		// Before the first navigation: the dialog seeds its own visibility from
+		// localStorage, so pre-setting the flag beats racing the mask.
+		await suppressSupportDialog(page)
 		await ensureApp(page)
 	})
 
@@ -262,18 +274,33 @@ test.describe.skip('builder-undo-redo — page designer (REQ-BUR-001..004)', () 
 	})
 })
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
-test.describe.skip('builder-undo-redo — schema designer (REQ-BUR-005)', () => {
+// UN-QUARANTINED 2026-07-30 — same two harness fixes as the block above; the
+// Schemas page itself was repaired in openbuild#30/#33/#34/#41.
+test.describe('builder-undo-redo — schema designer (REQ-BUR-005)', () => {
 	test.beforeEach(async ({ page }) => {
+		await suppressSupportDialog(page)
 		await ensureApp(page)
 	})
 
 	test('REQ-BUR-005: undo a field add, undo a discard, and a save resets the schema session history', async ({ page }) => {
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas`, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('.openbuild-schema-list')).toBeVisible({ timeout: 10_000 })
+		// `?_version=production` is REQUIRED, not decoration. Without it the
+		// designer falls back to the legacy `openbuild-{slug}` register, which a
+		// wizard-created app does not have — the schema is then created but the
+		// attach fails ("Schema created, but could not be attached to register
+		// openbuild-pw-undo-redo", with a Nextcloud login page as the response
+		// body), the detail never renders its field editor, and the Add-field
+		// click waits out the whole timeout. The real in-app nav carries the same
+		// marker via buildVersionedRoute(); see schema-designer.spec.ts.
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`, { waitUntil: 'domcontentloaded' })
+		await expect(page.locator('.openbuild-schema-list')).toBeVisible({ timeout: 20_000 })
+		await dismissOverlays(page)
 
-		const existingRow = page.locator('.openbuild-schema-list__row').filter({ hasText: SCHEMA_SLUG })
-		if ((await existingRow.count()) === 0) {
+		// `.first()` matters: the designer namespaces a created schema to
+		// `{app}-{slug}`, which still CONTAINS the bare slug, so every previous
+		// run's schema matches this filter too. Without it the click resolves to
+		// several rows and dies on strict mode (or lands on a stale duplicate).
+		const existingRow = page.locator('.openbuild-schema-list__row').filter({ hasText: SCHEMA_SLUG }).first()
+		if ((await page.locator('.openbuild-schema-list__row').filter({ hasText: SCHEMA_SLUG }).count()) === 0) {
 			await page.getByRole('button', { name: /add schema/i }).first().click()
 			await page.getByLabel(/slug/i).fill(SCHEMA_SLUG)
 			await page.getByLabel(/title/i).fill('Undo Redo Record')
@@ -311,6 +338,18 @@ test.describe.skip('builder-undo-redo — schema designer (REQ-BUR-005)', () => 
 		await expect(undoBtn).toBeEnabled()
 		await undoBtn.click()
 		await expect(fieldRows).toHaveCount(initialFieldCount + 1)
+
+		// Name the restored field before saving. Save is gated on
+		// `fieldNamesUnique`, which rejects ANY unnamed field — an unnamed
+		// property must not reach the schema. The original drove Save straight
+		// after the undo, so the button was (correctly) disabled and the click
+		// waited out the timeout: test debt, not a product defect.
+		//
+		// The name must also be unique PER RUN. This test saves, so the field it
+		// adds persists into the next run; re-using a fixed name made the second
+		// run stage a duplicate, which the same gate (correctly) refuses — the
+		// suite passed in isolation and failed on re-run.
+		await page.getByLabel('Name', { exact: false }).last().fill(`undo_redo_${Date.now().toString(36)}`)
 
 		// Save → both buttons disabled (new baseline).
 		await page.getByRole('button', { name: /^save$/i }).click()
