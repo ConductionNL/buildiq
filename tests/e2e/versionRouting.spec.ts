@@ -48,7 +48,24 @@ async function loginAs(page: import('@playwright/test').Page, user: string, pass
 // ---------------------------------------------------------------------------
 // 9.1 — Bookmarkability / reload preserves ?_version=
 // ---------------------------------------------------------------------------
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+// STILL SKIPPED (all three blocks), with the true reason replacing the #41 one.
+//
+// Shared blocker: every block needs an ApplicationVersion chain this instance
+// does not have. hello-world ships exactly one version, slug `production`;
+// 9.1 needs a `staging` row, 9.3 needs `development → staging → production`.
+// 9.2 additionally needs the `rbac-viewer` user from the Newman RBAC setup
+// collection, which this suite does not run.
+//
+// Second blocker, which would make 9.1/9.3 green-but-dead even with the chain:
+// they locate the designer with `[data-testid="schema-designer"]`,
+// `.ob-schema-designer`, `.ob-schema-list` and `[data-app-version="…"]`. None of
+// those exist in src/ — SchemaDesigner.vue emits none of them (9.3's own comment
+// already admits it, suggesting someone "consider adding a data-app-version
+// attribute"). Retarget these before re-enabling, or the chain will be seeded
+// and the assertions will still be measuring nothing.
+//
+// REQ-OBVR-009 (the version-not-found state BuilderHost renders) is NOT blocked
+// by any of this and is exercised elsewhere.
 test.describe.skip('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008)', () => {
 	test.use({ storageState: { cookies: [], origins: [] } })
 
@@ -106,7 +123,7 @@ test.describe.skip('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBV
 // ---------------------------------------------------------------------------
 // 9.2 — 404 for unauthorised on non-production version
 // ---------------------------------------------------------------------------
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+// See the block comment on 9.1 for the true reason (viewer user + version chain).
 test.describe.skip('9.2 Unauthorised access to non-production version shows 404 UI (REQ-OBVR-001 / REQ-OBVR-003)', () => {
 	test.use({ storageState: { cookies: [], origins: [] } })
 
@@ -174,7 +191,7 @@ test.describe.skip('9.2 Unauthorised access to non-production version shows 404 
 // ---------------------------------------------------------------------------
 // 9.3 — Default version is most-upstream-non-production fallback
 // ---------------------------------------------------------------------------
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+// See the block comment on 9.1 for the true reason (version chain + absent selectors).
 test.describe.skip('9.3 Default version resolution — most-upstream-non-production fallback (REQ-OBVR-004)', () => {
 	test.use({ storageState: { cookies: [], origins: [] } })
 

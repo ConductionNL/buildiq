@@ -80,7 +80,19 @@ async function openSchemaDetail(page: Page, versionSlug?: string): Promise<void>
 	)
 }
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+// STILL SKIPPED, with the true reason replacing the #41 one.
+//
+// Blocker 1: needs TWO extra Nextcloud users that only the Newman RBAC setup
+// collection provisions — `access-editor-nonvet` (editor role, NOT in `vets`)
+// and `access-editor-vet` (editor role, IN `vets`). The whole point of every
+// scenario is the difference between those two sessions, so the shared admin
+// storageState cannot stand in for either.
+// Blocker 2: needs a `staging` AND a `production` ApplicationVersion for the
+// target app, to prove a scope change under ?_version=staging leaves the
+// production schema untouched. hello-world has one version on this instance.
+// Blocker 3: the lock-out warning is located with `.note-stub, [type="warning"]`
+// and `.note-stub` exists nowhere in src/ — a placeholder class that would make
+// the REQ-OBDSA-004 assertions vacuous even once the users exist.
 test.describe.skip('data-scopes-authoring — multi-user / multi-version (REQ-OBDSA-004/006/007)', () => {
 	// Skip storageState — each test needs a freshly authed, specific-role session.
 	test.use({ storageState: { cookies: [], origins: [] } })

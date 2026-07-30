@@ -13,8 +13,13 @@ import { test, expect } from '@playwright/test'
  *  - OpenBuild enabled (`docker exec nextcloud php occ app:enable openbuild`).
  *  - SeedHelloWorld has run (post-migration repair step).
  */
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — builder host blank (BuilderHostView unresolved by nc-vue CnPageRenderer) / no detail/editor/version pages. Re-enable when #41 is fixed.
-test.describe.skip('BuilderHost — hello-world journey', () => {
+// UN-QUARANTINED 2026-07-30. The old reason — "builder host blank
+// (BuilderHostView unresolved by nc-vue CnPageRenderer)" — no longer holds:
+// `/builder/hello-world` mounts the nested CnAppRoot and renders the seeded
+// index page. The bodies below were already real (three named seeded titles, a
+// URL assertion on the inner router's path, and the seeded body text), so they
+// are un-skipped as written rather than rewritten.
+test.describe('BuilderHost — hello-world journey', () => {
 	test('loads /builder/hello-world and renders the seeded index page', async ({ page }) => {
 		await page.goto('/apps/openbuild/builder/hello-world')
 

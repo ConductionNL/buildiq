@@ -46,7 +46,18 @@ async function loginAs(page: import('@playwright/test').Page, user: string, pass
 // ---------------------------------------------------------------------------
 // Tests that require a live call site — SKIPPED until spec B ships
 // ---------------------------------------------------------------------------
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+// STILL SKIPPED, but not for the #41 reason that was written here. The real
+// blocker is this file's own TODO: every scenario below reaches the dialog
+// through
+//     TODO_PROMOTE_BUTTON_SELECTOR = '[data-testid="promote-version-btn"], button:has-text("Promote")'
+// and `promote-version-btn` exists nowhere in src/. The dialog itself ships
+// (src/dialogs/PromoteVersionDialog.vue, asserted by the static block below) and
+// its gate logic is unit-tested in tests/dialogs/PromoteVersionDialog.spec.js;
+// what is missing is the call site that opens it. ApplicationDetailHeader.vue
+// does render a `.ob-detail-header__pill-promote` affordance — wiring these
+// scenarios to THAT selector is the un-quarantine, and it needs a multi-version
+// chain to have a non-terminal pill to promote from, which this instance has
+// not got (hello-world has exactly one version, `production`).
 test.describe.skip('PromoteVersionDialog — e2e with live call site (pending spec B / openbuild-app-detail-overview)', () => {
 
 	// TODO: Replace this selector with the actual Promote button once spec B
@@ -142,7 +153,11 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 // Component-smoke test via the router (no describe.skip — runs immediately)
 // ---------------------------------------------------------------------------
 // QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
-test.describe.skip('PromoteVersionDialog — component available (static assertion)', () => {
+// UN-QUARANTINED 2026-07-30. Quarantining this block was spurious: it opens no
+// browser and touches no OpenBuild UI — it is an fs.stat on
+// src/dialogs/PromoteVersionDialog.vue asserting the ADR-004 modal-isolation
+// placement. A broken admin UI could never have affected it.
+test.describe('PromoteVersionDialog — component available (static assertion)', () => {
 	test('PromoteVersionDialog.vue exists in src/dialogs/ (ADR-004 modal-isolation)', async ({}) => {
 		// This is a file-system assertion: confirm the dialog lives in the
 		// correct location per ADR-004. No browser needed.
