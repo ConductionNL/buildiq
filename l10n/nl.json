@@ -647,6 +647,7 @@
         "notification-send": "notification-send",
         "number": "getal",
         "object": "object",
+        "openbuild.builder.menu.schemas": "Schema's",
         "openbuild.page-designer.menu.error.nesting-depth — menu depth limited to two levels.": "openbuild.page-designer.menu.error.nesting-depth — menudiepte beperkt tot twee niveaus.",
         "openbuild.page-designer.preview.unavailable — chain spec #2 not yet installed. Save and open the built app to preview your changes.": "openbuild.page-designer.preview.unavailable — ketenspecificatie #2 is nog niet geïnstalleerd. Sla op en open de gebouwde app om uw wijzigingen te bekijken.",
         "owner": "eigenaar",

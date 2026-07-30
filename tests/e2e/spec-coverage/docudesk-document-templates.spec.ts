@@ -327,30 +327,46 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
  * Runtime scenarios (REQ-DDT-003, REQ-DDT-004, and the runtime half of
  * REQ-DDT-005).
  *
- * BLOCKED ON A PRODUCT DEFECT, recorded here with evidence rather than hidden
- * behind the stale "#41 builder UI not functional" reason these carried:
+ * DEFECT NOW FIXED; BODIES STILL TO BE WRITTEN.
  *
- *   `DocumentActions.schemaAttachments` filters on
+ * These carried the stale "#41 builder UI not functional" reason. The real
+ * blocker was a product defect, since fixed:
+ *
+ *   `DocumentActions.schemaAttachments` filtered on
  *   `object['@self'].schema === attachment.schema`. OpenRegister returns
  *   `@self.schema` as the NUMERIC schema id — measured on this instance, a
  *   `hello-message` object carries `"@self": { "register": "15", "schema": "21" }`
  *   — while a `runtime.documents[]` entry declares the schema SLUG
- *   (`"hello-message"`), which is what the attach dialog's schema picker writes
- *   and what REQ-DDT-001 specifies. The comparison can therefore never be true
- *   for a real object, so the surface renders nothing no matter how it is
- *   configured, and there is no browser-observable behaviour left to assert.
+ *   (`"hello-message"`), which is what the attach dialog writes and what
+ *   REQ-DDT-001 specifies. `"21" === "hello-message"` is never true, so the
+ *   surface rendered nothing for every object, on every app, silently.
  *
- * Un-skipping these would produce five failures on a defect in the app, not in
- * the tests. Fixing it means resolving the object's schema id to its slug (or
- * matching on either form) in DocumentActions, which is a product change beyond
- * this file. A separate wiring defect on the same surface — the widget never
- * received `attachments` at all, because CnPageRenderer's slot-override path
- * hands a registry component the detail surface's own props — IS fixed, in
- * DocumentActions.vue, and covered by tests/components/DocumentActions.spec.js.
+ * Fixed 2026-07-30 by matching on a normalised key set (src/utils/objectSchemaKeys.js):
+ * `CnDetailPage` provides `cnObjectContext`, whose `schema` is the manifest's
+ * `config.schema` — the slug vocabulary the entries use. What the attach dialog
+ * WRITES is unchanged; the numeric side was the wrong one. Locked by two
+ * regression tests in tests/components/DocumentActions.spec.js that use the REAL
+ * `@self` envelope — note the pre-existing unit fixture used a SLUG in
+ * `@self.schema`, which is precisely why this suite stayed green while the
+ * surface was 100% dead.
+ *
+ * WHY THESE STAY SKIPPED FOR NOW: their bodies are stubs — `goto` plus
+ * `expect(page.locator('main')).toBeVisible()` — so un-skipping them would
+ * report coverage of download, filename interpolation, the 403 path, the
+ * double-click guard and button ordering while asserting none of it. Writing
+ * real bodies needs a seeded `runtime.documents[]` on the fixture app and a
+ * Docudesk template per scenario; that is follow-on work, deliberately not
+ * faked here. The logic itself is covered by vitest
+ * (useDocudeskDocument.spec.js, DocumentActions.spec.js) and by Newman.
+ *
+ * A separate wiring defect on the same surface — the widget never received
+ * `attachments` at all, because CnPageRenderer's slot-override path hands a
+ * registry component the detail surface's own props — was fixed earlier in
+ * DocumentActions.vue.
  */
 
 // @e2e docudesk-document-templates::generate-downloads-the-document
-// BLOCKED (product defect): `@self.schema` is a numeric id, `documents[].schema` a slug — see the note above. Logic + request shape covered by vitest (useDocudeskDocument.spec.js) and Newman.
+// STUB BODY (the id-vs-slug defect is fixed; this needs a real body + seeded runtime.documents[]). Logic + request shape covered by vitest (useDocudeskDocument.spec.js) and Newman.
 test.skip('REQ-DDT-003 — generate produces a download', async ({ page }) => {
 	// @e2e docudesk-document-templates::generate-downloads-the-document
 	await page.goto(`${BASE}/apps/openbuild/applications`)
@@ -358,7 +374,7 @@ test.skip('REQ-DDT-003 — generate produces a download', async ({ page }) => {
 })
 
 // @e2e docudesk-document-templates::filename-template-interpolates-object-properties
-// BLOCKED (product defect): see the note above. Logic covered by vitest (renderFilename + buildFilename).
+// STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (renderFilename + buildFilename).
 test.skip('REQ-DDT-003 — filename template interpolates object properties', async ({ page }) => {
 	// @e2e docudesk-document-templates::filename-template-interpolates-object-properties
 	await page.goto(`${BASE}/apps/openbuild/applications`)
@@ -366,7 +382,7 @@ test.skip('REQ-DDT-003 — filename template interpolates object properties', as
 })
 
 // @e2e docudesk-document-templates::403-renders-a-no-access-toast-not-an-error
-// BLOCKED (product defect): see the note above. Logic covered by vitest (403 → no-access error code).
+// STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (403 → no-access error code).
 test.skip('REQ-DDT-003 — a 403 renders the no-access message', async ({ page }) => {
 	// @e2e docudesk-document-templates::403-renders-a-no-access-toast-not-an-error
 	await page.goto(`${BASE}/apps/openbuild/applications`)
@@ -374,7 +390,7 @@ test.skip('REQ-DDT-003 — a 403 renders the no-access message', async ({ page }
 })
 
 // @e2e docudesk-document-templates::double-click-issues-one-request
-// BLOCKED (product defect): see the note above. Logic covered by vitest (in-flight guard test).
+// STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (in-flight guard test).
 test.skip('REQ-DDT-003 — double-click issues exactly one request', async ({ page }) => {
 	// @e2e docudesk-document-templates::double-click-issues-one-request
 	await page.goto(`${BASE}/apps/openbuild/applications`)
@@ -382,7 +398,7 @@ test.skip('REQ-DDT-003 — double-click issues exactly one request', async ({ pa
 })
 
 // @e2e docudesk-document-templates::two-attachments-render-two-ordered-buttons
-// BLOCKED (product defect): see the note above. Logic covered by vitest (DocumentActions ordered-buttons test).
+// STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (DocumentActions ordered-buttons test).
 test.skip('REQ-DDT-004 — two attachments render two ordered buttons', async ({ page }) => {
 	// @e2e docudesk-document-templates::two-attachments-render-two-ordered-buttons
 	await page.goto(`${BASE}/apps/openbuild/applications`)
@@ -390,7 +406,7 @@ test.skip('REQ-DDT-004 — two attachments render two ordered buttons', async ({
 })
 
 // @e2e docudesk-document-templates::no-attachments-renders-nothing
-// BLOCKED (product defect): see the note above. Logic covered by vitest (DocumentActions empty-render test).
+// STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (DocumentActions empty-render test).
 test.skip('REQ-DDT-004 — no attachments renders nothing', async ({ page }) => {
 	// @e2e docudesk-document-templates::no-attachments-renders-nothing
 	await page.goto(`${BASE}/apps/openbuild/applications`)
@@ -398,7 +414,7 @@ test.skip('REQ-DDT-004 — no attachments renders nothing', async ({ page }) => 
 })
 
 // @e2e docudesk-document-templates::runtime-surface-degrades-without-requests
-// BLOCKED (product defect): see the note above. Logic covered by vitest (DocumentActions absent-app state issues no request).
+// STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (DocumentActions absent-app state issues no request).
 test.skip('REQ-DDT-005 — runtime surface degrades without requests', async ({ page }) => {
 	// @e2e docudesk-document-templates::runtime-surface-degrades-without-requests
 	await page.goto(`${BASE}/apps/openbuild/applications`)

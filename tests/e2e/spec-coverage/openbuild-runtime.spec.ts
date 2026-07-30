@@ -518,35 +518,59 @@ test('REQ-OBR-006a — /builder/:slug still mounts the nested CnAppRoot', async 
 // ---------------------------------------------------------------------------
 
 // @e2e openbuild-runtime::schemas-entry-appears-in-the-builder-context
-test.skip('REQ-OBR-007a — the Schemas entry is reachable and routes to /builder/:slug/schemas', async () => {
+test('REQ-OBR-007a — the Schemas entry appears in the builder context and routes to the designer', async ({ page }) => {
 	// @e2e openbuild-runtime::schemas-entry-appears-in-the-builder-context
 	//
-	// PRODUCT GAP — the navigation entry this requirement mandates does not
-	// exist. Established by reading source, not by a timing-sensitive run:
+	// This entry did not exist until 2026-07-30 — the route worked, but nothing
+	// in the shell linked to it (manifest `menu[]` had five entries, none
+	// parameterised; `BuilderHost.vue` rendered no navigation). Built in
+	// src/store/builderMenu.js; see the WHY block there for why it is an `href`
+	// and not a route name.
+	test.setTimeout(60_000)
+
+	await open(page, `/builder/${SLUG}`)
+	await expect(page.locator('[data-testid="openbuild-builder-host"]')).toBeVisible({ timeout: 20_000 })
+
+	// The OUTER shell's navigation must carry it — the requirement is about the
+	// OpenBuild shell, not the nested app's own menu.
+	const entry = page.locator('[data-testid="cn-nav"] [data-testid="cn-nav-entry-BuilderSchemas"]')
+	await expect(
+		entry,
+		'the outer shell navigation must expose a Schemas entry in the builder context',
+	).toBeVisible({ timeout: 15_000 })
+
+	// It must be scoped to THIS app, not a generic /schemas shortcut.
+	const href = await entry.locator('a').first().getAttribute('href')
+		?? await entry.getAttribute('href')
+	expect(
+		href,
+		`the entry must address this app's schemas route, got "${href}"`,
+	).toContain(`/builder/${SLUG}/schemas`)
+
+	// Activating it lands on the designer — and, per REQ-OBR-006a, NOT on the
+	// virtual app.
+	await entry.click()
+	await page.waitForURL(new RegExp(`/builder/${SLUG}/schemas`), { timeout: 30_000 })
+	await dismissFirstVisitOverlays(page)
+	const names = await mountedComponentNames(page)
+	expect(names, `activating Schemas must land on the designer; mounted: ${names.join(', ')}`)
+		.toContain('SchemaDesigner')
+})
+
+// @e2e openbuild-runtime::schemas-entry-appears-in-the-builder-context
+test('REQ-OBR-007a — the Schemas entry is scoped to the builder context and leaves with it', async ({ page }) => {
+	// @e2e openbuild-runtime::schemas-entry-appears-in-the-builder-context
 	//
-	//   - `src/manifest.json` `menu[]` holds exactly five entries — Dashboard,
-	//     Apps (VirtualApps), Store (Templates), Documentation, Features &
-	//     roadmap. None routes to `/builder/:slug/schemas`, and none is scoped
-	//     to the builder context.
-	//   - `src/views/BuilderHost.vue` renders only the version-not-found notice
-	//     and the nested `CnAppRoot`. It surfaces no navigation of its own,
-	//     although REQ-OBR-007a names that file as the place the entry belongs.
-	//   - `src/menu-layout.json` (ADR-044's single declarative home for
-	//     navigation IA) ships empty: `relocations: {}`, `removals: []`,
-	//     `settingsSection: []`.
-	//   - The l10n key the requirement mandates, `openbuild.builder.menu.schemas`,
-	//     is absent from both `l10n/en.json` and `l10n/nl.json`.
-	//
-	// The ROUTE itself is fine and is covered by the two REQ-OBR-006a tests
-	// above: `/builder/:slug/schemas` renders `SchemaDesigner` and does not
-	// mount the virtual app. Only the menu affordance that makes it reachable
-	// without typing a URL was never built. `PageDesignerHost.vue` builds the
-	// same deep link by hand (`generateUrl('/apps/openbuild/builder/{slug}/schemas')`),
-	// which is the closest thing shipped.
-	//
-	// This test stays skipped rather than red because the gap is a missing
-	// feature, not a defect in the tests; it re-enables unchanged once the entry
-	// lands. Filed as a finding, not silently absorbed.
+	// The entry is published by BuilderHost and removed on unmount. If that
+	// teardown regressed, the entry would linger on every other page of the
+	// shell still pointing at the last app opened — which is exactly the kind of
+	// stale affordance that is worse than no affordance.
+	await open(page, '/applications')
+	await expect(page.locator('.ob-app-card').first()).toBeVisible({ timeout: 20_000 })
+	await expect(
+		page.locator('[data-testid="cn-nav-entry-BuilderSchemas"]'),
+		'the builder-context entry must NOT be present outside a builder route',
+	).toHaveCount(0)
 })
 
 // ---------------------------------------------------------------------------

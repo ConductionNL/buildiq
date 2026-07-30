@@ -49,6 +49,7 @@
 import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { generateUrl } from '@nextcloud/router'
 
+import { showBuilderSchemasEntry, hideBuilderSchemasEntry } from '../store/builderMenu.js'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useRegisterPicker, registerScope } from '../composables/useRegisterPicker.js'
 import { runtimeRegistry } from '../runtimeRegistry.js'
@@ -59,6 +60,12 @@ export default {
 	name: 'BuilderHost',
 	components: {
 		CnAppRoot,
+	},
+	// The live (reactive) app manifest CnAppRoot provides to every descendant.
+	// REQ-OBR-007a edits its `menu` array in place to publish the
+	// builder-context Schemas entry — see src/store/builderMenu.js.
+	inject: {
+		cnManifest: { default: null },
 	},
 	data() {
 		return {
@@ -153,6 +160,7 @@ export default {
 		 */
 		slug() {
 			this.resolveVersion()
+			this.syncSchemasMenuEntry()
 		},
 		/**
 		 * Observed behaviour of `versionSlug` (retrofit annotation).
@@ -173,11 +181,34 @@ export default {
 		// NOTE: we do NOT call $router.replace() — that would strip ?_version=
 		// and break bookmarkability (REQ-OBVR-008).
 		this.resolveVersion()
+		// REQ-OBR-007a: surface the Schemas entry while in this app's builder
+		// context.
+		this.syncSchemasMenuEntry()
+	},
+	/**
+	 * REQ-OBR-007a: the Schemas entry is scoped to the builder context, so it
+	 * leaves with the host. Without this the entry would linger — pointing at
+	 * the previous app — on every other page of the shell.
+	 *
+	 * @return {void}
+	 */
+	unmounted() {
+		hideBuilderSchemasEntry(this.cnManifest)
 	},
 	// REQ-NTS-003: no beforeDestroy teardown needed — CnAppRoot owns its own
 	// scoped-theme lifecycle (mount-apply/unmount-teardown) via `useScopedTheme`,
 	// with zero OpenBuild-side wiring (theme-picker-consumes-nldesign).
 	methods: {
+		/**
+		 * REQ-OBR-007a: publish the builder-context Schemas entry for the app
+		 * currently hosted, replacing any entry left by a previously-open app.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/openbuild-runtime/spec.md#req-obr-007a
+		 */
+		syncSchemasMenuEntry() {
+			showBuilderSchemasEntry(this.cnManifest, this.slug, generateUrl, t)
+		},
 		/**
 		 * Kick off useApplicationVersion and mirror reactive state into component data.
 		 *
