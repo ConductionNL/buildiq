@@ -176,14 +176,72 @@ async function addPage(page: import('@playwright/test').Page, type: string) {
 }
 
 /**
+ * Reopen the designer and select the page of the given `type`, so the centre
+ * pane mounts that page's sub-editor.
+ *
+ * Two things make a bare `.page-list-editor__row.click()` the wrong call here,
+ * both live-verified on /builder/hello-world/pages:
+ *
+ *  1. A row's own text content is only its drag handle, its TYPE TAG and the
+ *     permission picker's label + hint — `<input>` values are not text — so
+ *     `hasText: 'map'` is really a match on the type tag. Fine, but worth
+ *     stating, because it also means `hasText: 'map'` matches a `roadmap` row.
+ *     Anchoring on the tag makes that explicit.
+ *  2. Playwright clicks an element's geometric CENTRE. The row is a wrapping
+ *     two-line flex box whose second line is the permission picker, and that
+ *     picker carries `@click.stop` (opening a group dropdown must not also
+ *     re-select the row). The row's centre point lands inside it, so the click
+ *     was swallowed and no page was ever selected — the sub-editor stayed
+ *     unmounted and every round-trip assertion failed on a page that had in
+ *     fact saved correctly (the PATCH returns 200).
+ *
+ * Clicking the type tag targets the row's own selection surface directly.
+ *
+ * @param page Playwright page.
+ * @param type Page type whose row to select, e.g. `map`.
+ * @return {Promise<void>}
+ */
+async function selectPageRow(page: import('@playwright/test').Page, type: string): Promise<void> {
+	await expect(page.locator('.page-designer-host')).toBeVisible({ timeout: 15_000 })
+	await dismissSupportDialog(page)
+	const row = page
+		.locator('.page-list-editor__row')
+		.filter({ has: page.locator('.page-list-editor__type-tag', { hasText: new RegExp(`^${type}$`) }) })
+		.first()
+	await expect(row, `a ${type} page row must be present after saving`).toBeVisible({ timeout: 10_000 })
+	await row.locator('.page-list-editor__type-tag').click()
+	await expect(
+		page.locator('.page-list-editor__row--selected'),
+		`clicking the ${type} row must select it`,
+	).toHaveCount(1, { timeout: 5_000 })
+}
+
+/**
  * Fill a field row that renders as either a schema-property `<select>`
  * (once a register + schema are bound) or a free-text `<input>` — the
  * WikiPageEditor field-mapping fields switch shape at runtime depending
  * on the bound schema's declared properties.
+ *
+ * The `<select>` appears as soon as a register + schema are bound, but its
+ * option list arrives from a separate async fetch. Reading `option[value=…]`
+ * before that lands finds nothing, silently takes the `{ index: 1 }` fallback,
+ * and Playwright then applies it to the list that has meanwhile loaded — so
+ * asking for `body` quietly bound `id`, and the round-trip assertion failed on
+ * a value the test itself had chosen wrongly. Wait for the options first.
+ *
+ * @param row   The field row to fill.
+ * @param value The schema property to bind.
+ * @return {Promise<void>}
  */
 async function selectOrFill(row: import('@playwright/test').Locator, value: string) {
 	const select = row.locator('select')
 	if (await select.count()) {
+		await expect
+			.poll(async () => await select.locator('option').count(), {
+				message: 'the schema-property options must load before one is chosen',
+				timeout: 10_000,
+			})
+			.toBeGreaterThan(1)
 		const hasOption = (await select.locator(`option[value="${value}"]`).count()) > 0
 		await select.selectOption(hasOption ? value : { index: 1 })
 		return
@@ -258,7 +316,7 @@ test('REQ-PEC-003 — Create, configure, save and render a map page', async ({ p
 
 	// Reopen the designer and assert the values round-tripped.
 	await page.goto(PAGE_DESIGNER(SLUG))
-	await page.locator('.page-list-editor__row', { hasText: 'map' }).first().click()
+	await selectPageRow(page, 'map')
 	const reopened = page.locator('.map-page-editor')
 	await expect(reopened).toBeVisible({ timeout: 5_000 })
 	await expect(reopened.locator('.map-page-editor__row-url')).toHaveValue('https://tiles.example.test/{z}/{x}/{y}.png')
@@ -286,7 +344,7 @@ test('REQ-PEC-004 — Create, configure, save and render a roadmap page', async 
 	await expect(page.locator('.cn-features-and-roadmap-view'), 'built roadmap page must render').toBeVisible({ timeout: 15_000 })
 
 	await page.goto(PAGE_DESIGNER(SLUG))
-	await page.locator('.page-list-editor__row', { hasText: 'roadmap' }).first().click()
+	await selectPageRow(page, 'roadmap')
 	const reopened = page.locator('.roadmap-page-editor')
 	await expect(reopened).toBeVisible({ timeout: 5_000 })
 	await expect(reopened.locator('input[placeholder="owner/repo"]')).toHaveValue('ConductionNL/openbuild')
@@ -326,7 +384,7 @@ test('REQ-PEC-005 — Create, configure, save and render a search page', async (
 	await expect(page.locator('text=films')).toBeVisible()
 
 	await page.goto(PAGE_DESIGNER(SLUG))
-	await page.locator('.page-list-editor__row', { hasText: 'search' }).first().click()
+	await selectPageRow(page, 'search')
 	const reopened = page.locator('.search-page-editor')
 	await expect(reopened).toBeVisible({ timeout: 5_000 })
 	await expect(reopened.locator('.search-page-editor__group-row', { hasText: 'Placeholder' }).locator('input')).toHaveValue('Search everything…')
@@ -350,10 +408,24 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({ 
 	// with a strict-mode violation across two selects. Resolved by anchoring
 	// rather than by taking .first(), which would have silently picked whichever
 	// row happens to render first.
+	//
+	// Bind hello-world's OWN register and schema by slug, not `{ index: 1 }`.
+	// The register select lists every register on the instance (175 of them
+	// here) sorted by title, so index 1 resolved to Nextcloud's `directory`
+	// register, whose `nc-user` schema declares no properties this picker
+	// offers. The Content/Title field rows then rendered a `<select>` holding
+	// nothing but their "— default: body —" placeholder, and `selectOrFill`'s
+	// `{ index: 1 }` fallback failed with "did not find some options" — a real
+	// dead end, not a race. The seeded `hello-message` schema declares
+	// `id` + `body`, so the field mapping below has something to bind to.
 	const registerSelect = editor.locator('.wiki-page-editor__group-row', { hasText: /^\s*Register\b/ }).locator('select')
-	await registerSelect.selectOption({ index: 1 })
+	await registerSelect.selectOption('openbuild-hello-world-production')
 	const schemaSelect = editor.locator('.wiki-page-editor__group-row', { hasText: 'Schema' }).locator('select').first()
-	await schemaSelect.selectOption({ index: 1 })
+	await expect(
+		schemaSelect.locator('option[value="hello-world-production-hello-message"]'),
+		"the seeded app's register must offer its hello-message schema",
+	).toHaveCount(1, { timeout: 10_000 })
+	await schemaSelect.selectOption('hello-world-production-hello-message')
 
 	// contentField/titleField render as a schema-property <select> once a
 	// register + schema are bound (task 5.1); fall back to free-text input
@@ -367,9 +439,21 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({ 
 	await expect(page.locator('[data-testid="cn-wiki-page"]'), 'built wiki page must render').toBeVisible({ timeout: 15_000 })
 
 	await page.goto(PAGE_DESIGNER(SLUG))
-	await page.locator('.page-list-editor__row', { hasText: 'wiki' }).first().click()
+	await selectPageRow(page, 'wiki')
 	const reopened = page.locator('.wiki-page-editor')
 	await expect(reopened).toBeVisible({ timeout: 5_000 })
-	await expect(reopened.locator('.wiki-page-editor__group-row', { hasText: 'Register' }).locator('select')).not.toHaveValue('')
-	await expect(reopened.locator('.wiki-page-editor__group-row', { hasText: 'Schema' }).locator('select').first()).not.toHaveValue('')
+	// Anchor both labels for the same reason the binding above does: a bare
+	// `hasText: 'Register'` also matches the "Sidebar register" row (and
+	// 'Schema' the "Sidebar schema" row), which is a strict-mode violation
+	// across two selects. Assert the exact values that were bound rather than
+	// merely "not empty" — that is what a lossless round-trip means.
+	await expect(
+		reopened.locator('.wiki-page-editor__group-row', { hasText: /^\s*Register\b/ }).locator('select'),
+	).toHaveValue('openbuild-hello-world-production')
+	await expect(
+		reopened.locator('.wiki-page-editor__group-row', { hasText: /^\s*Schema\b/ }).locator('select'),
+	).toHaveValue('hello-world-production-hello-message')
+	await expect(
+		reopened.locator('.wiki-page-editor__group-row', { hasText: /^\s*Content field\b/ }).locator('select'),
+	).toHaveValue('body')
 })

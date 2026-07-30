@@ -268,16 +268,37 @@ describe('useRegisterPicker — REQ-OBFFUI-001', () => {
 	// ------------------------------------------------------------------ //
 
 	describe('fetchSchemaProperties', () => {
-		it('returns the properties map when the request succeeds', async () => {
+		// Resolved from the register's schema LIST. The previous implementation
+		// GET'd `/api/registers/{register}/schemas/{schema}`, a route
+		// OpenRegister does not have — it 404s for slugs and numeric ids alike,
+		// and the 404 was swallowed, so every field-mapping dropdown was empty
+		// in the real app while these tests passed against a hand-rolled
+		// response shape. Assert the URL now, so a regression to a non-existent
+		// route fails here instead of silently in the UI.
+		it('resolves the properties map from the register schema list', async () => {
 			const properties = { name: { type: 'string' } }
 			global.fetch = vi.fn().mockResolvedValue({
 				ok: true,
-				json: async () => ({ properties }),
+				json: async () => ({ results: [{ id: 7, slug: 'person', properties }] }),
 			})
 
 			const { fetchSchemaProperties } = useRegisterPicker()
 			const result = await fetchSchemaProperties('my-register', 'person')
 			expect(result).toEqual(properties)
+			expect(global.fetch).toHaveBeenCalledTimes(1)
+			expect(global.fetch.mock.calls[0][0]).toContain('/apps/openregister/api/registers/my-register/schemas')
+			expect(global.fetch.mock.calls[0][0]).not.toMatch(/\/schemas\/person$/)
+		})
+
+		it('matches a schema by numeric id as well as by slug', async () => {
+			const properties = { age: { type: 'integer' } }
+			global.fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				json: async () => ({ results: [{ id: 42, slug: 'person', properties }] }),
+			})
+
+			const { fetchSchemaProperties } = useRegisterPicker()
+			expect(await fetchSchemaProperties('r', 42)).toEqual(properties)
 		})
 
 		it('returns {} when register or schema is empty', async () => {
@@ -287,6 +308,26 @@ describe('useRegisterPicker — REQ-OBFFUI-001', () => {
 			expect(await fetchSchemaProperties('', 'person')).toEqual({})
 			expect(await fetchSchemaProperties('r', '')).toEqual({})
 			expect(global.fetch).not.toHaveBeenCalled()
+		})
+
+		it('returns {} when the register holds no matching schema', async () => {
+			global.fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				json: async () => ({ results: [{ id: 1, slug: 'other', properties: { x: {} } }] }),
+			})
+
+			const { fetchSchemaProperties } = useRegisterPicker()
+			expect(await fetchSchemaProperties('r', 'person')).toEqual({})
+		})
+
+		it('returns {} when the matched schema declares no properties', async () => {
+			global.fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				json: async () => ({ results: [{ id: 1, slug: 'person' }] }),
+			})
+
+			const { fetchSchemaProperties } = useRegisterPicker()
+			expect(await fetchSchemaProperties('r', 'person')).toEqual({})
 		})
 
 		it('returns {} on HTTP error', async () => {
@@ -303,18 +344,6 @@ describe('useRegisterPicker — REQ-OBFFUI-001', () => {
 			const { fetchSchemaProperties } = useRegisterPicker()
 			const result = await fetchSchemaProperties('r', 's')
 			expect(result).toEqual({})
-		})
-
-		it('falls back to schema.properties when top-level properties absent', async () => {
-			const properties = { age: { type: 'integer' } }
-			global.fetch = vi.fn().mockResolvedValue({
-				ok: true,
-				json: async () => ({ schema: { properties } }),
-			})
-
-			const { fetchSchemaProperties } = useRegisterPicker()
-			const result = await fetchSchemaProperties('r', 's')
-			expect(result).toEqual(properties)
 		})
 	})
 })

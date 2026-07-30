@@ -364,8 +364,37 @@ export default {
 	gap: 4px;
 }
 
+/* This row must stay inside the page designer's LEFT pane, a 280–320px grid
+   column whose panes are `overflow: visible`. Anything that spills out is not
+   clipped — it is PAINTED OVER THE CENTRE PANE and, being later in paint order,
+   swallows every pointer event aimed at the sub-editor underneath.
+
+   The row used to be a single `nowrap` line holding a drag handle, two text
+   inputs, a type tag, a group picker and a remove button. Measured on
+   /builder/hello-world/pages at a 1280x720 viewport, before this fix:
+
+     row                     x=355..639   (its pane ends at 648)
+     input (route)           x=517..647   already 8px past the row
+     span.type-tag           x=656..698   17px past — and the CENTRE PANE
+                                          starts at x=669, so this overlaps it
+     div.permission-group-field x=704, width 0, height 538
+     button.remove           x=710..741   entirely inside the centre pane
+
+   ~386px of content in a 284px row. Two consequences, both live-verified:
+   clicking a page row did nothing (the row's geometric centre landed on
+   overflowed children, or outside the viewport — the row was 550px tall
+   because the collapsed picker stacked its label and hint vertically), and
+   centre-pane controls were unclickable because `.page-designer__left`
+   intercepted their pointer events.
+
+   `flex-wrap` plus shrinkable items is the fix: the row can now use a second
+   line instead of leaving the pane. Note the previously-applied `min-width: 0`
+   on the picker was necessary but NOT sufficient — it let that one item
+   collapse to 0px while the inputs, which carry their own intrinsic minimum,
+   still pushed the tag and the remove button out. */
 .page-list-editor__row {
 	display: flex;
+	flex-wrap: wrap;
 	gap: 6px;
 	align-items: center;
 	padding: 6px;
@@ -392,7 +421,15 @@ export default {
 }
 
 .page-list-editor__field {
-	flex: 1 1 auto;
+	/* Small basis on purpose: the two inputs share whatever the fixed-width
+	   handle, type tag and remove button leave, so all five stay on the first
+	   line and only the picker below wraps. */
+	flex: 1 1 60px;
+	/* An `<input>`'s automatic minimum size comes from its intrinsic width
+	   (~130px here), and `min-width: auto` forbids a flex item from shrinking
+	   below it. Two such inputs alone exceeded the 284px row, which is how the
+	   type tag and the remove button ended up outside the pane. */
+	min-width: 0;
 	padding: 4px 6px;
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
@@ -401,7 +438,16 @@ export default {
 }
 
 .page-list-editor__permission {
-	flex: 1 1 200px;
+	/* Its own full-width line. This picker ships a wrapped hint paragraph, so
+	   it is several times taller than the 34px controls it used to sit beside;
+	   squeezing it into the same line is what stretched the row to 550px and
+	   pushed the centre point off screen. */
+	flex: 1 1 100%;
+	/* Flex wraps in DOM order, and a 100% basis always starts a new line — so
+	   without this the remove button that follows in markup would be pushed
+	   onto a third line. `order` moves the picker last visually while keeping
+	   the markup (and therefore the tab order of the two text fields) intact. */
+	order: 1;
 	/* Let this flex item shrink below its content's intrinsic width. Without
 	   it, `min-width: auto` keeps the item at the NcSelect's minimum and the
 	   row overflows instead of compressing. */
