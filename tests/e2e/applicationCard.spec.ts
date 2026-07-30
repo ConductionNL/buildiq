@@ -125,7 +125,6 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 		// permanently-stuck "Draft" of the pre-fix card also satisfied.
 		const badge = helloCard.locator('.ob-app-card__badge')
 		await expect(badge).toBeVisible({ timeout: 5_000 })
-		const badgeText = (await badge.textContent() || '').trim().toLowerCase()
 
 		const detail = await productionVersionDetail(page)
 		expect(
@@ -133,10 +132,18 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 			'the seeded app must expose a resolved productionVersionDetail — without it '
 			+ 'the card cannot know its status and this assertion is meaningless',
 		).toBeTruthy()
-		expect(
-			badgeText,
-			`the badge must show the production version's real status ("${detail.status}")`,
-		).toBe(String(detail.status).toLowerCase())
+
+		// RETRYING assertion, deliberately. The card first paints its placeholder
+		// ("Draft") and swaps to the real status when the shared production-version
+		// lookup resolves (src/store/productionVersions.js). A one-shot
+		// `textContent()` read races that and reported "draft" while the very
+		// snapshot taken at failure showed "Published" — the product was right and
+		// the assertion was early. `toHaveText` polls, so it asserts the settled
+		// state without weakening what is asserted.
+		await expect(
+			badge,
+			`the badge must settle on the production version's real status ("${detail.status}")`,
+		).toHaveText(new RegExp(`^${detail.status}$`, 'i'), { timeout: 15_000 })
 	})
 
 	test('hello-world ApplicationCard version chip shows semver or — placeholder', async ({ page }) => {
@@ -153,16 +160,15 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 		// literal string "Version null" would have satisfied. A format assertion
 		// pins every failure mode a template hole can produce.
 		const versionChip = helloCard.locator('.ob-app-card__chip').first()
-		const chipText = (await versionChip.textContent() || '').trim()
 
 		// The real semver, not the em-dash placeholder the pre-fix card was
-		// permanently stuck on.
+		// permanently stuck on. Retrying, for the same reason as the badge above.
 		const detail = await productionVersionDetail(page)
 		expect(detail, 'the seeded app must expose a resolved productionVersionDetail').toBeTruthy()
-		expect(
-			chipText,
-			`version chip must carry the production version's real semver ("${detail.semver}")`,
-		).toBe(`Version ${detail.semver}`)
+		await expect(
+			versionChip,
+			`version chip must settle on the production version's real semver ("${detail.semver}")`,
+		).toHaveText(`Version ${detail.semver}`, { timeout: 15_000 })
 
 		// And the slug chip beside it must be the real slug, not a template hole.
 		await expect(

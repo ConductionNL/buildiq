@@ -604,11 +604,12 @@ test('REQ-OBR-007b — every ApplicationCard carries a lifecycle status badge', 
 	// missing badge passed silently.
 	const badge = card.locator('.ob-app-card__badge')
 	await expect(badge, 'the card must carry exactly one status badge').toHaveCount(1)
-	const text = ((await badge.textContent()) ?? '').trim().toLowerCase()
-	expect(
-		['draft', 'published', 'archived'],
-		`the badge must show a lifecycle status, got "${text}"`,
-	).toContain(text)
+	// Retrying: the card paints a placeholder first and settles once the shared
+	// production-version lookup resolves. A one-shot read races that.
+	await expect(
+		badge,
+		'the badge must settle on one of the three lifecycle labels',
+	).toHaveText(/^(draft|published|archived)$/i, { timeout: 15_000 })
 
 	// REQ-OBR-013 removed the redundant "Live" chip; it must stay gone.
 	await expect(card.locator('.ob-app-card__chip--live')).toHaveCount(0)
@@ -628,10 +629,10 @@ test('REQ-OBR-007b — every ApplicationCard carries a lifecycle status badge', 
 		'the seeded app must expose a resolved productionVersionDetail — the card '
 		+ 'cannot render a real status without it',
 	).toBeTruthy()
-	expect(
-		text,
+	await expect(
+		badge,
 		`the card badge must show the production version's status ("${detail.status}")`,
-	).toBe(String(detail.status).toLowerCase())
+	).toHaveText(new RegExp(`^${detail.status}$`, 'i'), { timeout: 15_000 })
 })
 
 // @e2e openbuild-runtime::edited-draft-shows-modified-indicator
@@ -653,6 +654,9 @@ test('REQ-OBR-007b — the detail header carries the same status badge as the li
 	await open(page, '/applications')
 	const card = page.locator('.ob-app-card').filter({ hasText: 'Hello World' }).first()
 	await expect(card).toBeVisible({ timeout: 20_000 })
+	// Let the badge settle before reading it — see the note in the test above.
+	await expect(card.locator('.ob-app-card__badge'))
+		.toHaveText(/^(draft|published|archived)$/i, { timeout: 15_000 })
 	const listBadge = ((await card.locator('.ob-app-card__badge').textContent()) ?? '').trim().toLowerCase()
 
 	await open(page, `/applications/${objectIdOf(app)}`)
