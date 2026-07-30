@@ -69,6 +69,67 @@ const BUILT_PAGE = (slug: string, route: string) => `${BASE}/apps/openbuild/buil
  * @param page Playwright page.
  * @return {Promise<void>}
  */
+/**
+ * Ids this spec generates, e.g. `map-page-5`, `search-page-13`.
+ *
+ * The designer numbers a new page by its position, so every run appends another
+ * one instead of reusing the last.
+ */
+const GENERATED_PAGE_ID = /^(map|roadmap|search|wiki)-page-\d+$/
+
+/**
+ * Remove the pages previous runs of this spec left behind.
+ *
+ * These tests had no cleanup, so each run appended a fresh map/roadmap/search
+ * page to hello-world's manifest. After four runs the manifest held sixteen
+ * pages with FOUR different pages all claiming route `/map`. That broke the
+ * round-trip assertions rather than the saves: each test reopens the designer
+ * and clicks `.page-list-editor__row` filtered by `hasText: 'map'` `.first()`,
+ * which selects the OLDEST leftover page, not the one the test just configured
+ * — so `.map-page-editor` never showed the values that had just been written.
+ *
+ * Deleting them through OpenBuild's own manifest route (in-page fetch, so the
+ * request carries the session cookie AND the CSRF requesttoken the plain
+ * AppFramework route requires) leaves exactly the seeded pages, making each
+ * run's own page unambiguous.
+ *
+ * @param page Playwright page (authenticated via the shared storageState).
+ * @return {Promise<void>}
+ */
+async function removeGeneratedPages(page: import('@playwright/test').Page): Promise<void> {
+	await page.goto(`${BASE}/apps/openbuild/`, { waitUntil: 'domcontentloaded' })
+	await page.waitForTimeout(500)
+	await page.evaluate(async (slug) => {
+		const tok = (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken
+			|| document.querySelector('head')?.getAttribute('data-requesttoken')
+			|| ''
+		const headers = { requesttoken: tok, 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' }
+		const url = `/index.php/apps/openbuild/api/applications/${slug}/manifest`
+		const res = await fetch(url, { headers })
+		if (!res.ok) {
+			return
+		}
+		const body = await res.json()
+		const manifest = body.manifest || body
+		const pages = Array.isArray(manifest.pages) ? manifest.pages : []
+		const kept = pages.filter((p: { id?: string }) => !/^(map|roadmap|search|wiki)-page-\d+$/.test(String(p?.id ?? '')))
+		if (kept.length === pages.length) {
+			return
+		}
+		manifest.pages = kept
+		await fetch(url, { method: 'PUT', headers, body: JSON.stringify({ manifest }) })
+	}, SLUG)
+}
+
+test.beforeAll(async ({ browser }) => {
+	const page = await browser.newPage()
+	try {
+		await removeGeneratedPages(page)
+	} finally {
+		await page.close()
+	}
+})
+
 async function saveAndAwaitPersist(page: import('@playwright/test').Page): Promise<void> {
 	const saved = page.waitForResponse(
 		(r) => /\/api\/objects\/openbuild\/(applicationVersion|application)\/[^/]+$/.test(r.url())
