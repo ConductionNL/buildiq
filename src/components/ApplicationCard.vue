@@ -48,6 +48,10 @@
 <script>
 import { imagePath } from '@nextcloud/router'
 import { useRole, getCurrentUserGroups } from '../composables/useRole.js'
+import {
+	productionVersions,
+	ensureProductionVersionsLoaded,
+} from '../store/productionVersions.js'
 
 export default {
 	name: 'ApplicationCard',
@@ -95,15 +99,18 @@ export default {
 		 * @spec openspec/specs/openbuild-runtime/spec.md#req-obr-007b
 		 */
 		productionVersion() {
-			const detail = this.app.productionVersionDetail
-			if (detail && typeof detail === 'object') {
-				return detail
-			}
+			// 1. An inline object — the legacy `?extend=productionVersion` shape,
+			//    and what the component's unit fixtures pass.
 			const pv = this.app.productionVersion
-			if (!pv || typeof pv !== 'object') {
-				return null
+			if (pv && typeof pv === 'object') {
+				return pv
 			}
-			return pv
+			// 2. A UUID string — what this data path actually delivers. Resolve it
+			//    through the page-wide version index (src/store/productionVersions.js).
+			if (typeof pv === 'string' && pv !== '') {
+				return productionVersions[pv] || null
+			}
+			return null
 		},
 		/**
 		 * Semver string from the production ApplicationVersion, or '—' while
@@ -208,6 +215,19 @@ export default {
 				viewer: t('openbuild', 'Viewer'),
 			}[this.role] || ''
 		},
+	},
+	/**
+	 * Kick off the page-wide production-version lookup.
+	 *
+	 * Shared and de-duplicated, so a grid of N cards issues ONE request, not N.
+	 * The store is reactive, so cards that render before it settles re-render
+	 * with the real status and semver when it does.
+	 *
+	 * @return {void}
+	 * @spec openspec/specs/openbuild-runtime/spec.md#req-obr-007b
+	 */
+	created() {
+		ensureProductionVersionsLoaded()
 	},
 	methods: {
 		/**
