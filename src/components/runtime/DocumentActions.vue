@@ -41,6 +41,7 @@
 import { NcButton } from '@nextcloud/vue'
 import { useDocudeskDocument } from '../../composables/useDocudeskDocument.js'
 import { useAppStatus } from '../../composables/useAppStatus.js'
+import { objectSchemaKeys, matchesKey } from '../../utils/objectSchemaKeys.js'
 
 export default {
 	name: 'DocumentActions',
@@ -48,6 +49,11 @@ export default {
 	// The live, reactive manifest CnAppRoot provides to every descendant.
 	inject: {
 		cnManifest: { default: null },
+		// CnDetailPage provides the page's own object context. Its `schema` is
+		// the manifest's `config.schema` — a SLUG, the same vocabulary
+		// `runtime.documents[].schema` uses. `@self.schema` is a numeric id, so
+		// this injection is what makes the two sides comparable at all.
+		cnObjectContext: { default: null },
 	},
 	props: {
 		// The current OR object being viewed.
@@ -134,8 +140,21 @@ export default {
 		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
 		 */
 		objectSchema() {
-			const self = (this.object && this.object['@self']) || {}
-			return self.schema || this.object.schema || ''
+			return this.schemaKeys[0] || ''
+		},
+		/**
+		 * Every name this object's schema can legitimately be known by.
+		 *
+		 * `@self.schema` is a NUMERIC id (measured: `{"register":"15","schema":"21"}`)
+		 * while `runtime.documents[].schema` is a slug (`hello-message`), so the
+		 * old single-field read could never match an attachment and this widget
+		 * rendered nothing for every object. See src/utils/objectSchemaKeys.js.
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
+		 */
+		schemaKeys() {
+			return objectSchemaKeys(this.object, this.cnObjectContext)
 		},
 		/**
 		 * Attachments declared for this object's schema, in declared order.
@@ -144,11 +163,11 @@ export default {
 		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
 		 */
 		schemaAttachments() {
-			const schema = this.objectSchema
-			if (!schema) {
+			const keys = this.schemaKeys
+			if (keys.length === 0) {
 				return []
 			}
-			return this.effectiveAttachments.filter((a) => a && a.schema === schema)
+			return this.effectiveAttachments.filter((a) => a && matchesKey(a.schema, keys))
 		},
 	},
 	mounted() {

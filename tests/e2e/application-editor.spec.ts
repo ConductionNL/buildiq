@@ -16,7 +16,22 @@ import { test, expect } from '@playwright/test'
  * NOTE: the visual editor lands in chain spec #5; this test exercises the
  * stop-gap textarea editor only.
  */
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — builder host blank (BuilderHostView unresolved by nc-vue CnPageRenderer) / no detail/editor/version pages. Re-enable when #41 is fixed.
+// STILL SKIPPED — SUPERSEDED, not blocked. The true reason replaces the #41 one.
+//
+// This file drives `textarea.openbuild-editor__textarea` reached directly from
+// `/apps/openbuild/applications`. No `openbuild-editor__*` class exists in src/,
+// and there is no editor on the LIST page at all: the raw-JSON manifest editor
+// is a sidebar tab on the app DETAIL page (ApplicationManifestTab, testid
+// `openbuild-editor-textarea`), only in the DOM after NcAppSidebar's
+// `.app-sidebar__toggle` is clicked.
+//
+// The round-trip it was written to prove — load the stored manifest, edit it,
+// Save, and confirm the PUT landed and survives a reload — is now driven end to
+// end against that real surface by "REQ-OBR-005 — a valid edit is PUT to OR and
+// survives a reload" in tests/e2e/spec-coverage/openbuild-runtime.spec.ts, which
+// also covers the validation-blocks-save half this file never had. Rewriting
+// this file would duplicate that coverage under a second name; it is kept as a
+// pointer rather than deleted so the REQ-OBR-005 trail stays findable.
 test.describe.skip('ApplicationEditor — textarea round-trip', () => {
 	test('loads, edits hello-world manifest, saves successfully', async ({ page, request }) => {
 		await page.goto('/apps/openbuild/applications')

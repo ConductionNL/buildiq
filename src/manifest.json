@@ -81,28 +81,28 @@
 		{
 			"id": "Dashboard",
 			"label": "Dashboard",
-			"icon": "icon-category-dashboard",
+			"icon": "ViewDashboardOutline",
 			"route": "Dashboard",
 			"order": 10
 		},
 		{
 			"id": "VirtualApps",
 			"label": "Apps",
-			"icon": "icon-category-app-bundles",
+			"icon": "ViewGridOutline",
 			"route": "VirtualApps",
 			"order": 20
 		},
 		{
 			"id": "Store",
 			"label": "Store",
-			"icon": "icon-category-organization",
+			"icon": "StoreOutline",
 			"route": "Templates",
 			"order": 30
 		},
 		{
 			"id": "Documentation",
 			"label": "Documentation",
-			"icon": "icon-info",
+			"icon": "BookOpenVariantOutline",
 			"href": "https://openbuild.conduction.nl",
 			"section": "footer",
 			"order": 90
@@ -110,7 +110,7 @@
 		{
 			"id": "FeaturesRoadmapMenu",
 			"label": "Features & roadmap",
-			"icon": "icon-toggle",
+			"icon": "MapMarkerPath",
 			"route": "FeaturesRoadmap",
 			"section": "footer",
 			"order": 95
@@ -190,42 +190,42 @@
 					{
 						"id": "manifest",
 						"label": "Manifest",
-						"icon": "icon-edit",
+						"icon": "PencilOutline",
 						"component": "ApplicationManifestTab",
 						"order": 20
 					},
 					{
 						"id": "history",
 						"label": "Version history",
-						"icon": "icon-history",
+						"icon": "History",
 						"component": "ApplicationVersionsTab",
 						"order": 30
 					},
 					{
 						"id": "diff",
 						"label": "Diff",
-						"icon": "icon-files",
+						"icon": "FileDocumentMultipleOutline",
 						"component": "ApplicationDiffTab",
 						"order": 40
 					},
 					{
 						"id": "icons",
 						"label": "Icons",
-						"icon": "icon-image",
+						"icon": "ImageOutline",
 						"component": "ApplicationIconTab",
 						"order": 50
 					},
 					{
 						"id": "exports",
 						"label": "Exports",
-						"icon": "icon-download",
+						"icon": "DatabaseExportOutline",
 						"component": "ExportJobsTab",
 						"order": 60
 					},
 					{
 						"id": "audit",
 						"label": "History",
-						"icon": "icon-history",
+						"icon": "History",
 						"widgets": [ { "type": "audit" } ],
 						"order": 70
 					}

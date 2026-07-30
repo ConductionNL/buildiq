@@ -62,7 +62,27 @@ async function loginAs(page: Page, user: string, pass: string): Promise<void> {
 	}
 }
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / editor / version pages render. Re-enable when #41 is fixed.
+// STILL SKIPPED, with the true reason replacing the #41 one.
+//
+// Blocker 1 (hard): needs the Nextcloud user `rbac-outsider` / `RbacOutsider-1!`,
+// in no group named by hello-world's `permissions` block. It is created by
+// tests/integration/openbuild-rbac.postman_collection.json step 1.6, and this
+// Playwright suite does not run Newman. Without that user the whole premise —
+// a NON-admin, NON-member session — is unreachable; the shared admin
+// storageState exercises the admin bypass (REQ-OBRBAC-006) instead.
+//
+// Blocker 2 (would make it green-but-dead even with the user): the deny
+// assertion is `expect(page.locator('[data-app-slug="hello-world"],
+// [data-testid="builder-host-hello-world"]')).toHaveCount(0)`. Neither attribute
+// is emitted anywhere in src/ — BuilderHost.vue stamps
+// data-testid="openbuild-builder-host", with no slug in it. So that count is 0
+// for an admin who CAN see the app, and the assertion proves nothing. Retarget
+// it before re-enabling.
+//
+// This block is also the canonical home the openbuild-runtime spec points at
+// for REQ-OBR-006c ("@e2e exclude … already covered by rbac-403.spec.ts") and
+// is where REQ-OBR-007c's empty-list scenario belongs, since both need exactly
+// this outsider session.
 test.describe.skip('openbuild-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRBAC-003)', () => {
 	// Skip storageState — we need a freshly authed outsider context, not
 	// the shared admin session.

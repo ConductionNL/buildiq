@@ -26,7 +26,24 @@ const ADMIN_PASS = process.env.NC_ADMIN_PASS ?? 'admin'
 void ADMIN_USER
 void ADMIN_PASS
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / editor / version pages render. Re-enable when #41 is fixed.
+// STILL SKIPPED, with the true reason replacing the #41 one: this file was
+// written against a surface that does not exist and never did on this branch.
+//
+//   - It navigates to `/apps/openbuild/applications/hello-world/design`. There
+//     is no `/design` route: src/manifest.json declares the designer at
+//     `/builder/:slug/pages` (PageDesignerHost), and the detail route is keyed
+//     on the OR object id, not the slug.
+//   - It asserts `.application-editor__tab--active`, `.application-editor__textarea`
+//     and `.application-editor__dirty`. No `application-editor__*` class exists
+//     anywhere in src/.
+//   - Its REQ-OBR-005 assertion ("Design tab is the default") encodes the
+//     Design/Raw-JSON tab pair the spec describes but the app never shipped —
+//     the same spec drift documented at the matching skip in
+//     tests/e2e/spec-coverage/openbuild-runtime.spec.ts.
+//
+// The designer IS driven for real, against `/builder/:slug/pages`, by
+// tests/e2e/form-editor-logic.spec.ts and tests/e2e/builder-undo-redo.spec.ts.
+// Re-enabling this file means rewriting it onto those routes, not un-skipping.
 test.describe.skip('openbuild page designer', () => {
 
 	test('REQ-OBPD-002 + REQ-OBPD-003 + REQ-OBPD-009: add page → save → renders in builder', async ({ page }) => {
