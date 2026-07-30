@@ -33,7 +33,21 @@ const ADMIN_PASSWORD = process.env.NC_ADMIN_PASSWORD || 'admin'
 const APPLICATION_SLUG = 'hello-world'
 const POLL_TIMEOUT_MS = 60_000
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+// STILL SKIPPED, with the true reason replacing the #41 one.
+//
+//   - It polls `[data-test="export-job-row"]:has-text("succeeded")`. That
+//     attribute is emitted nowhere in src/; the jobs surface is
+//     src/components/tabs/ExportJobsTab.vue + src/views/ExportJobsList.vue, and
+//     the export trigger is now the "Export" button in ApplicationDetailActions
+//     opening ExportDialog — not the flow this file drives.
+//   - It navigates to `/apps/openbuild/applications/hello-world`, i.e. the slug
+//     as the route param. The detail route takes the OR OBJECT ID
+//     (`/applications/:objectId`), so this lands on a not-found detail page.
+//   - It also re-implements a form login instead of using the shared
+//     storageState from globalSetup.
+//
+// Retarget it at ExportJobsTab/ExportDialog and resolve the object id first;
+// the ZIP contract itself is covered at the unit/controller level meanwhile.
 test.describe.skip('OpenBuild ZIP export', () => {
 	test.beforeEach(async ({ page }) => {
 		// Login via the Nextcloud login form. CI uses storageState; this
