@@ -16,11 +16,15 @@ import AppsBox from 'vue-material-design-icons/AppsBox.vue'
 import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import ClipboardText from 'vue-material-design-icons/ClipboardText.vue'
+import DatabaseExportOutline from 'vue-material-design-icons/DatabaseExportOutline.vue'
+import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
 import Flash from 'vue-material-design-icons/Flash.vue'
 import History from 'vue-material-design-icons/History.vue'
+import ImageOutline from 'vue-material-design-icons/ImageOutline.vue'
 import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
 import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
 import PackageVariant from 'vue-material-design-icons/PackageVariant.vue'
+import PencilOutline from 'vue-material-design-icons/PencilOutline.vue'
 import PuzzleOutline from 'vue-material-design-icons/PuzzleOutline.vue'
 import Robot from 'vue-material-design-icons/Robot.vue'
 import RouterNetwork from 'vue-material-design-icons/RouterNetwork.vue'
@@ -36,11 +40,15 @@ export default {
 	BookOpenVariantOutline,
 	CheckCircle,
 	ClipboardText,
+	DatabaseExportOutline,
+	FileDocumentMultipleOutline,
 	Flash,
 	History,
+	ImageOutline,
 	MapMarkerPath,
 	MessageTextOutline,
 	PackageVariant,
+	PencilOutline,
 	PuzzleOutline,
 	Robot,
 	RouterNetwork,
