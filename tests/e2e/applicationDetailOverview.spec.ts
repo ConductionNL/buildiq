@@ -40,7 +40,20 @@ async function loginAs(page: import('@playwright/test').Page, user: string, pass
 	}
 }
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / editor / version pages render. Re-enable when #41 is fixed.
+// STILL SKIPPED, with the true reason replacing the #41 one.
+//
+// Blocker 1: this block opts OUT of the shared session
+// (`test.use({ storageState: { cookies: [], origins: [] } })`) and form-logs-in
+// per test. playwright.config.ts documents why the suite stopped doing that —
+// Nextcloud's brute-force throttle fires after a handful of near-simultaneous
+// form logins from one IP and every later spec falls back to /login. Re-enabling
+// as written would destabilise the whole run, not just this file.
+// Blocker 2: the pill-strip, promote-affordance and deep-link scenarios need a
+// development -> staging -> production ApplicationVersion chain. hello-world has
+// exactly one version (`production`) on this instance, so those tests would hit
+// their own `test.skip(pillCount < 2, ...)` guards and assert nothing anyway.
+//
+// Migrate it onto the shared storageState and seed the chain, in that order.
 test.describe.skip('Application detail — maintainer dashboard (REQ-OBADO-001..012)', () => {
 	test.use({ storageState: { cookies: [], origins: [] } })
 
@@ -133,7 +146,16 @@ test.describe.skip('Application detail — maintainer dashboard (REQ-OBADO-001..
 	})
 })
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / editor / version pages render. Re-enable when #41 is fixed.
+// STILL SKIPPED — same two blockers as the block above (own form login instead
+// of the shared storageState; needs a multi-version chain for the version-pill
+// and deep-link scenarios). Not #41.
+//
+// Third problem, to fix when rewriting rather than when un-skipping: the 14.5
+// scenario ends on `void req` under the comment "assertion is best-effort",
+// i.e. it captures the network request it exists to check and then discards it.
+// That is the green-but-dead shape — were this block un-skipped as written it
+// would report coverage of the ?_version= deep-link contract while asserting
+// nothing about it.
 test.describe.skip('Application detail overview — content scenarios (14.4/14.5/14.7/14.8)', () => {
 	const TEST_SLUG = process.env.NC_OBADO_TEST_SLUG ?? 'hello-world'
 
@@ -214,10 +236,10 @@ test.describe.skip('Application detail overview — content scenarios (14.4/14.5
 		for (let i = 0; i < linkCount; i++) {
 			const href = await widgetLinks.nth(i).getAttribute('href')
 			if (!href) continue
-			const carriesVersion =
-				href.includes(`-${versionSlug}`) ||
-				href.includes(`_version=${versionSlug}`) ||
-				href.includes(`?_version=${versionSlug}`)
+			const carriesVersion
+				= href.includes(`-${versionSlug}`)
+				|| href.includes(`_version=${versionSlug}`)
+				|| href.includes(`?_version=${versionSlug}`)
 			if (!carriesVersion) {
 				// Some links (e.g. external Open in OpenRegister) carry the version
 				// in the register slug itself; the assertion above already covers that.
@@ -247,8 +269,13 @@ test.describe.skip('Application detail overview — content scenarios (14.4/14.5
 	})
 })
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / editor / version pages render. Re-enable when #41 is fixed.
-test.describe.skip('Application insights — endpoint surface', () => {
+// UN-QUARANTINED 2026-07-30. Quarantining this block was spurious: it opens no
+// browser and asserts no UI — both tests are `request`-only contract checks on
+// the insights endpoint (400 for an invalid window enum with the spec-defined
+// body; 404 for an unknown appUuid, and specifically WITHOUT the
+// `public, max-age=60` cache header a 200 carries). A non-functional admin UI
+// could not have affected either.
+test.describe('Application insights — endpoint surface', () => {
 	test('invalid window enum returns 400 with the spec-defined body', async ({ request }) => {
 		test.skip(!LIVE, 'OPENBUILD_E2E_LIVE not set')
 		const res = await request.get(

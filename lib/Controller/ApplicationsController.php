@@ -836,6 +836,8 @@ class ApplicationsController extends Controller
                 );
             }
 
+            $filtered = $this->attachProductionVersionDetail(applications: $filtered);
+
             return new JSONResponse(data: $filtered, statusCode: Http::STATUS_OK);
         } catch (Throwable $e) {
             $this->logger->error(
@@ -919,6 +921,126 @@ class ApplicationsController extends Controller
 
         return [$filtered, $adminBypassUsed];
     }//end filterApplicationsByRole()
+
+    /**
+     * Attach the resolved production ApplicationVersion to each listed Application.
+     *
+     * WHY THIS EXISTS
+     * ---------------
+     * `productionVersion` on an Application is a UUID *string* (the versioned
+     * model, ADR-002). Every detail-side consumer treats it that way and looks
+     * the UUID up in a separately-fetched versions list —
+     * `ApplicationDetailHeader.productionVersionUuid`,
+     * `ApplicationDetailDashboard`, `ApplicationVersionsTab`,
+     * `promoteVersionDefaults`, `useApplicationVersion`.
+     *
+     * The LIST view has no such list to resolve against, and `ApplicationCard.vue`
+     * bailed unless `productionVersion` was already an object. It never is on this
+     * endpoint, so `statusKey` fell through to `'draft'` and `productionSemver` to
+     * `'—'` for EVERY card, whatever the app's real state — measured on the e2e
+     * instance, where `hello-world` renders "Draft / Version —" while its
+     * production ApplicationVersion is `{status: 'published', semver: '1.0.0'}`.
+     * That made REQ-OBR-007b ("newly published Application shows published badge")
+     * unsatisfiable from the list.
+     *
+     * `productionVersion` is deliberately LEFT ALONE — changing it to an object
+     * would break every string consumer named above. The resolved record is added
+     * alongside it as `productionVersionDetail`, and only the fields a card needs
+     * are projected: the full version row carries the whole manifest blob, which
+     * would bloat a list response enormously for data no card reads.
+     *
+     * One extra query total, not one per row: every ApplicationVersion is fetched
+     * once and indexed by UUID. This mirrors
+     * {@see ApplicationVersionsController::index()}, which fetches all rows and
+     * filters client-side for the same reason (OR's `searchObjects` does not
+     * reliably filter by relation-string equality on the `application` field).
+     *
+     * @param array<array<string,mixed>> $applications Applications the caller may see.
+     *
+     * @return array<array<string,mixed>> The same list, each entry gaining
+     *                                    `productionVersionDetail` when its
+     *                                    production version resolves.
+     *
+     * @spec openspec/specs/openbuild-runtime/spec.md#req-obr-007b
+     */
+    private function attachProductionVersionDetail(array $applications): array
+    {
+        // Nothing to resolve — skip the query entirely.
+        $wanted = [];
+        foreach ($applications as $app) {
+            $uuid = ($app['productionVersion'] ?? null);
+            if (is_string($uuid) === true && $uuid !== '' && $uuid !== 'draft') {
+                $wanted[$uuid] = true;
+            }
+        }
+
+        if ($wanted === []) {
+            return $applications;
+        }
+
+        try {
+            $registerId = $this->registerMapper->find(
+                ApplicationVersionService::REGISTER_SLUG,
+                _multitenancy: false
+            )->getId();
+            $schemaId = $this->schemaMapper->find(
+                ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+                _multitenancy: false
+            )->getId();
+
+            $rows = $this->objectService->searchObjects(
+                query: [
+                    '@self' => [
+                        'register' => $registerId,
+                        'schema'   => $schemaId,
+                    ],
+                ]
+            );
+        } catch (Throwable $e) {
+            // Fail SOFT and SAY SO: the list is still perfectly usable without
+            // the badge detail, but a silent catch here would recreate exactly
+            // the defect this method fixes — a card quietly showing "Draft"
+            // because the data never arrived.
+            $this->logger->warning(
+                'OpenBuild: could not resolve productionVersion detail for the application list; '
+                .'cards will fall back to their placeholder status/version: '.$e->getMessage(),
+                ['exception' => $e]
+            );
+            return $applications;
+        }//end try
+
+        if (is_array($rows) === false) {
+            return $applications;
+        }
+
+        $byUuid = [];
+        foreach ($rows as $row) {
+            $version = $this->normaliseObject(object: $row);
+            if ($version === []) {
+                continue;
+            }
+            $uuid = (string) ($version['id'] ?? $version['uuid'] ?? '');
+            if ($uuid === '' || isset($wanted[$uuid]) === false) {
+                continue;
+            }
+            $byUuid[$uuid] = [
+                'uuid'   => $uuid,
+                'slug'   => ($version['slug'] ?? null),
+                'name'   => ($version['name'] ?? null),
+                'semver' => ($version['semver'] ?? null),
+                'status' => ($version['status'] ?? null),
+            ];
+        }
+
+        foreach ($applications as $index => $app) {
+            $uuid = ($app['productionVersion'] ?? null);
+            if (is_string($uuid) === true && isset($byUuid[$uuid]) === true) {
+                $applications[$index]['productionVersionDetail'] = $byUuid[$uuid];
+            }
+        }
+
+        return $applications;
+    }//end attachProductionVersionDetail()
 
     /**
      * Project a read-only owner flag onto the manifest's `runtime.user` context.

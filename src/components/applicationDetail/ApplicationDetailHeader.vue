@@ -159,13 +159,27 @@ export default {
 			return (this.application && this.application.description) || ''
 		},
 		/**
-		 * Application status label.
+		 * Application lifecycle label for the header badge.
+		 *
+		 * Reads the PRODUCTION VERSION's status first. Spec C moved `status` off
+		 * the Application and onto the ApplicationVersion, so the Application-level
+		 * field is the legacy one — reading it made this badge disagree with the
+		 * list row, which REQ-OBR-007b requires to carry "the same badge".
+		 * Measured before the fix: hello-world's card read "Published" (from its
+		 * production version) while this header read "Draft" (from the stale
+		 * Application field) for the very same app.
+		 *
+		 * The Application-level value is kept as the fallback for legacy rows that
+		 * predate the versioned model and have no resolvable production version.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/specs/openbuild-runtime/spec.md#req-obr-007b
 		 */
 		applicationStatus() {
-			return (this.application && this.application.status) || t('openbuild', 'draft')
+			const fromVersion = this.productionVersion && this.productionVersion.status
+			return fromVersion
+				|| (this.application && this.application.status)
+				|| t('openbuild', 'draft')
 		},
 		/**
 		 * The app's type discriminator (unify-apps-with-app-type). Absent reads

@@ -34,6 +34,7 @@
 import { NcButton } from '@nextcloud/vue'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { useTrackLinkAction } from '../../composables/useTrackLinkAction.js'
+import { objectSchemaKeys, objectRegisterKeys, matchesKey } from '../../utils/objectSchemaKeys.js'
 
 export default {
 	name: 'TrackLinkAction',
@@ -45,6 +46,10 @@ export default {
 	// convention `useProcestCase.js::writeBack()` already relies on.
 	inject: {
 		cnManifest: { default: null },
+		// The page's own object context. Its `register`/`schema` are the
+		// manifest's slugs; `@self` carries numeric ids. See the schemaKeys
+		// computed below.
+		cnObjectContext: { default: null },
 	},
 	props: {
 		object: {
@@ -70,7 +75,16 @@ export default {
 		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		register() {
-			return (this.object && this.object['@self'] && this.object['@self'].register) || (this.object && this.object.register) || ''
+			return this.registerKeys[0] || ''
+		},
+		/**
+		 * Every name this object's register can legitimately be known by.
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
+		 */
+		registerKeys() {
+			return objectRegisterKeys(this.object, this.cnObjectContext)
 		},
 		/**
 		 * The object's OR schema slug, read off the `@self` envelope.
@@ -79,7 +93,21 @@ export default {
 		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		schema() {
-			return (this.object && this.object['@self'] && this.object['@self'].schema) || (this.object && this.object.schema) || ''
+			return this.schemaKeys[0] || ''
+		},
+		/**
+		 * Every name this object's schema can legitimately be known by.
+		 *
+		 * `@self.register`/`@self.schema` are NUMERIC ids (measured:
+		 * `{"register":"15","schema":"21"}`) while `runtime.externalForms[]`
+		 * carries slugs, so the old single-field reads could never match an
+		 * entry and this action never rendered. See src/utils/objectSchemaKeys.js.
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
+		 */
+		schemaKeys() {
+			return objectSchemaKeys(this.object, this.cnObjectContext)
 		},
 		/**
 		 * The resolved object id — prefer the explicit prop (CnDetailPage
@@ -101,10 +129,14 @@ export default {
 		 */
 		externalFormEntry() {
 			const list = this.cnManifest && this.cnManifest.runtime && this.cnManifest.runtime.externalForms
-			if (!Array.isArray(list) || !this.register || !this.schema) {
+			const registerKeys = this.registerKeys
+			const schemaKeys = this.schemaKeys
+			if (!Array.isArray(list) || registerKeys.length === 0 || schemaKeys.length === 0) {
 				return null
 			}
-			return list.find((e) => e && e.register === this.register && e.schema === this.schema) || null
+			return list.find((e) => e
+				&& matchesKey(e.register, registerKeys)
+				&& matchesKey(e.schema, schemaKeys)) || null
 		},
 		/**
 		 * REQ-EFP-006: only offered when the schema's external-form entry has

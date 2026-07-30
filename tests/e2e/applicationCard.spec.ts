@@ -23,8 +23,51 @@ import { test, expect } from '@playwright/test'
  *     by design (spec C Decision 4). The test asserts the icon is present and
  *     the badge is NOT the pre-spec-A regression value "Live".
  */
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — builder host blank (BuilderHostView unresolved by nc-vue CnPageRenderer) / no detail/editor/version pages. Re-enable when #41 is fixed.
-test.describe.skip('ApplicationCard — icon + productionVersion fields (spec A / spec C)', () => {
+// UN-QUARANTINED 2026-07-30. The old reason (#41, "builder host blank / no
+// detail pages") never applied to this file — it only reads the applications
+// index — and no longer holds anyway.
+//
+// PRODUCT DEFECT FOUND AND FIXED WHILE DOING THIS: the status badge and version
+// chip on this card were dead. `GET /api/applications` returns
+// `productionVersion` as a bare UUID STRING, but `ApplicationCard.vue`'s
+// `productionVersion` computed bailed unless `typeof pv === 'object'`. So
+// `statusKey` always fell back to `'draft'` and `productionSemver` to `'—'`, for
+// every app, whatever its real state — hello-world read "Draft / Version —"
+// while its production ApplicationVersion was `{status: 'published',
+// semver: '1.0.0'}`. That made REQ-OBR-007b's "newly published Application shows
+// published badge" unsatisfiable from the list view.
+//
+// Fixed by `ApplicationsController::attachProductionVersionDetail()`, which
+// resolves the UUID once for the whole list and projects
+// `{uuid, slug, name, semver, status}` as `productionVersionDetail`;
+// the card prefers that field. `productionVersion` is left a UUID string
+// because every detail-side consumer depends on that shape.
+//
+// Tests 3 and 4 below are now DATA-DRIVEN against that resolved field rather
+// than merely checking the badge vocabulary — they compare what the card renders
+// against what the API says the production version actually is, so the defect
+// cannot regress silently.
+/**
+ * The resolved production ApplicationVersion the API attaches to the seeded app.
+ *
+ * Read through the page's own session so the assertion compares the card against
+ * exactly the payload that rendered it.
+ *
+ * @param {import('@playwright/test').Page} page The Playwright page.
+ * @return {Promise<object|null>} `{uuid, slug, name, semver, status}` or null.
+ */
+async function productionVersionDetail(page) {
+	const res = await page.request.get('/index.php/apps/openbuild/api/applications', {
+		headers: { 'OCS-APIRequest': 'true' },
+	})
+	expect(res.ok(), 'the applications API must answer').toBeTruthy()
+	const body = await res.json()
+	const rows = Array.isArray(body) ? body : (body.results ?? [])
+	const app = rows.find((a) => (a.slug ?? a['@self']?.slug) === 'hello-world')
+	return (app && app.productionVersionDetail) || null
+}
+
+test.describe('ApplicationCard — icon + productionVersion fields (spec A / spec C)', () => {
 
 	test('index page renders ApplicationCards with icon <img> elements', async ({ page }) => {
 		await page.goto('/apps/openbuild/applications')
@@ -69,41 +112,68 @@ test.describe.skip('ApplicationCard — icon + productionVersion fields (spec A 
 	test('hello-world ApplicationCard status badge is one of the known values', async ({ page }) => {
 		await page.goto('/apps/openbuild/applications')
 
-		// Find the card for hello-world specifically.
-		const helloCard = page.locator('[data-slug="hello-world"], .ob-app-card').first()
-		await expect(helloCard).toBeVisible({ timeout: 15_000 })
+		// Target hello-world for real. The previous selector was
+		// `[data-slug="hello-world"], .ob-app-card` + `.first()` — ApplicationCard.vue
+		// renders no `data-slug` attribute, so that alternation always collapsed to
+		// "whatever card happens to be first" while the test name promised
+		// hello-world. The slug IS rendered, in the muted chip as `/{slug}`.
+		const helloCard = page.locator('.ob-app-card').filter({ hasText: '/hello-world' }).first()
+		await expect(helloCard, 'the seeded hello-world card must be on the index').toBeVisible({ timeout: 15_000 })
 
-		// The badge must be one of draft / published / archived (from
-		// Application.productionVersion.status via spec C).
+		// The badge must show the REAL lifecycle status of the app's production
+		// ApplicationVersion — not merely "one of the three words", which the
+		// permanently-stuck "Draft" of the pre-fix card also satisfied.
 		const badge = helloCard.locator('.ob-app-card__badge')
 		await expect(badge).toBeVisible({ timeout: 5_000 })
-		const badgeText = (await badge.textContent() || '').trim().toLowerCase()
-		const validStatuses = ['draft', 'published', 'archived']
+
+		const detail = await productionVersionDetail(page)
 		expect(
-			validStatuses.some(s => badgeText.includes(s)),
-			`badge text "${badgeText}" must be one of: ${validStatuses.join(', ')}`,
-		).toBe(true)
+			detail,
+			'the seeded app must expose a resolved productionVersionDetail — without it '
+			+ 'the card cannot know its status and this assertion is meaningless',
+		).toBeTruthy()
+
+		// RETRYING assertion, deliberately. The card first paints its placeholder
+		// ("Draft") and swaps to the real status when the shared production-version
+		// lookup resolves (src/store/productionVersions.js). A one-shot
+		// `textContent()` read races that and reported "draft" while the very
+		// snapshot taken at failure showed "Published" — the product was right and
+		// the assertion was early. `toHaveText` polls, so it asserts the settled
+		// state without weakening what is asserted.
+		await expect(
+			badge,
+			`the badge must settle on the production version's real status ("${detail.status}")`,
+		).toHaveText(new RegExp(`^${detail.status}$`, 'i'), { timeout: 15_000 })
 	})
 
 	test('hello-world ApplicationCard version chip shows semver or — placeholder', async ({ page }) => {
 		await page.goto('/apps/openbuild/applications')
 
-		const helloCard = page.locator('[data-slug="hello-world"], .ob-app-card').first()
-		await expect(helloCard).toBeVisible({ timeout: 15_000 })
+		const helloCard = page.locator('.ob-app-card').filter({ hasText: '/hello-world' }).first()
+		await expect(helloCard, 'the seeded hello-world card must be on the index').toBeVisible({ timeout: 15_000 })
 
-		// The version chip must show a semver string (from
-		// Application.productionVersion.semver) OR the "—" fallback when
-		// productionVersion is not yet inline-extended.
+		// The version chip must render the documented shape exactly: the label
+		// followed by a semver, or by the em-dash placeholder spec C Decision 4
+		// defines for "no resolved production version".
+		//
+		// The old body only checked `length > 0` and `not /undefined/`, which the
+		// literal string "Version null" would have satisfied. A format assertion
+		// pins every failure mode a template hole can produce.
 		const versionChip = helloCard.locator('.ob-app-card__chip').first()
-		const chipText = (await versionChip.textContent() || '').trim()
-		// Accept: "Version 1.0.0" / "Version —" / "v0.1.0" etc.
-		expect(
-			chipText.length,
-			'version chip must contain some text',
-		).toBeGreaterThan(0)
-		expect(
-			chipText,
-			'version chip must not contain the old Application-level "version" field fallback text',
-		).not.toMatch(/undefined/)
+
+		// The real semver, not the em-dash placeholder the pre-fix card was
+		// permanently stuck on. Retrying, for the same reason as the badge above.
+		const detail = await productionVersionDetail(page)
+		expect(detail, 'the seeded app must expose a resolved productionVersionDetail').toBeTruthy()
+		await expect(
+			versionChip,
+			`version chip must settle on the production version's real semver ("${detail.semver}")`,
+		).toHaveText(`Version ${detail.semver}`, { timeout: 15_000 })
+
+		// And the slug chip beside it must be the real slug, not a template hole.
+		await expect(
+			helloCard.locator('.ob-app-card__chip--muted'),
+			'the slug chip must render the application slug',
+		).toHaveText('/hello-world')
 	})
 })

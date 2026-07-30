@@ -56,7 +56,23 @@ async function loginAs(page: Page, user: string, pass: string): Promise<void> {
 	}
 }
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+// STILL SKIPPED, with the true reason replacing the #41 one.
+//
+// Two concrete blockers, both verified by reading the file against src/:
+//   1. It edits the manifest through `page.locator('textarea, [contenteditable]')
+//      .first()` reached straight from /apps/openbuild/applications — i.e. it
+//      assumes a one-big-textarea editor on the list page. The raw editor is now
+//      a SIDEBAR TAB on the detail page (data-testid="openbuild-editor-textarea"),
+//      only in the DOM once NcAppSidebar's .app-sidebar__toggle is clicked.
+//   2. Its history assertions expect exactly three ApplicationVersion rows,
+//      seeded by the Newman collection tests/integration/
+//      openbuild-versioning.postman_collection.json, which this suite does not
+//      run. hello-world has one version on this instance.
+//
+// The rollback contract itself is NOT uncovered: REQ-OBR-009a's
+// restore-and-stay-draft and cancel-sends-no-write scenarios are both driven,
+// against the real sidebar surface, in
+// tests/e2e/spec-coverage/openbuild-runtime.spec.ts.
 test.describe.skip('openbuild-versioning — publish + rollback (REQ-OBV-005 / REQ-OBR-009)', () => {
 	test.use({ storageState: { cookies: [], origins: [] } })
 
