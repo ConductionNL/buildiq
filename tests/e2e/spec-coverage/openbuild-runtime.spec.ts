@@ -661,10 +661,25 @@ test('REQ-OBR-007b — every ApplicationCard carries a lifecycle status badge', 
 	// REQ-OBR-013 removed the redundant "Live" chip; it must stay gone.
 	await expect(card.locator('.ob-app-card__chip--live')).toHaveCount(0)
 
-	// And the badge is not decorative — it must agree with the record.
+	// And the badge is not decorative — it must equal the REAL lifecycle status
+	// of the app's production ApplicationVersion.
+	//
+	// This used to compare against the Application-level `status`, which happened
+	// to agree only because every app on the instance was `draft`. Spec C moved
+	// lifecycle onto the version, and the version is what the card renders, so
+	// this now reads the resolved `productionVersionDetail` the list endpoint
+	// attaches (ApplicationsController::attachProductionVersionDetail).
 	const app = await fetchApplication(request)
-	const expected = ['draft', 'published', 'archived'].includes(app.status) ? app.status : 'draft'
-	expect(text, 'the card badge must reflect the Application\'s lifecycle state').toBe(expected)
+	const detail = app.productionVersionDetail
+	expect(
+		detail,
+		'the seeded app must expose a resolved productionVersionDetail — the card '
+		+ 'cannot render a real status without it',
+	).toBeTruthy()
+	expect(
+		text,
+		`the card badge must show the production version's status ("${detail.status}")`,
+	).toBe(String(detail.status).toLowerCase())
 })
 
 // @e2e openbuild-runtime::edited-draft-shows-modified-indicator

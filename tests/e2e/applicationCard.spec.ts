@@ -27,24 +27,46 @@ import { test, expect } from '@playwright/test'
 // detail pages") never applied to this file — it only reads the applications
 // index — and no longer holds anyway.
 //
-// PRODUCT DEFECT FOUND WHILE DOING THIS (openbuild, unfiled): the status badge
-// and version chip on this card are dead. `GET /api/applications` returns
+// PRODUCT DEFECT FOUND AND FIXED WHILE DOING THIS: the status badge and version
+// chip on this card were dead. `GET /api/applications` returns
 // `productionVersion` as a bare UUID STRING, but `ApplicationCard.vue`'s
-// `productionVersion` computed bails unless `typeof pv === 'object'`. So
-// `statusKey` always falls back to `'draft'` and `productionSemver` always
-// renders `'—'`, for every app, whatever its real state. Measured on the e2e
-// instance: hello-world's production ApplicationVersion is
-// `{status: 'published', semver: '1.0.0'}` while its card reads "Draft" and
-// "Version —". That makes REQ-OBR-007b's "newly published Application shows
+// `productionVersion` computed bailed unless `typeof pv === 'object'`. So
+// `statusKey` always fell back to `'draft'` and `productionSemver` to `'—'`, for
+// every app, whatever its real state — hello-world read "Draft / Version —"
+// while its production ApplicationVersion was `{status: 'published',
+// semver: '1.0.0'}`. That made REQ-OBR-007b's "newly published Application shows
 // published badge" unsatisfiable from the list view.
 //
-// The tests below therefore assert the card's STRUCTURE (icon endpoint, badge
-// vocabulary, chip format, absence of the removed Live chip) — all of which are
-// real contracts — and deliberately do NOT assert that the badge equals the
-// production version's status, because it does not and pretending otherwise
-// would either fail the suite for a defect this change is not fixing, or bake
-// the broken behaviour in as expected. Fix the extension in the controller (or
-// resolve the UUID client-side), then tighten test 3 and 4 to the real values.
+// Fixed by `ApplicationsController::attachProductionVersionDetail()`, which
+// resolves the UUID once for the whole list and projects
+// `{uuid, slug, name, semver, status}` as `productionVersionDetail`;
+// the card prefers that field. `productionVersion` is left a UUID string
+// because every detail-side consumer depends on that shape.
+//
+// Tests 3 and 4 below are now DATA-DRIVEN against that resolved field rather
+// than merely checking the badge vocabulary — they compare what the card renders
+// against what the API says the production version actually is, so the defect
+// cannot regress silently.
+/**
+ * The resolved production ApplicationVersion the API attaches to the seeded app.
+ *
+ * Read through the page's own session so the assertion compares the card against
+ * exactly the payload that rendered it.
+ *
+ * @param {import('@playwright/test').Page} page The Playwright page.
+ * @return {Promise<object|null>} `{uuid, slug, name, semver, status}` or null.
+ */
+async function productionVersionDetail(page) {
+	const res = await page.request.get('/index.php/apps/openbuild/api/applications', {
+		headers: { 'OCS-APIRequest': 'true' },
+	})
+	expect(res.ok(), 'the applications API must answer').toBeTruthy()
+	const body = await res.json()
+	const rows = Array.isArray(body) ? body : (body.results ?? [])
+	const app = rows.find((a) => (a.slug ?? a['@self']?.slug) === 'hello-world')
+	return (app && app.productionVersionDetail) || null
+}
+
 test.describe('ApplicationCard — icon + productionVersion fields (spec A / spec C)', () => {
 
 	test('index page renders ApplicationCards with icon <img> elements', async ({ page }) => {
@@ -98,16 +120,23 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 		const helloCard = page.locator('.ob-app-card').filter({ hasText: '/hello-world' }).first()
 		await expect(helloCard, 'the seeded hello-world card must be on the index').toBeVisible({ timeout: 15_000 })
 
-		// The badge must be one of draft / published / archived (from
-		// Application.productionVersion.status via spec C).
+		// The badge must show the REAL lifecycle status of the app's production
+		// ApplicationVersion — not merely "one of the three words", which the
+		// permanently-stuck "Draft" of the pre-fix card also satisfied.
 		const badge = helloCard.locator('.ob-app-card__badge')
 		await expect(badge).toBeVisible({ timeout: 5_000 })
 		const badgeText = (await badge.textContent() || '').trim().toLowerCase()
-		const validStatuses = ['draft', 'published', 'archived']
+
+		const detail = await productionVersionDetail(page)
 		expect(
-			validStatuses.some(s => badgeText.includes(s)),
-			`badge text "${badgeText}" must be one of: ${validStatuses.join(', ')}`,
-		).toBe(true)
+			detail,
+			'the seeded app must expose a resolved productionVersionDetail — without it '
+			+ 'the card cannot know its status and this assertion is meaningless',
+		).toBeTruthy()
+		expect(
+			badgeText,
+			`the badge must show the production version's real status ("${detail.status}")`,
+		).toBe(String(detail.status).toLowerCase())
 	})
 
 	test('hello-world ApplicationCard version chip shows semver or — placeholder', async ({ page }) => {
@@ -125,10 +154,15 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 		// pins every failure mode a template hole can produce.
 		const versionChip = helloCard.locator('.ob-app-card__chip').first()
 		const chipText = (await versionChip.textContent() || '').trim()
+
+		// The real semver, not the em-dash placeholder the pre-fix card was
+		// permanently stuck on.
+		const detail = await productionVersionDetail(page)
+		expect(detail, 'the seeded app must expose a resolved productionVersionDetail').toBeTruthy()
 		expect(
 			chipText,
-			`version chip must read "Version <semver>" or "Version —", got "${chipText}"`,
-		).toMatch(/^Version\s+(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?|—)$/)
+			`version chip must carry the production version's real semver ("${detail.semver}")`,
+		).toBe(`Version ${detail.semver}`)
 
 		// And the slug chip beside it must be the real slug, not a template hole.
 		await expect(

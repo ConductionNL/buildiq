@@ -68,18 +68,37 @@ export default {
 			return this.object || this.item || {}
 		},
 		/**
-		 * Resolve the inline productionVersion object, if OR returned it via
-		 * `?extend=productionVersion` (or the store pre-fetched it). Falls back
-		 * to null so the card can show skeleton defaults.
+		 * Resolve the production ApplicationVersion this card reports on.
 		 *
 		 * Spec C moved `status` and `semver` from Application onto
-		 * ApplicationVersion. The card reads them from productionVersion so the
-		 * status badge and version chip stay accurate.
+		 * ApplicationVersion, so the badge and version chip must read them from
+		 * the version, not the Application.
+		 *
+		 * Two shapes are accepted, in order:
+		 *
+		 *   1. `productionVersionDetail` — the resolved `{uuid, slug, name,
+		 *      semver, status}` projection that `ApplicationsController::listMine`
+		 *      attaches. This is the real path in the running app.
+		 *   2. an inline `productionVersion` OBJECT — the legacy
+		 *      `?extend=productionVersion` shape, kept so a caller that embeds
+		 *      the version (and the component's own unit fixtures) still work.
+		 *
+		 * A bare `productionVersion` UUID STRING resolves to null, because a
+		 * string carries neither field. That used to be the ONLY shape this
+		 * endpoint ever returned, which is why every card in the list read
+		 * "Draft / Version —" regardless of the app's real lifecycle state —
+		 * hello-world showed Draft while its production version was
+		 * `{status: 'published', semver: '1.0.0'}`. The fix is the resolved
+		 * field above; this computed just has to prefer it.
 		 *
 		 * @return {object|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/specs/openbuild-runtime/spec.md#req-obr-007b
 		 */
 		productionVersion() {
+			const detail = this.app.productionVersionDetail
+			if (detail && typeof detail === 'object') {
+				return detail
+			}
 			const pv = this.app.productionVersion
 			if (!pv || typeof pv !== 'object') {
 				return null
