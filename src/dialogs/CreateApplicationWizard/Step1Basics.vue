@@ -31,19 +31,21 @@
 			<a :href="aiSettingsUrl">{{ t('openbuild', 'Open AI settings') }}</a>
 		</p>
 
-		<!-- KNOWN DEFECT (openbuild): this dialog opens BEHIND the create-app
-		     wizard. Step1Basics renders inside the wizard's own NcModal, and the
-		     wizard's full-viewport `.modal-mask` paints over this nested modal, so
-		     every click aimed at the copilot dialog is received by the wizard's
-		     `#wizard-app-description` textarea instead. Live-verified from a
-		     failing run's accessibility snapshot: BOTH dialogs are present and
-		     visible (wizard + "Generate an app with AI" with its "Generate"
-		     button), yet the wizard's textarea is the pointer-event target. So
-		     "Generate with AI" is unusable for real users, not only in tests.
-		     Wrapping this in <Teleport to="body"> was tried and measured: it does
-		     NOT fix it, because the masks still stack in the wizard's favour. The
-		     fix belongs in NcModal's z-index handling for two concurrently-open
-		     modals, so it is recorded here rather than worked around. -->
+		<!-- This dialog is nested inside the create-app wizard's own NcModal.
+		     It used to open BEHIND the wizard — every click aimed at it landed on
+		     the wizard's `#wizard-app-description` instead — which made "Generate
+		     with AI" unusable for real users, not only in tests. Fixed upstream in
+		     @conduction/nextcloud-vue 2.1.0-vue3.7 by a shared modal stack that
+		     assigns each new `.modal-mask` an inline z-index above the current top.
+		     The root cause was our own library, not @nextcloud/vue:
+		     CnEditDataModal.vue carried an UNSCOPED
+		     `.modal-mask.dialog__modal { z-index: 10005 !important }`, and rollup
+		     folds every SFC style block into the global dist stylesheet — so one
+		     component's local override pinned every NcDialog mask in every
+		     consuming app to a single layer nothing could outrank, leaving mount
+		     order to break the tie. That is also why an earlier <Teleport to="body">
+		     attempt here changed nothing: both masks were already in <body>.
+		     Requires >= 2.1.0-vue3.7; do not downgrade below it. -->
 		<CopilotGenerateDialog v-model:open="showCopilotDialog" @created="onAiAppCreated" />
 
 		<!-- Name input -->

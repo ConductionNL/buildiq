@@ -40,6 +40,8 @@ import { test, expect } from '@playwright/test'
 // Neither persists its "seen" state on this instance, so both can reopen on
 // every run. Helpers shared with the other specs that hit the same overlays.
 import { dismissWalkthrough, dismissSupportDialog } from './support/overlays'
+// PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
+import { E2E_BASE_URL } from './support/baseUrl'
 
 const HEALTH_URL = '**/apps/openbuild/api/copilot/health'
 const PLAN_URL = '**/apps/openbuild/api/copilot/plan'
@@ -125,11 +127,37 @@ test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 		const res = await executeResponse
 		expect(res.status(), `execute must succeed — body: ${await res.text()}`).toBe(200)
 
-		// The write must be PERSISTED, not merely painted: reload the designer
-		// from the server and confirm the manifest carries the new page.
+		// The write must be PERSISTED, not merely painted. Assert it at the
+		// source first — the served manifest — then that the reloaded designer
+		// actually renders it.
+		const manifestRes = await page.request.get(
+			`${E2E_BASE_URL}/index.php/apps/openbuild/api/applications/hello-world/manifest`,
+			{ headers: { 'OCS-APIRequest': 'true' } },
+		)
+		expect(manifestRes.ok(), 'the manifest must be readable back').toBeTruthy()
+		const manifestBody = await manifestRes.json()
+		const persistedPages = (manifestBody.manifest ?? manifestBody).pages ?? []
+		expect(
+			persistedPages.map((p: { id?: string }) => p?.id),
+			'the approved plan must have persisted the new page into the manifest',
+		).toContain(SUPPLIERS_PAGE_ID)
+
 		await page.reload()
 		await expect(page.locator('.page-designer-host'), 'page designer must reload').toBeVisible({ timeout: 20_000 })
-		await expect(page.locator(`text=${SUPPLIERS_PAGE_ID}`).first()).toBeVisible({ timeout: 15_000 })
+
+		// NOT `text=e2e-suppliers`: a page-list row renders its id and route as
+		// `<input :value="…">` (PageListEditor.vue), and Playwright's `text=`
+		// engine matches TEXT NODES only — an input's value is a property, never
+		// a text node. That locator could not match however well the feature
+		// worked, and it was only ever reached once the nested-modal defect
+		// stopped failing this test earlier. Read the live input values instead.
+		const rowFields = page.locator('.page-list-editor__row input.page-list-editor__field')
+		await expect
+			.poll(async () => await rowFields.evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value)), {
+				message: 'the reloaded designer must list the persisted suppliers page',
+				timeout: 15_000,
+			})
+			.toContain(SUPPLIERS_PAGE_ID)
 	})
 
 	// @e2e ai-copilot::discarding-a-proposal-changes-nothing
@@ -151,10 +179,32 @@ test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 		const proposal = panel.locator('[data-testid="copilot-proposal"]')
 		await expect(proposal).toBeVisible({ timeout: 10_000 })
 
+		// Snapshot the manifest so "changes nothing" is asserted, not assumed.
+		const manifestUrl = `${E2E_BASE_URL}/index.php/apps/openbuild/api/applications/hello-world/manifest`
+		const before = await (await page.request.get(manifestUrl, { headers: { 'OCS-APIRequest': 'true' } })).text()
+
 		await proposal.locator('[data-testid="copilot-discard"]').click()
 
 		expect(executeCalled, 'execute must never be called after Discard').toBe(false)
-		await expect(proposal, 'the proposal must be dismissed').toHaveCount(0)
+
+		// The spec's requirement is "no execute request is sent and the app's
+		// manifest is unchanged" (openspec/specs/ai-copilot/spec.md, "Discarding
+		// a proposal changes nothing"). It does NOT say the card disappears, and
+		// the panel deliberately keeps it: proposals are rendered from the chat
+		// transcript (`messages[].plan`), while `discard()` clears the composable's
+		// `plan` and the panel's `pendingMessageId`. The turn stays in the log —
+		// which the agent-workspace spec relies on ("A discarded proposal is still
+		// logged") — but stops being actionable. `toHaveCount(0)` asserted a
+		// behaviour this component has never had on either branch
+		// (src/components/copilot/ is byte-identical to origin/development); it was
+		// simply never evaluated, because the nested-modal defect failed this test
+		// at the click above. Assert the real contract instead.
+		const after = await (await page.request.get(manifestUrl, { headers: { 'OCS-APIRequest': 'true' } })).text()
+		expect(after, 'the manifest must be byte-identical after a discard').toBe(before)
+		await expect(
+			proposal.locator('[data-testid="copilot-approve"]'),
+			'a discarded proposal must no longer be approvable',
+		).toBeDisabled()
 	})
 
 	// @e2e ai-copilot::no-write-happens-before-approval
