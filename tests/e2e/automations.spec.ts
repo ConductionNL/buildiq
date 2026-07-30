@@ -132,6 +132,44 @@ async function automationSchemaIsUsable(request: APIRequestContext): Promise<boo
 }
 
 /**
+ * Is Docudesk installed and enabled on this instance?
+ *
+ * The `generateDocument` action is a Docudesk integration and CANNOT be
+ * composed without it: `AutomationEditDialog.actionBlockedReason()` returns
+ * "Docudesk is not installed — document-generation actions are unavailable."
+ * whenever `useAppStatus('docudesk')` reports absent, and the template renders
+ * that blocked NoteCard via `v-if` with the whole `generateDocument` config
+ * sub-form behind the `v-else-if`. So on an instance without Docudesk the
+ * template/output fields genuinely do not exist and the compose scenario has no
+ * surface to drive. That is correct product behaviour — the spec's own
+ * "Document-generation action is disabled without Docudesk" scenario is
+ * `@e2e exclude`d to Vitest — but the compose test never declared the
+ * dependency, so it hard-failed instead of reporting its precondition.
+ * (Every Docudesk test in spec-coverage/docudesk-document-templates.spec.ts is
+ * unconditionally `test.skip`d for the same reason; this was the odd one out.)
+ *
+ * Mirrors `useAppStatus`'s own probe semantics deliberately: ONLY 404/501 means
+ * absent. Any other status — including 4xx/5xx — means the app answered, so a
+ * broken-but-installed Docudesk still returns true and the test fails loudly
+ * rather than being skipped into silence.
+ *
+ * @param request Playwright APIRequestContext (fixture-provided).
+ * @return {Promise<boolean>} true when Docudesk responds on its API route.
+ */
+async function docudeskIsAvailable(request: APIRequestContext): Promise<boolean> {
+	try {
+		const resp = await request.get('/index.php/apps/docudesk/api', {
+			headers: { 'OCS-APIRequest': 'true' },
+		})
+		return resp.status() !== 404 && resp.status() !== 501
+	} catch {
+		// A transport failure is not evidence of absence — let the test run and
+		// report the real problem rather than silently skipping.
+		return true
+	}
+}
+
+/**
  * Fixed names every automation-created-by-this-file scenario saves under.
  * The suite runs against a persistent, non-reset-between-runs container
  * (only the hello-world fixture is reseeded), so a prior run's rows are
@@ -511,6 +549,7 @@ test.describe('automation-document-action — generateDocument action', () => {
 	// @e2e automation-designer::compose-a-document-generation-action
 	test('REQ-AUTD-002 scenario 4: composes a document-generation automation on a lifecycle transition and confirms the generated document is attached', async ({ page, request }) => {
 		test.skip(await automationSchemaIsUsable(request) === false, 'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file')
+		test.skip(await docudeskIsAvailable(request) === false, 'Docudesk is not installed on this instance, so the `generateDocument` action renders its documented blocked-state NoteCard instead of a config sub-form and there is nothing to compose — see the docudeskIsAvailable() note at the top of this file')
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
 		// Brief settle before interacting — NcModal's open transition plus this
@@ -536,9 +575,13 @@ test.describe('automation-document-action — generateDocument action', () => {
 			})
 		await page.getByRole('option', { name: looseOptionName('Generate document') }).click()
 
-		// Template picker degrades to a free-text field when Docudesk has no
-		// seeded templates (or is absent) — try the live picker first, fall
+		// Template picker degrades to a free-text "Template id" field when
+		// Docudesk is installed but has no seeded templates
+		// (`templatePickerAvailable` is false) — try the live picker first, fall
 		// back to the text field so this test is honest on either fixture.
+		// Docudesk being ABSENT is a different case and does not reach here at
+		// all: the action is blocked outright, which is what the
+		// `docudeskIsAvailable` guard above covers.
 		const templateSelect = page.locator('[data-testid="generate-document-template-select"]')
 		const templateText = page.locator('[data-testid="generate-document-template-text"]')
 		if (await templateSelect.isVisible().catch(() => false)) {

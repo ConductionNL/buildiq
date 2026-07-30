@@ -135,22 +135,45 @@ guarded by per-template `slug` existence checks (matching the
 
 ### Requirement: Gallery view lists templates with filter and detail
 
-The OpenBuild frontend SHALL register a Vue route `/templates` whose
-view (`src/views/TemplateGallery.vue`) lists every
-`ApplicationTemplate` visible to the caller via OR REST, plus every
-`ComponentBlock` visible to the caller under a distinct "Blocks" filter (see
-`component-blocks`). The gallery SHALL:
+> **Amended 2026-07-30 to match shipped behaviour.** This requirement used to
+> describe `/templates` as a listing of local `ApplicationTemplate` objects with
+> a `category` filter and a free-text search, each card carrying a "Use this
+> template" action. None of that has shipped since `github-shop-catalogue`:
+> `src/views/TemplateGallery.vue` contains no reference to
+> `application-template` at all, its heading reads "App store", and its card
+> action reads "Install". Verified live on `/apps/openbuild/templates` and
+> against `origin/development` — the old wording described a surface that exists
+> on neither branch, which is why an e2e test asserting on it failed as though
+> the app had regressed. Seeded `ApplicationTemplate`s themselves are NOT gone:
+> `Repair\SeedApplicationTemplates` still seeds them, they are still authored via
+> Save-as-template / Edit-template-metadata from an Application's detail page,
+> and `POST /api/applications/from-template/{templateSlug}` (REQ-OBTC-006) still
+> clones them. They are simply no longer surfaced by this gallery. Whether the
+> gallery should list them again is a product question, tracked separately — the
+> spec's job here is to say what ships.
 
-- Show each `ApplicationTemplate`'s `title`, `useCase`, `description`,
-  `category`, and `screenshotUrl` if present
-- Show each `ComponentBlock`'s `name`, `description`, `category`, and a
-  fragment preview
-- Provide filter controls for `category` and a free-text search over
-  `title`/`name` + `useCase` + `description`, plus a top-level toggle between
-  "Templates" and "Blocks"
-- Surface a "Use this template" action per `ApplicationTemplate` card; a
-  `ComponentBlock` card SHALL NOT offer "Use this template" — blocks insert
-  via the page designer's block library, not the gallery
+The OpenBuild frontend SHALL register a Vue route `/templates` whose view
+(`src/views/TemplateGallery.vue`) presents an **App store** with a top-level
+tablist toggle between "Templates" and "Blocks". The gallery SHALL:
+
+- Under "Templates", render a server-backed GitHub source: a debounced search
+  field calling `GET /api/shop/github/search?q=…` (which lists repositories
+  tagged with the `openbuild-app` topic) and a grid of the returned cards,
+  each showing `name`, `category`, `description`, `owner/repo`, and — when
+  present — `appType`, `version`, star count, and the credentials the app
+  declares
+- Surface an **"Install"** action on each installable card, opening
+  `CloneTemplateDialog` seeded with that GitHub app
+- Render a card whose repository descriptor is unparseable as a
+  non-installable candidate — an "Unreadable app descriptor" badge and an
+  explanatory hint in place of the Install action — rather than omitting it
+- Render a warning note, not an empty grid, when GitHub browsing is
+  unavailable, distinguishing the rate-limited case and pointing at the
+  credential that would raise the limit
+- Under "Blocks", show each `ComponentBlock`'s `name`, `description`,
+  `category` and a fragment preview, with a `category` filter and NO clone
+  action — blocks insert via the page designer's block library, not the
+  gallery (see `component-blocks`)
 - Be reachable from a top-level OpenBuild left-nav entry and from a
   "Create from template" CTA on the empty-state of the Application
   list
@@ -163,10 +186,12 @@ CSS variables only (per ADR-010 — no hardcoded colours).
 
 #### Scenario: Filtering by category narrows the gallery
 
-- **WHEN** a user opens `/index.php/apps/openbuild/templates` and
-  selects the `government-services` category filter
-- **THEN** the gallery shows only the `permit-tracker` template
-- **AND** the three other seeded templates are hidden from view
+- **WHEN** a user opens `/apps/openbuild/templates` and switches to the "Blocks"
+  tab, then selects a `category` in its filter
+- **THEN** the gallery shows only the `ComponentBlock`s in that category
+- **AND** the route renders without a white screen (the "Templates" tab carries a
+  GitHub search field, not a category filter — the category filter is the
+  Blocks-tab control)
 
 #### Scenario: Empty Application list surfaces the gallery CTA
 
@@ -178,10 +203,10 @@ CSS variables only (per ADR-010 — no hardcoded colours).
 
 #### Scenario: Blocks filter shows blocks without the clone action
 
-- **WHEN** a user opens `/templates` and switches to the "Blocks" filter
+- **WHEN** a user opens `/templates` and switches to the "Blocks" tab
 - **THEN** the gallery lists `ComponentBlock` entries with name, description,
   category and a preview
-- **AND** no card in the "Blocks" filter offers a "Use this template" action
+- **AND** no card in the "Blocks" tab offers a clone/install action
 
 ### Requirement: "Use this template" clones into a new Application
 
@@ -333,11 +358,13 @@ flow lives in a separate change.
 
 #### Scenario: Gallery hides edit controls on a seeded template
 
-- **WHEN** a user views the `permit-tracker` template card in the
-  gallery
+- **WHEN** a user views a card in the gallery
 - **THEN** no "Edit template" or "Delete template" control is
   rendered
-- **AND** only the "Use this template" action is shown
+- **AND** the only card-level action is the clone/install action
+  (see REQ-OBTC-003 — the App-store card action reads "Install"; editing and
+  deleting a seeded `ApplicationTemplate` is not offered from the gallery on
+  any path)
 
 ### Requirement: Template manifests validate against the canonical app-manifest schema
 
