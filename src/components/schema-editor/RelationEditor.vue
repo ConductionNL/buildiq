@@ -27,29 +27,29 @@
 				:key="relation._key"
 				class="openbuild-relation-editor__row">
 				<NcTextField
-					:value="relation.name"
+					:model-value="relation.name"
 					:label="t('openbuild', 'Relation name')"
-					@update:value="updateRelation(index, 'name', $event)" />
+					@update:modelValue="updateRelation(index, 'name', $event)" />
 				<NcSelect
 					:input-label="t('openbuild', 'Target schema')"
-					:value="schemaOption(relation.target)"
+					:model-value="schemaOption(relation.target)"
 					:options="schemaOptions"
 					:clearable="false"
 					label="label"
 					track-by="value"
-					@input="updateRelation(index, 'target', $event ? $event.value : '')" />
+					@update:modelValue="updateRelation(index, 'target', $event ? $event.value : '')" />
 				<NcSelect
 					:input-label="t('openbuild', 'Cardinality')"
-					:value="cardinalityOption(relation.cardinality)"
+					:model-value="cardinalityOption(relation.cardinality)"
 					:options="cardinalityOptions"
 					:clearable="false"
 					label="label"
 					track-by="value"
-					@input="updateRelation(index, 'cardinality', $event ? $event.value : 'one')" />
+					@update:modelValue="updateRelation(index, 'cardinality', $event ? $event.value : 'one')" />
 				<NcTextField
-					:value="relation.inverseOf || ''"
+					:model-value="relation.inverseOf || ''"
 					:label="t('openbuild', 'Inverse-of (optional)')"
-					@update:value="updateRelation(index, 'inverseOf', $event)" />
+					@update:modelValue="updateRelation(index, 'inverseOf', $event)" />
 				<NcButton
 					type="error"
 					:aria-label="t('openbuild', 'Remove relation')"

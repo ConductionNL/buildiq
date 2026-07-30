@@ -37,8 +37,20 @@
 
 import { test, expect } from '@playwright/test'
 import { ensureApp, dismissOverlays, suppressSupportDialog } from './support/appFixture'
+import { readStagedManifest } from './support/stagedManifest'
 
-const BASE_URL = process.env.NEXTCLOUD_URL || process.env.NC_BASE_URL || 'http://localhost:8080'
+// Merge note (development -> feat/vue-3-migration, 2026-07-30): development's
+// un-quarantine reintroduced
+//   `process.env.NEXTCLOUD_URL || process.env.NC_BASE_URL || 'http://localhost:8080'`
+// which ignores PLAYWRIGHT_BASE_URL entirely. This suite is driven with
+// PLAYWRIGHT_BASE_URL=http://localhost:8099 and NC_BASE_URL unset, so that
+// expression falls through to :8080 — on a dev box the SHARED `nextcloud`
+// container holding other people's checkouts. This spec both READS and WRITES
+// (it provisions two fixture apps and component-block objects), so the old form
+// would have created fixtures on somebody else's instance while asserting
+// against a different one. Keeping our side; see tests/e2e/support/baseUrl.ts
+// for the full writeup.
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
 
 const SOURCE_APP = 'pw-cb-source'
 const TARGET_APP = 'pw-cb-target'
@@ -143,17 +155,15 @@ test.describe('OpenBuild component blocks', () => {
 	 * Read the designer's LIVE (staged) manifest — an insert is an in-editor
 	 * edit until the page is saved, so this is where it must be observed.
 	 *
+	 * The component handle lives in `support/stagedManifest.ts` — see the note
+	 * there on why the previous `element.__vue__` read was Vue-2-only and had to
+	 * become a component-tree walk.
+	 *
 	 * @param {import('@playwright/test').Page} page - the Playwright page.
 	 * @return {Promise<object>} The staged manifest.
 	 */
 	async function readStaged(page) {
-		return page.evaluate(() => {
-			const vm = document.querySelector('.page-designer')?.__vue__
-			if (!vm || !vm.manifest) {
-				throw new Error('page designer not mounted — cannot read the staged manifest')
-			}
-			return JSON.parse(JSON.stringify(vm.manifest))
-		})
+		return readStagedManifest(page)
 	}
 
 	/**

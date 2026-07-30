@@ -34,7 +34,7 @@
 		</NcButton>
 
 		<CreateApplicationWizard
-			:show.sync="showWizard"
+			v-model:show="showWizard"
 			@created="onWizardCreated" />
 	</div>
 </template>
@@ -111,6 +111,12 @@ export default {
 		},
 		/**
 		 * Observed behaviour of `onWizardCreated` (retrofit annotation).
+		 *
+		 * @param {string|undefined} applicationUuid - OpenRegister UUID of the
+		 *   Application the creation wizard just created, used as the `objectId` route
+		 *   param to jump straight to its detail page. The wizard deliberately emits
+		 *   `created` with no uuid on its AI-copilot path (which has already
+		 *   navigated), so an absent value must only close the wizard, not navigate.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
 		 */

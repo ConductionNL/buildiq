@@ -133,7 +133,7 @@
 					{{ t('openbuild', 'Configure') }}
 				</button>
 				<ExternalFormAccessDialog
-					:open.sync="externalDialogOpen"
+					v-model:open="externalDialogOpen"
 					:register="externalTarget.register"
 					:schema="externalTarget.schema"
 					:page-id="pageId"
@@ -253,8 +253,13 @@ export default {
 	},
 	methods: {
 		/**
-		 * Observed behaviour of `update` (retrofit annotation).
+		 * Write one key on the page's `config` block. Only the named key is
+		 * touched, so config keys this editor does not surface round-trip
+		 * losslessly. The submit one-of is handled by `setSubmitHandler` /
+		 * `setSubmitEndpoint`, never here.
 		 *
+		 * @param {string} key - the config key being written: `submitMethod`, `mode`, `submitLabel`, `successMessage`, `fields` or `steps`.
+		 * @param {string|Array<object>} value - the new value: the enum choice from a `<select>`, the i18n key from a text input, or the rebuilt list from FormFieldBuilder / FormStepsManager. `''` and `null` delete the key.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
@@ -267,8 +272,11 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Observed behaviour of `setSubmitShape` (retrofit annotation).
+		 * Switch between the two mutually exclusive submit targets by
+		 * deleting the key of the branch being left, so the emitted config
+		 * never carries both halves of the one-of.
 		 *
+		 * @param {'handler'|'endpoint'} shape - the radio's value: `handler` drops `submitEndpoint`, anything else drops `submitHandler`.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSubmitShape(shape) {
@@ -281,8 +289,10 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Observed behaviour of `setSubmitHandler` (retrofit annotation).
+		 * Write `submitHandler` and clear `submitEndpoint` in the same emit,
+		 * so typing a handler can never leave a stale endpoint behind.
 		 *
+		 * @param {string} value - the customComponents registry key of the submit handler; `''` deletes `submitHandler`, leaving the form with neither submit target.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSubmitHandler(value) {
@@ -297,8 +307,12 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Observed behaviour of `setSubmitEndpoint` (retrofit annotation).
+		 * Write `submitEndpoint` and clear `submitHandler` in the same emit.
+		 * The value is also what `externalTarget` parses, so an OR
+		 * `/api/objects/{register}/{schema}` URL is what unlocks the External
+		 * access section.
 		 *
+		 * @param {string} value - the submit URL; `''` deletes `submitEndpoint`, leaving the form with neither submit target.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSubmitEndpoint(value) {

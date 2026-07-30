@@ -28,6 +28,28 @@ import { test, expect } from '@playwright/test'
  *     Ollama on the dev box) OR 503 (test skipped per spec)
  *   - Authenticated browser context from global-setup
  */
+/**
+ * The endpoint the widget ACTUALLY probes.
+ *
+ * These specs used to gate on `/apps/openregister/api/chat/health`, but the
+ * `CnAiCompanion` widget in `@conduction/nextcloud-vue` resolves its backend
+ * through `aiChatConfig.js`, whose `DEFAULT_CHAT_APP_ID` was flipped from
+ * `openregister` to `hermiq` (ADR-034 Amendment 2026-07-05 "Default flip").
+ * OpenBuild does not pass `:chat-app-id`, so it gets the default.
+ *
+ * Probing OpenRegister therefore asked a question about a DIFFERENT app than
+ * the one whose answer decides whether the FAB renders. On this container both
+ * happen to be unavailable (OR 503 `no_provider`, hermiq 404 not installed) so
+ * the skip fires either way — but on any deployment still inside OpenRegister's
+ * `/api/chat/*` compat window, OR would answer 200 while hermiq is absent, the
+ * skip would NOT fire, and every one of these specs would fail on a FAB that is
+ * correctly hidden. Gate on the app the widget really calls.
+ */
+const CHAT_HEALTH_URL = '/index.php/apps/hermiq/api/chat/health'
+
+/** Absent app → 404, not 503; treat any non-200 as "no chat backend". */
+const chatUnavailable = (status: number) => status !== 200
+
 test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-companion-streaming)', () => {
 
 	test.beforeEach(async ({ page }) => {
@@ -38,8 +60,8 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
 	})
 
 	test('FAB renders on app pages when chat health is 200', async ({ page, request }) => {
-		const health = await request.get('/index.php/apps/openregister/api/chat/health')
-		test.skip(health.status() === 503, 'No LLM provider configured — chat companion intentionally hidden')
+		const health = await request.get(CHAT_HEALTH_URL)
+		test.skip(chatUnavailable(health.status()), 'No chat backend reachable — chat companion intentionally hidden')
 
 		const fab = page.locator('[data-testid="cn-ai-fab"]')
 		await expect(fab, 'FAB must be visible on /apps/openbuild/').toBeVisible({ timeout: 10_000 })
@@ -47,8 +69,8 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
 	})
 
 	test('Clicking the FAB opens the chat panel with the input ready', async ({ page, request }) => {
-		const health = await request.get('/index.php/apps/openregister/api/chat/health')
-		test.skip(health.status() === 503, 'No LLM provider configured')
+		const health = await request.get(CHAT_HEALTH_URL)
+		test.skip(chatUnavailable(health.status()), 'No chat backend reachable')
 
 		await page.locator('[data-testid="cn-ai-fab"]').click()
 		const panel = page.locator('[data-testid="cn-ai-panel"]')
@@ -60,8 +82,8 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
 	})
 
 	test('Submitting a message shows the user bubble + Thinking indicator', async ({ page, request }) => {
-		const health = await request.get('/index.php/apps/openregister/api/chat/health')
-		test.skip(health.status() === 503, 'No LLM provider configured')
+		const health = await request.get(CHAT_HEALTH_URL)
+		test.skip(chatUnavailable(health.status()), 'No chat backend reachable')
 
 		await page.locator('[data-testid="cn-ai-fab"]').click()
 		const panel = page.locator('[data-testid="cn-ai-panel"]')
@@ -89,8 +111,8 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
 
 	// QUARANTINED: requires a live AI chat backend not available in this environment.
 	test.skip('Thinking indicator clears once the response arrives', async ({ page, request }) => {
-		const health = await request.get('/index.php/apps/openregister/api/chat/health')
-		test.skip(health.status() === 503, 'No LLM provider configured')
+		const health = await request.get(CHAT_HEALTH_URL)
+		test.skip(chatUnavailable(health.status()), 'No chat backend reachable')
 
 		await page.locator('[data-testid="cn-ai-fab"]').click()
 		const panel = page.locator('[data-testid="cn-ai-panel"]')

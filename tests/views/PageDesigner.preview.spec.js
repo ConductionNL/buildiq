@@ -29,17 +29,24 @@ vi.mock('@nextcloud/axios', () => ({
 vi.mock('@nextcloud/router', () => ({
 	generateUrl: (p) => p,
 }))
-vi.mock('@nextcloud/l10n', () => ({
+// Partial mock: only `translate` is pinned to the raw key. `@nextcloud/vue`
+// (Vue 3) additionally imports `getLanguage`/`register` from this module at
+// import time, so a total mock makes the whole suite fail to collect.
+vi.mock('@nextcloud/l10n', async (importOriginal) => ({
+	...(await importOriginal()),
 	translate: (_app, key) => key,
 }))
 
 // Keep the registry import light — the preview only needs a resolvable
 // map; the real registry drags the whole component graph in.
-vi.mock('../../src/registry.js', () => ({
-	default: {
-		SomePage: { kind: 'page', component: { name: 'SomePage', render: (h) => h('div') } },
-	},
-}))
+vi.mock('../../src/registry.js', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			SomePage: { kind: 'page', component: { name: 'SomePage', render: () => h('div') } },
+		},
+	}
+})
 
 const validatorErrorsRef = ref([])
 const validatorStub = {
@@ -67,12 +74,13 @@ vi.mock('../../src/composables/useLivePreview.js', () => ({
 }))
 
 // Sub-editors + tree editors stubbed so only the right-hand pane matters.
-function stub(name) {
+async function stub(name) {
+	const { h } = await import('vue')
 	return {
 		default: {
 			name,
 			props: ['config', 'pageType', 'appSlug', 'dataRegisters', 'parentRoute', 'pages', 'selectedIndex', 'menu'],
-			render(h) { return h('div', { staticClass: `${name.toLowerCase()}-stub` }, name) },
+			render() { return h('div', { class: `${name.toLowerCase()}-stub` }, name) },
 		},
 	}
 }

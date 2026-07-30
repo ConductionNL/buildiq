@@ -41,7 +41,7 @@
 				{{ t('openbuild', 'Add action') }}
 			</NcButton>
 
-			<NcCheckboxRadioSwitch :checked.sync="staged.actief">
+			<NcCheckboxRadioSwitch v-model="staged.actief">
 				{{ t('openbuild', 'Active') }}
 			</NcCheckboxRadioSwitch>
 

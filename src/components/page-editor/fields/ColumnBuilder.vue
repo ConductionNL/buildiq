@@ -96,6 +96,11 @@ export default {
 		/**
 		 * Observed behaviour of `rowKey` (retrofit annotation).
 		 *
+		 * @param {string|{key?: string, property?: string, label?: string}} col - one entry of
+		 *   `config.columns`: either the legacy string shorthand (the property key itself) or
+		 *   the typed column object, which may name its key as `key` or as the alias `property`.
+		 * @return {string} the property key the row's `<select>` shows — a schema property
+		 *   name or an `@self.*` virtual key; `''` when the entry names neither.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		rowKey(col) {
@@ -107,6 +112,10 @@ export default {
 		/**
 		 * Observed behaviour of `rowLabel` (retrofit annotation).
 		 *
+		 * @param {string|{key?: string, label?: string}} col - one entry of `config.columns`;
+		 *   the string shorthand carries no label by construction.
+		 * @return {string} the i18n label key shown in the row's label input, `''` when
+		 *   the column is unlabelled.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		rowLabel(col) {
@@ -118,6 +127,10 @@ export default {
 		/**
 		 * Observed behaviour of `onKeyChange` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the column in the `columns` array.
+		 * @param {string} value - the newly selected property key: a schema property
+		 *   name, an `@self.*` virtual key, or `''` for the placeholder option. A
+		 *   labelled column keeps its object shape; an unlabelled one stays a string.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onKeyChange(index, value) {
@@ -134,6 +147,10 @@ export default {
 		/**
 		 * Observed behaviour of `onLabelInput` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the column in the `columns` array.
+		 * @param {string} value - the new i18n label key. A non-empty label PROMOTES a
+		 *   string-shorthand column to `{ key, label }`; clearing it DEMOTES a
+		 *   key-only object back to the string shorthand.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onLabelInput(index, value) {
@@ -162,6 +179,7 @@ export default {
 		/**
 		 * Observed behaviour of `removeColumn` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the column to drop from the `columns` array.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeColumn(index) {

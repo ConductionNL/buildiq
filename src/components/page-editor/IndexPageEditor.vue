@@ -135,8 +135,12 @@ export default {
 	},
 	emits: ['update:config'],
 	/**
-	 * Observed behaviour of `setup` (retrofit annotation).
+	 * Build the register/schema picker for this editor. Options-API `data`
+	 * cannot see props at construction time, so the picker is created here
+	 * from the resolved props and exposed as `this.picker`.
 	 *
+	 * @param {{appSlug: string, dataRegisters: Array<{register: string, label?: string}>, config: object, pageType: string, parentRoute: string}} props - the resolved component props; only `appSlug` (hoists `openbuild-{slug}` in the register list) and `dataRegisters` (labels/hoists the Application's declared bindings) are read.
+	 * @return {{picker: object}} - bindings merged into the instance; `picker` exposes fetchRegisters/fetchSchemas/fetchSchemaProperties.
 	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1
 	 */
@@ -190,8 +194,10 @@ export default {
 		'config.register': {
 			immediate: true,
 			/**
-			 * Observed behaviour of `handler` (retrofit annotation).
+			 * Reload the schema dropdown whenever the bound register changes
+			 * (also fires immediately on mount for an already-bound page).
 			 *
+			 * @param {string} val - the newly selected register slug; empty when the binding was cleared, which empties the schema list instead of fetching.
 			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 			 */
 			handler(val) {
@@ -205,8 +211,10 @@ export default {
 		'config.schema': {
 			immediate: true,
 			/**
-			 * Observed behaviour of `handler` (retrofit annotation).
+			 * Reload the property map that feeds ColumnBuilder's field picker
+			 * whenever the bound schema changes.
 			 *
+			 * @param {string} val - the newly selected schema slug; empty (or a schema without a register) clears the property map so the column picker offers nothing stale.
 			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 			 */
 			handler(val) {
@@ -223,8 +231,12 @@ export default {
 	},
 	methods: {
 		/**
-		 * Observed behaviour of `update` (retrofit annotation).
+		 * Write one key on the page's `config` block and emit the whole block
+		 * back to PageDesigner. Only the named key is touched, so config keys
+		 * this editor does not surface round-trip losslessly.
 		 *
+		 * @param {string} key - the config key being written: `register`, `schema`, `cardComponent`, `columns` or `actions`. Writing `register` also drops `schema`, since a schema is only meaningful inside its register.
+		 * @param {string|Array<object>} value - the new value: a slug/component key from a `<select>`/`<input>`, or the rebuilt array from ColumnBuilder / ActionBuilder. An empty string, `null` or an empty array deletes the key instead of storing it.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
@@ -241,8 +253,11 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Observed behaviour of `onSidebarToggle` (retrofit annotation).
+		 * Turn the sidebar block on or off. Switching it off deletes
+		 * `config.sidebar` outright — including any column groups authored
+		 * under it — rather than leaving `{ enabled: false }` behind.
 		 *
+		 * @param {boolean} enabled - the checkbox's new `checked` state.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		onSidebarToggle(enabled) {
@@ -256,8 +271,11 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Observed behaviour of `updateSidebar` (retrofit annotation).
+		 * Write one key inside the sidebar block, promoting a legacy boolean
+		 * `sidebar: true` to the object form `{ enabled: true }` on the way.
 		 *
+		 * @param {string} key - the sidebar key being written; currently only `columnGroups`.
+		 * @param {Array<object>} value - the rebuilt column-group list from SidebarSectionBuilder. Stored as-is, including when empty, so the sidebar stays enabled with no groups.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		updateSidebar(key, value) {
@@ -275,16 +293,22 @@ export default {
 			this.registers = await this.picker.fetchRegisters()
 		},
 		/**
-		 * Observed behaviour of `fetchSchemas` (retrofit annotation).
+		 * Load the schemas of one register into the schema dropdown.
 		 *
+		 * @param {string} register - slug of the register to list schemas for, i.e. `config.register`.
+		 * @return {Promise<void>} - resolves once `this.schemas` holds the result (`[]` when the request fails).
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		async fetchSchemas(register) {
 			this.schemas = await this.picker.fetchSchemas(register)
 		},
 		/**
-		 * Observed behaviour of `fetchSchemaProperties` (retrofit annotation).
+		 * Load one schema's JSON-Schema `properties` map, which ColumnBuilder
+		 * turns into the column field picker's options.
 		 *
+		 * @param {string} register - slug of the register the schema lives in.
+		 * @param {string} schema - slug of the schema whose properties are wanted.
+		 * @return {Promise<void>} - resolves once `this.schemaProperties` holds the map (`{}` when the request fails).
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		async fetchSchemaProperties(register, schema) {

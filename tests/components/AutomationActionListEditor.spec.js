@@ -11,24 +11,33 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AutomationActionListEditor from '../../src/components/AutomationActionListEditor.vue'
 
+// Vue 3 model API throughout: the editor binds `:model-value` and listens for
+// `@update:modelValue`, so a stub declaring the Vue 2 `value` prop receives
+// nothing (every field renders empty) and its `update:value` emit is ignored.
 const NcSelectStub = {
 	name: 'NcSelect',
-	props: ['value', 'options', 'inputLabel', 'label', 'clearable'],
+	props: ['modelValue', 'options', 'inputLabel', 'label', 'clearable'],
+	emits: ['update:modelValue'],
 	template: '<div class="ncselect-stub" :data-label="inputLabel" />',
 }
 const NcTextFieldStub = {
 	name: 'NcTextField',
-	props: ['value', 'label'],
-	template: '<input class="nctextfield-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)">',
+	props: ['modelValue', 'label'],
+	emits: ['update:modelValue'],
+	template: '<input class="nctextfield-stub" :data-label="label" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">',
 }
 const NcTextAreaStub = {
 	name: 'NcTextArea',
-	props: ['value', 'label'],
-	template: '<textarea class="nctextarea-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
+	props: ['modelValue', 'label'],
+	emits: ['update:modelValue'],
+	template: '<textarea class="nctextarea-stub" :data-label="label" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
 }
+// `emits: ['click']` keeps the parent's `@click` out of `$attrs`, so it does
+// not also fall through onto the root <button> and fire the handler twice.
 const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type'],
+	emits: ['click'],
 	template: '<button @click="$emit(\'click\')"><slot /></button>',
 }
 
@@ -86,6 +95,11 @@ describe('AutomationActionListEditor', () => {
 		const emitted = wrapper.emitted('update:modelValue')
 		expect(emitted).toBeTruthy()
 		const last = emitted[emitted.length - 1][0]
-		expect(last[0]).toEqual({ type: 'object-op', operation: 'update', schema: 'permit', fieldMapping: {} })
+		// fieldMapping is OMITTED, not emitted as `{}` — OpenRegister rejects an
+		// empty object on a nested array-item object property ("expects object
+		// but got empty ({})"), so AutomationActionListEditor strips the key
+		// entirely when there is nothing in it (see AutomationEditDialog.vue's
+		// buildActions() for the matching fix on the main action list).
+		expect(last[0]).toEqual({ type: 'object-op', operation: 'update', schema: 'permit' })
 	})
 })

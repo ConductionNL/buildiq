@@ -50,27 +50,39 @@ vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
 
 // Stub the field builders — they have their own specs; here we only
 // verify that update:config propagates through them.
-vi.mock('../../../src/components/page-editor/fields/ColumnBuilder.vue', () => ({
-	default: {
-		name: 'ColumnBuilder',
-		props: ['modelValue', 'schemaProperties'],
-		render(h) { return h('div', { staticClass: 'column-builder-stub' }) },
-	},
-}))
-vi.mock('../../../src/components/page-editor/fields/ActionBuilder.vue', () => ({
-	default: {
-		name: 'ActionBuilder',
-		props: ['modelValue'],
-		render(h) { return h('div', { staticClass: 'action-builder-stub' }) },
-	},
-}))
-vi.mock('../../../src/components/page-editor/fields/SidebarSectionBuilder.vue', () => ({
-	default: {
-		name: 'SidebarSectionBuilder',
-		props: ['modelValue'],
-		render(h) { return h('div', { staticClass: 'sidebar-section-builder-stub' }) },
-	},
-}))
+// `vi.mock` factories are hoisted above the imports, so `h` is pulled in with
+// a lazy dynamic import inside each (async) factory. Vue 3 does not pass `h`
+// into render(), and vnode classes use `class`, not Vue 2's `staticClass`.
+vi.mock('../../../src/components/page-editor/fields/ColumnBuilder.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'ColumnBuilder',
+			props: ['modelValue', 'schemaProperties'],
+			render() { return h('div', { class: 'column-builder-stub' }) },
+		},
+	}
+})
+vi.mock('../../../src/components/page-editor/fields/ActionBuilder.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'ActionBuilder',
+			props: ['modelValue'],
+			render() { return h('div', { class: 'action-builder-stub' }) },
+		},
+	}
+})
+vi.mock('../../../src/components/page-editor/fields/SidebarSectionBuilder.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'SidebarSectionBuilder',
+			props: ['modelValue'],
+			render() { return h('div', { class: 'sidebar-section-builder-stub' }) },
+		},
+	}
+})
 
 const IndexPageEditor = (await import('../../../src/components/page-editor/IndexPageEditor.vue')).default
 
@@ -105,8 +117,9 @@ describe('IndexPageEditor', () => {
 		const wrapper = mountEditor()
 		await new Promise((r) => setTimeout(r, 0))
 		await wrapper.vm.$nextTick()
-		const options = wrapper.findAll('option')
-		const slugs = options.wrappers.map((w) => w.element.value)
+		// VTU v2 returns a plain array from findAll() — the v1 `.wrappers`
+		// property no longer exists.
+		const slugs = wrapper.findAll('option').map((w) => w.element.value)
 		expect(slugs).toContain('openbuild-hello-world')
 		expect(slugs).toContain('openbuild')
 	})

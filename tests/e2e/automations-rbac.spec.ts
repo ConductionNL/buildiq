@@ -21,7 +21,8 @@
 
 import { test, expect, type Page, type APIRequestContext } from '@playwright/test'
 
-const NEXTCLOUD_URL = process.env.NC_BASE_URL ?? process.env.NEXTCLOUD_URL ?? 'http://localhost:8080'
+// PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
+import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
 const EDITOR_USER = process.env.NC_RBAC_EDITOR_USER ?? 'rbac-editor'
 const EDITOR_PASS = process.env.NC_RBAC_EDITOR_PASS ?? 'RbacEditor-1!'
 const OWNER_USER = process.env.NC_RBAC_OWNER_USER ?? 'rbac-owner'

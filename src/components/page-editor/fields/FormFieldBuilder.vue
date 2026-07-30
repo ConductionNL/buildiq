@@ -152,6 +152,15 @@ export default {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the field in the `fields` array.
+		 * @param {'key'|'label'|'type'|'required'|'pattern'} key - the formField property
+		 *   the bound control edits (`required`/`pattern` only exist in the flat,
+		 *   `show-logic`-off layout).
+		 * @param {string|boolean} value - the control's new value: input text, the
+		 *   selected `type`, or the `required` checkbox state. An empty string or
+		 *   `false` DELETES the key, except for the identity keys `key`, `label` and
+		 *   `type`, which are always written.
+		 * @return {void}
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
@@ -231,9 +240,8 @@ export default {
 		 * panel is no longer the expanded one (REQ-OBFEL-004 warns *inside* the
 		 * details area). Remap instead: drop the removed index, shift the rest.
 		 *
-		 * @param {number} index - the field index being removed.
+		 * @param {number} index - position of the field to drop from the `fields` array.
 		 * @return {void}
-		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeField(index) {

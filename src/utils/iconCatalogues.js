@@ -20,7 +20,6 @@
  * correct light/dark pair.
  *
  * @category Utils
- * @package  openbuild
  * @license  EUPL-1.2
  */
 

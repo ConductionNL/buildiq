@@ -29,10 +29,10 @@
 			</h2>
 
 			<NcTextField
-				:value="label"
+				:model-value="label"
 				:label="t('openbuild', 'Label')"
 				:placeholder="t('openbuild', 'e.g. Nightly BRP sync')"
-				@update:value="onLabelInput" />
+				@update:modelValue="onLabelInput" />
 			<p class="ob-schedule-edit__hint">
 				{{ t('openbuild', 'Identifier') }}: <code>{{ derivedId || '—' }}</code>
 			</p>
@@ -46,20 +46,20 @@
 
 			<NcTextField
 				v-if="isCustomCron"
-				:value="cron"
+				:model-value="cron"
 				:label="t('openbuild', 'Cron expression (5 fields)')"
 				:placeholder="t('openbuild', 'e.g. 0 3 * * 1')"
 				:error="cron !== '' && !cronValid"
 				:helper-text="cron !== '' && !cronValid ? t('openbuild', 'Enter a valid 5-field cron expression.') : ''"
-				@update:value="cron = $event" />
+				@update:modelValue="cron = $event" />
 
 			<NcTextField
 				v-if="isCustomInterval"
-				:value="String(intervalSeconds)"
+				:model-value="String(intervalSeconds)"
 				type="number"
 				:label="t('openbuild', 'Interval (seconds)')"
 				:placeholder="t('openbuild', 'e.g. 43200')"
-				@update:value="intervalSeconds = $event" />
+				@update:modelValue="intervalSeconds = $event" />
 
 			<NcSelect
 				v-model="actionOption"
@@ -76,23 +76,23 @@
 					:options="syncOptions"
 					:loading="syncLoading"
 					label="label"
-					@input="onSyncSelect" />
+					@update:modelValue="onSyncSelect" />
 				<div v-else class="ob-schedule-edit__sync-manual">
 					<p class="ob-schedule-edit__hint ob-schedule-edit__hint--warning">
 						{{ t('openbuild', 'The synchronization list could not be loaded. Enter a synchronization id manually.') }}
 					</p>
 					<NcTextField
-						:value="syncId"
+						:model-value="syncId"
 						:label="t('openbuild', 'Synchronization id')"
 						:placeholder="t('openbuild', 'e.g. 00000000-0000-0000-0000-000000000000')"
-						@update:value="syncId = $event" />
+						@update:modelValue="syncId = $event" />
 				</div>
 			</div>
 
 			<NcCheckboxRadioSwitch
-				:checked="enabled"
+				:model-value="enabled"
 				type="switch"
-				@update:checked="enabled = $event">
+				@update:modelValue="enabled = $event">
 				{{ t('openbuild', 'Enabled') }}
 			</NcCheckboxRadioSwitch>
 
@@ -288,7 +288,13 @@ export default {
 		},
 	},
 	watch: {
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */
+		/**
+		 * @param {boolean} isOpen - The dialog's new `open` state. Opening re-seeds the
+		 *   form from the schedule entry being edited and refetches the selectable
+		 *   synchronizations. Closing is not acted on, so the form is only ever reset
+		 *   on the way in.
+		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001
+		 */
 		open(isOpen) {
 			if (isOpen) {
 				this.hydrate()

@@ -20,12 +20,10 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PageListEditor, { PAGE_TYPES } from '../../../src/components/page-editor/PageListEditor.vue'
-
-const stubDraggable = {
-	name: 'Draggable',
-	props: ['value', 'options'],
-	render(h) { return h('div', { staticClass: 'vuedraggable-stub' }, this.$slots.default) },
-}
+// The shared stub mirrors vuedraggable v4 (`modelValue` + `#item` scoped
+// slot). The v2-shaped local stub this replaced never invoked `#item`, so
+// every row silently vanished from the render.
+import stubDraggable from '../../vitest/stubs/vuedraggable.js'
 
 function mountEditor(pages = [], selectedIndex = -1) {
 	return mount(PageListEditor, {

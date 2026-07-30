@@ -284,6 +284,11 @@ export default {
 	/**
 	 * Observed behaviour of `setup` (retrofit annotation).
 	 *
+	 * @param {{manifest: object, slug: string, sessionKey: string}} props - This
+	 *   view's resolved props. Only `manifest` is read here, to seed the undo/redo
+	 *   history with the session baseline before the first render; `slug` and
+	 *   `sessionKey` are consumed by the Options API half of the component.
+	 *
 	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 	 */
 	setup(props) {
@@ -472,6 +477,11 @@ export default {
 			/**
 			 * Observed behaviour of `handler` (retrofit annotation).
 			 *
+			 * @param {{pages: object[], menu: object[], runtime?: object}} m - The
+			 *   incoming manifest, as passed by the deep+immediate watcher: either
+			 *   the host's freshly-loaded manifest or one this view just emitted back
+			 *   through `update:manifest`. Validated and pushed onto the history.
+			 *
 			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 			 */
 			handler(m) {
@@ -543,7 +553,7 @@ export default {
 			})
 		}
 	},
-	beforeDestroy() {
+	beforeUnmount() {
 		document.removeEventListener('keydown', this.onKeydown)
 	},
 	methods: {
@@ -634,6 +644,11 @@ export default {
 		/**
 		 * Observed behaviour of `subEditorFor` (retrofit annotation).
 		 *
+		 * @param {string} type - The selected page's `page.type` (a canonical v2 page
+		 *   type such as `index`, `detail`, `form`).
+		 * @return {string} Registered component name for that page type, or
+		 *   `'StubPageEditor'` for a type this build ships no visual editor for.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		subEditorFor(type) {
@@ -641,6 +656,10 @@ export default {
 		},
 		/**
 		 * Observed behaviour of `selectPage` (retrofit annotation).
+		 *
+		 * @param {number} index - Position in `pages` of the page to open in the centre
+		 *   pane, from PageListEditor's `select` event. `-1` (emitted when the selected
+		 *   page is removed) clears the selection and shows the empty state.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
@@ -650,6 +669,13 @@ export default {
 		/**
 		 * Observed behaviour of `emitManifest` (retrofit annotation).
 		 *
+		 * Single write path back to the host: this view is a controlled component and
+		 * never mutates the `manifest` prop in place.
+		 *
+		 * @param {{pages: object[], menu?: object[], runtime?: object}} next - The
+		 *   complete replacement manifest (every caller builds it by spreading the
+		 *   current one), emitted as `update:manifest`.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		emitManifest(next) {
@@ -657,6 +683,12 @@ export default {
 		},
 		/**
 		 * Observed behaviour of `onPagesUpdate` (retrofit annotation).
+		 *
+		 * @param {Array<{id: string, route: string, type: string, title?: string,
+		 *   permission?: string, config: object, widgets?: object[]}>} pages - The
+		 *   complete replacement `manifest.pages` array from PageListEditor's
+		 *   `update:pages` event (add / edit-field / remove / drag-reorder all emit
+		 *   the whole array, never a patch).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
@@ -666,6 +698,14 @@ export default {
 		},
 		/**
 		 * Observed behaviour of `onMenuUpdate` (retrofit annotation).
+		 *
+		 * Also clears `depthError`: any accepted menu edit means the two-level depth
+		 * limit is no longer being violated.
+		 *
+		 * @param {Array<{label: string, icon?: string, route?: string, href?: string,
+		 *   children?: object[]}>} menu - The complete replacement `manifest.menu`
+		 *   tree from MenuTreeEditor's `update:menu` event. At most two levels deep;
+		 *   second-level entries carry no `children` of their own.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
@@ -684,6 +724,12 @@ export default {
 		},
 		/**
 		 * Observed behaviour of `onConfigUpdate` (retrofit annotation).
+		 *
+		 * @param {object} config - The selected page's complete replacement `config`
+		 *   object, from the mounted sub-editor's `update:config` event. Its keys are
+		 *   page-type specific (an `index` page's `{register, schema, columns,
+		 *   actions}`, a `form` page's `{fields, submitMethod, mode}`, …) and unknown
+		 *   keys are carried through untouched. No-ops while no page is selected.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
@@ -780,6 +826,10 @@ export default {
 		 * browser's native text-field undo wins there instead of stacking a
 		 * manifest-level revert on top of it (design.md D4).
 		 *
+		 * @param {KeyboardEvent} event - The document-level keydown. Only Ctrl/Cmd
+		 *   chords are acted on: Ctrl+Z undoes, Ctrl+Shift+Z / Ctrl+Y redo; anything
+		 *   else, and any chord fired while an editable element has focus, is ignored.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-003
 		 */
@@ -803,6 +853,13 @@ export default {
 		/**
 		 * Observed behaviour of `configPathPrefix` (retrofit annotation).
 		 *
+		 * @param {string} configKey - Name of a key inside the selected page's `config`
+		 *   object (e.g. `register`, `columns`), as passed by the sub-editor through
+		 *   the injected `pageEditorValidator`.
+		 * @return {string} The validator error path for that field
+		 *   (`/pages/<selectedIndex>/config/<configKey>`), or `''` when no page is
+		 *   selected — which every caller treats as "no mark".
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		configPathPrefix(configKey) {
@@ -813,6 +870,11 @@ export default {
 		},
 		/**
 		 * Observed behaviour of `registerConfigField` (retrofit annotation).
+		 *
+		 * @param {string} configKey - Key of the selected page's `config` the calling
+		 *   sub-editor wants inline validator marks for; registered with the validator
+		 *   under its full manifest path so its errors stop bubbling into the
+		 *   side-panel list.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
@@ -825,6 +887,10 @@ export default {
 		/**
 		 * Observed behaviour of `unregisterConfigField` (retrofit annotation).
 		 *
+		 * @param {string} configKey - Key of the selected page's `config` the calling
+		 *   sub-editor is releasing (on unmount / page switch), so its errors go back
+		 *   to the side-panel list.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		unregisterConfigField(configKey) {
@@ -835,6 +901,12 @@ export default {
 		},
 		/**
 		 * Observed behaviour of `configErrorFor` (retrofit annotation).
+		 *
+		 * @param {string} configKey - Key of the selected page's `config` the calling
+		 *   sub-editor is painting an inline mark for.
+		 * @return {{hasError: boolean, message: string}} The validator's error bag for
+		 *   that field; `{ hasError: false, message: '' }` when the field is valid, no
+		 *   page is selected, or the validator exposes no `errorFor`.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
@@ -911,6 +983,12 @@ export default {
 	border-radius: var(--border-radius);
 	padding: 8px;
 	background: var(--color-main-background);
+	/* Grid items default to `min-width: auto` and so refuse to shrink below
+	   their content's intrinsic minimum, which lets a wide child push a pane
+	   past its own track. Defensive only — the actual overflow that painted the
+	   left pane over the centre one came from a hardcoded NcSelect min-width
+	   and is fixed in PageListEditor.vue, where that select lives. */
+	min-width: 0;
 }
 
 .page-designer__centre {

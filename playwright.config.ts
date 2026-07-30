@@ -3,6 +3,18 @@
 
 import { defineConfig, devices } from '@playwright/test'
 
+// Roughly 26 specs self-skip behind `process.env.OPENBUILD_E2E_LIVE === '1'`
+// with reasons like "Requires live dev environment". But EVERY spec in this
+// suite already requires a live Nextcloud at `baseURL` — the config
+// deliberately does not spin its own webServer (see the note at the bottom).
+// So the guard never distinguished "can run" from "cannot run": it only let a
+// quarter of the suite report green while asserting nothing, which is the
+// green-but-dead antipattern.
+//
+// Default it ON so those specs actually assert. Set OPENBUILD_E2E_LIVE=0 to
+// opt out deliberately (e.g. a parse-only lint of the suite).
+process.env.OPENBUILD_E2E_LIVE ??= '1'
+
 /**
  * Playwright config for OpenBuild e2e tests.
  *

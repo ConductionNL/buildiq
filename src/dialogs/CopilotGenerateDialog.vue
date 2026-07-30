@@ -26,8 +26,8 @@
 					{{ t('openbuild', 'Describe the app you want to build in a sentence or two. The AI will propose schemas, pages and menu items for you to review before anything is created.') }}
 				</p>
 				<NcTextArea
+					v-model="brief"
 					data-testid="copilot-brief-input"
-					:value.sync="brief"
 					:label="t('openbuild', 'Describe your app')"
 					:disabled="state === 'planning'"
 					:placeholder="t('openbuild', 'e.g. A tool library where members can borrow and return tools')"

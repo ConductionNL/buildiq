@@ -102,7 +102,9 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 		await flush()
 		await wrapper.vm.$nextTick()
 
-		expect(wrapper.find('[data-testid="copilot-message-input"]').attributes('disabled')).toBeTruthy()
+		// Vue 3 renders a true boolean attribute as `disabled=""` — a falsy
+		// empty string — so presence is the signal, not truthiness.
+		expect(wrapper.find('[data-testid="copilot-message-input"]').attributes('disabled')).toBeDefined()
 	})
 
 	// -------------------------------------------------------------------

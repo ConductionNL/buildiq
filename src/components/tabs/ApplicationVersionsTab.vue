@@ -85,6 +85,14 @@ export default {
 		/**
 		 * Observed behaviour of `onRollback` (retrofit annotation).
 		 *
+		 * @param {{version: string, manifest: object, applicationUuid?: string}} version - The
+		 *   ApplicationVersion snapshot the user confirmed rolling back to,
+		 *   forwarded by VersionHistory. Its `manifest` is copied onto the
+		 *   Application under a new `<version>-rollback-<hex>` label with
+		 *   `status: 'draft'`, so the rollback never silently republishes. A snapshot
+		 *   without a stored manifest is ignored.
+		 * @return {Promise<void>}
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
 		 */
 		async onRollback(version) {

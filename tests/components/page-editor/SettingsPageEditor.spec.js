@@ -16,13 +16,19 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-vi.mock('../../../src/components/page-editor/fields/SettingsSectionBuilder.vue', () => ({
-	default: {
-		name: 'SettingsSectionBuilder',
-		props: ['modelValue'],
-		render(h) { return h('div', { staticClass: 'settings-section-builder-stub' }) },
-	},
-}))
+// `vi.mock` factories are hoisted above the imports, so `h` is pulled in with
+// a lazy dynamic import inside the (async) factory. Vue 3 does not pass `h`
+// into render(), and vnode classes use `class`, not Vue 2's `staticClass`.
+vi.mock('../../../src/components/page-editor/fields/SettingsSectionBuilder.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'SettingsSectionBuilder',
+			props: ['modelValue'],
+			render() { return h('div', { class: 'settings-section-builder-stub' }) },
+		},
+	}
+})
 
 const SettingsPageEditor = (await import('../../../src/components/page-editor/SettingsPageEditor.vue')).default
 

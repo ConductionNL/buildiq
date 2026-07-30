@@ -41,13 +41,16 @@ vi.mock('../../src/composables/useApplicationVersion.js', () => ({
 	}),
 }))
 
-vi.mock('../../src/components/walkthrough-editor/WalkthroughDesigner.vue', () => ({
-	default: {
-		name: 'WalkthroughDesigner',
-		props: ['manifest', 'appSlug', 'versionSlug'],
-		render(h) { return h('div', { staticClass: 'walkthrough-designer-stub' }) },
-	},
-}))
+vi.mock('../../src/components/walkthrough-editor/WalkthroughDesigner.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'WalkthroughDesigner',
+			props: ['manifest', 'appSlug', 'versionSlug'],
+			render() { return h('div', { class: 'walkthrough-designer-stub' }) },
+		},
+	}
+})
 
 const WalkthroughDesignerHost = (await import('../../src/views/WalkthroughDesignerHost.vue')).default
 

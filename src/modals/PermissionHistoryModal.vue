@@ -182,6 +182,18 @@ export default {
 		 * Normalise the OR audit envelope so the template can iterate
 		 * uniformly. OR's audit responses vary slightly by version (some
 		 * surface `changes.before/after`, others a flat `delta`).
+		 *
+		 * @param {Array<{id?: string, uuid?: string, actor?: string, userId?: string,
+		 *   user?: string, timestamp?: string, createdAt?: string, created?: string,
+		 *   event?: string, action?: string, changes?: {before: object, after: object},
+		 *   before?: object, after?: object}>} rawList - Audit rows straight off
+		 *   OpenRegister's audit-trail endpoint (already unwrapped from the response
+		 *   envelope by the caller). Every field is optional because the accepted
+		 *   spelling differs per OR version; each row is collapsed to one canonical
+		 *   shape, with a positional fallback id for rows carrying neither `id` nor
+		 *   `uuid`.
+		 * @return {Array<{id: string, actor: string, timestamp: string, event: string,
+		 *   before: object|null, after: object|null}>} Normalised rows for the table.
 		 */
 		shape(rawList) {
 			return rawList.map((row, idx) => ({

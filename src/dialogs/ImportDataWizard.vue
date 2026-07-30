@@ -46,14 +46,14 @@
 					{{ t('openbuild', 'Where should the data go?') }}
 				</h3>
 				<NcCheckboxRadioSwitch
-					:checked.sync="targetMode"
+					v-model="targetMode"
 					value="existing"
 					name="ob-import-target"
 					type="radio">
 					{{ t('openbuild', 'Add rows to an existing schema') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked.sync="targetMode"
+					v-model="targetMode"
 					value="create"
 					name="ob-import-target"
 					type="radio">
@@ -139,7 +139,9 @@
 						<table class="ob-import-wizard__sample">
 							<tbody>
 								<tr v-for="(row, ri) in sampleRows" :key="ri">
-									<td v-for="(cell, ci) in row" :key="ci">{{ cell }}</td>
+									<td v-for="(cell, ci) in row" :key="ci">
+										{{ cell }}
+									</td>
 								</tr>
 							</tbody>
 						</table>
@@ -238,12 +240,12 @@
 </template>
 
 <script>
-import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
-import NcNoteCard from '@nextcloud/vue/dist/Components/NcNoteCard.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
+import NcDialog from '@nextcloud/vue/components/NcDialog'
+import NcButton from '@nextcloud/vue/components/NcButton'
+import NcSelect from '@nextcloud/vue/components/NcSelect'
+import NcNoteCard from '@nextcloud/vue/components/NcNoteCard'
+import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
+import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
 import DownloadIcon from 'vue-material-design-icons/Download.vue'
 import UploadIcon from 'vue-material-design-icons/Upload.vue'
 

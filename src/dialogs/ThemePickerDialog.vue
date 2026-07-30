@@ -170,7 +170,13 @@ export default {
 		},
 	},
 	watch: {
-		/** @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002 */
+		/**
+		 * @param {boolean} isOpen - The dialog's new `open` state. Opening re-seeds the
+		 *   form from the manifest's current theme and (when NlDesign is installed)
+		 *   repopulates the selectable themes. Closing reverts the live preview, so
+		 *   dismissing the dialog never leaves the app wearing an unsaved theme.
+		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 */
 		open(isOpen) {
 			if (isOpen) {
 				this.hydrate()

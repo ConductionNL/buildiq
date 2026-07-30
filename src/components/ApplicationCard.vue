@@ -194,6 +194,10 @@ export default {
 		/**
 		 * Observed behaviour of `onIconError` (retrofit annotation).
 		 *
+		 * @param {Event} e - The `<img>` `error` event for the app icon (the app has no
+		 *   uploaded icon, or its URL 404s). `e.target` is swapped to the bundled
+		 *   fallback icon at most once — see the re-entry guard below.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		onIconError(e) {
@@ -214,6 +218,11 @@ export default {
 		},
 		/**
 		 * Observed behaviour of `onCardActivate` (retrofit annotation).
+		 *
+		 * @param {MouseEvent|KeyboardEvent} event - The activation event — a card
+		 *   `click`, or `keyup.enter` on the focused card (the keyboard path). Re-emitted
+		 *   verbatim as `click` for parents that want to intercept, before this card
+		 *   navigates to the application's detail route itself.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */

@@ -227,25 +227,39 @@ export function useRegisterPicker(opts = {}) {
 	/**
 	 * Fetch the JSON-schema `properties` map for a register / schema pair.
 	 *
-	 * @param {string} register - register slug.
-	 * @param {string} schema - schema slug.
+	 * Resolved from the register's schema LIST, not from a per-schema request.
+	 *
+	 * This used to GET `/api/registers/{register}/schemas/{schema}`, which does
+	 * not exist: OpenRegister routes `/api/registers/{id}/schemas` (list) and
+	 * `/api/schemas/{id}` (flat), and the only nested per-schema route is
+	 * `.../import-template`. Verified against the running instance — that URL
+	 * 404s for slugs AND for numeric ids. Because the failure was swallowed by
+	 * `if (!response.ok) return {}`, every field-mapping dropdown backed by this
+	 * function (WikiPageEditor content/title/sidebar fields, IndexPageEditor,
+	 * LogsPageEditor, MapPageEditor lat/lng) silently rendered with nothing but
+	 * its placeholder option. The Vitest suites all stub this composable, so
+	 * none of them could see it.
+	 *
+	 * The list endpoint already returns each schema's `properties` inline (see
+	 * OpenRegister `Schema::jsonSerialize`, and the same assumption
+	 * `buildDataSources` below already relies on), so resolving there is both
+	 * correct and one request instead of two. Matching within the register also
+	 * disambiguates schema slugs, which are NOT globally unique — this instance
+	 * carries several registers holding a `hello-world-production-hello-message`.
+	 *
+	 * @param {string} register - register slug or id.
+	 * @param {string} schema - schema slug or id.
 	 * @return {Promise<object>} - properties map (empty object on failure).
 	 */
 	async function fetchSchemaProperties(register, schema) {
 		if (!register || !schema) {
 			return {}
 		}
-		try {
-			const url = generateUrl(`/apps/openregister/api/registers/${register}/schemas/${schema}`)
-			const response = await fetch(url, { headers: PICKER_HEADERS() })
-			if (!response.ok) {
-				return {}
-			}
-			const data = await response.json()
-			return (data && data.properties) || (data && data.schema && data.schema.properties) || {}
-		} catch {
-			return {}
-		}
+		const schemas = await fetchSchemas(register)
+		const match = schemas.find(
+			(entry) => entry && (String(entry.slug) === String(schema) || String(entry.id) === String(schema)),
+		)
+		return (match && match.properties) || {}
 	}
 
 	/**

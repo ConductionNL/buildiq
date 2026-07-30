@@ -33,8 +33,10 @@
 				:menu-name="t('openbuild', 'Open a version')"
 				:force-menu="true"
 				class="ob-detail-actions__open-chevron">
-				<template v-for="v in openableVersions">
-					<NcActionButton :key="`open-${v.slug}`" @click="openVersion(v)">
+				<!-- Vue 3 requires the v-for key on the <template> itself, not on
+				     its children (Vue 2 allowed the per-child form used before). -->
+				<template v-for="v in openableVersions" :key="v.slug">
+					<NcActionButton @click="openVersion(v)">
 						<template #icon>
 							<OpenInNew :size="20" />
 						</template>
@@ -42,7 +44,6 @@
 					</NcActionButton>
 					<NcActionButton
 						v-if="canEditVersions"
-						:key="`edit-${v.slug}`"
 						class="ob-detail-actions__open-edit"
 						@click="editVersion(v)">
 						<template #icon>

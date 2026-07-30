@@ -41,7 +41,9 @@
 import { test, expect } from '@playwright/test'
 import { ensureApp, dismissOverlays } from './support/appFixture'
 
-const BASE_URL = process.env.NC_BASE_URL ?? 'http://localhost:8080'
+// PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts. This used to be
+// `NC_BASE_URL ?? 'http://localhost:8080'`, i.e. the SHARED dev instance.
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
 const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASS ?? 'admin'
 
@@ -70,6 +72,13 @@ const NAMESPACED_SLUG = `${APP_SLUG}-production-${SCHEMA_SLUG}`
 //     on a slug (or a uuid) 404 "Schema not found". Saving and deleting by slug
 //     silently did nothing — the toast fired, the change never landed.
 test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', () => {
+	// 45s inner waits inside the config's 30s per-test budget could never
+	// elapse: the test died first with a bare "Test timeout of 30000ms
+	// exceeded" rather than the assertion's own message, so the guard could
+	// never actually fire. Budget > longest wait, so the waits mean what they
+	// say; no assertion is relaxed.
+	test.describe.configure({ timeout: 90_000 })
+
 	test.beforeEach(async ({ page }) => {
 		// Session is established by globalSetup (tests/e2e/global-setup.ts)
 		// which writes storageState that every spec inherits via the

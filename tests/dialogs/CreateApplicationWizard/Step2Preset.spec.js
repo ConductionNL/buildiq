@@ -164,7 +164,8 @@ describe('Step2Preset.vue — spec task 6.3', () => {
 		const wrapper = mountStep2({ preset: 'dev-prod' })
 		await wrapper.vm.$nextTick()
 		const allCards = wrapper.findAll('.wizard-step2__preset-card')
-		const pressedCards = allCards.wrappers.filter(c => c.attributes('aria-pressed') === 'true')
+		// VTU v2 `findAll` returns a plain Array — v1's `.wrappers` is gone.
+		const pressedCards = allCards.filter(c => c.attributes('aria-pressed') === 'true')
 		expect(pressedCards.length).toBe(1)
 	})
 

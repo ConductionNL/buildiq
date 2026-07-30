@@ -118,7 +118,7 @@
 
 		<!-- Mounted as a sibling of CnDashboardPage (which has no default slot),
 		     so the wizard modal actually renders when showWizard flips true. -->
-		<CreateApplicationWizard :show.sync="showWizard" @created="onAppCreated" />
+		<CreateApplicationWizard v-model:show="showWizard" @created="onAppCreated" />
 	</div>
 </template>
 

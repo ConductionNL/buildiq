@@ -244,6 +244,12 @@ export default {
 		/**
 		 * Observed behaviour of `getSlugError` (retrofit annotation).
 		 *
+		 * @param {number} index - Position of the version row in `localVersions`, from
+		 *   the `v-for` in the template.
+		 * @return {string|null} Human-readable reason the row is invalid — the
+		 *   duplicate-slug message takes precedence over the pattern/empty-name one —
+		 *   or `null` when the row is valid.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		getSlugError(index) {
@@ -261,6 +267,13 @@ export default {
 		/**
 		 * Observed behaviour of `onNameInput` (retrofit annotation).
 		 *
+		 * Keeps the slug mirroring the name until the user has edited the slug by hand
+		 * (`_slugManual`), after which the name no longer overwrites it.
+		 *
+		 * @param {number} index - Position of the version row being typed into.
+		 * @param {InputEvent} event - Native `input` event from the row's name field;
+		 *   `event.target.value` is the new version name (e.g. `Production`).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		onNameInput(index, event) {
@@ -276,6 +289,15 @@ export default {
 		/**
 		 * Observed behaviour of `onSlugInput` (retrofit annotation).
 		 *
+		 * Latches `_slugManual` on the row, permanently detaching its slug from the
+		 * name field.
+		 *
+		 * @param {number} index - Position of the version row whose Advanced slug field
+		 *   is being typed into.
+		 * @param {InputEvent} event - Native `input` event from that field;
+		 *   `event.target.value` is stored verbatim (validated separately, not
+		 *   kebab-cased here).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		onSlugInput(index, event) {
@@ -286,10 +308,15 @@ export default {
 		/**
 		 * Observed behaviour of `toggleAdvanced` (retrofit annotation).
 		 *
+		 * @param {number} index - Position of the version row whose Advanced panel (the
+		 *   editable slug field) is being shown or hidden. Keyed by position, not by
+		 *   row `_id`, so reordering carries the open state to whichever row lands
+		 *   there.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		toggleAdvanced(index) {
-			this.$set(this.advancedOpen, index, !this.advancedOpen[index])
+			this.advancedOpen[index] = !this.advancedOpen[index]
 		},
 
 		/**
@@ -310,6 +337,10 @@ export default {
 		/**
 		 * Observed behaviour of `removeRow` (retrofit annotation).
 		 *
+		 * @param {number} index - Position of the version row to delete. Removing the
+		 *   last remaining row is refused (a chain needs at least one version) and
+		 *   surfaces `minRowError` instead.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		removeRow(index) {
@@ -325,6 +356,10 @@ export default {
 		/**
 		 * Observed behaviour of `moveUp` (retrofit annotation).
 		 *
+		 * @param {number} index - Position of the version row to move one step upstream
+		 *   (chain order is top-to-bottom, so "up" means closer to Development).
+		 *   No-ops on the first row.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		moveUp(index) {
@@ -335,6 +370,9 @@ export default {
 
 		/**
 		 * Observed behaviour of `moveDown` (retrofit annotation).
+		 *
+		 * @param {number} index - Position of the version row to move one step
+		 *   downstream (towards Production). No-ops on the last row.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
@@ -347,6 +385,10 @@ export default {
 		/**
 		 * Observed behaviour of `onDragStart` (retrofit annotation).
 		 *
+		 * @param {number} index - Position of the version row the pointer drag started
+		 *   on; parked in `dragFromIndex` until `onDrop` resolves the move (or
+		 *   `onDragEnd` cancels it).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		onDragStart(index) {
@@ -356,6 +398,11 @@ export default {
 		/**
 		 * Observed behaviour of `onDragOver` (retrofit annotation).
 		 *
+		 * @param {number} _index - Position of the version row being dragged over.
+		 *   Deliberately unused: the row is made a valid drop target by the template's
+		 *   `@dragover.prevent`, and no hover preview is rendered, so this handler has
+		 *   nothing to do with the index.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		onDragOver(_index) {
@@ -364,6 +411,11 @@ export default {
 
 		/**
 		 * Observed behaviour of `onDrop` (retrofit annotation).
+		 *
+		 * @param {number} toIndex - Position of the version row the drag was released
+		 *   over; the row parked in `dragFromIndex` is spliced out and re-inserted
+		 *   here. No-ops when nothing is being dragged or the row was dropped on
+		 *   itself.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */

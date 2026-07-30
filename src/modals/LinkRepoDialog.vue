@@ -15,20 +15,20 @@
 				{{ t('openbuild', 'Connect this app to a GitHub repository so you can publish and pull versions.') }}
 			</p>
 			<NcTextField
-				:value="owner"
+				:model-value="owner"
 				:label="t('openbuild', 'Repository owner (user or org)')"
 				:placeholder="t('openbuild', 'conduction')"
-				@update:value="owner = $event" />
+				@update:modelValue="owner = $event" />
 			<NcTextField
-				:value="name"
+				:model-value="name"
 				:label="t('openbuild', 'Repository name')"
 				:placeholder="t('openbuild', 'my-app')"
-				@update:value="name = $event" />
+				@update:modelValue="name = $event" />
 			<NcTextField
-				:value="org"
+				:model-value="org"
 				:label="t('openbuild', 'Create under organisation (optional)')"
 				:placeholder="t('openbuild', 'Leave empty to use your own account')"
-				@update:value="org = $event" />
+				@update:modelValue="org = $event" />
 			<p v-if="error" class="link-repo__error" role="alert">
 				{{ error }}
 			</p>

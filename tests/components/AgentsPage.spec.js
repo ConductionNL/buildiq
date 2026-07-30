@@ -15,14 +15,20 @@ vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn(), post: vi.fn(), del
 import axios from '@nextcloud/axios'
 import AgentsPage from '../../src/views/AgentsPage.vue'
 
+// `emits: ['click']` is load-bearing under Vue 3: an undeclared emit leaves the
+// parent's `@click` in `$attrs`, it falls through onto the root <button>, and a
+// single click runs the handler twice. The real NcButton declares it.
 const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled'],
+	emits: ['click'],
 	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
+// Vue 3 model API: `modelValue` in, `update:modelValue` out.
 const NcSelectStub = {
 	name: 'NcSelect',
-	props: ['value', 'options', 'loading', 'inputLabel'],
+	props: ['modelValue', 'options', 'loading', 'inputLabel'],
+	emits: ['update:modelValue'],
 	template: '<div class="ncselect-stub" :data-label="inputLabel" />',
 }
 const NcLoadingIconStub = { name: 'NcLoadingIcon', template: '<div class="ncloading-stub" />' }
@@ -158,6 +164,9 @@ describe('AgentsPage', () => {
 		await flush()
 
 		const newButton = wrapper.findAll('button').filter((b) => b.text().includes('New agent')).at(0)
-		expect(newButton.attributes('disabled')).toBeTruthy()
+		// Vue 3 renders a true boolean attribute as `disabled=""` (Vue 2 used
+		// `disabled="disabled"`), so the value is the falsy empty string —
+		// presence, not truthiness, is what says "disabled".
+		expect(newButton.attributes('disabled')).toBeDefined()
 	})
 })

@@ -63,6 +63,13 @@ export default {
 			/**
 			 * Observed behaviour of `handler` (retrofit annotation).
 			 *
+			 * @param {{manifest?: object}} app - The Application resolved by the
+			 *   `applicationContext` mixin. Its manifest is re-serialised into the
+			 *   editor's text buffer whenever the record changes, so unsaved edits are
+			 *   deliberately discarded on a refresh. Runs immediately, and is falsy
+			 *   while the record is still loading (in which case the buffer is left
+			 *   alone rather than blanked).
+			 *
 			 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
 			 */
 			handler(app) {

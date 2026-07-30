@@ -32,51 +32,51 @@
 			class="automation-action-list__row"
 			data-testid="follow-up-action-row">
 			<NcSelect
-				:value="typeOption(item.type)"
+				:model-value="typeOption(item.type)"
 				:input-label="t('openbuild', 'Action type')"
 				:options="typeOptions"
 				:clearable="false"
 				label="label"
-				@input="onTypeChange(index, $event)" />
+				@update:modelValue="onTypeChange(index, $event)" />
 
 			<template v-if="item.type === 'send-notification'">
 				<NcTextField
-					:value="item.subjectEn"
+					:model-value="item.subjectEn"
 					:label="t('openbuild', 'Subject (English)')"
-					@update:value="updateItem(index, 'subjectEn', $event)" />
+					@update:modelValue="updateItem(index, 'subjectEn', $event)" />
 				<NcTextField
-					:value="item.subjectNl"
+					:model-value="item.subjectNl"
 					:label="t('openbuild', 'Subject (Dutch)')"
-					@update:value="updateItem(index, 'subjectNl', $event)" />
+					@update:modelValue="updateItem(index, 'subjectNl', $event)" />
 			</template>
 
 			<template v-else-if="item.type === 'object-op'">
 				<NcSelect
-					:value="operationOption(item.operation)"
+					:model-value="operationOption(item.operation)"
 					:input-label="t('openbuild', 'Operation')"
 					:options="operationOptions"
 					:clearable="false"
 					label="label"
-					@input="updateItem(index, 'operation', $event ? $event.value : 'update')" />
+					@update:modelValue="updateItem(index, 'operation', $event ? $event.value : 'update')" />
 				<NcTextField
-					:value="item.schema"
+					:model-value="item.schema"
 					:label="t('openbuild', 'Target schema')"
-					@update:value="updateItem(index, 'schema', $event)" />
+					@update:modelValue="updateItem(index, 'schema', $event)" />
 				<NcTextArea
-					:value="item.fieldMappingText"
+					:model-value="item.fieldMappingText"
 					:label="t('openbuild', 'Field mapping (JSON)')"
-					@update:value="updateItem(index, 'fieldMappingText', $event)" />
+					@update:modelValue="updateItem(index, 'fieldMappingText', $event)" />
 			</template>
 
 			<template v-else-if="item.type === 'webhook'">
 				<NcTextField
-					:value="item.url"
+					:model-value="item.url"
 					:label="t('openbuild', 'Webhook URL')"
-					@update:value="updateItem(index, 'url', $event)" />
+					@update:modelValue="updateItem(index, 'url', $event)" />
 				<NcTextArea
-					:value="item.payloadTemplateText"
+					:model-value="item.payloadTemplateText"
 					:label="t('openbuild', 'Payload template (JSON)')"
-					@update:value="updateItem(index, 'payloadTemplateText', $event)" />
+					@update:modelValue="updateItem(index, 'payloadTemplateText', $event)" />
 			</template>
 
 			<NcButton type="error" :aria-label="t('openbuild', 'Remove follow-up action')" @click="removeAction(index)">
@@ -196,7 +196,14 @@ export default {
 					} catch (e) {
 						fieldMapping = {}
 					}
-					return { type: 'object-op', operation: item.operation, schema: item.schema, fieldMapping }
+					const objectOp = { type: 'object-op', operation: item.operation, schema: item.schema }
+					// OpenRegister rejects `{}` (and `null`) for a nested array-item
+					// object property — "expects object but got empty ({})" — so an
+					// empty mapping must be OMITTED, not sent as an empty object.
+					if (Object.keys(fieldMapping).length > 0) {
+						objectOp.fieldMapping = fieldMapping
+					}
+					return objectOp
 				}
 				let payloadTemplate = {}
 				try {
@@ -204,7 +211,12 @@ export default {
 				} catch (e) {
 					payloadTemplate = {}
 				}
-				return { type: 'webhook', url: item.url, payloadTemplate }
+				const webhook = { type: 'webhook', url: item.url }
+				// Same OpenRegister empty-nested-object rejection as fieldMapping above.
+				if (Object.keys(payloadTemplate).length > 0) {
+					webhook.payloadTemplate = payloadTemplate
+				}
+				return webhook
 			})
 		},
 		emit() {

@@ -409,9 +409,31 @@ class SeedHelloWorldFixture extends Command
                     'type'   => 'form',
                     'title'  => 'New message',
                     'config' => [
-                        'register'       => $reg,
-                        'schema'         => 'hello-message',
-                        'mode'           => 'create',
+                        'register' => $reg,
+                        'schema'   => 'hello-message',
+                        'mode'     => 'create',
+                        // `fields[]` is REQUIRED for a form page:
+                        // validateManifest() rejects a form page whose config has
+                        // no non-empty fields[] with "form pages must declare a
+                        // non-empty fields[] array" (manifest-form-page-type
+                        // REQ-MFPT-*). Each entry needs key + label + a type from
+                        // the closed enum (boolean|number|string|enum|password|json).
+                        //
+                        // Omitting it meant the SEEDED example app shipped a
+                        // manifest that fails the app's own validator, and because
+                        // the page designer gates Save on `validatorErrors.length
+                        // === 0`, "Save & open preview" was permanently DISABLED
+                        // for hello-world — nobody could save any page edit to the
+                        // one app every new user starts from. It also blocked three
+                        // page-editor-coverage specs, which reached Save and found
+                        // it disabled for a page they had configured correctly.
+                        //
+                        // Mirrors the index page's columns and the sample messages,
+                        // which both use `title` + `body`.
+                        'fields'   => [
+                            ['key' => 'title', 'label' => 'Title', 'type' => 'string'],
+                            ['key' => 'body', 'label' => 'Body', 'type' => 'string'],
+                        ],
                         'submitEndpoint' => '/index.php/apps/openregister/api/objects/'.$reg.'/hello-message',
                     ],
                 ],

@@ -50,8 +50,8 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import NcModal from '@nextcloud/vue/components/NcModal'
+import NcButton from '@nextcloud/vue/components/NcButton'
 import { CnJsonViewer } from '@conduction/nextcloud-vue'
 
 export default {

@@ -140,8 +140,12 @@ export default {
 	},
 	emits: ['update:config'],
 	/**
-	 * Observed behaviour of `setup` (retrofit annotation).
+	 * Build the register/schema picker for this editor. Options-API `data`
+	 * cannot see props at construction time, so the picker is created here
+	 * from the resolved props and exposed as `this.picker`.
 	 *
+	 * @param {{appSlug: string, dataRegisters: Array<{register: string, label?: string}>, config: object, pageType: string, parentRoute: string}} props - the resolved component props; only `appSlug` (hoists `openbuild-{slug}` in the register list) and `dataRegisters` (labels/hoists the Application's declared bindings) are read.
+	 * @return {{picker: object}} - bindings merged into the instance; `picker` exposes fetchRegisters/fetchSchemas/fetchSchemaProperties.
 	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1
 	 */
@@ -183,8 +187,10 @@ export default {
 		'config.register': {
 			immediate: true,
 			/**
-			 * Observed behaviour of `handler` (retrofit annotation).
+			 * Reload the schema dropdown whenever the bound register changes
+			 * (also fires immediately on mount for an already-bound page).
 			 *
+			 * @param {string} val - the newly selected register slug; empty when the binding was cleared — including by a switch to the `source` branch — which empties the schema list instead of fetching.
 			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 			 */
 			handler(val) {
@@ -198,8 +204,10 @@ export default {
 		'config.schema': {
 			immediate: true,
 			/**
-			 * Observed behaviour of `handler` (retrofit annotation).
+			 * Reload the property map that feeds ColumnBuilder's field picker
+			 * whenever the bound schema changes.
 			 *
+			 * @param {string} val - the newly selected schema slug; empty (or a schema without a register) clears the property map so the column picker offers nothing stale.
 			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 			 */
 			handler(val) {
@@ -216,8 +224,13 @@ export default {
 	},
 	methods: {
 		/**
-		 * Observed behaviour of `update` (retrofit annotation).
+		 * Write one key on the page's `config` block and keep the
+		 * (register + schema) XOR source intact: picking a register clears
+		 * `source`, typing a source clears `register` + `schema`. Keys this
+		 * editor does not surface are left untouched.
 		 *
+		 * @param {string} key - the config key being written: `register`, `schema`, `source` or `columns`.
+		 * @param {string|Array<object>} value - the new value: a slug from a `<select>`, the free-text source URL/registry key, or the rebuilt column list from ColumnBuilder. An empty string, `null` or an empty array deletes the key instead of storing it.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
@@ -240,8 +253,11 @@ export default {
 			this.$emit('update:config', next)
 		},
 		/**
-		 * Observed behaviour of `setSourceShape` (retrofit annotation).
+		 * Switch between the two mutually exclusive data-source branches by
+		 * deleting the keys of the branch being left, so the emitted config
+		 * never satisfies both halves of the XOR at once.
 		 *
+		 * @param {'register'|'source'} shape - the radio's value: `source` drops `register` + `schema`, `register` drops `source`.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSourceShape(shape) {
@@ -263,16 +279,22 @@ export default {
 			this.registers = await this.picker.fetchRegisters()
 		},
 		/**
-		 * Observed behaviour of `fetchSchemas` (retrofit annotation).
+		 * Load the schemas of one register into the schema dropdown.
 		 *
+		 * @param {string} register - slug of the register to list schemas for, i.e. `config.register`.
+		 * @return {Promise<void>} - resolves once `this.schemas` holds the result (`[]` when the request fails).
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		async fetchSchemas(register) {
 			this.schemas = await this.picker.fetchSchemas(register)
 		},
 		/**
-		 * Observed behaviour of `fetchSchemaProperties` (retrofit annotation).
+		 * Load one schema's JSON-Schema `properties` map, which ColumnBuilder
+		 * turns into the column field picker's options.
 		 *
+		 * @param {string} register - slug of the register the schema lives in.
+		 * @param {string} schema - slug of the schema whose properties are wanted.
+		 * @return {Promise<void>} - resolves once `this.schemaProperties` holds the map (`{}` when the request fails).
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		async fetchSchemaProperties(register, schema) {

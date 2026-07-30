@@ -25,30 +25,30 @@
 			</p>
 
 			<NcTextField
-				:value="form.title"
+				:model-value="form.title"
 				:label="t('openbuild', 'Template title')"
-				@update:value="onTitleInput" />
+				@update:modelValue="onTitleInput" />
 			<NcTextField
-				:value="form.slug"
+				:model-value="form.slug"
 				:label="t('openbuild', 'Slug (kebab-case, max 32 chars)')"
-				@update:value="form.slug = $event" />
+				@update:modelValue="form.slug = $event" />
 			<NcTextField
-				:value="form.useCase"
+				:model-value="form.useCase"
 				:label="t('openbuild', 'Use case (one line)')"
-				@update:value="form.useCase = $event" />
+				@update:modelValue="form.useCase = $event" />
 			<NcTextArea
-				:value="form.description"
+				:model-value="form.description"
 				:label="t('openbuild', 'Description')"
-				@update:value="form.description = $event" />
+				@update:modelValue="form.description = $event" />
 			<NcSelect
 				v-model="categoryOption"
 				:input-label="t('openbuild', 'Category')"
 				:options="categoryOptions"
 				:clearable="false" />
 			<NcTextField
-				:value="form.sourceUrl"
+				:model-value="form.sourceUrl"
 				:label="t('openbuild', 'Source URL (optional)')"
-				@update:value="form.sourceUrl = $event" />
+				@update:modelValue="form.sourceUrl = $event" />
 
 			<!-- Capture summary -->
 			<section class="ob-save-template__summary">
@@ -302,23 +302,14 @@ export default {
 			return this.updateMode ? t('openbuild', 'Update template') : t('openbuild', 'Save as template')
 		},
 	},
-	/**
-	 * Prefill on mount when already open (the parent renders the dialog
-	 * with `v-if="open"`, so `created` fires with `open: true`).
-	 *
-	 * @return {void}
-	 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
-	 */
-	created() {
-		if (this.open) {
-			this.resetForm()
-		}
-	},
 	watch: {
 		/**
 		 * Reset the form each time the dialog opens, prefilled from the app.
 		 *
-		 * @param value
+		 * @param {boolean} value - The dialog's new `open` state. Only the transition
+		 *   into "open" is acted on, so a close leaves the form untouched and the next
+		 *   open starts from the source Application again rather than from whatever
+		 *   the user last typed.
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
 		open(value) {
@@ -347,6 +338,18 @@ export default {
 		'form.slug'() {
 			this.slugEditedManually = true
 		},
+	},
+	/**
+	 * Prefill on mount when already open (the parent renders the dialog
+	 * with `v-if="open"`, so `created` fires with `open: true`).
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+	 */
+	created() {
+		if (this.open) {
+			this.resetForm()
+		}
 	},
 	methods: {
 		/**

@@ -102,6 +102,12 @@ export default {
 		/**
 		 * Observed behaviour of `onUpdateOpen` (retrofit annotation).
 		 *
+		 * @param {boolean} value - The `update:open` payload from the underlying
+		 *   NcDialog, i.e. the state the dialog itself wants to move to. Any close it
+		 *   originates (close button, Escape, backdrop) is reported to the parent as a
+		 *   `cancel`; the state change is forwarded upwards either way, since `open` is
+		 *   the parent's to own.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
 		 */
 		onUpdateOpen(value) {

@@ -31,7 +31,22 @@
 			<a :href="aiSettingsUrl">{{ t('openbuild', 'Open AI settings') }}</a>
 		</p>
 
-		<CopilotGenerateDialog :open.sync="showCopilotDialog" @created="onAiAppCreated" />
+		<!-- This dialog is nested inside the create-app wizard's own NcModal.
+		     It used to open BEHIND the wizard — every click aimed at it landed on
+		     the wizard's `#wizard-app-description` instead — which made "Generate
+		     with AI" unusable for real users, not only in tests. Fixed upstream in
+		     @conduction/nextcloud-vue 2.1.0-vue3.7 by a shared modal stack that
+		     assigns each new `.modal-mask` an inline z-index above the current top.
+		     The root cause was our own library, not @nextcloud/vue:
+		     CnEditDataModal.vue carried an UNSCOPED
+		     `.modal-mask.dialog__modal { z-index: 10005 !important }`, and rollup
+		     folds every SFC style block into the global dist stylesheet — so one
+		     component's local override pinned every NcDialog mask in every
+		     consuming app to a single layer nothing could outrank, leaving mount
+		     order to break the tie. That is also why an earlier <Teleport to="body">
+		     attempt here changed nothing: both masks were already in <body>.
+		     Requires >= 2.1.0-vue3.7; do not downgrade below it. -->
+		<CopilotGenerateDialog v-model:open="showCopilotDialog" @created="onAiAppCreated" />
 
 		<!-- Name input -->
 		<div class="wizard-step1__field">
@@ -324,6 +339,12 @@ export default {
 		/**
 		 * Observed behaviour of `onNameInput` (retrofit annotation).
 		 *
+		 * Emits a partial payload patch carrying the new name, plus a freshly derived
+		 * slug for as long as the user has not overridden the slug by hand.
+		 *
+		 * @param {InputEvent} event - Native `input` event from the app-name field;
+		 *   `event.target.value` is the new display name (e.g. `Hello World`).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		onNameInput(event) {
@@ -341,6 +362,13 @@ export default {
 		/**
 		 * Observed behaviour of `onSlugInput` (retrofit annotation).
 		 *
+		 * Latches `slugManuallyEdited`, so the name field stops rewriting the slug for
+		 * the rest of the wizard session.
+		 *
+		 * @param {InputEvent} event - Native `input` event from the slug field;
+		 *   `event.target.value` is emitted verbatim (validated elsewhere, not
+		 *   kebab-cased here).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		onSlugInput(event) {
@@ -350,6 +378,9 @@ export default {
 
 		/**
 		 * Observed behaviour of `onDescriptionInput` (retrofit annotation).
+		 *
+		 * @param {InputEvent} event - Native `input` event from the description
+		 *   textarea; `event.target.value` is emitted as the payload's `description`.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */

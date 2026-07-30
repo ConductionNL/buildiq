@@ -50,12 +50,13 @@ vi.mock('../../src/composables/useLivePreview.js', () => ({
 	useLivePreview: () => ({ available: ref(false), previewProps: () => null }),
 }))
 
-function stub(name) {
+async function stub(name) {
+	const { h } = await import('vue')
 	return {
 		default: {
 			name,
 			props: ['config', 'pageType', 'appSlug', 'parentRoute'],
-			render(h) { return h('div', { staticClass: `${name.toLowerCase()}-stub` }) },
+			render() { return h('div', { class: `${name.toLowerCase()}-stub` }) },
 		},
 	}
 }
@@ -69,12 +70,18 @@ vi.mock('../../src/components/page-editor/ChatPageEditor.vue', () => stub('ChatP
 vi.mock('../../src/components/page-editor/FilesPageEditor.vue', () => stub('FilesPageEditor'))
 vi.mock('../../src/components/page-editor/CustomPageEditor.vue', () => stub('CustomPageEditor'))
 vi.mock('../../src/components/page-editor/StubPageEditor.vue', () => stub('StubPageEditor'))
-vi.mock('../../src/components/page-editor/PageListEditor.vue', () => ({
-	default: { name: 'PageListEditor', props: ['pages', 'selectedIndex'], render(h) { return h('div') } },
-}))
-vi.mock('../../src/components/page-editor/MenuTreeEditor.vue', () => ({
-	default: { name: 'MenuTreeEditor', props: ['menu'], render(h) { return h('div') } },
-}))
+vi.mock('../../src/components/page-editor/PageListEditor.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: { name: 'PageListEditor', props: ['pages', 'selectedIndex'], render() { return h('div') } },
+	}
+})
+vi.mock('../../src/components/page-editor/MenuTreeEditor.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: { name: 'MenuTreeEditor', props: ['menu'], render() { return h('div') } },
+	}
+})
 
 const PageDesigner = (await import('../../src/views/PageDesigner.vue')).default
 
@@ -82,9 +89,20 @@ const PageDesigner = (await import('../../src/views/PageDesigner.vue')).default
 // pushed straight back into the manifest prop, the way PageDesignerHost
 // does. Returns the wrapper.
 function mountControlled(initial = { pages: [], menu: [] }, slug = 'hello-world', sessionKey = '') {
-	const wrapper = mount(PageDesigner, { propsData: { manifest: initial, slug, sessionKey } })
-	wrapper.vm.$on('update:manifest', (next) => {
-		wrapper.setProps({ manifest: next })
+	// Vue 3 removed the `$on` instance API, so the host echo is wired as a
+	// real `onUpdate:manifest` listener prop at mount time instead. The
+	// `wrapper` binding is captured lazily — the listener only ever fires
+	// after `mount()` has returned.
+	let wrapper = null
+	wrapper = mount(PageDesigner, {
+		propsData: {
+			manifest: initial,
+			slug,
+			sessionKey,
+			'onUpdate:manifest': (next) => {
+				wrapper.setProps({ manifest: next })
+			},
+		},
 	})
 	return wrapper
 }
@@ -97,7 +115,7 @@ describe('PageDesigner — undo/redo', () => {
 
 	it('renders Undo / Redo toolbar buttons', () => {
 		const wrapper = mountControlled()
-		const btns = wrapper.findAll('.page-designer__tool-btn').wrappers.map((w) => w.text())
+		const btns = wrapper.findAll('.page-designer__tool-btn').map((w) => w.text())
 		expect(btns.some((t) => t.includes('Undo'))).toBe(true)
 		expect(btns.some((t) => t.includes('Redo'))).toBe(true)
 	})

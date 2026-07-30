@@ -13,7 +13,7 @@
  */
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
+import { h, ref } from 'vue'
 
 vi.mock('@nextcloud/router', () => ({
 	generateUrl: (p) => p,
@@ -44,7 +44,7 @@ vi.mock('../../src/store/schemas.js', () => ({
 const CnAppRootStub = {
 	name: 'CnAppRoot',
 	props: ['appId', 'aiCompanion', 'bundledManifest', 'registry', 'dataSourcesLoader', 'options'],
-	render(h) { return h('div', { staticClass: 'cn-app-root-stub' }) },
+	render() { return h('div', { class: 'cn-app-root-stub' }) },
 }
 
 const BuilderHost = (await import('../../src/views/BuilderHost.vue')).default
@@ -81,6 +81,6 @@ describe('BuilderHost (REQ-NTS-003 — CnAppRoot owns theme application, zero Op
 		const wrapper = mountHost()
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.appTheme).toBeUndefined()
-		expect(() => wrapper.destroy()).not.toThrow()
+		expect(() => wrapper.unmount()).not.toThrow()
 	})
 })

@@ -3,7 +3,7 @@
 <template>
 	<div class="wt-recorder">
 		<div class="wt-recorder__bar">
-			<NcCheckboxRadioSwitch type="switch" :checked="recording" @update:checked="setRecording">
+			<NcCheckboxRadioSwitch type="switch" :model-value="recording" @update:modelValue="setRecording">
 				{{ recording ? t('openbuild', 'Recording — click an element to capture its target') : t('openbuild', 'Paused — navigate the app, then resume recording') }}
 			</NcCheckboxRadioSwitch>
 			<span class="wt-recorder__spacer" />
@@ -72,7 +72,7 @@ export default {
 		this.boundClick = null
 	},
 
-	beforeDestroy() {
+	beforeUnmount() {
 		this.detach()
 	},
 

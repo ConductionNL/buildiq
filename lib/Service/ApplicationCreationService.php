@@ -614,15 +614,34 @@ class ApplicationCreationService
                 _multitenancy: false
             )->getId();
 
+            // `_rbac` and `_multitenancy` are NAMED PARAMETERS of searchObjects
+            // (`searchObjects(array $query, bool $_rbac = true, bool $_multitenancy = true, ...)`),
+            // not query keys. `_multitenancy` used to be passed inside `@self`,
+            // which failed twice over: the real parameter kept its `true`
+            // default, AND `@self._multitenancy` became a filter condition on a
+            // field that does not exist, so the search matched nothing. The
+            // check therefore reported every slug as free and the wizard
+            // answered 201 Created for an already-taken slug instead of 422
+            // app_slug_conflict — which is what littered this instance with
+            // duplicate `hello-world` Applications and made OpenRegister's
+            // find-by-slug 500 on the ambiguous result.
+            //
+            // `_rbac: false` matters just as much here: application slugs are a
+            // GLOBAL namespace (OR resolves objects by slug without an owner
+            // scope), but the seeded `hello-world` is owned by `__system__`, so
+            // an RBAC-filtered search run as `admin` would not see it and would
+            // again report the slug as free. A uniqueness check must see every
+            // row, exactly as AppNavigationService does when it enumerates apps.
             $rows = $this->objectService->searchObjects(
                 query: [
                     '@self' => [
-                        'register'      => $registerId,
-                        'schema'        => $schemaId,
-                        '_multitenancy' => false,
+                        'register' => $registerId,
+                        'schema'   => $schemaId,
                     ],
                     'slug'  => $slug,
-                ]
+                ],
+                _rbac: false,
+                _multitenancy: false
             );
 
             return is_array($rows) === true && $rows !== [];

@@ -211,6 +211,13 @@ export default {
 		/**
 		 * Observed behaviour of `prettyManifest` (retrofit annotation).
 		 *
+		 * @param {object|null|undefined} value - One side's manifest blob (the `from`
+		 *   or `to` version). `null`/`undefined` — a version with no manifest yet —
+		 *   renders as an empty side rather than the string `"null"`.
+		 * @return {string} The manifest as 2-space-indented JSON with every object's
+		 *   keys sorted, so the line diff reflects real content changes and not
+		 *   serialisation order.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		prettyManifest(value) {
@@ -221,6 +228,15 @@ export default {
 		},
 		/**
 		 * Observed behaviour of `sortReplacer` (retrofit annotation).
+		 *
+		 * `JSON.stringify` replacer that makes serialisation key-order-independent.
+		 *
+		 * @param {string} _key - The property name being serialised. Unused: the
+		 *   rewrite depends only on the value's shape, never on where it sits.
+		 * @param {*} val - The value being serialised. Plain objects are returned with
+		 *   their keys sorted; arrays (order is meaningful in a manifest) and
+		 *   primitives pass through untouched.
+		 * @return {*} The value to serialise in place of `val`.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
@@ -236,6 +252,12 @@ export default {
 		},
 		/**
 		 * Observed behaviour of `partClass` (retrofit annotation).
+		 *
+		 * @param {{value: string, added?: boolean, removed?: boolean, count?: number}} part - One
+		 *   hunk from jsdiff's `diffLines()` output. `added`/`removed` are `undefined`
+		 *   (not `false`) on an unchanged hunk, and are never both set.
+		 * @return {string} The `manifest-diff__part` class list for that hunk, with the
+		 *   `--added` / `--removed` / `--unchanged` modifier that colours it.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */

@@ -12,9 +12,13 @@ import { mount } from '@vue/test-utils'
 
 import PermissionGroupField from '../../src/components/page-editor/fields/PermissionGroupField.vue'
 
+// Vue 3 model API: NcSelect takes `modelValue` and emits `update:modelValue`.
+// The Vue 2 `value` / `input` pair no longer exists, so a stub declaring
+// `value` receives nothing and `props('value')` reads `undefined`.
 const NcSelectStub = {
 	name: 'NcSelect',
-	props: ['value', 'options', 'taggable', 'clearable', 'placeholder', 'inputLabel', 'label', 'trackBy'],
+	props: ['modelValue', 'options', 'taggable', 'clearable', 'placeholder', 'inputLabel', 'label', 'trackBy'],
+	emits: ['update:modelValue', 'tag'],
 	template: '<div class="ncselect-stub" :data-input-label="inputLabel" />',
 }
 
@@ -32,19 +36,19 @@ describe('PermissionGroupField', () => {
 	it('renders no selection when permission is unset', () => {
 		const wrapper = factory({ permission: '' })
 		const select = wrapper.findComponent(NcSelectStub)
-		expect(select.props('value')).toBeNull()
+		expect(select.props('modelValue')).toBeNull()
 	})
 
 	it('derives the selected option from a group:<gid> permission', () => {
 		const wrapper = factory({ permission: 'group:vets' })
 		const select = wrapper.findComponent(NcSelectStub)
-		expect(select.props('value')).toEqual({ value: 'vets', label: 'vets' })
+		expect(select.props('modelValue')).toEqual({ value: 'vets', label: 'vets' })
 	})
 
 	it('emits update:permission with group:<gid> when an option is picked', async () => {
 		const wrapper = factory()
 		const select = wrapper.findComponent(NcSelectStub)
-		select.vm.$emit('input', { value: 'vets', label: 'vets' })
+		select.vm.$emit('update:modelValue', { value: 'vets', label: 'vets' })
 		await wrapper.vm.$nextTick()
 		expect(wrapper.emitted()['update:permission'][0]).toEqual(['group:vets'])
 	})
@@ -52,7 +56,7 @@ describe('PermissionGroupField', () => {
 	it('emits update:permission with null when cleared', async () => {
 		const wrapper = factory({ permission: 'group:vets' })
 		const select = wrapper.findComponent(NcSelectStub)
-		select.vm.$emit('input', null)
+		select.vm.$emit('update:modelValue', null)
 		await wrapper.vm.$nextTick()
 		expect(wrapper.emitted()['update:permission'][0]).toEqual([null])
 	})

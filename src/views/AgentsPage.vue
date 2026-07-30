@@ -31,7 +31,7 @@
 				:loading="loadingApplications"
 				label="name"
 				track-by="slug"
-				@input="onAppChange" />
+				@update:modelValue="onAppChange" />
 		</div>
 
 		<NcLoadingIcon v-if="loading" :size="32" />
@@ -98,7 +98,7 @@
 		</NcNoteCard>
 
 		<AgentEditDialog
-			:open.sync="editDialogOpen"
+			v-model:open="editDialogOpen"
 			:agent="editingAgent"
 			:application-slug="selectedApp ? selectedApp.slug : ''"
 			@saved="onDialogSaved" />

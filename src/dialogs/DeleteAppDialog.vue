@@ -18,7 +18,7 @@
 				{{ t('openbuild', 'Delete "{name}" and all of its versions? This cannot be undone.', { name: appName }) }}
 			</p>
 			<NcCheckboxRadioSwitch
-				:checked.sync="deleteData"
+				v-model="deleteData"
 				:disabled="busy">
 				{{ t('openbuild', 'Also permanently delete all data (the app\'s registers and everything stored in them)') }}
 			</NcCheckboxRadioSwitch>
@@ -43,10 +43,10 @@
 </template>
 
 <script>
-import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import NcDialog from '@nextcloud/vue/components/NcDialog'
+import NcButton from '@nextcloud/vue/components/NcButton'
+import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
+import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 
 export default {
 	name: 'DeleteAppDialog',

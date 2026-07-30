@@ -26,21 +26,21 @@
 			</p>
 
 			<NcTextField
-				:value="form.name"
+				:model-value="form.name"
 				:label="t('openbuild', 'Block name')"
-				@update:value="onNameInput" />
+				@update:modelValue="onNameInput" />
 			<NcTextField
-				:value="form.slug"
+				:model-value="form.slug"
 				:label="t('openbuild', 'Slug (kebab-case, max 48 chars)')"
-				@update:value="form.slug = $event" />
+				@update:modelValue="form.slug = $event" />
 			<NcTextArea
-				:value="form.description"
+				:model-value="form.description"
 				:label="t('openbuild', 'Description')"
-				@update:value="form.description = $event" />
+				@update:modelValue="form.description = $event" />
 			<NcTextField
-				:value="form.category"
+				:model-value="form.category"
 				:label="t('openbuild', 'Category (e.g. {examples})', { examples: categoryHint })"
-				@update:value="form.category = $event" />
+				@update:modelValue="form.category = $event" />
 
 			<!-- Capture summary -->
 			<section class="ob-save-block__summary">

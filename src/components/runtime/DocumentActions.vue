@@ -12,7 +12,7 @@
   -->
 <template>
 	<div v-if="schemaAttachments.length" class="ob-document-actions">
-		<div v-if="!docudeskAvailable" class="ob-document-actions__unavailable">
+		<div v-if="docudeskChecked && !docudeskUsable" class="ob-document-actions__unavailable">
 			{{ t('openbuild', 'Docudesk is not available — document generation is disabled.') }}
 		</div>
 		<template v-else>
@@ -40,10 +40,15 @@
 <script>
 import { NcButton } from '@nextcloud/vue'
 import { useDocudeskDocument } from '../../composables/useDocudeskDocument.js'
+import { useAppStatus } from '../../composables/useAppStatus.js'
 
 export default {
 	name: 'DocumentActions',
 	components: { NcButton },
+	// The live, reactive manifest CnAppRoot provides to every descendant.
+	inject: {
+		cnManifest: { default: null },
+	},
 	props: {
 		// The current OR object being viewed.
 		object: {
@@ -52,27 +57,76 @@ export default {
 		},
 		// All document attachments for the app (manifest `runtime.documents[]`).
 		// The widget filters to this object's schema itself.
+		//
+		// Optional: nothing supplies this at runtime. A registry entry is
+		// resolved by CnPageRenderer's slot-override path, which hands the
+		// component the DETAIL surface's own props (the object) — it has no way
+		// to know a widget wants a slice of the manifest. So the widget reads
+		// the manifest itself through the `cnManifest` injection, exactly as the
+		// sibling TrackLinkAction does for `runtime.externalForms[]`. The prop
+		// stays as an explicit override for tests and for a host that already
+		// holds the list.
 		attachments: {
 			type: Array,
 			default: () => ([]),
 		},
 		// Soft capability flag for Docudesk (graceful absence, REQ-DDT-005).
+		// `null` (the default) means "decide for yourself" — see
+		// `docudeskUsable`. A boolean is an explicit override.
 		docudeskAvailable: {
 			type: Boolean,
-			default: true,
+			default: null,
 		},
 	},
 	/**
-	 * Bind the Docudesk generate integration.
+	 * Bind the Docudesk generate integration and the soft capability probe.
 	 *
 	 * @return {object}
 	 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
 	 */
 	setup() {
 		const docs = useDocudeskDocument()
-		return { docs }
+		const docudesk = useAppStatus('docudesk')
+		return { docs, docudesk }
 	},
 	computed: {
+		/**
+		 * Has the Docudesk capability been decided yet?
+		 *
+		 * An explicit `docudeskAvailable` prop is a decision in itself.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-005
+		 */
+		docudeskChecked() {
+			return this.docudeskAvailable !== null || this.docudesk.checked.value
+		},
+		/**
+		 * May this surface talk to Docudesk?
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-005
+		 */
+		docudeskUsable() {
+			return this.docudeskAvailable === null
+				? this.docudesk.available.value
+				: this.docudeskAvailable
+		},
+		/**
+		 * The app's document attachments: the explicit prop when a host supplies
+		 * one, else the built app's own `runtime.documents[]` from the manifest.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
+		 */
+		effectiveAttachments() {
+			if (Array.isArray(this.attachments) && this.attachments.length) {
+				return this.attachments
+			}
+			const manifest = this.cnManifest
+			const list = manifest && manifest.runtime && manifest.runtime.documents
+			return Array.isArray(list) ? list : []
+		},
 		/**
 		 * The object's schema slug from its `@self` envelope.
 		 *
@@ -94,8 +148,15 @@ export default {
 			if (!schema) {
 				return []
 			}
-			return (this.attachments || []).filter((a) => a && a.schema === schema)
+			return this.effectiveAttachments.filter((a) => a && a.schema === schema)
 		},
+	},
+	mounted() {
+		// Fire the capability probe once. `useAppStatus` short-circuits on
+		// `OC.appswebroots` and caches per session, so this is cheap.
+		if (this.docudeskAvailable === null) {
+			this.docudesk.check()
+		}
 	},
 	methods: {
 		/**
@@ -132,7 +193,14 @@ export default {
 		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-003
 		 */
 		async onGenerate(att) {
-			if (!this.docudeskAvailable) {
+			// REQ-DDT-005: on an instance without Docudesk NO request may reach
+			// /apps/docudesk. Resolve the capability BEFORE generating rather
+			// than reading a possibly-unresolved flag — `check()` is cached, so
+			// the await is free after the first call.
+			if (this.docudeskAvailable === null && this.docudesk.checked.value === false) {
+				await this.docudesk.check()
+			}
+			if (!this.docudeskUsable) {
 				return
 			}
 			await this.docs.generate(att, this.object)

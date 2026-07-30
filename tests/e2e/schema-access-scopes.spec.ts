@@ -42,7 +42,10 @@
 import { test, expect } from '@playwright/test'
 import { ensureApp, dismissOverlays } from './support/appFixture'
 
-const BASE_URL = process.env.NC_BASE_URL ?? 'http://localhost:8080'
+// PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts. This used to be
+// `NC_BASE_URL ?? 'http://localhost:8080'`, which pointed at the SHARED dev
+// instance while ensureApp() created the fixture on the e2e one.
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
 const APP_SLUG = 'pw-access-scopes'
 const SCOPED_SCHEMA_SLUG = 'record'
 const UNSCOPED_SCHEMA_SLUG = 'plain-record'
@@ -188,6 +191,17 @@ async function putSchema(page: import('@playwright/test').Page, slug: string, bo
 //   - `waitForLoadState('networkidle')` does NOT wait for the save XHR — read
 //     back through saveAndAwait(), which polls the API.
 test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/003/005)', () => {
+	// The waits below are deliberately 45s: the schema designer hydrates over
+	// several sequential OpenRegister round-trips and is genuinely slow on a
+	// loaded instance. But the config's per-test budget is 30s, so a 45s wait
+	// could never elapse — the test always died first with a bare "Test timeout
+	// of 30000ms exceeded" instead of the assertion's own message. A guard that
+	// cannot fire is worse than no guard: it hides which condition failed.
+	// Give the tests a budget larger than their longest wait so those waits mean
+	// what they say. This does not relax any assertion — each keeps its own
+	// timeout, and a real failure now reports itself instead of being masked.
+	test.describe.configure({ timeout: 90_000 })
+
 	// Whether this run has already reset the scoped schema's authorization.
 	let baselineReset = false
 

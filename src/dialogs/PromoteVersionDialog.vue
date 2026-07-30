@@ -27,7 +27,7 @@
 				</legend>
 
 				<NcCheckboxRadioSwitch
-					:checked.sync="selectedStrategy"
+					v-model="selectedStrategy"
 					value="start-with-source-data"
 					name="promote-strategy"
 					type="radio">
@@ -38,7 +38,7 @@
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:checked.sync="selectedStrategy"
+					v-model="selectedStrategy"
 					value="migrate-existing-data"
 					name="promote-strategy"
 					type="radio">
@@ -49,7 +49,7 @@
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:checked.sync="selectedStrategy"
+					v-model="selectedStrategy"
 					value="empty-start"
 					name="promote-strategy"
 					type="radio">
@@ -87,10 +87,10 @@
 </template>
 
 <script>
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
-import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
-import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
+import NcButton from '@nextcloud/vue/components/NcButton'
+import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
+import NcDialog from '@nextcloud/vue/components/NcDialog'
+import NcTextField from '@nextcloud/vue/components/NcTextField'
 
 import { defaultStrategyFor } from './promoteVersionDefaults.js'
 

@@ -217,7 +217,7 @@
 		</section>
 
 		<UserDeltaEditModal
-			:open.sync="showUserDeltaModal"
+			v-model:open="showUserDeltaModal"
 			:app-slug="appSlug"
 			:delta="userDeltaContent"
 			@saved="onUserDeltaChanged" />
@@ -236,7 +236,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
 import { CnStatsBlock } from '@conduction/nextcloud-vue'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import NcButton from '@nextcloud/vue/components/NcButton'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import Harddisk from 'vue-material-design-icons/Harddisk.vue'
@@ -624,7 +624,7 @@ export default {
 	 * @return {void}
 	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 	 */
-	beforeDestroy() {
+	beforeUnmount() {
 		if (this.insightsDebounce) {
 			clearTimeout(this.insightsDebounce)
 			this.insightsDebounce = null

@@ -23,16 +23,16 @@
 			</h2>
 
 			<NcTextField
-				:value="name"
+				:model-value="name"
 				:label="t('openbuild', 'Name')"
-				@update:value="onNameInput" />
+				@update:modelValue="onNameInput" />
 			<p class="automation-edit__hint">
 				{{ t('openbuild', 'Identifier') }}: <code>{{ derivedSlug || '—' }}</code>
 			</p>
 			<NcTextField
-				:value="description"
+				:model-value="description"
 				:label="t('openbuild', 'Description (optional)')"
-				@update:value="description = $event" />
+				@update:modelValue="description = $event" />
 
 			<!-- Trigger -->
 			<section class="automation-edit__section">
@@ -43,7 +43,7 @@
 					:options="triggerOptions"
 					:clearable="false"
 					label="label"
-					@input="onTriggerChange" />
+					@update:modelValue="onTriggerChange" />
 
 				<template v-if="isObjectTrigger || triggerType === 'lifecycle-transition'">
 					<NcSelect
@@ -53,12 +53,12 @@
 						:options="schemaOptions"
 						:loading="schemaLoading"
 						label="label"
-						@input="onSchemaSelect" />
+						@update:modelValue="onSchemaSelect" />
 					<NcTextField
 						v-else
-						:value="triggerSchema"
+						:model-value="triggerSchema"
 						:label="t('openbuild', 'Schema slug')"
-						@update:value="triggerSchema = $event" />
+						@update:modelValue="triggerSchema = $event" />
 				</template>
 
 				<template v-if="triggerType === 'lifecycle-transition'">
@@ -71,9 +71,9 @@
 						label="label" />
 					<NcTextField
 						v-else
-						:value="triggerTransition"
+						:model-value="triggerTransition"
 						:label="t('openbuild', 'Transition action name')"
-						@update:value="triggerTransition = $event" />
+						@update:modelValue="triggerTransition = $event" />
 				</template>
 
 				<template v-if="triggerType === 'schedule'">
@@ -85,15 +85,15 @@
 						label="label" />
 					<NcTextField
 						v-if="isCustomCron"
-						:value="triggerCron"
+						:model-value="triggerCron"
 						:label="t('openbuild', 'Cron expression (5 fields)')"
-						@update:value="triggerCron = $event" />
+						@update:modelValue="triggerCron = $event" />
 					<NcTextField
 						v-if="isCustomInterval"
-						:value="String(triggerInterval)"
+						:model-value="String(triggerInterval)"
 						type="number"
 						:label="t('openbuild', 'Interval (seconds)')"
-						@update:value="triggerInterval = Number($event)" />
+						@update:modelValue="triggerInterval = Number($event)" />
 				</template>
 			</section>
 
@@ -111,15 +111,15 @@
 						label="label" />
 					<NcTextField
 						v-if="conditionKind === 'feel'"
-						:value="conditionExpression"
+						:model-value="conditionExpression"
 						:label="t('openbuild', 'FEEL expression')"
 						placeholder="payload.amount > 1000"
-						@update:value="conditionExpression = $event" />
+						@update:modelValue="conditionExpression = $event" />
 					<NcTextField
 						v-if="conditionKind === 'rule-set'"
-						:value="conditionRuleSetSlug"
+						:model-value="conditionRuleSetSlug"
 						:label="t('openbuild', 'Rule set slug')"
-						@update:value="conditionRuleSetSlug = $event" />
+						@update:modelValue="conditionRuleSetSlug = $event" />
 				</template>
 			</section>
 
@@ -142,12 +142,12 @@
 					class="automation-edit__action"
 					data-testid="action-row">
 					<NcSelect
-						:value="actionTypeOption(action.type)"
+						:model-value="actionTypeOption(action.type)"
 						:input-label="t('openbuild', 'Action type')"
 						:options="actionTypeOptions"
 						:clearable="false"
 						label="label"
-						@input="onActionTypeChange(index, $event)" />
+						@update:modelValue="onActionTypeChange(index, $event)" />
 
 					<NcNoteCard
 						v-if="actionBlockedReason(action.type)"
@@ -158,29 +158,29 @@
 
 					<template v-else-if="action.type === 'send-notification'">
 						<NcTextField
-							:value="action.subjectEn"
+							:model-value="action.subjectEn"
 							:label="t('openbuild', 'Subject (English)')"
-							@update:value="updateAction(index, 'subjectEn', $event)" />
+							@update:modelValue="updateAction(index, 'subjectEn', $event)" />
 						<NcTextField
-							:value="action.subjectNl"
+							:model-value="action.subjectNl"
 							:label="t('openbuild', 'Subject (Dutch)')"
-							@update:value="updateAction(index, 'subjectNl', $event)" />
+							@update:modelValue="updateAction(index, 'subjectNl', $event)" />
 					</template>
 
 					<template v-else-if="action.type === 'run-synchronization'">
 						<NcSelect
 							v-if="syncPickerAvailable"
-							:value="syncOption(action.synchronizationId)"
+							:model-value="syncOption(action.synchronizationId)"
 							:input-label="t('openbuild', 'Synchronization')"
 							:options="syncOptions"
 							:loading="syncLoading"
 							label="label"
-							@input="onSyncSelect(index, $event)" />
+							@update:modelValue="onSyncSelect(index, $event)" />
 						<NcTextField
 							v-else
-							:value="action.synchronizationId"
+							:model-value="action.synchronizationId"
 							:label="t('openbuild', 'Synchronization id')"
-							@update:value="updateAction(index, 'synchronizationId', $event)" />
+							@update:modelValue="updateAction(index, 'synchronizationId', $event)" />
 					</template>
 
 					<template v-else-if="action.type === 'object-op'">
@@ -190,42 +190,42 @@
 							:options="objectOpOperationOptions"
 							:clearable="false"
 							label="label"
-							@input="updateAction(index, 'operation', $event ? $event.value : 'create')" />
+							@update:modelValue="updateAction(index, 'operation', $event ? $event.value : 'create')" />
 						<NcTextField
-							:value="action.schema"
+							:model-value="action.schema"
 							:label="t('openbuild', 'Target schema')"
-							@update:value="updateAction(index, 'schema', $event)" />
+							@update:modelValue="updateAction(index, 'schema', $event)" />
 						<NcTextArea
-							:value="action.fieldMappingText"
+							:model-value="action.fieldMappingText"
 							:label="t('openbuild', 'Field mapping (JSON)')"
-							@update:value="updateAction(index, 'fieldMappingText', $event)" />
+							@update:modelValue="updateAction(index, 'fieldMappingText', $event)" />
 					</template>
 
 					<template v-else-if="action.type === 'webhook'">
 						<NcTextField
-							:value="action.url"
+							:model-value="action.url"
 							:label="t('openbuild', 'Webhook URL')"
-							@update:value="updateAction(index, 'url', $event)" />
+							@update:modelValue="updateAction(index, 'url', $event)" />
 						<NcTextArea
-							:value="action.payloadTemplateText"
+							:model-value="action.payloadTemplateText"
 							:label="t('openbuild', 'Payload template (JSON)')"
-							@update:value="updateAction(index, 'payloadTemplateText', $event)" />
+							@update:modelValue="updateAction(index, 'payloadTemplateText', $event)" />
 					</template>
 
 					<template v-else-if="action.type === 'approval'">
 						<NcSelect
 							v-if="groupPickerAvailable"
-							:value="groupOption(action.assigneeGroup)"
+							:model-value="groupOption(action.assigneeGroup)"
 							:input-label="t('openbuild', 'Assignee group')"
 							:options="groupOptions"
 							:loading="groupLoading"
 							label="label"
-							@input="onGroupSelect(index, $event)" />
+							@update:modelValue="onGroupSelect(index, $event)" />
 						<NcTextField
 							v-else
-							:value="action.assigneeGroup"
+							:model-value="action.assigneeGroup"
 							:label="t('openbuild', 'Assignee group id')"
-							@update:value="updateAction(index, 'assigneeGroup', $event)" />
+							@update:modelValue="updateAction(index, 'assigneeGroup', $event)" />
 
 						<AutomationActionListEditor
 							:model-value="action.onApprove"
@@ -242,28 +242,28 @@
 					<template v-else-if="action.type === 'generateDocument'">
 						<NcSelect
 							v-if="templatePickerAvailable"
-							:value="templateOption(action.templateId)"
+							:model-value="templateOption(action.templateId)"
 							:input-label="t('openbuild', 'Document template')"
 							:options="docudeskTemplateOptions"
 							:loading="docudeskTemplatesLoading"
 							label="label"
 							data-testid="generate-document-template-select"
-							@input="onTemplateSelect(index, $event)" />
+							@update:modelValue="onTemplateSelect(index, $event)" />
 						<NcTextField
 							v-else
-							:value="action.templateId"
+							:model-value="action.templateId"
 							:label="t('openbuild', 'Template id')"
 							data-testid="generate-document-template-text"
-							@update:value="updateAction(index, 'templateId', $event)" />
+							@update:modelValue="updateAction(index, 'templateId', $event)" />
 						<NcSelect
-							:value="outputModeSelection(action)"
+							:model-value="outputModeSelection(action)"
 							:input-label="t('openbuild', 'Output')"
 							:options="outputModeOptions"
 							:multiple="true"
 							:clearable="false"
 							label="label"
 							data-testid="generate-document-output-select"
-							@input="onOutputModesSelect(index, $event)" />
+							@update:modelValue="onOutputModesSelect(index, $event)" />
 					</template>
 
 					<NcButton type="error" :aria-label="t('openbuild', 'Remove action')" @click="removeAction(index)">

@@ -129,15 +129,32 @@ export default {
 			const connector = { ...this.connector, ...patch }
 			this.$emit('update:dataSource', { ...this.dataSource, connector })
 		},
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002 */
+		/**
+		 * Store the endpoint the source picker settled on.
+		 *
+		 * @param {string} endpointPath - host-relative OpenConnector endpoint path, already stripped of any scheme/host by ConnectorSourcePicker; `''` when the selection was cleared.
+		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
+		 */
 		onEndpointPath(endpointPath) {
 			this.emitConnector({ endpointPath })
 		},
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
+		/**
+		 * Store the list-root selector picked in the field mapper.
+		 *
+		 * @param {string} itemsPath - dot-path, relative to the sample root, of the array the runtime iterates (e.g. `results.items`); `''` means the response root is the list.
+		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003
+		 */
 		onItemsPath(itemsPath) {
 			this.emitConnector({ itemsPath })
 		},
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
+		/**
+		 * Store the whole field map after the mapper added or removed one
+		 * entry — ConnectorFieldMapper always emits the complete map, never a
+		 * delta.
+		 *
+		 * @param {{[fieldName: string]: string}} fields - display-field name to dot-path selector, relative to an item of the list (e.g. `{ Title: 'attributes.name' }`).
+		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003
+		 */
 		onFields(fields) {
 			this.emitConnector({ fields })
 		},

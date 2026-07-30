@@ -49,7 +49,7 @@
 		</ul>
 
 		<ScheduleEditDialog
-			:open.sync="dialogOpen"
+			v-model:open="dialogOpen"
 			:entry="editingEntry"
 			:existing-ids="otherIds"
 			@save="onDialogSave" />
@@ -151,7 +151,16 @@ export default {
 			this.editingEntry = null
 			this.dialogOpen = true
 		},
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-005 */
+		/**
+		 * Open the schedule dialog on an existing entry.
+		 *
+		 * @param {{id: string, enabled?: boolean, interval?: number, cron?: string,
+		 *   action?: string, arguments?: object}} schedule - The `manifest.schedules[]`
+		 *   entry the user clicked. Kept in `editingEntry` so `onDialogSave` can
+		 *   replace it by `id` rather than appending a duplicate. Cadence is either
+		 *   `interval` (seconds) or `cron`, never both.
+		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-005
+		 */
 		openEdit(schedule) {
 			this.editingEntry = schedule
 			this.dialogOpen = true

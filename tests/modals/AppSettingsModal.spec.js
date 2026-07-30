@@ -28,20 +28,29 @@ const baseStubs = {
 		props: ['name'],
 		template: '<div class="nc-modal-stub"><slot /></div>',
 	},
+	// `emits: ['click']` is load-bearing under Vue 3: an undeclared emit leaves
+	// the parent's `@click` in `$attrs`, it falls through onto the root
+	// <button>, and one click runs the handler twice.
 	NcButton: {
 		name: 'NcButton',
 		props: ['type', 'disabled'],
+		emits: ['click'],
 		template: '<button :disabled="disabled" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
 	},
+	// Vue 3 model API throughout: `modelValue` in, `update:modelValue` out.
+	// The Vue 2 `checked` / `value` props receive nothing from the component's
+	// `:model-value` bindings, which is why every field rendered empty.
 	NcCheckboxRadioSwitch: {
 		name: 'NcCheckboxRadioSwitch',
-		props: ['checked', 'type', 'disabled'],
-		template: '<input type="checkbox" :checked="checked" :disabled="disabled" @change="$emit(\'update:checked\', $event.target.checked)" />',
+		props: ['modelValue', 'type', 'disabled'],
+		emits: ['update:modelValue'],
+		template: '<input type="checkbox" :checked="modelValue" :disabled="disabled" @change="$emit(\'update:modelValue\', $event.target.checked)" />',
 	},
 	NcTextField: {
 		name: 'NcTextField',
-		props: ['value', 'label', 'disabled'],
-		template: '<input class="nc-textfield-stub" :data-label="label" :value="value" :disabled="disabled" @input="$emit(\'update:value\', $event.target.value)" />',
+		props: ['modelValue', 'label', 'disabled'],
+		emits: ['update:modelValue'],
+		template: '<input class="nc-textfield-stub" :data-label="label" :value="modelValue" :disabled="disabled" @input="$emit(\'update:modelValue\', $event.target.value)" />',
 	},
 }
 

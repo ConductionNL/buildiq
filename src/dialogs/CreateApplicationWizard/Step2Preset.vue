@@ -116,6 +116,11 @@ export default {
 		/**
 		 * Observed behaviour of `selectPreset` (retrofit annotation).
 		 *
+		 * @param {'single'|'dev-prod'|'dev-staging-prod'|'custom'} presetId - `id` of
+		 *   the chosen preset card. A canned preset also pre-populates `versions` from
+		 *   `PRESET_VERSIONS`; `custom` keeps any versions already chosen and
+		 *   otherwise seeds a single Production row for step 3 to edit.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		selectPreset(presetId) {

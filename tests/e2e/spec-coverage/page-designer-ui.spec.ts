@@ -27,6 +27,12 @@
  */
 
 import { test, expect } from '@playwright/test'
+// nc-vue's first-visit CnSupportDialog renders a full-viewport backdrop that
+// swallows clicks. It appears only sometimes (its "have I been seen" check is an
+// async round-trip), which made REQ-OBPDUI-003 intermittent: it passed on one
+// full run and failed on the next with `cn-support-dialog` as the pointer-event
+// target. Dismissing it is a precondition, not a weakened assertion.
+import { dismissFirstVisitOverlays } from '../support/overlays'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
@@ -47,7 +53,7 @@ const PAGE_DESIGNER = (slug: string) => `${BASE}/apps/openbuild/builder/${slug}/
 test.skip('REQ-OBPDUI-001 — page designer route renders the three-pane layout', async ({ page }) => {
 	// @e2e page-designer-ui::page-designer-renders-three-pane-layout
 	await page.goto(PAGE_DESIGNER('hello-world'))
-	await expect(page.locator('main, .page-designer, [class*="page-designer"]'), 'designer must load').toBeVisible({ timeout: 15_000 })
+	await expect(page.locator('.page-designer-host'), 'designer must load').toBeVisible({ timeout: 15_000 })
 
 	// The outer shell must load without a white screen.
 	await expect(page).toHaveTitle(/openbuild/i)
@@ -59,7 +65,7 @@ test('REQ-OBPDUI-001 — undo button is disabled when no edits have been made', 
 	test.skip(!LIVE, 'Requires live dev env with page designer JS built — set OPENBUILD_E2E_LIVE=1')
 
 	await page.goto(PAGE_DESIGNER('hello-world'))
-	await expect(page.locator('.page-designer, [class*="page-designer"]')).toBeVisible({ timeout: 15_000 })
+	await expect(page.locator('.page-designer-host')).toBeVisible({ timeout: 15_000 })
 
 	// On first load there is no history, so undo must be disabled.
 	const undoBtn = page.locator('button[title*="Undo"], button:has-text("Undo")').first()
@@ -94,7 +100,12 @@ test('REQ-OBPDUI-002 — unknown ?_version shows version-not-found state', async
 	await expect(page.locator('main'), 'main must still render').toBeVisible({ timeout: 15_000 })
 
 	// The version-not-found state is rendered via NcEmptyContent or a div with "Version not found".
-	const notFound = page.locator('text=/Version not found/i, [class*="version-not-found"]').first()
+	// NOT the comma-joined 'text=/regex/flags, [selector]' form — Playwright's
+	// text engine parses everything after `text=` up to the next top-level
+	// comma as ONE pattern, so the trailing CSS selector got swallowed into
+	// the regex flags and threw "Invalid flags supplied to RegExp
+	// constructor". Combine the two locators with .or() instead.
+	const notFound = page.getByText(/Version not found/i).or(page.locator('[class*="version-not-found"]')).first()
 	await expect(notFound, 'version-not-found state must be displayed').toBeVisible({ timeout: 10_000 })
 })
 
@@ -108,10 +119,13 @@ test('REQ-OBPDUI-003 — centre pane renders a sub-editor when a page is selecte
 	test.skip(!LIVE, 'Requires live dev env with page designer JS built and hello-world pages — set OPENBUILD_E2E_LIVE=1')
 
 	await page.goto(PAGE_DESIGNER('hello-world'))
-	await expect(page.locator('.page-designer, [class*="page-designer"]')).toBeVisible({ timeout: 15_000 })
+	await expect(page.locator('.page-designer-host')).toBeVisible({ timeout: 15_000 })
+	// This test clicks, so the first-visit overlays have to be cleared first.
+	await dismissFirstVisitOverlays(page)
 
-	// Click the first page entry in the left pane.
-	const firstPage = page.locator('.page-designer__left li, .page-list-editor li').first()
+	// Click the first page entry in the left pane. Rows are
+	// `.page-list-editor__row` divs, not `<li>` elements (PageListEditor.vue).
+	const firstPage = page.locator('.page-list-editor__row').first()
 	await expect(firstPage, 'at least one page must be listed').toBeVisible({ timeout: 5_000 })
 	await firstPage.click()
 
@@ -130,7 +144,7 @@ test('REQ-OBPDUI-004 — left pane renders the page list and menu tree', async (
 	test.skip(!LIVE, 'Requires live dev env with page designer JS built — set OPENBUILD_E2E_LIVE=1')
 
 	await page.goto(PAGE_DESIGNER('hello-world'))
-	await expect(page.locator('.page-designer, [class*="page-designer"]')).toBeVisible({ timeout: 15_000 })
+	await expect(page.locator('.page-designer-host')).toBeVisible({ timeout: 15_000 })
 
 	// The left pane contains the PageListEditor (page list) and MenuTreeEditor (menu tree).
 	const leftPane = page.locator('.page-designer__left').first()
@@ -147,7 +161,7 @@ test('REQ-OBPDUI-005 — right pane renders the validation surface', async ({ pa
 	test.skip(!LIVE, 'Requires live dev env with page designer JS built — set OPENBUILD_E2E_LIVE=1')
 
 	await page.goto(PAGE_DESIGNER('hello-world'))
-	await expect(page.locator('.page-designer, [class*="page-designer"]')).toBeVisible({ timeout: 15_000 })
+	await expect(page.locator('.page-designer-host')).toBeVisible({ timeout: 15_000 })
 
 	// The right pane must contain the validation errors panel.
 	const rightPane = page.locator('.page-designer__right').first()

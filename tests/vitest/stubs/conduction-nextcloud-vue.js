@@ -19,7 +19,21 @@
  * guard.
  */
 
-const stub = (name) => ({ name, render: (h) => h('div') })
+import { h } from 'vue'
+
+// Vue 3 no longer passes `h` into a render function — it must be imported
+// from `vue`. A `render: (h) => h('div')` stub written for Vue 2 throws
+// "h is not a function" the moment anything mounts it.
+//
+// The stub also renders its default slot: a stub that swallowed its
+// children made every assertion about content *inside* an NcModal /
+// NcDialog / NcNoteCard read as empty.
+const stub = (name) => ({
+	name,
+	render() {
+		return h('div', { class: `${name.toLowerCase()}-stub` }, this.$slots?.default?.())
+	},
+})
 
 export const NcModal = stub('NcModal')
 export const NcDialog = stub('NcDialog')
@@ -56,11 +70,11 @@ export function createObjectStore() {
 // these; they only need the symbols to exist.
 export const CnAppRoot = stub('CnAppRoot')
 export const CnAppNav = stub('CnAppNav')
-export const CnPageRenderer = { name: 'CnPageRenderer', render: (h) => h('div') }
+export const CnPageRenderer = { name: 'CnPageRenderer', render: () => h('div') }
 export const CnCard = {
 	name: 'CnCard',
 	props: ['title', 'description', 'titleTooltip', 'icon', 'iconSize', 'labels', 'stats'],
-	render(h) {
+	render() {
 		return h('div', { class: 'cn-card-stub' }, [
 			h('h3', this.title),
 			h('p', this.description),

@@ -29,7 +29,7 @@
 				:loading="loadingApplications"
 				label="name"
 				track-by="slug"
-				@input="onAppChange" />
+				@update:modelValue="onAppChange" />
 			<NcSelect
 				v-model="selectedVersion"
 				class="automations-page__picker"
@@ -39,7 +39,7 @@
 				:disabled="!selectedApp"
 				label="name"
 				track-by="id"
-				@input="onVersionChange" />
+				@update:modelValue="onVersionChange" />
 		</div>
 
 		<NcLoadingIcon v-if="loading" :size="32" />
@@ -84,8 +84,8 @@
 				<div class="automations-page__item-side">
 					<NcCheckboxRadioSwitch
 						type="switch"
-						:checked="automation.enabled !== false"
-						@update:checked="toggleEnabled(automation, $event)">
+						:model-value="automation.enabled !== false"
+						@update:modelValue="toggleEnabled(automation, $event)">
 						{{ t('openbuild', 'Enabled') }}
 					</NcCheckboxRadioSwitch>
 					<NcButton type="tertiary" @click="openTestPanel(automation)">
@@ -106,7 +106,7 @@
 		</NcNoteCard>
 
 		<AutomationEditDialog
-			:open.sync="editDialogOpen"
+			v-model:open="editDialogOpen"
 			:automation="editingAutomation"
 			:register="selectedVersion ? selectedVersion.register : ''"
 			@saved="onDialogSaved" />

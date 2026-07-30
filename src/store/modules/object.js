@@ -19,6 +19,19 @@ export const useObjectStore = defineStore('object', {
 		/**
 		 * Observed behaviour of `configure` (retrofit annotation).
 		 *
+		 * Called once from `initializeStores()` (src/store/store.js) with the two
+		 * OpenRegister REST roots this store issues its `fetch` calls against.
+		 *
+		 * @param {{baseUrl: string, schemaBaseUrl: string}} endpoints - The OpenRegister
+		 *   API roots, already run through `generateUrl()` so they carry the instance's
+		 *   index.php prefix.
+		 * @param {string} endpoints.baseUrl - Root of OR's objects API
+		 *   (`/apps/openregister/api/objects`); `fetchObjects` appends `register` and
+		 *   `schema` query parameters to it.
+		 * @param {string} endpoints.schemaBaseUrl - Root of OR's schemas API
+		 *   (`/apps/openregister/api/schemas`); stored for consumers, not used by this
+		 *   store's own actions.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
 		 */
 		configure({ baseUrl, schemaBaseUrl }) {
@@ -28,6 +41,17 @@ export const useObjectStore = defineStore('object', {
 
 		/**
 		 * Observed behaviour of `registerObjectType` (retrofit annotation).
+		 *
+		 * Binds a local type key to the OpenRegister register/schema pair that backs
+		 * it, and seeds an empty cache bucket for it. Re-registering a type overwrites
+		 * its binding but keeps any already-cached objects.
+		 *
+		 * @param {string} type - Local key the app addresses this collection by
+		 *   (e.g. `application`); used for `objects[type]` and `loading[type]`.
+		 * @param {string} schema - OpenRegister schema slug, sent verbatim as the
+		 *   `schema` query parameter of the objects request.
+		 * @param {string} register - OpenRegister register slug, sent verbatim as the
+		 *   `register` query parameter of the objects request.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
 		 */
@@ -40,6 +64,22 @@ export const useObjectStore = defineStore('object', {
 
 		/**
 		 * Observed behaviour of `fetchObjects` (retrofit annotation).
+		 *
+		 * OpenRegister answers the objects endpoint with an envelope
+		 * (`{ results, total, page, pages }`), never a bare array — the `data.results
+		 * || data` below is what unwraps it. The value this action returns and caches
+		 * is therefore the `results` array, not the envelope.
+		 *
+		 * Never throws: a network failure or a non-2xx response is logged and yields
+		 * an empty array, leaving any previously cached objects for `type` untouched.
+		 *
+		 * @param {string} type - A type key previously passed to `registerObjectType`;
+		 *   an unregistered key logs a warning and short-circuits to `[]`.
+		 * @param {{[key: string]: string|number|boolean}} [params] - Extra query
+		 *   parameters merged into the OpenRegister request (paging/filtering, e.g.
+		 *   `{ _limit: 8 }`); each value is stringified by `URLSearchParams`.
+		 * @return {Promise<object[]>} The register objects for `type`, or `[]` when the
+		 *   type is unregistered or the request failed.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
 		 */

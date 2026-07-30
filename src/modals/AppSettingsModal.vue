@@ -12,14 +12,16 @@
 <template>
 	<NcModal v-if="open" :name="t('openbuild', 'App settings')" @close="$emit('update:open', false)">
 		<div class="app-settings">
-			<h3 class="app-settings__title">{{ appName }}</h3>
+			<h3 class="app-settings__title">
+				{{ appName }}
+			</h3>
 
 			<div class="app-settings__row">
 				<NcCheckboxRadioSwitch
 					type="switch"
-					:checked="isPublished"
+					:model-value="isPublished"
 					:disabled="busy"
-					@update:checked="$emit('set-published', $event)">
+					@update:modelValue="$emit('set-published', $event)">
 					{{ t('openbuild', 'Published') }}
 				</NcCheckboxRadioSwitch>
 				<p class="app-settings__hint">
@@ -30,9 +32,9 @@
 			<div class="app-settings__row">
 				<NcCheckboxRadioSwitch
 					type="switch"
-					:checked="allowUserOverrides"
+					:model-value="allowUserOverrides"
 					:disabled="busy"
-					@update:checked="$emit('update:allow-overrides', $event)">
+					@update:modelValue="$emit('update:allow-overrides', $event)">
 					{{ t('openbuild', 'Allow per-user customisation') }}
 				</NcCheckboxRadioSwitch>
 				<p class="app-settings__hint">
@@ -49,15 +51,15 @@
 				</p>
 				<div v-for="(row, index) in rows" :key="index" class="app-settings__data-register-row">
 					<NcTextField
-						:value="row.register"
+						:model-value="row.register"
 						:label="t('openbuild', 'Register slug')"
 						:disabled="busy"
-						@update:value="updateRow(index, 'register', $event)" />
+						@update:modelValue="updateRow(index, 'register', $event)" />
 					<NcTextField
-						:value="row.label"
+						:model-value="row.label"
 						:label="t('openbuild', 'Label (optional)')"
 						:disabled="busy"
-						@update:value="updateRow(index, 'label', $event)" />
+						@update:modelValue="updateRow(index, 'label', $event)" />
 					<NcButton
 						type="tertiary"
 						:disabled="busy"
@@ -75,10 +77,10 @@
 </template>
 
 <script>
-import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
-import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
+import NcModal from '@nextcloud/vue/components/NcModal'
+import NcButton from '@nextcloud/vue/components/NcButton'
+import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
+import NcTextField from '@nextcloud/vue/components/NcTextField'
 
 export default {
 	name: 'AppSettingsModal',

@@ -46,6 +46,20 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Observed behaviour of `saveSettings` (retrofit annotation).
 		 *
+		 * POSTs the given settings to the app's settings endpoint and replaces the
+		 * cached `settings` state with whatever the server echoes back. Never throws:
+		 * a failure is logged and `null` is returned, which the settings view reads as
+		 * "not saved".
+		 *
+		 * @param {{register: string, registry_url: string, registry_register: string,
+		 *   registry_token?: string}} settings - Admin settings to persist, as built by
+		 *   `src/views/settings/Settings.vue#save`. `registry_token` is omitted rather
+		 *   than sent empty when the admin left the token field blank, which the
+		 *   backend treats as "leave the stored token unchanged".
+		 * @return {Promise<object|null>} The saved settings as returned by the server
+		 *   (including the `registry_token_set` flag), or `null` when the request
+		 *   failed.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
 		 */
 		async saveSettings(settings) {

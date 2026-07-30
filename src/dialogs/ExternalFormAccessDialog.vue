@@ -43,10 +43,10 @@
 				</label>
 
 				<NcTextField
-					:value="organisationScope || ''"
+					:model-value="organisationScope || ''"
 					:label="t('openbuild', 'Organisation scope (optional)')"
 					:placeholder="t('openbuild', 'Organisation id — leave empty for none')"
-					@update:value="organisationScope = $event || null" />
+					@update:modelValue="organisationScope = $event || null" />
 
 				<label class="ob-external-form-access__toggle">
 					<input

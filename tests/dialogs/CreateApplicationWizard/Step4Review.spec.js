@@ -88,7 +88,8 @@ describe('Step4Review.vue — spec task 6.5', () => {
 		const wrapper = mountStep4({ description: '' })
 		// Should not find the description dd element
 		const rows = wrapper.findAll('.wizard-step4__row')
-		const rowTexts = rows.wrappers.map(r => r.text())
+		// VTU v2 `findAll` returns a plain Array — v1's `.wrappers` is gone.
+		const rowTexts = rows.map(r => r.text())
 		expect(rowTexts.some(t => t.includes('Description'))).toBe(false)
 	})
 

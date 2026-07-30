@@ -32,7 +32,7 @@
  * for `playwright test --list`.
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Page, type APIRequestContext } from '@playwright/test'
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -41,6 +41,57 @@ import { test, expect, type Page } from '@playwright/test'
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASSWORD ?? 'admin'
+
+/**
+ * Application slugs this spec creates through the wizard.
+ *
+ * These are derived from the fixed app names passed to `fillStep1()`, whose
+ * slugs auto-derive as lower-kebab. They MUST be removed before the run: the
+ * wizard now correctly rejects an already-taken slug with 422
+ * app_slug_conflict, so a second run would fail at "Create" on every happy
+ * path. Previously the uniqueness check was broken (it never matched
+ * anything), so re-running silently minted duplicate Applications instead —
+ * which is what littered the e2e instance with three `hello-world` rows and,
+ * through OpenRegister's ambiguous find-by-slug, broke the whole automations
+ * suite. `hello-world` is deliberately NOT in this list: it is the canonical
+ * seeded fixture and the "slug already in use" test depends on it existing.
+ */
+const WIZARD_FIXTURE_SLUGS = [
+	'playwright-single-app',
+	'playwright-devprod-app',
+	'playwright-dsp-app',
+	'playwright-custom-app',
+	'playwright-validation-app',
+	'playwright-dup-slug-app',
+	'playwright-empty-name-app',
+]
+
+/**
+ * Delete the Applications this spec creates, so each run starts from a state
+ * where its slugs are genuinely free and "Create" really exercises creation.
+ *
+ * @param request Playwright API request context (carries the admin session).
+ * @return {Promise<void>}
+ */
+async function deleteWizardFixtureApps(request: APIRequestContext): Promise<void> {
+	const resp = await request.get('/index.php/apps/openregister/api/objects/openbuild/application?_limit=100', {
+		headers: { 'OCS-APIRequest': 'true' },
+	})
+	if (resp.ok() === false) {
+		return
+	}
+	const body = await resp.json()
+	const items = Array.isArray(body) ? body : (body.results ?? [])
+	for (const app of items) {
+		const slug = app?.slug ?? app?.['@self']?.slug
+		const id = app?.id ?? app?.['@self']?.id
+		if (WIZARD_FIXTURE_SLUGS.includes(slug) && id) {
+			await request.delete(`/index.php/apps/openregister/api/objects/openbuild/application/${id}`, {
+				headers: { 'OCS-APIRequest': 'true' },
+			}).catch(() => {})
+		}
+	}
+}
 
 /**
  * Whether a live dev environment is available.
@@ -58,19 +109,27 @@ const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
  * @param page Playwright page.
  */
 async function goToApps(page: Page): Promise<void> {
-	await page.goto(`${BASE_URL}/index.php/apps/openbuild/applications`)
+	// NOT `/index.php/apps/openbuild/applications` — live-verified that the
+	// `/index.php/`-prefixed form of this deep link redirects to the bare
+	// `/apps/openbuild/` Dashboard root, silently dropping the `/applications`
+	// sub-path, so `.ob-va-actions` never renders and this always timed out.
+	// The pretty-URL form (no `/index.php/` prefix) preserves the sub-path.
+	await page.goto(`${BASE_URL}/apps/openbuild/applications`)
 	// Wait for the app to mount; the actions bar must be visible.
 	await page.waitForSelector('.ob-va-actions, [data-cy="ob-actions"]', { timeout: 20_000 })
 }
 
 /**
- * Open the wizard by clicking the "Add application" button.
+ * Open the wizard by clicking the "Add app" button.
  *
  * @param page Playwright page.
  */
 async function openWizard(page: Page): Promise<void> {
-	const addBtn = page.getByRole('button', { name: /add application/i }).first()
-	await expect(addBtn, '"Add application" button must be visible').toBeVisible({ timeout: 10_000 })
+	// VirtualAppsActions.vue's button reads "Add app", not "Add application"
+	// (src/components/VirtualAppsActions.vue) — live-verified against the
+	// rendered applications list.
+	const addBtn = page.getByRole('button', { name: /add app/i }).first()
+	await expect(addBtn, '"Add app" button must be visible').toBeVisible({ timeout: 10_000 })
 	await addBtn.click()
 	// The wizard modal should appear.
 	await page.waitForSelector('.nc-modal-stub, .modal-wrapper, [role="dialog"]', { timeout: 8_000 })
@@ -102,6 +161,69 @@ async function clickNext(page: Page): Promise<void> {
 }
 
 /**
+ * Reveal a step-3 row's Advanced panel, which is where the editable version
+ * slug input (`#wizard-version-slug-{index}`) lives.
+ *
+ * The slug input is behind `v-if="advancedOpen[index]"` in
+ * Step3Custom.vue — the always-visible surface is the read-only
+ * `.wizard-step3__slug-chip`. Specs that filled `#wizard-version-slug-0`
+ * without opening Advanced were waiting on an element that is never in the DOM
+ * until the toggle is clicked (live-verified: 0 before, 1 after).
+ *
+ * @param page  Playwright page.
+ * @param index Zero-based version row index.
+ */
+async function openAdvanced(page: Page, index: number): Promise<void> {
+	const toggle = page.locator('.wizard-step3__advanced-toggle').nth(index)
+	await expect(toggle, `row ${index} Advanced toggle must be present`).toBeVisible({ timeout: 5_000 })
+	await toggle.click()
+	await expect(page.locator(`#wizard-version-slug-${index}`)).toBeVisible({ timeout: 5_000 })
+}
+
+/**
+ * Assert the wizard REFUSES to leave the custom-chain step while it is invalid.
+ *
+ * The spec's REQ-OBWIZ-005/006 wording is "the wizard's Next / Create button is
+ * disabled until the slug is corrected", but `CnWizardDialog` (the shared
+ * @conduction/nextcloud-vue shell) binds its primary action to
+ * `:disabled="loading"` only and exposes no validity input — it is a
+ * validate-on-advance wizard: `validate(stepId, stepData)` runs on click and a
+ * falsy/`string` outcome blocks the transition and renders the reason. So the
+ * button is never disabled on any branch, on this branch or on development.
+ *
+ * Asserting the guarantee the requirement exists to provide — the admin cannot
+ * proceed, and is told why — is strictly stronger than asserting the
+ * disabled-attribute proxy for it. The disabled-button clause needs a library
+ * change to become true; see the handover notes.
+ *
+ * @param page          Playwright page.
+ * @param expectedError Substring of the row-level message that must be shown.
+ */
+async function expectStep3BlocksAdvance(page: Page, expectedError: RegExp): Promise<void> {
+	// The row-level inline error must be rendered.
+	await expect(
+		page.locator('.wizard-step3__error-msg').filter({ hasText: expectedError }).first(),
+		'the invalid row must render its inline error',
+	).toBeVisible({ timeout: 5_000 })
+
+	// And Next must not get us off step 3.
+	const nextBtn = page.getByRole('button', { name: /^next$/i }).first()
+	await nextBtn.click()
+	await expect(
+		page.locator('.wizard-step3'),
+		'the wizard must not advance off the invalid custom-chain step',
+	).toBeVisible()
+	await expect(
+		page.locator('.wizard-step4'),
+		'the wizard must not reach Review while the chain is invalid',
+	).toHaveCount(0)
+	await expect(
+		page.locator('[role="alert"]').filter({ hasText: /complete the custom version chain/i }).first(),
+		'the wizard must explain why it refused to advance',
+	).toBeVisible({ timeout: 5_000 })
+}
+
+/**
  * Click the Create button on step 4 and wait for navigation.
  *
  * @param page Playwright page.
@@ -122,6 +244,9 @@ async function clickCreate(page: Page): Promise<string> {
 // ---------------------------------------------------------------------------
 
 test.describe('Wizard — preset happy paths (task 8.5)', () => {
+	test.beforeAll(async ({ request }) => {
+		await deleteWizardFixtureApps(request)
+	})
 
 	test('single preset: name → slug auto-derives, Create lands on detail page', async ({ page }) => {
 		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
@@ -136,12 +261,17 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 		await page.waitForTimeout(200)
 		await clickNext(page)
 
-		// Step 2: Preset — select Single
-		const singleOption = page.getByRole('radio', { name: /single/i }).or(
-			page.locator('input[value="single"], label:has-text("Single")'),
-		).first()
+		// Step 2: Preset — select Single. Preset cards are plain
+		// `<button class="wizard-step2__preset-card">` elements (aria-pressed
+		// toggles, not role="radio" inputs) — Step2Preset.vue.
+		const singleOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /single/i }).first()
 		await expect(singleOption).toBeVisible({ timeout: 5_000 })
 		await singleOption.click()
+		// Settle: selectPreset()'s payload.versions update reaches the parent
+		// via an emit; clickNext()'s toBeEnabled() only proves `preset` landed,
+		// not that `versions` did too. Without this, Step4 can render before
+		// the versions array is the preset's, showing a stale/empty chain.
+		await page.waitForTimeout(300)
 		await clickNext(page)
 
 		// Step 4: Review (step 3 is skipped for non-custom presets)
@@ -164,12 +294,19 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 		await fillStep1(page, 'Playwright DevProd App')
 		await clickNext(page)
 
-		// Step 2: Preset — select Development + Production
-		const devProdOption = page.getByRole('radio', { name: /dev.*prod|development.*production/i }).or(
-			page.locator('input[value="dev-prod"], label:has-text("Development + Production")'),
-		).first()
+		// Step 2: Preset — select Development + Production. See the Single
+		// case above for why this is a class-scoped button, not role="radio".
+		// Match on the card's rendered CHAIN line, which is unique per card.
+		// A name/description match is ambiguous: `/development.*production/i`
+		// also matches the three-tier card, and — as the dev-staging-prod test
+		// below documents — every card's description is fair game for
+		// hasText, which is how a `/staging/i` filter ended up selecting the
+		// "Single" card.
+		const devProdOption = page.locator('.wizard-step2__preset-card').filter({ hasText: 'development → production' }).first()
 		await expect(devProdOption).toBeVisible({ timeout: 5_000 })
 		await devProdOption.click()
+		// Settle — see the identical note in the "single preset" test above.
+		await page.waitForTimeout(300)
 		await clickNext(page)
 
 		// Step 4: Review
@@ -191,12 +328,21 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 		await fillStep1(page, 'Playwright DSP App')
 		await clickNext(page)
 
-		// Step 2: Preset — select three-tier
-		const dspOption = page.getByRole('radio', { name: /staging|dev.*staging.*prod/i }).or(
-			page.locator('input[value="dev-staging-prod"], label:has-text("Staging")'),
-		).first()
+		// Step 2: Preset — select three-tier. See the Single case above for
+		// why this is a class-scoped button, not role="radio".
+		//
+		// `hasText: /staging/i` DOES NOT WORK here and silently selected the
+		// wrong card: the "Single" preset's own description reads "One version
+		// only. Best for simple apps without a staging environment." — so
+		// `/staging/i` matched card 0 first, this test clicked "Single", and
+		// the review chain legitimately read "production". Live-verified: the
+		// filter resolved to 2 cards with "Single" first.
+		// Match the card's unique CHAIN line instead.
+		const dspOption = page.locator('.wizard-step2__preset-card').filter({ hasText: 'development → staging → production' }).first()
 		await expect(dspOption).toBeVisible({ timeout: 5_000 })
 		await dspOption.click()
+		// Settle — see the identical note in the "single preset" test above.
+		await page.waitForTimeout(300)
 		await clickNext(page)
 
 		// Step 4: Review
@@ -216,12 +362,13 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 		await fillStep1(page, 'Playwright Custom App')
 		await clickNext(page)
 
-		// Step 2: Preset — select Custom
-		const customOption = page.getByRole('radio', { name: /custom/i }).or(
-			page.locator('input[value="custom"], label:has-text("Custom")'),
-		).first()
+		// Step 2: Preset — select Custom. See the Single case above for why
+		// this is a class-scoped button, not role="radio".
+		const customOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /custom/i }).first()
 		await expect(customOption).toBeVisible({ timeout: 5_000 })
 		await customOption.click()
+		// Settle — see the identical note in the "single preset" test above.
+		await page.waitForTimeout(300)
 		await clickNext(page)
 
 		// Step 3: Custom chain — should have one default row (Production).
@@ -279,8 +426,11 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('Wizard — validation errors (task 8.6)', () => {
+	test.beforeAll(async ({ request }) => {
+		await deleteWizardFixtureApps(request)
+	})
 
-	test('leading-underscore version slug shows inline error and disables Create', async ({ page }) => {
+	test('leading-underscore version slug shows inline error and blocks advancing', async ({ page }) => {
 		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
 
 		await goToApps(page)
@@ -290,29 +440,33 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 		await clickNext(page)
 
 		// Select custom preset so we can edit version slugs.
-		const customOption = page.getByRole('radio', { name: /custom/i }).or(
-			page.locator('input[value="custom"]'),
-		).first()
+		// Class-scoped button, not role="radio" — see the Single case in the
+		// preceding describe block.
+		const customOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /custom/i }).first()
 		await customOption.click()
-		await clickNext(page)
-
-		// Step 3: Manually set a leading-underscore slug.
-		const slugInput = page.locator('#wizard-version-slug-0, input[id*="wizard-version-slug"]').first()
-		await expect(slugInput).toBeVisible({ timeout: 5_000 })
-		await slugInput.clear()
-		await slugInput.fill('_system')
+		// Settle — selectPreset()'s emit must reach the parent before Next, or
+		// `wizardSteps` has not yet grown the Custom step. See the "single
+		// preset" test in the preceding describe block.
 		await page.waitForTimeout(300)
+		await clickNext(page)
+		await expect(page.locator('.wizard-step3'), 'custom preset must open step 3').toBeVisible({ timeout: 5_000 })
 
-		// An error chip / error message must appear.
-		const errorEl = page.locator('.wizard-step3__slug-chip--error, .wizard-step3__slug-error, [data-cy="slug-error"]').first()
-		await expect(errorEl, 'slug error indicator must appear for _system').toBeVisible({ timeout: 5_000 })
+		// Step 3: Manually set a leading-underscore slug. The editable slug
+		// input only exists once the row's Advanced panel is open.
+		await openAdvanced(page, 0)
+		const slugInput = page.locator('#wizard-version-slug-0')
+		await slugInput.fill('_system')
 
-		// Next button must be disabled (step 3 not valid).
-		const nextBtn = page.getByRole('button', { name: /^next$/i }).first()
-		await expect(nextBtn).toBeDisabled()
+		// The always-visible slug chip must flag the row as errored.
+		await expect(
+			page.locator('.wizard-step3__slug-chip--error').first(),
+			'slug error indicator must appear for _system',
+		).toBeVisible({ timeout: 5_000 })
+
+		await expectStep3BlocksAdvance(page, /cannot start with/i)
 	})
 
-	test('duplicate version slug shows inline error and disables Create', async ({ page }) => {
+	test('duplicate version slug shows inline error and blocks advancing', async ({ page }) => {
 		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
 
 		await goToApps(page)
@@ -321,38 +475,36 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 		await fillStep1(page, 'Playwright Dup Slug App')
 		await clickNext(page)
 
-		const customOption = page.getByRole('radio', { name: /custom/i }).or(
-			page.locator('input[value="custom"]'),
-		).first()
+		// Class-scoped button, not role="radio" — see the Single case in the
+		// preceding describe block.
+		const customOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /custom/i }).first()
 		await customOption.click()
+		// Settle — see the "leading-underscore" test above.
+		await page.waitForTimeout(300)
 		await clickNext(page)
+		await expect(page.locator('.wizard-step3'), 'custom preset must open step 3').toBeVisible({ timeout: 5_000 })
 
 		// Step 3: add a second row and set the same slug as the first.
 		const addBtn = page.locator('.wizard-step3__add-btn').first()
 		await addBtn.click()
-		await page.waitForTimeout(200)
+		await expect(page.locator('.wizard-step3__row')).toHaveCount(2, { timeout: 5_000 })
 
-		// Set second row slug to the same as first.
-		const slug0 = page.locator('#wizard-version-slug-0, input[id*="wizard-version-slug"]').first()
-		const slug1 = page.locator('#wizard-version-slug-1, input[id*="wizard-version-slug"]').nth(1)
+		// Both editable slug inputs live behind their row's Advanced panel.
+		await openAdvanced(page, 0)
+		await openAdvanced(page, 1)
+		await page.locator('#wizard-version-slug-0').fill('production')
+		await page.locator('#wizard-version-slug-1').fill('production')
 
-		await slug0.clear()
-		await slug0.fill('production')
-		await page.waitForTimeout(200)
-		await slug1.clear()
-		await slug1.fill('production')
-		await page.waitForTimeout(300)
+		// Both colliding rows must be flagged as duplicates.
+		await expect(
+			page.locator('.wizard-step3__slug-chip--duplicate'),
+			'both colliding rows must show the duplicate indicator',
+		).toHaveCount(2, { timeout: 5_000 })
 
-		// Duplicate indicator must appear.
-		const dupEl = page.locator('.wizard-step3__slug-chip--duplicate, [data-cy="slug-duplicate"]').first()
-		await expect(dupEl, 'duplicate indicator must appear').toBeVisible({ timeout: 5_000 })
-
-		// Next button disabled.
-		const nextBtn = page.getByRole('button', { name: /^next$/i }).first()
-		await expect(nextBtn).toBeDisabled()
+		await expectStep3BlocksAdvance(page, /already used in this chain/i)
 	})
 
-	test('empty version name shows inline error and disables Next', async ({ page }) => {
+	test('empty version name shows inline error and blocks advancing', async ({ page }) => {
 		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
 
 		await goToApps(page)
@@ -361,21 +513,29 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 		await fillStep1(page, 'Playwright Empty Name App')
 		await clickNext(page)
 
-		const customOption = page.getByRole('radio', { name: /custom/i }).or(
-			page.locator('input[value="custom"]'),
-		).first()
+		// Class-scoped button, not role="radio" — see the Single case in the
+		// preceding describe block.
+		const customOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /custom/i }).first()
 		await customOption.click()
-		await clickNext(page)
-
-		// Step 3: clear the name of the first row.
-		const nameInput = page.locator('#wizard-version-name-0, input[id*="wizard-version-name"]').first()
-		await expect(nameInput).toBeVisible({ timeout: 5_000 })
-		await nameInput.clear()
+		// Settle — see the "leading-underscore" test above.
 		await page.waitForTimeout(300)
+		await clickNext(page)
+		await expect(page.locator('.wizard-step3'), 'custom preset must open step 3').toBeVisible({ timeout: 5_000 })
 
-		// The step should be invalid — Next disabled.
-		const nextBtn = page.getByRole('button', { name: /^next$/i }).first()
-		await expect(nextBtn).toBeDisabled()
+		// Step 3: clear the name of the first row. Open the row's Advanced panel
+		// first — `.wizard-step3__error-msg` is rendered *inside* that panel
+		// (Step3Custom.vue), so the row's inline reason is only observable with
+		// Advanced open. The always-visible surface is the errored slug chip.
+		await openAdvanced(page, 0)
+		const nameInput = page.locator('#wizard-version-name-0')
+		await expect(nameInput).toBeVisible({ timeout: 5_000 })
+		await nameInput.fill('')
+
+		await expect(
+			page.locator('.wizard-step3__slug-chip--error').first(),
+			'clearing the version name must flag the row',
+		).toBeVisible({ timeout: 5_000 })
+		await expectStep3BlocksAdvance(page, /name must not be empty/i)
 	})
 
 	test('slug already in use shows server-side error; admin can edit and retry', async ({ page }) => {
@@ -404,11 +564,12 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 
 		await clickNext(page)
 
-		// Step 2: choose single preset.
-		const singleOption = page.getByRole('radio', { name: /single/i }).or(
-			page.locator('input[value="single"]'),
-		).first()
+		// Step 2: choose single preset. Class-scoped button, not role="radio"
+		// — see the Single case in the "preset happy paths" describe block.
+		const singleOption = page.locator('.wizard-step2__preset-card').filter({ hasText: /single/i }).first()
 		await singleOption.click()
+		// Settle — see the identical note in the "single preset" test above.
+		await page.waitForTimeout(300)
 		await clickNext(page)
 
 		// Step 4: Review — click Create. Should hit a slug conflict (422).
@@ -417,7 +578,12 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 		await createBtn.click()
 
 		// Error banner should appear with a conflict message.
-		const errorBanner = page.locator('.wizard__error-banner').first()
+		// `.wizard__error-banner` does not exist anywhere in src/ — it never did.
+		// CreateApplicationWizard surfaces a recoverable submit failure through
+		// nc-vue's CnWizardDialog.setError(), which renders an NcNoteCard, i.e.
+		// `.notecard.notecard--error` with role="alert". Match the markup the
+		// component actually produces.
+		const errorBanner = page.locator('.notecard--error').first()
 		await expect(errorBanner, 'error banner must appear for slug conflict').toBeVisible({ timeout: 10_000 })
 		await expect(errorBanner).toContainText(/hello-world|already exists|conflict/i)
 

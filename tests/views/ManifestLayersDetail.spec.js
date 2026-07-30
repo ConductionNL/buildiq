@@ -45,21 +45,34 @@ vi.mock('@nextcloud/dialogs', () => ({
 	showSuccess: vi.fn(),
 }))
 
-vi.mock('../../src/views/VersionHistory.vue', () => ({
-	default: {
-		name: 'VersionHistory',
-		props: ['appSlug', 'applicationUuid', 'currentVersionUuid', 'canEdit', 'canRelease'],
-		methods: { refresh: vi.fn().mockResolvedValue(undefined) },
-		render(h) { return h('div', { staticClass: 'version-history-stub' }) },
-	},
-}))
-vi.mock('../../src/modals/UserDeltaEditModal.vue', () => ({
-	default: {
-		name: 'UserDeltaEditModal',
-		props: ['open', 'appSlug', 'delta'],
-		render(h) { return h('div', { staticClass: 'user-delta-edit-modal-stub' }) },
-	},
-}))
+// Child stubs. Two Vue-2-isms had to go:
+//   - `render(h)` — Vue 3 does not pass `h` to a render function; it is
+//     imported from `vue` (inside the factory, since vitest hoists `vi.mock`
+//     above this file's own imports).
+//   - `staticClass` is Vue 2 vnode data. Vue 3 uses `class`; left as-is it
+//     renders a literal `staticclass` attribute and `.find('.x-stub')`
+//     matches nothing.
+vi.mock('../../src/views/VersionHistory.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'VersionHistory',
+			props: ['appSlug', 'applicationUuid', 'currentVersionUuid', 'canEdit', 'canRelease'],
+			methods: { refresh: vi.fn().mockResolvedValue(undefined) },
+			render() { return h('div', { class: 'version-history-stub' }) },
+		},
+	}
+})
+vi.mock('../../src/modals/UserDeltaEditModal.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'UserDeltaEditModal',
+			props: ['open', 'appSlug', 'delta'],
+			render() { return h('div', { class: 'user-delta-edit-modal-stub' }) },
+		},
+	}
+})
 
 import { showSuccess } from '@nextcloud/dialogs'
 const ManifestLayersDetail = (await import('../../src/views/ManifestLayersDetail.vue')).default

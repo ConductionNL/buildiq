@@ -27,8 +27,16 @@
 
 import { test, expect } from '@playwright/test'
 import { ensureApp, dismissOverlays, suppressSupportDialog } from './support/appFixture'
+import { readStagedManifest } from './support/stagedManifest'
 
-const BASE_URL = process.env.NC_BASE_URL ?? 'http://localhost:8080'
+// Merge note (development -> feat/vue-3-migration, 2026-07-30): arrived as
+// `process.env.NC_BASE_URL ?? 'http://localhost:8080'`, which ignores
+// PLAYWRIGHT_BASE_URL. With NC_BASE_URL unset — how this suite is driven — that
+// resolves to :8080, the SHARED `nextcloud` container. This spec PUTs the app
+// manifest, so it would have written fixtures to somebody else's instance while
+// `ensureApp()` (relative URL, config baseURL) created the app on :8099.
+// See tests/e2e/support/baseUrl.ts.
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
 
 // Harness rewritten 2026-07-28. The original seeded through a "Raw JSON" tab on
 // `/apps/openbuild/applications/{slug}/design` — neither the route nor the
@@ -135,24 +143,22 @@ test.describe('openbuild form-editor-logic', () => {
 	/**
 	 * Read the designer's LIVE (staged) manifest.
 	 *
-	 * The original read this from a "Raw JSON" tab, which does not exist. Read it
-	 * from the designer component instead — same thing the tab used to show: the
-	 * in-editor buffer, before any save. Deliberately NOT read back through the
-	 * API: the host treats a successful save as a session boundary and bumps its
-	 * session key, which resets the designer (and its selection) mid-scenario.
+	 * The original read this from a "Raw JSON" tab, which does not exist on the
+	 * `/builder/:slug/pages` route. Read it from the designer component instead —
+	 * same thing the tab used to show: the in-editor buffer, before any save.
+	 * Deliberately NOT read back through the API: the host treats a successful
+	 * save as a session boundary and bumps its session key, which resets the
+	 * designer (and its selection) mid-scenario.
+	 *
+	 * The component handle lives in `support/stagedManifest.ts` — see the note
+	 * there on why the previous `element.__vue__` read was Vue-2-only and had to
+	 * become a component-tree walk.
 	 *
 	 * @param {import('@playwright/test').Page} page - the Playwright page.
 	 * @return {Promise<object>} The staged manifest.
 	 */
 	async function readManifest(page) {
-		return page.evaluate(() => {
-			const el = document.querySelector('.page-designer')
-			const vm = el && el.__vue__
-			if (!vm || !vm.manifest) {
-				throw new Error('page designer not mounted — cannot read the staged manifest')
-			}
-			return JSON.parse(JSON.stringify(vm.manifest))
-		})
+		return readStagedManifest(page)
 	}
 
 	/**

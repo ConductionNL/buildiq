@@ -37,6 +37,11 @@ export default {
 		/**
 		 * Observed behaviour of `onIconUpdated` (retrofit annotation).
 		 *
+		 * @param {{field: 'icon'|'iconDark', ref: string|null}} payload - What
+		 *   IconUploadSection just wrote on the Application: which icon field changed,
+		 *   and the attached filename (`null` when the icon was removed). Re-emitted
+		 *   unchanged so the detail page can refresh the record.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
 		 */
 		onIconUpdated(payload) {

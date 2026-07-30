@@ -43,7 +43,7 @@
 		</ul>
 
 		<WorkflowAttachmentDialog
-			:open.sync="dialogOpen"
+			v-model:open="dialogOpen"
 			:schemas="schemas"
 			:attached-schemas="attachedSchemas"
 			:attachment="editingAttachment"
@@ -98,7 +98,16 @@ export default {
 			this.editingAttachment = null
 			this.dialogOpen = true
 		},
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/**
+		 * Open the attachment dialog on an existing entry.
+		 *
+		 * @param {{id: string, schema: string, caseTypeUuid: string,
+		 *   caseTypeName: string, trigger: string, linkProperty: string,
+		 *   descriptionTemplate?: string}} wf - The `runtime.workflows[]` entry the
+		 *   user clicked. Passed to the dialog as-is to prefill it; the edit is written
+		 *   back through `onDialogSave`, matched on `id`.
+		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 */
 		openEdit(wf) {
 			this.editingAttachment = wf
 			this.dialogOpen = true
