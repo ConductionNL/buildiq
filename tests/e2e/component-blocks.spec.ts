@@ -37,6 +37,7 @@
 
 import { test, expect } from '@playwright/test'
 import { ensureApp, dismissOverlays, suppressSupportDialog } from './support/appFixture'
+import { readStagedManifest } from './support/stagedManifest'
 
 // Merge note (development -> feat/vue-3-migration, 2026-07-30): development's
 // un-quarantine reintroduced
@@ -154,17 +155,15 @@ test.describe('OpenBuild component blocks', () => {
 	 * Read the designer's LIVE (staged) manifest — an insert is an in-editor
 	 * edit until the page is saved, so this is where it must be observed.
 	 *
+	 * The component handle lives in `support/stagedManifest.ts` — see the note
+	 * there on why the previous `element.__vue__` read was Vue-2-only and had to
+	 * become a component-tree walk.
+	 *
 	 * @param {import('@playwright/test').Page} page - the Playwright page.
 	 * @return {Promise<object>} The staged manifest.
 	 */
 	async function readStaged(page) {
-		return page.evaluate(() => {
-			const vm = document.querySelector('.page-designer')?.__vue__
-			if (!vm || !vm.manifest) {
-				throw new Error('page designer not mounted — cannot read the staged manifest')
-			}
-			return JSON.parse(JSON.stringify(vm.manifest))
-		})
+		return readStagedManifest(page)
 	}
 
 	/**
