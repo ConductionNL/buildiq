@@ -317,7 +317,20 @@ test.describe('builder-undo-redo — schema designer (REQ-BUR-005)', () => {
 
 		// Add a field → undo → field gone.
 		const fieldRows = page.locator('.openbuild-field-editor__row')
-		const initialFieldCount = await fieldRows.count()
+
+		// Let the row list SETTLE before baselining it. This test saves the field
+		// it adds, so the fixture schema grows by one property per run and the
+		// editor paints its rows progressively; reading `.count()` the instant the
+		// detail mounts caught a partially-rendered list and every later
+		// `toHaveCount(initialFieldCount ± 1)` was then off by one. Poll until two
+		// consecutive reads agree.
+		let initialFieldCount = -1
+		await expect.poll(async () => {
+			const seen = await fieldRows.count()
+			const stable = seen === initialFieldCount
+			initialFieldCount = seen
+			return stable
+		}, { timeout: 20_000, message: 'the field-editor row list must settle before baselining' }).toBe(true)
 		await page.getByRole('button', { name: /add field/i }).click()
 		await expect(fieldRows).toHaveCount(initialFieldCount + 1)
 		await expect(undoBtn).toBeEnabled()
