@@ -27,84 +27,148 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { ensureApp, dismissOverlays, suppressSupportDialog } from './support/appFixture'
 
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
 import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
 
-// QUARANTINED (Conduction/openbuild#41): admin UI not functional in this build.
-test.describe.skip('OpenBuild save as template', () => {
+const SOURCE_APP = 'pw-sat-source'
+const TEMPLATE_SLUG = 'pw-sat-template'
+const OR_TEMPLATES = '/index.php/apps/openregister/api/objects/openbuild/application-template'
+
+// UN-QUARANTINED AND NARROWED 2026-07-31. #41 was not the blocker; the flow this
+// file drove is half live and half deliberately removed.
+//
+// LIVE, and covered below: capturing an app as an org-local ApplicationTemplate
+// (ApplicationDetailActions -> "Save as template" -> SaveAsTemplateDialog ->
+// an ApplicationTemplate record in OpenRegister).
+//
+// REMOVED ON PURPOSE, and therefore NOT asserted any more: the clone round-trip.
+// This file cloned a seeded "Permit Tracker" card to build its fixture app and
+// then re-cloned its own saved template from the gallery. Commit f8e0eec57
+// ("keep GitHub-only") made the Templates tab a GitHub search; the gallery's
+// CloneTemplateDialog is bound `:github="true"` and installs through
+// `/api/shop/github/install`. Nothing in src/ calls
+// `POST /api/applications/from-template/{templateSlug}` any more, so an
+// org-local template cannot be cloned from the UI at all. The fixture app is
+// now created through the wizard fixture instead, and the clone/badge
+// assertions are dropped rather than rewritten against a path that does not
+// exist. See tests/e2e/template-gallery.spec.ts for the same finding.
+test.describe('OpenBuild save as template', () => {
+	/**
+	 * Delete any template this suite created, so a re-run starts clean and the
+	 * slug-collision guard in the dialog does not (correctly) block the save.
+	 *
+	 * @param {import('@playwright/test').Page} page - the Playwright page.
+	 * @return {Promise<void>}
+	 */
+	async function resetTemplate(page) {
+		await page.evaluate(async ({ api, slug }) => {
+			const tok = window.OC?.requestToken
+				|| document.querySelector('head')?.getAttribute('data-requesttoken')
+				|| ''
+			const headers = { requesttoken: tok, 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' }
+			const listed = await (await fetch(api, { headers })).json().catch(() => null)
+			const rows = Array.isArray(listed) ? listed : (listed?.results ?? [])
+			for (const row of rows) {
+				if (row?.slug !== slug) {
+					continue
+				}
+				const uuid = row?.['@self']?.id ?? row?.id
+				if (uuid) {
+					await fetch(`${api}/${encodeURIComponent(String(uuid))}`, { method: 'DELETE', headers })
+				}
+			}
+		}, { api: OR_TEMPLATES, slug: TEMPLATE_SLUG })
+	}
+
+	test.beforeEach(async ({ page }) => {
+		await suppressSupportDialog(page)
+		await ensureApp(page, SOURCE_APP, 'PW SAT Source')
+		await resetTemplate(page)
+	})
 
 	// @e2e save-as-template::saving-captures-the-app-as-an-org-local-template
-	// @e2e save-as-template::round-trip-is-a-clean-rename
-	// @e2e save-as-template::update-in-place-bumps-the-version
-	// @e2e save-as-template::org-local-template-appears-with-badge-and-clones-normally
-	// @e2e save-as-template::delete-leaves-clones-and-the-source-app-intact
-	test('captures an app as an org-local template, round-trips a clone, updates and deletes it', async ({ page }) => {
-		// 1. Clone a seeded template into source app A (fixture for the capture).
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/templates`)
-		await expect(page.locator('.template-gallery')).toBeVisible({ timeout: 15_000 })
-		const seededCard = page.locator('.template-card')
-			.filter({ has: page.locator('.template-card__title', { hasText: 'Permit Tracker' }) })
-		await seededCard.getByRole('button', { name: /Use this template/i }).click()
-		const appA = `e2e-sat-a-${Date.now().toString(36)}`
-		const cloneDialog = page.locator('.clone-dialog')
-		await cloneDialog.getByLabel(/Application name/i).fill('SAT source A')
-		await cloneDialog.getByLabel(/Slug/i).fill(appA)
-		await cloneDialog.getByRole('button', { name: /Clone template/i }).click()
-		await page.waitForURL((url) => url.toString().includes(appA), { timeout: 15_000 })
+	test('captures an app as an org-local template, config only', async ({ page }) => {
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications/${SOURCE_APP}`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await dismissOverlays(page)
 
-		// 2. REQ-SAT-001: open the application-detail surface and "Save as template".
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild`)
-		// (navigate to app A's detail surface — selector resolved once #41 lands)
-		await page.getByRole('button', { name: /Save as template/i }).click()
+		// "Save as template" lives in the detail page's overflow Actions menu.
+		await page.getByRole('button', { name: /^Actions$/i }).first().click()
+		await page.getByRole('menuitem', { name: /Save as template/i })
+			.or(page.getByRole('button', { name: /Save as template/i }))
+			.first()
+			.click()
+
 		const saveDialog = page.locator('.ob-save-template')
-		await expect(saveDialog).toBeVisible({ timeout: 5_000 })
-		const tplSlug = `permit-pack-${Date.now().toString(36)}`
-		await saveDialog.getByLabel(/Slug/i).fill(tplSlug)
-		await page.getByRole('button', { name: /Save as template/i }).last().click()
+		await expect(saveDialog).toBeVisible({ timeout: 20_000 })
+		await saveDialog.getByLabel(/Template title/i).fill('PW SAT template')
+		await saveDialog.getByLabel(/^Slug/i).fill(TEMPLATE_SLUG)
+		await saveDialog.getByLabel(/Use case/i).fill('e2e capture')
 
-		// 3. REQ-SAT-005: the gallery shows the org-local badge card.
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/templates`)
-		const orgCard = page.locator('.template-card')
-			.filter({ has: page.locator('.template-card__badge') })
-			.filter({ hasText: 'permit-pack' })
-		await expect(orgCard).toBeVisible({ timeout: 15_000 })
-		await expect(orgCard.locator('.template-card__badge')).toHaveText(/Organisation template/i)
+		// A category is required (`canSave` gates on `selectedCategory`) and the
+		// dialog pre-selects the first one, so it needs no interaction here —
+		// asserted rather than assumed.
+		await expect(saveDialog.locator('.v-select')).toContainText(/\w/)
 
-		// 4. REQ-SAT-002: clone the org-local template into app B; assert re-prefixed schema refs load.
-		const appB = `e2e-sat-b-${Date.now().toString(36)}`
-		await orgCard.getByRole('button', { name: /Use this template/i }).click()
-		const cloneB = page.locator('.clone-dialog')
-		await cloneB.getByLabel(/Application name/i).fill('SAT clone B')
-		await cloneB.getByLabel(/Slug/i).fill(appB)
-		await cloneB.getByRole('button', { name: /Clone template/i }).click()
-		await page.waitForURL((url) => url.toString().includes(appB), { timeout: 15_000 })
-		// App B loads its own re-prefixed schema namespace (no prefix stacking).
-		await expect(page.locator('body')).not.toContainText(`${appA}-`)
+		// No validation error may be showing: the capture must be a real manifest.
+		// This is the regression that made Save unreachable — the dialog captured
+		// `{}` and reported "/version must be a string /menu must be an array
+		// /pages must be an array" for every app.
+		await expect(saveDialog.locator('.ob-save-template__error')).toHaveCount(0)
 
-		// 5. REQ-SAT-004: update-in-place from app A bumps the gallery card version; app B untouched.
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild`)
-		await page.getByRole('button', { name: /Save as template/i }).click()
-		await page.locator('.ob-save-template').getByLabel(/Slug/i).fill(tplSlug)
-		await page.getByRole('button', { name: /Update template/i }).click()
+		// The capture is config-only — it never carries object rows.
+		await expect(saveDialog.locator('.ob-save-template__no-rows')).toBeVisible()
 
-		// 6. REQ-SAT-005: delete the template; apps A + B still load.
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/templates`)
-		await orgCard.getByRole('button', { name: /^Delete$/i }).click()
-		await page.locator('.nc-dialog-stub, [role="dialog"]').getByRole('button', { name: /^Delete$/i }).click()
-		await expect(orgCard).toHaveCount(0, { timeout: 10_000 })
+		await page.getByRole('button', { name: /^Save as template$/i }).last().click()
+
+		// The record must actually land in OpenRegister.
+		await expect.poll(async () => {
+			const rows = await page.evaluate(async (api) => {
+				const resp = await fetch(api, { headers: { 'OCS-APIRequest': 'true' } })
+				const data = await resp.json().catch(() => null)
+				return Array.isArray(data) ? data : (data?.results ?? [])
+			}, OR_TEMPLATES)
+			return rows.some((r) => r?.slug === TEMPLATE_SLUG)
+		}, { timeout: 30_000, message: 'the saved template must exist as an ApplicationTemplate' }).toBe(true)
+
+		const stored = await page.evaluate(async (api) => {
+			const resp = await fetch(api, { headers: { 'OCS-APIRequest': 'true' } })
+			const data = await resp.json().catch(() => null)
+			const rows = Array.isArray(data) ? data : (data?.results ?? [])
+			return rows.find((r) => r?.slug === 'pw-sat-template') ?? null
+		}, OR_TEMPLATES)
+
+		expect(stored, 'the template record must be readable back').toBeTruthy()
+		expect(stored.title).toBe('PW SAT template')
+		// Org-local, not one of the bundled Conduction fixtures.
+		expect(stored.isSeeded ?? false).toBeFalsy()
+		// It captured the app's manifest, and no object data travelled with it.
+		expect(stored.manifest, 'the capture must carry the source manifest').toBeTruthy()
+		expect(JSON.stringify(stored.manifest)).not.toContain('"results"')
 	})
 
 	// @e2e save-as-template::viewer-cannot-save-a-template
 	// @e2e save-as-template::seeded-cards-remain-read-only
-	test('a viewer sees neither the save action nor the manage actions', async ({ page }) => {
-		// REQ-SAT-001 "Viewer cannot save a template" + REQ-SAT-005 rights-gating.
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild`)
+	// The capture action is scoped to a single application, never to the list.
+	//
+	// This test used to be called "a viewer sees neither the save action nor the
+	// manage actions", which it did not test: it runs on the shared ADMIN
+	// session, so the absent button proves scoping, not rights-gating. Its second
+	// half then asserted that a seeded "Permit Tracker" card carries no Edit or
+	// Delete button — since the GitHub-only gallery renders no seeded cards at
+	// all, those `toHaveCount(0)` assertions passed against an empty locator and
+	// proved nothing.
+	//
+	// Real viewer gating (REQ-SAT-001 / REQ-SAT-005) needs a second, non-owner
+	// session, which this instance has no provisioned user for — the same gap
+	// that keeps rbac-403.spec.ts and schema-access-scopes-rbac.spec.ts skipped.
+	// It is asserted at the unit level in tests/components/... via `obAppRole`,
+	// and left out here rather than faked with an admin session.
+	test('the capture action is offered per application, not on the index', async ({ page }) => {
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild`, { waitUntil: 'domcontentloaded' })
 		await expect(page.getByRole('button', { name: /Save as template/i })).toHaveCount(0)
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/templates`)
-		// Seeded cards remain read-only (REQ-SAT-005 / REQ-OBTC-008 regression).
-		const seeded = page.locator('.template-card').filter({ hasText: 'Permit Tracker' })
-		await expect(seeded.getByRole('button', { name: /^Edit$/i })).toHaveCount(0)
-		await expect(seeded.getByRole('button', { name: /^Delete$/i })).toHaveCount(0)
 	})
 })

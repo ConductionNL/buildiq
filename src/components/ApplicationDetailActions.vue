@@ -550,7 +550,26 @@ export default {
 			this.saveTemplateLoading = true
 			this.error = ''
 			try {
-				this.saveTemplateManifest = this.obApp.manifest
+				// Resolve the manifest from the app's ACTIVE VERSION, through the
+				// endpoint that owns that resolution.
+				//
+				// This used to read `obApp.manifest`, falling back to
+				// `obApp.currentVersion.manifest`. An Application record carries
+				// NEITHER: the manifest lives on the ApplicationVersion, and
+				// `GET /api/applications` returns no `manifest` and no
+				// `currentVersion` for any app — the seeded hello-world included.
+				// So the capture always fell through to `{}`, the dialog validated
+				// an empty object and opened with "The captured manifest is invalid
+				// and cannot be published: /version must be a string /menu must be
+				// an array /pages must be an array", with Save permanently
+				// disabled. Saving an app as a template was impossible for EVERY
+				// application.
+				const manifestUrl = generateUrl(
+					`/apps/openbuild/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+				)
+				const { data: resolvedManifest } = await axios.get(manifestUrl)
+				this.saveTemplateManifest = resolvedManifest
+					|| this.obApp.manifest
 					|| (this.obApp.currentVersion && this.obApp.currentVersion.manifest)
 					|| {}
 				const picker = useRegisterPicker({ appSlug: this.obApp.slug, dataRegisters: this.obApp.dataRegisters || [] })
