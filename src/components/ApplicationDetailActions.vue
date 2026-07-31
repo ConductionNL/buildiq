@@ -160,6 +160,7 @@
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue'
 import { NcButton, NcActions, NcActionButton, NcActionLink } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
@@ -182,7 +183,15 @@ import { getCurrentUserGroups } from '../composables/useRole.js'
 import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import applicationContext from '../mixins/applicationContext.js'
 
-const ExportDialog = () => import('../dialogs/ExportDialog.vue')
+// Vue 3 requires `defineAsyncComponent()` around a lazy import. The bare
+// `() => import(…)` form is Vue 2 syntax: Vue 3 accepts a plain function as a
+// FUNCTIONAL component, so this was registered as a component whose render
+// function returns a Promise — it rendered nothing, with no error and no
+// warning. The Export button set `exportOpen = true`, the `v-if` passed, and
+// still no dialog ever appeared: Export was dead for every user of the app
+// detail page. This is the only such import left in src/; every sibling dialog
+// here is imported eagerly.
+const ExportDialog = defineAsyncComponent(() => import('../dialogs/ExportDialog.vue'))
 
 const OR_TEMPLATES = '/apps/openregister/api/objects/openbuild/application-template'
 

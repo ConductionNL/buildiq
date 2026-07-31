@@ -33,6 +33,45 @@ const ADMIN_PASSWORD = process.env.NC_ADMIN_PASSWORD || 'admin'
 const APPLICATION_SLUG = 'hello-world'
 const POLL_TIMEOUT_MS = 60_000
 
+// REGRESSION GUARD for a defect this file's quarantine was hiding: the Export
+// button did nothing at all.
+//
+// `ApplicationDetailActions.vue` registered the dialog as
+// `const ExportDialog = () => import('…')` — Vue 2 async-component syntax. Vue 3
+// accepts a plain function as a FUNCTIONAL component, so it was registered as a
+// component whose render function returns a Promise: it rendered nothing, threw
+// nothing, and warned nothing. The click set `exportOpen = true`, the `v-if`
+// passed, and no dialog ever appeared. It was the last such import in src/.
+//
+// Fixed with `defineAsyncComponent()`. This block asserts the dialog actually
+// mounts, which is the part that silently broke; the ZIP round-trip below stays
+// skipped for the unrelated reasons documented there.
+test.describe('OpenBuild export dialog', () => {
+	test('the Export action opens the export dialog with its target picker', async ({ page }) => {
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications/${APPLICATION_SLUG}`, {
+			waitUntil: 'domcontentloaded',
+		})
+		const exportButton = page.getByRole('button', { name: /^export$/i }).first()
+		await expect(exportButton, 'the app detail page must offer an Export action').toBeVisible({ timeout: 30_000 })
+		await exportButton.click()
+
+		// The regression: this never appeared.
+		const dialog = page.locator('.export-dialog')
+		await expect(dialog, 'clicking Export must mount the export dialog').toBeVisible({ timeout: 20_000 })
+
+		// Its three pickers are labelled via `<label for>`; the combobox itself
+		// carries no accessible name in this @nextcloud/vue version, so a
+		// getByRole('combobox', {name}) lookup finds nothing — match the labels.
+		await expect(dialog.locator('label', { hasText: 'Version' })).toBeVisible()
+		await expect(dialog.locator('label', { hasText: 'Target' })).toBeVisible()
+		await expect(dialog.locator('label', { hasText: 'License' })).toBeVisible()
+
+		// ZIP is the default target, and the submit action is reachable.
+		await expect(dialog).toContainText('ZIP download')
+		await expect(page.getByRole('button', { name: /start export/i })).toBeVisible()
+	})
+})
+
 // STILL SKIPPED, with the true reason replacing the #41 one.
 //
 //   - It polls `[data-test="export-job-row"]:has-text("succeeded")`. That
