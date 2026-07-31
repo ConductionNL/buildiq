@@ -102,7 +102,7 @@ class AppRepoFormatV2Test extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-apps-whole-configuration
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
      */
     public function testSerializerStampsFormatVersionTwo(): void
     {
@@ -122,7 +122,7 @@ class AppRepoFormatV2Test extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-apps-whole-configuration
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
      */
     public function testEmptyChannelsAreRecordedNotHidden(): void
     {
@@ -145,7 +145,7 @@ class AppRepoFormatV2Test extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-apps-whole-configuration
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
      */
     public function testV1RepositoryStillParses(): void
     {
@@ -175,7 +175,7 @@ class AppRepoFormatV2Test extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-apps-whole-configuration
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
      */
     public function testV2RepositoryParses(): void
     {
@@ -207,7 +207,7 @@ class AppRepoFormatV2Test extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-apps-whole-configuration
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
      */
     public function testUnknownFormatMajorIsRefused(): void
     {
@@ -272,7 +272,7 @@ class AppRepoFormatV2Test extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-apps-whole-configuration
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
      */
     public function testChannelsRoundTripThroughTheParser(): void
     {

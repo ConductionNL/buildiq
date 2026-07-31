@@ -9,18 +9,18 @@
 - **acceptance_criteria**:
   - GIVEN the fragment WHEN the register merges THEN `Application.connectors` exists and `Application.required` is unchanged
   - GIVEN an entry with an out-of-enum kind THEN it fails validation
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 2: data-registers + automations collectors
-- **spec_ref**: `openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-apps-whole-configuration`
+- **spec_ref**: `openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration`
 - **files**: `lib/Service/AppRepoSerializer.php`, `tests/Unit/Service/AppRepoSerializerTest.php`
 - **notes**: Total collectors, mirroring `collectCompanionSchemas()` — a missing source yields no entries and a debug log, never an exception. data-registers from `dataRegisters[].register`; automations by `Automation.applicationSlug`. Schema definitions only, no objects.
 - **acceptance_criteria**:
   - GIVEN an app binding `spectr-live` THEN `data-registers/spectr-live.json` carries its schema definitions and no objects
   - GIVEN an app with no bindings THEN no entries and no exception
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 3: connectors collector with one-level resolution
 - **spec_ref**: `openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-connectors-are-declared-explicitly-never-inferred`
@@ -30,8 +30,8 @@
   - GIVEN two apps binding the same register THEN each exports only its own declared entries
   - GIVEN a declared synchronization THEN its source and mapping are exported and reported as resolved
   - GIVEN a resolved object that itself references others THEN resolution stops at one level
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 4: Secret stripping
 - **spec_ref**: `openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-credential-values-never-leave-the-instance`
@@ -41,8 +41,8 @@
   - GIVEN a source with an inline password THEN the emitted file does not contain it and the strip is recorded
   - GIVEN a source using `credentialRef` THEN the reference survives and no value is resolved
   - GIVEN a connection string with embedded credentials THEN the credentials are stripped
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 5: Path/slug validation on emit, and descriptor channel counts
 - **spec_ref**: `openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use`
@@ -51,19 +51,19 @@
 - **acceptance_criteria**:
   - GIVEN a binding slug of `../../etc` THEN it is rejected and nothing is written outside its channel
   - GIVEN an app with every channel empty THEN the descriptor records zeros
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 6: Parser v2 read path, v1 preserved
-- **spec_ref**: `openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-apps-whole-configuration`
+- **spec_ref**: `openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration`
 - **files**: `lib/Service/AppRepoParser.php`, `tests/Unit/Service/AppRepoParserTest.php`
 - **notes**: Switch on `formatVersion`. 1.0 keeps today's strict path byte-for-byte. 2.0 additionally collects the new directories, re-validating every path — the parser must not trust that the repo was written by a well-behaved serializer.
 - **acceptance_criteria**:
   - GIVEN a v1 repo THEN the parse result is identical to today's
   - GIVEN a v2 repo THEN the new channels are returned
   - GIVEN `connectors/source/../../evil.json` THEN it is ignored and the rest still parses
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 7: Round-trip + gates
 - **spec_ref**: `openspec/changes/app-repo-format-v2/proposal.md`
@@ -72,8 +72,8 @@
 - **acceptance_criteria**:
   - GIVEN a v2 app WHEN serialised and re-parsed THEN every channel round-trips
   - GIVEN the gate script WHEN run THEN ALL GATES GREEN with exit 0
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ## Quality checklist
 

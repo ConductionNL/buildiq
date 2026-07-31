@@ -224,7 +224,7 @@ class AppRepoSerializer
      *
      * @return array<string,array<string,mixed>> Register blobs keyed by register slug.
      *
-     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-apps-whole-configuration
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
      */
     private function collectDataRegisters(array $application): array
     {
@@ -484,7 +484,7 @@ class AppRepoSerializer
      *
      * @return array<string,array<string,mixed>> Automation blobs keyed by slug.
      *
-     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-apps-whole-configuration
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
      */
     private function collectAutomations(string $slug): array
     {
@@ -635,7 +635,7 @@ class AppRepoSerializer
      * @return array<string,mixed>
      *
      * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
-     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-apps-whole-configuration
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
      */
     private function buildDescriptor(array $application, array $version, array $manifest, array $channels=[]): array
     {

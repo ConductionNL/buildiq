@@ -403,12 +403,5 @@
 			}
 		]
 	},
-	"deepLinks": [
-		{
-			"registerSlug": "openbuild",
-			"schemaSlug": "example",
-			"urlTemplate": "/apps/openbuild/#/examples/{uuid}",
-			"displayName": "Example"
-		}
-	]
+	"deepLinks": []
 }
