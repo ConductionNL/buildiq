@@ -41,6 +41,8 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
 import { validateManifest } from '@conduction/nextcloud-vue'
 import applicationContext from '../../mixins/applicationContext.js'
@@ -74,12 +76,48 @@ export default {
 			 */
 			handler(app) {
 				if (app) {
-					this.manifestText = JSON.stringify(app.manifest || {}, null, 2)
+					this.loadManifest(app)
 				}
 			},
 		},
 	},
 	methods: {
+		/**
+		 * Load the app's manifest into the editor buffer, from the ACTIVE VERSION.
+		 *
+		 * This tab used to seed itself with `JSON.stringify(app.manifest || {})`.
+		 * Under the versioned model (ADR-002) the manifest lives on the
+		 * ApplicationVersion, and the Application record carries no `manifest` key
+		 * at all — `ApplicationsController` says as much itself ("reading
+		 * `applicationArray['manifest']` directly returns null for every app"). So
+		 * the integrator-facing raw JSON editor showed `{}` for EVERY application,
+		 * and its Save then wrote that onto a field nothing reads back: empty on
+		 * read, dead on write.
+		 *
+		 * `GET /api/applications/{slug}/manifest` resolves the active version's
+		 * manifest, which is what the editor is supposed to show.
+		 *
+		 * @param {{slug?: string, manifest?: object}} app - the resolved Application.
+		 * @return {Promise<void>}
+		 */
+		async loadManifest(app) {
+			const slug = app && app.slug
+			if (!slug) {
+				this.manifestText = JSON.stringify(app?.manifest || {}, null, 2)
+				return
+			}
+			try {
+				const { data } = await axios.get(
+					generateUrl(`/apps/openbuild/api/applications/${encodeURIComponent(slug)}/manifest`),
+				)
+				this.manifestText = JSON.stringify(data || {}, null, 2)
+			} catch (e) {
+				// Fall back to whatever the record carries rather than blanking the
+				// editor; the error surface below reports the failure.
+				this.manifestText = JSON.stringify(app.manifest || {}, null, 2)
+				this.error = `${t('openbuild', 'Could not load the manifest')}: ${e.message || e}`
+			}
+		},
 		/**
 		 * Observed behaviour of `parseAndValidate` (retrofit annotation).
 		 *
@@ -117,7 +155,15 @@ export default {
 			this.saving = true
 			this.savedToast = ''
 			try {
-				await this.obPatchApp({ manifest: parsed })
+				// PUT the ACTIVE VERSION's manifest, not a field on the Application.
+				// `obPatchApp({ manifest })` wrote onto the Application record, which
+				// nothing reads back — see loadManifest() for the full writeup.
+				// Note the endpoint's asymmetry: GET returns the manifest bare, PUT
+				// expects it wrapped in `{ manifest }`.
+				await axios.put(
+					generateUrl(`/apps/openbuild/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`),
+					{ manifest: parsed },
+				)
 				this.savedToast = t('openbuild', 'Saved')
 			} catch (e) {
 				this.error = `${t('openbuild', 'Save failed')}: ${e.message || e}`

@@ -330,37 +330,69 @@ test('REQ-OBR-005 — an invalid manifest is rejected inline and sends no write'
 })
 
 // @e2e openbuild-runtime::valid-edit-persists-and-reloads
-test.skip('REQ-OBR-005 — a valid edit is PUT to OR and survives a reload', async () => {
+test('REQ-OBR-005 — a valid edit is PUT to OR and survives a reload', async ({ page, request }) => {
 	// @e2e openbuild-runtime::valid-edit-persists-and-reloads
 	//
-	// BLOCKED BY A PRODUCT DEFECT this test found. Driving it produced
-	// `expect(original.pages).toBeTruthy()` → received `undefined`, because the
-	// editor's buffer is the literal string "{}".
-	//
-	// Evidence (live API, admin session):
-	//   GET /apps/openregister/api/objects/openbuild/application
-	//   → the hello-world row has NO `manifest` key at all.
-	//
-	// `ApplicationManifestTab.vue` seeds its textarea from
-	// `JSON.stringify(app.manifest || {}, null, 2)`, and under the versioned
-	// model (ADR-002) the manifest lives on the ApplicationVersion, not on the
-	// Application — `ApplicationsController` says so itself: "reading
-	// `applicationArray['manifest']` directly returns null for every app".
-	//
-	// So the integrator-facing raw JSON editor shows `{}` for EVERY app, and its
-	// Save writes `obPatchApp({ manifest })` onto the Application, a field nothing
-	// reads back. Empty on read, dead on write.
-	//
-	// Not fixed here because it needs the tab re-pointed at the manifest API and
-	// re-verified live, which is beyond this change. The fix is small and the
-	// endpoints already exist and are exercised by other tests in this file:
-	// GET `/api/applications/{slug}/manifest` returns the resolved blob, and PUT
-	// accepts `{ manifest }` (note the asymmetry — GET returns the manifest bare,
-	// PUT expects it wrapped).
-	//
-	// The VALIDATION half of REQ-OBR-005 is unaffected and passing: "an invalid
-	// manifest is rejected inline and sends no write" and "unsaved manifest edits
-	// survive a sidebar tab switch".
+	// This was skipped on a product defect it found: ApplicationManifestTab
+	// seeded its buffer from `app.manifest || {}`, but under the versioned model
+	// (ADR-002) the manifest lives on the ApplicationVersion and the Application
+	// record carries no `manifest` key — so the editor showed `{}` for EVERY app
+	// and its Save wrote onto a field nothing reads back. Empty on read, dead on
+	// write. The tab now loads and saves through
+	// `/api/applications/{slug}/manifest` (GET returns it bare, PUT expects it
+	// wrapped in `{ manifest }` — note the asymmetry), so this can run.
+	const app = await fetchApplication(request)
+	await openDetailSidebar(page, objectIdOf(app))
+	await activateSidebarTab(page, 'manifest', 'Manifest')
+
+	const textarea = page.locator('[data-testid="openbuild-editor-textarea"]')
+	await expect(textarea).toBeVisible({ timeout: 15_000 })
+
+	// The editor must show the REAL manifest, not `{}` — the defect above.
+	await expect.poll(async () => {
+		const raw = await textarea.inputValue()
+		try {
+			return Array.isArray(JSON.parse(raw).pages)
+		} catch {
+			return false
+		}
+	}, { timeout: 20_000, message: 'the editor must load the stored manifest, not an empty object' }).toBe(true)
+
+	const original = JSON.parse(await textarea.inputValue())
+	expect(original.pages, 'the loaded manifest must carry its pages').toBeTruthy()
+
+	// A valid edit: bump a top-level marker the manifest schema allows.
+	const marker = `e2e-${Date.now().toString(36)}`
+	await textarea.fill(JSON.stringify({ ...original, description: marker }, null, 2))
+	await page.locator('[data-testid="openbuild-editor-save"]').click()
+
+	// It must reach the SERVER, not just the buffer.
+	await expect.poll(async () => {
+		const resp = await request.get(
+			`${BASE}/index.php/apps/openbuild/api/applications/${SLUG}/manifest`,
+			{ headers: { 'OCS-APIRequest': 'true' } },
+		)
+		return (await resp.json()).description
+	}, { timeout: 30_000, message: 'a valid edit must be PUT to the server' }).toBe(marker)
+
+	// And it must survive a reload of the editor.
+	await page.reload({ waitUntil: 'domcontentloaded' })
+	await openDetailSidebar(page, objectIdOf(app))
+	await activateSidebarTab(page, 'manifest', 'Manifest')
+	await expect(textarea).toBeVisible({ timeout: 15_000 })
+	await expect.poll(async () => {
+		try {
+			return JSON.parse(await textarea.inputValue()).description
+		} catch {
+			return null
+		}
+	}, { timeout: 20_000, message: 'the saved edit must survive a reload' }).toBe(marker)
+
+	// Leave the fixture as we found it.
+	await request.put(
+		`${BASE}/index.php/apps/openbuild/api/applications/${SLUG}/manifest`,
+		{ headers: { 'OCS-APIRequest': 'true' }, data: { manifest: original } },
+	)
 })
 
 // @e2e openbuild-runtime::default-tab-is-design
