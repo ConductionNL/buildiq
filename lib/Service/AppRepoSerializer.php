@@ -40,6 +40,7 @@ namespace OCA\OpenBuild\Service;
 
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -52,8 +53,65 @@ class AppRepoSerializer
 {
     /**
      * The layout version stamped on every emitted descriptor.
+     *
+     * 2.0 (app-repo-format-v2) adds the data-registers, connectors, automations
+     * and skills channels. `AppRepoParser` still accepts 1.0 unchanged.
      */
-    public const FORMAT_VERSION = '1.0';
+    public const FORMAT_VERSION = '2.0';
+
+    /**
+     * The OpenRegister register OpenConnector's configuration objects live in.
+     *
+     * OpenConnector was re-platformed onto OpenRegister — it has no `lib/Db` and
+     * no `openconnector_*` tables — so its Sources/Mappings/Synchronizations/Jobs
+     * are ordinary OR objects. Reading them here is therefore an OR read, NOT a
+     * cross-app PHP dependency (ADR-022).
+     *
+     * @var string
+     */
+    private const CONNECTOR_REGISTER = 'openconnector';
+
+    /**
+     * The connector kinds an application may declare. `endpoint` and `rule` are
+     * deliberately excluded: an endpoint is instance-facing surface, and a rule
+     * belongs to the automations channel.
+     *
+     * @var array<int,string>
+     */
+    private const CONNECTOR_KINDS = ['source', 'mapping', 'synchronization', 'job'];
+
+    /**
+     * Object keys whose VALUE is stripped before export.
+     *
+     * Defence in depth rather than the primary control: credentials live in
+     * OpenRegister's credential broker and configs reference them by UUID
+     * (`credential`/`credentialRef`), so a well-formed config carries no secret
+     * to begin with. This exists so a future config that DOES inline one cannot
+     * reach a repository, and every strip is recorded rather than silent.
+     *
+     * @var array<int,string>
+     */
+    private const SECRET_KEYS = [
+        'password',
+        'secret',
+        'apikey',
+        'api_key',
+        'token',
+        'accesstoken',
+        'refreshtoken',
+        'authorization',
+        'connectionstring',
+        'privatekey',
+        'clientsecret',
+    ];
+
+    /**
+     * Maximum entries collected per channel, so one application cannot declare
+     * the whole instance into its repository.
+     *
+     * @var int
+     */
+    private const MAX_CHANNEL_ENTRIES = 256;
 
     /**
      * Constructor.
@@ -62,6 +120,9 @@ class AppRepoSerializer
      * @param SchemaMapper           $schemaMapper       Resolves companion schema definitions by id.
      * @param LoggerInterface        $logger             PSR logger (server-side diagnostics only).
      * @param TemplateRepoSerializer $templateSerializer Serialises a seeded template into the same repo layout.
+     * @param ObjectService|null     $objectService      Reads connector + automation objects (app-repo-format-v2).
+     *                                                   Nullable so the v1 construction shape still works and the
+     *                                                   new channels simply collect nothing when it is absent.
      *
      * @return void
      */
@@ -70,6 +131,7 @@ class AppRepoSerializer
         private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger,
         private readonly TemplateRepoSerializer $templateSerializer,
+        private readonly ?ObjectService $objectService=null,
     ) {
     }//end __construct()
 
@@ -92,15 +154,57 @@ class AppRepoSerializer
         }
 
         $files = [];
-        $files['openbuild-app.json'] = $this->encode(
-            data: $this->buildDescriptor(application: $application, version: $version, manifest: $manifest)
-        );
-        $files['manifest.json']      = $this->encode(data: $manifest);
 
         $companions = $this->collectCompanionSchemas(slug: $slug);
         ksort($companions);
+
+        // App-repo-format-v2 channels. Every collector is TOTAL in the same way
+        // collectCompanionSchemas() is — a missing or unreadable source yields no
+        // entries and a debug log, never an exception, so serialisation never
+        // becomes the thing that blocks a publish. The counter-measure against
+        // that silently producing an empty artefact is the descriptor's channel
+        // counts, written below.
+        $dataRegisters = $this->collectDataRegisters(application: $application);
+        $connectors    = $this->collectConnectors(application: $application);
+        $automations   = $this->collectAutomations(slug: $slug);
+        ksort($dataRegisters);
+        ksort($automations);
+
+        $files['openbuild-app.json'] = $this->encode(
+            data: $this->buildDescriptor(
+                application: $application,
+                version: $version,
+                manifest: $manifest,
+                channels: [
+                    'schemas'       => count($companions),
+                    'dataRegisters' => count($dataRegisters),
+                    'connectors'    => [
+                        'declared' => $connectors['declaredCount'],
+                        'resolved' => $connectors['resolvedCount'],
+                        'stripped' => $connectors['strippedCount'],
+                    ],
+                    'automations'   => count($automations),
+                ]
+            )
+        );
+        $files['manifest.json']      = $this->encode(data: $manifest);
+
         foreach ($companions as $schemaSlug => $blob) {
             $files['schemas/'.$schemaSlug.'.json'] = $this->encode(data: $blob);
+        }
+
+        foreach ($dataRegisters as $registerSlug => $blob) {
+            $files['data-registers/'.$registerSlug.'.json'] = $this->encode(data: $blob);
+        }
+
+        $connectorFiles = $connectors['files'];
+        ksort($connectorFiles);
+        foreach ($connectorFiles as $path => $blob) {
+            $files['connectors/'.$path] = $this->encode(data: $blob);
+        }
+
+        foreach ($automations as $automationSlug => $blob) {
+            $files['automations/'.$automationSlug.'.json'] = $this->encode(data: $blob);
         }
 
         $readme = $this->buildReadme(application: $application);
@@ -110,6 +214,390 @@ class AppRepoSerializer
 
         return $files;
     }//end serialize()
+
+    /**
+     * Collect the shared data registers this application binds, as schema
+     * definitions only — never objects (the locked scope is full config
+     * fidelity, no data).
+     *
+     * @param array<string,mixed> $application The Application object.
+     *
+     * @return array<string,array<string,mixed>> Register blobs keyed by register slug.
+     *
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-apps-whole-configuration
+     */
+    private function collectDataRegisters(array $application): array
+    {
+        $bindings = ($application['dataRegisters'] ?? []);
+        if (is_array($bindings) === false) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($bindings as $binding) {
+            if (is_array($binding) === false || count($out) >= self::MAX_CHANNEL_ENTRIES) {
+                continue;
+            }
+
+            $registerSlug = (string) ($binding['register'] ?? '');
+            if ($this->isSafeSlug(slug: $registerSlug) === false) {
+                $this->logger->warning(
+                    'OpenBuild AppRepoSerializer: rejected unsafe data-register slug.',
+                    ['slug' => $registerSlug]
+                );
+                continue;
+            }
+
+            try {
+                $register = $this->registerMapper->find($registerSlug, _multitenancy: false);
+            } catch (Throwable $e) {
+                $this->logger->debug(
+                    'OpenBuild AppRepoSerializer: bound data register "'.$registerSlug.'" not resolvable: '.$e->getMessage()
+                );
+                continue;
+            }
+
+            $schemas = [];
+            foreach ((array) $register->getSchemas() as $schemaId) {
+                try {
+                    $schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
+                } catch (Throwable $e) {
+                    continue;
+                }
+
+                $schemaSlug = $schema->getSlug();
+                if ($schemaSlug === '') {
+                    continue;
+                }
+
+                $schemaVersion = (string) $schema->getVersion();
+                if ($schemaVersion === '') {
+                    $schemaVersion = '0.1.0';
+                }
+
+                $schemas[$schemaSlug] = [
+                    'slug'        => $schemaSlug,
+                    'title'       => (string) $schema->getTitle(),
+                    'description' => (string) $schema->getDescription(),
+                    'version'     => $schemaVersion,
+                    'type'        => 'object',
+                    'required'    => array_values((array) $schema->getRequired()),
+                    'properties'  => (array) $schema->getProperties(),
+                ];
+            }//end foreach
+
+            ksort($schemas);
+
+            $out[$registerSlug] = [
+                'slug'    => $registerSlug,
+                'title'   => (string) $register->getTitle(),
+                'label'   => (string) ($binding['label'] ?? ''),
+                'schemas' => $schemas,
+            ];
+        }//end foreach
+
+        return $out;
+
+    }//end collectDataRegisters()
+
+    /**
+     * Collect the OpenConnector configuration this application EXPLICITLY declares.
+     *
+     * Declared entries are exported as declared. The objects a declared entry
+     * DIRECTLY references (a synchronization's source, mapping and target) are
+     * additionally resolved — ONE level only, never a transitive graph walk —
+     * because a synchronization without its source installs into something that
+     * cannot run. Declared and resolved counts are reported separately so
+     * "explicit" stays honest.
+     *
+     * @param array<string,mixed> $application The Application object.
+     *
+     * @return array{files:array<string,array<string,mixed>>,declaredCount:int,resolvedCount:int,strippedCount:int}
+     *
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-connectors-are-declared-explicitly-never-inferred
+     */
+    private function collectConnectors(array $application): array
+    {
+        $empty    = ['files' => [], 'declaredCount' => 0, 'resolvedCount' => 0, 'strippedCount' => 0];
+        $bindings = ($application['connectors'] ?? []);
+        if (is_array($bindings) === false || $this->objectService === null) {
+            return $empty;
+        }
+
+        $files    = [];
+        $declared = 0;
+        $resolved = 0;
+        $stripped = 0;
+        $seen     = [];
+
+        foreach ($bindings as $binding) {
+            if (is_array($binding) === false || count($files) >= self::MAX_CHANNEL_ENTRIES) {
+                continue;
+            }
+
+            $kind = (string) ($binding['kind'] ?? '');
+            $slug = (string) ($binding['slug'] ?? '');
+            if (in_array($kind, self::CONNECTOR_KINDS, true) === false || $this->isSafeSlug(slug: $slug) === false) {
+                $this->logger->warning(
+                    'OpenBuild AppRepoSerializer: rejected unsafe connector binding.',
+                    ['kind' => $kind, 'slug' => $slug]
+                );
+                continue;
+            }
+
+            $object = $this->findConnector(kind: $kind, slug: $slug);
+            if ($object === null) {
+                continue;
+            }
+
+            $sanitised = $this->stripSecrets(data: $object, stripped: $stripped);
+            $files[$kind.'/'.$slug.'.json'] = $sanitised;
+            $seen[$kind.'/'.$slug]          = true;
+            $declared++;
+
+            // ONE level of dependency resolution, and no further.
+            foreach ($this->directReferences(kind: $kind, object: $object) as $refKind => $refSlugs) {
+                foreach ($refSlugs as $refSlug) {
+                    $key = $refKind.'/'.$refSlug;
+                    if (isset($seen[$key]) === true || count($files) >= self::MAX_CHANNEL_ENTRIES) {
+                        continue;
+                    }
+
+                    if ($this->isSafeSlug(slug: $refSlug) === false) {
+                        continue;
+                    }
+
+                    $refObject = $this->findConnector(kind: $refKind, slug: $refSlug);
+                    if ($refObject === null) {
+                        continue;
+                    }
+
+                    $files[$key.'.json'] = $this->stripSecrets(data: $refObject, stripped: $stripped);
+                    $seen[$key]          = true;
+                    $resolved++;
+                }//end foreach
+            }//end foreach
+        }//end foreach
+
+        return [
+            'files'         => $files,
+            'declaredCount' => $declared,
+            'resolvedCount' => $resolved,
+            'strippedCount' => $stripped,
+        ];
+
+    }//end collectConnectors()
+
+    /**
+     * Resolve one connector object by kind + slug from the shared `openconnector`
+     * register.
+     *
+     * @param string $kind The connector kind.
+     * @param string $slug The object slug.
+     *
+     * @return array<string,mixed>|null The object payload, or null when absent.
+     */
+    private function findConnector(string $kind, string $slug): ?array
+    {
+        if ($this->objectService === null) {
+            return null;
+        }
+
+        try {
+            $results = $this->objectService->findAll(
+                config: [
+                    'filters' => [
+                        'register' => self::CONNECTOR_REGISTER,
+                        'schema'   => $kind,
+                        'slug'     => $slug,
+                    ],
+                    'limit'   => 1,
+                ]
+            );
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                'OpenBuild AppRepoSerializer: connector "'.$kind.'/'.$slug.'" not resolvable: '.$e->getMessage()
+            );
+            return null;
+        }
+
+        $first = null;
+        foreach ((array) $results as $result) {
+            $first = $result;
+            break;
+        }
+
+        if ($first === null) {
+            return null;
+        }
+
+        if (is_object($first) === true && method_exists($first, 'getObject') === true) {
+            return (array) $first->getObject();
+        }
+
+        if (is_array($first) === true) {
+            return $first;
+        }
+
+        return null;
+
+    }//end findConnector()
+
+    /**
+     * The objects a connector directly references — one level, no graph walk.
+     *
+     * @param string              $kind   The declared entry's kind.
+     * @param array<string,mixed> $object The declared entry's payload.
+     *
+     * @return array<string,array<int,string>> Referenced slugs keyed by kind.
+     */
+    private function directReferences(string $kind, array $object): array
+    {
+        if ($kind !== 'synchronization') {
+            return [];
+        }
+
+        $refs = ['source' => [], 'mapping' => []];
+
+        foreach (['sourceId' => 'source', 'source_id' => 'source'] as $key => $refKind) {
+            $value = (string) ($object[$key] ?? '');
+            if ($value !== '') {
+                $refs[$refKind][] = $value;
+            }
+        }
+
+        foreach (['sourceTargetMapping', 'source_target_mapping', 'sourceHashMapping', 'source_hash_mapping'] as $key) {
+            $value = (string) ($object[$key] ?? '');
+            if ($value !== '') {
+                $refs['mapping'][] = $value;
+            }
+        }
+
+        return array_map(callback: 'array_unique', array: $refs);
+
+    }//end directReferences()
+
+    /**
+     * Collect the application's automations, selected by `applicationSlug`.
+     *
+     * @param string $slug The Application slug.
+     *
+     * @return array<string,array<string,mixed>> Automation blobs keyed by slug.
+     *
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-apps-whole-configuration
+     */
+    private function collectAutomations(string $slug): array
+    {
+        if ($slug === '' || $this->objectService === null) {
+            return [];
+        }
+
+        try {
+            $results = $this->objectService->findAll(
+                config: [
+                    'filters' => [
+                        'register'        => 'openbuild',
+                        'schema'          => 'automation',
+                        'applicationSlug' => $slug,
+                    ],
+                    'limit'   => self::MAX_CHANNEL_ENTRIES,
+                ]
+            );
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                'OpenBuild AppRepoSerializer: automations for "'.$slug.'" not resolvable: '.$e->getMessage()
+            );
+            return [];
+        }
+
+        $out = [];
+        foreach ((array) $results as $result) {
+            $payload = null;
+            if (is_object($result) === true && method_exists($result, 'getObject') === true) {
+                $payload = (array) $result->getObject();
+            } else if (is_array($result) === true) {
+                $payload = $result;
+            }
+
+            if ($payload === null) {
+                continue;
+            }
+
+            $automationSlug = (string) ($payload['slug'] ?? '');
+            if ($this->isSafeSlug(slug: $automationSlug) === false) {
+                continue;
+            }
+
+            $out[$automationSlug] = $payload;
+        }//end foreach
+
+        return $out;
+
+    }//end collectAutomations()
+
+    /**
+     * Recursively strip secret-bearing VALUES from an exported payload.
+     *
+     * Defence in depth, not the primary control: credentials live in
+     * OpenRegister's credential broker and configs reference them by UUID, so a
+     * well-formed config carries no secret. Credential REFERENCES are preserved —
+     * stripping them would break the installed app for no security gain.
+     *
+     * @param array<string,mixed> $data     The payload.
+     * @param int                 $stripped Running strip counter (by reference).
+     *
+     * @return array<string,mixed> The sanitised payload.
+     *
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-credential-values-never-leave-the-instance
+     */
+    private function stripSecrets(array $data, int &$stripped): array
+    {
+        $out = [];
+        foreach ($data as $key => $value) {
+            if (is_array($value) === true) {
+                $out[$key] = $this->stripSecrets(data: $value, stripped: $stripped);
+                continue;
+            }
+
+            $normalised = strtolower(str_replace(['-', '_'], '', (string) $key));
+            if (in_array($normalised, array_map(static fn ($k): string => str_replace('_', '', $k), self::SECRET_KEYS), true) === true
+                && is_string($value) === true && $value !== ''
+            ) {
+                $out[$key] = '';
+                $stripped++;
+                continue;
+            }
+
+            // An inline `scheme://user:pass@host` credential in any string value.
+            if (is_string($value) === true && preg_match('#://[^:/@\s]+:[^@\s]+@#', $value) === 1) {
+                $out[$key] = preg_replace('#://[^:/@\s]+:[^@\s]+@#', '://', $value);
+                $stripped++;
+                continue;
+            }
+
+            $out[$key] = $value;
+        }//end foreach
+
+        return $out;
+
+    }//end stripSecrets()
+
+    /**
+     * Whether a value is safe to use as a path component.
+     *
+     * Validated BEFORE any concatenation, so a crafted slug never reaches a path.
+     *
+     * @param string $slug The candidate slug.
+     *
+     * @return bool True when safe.
+     *
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
+     */
+    private function isSafeSlug(string $slug): bool
+    {
+        return (preg_match('/^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$/', $slug) === 1);
+
+    }//end isSafeSlug()
 
     /**
      * Serialise a seeded `application-template` object into the same repo file
@@ -142,12 +630,14 @@ class AppRepoSerializer
      * @param array<string,mixed> $application The Application object.
      * @param array<string,mixed> $version     The chosen ApplicationVersion object.
      * @param array<string,mixed> $manifest    The version's manifest blob.
+     * @param array<string,mixed> $channels    Per-channel entry counts (app-repo-format-v2).
      *
      * @return array<string,mixed>
      *
      * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-apps-whole-configuration
      */
-    private function buildDescriptor(array $application, array $version, array $manifest): array
+    private function buildDescriptor(array $application, array $version, array $manifest, array $channels=[]): array
     {
         $appType = (string) ($application['appType'] ?? 'virtual');
 
@@ -178,6 +668,15 @@ class AppRepoSerializer
         $credentials = $this->deriveCredentials(manifest: $manifest);
         if ($credentials !== []) {
             $descriptor['credentials'] = $credentials;
+        }
+
+        // App-repo-format-v2: per-channel counts. Collectors are deliberately total
+        // (a missing source yields no entries rather than an error), so without
+        // these an app that collected NOTHING would publish and look successful —
+        // exactly the green-but-empty artefact this format exists to end. Recording
+        // the counts makes an empty export visible in the artefact itself.
+        if ($channels !== []) {
+            $descriptor['channels'] = $channels;
         }
 
         return $descriptor;

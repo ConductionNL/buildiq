@@ -71,6 +71,52 @@ class AppRepoParser
     private const SUPPORTED_FORMAT_MAJOR = 1;
 
     /**
+     * The `formatVersion` major introduced by app-repo-format-v2. Parsed in
+     * addition to major 1, which keeps its exact prior behaviour — a v1 repo is
+     * read today as it was before this change existed.
+     *
+     * @var int
+     */
+    private const SUPPORTED_FORMAT_MAJOR_V2 = 2;
+
+    /**
+     * V2 channel prefixes. Each is re-validated on read: the parser never trusts
+     * that a repository was written by a well-behaved serializer.
+     *
+     * @var string
+     */
+    public const DATA_REGISTERS_PREFIX = 'data-registers/';
+
+    /**
+     * V2 connector channel prefix.
+     *
+     * @var string
+     */
+    public const CONNECTORS_PREFIX = 'connectors/';
+
+    /**
+     * V2 automations channel prefix.
+     *
+     * @var string
+     */
+    public const AUTOMATIONS_PREFIX = 'automations/';
+
+    /**
+     * V2 skills channel prefix (hermiq's SkillBundleSerializer layout).
+     *
+     * @var string
+     */
+    public const SKILLS_PREFIX = 'skills/';
+
+    /**
+     * The connector kinds a v2 repository may carry, mirroring the serializer's
+     * enum so an unknown directory is ignored rather than trusted.
+     *
+     * @var array<int,string>
+     */
+    private const CONNECTOR_KINDS = ['source', 'mapping', 'synchronization', 'job'];
+
+    /**
      * Hard cap on a single file's byte size before decode (hostile-input guard).
      */
     private const MAX_FILE_BYTES = 1048576;
@@ -117,7 +163,7 @@ class AppRepoParser
         $category    = (string) ($descriptor['category'] ?? '');
         $version     = (string) ($descriptor['version'] ?? '');
 
-        return [
+        $payload = [
             'slug'             => $slug,
             'title'            => $name,
             'description'      => $description,
@@ -132,6 +178,14 @@ class AppRepoParser
                 'version' => $version,
             ],
         ];
+
+        // app-repo-format-v2 channels, added only for a v2 repo so a v1 parse
+        // result stays byte-identical to what it was before this change.
+        if ($this->majorOf(formatVersion: (string) ($descriptor['formatVersion'] ?? '')) === self::SUPPORTED_FORMAT_MAJOR_V2) {
+            $payload['channels'] = $this->parseChannels(files: $files);
+        }
+
+        return $payload;
     }//end parse()
 
     /**
@@ -162,7 +216,7 @@ class AppRepoParser
 
         $formatVersion = (string) ($descriptor['formatVersion'] ?? '');
         $major         = $this->majorOf(formatVersion: $formatVersion);
-        if ($major !== self::SUPPORTED_FORMAT_MAJOR) {
+        if (in_array($major, [self::SUPPORTED_FORMAT_MAJOR, self::SUPPORTED_FORMAT_MAJOR_V2], true) === false) {
             throw new AppRepoParseException(
                 errorCode: 'format_version_unsupported',
                 message: 'openbuild-app.json formatVersion "'.$formatVersion.'" is not supported by this OpenBuild.',
@@ -269,6 +323,120 @@ class AppRepoParser
      *
      * @throws AppRepoParseException schema_unparseable | schema_invalid | schema_slug_duplicate.
      */
+    /**
+     * Parse the app-repo-format-v2 channels: data-registers, connectors,
+     * automations and skills.
+     *
+     * Deliberately LENIENT where `parseCompanionSchemas()` is strict. A companion
+     * schema is load-bearing — a malformed one means the app cannot work, so it
+     * aborts the whole parse. A channel entry is additive configuration: dropping
+     * one unreadable connector must not make an otherwise-valid repository
+     * unimportable. Bad entries are skipped, and every path is re-validated
+     * because the parser never trusts that the repo was written by a well-behaved
+     * serializer.
+     *
+     * @param array<string,string> $files The repo file map.
+     *
+     * @return array<string,mixed> The parsed channels.
+     *
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
+     */
+    private function parseChannels(array $files): array
+    {
+        $channels = [
+            'dataRegisters' => [],
+            'connectors'    => [],
+            'automations'   => [],
+            'skills'        => [],
+        ];
+
+        $paths = array_keys($files);
+        sort($paths);
+
+        foreach ($paths as $path) {
+            if (str_contains($path, '..') === true || str_starts_with($path, '/') === true) {
+                // Never rewrite to a safe form — drop it.
+                continue;
+            }
+
+            if (str_starts_with($path, self::DATA_REGISTERS_PREFIX) === true && str_ends_with($path, '.json') === true) {
+                $slug = substr($path, strlen(self::DATA_REGISTERS_PREFIX), -strlen('.json'));
+                if (preg_match(self::SLUG_PATTERN, $slug) === 1) {
+                    $blob = $this->decodeChannelEntry(path: $path, contents: $files[$path]);
+                    if ($blob !== null) {
+                        $channels['dataRegisters'][$slug] = $blob;
+                    }
+                }
+
+                continue;
+            }
+
+            if (str_starts_with($path, self::CONNECTORS_PREFIX) === true && str_ends_with($path, '.json') === true) {
+                $rest  = substr($path, strlen(self::CONNECTORS_PREFIX), -strlen('.json'));
+                $parts = explode('/', $rest);
+                if (count($parts) === 2
+                    && in_array($parts[0], self::CONNECTOR_KINDS, true) === true
+                    && preg_match(self::SLUG_PATTERN, $parts[1]) === 1
+                ) {
+                    $blob = $this->decodeChannelEntry(path: $path, contents: $files[$path]);
+                    if ($blob !== null) {
+                        $channels['connectors'][$parts[0]][$parts[1]] = $blob;
+                    }
+                }
+
+                continue;
+            }
+
+            if (str_starts_with($path, self::AUTOMATIONS_PREFIX) === true && str_ends_with($path, '.json') === true) {
+                $slug = substr($path, strlen(self::AUTOMATIONS_PREFIX), -strlen('.json'));
+                if (preg_match(self::SLUG_PATTERN, $slug) === 1) {
+                    $blob = $this->decodeChannelEntry(path: $path, contents: $files[$path]);
+                    if ($blob !== null) {
+                        $channels['automations'][$slug] = $blob;
+                    }
+                }
+
+                continue;
+            }
+
+            if (str_starts_with($path, self::SKILLS_PREFIX) === true) {
+                $rest  = substr($path, strlen(self::SKILLS_PREFIX));
+                $parts = explode('/', $rest, 2);
+                if (count($parts) === 2 && preg_match(self::SLUG_PATTERN, $parts[0]) === 1 && $parts[1] !== '') {
+                    // Skills are carried verbatim (hermiq's SkillBundleSerializer
+                    // layout) — SKILL.md is markdown, not JSON, so no decode here.
+                    $channels['skills'][$parts[0]][$parts[1]] = (string) $files[$path];
+                }
+            }
+        }//end foreach
+
+        return $channels;
+
+    }//end parseChannels()
+
+    /**
+     * Decode one channel entry, returning null rather than throwing.
+     *
+     * @param string $path     The repo path.
+     * @param string $contents The raw contents.
+     *
+     * @return array<string,mixed>|null The decoded object, or null when unreadable.
+     */
+    private function decodeChannelEntry(string $path, string $contents): ?array
+    {
+        if (strlen($contents) > self::MAX_FILE_BYTES) {
+            return null;
+        }
+
+        $decoded = json_decode($contents, true, self::MAX_JSON_DEPTH);
+        if (is_array($decoded) === false) {
+            return null;
+        }
+
+        return $decoded;
+
+    }//end decodeChannelEntry()
+
     private function parseCompanionSchemas(array $files): array
     {
         $companions = [];
