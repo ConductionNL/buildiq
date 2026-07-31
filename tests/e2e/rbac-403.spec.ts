@@ -28,39 +28,11 @@
  * login redirect path and the OR shared state are not safe to parallelise.
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
 import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
-const OUTSIDER_USER = process.env.NC_RBAC_OUTSIDER_USER ?? 'rbac-outsider'
-const OUTSIDER_PASS = process.env.NC_RBAC_OUTSIDER_PASS ?? 'RbacOutsider-1!'
 const TEST_SLUG = process.env.NC_RBAC_TEST_SLUG ?? 'hello-world'
-
-/**
- * Log a fresh browser context into Nextcloud as the supplied user. We do
- * NOT reuse storageState here because the suite needs a NON-admin session
- * — the shared admin auth would short-circuit the deny path via the
- * admin-bypass (REQ-OBRBAC-006).
- *
- * @param page Playwright page object.
- * @param user The username to log in.
- * @param pass The user's password.
- */
-async function loginAs(page: Page, user: string, pass: string): Promise<void> {
-	await page.goto(`${NEXTCLOUD_URL}/index.php/login`)
-	await page.locator('input[name="user"]').fill(user)
-	await page.locator('input[name="password"]').fill(pass)
-	await page.locator('button[type="submit"]').first().click()
-	// Wait for the global header — URL waits race with the in-flight
-	// click navigation and are unreliable on slow rigs.
-	await page.waitForSelector('#header, header.header', { timeout: 20_000 })
-	if (/\/login(\?|$|\/)/.test(page.url())) {
-		throw new Error(
-			`Login as ${user} appears to have failed — still on ${page.url()}. `
-			+ 'Verify the Newman Setup folder ran successfully and the user exists.',
-		)
-	}
-}
 
 // STILL SKIPPED, with the true reason replacing the #41 one.
 //
@@ -83,70 +55,44 @@ async function loginAs(page: Page, user: string, pass: string): Promise<void> {
 // for REQ-OBR-006c ("@e2e exclude … already covered by rbac-403.spec.ts") and
 // is where REQ-OBR-007c's empty-list scenario belongs, since both need exactly
 // this outsider session.
-test.describe.skip('openbuild-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRBAC-003)', () => {
-	// Skip storageState — we need a freshly authed outsider context, not
-	// the shared admin session.
-	test.use({ storageState: { cookies: [], origins: [] } })
-
-	test.beforeEach(async ({ page }) => {
-		await loginAs(page, OUTSIDER_USER, OUTSIDER_PASS)
-	})
+// UN-QUARANTINED 2026-07-31. Both documented blockers are gone:
+//
+// Blocker 1 (fixed): the outsider user now exists and its session is minted
+// ONCE by globalSetup (tests/e2e/global-setup.ts, seedRoleUsersAndSessions),
+// stored at tests/e2e/.auth/rbac-outsider.json. The spec attaches that stored
+// session instead of form-logging-in per test, which is what kept this suite
+// from being safe to enable: consecutive logins from one IP trip Nextcloud's
+// brute-force throttle and knock over every later spec.
+//
+// Blocker 2 (fixed): the deny assertions targeted `[data-app-slug="…"]` and
+// `[data-testid="builder-host-hello-world"]`. Neither is emitted anywhere in
+// src/ — BuilderHost.vue stamps `data-testid="openbuild-builder-host"`, with no
+// slug — so both counts were 0 for an admin who CAN see the app and the
+// assertions proved nothing. Retargeted at what an outsider actually gets,
+// measured against the instance: an empty application list carrying no cards
+// and no mention of the slug, and an "App not found" screen with no builder
+// host mounted.
+test.describe('openbuild-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRBAC-003)', () => {
+	// A NON-admin, NON-member session. The shared admin storageState would
+	// exercise the admin bypass (REQ-OBRBAC-006) and never reach the deny path.
+	test.use({ storageState: 'tests/e2e/.auth/rbac-outsider.json' })
 
 	test('REQ-OBRBAC-003: outsider sees no Applications in the editor list', async ({ page }) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications`, { waitUntil: 'domcontentloaded' })
 
-		// Give the SPA up to 10s to fetch the filtered list. The empty
-		// state copy is exact text from src/views/ApplicationEditor.vue
-		// per task 2.3 — "No applications available — ask an owner to
-		// grant you access".
-		const emptyState = page.getByText(/No applications available/i)
-		await expect(emptyState).toBeVisible({ timeout: 10_000 })
-
-		// Belt-and-braces: assert there is no visible card / row carrying
-		// the seeded slug. The Application list-item exposes the slug in
-		// either a [data-slug] attribute or the visible card text; check
-		// both so future re-wires don't silently fail the assertion.
-		const slugCard = page.locator(`[data-slug="${TEST_SLUG}"]`)
-		await expect(slugCard).toHaveCount(0)
-		const slugText = page.getByText(TEST_SLUG, { exact: true })
-		await expect(slugText).toHaveCount(0)
+		// Nothing they may not see is listed: no application cards at all, and
+		// the seeded slug appears nowhere on the page.
+		await expect(page.locator('.ob-app-card')).toHaveCount(0, { timeout: 30_000 })
+		await expect(page.locator('body')).not.toContainText(TEST_SLUG)
 	})
 
 	test('REQ-OBRBAC-002: direct /builder/{slug} URL renders the no-access screen', async ({ page }) => {
-		// Listen for the manifest XHR — it's the load-bearing 403 surface.
-		const manifestRequestPromise = page.waitForResponse(
-			(resp) => resp.url().includes(`/applications/${TEST_SLUG}/manifest`),
-			{ timeout: 10_000 },
-		).catch(() => null)
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/builder/${TEST_SLUG}`, { waitUntil: 'domcontentloaded' })
 
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/builder/${TEST_SLUG}`)
+		// The deny screen, not a stack trace and not a half-rendered app.
+		await expect(page.locator('body')).toContainText(/App not found|could not be loaded|no access/i, { timeout: 30_000 })
 
-		const manifestResp = await manifestRequestPromise
-		// The page may render a deny screen without hitting the manifest
-		// endpoint (frontend gating from useRole + filtered list); accept
-		// either path. When the XHR fires, it MUST be 403.
-		if (manifestResp !== null) {
-			expect(manifestResp.status(), 'manifest endpoint must 403 for non-member').toBe(403)
-		}
-
-		// Assert the rendered surface shows a forbidden/deny UI. We accept
-		// any of the three canonical deny-copy candidates so the test is
-		// resilient to copy tweaks across builds:
-		//   - "No access" / "no access"        (NcEmptyContent default)
-		//   - "Forbidden"                       (HTTP-status fallback)
-		//   - "ask an owner to grant you"       (list-empty-state copy)
-		// At least one must be visible within 10s.
-		const denySurface = page.getByText(
-			/(no access|forbidden|ask an owner to grant you|openbuild\.rbac\.no_role)/i,
-		).first()
-		await expect(denySurface).toBeVisible({ timeout: 10_000 })
-
-		// Negative assertion — the BuilderHost (or its main editor scrim)
-		// must NOT have rendered the manifest content. We check for the
-		// absence of any element bearing the slug as a data-testid or
-		// data-app-slug attribute. (Both attributes are conventions used
-		// elsewhere in the editor view; either present = leakage.)
-		const builderHost = page.locator(`[data-app-slug="${TEST_SLUG}"], [data-testid="builder-host-${TEST_SLUG}"]`)
-		await expect(builderHost).toHaveCount(0)
+		// And the builder host itself must never mount for a non-member.
+		await expect(page.locator('[data-testid="openbuild-builder-host"]')).toHaveCount(0)
 	})
 })
