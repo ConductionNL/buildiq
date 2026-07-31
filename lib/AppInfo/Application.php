@@ -58,6 +58,7 @@ use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Services\IInitialState;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\INavigationManager;
 use OCP\IURLGenerator;
@@ -335,29 +336,14 @@ class Application extends App implements IBootstrap
         // this Application (ADR-031 §Exceptions(1) — cross-row validation
         // that OR's per-row x-openregister-validation cannot perform).
         //
-        // The CREATE half declares its schema interest up front: the handler's
-        // very first guard is
-        // `$schema !== ApplicationVersionService::APPLICATION_SCHEMA` (= the
-        // `application` schema slug), read off the entity's own
-        // `getSchemaSlug()`. Registered globally it woke on every object write
-        // on the instance. No register is declared on purpose — OpenBuild
-        // creates registers dynamically, one per built app and environment
-        // (`openbuild-pet-store-production`, `openbuild-library-desk-development`,
-        // …), so a static register list could never cover a register that does
-        // not exist yet. Schema-only is exactly the handler's own guard.
+        // The CREATE half declares its schema interest up front and is
+        // therefore subscribed from boot() — see boot().
         //
         // The UPDATE half stays a plain registration: `ObjectUpdatingEvent`
         // exposes `getNewObject()`/`getOldObject()` but no `getObject()`, which
         // is the accessor OpenRegister's subscription proxy identifies the
         // written row with. It would fail open on every dispatch, so declaring
         // an interest there buys nothing and only adds indirection.
-        $this->registerFilteredObjectListener(
-            context: $context,
-            event: ObjectCreatingEvent::class,
-            listener: ProductionVersionGuardListener::class,
-            registers: null,
-            schemas: ['application']
-        );
         $context->registerEventListener(
             event: ObjectUpdatingEvent::class,
             listener: ProductionVersionGuardListener::class
@@ -375,27 +361,6 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(
             event: ObjectUpdatingEvent::class,
             listener: HybridMetadataLockListener::class
-        );
-
-        // Automation-designer artifact cleanup (spec REQ-AUTD-005). Automation
-        // CRUD (including delete) stays on OR REST per ADR-022 — no delete
-        // route on AutomationsController — so removing exactly the
-        // provenance-listed compiled artifacts on delete is realized here as
-        // the imperative companion to that declarative delete (ADR-031
-        // §Exceptions(1)), mirroring the two listeners registered above.
-        //
-        // Declares its schema interest up front: the handler's first guard is
-        // `$schema !== AutomationCompilerService::AUTOMATION_SCHEMA` (= the
-        // `automation` schema slug), read off the entity's own
-        // `getSchemaSlug()`. Schema-only, no register — see the
-        // ProductionVersionGuardListener note above on OpenBuild's dynamically
-        // created per-app registers.
-        $this->registerFilteredObjectListener(
-            context: $context,
-            event: ObjectDeletedEvent::class,
-            listener: AutomationCleanupListener::class,
-            registers: null,
-            schemas: ['automation']
         );
 
         // Automation-approval-steps: trigger-fire half of the `approval`
@@ -529,16 +494,24 @@ class Application extends App implements IBootstrap
      * degrades to the plain global registration it replaced, which is exactly
      * the behaviour every listener had before.
      *
-     * @param IRegistrationContext   $context   Registration context.
-     * @param string                 $event     OpenRegister event class name.
-     * @param string                 $listener  Listener class name.
-     * @param array<int,string>|null $registers Register slugs the listener reacts to, or null for all.
-     * @param array<int,string>|null $schemas   Schema slugs the listener reacts to, or null for all.
+     * MUST be called from boot(), never from register(). Nextcloud enables each
+     * app's own autoloader immediately before calling that app's register(), so
+     * during register() OpenRegister's classes are only autoloadable to apps
+     * that happen to be registered after it — the class_exists() guard below
+     * would then resolve differently purely by app load order and silently fall
+     * back to an unfiltered registration. boot() runs only after every app's
+     * register() has completed, so the guard is order-independent there.
+     *
+     * @param IEventDispatcher       $dispatcher The live event dispatcher.
+     * @param string                 $event      OpenRegister event class name.
+     * @param string                 $listener   Listener class name.
+     * @param array<int,string>|null $registers  Register slugs the listener reacts to, or null for all.
+     * @param array<int,string>|null $schemas    Schema slugs the listener reacts to, or null for all.
      *
      * @return void
      */
     private function registerFilteredObjectListener(
-        IRegistrationContext $context,
+        IEventDispatcher $dispatcher,
         string $event,
         string $listener,
         ?array $registers,
@@ -546,8 +519,8 @@ class Application extends App implements IBootstrap
     ): void {
         $subscription = '\\OCA\\OpenRegister\\Event\\ObjectEventSubscription';
         if (class_exists($subscription) === true) {
-            $subscription::register(
-                context: $context,
+            $subscription::subscribe(
+                dispatcher: $dispatcher,
                 event: $event,
                 listener: $listener,
                 registers: $registers,
@@ -556,7 +529,16 @@ class Application extends App implements IBootstrap
             return;
         }
 
-        $context->registerEventListener(event: $event, listener: $listener);
+        // Loud on purpose. This fallback is correct but UNFILTERED, and while it
+        // was silent it was indistinguishable from a working narrowing.
+        \OCP\Server::get(LoggerInterface::class)->warning(
+            'OpenRegister ObjectEventSubscription unavailable: '.$listener
+            .' fell back to an UNFILTERED registration for '.$event
+            .' and will be invoked on every object write instance-wide.',
+            ['app' => self::APP_ID]
+        );
+
+        $dispatcher->addServiceListener($event, $listener);
     }//end registerFilteredObjectListener()
 
     /**
@@ -567,6 +549,9 @@ class Application extends App implements IBootstrap
      * Lazily resolved from the DI container to avoid instantiating the
      * service tree when OR is not installed.
      *
+     * Also subscribes the narrowed object-lifecycle listeners — see
+     * registerFilteredObjectListener() for why that cannot happen in register().
+     *
      * @param IBootContext $context The boot context
      *
      * @return void
@@ -575,6 +560,48 @@ class Application extends App implements IBootstrap
      */
     public function boot(IBootContext $context): void
     {
+        $dispatcher = $context->getServerContainer()->get(IEventDispatcher::class);
+
+        // Cross-row integrity guard, CREATE half (see register() for the full
+        // rationale and the UPDATE half). Declares its schema interest up front:
+        // the handler's very first guard is
+        // `$schema !== ApplicationVersionService::APPLICATION_SCHEMA` (= the
+        // `application` schema slug), read off the entity's own
+        // `getSchemaSlug()`. Registered globally it woke on every object write
+        // on the instance. No register is declared on purpose — OpenBuild
+        // creates registers dynamically, one per built app and environment
+        // (`openbuild-pet-store-production`, `openbuild-library-desk-development`,
+        // …), so a static register list could never cover a register that does
+        // not exist yet. Schema-only is exactly the handler's own guard.
+        $this->registerFilteredObjectListener(
+            dispatcher: $dispatcher,
+            event: ObjectCreatingEvent::class,
+            listener: ProductionVersionGuardListener::class,
+            registers: null,
+            schemas: ['application']
+        );
+
+        // Automation-designer artifact cleanup (spec REQ-AUTD-005). Automation
+        // CRUD (including delete) stays on OR REST per ADR-022 — no delete
+        // route on AutomationsController — so removing exactly the
+        // provenance-listed compiled artifacts on delete is realized here as
+        // the imperative companion to that declarative delete (ADR-031
+        // §Exceptions(1)), mirroring the guard listeners in register().
+        //
+        // Declares its schema interest up front: the handler's first guard is
+        // `$schema !== AutomationCompilerService::AUTOMATION_SCHEMA` (= the
+        // `automation` schema slug), read off the entity's own
+        // `getSchemaSlug()`. Schema-only, no register — see the
+        // ProductionVersionGuardListener note above on OpenBuild's dynamically
+        // created per-app registers.
+        $this->registerFilteredObjectListener(
+            dispatcher: $dispatcher,
+            event: ObjectDeletedEvent::class,
+            listener: AutomationCleanupListener::class,
+            registers: null,
+            schemas: ['automation']
+        );
+
         try {
             $container = $context->getAppContainer();
             $container->get(AppNavigationService::class)
