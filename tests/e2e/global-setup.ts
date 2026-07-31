@@ -239,6 +239,125 @@ async function seedDocudeskTemplateFixtures(
 	}
 }
 
+/**
+ * The RBAC fixture users the permission specs need, with the credentials those
+ * specs already expect. Passwords are >= 10 chars: Nextcloud silently refuses
+ * shorter ones and the user is then simply absent.
+ */
+export const ROLE_USERS = [
+	{ id: 'rbac-owner', pass: 'RbacOwner-1!', groups: [] as string[] },
+	{ id: 'rbac-editor', pass: 'RbacEditor-1!', groups: ['rbac-editors'] },
+	{ id: 'rbac-viewer', pass: 'RbacViewer-1!', groups: ['rbac-viewers'] },
+	// Deliberately in NO group referenced by any Application's permissions.
+	{ id: 'rbac-outsider', pass: 'RbacOutsider-1!', groups: [] as string[] },
+] as const
+
+/**
+ * Provision the RBAC fixture users and groups through the OCS provisioning API,
+ * then mint one storageState per user under `tests/e2e/.auth/{id}.json`.
+ *
+ * Why this lives in globalSetup rather than in the specs: the permission suites
+ * used to form-log-in per test. Nextcloud's brute-force throttle fires after a
+ * handful of near-simultaneous logins from one IP, and once it does every later
+ * spec falls back to /login — a whole-suite false red. Logging each role in
+ * exactly ONCE here, and letting specs attach the stored session, is what makes
+ * those suites safe to enable at all.
+ *
+ * Idempotent: an existing user returns OCS 102 ("user already exists"), which is
+ * treated as success. Failures are logged, never thrown — a missing RBAC user
+ * must not take down the suites that do not need one; those specs assert the
+ * session they were given and fail on their own terms.
+ *
+ * @param baseURL       The instance under test.
+ * @param adminUser     Admin login, for the provisioning calls.
+ * @param adminPassword Admin password.
+ * @return {Promise<void>}
+ */
+async function seedRoleUsersAndSessions(
+	baseURL: string,
+	adminUser: string,
+	adminPassword: string,
+): Promise<void> {
+	const auth = 'Basic ' + Buffer.from(`${adminUser}:${adminPassword}`).toString('base64')
+	const headers = {
+		Authorization: auth,
+		'OCS-APIRequest': 'true',
+		'Content-Type': 'application/x-www-form-urlencoded',
+		Accept: 'application/json',
+	}
+
+	const groups = [...new Set(ROLE_USERS.flatMap((u) => u.groups))]
+	for (const group of groups) {
+		try {
+			await fetch(`${baseURL}/ocs/v2.php/cloud/groups`, {
+				method: 'POST',
+				headers,
+				body: new URLSearchParams({ groupid: group }).toString(),
+			})
+		} catch (e) {
+			// eslint-disable-next-line no-console
+			console.warn(`[globalSetup] could not create group ${group}: ${(e as Error).message}`)
+		}
+	}
+
+	for (const user of ROLE_USERS) {
+		try {
+			const body = new URLSearchParams({ userid: user.id, password: user.pass })
+			for (const group of user.groups) {
+				body.append('groups[]', group)
+			}
+			const resp = await fetch(`${baseURL}/ocs/v2.php/cloud/users`, {
+				method: 'POST',
+				headers,
+				body: body.toString(),
+			})
+			const text = await resp.text()
+			// OCS v2 answers 200 on success; the v1 shape answers 100 (created) or
+			// 102 (already exists). All three are the state we want.
+			if (!/<statuscode>(10[02]|200)<\/statuscode>|"statuscode":(10[02]|200)/.test(text)) {
+				// eslint-disable-next-line no-console
+				console.warn(`[globalSetup] provisioning ${user.id} returned an unexpected status: ${text.slice(0, 160)}`)
+			}
+		} catch (e) {
+			// eslint-disable-next-line no-console
+			console.warn(`[globalSetup] could not provision ${user.id}: ${(e as Error).message}`)
+		}
+	}
+
+	// Mint one session per role — ONCE, sequentially.
+	const browser = await chromium.launch()
+	for (const user of ROLE_USERS) {
+		const statePath = `tests/e2e/.auth/${user.id}.json`
+		const context = await browser.newContext({ baseURL })
+		const page = await context.newPage()
+		try {
+			await page.goto('/index.php/login', { waitUntil: 'domcontentloaded', timeout: 90_000 })
+			await page.locator('input[name="user"]').fill(user.id)
+			await page.locator('input[name="password"]').fill(user.pass)
+			await page.locator('form').first().evaluate((form: HTMLFormElement) => form.requestSubmit())
+			// Wait on the URL leaving /login rather than on `#header`: the landing
+			// page differs per user (dashboard vs first-run) and a header selector
+			// races the theming bundle. Generous budget — four logins in a row is
+			// exactly the pattern Nextcloud's brute-force throttle slows down, which
+			// is why this is done ONCE here rather than per test.
+			await page.waitForURL((url) => !/\/login(\?|$|\/)/.test(url.toString()), { timeout: 60_000 })
+			await context.storageState({ path: statePath })
+			// eslint-disable-next-line no-console
+			console.log(`[globalSetup] ${user.id} session stored at ${statePath}`)
+		} catch (e) {
+			// eslint-disable-next-line no-console
+			console.warn(`[globalSetup] could not mint a session for ${user.id}: ${(e as Error).message}`)
+		} finally {
+			await context.close()
+		}
+		// Space the logins out: consecutive form logins from one IP are what
+		// trips the throttle, and a throttled login stalls well past any
+		// reasonable timeout.
+		await new Promise((resolve) => setTimeout(resolve, 1_500))
+	}
+	await browser.close()
+}
+
 export default async function globalSetup(config: FullConfig): Promise<void> {
 	const baseURL = (config.projects[0].use.baseURL as string)
 		|| process.env.PLAYWRIGHT_BASE_URL
@@ -266,61 +385,61 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// slow path an explicit budget and two more attempts before giving up.
 	const LOGIN_ATTEMPTS = 3
 	for (let attempt = 1; attempt <= LOGIN_ATTEMPTS; attempt++) {
-	try {
-		await page.goto('/index.php/login', { waitUntil: 'domcontentloaded', timeout: 90_000 })
-		await page.locator('input[name="user"]').fill(adminUser)
-		await page.locator('input[name="password"]').fill(adminPassword)
-		// Submit via the form rather than a button click: on a slow/loaded
-		// instance the themed submit button's click can be swallowed by an
-		// overlay/animation and never navigate. Falling back to a button
-		// click keeps it working where the form ref is unavailable.
-		await page.evaluate(() => {
-			const form = document.querySelector('form[name="login"], form') as HTMLFormElement | null
-			if (form && typeof form.requestSubmit === 'function') {
-				form.requestSubmit()
-			} else if (form) {
-				form.submit()
-			} else {
-				document.querySelector<HTMLButtonElement>('button[type="submit"], input[type="submit"]')?.click()
+		try {
+			await page.goto('/index.php/login', { waitUntil: 'domcontentloaded', timeout: 90_000 })
+			await page.locator('input[name="user"]').fill(adminUser)
+			await page.locator('input[name="password"]').fill(adminPassword)
+			// Submit via the form rather than a button click: on a slow/loaded
+			// instance the themed submit button's click can be swallowed by an
+			// overlay/animation and never navigate. Falling back to a button
+			// click keeps it working where the form ref is unavailable.
+			await page.evaluate(() => {
+				const form = document.querySelector('form[name="login"], form') as HTMLFormElement | null
+				if (form && typeof form.requestSubmit === 'function') {
+					form.requestSubmit()
+				} else if (form) {
+					form.submit()
+				} else {
+					document.querySelector<HTMLButtonElement>('button[type="submit"], input[type="submit"]')?.click()
+				}
+			})
+			// Accept both pretty + index.php-prefixed redirects. Generous
+			// timeout for slow dev instances.
+			//
+			// Do NOT treat the post-login URL as the success signal on its own: on a
+			// loaded dev instance the redirect chain (login -> apps/<default app>)
+			// can outlast any reasonable timeout while the session cookie is in fact
+			// already set, which used to abort setup and leave EVERY spec running
+			// unauthenticated (a whole-suite false red). Wait for the URL, but fall
+			// back to probing an authenticated API endpoint and accept the session
+			// whenever that probe succeeds.
+			await page.waitForURL(/\/apps\//, { timeout: 60_000 }).catch(() => {})
+			const authed = await page.evaluate(async () => {
+				try {
+					const resp = await fetch('/index.php/apps/openbuild/api/applications', {
+						headers: { 'OCS-APIRequest': 'true' },
+					})
+					return resp.status !== 401
+				} catch {
+					return false
+				}
+			})
+			if (authed === false) {
+				throw new Error('session cookie not accepted by an authenticated endpoint (401)')
 			}
-		})
-		// Accept both pretty + index.php-prefixed redirects. Generous
-		// timeout for slow dev instances.
-		//
-		// Do NOT treat the post-login URL as the success signal on its own: on a
-		// loaded dev instance the redirect chain (login -> apps/<default app>)
-		// can outlast any reasonable timeout while the session cookie is in fact
-		// already set, which used to abort setup and leave EVERY spec running
-		// unauthenticated (a whole-suite false red). Wait for the URL, but fall
-		// back to probing an authenticated API endpoint and accept the session
-		// whenever that probe succeeds.
-		await page.waitForURL(/\/apps\//, { timeout: 60_000 }).catch(() => {})
-		const authed = await page.evaluate(async () => {
-			try {
-				const resp = await fetch('/index.php/apps/openbuild/api/applications', {
-					headers: { 'OCS-APIRequest': 'true' },
-				})
-				return resp.status !== 401
-			} catch {
-				return false
-			}
-		})
-		if (authed === false) {
-			throw new Error('session cookie not accepted by an authenticated endpoint (401)')
-		}
-		await context.storageState({ path: storagePath })
-		// eslint-disable-next-line no-console
-		console.log(`[globalSetup] authenticated session stored at ${storagePath}`)
-		break
-	} catch (e) {
-		if (attempt < LOGIN_ATTEMPTS) {
+			await context.storageState({ path: storagePath })
 			// eslint-disable-next-line no-console
-			console.warn(`[globalSetup] login attempt ${attempt}/${LOGIN_ATTEMPTS} failed (${(e as Error).message}) — retrying`)
-			continue
+			console.log(`[globalSetup] authenticated session stored at ${storagePath}`)
+			break
+		} catch (e) {
+			if (attempt < LOGIN_ATTEMPTS) {
+			// eslint-disable-next-line no-console
+				console.warn(`[globalSetup] login attempt ${attempt}/${LOGIN_ATTEMPTS} failed (${(e as Error).message}) — retrying`)
+				continue
+			}
+			// eslint-disable-next-line no-console
+			console.warn(`[globalSetup] login failed after ${LOGIN_ATTEMPTS} attempts — specs will run unauthenticated: ${(e as Error).message}`)
 		}
-		// eslint-disable-next-line no-console
-		console.warn(`[globalSetup] login failed after ${LOGIN_ATTEMPTS} attempts — specs will run unauthenticated: ${(e as Error).message}`)
-	}
 	}
 	await browser.close()
 
@@ -330,4 +449,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// Configure Docudesk + seed its template fixtures (idempotent, and a no-op
 	// with a log when Docudesk is not installed).
 	await seedDocudeskTemplateFixtures(baseURL, adminUser, adminPassword)
+
+	// RBAC fixture users + one stored session per role (idempotent).
+	await seedRoleUsersAndSessions(baseURL, adminUser, adminPassword)
 }
