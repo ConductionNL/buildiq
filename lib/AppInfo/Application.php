@@ -334,9 +334,29 @@ class Application extends App implements IBootstrap
         // ApplicationVersion whose `application` relation refers back to
         // this Application (ADR-031 §Exceptions(1) — cross-row validation
         // that OR's per-row x-openregister-validation cannot perform).
-        $context->registerEventListener(
+        //
+        // The CREATE half declares its schema interest up front: the handler's
+        // very first guard is
+        // `$schema !== ApplicationVersionService::APPLICATION_SCHEMA` (= the
+        // `application` schema slug), read off the entity's own
+        // `getSchemaSlug()`. Registered globally it woke on every object write
+        // on the instance. No register is declared on purpose — OpenBuild
+        // creates registers dynamically, one per built app and environment
+        // (`openbuild-pet-store-production`, `openbuild-library-desk-development`,
+        // …), so a static register list could never cover a register that does
+        // not exist yet. Schema-only is exactly the handler's own guard.
+        //
+        // The UPDATE half stays a plain registration: `ObjectUpdatingEvent`
+        // exposes `getNewObject()`/`getOldObject()` but no `getObject()`, which
+        // is the accessor OpenRegister's subscription proxy identifies the
+        // written row with. It would fail open on every dispatch, so declaring
+        // an interest there buys nothing and only adds indirection.
+        $this->registerFilteredObjectListener(
+            context: $context,
             event: ObjectCreatingEvent::class,
-            listener: ProductionVersionGuardListener::class
+            listener: ProductionVersionGuardListener::class,
+            registers: null,
+            schemas: ['application']
         );
         $context->registerEventListener(
             event: ObjectUpdatingEvent::class,
@@ -363,9 +383,19 @@ class Application extends App implements IBootstrap
         // provenance-listed compiled artifacts on delete is realized here as
         // the imperative companion to that declarative delete (ADR-031
         // §Exceptions(1)), mirroring the two listeners registered above.
-        $context->registerEventListener(
+        //
+        // Declares its schema interest up front: the handler's first guard is
+        // `$schema !== AutomationCompilerService::AUTOMATION_SCHEMA` (= the
+        // `automation` schema slug), read off the entity's own
+        // `getSchemaSlug()`. Schema-only, no register — see the
+        // ProductionVersionGuardListener note above on OpenBuild's dynamically
+        // created per-app registers.
+        $this->registerFilteredObjectListener(
+            context: $context,
             event: ObjectDeletedEvent::class,
-            listener: AutomationCleanupListener::class
+            listener: AutomationCleanupListener::class,
+            registers: null,
+            schemas: ['automation']
         );
 
         // Automation-approval-steps: trigger-fire half of the `approval`
@@ -379,6 +409,13 @@ class Application extends App implements IBootstrap
         // gate, a different use case). Registered for all four trigger-shape
         // events the v1 matrix supports (design.md Decision 1 of
         // automation-approval-steps).
+        //
+        // Deliberately NOT narrowed with ObjectEventSubscription: this
+        // listener has no static schema interest at all. It reacts to whatever
+        // schema an author names in an `automation` row's trigger config, in
+        // whichever per-app register that automation targets — both created at
+        // runtime. Declaring anything here would silently stop the listener
+        // firing for every automation authored after this line was written.
         $context->registerEventListener(
             event: ObjectCreatedEvent::class,
             listener: AutomationApprovalTriggerListener::class
@@ -419,6 +456,11 @@ class Application extends App implements IBootstrap
         // owner-impersonated call happens here, at trigger-fire time.
         // Registered for the same four trigger-shape events the v1 matrix
         // supports (design.md Decision 2 of automation-document-action).
+        //
+        // Deliberately NOT narrowed with ObjectEventSubscription, for exactly
+        // the reason given on AutomationApprovalTriggerListener above: the
+        // schema it reacts to comes from runtime automation config, not from
+        // anything statically knowable here.
         $context->registerEventListener(
             event: ObjectCreatedEvent::class,
             listener: DocumentGenerationListener::class
@@ -476,6 +518,46 @@ class Application extends App implements IBootstrap
 
         // Repair steps (InitializeSettings + MigrateToVersionedModel + …) are declared in info.xml.
     }//end register()
+
+    /**
+     * Register an object-lifecycle listener that declares its interest up front.
+     *
+     * OpenRegister's `ObjectEventSubscription` records the register/schema slugs
+     * a listener reacts to and routes dispatches through a single shared proxy,
+     * so an uninterested listener is neither constructed nor invoked. When
+     * OpenRegister is absent — OpenBuild carries no hard dependency on it — this
+     * degrades to the plain global registration it replaced, which is exactly
+     * the behaviour every listener had before.
+     *
+     * @param IRegistrationContext   $context   Registration context.
+     * @param string                 $event     OpenRegister event class name.
+     * @param string                 $listener  Listener class name.
+     * @param array<int,string>|null $registers Register slugs the listener reacts to, or null for all.
+     * @param array<int,string>|null $schemas   Schema slugs the listener reacts to, or null for all.
+     *
+     * @return void
+     */
+    private function registerFilteredObjectListener(
+        IRegistrationContext $context,
+        string $event,
+        string $listener,
+        ?array $registers,
+        ?array $schemas
+    ): void {
+        $subscription = '\\OCA\\OpenRegister\\Event\\ObjectEventSubscription';
+        if (class_exists($subscription) === true) {
+            $subscription::register(
+                context: $context,
+                event: $event,
+                listener: $listener,
+                registers: $registers,
+                schemas: $schemas
+            );
+            return;
+        }
+
+        $context->registerEventListener(event: $event, listener: $listener);
+    }//end registerFilteredObjectListener()
 
     /**
      * Boot the application.
