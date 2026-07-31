@@ -46,7 +46,32 @@ async function loginAs(page: import('@playwright/test').Page, user: string, pass
 // ---------------------------------------------------------------------------
 // Tests that require a live call site — SKIPPED until spec B ships
 // ---------------------------------------------------------------------------
-// STILL SKIPPED, but not for the #41 reason that was written here. The real
+// STILL SKIPPED — and the reason is now VERIFIED against a real multi-version
+// chain (tests/e2e/support/versionChain.ts), not inferred:
+//
+//   - the chain renders correctly: pills read `development`, `staging`,
+//     `* production`, and `.ob-detail-header__pill-promote` appears on exactly
+//     the two non-terminal pills (REQ-OBADO-012 is covered in
+//     applicationDetailOverview.spec.ts);
+//   - clicking that affordance opens NOTHING. `onPromoteClick()` looks for
+//     `window.openbuild.openPromoteDialog`, which is defined nowhere in src/,
+//     then falls back to emitting a `promote` event that no parent handles, and
+//     logs `console.debug('openbuild: promote dialog not registered —
+//     deferred')`. PromoteVersionDialog.vue is fully built and unit-tested
+//     (tests/dialogs/PromoteVersionDialog.spec.js) but is imported by nothing.
+//
+// So the affordance ships to users and no-ops. That is unfinished work rather
+// than a regression ("deferred" is the code's own word), and wiring the call
+// site is a feature change with destructive promotion semantics — not something
+// to do from a test file. Un-quarantining waits on that call site.
+//
+// One further caution for whoever writes it: these scenarios end by CLICKING
+// Confirm, which performs a real promotion (empty-start wipes the target
+// register). Against a fixture chain that makes the suite non-idempotent — the
+// gating assertions are the valuable part and should stop at Cancel.
+//
+// The original note follows; its diagnosis was right.
+// The real
 // blocker is this file's own TODO: every scenario below reaches the dialog
 // through
 //     TODO_PROMOTE_BUTTON_SELECTOR = '[data-testid="promote-version-btn"], button:has-text("Promote")'

@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 import { test, expect } from '@playwright/test'
+import { suppressSupportDialog } from './support/appFixture'
+import { ensureVersionChain } from './support/versionChain'
 
 /**
  * Playwright e2e — Version routing (spec E, openbuild-version-routing).
@@ -29,9 +31,13 @@ import { test, expect } from '@playwright/test'
  */
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const ADMIN = { user: process.env.NC_ADMIN_USER ?? 'admin', pass: process.env.NC_ADMIN_PASSWORD ?? 'admin' }
+// Admin comes from globalSetup's shared storageState; only 9.2 still needs an
+// explicit (viewer) login of its own.
 const VIEWER = { user: process.env.NC_VIEWER_USER ?? 'rbac-viewer', pass: process.env.NC_VIEWER_PASS ?? 'RbacViewer-1!' }
-const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'hello-world'
+// A DEDICATED fixture app carrying development -> staging -> production.
+// hello-world ships exactly one version (`production`), which is why every
+// block here used to skip itself; see tests/e2e/support/versionChain.ts.
+const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'pw-verchain'
 const STAGING_VERSION = process.env.NC_STAGING_VERSION ?? 'staging'
 
 async function loginAs(page: import('@playwright/test').Page, user: string, pass: string): Promise<void> {
@@ -66,25 +72,16 @@ async function loginAs(page: import('@playwright/test').Page, user: string, pass
 //
 // REQ-OBVR-009 (the version-not-found state BuilderHost renders) is NOT blocked
 // by any of this and is exercised elsewhere.
-test.describe.skip('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008)', () => {
-	test.use({ storageState: { cookies: [], origins: [] } })
-
+test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008)', () => {
 	test.beforeEach(async ({ page }) => {
-		await loginAs(page, ADMIN.user, ADMIN.pass)
+		await suppressSupportDialog(page)
+		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 	})
 
 	test('navigating to /builder/{slug}/schemas?_version=staging preserves the param after reload', async ({ page }) => {
-		// Check whether a "staging" version is accessible — if not, skip.
-		const manifestCheck = await page.request.get(
-			`${BASE}/index.php/apps/openbuild/api/applications/${TEST_SLUG}/versions/${STAGING_VERSION}`,
-			{ headers: { 'OCS-APIRequest': 'true' } },
-		)
-		if (manifestCheck.status() !== 200) {
-			test.skip(`SKIP 9.1: ApplicationVersion "${STAGING_VERSION}" not found — seed a version with this slug first`)
-			return
-		}
-
-		const targetUrl = `${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`
+		// No `/index.php` prefix: every other spec navigates the pretty form, and the
+		// SPA's router base is resolved from it.
+		const targetUrl = `${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`
 		await page.goto(targetUrl)
 		await page.waitForLoadState('networkidle', { timeout: 20_000 })
 
@@ -94,13 +91,12 @@ test.describe.skip('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBV
 			`URL must still contain ?_version=${STAGING_VERSION} after initial navigation`,
 		).toContain(`_version=${STAGING_VERSION}`)
 
-		// Assert the SchemaDesigner view is mounted (any schema-related heading
-		// or the schema list panel).
-		const schemaSurface = page
-			.locator('[data-testid="schema-designer"], .ob-schema-designer, h2, h3')
-			.filter({ hasText: /schema|design|version/i })
-			.first()
-		await expect(schemaSurface).toBeVisible({ timeout: 10_000 })
+		// Assert the schema designer actually mounted. The original looked for
+		// `[data-testid="schema-designer"]` / `.ob-schema-designer`, neither of
+		// which exists in src/, with an `h2, h3` text fallback — so it would have
+		// passed on any page with a matching heading. The real panel is
+		// `.openbuild-schema-list`.
+		await expect(page.locator('.openbuild-schema-list')).toBeVisible({ timeout: 30_000 })
 
 		// Reload and re-check.
 		await page.reload()
@@ -111,12 +107,9 @@ test.describe.skip('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBV
 			`URL must still contain ?_version=${STAGING_VERSION} after page reload`,
 		).toContain(`_version=${STAGING_VERSION}`)
 
-		// The schema designer should still be visible after reload.
-		await expect(
-			page.locator('[data-testid="schema-designer"], .ob-schema-designer, h2, h3')
-				.filter({ hasText: /schema|design|version/i })
-				.first(),
-		).toBeVisible({ timeout: 15_000 })
+		// The schema designer must still be mounted after the reload — the point
+		// of the requirement is that a bookmarked version URL is fully usable.
+		await expect(page.locator('.openbuild-schema-list')).toBeVisible({ timeout: 30_000 })
 	})
 })
 
@@ -192,65 +185,42 @@ test.describe.skip('9.2 Unauthorised access to non-production version shows 404 
 // 9.3 — Default version is most-upstream-non-production fallback
 // ---------------------------------------------------------------------------
 // See the block comment on 9.1 for the true reason (version chain + absent selectors).
-test.describe.skip('9.3 Default version resolution — most-upstream-non-production fallback (REQ-OBVR-004)', () => {
-	test.use({ storageState: { cookies: [], origins: [] } })
-
+// 9.3 — Default version resolution (REQ-OBVR-004)
+//
+// The "most-upstream non-production fallback" rule itself is NOT assertable
+// through this UI, and the original test knew it: it accepted any of three
+// possible signals, ended on `expect(productionActive).toBe(false)` — which
+// passes when NO signal exists at all — and then `console.warn`ed that the
+// signal was missing. That is green-but-dead; it would report coverage of
+// REQ-OBVR-004 while proving nothing.
+//
+// Measured against the built app: navigating to /builder/{slug} with no
+// `?_version=` leaves the URL untouched and issues a manifest request that
+// carries no version marker either, so the resolved version is invisible from
+// the outside. The rule is unit-covered, properly, in
+// tests/composables/useApplicationVersion.spec.js (it is pure logic over the
+// promotesTo graph).
+//
+// What IS worth asserting end-to-end, and is asserted here: a version-less URL
+// still resolves to SOMETHING and renders the builder rather than erroring —
+// the regression that would actually hurt a user who drops the query param.
+test.describe('9.3 Default version resolution — a version-less URL still renders (REQ-OBVR-004)', () => {
 	test.beforeEach(async ({ page }) => {
-		await loginAs(page, ADMIN.user, ADMIN.pass)
+		await suppressSupportDialog(page)
+		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 	})
 
-	test('navigating without ?_version= resolves the development (upstream-most) version, not production', async ({ page }) => {
-		// This test assumes a three-version chain: development → staging → production.
-		// Check that all three exist before proceeding.
-		const [devResp, stagingResp] = await Promise.all([
-			page.request.get(
-				`${BASE}/index.php/apps/openbuild/api/applications/${TEST_SLUG}/versions/development`,
-				{ headers: { 'OCS-APIRequest': 'true' } },
-			).catch(() => null),
-			page.request.get(
-				`${BASE}/index.php/apps/openbuild/api/applications/${TEST_SLUG}/versions/staging`,
-				{ headers: { 'OCS-APIRequest': 'true' } },
-			).catch(() => null),
-		])
+	test('navigating without ?_version= resolves a version and renders the builder', async ({ page }) => {
+		await page.goto(`${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas`, { waitUntil: 'domcontentloaded' })
 
-		const chainExists = (devResp?.status() === 200) && (stagingResp?.status() === 200)
-		if (!chainExists) {
-			test.skip('SKIP 9.3: development+staging chain not seeded — create ApplicationVersions development → staging → production first')
-			return
-		}
+		// It must resolve to a usable designer without a version in the URL.
+		await expect(page.locator('.openbuild-schema-list')).toBeVisible({ timeout: 30_000 })
 
-		// Navigate to the builder root (no ?_version=).
-		await page.goto(`${BASE}/apps/openbuild/builder/${TEST_SLUG}`)
-		await page.waitForLoadState('networkidle', { timeout: 20_000 })
-
-		// The composable (useApplicationVersion) should resolve "development"
-		// as the most-upstream non-production version and either:
-		//   a) Append ?_version=development to the URL, OR
-		//   b) Expose it via a data attribute on the builder root element, OR
-		//   c) Show a heading/breadcrumb containing "development".
-		// Accept any of these signals.
-
-		const urlContainsDev = page.url().includes('_version=development')
-		const devHeading = page.getByText(/development/i, { exact: false }).first()
-		const devHeadingVisible = await devHeading.isVisible({ timeout: 8_000 }).catch(() => false)
-		const builderRoot = page.locator('[data-version="development"], [data-app-version="development"]')
-		const builderRootVisible = await builderRoot.isVisible({ timeout: 2_000 }).catch(() => false)
-
-		// Assert that "production" (the terminal version) is NOT the active one
-		// (which would be the wrong fallback per REQ-OBVR-004 Scenario 2).
-		const productionActive = page.url().includes('_version=production')
-			|| (await page.locator('[data-version="production"]').isVisible({ timeout: 1_000 }).catch(() => false))
-
-		expect(
-			productionActive,
-			'production version must NOT be selected as the default when a non-production upstream exists',
-		).toBe(false)
-
-		if (!urlContainsDev && !devHeadingVisible && !builderRootVisible) {
-			// The signal is not yet exposed — log a note. The composable
-			// unit tests in tests/composables/useApplicationVersion.spec.js
-			// cover the fallback logic in isolation.
-			console.warn('9.3: no explicit "development" signal found in the DOM/URL — composable unit tests cover this path; consider adding a data-app-version attribute to BuilderHost for e2e discoverability')
-		}
+		// And it must not have silently rewritten itself onto production: when a
+		// non-production upstream exists, production is the WRONG fallback
+		// (REQ-OBVR-004 Scenario 2). This is the one part of the original
+		// assertion that carries meaning, kept deliberately.
+		expect(page.url(), 'production must not be selected while an upstream version exists')
+			.not.toContain('_version=production')
 	})
 })

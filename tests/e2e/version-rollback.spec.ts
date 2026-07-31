@@ -73,6 +73,23 @@ async function loginAs(page: Page, user: string, pass: string): Promise<void> {
 // restore-and-stay-draft and cancel-sends-no-write scenarios are both driven,
 // against the real sidebar surface, in
 // tests/e2e/spec-coverage/openbuild-runtime.spec.ts.
+// STILL SKIPPED, with a measured reason replacing the #41 one.
+//
+// The rollback surface it targets DOES exist — `.version-history__row` and
+// `.version-history__btn--danger` are rendered by src/views/VersionHistory.vue,
+// and RollbackConfirmModal.vue ships. Two things block it:
+//
+//   - it reaches the app by clicking `[data-slug="hello-world"]`, an attribute
+//     ApplicationCard.vue does not render (the slug appears as a `/{slug}` chip;
+//     the same defect PR #55 fixed in applicationCard.spec.ts);
+//   - it then edits the manifest in "the first textarea on the page" and clicks
+//     Publish. The raw manifest editor is a sidebar tab on the app DETAIL page
+//     (ApplicationManifestTab, `data-testid="openbuild-editor-textarea"`), which
+//     this navigation never opens.
+//
+// Retarget both, then it should run against the fixture chain in
+// tests/e2e/support/versionChain.ts (publish needs more than one version to
+// produce the two history rows it asserts).
 test.describe.skip('openbuild-versioning — publish + rollback (REQ-OBV-005 / REQ-OBR-009)', () => {
 	test.use({ storageState: { cookies: [], origins: [] } })
 
