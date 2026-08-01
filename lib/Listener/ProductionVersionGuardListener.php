@@ -40,6 +40,8 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Listener;
 
 use OCA\OpenBuild\Service\ApplicationVersionService;
+use OCA\OpenBuild\Service\ListenerSlugContract;
+use OCA\OpenBuild\Service\ObjectSchemaSlugResolver;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCP\EventDispatcher\Event;
@@ -57,14 +59,18 @@ class ProductionVersionGuardListener implements IEventListener
     /**
      * Constructor.
      *
-     * @param LoggerInterface           $logger  PSR logger for diagnostics
-     * @param ApplicationVersionService $service The cross-row guard owner
+     * @param LoggerInterface           $logger   PSR logger for diagnostics
+     * @param ApplicationVersionService $service  The cross-row guard owner
+     * @param ObjectSchemaSlugResolver  $slugs    Resolves the event's schema id to a slug
+     * @param ListenerSlugContract      $contract Gates the corrected comparison
      *
      * @return void
      */
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly ApplicationVersionService $service,
+        private readonly ObjectSchemaSlugResolver $slugs,
+        private readonly ListenerSlugContract $contract,
     ) {
     }//end __construct()
 
@@ -96,8 +102,27 @@ class ProductionVersionGuardListener implements IEventListener
             return;
         }
 
-        $schema = $this->extractSchemaSlug(entity: $entity);
-        if ($schema !== ApplicationVersionService::APPLICATION_SCHEMA) {
+        // GATED ON PURPOSE — read before flipping the flag.
+        //
+        // This guard has never once executed: extractSchemaSlug() returned the
+        // schema's numeric id and compared it to the slug 'application', so the
+        // `!==` was always true and this method always returned here. The
+        // comparison below is now correct, but making it correct CHANGES
+        // BEHAVIOUR: this is a fail-closed validation guard, so waking it
+        // starts REJECTING production-version writes that succeed today.
+        //
+        // Enabling it is therefore a rollout decision, not a bug fix, and it is
+        // deliberately off by default. Enable with:
+        // occ config:app:set openbuild listener_slug_contract --value=yes.
+        if ($this->contract->isEnabled() === false) {
+            return;
+        }
+
+        if ($this->slugs->isOpenBuildSchema(
+            entity: $entity,
+            schemaSlug: ApplicationVersionService::APPLICATION_SCHEMA
+        ) === false
+        ) {
             return;
         }
 
@@ -142,33 +167,6 @@ class ProductionVersionGuardListener implements IEventListener
             );
         }//end try
     }//end handle()
-
-    /**
-     * Read the schema slug from the ObjectEntity (defensive — supports
-     * both direct `getSchemaSlug()` and the `@self.schema` projection).
-     *
-     * @param object $entity The ObjectEntity instance
-     *
-     * @return string Schema slug or empty string when unresolved
-     */
-    private function extractSchemaSlug(object $entity): string
-    {
-        if (method_exists($entity, 'getSchemaSlug') === true) {
-            $slug = $entity->getSchemaSlug();
-            if (is_string($slug) === true && $slug !== '') {
-                return $slug;
-            }
-        }
-
-        if (method_exists($entity, 'jsonSerialize') === true) {
-            $serialised = $entity->jsonSerialize();
-            if (is_array($serialised) === true && isset($serialised['@self']['schema']) === true) {
-                return (string) $serialised['@self']['schema'];
-            }
-        }
-
-        return '';
-    }//end extractSchemaSlug()
 
     /**
      * Read the object payload (post-`@self`) from the ObjectEntity.

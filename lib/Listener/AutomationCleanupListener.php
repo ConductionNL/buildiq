@@ -41,6 +41,8 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Listener;
 
 use OCA\OpenBuild\Service\AutomationCompilerService;
+use OCA\OpenBuild\Service\ListenerSlugContract;
+use OCA\OpenBuild\Service\ObjectSchemaSlugResolver;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -59,12 +61,16 @@ class AutomationCleanupListener implements IEventListener
      *
      * @param LoggerInterface           $logger   PSR logger for diagnostics.
      * @param AutomationCompilerService $compiler Owns the artifact-removal logic.
+     * @param ObjectSchemaSlugResolver  $slugs    Resolves the event's schema id to a slug.
+     * @param ListenerSlugContract      $contract Gates the corrected comparison.
      *
      * @return void
      */
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly AutomationCompilerService $compiler,
+        private readonly ObjectSchemaSlugResolver $slugs,
+        private readonly ListenerSlugContract $contract,
     ) {
     }//end __construct()
 
@@ -83,8 +89,27 @@ class AutomationCleanupListener implements IEventListener
         }
 
         $entity = $event->getObject();
-        $schema = $this->extractSchemaSlug(entity: $entity);
-        if ($schema !== AutomationCompilerService::AUTOMATION_SCHEMA) {
+
+        // GATED ON PURPOSE — see ListenerSlugContract.
+        //
+        // extractSchemaSlug() returned the schema's numeric id and compared it
+        // to the slug 'automation', so this cleanup has never once run and
+        // every deleted automation has left its compiled artifacts behind. The
+        // comparison below is correct; enabling it starts DELETING those
+        // artifacts on automation delete, which is the desired behaviour but is
+        // still a behaviour change on a path that has never executed.
+        if ($this->contract->isEnabled() === false) {
+            return;
+        }
+
+        // The register is checked as well as the schema: `automation` is not a
+        // unique slug on this instance (two schemas carry it), so matching on
+        // the schema slug alone would delete artifacts for another app's rows.
+        if ($this->slugs->isOpenBuildSchema(
+            entity: $entity,
+            schemaSlug: AutomationCompilerService::AUTOMATION_SCHEMA
+        ) === false
+        ) {
             return;
         }
 
@@ -104,34 +129,6 @@ class AutomationCleanupListener implements IEventListener
             );
         }
     }//end handle()
-
-    /**
-     * Read the schema slug from the ObjectEntity (defensive — supports both
-     * direct `getSchemaSlug()` and the `@self.schema` projection, mirroring
-     * {@see ProductionVersionGuardListener::extractSchemaSlug()}).
-     *
-     * @param object $entity The ObjectEntity instance.
-     *
-     * @return string Schema slug or empty string when unresolved.
-     */
-    private function extractSchemaSlug(object $entity): string
-    {
-        if (method_exists($entity, 'getSchemaSlug') === true) {
-            $slug = $entity->getSchemaSlug();
-            if (is_string($slug) === true && $slug !== '') {
-                return $slug;
-            }
-        }
-
-        if (method_exists($entity, 'jsonSerialize') === true) {
-            $serialised = $entity->jsonSerialize();
-            if (is_array($serialised) === true && isset($serialised['@self']['schema']) === true) {
-                return (string) $serialised['@self']['schema'];
-            }
-        }
-
-        return '';
-    }//end extractSchemaSlug()
 
     /**
      * Read the object payload (post-`@self`) from the ObjectEntity.
