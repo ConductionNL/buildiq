@@ -218,18 +218,22 @@ export default {
 	justify-content: space-between;
 	margin-bottom: 8px;
 }
+
 .ob-documents-section__title {
 	margin: 0;
 }
+
 .ob-documents-section__empty,
 .ob-documents-section__hint {
 	color: var(--color-text-maxcontrast);
 }
+
 .ob-documents-section__list {
 	list-style: none;
 	padding: 0;
 	margin: 0;
 }
+
 .ob-documents-section__item {
 	display: flex;
 	align-items: center;
@@ -237,6 +241,7 @@ export default {
 	padding: 8px 0;
 	border-bottom: 1px solid var(--color-border);
 }
+
 .ob-documents-section__item-meta {
 	color: var(--color-text-maxcontrast);
 	margin-left: 8px;

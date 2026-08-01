@@ -167,22 +167,27 @@ export default {
 	justify-content: space-between;
 	margin-bottom: 8px;
 }
+
 .ob-theme-section__title {
 	margin: 0;
 }
+
 .ob-theme-section__actions {
 	display: flex;
 	gap: 8px;
 }
+
 .ob-theme-section__hint,
 .ob-theme-section__default {
 	color: var(--color-text-maxcontrast);
 }
+
 .ob-theme-section__current {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 }
+
 .ob-theme-section__swatch {
 	width: 24px;
 	height: 24px;

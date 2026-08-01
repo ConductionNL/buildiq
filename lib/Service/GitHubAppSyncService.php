@@ -1217,7 +1217,7 @@ class GitHubAppSyncService
                 .' — '.get_class($e).': '.$e->getMessage()
             );
             return ['ok' => false, 'denied' => true, 'status' => 0, 'data' => []];
-        }
+        }//end try
 
         $status  = (int) ($response['status'] ?? 0);
         $decoded = json_decode((string) ($response['body'] ?? ''), true);

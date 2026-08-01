@@ -366,22 +366,27 @@ export default {
 	flex-direction: column;
 	gap: 12px;
 }
+
 .ob-document-attach__warn {
 	color: var(--color-warning-text, var(--color-warning));
 }
+
 .ob-document-attach__error {
 	color: var(--color-error);
 }
+
 .ob-document-attach__toggle {
 	display: flex;
 	gap: 8px;
 	align-items: center;
 }
+
 .ob-document-attach__preview {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
+
 .ob-document-attach__preview-body {
 	max-height: 240px;
 	overflow: auto;

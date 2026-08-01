@@ -983,7 +983,7 @@ class ApplicationsController extends Controller
                 ApplicationVersionService::REGISTER_SLUG,
                 _multitenancy: false
             )->getId();
-            $schemaId = $this->schemaMapper->find(
+            $schemaId   = $this->schemaMapper->find(
                 ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
                 _multitenancy: false
             )->getId();
@@ -1019,10 +1019,12 @@ class ApplicationsController extends Controller
             if ($version === []) {
                 continue;
             }
+
             $uuid = (string) ($version['id'] ?? $version['uuid'] ?? '');
             if ($uuid === '' || isset($wanted[$uuid]) === false) {
                 continue;
             }
+
             $byUuid[$uuid] = [
                 'uuid'   => $uuid,
                 'slug'   => ($version['slug'] ?? null),

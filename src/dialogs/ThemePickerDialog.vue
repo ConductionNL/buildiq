@@ -334,18 +334,22 @@ export default {
 	flex-direction: column;
 	gap: 12px;
 }
+
 .ob-theme-picker__warn {
 	color: var(--color-warning-text, var(--color-warning));
 }
+
 .ob-theme-picker__hint {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
 }
+
 .ob-theme-picker__candidate {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 }
+
 .ob-theme-picker__swatch {
 	width: 24px;
 	height: 24px;
@@ -353,14 +357,17 @@ export default {
 	border: 1px solid var(--color-border);
 	display: inline-block;
 }
+
 .ob-theme-picker__candidate-meta {
 	display: flex;
 	flex-direction: column;
 }
+
 .ob-theme-picker__candidate-desc {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
 }
+
 .ob-theme-picker__contrast {
 	list-style: none;
 	margin: 0;
@@ -370,12 +377,15 @@ export default {
 	gap: 2px;
 	font-size: 0.9em;
 }
+
 .ob-theme-picker__contrast-row--pass {
 	color: var(--color-success-text, var(--color-success));
 }
+
 .ob-theme-picker__contrast-row--warn {
 	color: var(--color-warning-text, var(--color-warning));
 }
+
 .ob-theme-picker__toggle {
 	display: flex;
 	gap: 8px;

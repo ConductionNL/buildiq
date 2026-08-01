@@ -179,7 +179,7 @@ class AppRepoParser
             ],
         ];
 
-        // app-repo-format-v2 channels, added only for a v2 repo so a v1 parse
+        // App-repo-format-v2 channels, added only for a v2 repo so a v1 parse
         // result stays byte-identical to what it was before this change.
         if ($this->majorOf(formatVersion: (string) ($descriptor['formatVersion'] ?? '')) === self::SUPPORTED_FORMAT_MAJOR_V2) {
             $payload['channels'] = $this->parseChannels(files: $files);
@@ -323,6 +323,7 @@ class AppRepoParser
      *
      * @throws AppRepoParseException schema_unparseable | schema_invalid | schema_slug_duplicate.
      */
+
     /**
      * Parse the app-repo-format-v2 channels: data-registers, connectors,
      * automations and skills.
@@ -437,6 +438,19 @@ class AppRepoParser
 
     }//end decodeChannelEntry()
 
+    /**
+     * Collect the companion JSON-schema files shipped alongside an app-repo-format-v2 descriptor.
+     *
+     * Iterates `$files` in sorted path order so a duplicate slug always names the same pair,
+     * and validates each entry's base name, JSON body and declared slug.
+     *
+     * @param array<string, string> $files Repo file map, keyed by path, valued by raw contents.
+     *
+     * @return array<int, array<string, mixed>> The decoded companion schemas, in path order.
+     *
+     * @throws AppRepoParseException When a schema file has an invalid base name or slug, is not a
+     *                               JSON-schema object, or duplicates an already-seen slug.
+     */
     private function parseCompanionSchemas(array $files): array
     {
         $companions = [];
