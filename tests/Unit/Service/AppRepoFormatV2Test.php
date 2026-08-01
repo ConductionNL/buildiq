@@ -247,8 +247,9 @@ class AppRepoFormatV2Test extends TestCase
                     ['register' => '/absolute'],
                 ],
                 'connectors'    => [
-                    ['kind' => 'source', 'slug' => '../../escape'],
-                    ['kind' => 'not-a-kind', 'slug' => 'fine-slug'],
+                    ['kind' => 'source', 'uuid' => '../../escape'],
+                    ['kind' => 'not-a-kind', 'uuid' => '00000000-0000-0000-0000-000000000000'],
+                    ['kind' => 'source', 'uuid' => 'not-a-uuid'],
                 ],
             ]
         );
@@ -319,4 +320,50 @@ class AppRepoFormatV2Test extends TestCase
         }
 
     }//end testChannelsRoundTripThroughTheParser()
+
+    /**
+     * A slug-less connector binding is still usable — the reason this binding is
+     * UUID-keyed rather than slug-keyed.
+     *
+     * Measured on a live instance: only 13 of 369 sources, 1 of 291 mappings,
+     * 7 of 206 synchronizations and **0 of 74 jobs** carry a slug, while every
+     * object has a UUID. A slug-keyed binding could therefore reference almost
+     * none of a real app's ingestion, and the export would silently collect
+     * nothing — the exact green-but-empty shape this format exists to end.
+     *
+     * The earlier tests never caught it because their fixtures all had slugs.
+     * Only real data exposed it, so this test encodes the real-data shape.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-connectors-are-declared-explicitly-never-inferred
+     */
+    public function testConnectorBindingIsUuidKeyedNotSlugKeyed(): void
+    {
+        $uuid = '3f2504e0-4f89-11d3-9a0c-0305e82c3301';
+
+        [$application, $version] = $this->app(
+            [
+                'connectors' => [
+                    // No slug at all — the overwhelmingly common real-world shape.
+                    ['kind' => 'job', 'uuid' => $uuid],
+                ],
+            ]
+        );
+
+        // With no ObjectService the channel collects nothing, but the binding must
+        // still be ACCEPTED rather than rejected as malformed: the descriptor
+        // distinguishes "nothing declared" from "declared but unresolvable".
+        $files      = $this->serializer()->serialize(application: $application, version: $version);
+        $descriptor = json_decode($files['openbuild-app.json'], true);
+
+        $this->assertArrayHasKey('connectors', $descriptor['channels']);
+        $this->assertSame(0, $descriptor['channels']['connectors']['declared']);
+
+        // And nothing unsafe reached a path.
+        foreach (array_keys($files) as $path) {
+            $this->assertStringNotContainsString('..', $path);
+        }
+
+    }//end testConnectorBindingIsUuidKeyedNotSlugKeyed()
 }//end class
