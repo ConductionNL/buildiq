@@ -30,18 +30,18 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-45
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-46
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-48
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-49
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-51
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-69
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-45
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-46
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-48
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-49
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-51
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-69
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
  * @spec openspec/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
  * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
  */
@@ -166,8 +166,8 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse The manifest blob (carrying `runtime.user.isOwner`), or a 404 envelope when not found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-51
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-51
      * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-openbuild-primitives
      */
     #[NoAdminRequired]
@@ -468,8 +468,8 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse 200 with manifest, or 404 when not found / not authorised.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-69
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-69
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
      */
     private function resolveVersionedManifestResponse(string $slug, string $versionSlug): JSONResponse
     {
@@ -535,7 +535,7 @@ class ApplicationsController extends Controller
      * and the resolveVersionBlob() check on `applicationUuid` rejects snapshots
      * that do not belong to this Application. Mirrors getManifest()'s pattern.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -652,7 +652,7 @@ class ApplicationsController extends Controller
      *
      * @return array<string, mixed>|null Blob or null if the version is missing.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
      */
     private function resolveVersionBlob(string $token, array $application, string $applicationUuid): ?array
     {
@@ -700,7 +700,7 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse|array{0: ObjectEntity|array<string, mixed>, 1: array<string, mixed>, 2: string}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
      */
     private function resolveApplicationBySlug(string $slug): JSONResponse|array
     {
@@ -781,9 +781,9 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse The filtered Application list
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-46
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-48
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-46
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-48
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -865,7 +865,7 @@ class ApplicationsController extends Controller
      *
      * @return array{0: array<array<string,mixed>>, 1: bool} [filtered list, adminBypassUsed].
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-48
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-48
      */
     private function filterApplicationsByRole(
         array $results,
@@ -1178,8 +1178,8 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse|null Null on allow, 403 JSONResponse on deny
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-45
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-45
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
      */
     private function requirePermission(
         ?ObjectEntity $application,
@@ -1240,7 +1240,7 @@ class ApplicationsController extends Controller
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-49
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-49
      */
     private function recordAdminBypass(?ObjectEntity $application, string $slug, string $actor): void
     {
@@ -1303,8 +1303,8 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse The new application's uuid + slug, or an error envelope
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     #[NoAdminRequired]
     #[UserRateLimit(limit: 10, period: 3600)]
@@ -1526,7 +1526,7 @@ class ApplicationsController extends Controller
      *
      * @return array<string,mixed>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     private function buildClonedManifest(array $template, array $rewriteMap): array
     {
@@ -1554,7 +1554,7 @@ class ApplicationsController extends Controller
      *
      * @return array{register:\OCA\OpenRegister\Db\Register,schemaIds:array<int,int>}|array{error:array<string,mixed>,status:int}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     private function provisionPerAppArtifacts(
         string $newSlug,
@@ -1596,7 +1596,13 @@ class ApplicationsController extends Controller
      *
      * @return array{uuid:string|null}|array{error:array<string,mixed>,status:int}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
+     * @throws Throwable From normaliseObject() AFTER a successful save. Deliberately
+     *                   not folded into the envelope: at that point the Application
+     *                   record already exists, so returning `clone_failed` would tell
+     *                   the caller nothing was created when something was. Surfacing
+     *                   the real failure is the honest outcome.
+     *
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
      */
     private function persistApplication(
         string $name,
@@ -1682,7 +1688,7 @@ class ApplicationsController extends Controller
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     private function extractCompanionSchemas(array $template): array
     {
@@ -1707,7 +1713,7 @@ class ApplicationsController extends Controller
      *
      * @return array<string,string>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     private function buildRewriteMap(array $companions, string $newSlug): array
     {
@@ -1731,7 +1737,7 @@ class ApplicationsController extends Controller
      *
      * @return \OCA\OpenRegister\Db\Register
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     private function provisionPerAppRegister(string $newSlug, string $ownerUid): \OCA\OpenRegister\Db\Register
     {
@@ -1846,7 +1852,7 @@ class ApplicationsController extends Controller
      *
      * @return array<int,int> List of created schema IDs
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     private function cloneCompanionSchemas(
         array $companions,
@@ -1889,7 +1895,7 @@ class ApplicationsController extends Controller
      *
      * @return mixed The rewritten node
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
      */
     private function rewriteSchemaRefs(mixed $node, array $map): mixed
     {

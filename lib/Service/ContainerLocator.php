@@ -66,6 +66,8 @@ class ContainerLocator
      * @param string $className Fully-qualified class name.
      *
      * @return object|null The service, or null when it cannot be resolved.
+     *
+     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-an-absent-optional-dependency-degrades-with-a-stated-reason
      */
     public function get(string $className): ?object
     {

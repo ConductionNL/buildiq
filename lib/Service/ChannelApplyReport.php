@@ -109,6 +109,8 @@ class ChannelApplyReport
      * @param int    $declared How many items the template declared.
      *
      * @return void
+     *
+     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-an-absent-optional-dependency-degrades-with-a-stated-reason
      */
     public function declareChannel(string $channel, int $declared): void
     {
@@ -132,6 +134,8 @@ class ChannelApplyReport
      * @param string $item    The item identity (e.g. `source/<uuid>`).
      *
      * @return void
+     *
+     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-application-is-best-effort-with-a-complete-per-item-outcome-report
      */
     public function recordCreated(string $channel, string $item): void
     {
@@ -147,6 +151,8 @@ class ChannelApplyReport
      * @param string $reason  Why it was skipped.
      *
      * @return void
+     *
+     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-application-is-best-effort-with-a-complete-per-item-outcome-report
      */
     public function recordSkipped(string $channel, string $item, string $reason): void
     {
@@ -163,6 +169,8 @@ class ChannelApplyReport
      * @param string $reason  The failure reason (never a secret).
      *
      * @return void
+     *
+     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-application-is-best-effort-with-a-complete-per-item-outcome-report
      */
     public function recordFailed(string $channel, string $item, string $reason): void
     {
@@ -180,6 +188,8 @@ class ChannelApplyReport
      * @param string $item    The item identity.
      *
      * @return void
+     *
+     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-every-channel-is-bounded-and-truncation-is-reported
      */
     public function recordTruncated(string $channel, string $item): void
     {
@@ -197,6 +207,8 @@ class ChannelApplyReport
      * @param string $reason  Machine-readable reason (e.g. `hermiq-unavailable`).
      *
      * @return void
+     *
+     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-an-absent-optional-dependency-degrades-with-a-stated-reason
      */
     public function skipChannel(string $channel, string $reason): void
     {
@@ -228,6 +240,8 @@ class ChannelApplyReport
      * @param int    $truncated Items hermiq dropped at its own bound.
      *
      * @return void
+     *
+     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
      */
     public function adoptCounts(string $channel, int $created, int $skipped, int $failed, int $truncated): void
     {
@@ -254,6 +268,8 @@ class ChannelApplyReport
      * @param string $connector  The connector that needs it.
      *
      * @return void
+     *
+     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-unresolvable-credential-references-are-reported
      */
     public function needsCredential(string $credential, string $connector): void
     {
@@ -274,6 +290,8 @@ class ChannelApplyReport
      * @throws RuntimeException When a channel does not balance — that means an
      *                          item was dropped somewhere, which is exactly the
      *                          class of defect this report exists to expose.
+     *
+     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-application-is-best-effort-with-a-complete-per-item-outcome-report
      */
     public function toArray(): array
     {
