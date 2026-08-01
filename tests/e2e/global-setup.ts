@@ -38,9 +38,72 @@ export const DOCUDESK_TEMPLATE_NAMES = ['Bevestigingsbrief', 'Besluit'] as const
  * OPENBUILD_SEED_CMD when occ is reached differently (e.g. a non-docker CI).
  * Non-fatal: a failure is logged and specs surface the missing fixture.
  */
-function seedHelloWorldFixture(): void {
+/**
+ * The docker container serving the instance under test, resolved from its
+ * PUBLISHED PORT.
+ *
+ * WHY THIS EXISTS — read before replacing it with a name.
+ *
+ * Both `occ` helpers below used to hardcode `docker exec … nextcloud …`. That
+ * container is the SHARED dev box on :8080. The suite is driven with
+ * PLAYWRIGHT_BASE_URL pointing at the disposable container (:8099), so every run
+ * seeded fixtures into — and set config on, and gracefully restarted Apache in —
+ * an instance the tests were not asserting against. A cross-instance write on
+ * every single run, silent unless the shared box happened to be down (which is
+ * how it surfaced: "hello-world fixture seed failed" while :8080 sat in
+ * maintenance). Same class of drift as the base-URL bug that
+ * tests/e2e/support/baseUrl.ts documents.
+ *
+ * Resolution is by `--filter publish=<port>` rather than by name. `docker ps -f
+ * name=nextcloud` is a SUBSTRING match — it happily returns `nextcloud`,
+ * `ob-vue3-e2e-nextcloud`, or somebody's `nextcloud-old` — so matching on the
+ * port the tests actually talk to is the only form that cannot pick the wrong
+ * box.
+ *
+ * Returns null when nothing publishes that port; callers then SKIP their occ
+ * step with a clear reason instead of falling back to a hardcoded container,
+ * because the fallback is exactly the bug.
+ *
+ * @param baseURL The instance under test.
+ * @return {?string} The container name, or null when it cannot be resolved.
+ */
+function resolveContainerFor(baseURL: string): string | null {
+	const override = process.env.OPENBUILD_E2E_CONTAINER
+	if (override) {
+		return override
+	}
+	let port: string
+	try {
+		port = new URL(baseURL).port || (baseURL.startsWith('https') ? '443' : '80')
+	} catch {
+		return null
+	}
+	try {
+		const out = execSync(`docker ps --format '{{.Names}}' --filter publish=${port}`, {
+			encoding: 'utf8',
+			stdio: ['ignore', 'pipe', 'pipe'],
+		})
+		const names = out.split('\n').map((n) => n.trim()).filter(Boolean)
+		return names[0] ?? null
+	} catch {
+		return null
+	}
+}
+
+function seedHelloWorldFixture(container: string | null): void {
 	const cmd = process.env.OPENBUILD_SEED_CMD
-		|| 'docker exec -u www-data nextcloud php occ openbuild:seed-hello-world-fixture'
+		|| (container
+			? `docker exec -u www-data ${container} php occ openbuild:seed-hello-world-fixture`
+			: null)
+	if (!cmd) {
+		// eslint-disable-next-line no-console
+		console.warn(
+			'[globalSetup] hello-world fixture NOT seeded: could not resolve the container '
+			+ 'serving the instance under test. Set OPENBUILD_E2E_CONTAINER or OPENBUILD_SEED_CMD. '
+			+ 'Deliberately not falling back to a hardcoded container — that would seed a DIFFERENT instance.',
+		)
+		return
+	}
 	try {
 		const out = execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
 		// eslint-disable-next-line no-console
@@ -74,17 +137,32 @@ function seedHelloWorldFixture(): void {
  * `occ` is reached the same way the fixture seed reaches it; override with
  * OPENBUILD_RATELIMIT_CMD for a non-docker CI. Non-fatal: on failure the run
  * continues and the 429s simply reappear, with this warning explaining them.
+ *
+ * @param container The container serving the instance under test, or null when
+ *   it could not be resolved (in which case the config is left alone).
+ * @return {void}
  */
-function disableRateLimitProtection(): void {
+function disableRateLimitProtection(container: string | null): void {
 	// The graceful reload is not optional on a warm container: config.php is
 	// opcached, and with the container default `opcache.revalidate_freq=60` the
 	// new value can be served stale for up to a minute — long enough for the
 	// first specs to 429 anyway. Measured: setting the value alone left the
 	// endpoint still returning 429; it only took effect after the reload.
 	const cmd = process.env.OPENBUILD_RATELIMIT_CMD
-		|| 'docker exec -u www-data nextcloud php occ config:system:set '
-		+ 'ratelimit.protection.enabled --value=false --type=boolean '
-		+ '&& docker exec nextcloud apache2ctl graceful'
+		|| (container
+			? `docker exec -u www-data ${container} php occ config:system:set `
+				+ 'ratelimit.protection.enabled --value=false --type=boolean '
+				+ `&& docker exec ${container} apache2ctl graceful`
+			: null)
+	if (!cmd) {
+		// eslint-disable-next-line no-console
+		console.warn(
+			'[globalSetup] rate-limit protection left ALONE: could not resolve the container '
+			+ 'serving the instance under test. Set OPENBUILD_E2E_CONTAINER or OPENBUILD_RATELIMIT_CMD. '
+			+ 'This one writes config and gracefully restarts Apache, so it must never guess an instance.',
+		)
+		return
+	}
 	try {
 		execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
 		// eslint-disable-next-line no-console
@@ -372,7 +450,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
 	// Before anything else: the wizard endpoint's 10-per-hour user rate limit
 	// would otherwise 429 every app creation past the tenth, mid-run.
-	disableRateLimitProtection()
+	const container = resolveContainerFor(baseURL)
+	// eslint-disable-next-line no-console
+	console.log(`[globalSetup] instance under test: ${baseURL} (container: ${container ?? 'unresolved'})`)
+	disableRateLimitProtection(container)
 
 	const browser = await chromium.launch()
 	const context = await browser.newContext({ baseURL })
@@ -444,7 +525,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	await browser.close()
 
 	// Seed the hello-world fixture the specs run against (idempotent).
-	seedHelloWorldFixture()
+	seedHelloWorldFixture(container)
 
 	// Configure Docudesk + seed its template fixtures (idempotent, and a no-op
 	// with a log when Docudesk is not installed).
