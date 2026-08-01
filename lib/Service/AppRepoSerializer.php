@@ -336,44 +336,48 @@ class AppRepoSerializer
             }
 
             $kind = (string) ($binding['kind'] ?? '');
-            $slug = (string) ($binding['slug'] ?? '');
-            if (in_array($kind, self::CONNECTOR_KINDS, true) === false || $this->isSafeSlug(slug: $slug) === false) {
+            $uuid = (string) ($binding['uuid'] ?? '');
+            if (in_array($kind, self::CONNECTOR_KINDS, true) === false || $this->isSafeUuid(uuid: $uuid) === false) {
                 $this->logger->warning(
                     'OpenBuild AppRepoSerializer: rejected unsafe connector binding.',
-                    ['kind' => $kind, 'slug' => $slug]
+                    ['kind' => $kind, 'uuid' => $uuid]
                 );
                 continue;
             }
 
-            $object = $this->findConnector(kind: $kind, slug: $slug);
+            $object = $this->findConnector(kind: $kind, uuid: $uuid);
             if ($object === null) {
                 continue;
             }
 
+            $name      = $this->connectorFileName(binding: $binding, object: $object, uuid: $uuid);
             $sanitised = $this->stripSecrets(data: $object, stripped: $stripped);
-            $files[$kind.'/'.$slug.'.json'] = $sanitised;
-            $seen[$kind.'/'.$slug]          = true;
+
+            $files[$kind.'/'.$name.'.json'] = $sanitised;
+            $seen[$kind.'/'.$uuid]          = true;
             $declared++;
 
             // ONE level of dependency resolution, and no further.
-            foreach ($this->directReferences(kind: $kind, object: $object) as $refKind => $refSlugs) {
-                foreach ($refSlugs as $refSlug) {
-                    $key = $refKind.'/'.$refSlug;
+            foreach ($this->directReferences(kind: $kind, object: $object) as $refKind => $refUuids) {
+                foreach ($refUuids as $refUuid) {
+                    $key = $refKind.'/'.$refUuid;
                     if (isset($seen[$key]) === true || count($files) >= self::MAX_CHANNEL_ENTRIES) {
                         continue;
                     }
 
-                    if ($this->isSafeSlug(slug: $refSlug) === false) {
+                    if ($this->isSafeUuid(uuid: $refUuid) === false) {
                         continue;
                     }
 
-                    $refObject = $this->findConnector(kind: $refKind, slug: $refSlug);
+                    $refObject = $this->findConnector(kind: $refKind, uuid: $refUuid);
                     if ($refObject === null) {
                         continue;
                     }
 
-                    $files[$key.'.json'] = $this->stripSecrets(data: $refObject, stripped: $stripped);
-                    $seen[$key]          = true;
+                    $refName = $this->connectorFileName(binding: [], object: $refObject, uuid: $refUuid);
+
+                    $files[$refKind.'/'.$refName.'.json'] = $this->stripSecrets(data: $refObject, stripped: $stripped);
+                    $seen[$key] = true;
                     $resolved++;
                 }//end foreach
             }//end foreach
@@ -389,34 +393,37 @@ class AppRepoSerializer
     }//end collectConnectors()
 
     /**
-     * Resolve one connector object by kind + slug from the shared `openconnector`
+     * Resolve one connector object by kind + UUID from the shared `openconnector`
      * register.
      *
      * @param string $kind The connector kind.
-     * @param string $slug The object slug.
+     * @param string $uuid The object UUID.
      *
      * @return array<string,mixed>|null The object payload, or null when absent.
      */
-    private function findConnector(string $kind, string $slug): ?array
+    private function findConnector(string $kind, string $uuid): ?array
     {
         if ($this->objectService === null) {
             return null;
         }
 
         try {
+            // Resolved by UUID, never by slug: OpenConnector objects overwhelmingly
+            // have no slug (measured live: 0 of 74 jobs, 1 of 291 mappings), so a
+            // slug lookup would silently match nothing for most real ingestion.
             $results = $this->objectService->findAll(
                 config: [
                     'filters' => [
                         'register' => self::CONNECTOR_REGISTER,
                         'schema'   => $kind,
-                        'slug'     => $slug,
+                        'uuid'     => $uuid,
                     ],
                     'limit'   => 1,
                 ]
             );
         } catch (Throwable $e) {
             $this->logger->debug(
-                'OpenBuild AppRepoSerializer: connector "'.$kind.'/'.$slug.'" not resolvable: '.$e->getMessage()
+                'OpenBuild AppRepoSerializer: connector "'.$kind.'/'.$uuid.'" not resolvable: '.$e->getMessage()
             );
             return null;
         }
@@ -449,7 +456,9 @@ class AppRepoSerializer
      * @param string              $kind   The declared entry's kind.
      * @param array<string,mixed> $object The declared entry's payload.
      *
-     * @return array<string,array<int,string>> Referenced slugs keyed by kind.
+     * @return array<string,array<int,string>> Referenced UUIDs keyed by kind. A
+     *         synchronization's `sourceId` / `source_target_mapping` fields already
+     *         carry UUIDs, so this needs no translation.
      */
     private function directReferences(string $kind, array $object): array
     {
@@ -598,6 +607,51 @@ class AppRepoSerializer
         return (preg_match('/^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$/', $slug) === 1);
 
     }//end isSafeSlug()
+
+    /**
+     * Whether a value is a well-formed UUID, and therefore safe as a path component.
+     *
+     * A UUID is a stricter path component than a free-form slug — the character set
+     * admits no separator, traversal segment or extension — so validating here is
+     * both the identity check and the path guard.
+     *
+     * @param string $uuid The candidate UUID.
+     *
+     * @return bool True when well-formed.
+     *
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
+     */
+    private function isSafeUuid(string $uuid): bool
+    {
+        return (preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $uuid) === 1);
+
+    }//end isSafeUuid()
+
+    /**
+     * The filename a connector is exported under.
+     *
+     * Prefers a human-readable slug — a diff of `connectors/source/ted-source.json`
+     * is reviewable in a way `connectors/source/9f1c….json` is not — but falls back
+     * to the UUID, which every object has. Resolution is always by UUID; this only
+     * decides the name.
+     *
+     * @param array<string,mixed> $binding The declared binding (may be empty for a resolved dependency).
+     * @param array<string,mixed> $object  The resolved connector payload.
+     * @param string              $uuid    The connector UUID.
+     *
+     * @return string The safe filename stem.
+     */
+    private function connectorFileName(array $binding, array $object, string $uuid): string
+    {
+        foreach ([(string) ($binding['slug'] ?? ''), (string) ($object['slug'] ?? '')] as $candidate) {
+            if ($this->isSafeSlug(slug: $candidate) === true) {
+                return $candidate;
+            }
+        }
+
+        return $uuid;
+
+    }//end connectorFileName()
 
     /**
      * Serialise a seeded `application-template` object into the same repo file

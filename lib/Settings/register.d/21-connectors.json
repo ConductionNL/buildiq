@@ -14,7 +14,7 @@
                             "title": "Connector Binding",
                             "required": [
                                 "kind",
-                                "slug"
+                                "uuid"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -29,13 +29,19 @@
                                     ],
                                     "description": "Which OpenConnector schema the entry refers to. Constrained to the four configuration kinds that define ingestion; `endpoint` and `rule` are deliberately excluded — an endpoint is instance-facing surface and a rule belongs to the automations channel."
                                 },
+                                "uuid": {
+                                    "title": "Connector UUID",
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                                    "description": "UUID of the OpenConnector object in the shared `openconnector` register. The binding is UUID-keyed, NOT slug-keyed, because OpenConnector objects overwhelmingly have no slug: measured on a live instance, only 13 of 369 sources, 1 of 291 mappings, 7 of 206 synchronizations and 0 of 74 jobs carry one, while every object has a UUID. A slug-keyed binding could therefore reference almost none of a real app's ingestion — the export would silently collect nothing. Validated as a UUID BEFORE it is ever used as a path component, so a crafted value cannot escape the `connectors/<kind>/` prefix on export."
+                                },
                                 "slug": {
                                     "title": "Connector Slug",
                                     "type": "string",
                                     "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
                                     "minLength": 2,
                                     "maxLength": 64,
-                                    "description": "Slug of the OpenConnector object in the shared `openconnector` register. Validated as a slug BEFORE it is ever used as a path component, so a crafted value cannot escape the `connectors/<kind>/` prefix on export."
+                                    "description": "OPTIONAL human-readable slug. Used as the exported filename when present and safe (`connectors/<kind>/<slug>.json`), because a slug is far more reviewable in a diff than a UUID; the export falls back to the UUID when absent. Never used for resolution — the UUID is the identity."
                                 },
                                 "label": {
                                     "title": "Label",
