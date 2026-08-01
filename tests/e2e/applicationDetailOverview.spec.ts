@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 import { test, expect } from '@playwright/test'
+import { suppressSupportDialog } from './support/appFixture'
+import { ensureVersionChain } from './support/versionChain'
 
 /**
  * Playwright e2e — Application detail / maintainer dashboard
@@ -25,7 +27,12 @@ import { test, expect } from '@playwright/test'
  */
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'hello-world'
+// A DEDICATED fixture app carrying development -> staging -> production.
+// This suite is about the version pill strip, the Promote affordance and
+// version-scoped deep links; hello-world has exactly ONE version, so those
+// scenarios skipped themselves via their own `pillCount < 2` guards and
+// asserted nothing. See tests/e2e/support/versionChain.ts.
+const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'pw-verchain'
 const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
 
 // The per-spec form login that used to live here is gone: every block now
@@ -54,6 +61,11 @@ const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
 // UI was built and rendering the whole time, the selectors just named the wrong
 // component. Corrected in place.
 test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)', () => {
+	test.beforeEach(async ({ page }) => {
+		await suppressSupportDialog(page)
+		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
+	})
+
 	test('renders the six stacked rows when the hello-world app is opened', async ({ page }) => {
 		const appUuidRes = await page.request.get(
 			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
@@ -169,7 +181,12 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 // `.ob-detail-header__*`; those rows belong to ApplicationDetailDashboard.vue
 // (`ob-detail-dashboard__`). Corrected, so they now exercise the UI they name.
 test.describe('Application detail overview — content scenarios (14.4/14.5/14.7/14.8)', () => {
-	const TEST_SLUG = process.env.NC_OBADO_TEST_SLUG ?? 'hello-world'
+	const TEST_SLUG = process.env.NC_OBADO_TEST_SLUG ?? 'pw-verchain'
+
+	test.beforeEach(async ({ page }) => {
+		await suppressSupportDialog(page)
+		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
+	})
 
 	async function loadFirstApp(page: import('@playwright/test').Page): Promise<string | null> {
 		const lookup = await page.request.get(
