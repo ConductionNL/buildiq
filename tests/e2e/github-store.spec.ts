@@ -60,10 +60,17 @@ const ADMIN_PASS = process.env.NC_ADMIN_PASSWORD ?? process.env.NC_ADMIN_PASS ??
  * @return {Promise<import('@playwright/test').APIRequestContext>} the context.
  */
 async function storeApi() {
+	// An EXPLICIT Authorization header, not `httpCredentials`. Playwright only
+	// sends httpCredentials in response to a challenge it recognises, and
+	// Nextcloud's 401 here is not satisfied that way: measured side by side on
+	// this instance, httpCredentials → 401 with an empty body while the explicit
+	// header → 200 with the credential list. The httpCredentials form made the
+	// capability probe below silently answer "no credential granted", so these
+	// tests skipped on an instance that had one.
+	const basic = 'Basic ' + Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`).toString('base64')
 	return playwrightRequest.newContext({
 		baseURL: STORE_URL,
-		httpCredentials: { username: ADMIN_USER, password: ADMIN_PASS },
-		extraHTTPHeaders: { 'OCS-APIRequest': 'true' },
+		extraHTTPHeaders: { 'OCS-APIRequest': 'true', Authorization: basic },
 	})
 }
 
