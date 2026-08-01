@@ -182,6 +182,7 @@ class AppRepoSerializer
                         'declared' => $connectors['declaredCount'],
                         'resolved' => $connectors['resolvedCount'],
                         'stripped' => $connectors['strippedCount'],
+                        'missing'  => $connectors['missingCount'],
                     ],
                     'automations'   => count($automations),
                 ]
@@ -318,7 +319,7 @@ class AppRepoSerializer
      */
     private function collectConnectors(array $application): array
     {
-        $empty    = ['files' => [], 'declaredCount' => 0, 'resolvedCount' => 0, 'strippedCount' => 0];
+        $empty    = ['files' => [], 'declaredCount' => 0, 'resolvedCount' => 0, 'strippedCount' => 0, 'missingCount' => 0];
         $bindings = ($application['connectors'] ?? []);
         if (is_array($bindings) === false || $this->objectService === null) {
             return $empty;
@@ -328,6 +329,7 @@ class AppRepoSerializer
         $declared = 0;
         $resolved = 0;
         $stripped = 0;
+        $missing  = 0;
         $seen     = [];
 
         foreach ($bindings as $binding) {
@@ -347,6 +349,11 @@ class AppRepoSerializer
 
             $object = $this->findConnector(kind: $kind, uuid: $uuid);
             if ($object === null) {
+                // Counted, not silently skipped: "declared 25, missing 25" is a
+                // diagnosable artefact; "declared 0" is indistinguishable from an
+                // app that declared nothing, which is how a lookup bug hid here
+                // once already.
+                $missing++;
                 continue;
             }
 
@@ -388,6 +395,7 @@ class AppRepoSerializer
             'declaredCount' => $declared,
             'resolvedCount' => $resolved,
             'strippedCount' => $stripped,
+            'missingCount'  => $missing,
         ];
 
     }//end collectConnectors()
@@ -408,42 +416,36 @@ class AppRepoSerializer
         }
 
         try {
-            // Resolved by UUID, never by slug: OpenConnector objects overwhelmingly
-            // have no slug (measured live: 0 of 74 jobs, 1 of 291 mappings), so a
-            // slug lookup would silently match nothing for most real ingestion.
-            $results = $this->objectService->findAll(
-                config: [
-                    'filters' => [
-                        'register' => self::CONNECTOR_REGISTER,
-                        'schema'   => $kind,
-                        'uuid'     => $uuid,
-                    ],
-                    'limit'   => 1,
-                ]
+            // find(), NOT findAll(filters: ['uuid' => …]): a uuid is OpenRegister
+            // METADATA, not an object property, so a filter on it matches nothing.
+            // Resolved by UUID rather than slug because OpenConnector objects
+            // overwhelmingly have no slug (measured live: 0 of 74 jobs, 1 of 291
+            // mappings), so a slug lookup would miss most real ingestion.
+            $found = $this->objectService->find(
+                id: $uuid,
+                register: self::CONNECTOR_REGISTER,
+                schema: $kind
             );
         } catch (Throwable $e) {
-            $this->logger->debug(
-                'OpenBuild AppRepoSerializer: connector "'.$kind.'/'.$uuid.'" not resolvable: '.$e->getMessage()
+            $this->logger->warning(
+                'OpenBuild AppRepoSerializer: declared connector "'.$kind.'/'.$uuid.'" could not be resolved: '.$e->getMessage()
             );
             return null;
         }
 
-        $first = null;
-        foreach ((array) $results as $result) {
-            $first = $result;
-            break;
-        }
-
-        if ($first === null) {
+        if ($found === null) {
+            $this->logger->warning(
+                'OpenBuild AppRepoSerializer: declared connector "'.$kind.'/'.$uuid.'" does not exist.'
+            );
             return null;
         }
 
-        if (is_object($first) === true && method_exists($first, 'getObject') === true) {
-            return (array) $first->getObject();
+        if (is_object($found) === true && method_exists($found, 'getObject') === true) {
+            return (array) $found->getObject();
         }
 
-        if (is_array($first) === true) {
-            return $first;
+        if (is_array($found) === true) {
+            return $found;
         }
 
         return null;
