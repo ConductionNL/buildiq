@@ -124,6 +124,15 @@
                 <referencedClass name="OCA\OpenRegister\AppHost\Routes"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Settings\GenericAdminSettings"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Settings\GenericSettingsSection"/>
+                <!-- Bound by Application::register() as STRING class names inside
+                     lazy closures (so nothing touches the OCA\OpenRegister
+                     namespace at boot) and resolved by the DI container at
+                     request time, when OR's autoloader is registered. Same
+                     cross-app situation as the entries above — these two were
+                     simply omitted, which is why `composer psalm` reported two
+                     UndefinedClass errors. -->
+                <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericHealthController"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericMetricsController"/>
                 <!-- Additional OCP infrastructure types used across the fleet -->
                 <referencedClass name="OCP\AppFramework\Bootstrap\IBootContext"/>
                 <referencedClass name="OCP\AppFramework\Bootstrap\IRegistrationContext"/>

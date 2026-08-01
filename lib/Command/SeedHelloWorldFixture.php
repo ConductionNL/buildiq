@@ -409,9 +409,9 @@ class SeedHelloWorldFixture extends Command
                     'type'   => 'form',
                     'title'  => 'New message',
                     'config' => [
-                        'register' => $reg,
-                        'schema'   => 'hello-message',
-                        'mode'     => 'create',
+                        'register'       => $reg,
+                        'schema'         => 'hello-message',
+                        'mode'           => 'create',
                         // `fields[]` is REQUIRED for a form page:
                         // validateManifest() rejects a form page whose config has
                         // no non-empty fields[] with "form pages must declare a
@@ -430,7 +430,7 @@ class SeedHelloWorldFixture extends Command
                         //
                         // Mirrors the index page's columns and the sample messages,
                         // which both use `title` + `body`.
-                        'fields'   => [
+                        'fields'         => [
                             ['key' => 'title', 'label' => 'Title', 'type' => 'string'],
                             ['key' => 'body', 'label' => 'Body', 'type' => 'string'],
                         ],

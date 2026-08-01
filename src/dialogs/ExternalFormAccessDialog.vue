@@ -367,20 +367,24 @@ export default {
 	flex-direction: column;
 	gap: 12px;
 }
+
 .ob-external-form-access__target {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
 }
+
 .ob-external-form-access__toggle {
 	display: flex;
 	gap: 8px;
 	align-items: center;
 }
+
 .ob-external-form-access__urls {
 	background: var(--color-background-hover);
 	border-radius: var(--border-radius);
 	padding: 8px 12px;
 }
+
 .ob-external-form-access__urls code {
 	word-break: break-all;
 }

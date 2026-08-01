@@ -593,7 +593,7 @@ class DocumentGenerationService
         } catch (Throwable $e) {
             $this->logger->error('OpenBuild: DocumentGenerationService attach-to-Files failed: '.$e->getMessage(), ['exception' => $e]);
             return null;
-        }
+        }//end try
 
     }//end attachToFiles()
 

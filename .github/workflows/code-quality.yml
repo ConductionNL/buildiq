@@ -9,7 +9,7 @@ on:
 
 jobs:
   quality:
-    uses: Conduction/.github/.github/workflows/quality.yml@main
+    uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
       app-name: openbuild
       php-version: "8.3"
@@ -45,5 +45,5 @@ jobs:
       # Register on application-type imports — OR PR #1464) and the lifecycle
       # engine (ObjectTransitionedEvent) that OpenBuild's repair steps + the
       # Newman publish step need; `main` predates both. See openbuild#29.
-      additional-apps: '[{"repo":"Conduction/openregister","app":"openregister","ref":"development"}]'
+      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"}]'
       enable-sbom: true

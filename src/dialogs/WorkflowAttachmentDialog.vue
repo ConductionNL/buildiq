@@ -256,17 +256,21 @@ export default {
 	flex-direction: column;
 	gap: 12px;
 }
+
 .ob-workflow-attach__link {
 	display: flex;
 	align-items: flex-end;
 	gap: 8px;
 }
+
 .ob-workflow-attach__warn {
 	color: var(--color-warning-text, var(--color-warning));
 }
+
 .ob-workflow-attach__error {
 	color: var(--color-error);
 }
+
 .ob-workflow-attach__toggle {
 	display: flex;
 	gap: 8px;

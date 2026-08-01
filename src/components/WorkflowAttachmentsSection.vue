@@ -211,17 +211,21 @@ export default {
 	justify-content: space-between;
 	margin-bottom: 8px;
 }
+
 .ob-workflows-section__title {
 	margin: 0;
 }
+
 .ob-workflows-section__empty {
 	color: var(--color-text-maxcontrast);
 }
+
 .ob-workflows-section__list {
 	list-style: none;
 	padding: 0;
 	margin: 0;
 }
+
 .ob-workflows-section__item {
 	display: flex;
 	align-items: center;
@@ -229,6 +233,7 @@ export default {
 	padding: 8px 0;
 	border-bottom: 1px solid var(--color-border);
 }
+
 .ob-workflows-section__item-meta {
 	color: var(--color-text-maxcontrast);
 	margin-left: 8px;
