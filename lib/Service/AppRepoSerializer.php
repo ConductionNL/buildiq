@@ -313,7 +313,7 @@ class AppRepoSerializer
      *
      * @param array<string,mixed> $application The Application object.
      *
-     * @return array{files:array<string,array<string,mixed>>,declaredCount:int,resolvedCount:int,strippedCount:int}
+     * @return array{files:array<string,array<string,mixed>>,declaredCount:int,resolvedCount:int,strippedCount:int,missingCount:int}
      *
      * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-connectors-are-declared-explicitly-never-inferred
      */
