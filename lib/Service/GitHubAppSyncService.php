@@ -136,6 +136,7 @@ class GitHubAppSyncService
      * @param AppRepoSerializer    $serializer     Local → repo file map (change 1).
      * @param AppRepoParser        $parser         Repo file map → clone-seam array (change 1).
      * @param GitHubCatalogService $catalogService Repo fetch + commit-sha resolution (change 2).
+     * @param AppChannelApplier    $channelApplier Applies the v2 repo channels (apply-v2-channels).
      * @param LoggerInterface      $logger         PSR logger (secret-free diagnostics only).
      *
      * @return void
@@ -147,6 +148,7 @@ class GitHubAppSyncService
         private readonly AppRepoSerializer $serializer,
         private readonly AppRepoParser $parser,
         private readonly GitHubCatalogService $catalogService,
+        private readonly AppChannelApplier $channelApplier,
         private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
@@ -512,6 +514,19 @@ class GitHubAppSyncService
         $versionData = $this->normalise(object: $created);
         $versionUuid = $this->uuidOf(object: $versionData);
 
+        // Apply the app-repo-format-v2 channels through the SAME applier the shop
+        // install path uses. Before this call, pull() persisted the manifest and
+        // discarded the registers, connectors, automations and skills the repo
+        // carried — a complete, silent failure of what the format is for.
+        $channels = $this->channelApplier->apply(
+            template: $template,
+            owner: $owner,
+            repo: $name,
+            ref: $ref,
+            actingUserId: $actingUserId,
+            credentialId: $credentialId
+        );
+
         return [
             'outcome'     => self::OUTCOME_OK,
             'versionUuid' => $versionUuid,
@@ -520,6 +535,7 @@ class GitHubAppSyncService
             'sourceRef'   => $ref,
             'status'      => 'draft',
             'register'    => $registerSlug,
+            'channels'    => $channels,
         ];
     }//end pull()
 

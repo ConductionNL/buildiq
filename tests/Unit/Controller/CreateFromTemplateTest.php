@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Tests\Unit\Controller;
 
 use OCA\OpenBuild\Controller\ApplicationsController;
+use OCA\OpenBuild\Service\AppChannelApplier;
 use OCA\OpenBuild\Service\ManifestResolverService;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -120,6 +121,13 @@ class CreateFromTemplateTest extends TestCase
     private ManifestResolverService&MockObject $manifestResolver;
 
     /**
+     * The v2 channel applier (apply-v2-channels).
+     *
+     * @var AppChannelApplier&MockObject
+     */
+    private AppChannelApplier&MockObject $channelApplier;
+
+    /**
      * Per-app Register entity stub.
      *
      * @var Register&MockObject
@@ -147,6 +155,7 @@ class CreateFromTemplateTest extends TestCase
         $this->userSession      = $this->createMock(IUserSession::class);
         $this->groupManager     = $this->createMock(IGroupManager::class);
         $this->manifestResolver = $this->createMock(ManifestResolverService::class);
+        $this->channelApplier   = $this->createMock(AppChannelApplier::class);
 
         $this->objectService = $this->createMock(ObjectService::class);
 
@@ -218,6 +227,7 @@ class CreateFromTemplateTest extends TestCase
             groupManager: $this->groupManager,
             manifestResolver: $this->manifestResolver,
             permissionResolver: $permissionResolver,
+            channelApplier: $this->channelApplier,
             auditTrailMapper: null,
         );
     }//end setUp()

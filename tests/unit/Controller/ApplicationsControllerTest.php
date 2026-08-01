@@ -173,6 +173,7 @@ class ApplicationsControllerTest extends TestCase
             groupManager: $this->groupManager,
             manifestResolver: $this->manifestResolver,
             permissionResolver: $permissionResolver,
+            channelApplier: $this->createMock(\OCA\OpenBuild\Service\AppChannelApplier::class),
             auditTrailMapper: $this->auditTrailMapper,
         );
     }//end buildController()

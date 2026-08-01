@@ -53,6 +53,7 @@ namespace OCA\OpenBuild\Controller;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenBuild\AppInfo\Application;
+use OCA\OpenBuild\Service\AppChannelApplier;
 use OCA\OpenBuild\Service\ApplicationVersionService;
 use OCA\OpenBuild\Service\ManifestResolverService;
 use OCA\OpenBuild\Service\PermissionResolver;
@@ -103,6 +104,7 @@ class ApplicationsController extends Controller
      * @param IGroupManager           $groupManager       Group membership resolver
      * @param ManifestResolverService $manifestResolver   Version-aware manifest resolver (REQ-OBVR-002)
      * @param PermissionResolver      $permissionResolver Shared permission-grammar resolver (H1/H2 fix)
+     * @param AppChannelApplier       $channelApplier     Applies the v2 repo channels (apply-v2-channels)
      * @param AuditTrailMapper|null   $auditTrailMapper   Optional OR audit-trail writer (null until OR loaded)
      *
      * @return void
@@ -117,6 +119,7 @@ class ApplicationsController extends Controller
         private readonly IGroupManager $groupManager,
         private readonly ManifestResolverService $manifestResolver,
         private readonly PermissionResolver $permissionResolver,
+        private readonly AppChannelApplier $channelApplier,
         private readonly ?AuditTrailMapper $auditTrailMapper=null,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
@@ -1454,6 +1457,14 @@ class ApplicationsController extends Controller
             return ['status' => $persistResult['status'], 'data' => $persistResult['error']];
         }
 
+        // Apply the app-repo-format-v2 channels. Until this call existed, the four
+        // channels were parsed and then dropped, so an installed app arrived with
+        // its manifest and nothing that makes it run — and reported success.
+        $channels = $this->channelApplier->apply(
+            template: $template,
+            actingUserId: $ownerUid
+        );
+
         return [
             'status' => Http::STATUS_CREATED,
             'data'   => [
@@ -1461,6 +1472,7 @@ class ApplicationsController extends Controller
                 'slug'             => $newSlug,
                 'register'         => $cloneResult['register']->getSlug(),
                 'companionSchemas' => $cloneResult['schemaIds'],
+                'channels'         => $channels,
             ],
         ];
     }//end installFromTemplateArray()
