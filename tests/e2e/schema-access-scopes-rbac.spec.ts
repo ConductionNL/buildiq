@@ -80,19 +80,41 @@ async function openSchemaDetail(page: Page, versionSlug?: string): Promise<void>
 	)
 }
 
-// STILL SKIPPED, with the true reason replacing the #41 one.
+// STILL SKIPPED. The three blockers recorded here previously are now RESOLVED;
+// a fourth, found by measuring rather than reading, is not. Re-measured
+// 2026-08-01 — do not re-derive this from the source, it does not read that way.
 //
-// Blocker 1: needs TWO extra Nextcloud users that only the Newman RBAC setup
-// collection provisions — `access-editor-nonvet` (editor role, NOT in `vets`)
-// and `access-editor-vet` (editor role, IN `vets`). The whole point of every
-// scenario is the difference between those two sessions, so the shared admin
-// storageState cannot stand in for either.
-// Blocker 2: needs a `staging` AND a `production` ApplicationVersion for the
-// target app, to prove a scope change under ?_version=staging leaves the
-// production schema untouched. hello-world has one version on this instance.
-// Blocker 3: the lock-out warning is located with `.note-stub, [type="warning"]`
-// and `.note-stub` exists nowhere in src/ — a placeholder class that would make
-// the REQ-OBDSA-004 assertions vacuous even once the users exist.
+// RESOLVED — Blocker 1 (fixture users). globalSetup provisions
+//   rbac-owner/-editor/-viewer/-outsider and mints one storageState each
+//   (tests/e2e/.auth/{id}.json). The two scenarios need "an editor IN the
+//   selected group" vs "an editor NOT in it" — that is rbac-editor picking
+//   `rbac-editors` vs `rbac-viewers`. No `vets` group, and no Newman, needed.
+// RESOLVED — Blocker 2 (version chain). tests/e2e/support/versionChain.ts seeds
+//   development -> staging -> production on `pw-verchain`.
+// RESOLVED — Blocker 3 (dead selector). The feature is real and the copy exists:
+//   SchemaDesigner.vue renders `<NcNoteCard type="warning">` gated on
+//   `authorLockedOut`, with the text "…invisible to you…". It is a SIBLING of
+//   `.openbuild-access-editor`, not a child. Target `.notecard--warning` filtered
+//   by that text; `.note-stub` never existed.
+//
+// BLOCKING — the schema designer is unreachable for a non-admin. Driven with
+// rbac-editor's session against pw-verchain, the page renders the first-time
+// SETUP WIZARD ("Welcome to OpenBuild / Set up this app") and `.openbuild-schema-list`
+// has count 0. Cause: `GET /api/setup/status` is admin-only and answers 403 to
+// everyone else, and useSetupStatus treated that 403 as "nothing done" rather
+// than "not your concern", so the shell gated on the wizard. Fixed upstream in
+// ConductionNL/nextcloud-vue#574 — this suite unblocks once that lands in a
+// published @conduction/nextcloud-vue and openbuild bumps to it.
+//
+// One more thing to fix WITH this suite, found while measuring and not yet
+// filed as its own change: `availableGroups` (SchemaDesigner.vue) feeds the
+// dropdown the RAW permission entries, which are prefixed — `group:rbac-editors`
+// — while `authorLockedOut` compares them against `getCurrentUserGroups()`,
+// which returns BARE gids (`["rbac-editors"]`, verified from the page's
+// initial-state blob). They can never match, so the lock-out warning fires for
+// a member too. That is precisely the REQ-OBDSA-004 "a member editor sees NO
+// warning" scenario, and it is why this suite must not simply be un-skipped and
+// declared green.
 test.describe.skip('data-scopes-authoring — multi-user / multi-version (REQ-OBDSA-004/006/007)', () => {
 	// Skip storageState — each test needs a freshly authed, specific-role session.
 	test.use({ storageState: { cookies: [], origins: [] } })

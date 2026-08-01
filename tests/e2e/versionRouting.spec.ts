@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
-import { test, expect } from '@playwright/test'
+import { test, expect, request as playwrightRequest } from '@playwright/test'
 import { suppressSupportDialog } from './support/appFixture'
 import { ensureVersionChain } from './support/versionChain'
+import { grantAppRoles } from './support/appRoles'
 
 /**
  * Playwright e2e — Version routing (spec E, openbuild-version-routing).
@@ -31,25 +32,15 @@ import { ensureVersionChain } from './support/versionChain'
  */
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-// Admin comes from globalSetup's shared storageState; only 9.2 still needs an
-// explicit (viewer) login of its own.
-const VIEWER = { user: process.env.NC_VIEWER_USER ?? 'rbac-viewer', pass: process.env.NC_VIEWER_PASS ?? 'RbacViewer-1!' }
+// Every session comes from globalSetup — admin here, and one per rbac-* fixture
+// role for 9.2. No spec form-logs-in: consecutive logins trip Nextcloud's
+// brute-force throttle and turn a whole run red.
+const ADMIN_STATE = 'tests/e2e/.auth/admin.json'
 // A DEDICATED fixture app carrying development -> staging -> production.
 // hello-world ships exactly one version (`production`), which is why every
 // block here used to skip itself; see tests/e2e/support/versionChain.ts.
 const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'pw-verchain'
 const STAGING_VERSION = process.env.NC_STAGING_VERSION ?? 'staging'
-
-async function loginAs(page: import('@playwright/test').Page, user: string, pass: string): Promise<void> {
-	await page.goto(`${BASE}/index.php/login`)
-	await page.locator('input[name="user"]').fill(user)
-	await page.locator('input[name="password"]').fill(pass)
-	await page.locator('button[type="submit"]').first().click()
-	await page.waitForSelector('#header, header.header', { timeout: 20_000 })
-	if (/\/login(\?|$|\/)/.test(page.url())) {
-		throw new Error(`Login as ${user} failed — still on ${page.url()}`)
-	}
-}
 
 // ---------------------------------------------------------------------------
 // 9.1 — Bookmarkability / reload preserves ?_version=
@@ -114,69 +105,136 @@ test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008
 })
 
 // ---------------------------------------------------------------------------
-// 9.2 — 404 for unauthorised on non-production version
+// 9.2 — non-production version access is role-gated (REQ-OBVR-003)
 // ---------------------------------------------------------------------------
-// See the block comment on 9.1 for the true reason (viewer user + version chain).
-test.describe.skip('9.2 Unauthorised access to non-production version shows 404 UI (REQ-OBVR-001 / REQ-OBVR-003)', () => {
-	test.use({ storageState: { cookies: [], origins: [] } })
-
-	test.beforeEach(async ({ page }) => {
-		await loginAs(page, VIEWER.user, VIEWER.pass).catch(() => {
-			// Viewer user may not exist in this environment.
-		})
+// PREVIOUSLY SKIPPED, now enabled. Two things unblocked it:
+//
+//  1. The fixture users. globalSetup provisions rbac-owner/-editor/-viewer/
+//     -outsider and mints one storageState each, so no spec form-logs-in (four
+//     consecutive logins is exactly what trips Nextcloud's brute-force throttle).
+//     `loginAs` is gone from this block for that reason.
+//  2. OpenRegister-level visibility. Until openbuild#76 every non-admin saw ZERO
+//     objects — a schema authorization block with no `read` key fails closed to
+//     owner-only rows — so "viewer gets 404" passed for the wrong reason and any
+//     200 assertion was unreachable. `read: ["authenticated"]` fixed that, which
+//     is what makes the editor-gets-200 row below meaningful as a control.
+//
+// The old body asserted almost nothing: it located the schema list with
+// `.ob-schema-list` / `[data-testid="schema-list"]`, neither of which exists in
+// src/, so "must NOT be visible" was true on any page including a correct one;
+// and it downgraded the missing not-found UI to a console.warn. All four
+// REQ-OBVR-003 scenarios are now asserted directly, with the editor row as the
+// positive control that proves the 404s are the gate and not a broken fixture.
+test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', () => {
+	// Setup runs as admin (the default storageState); the per-role assertions
+	// below each open their own request context.
+	test.beforeAll(async ({ browser }) => {
+		const context = await browser.newContext({ storageState: ADMIN_STATE })
+		const page = await context.newPage()
+		try {
+			await suppressSupportDialog(page)
+			await page.goto(`${BASE}/apps/openbuild/`, { waitUntil: 'domcontentloaded' })
+			await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
+			// Without this the roles below are all "non-member" and the editor
+			// control cannot distinguish a working gate from a broken fixture.
+			await grantAppRoles(page, TEST_SLUG, {
+				editors: ['group:rbac-editors'],
+				viewers: ['group:rbac-viewers'],
+			})
+		} finally {
+			await context.close()
+		}
 	})
 
-	test('viewer navigating to ?_version=staging sees version-not-found UI, not a stack trace', async ({ page }) => {
-		// If the viewer login failed (user doesn't exist), skip.
-		if (/\/login(\?|$|\/)/.test(page.url())) {
-			test.skip('SKIP 9.2: viewer user not found — run Newman RBAC setup collection first')
-			return
+	/**
+	 * A request context carrying one fixture role's stored session.
+	 *
+	 * @param role The rbac-* fixture user id.
+	 * @return {Promise<import('@playwright/test').APIRequestContext>} the context.
+	 */
+	async function asRole(role: string) {
+		return playwrightRequest.newContext({
+			baseURL: BASE,
+			storageState: `tests/e2e/.auth/${role}.json`,
+			extraHTTPHeaders: { 'OCS-APIRequest': 'true' },
+		})
+	}
+
+	/**
+	 * GET the manifest for a version slug as the given role.
+	 *
+	 * @param role    The rbac-* fixture user id.
+	 * @param version The `?_version=` value.
+	 * @return {Promise<{status: number, body: unknown}>} status and parsed body.
+	 */
+	async function manifestAs(role: string, version: string) {
+		const api = await asRole(role)
+		try {
+			const resp = await api.get(
+				`/index.php/apps/openbuild/api/applications/${TEST_SLUG}/manifest?_version=${version}`,
+			)
+			return { status: resp.status(), body: await resp.json().catch(() => null) }
+		} finally {
+			await api.dispose()
 		}
+	}
 
-		// The viewer is not in permissions.editors — they cannot see non-production
-		// versions. ManifestResolverService returns null → 404 JSON.
-		const manifestResp = await page.request.get(
-			`${BASE}/index.php/apps/openbuild/api/applications/${TEST_SLUG}/manifest?_version=${STAGING_VERSION}`,
-			{ headers: { 'OCS-APIRequest': 'true' } },
-		).catch(() => null)
+	test('a viewer gets 404 with the exact no-leak envelope for a non-production version', async () => {
+		const { status, body } = await manifestAs('rbac-viewer', STAGING_VERSION)
 
-		if (manifestResp) {
-			expect(
-				manifestResp.status(),
-				'manifest endpoint must return 404 for viewer accessing non-production version (REQ-OBVR-003)',
-			).toBe(404)
+		expect(status, 'REQ-OBVR-003: viewer must receive 404, not 403').toBe(404)
+		// The spec pins the body exactly — "no mention of authorisation", so that a
+		// 404 for "unauthorised" is indistinguishable from one for "no such version".
+		expect(body).toEqual({ status: 404, message: 'Version not found' })
+		expect(JSON.stringify(body), 'the 404 must not hint that authorisation was the reason')
+			.not.toMatch(/forbid|denied|permission|unauthoris|unauthoriz|role/i)
+	})
 
-			const body = await manifestResp.json().catch(() => null)
-			if (body) {
-				expect(body, 'no existence leak — 404 must not expose whether the version exists').not.toHaveProperty('data')
-				expect(body.status ?? body.error ?? body.message, 'body must indicate not_found').toBeDefined()
-			}
-		}
+	test('a non-member gets the identical 404 — no existence leak', async () => {
+		const viewer = await manifestAs('rbac-viewer', STAGING_VERSION)
+		const outsider = await manifestAs('rbac-outsider', STAGING_VERSION)
 
-		// Navigate to the builder with the staging version.
-		await page.goto(`${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`)
-		await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {})
+		expect(outsider.status, 'REQ-OBVR-003: non-member must receive 404').toBe(404)
+		// The point of the requirement: a caller must not be able to tell a
+		// version they may not see from one that does not exist. Byte-identical.
+		expect(outsider.body, 'non-member and viewer responses must be indistinguishable')
+			.toEqual(viewer.body)
 
-		// The view must show a "not found" UI — no schema list, no stack trace,
-		// no "forbidden" / "403" language (the spec mandates 404, not 403).
-		const notFoundSurface = page.getByText(
-			/(not found|version not found|could not find|no version|no access)/i,
-		).first()
-		const hasNotFound = await notFoundSurface.isVisible({ timeout: 10_000 }).catch(() => false)
+		const unknown = await manifestAs('rbac-outsider', 'no-such-version-xyz')
+		expect(unknown.body, 'an unknown version must answer identically to a forbidden one')
+			.toEqual(outsider.body)
+	})
 
-		// The builder host (schema list / page list) must NOT be visible.
-		const schemaList = page.locator('[data-testid="schema-list"], .ob-schema-list, .ob-schema-designer__list')
-		const schemaListVisible = await schemaList.isVisible({ timeout: 3_000 }).catch(() => false)
-		expect(schemaListVisible, 'schema list must NOT be visible for unauthorised version access').toBe(false)
+	test('an editor gets 200 for the same non-production version (positive control)', async () => {
+		const { status, body } = await manifestAs('rbac-editor', STAGING_VERSION)
 
-		// At minimum the test confirms no stack trace or raw error dump is shown.
-		const stackTrace = page.getByText(/Stack trace|Exception|Uncaught/i)
-		await expect(stackTrace, 'no stack trace must be visible to viewer').toHaveCount(0)
+		// Without this row the 404s above prove nothing: a broken fixture, a
+		// missing version chain or a blanket denial would produce them too.
+		expect(status, 'REQ-OBVR-003: an editor must receive the staging manifest').toBe(200)
+		expect(body, 'the editor must receive an actual manifest').toHaveProperty('version')
+	})
 
-		if (!hasNotFound) {
-			// The "not found" copy is implementation-dependent; log a warning
-			// but don't fail — the main assertion is no schema leakage + no stack trace.
-			console.warn('9.2: version-not-found UI copy not matched — verify BuilderHost renders an error state for null applicationVersion')
+	test('the viewer UI shows no schema list and no stack trace on a forbidden version', async ({ browser }) => {
+		const context = await browser.newContext({ storageState: 'tests/e2e/.auth/rbac-viewer.json' })
+		const page = await context.newPage()
+		try {
+			await page.goto(`${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`)
+			await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {})
+
+			// `.openbuild-schema-list` is the REAL panel — the selector 9.1 and 9.3
+			// assert on. The old `.ob-schema-list` matched nothing, so this
+			// assertion used to hold vacuously.
+			await expect(
+				page.locator('.openbuild-schema-list'),
+				'the schema list must not render for a version the caller may not see',
+			).toHaveCount(0)
+
+			await expect(
+				page.getByText(/Stack trace|Fatal error|Uncaught/i),
+				'a denied version must not surface a stack trace',
+			).toHaveCount(0)
+		} finally {
+			await context.close()
 		}
 	})
 })
