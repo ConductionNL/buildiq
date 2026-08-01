@@ -1125,7 +1125,7 @@ namespace OCA\OpenRegister\Service {
              *
              * @return \OCA\OpenRegister\Db\ObjectEntity
              */
-            public function saveObject(array|\OCA\OpenRegister\Db\ObjectEntity $object, ?array $extend=[], \OCA\OpenRegister\Db\Register|string|int|null $register=null, \OCA\OpenRegister\Db\Schema|string|int|null $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false, ?array $uploadedFiles=null, ?\OCP\IUser $currentUser=null): \OCA\OpenRegister\Db\ObjectEntity
+            public function saveObject(array|\OCA\OpenRegister\Db\ObjectEntity $object, ?array $extend=[], \OCA\OpenRegister\Db\Register|string|int|null $register=null, \OCA\OpenRegister\Db\Schema|string|int|null $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false, ?array $uploadedFiles=null, ?\OCP\IUser $currentUser=null, bool $failIfExists=false): \OCA\OpenRegister\Db\ObjectEntity
             {
                 return new \OCA\OpenRegister\Db\ObjectEntity();
             }//end saveObject()
@@ -1883,6 +1883,24 @@ namespace OCA\OpenRegister\Lifecycle {
              */
             public function check(array $object, string $action, string $userId): GuardResult;
         }//end interface
+    }
+}
+
+namespace OCA\OpenRegister\Exception {
+
+    if (class_exists('OCA\OpenRegister\Exception\ObjectExistsException', false) === false) {
+        /**
+         * Insert-only save conflict — thrown by ObjectService::saveObject() when
+         * $failIfExists is true and the identifier is already taken.
+         *
+         * Stubbed as a TYPE because OpenBuild's channel applier catches it by
+         * type. Matching on message text instead let a plain PHP "Unknown named
+         * parameter $failIfExists" error masquerade as a benign collision, so a
+         * wiring bug reported itself as "already exists" and the test went green.
+         */
+        class ObjectExistsException extends \Exception
+        {
+        }//end class
     }
 }
 

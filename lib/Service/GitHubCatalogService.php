@@ -408,7 +408,7 @@ class GitHubCatalogService
             }
         }
 
-        // app-repo-format-v2 channels. Without this the parser — which DOES know
+        // The app-repo-format-v2 channels. Without this the parser — which DOES know
         // how to read them — is handed a v1 file set, so every channel comes back
         // empty and a v2 repo installs as if it carried nothing but a manifest.
         // Verified against the real published artefacts: buildiq-spectr fetched

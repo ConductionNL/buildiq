@@ -127,6 +127,7 @@ class ApplicationsControllerDiffTest extends TestCase
             groupManager: $groupManager,
             manifestResolver: $this->createMock(ManifestResolverService::class),
             permissionResolver: $permissionResolver,
+            channelApplier: $this->createMock(\OCA\OpenBuild\Service\AppChannelApplier::class),
         );
     }//end setUp()
 
@@ -380,6 +381,7 @@ class ApplicationsControllerDiffTest extends TestCase
             groupManager: $noAdminGroupManager,
             manifestResolver: $this->createMock(ManifestResolverService::class),
             permissionResolver: $noAdminPermissionResolver,
+            channelApplier: $this->createMock(\OCA\OpenBuild\Service\AppChannelApplier::class),
         );
 
         $result = $controller->diffVersions(slug: 'hello-world', from: 'draft', to: 'draft');

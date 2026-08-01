@@ -112,6 +112,11 @@
                 <referencedClass name="OCA\OpenRegister\Db\ApprovalStepMapper"/>
                 <referencedClass name="OCA\OpenRegister\Service\ApprovalService"/>
                 <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
+                <!-- Thrown by ObjectService::saveObject(failIfExists: true) and
+                     caught BY TYPE in AppChannelApplier — matching the message
+                     text instead let an unrelated PHP error masquerade as a
+                     benign collision (apply-v2-channels). -->
+                <referencedClass name="OCA\OpenRegister\Exception\ObjectExistsException"/>
                 <referencedClass name="OCA\OpenRegister\Service\ConfigurationService"/>
                 <referencedClass name="OCA\OpenRegister\Service\RegisterService"/>
                 <referencedClass name="OCA\OpenRegister\Service\FileService"/>

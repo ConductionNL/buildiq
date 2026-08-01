@@ -416,7 +416,7 @@ class AppRepoSerializer
         }
 
         try {
-            // find(), NOT findAll(filters: ['uuid' => …]): a uuid is OpenRegister
+            // Resolved with find(), NOT findAll(filters: ['uuid' => …]): a uuid is OpenRegister
             // METADATA, not an object property, so a filter on it matches nothing.
             // Resolved by UUID rather than slug because OpenConnector objects
             // overwhelmingly have no slug (measured live: 0 of 74 jobs, 1 of 291
