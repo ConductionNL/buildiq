@@ -10,6 +10,9 @@
         "title": "Agent",
         "description": "A named, reusable, tool-scoped AI configuration for one Application: free-text instructions prefixed onto the copilot system prompt, an explicit subset of the eight OpenBuildToolProvider tools it may invoke, and a per-run action cap. Never a wider capability surface than the bare copilot (agent-workspace design.md Goals).",
         "authorization": {
+          "read": [
+            "authenticated"
+          ],
           "create": [
             "admin"
           ],
@@ -91,6 +94,9 @@
         "title": "Agent Run",
         "description": "One transparently-logged plan+execute (or plan+discard) interaction issued with an agentId (agent-workspace design.md Decision 2) — the prompt, the returned plan, every tool call's arguments and result, and the final outcome. Written by `AgentRunLogger`, a thin wrapper around CopilotService's plan/execute/discard paths. Never a summarised or redacted view of what actually ran.",
         "authorization": {
+          "read": [
+            "authenticated"
+          ],
           "create": [
             "admin"
           ],

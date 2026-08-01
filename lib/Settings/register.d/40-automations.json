@@ -10,6 +10,9 @@
 				"title": "Automation",
 				"description": "A single trigger→condition→actions declarative automation, compiled on demand to OpenBuild's existing declarative primitives (notifications dialect, lifecycle actions, schedules, rules engine). One automation is managed as one unit: list/edit/enable/disable/dry-run/delete.",
 				"authorization": {
+					"read": [
+						"authenticated"
+					],
 					"create": [
 						"admin"
 					],

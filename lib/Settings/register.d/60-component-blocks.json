@@ -10,6 +10,9 @@
 				"title": "Component Block",
 				"description": "A named, reusable manifest fragment captured from a configured widget or a multi-widget page section, insertable into any page/app the caller has editor rights on. Never contains object data (record rows) — only structure, matching the ApplicationTemplate 'never captures rows' guarantee. Insert always deep-copies the fragment and mints fresh widget ids; there is no live link back to the source block (explicit v1 non-goal — see proposal.md).",
 				"authorization": {
+					"read": [
+						"authenticated"
+					],
 					"create": [
 						"admin"
 					],

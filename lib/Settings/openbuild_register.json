@@ -22,6 +22,9 @@
         "title": "Application",
         "description": "An app built or customized with OpenBuild (unify-apps-with-app-type). The `appType` discriminator distinguishes a `virtual` app (fully delivered by OpenBuild) from a `hybrid` app (a delta layered over an installed Nextcloud fleet app, linked via `baseRef`). Per ADR-002 the Application carries identity (slug, name, description, appType, baseRef, permissions) plus a productionVersion relation to the ApplicationVersion currently exposed at the canonical URL. Manifest, semver, and lifecycle live on ApplicationVersion. For a hybrid app the identity metadata (slug/name) mirrors the underlying NC app and is read-only after creation (enforced by HybridMetadataLockListener).",
         "authorization": {
+          "read": [
+            "authenticated"
+          ],
           "create": [
             "admin"
           ],
@@ -246,6 +249,9 @@
         "title": "Application Template",
         "description": "A pre-baked starter pack for building an Application from a recognisable use case — manifest plus companion schemas. Seeded Conduction-curated templates carry isSeeded: true. Per the hybrid register model this schema is shared across the `openbuild` register; cloned user schemas land in a per-app `openbuild-{slug}` register.",
         "authorization": {
+          "read": [
+            "authenticated"
+          ],
           "create": [
             "admin"
           ],
@@ -354,6 +360,9 @@
         "title": "Built App Route",
         "description": "Index from slug → applicationUuid. Maintained by the Application lifecycle (upserted on publish, deleted on archive). Used by the runtime to resolve /builder/{slug} → manifest in a single OR lookup. Per ADR-022 this is an explicit flattened index rather than scanning the Application collection.",
         "authorization": {
+          "read": [
+            "authenticated"
+          ],
           "create": [
             "admin"
           ],
@@ -395,6 +404,9 @@
         "title": "Hello Message",
         "description": "Seed schema for the canonical hello-world virtual app. Three sample messages are seeded on install so the install is testable out of the box.",
         "authorization": {
+          "read": [
+            "authenticated"
+          ],
           "create": [
             "admin"
           ],
@@ -472,6 +484,9 @@
         "title": "Application Version",
         "description": "A deployable runtime for an Application (ADR-002). A VIRTUAL app's version carries a full `manifest` blob and owns its own per-version OpenRegister register so production and test data are physically isolated. A HYBRID app's version (unify-apps-with-app-type) instead carries a delta-only customization: `manifest` is an empty object `{}`, `baseRef.kind` is `fleet-app`, and `manifestDelta` holds the keyed structural diff served raw via GET /api/app-overrides/{appId} and merged client-side over the installed fleet app's bundled manifest (OpenBuild holds no fleet base). The admin-defined linear promotion chain reads via the optional `promotesTo` relation. Lifecycle (draft → published → archived) is per-version; the `draft → published` transition upserts the BuiltAppRoute slug index.",
         "authorization": {
+          "read": [
+            "authenticated"
+          ],
           "create": [
             "admin"
           ],
@@ -734,6 +749,9 @@
         "title": "Export Job",
         "description": "Asynchronous pipeline that turns a published Application into a standalone Nextcloud app — delivered as a ZIP download or pushed to GitHub. Lifecycle is declarative per ADR-031; the file-generation surface is an ADR-031 §Exceptions(3) imperative path.",
         "authorization": {
+          "read": [
+            "authenticated"
+          ],
           "create": [
             "admin"
           ],
