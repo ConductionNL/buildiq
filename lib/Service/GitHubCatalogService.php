@@ -101,6 +101,18 @@ class GitHubCatalogService
     private const MAX_HITS = 30;
 
     /**
+     * Maximum app-repo-format-v2 channel blobs fetched for one install.
+     *
+     * Sized above a real v2 artefact — buildiq-hydra carries 94 skills across
+     * ~750 blobs — while still bounding a hostile repository's ability to turn
+     * one install into an unbounded fan-out of contents-API calls. Truncation is
+     * logged, never silent.
+     *
+     * @var int
+     */
+    private const MAX_CHANNEL_FILES = 2048;
+
+    /**
      * Safe owner/repo pattern (GitHub allows alnum, `-`, `_`, `.`).
      */
     private const OWNER_REPO_PATTERN = '/^[A-Za-z0-9._-]{1,100}$/';
@@ -396,8 +408,131 @@ class GitHubCatalogService
             }
         }
 
-        return $files;
+        // app-repo-format-v2 channels. Without this the parser — which DOES know
+        // how to read them — is handed a v1 file set, so every channel comes back
+        // empty and a v2 repo installs as if it carried nothing but a manifest.
+        // Verified against the real published artefacts: buildiq-spectr fetched
+        // 2 files and parsed with 0 data-registers and 0 connectors, despite the
+        // repository holding 46 blobs.
+        return array_merge(
+            $files,
+            $this->fetchChannelFiles(
+                owner: $owner,
+                repo: $repo,
+                ref: $ref,
+                actingUserId: $actingUserId,
+                credentialId: $credentialId
+            )
+        );
     }//end fetchRepoFiles()
+
+    /**
+     * Fetch every blob under the app-repo-format-v2 channel prefixes.
+     *
+     * Uses ONE recursive tree call rather than a contents-API walk per directory:
+     * a v2 repo can carry hundreds of entries (94 skills is ~750 blobs), and a
+     * per-directory listing would multiply the round trips before a single file
+     * is read.
+     *
+     * Bounded, and truncation is logged rather than silent — an install that
+     * quietly drops half an app is the failure this format exists to prevent.
+     *
+     * @param string      $owner        Repo owner.
+     * @param string      $repo         Repo name.
+     * @param string|null $ref          Optional git ref.
+     * @param string|null $actingUserId The session UID, or null.
+     * @param string|null $credentialId Optional allowed `github` credential.
+     *
+     * @return array<string,string> The `path => contents` map for the v2 channels.
+     *
+     * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
+     */
+    private function fetchChannelFiles(
+        string $owner,
+        string $repo,
+        ?string $ref,
+        ?string $actingUserId,
+        ?string $credentialId
+    ): array {
+        $treeRef = ($ref ?? '');
+        if ($treeRef === '') {
+            $treeRef = 'HEAD';
+        }
+
+        $result = $this->get(
+            path: '/repos/'.rawurlencode($owner).'/'.rawurlencode($repo)
+                .'/git/trees/'.rawurlencode($treeRef).'?recursive=1',
+            actingUserId: $actingUserId,
+            credentialId: $credentialId
+        );
+        if ($result['ok'] === false) {
+            return [];
+        }
+
+        $decoded = json_decode($result['body'], true);
+        if (is_array($decoded) === false || is_array($decoded['tree'] ?? null) === false) {
+            return [];
+        }
+
+        $prefixes = [
+            AppRepoParser::DATA_REGISTERS_PREFIX,
+            AppRepoParser::CONNECTORS_PREFIX,
+            AppRepoParser::AUTOMATIONS_PREFIX,
+            AppRepoParser::SKILLS_PREFIX,
+        ];
+
+        $files     = [];
+        $truncated = false;
+
+        foreach ($decoded['tree'] as $entry) {
+            if (is_array($entry) === false || (string) ($entry['type'] ?? '') !== 'blob') {
+                continue;
+            }
+
+            $path = (string) ($entry['path'] ?? '');
+            if ($path === '' || str_contains($path, '..') === true) {
+                continue;
+            }
+
+            $wanted = false;
+            foreach ($prefixes as $prefix) {
+                if (str_starts_with($path, $prefix) === true) {
+                    $wanted = true;
+                    break;
+                }
+            }
+
+            if ($wanted === false) {
+                continue;
+            }
+
+            if (count($files) >= self::MAX_CHANNEL_FILES) {
+                $truncated = true;
+                continue;
+            }
+
+            $contents = $this->fetchFileContents(
+                owner: $owner,
+                repo: $repo,
+                path: $path,
+                ref: $ref,
+                actingUserId: $actingUserId,
+                credentialId: $credentialId
+            );
+            if ($contents !== null) {
+                $files[$path] = $contents;
+            }
+        }//end foreach
+
+        if ($truncated === true) {
+            $this->logger->warning(
+                'OpenBuild: v2 channel fetch truncated — the installed app will be INCOMPLETE.',
+                ['owner' => $owner, 'repo' => $repo, 'limit' => self::MAX_CHANNEL_FILES]
+            );
+        }
+
+        return $files;
+    }//end fetchChannelFiles()
 
     /**
      * Build a card from a search hit's descriptor (non-installable when the
