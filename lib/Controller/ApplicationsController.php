@@ -1596,11 +1596,16 @@ class ApplicationsController extends Controller
      *
      * @return array{uuid:string|null}|array{error:array<string,mixed>,status:int}
      *
+     * Exception contract: the save is wrapped in `catch (Throwable)`, which
+     * deliberately covers OpenRegister's ValidationException and
+     * DoesNotExistException as well as anything else the write path raises — all
+     * of them are translated into the `clone_failed` envelope rather than leaking
+     * out of the controller.
+     *
      * @throws Throwable From normaliseObject() AFTER a successful save. Deliberately
-     *                   not folded into the envelope: at that point the Application
-     *                   record already exists, so returning `clone_failed` would tell
-     *                   the caller nothing was created when something was. Surfacing
-     *                   the real failure is the honest outcome.
+     *                   NOT folded into the envelope: by then the Application record
+     *                   already exists, so returning `clone_failed` would tell the
+     *                   caller nothing was created when something was.
      *
      * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
      */
