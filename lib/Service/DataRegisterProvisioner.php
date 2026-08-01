@@ -61,7 +61,6 @@ class DataRegisterProvisioner
      */
     private const MAX_REGISTERS = 64;
 
-
     /**
      * Constructor.
      *
@@ -77,7 +76,6 @@ class DataRegisterProvisioner
         private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
-
 
     /**
      * Apply the data-registers channel.
@@ -118,7 +116,6 @@ class DataRegisterProvisioner
         }//end foreach
 
     }//end apply()
-
 
     /**
      * Create one register and its missing schemas, or skip an existing one.
@@ -165,7 +162,6 @@ class DataRegisterProvisioner
 
     }//end applyOne()
 
-
     /**
      * Find a schema by slug, or create it from the published definition.
      *
@@ -208,6 +204,4 @@ class DataRegisterProvisioner
         }
 
     }//end findOrCreateSchema()
-
-
 }//end class

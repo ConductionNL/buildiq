@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\AppChannelApplier;
+use OCA\OpenBuild\Service\AppRepoParser;
 use OCA\OpenBuild\Service\ChannelApplyReport;
 use OCA\OpenBuild\Service\ContainerLocator;
 use OCA\OpenBuild\Service\DataRegisterProvisioner;
@@ -146,9 +147,64 @@ class AppChannelApplierTest extends TestCase
     {
         return [
             'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
-            'connectors'     => [$kind => ['example' => ['id' => $uuid, 'name' => 'Example']]],
+            'channels'       => [
+                'connectors' => [$kind => ['example' => ['id' => $uuid, 'name' => 'Example']]],
+            ],
         ];
     }//end templateWithConnector()
+
+
+    /**
+     * The applier reads the channels AppRepoParser actually produces.
+     *
+     * This is the load-bearing test of the file. The channels are nested under
+     * `channels`, and an applier that read them from the top level would find
+     * nothing, report `declared: 0` for everything, and still return success —
+     * the precise do-nothing-and-claim-victory failure this class exists to end.
+     *
+     * Hand-written fixtures cannot catch that: write them in the same shape the
+     * implementation assumes and the two agree with each other while both
+     * disagree with the real producer. So this test drives the REAL parser and
+     * feeds its output straight in, which is the only version of this assertion
+     * that can fail when the shapes drift apart.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-every-install-path-applies-the-v2-channels
+     */
+    public function testAppliesTheChannelShapeTheParserActuallyProduces(): void
+    {
+        $files = [
+            'openbuild-app.json' => json_encode(
+                [
+                    'formatVersion' => '2.0',
+                    'appType'       => 'virtual',
+                    'slug'          => 'example-app',
+                    'version'       => '1.0.0',
+                ]
+            ),
+            'manifest.json'      => json_encode(['version' => '1.0.0', 'pages' => []]),
+            'connectors/source/example.json' => json_encode(['id' => self::NIL_UUID, 'name' => 'Example']),
+            'data-registers/example.json'    => json_encode(['slug' => 'example', 'title' => 'Example', 'schemas' => []]),
+        ];
+
+        $template = (new AppRepoParser())->parse(
+            files: $files,
+            repo: ['owner' => 'ConductionNL', 'name' => 'example-app']
+        );
+
+        $this->appManager->method('isEnabledForUser')->willReturn(true);
+        $this->objectService->method('findAll')->willReturn([]);
+        $this->registerMapper->method('find')->willThrowException(new RuntimeException('absent'));
+
+        $report = $this->applier()->apply(template: $template);
+
+        // The whole point: NON-ZERO declared counts straight off the real parser.
+        self::assertSame(1, $report['channels']['connectors']['declared']);
+        self::assertSame(1, $report['channels']['dataRegisters']['declared']);
+        self::assertSame(1, $report['channels']['connectors']['created']);
+
+    }//end testAppliesTheChannelShapeTheParserActuallyProduces()
 
     /**
      * A v1 template installs unchanged and reports zero declared everywhere.
@@ -285,9 +341,11 @@ class AppChannelApplierTest extends TestCase
         $report = $this->applier()->apply(
             template: [
                 'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
-                'skills'         => [
-                    'alpha' => ['SKILL.md' => '# alpha'],
-                    'beta'  => ['SKILL.md' => '# beta'],
+                'channels'       => [
+                    'skills' => [
+                        'alpha' => ['SKILL.md' => '# alpha'],
+                        'beta'  => ['SKILL.md' => '# beta'],
+                    ],
                 ],
             ]
         );
@@ -312,13 +370,15 @@ class AppChannelApplierTest extends TestCase
         $report = $this->applier()->apply(
             template: [
                 'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
-                'connectors'     => [
-                    'source' => [
-                        'example' => [
-                            'id'            => self::NIL_UUID,
-                            'configuration' => [
-                                'authentication' => [
-                                    'credentialRef' => ['credentialName' => 'PLACEHOLDER_CREDENTIAL'],
+                'channels'       => [
+                    'connectors' => [
+                        'source' => [
+                            'example' => [
+                                'id'            => self::NIL_UUID,
+                                'configuration' => [
+                                    'authentication' => [
+                                        'credentialRef' => ['credentialName' => 'PLACEHOLDER_CREDENTIAL'],
+                                    ],
                                 ],
                             ],
                         ],
@@ -347,11 +407,13 @@ class AppChannelApplierTest extends TestCase
         $report = $this->applier()->apply(
             template: [
                 'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
-                'connectors'     => [
-                    'source' => [
-                        'example' => [
-                            'id'            => self::NIL_UUID,
-                            'credentialRef' => ['credentialName' => 'PLACEHOLDER_CREDENTIAL'],
+                'channels'       => [
+                    'connectors' => [
+                        'source' => [
+                            'example' => [
+                                'id'            => self::NIL_UUID,
+                                'credentialRef' => ['credentialName' => 'PLACEHOLDER_CREDENTIAL'],
+                            ],
                         ],
                     ],
                 ],

@@ -254,7 +254,17 @@ class AppChannelApplier
      */
     private function channelOf(array $template, string $name): array
     {
-        $channel = ($template[$name] ?? []);
+        // AppRepoParser NESTS the v2 channels under `channels`, and adds the key
+        // only for a v2 repo. Reading them from the top level instead returns
+        // nothing for every channel — which is not an error, just a silent
+        // `declared: 0`, i.e. exactly the do-nothing-and-report-success failure
+        // this class exists to end. Verified against the parser, not assumed.
+        $channels = ($template['channels'] ?? []);
+        if (is_array($channels) === false) {
+            return [];
+        }
+
+        $channel = ($channels[$name] ?? []);
         if (is_array($channel) === false) {
             return [];
         }
@@ -582,7 +592,7 @@ class AppChannelApplier
                 created: (int) ($result['installed'] ?? 0),
                 skipped: (int) ($result['skipped'] ?? 0),
                 failed: (int) ($result['failed'] ?? 0),
-                truncated: (int) ($result['truncated'] ?? 0)
+                truncated: (bool) ($result['truncated'] ?? false)
             );
         } catch (Throwable $e) {
             $this->logger->warning('OpenBuild channel apply: hermiq skill install failed: '.$e->getMessage());

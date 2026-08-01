@@ -220,8 +220,7 @@ class ChannelApplyReport
         $this->channels[$channel]['reason'] = $reason;
 
         $channelState = $this->channels[$channel];
-        $outstanding  = ($channelState['declared'] - $channelState['created']
-            - $channelState['skipped'] - $channelState['failed']);
+        $outstanding  = ($channelState['declared'] - $channelState['created'] - $channelState['skipped'] - $channelState['failed']);
 
         if ($outstanding > 0) {
             $this->channels[$channel]['skipped'] += $outstanding;
@@ -233,26 +232,45 @@ class ChannelApplyReport
      * Adopt counts produced by another app (hermiq owns skill installation, so
      * its numbers are carried through unmodified rather than recomputed here).
      *
+     * Any shortfall between what we declared and what the source accounted for is
+     * absorbed as a skip with a named cause, rather than left to break the balance
+     * identity. A source that returns fewer outcomes than we sent it items is a
+     * real event with a real explanation — usually its own truncation — and the
+     * report should say which, not throw or quietly disagree with itself.
+     *
      * @param string $channel   The channel name.
-     * @param int    $created   Items hermiq installed.
-     * @param int    $skipped   Items hermiq skipped.
-     * @param int    $failed    Items hermiq failed.
-     * @param int    $truncated Items hermiq dropped at its own bound.
+     * @param int    $created   Items the source installed.
+     * @param int    $skipped   Items the source skipped.
+     * @param int    $failed    Items the source failed.
+     * @param bool   $truncated Whether the SOURCE truncated its own fetch. A flag,
+     *                          not a count: it knows truncation happened but not
+     *                          how many items it never read.
      *
      * @return void
      *
      * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
      */
-    public function adoptCounts(string $channel, int $created, int $skipped, int $failed, int $truncated): void
+    public function adoptCounts(string $channel, int $created, int $skipped, int $failed, bool $truncated): void
     {
         if (isset($this->channels[$channel]) === false) {
             $this->declareChannel(channel: $channel, declared: ($created + $skipped + $failed));
         }
 
-        $this->channels[$channel]['created']   = $created;
-        $this->channels[$channel]['skipped']   = $skipped;
-        $this->channels[$channel]['failed']    = $failed;
-        $this->channels[$channel]['truncated'] = $truncated;
+        $this->channels[$channel]['created'] = $created;
+        $this->channels[$channel]['skipped'] = $skipped;
+        $this->channels[$channel]['failed']  = $failed;
+
+        if ($truncated === true) {
+            $this->channels[$channel]['reason'] = 'source-bundle-truncated';
+        }
+
+        $outstanding = ($this->channels[$channel]['declared'] - $created - $skipped - $failed);
+        if ($outstanding > 0) {
+            $this->channels[$channel]['skipped'] += $outstanding;
+            if ($this->channels[$channel]['reason'] === null) {
+                $this->channels[$channel]['reason'] = 'not-accounted-for-by-source';
+            }
+        }
 
     }//end adoptCounts()
 
