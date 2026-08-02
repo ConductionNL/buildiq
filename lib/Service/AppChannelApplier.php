@@ -116,28 +116,12 @@ class AppChannelApplier
     private const REASON_NO_OPENCONNECTOR = 'openconnector-unavailable';
 
     /**
-     * Reason recorded when hermiq is not available.
-     *
-     * @var string
-     */
-    private const REASON_NO_HERMIQ = 'hermiq-unavailable';
-
-    /**
-     * The hermiq service that installs a published skill bundle by repo
-     * coordinates. Resolved from the server container only when hermiq is
-     * enabled, so hermiq stays an optional dependency.
-     *
-     * @var string
-     */
-    private const HERMIQ_INSTALLER = '\OCA\Hermiq\Service\SkillBundleInstaller';
-
-    /**
      * Constructor.
      *
      * @param ObjectService           $objectService       OpenRegister object read/write.
      * @param DataRegisterProvisioner $registerProvisioner The data-registers channel.
+     * @param SkillChannelDelegate    $skillDelegate       The skills channel (delegated to hermiq).
      * @param IAppManager             $appManager          Optional-dependency detection.
-     * @param ContainerLocator        $locator             Lazy cross-app service resolution.
      * @param LoggerInterface         $logger              PSR logger (secret-free diagnostics).
      *
      * @return void
@@ -145,8 +129,8 @@ class AppChannelApplier
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly DataRegisterProvisioner $registerProvisioner,
+        private readonly SkillChannelDelegate $skillDelegate,
         private readonly IAppManager $appManager,
-        private readonly ContainerLocator $locator,
         private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
@@ -200,7 +184,7 @@ class AppChannelApplier
             report: $report
         );
 
-        $this->applySkills(
+        $this->skillDelegate->apply(
             skills: $this->channelOf(template: $template, name: 'skills'),
             owner: $owner,
             repo: $repo,
@@ -521,85 +505,6 @@ class AppChannelApplier
         }
 
     }//end applyAutomations()
-
-    /**
-     * Delegate the skills channel to hermiq, which owns skill installation and
-     * fetches the bundle itself from the repo coordinates.
-     *
-     * OpenBuild deliberately parses no skill frontmatter and places no aux files:
-     * byte-fidelity and the ADR-068 §3 `learning-candidates.md` exclusion live in
-     * exactly one implementation.
-     *
-     * @param array<string,mixed> $skills       The channel (name → path → contents).
-     * @param string              $owner        Repo owner.
-     * @param string              $repo         Repo name.
-     * @param string|null         $ref          Optional git ref.
-     * @param string|null         $actingUserId The session UID.
-     * @param string|null         $credentialId Optional broker credential UUID.
-     * @param ChannelApplyReport  $report       The report to write into.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
-     */
-    private function applySkills(
-        array $skills,
-        string $owner,
-        string $repo,
-        ?string $ref,
-        ?string $actingUserId,
-        ?string $credentialId,
-        ChannelApplyReport $report
-    ): void {
-        $report->declareChannel(channel: 'skills', declared: count($skills));
-
-        if ($skills === []) {
-            return;
-        }
-
-        if ($owner === '' || $repo === '') {
-            // Hermiq fetches the bundle itself, so without coordinates there is
-            // nothing to delegate. Reported rather than treated as "no skills".
-            $report->skipChannel(channel: 'skills', reason: 'no-repo-coordinates');
-            return;
-        }
-
-        $installer = null;
-        if ($this->appManager->isEnabledForUser('hermiq') === true) {
-            $installer = $this->locator->get(className: self::HERMIQ_INSTALLER);
-        }
-
-        if ($installer === null) {
-            $this->logger->info(
-                'OpenBuild channel apply: hermiq is not available — skipping '.count($skills).' declared skills.'
-            );
-            $report->skipChannel(channel: 'skills', reason: self::REASON_NO_HERMIQ);
-            return;
-        }
-
-        try {
-            $result = $installer->installFromRepo(
-                owner: $owner,
-                repo: $repo,
-                ref: $ref,
-                actingUserId: $actingUserId,
-                credentialId: $credentialId
-            );
-
-            // Hermiq owns these numbers; they are carried through unmodified.
-            $report->adoptCounts(
-                channel: 'skills',
-                created: (int) ($result['installed'] ?? 0),
-                skipped: (int) ($result['skipped'] ?? 0),
-                failed: (int) ($result['failed'] ?? 0),
-                truncated: (bool) ($result['truncated'] ?? false)
-            );
-        } catch (Throwable $e) {
-            $this->logger->warning('OpenBuild channel apply: hermiq skill install failed: '.$e->getMessage());
-            $report->skipChannel(channel: 'skills', reason: 'hermiq-install-failed');
-        }//end try
-
-    }//end applySkills()
 
     /**
      * Log that a channel bound was reached. Never silent: an install that quietly

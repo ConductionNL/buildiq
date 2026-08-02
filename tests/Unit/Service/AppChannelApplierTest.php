@@ -38,6 +38,7 @@ use OCA\OpenBuild\Service\AppRepoParser;
 use OCA\OpenBuild\Service\ChannelApplyReport;
 use OCA\OpenBuild\Service\ContainerLocator;
 use OCA\OpenBuild\Service\DataRegisterProvisioner;
+use OCA\OpenBuild\Service\SkillChannelDelegate;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectExistsException;
@@ -128,8 +129,15 @@ class AppChannelApplierTest extends TestCase
                 $this->schemaMapper,
                 $this->createMock(LoggerInterface::class)
             ),
+            // A REAL delegate over the mocked app-manager and locator: the skills
+            // channel's degradation and count-adoption behaviour is exactly what
+            // several tests in this file assert, so a mock would gut them.
+            new SkillChannelDelegate(
+                $this->appManager,
+                $this->locator,
+                $this->createMock(LoggerInterface::class)
+            ),
             $this->appManager,
-            $this->locator,
             $this->createMock(LoggerInterface::class)
         );
 
@@ -333,6 +341,57 @@ class AppChannelApplierTest extends TestCase
      *
      * @return void
      */
+    public function testAnIdempotentSourceReportingOnlyUnchangedIsNotTreatedAsUnaccountedFor(): void
+    {
+        $this->appManager->method('isEnabledForUser')->willReturn(true);
+
+        // hermiq's installer is idempotent: a re-install of a bundle already
+        // present reports everything as `unchanged`, with `installed` at zero.
+        // Reading only `installed` accounts for 0 of 2 declared and reports the
+        // whole channel as not-accounted-for — a loud failure on a good run.
+        $installer = new class {
+            public function installFromRepo(
+                string $owner,
+                string $repo,
+                ?string $ref=null,
+                ?string $actingUserId=null,
+                ?string $credentialId=null
+            ): array {
+                return [
+                    'installed' => 0,
+                    'updated'   => 0,
+                    'unchanged' => 2,
+                    'skipped'   => 0,
+                    'failed'    => 0,
+                    'truncated' => false,
+                ];
+            }
+        };
+        $this->locator->method('get')->willReturn($installer);
+
+        $report = $this->applier()->apply(
+            template: [
+                'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
+                'channels'       => [
+                    'skills' => [
+                        'alpha' => ['SKILL.md' => '# alpha'],
+                        'beta'  => ['SKILL.md' => '# beta'],
+                    ],
+                ],
+            ]
+        );
+
+        $skills = $report['channels']['skills'];
+        self::assertSame(2, $skills['declared']);
+        self::assertSame(2, $skills['created'], 'unchanged items are present as intended');
+        self::assertSame(0, $skills['skipped']);
+        self::assertNull($skills['reason'], 'a clean idempotent re-run must not be flagged');
+        self::assertSame(2, $skills['sourceCounts']['unchanged']);
+        self::assertSame(0, $skills['sourceCounts']['installed']);
+
+    }//end testAnIdempotentSourceReportingOnlyUnchangedIsNotTreatedAsUnaccountedFor()
+
+
     public function testSkillsDegradeWhenHermiqIsAbsent(): void
     {
         $this->appManager->method('isEnabledForUser')->willReturn(false);
