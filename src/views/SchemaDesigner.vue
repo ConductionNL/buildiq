@@ -387,7 +387,19 @@ export default {
 				...(Array.isArray(perms.editors) ? perms.editors : []),
 				...(Array.isArray(perms.viewers) ? perms.viewers : []),
 			]
-			const groups = all.filter((p) => typeof p === 'string' && !p.startsWith('user:'))
+			// Permission buckets carry `user:<uid>`, `group:<gid>` OR a bare gid
+			// (useRole.js). Everything downstream wants the BARE gid: the saved
+			// access rule goes to OpenRegister, which matches read rules against
+			// getUserGroupIds() output, and authorLockedOut compares against
+			// getCurrentUserGroups() — both bare. Leaking the `group:` prefix
+			// through produced a rule that matched nobody: measured on a live
+			// instance, read:["group:rbac-editors"] showed a member 0 objects
+			// where read:["rbac-editors"] showed 22. It also made the lock-out
+			// warning fire for members, since the comparison could never hit.
+			const groups = all
+				.filter((p) => typeof p === 'string' && !p.startsWith('user:'))
+				.map((p) => (p.startsWith('group:') ? p.slice('group:'.length) : p))
+				.filter((gid) => gid !== '')
 			return [...new Set(groups)]
 		},
 		/**
