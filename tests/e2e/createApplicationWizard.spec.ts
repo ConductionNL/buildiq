@@ -120,6 +120,29 @@ async function goToApps(page: Page): Promise<void> {
 }
 
 /**
+ * The wizard dialog itself — every action button MUST be looked up inside it.
+ *
+ * CnWizardDialog renders as `.dialog__modal[data-testid-modal="cn-wizard-dialog"]`,
+ * teleported to <body>. Scoping matters because a page-level `getByRole('button',
+ * { name: /^next$/i }).first()` does NOT find the wizard's Next: the applications
+ * list behind the modal renders a PAGINATION control whose button is also called
+ * "Next" (`.cn-pagination__nav`), it comes first in DOM order, and it sits at
+ * y≈1318 in a 720px viewport. Playwright judged it visible and enabled, scrolled
+ * to it, and the modal overlay then swallowed the click — producing "subtree
+ * intercepts pointer events" against the DIALOG, which reads exactly like a
+ * broken dialog rather than a mis-aimed locator (openbuild#86).
+ *
+ * It only started failing once the fixture apps grew past one page, which is why
+ * this looked like a regression in the wizard.
+ *
+ * @param page Playwright page.
+ * @return {import('@playwright/test').Locator} The wizard dialog root.
+ */
+function wizard(page: Page) {
+	return page.locator('[data-testid-modal="cn-wizard-dialog"]')
+}
+
+/**
  * Open the wizard by clicking the "Add app" button.
  *
  * @param page Playwright page.
@@ -155,7 +178,9 @@ async function fillStep1(page: Page, appName: string): Promise<void> {
  * @param page Playwright page.
  */
 async function clickNext(page: Page): Promise<void> {
-	const nextBtn = page.getByRole('button', { name: /^next$/i }).first()
+	// Scoped to the dialog — see wizard() for why an unscoped lookup hits the
+	// applications-list pagination instead.
+	const nextBtn = wizard(page).getByRole('button', { name: /^next$/i })
 	await expect(nextBtn).toBeEnabled({ timeout: 5_000 })
 	await nextBtn.click()
 }
@@ -207,7 +232,7 @@ async function expectStep3BlocksAdvance(page: Page, expectedError: RegExp): Prom
 	).toBeVisible({ timeout: 5_000 })
 
 	// And Next must not get us off step 3.
-	const nextBtn = page.getByRole('button', { name: /^next$/i }).first()
+	const nextBtn = wizard(page).getByRole('button', { name: /^next$/i })
 	await nextBtn.click()
 	await expect(
 		page.locator('.wizard-step3'),
@@ -230,7 +255,7 @@ async function expectStep3BlocksAdvance(page: Page, expectedError: RegExp): Prom
  * @returns The applicationUuid extracted from the URL after navigation.
  */
 async function clickCreate(page: Page): Promise<string> {
-	const createBtn = page.getByRole('button', { name: /^create$/i }).first()
+	const createBtn = wizard(page).getByRole('button', { name: /^create$/i })
 	await expect(createBtn).toBeEnabled({ timeout: 5_000 })
 	await createBtn.click()
 	// Wait for the modal to close and the router to navigate to the detail page.
@@ -573,7 +598,7 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 		await clickNext(page)
 
 		// Step 4: Review — click Create. Should hit a slug conflict (422).
-		const createBtn = page.getByRole('button', { name: /^create$/i }).first()
+		const createBtn = wizard(page).getByRole('button', { name: /^create$/i })
 		await expect(createBtn).toBeEnabled({ timeout: 5_000 })
 		await createBtn.click()
 
@@ -588,7 +613,7 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 		await expect(errorBanner).toContainText(/hello-world|already exists|conflict/i)
 
 		// Admin can press Back, change the slug, and the banner is gone.
-		const backBtn = page.getByRole('button', { name: /back/i }).first()
+		const backBtn = wizard(page).getByRole('button', { name: /back/i })
 		await expect(backBtn).toBeVisible()
 		await backBtn.click()
 		// Now on step 2 again.

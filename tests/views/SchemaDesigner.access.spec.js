@@ -297,3 +297,73 @@ describe('SchemaDesigner — accessReadOnly truth table (REQ-OBDSA-007)', () => 
 		expect(wrapper.vm.accessReadOnly).toBe(false)
 	})
 })
+
+/*
+ * Regression: the Access editor used to offer PREFIXED group ids.
+ *
+ * Application permission buckets carry `user:<uid>`, `group:<gid>` or a bare
+ * gid (useRole.js). `availableGroups` filtered out only the `user:` form and
+ * passed `group:rbac-editors` straight through to the dropdown — so the value
+ * the admin picked was also the value written into the schema's read rule.
+ *
+ * OpenRegister matches read rules against getUserGroupIds(), which returns BARE
+ * gids, so such a rule matched nobody. Measured on a live instance:
+ *
+ *     read: ["group:rbac-editors"]  -> a member of rbac-editors saw  0 objects
+ *     read: ["rbac-editors"]        -> the same member saw          22 objects
+ *
+ * The same mismatch made `authorLockedOut` fire for members, since it compares
+ * the selected values against getCurrentUserGroups() (also bare) — the
+ * REQ-OBDSA-004 "a member sees no warning" scenario could never pass.
+ *
+ * Every pre-existing test here seeded permissions with bare gids, which is why
+ * the suite stayed green over a scope that granted nothing in production.
+ */
+describe('SchemaDesigner — availableGroups normalises prefixed principals (#83)', () => {
+	it('strips the `group:` prefix so the saved rule is a bare gid', async () => {
+		const wrapper = await mountDetail()
+		wrapper.vm.applicationRecord = {
+			permissions: {
+				owners: ['user:admin'],
+				editors: ['group:rbac-editors'],
+				viewers: ['group:rbac-viewers'],
+			},
+		}
+		expect(wrapper.vm.availableGroups).toEqual(['rbac-editors', 'rbac-viewers'])
+	})
+
+	it('leaves an already-bare gid alone and still drops user: principals', async () => {
+		const wrapper = await mountDetail()
+		wrapper.vm.applicationRecord = {
+			permissions: {
+				owners: ['user:admin', 'legacy-bare-group'],
+				editors: ['group:rbac-editors'],
+				viewers: [],
+			},
+		}
+		expect(wrapper.vm.availableGroups).toEqual(['legacy-bare-group', 'rbac-editors'])
+	})
+
+	it('deduplicates a group that appears in both prefixed and bare form', async () => {
+		const wrapper = await mountDetail()
+		wrapper.vm.applicationRecord = {
+			permissions: {
+				owners: [],
+				editors: ['group:rbac-editors'],
+				viewers: ['rbac-editors'],
+			},
+		}
+		expect(wrapper.vm.availableGroups).toEqual(['rbac-editors'])
+	})
+
+	it('a member of a PREFIXED-granted group sees no lock-out warning', async () => {
+		// The scenario that could never pass before: the rule holds the bare gid
+		// the dropdown now offers, and the caller's groups are bare too.
+		mockedUserGroups = ['vets']
+		globalThis.OC = { isUserAdmin: () => false }
+		const wrapper = await mountDetail()
+		wrapper.vm.applicationRecord = { permissions: { owners: [], editors: ['group:vets'], viewers: [] } }
+		expect(wrapper.vm.availableGroups).toEqual(['vets'])
+		expect(wrapper.vm.authorLockedOut).toBe(false)
+	})
+})
