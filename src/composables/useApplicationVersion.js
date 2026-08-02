@@ -55,7 +55,7 @@ export function defaultEditableVersion(versions, productionUuid) {
 
 	// Find all versions that no other version promotes-to (upstream-most nodes).
 	const upstreamMost = versions.filter(
-		(v) => !versions.some((u) => u.promotesTo === v.uuid)
+		(v) => !versions.some((u) => u.promotesTo === v.uuid),
 	)
 
 	// Prefer an upstream-most version that is NOT the production version.
@@ -104,7 +104,7 @@ export function useApplicationVersion(appSlug, versionSlug) {
 		error.value = null
 		try {
 			const url = generateUrl(
-				`/apps/openbuild/api/applications/${encodeURIComponent(appSlug)}/versions/${encodeURIComponent(versionSlug)}`
+				`/apps/openbuild/api/applications/${encodeURIComponent(appSlug)}/versions/${encodeURIComponent(versionSlug)}`,
 			)
 			const { data } = await axios.get(url)
 			applicationVersion.value = data || null
@@ -130,7 +130,7 @@ export function useApplicationVersion(appSlug, versionSlug) {
 		try {
 			// Fetch all versions for this app (spec C REQ-OBV-107 list endpoint).
 			const versionsUrl = generateUrl(
-				`/apps/openbuild/api/applications/${encodeURIComponent(appSlug)}/versions`
+				`/apps/openbuild/api/applications/${encodeURIComponent(appSlug)}/versions`,
 			)
 			const { data: versionsData } = await axios.get(versionsUrl)
 			const versions = Array.isArray(versionsData)

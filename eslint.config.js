@@ -8,6 +8,21 @@ const {
 	FlatCompat,
 } = require('@eslint/eslintrc')
 
+// Shared Vue 3 rule layer, published inside @conduction/nextcloud-vue.
+//
+// It is an ARRAY of configs, not one object, and it registers no plugins —
+// which is why it layers cleanly on top of the @nextcloud v8 base and must be
+// spread LAST. Do NOT adopt `@nextcloud/eslint-config/vue3` directly: it sets
+// `parserOptions.parser` to a bare string, which routes template expressions
+// through @typescript-eslint/parser, drops `v-for` scope, and manufactures
+// hundreds of bogus `vue/valid-v-for` errors. (That is exactly what the long
+// note this comment replaces had measured — the conclusion was right, the
+// remedy was to keep hand-rolling, and the fleet has since solved it properly
+// in nc-vue.)
+const {
+	conductionVue3Fixes,
+} = require('@conduction/nextcloud-vue/eslint')
+
 const compat = new FlatCompat({
 	baseDirectory: __dirname,
 	recommendedConfig: js.configs.recommended,
@@ -16,38 +31,17 @@ const compat = new FlatCompat({
 
 module.exports = defineConfig([{
 	// `@nextcloud/eslint-config`'s default entry point extends
-	// `plugin:vue/recommended`, which is the **Vue 2** rule set: it forbids
-	// `v-model:arg` (`vue/no-v-model-argument`) and keyed `<template v-for>`
-	// (`vue/no-v-for-template-key`) — both of which are the *correct* and
-	// required syntax in Vue 3. Those two rules are switched off below.
+	// `plugin:vue/recommended`, which is the **Vue 2** rule set. It is kept as
+	// the base for its general JS/import/jsdoc rules; the Vue-3 corrections are
+	// applied by `conductionVue3Fixes`, spread last at the bottom of this file.
 	//
-	// RESOLVED(vue3-preset): the previous TODO here proposed switching to
-	// `@nextcloud/eslint-config/vue3` and described the resulting 146→267 error
-	// jump as "stricter general rules ... real and worth fixing". That was
-	// measured but never inspected. It is wrong.
-	//
-	// 128 of those 267 errors are a single rule, `vue/valid-v-for`, claiming
-	// "Expected 'v-bind:key' directive to use the variables which are defined by
-	// the 'v-for' directive" — on code that plainly does exactly that, e.g.
-	//   <template v-for="v in openableVersions" :key="v.slug">
-	//   <div v-for="(item, index) in items" :key="item._key">
-	// The key references the loop variable in every sampled case. Under the
-	// default entry point the very same files produce zero `valid-v-for`
-	// errors, so this is the `vue3` preset mis-wiring `vue-eslint-parser`'s
-	// template scope under FlatCompat, not a stricter check. Adopting it would
-	// mean "fixing" 128 pieces of correct Vue 3 code.
-	//
-	// It also enables `vue/v-on-event-hyphenation` (169 findings), whose
-	// autofix rewrites `@update:modelValue` to `@update:model-value`. Nextcloud
-	// Vue 3 field components resolve their model listener through `useModel`,
-	// which reads the `onUpdate:modelValue` prop directly rather than going
-	// through `emit()`'s hyphenated-variant lookup — so the hyphenated form is
-	// silently DEAD. Applying that autofix would re-break the 34 listeners
-	// commit 441128f4 just repaired, with no error at runtime.
-	//
-	// So: stay on the default entry point and disable the two genuinely
-	// Vue-2-only rules. That is the ruleset that actually describes this
-	// codebase; the `vue3` preset is not adoptable until upstream fixes it.
+	// Before that layer was adopted, `npx eslint --print-config` on this
+	// Vue 3 app showed EVERY `vue/no-deprecated-*` rule as `undefined` (zero
+	// armed) and `vue/no-multiple-template-root` armed at `[2]` — i.e. the
+	// gate that catches surviving Vue-2 idioms was entirely absent, while a
+	// rule forbidding syntax Vue 3 explicitly permits was on. That is the same
+	// configuration that let four `beforeDestroy` hooks (silent memory leaks,
+	// no console output) survive openconnector's Vue 3 migration.
 	extends: compat.extends('@nextcloud'),
 
 	settings: {
@@ -79,13 +73,10 @@ module.exports = defineConfig([{
 		// (1106 warnings) despite the setting being declared. Passing the tags
 		// as rule options is the form the rule actually reads.
 		'jsdoc/check-tag-names': ['warn', { definedTags: ['spec', 'category'] }],
-		// Vue-2-only rules that flag *required* Vue 3 syntax. `v-model:open`
-		// (an argument on v-model) replaced Vue 2's `.sync`, and Vue 3 requires
-		// the `v-for` key on the `<template>` itself rather than on its
-		// children. Both are errors under `plugin:vue/recommended` only because
-		// that preset describes Vue 2 — see the long note above.
-		'vue/no-v-model-argument': 'off',
-		'vue/no-v-for-template-key': 'off',
+		// NOTE: `vue/no-v-model-argument` and `vue/no-v-for-template-key` used
+		// to be disabled here by hand. They are two of the three inverted
+		// Vue-2 rules `conductionVue3Fixes` turns off fleet-wide (along with
+		// `vue/no-multiple-template-root`), so the local disables are gone.
 		// Allow unused i18n functions (t, n) — imported for future translation wiring.
 		// Also allow leading-underscore vars (idiomatic "discarded destructure" —
 		// `const { foo: _foo, ...rest } = x` to strip a key while keeping the rest).
@@ -99,4 +90,10 @@ module.exports = defineConfig([{
 		'import/no-named-as-default': 'off', // disable named-as-default checking to avoid parser requirement
 		'import/no-named-as-default-member': 'off', // disable named-as-default-member checking to avoid parser requirement
 	},
-}])
+},
+// Spread LAST so the Vue 3 rules win over the Vue-2-era @nextcloud base.
+// Without this layer ZERO `vue/no-deprecated-*` rules are active, so Vue-2
+// survivals (beforeDestroy, .sync, filters, $listeners) lint clean while
+// being silently ignored at runtime.
+...conductionVue3Fixes,
+])

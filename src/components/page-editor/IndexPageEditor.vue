@@ -11,7 +11,7 @@
 		</h3>
 		<DataSourceOriginToggle
 			:data-source="config.dataSource || {}"
-			@update:dataSource="onDataSourceUpdate" />
+			@update:data-source="onDataSourceUpdate" />
 		<div v-if="!connectorActive" class="index-page-editor__group">
 			<label>
 				{{ t('openbuild', 'Register') }}

@@ -55,14 +55,30 @@ describe('ExportJobsList — #104 schema-slug fix', () => {
 		wrapper.unmount()
 	})
 
-	it('filters by the applicationSlug prop', async () => {
+	// This test used to assert `filter[applicationSlug]=my-app`. Commit
+	// c1d22f4f5 ("the Exports tab was empty for every app — the filter used a
+	// field the schema does not have", #95) correctly replaced that with a
+	// plain `?applicationUuid=` param, for two independently sufficient
+	// reasons documented in ExportJobsList.vue and measured against real
+	// stored jobs: `export-job` has no `applicationSlug` property at all, and
+	// the `filter[...]` bracket syntax is not what the endpoint reads.
+	//
+	// The spec was never updated, so it still pinned the exact broken
+	// contract the fix removed — invisible because no app's JS unit suite had
+	// ever run in CI. Production is right; the expectation is corrected.
+	it('filters by the applicationUuid prop, as a plain query param', async () => {
 		const wrapper = mount(ExportJobsList, {
-			propsData: { applicationSlug: 'my-app' },
+			propsData: { applicationSlug: 'my-app', applicationUuid: 'app-uuid-1' },
 		})
 		await flushFetch(wrapper)
 
 		const requestedUrl = global.fetch.mock.calls[0][0]
-		expect(requestedUrl).toContain('filter[applicationSlug]=my-app')
+		expect(requestedUrl).toContain('applicationUuid=app-uuid-1')
+		// The two shapes the #95 fix ruled out, pinned so neither comes back:
+		// bracket-filter syntax the endpoint ignores, and a slug the
+		// `export-job` schema does not declare.
+		expect(requestedUrl).not.toContain('filter[')
+		expect(requestedUrl).not.toContain('applicationSlug')
 
 		wrapper.unmount()
 	})

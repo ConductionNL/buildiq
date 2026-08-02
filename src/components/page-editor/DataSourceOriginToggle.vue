@@ -34,13 +34,13 @@
 		<div v-if="origin === 'openconnector'" class="ds-origin-toggle__connector">
 			<ConnectorSourcePicker
 				:binding="connector"
-				@update:endpointPath="onEndpointPath"
+				@update:endpoint-path="onEndpointPath"
 				@sample-fetch="onSampleFetch" />
 			<ConnectorFieldMapper
 				:binding="connector"
 				:sample="sample"
 				:refreshing="sampleLoading"
-				@update:itemsPath="onItemsPath"
+				@update:items-path="onItemsPath"
 				@update:fields="onFields"
 				@refetch-sample="onRefetch" />
 		</div>

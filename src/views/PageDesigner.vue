@@ -91,7 +91,7 @@
 						:page-id="selectedPage.id || ''"
 						:runtime-external-forms="externalForms"
 						@update:config="onConfigUpdate"
-						@update:runtimeExternalForms="onExternalFormsUpdate" />
+						@update:runtime-external-forms="onExternalFormsUpdate" />
 					<!-- component-blocks task 2.2: widget/section selection
 					     affordance feeding SaveBlockDialog. Operates on the
 					     page's uniform v2 widgets[] array. -->
