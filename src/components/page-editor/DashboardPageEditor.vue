@@ -11,7 +11,7 @@
 
 		<DataSourceOriginToggle
 			:data-source="config.dataSource || {}"
-			@update:dataSource="onDataSourceUpdate" />
+			@update:data-source="onDataSourceUpdate" />
 
 		<fieldset class="dashboard-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Widgets') }}</legend>
