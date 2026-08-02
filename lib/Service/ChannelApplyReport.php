@@ -238,20 +238,29 @@ class ChannelApplyReport
      * real event with a real explanation — usually its own truncation — and the
      * report should say which, not throw or quietly disagree with itself.
      *
-     * @param string $channel   The channel name.
-     * @param int    $created   Items the source installed.
-     * @param int    $skipped   Items the source skipped.
-     * @param int    $failed    Items the source failed.
-     * @param bool   $truncated Whether the SOURCE truncated its own fetch. A flag,
-     *                          not a count: it knows truncation happened but not
-     *                          how many items it never read.
+     * @param string $channel      The channel name.
+     * @param int    $created      Items the source installed.
+     * @param int    $skipped      Items the source skipped.
+     * @param int    $failed       Items the source failed.
+     * @param bool   $truncated    Whether the SOURCE truncated its own fetch. A flag,
+     *                             not a count: it knows truncation happened but not
+     *                             how many items it never read.
+     * @param array  $sourceCounts The source's own breakdown, carried verbatim so
+     *                             "installed 0, updated 0, unchanged 94" is not
+     *                             flattened into an indistinguishable total.
      *
      * @return void
      *
      * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
      */
-    public function adoptCounts(string $channel, int $created, int $skipped, int $failed, bool $truncated): void
-    {
+    public function adoptCounts(
+        string $channel,
+        int $created,
+        int $skipped,
+        int $failed,
+        bool $truncated,
+        array $sourceCounts=[]
+    ): void {
         if (isset($this->channels[$channel]) === false) {
             $this->declareChannel(channel: $channel, declared: ($created + $skipped + $failed));
         }
@@ -259,6 +268,14 @@ class ChannelApplyReport
         $this->channels[$channel]['created'] = $created;
         $this->channels[$channel]['skipped'] = $skipped;
         $this->channels[$channel]['failed']  = $failed;
+
+        // The source's OWN breakdown, carried verbatim. `created` here means "the
+        // item is present as intended", which for an idempotent source covers
+        // installed + updated + unchanged alike — collapsing them would otherwise
+        // throw away the distinction between a first install and a no-op re-run.
+        if ($sourceCounts !== []) {
+            $this->channels[$channel]['sourceCounts'] = $sourceCounts;
+        }
 
         if ($truncated === true) {
             $this->channels[$channel]['reason'] = 'source-bundle-truncated';
