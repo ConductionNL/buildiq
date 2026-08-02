@@ -18,7 +18,13 @@
 				</tr>
 			</thead>
 			<tbody>
-				<tr v-for="job in jobs" :key="job.uuid">
+				<!--
+				  Key on the OR object id. `job.uuid` is NOT a property of the
+				  `export-job` schema, so it is undefined on EVERY row — which
+				  makes every key identical and lets Vue reuse the wrong <tr>
+				  as statuses change under polling.
+				-->
+				<tr v-for="(job, i) in jobs" :key="(job['@self'] && job['@self'].id) || i">
 					<td>{{ job.applicationVersion }}</td>
 					<td>{{ job.target }}</td>
 					<td>{{ statusLabel(job.status) }}</td>
@@ -64,9 +70,15 @@ export default {
 		ExportDialog,
 	},
 	props: {
+		/** Slug — the key the export SUBMIT endpoint takes. */
 		applicationSlug: {
 			type: String,
 			required: true,
+		},
+		/** Object id — the key stored jobs are actually filterable by. */
+		applicationUuid: {
+			type: String,
+			default: '',
 		},
 	},
 	data() {
@@ -126,7 +138,23 @@ export default {
 			try {
 				// Schema slug is `export-job` (OpenRegister derives it from the
 				// "Export Job" title); the camelCase `exportJob` 404s.
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/export-job') + '?filter[applicationSlug]=' + encodeURIComponent(this.applicationSlug)
+				//
+				// Filter on applicationUuid as a PLAIN query param. The previous
+				// `?filter[applicationSlug]=` was wrong twice over, and the Exports
+				// tab was therefore empty for every application, always:
+				//
+				//   1. `export-job` declares 18 properties and `applicationSlug` is
+				//      NOT one of them — it is `applicationUuid`. Nothing ever wrote
+				//      a slug onto these objects, so no row could ever carry one.
+				//   2. The `filter[...]` bracket syntax is not what this endpoint
+				//      reads. Measured against the same 5 stored jobs:
+				//        ?applicationUuid=<uuid>        -> 1   (correct)
+				//        ?filter[applicationUuid]=<u>   -> 0
+				//        ?_filter[applicationUuid]=<u>  -> 5   (ignored entirely)
+				//
+				// `applicationSlug` is still the right key for the SUBMIT endpoint
+				// (/api/applications/{slug}/exports), so both props are kept.
+				const url = generateUrl('/apps/openregister/api/objects/openbuild/export-job') + '?applicationUuid=' + encodeURIComponent(this.applicationUuid)
 				const response = await fetch(url)
 				if (!response.ok) {
 					return

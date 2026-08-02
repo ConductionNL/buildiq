@@ -391,10 +391,41 @@ async function seedRoleUsersAndSessions(
 			})
 			const text = await resp.text()
 			// OCS v2 answers 200 on success; the v1 shape answers 100 (created) or
-			// 102 (already exists). All three are the state we want.
+			// 102 (already exists).
 			if (!/<statuscode>(10[02]|200)<\/statuscode>|"statuscode":(10[02]|200)/.test(text)) {
 				// eslint-disable-next-line no-console
 				console.warn(`[globalSetup] provisioning ${user.id} returned an unexpected status: ${text.slice(0, 160)}`)
+			}
+
+			// "Already exists" is NOT the same as "usable". On a long-lived
+			// instance the account may predate this harness and carry a DIFFERENT
+			// password, in which case creation is skipped, every later login fails,
+			// and the specs run that role UNAUTHENTICATED — which reads as a
+			// product change, not a fixture gap. Observed on the shared dev box:
+			// rbac-owner/editor/viewer authenticated 200, rbac-outsider 401, and
+			// versionRouting's "non-member must receive 404" failed with 401.
+			//
+			// So prove the credentials work, and repair them if they do not.
+			const probe = await fetch(`${baseURL}/ocs/v2.php/cloud/user?format=json`, {
+				headers: {
+					'OCS-APIRequest': 'true',
+					Authorization: 'Basic ' + Buffer.from(`${user.id}:${user.pass}`).toString('base64'),
+				},
+			})
+			if (probe.status === 401) {
+				const reset = await fetch(`${baseURL}/ocs/v2.php/cloud/users/${encodeURIComponent(user.id)}`, {
+					method: 'PUT',
+					headers,
+					body: new URLSearchParams({ key: 'password', value: user.pass }).toString(),
+				})
+				const ok = await fetch(`${baseURL}/ocs/v2.php/cloud/user?format=json`, {
+					headers: {
+						'OCS-APIRequest': 'true',
+						Authorization: 'Basic ' + Buffer.from(`${user.id}:${user.pass}`).toString('base64'),
+					},
+				})
+				// eslint-disable-next-line no-console
+				console.warn(`[globalSetup] ${user.id} existed with a different password — reset ${reset.status}, now ${ok.status === 200 ? 'usable' : `STILL UNUSABLE (${ok.status})`}`)
 			}
 		} catch (e) {
 			// eslint-disable-next-line no-console
