@@ -27,6 +27,8 @@ namespace OCA\OpenBuild\Tests\Unit\Listener;
 
 use OCA\OpenBuild\Listener\AutomationCleanupListener;
 use OCA\OpenBuild\Service\AutomationCompilerService;
+use OCA\OpenBuild\Service\ListenerSlugContract;
+use OCA\OpenBuild\Service\ObjectSchemaSlugResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
@@ -52,16 +54,82 @@ final class AutomationCleanupListenerTest extends TestCase
     private AutomationCleanupListener $listener;
 
     /**
+     * Resolver double: turns the entity's schema id into a slug.
+     *
+     * @var ObjectSchemaSlugResolver&MockObject
+     */
+    private ObjectSchemaSlugResolver&MockObject $slugs;
+
+    /**
+     * Opt-in flag double for the corrected slug comparison.
+     *
+     * @var ListenerSlugContract&MockObject
+     */
+    private ListenerSlugContract&MockObject $contract;
+
+    /**
      * Set up mocks + SUT.
+     *
+     * The contract defaults to ENABLED here so the tests below exercise the
+     * cleanup path itself. `testDoesNothingWhenContractDisabled()` covers the
+     * shipped default, which is off.
      *
      * @return void
      */
     protected function setUp(): void
     {
         $this->compiler = $this->createMock(AutomationCompilerService::class);
-        $this->listener = new AutomationCleanupListener($this->createMock(LoggerInterface::class), $this->compiler);
+        $this->slugs    = $this->createMock(ObjectSchemaSlugResolver::class);
+        $this->contract = $this->createMock(ListenerSlugContract::class);
+        $this->contract->method('isEnabled')->willReturn(true);
+
+        $this->listener = new AutomationCleanupListener(
+            $this->createMock(LoggerInterface::class),
+            $this->compiler,
+            $this->slugs,
+            $this->contract
+        );
 
     }//end setUp()
+
+    /**
+     * The shipped default is OFF: an automation delete must change nothing,
+     * because waking this listener starts deleting compiled artifacts on a
+     * path that has never executed.
+     *
+     * @return void
+     */
+    public function testDoesNothingWhenContractDisabled(): void
+    {
+        $compiler = $this->createMock(AutomationCompilerService::class);
+        $slugs    = $this->createMock(ObjectSchemaSlugResolver::class);
+        $contract = $this->createMock(ListenerSlugContract::class);
+        $contract->method('isEnabled')->willReturn(false);
+
+        $listener = new AutomationCleanupListener(
+            $this->createMock(LoggerInterface::class),
+            $compiler,
+            $slugs,
+            $contract
+        );
+
+        $automation = [
+            '@self'      => ['schema' => '116'],
+            'slug'       => 'notify-caseworkers',
+            'provenance' => ['notificationKeys' => [['schema' => 'permit', 'key' => 'k']]],
+        ];
+
+        $entity = $this->createMock(ObjectEntity::class);
+        $entity->method('jsonSerialize')->willReturn($automation);
+        $entity->method('getObject')->willReturn($automation);
+
+        // Not even the slug lookup happens — the gate returns first.
+        $slugs->expects($this->never())->method('isOpenBuildSchema');
+        $compiler->expects($this->never())->method('remove');
+
+        $listener->handle(new ObjectDeletedEvent($entity));
+
+    }//end testDoesNothingWhenContractDisabled()
 
     /**
      * A deleted `automation` row triggers compiler removal with its
@@ -71,8 +139,11 @@ final class AutomationCleanupListenerTest extends TestCase
      */
     public function testRemovesArtifactsForDeletedAutomation(): void
     {
+        // `@self.schema` carries the NUMERIC ID, as MagicMapper writes it —
+        // the old test fed a slug here, which is why it passed against a
+        // listener that could never match in production.
         $automation = [
-            '@self'       => ['schema' => 'automation'],
+            '@self'       => ['schema' => '116'],
             'slug'        => 'notify-caseworkers',
             'provenance'  => ['notificationKeys' => [['schema' => 'permit', 'key' => 'aut-notify-caseworkers-1']]],
         ];
@@ -80,6 +151,11 @@ final class AutomationCleanupListenerTest extends TestCase
         $entity = $this->createMock(ObjectEntity::class);
         $entity->method('jsonSerialize')->willReturn($automation);
         $entity->method('getObject')->willReturn($automation);
+
+        $this->slugs->expects($this->once())
+            ->method('isOpenBuildSchema')
+            ->with($entity, AutomationCompilerService::AUTOMATION_SCHEMA)
+            ->willReturn(true);
 
         $event = new ObjectDeletedEvent($entity);
 
@@ -102,8 +178,10 @@ final class AutomationCleanupListenerTest extends TestCase
     public function testIgnoresNonAutomationSchema(): void
     {
         $entity = $this->createMock(ObjectEntity::class);
-        $entity->method('jsonSerialize')->willReturn(['@self' => ['schema' => 'application']]);
+        $entity->method('jsonSerialize')->willReturn(['@self' => ['schema' => '117']]);
         $entity->method('getObject')->willReturn([]);
+
+        $this->slugs->method('isOpenBuildSchema')->willReturn(false);
 
         $event = new ObjectDeletedEvent($entity);
 
@@ -136,10 +214,12 @@ final class AutomationCleanupListenerTest extends TestCase
      */
     public function testCompilerFailureIsSwallowed(): void
     {
-        $automation = ['@self' => ['schema' => 'automation'], 'slug' => 'broken'];
+        $automation = ['@self' => ['schema' => '116'], 'slug' => 'broken'];
         $entity     = $this->createMock(ObjectEntity::class);
         $entity->method('jsonSerialize')->willReturn($automation);
         $entity->method('getObject')->willReturn($automation);
+
+        $this->slugs->method('isOpenBuildSchema')->willReturn(true);
 
         $event = new ObjectDeletedEvent($entity);
 
