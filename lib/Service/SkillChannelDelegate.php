@@ -116,7 +116,7 @@ class SkillChannelDelegate
         }
 
         if ($owner === '' || $repo === '') {
-            // hermiq fetches the bundle itself, so without coordinates there is
+            // Hermiq fetches the bundle itself, so without coordinates there is
             // nothing to delegate. Reported rather than treated as "no skills".
             $report->skipChannel(channel: self::CHANNEL, reason: 'no-repo-coordinates');
             return;
