@@ -2,179 +2,137 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * Playwright end-to-end test for the openbuild-versioning publish + rollback
- * cycle. Walks an admin user through:
+ * Playwright e2e — version rollback (REQ-OBV-003 / REQ-OBR-009).
  *
- *   1. login → open the hello-world Application editor
- *   2. make a small manifest edit (bump version field) and Publish
- *      → a v1.1.0 ApplicationVersion appears in the version-history panel
- *      → version-history now lists 2 versions (the seed v1.0.0 + v1.1.0)
- *   3. click Rollback on v1.0.0 → confirm modal → confirm
- *      → version-history now lists 3 versions (rollback row appended;
- *        history is append-only per design.md Decision 3)
+ * REWRITTEN. The previous version of this file was skipped for years behind a
+ * chain of blocker notes that were each partly wrong; the history is worth
+ * keeping because every wrong note cost someone a retarget that could not work:
  *
- * Pre-conditions assumed by this spec:
- *   - Nextcloud reachable at NC_BASE_URL (default http://localhost:8080) with
- *     openbuild enabled.
- *   - SeedHelloWorld repair step has produced the hello-world Application
- *     AND its initial v1.0.0 ApplicationVersion (per tests/integration/
- *     openbuild-versioning.postman_collection.json Setup step).
- *   - admin/admin credentials (dev compose memory rule).
+ *   - "click [data-slug=…] on the list page" — ApplicationCard never rendered
+ *     that attribute. True, but not the reason it was stuck.
+ *   - "edit the first textarea, then Publish" — the manifest editor is a
+ *     sidebar tab on the DETAIL page. Also true, also not the reason.
+ *   - "VersionHistory lists publish SNAPSHOTS, not versions, so it needs a
+ *     fixture that publishes twice" — WRONG, and mine. VersionHistory loads
+ *     `/api/applications/{slug}/versions`: the very rows versionChain.ts
+ *     creates.
  *
- * Running:
- *   npx playwright test tests/e2e/version-rollback.spec.ts
+ * The actual reason the panel was empty was a product bug: that endpoint
+ * returns rows with no `applicationUuid`, and VersionHistory filtered on
+ * `r.applicationUuid === this.applicationUuid` — a field its own response does
+ * not carry — so the "Version history" tab rendered empty for EVERY app,
+ * always. Fixed alongside this spec; the filter now applies only to the
+ * unscoped endpoint, since the by-slug URL is already app-scoped server-side.
  *
- * Workers are 1 — the editor mutates the seed Application's manifest, and
- * parallel runs would race on the shared seed state. The Newman teardown
- * step at the end of the versioning postman collection restores manifest
- * + version table back to a known-good baseline.
+ * What this asserts is the rollback CONTRACT as ApplicationVersionsTab
+ * implements it (`onRollback`): confirming a rollback copies that version's
+ * manifest onto the Application under a `<version>-rollback-<hex>` label with
+ * `status: 'draft'` — so a rollback never silently republishes.
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
+import { ensureVersionChain } from './support/versionChain'
+import { suppressSupportDialog } from './support/appFixture'
 
-// PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
-import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
-const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
-const ADMIN_PASS = process.env.NC_ADMIN_PASS ?? 'admin'
-const TEST_SLUG = process.env.NC_VERSIONING_TEST_SLUG ?? 'hello-world'
+const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'pw-verchain'
 
 /**
- * Log into Nextcloud with a fresh context (no storageState).
+ * Resolve the Application's OR object id — the detail route takes the UUID,
+ * not the slug. (The old spec navigated by slug and landed on a not-found page.)
  *
- * @param page Playwright page object.
- * @param user Username.
- * @param pass Password.
+ * @param page Playwright page.
+ * @return {Promise<string>} The application uuid.
  */
-async function loginAs(page: Page, user: string, pass: string): Promise<void> {
-	await page.goto(`${NEXTCLOUD_URL}/index.php/login`)
-	await page.locator('input[name="user"]').fill(user)
-	await page.locator('input[name="password"]').fill(pass)
-	await page.locator('button[type="submit"]').first().click()
-	await page.waitForSelector('#header, header.header', { timeout: 20_000 })
-	if (/\/login(\?|$|\/)/.test(page.url())) {
-		throw new Error(`Login as ${user} failed — still on ${page.url()}.`)
-	}
+async function appUuid(page: import('@playwright/test').Page): Promise<string> {
+	return page.evaluate(async (slug) => {
+		const r = await fetch('/index.php/apps/openbuild/api/applications', { headers: { 'OCS-APIRequest': 'true' } })
+		const d = await r.json()
+		const rows = Array.isArray(d) ? d : (d?.results ?? [])
+		const app = rows.find((x: Record<string, unknown>) => x?.slug === slug)
+		return (app?.['@self']?.id ?? app?.id ?? '') as string
+	}, TEST_SLUG)
 }
 
-// STILL SKIPPED, with the true reason replacing the #41 one.
-//
-// Two concrete blockers, both verified by reading the file against src/:
-//   1. It edits the manifest through `page.locator('textarea, [contenteditable]')
-//      .first()` reached straight from /apps/openbuild/applications — i.e. it
-//      assumes a one-big-textarea editor on the list page. The raw editor is now
-//      a SIDEBAR TAB on the detail page (data-testid="openbuild-editor-textarea"),
-//      only in the DOM once NcAppSidebar's .app-sidebar__toggle is clicked.
-//   2. Its history assertions expect exactly three ApplicationVersion rows,
-//      seeded by the Newman collection tests/integration/
-//      openbuild-versioning.postman_collection.json, which this suite does not
-//      run. hello-world has one version on this instance.
-//
-// The rollback contract itself is NOT uncovered: REQ-OBR-009a's
-// restore-and-stay-draft and cancel-sends-no-write scenarios are both driven,
-// against the real sidebar surface, in
-// tests/e2e/spec-coverage/openbuild-runtime.spec.ts.
-// STILL SKIPPED, with a measured reason replacing the #41 one.
-//
-// The rollback surface it targets DOES exist — `.version-history__row` and
-// `.version-history__btn--danger` are rendered by src/views/VersionHistory.vue,
-// and RollbackConfirmModal.vue ships. Two things block it:
-//
-//   - it reaches the app by clicking `[data-slug="hello-world"]`, an attribute
-//     ApplicationCard.vue does not render (the slug appears as a `/{slug}` chip;
-//     the same defect PR #55 fixed in applicationCard.spec.ts);
-//   - it then edits the manifest in "the first textarea on the page" and clicks
-//     Publish. The raw manifest editor is a sidebar tab on the app DETAIL page
-//     (ApplicationManifestTab, `data-testid="openbuild-editor-textarea"`), which
-//     this navigation never opens.
-//
-// Retarget both — and then a THIRD blocker appears that reading could not
-// reveal. Driven live against `pw-verchain` (which carries the full
-// development -> staging -> production chain from support/versionChain.ts),
-// with the detail page open and the "Version history" tab mounted:
-//
-//     .ob-versions-tab            1     (the tab IS there)
-//     .version-history            1     (the component renders)
-//     .version-history__empty     1     (and it renders EMPTY)
-//     .version-history__row       0
-//     .version-history__btn--danger 0
-//
-// So VersionHistory does not list ApplicationVersions. It lists PUBLISH
-// SNAPSHOTS, and versionChain.ts creates versions, not snapshots — a three-
-// version app still has zero history rows. The note above ("publish needs more
-// than one version to produce the two history rows") had the dependency
-// backwards: rows come from publishing, not from having versions.
-//
-// What this suite actually needs before it can be un-skipped is a fixture that
-// PUBLISHES at least twice, so there is something to roll back to. That is a
-// new fixture, not a retarget.
-//
-// Navigation notes for whoever writes it, measured on the same run:
-//   - the detail page is /apps/openbuild/applications/{uuid} (uuid, not slug);
-//   - the sidebar tabs render WITHOUT clicking .app-sidebar__toggle — a toggle
-//     click times out (5s) because the tabs are already open, so the original
-//     "open the sidebar first" step is not just unnecessary, it hangs;
-//   - the tab strip reads: Manifest | Version history | Diff | Icons | Exports
-//     | History, above a version pill row (development / staging / *production).
-test.describe.skip('openbuild-versioning — publish + rollback (REQ-OBV-005 / REQ-OBR-009)', () => {
-	test.use({ storageState: { cookies: [], origins: [] } })
+/**
+ * The Application record as stored, for before/after comparison.
+ *
+ * @param page Playwright page.
+ * @return {Promise<Record<string, unknown>>} The application object.
+ */
+async function appRecord(page: import('@playwright/test').Page): Promise<Record<string, unknown>> {
+	return page.evaluate(async (slug) => {
+		const r = await fetch('/index.php/apps/openbuild/api/applications', { headers: { 'OCS-APIRequest': 'true' } })
+		const d = await r.json()
+		const rows = Array.isArray(d) ? d : (d?.results ?? [])
+		return rows.find((x: Record<string, unknown>) => x?.slug === slug) ?? {}
+	}, TEST_SLUG)
+}
 
+// ⚠️ SKIPPED because it has NEVER BEEN EXECUTED — not because of a known blocker.
+//
+// It is written against a contract that WAS verified live (the VersionHistory
+// fix below it was confirmed on a real instance: 3 rows, `.version-history__empty`
+// count 0, where the panel had always rendered empty before). But the disposable
+// e2e instance was destroyed by a disk-full event before this spec itself could
+// be run once, so its selectors, timings and the rollback assertion are unproven.
+//
+// Enabling it is a one-line change — delete the `.skip` — but do that WITH a run,
+// not on the strength of this comment. Shipping an unexecuted spec as if it were
+// coverage is the exact failure mode the notes above document three times over.
+test.describe.skip('openbuild-versioning — rollback (REQ-OBV-003)', () => {
 	test.beforeEach(async ({ page }) => {
-		await loginAs(page, ADMIN_USER, ADMIN_PASS)
+		await suppressSupportDialog(page)
+		await page.goto(`${BASE_URL}/apps/openbuild/`, { waitUntil: 'domcontentloaded' })
+		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 	})
 
-	test('publish a manifest edit then roll back to v1.0.0 — history grows append-only', async ({ page }) => {
-		// Step 1 — open the openbuild shell + navigate to the hello-world editor.
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications`)
-		// The list-page renders an entry per Application. Click the seeded
-		// row's edit affordance — accept either a [data-slug] anchor or the
-		// rendered slug text.
-		const editorEntry = page.locator(`[data-slug="${TEST_SLUG}"], a:has-text("${TEST_SLUG}")`).first()
-		await editorEntry.click({ timeout: 15_000 })
-		await expect(page.getByText(/Hello World/i).first()).toBeVisible({ timeout: 10_000 })
+	test('the version history tab lists the chain', async ({ page }) => {
+		await page.goto(`${BASE_URL}/apps/openbuild/applications/${await appUuid(page)}`, { waitUntil: 'domcontentloaded' })
+		await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {})
+		await page.getByText('Version history', { exact: true }).first().click({ timeout: 10_000 })
 
-		// Step 2 — bump the manifest's `version` field. We use the editor's
-		// textarea (a JSON edit surface) and patch the version string in place.
-		const manifestField = page.locator('textarea, [contenteditable="true"]').first()
-		await expect(manifestField).toBeVisible({ timeout: 10_000 })
-		const original = await manifestField.inputValue().catch(() => '')
-		const patched = (original || '{}').replace(/"version"\s*:\s*"1\.0\.0"/, '"version": "1.1.0"')
-		await manifestField.fill(patched)
-
-		// Step 3 — Publish.
-		const publishBtn = page.getByRole('button', { name: /publish/i }).first()
-		await publishBtn.click()
-		// Tolerate either an in-place success toast or an async refresh.
-		await page.waitForTimeout(1_500)
-
-		// Step 4 — version history panel now lists 2 versions (seed + new).
-		// Each version row carries the version string in its visible text;
-		// we count by version-history__row CSS class (component contract).
+		// The regression guard: this panel used to render `.version-history__empty`
+		// for every app because of the applicationUuid filter described above.
 		const rows = page.locator('.version-history__row')
-		await expect(rows).toHaveCount(2, { timeout: 15_000 })
-		await expect(page.getByText(/1\.1\.0/).first()).toBeVisible()
+		await expect(rows, 'the seeded development -> staging -> production chain must be listed')
+			.toHaveCount(3, { timeout: 15_000 })
+		await expect(page.locator('.version-history__empty')).toHaveCount(0)
+	})
 
-		// Step 5 — click Rollback on the v1.0.0 row. The bottom row is the
-		// oldest (seed v1.0.0) since the list is sorted newest-first.
-		const oldRow = rows.last()
-		const rollbackBtn = oldRow.locator('.version-history__btn--danger').first()
-		await rollbackBtn.click()
+	test('rolling back copies the snapshot manifest onto the app as a draft', async ({ page }) => {
+		const before = await appRecord(page)
 
-		// Step 6 — confirm modal appears, click Roll back.
-		// RollbackConfirmModal renders an NcDialog with two NcButtons. Match
-		// by visible text — copy is "Roll back" (no ellipsis).
-		const confirmBtn = page.getByRole('button', { name: /^roll back$/i }).first()
-		await expect(confirmBtn).toBeVisible({ timeout: 10_000 })
-		await confirmBtn.click()
-		await page.waitForTimeout(1_500)
+		await page.goto(`${BASE_URL}/apps/openbuild/applications/${await appUuid(page)}`, { waitUntil: 'domcontentloaded' })
+		await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {})
+		await page.getByText('Version history', { exact: true }).first().click({ timeout: 10_000 })
+		await expect(page.locator('.version-history__row').first()).toBeVisible({ timeout: 15_000 })
 
-		// Step 7 — history now has 3 versions (append-only contract).
-		await expect(rows).toHaveCount(3, { timeout: 15_000 })
+		// "Roll back" only renders on a NON-production row (`v-if="!isProduction(row)"`),
+		// so this also proves the terminal production version offers no rollback.
+		const rollbackBtns = page.locator('.version-history__btn--danger')
+		const total = await page.locator('.version-history__row').count()
+		expect(
+			await rollbackBtns.count(),
+			'production must not offer Roll back — exactly the non-production rows may',
+		).toBe(total - 1)
 
-		// Step 8 — the editor's manifest reflects the rollback (back to 1.0.0
-		// shape). We re-read the textarea — version field should be 1.0.0
-		// again (or a rollback-marker like 1.0.0-rb1 depending on the
-		// implementation choice).
-		const reloaded = await manifestField.inputValue().catch(() => '')
-		expect(reloaded).toMatch(/"version"\s*:\s*"1\.0\.0/)
+		await rollbackBtns.first().click()
+
+		// RollbackConfirmModal — copy is "Roll back" (no ellipsis).
+		const confirm = page.getByRole('button', { name: /^roll back$/i }).last()
+		await expect(confirm, 'the confirm modal must appear').toBeVisible({ timeout: 10_000 })
+		await confirm.click()
+
+		// The contract (ApplicationVersionsTab.onRollback): manifest copied over,
+		// version relabelled `<version>-rollback-<hex>`, status forced to draft.
+		await expect.poll(async () => (await appRecord(page)).version, {
+			message: 'the application version must be relabelled as a rollback',
+			timeout: 20_000,
+		}).toMatch(/-rollback-[0-9a-f]+$/i)
+
+		const after = await appRecord(page)
+		expect(after.status, 'a rollback must land as a DRAFT — it never silently republishes').toBe('draft')
+		expect(after.version, 'the rollback label must differ from the pre-rollback version').not.toBe(before.version)
 	})
 })

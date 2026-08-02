@@ -190,7 +190,22 @@ export default {
 				}
 				const { data } = await axios.get(url)
 				const raw = Array.isArray(data) ? data : ((data && data.results) ? data.results : [])
-				const filtered = this.applicationUuid
+				// The IDOR filter applies ONLY to the unscoped endpoint. The
+				// by-slug URL above is already app-scoped server-side, and its
+				// rows do not carry `applicationUuid` at all — measured, every
+				// row comes back without the key:
+				//
+				//   GET /api/applications/pw-verchain/versions
+				//   -> 3 rows, each { name, slug, manifest, ..., status } and no
+				//      applicationUuid
+				//
+				// ApplicationVersionsTab passes BOTH app-slug and
+				// application-uuid, so this filter removed every row and the
+				// "Version history" tab rendered `.version-history__empty` for
+				// every app, always. Filtering a server-scoped response against
+				// a field that response does not contain is not defence in
+				// depth — it is an unconditional deny.
+				const filtered = (this.applicationUuid && !this.appSlug)
 					? raw.filter(r => r && r.applicationUuid === this.applicationUuid)
 					: raw
 				this.versions = filtered
