@@ -214,20 +214,39 @@ test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', 
 		expect(body, 'the editor must receive an actual manifest').toHaveProperty('version')
 	})
 
-	test('the viewer UI shows no schema list and no stack trace on a forbidden version', async ({ browser }) => {
+	// This test previously asserted `.openbuild-schema-list` has count 0 for the
+	// viewer. That assertion was wrong twice over, and worth recording because
+	// both failure modes are easy to repeat:
+	//
+	//  1. It PASSED for the wrong reason. Before the setup-wizard fix
+	//     (@conduction/nextcloud-vue 2.1.0-vue3.15) a non-admin never reached
+	//     the builder at all — they got "Set up this app" — so "no schema list"
+	//     held because nothing rendered for anyone.
+	//  2. It cannot distinguish the roles anyway. Measured side by side, the
+	//     viewer (DENIED staging) and the editor (ALLOWED staging) render the
+	//     IDENTICAL surface: `.openbuild-schema-list` count 1, reading
+	//     "No schemas yet". The builder shows the same empty designer either
+	//     way, so the selector carries no information about the gate.
+	//
+	// No data leaks — the list is empty for both — so this is a UX gap, not a
+	// security one: the builder renders no version-not-found state for a version
+	// the caller may not see. The GATE itself is asserted properly by the three
+	// request-level tests above, which is where it is actually enforced.
+	test('the viewer UI leaks no schema data and no stack trace on a forbidden version', async ({ browser }) => {
 		const context = await browser.newContext({ storageState: 'tests/e2e/.auth/rbac-viewer.json' })
 		const page = await context.newPage()
 		try {
 			await page.goto(`${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`)
 			await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {})
 
-			// `.openbuild-schema-list` is the REAL panel — the selector 9.1 and 9.3
-			// assert on. The old `.ob-schema-list` matched nothing, so this
-			// assertion used to hold vacuously.
-			await expect(
-				page.locator('.openbuild-schema-list'),
-				'the schema list must not render for a version the caller may not see',
-			).toHaveCount(0)
+			// What actually matters: no schema of the forbidden version is named.
+			// `.openbuild-schema-list` renders as empty chrome; asserting its
+			// ABSENCE measured nothing, asserting its emptiness measures the leak.
+			const listText = await page.locator('.openbuild-schema-list').innerText().catch(() => '')
+			expect(
+				listText,
+				'the builder must not name any schema belonging to a version the caller may not see',
+			).not.toMatch(new RegExp(`${TEST_SLUG}-${STAGING_VERSION}-`, 'i'))
 
 			await expect(
 				page.getByText(/Stack trace|Fatal error|Uncaught/i),
