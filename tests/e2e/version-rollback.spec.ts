@@ -87,9 +87,34 @@ async function loginAs(page: Page, user: string, pass: string): Promise<void> {
 //     (ApplicationManifestTab, `data-testid="openbuild-editor-textarea"`), which
 //     this navigation never opens.
 //
-// Retarget both, then it should run against the fixture chain in
-// tests/e2e/support/versionChain.ts (publish needs more than one version to
-// produce the two history rows it asserts).
+// Retarget both — and then a THIRD blocker appears that reading could not
+// reveal. Driven live against `pw-verchain` (which carries the full
+// development -> staging -> production chain from support/versionChain.ts),
+// with the detail page open and the "Version history" tab mounted:
+//
+//     .ob-versions-tab            1     (the tab IS there)
+//     .version-history            1     (the component renders)
+//     .version-history__empty     1     (and it renders EMPTY)
+//     .version-history__row       0
+//     .version-history__btn--danger 0
+//
+// So VersionHistory does not list ApplicationVersions. It lists PUBLISH
+// SNAPSHOTS, and versionChain.ts creates versions, not snapshots — a three-
+// version app still has zero history rows. The note above ("publish needs more
+// than one version to produce the two history rows") had the dependency
+// backwards: rows come from publishing, not from having versions.
+//
+// What this suite actually needs before it can be un-skipped is a fixture that
+// PUBLISHES at least twice, so there is something to roll back to. That is a
+// new fixture, not a retarget.
+//
+// Navigation notes for whoever writes it, measured on the same run:
+//   - the detail page is /apps/openbuild/applications/{uuid} (uuid, not slug);
+//   - the sidebar tabs render WITHOUT clicking .app-sidebar__toggle — a toggle
+//     click times out (5s) because the tabs are already open, so the original
+//     "open the sidebar first" step is not just unnecessary, it hangs;
+//   - the tab strip reads: Manifest | Version history | Diff | Icons | Exports
+//     | History, above a version pill row (development / staging / *production).
 test.describe.skip('openbuild-versioning — publish + rollback (REQ-OBV-005 / REQ-OBR-009)', () => {
 	test.use({ storageState: { cookies: [], origins: [] } })
 
