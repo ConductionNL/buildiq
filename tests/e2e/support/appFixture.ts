@@ -115,6 +115,46 @@ export async function dismissOverlays(page: Page): Promise<void> {
 }
 
 /**
+ * Stop the non-gating first-time-setup wizard from auto-opening.
+ *
+ * CnAppRoot offers the setup wizard whenever every REQUIRED step is met but at
+ * least one OPTIONAL step is not (`optionalSetupGating`, REQ-SETUP-NV-012), and
+ * it opens it as a full `modal-mask`. "Non-gating" describes the app phase, not
+ * the DOM: the mask covers the shell, so anything behind it — notably the
+ * sidebar toggle at z-index 1001 — is unclickable while it is up.
+ *
+ * OpenBuild trips this permanently. Its `store` step ("Remote template store")
+ * is optional and is normally never completed, so `optionalUnmet` is non-empty
+ * forever. The wizard is suppressed for real users by a per-browser flag
+ * (`cn-setup-wizard-dismissed:{appId}:{setup.version}`) written on dismiss —
+ * but every Playwright test gets a FRESH context, so that flag is never present
+ * and the wizard opens in every single test.
+ *
+ * Pre-set the flag for ANY such key before the app boots, rather than racing the
+ * dialog after the fact. Keyed on `setup.version`, so this keeps working when
+ * that version is bumped.
+ *
+ * @param page Playwright page.
+ * @return {Promise<void>}
+ */
+export async function suppressSetupWizard(page: Page): Promise<void> {
+	await page.addInitScript(() => {
+		const prefix = 'cn-setup-wizard-dismissed:'
+		try {
+			const original = Storage.prototype.getItem
+			Storage.prototype.getItem = function getItem(key: string) {
+				if (typeof key === 'string' && key.startsWith(prefix)) {
+					return '1'
+				}
+				return original.call(this, key)
+			}
+		} catch {
+			// Non-fatal: the wizard is then handled by dismissOverlays().
+		}
+	})
+}
+
+/**
  * Stop the first-open support dialog from ever mounting.
  *
  * `useSupportDialog` seeds its visibility from a `localStorage` flag keyed

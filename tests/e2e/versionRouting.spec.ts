@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 import { test, expect, request as playwrightRequest } from '@playwright/test'
-import { suppressSupportDialog } from './support/appFixture'
+import { suppressSupportDialog, suppressSetupWizard } from './support/appFixture'
 import { ensureVersionChain } from './support/versionChain'
 import { grantAppRoles } from './support/appRoles'
 
@@ -66,6 +66,7 @@ const STAGING_VERSION = process.env.NC_STAGING_VERSION ?? 'staging'
 test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008)', () => {
 	test.beforeEach(async ({ page }) => {
 		await suppressSupportDialog(page)
+		await suppressSetupWizard(page)
 		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 	})
 

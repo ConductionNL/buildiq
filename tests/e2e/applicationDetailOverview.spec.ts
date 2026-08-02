@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 import { test, expect } from '@playwright/test'
-import { suppressSupportDialog } from './support/appFixture'
+import { suppressSupportDialog, suppressSetupWizard } from './support/appFixture'
 import { ensureVersionChain } from './support/versionChain'
 
 /**
@@ -63,6 +63,7 @@ const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
 test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)', () => {
 	test.beforeEach(async ({ page }) => {
 		await suppressSupportDialog(page)
+		await suppressSetupWizard(page)
 		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 	})
 

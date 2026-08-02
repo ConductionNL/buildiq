@@ -29,7 +29,7 @@ import { test, expect } from '@playwright/test'
 import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
 import { ensureVersionChain } from './support/versionChain'
 import { grantAppRoles } from './support/appRoles'
-import { suppressSupportDialog } from './support/appFixture'
+import { suppressSupportDialog, suppressSetupWizard } from './support/appFixture'
 
 const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'pw-verchain'
 const ADMIN_STATE = 'tests/e2e/.auth/admin.json'
@@ -40,6 +40,7 @@ test.describe('a non-admin with an app role can use the app', () => {
 		const page = await context.newPage()
 		try {
 			await suppressSupportDialog(page)
+		await suppressSetupWizard(page)
 			await page.goto(`${BASE_URL}/apps/openbuild/`, { waitUntil: 'domcontentloaded' })
 			await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 			await grantAppRoles(page, TEST_SLUG, {
