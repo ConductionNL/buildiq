@@ -5,10 +5,22 @@
 # official php:8.3-cli + a base-tooling step. The old code.forgejo.org/oci/ci-php:8.3
 # image 404s ("manifest unknown"), which fast-failed every run at container-pull.
 #
-# The gate runs `composer lint` + `composer phpcs` directly: check:strict's
-# psalm/phpstan/phpmd/test:all are wrapped in `|| echo skipping` so they never
-# affect pass/fail (ADR-022 parks static analysis), and running them on the medium
-# runner OOMs it. lint+phpcs is the identical enforced gate, fast and deterministic.
+# The gate runs `composer lint` + `composer phpcs` directly, because running the
+# full analyser set on the medium runner OOMs it.
+#
+# NB the older justification here ("psalm/phpstan/phpmd/test:all are wrapped in
+# `|| echo skipping` so they never affect pass/fail") is no longer true and was
+# only ever true of phpmd + test:all. As of 2026-08-02:
+#   psalm   — plain `./vendor/bin/psalm`,   real gate, 0 findings
+#   phpstan — plain `./vendor/bin/phpstan`, real gate, 0 findings
+#   phpmd   — plain `./vendor/bin/phpmd`,   real gate as of this commit
+#   test:all — still ends `|| echo`, deliberately (needs a Nextcloud env; see
+#              composer.json). Measured: the suite actually passes standalone
+#              (754 tests) and only exits 1 on a "no code coverage driver"
+#              warning, so that `|| echo` is a candidate for removal once a
+#              coverage driver is available on the runner.
+# Those four run on GitHub via the shared quality.yml workflow, which invokes the
+# composer scripts. lint+phpcs remains the enforced subset here.
 
 name: pre-merge-check-strict
 
