@@ -33,9 +33,14 @@
 import { test, expect } from '@playwright/test'
 import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
 import { ensureVersionChain } from './support/versionChain'
-import { suppressSupportDialog } from './support/appFixture'
+import { suppressSupportDialog, suppressSetupWizard } from './support/appFixture'
 
-const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'pw-verchain'
+// A DEDICATED fixture. This spec plants a manifest and then rolls it back, i.e.
+// it mutates the app's active manifest twice per run. versionRouting.spec.ts
+// drives `pw-verchain` and reads `/manifest?_version=…` off it, so sharing that
+// slug made this spec corrupt that one — observed as an editor getting 404 for
+// the staging manifest in a combined run. Destructive specs get their own app.
+const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'pw-rollback'
 
 /**
  * Resolve the Application's OR object id — the detail route takes the UUID,
@@ -69,56 +74,101 @@ async function appRecord(page: import('@playwright/test').Page): Promise<Record<
 	}, TEST_SLUG)
 }
 
-// ⚠️ STILL SKIPPED — the assertions have never been reached, and the reason is
-// the SIDEBAR, not the rollback contract.
-//
-// The contract below is written against verified behaviour, and the product fix
-// it depends on IS confirmed on both instances: `?tab=history` deep-links the
-// tab and `.version-history__row` count is 3, where the panel used to render
-// empty for every app. So the data is right.
-//
-// What cannot be driven is the UI. Measured on the shared dev instance:
-//
-//     aside.app-sidebar                       width 0   (closed)
-//     section.app-sidebar__tab[role=tabpanel] display:none
-//     button[aria-label="Open sidebar"]       present AND visible
-//       -> clicking it TIMES OUT on actionability, at 1280x720 and at 1920x1080
-//
-// So the sidebar will not open, and every tab-scoped assertion is unreachable
-// even though the tab's content is mounted underneath it. That is an instance /
-// UI defect to chase on its own, not something a selector change fixes.
-//
-// Three dead ends recorded so the next attempt skips them:
-//   - `getByText('Version history')` resolves the tab BUTTON'S LABEL SPAN, which
-//     is display:none once the tab strip collapses to icons. Waiting on its
-//     visibility waits forever (18 resolutions, all "hidden"). There are FIVE
-//     nodes with that exact text; the deepest is the panel's own <h3>.
-//   - `getByRole('tab', …)` finds nothing — these are not ARIA tabs.
-//   - `[aria-label*="sidebar" i]` matches "Close sidebar" first; the control is
-//     labelled exactly "Open sidebar".
-//
-// The one thing that DOES work, and is the way in for a rewrite:
-//     /apps/openbuild/applications/{uuid}?tab=history
-// mounts the tab content directly. Assert against the DOM it produces, or fix
-// the sidebar first.
+/**
+ * The manifest currently served as the application's ACTIVE manifest.
+ *
+ * Note the endpoint asymmetry ApplicationManifestTab documents: GET returns the
+ * manifest bare, PUT expects it wrapped in `{ manifest }`.
+ *
+ * @param page Playwright page.
+ * @return {Promise<unknown>} The active manifest.
+ */
+async function activeManifest(page: import('@playwright/test').Page): Promise<Record<string, unknown> | null> {
+	return page.evaluate(async (slug) => {
+		const r = await fetch(`/index.php/apps/openbuild/api/applications/${slug}/manifest`, { headers: { 'OCS-APIRequest': 'true' } })
+		return r.ok ? await r.json() : null
+	}, TEST_SLUG)
+}
 
+/**
+ * The snapshot a given semver identifies, read from the versions endpoint.
+ *
+ * Take the semver from the DOM ROW that owns the "Roll back" button being
+ * clicked — do NOT infer it from the API ordering. This helper previously
+ * picked "the first non-production row" out of the API response, which is a
+ * DIFFERENT row than the first button on screen: the restore wrote the empty
+ * manifest belonging to the clicked row while the assertion expected the full
+ * one belonging to another, so the spec failed against a working fix.
+ *
+ * @param page Playwright page.
+ * @param semver The semver shown on the row being rolled back to.
+ * @return {Promise<{version: string, manifest: unknown}>} The snapshot.
+ */
+async function snapshotBySemver(page: import('@playwright/test').Page, semver: string): Promise<{ version: string, manifest: unknown }> {
+	return page.evaluate(async ([slug, want]) => {
+		const r = await fetch(`/index.php/apps/openbuild/api/applications/${slug}/versions`, { headers: { 'OCS-APIRequest': 'true' } })
+		const d = await r.json()
+		const rows = Array.isArray(d) ? d : (d?.results ?? [])
+		const row = rows.find((x: Record<string, unknown>) => String(x?.semver ?? '') === want) ?? {}
+		return { version: row.semver ?? '', manifest: row.manifest ?? null }
+	}, [TEST_SLUG, semver] as const)
+}
+
+/**
+ * Overwrite the application's ACTIVE manifest.
+ *
+ * Note the endpoint asymmetry ApplicationManifestTab documents: GET returns the
+ * manifest bare, PUT expects it wrapped in `{ manifest }`.
+ *
+ * @param page Playwright page.
+ * @param manifest The manifest to store.
+ * @return {Promise<void>}
+ */
+async function putActiveManifest(page: import('@playwright/test').Page, manifest: unknown): Promise<void> {
+	await page.evaluate(async ([slug, m]) => {
+		await fetch(`/index.php/apps/openbuild/api/applications/${slug}/manifest`, {
+			method: 'PUT',
+			headers: { 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' },
+			body: JSON.stringify({ manifest: m }),
+		})
+	}, [TEST_SLUG, manifest] as const)
+}
+
+// PREVIOUSLY SKIPPED, AND THE RECORDED REASON WAS WRONG. Both tests now run.
+//
+// This file used to say: "the sidebar refuses to open — a UI defect to chase on
+// its own, not something a selector change fixes", and "getByRole('tab', …)
+// finds nothing — these are not ARIA tabs". Neither was true.
+//
+// What was actually on screen was a MODAL. CnAppRoot offers the first-time-setup
+// wizard whenever every REQUIRED step is met but at least one OPTIONAL step is
+// not (`optionalSetupGating`, REQ-SETUP-NV-012), and it opens it as a full
+// `modal-mask`. OpenBuild trips that permanently: its `store` step carries NO
+// `required` key — the word "optional" lives only in the title string — so
+// `optionalUnmet` is never empty. Real users dismiss it once
+// (`cn-setup-wizard-dismissed:{appId}:{version}` in localStorage); every
+// Playwright test gets a FRESH context, so it re-opened in every test.
+//
+// That mask sat over the sidebar toggle (z-index 1001), which is why the toggle
+// was "visible but not actionable" — and it marked the background aria-hidden,
+// which is why `role=tab` appeared to not exist. Both symptoms, one cause.
+// `suppressSetupWizard()` removes it and the sidebar behaves normally.
+//
+// The measurement that settled it, after three wrong theories:
+//     document.elementsFromPoint(<centre of the toggle>)
+//       -> div.modal-wrapper--large, div.dialog__modal.modal-mask, …
+// Identifying the thing on top costs one probe. Reasoning about why a click
+// "should" work costs an afternoon.
 /**
  * Open the app detail page and reveal its "Version history" sidebar tab.
  *
- * The sidebar's open/closed state is NOT the same on every instance — it is
- * per-user UI state, so it differs between a freshly seeded fixture box and a
- * long-lived shared one. Both were observed within an hour:
+ * The sidebar's open/closed state is per-user UI state, so it differs between a
+ * freshly seeded fixture box and a long-lived shared one — probe the tab and
+ * only open the sidebar when it is actually hidden.
  *
- *   disposable instance : tabs already open; clicking the toggle TIMES OUT
- *   shared dev instance : tabs present in the DOM but "element is not visible"
- *
- * So neither "click the toggle first" nor "click the tab directly" works
- * everywhere. This probes the tab and only opens the sidebar when it is hidden.
- *
- * ⚠️ This does NOT currently succeed on the shared dev instance — the sidebar
- * refuses to open there at all (see the block comment above). Kept because the
- * probe-then-open shape is right and the dead ends are documented; a rewrite
- * should either fix the sidebar or drive `?tab=history` directly.
+ * Requires `suppressSetupWizard()` to have run: with the setup wizard's
+ * modal-mask up, the toggle is visible but not actionable and the tab role is
+ * hidden from the a11y tree. See the block comment above.
  *
  * @param page Playwright page.
  * @param uuid The application uuid.
@@ -130,10 +180,9 @@ async function openVersionHistory(page: import('@playwright/test').Page, uuid: s
 
 	// Target the TAB, not its label. `getByText('Version history')` resolves to
 	// the `<span class="_sidebarTabsButton__name_…">` inside the tab button, and
-	// that span is display:none whenever the tab strip collapses to icons — which
-	// it does at this viewport on the shared instance. The span being hidden says
-	// nothing about the tab being reachable, so waiting on its visibility waits
-	// forever (18 resolutions, all "hidden").
+	// that span is display:none once the tab strip collapses to icons — so
+	// waiting on ITS visibility waits forever. Five nodes carry that exact text;
+	// the deepest is the panel's own <h3>.
 	const tab = page.getByRole('tab', { name: /version history/i }).first()
 
 	if (!(await tab.isVisible().catch(() => false))) {
@@ -148,7 +197,7 @@ async function openVersionHistory(page: import('@playwright/test').Page, uuid: s
 	await tab.click({ timeout: 20_000 })
 }
 
-test.describe.skip('openbuild-versioning — rollback (REQ-OBV-003)', () => {
+test.describe('openbuild-versioning — rollback (REQ-OBV-003)', () => {
 	// The default 30s cannot cover this on a loaded instance. Measured on the
 	// shared dev box (28 applications, 200+ schemas), a single
 	// GET /api/applications takes ~6.9s — against ~0.3s on a disposable
@@ -159,8 +208,9 @@ test.describe.skip('openbuild-versioning — rollback (REQ-OBV-003)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await suppressSupportDialog(page)
+		await suppressSetupWizard(page)
 		await page.goto(`${BASE_URL}/apps/openbuild/`, { waitUntil: 'domcontentloaded' })
-		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
+		await ensureVersionChain(page, TEST_SLUG, 'PW Rollback Fixture')
 	})
 
 	test('the version history tab lists the chain', async ({ page }) => {
@@ -174,9 +224,7 @@ test.describe.skip('openbuild-versioning — rollback (REQ-OBV-003)', () => {
 		await expect(page.locator('.version-history__empty')).toHaveCount(0)
 	})
 
-	test('rolling back copies the snapshot manifest onto the app as a draft', async ({ page }) => {
-		const before = await appRecord(page)
-
+	test('rolling back RESTORES the snapshot manifest onto the active version', async ({ page }) => {
 		await openVersionHistory(page, await appUuid(page))
 		await expect(page.locator('.version-history__row').first()).toBeVisible({ timeout: 20_000 })
 
@@ -189,22 +237,57 @@ test.describe.skip('openbuild-versioning — rollback (REQ-OBV-003)', () => {
 			'production must not offer Roll back — exactly the non-production rows may',
 		).toBe(total - 1)
 
-		await rollbackBtns.first().click()
+		// Resolve the target from the row that OWNS the first Roll back button.
+		const targetRow = page.locator('.version-history__row')
+			.filter({ has: page.locator('.version-history__btn--danger') })
+			.first()
+		const targetSemver = (await targetRow.locator('.version-history__semver').innerText()).trim()
+		const target = await snapshotBySemver(page, targetSemver)
+		expect(target.manifest, `the snapshot under test (${targetSemver}) must carry a stored manifest`).toBeTruthy()
+
+		// POSITIVE CONTROL. The seeded snapshots all carry the SAME (empty
+		// menu/pages) manifest, so "restored the snapshot" and "did nothing at
+		// all" produce byte-identical results — the assertion below would pass
+		// against a rollback that was a complete no-op, which is exactly the bug
+		// this spec exists to catch. Plant a manifest that differs from the
+		// target FIRST, so the restore has something observable to undo.
+		const planted = {
+			version: '1.0.0',
+			menu: [{ id: 'planted', label: 'PLANTED_BEFORE_ROLLBACK', icon: 'icon-category-dashboard', route: 'Planted', order: 10 }],
+			pages: [{ id: 'Planted', route: '/planted', type: 'dashboard', title: 'Planted', config: { widgets: [], layout: [] } }],
+		}
+		await putActiveManifest(page, planted)
+		expect(
+			(await activeManifest(page))?.menu,
+			'the planted manifest must be live before the rollback — otherwise this test cannot fail',
+		).toEqual(planted.menu)
+
+		await page.reload({ waitUntil: 'domcontentloaded' })
+		await openVersionHistory(page, await appUuid(page))
+		await expect(page.locator('.version-history__row').first()).toBeVisible({ timeout: 20_000 })
+		await page.locator('.version-history__btn--danger').first().click()
 
 		// RollbackConfirmModal — copy is "Roll back" (no ellipsis).
 		const confirm = page.getByRole('button', { name: /^roll back$/i }).last()
 		await expect(confirm, 'the confirm modal must appear').toBeVisible({ timeout: 10_000 })
 		await confirm.click()
 
-		// The contract (ApplicationVersionsTab.onRollback): manifest copied over,
-		// version relabelled `<version>-rollback-<hex>`, status forced to draft.
-		await expect.poll(async () => (await appRecord(page)).version, {
-			message: 'the application version must be relabelled as a rollback',
-			timeout: 20_000,
-		}).toMatch(/-rollback-[0-9a-f]+$/i)
+		// THE regression guard. Rollback used to PUT `{manifest, version, status}`
+		// onto the Application object, whose schema has NEITHER `manifest` NOR
+		// `version` — both were dropped, only `status` survived, and the manifest
+		// never came back. Compare menu/pages only: the GET returns an EFFECTIVE
+		// manifest, with `runtime` injected and `name` added server-side, so a
+		// whole-document comparison can never match a stored snapshot.
+		await expect.poll(async () => JSON.stringify((await activeManifest(page))?.menu ?? null), {
+			message: 'the active menu must become the snapshot menu',
+			timeout: 30_000,
+		}).toBe(JSON.stringify((target.manifest as Record<string, unknown>)?.menu ?? null))
 
 		const after = await appRecord(page)
 		expect(after.status, 'a rollback must land as a DRAFT — it never silently republishes').toBe('draft')
-		expect(after.version, 'the rollback label must differ from the pre-rollback version').not.toBe(before.version)
+		expect(
+			(await activeManifest(page))?.menu,
+			'the planted manifest must be GONE — proves the restore actually wrote',
+		).not.toEqual(planted.menu)
 	})
 })
