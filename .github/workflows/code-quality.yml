@@ -65,3 +65,60 @@ jobs:
       # Newman publish step need; `main` predates both. See openbuild#29.
       additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"}]'
       enable-sbom: true
+
+      # ── E2E browser tests ────────────────────────────────────────────────
+      # Previously LEFT OFF, so `quality / E2E Tests (Playwright)` reported
+      # `skipped` on every run — and a skipped job is visually indistinguishable
+      # from a passing one in the PR checks list. 48 spec files carrying ~327
+      # assertions existed in this repo and none of them had ever run in CI.
+      #
+      # Three things had to be true before this could be switched on, and each
+      # of them fails SILENTLY when it is not:
+      #
+      #  1. The register must actually be imported. `occ app:enable openbuild`
+      #     runs InitializeSettings, which imports as an IRepairStep — i.e. with
+      #     NO user session — so OpenRegister's RBAC denies it, the exception is
+      #     caught and downgraded to a warning, and `app:enable` still exits 0.
+      #     FIXED by not relying on it: ci-seed.sh performs the import explicitly
+      #     over the admin HTTP API (POST /apps/openbuild/api/settings/load →
+      #     reloadConfiguration(force: true), which is also the only path that
+      #     deep-merges the ADR-037 register.d/*.json fragments) and then VERIFIES
+      #     all 15 schema slugs plus the register, so a bad provision is one loud
+      #     step failure instead of a wall of misleading spec failures.
+      #
+      #  2. The `hello-world` fixture and the wizard's rate-limit exemption must
+      #     be applied. tests/e2e/global-setup.ts does both, but only by
+      #     resolving the DOCKER CONTAINER publishing the port under test. On a
+      #     runner Nextcloud is a bare `php -S`, so that resolution returns null
+      #     and both steps are skipped with a console warning nothing reads.
+      #     Without the fixture, ~13 spec files open an empty app; without the
+      #     exemption, ApplicationCreationController::wizard()'s
+      #     #[UserRateLimit(limit: 10, period: 3600)] starts returning 429
+      #     mid-run. FIXED: ci-seed.sh does both with `occ` directly.
+      #
+      #  3. The frontend bundle must actually serve. A missing bundle does not
+      #     404 — Nextcloud returns its HTML error page with HTTP 200 and
+      #     Content-Type text/html, which every status check reads as success.
+      #     FIXED: ci-seed.sh gates on the SERVED content type being JavaScript.
+      #
+      # `database: sqlite` above is retained. The blocker recorded for Newman —
+      # `[PermissionHandler] no such function: REGEXP` from OR's MagicMapper —
+      # no longer applies: OpenRegister `development` carries a three-platform
+      # rewrite of that query (lib/Db/RegisterMapper.php explicitly handles
+      # "SQLite (no REGEXP function)"), and `REGEXP` now appears nowhere in its
+      # lib/ except those comments.
+      enable-playwright: true
+      # Double duty in the shared workflow: it is both the directory the
+      # "Validate Playwright tests exist" step counts *.spec.ts in, AND the FIRST
+      # place the run step looks for a config, falling back to the repo root only
+      # if that file is absent. We ship tests/e2e/playwright.config.ts precisely
+      # so that lookup hits it: the run step passes no `--project`, so the ROOT
+      # config would additionally run `docs-capture` (re-shooting every
+      # documentation screenshot on every PR) and `visual` (whose own PNG
+      # baselines cannot byte-match on a CI runner — see the root config's
+      # PLATFORM CAVEAT). Both projects stay declared in the root config, which
+      # is untouched: the separate `Journeydoc Capture` job hard-fails unless the
+      # root config still declares `docs-capture`.
+      playwright-test-path: tests/e2e
+      # cwd for this step is the Nextcloud server root.
+      playwright-seed-command: 'bash apps/openbuild/tests/e2e/ci-seed.sh'
