@@ -19,6 +19,8 @@ permissions:
 jobs:
   exporter-e2e:
     runs-on: ubuntu-latest
+    # Observed over 30 runs: max 0.8 min.
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
