@@ -22,10 +22,20 @@
 			"OCA\\OpenRegister\\": "tests/Stubs/"
 		}
 	},
+	"repositories": [
+		{
+			"type": "path",
+			"url": "../hydra",
+			"options": {
+				"symlink": false
+			}
+		}
+	],
 	"require": {
 		"php": "^8.3"
 	},
 	"require-dev": {
+		"conduction/hydra-gates": "*",
 		"cyclonedx/cyclonedx-php-composer": "^6.2",
 		"edgedesign/phpqa": "^1.27",
 		"nextcloud/coding-standard": "^1.4",
@@ -55,7 +65,9 @@
 		"test:all": "if [ -f vendor/bin/phpunit ]; then ./vendor/bin/phpunit --colors=always --no-coverage; else echo 'phpunit not installed, skipping...'; fi",
 		"check": "E=0; for CMD in lint phpcs psalm test:unit; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
 		"check:full": "E=0; for CMD in lint phpcs psalm phpstan test:all; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
-		"check:strict": "E=0; for CMD in lint phpcs phpmd psalm phpstan test:all; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
+		"gates": "hydra-gates --app-dir .",
+		"gates:full": "hydra-gates --app-dir . --full",
+		"check:strict": "E=0; G=0; for CMD in lint phpcs phpmd psalm phpstan test:all gates; do echo; echo \"=== $CMD ===\"; composer $CMD; R=$?; if [ $R -ne 0 ]; then E=1; if [ \"$CMD\" = gates ]; then G=$R; fi; fi; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED — read the gate COVERAGE block above before treating this as complete.\"; else echo \"SOME CHECKS FAILED (see above)\"; if [ $G -eq 99 ]; then echo \"  gates: COULD NOT RUN (exit 99) — a configuration error, NOT a clean run. Nothing was gated.\"; elif [ $G -ne 0 ]; then echo \"  gates: $G gate(s) failed — run 'composer gates' directly; its exit code is the failure COUNT.\"; fi; fi; exit $E",
 		"fix": [
 			"@cs:fix"
 		],
