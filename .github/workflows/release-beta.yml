@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    uses: Conduction/.github/.forgejo/workflows/release-semrel-beta.yml@main
+    uses: ConductionNL/.github/.github/workflows/release-beta.yml@main
     with:
-      app-name: openbuilt
+      app-name: openbuild
     secrets: inherit
