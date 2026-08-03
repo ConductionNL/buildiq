@@ -38,12 +38,66 @@
  * config baseURL and cannot drift from it at all. Import this only where an
  * absolute URL is genuinely required (e.g. building a `page.request` URL).
  *
+ * ⚠️ `BASE_URL` IS IN THE LIST ON PURPOSE.
+ * The shared quality workflow (ConductionNL/.github/.github/workflows/quality.yml)
+ * exports the target of its `E2E Tests (Playwright)` job as **`BASE_URL`** —
+ * alongside NEXTCLOUD_URL / NC_BASE_URL, but NOT as PLAYWRIGHT_BASE_URL. A
+ * resolver that omits `BASE_URL` therefore either hard-fails on CI (openconnector:
+ * "Error: PLAYWRIGHT_BASE_URL is not set" on every run since its Vue 3 migration)
+ * or falls through to a literal and happens to be right for the wrong reason.
+ *
+ * ⚠️ THERE IS NO LONGER A `|| 'http://localhost:8080'` DEFAULT OFF CI.
+ * That literal is the SHARED `nextcloud` dev container on this box. It
+ * bind-mounts real host checkouts, and this suite performs WRITES (it creates
+ * applications, schemas, pages and RBAC users). A silent fallback onto it
+ * corrupts other people's environments, and the failure is invisible: the suite
+ * goes green, against the wrong instance. So off CI an unset target is a hard
+ * error naming the fix. On a GitHub runner there is no shared instance — the
+ * workflow starts a throwaway Nextcloud on the runner's own `localhost:8080` via
+ * `php -S` — so falling back there is safe and is kept.
+ *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
 
-export const E2E_BASE_URL: string = process.env.PLAYWRIGHT_BASE_URL
-	|| process.env.NC_BASE_URL
-	|| process.env.NEXTCLOUD_URL
-	|| 'http://localhost:8080'
+const CI_DEFAULT_BASE_URL = 'http://localhost:8080'
+
+/**
+ * Resolve the Nextcloud base URL for this run.
+ *
+ * @return {string} The base URL, without a trailing slash.
+ * @throws {Error} When no target is configured and this is not a CI runner.
+ */
+export function resolveE2EBaseURL(): string {
+	const explicit = process.env.PLAYWRIGHT_BASE_URL
+		|| process.env.NC_BASE_URL
+		|| process.env.NEXTCLOUD_URL
+		// Exported by the shared ConductionNL/.github quality workflow.
+		|| process.env.BASE_URL
+
+	if (explicit) {
+		return explicit.replace(/\/+$/, '')
+	}
+
+	if (process.env.CI || process.env.GITHUB_ACTIONS) {
+		// eslint-disable-next-line no-console
+		console.warn(
+			'[openbuild e2e] no PLAYWRIGHT_BASE_URL / NEXTCLOUD_URL / NC_BASE_URL / BASE_URL set; '
+			+ `using the CI-local default ${CI_DEFAULT_BASE_URL}.`,
+		)
+		return CI_DEFAULT_BASE_URL
+	}
+
+	throw new Error(
+		'[openbuild e2e] No target Nextcloud configured. Set PLAYWRIGHT_BASE_URL (preferred), '
+		+ 'NC_BASE_URL, NEXTCLOUD_URL or BASE_URL to the instance you want to test, e.g.\n\n'
+		+ '    PLAYWRIGHT_BASE_URL=http://localhost:8099 npx playwright test\n\n'
+		+ 'There is deliberately no default off CI: the historic one was http://localhost:8080, '
+		+ 'the SHARED development container, and this suite WRITES (applications, schemas, users) — '
+		+ "running it there corrupts other people's environments while reporting green.",
+	)
+}
+
+/** The resolved base URL for this run. */
+export const E2E_BASE_URL: string = resolveE2EBaseURL()
