@@ -32,7 +32,7 @@ namespace OCA\OpenBuild\Tests\Unit\Controller;
 
 use OCA\OpenBuild\Controller\ApplicationsController;
 use OCA\OpenBuild\Controller\StoreController;
-use OCA\OpenBuild\Service\RemoteTemplateStoreService;
+use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -71,9 +71,9 @@ class StoreControllerTest extends TestCase
     /**
      * Mock store service.
      *
-     * @var RemoteTemplateStoreService&MockObject
+     * @var GenericStoreService&MockObject
      */
-    private RemoteTemplateStoreService&MockObject $storeService;
+    private GenericStoreService&MockObject $storeService;
 
     /**
      * Mock shared install seam.
@@ -94,7 +94,7 @@ class StoreControllerTest extends TestCase
         $this->request               = $this->createMock(IRequest::class);
         $this->logger                = $this->createMock(LoggerInterface::class);
         $this->userSession           = $this->createMock(IUserSession::class);
-        $this->storeService          = $this->createMock(RemoteTemplateStoreService::class);
+        $this->storeService          = $this->createMock(GenericStoreService::class);
         $this->applicationsController = $this->createMock(ApplicationsController::class);
 
     }//end setUp()
@@ -140,7 +140,7 @@ class StoreControllerTest extends TestCase
     public function testAnonymousSearchIsRejected(): void
     {
         $this->userSession->method('getUser')->willReturn(null);
-        $this->storeService->expects(self::never())->method('searchTemplates');
+        $this->storeService->expects(self::never())->method('search');
 
         $response = $this->controller()->search();
 
@@ -156,7 +156,7 @@ class StoreControllerTest extends TestCase
     public function testAnonymousInstallIsRejected(): void
     {
         $this->userSession->method('getUser')->willReturn(null);
-        $this->storeService->expects(self::never())->method('resolveTemplate');
+        $this->storeService->expects(self::never())->method('resolve');
         $this->applicationsController->expects(self::never())->method('installFromTemplateArray');
 
         $response = $this->controller()->install(slug: 'permit-tracker');
@@ -173,25 +173,32 @@ class StoreControllerTest extends TestCase
     public function testAuthenticatedSearchProxiesStoreService(): void
     {
         $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
-        $this->request->method('getParam')->willReturn('permits');
+        // Key-aware: the search action reads `q` AND `kind` separately
+        // (ADR-080 Decision 5). A blanket willReturn() would hand the same
+        // value to both and quietly assert the wrong call shape.
+        $this->request->method('getParam')->willReturnCallback(
+            static fn (string $key) => $key === 'q' ? 'permits' : null
+        );
 
         $cards = [['slug' => 'permit-tracker', 'title' => 'Permit Tracker']];
         $this->storeService->expects(self::once())
-            ->method('searchTemplates')
-            ->with('permits')
-            ->willReturn(['outcome' => RemoteTemplateStoreService::OUTCOME_OK, 'cards' => $cards]);
+            ->method('search')
+            // ADR-080: discovery is parameterised by the app's StoreDescriptor,
+            // so the query is the SECOND argument now, not the first.
+            ->with(self::anything(), 'permits', null)
+            ->willReturn(['outcome' => GenericStoreService::OUTCOME_OK, 'cards' => $cards]);
 
         $response = $this->controller()->search();
 
         self::assertSame(Http::STATUS_OK, $response->getStatus());
         $data = $response->getData();
-        self::assertSame(RemoteTemplateStoreService::OUTCOME_OK, $data['outcome']);
+        self::assertSame(GenericStoreService::OUTCOME_OK, $data['outcome']);
         self::assertSame($cards, $data['cards']);
 
     }//end testAuthenticatedSearchProxiesStoreService()
 
     /**
-     * An unresolvable slug (resolveTemplate → null) yields 404 and never
+     * An unresolvable slug (resolve → null) yields 404 and never
      * delegates to the install seam.
      *
      * @return void
@@ -208,7 +215,7 @@ class StoreControllerTest extends TestCase
                 };
             });
 
-        $this->storeService->method('resolveTemplate')->willReturn(null);
+        $this->storeService->method('resolve')->willReturn(null);
         $this->applicationsController->expects(self::never())->method('installFromTemplateArray');
 
         $response = $this->controller()->install(slug: 'permit-tracker');
@@ -236,7 +243,7 @@ class StoreControllerTest extends TestCase
             });
 
         $template = ['slug' => 'permit-tracker', 'manifest' => ['pages' => []]];
-        $this->storeService->method('resolveTemplate')->with('permit-tracker')->willReturn($template);
+        $this->storeService->method('resolve')->with(self::anything(), 'permit-tracker')->willReturn($template);
 
         // The seam returns a {status, data} result; the controller wraps it.
         $this->applicationsController->expects(self::once())
@@ -259,7 +266,7 @@ class StoreControllerTest extends TestCase
     public function testInstallInvalidSlugIsBadRequest(): void
     {
         $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
-        $this->storeService->expects(self::never())->method('resolveTemplate');
+        $this->storeService->expects(self::never())->method('resolve');
 
         $response = $this->controller()->install(slug: 'Not_Valid');
 
@@ -276,7 +283,7 @@ class StoreControllerTest extends TestCase
     {
         $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
         $this->request->method('getParam')->willReturn(null);
-        $this->storeService->expects(self::never())->method('resolveTemplate');
+        $this->storeService->expects(self::never())->method('resolve');
 
         $response = $this->controller()->install(slug: 'permit-tracker');
 

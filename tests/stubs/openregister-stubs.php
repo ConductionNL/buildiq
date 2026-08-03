@@ -1260,11 +1260,25 @@ namespace OCA\OpenRegister\Service {
         /**
          * Stub SecurityService — no-op SSRF guard for unit-test isolation.
          *
-         * RemoteTemplateStoreService calls `SecurityService::assertSafeFetchUrl()`
-         * at runtime via `class_exists()` + `call_user_func()`. In unit tests the
-         * mock HttpClient already controls what "returns", but the guard fires
-         * BEFORE the mock client is invoked — and performs real DNS lookups that
-         * fail for the `.test` / `.example.test` hostnames used in fixtures.
+         * NOTE (ADR-080): the store client that used to need this — this app's
+         * RemoteTemplateStoreService — has moved to OpenRegister as
+         * GenericStoreService, and StoreControllerTest now mocks that service
+         * outright, so no guard fires on the store path here any more.
+         *
+         * Keep this stub aware of what it costs: a no-op guard means any test
+         * relying on it is NOT exercising the real SSRF check, so an "SSRF
+         * negative control" written against it would pass whatever the guard
+         * does. The real guard is exercised in OpenRegister's
+         * GenericStoreServiceTest, which uses literal public IPs rather than
+         * fixture hostnames precisely so the guard can run for real (a
+         * made-up hostname does not resolve, and the guard fails CLOSED — so
+         * every case would be rejected and the negative controls would pass
+         * for the wrong reason).
+         *
+         * Other suites may still call `SecurityService::assertSafeFetchUrl()`
+         * with `.test` / `.example.test` fixture hostnames, which perform real
+         * DNS lookups that fail; the stub keeps those reaching their mock
+         * HttpClient layer.
          *
          * Defining the stub here (in the Service namespace, loaded by bootstrap-unit.php
          * BEFORE the OR PSR-4 path is searched) satisfies the `class_exists()` check
@@ -2026,6 +2040,212 @@ namespace OCA\OpenRegister\AppHost {
             {
                 return ['routes' => $extra];
             }
+        }
+    }
+}
+
+namespace OCA\OpenRegister\AppHost\Service {
+
+    if (class_exists(StoreDescriptor::class, autoload: false) === false) {
+        /**
+         * Stub StoreDescriptor — the ADR-080 per-app store parameters.
+         * A plain value object; the stub mirrors its shape so a leaf app's
+         * descriptor() can be constructed without the sibling openregister app
+         * on the autoload path.
+         */
+        final class StoreDescriptor
+        {
+            /**
+             * Constructor.
+             *
+             * @param string                $appId           Owning app id.
+             * @param string                $schema          Remote schema slug.
+             * @param string                $defaultRegister Remote register segment.
+             * @param array<string, string> $cardFields      Card field => remote property.
+             *
+             * @return void
+             */
+            public function __construct(
+                public readonly string $appId,
+                public readonly string $schema,
+                public readonly string $defaultRegister,
+                public readonly array $cardFields = [],
+            ) {
+            }//end __construct()
+        }
+    }
+
+    if (class_exists(GenericStoreService::class, autoload: false) === false) {
+        /**
+         * Stub GenericStoreService — the ADR-080 store DISCOVERY client that
+         * OpenRegister owns. Leaf-app unit tests mock this class outright, so
+         * the stub only needs the real method signatures and outcome constants
+         * for `createMock()` to produce a faithful double.
+         *
+         * Deliberately NOT a working implementation: the real SSRF guard,
+         * redirect refusal and outcome mapping are exercised in OpenRegister's
+         * own GenericStoreServiceTest against the REAL SecurityService. A
+         * behaving stub here would invite leaf apps to "test" store security
+         * against a fake, which proves nothing.
+         */
+        class GenericStoreService
+        {
+            public const OUTCOME_OK = 'ok';
+
+            public const OUTCOME_NOT_CONFIGURED = 'not_configured';
+
+            public const OUTCOME_UNREACHABLE = 'store_unreachable';
+
+            public const OUTCOME_INVALID = 'store_invalid_response';
+
+            /**
+             * Stub: whether a registry is configured.
+             *
+             * @param StoreDescriptor $descriptor Store parameters.
+             *
+             * @return bool
+             */
+            public function isConfigured(StoreDescriptor $descriptor): bool
+            {
+                return false;
+            }//end isConfigured()
+
+            /**
+             * Stub: search the remote store.
+             *
+             * @param StoreDescriptor $descriptor Store parameters.
+             * @param string|null     $query      Free-text term.
+             * @param string|null     $kind       Kind discriminator.
+             *
+             * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+             */
+            public function search(StoreDescriptor $descriptor, ?string $query=null, ?string $kind=null): array
+            {
+                return ['outcome' => self::OUTCOME_NOT_CONFIGURED, 'cards' => []];
+            }//end search()
+
+            /**
+             * Stub: resolve one remote item by slug.
+             *
+             * @param StoreDescriptor $descriptor Store parameters.
+             * @param string          $slug       Item slug.
+             *
+             * @return array<string, mixed>|null
+             */
+            public function resolve(StoreDescriptor $descriptor, string $slug): ?array
+            {
+                return null;
+            }//end resolve()
+        }
+    }
+}
+
+namespace OCA\OpenRegister\AppHost\Controller {
+
+    if (class_exists(GenericStoreControllerBase::class, autoload: false) === false) {
+        /**
+         * Stub GenericStoreControllerBase — the ADR-080 store discovery
+         * controller base a leaf app SUBCLASSES.
+         *
+         * This stub is load-bearing in a way the others are not: `extends` is
+         * resolved by the AUTOLOADER, not the container, so without it the
+         * leaf's StoreController cannot be loaded at all and every test in the
+         * class errors before it runs. That is the same mechanism by which a
+         * missing sibling app 500s every route in production, which is why
+         * ADR-080 restricts subclassing to apps declaring openregister a hard
+         * <app> dependency.
+         */
+        abstract class GenericStoreControllerBase extends \OCP\AppFramework\Controller
+        {
+            protected const SLUG_PATTERN = '/^[a-z0-9][a-z0-9-]*[a-z0-9]$/';
+
+            /**
+             * Constructor.
+             *
+             * @param string                                             $appName      Leaf app id.
+             * @param \OCP\IRequest                                      $request      Current request.
+             * @param \OCP\IUserSession                                  $userSession  User session.
+             * @param \OCA\OpenRegister\AppHost\Service\GenericStoreService $storeService Store client.
+             * @param \Psr\Log\LoggerInterface                           $logger       Logger.
+             *
+             * @return void
+             */
+            public function __construct(
+                string $appName,
+                \OCP\IRequest $request,
+                protected readonly \OCP\IUserSession $userSession,
+                protected readonly \OCA\OpenRegister\AppHost\Service\GenericStoreService $storeService,
+                protected readonly \Psr\Log\LoggerInterface $logger,
+            ) {
+                parent::__construct($appName, $request);
+            }//end __construct()
+
+            /**
+             * The leaf app's store parameters.
+             *
+             * @return \OCA\OpenRegister\AppHost\Service\StoreDescriptor
+             */
+            abstract protected function descriptor(): \OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+
+            /**
+             * Search this app's remote store.
+             *
+             * @return \OCP\AppFramework\Http\JSONResponse
+             */
+            public function search(): \OCP\AppFramework\Http\JSONResponse
+            {
+                if ($this->userSession->getUser() === null) {
+                    return $this->storeError('unauthenticated', \OCP\AppFramework\Http::STATUS_UNAUTHORIZED);
+                }
+
+                $query = $this->request->getParam('q');
+                $kind  = $this->request->getParam('kind');
+                $result = $this->storeService->search(
+                    $this->descriptor(),
+                    is_string($query) === true ? $query : null,
+                    is_string($kind) === true ? $kind : null
+                );
+
+                return new \OCP\AppFramework\Http\JSONResponse(
+                    ['outcome' => $result['outcome'], 'cards' => $result['cards']],
+                    \OCP\AppFramework\Http::STATUS_OK
+                );
+            }//end search()
+
+            /**
+             * Validate + resolve a remote item for an install action.
+             *
+             * @param string $slug Remote item slug.
+             *
+             * @return array<string, mixed>|null
+             */
+            protected function resolveForInstall(string $slug): ?array
+            {
+                if (preg_match(static::SLUG_PATTERN, $slug) !== 1) {
+                    return null;
+                }
+
+                return $this->storeService->resolve($this->descriptor(), $slug);
+            }//end resolveForInstall()
+
+            /**
+             * Uniform error response.
+             *
+             * @param string      $code   Error code.
+             * @param int         $status HTTP status.
+             * @param string|null $detail Optional detail.
+             *
+             * @return \OCP\AppFramework\Http\JSONResponse
+             */
+            protected function storeError(string $code, int $status, ?string $detail=null): \OCP\AppFramework\Http\JSONResponse
+            {
+                $body = ['error' => $code];
+                if ($detail !== null) {
+                    $body['detail'] = $detail;
+                }
+
+                return new \OCP\AppFramework\Http\JSONResponse($body, $status);
+            }//end storeError()
         }
     }
 }
