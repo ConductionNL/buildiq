@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4ec6832d7c2707b88fe7151c86406207",
+    "content-hash": "dd14a5bb9499a702283c257023f27736",
     "packages": [],
     "packages-dev": [
         {
@@ -466,31 +466,38 @@
         },
         {
             "name": "conduction/hydra-gates",
-            "version": "dev-fd71598e055076d13fbee92d7700014657056a3d",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ConductionNL/.github.git",
+                "reference": "fdad2546f2ac68aa64be5fecef898784c1847538"
+            },
             "dist": {
-                "type": "path",
-                "url": "../hydra",
-                "reference": "fd71598e055076d13fbee92d7700014657056a3d"
+                "type": "zip",
+                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/fdad2546f2ac68aa64be5fecef898784c1847538",
+                "reference": "fdad2546f2ac68aa64be5fecef898784c1847538",
+                "shasum": ""
             },
             "require": {
                 "php": ">=8.1"
             },
             "bin": [
-                "bin/hydra-gates"
+                "hydra-gates/bin/hydra-gates"
             ],
             "type": "library",
             "extra": {
                 "hydra-gates": {
-                    "runner": "scripts/run-hydra-gates.sh",
-                    "helpers": "scripts/lib"
+                    "runner": "hydra-gates/scripts/run-hydra-gates.sh",
+                    "helpers": "hydra-gates/scripts/lib",
+                    "schemas": "hydra-gates/scripts/schemas"
                 }
             },
             "scripts": {
                 "gates": [
-                    "bin/hydra-gates"
+                    "hydra-gates/bin/hydra-gates"
                 ],
                 "test:package": [
-                    "bash tests/test-hydra-gates-bin.sh"
+                    "bash hydra-gates/tests/test-hydra-gates-bin.sh"
                 ]
             },
             "license": [
@@ -502,7 +509,8 @@
                     "homepage": "https://conduction.nl"
                 }
             ],
-            "description": "Hydra's mechanical quality gates, packaged so any repo can run them from its own tree via composer check:strict.",
+            "description": "Hydra's mechanical quality gates, packaged so any repo can run them against its own diff. The exit code is the failure COUNT.",
+            "homepage": "https://github.com/ConductionNL/.github/tree/main/hydra-gates",
             "keywords": [
                 "conduction",
                 "gates",
@@ -510,10 +518,11 @@
                 "quality",
                 "static-analysis"
             ],
-            "transport-options": {
-                "symlink": false,
-                "relative": true
-            }
+            "support": {
+                "issues": "https://github.com/ConductionNL/.github/issues",
+                "docs": "https://github.com/ConductionNL/.github/blob/main/hydra-gates/README.md"
+            },
+            "time": "2026-08-03T15:03:36+00:00"
         },
         {
             "name": "consolidation/annotated-command",
@@ -7824,7 +7833,6 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "conduction/hydra-gates": 20,
         "roave/security-advisories": 20
     },
     "prefer-stable": false,
@@ -7832,9 +7840,9 @@
     "platform": {
         "php": "^8.3"
     },
-    "platform-dev": {},
+    "platform-dev": [],
     "platform-overrides": {
         "php": "8.3"
     },
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.6.0"
 }
