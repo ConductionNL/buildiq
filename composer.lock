@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e22f033670a4dfa25bad1c7ebed2dd4c",
+    "content-hash": "dd14a5bb9499a702283c257023f27736",
     "packages": [],
     "packages-dev": [
         {
@@ -463,6 +463,66 @@
                 }
             ],
             "time": "2024-05-06T16:37:16+00:00"
+        },
+        {
+            "name": "conduction/hydra-gates",
+            "version": "v1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ConductionNL/.github.git",
+                "reference": "f4d97563dec05b9296b18f9ab986d50ba9ce90e9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/f4d97563dec05b9296b18f9ab986d50ba9ce90e9",
+                "reference": "f4d97563dec05b9296b18f9ab986d50ba9ce90e9",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.1"
+            },
+            "bin": [
+                "hydra-gates/bin/hydra-gates"
+            ],
+            "type": "library",
+            "extra": {
+                "hydra-gates": {
+                    "runner": "hydra-gates/scripts/run-hydra-gates.sh",
+                    "helpers": "hydra-gates/scripts/lib",
+                    "schemas": "hydra-gates/scripts/schemas"
+                }
+            },
+            "scripts": {
+                "gates": [
+                    "hydra-gates/bin/hydra-gates"
+                ],
+                "test:package": [
+                    "bash hydra-gates/tests/test-hydra-gates-bin.sh"
+                ]
+            },
+            "license": [
+                "EUPL-1.2"
+            ],
+            "authors": [
+                {
+                    "name": "Conduction",
+                    "homepage": "https://conduction.nl"
+                }
+            ],
+            "description": "Hydra's mechanical quality gates, packaged so any repo can run them against its own diff. The exit code is the failure COUNT.",
+            "homepage": "https://github.com/ConductionNL/.github/tree/main/hydra-gates",
+            "keywords": [
+                "conduction",
+                "gates",
+                "nextcloud",
+                "quality",
+                "static-analysis"
+            ],
+            "support": {
+                "issues": "https://github.com/ConductionNL/.github/issues",
+                "docs": "https://github.com/ConductionNL/.github/blob/main/hydra-gates/README.md"
+            },
+            "time": "2026-08-03T19:02:26+00:00"
         },
         {
             "name": "consolidation/annotated-command",
