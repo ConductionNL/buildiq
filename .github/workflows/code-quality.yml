@@ -32,7 +32,7 @@ jobs:
       # Pinned to a tag rather than `main` so a change to the gates cannot alter
       # this repo's verdict without a commit in this repo to move the pin.
       enable-hydra-gates: true
-      hydra-gates-ref: v1.0.0
+      hydra-gates-ref: v1.0.1
       # Newman stays disabled while the openbuild#33 fixes are in flight.
       # The collection bugs in this PR are fixed (uuid `@self.id` extraction,
       # `export-job` slug correction, hello-world `@self.slug` fallback). But

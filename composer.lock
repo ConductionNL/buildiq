@@ -466,16 +466,16 @@
         },
         {
             "name": "conduction/hydra-gates",
-            "version": "v1.0.0",
+            "version": "v1.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ConductionNL/.github.git",
-                "reference": "fdad2546f2ac68aa64be5fecef898784c1847538"
+                "reference": "f4d97563dec05b9296b18f9ab986d50ba9ce90e9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/fdad2546f2ac68aa64be5fecef898784c1847538",
-                "reference": "fdad2546f2ac68aa64be5fecef898784c1847538",
+                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/f4d97563dec05b9296b18f9ab986d50ba9ce90e9",
+                "reference": "f4d97563dec05b9296b18f9ab986d50ba9ce90e9",
                 "shasum": ""
             },
             "require": {
@@ -522,7 +522,7 @@
                 "issues": "https://github.com/ConductionNL/.github/issues",
                 "docs": "https://github.com/ConductionNL/.github/blob/main/hydra-gates/README.md"
             },
-            "time": "2026-08-03T15:03:36+00:00"
+            "time": "2026-08-03T19:02:26+00:00"
         },
         {
             "name": "consolidation/annotated-command",
