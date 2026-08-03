@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e22f033670a4dfa25bad1c7ebed2dd4c",
+    "content-hash": "4ec6832d7c2707b88fe7151c86406207",
     "packages": [],
     "packages-dev": [
         {
@@ -463,6 +463,57 @@
                 }
             ],
             "time": "2024-05-06T16:37:16+00:00"
+        },
+        {
+            "name": "conduction/hydra-gates",
+            "version": "dev-fd71598e055076d13fbee92d7700014657056a3d",
+            "dist": {
+                "type": "path",
+                "url": "../hydra",
+                "reference": "fd71598e055076d13fbee92d7700014657056a3d"
+            },
+            "require": {
+                "php": ">=8.1"
+            },
+            "bin": [
+                "bin/hydra-gates"
+            ],
+            "type": "library",
+            "extra": {
+                "hydra-gates": {
+                    "runner": "scripts/run-hydra-gates.sh",
+                    "helpers": "scripts/lib"
+                }
+            },
+            "scripts": {
+                "gates": [
+                    "bin/hydra-gates"
+                ],
+                "test:package": [
+                    "bash tests/test-hydra-gates-bin.sh"
+                ]
+            },
+            "license": [
+                "EUPL-1.2"
+            ],
+            "authors": [
+                {
+                    "name": "Conduction",
+                    "homepage": "https://conduction.nl"
+                }
+            ],
+            "description": "Hydra's mechanical quality gates, packaged so any repo can run them from its own tree via composer check:strict.",
+            "keywords": [
+                "conduction",
+                "gates",
+                "nextcloud",
+                "quality",
+                "static-analysis"
+            ],
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            }
         },
         {
             "name": "consolidation/annotated-command",
@@ -7689,6 +7740,7 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
+        "conduction/hydra-gates": 20,
         "roave/security-advisories": 20
     },
     "prefer-stable": false,
@@ -7696,9 +7748,9 @@
     "platform": {
         "php": "^8.3"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "platform-overrides": {
         "php": "8.3"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }
