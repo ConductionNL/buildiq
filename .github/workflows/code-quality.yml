@@ -21,6 +21,18 @@ jobs:
       enable-frontend: true
       enable-eslint: true
       enable-phpunit: true
+      # Run the 61 Hydra mechanical gates against this PR's diff.
+      #
+      # Without this, wiring the gates into `composer check:strict` would have
+      # been a LOCAL-ONLY change: nothing in this repository's CI runs
+      # check:strict — there is no workflow that invokes it — so every PR would
+      # have gone green with the gates never having executed. A gate that only
+      # runs on a developer's machine is not a gate.
+      #
+      # Pinned to a tag rather than `main` so a change to the gates cannot alter
+      # this repo's verdict without a commit in this repo to move the pin.
+      enable-hydra-gates: true
+      hydra-gates-ref: v1.0.0
       # Newman stays disabled while the openbuild#33 fixes are in flight.
       # The collection bugs in this PR are fixed (uuid `@self.id` extraction,
       # `export-job` slug correction, hello-world `@self.slug` fallback). But
