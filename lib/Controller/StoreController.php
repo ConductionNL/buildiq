@@ -13,13 +13,23 @@
  *            register, identical to a local template clone).
  *
  * ADR-080: DISCOVERY (configure / search / resolve) is OpenRegister's. This
- * controller extends AppHost's GenericStoreControllerBase and inherits
- * `search()` plus the SSRF-guarded, redirect-refusing, token-private fetch that
- * used to live in this app's own RemoteTemplateStoreService. That service is
- * deleted; its behaviour and its SSRF negative controls moved to
- * OpenRegister's GenericStoreServiceTest. The old implementation reached
- * OpenRegister's SSRF guard through a dynamic class-string with a weaker local
- * fallback — in the engine the guard is simply always there.
+ * controller INJECTS AppHost's GenericStoreService — which owns the
+ * SSRF-guarded, redirect-refusing, token-private fetch that used to live in
+ * this app's own RemoteTemplateStoreService. That service is deleted; its
+ * behaviour and its SSRF negative controls moved to OpenRegister's
+ * GenericStoreServiceTest. The old implementation reached OpenRegister's SSRF
+ * guard through a dynamic class-string with a weaker local fallback — in the
+ * engine the guard is simply always there.
+ *
+ * Composition, NOT inheritance, and deliberately so. A cross-app `extends` is
+ * resolved by the AUTOLOADER rather than the container, which breaks in three
+ * separate places: Nextcloud's router reflects every controller during route
+ * MATCHING (an absent OpenRegister would 500 EVERY route in this app, not just
+ * the store), the unit suite cannot load the class at all because OR is stubbed
+ * rather than autoloaded, and phpstan/psalm reject "extends unknown class". An
+ * injected type-hint has none of those problems — it is the same shape as the
+ * OCA\OpenRegister\Service\ObjectService dependency 8 other controllers here
+ * already carry, resolved for static analysis by one stub entry.
  *
  * INSTALL stays here, and only install: cloning an application template into a
  * local virtual app is OpenBuild-specific (companion namespacing, manifest
@@ -54,23 +64,29 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Controller;
 
 use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenRegister\AppHost\Controller\GenericStoreControllerBase;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
- * Store search (inherited from AppHost) + OpenBuild's own template install.
+ * Store search + OpenBuild's own template install.
  *
  * @spec openspec/specs/openbuild-remote-template-store/spec.md
  */
-class StoreController extends GenericStoreControllerBase
+class StoreController extends Controller
 {
+    /**
+     * Kebab-case slug pattern shared by store item slugs.
+     */
+    private const SLUG_PATTERN = '/^[a-z0-9][a-z0-9-]*[a-z0-9]$/';
+
     /**
      * Constructor.
      *
@@ -84,18 +100,12 @@ class StoreController extends GenericStoreControllerBase
      */
     public function __construct(
         IRequest $request,
-        LoggerInterface $logger,
-        IUserSession $userSession,
-        GenericStoreService $storeService,
+        private readonly LoggerInterface $logger,
+        private readonly IUserSession $userSession,
+        private readonly GenericStoreService $storeService,
         private readonly ApplicationsController $applicationsController,
     ) {
-        parent::__construct(
-            appName: Application::APP_ID,
-            request: $request,
-            userSession: $userSession,
-            storeService: $storeService,
-            logger: $logger
-        );
+        parent::__construct(appName: Application::APP_ID, request: $request);
     }//end __construct()
 
     /**
@@ -104,7 +114,7 @@ class StoreController extends GenericStoreControllerBase
      *
      * @return StoreDescriptor
      */
-    protected function descriptor(): StoreDescriptor
+    private function descriptor(): StoreDescriptor
     {
         return new StoreDescriptor(
             appId: Application::APP_ID,
@@ -121,6 +131,96 @@ class StoreController extends GenericStoreControllerBase
             ]
         );
     }//end descriptor()
+
+    /**
+     * Search the remote template store.
+     *
+     * Login-required (in-body guard, so an anonymous caller gets an explicit
+     * 401 rather than a redirect). Returns normalised cards or a generic
+     * outcome — NEVER the registry URL or token, which stay server-side.
+     *
+     * @return JSONResponse 200 with `{outcome, cards}`; 401 for anonymous.
+     *
+     * @spec openspec/specs/openbuild-remote-template-store/spec.md
+     */
+    #[NoAdminRequired]
+    public function search(): JSONResponse
+    {
+        if ($this->userSession->getUser() === null) {
+            return $this->storeError(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+        }
+
+        $query = $this->request->getParam('q');
+        if (is_string($query) === false) {
+            $query = null;
+        }
+
+        $kind = $this->request->getParam('kind');
+        if (is_string($kind) === false) {
+            $kind = null;
+        }
+
+        try {
+            $result = $this->storeService->search(
+                descriptor: $this->descriptor(),
+                query: $query,
+                kind: $kind
+            );
+        } catch (Throwable $e) {
+            // Detail to the log, generic outcome to the browser: a registry's
+            // internals are not the caller's business.
+            $this->logger->error('OpenBuild store: search failed: '.$e->getMessage());
+            return new JSONResponse(
+                data: ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'cards' => []],
+                statusCode: Http::STATUS_OK
+            );
+        }
+
+        return new JSONResponse(
+            data: ['outcome' => $result['outcome'], 'cards' => $result['cards']],
+            statusCode: Http::STATUS_OK
+        );
+    }//end search()
+
+    /**
+     * Validate a remote slug and resolve its FULL payload for install.
+     *
+     * @param string $slug The remote item slug.
+     *
+     * @return array<string, mixed>|null Null when the slug is malformed, unresolved, or the store errored.
+     */
+    private function resolveForInstall(string $slug): ?array
+    {
+        if (preg_match(self::SLUG_PATTERN, $slug) !== 1) {
+            return null;
+        }
+
+        try {
+            return $this->storeService->resolve(descriptor: $this->descriptor(), slug: $slug);
+        } catch (Throwable $e) {
+            $this->logger->error('OpenBuild store: resolve failed for '.$slug.': '.$e->getMessage());
+            return null;
+        }
+    }//end resolveForInstall()
+
+    /**
+     * Build a uniform error JSONResponse.
+     *
+     * @param string      $code   The error code.
+     * @param int         $status The HTTP status code.
+     * @param string|null $detail Optional detail message.
+     *
+     * @return JSONResponse
+     */
+    private function storeError(string $code, int $status, ?string $detail=null): JSONResponse
+    {
+        $body = ['error' => $code];
+        if ($detail !== null) {
+            $body['detail'] = $detail;
+        }
+
+        return new JSONResponse(data: $body, statusCode: $status);
+    }//end storeError()
 
     /**
      * Resolve a remote template by slug and install it locally (clone).

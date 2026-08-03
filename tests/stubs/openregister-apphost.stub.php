@@ -157,3 +157,92 @@ class GenericAdminSettings implements ISettings
         return $this->priority;
     }//end getPriority()
 }//end class
+
+namespace OCA\OpenRegister\AppHost\Service;
+
+/**
+ * ADR-080 store-plane stubs for static analysis.
+ *
+ * The real classes live in OpenRegister; phpstan/psalm do not have that app on
+ * their path, so StoreController's injected dependency would otherwise be an
+ * "unknown class". This is the same treatment the OR lifecycle and AppHost
+ * settings contracts already get above.
+ *
+ * A stub is enough precisely BECAUSE the dependency is injected rather than
+ * inherited — an `extends` on a cross-app class cannot be stubbed away, it is
+ * rejected outright ("extends unknown class", which phpstan will not let you
+ * ignore).
+ */
+final class StoreDescriptor
+{
+    /**
+     * Constructor.
+     *
+     * @param string                $appId           Owning app id.
+     * @param string                $schema          Remote schema slug.
+     * @param string                $defaultRegister Remote register segment.
+     * @param array<string, string> $cardFields      Card field => remote property.
+     *
+     * @return void
+     */
+    public function __construct(
+        public readonly string $appId,
+        public readonly string $schema,
+        public readonly string $defaultRegister,
+        public readonly array $cardFields = [],
+    ) {
+    }//end __construct()
+}//end class
+
+/**
+ * Stub of the engine-owned store discovery client (ADR-080).
+ */
+class GenericStoreService
+{
+    public const OUTCOME_OK = 'ok';
+
+    public const OUTCOME_NOT_CONFIGURED = 'not_configured';
+
+    public const OUTCOME_UNREACHABLE = 'store_unreachable';
+
+    public const OUTCOME_INVALID = 'store_invalid_response';
+
+    /**
+     * Whether a registry is configured.
+     *
+     * @param StoreDescriptor $descriptor Store parameters.
+     *
+     * @return bool
+     */
+    public function isConfigured(StoreDescriptor $descriptor): bool
+    {
+        return false;
+    }//end isConfigured()
+
+    /**
+     * Search the remote store.
+     *
+     * @param StoreDescriptor $descriptor Store parameters.
+     * @param string|null     $query      Free-text term.
+     * @param string|null     $kind       Kind discriminator.
+     *
+     * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+     */
+    public function search(StoreDescriptor $descriptor, ?string $query=null, ?string $kind=null): array
+    {
+        return ['outcome' => self::OUTCOME_NOT_CONFIGURED, 'cards' => []];
+    }//end search()
+
+    /**
+     * Resolve one remote item by slug.
+     *
+     * @param StoreDescriptor $descriptor Store parameters.
+     * @param string          $slug       Item slug.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function resolve(StoreDescriptor $descriptor, string $slug): ?array
+    {
+        return null;
+    }//end resolve()
+}//end class
