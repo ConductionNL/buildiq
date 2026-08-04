@@ -65,3 +65,39 @@ jobs:
       # Newman publish step need; `main` predates both. See openbuild#29.
       additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"}]'
       enable-sbom: true
+
+      # ── Integration tests ────────────────────────────────────────────────
+      # Was explicitly `false`. tests/integration ships NINETEEN
+      # *.postman_collection.json files that had never executed in CI — the
+      # largest unrun integration suite in the fleet. They sit at the default
+      # `newman-collection-path` (tests/integration), which is both the
+      # directory the validator counts collections in and the directory the run
+      # step globs flat.
+      # This is the one change here most likely to be red on arrival: nineteen
+      # collections meeting a fresh Nextcloud for the first time. Per the
+      # brief, that red is a result to report, not a reason to switch the gate
+      # back off.
+      enable-newman: true
+
+      # ── Frontend Check legs ──────────────────────────────────────────────
+      # `frontend-checks` defaults to `[]`, and an empty list means the shared
+      # workflow emits NO "Frontend Check" job at all — so these two validators
+      # ran nowhere while the run still looked complete. Both are self-contained
+      # `node` scripts, which is what a leg has to be.
+      # `test:l10n` was measured FAILING on this tree (source strings missing
+      # from l10n/en.json, e.g. "Widgets on this page"). `check:manifest` could
+      # not be measured locally — it `require`s `ajv/dist/2020`, which only
+      # exists after the leg's own `npm ci`, so CI is the first place it gets a
+      # real verdict.
+      # `test` / `test:unit` are NOT listed: "Frontend Tests (unit)" runs them.
+      frontend-checks: '["check:manifest", "test:l10n"]'
+
+      # ── Coverage ratchet ─────────────────────────────────────────────────
+      # `enable-coverage-guard` defaults to FALSE, which is why both
+      # "Coverage Baseline Protection" and "Coverage Baseline Check" have only
+      # ever reported `skipped`. It needs two inputs this repo did not have,
+      # both added in this commit: `scripts/coverage-guard.php` (byte-identical
+      # to openregister's) and `.coverage-baseline` = 57.39, this repo's own
+      # measured coverage (8018 of 13971 statements) read from clover.xml in the
+      # `coverage-report` artifact of run 30911188960.
+      enable-coverage-guard: true
