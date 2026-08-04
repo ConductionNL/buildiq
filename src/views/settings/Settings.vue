@@ -56,8 +56,8 @@
 			</div>
 
 			<NcButton
-				type="primary"
-				native-type="submit"
+				variant="primary"
+				type="submit"
 				:disabled="saving">
 				{{ saving ? t('openbuild', 'Saving...') : t('openbuild', 'Save') }}
 			</NcButton>
