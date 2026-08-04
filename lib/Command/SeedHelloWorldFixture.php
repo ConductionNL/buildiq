@@ -65,12 +65,46 @@ class SeedHelloWorldFixture extends Command
     private const SEMVER = '1.0.0';
 
     /**
+     * Description of the seeded hello-world Application.
+     *
+     * A named constant because OR's saveObject() is PUT-semantic: the
+     * set-productionVersion save has to repeat the WHOLE record or the omitted
+     * properties are written back as null, and two literals that must stay
+     * identical are two literals that will eventually drift.
+     */
+    private const SEED_DESCRIPTION = 'Seeded e2e fixture — your first virtual app built from a JSON manifest.';
+
+    /**
+     * Owner grant carried by the seeded hello-world Application.
+     *
+     * Repeated on the set-productionVersion save for the same PUT-semantic
+     * reason as {@see SEED_DESCRIPTION}; dropping it there silently reverted the
+     * grant and 403'd every automation op.
+     *
+     * @var array<string, array<int, string>>
+     */
+    private const SEED_PERMISSIONS = [
+        'owners'  => ['user:admin'],
+        'editors' => [],
+        'viewers' => [],
+    ];
+
+    /**
      * Slug/appId of the seeded HYBRID example app (unify-apps-with-app-type).
      * Points at the OpenCatalogi fleet app; the delta is data-only and renders
      * over that app's bundled manifest client-side, so it is harmless even when
      * OpenCatalogi is not installed on this instance.
      */
     private const HYBRID_SLUG = 'opencatalogi';
+
+    /**
+     * Description of the seeded hybrid example Application.
+     *
+     * Named for the same PUT-semantic reason as {@see SEED_DESCRIPTION}: the
+     * set-productionVersion save repeats the whole record, and omitting this
+     * field is exactly what made the hybrid metadata-lock reject the link.
+     */
+    private const HYBRID_DESCRIPTION = 'Seeded hybrid example — a local layout customization layered over the installed OpenCatalogi app.';
 
     /**
      * Constructor.
@@ -113,101 +147,9 @@ class SeedHelloWorldFixture extends Command
         $register = ApplicationVersionService::REGISTER_SLUG;
 
         try {
-            // Guard on the Application object (survives disable/enable), not just
-            // the built-app-route (cleared on disable) — otherwise re-seeding
-            // accumulates duplicate hello-world apps that make loadApplication()
-            // 404 on the ambiguous slug.
-            if ($this->applicationExists(register: $register) === true || $this->routeExists(register: $register) === true) {
-                $output->writeln('<info>hello-world fixture already present — skipping the virtual app.</info>');
-                $this->seedHybridExample(register: $register, output: $output);
-                return Command::SUCCESS;
-            }
-
-            // 1. Application (no productionVersion yet — set after the version exists).
-            $application     = $this->create(
-                register: $register,
-                schema: ApplicationVersionService::APPLICATION_SCHEMA,
-                data: [
-                    'slug'        => self::SEED_SLUG,
-                    'name'        => 'Hello World',
-                    'description' => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
-                    // Grant the admin user owner rights so automation ops
-                    // (compile/enable/dry-run — WRITE_ROLES ['owners','editors'])
-                    // are permitted. Wizard-created apps set this; the seed ran
-                    // in system context with permissions=null, which makes
-                    // matchesCaller() deny everyone (empty-permissions = deny,
-                    // allowAdminBypass=false) and 403s every automation op.
-                    'permissions' => [
-                        'owners'  => ['user:admin'],
-                        'editors' => [],
-                        'viewers' => [],
-                    ],
-                ]
-            );
-            $applicationUuid = $application->getUuid();
-
-            // 2. Published version carrying the manifest.
-            $version     = $this->create(
-                register: $register,
-                schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
-                data: [
-                    'name'        => self::SEMVER,
-                    'slug'        => self::VERSION_SLUG,
-                    'manifest'    => $this->buildManifest(),
-                    // The version's `register` field names the app's per-app
-                    // data register (pattern: openbuild-<slug>). The shared
-                    // `hello-message` data + manifest pages live in the main
-                    // `openbuild` register, so this is metadata only.
-                    'register'    => $register.'-'.self::SEED_SLUG,
-                    'semver'      => self::SEMVER,
-                    'status'      => 'published',
-                    'application' => $applicationUuid,
-                ]
-            );
-            $versionUuid = $version->getUuid();
-
-            // 3. Point the Application at its production version.
-            //
-            // OR's saveObject() is PUT-semantic — every property omitted from
-            // this payload is written back as NULL. `permissions` was omitted,
-            // so this step immediately undid the owner grant step 1 had just
-            // set: matchesCaller() reads empty permissions as deny (with
-            // allowAdminBypass=false), which 403s every automation op on the
-            // one app every new user starts from. Carry the whole record.
-            $this->create(
-                register: $register,
-                schema: ApplicationVersionService::APPLICATION_SCHEMA,
-                data: [
-                    'slug'              => self::SEED_SLUG,
-                    'name'              => 'Hello World',
-                    'description'       => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
-                    'permissions'       => [
-                        'owners'  => ['user:admin'],
-                        'editors' => [],
-                        'viewers' => [],
-                    ],
-                    'productionVersion' => $versionUuid,
-                ],
-                uuid: $applicationUuid
-            );
-
-            // 4. BuiltAppRoute so getManifest()/resolveApplicationBySlug() resolve the slug.
-            $this->create(
-                register: $register,
-                schema: 'built-app-route',
-                data: [
-                    'slug'            => self::SEED_SLUG,
-                    'applicationUuid' => $applicationUuid,
-                ]
-            );
-
-            // 5. Three sample messages rendered by the index page.
-            foreach ($this->buildSampleMessages() as $message) {
-                $this->create(register: $register, schema: 'hello-message', data: $message);
-            }
-
-            $output->writeln('<info>Seeded hello-world fixture (application '.$applicationUuid.').</info>');
-
+            // Both seeders are individually idempotent and short-circuit when
+            // their app already exists.
+            $this->seedVirtualApp(register: $register, output: $output);
             // Also seed the hybrid example app (unify-apps-with-app-type).
             $this->seedHybridExample(register: $register, output: $output);
             return Command::SUCCESS;
@@ -216,6 +158,110 @@ class SeedHelloWorldFixture extends Command
             return Command::FAILURE;
         }//end try
     }//end execute()
+
+    /**
+     * Seed the canonical `hello-world` VIRTUAL app: Application → published
+     * ApplicationVersion carrying the manifest → productionVersion pointer →
+     * BuiltAppRoute → three sample hello-message objects.
+     *
+     * Idempotent: a no-op once the hello-world Application exists.
+     *
+     * @param string          $register The openbuild register slug.
+     * @param OutputInterface $output   The command output.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+     */
+    private function seedVirtualApp(string $register, OutputInterface $output): void
+    {
+        // Guard on the Application object (survives disable/enable), not just
+        // the built-app-route (cleared on disable) — otherwise re-seeding
+        // accumulates duplicate hello-world apps that make loadApplication()
+        // 404 on the ambiguous slug.
+        if ($this->applicationExists(register: $register) === true || $this->routeExists(register: $register) === true) {
+            $output->writeln('<info>hello-world fixture already present — skipping the virtual app.</info>');
+            return;
+        }
+
+        // 1. Application (no productionVersion yet — set after the version exists).
+        $application     = $this->create(
+            register: $register,
+            schema: ApplicationVersionService::APPLICATION_SCHEMA,
+            data: [
+                'slug'        => self::SEED_SLUG,
+                'name'        => 'Hello World',
+                'description' => self::SEED_DESCRIPTION,
+                // Grant the admin user owner rights so automation ops
+                // (compile/enable/dry-run — WRITE_ROLES ['owners','editors'])
+                // are permitted. Wizard-created apps set this; the seed ran
+                // in system context with permissions=null, which makes
+                // matchesCaller() deny everyone (empty-permissions = deny,
+                // allowAdminBypass=false) and 403s every automation op.
+                'permissions' => self::SEED_PERMISSIONS,
+            ]
+        );
+        $applicationUuid = $application->getUuid();
+
+        // 2. Published version carrying the manifest.
+        $version     = $this->create(
+            register: $register,
+            schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+            data: [
+                'name'        => self::SEMVER,
+                'slug'        => self::VERSION_SLUG,
+                'manifest'    => $this->buildManifest(),
+                // The version's `register` field names the app's per-app
+                // data register (pattern: openbuild-<slug>). The shared
+                // `hello-message` data + manifest pages live in the main
+                // `openbuild` register, so this is metadata only.
+                'register'    => $register.'-'.self::SEED_SLUG,
+                'semver'      => self::SEMVER,
+                'status'      => 'published',
+                'application' => $applicationUuid,
+            ]
+        );
+        $versionUuid = $version->getUuid();
+
+        // 3. Point the Application at its production version.
+        //
+        // OR's saveObject() is PUT-semantic — every property omitted from this
+        // payload is written back as NULL. `permissions` was omitted, so this
+        // step immediately undid the owner grant step 1 had just set:
+        // matchesCaller() reads empty permissions as deny (with
+        // allowAdminBypass=false), which 403s every automation op on the one
+        // app every new user starts from. Carry the whole record.
+        $this->create(
+            register: $register,
+            schema: ApplicationVersionService::APPLICATION_SCHEMA,
+            data: [
+                'slug'              => self::SEED_SLUG,
+                'name'              => 'Hello World',
+                'description'       => self::SEED_DESCRIPTION,
+                'permissions'       => self::SEED_PERMISSIONS,
+                'productionVersion' => $versionUuid,
+            ],
+            uuid: $applicationUuid
+        );
+
+        // 4. BuiltAppRoute so getManifest()/resolveApplicationBySlug() resolve the slug.
+        $this->create(
+            register: $register,
+            schema: 'built-app-route',
+            data: [
+                'slug'            => self::SEED_SLUG,
+                'applicationUuid' => $applicationUuid,
+            ]
+        );
+
+        // 5. Three sample messages rendered by the index page.
+        foreach ($this->buildSampleMessages() as $message) {
+            $this->create(register: $register, schema: 'hello-message', data: $message);
+        }
+
+        $output->writeln('<info>Seeded hello-world fixture (application '.$applicationUuid.').</info>');
+
+    }//end seedVirtualApp()
 
     /**
      * Idempotently seed one HYBRID example app (unify-apps-with-app-type): a
@@ -248,7 +294,7 @@ class SeedHelloWorldFixture extends Command
             data: [
                 'slug'        => self::HYBRID_SLUG,
                 'name'        => 'OpenCatalogi',
-                'description' => 'Seeded hybrid example — a local layout customization layered over the installed OpenCatalogi app.',
+                'description' => self::HYBRID_DESCRIPTION,
                 'appType'     => 'hybrid',
                 'baseRef'     => $baseRef,
             ]
@@ -285,7 +331,7 @@ class SeedHelloWorldFixture extends Command
             data: [
                 'slug'              => self::HYBRID_SLUG,
                 'name'              => 'OpenCatalogi',
-                'description'       => 'Seeded hybrid example — a local layout customization layered over the installed OpenCatalogi app.',
+                'description'       => self::HYBRID_DESCRIPTION,
                 'appType'           => 'hybrid',
                 'baseRef'           => $baseRef,
                 'productionVersion' => $versionUuid,
