@@ -100,7 +100,7 @@ class HybridMetadataLockListenerTest extends TestCase
 
     /**
      * A non-identity edit on a hybrid app (e.g. toggling allowUserOverrides) is
-     * allowed — only slug/name/description/productionVersion/appType are locked.
+     * allowed — only slug/name/appType are locked.
      *
      * @return void
      */
@@ -118,11 +118,18 @@ class HybridMetadataLockListenerTest extends TestCase
     }//end testAllowsContentEditOnHybrid()
 
     /**
-     * A hybrid app's description is read-only (layered-versioned-app-deltas).
+     * A hybrid app's description is NOT part of the locked identity.
+     *
+     * The spec's lock requirement names `slug`, `name`, `appType` and the
+     * `baseRef` linkage, then states "All other content … SHALL remain
+     * editable" (openspec/specs/unified-app-model/spec.md). Locking
+     * `description` additionally broke every partial update: OR's saveObject()
+     * is PUT-semantic, so a payload that merely omits `description` reaches the
+     * listener as `description: null` and was rejected as a change.
      *
      * @return void
      */
-    public function testRejectsDescriptionChangeOnHybrid(): void
+    public function testAllowsDescriptionChangeOnHybrid(): void
     {
         $event = $this->updateEvent(
             old: ['appType' => 'hybrid', 'slug' => 'pipelinq', 'name' => 'Pipelinq', 'description' => 'A'],
@@ -131,16 +138,25 @@ class HybridMetadataLockListenerTest extends TestCase
 
         $this->listener->handle($event);
 
-        self::assertTrue($event->isPropagationStopped());
+        self::assertFalse($event->isPropagationStopped());
 
-    }//end testRejectsDescriptionChangeOnHybrid()
+    }//end testAllowsDescriptionChangeOnHybrid()
 
     /**
-     * A hybrid app's productionVersion is read-only (it is the admin delta).
+     * A hybrid app's productionVersion pointer MUST be movable.
+     *
+     * The spec requires it — "The Application's `productionVersion` SHALL point
+     * at that version" — and three product paths depend on it:
+     * AppOverrideService::createHybridApp() (the app-overrides HTTP shim),
+     * MigrateAppOverridesToHybrid, and ApplicationVersionService::
+     * releaseVersion() step 3. While it was locked, all three were rejected at
+     * that step and the hybrid app kept `productionVersion: null`, which
+     * findHybridProductionVersion() treats as "no delta" — so the stored
+     * override was never served.
      *
      * @return void
      */
-    public function testRejectsProductionVersionChangeOnHybrid(): void
+    public function testAllowsProductionVersionChangeOnHybrid(): void
     {
         $event = $this->updateEvent(
             old: ['appType' => 'hybrid', 'slug' => 'pipelinq', 'name' => 'Pipelinq', 'productionVersion' => 'ver-1'],
@@ -149,9 +165,42 @@ class HybridMetadataLockListenerTest extends TestCase
 
         $this->listener->handle($event);
 
-        self::assertTrue($event->isPropagationStopped());
+        self::assertFalse($event->isPropagationStopped());
 
-    }//end testRejectsProductionVersionChangeOnHybrid()
+    }//end testAllowsProductionVersionChangeOnHybrid()
+
+    /**
+     * The regression this narrowing fixes, end to end: linking a freshly created
+     * hybrid Application to its delta-only production version. The payload sets
+     * `productionVersion` and — being PUT-semantic — carries no `description`,
+     * i.e. exactly the shape createHybridApp() / the fixture seeder send.
+     *
+     * @return void
+     */
+    public function testAllowsLinkingProductionVersionOnFreshHybrid(): void
+    {
+        $event = $this->updateEvent(
+            old: [
+                'appType'           => 'hybrid',
+                'slug'              => 'opencatalogi',
+                'name'              => 'OpenCatalogi',
+                'description'       => 'Seeded hybrid example.',
+                'productionVersion' => null,
+            ],
+            new: [
+                'appType'           => 'hybrid',
+                'slug'              => 'opencatalogi',
+                'name'              => 'OpenCatalogi',
+                'description'       => null,
+                'productionVersion' => 'ver-1',
+            ]
+        );
+
+        $this->listener->handle($event);
+
+        self::assertFalse($event->isPropagationStopped());
+
+    }//end testAllowsLinkingProductionVersionOnFreshHybrid()
 
     /**
      * appType is immutable for EVERY app — a virtual→hybrid flip is rejected.

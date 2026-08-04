@@ -167,6 +167,13 @@ class SeedHelloWorldFixture extends Command
             $versionUuid = $version->getUuid();
 
             // 3. Point the Application at its production version.
+            //
+            // OR's saveObject() is PUT-semantic — every property omitted from
+            // this payload is written back as NULL. `permissions` was omitted,
+            // so this step immediately undid the owner grant step 1 had just
+            // set: matchesCaller() reads empty permissions as deny (with
+            // allowAdminBypass=false), which 403s every automation op on the
+            // one app every new user starts from. Carry the whole record.
             $this->create(
                 register: $register,
                 schema: ApplicationVersionService::APPLICATION_SCHEMA,
@@ -174,6 +181,11 @@ class SeedHelloWorldFixture extends Command
                     'slug'              => self::SEED_SLUG,
                     'name'              => 'Hello World',
                     'description'       => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
+                    'permissions'       => [
+                        'owners'  => ['user:admin'],
+                        'editors' => [],
+                        'viewers' => [],
+                    ],
                     'productionVersion' => $versionUuid,
                 ],
                 uuid: $applicationUuid
@@ -264,12 +276,16 @@ class SeedHelloWorldFixture extends Command
         );
         $versionUuid = $version->getUuid();
 
+        // OR's saveObject() is PUT-semantic: any property omitted here is
+        // written back as null, so the full record must be carried forward.
+        // `description` in particular was dropped, silently clearing it.
         $this->create(
             register: $register,
             schema: ApplicationVersionService::APPLICATION_SCHEMA,
             data: [
                 'slug'              => self::HYBRID_SLUG,
                 'name'              => 'OpenCatalogi',
+                'description'       => 'Seeded hybrid example — a local layout customization layered over the installed OpenCatalogi app.',
                 'appType'           => 'hybrid',
                 'baseRef'           => $baseRef,
                 'productionVersion' => $versionUuid,
