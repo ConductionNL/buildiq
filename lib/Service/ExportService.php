@@ -150,6 +150,49 @@ class ExportService
     }//end generateAppZip()
 
     /**
+     * Build the installable NC-app scaffold as an in-memory `path => contents` map.
+     *
+     * The same copy → resolve-placeholders pipeline `generateAppZip()` uses, but
+     * returning the tree as a map instead of a ZIP, so a config-set repo publish
+     * (GitHubAppSyncService) can fold the scaffold in and produce ONE repo that is
+     * both the config-set store AND an app-store-installable, standalone
+     * nc-vue app (info.xml + the manifest runtime + OpenRegister as its data layer).
+     *
+     * @param array<string,mixed> $context       Placeholder context: appId, appNamespace, appName, appVersion, authorName, authorEmail, license.
+     * @param array<int,mixed>    $dataRegisters Optional bound data-register schemas to bundle.
+     *
+     * @return array<string,string> Ordered `path => contents` map of the resolved scaffold.
+     *
+     * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+     */
+    public function buildScaffoldMap(array $context, array $dataRegisters=[]): array
+    {
+        $jobUuid = 'scaffold-'.((string) ($context['appId'] ?? 'app')).'-'.uniqid();
+        $scratch = $this->prepareScratchDir(jobUuid: $jobUuid);
+
+        try {
+            $this->copyTemplate(source: $this->templateRoot, dest: $scratch);
+            $this->resolvePlaceholders(rootDir: $scratch, context: $context);
+            if ($dataRegisters !== []) {
+                $this->bundleDataRegisterSchemas(rootDir: $scratch, dataRegisters: $dataRegisters);
+            }
+
+            $map = [];
+            foreach ($this->listFilesSorted(baseDir: $scratch) as $relative) {
+                $contents = file_get_contents($scratch.'/'.$relative);
+                if ($contents !== false) {
+                    $map[$relative] = $contents;
+                }
+            }
+
+            return $map;
+        } finally {
+            $this->rrmdir(dir: $scratch);
+        }//end try
+
+    }//end buildScaffoldMap()
+
+    /**
      * Bundle every `dataRegisters` binding's schema definitions (always) and
      * row data (only when that binding's `includeData` is true) into the
      * exported tree (spec openbuild-exporter, ADDED Requirements "Bound
