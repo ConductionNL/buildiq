@@ -54,10 +54,43 @@ jobs:
       #      MagicMapper. The query uses MySQL's REGEXP operator which
       #      SQLite doesn't ship.
       #
-      # File those as their own issues; once both are unblocked, flip this
-      # back to `true` and re-evaluate.
+      # Blocker 2 is now moot — see the `database:` note below — but 1 is
+      # untested since. File those as their own issues; once both are
+      # confirmed unblocked, flip this back to `true` and re-evaluate.
       enable-newman: false
-      database: sqlite
+      # ── Back to the shared workflow's own default, pgsql ──────────────────
+      #
+      # `database: sqlite` was set in May 2026 (44bb3aeb) because OpenRegister's
+      # migrations did not install cleanly on pgsql at the time: `relation
+      # "oc_openregister_objects" does not exist` during CREATE INDEX, plus a
+      # MySQL-ism `syntax error at or near "LIKE"`. sqlite was "the most lenient
+      # backend and needs no service container".
+      #
+      # It is no longer lenient enough. SQLite has no `information_schema`, and
+      # OpenRegister's MagicMapper reads `information_schema.columns` to create
+      # and reconcile the per-schema magic tables that every OpenBuild object
+      # lives in. Measured on run 30858649136, with the register import itself
+      # reporting success and all 15 schema slugs verified present:
+      #
+      #   [ImportHandler] Failed to reconcile magic table for imported schema
+      #     … schema_slug: built-app-route …
+      #     SQLSTATE[HY000]: General error: 1 no such table: information_schema.columns
+      #   Failed to seed hello-world fixture: Failed to create/update table for
+      #     register 'OpenBuild Register' + schema 'Application': … same error
+      #
+      # So on sqlite the schemas exist but NOTHING can be stored against them —
+      # no application, no version, no page. That is unusable for the e2e suite
+      # and, note, it is the same class of defect as the REGEXP one recorded
+      # above for Newman, just a different query.
+      #
+      # The May migration failures do not reproduce: planix runs this same
+      # workflow against `ConductionNL/openregister@development` on the default
+      # pgsql and its `E2E Tests (Playwright)` job is green (run 30851679874).
+      # The `database:` input feeds the phpunit, newman, playwright and
+      # journeydoc jobs; phpunit here is mock-based and only needs `occ
+      # maintenance:install` to succeed, which is what the postgres service
+      # container the shared workflow starts for pgsql provides.
+      database: pgsql
       newman-seed-command: 'php occ app:disable openbuild && php occ app:enable openbuild'
       # OpenRegister `development` carries the runtime-schema-API (auto-create
       # Register on application-type imports — OR PR #1464) and the lifecycle
@@ -101,12 +134,11 @@ jobs:
       #     Content-Type text/html, which every status check reads as success.
       #     FIXED: ci-seed.sh gates on the SERVED content type being JavaScript.
       #
-      # `database: sqlite` above is retained. The blocker recorded for Newman —
-      # `[PermissionHandler] no such function: REGEXP` from OR's MagicMapper —
-      # no longer applies: OpenRegister `development` carries a three-platform
-      # rewrite of that query (lib/Db/RegisterMapper.php explicitly handles
-      # "SQLite (no REGEXP function)"), and `REGEXP` now appears nowhere in its
-      # lib/ except those comments.
+      #  4. The database had to move off sqlite. See the `database:` note above:
+      #     OR's MagicMapper reads `information_schema.columns`, which SQLite
+      #     does not have, so every magic table creation failed and no OpenBuild
+      #     object could be stored at all — while the register import itself
+      #     reported success and all 15 schema slugs verified present.
       enable-playwright: true
       # Double duty in the shared workflow: it is both the directory the
       # "Validate Playwright tests exist" step counts *.spec.ts in, AND the FIRST
