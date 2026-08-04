@@ -446,4 +446,22 @@ if [ "${GITHUB_ACTIONS:-}" = "true" ] || [ "${CI:-}" = "true" ]; then
 	esac
 fi
 
+# ─────────────────────────────────────────────────────────────────────────────
+# ⚠️ TEMPORARY TRUNCATION CONTROL — THROWAWAY BRANCH ONLY, NEVER MERGE.
+#
+# Answers "is this suite testing anything?" by removing the ONE thing every UI
+# assertion depends on — the JavaScript — and checking that the specs which
+# pass on the real branch now FAIL. Any spec that still passes with a zero-byte
+# bundle was never exercising the app.
+#
+# TRUNCATE, do not delete: a deleted file can be silently rebuilt, and Nextcloud
+# answers a missing asset with HTTP 200 text/html rather than a 404, so deleting
+# would change the failure mode as well as the content.
+for f in "${APP_DIR}"/js/*.js; do
+	[ -f "$f" ] || continue
+	truncate -s 0 "$f"
+done
+echo "[ci-seed] TRUNCATION CONTROL: emptied $(find "${APP_DIR}/js" -name '*.js' | wc -l) bundle file(s) to 0 bytes."
+ls -l "${APP_DIR}"/js/*.js | head -5
+
 echo "[ci-seed] done."
