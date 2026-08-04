@@ -45,11 +45,21 @@ use ZipArchive;
 /**
  * Generates a real Nextcloud-app tree from an OpenBuild Application + ZIPs it.
  *
- * Public surface:
+ * Public surface — an entry point is public only when production calls it:
  *
- *   - generateAppZip() — orchestrates copy → resolve placeholders → ZIP.
- *   - run()           — used by RunExportJob; handles the full pipeline
- *                       (state transitions + ZIP + optional GitHub push).
+ *   - generateAppZip()  — RunExportJob::run(); orchestrates copy → resolve
+ *                         placeholders → bundle data registers → ZIP.
+ *   - scratchTreeDir()  — RunExportJob::run(); pure path resolver so the
+ *                         GitHub push target can read the generated tree.
+ *   - buildScaffoldMap() — the same pipeline returning an in-memory
+ *                         `path => contents` map instead of a ZIP, for a
+ *                         config-set repo publish.
+ *
+ * Every remaining step (copyTemplate, resolvePlaceholders, packageZip,
+ * listFilesSorted, isBinary, prepareScratchDir, getOrCreateAppDataDir,
+ * rrmdir, bundleDataRegisterSchemas) is an implementation detail of those
+ * three and is private. They were public only so the tests could reach them;
+ * the tests now drive the real entry points instead.
  *
  * Idempotency contract (REQ-OBEX-008):
  *
@@ -158,6 +168,15 @@ class ExportService
      * both the config-set store AND an app-store-installable, standalone
      * nc-vue app (info.xml + the manifest runtime + OpenRegister as its data layer).
      *
+     * NOTE — no production caller on this remote yet. The call site
+     * (`GitHubAppSyncService::scaffoldFor()`, folded into `push()`) exists only
+     * on the Codeberg line and was NOT part of the rescue that brought this
+     * method across; GitHub's `GitHubAppSyncService` has diverged since (it
+     * gained `AppChannelApplier`, `OUTCOME_FORBIDDEN` and richer broker
+     * logging), so porting it is its own change, not a file-copy. This method
+     * is therefore public as a designed entry point that is currently unwired,
+     * NOT because a test needs to reach it. See the follow-up issue.
+     *
      * @param array<string,mixed> $context       Placeholder context: appId, appNamespace, appName, appVersion, authorName, authorEmail, license.
      * @param array<int,mixed>    $dataRegisters Optional bound data-register schemas to bundle.
      *
@@ -213,7 +232,7 @@ class ExportService
      *
      * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
      */
-    public function bundleDataRegisterSchemas(string $rootDir, array $dataRegisters): void
+    private function bundleDataRegisterSchemas(string $rootDir, array $dataRegisters): void
     {
         $this->dataRegisterBundler->bundle(rootDir: $rootDir, dataRegisters: $dataRegisters);
         $this->pinDataRegisterFileTimestamps(rootDir: $rootDir);
@@ -265,7 +284,7 @@ class ExportService
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
      */
-    public function packageZip(string $sourceDir, string $jobUuid): string
+    private function packageZip(string $sourceDir, string $jobUuid): string
     {
         $exportRoot = $this->getOrCreateAppDataDir(name: 'exports');
         $zipPath    = $exportRoot.'/'.$jobUuid.'.zip';
@@ -312,7 +331,7 @@ class ExportService
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-41
      */
-    public function listFilesSorted(string $baseDir): array
+    private function listFilesSorted(string $baseDir): array
     {
         $files = [];
         if (is_dir($baseDir) === false) {
@@ -345,7 +364,7 @@ class ExportService
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
      */
-    public function resolvePlaceholders(string $rootDir, array $context): void
+    private function resolvePlaceholders(string $rootDir, array $context): void
     {
         $stringContext = [];
         foreach ($context as $key => $value) {
@@ -389,7 +408,7 @@ class ExportService
      *
      * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
      */
-    public function isBinary(string $path): bool
+    private function isBinary(string $path): bool
     {
         $binaryExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'ico', 'webp', 'zip', 'gz', 'tar', 'phar'];
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
@@ -409,7 +428,7 @@ class ExportService
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
      */
-    public function copyTemplate(string $source, string $dest): void
+    private function copyTemplate(string $source, string $dest): void
     {
         if (is_dir($source) === false) {
             throw new RuntimeException('Template snapshot is missing: '.$source);
@@ -454,7 +473,7 @@ class ExportService
      *
      * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
      */
-    public function prepareScratchDir(string $jobUuid): string
+    private function prepareScratchDir(string $jobUuid): string
     {
         $scratch = $this->scratchTreeDir(jobUuid: $jobUuid);
 
@@ -506,7 +525,7 @@ class ExportService
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
      */
-    public function getOrCreateAppDataDir(string $name): string
+    private function getOrCreateAppDataDir(string $name): string
     {
         // Best-effort: make sure the IAppData folder exists so any
         // surrounding bookkeeping (quota, cleanup, audit) is aware of the
@@ -542,7 +561,7 @@ class ExportService
      *
      * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
      */
-    public function rrmdir(string $dir): void
+    private function rrmdir(string $dir): void
     {
         if (is_dir($dir) === false) {
             return;

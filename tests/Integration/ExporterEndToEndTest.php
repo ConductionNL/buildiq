@@ -4,10 +4,11 @@
  * OpenBuild Exporter end-to-end integration test
  *
  * Exercises the file-generation pipeline against the real embedded template
- * snapshot: copy → placeholder-resolve → package ZIP. Asserts the produced
- * tree has no unresolved tokens, is byte-equivalent across re-runs
- * (REQ-OBEX-008), and carries no `openbuild` dependency reference in its
- * dependency manifests (REQ-OBEX-010).
+ * snapshot through the one entry point production uses — ExportService::
+ * generateAppZip(), which RunExportJob calls. Asserts the produced archive has
+ * no unresolved tokens, is byte-equivalent across re-runs (REQ-OBEX-008), and
+ * carries no `openbuild` dependency reference in its dependency manifests
+ * (REQ-OBEX-010).
  *
  * @category Test
  * @package  OCA\OpenBuild\Tests\Integration
@@ -46,24 +47,38 @@ final class ExporterEndToEndTest extends TestCase
 {
     private string $templateRoot;
 
-    private string $workDir;
+    /**
+     * Paths the exporter created, removed in tearDown().
+     *
+     * @var array<int,string>
+     */
+    private array $litter = [];
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->templateRoot = dirname(__DIR__, 2).'/lib/Resources/template';
-        $this->workDir      = sys_get_temp_dir().'/openbuild-e2e-'.uniqid();
-        mkdir($this->workDir, 0o755, true);
     }//end setUp()
 
     protected function tearDown(): void
     {
-        $this->rrmdir($this->workDir);
+        foreach ($this->litter as $path) {
+            if (is_dir($path) === true) {
+                $this->rrmdir($path);
+                continue;
+            }
+
+            if (file_exists($path) === true) {
+                unlink($path);
+            }
+        }
+
+        $this->litter = [];
         parent::tearDown();
     }//end tearDown()
 
     /**
-     * The exporter resolves the template into a tree with no unresolved
+     * The exporter resolves the template into an archive with no unresolved
      * placeholders and no leftover `openbuild` dependency reference.
      *
      * @return void
@@ -74,20 +89,15 @@ final class ExporterEndToEndTest extends TestCase
             self::markTestSkipped('Embedded template snapshot not present.');
         }
 
-        $service = $this->buildService();
-        $dest    = $this->workDir.'/tree';
-        mkdir($dest, 0o755, true);
-
-        $service->copyTemplate($this->templateRoot, $dest);
-        $service->resolvePlaceholders($dest, $this->context());
+        $entries = $this->export(jobUuid: 'e2e-standalone-'.bin2hex(random_bytes(4)));
+        self::assertNotSame([], $entries);
 
         // No unresolved {{token}} in any text file.
-        foreach ($service->listFilesSorted($dest) as $relative) {
-            if ($service->isBinary($dest.'/'.$relative) === true) {
+        foreach ($entries as $relative => $contents) {
+            if ($this->hasBinaryExtension($relative) === true) {
                 continue;
             }
 
-            $contents = (string) file_get_contents($dest.'/'.$relative);
             self::assertDoesNotMatchRegularExpression(
                 '/\{\{[a-zA-Z]+\}\}/',
                 $contents,
@@ -97,22 +107,21 @@ final class ExporterEndToEndTest extends TestCase
 
         // REQ-OBEX-010: dependency manifests must not reference openbuild.
         foreach (['composer.json', 'package.json', 'appinfo/info.xml'] as $manifest) {
-            $path = $dest.'/'.$manifest;
-            if (file_exists($path) === false) {
+            if (array_key_exists($manifest, $entries) === false) {
                 continue;
             }
 
             self::assertStringNotContainsStringIgnoringCase(
                 'openbuild',
-                (string) file_get_contents($path),
+                $entries[$manifest],
                 $manifest.' must not reference openbuild as a dependency'
             );
         }
     }//end testResolvedTreeIsStandaloneAndComplete()
 
     /**
-     * REQ-OBEX-008: re-packaging the same resolved tree yields per-file
-     * SHA-256 digests that are identical across runs.
+     * REQ-OBEX-008: re-exporting the same application + version yields
+     * per-file SHA-256 digests that are identical across runs.
      *
      * @return void
      */
@@ -122,43 +131,82 @@ final class ExporterEndToEndTest extends TestCase
             self::markTestSkipped('Embedded template snapshot not present.');
         }
 
-        $service = $this->buildService();
-        $dest    = $this->workDir.'/tree';
-        mkdir($dest, 0o755, true);
-        $service->copyTemplate($this->templateRoot, $dest);
-        $service->resolvePlaceholders($dest, $this->context());
-
-        $first  = $service->packageZip($dest, 'run-a');
-        $second = $service->packageZip($dest, 'run-b');
+        $first  = $this->export(jobUuid: 'e2e-run-a-'.bin2hex(random_bytes(4)));
+        $second = $this->export(jobUuid: 'e2e-run-b-'.bin2hex(random_bytes(4)));
 
         self::assertSame(
-            $this->zipDigests($first),
-            $this->zipDigests($second),
-            'Re-export of the same tree must produce identical per-file digests'
+            $this->digests($first),
+            $this->digests($second),
+            'Re-export of the same application must produce identical per-file digests'
         );
     }//end testReExportIsByteEquivalent()
 
     /**
-     * Compute a map of entry-name → SHA-256 for every file in a ZIP.
+     * Run a real export and return the archive as `path => contents`.
      *
-     * @param string $zipPath ZIP path.
+     * @param string $jobUuid The export job UUID (archive filename base).
      *
-     * @return array<string,string> Entry-name → digest.
+     * @return array<string,string> Archive entries, in archive order.
      */
-    private function zipDigests(string $zipPath): array
+    private function export(string $jobUuid): array
     {
-        $digests = [];
+        $zipPath = $this->buildService()->generateAppZip(
+            applicationUuid: 'e2e-application',
+            versionSlug: '1.0.0',
+            context: $this->context(),
+            jobUuid: $jobUuid
+        );
+
+        $this->litter[] = $zipPath;
+        $this->litter[] = sys_get_temp_dir().'/openbuild-work/'.$jobUuid;
+
+        self::assertFileExists($zipPath);
+
+        $entries = [];
         $zip     = new ZipArchive();
-        $zip->open($zipPath);
+        self::assertTrue($zip->open($zipPath) === true);
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name           = (string) $zip->getNameIndex($i);
-            $digests[$name] = hash('sha256', (string) $zip->getFromIndex($i));
+            $entries[$name] = (string) $zip->getFromIndex($i);
         }
 
         $zip->close();
+        return $entries;
+    }//end export()
+
+    /**
+     * Compute a map of entry-name → SHA-256 for a set of archive entries.
+     *
+     * @param array<string,string> $entries Archive entries.
+     *
+     * @return array<string,string> Entry-name → digest.
+     */
+    private function digests(array $entries): array
+    {
+        $digests = [];
+        foreach ($entries as $name => $contents) {
+            $digests[$name] = hash('sha256', $contents);
+        }
+
         ksort($digests);
         return $digests;
-    }//end zipDigests()
+    }//end digests()
+
+    /**
+     * The test's own view of which exported files are binary assets.
+     *
+     * Deliberately the test's own list, not the service's — asking the service
+     * what to skip would make the assertion agree with itself.
+     *
+     * @param string $path Relative path inside the export.
+     *
+     * @return bool True when the file is a binary asset.
+     */
+    private function hasBinaryExtension(string $path): bool
+    {
+        $binary = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'ico', 'webp', 'zip', 'gz', 'tar', 'phar'];
+        return in_array(strtolower(pathinfo($path, PATHINFO_EXTENSION)), $binary, true);
+    }//end hasBinaryExtension()
 
     /**
      * Build the placeholder context for a sample export.
