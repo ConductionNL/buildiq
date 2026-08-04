@@ -462,6 +462,11 @@ for f in "${APP_DIR}"/js/*.js; do
 	truncate -s 0 "$f"
 done
 echo "[ci-seed] TRUNCATION CONTROL: emptied $(find "${APP_DIR}/js" -name '*.js' | wc -l) bundle file(s) to 0 bytes."
-ls -l "${APP_DIR}"/js/*.js | head -5
+# NOT `ls … | head -5`: under `set -o pipefail` head closes the pipe, ls dies of
+# SIGPIPE ("ls: write error: Broken pipe") and `set -e` aborts the whole seed
+# step — which is exactly what happened on the first control attempt (job
+# 91951819460 died after 2m23s having run ZERO specs, i.e. the control measured
+# nothing at all while looking like a failing suite).
+du -b "${APP_DIR}"/js/openbuild-main.js "${APP_DIR}"/js/openbuild-builder.js || true
 
 echo "[ci-seed] done."
