@@ -117,11 +117,64 @@ api_get() {
 # Non-fatal by design: if `occ` is unreachable the run continues and the 429s
 # simply reappear, with this warning in the log to explain them. Making it fatal
 # would trade a legible late failure for an early one with no more information.
+#
+# `htaccess.IgnoreFrontController=true`: THE single most important line in this
+# file. See the long note below — without it every deep-linking spec silently
+# lands on the Dashboard.
 if [ -f "${SERVER_DIR}/occ" ]; then
 	if (cd "${SERVER_DIR}" && php occ config:system:set ratelimit.protection.enabled --value=false --type=boolean); then
 		echo "[ci-seed] rate-limit protection disabled for this instance."
 	else
 		echo "::warning::Could not disable ratelimit.protection.enabled — expect HTTP 429 from the app-creation wizard after 10 creates."
+	fi
+
+	# ── PRETTY URLs — why a deep link silently became the Dashboard ──────────
+	#
+	# openbuild's SPA builds its router as
+	#
+	#     createWebHistory(generateUrl('/apps/openbuild'))     (src/main.js)
+	#
+	# and `generateUrl()` from @nextcloud/router is:
+	#
+	#     if (window.OC.config.modRewriteWorking === true) return webroot + path
+	#     return webroot + '/index.php' + path
+	#
+	# Nextcloud sets `modRewriteWorking` from `htaccess.IgnoreFrontController`.
+	# A real Apache install has it on (that is what the shipped .htaccess is
+	# for), so the router base is `/apps/openbuild` and every spec's
+	# `page.goto('/apps/openbuild/applications')` matches.
+	#
+	# A freshly `occ maintenance:install`ed instance behind `php -S` does NOT
+	# have it set. The router base is then `/index.php/apps/openbuild`, which is
+	# NOT a prefix of the URL the spec opened — so vue-router matches nothing
+	# and falls back to the default route. The SPA mounts, renders perfectly,
+	# and shows the DASHBOARD. No error, no 404, no console warning: the app
+	# just quietly is not on the page the spec asked for.
+	#
+	# That is the shared root cause behind the great majority of the 67
+	# failures measured on run 30893236971 (job 91940627335). Every one of them
+	# was a selector for a NON-Dashboard surface — `.ob-va-actions`,
+	# `.agents-page`, `.automations-page`, `.page-designer__left`,
+	# `.ob-detail-header`, `.ob-app-card` — timing out, and every failure
+	# screenshot in the artifacts shows the same Dashboard. The specs that
+	# passed are exactly the two classes this cannot touch: pure `request.get()`
+	# API tests, and builder-host, whose builder.js router is based on
+	# `/apps/openbuild/builder/<slug>` and which the spec opens AT that base.
+	#
+	# createApplicationWizard.spec.ts already carries a live-verified note about
+	# the mirror image of this on the dev box ("the `/index.php/`-prefixed form
+	# of this deep link redirects to the bare Dashboard, silently dropping the
+	# sub-path"). Same bug, opposite instance: whichever URL shape disagrees
+	# with `generateUrl()` loses its sub-path.
+	#
+	# The shared workflow's `ci-router.php` already serves pretty URLs correctly
+	# (it mirrors Nextcloud's .htaccess and gates on `/apps/files/` not 404ing),
+	# so turning this on states something TRUE about the instance. It is not a
+	# workaround — it aligns the CI box with every real deployment.
+	if (cd "${SERVER_DIR}" && php occ config:system:set htaccess.IgnoreFrontController --value=true --type=boolean); then
+		echo "[ci-seed] pretty URLs enabled (htaccess.IgnoreFrontController=true)."
+	else
+		echo "::warning::Could not set htaccess.IgnoreFrontController."
 	fi
 else
 	echo "::warning::No occ at ${SERVER_DIR}/occ — skipping instance configuration."
@@ -378,6 +431,35 @@ set_pref() {
 # identically, so writing the declared key is correct.
 set_pref 'walkthrough_completed_version' '999.0.0'
 set_pref 'support-dialog-seen' '1'
+
+# ── 3c. GATE: the SERVED page must actually advertise pretty URLs ────────────
+#
+# Setting `htaccess.IgnoreFrontController` above is not evidence that the SPA
+# will see it — `occ` writes config.php, but what matters is the value
+# Nextcloud renders into `OC.config.modRewriteWorking` on the page the browser
+# loads, which is what `generateUrl()` reads to build the router base.
+#
+# Assert on the SERVED HTML, not on the config we just wrote. Getting this
+# wrong is invisible in exactly the way that matters: the app still boots,
+# still renders, still returns HTTP 200 — it is simply on the wrong route, and
+# every downstream failure then accuses a selector.
+PRETTY_HTML="$(mktemp)"
+PRETTY_CODE="$(api_get "$PRETTY_HTML" "/index.php/apps/openbuild/")"
+if [ "$PRETTY_CODE" != "200" ]; then
+	echo "::error::Could not fetch the OpenBuild app page to verify pretty URLs (HTTP ${PRETTY_CODE})."
+	exit 1
+fi
+if grep -q '"modRewriteWorking":true\|"modRewriteWorking": *true' "$PRETTY_HTML"; then
+	echo "[ci-seed] served page reports modRewriteWorking:true — the SPA router base will be /apps/openbuild."
+else
+	echo "::error::The served OpenBuild page does NOT report modRewriteWorking:true."
+	echo "::error::generateUrl() will therefore return '/index.php/apps/openbuild' as the vue-router base,"
+	echo "::error::while every spec navigates to the pretty '/apps/openbuild/...' form. Those disagree, so"
+	echo "::error::vue-router matches nothing and silently falls back to the Dashboard — the SPA mounts and"
+	echo "::error::renders fine, on the wrong page, and every non-Dashboard selector times out blaming itself."
+	grep -o 'modRewriteWorking[^,}]*' "$PRETTY_HTML" | head -3 || echo "  (key not present in the page at all)"
+	exit 1
+fi
 
 # ── 4. Warm the SPA so the first spec doesn't pay the cold start ─────────────
 # Failures are ignored on purpose: this is a warm-up, not a gate. The real
