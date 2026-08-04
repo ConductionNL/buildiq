@@ -323,6 +323,62 @@ else
 	echo "::warning::No occ at ${SERVER_DIR}/occ — hello-world fixture NOT seeded."
 fi
 
+# ── 3b. Make the CI admin a RETURNING user for the first-visit overlays ──────
+#
+# nc-vue's CnAppRoot auto-mounts two first-visit overlays over the shell, and
+# BOTH render a full-viewport backdrop that swallows pointer events:
+#
+#   - the `CnWalkthrough` product tour declared in src/manifest.json
+#     (`walkthrough.trigger: "first-visit"`), and
+#   - the `CnSupportDialog` "Support Openbuild" note.
+#
+# For a real user each is shown once and then never again. For this suite they
+# are shown in EVERY test, because Playwright gives every test a FRESH browser
+# context — so the localStorage mirror that records "seen" is always empty and
+# every single test is, to the app, a first visit. Measured on run 30889538697:
+# the tour was up in the failure screenshot of most of the 66 failing tests,
+# and the surviving spec files are the ones that already call the per-spec
+# `suppressSupportDialog()` / `dismissFirstVisitOverlays()` helpers.
+#
+# The fix used here is the PRODUCT'S OWN returning-user mechanism, not a test
+# hack and not a per-spec workaround: both overlays persist "seen" as a
+# per-user preference through `PUT /apps/openbuild/api/preferences/{key}`
+# (nc-vue `persistWalkthroughSeenVersion()` and the support dialog's
+# `support-dialog-seen`), and read it back on mount. Writing it once here for
+# the admin the suite runs as makes every fresh context a returning user.
+#
+# Deliberately ONLY for the admin. `global-setup.ts` also mints rbac-owner /
+# rbac-editor / rbac-viewer / rbac-outsider sessions, and
+# `non-admin-access.spec.ts` asserts that a non-admin is never blocked by a
+# first-run overlay they cannot complete. Pre-marking those users would make
+# that assertion pass without the product doing anything — the exact failure
+# mode that file's own header was written to prevent. They stay untouched.
+#
+# Non-fatal: on failure the overlays reappear and the specs fail visibly, which
+# is the honest outcome. The version is deliberately far above any real app
+# version so the step-composition filter empties every tour.
+set_pref() {
+	# $1 = preference key, $2 = value
+	code="$(curl -sS -o /dev/null -w '%{http_code}' \
+		-u "${USER_NAME}:${USER_PASS}" \
+		-X PUT \
+		-H 'Content-Type: application/json' \
+		-H 'OCS-APIRequest: true' \
+		--data "{\"value\":\"$2\"}" \
+		"${BASE}/index.php/apps/openbuild/api/preferences/$1" || echo 000)"
+	echo "[ci-seed] preference $1=$2 -> HTTP ${code}"
+	if [ "$code" != "200" ]; then
+		echo "::warning::Could not set the '$1' preference (HTTP ${code}) — the first-visit overlay will re-open in every test and swallow clicks."
+	fi
+}
+
+# Keys as the manifest and nc-vue declare them. Note the app's own
+# PreferencesController::sanitizeKey() strips characters outside [a-z0-9-], so
+# the stored key is the sanitised form — but the READ path sanitises
+# identically, so writing the declared key is correct.
+set_pref 'walkthrough_completed_version' '999.0.0'
+set_pref 'support-dialog-seen' '1'
+
 # ── 4. Warm the SPA so the first spec doesn't pay the cold start ─────────────
 # Failures are ignored on purpose: this is a warm-up, not a gate. The real
 # checks are above and in the bundle gate below.
