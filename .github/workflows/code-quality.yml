@@ -21,7 +21,13 @@ jobs:
       enable-frontend: true
       enable-eslint: true
       enable-phpunit: true
-      # Run the 61 Hydra mechanical gates against this PR's diff.
+      # Run the Hydra mechanical quality gates against this PR's diff.
+      #
+      # Deliberately no count here: the gate set is the composer package
+      # `conduction/hydra-gates` and that package is the single source of truth
+      # for which gates exist and how many actually report. A digit written into
+      # prose goes stale silently and then misrepresents the coverage this repo
+      # has. See https://github.com/ConductionNL/.github/tree/main/hydra-gates
       #
       # Without this, wiring the gates into `composer check:strict` would have
       # been a LOCAL-ONLY change: nothing in this repository's CI runs

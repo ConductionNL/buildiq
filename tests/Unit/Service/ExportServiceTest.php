@@ -18,71 +18,394 @@ use Psr\Log\NullLogger;
 use ZipArchive;
 
 /**
- * Unit tests for {@see ExportService} — ZIP packaging contract.
+ * Unit tests for {@see ExportService}.
+ *
+ * Every test drives one of the three real entry points — generateAppZip(),
+ * buildScaffoldMap() or scratchTreeDir(). The pipeline steps (copyTemplate,
+ * resolvePlaceholders, packageZip, listFilesSorted, isBinary,
+ * prepareScratchDir, getOrCreateAppDataDir, rrmdir,
+ * bundleDataRegisterSchemas) are private implementation detail and are
+ * asserted through their effect on what those entry points produce.
  */
 final class ExportServiceTest extends TestCase
 {
-    private string $tmpDir;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->tmpDir = sys_get_temp_dir().'/openbuild-exportservice-test-'.uniqid();
-        mkdir($this->tmpDir, 0o755, true);
-    }//end setUp()
+    /**
+     * Paths created by the service under test, removed in tearDown().
+     *
+     * @var array<int,string>
+     */
+    private array $litter = [];
 
     protected function tearDown(): void
     {
-        $this->rrmdir($this->tmpDir);
+        foreach ($this->litter as $path) {
+            if (is_dir($path) === true) {
+                $this->rrmdir($path);
+                continue;
+            }
+
+            if (file_exists($path) === true) {
+                unlink($path);
+            }
+        }
+
+        $this->litter = [];
         parent::tearDown();
     }//end tearDown()
 
     /**
-     * Resolver runs in-place across text files.
+     * REQ-OBEX-003: the exported tree is the template with every `{{token}}`
+     * resolved against the export context.
      */
-    public function testResolvePlaceholdersRewritesTextFiles(): void
+    public function testGenerateAppZipResolvesPlaceholdersAcrossTheTree(): void
     {
-        $service = $this->buildService();
-        file_put_contents($this->tmpDir.'/info.xml', '<id>app-template</id>');
-        $service->resolvePlaceholders($this->tmpDir, [
-            'appId' => 'demo-app',
-            'appNamespace' => 'DemoApp',
+        $entries = $this->export();
+
+        self::assertArrayHasKey('appinfo/info.xml', $entries);
+        self::assertStringContainsString('<id>demo-app</id>', $entries['appinfo/info.xml']);
+        self::assertStringContainsString('DemoApp', $entries['appinfo/info.xml']);
+
+        foreach ($entries as $relative => $contents) {
+            if ($this->hasBinaryExtension($relative) === true) {
+                continue;
+            }
+
+            self::assertDoesNotMatchRegularExpression(
+                '/\{\{[a-zA-Z]+\}\}/',
+                $contents,
+                'Unresolved placeholder left in '.$relative
+            );
+        }
+    }//end testGenerateAppZipResolvesPlaceholdersAcrossTheTree()
+
+    /**
+     * REQ-OBEX-008: archive entries are written in a stable, case-sensitive
+     * ASCII sort, so two exports of the same tree line up entry-for-entry.
+     */
+    public function testGenerateAppZipOrdersArchiveEntriesLexicographically(): void
+    {
+        $names = array_keys($this->export());
+
+        $sorted = $names;
+        sort($sorted, SORT_STRING);
+
+        self::assertSame($sorted, $names, 'ZIP entries must be in stable ASCII order');
+        self::assertNotEmpty($names);
+    }//end testGenerateAppZipOrdersArchiveEntriesLexicographically()
+
+    /**
+     * The snapshot bookkeeping files are artefacts of OpenBuild, not of the
+     * produced app, and must never reach the exported tree.
+     */
+    public function testGenerateAppZipOmitsSnapshotHelperFiles(): void
+    {
+        $entries = $this->export();
+
+        self::assertArrayNotHasKey('.snapshot-meta.json', $entries);
+        self::assertArrayNotHasKey('.path-manifest.txt', $entries);
+    }//end testGenerateAppZipOmitsSnapshotHelperFiles()
+
+    /**
+     * REQ (openbuild-exporter, data-registers-runtime): bound data
+     * registers' schema definitions are bundled into every export.
+     */
+    public function testGenerateAppZipBundlesSchemaDefsForBoundRegister(): void
+    {
+        $register = $this->buildRegisterMock(schemaIds: [42]);
+        $schema   = $this->buildSchemaMock(
+            slug: 'spectr-company',
+            title: 'Company',
+            required: ['name'],
+            properties: ['name' => ['type' => 'string']]
+        );
+
+        $registerMapper = $this->createMock(RegisterMapper::class);
+        $registerMapper->method('find')->with('spectr')->willReturn($register);
+
+        $schemaMapper = $this->createMock(SchemaMapper::class);
+        $schemaMapper->method('find')->with(42)->willReturn($schema);
+
+        $entries = $this->export(
+            dataRegisters: [['register' => 'spectr']],
+            service: $this->buildService(registerMapper: $registerMapper, schemaMapper: $schemaMapper)
+        );
+
+        self::assertArrayHasKey('lib/Settings/data-registers/spectr.schema.json', $entries);
+
+        $decoded = json_decode($entries['lib/Settings/data-registers/spectr.schema.json'], true);
+        self::assertArrayHasKey('spectr-company', $decoded['components']['schemas']);
+        self::assertSame('Company', $decoded['components']['schemas']['spectr-company']['title']);
+        self::assertSame(['name'], $decoded['components']['schemas']['spectr-company']['required']);
+        self::assertSame(
+            ['name' => ['type' => 'string']],
+            $decoded['components']['schemas']['spectr-company']['properties']
+        );
+
+        // Namespaced away from an app-owned-looking filename (Decision 5).
+        self::assertArrayNotHasKey('lib/Settings/spectr_register.json', $entries);
+    }//end testGenerateAppZipBundlesSchemaDefsForBoundRegister()
+
+    /**
+     * REQ (openbuild-exporter, data-registers-runtime): row data is only
+     * bundled when a binding's `includeData` is explicitly true.
+     */
+    public function testGenerateAppZipWritesSeedDataOnlyWhenIncludeDataTrue(): void
+    {
+        $register = $this->buildRegisterMock(schemaIds: [42]);
+        $schema   = $this->buildSchemaMock(slug: 'spectr-company', title: 'Company', required: [], properties: []);
+
+        $registerMapper = $this->createMock(RegisterMapper::class);
+        $registerMapper->method('find')->with('spectr')->willReturn($register);
+
+        $schemaMapper = $this->createMock(SchemaMapper::class);
+        $schemaMapper->method('find')->with(42)->willReturn($schema);
+
+        $objectService = $this->createMock(ObjectService::class);
+        $objectService->method('searchObjects')->willReturn([
+            ['id' => 'row-1', 'name' => 'Acme'],
+            ['id' => 'row-2', 'name' => 'Beta'],
         ]);
-        self::assertSame('<id>demo-app</id>', file_get_contents($this->tmpDir.'/info.xml'));
-    }//end testResolvePlaceholdersRewritesTextFiles()
+
+        $entries = $this->export(
+            dataRegisters: [['register' => 'spectr', 'includeData' => true]],
+            service: $this->buildService(
+                registerMapper: $registerMapper,
+                schemaMapper: $schemaMapper,
+                objectService: $objectService
+            )
+        );
+
+        self::assertArrayHasKey('lib/Settings/data-registers/spectr.schema.json', $entries);
+        self::assertArrayHasKey('lib/Settings/data-registers/spectr.seed-data.json', $entries);
+
+        $decodedSeed = json_decode($entries['lib/Settings/data-registers/spectr.seed-data.json'], true);
+        self::assertArrayHasKey('_comment', $decodedSeed);
+        self::assertCount(2, $decodedSeed['objects']);
+        self::assertSame('Acme', $decodedSeed['objects'][0]['name']);
+    }//end testGenerateAppZipWritesSeedDataOnlyWhenIncludeDataTrue()
 
     /**
-     * listFilesSorted yields a stable, lexicographically sorted set.
+     * REQ (openbuild-exporter, data-registers-runtime): includeData omitted
+     * (or explicitly false) defaults to schema-defs-only — no seed-data file,
+     * and no row read against OpenRegister at all.
      */
-    public function testListFilesSortedIsStable(): void
+    public function testGenerateAppZipOmitsSeedDataWhenIncludeDataAbsent(): void
     {
-        $service = $this->buildService();
-        file_put_contents($this->tmpDir.'/zeta.txt', 'z');
-        file_put_contents($this->tmpDir.'/alpha.txt', 'a');
-        mkdir($this->tmpDir.'/sub');
-        file_put_contents($this->tmpDir.'/sub/mid.txt', 'm');
+        $register = $this->buildRegisterMock(schemaIds: [42]);
+        $schema   = $this->buildSchemaMock(slug: 'spectr-company', title: 'Company', required: [], properties: []);
 
-        $files = $service->listFilesSorted($this->tmpDir);
-        self::assertSame(['alpha.txt', 'sub/mid.txt', 'zeta.txt'], $files);
-    }//end testListFilesSortedIsStable()
+        $registerMapper = $this->createMock(RegisterMapper::class);
+        $registerMapper->method('find')->with('spectr')->willReturn($register);
+
+        $schemaMapper = $this->createMock(SchemaMapper::class);
+        $schemaMapper->method('find')->with(42)->willReturn($schema);
+
+        $objectService = $this->createMock(ObjectService::class);
+        $objectService->expects(self::never())->method('searchObjects');
+
+        // No dataRegisters[].includeData at all — the request body omitted it.
+        $entries = $this->export(
+            dataRegisters: [['register' => 'spectr']],
+            service: $this->buildService(
+                registerMapper: $registerMapper,
+                schemaMapper: $schemaMapper,
+                objectService: $objectService
+            )
+        );
+
+        self::assertArrayHasKey('lib/Settings/data-registers/spectr.schema.json', $entries);
+        self::assertArrayNotHasKey('lib/Settings/data-registers/spectr.seed-data.json', $entries);
+    }//end testGenerateAppZipOmitsSeedDataWhenIncludeDataAbsent()
 
     /**
-     * ZIP packaging produces an archive containing the expected entries.
+     * REQ (openbuild-exporter): an Application with no `dataRegisters`
+     * produces an export tree with no `lib/Settings/data-registers/`
+     * entries at all — and never touches OpenRegister.
      */
-    public function testPackageZipProducesReadableArchive(): void
+    public function testGenerateAppZipWritesNoDataRegisterDirectoryWhenNoneBound(): void
+    {
+        $registerMapper = $this->createMock(RegisterMapper::class);
+        $registerMapper->expects(self::never())->method('find');
+
+        $entries = $this->export(
+            dataRegisters: [],
+            service: $this->buildService(registerMapper: $registerMapper)
+        );
+
+        $bundled = array_filter(
+            array_keys($entries),
+            static fn (string $path): bool => str_starts_with($path, 'lib/Settings/data-registers/')
+        );
+
+        self::assertSame([], array_values($bundled));
+    }//end testGenerateAppZipWritesNoDataRegisterDirectoryWhenNoneBound()
+
+    /**
+     * Non-Goal precedent: a `dataRegisters[].register` slug that does not
+     * resolve in OR (dangling reference) is skipped silently — nothing is
+     * bundled for it, and it does not block other, resolvable bindings.
+     */
+    public function testGenerateAppZipSkipsDanglingRegisterReference(): void
+    {
+        $goodRegister = $this->buildRegisterMock(schemaIds: [1]);
+        $goodSchema   = $this->buildSchemaMock(slug: 'ok-schema', title: 'Ok', required: [], properties: []);
+
+        $registerMapper = $this->createMock(RegisterMapper::class);
+        $registerMapper
+            ->method('find')
+            ->willReturnCallback(function (string $slug) use ($goodRegister) {
+                if ($slug === 'ghost-register') {
+                    throw new \RuntimeException('not found');
+                }
+
+                return $goodRegister;
+            });
+
+        $schemaMapper = $this->createMock(SchemaMapper::class);
+        $schemaMapper->method('find')->with(1)->willReturn($goodSchema);
+
+        $entries = $this->export(
+            dataRegisters: [
+                ['register' => 'ghost-register'],
+                ['register' => 'spectr'],
+            ],
+            service: $this->buildService(registerMapper: $registerMapper, schemaMapper: $schemaMapper)
+        );
+
+        self::assertArrayNotHasKey('lib/Settings/data-registers/ghost-register.schema.json', $entries);
+        self::assertArrayHasKey('lib/Settings/data-registers/spectr.schema.json', $entries);
+    }//end testGenerateAppZipSkipsDanglingRegisterReference()
+
+    /**
+     * buildScaffoldMap() returns the same resolved tree as an in-memory map,
+     * carrying the NC-app files that make a config-set repo app-store
+     * installable and standalone on nc-vue.
+     */
+    public function testBuildScaffoldMapProducesAnInstallableStandaloneApp(): void
+    {
+        $map = $this->buildService()->buildScaffoldMap(context: $this->context());
+
+        $this->assertArrayHasKey('appinfo/info.xml', $map);
+        $this->assertArrayHasKey('package.json', $map);
+        $this->assertArrayHasKey('src/main.js', $map);
+
+        // Placeholders resolved to the app.
+        $this->assertStringContainsString('demo-app', $map['appinfo/info.xml']);
+        // The build packages the nc-vue stack itself.
+        $this->assertStringContainsString('@conduction/nextcloud-vue', $map['package.json']);
+        // OpenRegister is declared its data-layer dependency.
+        $this->assertStringContainsString('OpenRegister', $map['appinfo/info.xml']);
+    }//end testBuildScaffoldMapProducesAnInstallableStandaloneApp()
+
+    /**
+     * buildScaffoldMap() stages on disk but hands back only the map — it must
+     * leave no scratch tree behind, on the success path or on the throw path.
+     */
+    public function testBuildScaffoldMapRemovesItsScratchDirectory(): void
+    {
+        $appId            = 'cleanup-'.bin2hex(random_bytes(4));
+        $context          = $this->context();
+        $context['appId'] = $appId;
+
+        $map = $this->buildService()->buildScaffoldMap(context: $context);
+
+        self::assertNotSame([], $map);
+        self::assertSame(
+            [],
+            glob(sys_get_temp_dir().'/openbuild-work/scaffold-'.$appId.'-*'),
+            'buildScaffoldMap() must remove its scratch tree'
+        );
+    }//end testBuildScaffoldMapRemovesItsScratchDirectory()
+
+    /**
+     * scratchTreeDir() is the pure, job-scoped path resolver RunExportJob uses
+     * to hand the generated tree to the GitHub push target: deterministic,
+     * distinct per job, and it never creates or wipes the directory itself.
+     */
+    public function testScratchTreeDirIsAPureJobScopedPathResolver(): void
     {
         $service = $this->buildService();
-        file_put_contents($this->tmpDir.'/hello.txt', 'world');
+        $jobUuid = 'probe-'.bin2hex(random_bytes(4));
 
-        $zipPath = $service->packageZip($this->tmpDir, 'test-uuid');
+        $path = $service->scratchTreeDir(jobUuid: $jobUuid);
+
+        self::assertSame(sys_get_temp_dir().'/openbuild-work/'.$jobUuid, $path);
+        self::assertSame($path, $service->scratchTreeDir(jobUuid: $jobUuid));
+        self::assertNotSame($path, $service->scratchTreeDir(jobUuid: $jobUuid.'-other'));
+        self::assertDirectoryDoesNotExist($path);
+    }//end testScratchTreeDirIsAPureJobScopedPathResolver()
+
+    /**
+     * Run a real export and return the archive as `path => contents`.
+     *
+     * @param array<int,mixed>    $dataRegisters Bindings handed to the export.
+     * @param ExportService|null  $service       Service under test.
+     *
+     * @return array<string,string> Archive entries, in archive order.
+     */
+    private function export(array $dataRegisters=[], ?ExportService $service=null): array
+    {
+        $jobUuid = 'unit-'.bin2hex(random_bytes(6));
+
+        $zipPath = ($service ?? $this->buildService())->generateAppZip(
+            applicationUuid: 'app-uuid',
+            versionSlug: '1.2.3',
+            context: $this->context(),
+            jobUuid: $jobUuid,
+            dataRegisters: $dataRegisters
+        );
+
+        $this->litter[] = $zipPath;
+        $this->litter[] = sys_get_temp_dir().'/openbuild-work/'.$jobUuid;
+
         self::assertFileExists($zipPath);
 
-        $zip = new ZipArchive();
+        $entries = [];
+        $zip     = new ZipArchive();
         self::assertTrue($zip->open($zipPath) === true);
-        $contents = $zip->getFromName('hello.txt');
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name           = (string) $zip->getNameIndex($i);
+            $entries[$name] = (string) $zip->getFromIndex($i);
+        }
+
         $zip->close();
-        self::assertSame('world', $contents);
-    }//end testPackageZipProducesReadableArchive()
+        return $entries;
+    }//end export()
+
+    /**
+     * The placeholder context used by every export in this class.
+     *
+     * @return array<string,string> Context map.
+     */
+    private function context(): array
+    {
+        return [
+            'appId'          => 'demo-app',
+            'appNamespace'   => 'DemoApp',
+            'appName'        => 'Demo App',
+            'appDescription' => 'Exported from OpenBuild',
+            'appVersion'     => '1.2.3',
+            'authorName'     => 'Dev',
+            'authorEmail'    => 'dev@conduction.nl',
+            'license'        => 'agpl',
+        ];
+    }//end context()
+
+    /**
+     * The test's own view of which exported files are binary assets.
+     *
+     * Deliberately the test's own list, not the service's — asking the service
+     * what to skip would make the assertion agree with itself.
+     *
+     * @param string $path Relative path inside the export.
+     *
+     * @return bool True when the file is a binary asset.
+     */
+    private function hasBinaryExtension(string $path): bool
+    {
+        $binary = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'ico', 'webp', 'zip', 'gz', 'tar', 'phar'];
+        return in_array(strtolower(pathinfo($path, PATHINFO_EXTENSION)), $binary, true);
+    }//end hasBinaryExtension()
 
     private function buildService(
         ?RegisterMapper $registerMapper=null,
@@ -141,182 +464,12 @@ final class ExportServiceTest extends TestCase
         return $schema;
     }//end buildSchemaMock()
 
-    /**
-     * REQ (openbuild-exporter, data-registers-runtime): bound data
-     * registers' schema definitions are bundled into every export.
-     *
-     * @return void
-     */
-    public function testBundleDataRegisterSchemasWritesSchemaDefsFileForBoundRegister(): void
-    {
-        $register = $this->buildRegisterMock(schemaIds: [42]);
-        $schema   = $this->buildSchemaMock(
-            slug: 'spectr-company',
-            title: 'Company',
-            required: ['name'],
-            properties: ['name' => ['type' => 'string']]
-        );
-
-        $registerMapper = $this->createMock(RegisterMapper::class);
-        $registerMapper->method('find')->with('spectr')->willReturn($register);
-
-        $schemaMapper = $this->createMock(SchemaMapper::class);
-        $schemaMapper->method('find')->with(42)->willReturn($schema);
-
-        $service = $this->buildService(registerMapper: $registerMapper, schemaMapper: $schemaMapper);
-        $service->bundleDataRegisterSchemas($this->tmpDir, [['register' => 'spectr']]);
-
-        $schemaFile = $this->tmpDir.'/lib/Settings/data-registers/spectr.schema.json';
-        self::assertFileExists($schemaFile);
-
-        $decoded = json_decode((string) file_get_contents($schemaFile), true);
-        self::assertArrayHasKey('spectr-company', $decoded['components']['schemas']);
-        self::assertSame('Company', $decoded['components']['schemas']['spectr-company']['title']);
-        self::assertSame(['name'], $decoded['components']['schemas']['spectr-company']['required']);
-        self::assertSame(
-            ['name' => ['type' => 'string']],
-            $decoded['components']['schemas']['spectr-company']['properties']
-        );
-
-        // Namespaced away from an app-owned-looking filename (Decision 5).
-        self::assertFileDoesNotExist($this->tmpDir.'/lib/Settings/spectr_register.json');
-    }//end testBundleDataRegisterSchemasWritesSchemaDefsFileForBoundRegister()
-
-    /**
-     * REQ (openbuild-exporter, data-registers-runtime): row data is only
-     * bundled when a binding's `includeData` is explicitly true.
-     *
-     * @return void
-     */
-    public function testBundleDataRegisterSchemasWritesSeedDataOnlyWhenIncludeDataTrue(): void
-    {
-        $register = $this->buildRegisterMock(schemaIds: [42]);
-        $schema   = $this->buildSchemaMock(slug: 'spectr-company', title: 'Company', required: [], properties: []);
-
-        $registerMapper = $this->createMock(RegisterMapper::class);
-        $registerMapper->method('find')->with('spectr')->willReturn($register);
-
-        $schemaMapper = $this->createMock(SchemaMapper::class);
-        $schemaMapper->method('find')->with(42)->willReturn($schema);
-
-        $objectService = $this->createMock(ObjectService::class);
-        $objectService->method('searchObjects')->willReturn([
-            ['id' => 'row-1', 'name' => 'Acme'],
-            ['id' => 'row-2', 'name' => 'Beta'],
-        ]);
-
-        $service = $this->buildService(
-            registerMapper: $registerMapper,
-            schemaMapper: $schemaMapper,
-            objectService: $objectService
-        );
-
-        // includeData: true — both files present.
-        $service->bundleDataRegisterSchemas($this->tmpDir, [['register' => 'spectr', 'includeData' => true]]);
-
-        $schemaFile = $this->tmpDir.'/lib/Settings/data-registers/spectr.schema.json';
-        $seedFile   = $this->tmpDir.'/lib/Settings/data-registers/spectr.seed-data.json';
-        self::assertFileExists($schemaFile);
-        self::assertFileExists($seedFile);
-
-        $decodedSeed = json_decode((string) file_get_contents($seedFile), true);
-        self::assertArrayHasKey('_comment', $decodedSeed);
-        self::assertCount(2, $decodedSeed['objects']);
-        self::assertSame('Acme', $decodedSeed['objects'][0]['name']);
-    }//end testBundleDataRegisterSchemasWritesSeedDataOnlyWhenIncludeDataTrue()
-
-    /**
-     * REQ (openbuild-exporter, data-registers-runtime): includeData omitted
-     * (or explicitly false) defaults to schema-defs-only — no seed-data file.
-     *
-     * @return void
-     */
-    public function testBundleDataRegisterSchemasOmitsSeedDataWhenIncludeDataAbsent(): void
-    {
-        $register = $this->buildRegisterMock(schemaIds: [42]);
-        $schema   = $this->buildSchemaMock(slug: 'spectr-company', title: 'Company', required: [], properties: []);
-
-        $registerMapper = $this->createMock(RegisterMapper::class);
-        $registerMapper->method('find')->with('spectr')->willReturn($register);
-
-        $schemaMapper = $this->createMock(SchemaMapper::class);
-        $schemaMapper->method('find')->with(42)->willReturn($schema);
-
-        $objectService = $this->createMock(ObjectService::class);
-        $objectService->expects(self::never())->method('searchObjects');
-
-        $service = $this->buildService(
-            registerMapper: $registerMapper,
-            schemaMapper: $schemaMapper,
-            objectService: $objectService
-        );
-
-        // No dataRegisters[].includeData at all — request body omitted it.
-        $service->bundleDataRegisterSchemas($this->tmpDir, [['register' => 'spectr']]);
-
-        self::assertFileExists($this->tmpDir.'/lib/Settings/data-registers/spectr.schema.json');
-        self::assertFileDoesNotExist($this->tmpDir.'/lib/Settings/data-registers/spectr.seed-data.json');
-    }//end testBundleDataRegisterSchemasOmitsSeedDataWhenIncludeDataAbsent()
-
-    /**
-     * REQ (openbuild-exporter): an Application with no `dataRegisters`
-     * produces an export tree with no `lib/Settings/data-registers/`
-     * directory at all.
-     *
-     * @return void
-     */
-    public function testBundleDataRegisterSchemasNoDirectoryWhenDataRegistersEmpty(): void
-    {
-        $registerMapper = $this->createMock(RegisterMapper::class);
-        $registerMapper->expects(self::never())->method('find');
-
-        $service = $this->buildService(registerMapper: $registerMapper);
-        $service->bundleDataRegisterSchemas($this->tmpDir, []);
-
-        self::assertDirectoryDoesNotExist($this->tmpDir.'/lib/Settings/data-registers');
-    }//end testBundleDataRegisterSchemasNoDirectoryWhenDataRegistersEmpty()
-
-    /**
-     * Non-Goal precedent: a `dataRegisters[].register` slug that does not
-     * resolve in OR (dangling reference) is skipped silently — no file is
-     * written for it, and it does not block other, resolvable bindings.
-     *
-     * @return void
-     */
-    public function testBundleDataRegisterSchemasSkipsDanglingRegisterReference(): void
-    {
-        $goodRegister = $this->buildRegisterMock(schemaIds: [1]);
-        $goodSchema   = $this->buildSchemaMock(slug: 'ok-schema', title: 'Ok', required: [], properties: []);
-
-        $registerMapper = $this->createMock(RegisterMapper::class);
-        $registerMapper
-            ->method('find')
-            ->willReturnCallback(function (string $slug) use ($goodRegister) {
-                if ($slug === 'ghost-register') {
-                    throw new \RuntimeException('not found');
-                }
-
-                return $goodRegister;
-            });
-
-        $schemaMapper = $this->createMock(SchemaMapper::class);
-        $schemaMapper->method('find')->with(1)->willReturn($goodSchema);
-
-        $service = $this->buildService(registerMapper: $registerMapper, schemaMapper: $schemaMapper);
-        $service->bundleDataRegisterSchemas($this->tmpDir, [
-            ['register' => 'ghost-register'],
-            ['register' => 'spectr'],
-        ]);
-
-        self::assertFileDoesNotExist($this->tmpDir.'/lib/Settings/data-registers/ghost-register.schema.json');
-        self::assertFileExists($this->tmpDir.'/lib/Settings/data-registers/spectr.schema.json');
-    }//end testBundleDataRegisterSchemasSkipsDanglingRegisterReference()
-
     private function rrmdir(string $dir): void
     {
         if (is_dir($dir) === false) {
             return;
         }
+
         $iterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::CHILD_FIRST
@@ -328,6 +481,7 @@ final class ExportServiceTest extends TestCase
                 unlink((string) $entry->getPathname());
             }
         }
+
         rmdir($dir);
     }//end rrmdir()
 }//end class
