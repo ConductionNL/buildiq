@@ -10,7 +10,6 @@
 .github/workflows/sync-to-beta.yml
 .gitignore
 .prettierrc
-.snapshot-meta.json
 .vscode/settings.json
 LICENSE
 Makefile

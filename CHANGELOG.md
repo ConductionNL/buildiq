@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-08-05
+
+### Fixed
+- **Every app OpenBuild has ever generated was born declaring the wrong licence.**
+  The embedded template snapshot's `appinfo/info.xml` hardcoded
+  `<licence>agpl</licence>` while the very same file's description read "Free and
+  open source under the EUPL-1.2 license". It now reads `<licence>{{license}}</licence>`,
+  so the `license` value the export already carried end to end
+  (`ExportJobService` → `RunExportJob` → `PlaceholderResolver`, defaulting to
+  `EUPL-1.2` at all three layers) finally reaches the file that declares it, and
+  a caller who picks a different licence gets the licence they picked. Verified
+  against the Nextcloud appstore schema
+  (`https://apps.nextcloud.com/schema/apps/info.xsd`): the `licence` enumeration
+  **does** include `EUPL-1.2`. It does **not** include `eupl`.
+
+### Added
+- `ExporterEndToEndTest::testGeneratedAppDeclaresTheRequestedLicence()` — asserts
+  a really-exported app's `appinfo/info.xml` declares `EUPL-1.2` and does not
+  declare `agpl`, and that `src/manifest.json` and `composer.json` agree. Shown
+  to fail against the pre-fix snapshot before it was made to pass. Nothing in the
+  suite covered the generated app's licence declaration until now: the existing
+  unresolved-placeholder assertion matches `/\{\{[a-zA-Z]+\}\}/`, and a hardcoded
+  wrong value contains no placeholder.
+
+### Changed
+- `lib/Resources/template/.snapshot-meta.json` and `docs/releasing.md` now record
+  that the embedded template is a **fork**, not a snapshot, and that the
+  documented `rsync -a --delete` refresh is unsafe to run as written — it would
+  revert OpenBuild-only fixes (including "the generated app could not be built at
+  all", #39) and swap OpenBuild's `{{token}}` placeholder dialect for upstream's
+  `{APP_NAME}` dialect, which `PlaceholderResolver` does not resolve and no test
+  would catch. `docs/releasing.md` also now records that the "CI drift check" it
+  describes **does not exist**.
+- `lib/Resources/template/.path-manifest.txt` no longer lists `.snapshot-meta.json`;
+  the regeneration command in `docs/releasing.md` excludes it, so the checked-in
+  manifest disagreed with its own generator.
+
 ## [0.8.0] - 2026-07-25
 
 ### Changed
