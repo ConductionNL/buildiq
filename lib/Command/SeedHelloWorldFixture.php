@@ -73,6 +73,42 @@ class SeedHelloWorldFixture extends Command
     private const HYBRID_SLUG = 'opencatalogi';
 
     /**
+     * The hello-world fixture's access block, granting the CI/dev admin owner
+     * rights on the seeded app.
+     *
+     * A CONSTANT, and repeated on EVERY write to the Application — this is the
+     * point of it, not an accident.
+     *
+     * OR's `saveObject()` update path is PUT-semantic, not PATCH:
+     * `SaveObject::fillMissingSchemaPropertiesWithNull()` sets every schema
+     * property absent from the payload to null. The fixture writes the
+     * Application once with its permissions and then writes it again purely to
+     * attach `productionVersion` — and that second, "partial" write silently
+     * NULLED the block the first had just set.
+     *
+     * The result was not a missing badge. `permissions` is what the frontend
+     * `useRole()` and the backend `PermissionResolver` both read, and an empty
+     * block denies everyone (`allowAdminBypass` is false), so the seeded app
+     * came out owned by NOBODY. Measured on run 31040914410, that one omission
+     * produced: a `readonly` manifest editor for the admin (REQ-OBR-005 x4,
+     * REQ-OBR-006b, REQ-OBR-008b), no owner-only Settings menu entry, a 403
+     * from the copilot execute endpoint ("You do not have owner or editor
+     * access to application 'hello-world'"), and seven automation scenarios
+     * whose edit modal never closed because the save 403'd — 14 failures, every
+     * one of which reads like a permissions bug in the product.
+     *
+     * Wizard-created apps set the same shape; only the seed, which runs in
+     * system context, has to state it.
+     *
+     * @var array<string, array<int, string>>
+     */
+    private const SEED_PERMISSIONS = [
+        'owners'  => ['user:admin'],
+        'editors' => [],
+        'viewers' => [],
+    ];
+
+    /**
      * Constructor.
      *
      * @param ObjectService  $objectService  OpenRegister object service.
@@ -133,15 +169,8 @@ class SeedHelloWorldFixture extends Command
                     'description' => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
                     // Grant the admin user owner rights so automation ops
                     // (compile/enable/dry-run — WRITE_ROLES ['owners','editors'])
-                    // are permitted. Wizard-created apps set this; the seed ran
-                    // in system context with permissions=null, which makes
-                    // matchesCaller() deny everyone (empty-permissions = deny,
-                    // allowAdminBypass=false) and 403s every automation op.
-                    'permissions' => [
-                        'owners'  => ['user:admin'],
-                        'editors' => [],
-                        'viewers' => [],
-                    ],
+                    // are permitted. See SEED_PERMISSIONS.
+                    'permissions' => self::SEED_PERMISSIONS,
                 ]
             );
             $applicationUuid = $application->getUuid();
@@ -169,28 +198,9 @@ class SeedHelloWorldFixture extends Command
             // 3. Point the Application at its production version.
             //
             // ⚠️ `permissions` IS REPEATED HERE ON PURPOSE — DO NOT TRIM IT.
-            //
-            // OR's `saveObject()` update path is PUT-semantic, not PATCH:
-            // `SaveObject::fillMissingSchemaPropertiesWithNull()` sets EVERY
-            // schema property absent from the payload to null. So this write —
-            // whose only intent is to attach the production pointer — silently
-            // WIPED the `permissions` block that step 1 had just set.
-            //
-            // The consequence was not a missing badge somewhere. `permissions`
-            // is what `useRole()` and the backend `PermissionResolver` both read,
-            // and an empty block denies everyone (`allowAdminBypass` is false).
-            // The seeded hello-world app therefore came out owned by NOBODY, and
-            // in the E2E run that measured it (run 31040914410) that single
-            // omission accounts for the manifest editor rendering `readonly` for
-            // the admin (REQ-OBR-005 ×4, REQ-OBR-006b, REQ-OBR-008b), the
-            // owner-only Settings menu entry being absent, and the copilot
-            // execute endpoint answering
-            //
-            //   403 {"error":"forbidden","message":"You do not have owner or
-            //   editor access to application 'hello-world'."}
-            //
-            // Each of those reads, from the failing spec's side, like a
-            // permissions bug in the product. It was a partial write.
+            // This write's only intent is the production pointer, but OR's
+            // saveObject() is PUT-semantic and nulls every property it omits.
+            // See the SEED_PERMISSIONS docblock for what that cost.
             $this->create(
                 register: $register,
                 schema: ApplicationVersionService::APPLICATION_SCHEMA,
@@ -198,11 +208,7 @@ class SeedHelloWorldFixture extends Command
                     'slug'              => self::SEED_SLUG,
                     'name'              => 'Hello World',
                     'description'       => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
-                    'permissions'       => [
-                        'owners'  => ['user:admin'],
-                        'editors' => [],
-                        'viewers' => [],
-                    ],
+                    'permissions'       => self::SEED_PERMISSIONS,
                     'productionVersion' => $versionUuid,
                 ],
                 uuid: $applicationUuid

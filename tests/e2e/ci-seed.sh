@@ -514,6 +514,15 @@ fi
 # This gate reads the SERVED response, not the file on disk, and it is placed at
 # the very end so a run that reaches the specs has provably been able to fetch
 # real JavaScript for the SPA.
+#
+# ⚠️ THE CONTENT TYPE ALONE IS NOT ENOUGH — hence the size floor below.
+# A TRUNCATED (or zero-byte) bundle still serves `200 application/javascript`,
+# so a content-type-only gate passes over exactly the failure it exists to
+# catch. Reported live on a sibling repo, where such a gate did precisely that.
+# The floor is deliberately far below the real figure (measured on run
+# 31040914410: 13,552,436 bytes) so it fires on a truncation or an empty file
+# without becoming a second, silently-drifting size budget to maintain.
+BUNDLE_MIN_BYTES=100000
 if [ "${GITHUB_ACTIONS:-}" = "true" ] || [ "${CI:-}" = "true" ]; then
 	case "$BUNDLE_INFO" in
 		*javascript*)
@@ -526,6 +535,23 @@ if [ "${GITHUB_ACTIONS:-}" = "true" ] || [ "${CI:-}" = "true" ]; then
 			exit 1
 			;;
 	esac
+
+	# BUNDLE_INFO is "<code> <content_type> <size_download>"; take the third field.
+	BUNDLE_BYTES="$(printf '%s\n' "$BUNDLE_INFO" | awk '{print $3}')"
+	case "$BUNDLE_BYTES" in
+		''|*[!0-9]*)
+			echo "::error::Could not read a byte count for the served bundle (got: ${BUNDLE_INFO})."
+			exit 1
+			;;
+	esac
+	if [ "$BUNDLE_BYTES" -lt "$BUNDLE_MIN_BYTES" ]; then
+		echo "::error::The OpenBuild frontend bundle served only ${BUNDLE_BYTES} bytes (floor: ${BUNDLE_MIN_BYTES})."
+		echo "::error::Content-Type was JavaScript, so the check above passed — a truncated or empty bundle"
+		echo "::error::is served as 200 application/javascript and is indistinguishable from a good one by"
+		echo "::error::status and type alone. The SPA will not mount and every UI spec will blame its selector."
+		exit 1
+	fi
+	echo "[ci-seed] bundle size OK (${BUNDLE_BYTES} bytes >= ${BUNDLE_MIN_BYTES})."
 fi
 
 echo "[ci-seed] done."
