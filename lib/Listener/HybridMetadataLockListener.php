@@ -59,18 +59,41 @@ use Psr\Log\LoggerInterface;
 class HybridMetadataLockListener implements IEventListener
 {
     /**
-     * The identity / structural fields that are immutable on a HYBRID app.
+     * The identity fields that are immutable on a HYBRID app.
      *
-     * A hybrid app mirrors the installed Nextcloud app it customizes: its
-     * identity (slug/name/description) is the fleet app's, and its
-     * productionVersion is the admin-managed delta version — none of which a
-     * user (or admin) may overwrite from the generic object editor. `appType`
-     * is handled separately because it is immutable for EVERY app, not just
-     * hybrids (layered-versioned-app-deltas).
+     * A hybrid app mirrors the installed Nextcloud app it customizes, so its
+     * IDENTITY — the `slug` and the `name` — is the fleet app's and may not be
+     * overwritten from the generic object editor. `appType` is handled
+     * separately because it is immutable for EVERY app, not just hybrids
+     * (layered-versioned-app-deltas).
+     *
+     * DELIBERATELY NOT LOCKED — both were here and both were wrong:
+     *
+     *  - `productionVersion`. The canonical spec requires the opposite: "The
+     *    Application's `productionVersion` SHALL point at that version"
+     *    (openspec/specs/unified-app-model/spec.md, "A hybrid app is an
+     *    Application plus a delta-only ApplicationVersion"). Locking it made
+     *    that pointer unwritable, so EVERY path that creates or republishes a
+     *    hybrid app was rejected at its final step:
+     *    `AppOverrideService::createHybridApp()` (the POST
+     *    /api/app-overrides/{appId} shim), `MigrateAppOverridesToHybrid`, and
+     *    `ApplicationVersionService::releaseVersion()` step 3. A hybrid app
+     *    that survived creation kept `productionVersion: null`, which is
+     *    exactly the value `findHybridProductionVersion()` bails on — the
+     *    stored delta was then never served to anyone.
+     *
+     *  - `description`. Never named as read-only by the spec, whose lock
+     *    requirement lists `slug`, `name`, `appType` and the `baseRef` linkage
+     *    and then says "All other content … SHALL remain editable". Worse, OR's
+     *    `saveObject()` is PUT-semantic: a partial update that simply does not
+     *    mention `description` arrives here as `description: null`, which the
+     *    lock read as a deliberate change and rejected. That is what actually
+     *    fired — an unrelated pointer update was refused with "A hybrid app's
+     *    description is read-only".
      *
      * @var array<int, string>
      */
-    private const LOCKED_FIELDS = ['slug', 'name', 'description', 'productionVersion'];
+    private const LOCKED_FIELDS = ['slug', 'name'];
 
     /**
      * Constructor.
@@ -135,8 +158,8 @@ class HybridMetadataLockListener implements IEventListener
         // discriminator (the only schema in the fleet that carries it; matching
         // on the schema slug is unreliable because OR exposes the schema as a
         // numeric id in @self.schema). Keyed on the STORED appType, so a virtual
-        // app keeps full edit of slug/name/description/productionVersion; an
-        // absent appType reads as virtual (legacy default).
+        // app keeps full edit of slug/name; an absent appType reads as virtual
+        // (legacy default).
         if (($old['appType'] ?? 'virtual') !== 'hybrid') {
             return;
         }
