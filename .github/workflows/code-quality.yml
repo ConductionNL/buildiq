@@ -57,7 +57,27 @@ jobs:
       # File those as their own issues; once both are unblocked, flip this
       # back to `true` and re-evaluate.
       enable-newman: false
-      database: sqlite
+      # Was `sqlite`. Measured on run 31018480923: it is what made the E2E seed
+      # fail before a single spec ran —
+      #
+      #   Failed to seed hello-world fixture: … SQLSTATE[HY000]: General error:
+      #   1 no such table: information_schema.columns
+      #
+      # OpenRegister's MagicTableHandler reads `information_schema.columns` to
+      # decide whether an object table needs creating/updating. Postgres and
+      # MySQL both ship that view; SQLite does not have it at all. This is the
+      # same family as documented Newman blocker #2 below (`no such function:
+      # REGEXP`, also from OR's MagicMapper, also SQLite-only) — OpenRegister
+      # simply does not run on SQLite, and every job in this file that boots it
+      # was running on a database it does not support.
+      #
+      # `pgsql` is the shared workflow's own default, which is why it did not
+      # need writing here at all; the repos whose E2E is green (opencatalogi,
+      # doriath) set no `database:` and get it. Stated explicitly rather than
+      # deleted so the next person reads the reason instead of re-adding the
+      # override. The `database` input also feeds PHPUnit, Newman and the
+      # journeydoc capture, so those move to Postgres with it.
+      database: pgsql
       newman-seed-command: 'php occ app:disable openbuild && php occ app:enable openbuild'
       # OpenRegister `development` carries the runtime-schema-API (auto-create
       # Register on application-type imports — OR PR #1464) and the lifecycle
