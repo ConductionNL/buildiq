@@ -43,9 +43,30 @@ const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 
 // In-app nav link scoped by its openbuild href (avoids the NC top-bar).
 // History-mode router => plain path hrefs, no `#` segment.
+//
+// ⚠️ SCOPED TO THE IN-APP NAVIGATION, NOT THE PAGE.
+//
+// `a[href$="/apps/openbuild/"]` matches TWO links on this page, and the first
+// in DOM order is the wrong one: Nextcloud's own global app menu, in the
+// <banner>, whose entry is labelled with the APP name. Measured from the
+// failure's ARIA snapshot on run 31040914410:
+//
+//   - banner > navigation "Applications menu" > link "OpenBuild" -> /apps/openbuild/
+//   - navigation > list > link "Dashboard"    -> /apps/openbuild/
+//
+// so `.first()` asserted `toHaveText('Dashboard')` against a link that reads
+// "OpenBuild" and always failed. The other three entries passed only because
+// no global menu link ends in `/applications`, `/templates` or
+// `/features-roadmap` — i.e. this was luck, not scoping.
+//
+// `#app-navigation-vue` is the id NcAppNavigation renders and the target of
+// the page's own "Skip to app navigation" link (visible in the same snapshot),
+// and the snapshot shows all four in-app entries inside that one <nav>. This
+// is a NARROWER locator, not a weaker assertion: the label check below is
+// unchanged, and it now runs against the element it was written for.
 const navLink = (page: import('@playwright/test').Page, path: string) => {
 	const suffix = path === '/' ? '/apps/openbuild/' : `/apps/openbuild${path}`
-	return page.locator(`a[href$="${suffix}"]`).first()
+	return page.locator('#app-navigation-vue').locator(`a[href$="${suffix}"]`).first()
 }
 
 test.describe('OpenBuild Dashboard', () => {

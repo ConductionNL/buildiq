@@ -167,6 +167,30 @@ class SeedHelloWorldFixture extends Command
             $versionUuid = $version->getUuid();
 
             // 3. Point the Application at its production version.
+            //
+            // ⚠️ `permissions` IS REPEATED HERE ON PURPOSE — DO NOT TRIM IT.
+            //
+            // OR's `saveObject()` update path is PUT-semantic, not PATCH:
+            // `SaveObject::fillMissingSchemaPropertiesWithNull()` sets EVERY
+            // schema property absent from the payload to null. So this write —
+            // whose only intent is to attach the production pointer — silently
+            // WIPED the `permissions` block that step 1 had just set.
+            //
+            // The consequence was not a missing badge somewhere. `permissions`
+            // is what `useRole()` and the backend `PermissionResolver` both read,
+            // and an empty block denies everyone (`allowAdminBypass` is false).
+            // The seeded hello-world app therefore came out owned by NOBODY, and
+            // in the E2E run that measured it (run 31040914410) that single
+            // omission accounts for the manifest editor rendering `readonly` for
+            // the admin (REQ-OBR-005 ×4, REQ-OBR-006b, REQ-OBR-008b), the
+            // owner-only Settings menu entry being absent, and the copilot
+            // execute endpoint answering
+            //
+            //   403 {"error":"forbidden","message":"You do not have owner or
+            //   editor access to application 'hello-world'."}
+            //
+            // Each of those reads, from the failing spec's side, like a
+            // permissions bug in the product. It was a partial write.
             $this->create(
                 register: $register,
                 schema: ApplicationVersionService::APPLICATION_SCHEMA,
@@ -174,6 +198,11 @@ class SeedHelloWorldFixture extends Command
                     'slug'              => self::SEED_SLUG,
                     'name'              => 'Hello World',
                     'description'       => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
+                    'permissions'       => [
+                        'owners'  => ['user:admin'],
+                        'editors' => [],
+                        'viewers' => [],
+                    ],
                     'productionVersion' => $versionUuid,
                 ],
                 uuid: $applicationUuid
@@ -242,8 +271,8 @@ class SeedHelloWorldFixture extends Command
         // version, then UPDATED the Application to attach productionVersion —
         // an update touching two locked fields at once. It was rejected with
         //
-        //   A hybrid app's description is read-only — it mirrors the installed
-        //   Nextcloud app it customizes.
+        // "A hybrid app's description is read-only — it mirrors the installed
+        // Nextcloud app it customizes."
         //
         // (description first only because it came first in LOCKED_FIELDS; the
         // update dropped it under PUT semantics, and productionVersion was
