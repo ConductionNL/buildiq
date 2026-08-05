@@ -28,9 +28,19 @@
 
         The composer script passes --exclude '*/Resources/template/*' to BOTH legs;
         dropping it from either leg would change the analysed file set.
+
+        The pattern is */lib/Migration/* and deliberately NOT */Migration/*. The
+        broader form silently swallows ordinary classes that merely have a path
+        segment of that name - measured with a positive control (PHPMD 2.15, PHP 8.4,
+        absolute paths): with */lib/Migration/* a probe in lib/Service/Migration/ IS
+        reported; with */Migration/* it is not reported at all. That matters here
+        precisely because this repo has no lib/Migration/ - the only thing the broad
+        pattern could ever match is a false exclusion. Matches the fleet-canonical
+        shape in nextcloud-app-template #125, doriath #157, larpingapp #263,
+        planix #315.
     </description>
 
-    <exclude-pattern>*/Migration/*</exclude-pattern>
+    <exclude-pattern>*/lib/Migration/*</exclude-pattern>
 
     <rule ref="rulesets/unusedcode.xml/UnusedFormalParameter"/>
 </ruleset>
