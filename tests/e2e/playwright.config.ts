@@ -73,18 +73,65 @@ export default defineConfig({
 	globalSetup: path.resolve(__dirname, 'global-setup.ts'),
 	// CI runs Nextcloud behind PHP's built-in server on a shared runner, which
 	// is markedly slower than the dev container the root config's 30s was
-	// measured against. A generous budget here turns "the runner was slow" into
-	// a pass instead of a flake; it does not make any assertion weaker.
-	timeout: 60_000,
+	// measured against.
+	//
+	// 60_000 WAS MEASURED AND IS TOO GENEROUS. From the first run this suite
+	// ever had (run 31030663352, job 92390852268), the FOUR tests that PASSED
+	// took 0.4s, 0.4s, 2.9s and 3.5s. Passes finish fast; only failures sit on
+	// the budget, and six component-blocks failures burned the full 1.0m each.
+	// 30_000 is ~8.5x the slowest observed pass, and is still comfortably above
+	// the largest wait a spec asks for itself (`waitForSelector(…, 20_000)` in
+	// agents/automations) plus its navigation — so a genuine app failure still
+	// reports its OWN legible message instead of being masked by a test-timeout.
+	// This is a budget cut, not a weakened assertion: nothing that passed at 60s
+	// passed anywhere near 30s.
+	timeout: 30_000,
 	expect: { timeout: 15_000 },
 	// Don't run specs in parallel: Nextcloud's brute-force throttle fires after
 	// a handful of near-simultaneous form logins from the same IP and every
 	// subsequent spec falls back to the /login page. Serial execution with one
 	// shared storageState (via globalSetup) avoids it.
+	//
+	// `workers: 1` is NOT a wall-clock knob to turn when the job runs long.
+	// Four independent classes of cross-talk make parallelism unsafe here:
+	//   1. the shared `hello-world` fixture slug — nine specs read it and three
+	//      write it, so two workers race on the same object;
+	//   2. exact-count assertions (read-then-delta) that another worker's create
+	//      invalidates between the read and the delta;
+	//   3. Nextcloud's brute-force throttle, which fires on near-simultaneous
+	//      logins from one IP (see above);
+	//   4. the backend itself — `_limit=5000` list reads with client-side
+	//      filtering are the bottleneck, so more workers mostly queue on PHP.
 	fullyParallel: false,
 	forbidOnly: !!process.env.CI,
-	retries: process.env.CI ? 1 : 0,
+	// NO RETRIES ON CI. A retry can only ever convert red to green, so it buys
+	// nothing a real defect needs — and it doubles the cost of every failure,
+	// which is precisely what blew the budget: of the 98 test attempts the first
+	// run got through in 42.5 minutes, 15 were retries of already-failing tests,
+	// and failures accounted for 29.6 of those 42.5 minutes. Flakiness, if any
+	// shows up, is a defect to name and fix, not to average away.
+	retries: 0,
 	workers: 1,
+	// EXIT WITH A TALLY RATHER THAN BE KILLED WITH NONE.
+	//
+	// The shared workflow's job carries `timeout-minutes: 45`. The first run of
+	// this suite hit it exactly (job 92390852268 ran 45m16s) and GitHub cancelled
+	// the runner mid-test. A cancellation is not a verdict: no summary line, no
+	// counts, and — because Playwright writes its HTML report only after the last
+	// test — `actions/upload-artifact` found nothing ("No files were found with
+	// the provided path: server/apps/openbuild/playwright-report/"), so there was
+	// no report and no traces to read either.
+	//
+	// A `globalTimeout` BELOW the job cap makes Playwright stop itself, print
+	// "Timed out waiting … for the entire test run", emit the pass/fail/skip
+	// tally for everything it did reach, and flush the report so the artifact
+	// uploads. Budget: 45m job cap − ~3m of runner setup before `npx playwright
+	// test` starts (measured: job start 17:36:59, first test 17:39:40) − report
+	// write + upload ≈ 36m of headroom for the run itself.
+	//
+	// This does not hide anything. Hitting it is a hard failure and says so; it
+	// just fails with numbers attached.
+	globalTimeout: 36 * 60 * 1000,
 	reporter: process.env.CI
 		? [
 			['github'],

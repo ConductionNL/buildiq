@@ -435,6 +435,7 @@ async function seedRoleUsersAndSessions(
 
 	// Mint one session per role — ONCE, sequentially.
 	const browser = await chromium.launch()
+	const failed: string[] = []
 	for (const user of ROLE_USERS) {
 		const statePath = `tests/e2e/.auth/${user.id}.json`
 		const context = await browser.newContext({ baseURL })
@@ -454,6 +455,7 @@ async function seedRoleUsersAndSessions(
 			// eslint-disable-next-line no-console
 			console.log(`[globalSetup] ${user.id} session stored at ${statePath}`)
 		} catch (e) {
+			failed.push(user.id)
 			// eslint-disable-next-line no-console
 			console.warn(`[globalSetup] could not mint a session for ${user.id}: ${(e as Error).message}`)
 		} finally {
@@ -465,6 +467,29 @@ async function seedRoleUsersAndSessions(
 		await new Promise((resolve) => setTimeout(resolve, 1_500))
 	}
 	await browser.close()
+
+	// ⚠️ ON CI A MISSING ROLE SESSION IS FATAL, NOT A WARNING.
+	//
+	// Off CI the warning above is the right call: a developer running one spec
+	// against a shared box must not be blocked by an unrelated fixture user. On
+	// CI it is the opposite, because of what an absent storage state DOES to the
+	// permission suites. `test.use({ storageState: 'tests/e2e/.auth/rbac-outsider.json' })`
+	// with no such file, or one holding an empty cookie jar, does not error — the
+	// spec simply runs UNAUTHENTICATED. And an unauthenticated caller is denied
+	// everything, so `rbac-403.spec.ts`'s "the outsider sees no application
+	// cards" and `versionRouting.spec.ts`'s "a non-member receives 404" both
+	// PASS — for exactly the wrong reason. The absence of the fixture is
+	// indistinguishable from the product enforcing its rules.
+	//
+	// So on CI, say so loudly and stop. A failed globalSetup is one legible
+	// failure; a silently unauthenticated RBAC suite is a false green.
+	if (failed.length > 0 && (process.env.CI || process.env.GITHUB_ACTIONS)) {
+		throw new Error(
+			`[globalSetup] could not mint a session for the RBAC fixture user(s): ${failed.join(', ')}. `
+			+ 'Refusing to continue on CI: an RBAC spec attaching a missing storage state runs '
+			+ 'UNAUTHENTICATED, and every "must be denied" assertion then passes for the wrong reason.',
+		)
+	}
 }
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
@@ -496,6 +521,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// to leave EVERY spec unauthenticated (whole-suite false red), so give the
 	// slow path an explicit budget and two more attempts before giving up.
 	const LOGIN_ATTEMPTS = 3
+	let adminAuthenticated = false
 	for (let attempt = 1; attempt <= LOGIN_ATTEMPTS; attempt++) {
 		try {
 			await page.goto('/index.php/login', { waitUntil: 'domcontentloaded', timeout: 90_000 })
@@ -540,6 +566,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 				throw new Error('session cookie not accepted by an authenticated endpoint (401)')
 			}
 			await context.storageState({ path: storagePath })
+			adminAuthenticated = true
 			// eslint-disable-next-line no-console
 			console.log(`[globalSetup] authenticated session stored at ${storagePath}`)
 			break
@@ -554,6 +581,21 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 		}
 	}
 	await browser.close()
+
+	// On CI, stop here rather than run the whole suite unauthenticated.
+	//
+	// Off CI the warning is deliberate — a developer gets a legible "still on
+	// /login" snapshot out of the failing spec. On a runner it just produces a
+	// wall of selector timeouts across ~327 tests whose common cause is stated
+	// only in a console line nobody reads, and it burns the job's entire 45
+	// minute budget to say so. One failure, named, is worth more.
+	if (adminAuthenticated === false && (process.env.CI || process.env.GITHUB_ACTIONS)) {
+		throw new Error(
+			`[globalSetup] could not authenticate as '${adminUser}' after ${LOGIN_ATTEMPTS} attempts. `
+			+ 'Refusing to continue on CI: every spec would fail on a selector timeout that accuses '
+			+ 'the selector rather than the missing session.',
+		)
+	}
 
 	// Seed the hello-world fixture the specs run against (idempotent).
 	seedHelloWorldFixture(container)

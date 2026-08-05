@@ -147,15 +147,47 @@ jobs:
       enable-playwright: true
       playwright-test-path: tests/e2e
 
-      # Two pieces of instance setup the suite cannot do for itself on CI.
-      # `tests/e2e/global-setup.ts` does both locally, but it reaches `occ` by
+      # The instance setup the suite cannot do for itself on CI.
+      # `tests/e2e/global-setup.ts` does it locally, but it reaches `occ` by
       # resolving the DOCKER CONTAINER publishing the port under test — and it
       # deliberately refuses to guess when it cannot resolve one (guessing is
       # how it used to seed a different instance than it asserted against).
-      # On this runner Nextcloud is `php -S`, not a container, so both steps
-      # log a warning and no-op. This step is the documented override path.
+      # On this runner Nextcloud is `php -S`, not a container, so those steps
+      # log a warning and no-op. `tests/e2e/ci-seed.sh` is the documented
+      # override path; the step runs with cwd = the Nextcloud server root, so
+      # the app-relative path below is what `occ` sees.
       #
-      #   1. ratelimit.protection.enabled=false — the app-creation wizard
+      # It was a two-command inline string until run 31030663352 measured what
+      # that leaves undone. Read the script's header for the full reasoning; the
+      # short version is five things, each of which fails SILENTLY:
+      #
+      #   1. htaccess.IgnoreFrontController=true. THE root cause of the first
+      #      run's failures. openbuild builds its router as
+      #      `createWebHistory(generateUrl('/apps/openbuild'))`, and
+      #      `generateUrl()` prefixes `/index.php` unless the page reports
+      #      `modRewriteWorking`. A freshly `maintenance:install`ed instance
+      #      does not set it, so the router base becomes
+      #      `/index.php/apps/openbuild` while every spec navigates to the
+      #      pretty `/apps/openbuild/...`. Those disagree, vue-router matches
+      #      nothing, and the SPA mounts and renders perfectly — on the
+      #      DASHBOARD. No 404, no console error. That is why 68 of the 83
+      #      tests the first run reached failed on a non-Dashboard selector
+      #      (`.agents-page`, `.ob-app-card`, `.automations-page`,
+      #      `.page-designer__left`), while the only UI tests that passed were
+      #      builder-host's first two — whose inner router is based at
+      #      `/apps/openbuild/builder/<slug>`, the exact URL the spec opens, so
+      #      its DEFAULT route is the page being asserted. builder-host's third
+      #      test, the one that needs the `/messages/new` SUB-path to survive,
+      #      failed with the rest. The CI router already serves pretty URLs
+      #      (the workflow's own front-controller check proves it), so this
+      #      states something TRUE about the instance rather than working
+      #      around anything.
+      #   2. The register + schema import. `occ app:enable openbuild` runs
+      #      `InitializeSettings`, which imports with NO user session — so OR's
+      #      RBAC denies it and the repair step downgrades the throw to a
+      #      warning. Done here explicitly over the admin HTTP API, FORCED,
+      #      and then VERIFIED against the 15 schema slugs read out of the repo.
+      #   3. ratelimit.protection.enabled=false — the app-creation wizard
       #      carries `#[UserRateLimit(limit: 10, period: 3600)]`, and the suite
       #      creates far more than ten apps (every `ensureApp()` in
       #      tests/e2e/support/appFixture.ts goes through that endpoint). Past
@@ -163,14 +195,19 @@ jobs:
       #      to do with what it asserts. The limit is correct product behaviour
       #      and is NOT changed — it is switched off for this throwaway test
       #      instance using Nextcloud's own supported flag.
-      #   2. openbuild:seed-hello-world-fixture — the deterministic
+      #   4. openbuild:seed-hello-world-fixture — the deterministic
       #      `hello-world` virtual app the legacy specs assert against.
       #      Production no longer seeds it (the SeedHelloWorld repair step was
       #      retired with the versioned-model migration), so the harness seeds
-      #      it. Idempotent; a test/dev-only occ command.
+      #      it. Idempotent; a test/dev-only occ command. Its exit code covers
+      #      "already present", so the script also proves the fixture exists
+      #      over HTTP.
+      #   5. The bundle. A missing frontend bundle does not 404 on Nextcloud —
+      #      it serves the HTML error page with HTTP 200 and `text/html`, which
+      #      every status-code check in the pipeline reads as success. Gated on
+      #      the SERVED response's content type actually being JavaScript.
       #
-      # Deliberately NOT `|| true`: if the fixture cannot be seeded, the specs
-      # that need it fail on missing content and the cause is a wall of
-      # selector timeouts. Better to fail here, once, where the reason is
-      # printed.
-      playwright-seed-command: 'php occ config:system:set ratelimit.protection.enabled --value=false --type=boolean && php occ openbuild:seed-hello-world-fixture'
+      # Deliberately NOT `|| true`: if the instance cannot be provisioned, the
+      # specs fail on missing content and the cause is a wall of selector
+      # timeouts. Better to fail here, once, where the reason is printed.
+      playwright-seed-command: 'bash apps/openbuild/tests/e2e/ci-seed.sh'

@@ -235,7 +235,7 @@ class SeedHelloWorldFixture extends Command
         //
         // WHY — read before restoring the create/create/update shape.
         //
-        // HybridMetadataLockListener locks slug, name, description AND
+        // HybridMetadataLockListener USED TO lock slug, name, description AND
         // productionVersion on a hybrid app, and it fires on ObjectUpdatingEvent
         // only: "a hybrid app is created with its locked identity, which is
         // allowed". The previous shape created the Application, created the
@@ -245,12 +245,21 @@ class SeedHelloWorldFixture extends Command
         //   A hybrid app's description is read-only — it mirrors the installed
         //   Nextcloud app it customizes.
         //
-        // (description first only because it comes first in LOCKED_FIELDS; the
+        // (description first only because it came first in LOCKED_FIELDS; the
         // update dropped it under PUT semantics, and productionVersion was
         // locked too). So the hybrid example could never be seeded once that
         // listener shipped. Nothing said so: globalSetup swallows a seed failure
         // as a warning, and the E2E job had never run in CI at all. It surfaced
         // the first time it did — run 31029961494.
+        //
+        // Both of those locks have since been removed as defects in their own
+        // right — `productionVersion` because the canonical spec REQUIRES a
+        // hybrid app to point at its delta version, and `description` because
+        // OR's PUT-semantic saveObject delivers an unmentioned field as null,
+        // which the lock read as a deliberate edit. See
+        // HybridMetadataLockListener::LOCKED_FIELDS. The single-create shape is
+        // kept anyway: it is one write instead of three, and it does not depend
+        // on which fields the listener happens to guard today.
         //
         // Creating the version first requires the parent UUID up front, which is
         // why it is minted. The forward reference is safe: OR only validates a
