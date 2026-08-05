@@ -29,6 +29,7 @@ use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IInitialState;
+use OCP\Settings\IDelegatedSettings;
 use OCP\Settings\IIconSection;
 use OCP\Settings\ISettings;
 
@@ -104,8 +105,16 @@ class GenericSettingsSection implements IIconSection
  * PHPStan-only stub for the AppHost admin settings panel base class.
  *
  * The real class lives in the openregister sibling app (ADR-040).
+ *
+ * ⚠️ It implements `IDelegatedSettings`, NOT `ISettings` — this stub said
+ * `ISettings`, and a stub that understates the real contract fails static
+ * analysis for code that is correct at runtime. Concretely:
+ * `#[AuthorizedAdminSetting(AdminSettings::class)]` takes a
+ * `class-string<IDelegatedSettings>`, and against the old stub phpstan could
+ * only see "string given". Keep this in step with
+ * `OCA\OpenRegister\AppHost\Settings\GenericAdminSettings`.
  */
-class GenericAdminSettings implements ISettings
+class GenericAdminSettings implements IDelegatedSettings
 {
     /**
      * Construct an admin settings panel.
@@ -156,6 +165,26 @@ class GenericAdminSettings implements ISettings
     {
         return $this->priority;
     }//end getPriority()
+
+    /**
+     * Display name of the delegated settings block.
+     *
+     * @return string|null
+     */
+    public function getName(): ?string
+    {
+        return null;
+    }//end getName()
+
+    /**
+     * App-config keys a delegated admin may write through this panel.
+     *
+     * @return array<string, list<string>>
+     */
+    public function getAuthorizedAppConfig(): array
+    {
+        return [];
+    }//end getAuthorizedAppConfig()
 }//end class
 
 namespace OCA\OpenRegister\AppHost\Service;

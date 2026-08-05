@@ -43,7 +43,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-21
+ * @spec openspec/specs/first-time-setup/spec.md#requirement-admin-only-idempotent-seed-templates-action
  */
 
 declare(strict_types=1);
@@ -68,7 +68,7 @@ use Throwable;
 /**
  * First-time-setup status + config + actions for the abstract setup wizard.
  *
- * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-21
+ * @spec openspec/specs/first-time-setup/spec.md#requirement-admin-only-idempotent-seed-templates-action
  */
 class SetupController extends Controller
 {
@@ -120,7 +120,7 @@ class SetupController extends Controller
      *
      * @return JSONResponse `{ version, completed, steps: { <id>: { done } } }`.
      *
-     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-41
+     * @spec openspec/specs/first-time-setup/spec.md#requirement-setup-completion-gates-re-display-and-the-getting-started-tour
      */
     #[AuthorizedAdminSetting(AdminSettings::class)]
     public function status(): JSONResponse
@@ -162,7 +162,7 @@ class SetupController extends Controller
      *
      * @return JSONResponse `{ success }`.
      *
-     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-31
+     * @spec openspec/specs/first-time-setup/spec.md#requirement-manifest-declares-a-first-time-setup-block
      */
     #[AuthorizedAdminSetting(AdminSettings::class)]
     public function saveConfig(): JSONResponse
@@ -187,7 +187,7 @@ class SetupController extends Controller
      *
      * @return JSONResponse `{ success, message, detail }`.
      *
-     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-21
+     * @spec openspec/specs/first-time-setup/spec.md#requirement-admin-only-idempotent-seed-templates-action
      */
     #[AuthorizedAdminSetting(AdminSettings::class)]
     public function runAction(string $actionId): JSONResponse
@@ -246,7 +246,7 @@ class SetupController extends Controller
      *
      * @return JSONResponse|null A 401/403 response when denied, null when the caller is an admin.
      *
-     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-21
+     * @spec openspec/specs/first-time-setup/spec.md#requirement-admin-only-idempotent-seed-templates-action
      */
     private function requireAdmin(): ?JSONResponse
     {
