@@ -37,8 +37,21 @@ jobs:
       #
       # Pinned to a tag rather than `main` so a change to the gates cannot alter
       # this repo's verdict without a commit in this repo to move the pin.
+      #
+      # Moved v1.0.1 -> v1.2.0. This repo is the CONTROL in the v1.2.0 wave:
+      # measured locally at full-tree scope, its gate-5 and gate-14 verdicts are
+      # byte-identical under both pins (gate-5 PASS, gate-14 FAIL — 7). So a
+      # change in this repo's Hydra Gates result after the pin move is
+      # attributable to something OTHER than the gate-5 rewrite, which is
+      # exactly what a control is for.
+      #
+      # What v1.2.0 brings that v1.0.1 lacks, beyond gate-5
+      # (ConductionNL/.github#162, closing #153): the runner's COVERAGE
+      # accounting — v1.0.1's summary printed only "N gate(s) failed" and could
+      # not distinguish a gate that passed from one that never ran — plus a
+      # countable gate-22 and gates 6/7 that stop passing on an empty scope.
       enable-hydra-gates: true
-      hydra-gates-ref: v1.0.1
+      hydra-gates-ref: v1.2.0
       # Newman stays disabled while the openbuild#33 fixes are in flight.
       # The collection bugs in this PR are fixed (uuid `@self.id` extraction,
       # `export-job` slug correction, hello-world `@self.slug` fallback). But
