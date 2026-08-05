@@ -136,7 +136,7 @@ class CopilotServiceTest extends TestCase
             toolProvider: $this->toolProvider,
             planValidator: $planValidator,
             promptBuilder: $promptBuilder,
-            applicationDeletionService: $this->deletionService,
+            appDeletionService: $this->deletionService,
             agentRunLogger: $this->agentRunLogger,
         );
     }//end makeService()
@@ -165,7 +165,7 @@ class CopilotServiceTest extends TestCase
             toolProvider: $this->toolProvider,
             planValidator: new CopilotPlanValidator(),
             promptBuilder: new CopilotPromptBuilder(toolProvider: $this->toolProvider),
-            applicationDeletionService: $this->deletionService,
+            appDeletionService: $this->deletionService,
             agentRunLogger: $this->agentRunLogger,
             auditTrailMapper: $auditMapper,
         );

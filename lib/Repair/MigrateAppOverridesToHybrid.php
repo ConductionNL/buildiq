@@ -116,9 +116,10 @@ class MigrateAppOverridesToHybrid implements IRepairStep
         foreach ($rows as $row) {
             if ($this->migrateOne(row: $row, output: $output) === true) {
                 $migrated++;
-            } else {
-                $failed++;
+                continue;
             }
+
+            $failed++;
         }
 
         $output->info('Migrate-app-overrides-to-hybrid: migrated '.$migrated.' override(s) to hybrid apps.');
@@ -130,15 +131,16 @@ class MigrateAppOverridesToHybrid implements IRepairStep
         // retry; otherwise un-migrated overrides would be silently destroyed.
         if ($failed === 0) {
             $this->dropLegacySchema(schemaId: $schemaId, output: $output);
-        } else {
-            $output->warning(
-                'Migrate-app-overrides-to-hybrid: '.$failed.' override(s) failed to migrate; '
-                .'retaining the app-override schema and its rows for retry (schema NOT dropped).'
-            );
-            $this->logger->warning(
-                'OpenBuild: MigrateAppOverridesToHybrid: schema retained — '.$failed.' override(s) un-migrated'
-            );
+            return;
         }
+
+        $output->warning(
+            'Migrate-app-overrides-to-hybrid: '.$failed.' override(s) failed to migrate; '
+            .'retaining the app-override schema and its rows for retry (schema NOT dropped).'
+        );
+        $this->logger->warning(
+            'OpenBuild: MigrateAppOverridesToHybrid: schema retained — '.$failed.' override(s) un-migrated'
+        );
 
     }//end run()
 

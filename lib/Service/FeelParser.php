@@ -168,33 +168,33 @@ class FeelParser
     {
         $tokens = [];
         $len    = strlen($src);
-        $i      = 0;
+        $cursor = 0;
 
-        while ($i < $len) {
-            $ch = $src[$i];
+        while ($cursor < $len) {
+            $ch = $src[$cursor];
 
             if (ctype_space($ch) === true) {
-                ++$i;
+                ++$cursor;
                 continue;
             }
 
             // Single-quoted string literal.
             if ($ch === "'") {
-                $start = $i;
-                ++$i;
+                $start = $cursor;
+                ++$cursor;
                 $buf = '';
-                while ($i < $len && $src[$i] !== "'") {
-                    $buf .= $src[$i];
-                    ++$i;
+                while ($cursor < $len && $src[$cursor] !== "'") {
+                    $buf .= $src[$cursor];
+                    ++$cursor;
                 }
 
-                if ($i >= $len) {
+                if ($cursor >= $len) {
                     throw new InvalidArgumentException(
                         'Syntax error at position '.$start.': unterminated string literal.'
                     );
                 }
 
-                ++$i;
+                ++$cursor;
                 $tokens[] = ['kind' => 'string', 'value' => $buf, 'pos' => $start];
                 continue;
             }
@@ -202,14 +202,14 @@ class FeelParser
             // Number literal (integer or decimal). A double-dot range separator
             // must not be swallowed as a decimal point.
             if (ctype_digit($ch) === true) {
-                $start = $i;
+                $start = $cursor;
                 $buf   = '';
-                while ($i < $len
-                    && (ctype_digit($src[$i]) === true
-                    || ($src[$i] === '.' && ($i + 1) < $len && $src[($i + 1)] !== '.'))
+                while ($cursor < $len
+                    && (ctype_digit($src[$cursor]) === true
+                    || ($src[$cursor] === '.' && ($cursor + 1) < $len && $src[($cursor + 1)] !== '.'))
                 ) {
-                    $buf .= $src[$i];
-                    ++$i;
+                    $buf .= $src[$cursor];
+                    ++$cursor;
                 }
 
                 $value = (int) $buf;
@@ -222,21 +222,21 @@ class FeelParser
             }
 
             // Range separator `..`.
-            if ($ch === '.' && ($i + 1) < $len && $src[($i + 1)] === '.') {
-                $tokens[] = ['kind' => 'range', 'value' => '..', 'pos' => $i];
-                $i       += 2;
+            if ($ch === '.' && ($cursor + 1) < $len && $src[($cursor + 1)] === '.') {
+                $tokens[] = ['kind' => 'range', 'value' => '..', 'pos' => $cursor];
+                $cursor  += 2;
                 continue;
             }
 
             // Multi-character operators.
             $two = '';
-            if (($i + 1) < $len) {
-                $two = substr($src, $i, 2);
+            if (($cursor + 1) < $len) {
+                $two = substr($src, $cursor, 2);
             }
 
             if (in_array($two, ['==', '!=', '<=', '>='], true) === true) {
-                $tokens[] = ['kind' => 'op', 'value' => $two, 'pos' => $i];
-                $i       += 2;
+                $tokens[] = ['kind' => 'op', 'value' => $two, 'pos' => $cursor];
+                $cursor  += 2;
                 continue;
             }
 
@@ -247,46 +247,46 @@ class FeelParser
                     $tokenKind = 'punct';
                 }
 
-                $tokens[] = ['kind' => $tokenKind, 'value' => $ch, 'pos' => $i];
-                ++$i;
+                $tokens[] = ['kind' => $tokenKind, 'value' => $ch, 'pos' => $cursor];
+                ++$cursor;
                 continue;
             }
 
             // A lone `=` is a common mistake (assignment vs equality).
             if ($ch === '=') {
                 throw new InvalidArgumentException(
-                    'Syntax error at position '.$i.': unknown operator "=" (use "==" for equality).'
+                    'Syntax error at position '.$cursor.': unknown operator "=" (use "==" for equality).'
                 );
             }
 
             // Identifiers, keywords and dotted field paths.
             if (ctype_alpha($ch) === true || $ch === '_') {
-                $start = $i;
+                $start = $cursor;
                 $buf   = '';
-                while ($i < $len
-                    && (ctype_alnum($src[$i]) === true || $src[$i] === '_' || $src[$i] === '.')
+                while ($cursor < $len
+                    && (ctype_alnum($src[$cursor]) === true || $src[$cursor] === '_' || $src[$cursor] === '.')
                 ) {
                     // Stop a path on a `..` range separator.
-                    if ($src[$i] === '.' && ($i + 1) < $len && $src[($i + 1)] === '.') {
+                    if ($src[$cursor] === '.' && ($cursor + 1) < $len && $src[($cursor + 1)] === '.') {
                         break;
                     }
 
-                    $buf .= $src[$i];
-                    ++$i;
+                    $buf .= $src[$cursor];
+                    ++$cursor;
                 }
 
                 $lower = strtolower($buf);
+                $token = ['kind' => 'ident', 'value' => $buf, 'pos' => $start];
                 if (in_array($lower, ['and', 'or', 'not', 'in', 'is', 'null', 'true', 'false'], true) === true) {
-                    $tokens[] = ['kind' => 'keyword', 'value' => $lower, 'pos' => $start];
-                } else {
-                    $tokens[] = ['kind' => 'ident', 'value' => $buf, 'pos' => $start];
+                    $token = ['kind' => 'keyword', 'value' => $lower, 'pos' => $start];
                 }
 
+                $tokens[] = $token;
                 continue;
             }//end if
 
             throw new InvalidArgumentException(
-                'Syntax error at position '.$i.': unexpected character "'.$ch.'".'
+                'Syntax error at position '.$cursor.': unexpected character "'.$ch.'".'
             );
         }//end while
 

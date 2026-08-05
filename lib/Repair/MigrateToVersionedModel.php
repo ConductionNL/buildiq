@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Repair;
 
+use Closure;
 use OCA\OpenBuild\AppInfo\Application;
 use OCA\OpenBuild\Service\ApplicationVersionService;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -230,13 +231,18 @@ class MigrateToVersionedModel implements IRepairStep
             }
         }
 
+        // Precedence unchanged: failed beats blocked beats done. Initialising to
+        // the default and keeping the if/else-if chain drops the bare `else`
+        // without adding a path — two independent ifs would have doubled run()'s
+        // already-flagged NPath complexity.
+        $state = self::STATE_DONE;
         if ($sawFailed === true) {
-            $this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, self::STATE_FAILED);
+            $state = self::STATE_FAILED;
         } else if ($sawBlocked === true) {
-            $this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, self::STATE_BLOCKED);
-        } else {
-            $this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, self::STATE_DONE);
+            $state = self::STATE_BLOCKED;
         }
+
+        $this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, $state);
     }//end run()
 
     /**
@@ -391,15 +397,11 @@ class MigrateToVersionedModel implements IRepairStep
 
         if ($register !== null) {
             try {
-                if ($hasSystemContext === true) {
-                    $this->objectService->runAsSystem(
-                        function () use ($register): void {
-                            $this->registerService->delete(register: $register);
-                        }
-                    );
-                } else {
-                    $this->registerService->delete(register: $register);
-                }
+                $this->runElevated(
+                    work: function () use ($register): void {
+                        $this->registerService->delete(register: $register);
+                    }
+                );
             } catch (Throwable $e) {
                 if ($hasSystemContext === false) {
                     // Expected/precondition-absent: no elevation available on
@@ -453,15 +455,11 @@ class MigrateToVersionedModel implements IRepairStep
         }
 
         try {
-            if ($hasSystemContext === true) {
-                $this->objectService->runAsSystem(
-                    function () use ($applicationUuid): void {
-                        $this->objectService->deleteObject(uuid: $applicationUuid);
-                    }
-                );
-            } else {
-                $this->objectService->deleteObject(uuid: $applicationUuid);
-            }
+            $this->runElevated(
+                work: function () use ($applicationUuid): void {
+                    $this->objectService->deleteObject(uuid: $applicationUuid);
+                }
+            );
         } catch (Throwable $e) {
             if ($hasSystemContext === false) {
                 $this->logger->debug(
@@ -499,6 +497,31 @@ class MigrateToVersionedModel implements IRepairStep
         );
         return self::ROW_OK;
     }//end migrateOne()
+
+    /**
+     * Run a unit of work under OpenRegister's system context when the installed
+     * release offers one, and plainly when it does not.
+     *
+     * Extracted from {@see self::migrateOne()}, which carried the same
+     * elevate-or-not if/else twice. Folding both into one guarded helper removes
+     * the else branches AND lowers migrateOne()'s NPath complexity, rather than
+     * trading one rule for another. The probe is the same `method_exists()` test
+     * `run()` uses to derive `$hasSystemContext`, so the choice is unchanged.
+     *
+     * @param Closure $work The work to run.
+     *
+     * @return void
+     */
+    private function runElevated(Closure $work): void
+    {
+        if (method_exists($this->objectService, 'runAsSystem') === true) {
+            $this->objectService->runAsSystem($work);
+            return;
+        }
+
+        $work();
+
+    }//end runElevated()
 
     /**
      * Coerce an OR result entry to a plain associative array.

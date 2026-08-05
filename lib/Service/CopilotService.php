@@ -136,24 +136,25 @@ class CopilotService
     /**
      * Constructor.
      *
-     * @param ContainerInterface         $container                  DI container, used to lazily resolve
-     *                                                               `OCP\TaskProcessing\IManager` (NC
-     *                                                               30+ only).
-     * @param LoggerInterface            $logger                     PSR logger for diagnostics.
-     * @param ObjectService              $objectService              OpenRegister object surface (reads only
-     *                                                               — writes flow through
-     *                                                               `invokeTool()`).
-     * @param IUserManager               $userManager                Resolves a uid string to an `IUser` for RBAC.
-     * @param IGroupManager              $groupManager               Group manager (admin bypass logging).
-     * @param PermissionResolver         $permissionResolver         Shared permission-grammar resolver.
-     * @param OpenBuildToolProvider      $toolProvider               MCP dispatcher — the single
-     *                                                               execution path.
-     * @param CopilotPlanValidator       $planValidator              Structural plan validator.
-     * @param CopilotPromptBuilder       $promptBuilder              System-prompt builder.
-     * @param ApplicationDeletionService $applicationDeletionService Compensates a plan-created app on rollback.
-     * @param AgentRunLogger             $agentRunLogger             Persists the transparent AgentRun record for
-     *                                                               every agent-scoped plan/execute/discard turn.
-     * @param AuditTrailMapper|null      $auditTrailMapper           Optional OR audit-trail writer for admin-bypass parity (L2).
+     * @param ContainerInterface         $container          DI container, used to lazily resolve
+     *                                                       `OCP\TaskProcessing\IManager` (NC
+     *                                                       30+ only).
+     * @param LoggerInterface            $logger             PSR logger for diagnostics.
+     * @param ObjectService              $objectService      OpenRegister object surface (reads only
+     *                                                       — writes flow through
+     *                                                       `invokeTool()`).
+     * @param IUserManager               $userManager        Resolves a uid string to an `IUser` for RBAC.
+     * @param IGroupManager              $groupManager       Group manager (admin bypass logging).
+     * @param PermissionResolver         $permissionResolver Shared permission-grammar resolver.
+     * @param OpenBuildToolProvider      $toolProvider       MCP dispatcher — the
+     *                                                       single execution path.
+     * @param CopilotPlanValidator       $planValidator      Structural plan validator.
+     * @param CopilotPromptBuilder       $promptBuilder      System-prompt builder.
+     * @param ApplicationDeletionService $appDeletionService Compensates a plan-created app on rollback.
+     * @param AgentRunLogger             $agentRunLogger     Persists the transparent AgentRun record for
+     *                                                       every agent-scoped plan/execute/discard
+     *                                                       turn.
+     * @param AuditTrailMapper|null      $auditTrailMapper   Optional OR audit-trail writer for admin-bypass parity (L2).
      *
      * @return void
      */
@@ -167,7 +168,7 @@ class CopilotService
         private readonly OpenBuildToolProvider $toolProvider,
         private readonly CopilotPlanValidator $planValidator,
         private readonly CopilotPromptBuilder $promptBuilder,
-        private readonly ApplicationDeletionService $applicationDeletionService,
+        private readonly ApplicationDeletionService $appDeletionService,
         private readonly AgentRunLogger $agentRunLogger,
         private readonly ?AuditTrailMapper $auditTrailMapper=null,
     ) {
@@ -1487,7 +1488,7 @@ class CopilotService
         }
 
         try {
-            $this->applicationDeletionService->deleteApplication(
+            $this->appDeletionService->deleteApplication(
                 appUuid: $createdAppUuid,
                 appSlug: (string) $createdAppSlug,
                 deleteData: false

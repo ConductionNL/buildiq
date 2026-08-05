@@ -224,13 +224,14 @@ class RuleActionDispatcher
             return $this->objectService->saveObject(object: $object, register: $register, schema: $schema);
         };
 
+        // Exactly one of these writes runs; an early return replaces the else.
         if ($this->userSession->getUser() === null && $id !== '') {
-            $saved = $this->ownerImpersonator->runAsOwner(objectId: $id, work: $write);
-        } else {
-            $saved = $write();
+            return $this->normalise(
+                object: $this->ownerImpersonator->runAsOwner(objectId: $id, work: $write)
+            );
         }
 
-        return $this->normalise(object: $saved);
+        return $this->normalise(object: $write());
 
     }//end dispatchObjectOp()
 

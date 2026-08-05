@@ -122,6 +122,17 @@ class Application extends App implements IBootstrap
         // which is what this app actually relies on (the comment that the lazy
         // closures "never fatal NC bootstrap" only held for the closures, not for
         // resolving the Bootstrap class itself).
+        if (class_exists(Bootstrap::class) === false) {
+            // No PSR logger is wired this early in register(); error_log is the
+            // safe channel and is captured by the NC log pipeline.
+            // phpcs:ignore Generic.PHP.ForbiddenFunctions.Found -- intentional: no PSR logger available this early in register().
+            error_log(
+                'OpenBuild: OpenRegister AppHost\\Bootstrap is not autoloadable — '
+                .'skipping generic AppHost plumbing; concrete controllers + domain '
+                .'listeners (RBAC + hybrid metadata-lock) still register.'
+            );
+        }
+
         if (class_exists(Bootstrap::class) === true) {
             Bootstrap::register(
                 $context,
@@ -131,15 +142,6 @@ class Application extends App implements IBootstrap
                     'sectionName'   => 'OpenBuild',
                     'observability' => true,
                 ]
-            );
-        } else {
-            // No PSR logger is wired this early in register(); error_log is the
-            // safe channel and is captured by the NC log pipeline.
-            // phpcs:ignore Generic.PHP.ForbiddenFunctions.Found -- intentional: no PSR logger available this early in register().
-            error_log(
-                'OpenBuild: OpenRegister AppHost\\Bootstrap is not autoloadable — '
-                .'skipping generic AppHost plumbing; concrete controllers + domain '
-                .'listeners (RBAC + hybrid metadata-lock) still register.'
             );
         }
 

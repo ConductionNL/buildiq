@@ -184,7 +184,9 @@ class TemplateSeedService
                 );
                 if ($existing === null) {
                     ++$seeded;
-                } else {
+                }
+
+                if ($existing !== null) {
                     ++$updated;
                 }
             } catch (DoesNotExistException $e) {

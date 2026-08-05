@@ -45,6 +45,7 @@ use DateTimeInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -256,16 +257,16 @@ class AppOverrideService
     public function upsertUserDelta(string $appId, array $delta, string $uid): array
     {
         if ($uid === '') {
-            throw new \RuntimeException('A user delta requires an authenticated owner.');
+            throw new RuntimeException('A user delta requires an authenticated owner.');
         }
 
         $application = $this->findHybridApplication(appId: $appId);
         if ($application === null) {
-            throw new \RuntimeException('No hybrid app exists for '.$appId.'.');
+            throw new RuntimeException('No hybrid app exists for '.$appId.'.');
         }
 
         if ($this->appAllowsUserOverrides(application: $application) === false) {
-            throw new \RuntimeException('This app does not allow per-user overrides.');
+            throw new RuntimeException('This app does not allow per-user overrides.');
         }
 
         $now          = (new DateTimeImmutable())->format(DateTimeInterface::ATOM);
@@ -280,6 +281,12 @@ class AppOverrideService
 
         $userBaseRef = ['kind' => 'application-version', 'id' => $adminUuid];
 
+        // NOT converted to a guard/extraction: AppOverrideService already sits
+        // at its ExcessiveClassLength and TooManyMethods thresholds, and both
+        // arms write, so neither an initialise-then-override nor a helper is
+        // available without tipping those rules. Clearing this else needs the
+        // class split into a collaborator — a separate change
+        // (ConductionNL/.github#155).
         if ($existing !== null) {
             $versionUuid = $this->extractUuid(object: $existing);
             $existing['manifestDelta'] = $delta;
@@ -301,7 +308,7 @@ class AppOverrideService
             $saved = $this->objectService->saveObject(
                 object: [
                     'name'          => 'Mijn weergave',
-                    'slug'          => $this->userVersionSlug(appId: $appId, uid: $uid),
+                    'slug'          => $this->userVersionSlug(uid: $uid),
                     'scope'         => 'user',
                     'owner'         => $uid,
                     'manifest'      => (object) [],
@@ -469,6 +476,9 @@ class AppOverrideService
         $now         = (new DateTimeImmutable())->format(DateTimeInterface::ATOM);
         $application = $this->findHybridApplication(appId: $appId);
 
+        // Both paths write, so exactly one must run — an early return replaces
+        // the else branch without extracting a helper (AppOverrideService is
+        // already at its ExcessiveClassLength / TooManyMethods thresholds).
         if ($application === null) {
             $applicationUuid = $this->createHybridApp(
                 appId: $appId,
@@ -476,14 +486,21 @@ class AppOverrideService
                 baseRef: $baseRef,
                 systemContext: $systemContext
             );
-        } else {
-            $applicationUuid = $this->updateHybridVersionDelta(
-                application: $application,
-                delta: $delta,
-                baseRef: $baseRef,
-                systemContext: $systemContext
-            );
+
+            return [
+                'appId'           => $appId,
+                'updatedBy'       => $updatedBy,
+                'updatedAt'       => $now,
+                'applicationUuid' => $applicationUuid,
+            ];
         }
+
+        $applicationUuid = $this->updateHybridVersionDelta(
+            application: $application,
+            delta: $delta,
+            baseRef: $baseRef,
+            systemContext: $systemContext
+        );
 
         return [
             'appId'           => $appId,
@@ -933,16 +950,21 @@ class AppOverrideService
     {
         $result = $base;
         foreach ($overlay as $key => $value) {
+            // Only two associative arrays recurse; everything else — including a
+            // list on either side — is a plain overwrite. `is_array($baseValue)`
+            // subsumes the former `isset($result[$key])` test, since a null base
+            // can never be an array.
+            $baseValue = ($result[$key] ?? null);
             if (is_array($value) === true
-                && isset($result[$key]) === true
-                && is_array($result[$key]) === true
+                && is_array($baseValue) === true
                 && array_is_list($value) === false
-                && array_is_list($result[$key]) === false
+                && array_is_list($baseValue) === false
             ) {
-                $result[$key] = $this->deepMergeDelta(base: $result[$key], overlay: $value);
-            } else {
-                $result[$key] = $value;
+                $result[$key] = $this->deepMergeDelta(base: $baseValue, overlay: $value);
+                continue;
             }
+
+            $result[$key] = $value;
         }
 
         return $result;
@@ -952,12 +974,11 @@ class AppOverrideService
     /**
      * Build a URL-safe per-user version slug (`user-<sanitised-uid>`).
      *
-     * @param string $appId The fleet app id (kept for context/uniqueness).
-     * @param string $uid   The owning user UID.
+     * @param string $uid The owning user UID.
      *
      * @return string The kebab-case slug.
      */
-    private function userVersionSlug(string $appId, string $uid): string
+    private function userVersionSlug(string $uid): string
     {
         $safe = strtolower((string) preg_replace('/[^a-z0-9]+/i', '-', $uid));
         $safe = trim($safe, '-');

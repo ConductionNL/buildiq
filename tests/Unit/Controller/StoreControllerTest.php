@@ -80,7 +80,7 @@ class StoreControllerTest extends TestCase
      *
      * @var ApplicationsController&MockObject
      */
-    private ApplicationsController&MockObject $applicationsController;
+    private ApplicationsController&MockObject $appsController;
 
     /**
      * Set up shared mocks.
@@ -95,7 +95,7 @@ class StoreControllerTest extends TestCase
         $this->logger                = $this->createMock(LoggerInterface::class);
         $this->userSession           = $this->createMock(IUserSession::class);
         $this->storeService          = $this->createMock(GenericStoreService::class);
-        $this->applicationsController = $this->createMock(ApplicationsController::class);
+        $this->appsController = $this->createMock(ApplicationsController::class);
 
     }//end setUp()
 
@@ -111,7 +111,7 @@ class StoreControllerTest extends TestCase
             logger: $this->logger,
             userSession: $this->userSession,
             storeService: $this->storeService,
-            applicationsController: $this->applicationsController
+            appsController: $this->appsController
         );
 
     }//end controller()
@@ -157,7 +157,7 @@ class StoreControllerTest extends TestCase
     {
         $this->userSession->method('getUser')->willReturn(null);
         $this->storeService->expects(self::never())->method('resolve');
-        $this->applicationsController->expects(self::never())->method('installFromTemplateArray');
+        $this->appsController->expects(self::never())->method('installFromTemplateArray');
 
         $response = $this->controller()->install(slug: 'permit-tracker');
 
@@ -216,7 +216,7 @@ class StoreControllerTest extends TestCase
             });
 
         $this->storeService->method('resolve')->willReturn(null);
-        $this->applicationsController->expects(self::never())->method('installFromTemplateArray');
+        $this->appsController->expects(self::never())->method('installFromTemplateArray');
 
         $response = $this->controller()->install(slug: 'permit-tracker');
 
@@ -246,7 +246,7 @@ class StoreControllerTest extends TestCase
         $this->storeService->method('resolve')->with(self::anything(), 'permit-tracker')->willReturn($template);
 
         // The seam returns a {status, data} result; the controller wraps it.
-        $this->applicationsController->expects(self::once())
+        $this->appsController->expects(self::once())
             ->method('installFromTemplateArray')
             ->with($template, 'My Permits', 'my-permits', 'alice')
             ->willReturn(['status' => Http::STATUS_CREATED, 'data' => ['uuid' => 'new-app', 'slug' => 'my-permits']]);

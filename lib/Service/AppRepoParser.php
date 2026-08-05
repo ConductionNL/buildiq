@@ -363,7 +363,7 @@ class AppRepoParser
             if (str_starts_with($path, self::DATA_REGISTERS_PREFIX) === true && str_ends_with($path, '.json') === true) {
                 $slug = substr($path, strlen(self::DATA_REGISTERS_PREFIX), -strlen('.json'));
                 if (preg_match(self::SLUG_PATTERN, $slug) === 1) {
-                    $blob = $this->decodeChannelEntry(path: $path, contents: $files[$path]);
+                    $blob = $this->decodeChannelEntry(contents: $files[$path]);
                     if ($blob !== null) {
                         $channels['dataRegisters'][$slug] = $blob;
                     }
@@ -379,7 +379,7 @@ class AppRepoParser
                     && in_array($parts[0], self::CONNECTOR_KINDS, true) === true
                     && preg_match(self::SLUG_PATTERN, $parts[1]) === 1
                 ) {
-                    $blob = $this->decodeChannelEntry(path: $path, contents: $files[$path]);
+                    $blob = $this->decodeChannelEntry(contents: $files[$path]);
                     if ($blob !== null) {
                         $channels['connectors'][$parts[0]][$parts[1]] = $blob;
                     }
@@ -391,7 +391,7 @@ class AppRepoParser
             if (str_starts_with($path, self::AUTOMATIONS_PREFIX) === true && str_ends_with($path, '.json') === true) {
                 $slug = substr($path, strlen(self::AUTOMATIONS_PREFIX), -strlen('.json'));
                 if (preg_match(self::SLUG_PATTERN, $slug) === 1) {
-                    $blob = $this->decodeChannelEntry(path: $path, contents: $files[$path]);
+                    $blob = $this->decodeChannelEntry(contents: $files[$path]);
                     if ($blob !== null) {
                         $channels['automations'][$slug] = $blob;
                     }
@@ -418,12 +418,11 @@ class AppRepoParser
     /**
      * Decode one channel entry, returning null rather than throwing.
      *
-     * @param string $path     The repo path.
      * @param string $contents The raw contents.
      *
      * @return array<string,mixed>|null The decoded object, or null when unreadable.
      */
-    private function decodeChannelEntry(string $path, string $contents): ?array
+    private function decodeChannelEntry(string $contents): ?array
     {
         if (strlen($contents) > self::MAX_FILE_BYTES) {
             return null;
