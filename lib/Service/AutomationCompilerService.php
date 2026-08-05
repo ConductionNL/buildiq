@@ -662,14 +662,14 @@ class AutomationCompilerService
      */
     private function assertGenerateDocumentActions(array $actions): void
     {
-        $docGenActions = array_values(
+        $generateDocumentActions = array_values(
             array_filter(
                 $actions,
                 static fn ($action): bool => is_array($action) === true && ($action['type'] ?? '') === 'generateDocument'
             )
         );
 
-        if ($docGenActions === []) {
+        if ($generateDocumentActions === []) {
             return;
         }
 
@@ -680,7 +680,7 @@ class AutomationCompilerService
             );
         }
 
-        foreach ($docGenActions as $action) {
+        foreach ($generateDocumentActions as $action) {
             $templateId = (string) ($action['templateId'] ?? '');
             if ($templateId === '') {
                 throw new UnsupportedAutomationCombinationException(
@@ -730,7 +730,7 @@ class AutomationCompilerService
             array_unique(
                 array_filter(
                     $modes,
-                    static fn ($mode): bool => is_string($mode) === true && in_array($mode, self::GENERATE_DOCUMENT_OUTPUT_MODES, true) === true
+                    static fn ($m): bool => is_string($m) === true && in_array($m, self::GENERATE_DOCUMENT_OUTPUT_MODES, true) === true
                 )
             )
         );
@@ -889,14 +889,10 @@ class AutomationCompilerService
                 'arguments' => ['synchronizationId' => (string) ($action['synchronizationId'] ?? '')],
             ];
 
-            // Two complementary guards rather than an else, so the resulting key
-            // order (cron XOR interval) is exactly what it was before.
             $cron = (string) ($trigger['cron'] ?? '');
             if ($cron !== '') {
                 $entry['cron'] = $cron;
-            }
-
-            if ($cron === '') {
+            } else {
                 $entry['interval'] = (int) ($trigger['interval'] ?? 86400);
             }
 
@@ -1377,19 +1373,16 @@ class AutomationCompilerService
                 }
             }
 
-            if ($idx === null) {
+            if ($idx !== null) {
+                $schedules[$idx] = $entry;
+            } else {
                 $schedules[] = $entry;
-                continue;
             }
-
-            $schedules[$idx] = $entry;
-        }//end foreach
+        }
 
         if ($schedules === []) {
             unset($manifest['schedules']);
-        }
-
-        if ($schedules !== []) {
+        } else {
             $manifest['schedules'] = array_values($schedules);
         }
 
@@ -1430,22 +1423,38 @@ class AutomationCompilerService
 
         $existingRuleSet = $this->findOneObject(schema: RuleEngineService::RULE_SET_SCHEMA, filters: ['slug' => $ruleSet['slug']]);
         try {
-            $this->saveOrUpdate(
-                object: $ruleSet,
-                schema: RuleEngineService::RULE_SET_SCHEMA,
-                existing: $existingRuleSet
-            );
+            if ($existingRuleSet !== null) {
+                $id = (string) ($existingRuleSet['id'] ?? $existingRuleSet['uuid'] ?? '');
+                $this->objectService->saveObject(
+                    object: $ruleSet,
+                    register: self::REGISTER_SLUG,
+                    schema: RuleEngineService::RULE_SET_SCHEMA,
+                    uuid: $id
+                );
+            } else {
+                $this->objectService->saveObject(object: $ruleSet, register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA);
+            }
         } catch (Throwable $e) {
             $this->logger->error('OpenBuild: AutomationCompilerService failed to save RuleSet "'.$ruleSet['slug'].'": '.$e->getMessage());
         }
 
         $existingRule = $this->findOneObject(schema: RuleEngineService::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => $ruleSet['slug']]);
         try {
-            $this->saveOrUpdate(
-                object: $conditionActionRule,
-                schema: RuleEngineService::CONDITION_RULE_SCHEMA,
-                existing: $existingRule
-            );
+            if ($existingRule !== null) {
+                $id = (string) ($existingRule['id'] ?? $existingRule['uuid'] ?? '');
+                $this->objectService->saveObject(
+                    object: $conditionActionRule,
+                    register: self::REGISTER_SLUG,
+                    schema: RuleEngineService::CONDITION_RULE_SCHEMA,
+                    uuid: $id
+                );
+            } else {
+                $this->objectService->saveObject(
+                    object: $conditionActionRule,
+                    register: self::REGISTER_SLUG,
+                    schema: RuleEngineService::CONDITION_RULE_SCHEMA
+                );
+            }
         } catch (Throwable $e) {
             $this->logger->error(
                 'OpenBuild: AutomationCompilerService failed to save ConditionActionRule for "'.$ruleSet['slug'].'": '.$e->getMessage()
@@ -1455,41 +1464,6 @@ class AutomationCompilerService
         return (string) $ruleSet['slug'];
 
     }//end applyRuleSet()
-
-    /**
-     * Save an object, updating the existing row in place when there is one.
-     *
-     * Extracted from {@see self::applyRuleSet()}, which carried the same
-     * update-or-create if/else twice. Folding both into one guarded helper
-     * removes the else branches AND lowers applyRuleSet()'s cyclomatic
-     * complexity, rather than trading one rule for another.
-     *
-     * @param array<string, mixed>      $object   The object to write.
-     * @param string                    $schema   The target schema.
-     * @param array<string, mixed>|null $existing The existing row, or null to create.
-     *
-     * @return void
-     */
-    private function saveOrUpdate(array $object, string $schema, ?array $existing): void
-    {
-        if ($existing === null) {
-            $this->objectService->saveObject(
-                object: $object,
-                register: self::REGISTER_SLUG,
-                schema: $schema
-            );
-
-            return;
-        }
-
-        $this->objectService->saveObject(
-            object: $object,
-            register: self::REGISTER_SLUG,
-            schema: $schema,
-            uuid: (string) ($existing['id'] ?? $existing['uuid'] ?? '')
-        );
-
-    }//end saveOrUpdate()
 
     /**
      * Delete the RuleSet + its ConditionActionRule by slug.

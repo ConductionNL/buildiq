@@ -415,11 +415,9 @@ class AutomationsController extends Controller
         $productionVersion = ($application['productionVersion'] ?? null);
         if (is_array($productionVersion) === true) {
             $productionUuid = (string) ($productionVersion['id'] ?? $productionVersion['uuid'] ?? '');
-
-            return $productionUuid !== '' && $productionUuid === $versionUuid;
+        } else {
+            $productionUuid = (string) ($productionVersion ?? '');
         }
-
-        $productionUuid = (string) ($productionVersion ?? '');
 
         return $productionUuid !== '' && $productionUuid === $versionUuid;
 

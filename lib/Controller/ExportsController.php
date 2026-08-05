@@ -162,11 +162,10 @@ class ExportsController extends Controller
                     }
 
                     // Back-compat / group: prefix.
-                    // Back-compat: a bare principal IS the group id; the
-                    // `group:` form only strips its prefix.
-                    $gid = $principal;
                     if (str_starts_with($principal, 'group:') === true) {
                         $gid = substr($principal, 6);
+                    } else {
+                        $gid = $principal;
                     }
 
                     if ($gid !== '' && $this->groupManager->isInGroup($uid, $gid) === true) {
@@ -226,11 +225,12 @@ class ExportsController extends Controller
             }
 
             // Verify the job was requested by this user.
-            // An array casts to itself and a plain object casts to its public
-            // properties; only a JsonSerializable needs its own conversion.
-            $job = (array) $found;
-            if (is_array($found) === false && method_exists($found, 'jsonSerialize') === true) {
+            if (is_array($found) === true) {
+                $job = $found;
+            } else if (method_exists($found, 'jsonSerialize') === true) {
                 $job = (array) $found->jsonSerialize();
+            } else {
+                $job = (array) $found;
             }
 
             // Read the requester identity actually persisted on the record
