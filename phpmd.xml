@@ -97,7 +97,11 @@
     <rule ref="rulesets/unusedcode.xml/UnusedPrivateField"/>
     <rule ref="rulesets/unusedcode.xml/UnusedLocalVariable"/>
     <rule ref="rulesets/unusedcode.xml/UnusedPrivateMethod"/>
-    <rule ref="rulesets/unusedcode.xml/UnusedFormalParameter">
-        <exclude-pattern>*Migration*</exclude-pattern>
-    </rule>
+    <!-- UnusedFormalParameter lives in the sibling ruleset phpmd-unusedparams.xml,
+         which `composer phpmd` runs as a second leg. It was moved out because the
+         <exclude-pattern> that used to sit here, nested inside the <rule>, was INERT:
+         PHPMD 2.15 honours exclude-pattern only as a direct child of <ruleset>
+         (ConductionNL/.github#155). A direct child is applied by PDepend at
+         file-collection time and would drop the file from EVERY rule in this ruleset,
+         so the exclusion had to move to a ruleset containing this rule alone. -->
 </ruleset>

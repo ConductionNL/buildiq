@@ -267,22 +267,47 @@ class DecisionTableEvaluator
         // ">=18" → "__v >= 18", "18..65" → "__v in (18..65)", "in (1,2)" → "__v in (1,2)".
         $context = ['__v' => $value];
 
-        if (preg_match('/^(==|!=|<=|>=|<|>)\s*(.+)$/', $trimmed, $m) === 1) {
-            $expr = '__v '.$m[1].' '.$m[2];
-        } else if (str_contains($trimmed, '..') === true) {
-            $expr = '__v in ('.$trimmed.')';
-        } else if (preg_match('/^in\s*\(/i', $trimmed) === 1) {
-            $expr = '__v '.$trimmed;
-        } else if (is_numeric($trimmed) === true) {
-            $expr = '__v == '.$trimmed;
-        } else {
-            // Bare string literal equality.
-            $expr = "__v == '".str_replace("'", '', $trimmed)."'";
-        }
+        $expr = $this->buildCellExpression(trimmed: $trimmed);
 
         return (bool) $this->expressionEvaluator->evaluateExpression($expr, $context);
 
     }//end cellMatches()
+
+    /**
+     * Build the FEEL expression for one cell condition, with `__v` bound to the
+     * column value.
+     *
+     * Extracted from {@see self::cellMatches()} so the condition dialects read
+     * as an ordered sequence of guards rather than an if/else-if chain. The
+     * order is significant and unchanged: comparison operator, range, explicit
+     * `in (...)`, numeric equality, then bare string equality as the fallback.
+     *
+     * @param string $trimmed The trimmed cell condition.
+     *
+     * @return string The FEEL expression.
+     */
+    private function buildCellExpression(string $trimmed): string
+    {
+        if (preg_match('/^(==|!=|<=|>=|<|>)\s*(.+)$/', $trimmed, $matches) === 1) {
+            return '__v '.$matches[1].' '.$matches[2];
+        }
+
+        if (str_contains($trimmed, '..') === true) {
+            return '__v in ('.$trimmed.')';
+        }
+
+        if (preg_match('/^in\s*\(/i', $trimmed) === 1) {
+            return '__v '.$trimmed;
+        }
+
+        if (is_numeric($trimmed) === true) {
+            return '__v == '.$trimmed;
+        }
+
+        // Bare string literal equality.
+        return "__v == '".str_replace("'", '', $trimmed)."'";
+
+    }//end buildCellExpression()
 
     /**
      * Detect overlapping, unreachable and (for `unique`) gap issues.
@@ -340,17 +365,17 @@ class DecisionTableEvaluator
     {
         $columns = array_unique(array_merge(array_keys($a), array_keys($b)));
         foreach ($columns as $column) {
-            $ca = trim((string) ($a[$column] ?? ''));
-            $cb = trim((string) ($b[$column] ?? ''));
+            $condA = trim((string) ($a[$column] ?? ''));
+            $condB = trim((string) ($b[$column] ?? ''));
 
-            $aDontCare = in_array(strtolower($ca), self::DONT_CARE, true);
-            $bDontCare = in_array(strtolower($cb), self::DONT_CARE, true);
+            $aDontCare = in_array(strtolower($condA), self::DONT_CARE, true);
+            $bDontCare = in_array(strtolower($condB), self::DONT_CARE, true);
             if ($aDontCare === true || $bDontCare === true) {
                 continue;
             }
 
             // Distinct literal equalities never overlap.
-            if ($this->isLiteral(condition: $ca) === true && $this->isLiteral(condition: $cb) === true && $ca !== $cb) {
+            if ($this->isLiteral(condition: $condA) === true && $this->isLiteral(condition: $condB) === true && $condA !== $condB) {
                 return false;
             }
         }
@@ -377,14 +402,14 @@ class DecisionTableEvaluator
         // does not.
         $columns = array_unique(array_merge(array_keys($a), array_keys($b)));
         foreach ($columns as $column) {
-            $ca = strtolower(trim((string) ($a[$column] ?? '')));
-            $cb = strtolower(trim((string) ($b[$column] ?? '')));
+            $condA = strtolower(trim((string) ($a[$column] ?? '')));
+            $condB = strtolower(trim((string) ($b[$column] ?? '')));
 
-            if (in_array($ca, self::DONT_CARE, true) === true) {
+            if (in_array($condA, self::DONT_CARE, true) === true) {
                 continue;
             }
 
-            if ($ca !== $cb) {
+            if ($condA !== $condB) {
                 return false;
             }
         }

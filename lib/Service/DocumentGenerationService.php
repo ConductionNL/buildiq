@@ -336,7 +336,7 @@ class DocumentGenerationService
             array_unique(
                 array_filter(
                     $modes,
-                    static fn ($m): bool => is_string($m) === true && in_array($m, self::OUTPUT_MODES, true) === true
+                    static fn ($mode): bool => is_string($mode) === true && in_array($mode, self::OUTPUT_MODES, true) === true
                 )
             )
         );
@@ -572,9 +572,12 @@ class DocumentGenerationService
             // mintOneTimeToken()'s docblock) — get-or-create is composed
             // manually from the widely-available `nodeExists`/`get`/
             // `newFolder` trio instead.
+            $target = null;
             if ($folder->nodeExists(self::ATTACH_SUBFOLDER) === true) {
                 $target = $folder->get(self::ATTACH_SUBFOLDER);
-            } else {
+            }
+
+            if ($target === null) {
                 $target = $folder->newFolder(self::ATTACH_SUBFOLDER);
             }
 
@@ -620,12 +623,12 @@ class DocumentGenerationService
             $ext  = substr($filename, $dot);
         }
 
-        $i = 2;
-        while ($folder->nodeExists($base.'-'.$i.$ext) === true) {
-            $i++;
+        $seq = 2;
+        while ($folder->nodeExists($base.'-'.$seq.$ext) === true) {
+            $seq++;
         }
 
-        return $base.'-'.$i.$ext;
+        return $base.'-'.$seq.$ext;
 
     }//end uniqueChildName()
 
