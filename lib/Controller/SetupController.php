@@ -12,10 +12,20 @@
  * admin request context, so OpenRegister's admin-only create check on the
  * ApplicationTemplate schema is satisfied.
  *
- * Each method carries `#[NoAdminRequired]` so NC middleware accepts the
- * request, but the body enforces an explicit `IGroupManager::isAdmin` gate
- * (ADR-005 — do not rely on the SecurityMiddleware default alone) and returns
- * a clean 403 for non-admins, mirroring ApplicationCreationController. CSRF is
+ * Every method is admin-only and says so TWICE, at two different layers.
+ *
+ * These methods used to carry `#[NoAdminRequired]` with the stated rationale
+ * that the body's `IGroupManager::isAdmin` gate meant we did "not rely on the
+ * SecurityMiddleware default alone". That reasoning was inverted:
+ * `#[NoAdminRequired]` does not ADD a layer, it REMOVES one — it tells NC's
+ * SecurityMiddleware to stop requiring admin, leaving the body check as the
+ * only thing standing between a non-admin and a wizard that writes app config
+ * and seeds OpenRegister objects. Hydra gate-9 (semantic-auth) flags exactly
+ * this shape: an annotation that contradicts the method body.
+ *
+ * The attribute is now `#[AuthorizedAdminSetting]`, so the middleware enforces
+ * admin BEFORE dispatch, AND `requireAdmin()` stays in each body as the
+ * defence-in-depth layer the original comment was reaching for. CSRF is
  * enforced (no `#[NoCSRFRequired]`): the SPA posts via `@nextcloud/axios`,
  * which sends the `requesttoken`.
  *
@@ -43,9 +53,10 @@ namespace OCA\OpenBuild\Controller;
 use OCA\OpenBuild\AppInfo\Application;
 use OCA\OpenBuild\Service\SettingsService;
 use OCA\OpenBuild\Service\TemplateSeedService;
+use OCA\OpenBuild\Settings\AdminSettings;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
-use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -111,7 +122,7 @@ class SetupController extends Controller
      *
      * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-41
      */
-    #[NoAdminRequired]
+    #[AuthorizedAdminSetting(AdminSettings::class)]
     public function status(): JSONResponse
     {
         $denied = $this->requireAdmin();
@@ -153,7 +164,7 @@ class SetupController extends Controller
      *
      * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-31
      */
-    #[NoAdminRequired]
+    #[AuthorizedAdminSetting(AdminSettings::class)]
     public function saveConfig(): JSONResponse
     {
         $denied = $this->requireAdmin();
@@ -178,7 +189,7 @@ class SetupController extends Controller
      *
      * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-21
      */
-    #[NoAdminRequired]
+    #[AuthorizedAdminSetting(AdminSettings::class)]
     public function runAction(string $actionId): JSONResponse
     {
         $denied = $this->requireAdmin();
