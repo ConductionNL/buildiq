@@ -97,3 +97,60 @@ jobs:
       # measured coverage (8018 of 13971 statements) read from clover.xml in the
       # `coverage-report` artifact of run 30911188960.
       enable-coverage-guard: true
+
+      # ── E2E Tests (Playwright) ───────────────────────────────────────────
+      # `enable-playwright` defaults to FALSE and this file never set it, so
+      # the shared workflow's `E2E Tests (Playwright)` job has reported
+      # `skipped` on every run this repository has ever produced — while 50
+      # committed spec files sat in `tests/e2e/`. Unlike `enable-newman: false`
+      # above, that was not a decision anyone recorded; it is simply a default
+      # nobody chose, and a skipped job is indistinguishable from a passing one
+      # in the run summary. Turning it on is the whole point of this change.
+      #
+      # `playwright-test-path` is NOT cosmetic here. The workflow picks its
+      # config as `"${playwright-test-path}/playwright.config.ts"`, falling
+      # back to the ROOT `playwright.config.ts`, and then runs it with NO
+      # `--project` — so every project in whichever config it lands on runs.
+      # The root config declares three, and two of them are documented as
+      # unable to pass on a CI runner: `docs-capture` (journeydoc; the separate
+      # `Journeydoc Capture` job owns it) and `visual` (PNG baselines that,
+      # per that config's own header, "a CI Linux runner will not byte-match").
+      # Pointing at `tests/e2e` makes the FIRST lookup hit
+      # `tests/e2e/playwright.config.ts`, added in this commit, which declares
+      # only the `chromium` regression project and writes its report/traces to
+      # the app root — the paths the workflow's upload steps actually look at.
+      # The root config is untouched and still drives local runs.
+      #
+      # OpenRegister is already checked out for every job via `additional-apps`
+      # above, which the specs need: OpenBuild's applications, versions and
+      # schemas are OpenRegister objects.
+      enable-playwright: true
+      playwright-test-path: tests/e2e
+
+      # Two pieces of instance setup the suite cannot do for itself on CI.
+      # `tests/e2e/global-setup.ts` does both locally, but it reaches `occ` by
+      # resolving the DOCKER CONTAINER publishing the port under test — and it
+      # deliberately refuses to guess when it cannot resolve one (guessing is
+      # how it used to seed a different instance than it asserted against).
+      # On this runner Nextcloud is `php -S`, not a container, so both steps
+      # log a warning and no-op. This step is the documented override path.
+      #
+      #   1. ratelimit.protection.enabled=false — the app-creation wizard
+      #      carries `#[UserRateLimit(limit: 10, period: 3600)]`, and the suite
+      #      creates far more than ten apps (every `ensureApp()` in
+      #      tests/e2e/support/appFixture.ts goes through that endpoint). Past
+      #      the tenth create every later spec fails on a 429 that has nothing
+      #      to do with what it asserts. The limit is correct product behaviour
+      #      and is NOT changed — it is switched off for this throwaway test
+      #      instance using Nextcloud's own supported flag.
+      #   2. openbuild:seed-hello-world-fixture — the deterministic
+      #      `hello-world` virtual app the legacy specs assert against.
+      #      Production no longer seeds it (the SeedHelloWorld repair step was
+      #      retired with the versioned-model migration), so the harness seeds
+      #      it. Idempotent; a test/dev-only occ command.
+      #
+      # Deliberately NOT `|| true`: if the fixture cannot be seeded, the specs
+      # that need it fail on missing content and the cause is a wall of
+      # selector timeouts. Better to fail here, once, where the reason is
+      # printed.
+      playwright-seed-command: 'php occ config:system:set ratelimit.protection.enabled --value=false --type=boolean && php occ openbuild:seed-hello-world-fixture'
