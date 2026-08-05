@@ -55,7 +55,13 @@ use ReflectionMethod;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://conduction.nl
  *
- * @spec openspec/specs/first-time-setup/spec.md#requirement-admin-only-idempotent-seed-templates-action
+ * No `@spec` anchor: the behaviour this asserts ("Admin-only idempotent
+ * seed-templates action" / "Non-admin is rejected") lives only in the
+ * `openbuild-first-time-setup` CHANGE delta, and an anchor into
+ * `openspec/changes/**` dangles as soon as that change is archived. Promoting
+ * it to `openspec/specs/` is the right fix and is filed separately — it pulls
+ * seven scenarios under gate-19, which needs real e2e coverage rather than a
+ * `@e2e exclude`.
  */
 class SetupControllerAuthPostureTest extends TestCase
 {
