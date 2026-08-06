@@ -45,6 +45,24 @@ jobs:
       # To hold this repo still for a specific reason, set the input explicitly
       # and say why — it is still honoured. To roll back for everyone, revert on
       # ConductionNL/.github main.
+      #
+      # THIRD CAUSE, and the one that is failing this repo RIGHT NOW
+      # (.github#177): quality.yml@main began executing three gate helpers BY
+      # NAME — check_spec_anchors.py, check_form_labels.py and
+      # check_license_triangle.py — which exist in NO tag before v1.5.0.
+      # Verified by DIRECTORY LISTING of each tag, not by per-file lookups:
+      # those answered "present" uniformly across v1.0.0..v1.5.0, and the
+      # uniformity across independent inputs was the tell that the instrument
+      # was wrong. So the Hydra Gates job here fails at "Verify the pinned gates
+      # package satisfies this workflow", before a single gate runs, with the
+      # workflow's own words: "This is NOT a code-quality finding about your
+      # repository." Removing the pin is the repair.
+      #
+      # Unpinning also picks up v1.5.1's push scoping (.github#179): on a push to
+      # `development`, `origin/development` IS `HEAD`, so the diff was empty by
+      # construction — <= v1.4.0 passed over it (permanently green) and v1.5.0
+      # refused with exit 99 (permanently red). The scope is now
+      # `github.event.before...HEAD`, what the push actually changed.
       # `enable-axe` is deliberately still NOT set — a vanilla Nextcloud 34
       # reports serious/critical violations on core's OWN routes that DOM
       # scoping does not remove. Enabling axe is a separate decision.
@@ -66,7 +84,27 @@ jobs:
       # File those as their own issues; once both are unblocked, flip this
       # back to `true` and re-evaluate.
       enable-newman: false
-      database: sqlite
+      # Was `sqlite`. Measured on run 31018480923: it is what made the E2E seed
+      # fail before a single spec ran —
+      #
+      #   Failed to seed hello-world fixture: … SQLSTATE[HY000]: General error:
+      #   1 no such table: information_schema.columns
+      #
+      # OpenRegister's MagicTableHandler reads `information_schema.columns` to
+      # decide whether an object table needs creating/updating. Postgres and
+      # MySQL both ship that view; SQLite does not have it at all. This is the
+      # same family as documented Newman blocker #2 below (`no such function:
+      # REGEXP`, also from OR's MagicMapper, also SQLite-only) — OpenRegister
+      # simply does not run on SQLite, and every job in this file that boots it
+      # was running on a database it does not support.
+      #
+      # `pgsql` is the shared workflow's own default, which is why it did not
+      # need writing here at all; the repos whose E2E is green (opencatalogi,
+      # doriath) set no `database:` and get it. Stated explicitly rather than
+      # deleted so the next person reads the reason instead of re-adding the
+      # override. The `database` input also feeds PHPUnit, Newman and the
+      # journeydoc capture, so those move to Postgres with it.
+      database: pgsql
       newman-seed-command: 'php occ app:disable openbuild && php occ app:enable openbuild'
       # OpenRegister `development` carries the runtime-schema-API (auto-create
       # Register on application-type imports — OR PR #1464) and the lifecycle
@@ -106,3 +144,97 @@ jobs:
       # measured coverage (8018 of 13971 statements) read from clover.xml in the
       # `coverage-report` artifact of run 30911188960.
       enable-coverage-guard: true
+
+      # ── E2E Tests (Playwright) ───────────────────────────────────────────
+      # `enable-playwright` defaults to FALSE and this file never set it, so
+      # the shared workflow's `E2E Tests (Playwright)` job has reported
+      # `skipped` on every run this repository has ever produced — while 50
+      # committed spec files sat in `tests/e2e/`. Unlike `enable-newman: false`
+      # above, that was not a decision anyone recorded; it is simply a default
+      # nobody chose, and a skipped job is indistinguishable from a passing one
+      # in the run summary. Turning it on is the whole point of this change.
+      #
+      # `playwright-test-path` is NOT cosmetic here. The workflow picks its
+      # config as `"${playwright-test-path}/playwright.config.ts"`, falling
+      # back to the ROOT `playwright.config.ts`, and then runs it with NO
+      # `--project` — so every project in whichever config it lands on runs.
+      # The root config declares three, and two of them are documented as
+      # unable to pass on a CI runner: `docs-capture` (journeydoc; the separate
+      # `Journeydoc Capture` job owns it) and `visual` (PNG baselines that,
+      # per that config's own header, "a CI Linux runner will not byte-match").
+      # Pointing at `tests/e2e` makes the FIRST lookup hit
+      # `tests/e2e/playwright.config.ts`, added in this commit, which declares
+      # only the `chromium` regression project and writes its report/traces to
+      # the app root — the paths the workflow's upload steps actually look at.
+      # The root config is untouched and still drives local runs.
+      #
+      # OpenRegister is already checked out for every job via `additional-apps`
+      # above, which the specs need: OpenBuild's applications, versions and
+      # schemas are OpenRegister objects.
+      enable-playwright: true
+      playwright-test-path: tests/e2e
+
+      # The instance setup the suite cannot do for itself on CI.
+      # `tests/e2e/global-setup.ts` does it locally, but it reaches `occ` by
+      # resolving the DOCKER CONTAINER publishing the port under test — and it
+      # deliberately refuses to guess when it cannot resolve one (guessing is
+      # how it used to seed a different instance than it asserted against).
+      # On this runner Nextcloud is `php -S`, not a container, so those steps
+      # log a warning and no-op. `tests/e2e/ci-seed.sh` is the documented
+      # override path; the step runs with cwd = the Nextcloud server root, so
+      # the app-relative path below is what `occ` sees.
+      #
+      # It was a two-command inline string until run 31030663352 measured what
+      # that leaves undone. Read the script's header for the full reasoning; the
+      # short version is five things, each of which fails SILENTLY:
+      #
+      #   1. htaccess.IgnoreFrontController=true. THE root cause of the first
+      #      run's failures. openbuild builds its router as
+      #      `createWebHistory(generateUrl('/apps/openbuild'))`, and
+      #      `generateUrl()` prefixes `/index.php` unless the page reports
+      #      `modRewriteWorking`. A freshly `maintenance:install`ed instance
+      #      does not set it, so the router base becomes
+      #      `/index.php/apps/openbuild` while every spec navigates to the
+      #      pretty `/apps/openbuild/...`. Those disagree, vue-router matches
+      #      nothing, and the SPA mounts and renders perfectly — on the
+      #      DASHBOARD. No 404, no console error. That is why 68 of the 83
+      #      tests the first run reached failed on a non-Dashboard selector
+      #      (`.agents-page`, `.ob-app-card`, `.automations-page`,
+      #      `.page-designer__left`), while the only UI tests that passed were
+      #      builder-host's first two — whose inner router is based at
+      #      `/apps/openbuild/builder/<slug>`, the exact URL the spec opens, so
+      #      its DEFAULT route is the page being asserted. builder-host's third
+      #      test, the one that needs the `/messages/new` SUB-path to survive,
+      #      failed with the rest. The CI router already serves pretty URLs
+      #      (the workflow's own front-controller check proves it), so this
+      #      states something TRUE about the instance rather than working
+      #      around anything.
+      #   2. The register + schema import. `occ app:enable openbuild` runs
+      #      `InitializeSettings`, which imports with NO user session — so OR's
+      #      RBAC denies it and the repair step downgrades the throw to a
+      #      warning. Done here explicitly over the admin HTTP API, FORCED,
+      #      and then VERIFIED against the 15 schema slugs read out of the repo.
+      #   3. ratelimit.protection.enabled=false — the app-creation wizard
+      #      carries `#[UserRateLimit(limit: 10, period: 3600)]`, and the suite
+      #      creates far more than ten apps (every `ensureApp()` in
+      #      tests/e2e/support/appFixture.ts goes through that endpoint). Past
+      #      the tenth create every later spec fails on a 429 that has nothing
+      #      to do with what it asserts. The limit is correct product behaviour
+      #      and is NOT changed — it is switched off for this throwaway test
+      #      instance using Nextcloud's own supported flag.
+      #   4. openbuild:seed-hello-world-fixture — the deterministic
+      #      `hello-world` virtual app the legacy specs assert against.
+      #      Production no longer seeds it (the SeedHelloWorld repair step was
+      #      retired with the versioned-model migration), so the harness seeds
+      #      it. Idempotent; a test/dev-only occ command. Its exit code covers
+      #      "already present", so the script also proves the fixture exists
+      #      over HTTP.
+      #   5. The bundle. A missing frontend bundle does not 404 on Nextcloud —
+      #      it serves the HTML error page with HTTP 200 and `text/html`, which
+      #      every status-code check in the pipeline reads as success. Gated on
+      #      the SERVED response's content type actually being JavaScript.
+      #
+      # Deliberately NOT `|| true`: if the instance cannot be provisioned, the
+      # specs fail on missing content and the cause is a wall of selector
+      # timeouts. Better to fail here, once, where the reason is printed.
+      playwright-seed-command: 'bash apps/openbuild/tests/e2e/ci-seed.sh'
