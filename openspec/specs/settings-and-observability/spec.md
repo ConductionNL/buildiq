@@ -129,8 +129,9 @@ engine (ADR-040 adoption, ADR-006 contract), driven by the declarative
 `observability` block of `src/manifest.json`. OpenBuild no longer owns a
 concrete `HealthController` / `MetricsController`; `AppInfo\Application`
 binds the leaf controller names to `GenericHealthController` /
-`GenericMetricsController` via lazy service factories, so the binding
-survives the app load order in which OpenRegister is not yet autoloadable.
+`GenericMetricsController` via lazy service factories. Those factories are
+themselves registered by `Bootstrap::register()`, which only runs once
+OpenRegister's PSR-4 prefix is on the autoloader — see REQ-OBS-006.
 
 `health#index` SHALL return JSON `{status, app, version, checks}` where
 `status` is `ok` when every manifest health check passes, with the HTTP
@@ -162,3 +163,62 @@ implementation was removed by the ADR-040 AppHost adoption but the
 requirement text was not updated with it, leaving the spec — and the e2e
 tests written against it — asserting a contract the code had stopped
 serving. The text above now tracks the AppHost engine's actual behaviour.
+
+### REQ-OBS-006: The AppHost adoption registers OpenRegister's autoloader first
+
+`AppInfo\Application::register()` SHALL put OpenRegister's PSR-4 prefix on
+the composer autoloader — via `OpenRegisterAutoloader::register()`, which
+calls `OC_App::registerAutoloading('openregister', …)` — BEFORE it
+references any `OCA\OpenRegister\AppHost\…` name, including the
+`class_exists()` guard around `Bootstrap::register()`.
+
+Nextcloud registers apps in sorted order: `OC_App::getEnabledApps()` does
+`sort($apps)` and `Coordinator::registerApps()` walks that list calling
+`OC_App::registerAutoloading($appId, $path)` and then `$app->register()`
+for one app at a time. `openbuild` sorts before `openregister`, so every
+`OCA\OpenRegister\…` name is unresolvable inside OpenBuild's `register()`
+on a perfectly healthy instance with OpenRegister enabled.
+
+`OC_App::registerAutoloading()` is idempotent and touches only the
+autoloader. `IAppManager::loadApp('openregister')` MUST NOT be used
+instead: it marks OpenRegister loaded and calls `Coordinator::bootApp()`,
+booting OpenRegister before its own `register()` has run.
+
+The prelude MUST NOT throw under any instance state — an exception escaping
+it would abort the whole of `register()`, which is a strictly worse failure
+than the one it exists to prevent.
+
+#### Scenario: OpenRegister is enabled but has not registered yet
+
+- **GIVEN** an instance with OpenRegister enabled, and OpenBuild's
+  `register()` running at its sorted position ahead of `openregister`
+- **WHEN** `class_exists(Bootstrap::class)` is evaluated
+- **THEN** it MUST answer `true`, because the prelude has already put
+  OpenRegister's prefix on the autoloader, and `Bootstrap::register()` MUST
+  run — wiring the generic dashboard / settings / preferences controllers,
+  the observability controllers, the install repair steps and the
+  manifest-driven deep-link listener
+- **AND** the log line `OpenRegister AppHost\Bootstrap is not autoloadable`
+  MUST NOT be emitted
+- @e2e exclude composition-root load order — observable only in the app
+  registration phase, before any HTTP request or browser session exists;
+  asserted by tests/Unit/AppInfo/OpenRegisterAutoloaderTest.php and by
+  hydra gate-64 (apphost-autoload-prelude)
+
+#### Scenario: OpenRegister is genuinely absent
+
+- **GIVEN** an instance with OpenRegister not installed
+- **WHEN** the prelude runs
+- **THEN** it MUST return `false` rather than throw, and the
+  `class_exists()` guard MUST then skip the generic AppHost plumbing while
+  OpenBuild's own concrete controllers and domain listeners still register
+- @e2e exclude composition-root load order — asserted by
+  tests/Unit/AppInfo/OpenRegisterAutoloaderTest.php
+
+**Notes:** Measured 2026-08-06. `OpenBuild: OpenRegister AppHost\Bootstrap
+is not autoloadable` was logged on every `occ` call in the E2E workflow
+while `lib/AppHost/Bootstrap.php` existed on OpenRegister the whole time.
+Because the reference was guarded, this degraded silently: the generic
+plumbing above had apparently never been registered on any instance where
+no alphabetically-earlier app happened to pull OpenRegister's autoloader in
+first.

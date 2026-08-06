@@ -122,6 +122,40 @@ class Application extends App implements IBootstrap
         // which is what this app actually relies on (the comment that the lazy
         // closures "never fatal NC bootstrap" only held for the closures, not for
         // resolving the Bootstrap class itself).
+        //
+        // LOAD-ORDER HAZARD (measured, not theoretical). OC_App::getEnabledApps()
+        // sort()s the app list, and Coordinator::registerApps() walks THAT sorted
+        // list calling OC_App::registerAutoloading($appId) and then $app->register()
+        // for one app at a time. So every app registers before the PSR-4 prefix of
+        // every alphabetically-LATER app exists: `openbuild` < `openregister`, so
+        // OCA\OpenRegister\ is not autoloadable at this point on a perfectly
+        // healthy instance with OpenRegister enabled.
+        //
+        // That is what actually happened here. `OpenBuild: OpenRegister
+        // AppHost\Bootstrap is not autoloadable` was logged on EVERY occ call in
+        // CI while lib/AppHost/Bootstrap.php existed on OpenRegister all along.
+        // The class_exists() guard below turned a fatal into a SILENT
+        // degradation, so Bootstrap::register() had apparently never run and the
+        // generic dashboard/settings/preferences controllers, the observability
+        // controllers, the install repair steps and the deep-link listener were
+        // simply absent — with nothing in the UI to say so.
+        //
+        // The fix is to put OpenRegister's prefix on the autoloader ourselves,
+        // which is exactly what Nextcloud will do a few iterations later. Two
+        // properties make this the correct call. First,
+        // OC_App::registerAutoloading() touches ONLY the autoloader and is
+        // idempotent — it early-returns on an $alreadyRegistered key. Second,
+        // IAppManager::loadApp() would NOT be correct here: it marks OpenRegister
+        // loaded and calls Coordinator::bootApp(), booting OpenRegister BEFORE
+        // its own register() has run.
+        //
+        // The prelude lives in its own class so the "never throws" contract is
+        // reachable from a unit test — Application cannot be constructed without
+        // a Nextcloud DI container. It returns false, never throws, when
+        // OpenRegister really is absent; the class_exists() guard below then
+        // still skips the AppHost plumbing exactly as before.
+        OpenRegisterAutoloader::register();
+
         if (class_exists(Bootstrap::class) === true) {
             Bootstrap::register(
                 $context,
