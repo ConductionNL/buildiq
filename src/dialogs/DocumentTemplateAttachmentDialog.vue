@@ -21,10 +21,30 @@
 		@update:open="$emit('update:open', $event)"
 		@closing="onClose">
 		<div class="ob-document-attach">
+			<!--
+				EXACTLY ONE of these may render. They are mutually exclusive
+				claims about the same thing and they were `v-if`/`v-if`, so both
+				rendered together the moment `docudeskAvailable` flipped false
+				after the dialog had already opened — which is the normal case,
+				because `PageDesignerHost` initialises the flag to `true` and
+				resolves the real value asynchronously (PageDesignerHost.vue
+				`docudeskAvailable: true` → `docudeskStatus.available`). The
+				dialog's `open` watcher therefore ran the snapshot refresh, got a
+				404 from a route that does not exist, set `templateMissing`, and
+				then the late `false` added the second paragraph on top.
+
+				The result told the user two contradictory things at once — "the
+				app is not installed" and "your template was deleted from it" —
+				and the second is not knowable when the first is true: a 404 from
+				an absent app is the router saying the ROUTE is missing, not
+				Docudesk saying the TEMPLATE is. `v-else-if` makes the absence
+				message win, which is both the honest reading and the actionable
+				one.
+			-->
 			<p v-if="!docudeskAvailable" class="ob-document-attach__warn">
 				{{ t('openbuild', 'Docudesk is not installed or enabled on this instance. The template list cannot be loaded.') }}
 			</p>
-			<p v-if="templateMissing" class="ob-document-attach__warn" role="alert">
+			<p v-else-if="templateMissing" class="ob-document-attach__warn" role="alert">
 				{{ t('openbuild', 'The attached template no longer exists in Docudesk. Pick another template or detach.') }}
 			</p>
 

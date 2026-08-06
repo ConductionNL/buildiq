@@ -66,3 +66,53 @@ describe('DocumentTemplateAttachmentDialog — preview sanitization', () => {
 		expect(out).toContain('<li>a</li>')
 	})
 })
+
+/**
+ * The two `.ob-document-attach__warn` paragraphs are mutually exclusive claims
+ * about the same subject: "Docudesk is not installed" and "the template you
+ * attached no longer exists IN Docudesk". The second is not knowable when the
+ * first is true.
+ *
+ * They were authored as two independent `v-if`s, and both rendered together
+ * whenever `docudeskAvailable` arrived late — the normal case, since
+ * PageDesignerHost initialises it to `true` and resolves the real value
+ * asynchronously. The dialog's `open` watcher then ran its snapshot refresh,
+ * took a 404 from a route that does not exist, set `templateMissing`, and the
+ * late `false` stacked the absence message on top.
+ *
+ * Playwright saw it as `strict mode violation: locator('.ob-document-attach__warn')
+ * resolved to 2 elements` in run 31083894467. These assertions pin the
+ * invariant directly so the next regression is caught in milliseconds by the
+ * unit suite instead of in a 19-minute browser run.
+ */
+describe('DocumentTemplateAttachmentDialog — mutually exclusive warnings', () => {
+	/**
+	 * Mount the dialog and drive it into the both-warnings-eligible state.
+	 *
+	 * @param {boolean} docudeskAvailable Value of the capability prop.
+	 * @return {Promise<object>} The mounted wrapper.
+	 */
+	async function warnState(docudeskAvailable) {
+		const wrapper = mount(DocumentTemplateAttachmentDialog, {
+			propsData: { docudeskAvailable },
+			stubs: baseStubs,
+		})
+		// `templateMissing` is what a 404 from the snapshot refresh sets.
+		await wrapper.setData({ templateMissing: true })
+		return wrapper
+	}
+
+	it('renders exactly one warning when Docudesk is absent AND a template 404d', async () => {
+		const wrapper = await warnState(false)
+		const warns = wrapper.findAll('.ob-document-attach__warn')
+		expect(warns).toHaveLength(1)
+		expect(warns[0].text()).toContain('not installed')
+	})
+
+	it('renders the deleted-template warning when Docudesk IS available', async () => {
+		const wrapper = await warnState(true)
+		const warns = wrapper.findAll('.ob-document-attach__warn')
+		expect(warns).toHaveLength(1)
+		expect(warns[0].text()).toContain('no longer exists')
+	})
+})

@@ -410,22 +410,52 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({ 
 	// row happens to render first.
 	//
 	// Bind hello-world's OWN register and schema by slug, not `{ index: 1 }`.
-	// The register select lists every register on the instance (175 of them
-	// here) sorted by title, so index 1 resolved to Nextcloud's `directory`
+	// The register select lists every register on the instance (175 of them on a
+	// dev box) sorted by title, so index 1 resolved to Nextcloud's `directory`
 	// register, whose `nc-user` schema declares no properties this picker
 	// offers. The Content/Title field rows then rendered a `<select>` holding
 	// nothing but their "— default: body —" placeholder, and `selectOrFill`'s
 	// `{ index: 1 }` fallback failed with "did not find some options" — a real
 	// dead end, not a race. The seeded `hello-message` schema declares
-	// `id` + `body`, so the field mapping below has something to bind to.
+	// `title` + `body`, so the field mapping below has something to bind to.
+	//
+	// THE SLUGS WERE WRONG, AND WRONG IN A WAY ONLY CI COULD SHOW.
+	//
+	// This used to bind `openbuild-hello-world-production` /
+	// `hello-world-production-hello-message` and failed with `did not find some
+	// options` (run 31083894467) — the same symptom as the `{ index: 1 }` bug
+	// above, but a different cause: on CI THOSE SLUGS DO NOT EXIST. The seeded
+	// fixture is created by `occ openbuild:seed-hello-world-fixture`, not by the
+	// creation wizard, and it deliberately does not mint a per-version register:
+	// SeedHelloWorldFixture writes `register: 'openbuild-hello-world'` on the
+	// version as METADATA ONLY and puts the manifest, the `hello-message` schema
+	// and the three sample objects in the shared `openbuild` register — its own
+	// comment says so, and the hello-world manifest's index, detail and form
+	// pages all carry `config.register = 'openbuild'`. `ci-seed.sh` prints the
+	// instance's registers, and that list is `[…, 'openbuild', …]` with no
+	// `openbuild-hello-world-production` anywhere.
+	//
+	// Those names come from a WIZARD-created app (RegisterWidget builds exactly
+	// `openbuild-{slug}-{version}`), which a developer's long-lived instance
+	// accumulates and a fresh CI instance never has. So the test was pinned to
+	// a fixture shape that only existed on the machine it was written on.
+	//
+	// Bound to what the fixture actually provides. This is the same requirement
+	// — a wiki page bound to a real register + schema with its content and title
+	// fields mapped to real schema properties — asserted against the pair the
+	// seeded app genuinely uses, and it is now identical on CI and locally.
 	const registerSelect = editor.locator('.wiki-page-editor__group-row', { hasText: /^\s*Register\b/ }).locator('select')
-	await registerSelect.selectOption('openbuild-hello-world-production')
+	await expect(
+		registerSelect.locator('option[value="openbuild"]'),
+		"the seeded app's register must be offered by the register picker",
+	).toHaveCount(1, { timeout: 10_000 })
+	await registerSelect.selectOption('openbuild')
 	const schemaSelect = editor.locator('.wiki-page-editor__group-row', { hasText: 'Schema' }).locator('select').first()
 	await expect(
-		schemaSelect.locator('option[value="hello-world-production-hello-message"]'),
+		schemaSelect.locator('option[value="hello-message"]'),
 		"the seeded app's register must offer its hello-message schema",
 	).toHaveCount(1, { timeout: 10_000 })
-	await schemaSelect.selectOption('hello-world-production-hello-message')
+	await schemaSelect.selectOption('hello-message')
 
 	// contentField/titleField render as a schema-property <select> once a
 	// register + schema are bound (task 5.1); fall back to free-text input
@@ -449,10 +479,10 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({ 
 	// merely "not empty" — that is what a lossless round-trip means.
 	await expect(
 		reopened.locator('.wiki-page-editor__group-row', { hasText: /^\s*Register\b/ }).locator('select'),
-	).toHaveValue('openbuild-hello-world-production')
+	).toHaveValue('openbuild')
 	await expect(
 		reopened.locator('.wiki-page-editor__group-row', { hasText: /^\s*Schema\b/ }).locator('select'),
-	).toHaveValue('hello-world-production-hello-message')
+	).toHaveValue('hello-message')
 	await expect(
 		reopened.locator('.wiki-page-editor__group-row', { hasText: /^\s*Content field\b/ }).locator('select'),
 	).toHaveValue('body')

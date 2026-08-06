@@ -38,6 +38,15 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 1 : 0,
 	workers: 1,
+	// Mirror of tests/e2e/playwright.config.ts. CI does not pick this file up
+	// (`playwright-test-path: tests/e2e` makes the workflow's first lookup hit
+	// the config next to the specs), but it IS the documented fallback the
+	// shared workflow uses when that file is absent — and the job it would run
+	// under carries `timeout-minutes: 45`. A cancellation at the job cap is not
+	// a verdict: no tally, and the report is never written so the artifact
+	// upload finds nothing. Stopping ourselves below the cap fails with numbers
+	// attached instead.
+	globalTimeout: 36 * 60 * 1000,
 	globalSetup: './tests/e2e/global-setup.ts',
 	reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
 	use: {
@@ -56,7 +65,12 @@ export default defineConfig({
 		// (no Location header is emitted, the page stays on /login).
 		// Specs that need OCS-APIRequest set it on their explicit `request`
 		// calls (e.g. versionRouting.spec.ts, applicationDetailOverview.spec.ts).
-		trace: 'on-first-retry',
+		// `retain-on-failure`, not `on-first-retry`: this config's `retries` is
+		// 1 only on CI and 0 locally, so on a developer box the old setting
+		// produced no trace for any failure at all — and CI does not use this
+		// config (see tests/e2e/playwright.config.ts). Keeping the two files in
+		// step so a local reproduction has the same evidence a CI run does.
+		trace: 'retain-on-failure',
 		screenshot: 'only-on-failure',
 		video: 'retain-on-failure',
 		headless: true,
