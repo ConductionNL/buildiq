@@ -176,11 +176,11 @@ class Application extends App implements IBootstrap
         }
 
         // No else branch, deliberately. It used to write a line to the PHP error
-        // log on every single request, and with the prelude above in place that
-        // line no longer means what it said: before the prelude it fired on a
-        // HEALTHY instance because the probe was answering "not autoloadable
-        // YET". It was the symptom, not a diagnostic — the very noise that made
-        // the real defect read as ambient log spam.
+        // log, and with the prelude above in place that line no longer means what
+        // it said: before the prelude it fired on a HEALTHY instance, because the
+        // probe was answering "not autoloadable YET" — measured 3x per E2E run,
+        // once per occ call. It was the symptom, not a diagnostic: the very noise
+        // that made the real defect read as ambient log spam.
         //
         // Now a false class_exists() means OpenRegister genuinely is absent or
         // disabled, which is a whole-instance condition an app cannot usefully
@@ -189,7 +189,7 @@ class Application extends App implements IBootstrap
         // lib/, for good reason. The degraded state is reported where it can be
         // read instead — /api/health, wired by `observability => true` and bound
         // below regardless of load order. Same choice doriath made.
-
+        //
         // OpenBuild keeps three concrete controllers + the settings service that
         // the AppHost generics cannot cover on OpenRegister `development` (see
         // openspec/changes/adopt-apphost/design.md "Engine reality"):
