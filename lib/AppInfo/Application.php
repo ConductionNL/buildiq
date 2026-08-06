@@ -68,7 +68,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Main application class for the OpenBuild Nextcloud app.
  *
- * @spec openspec/changes/archive/2026-05-12-openbuild-rbac/tasks.md
+ * @spec openspec/specs/openbuild-rbac/spec.md
  */
 class Application extends App implements IBootstrap
 {
@@ -93,7 +93,7 @@ class Application extends App implements IBootstrap
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/archive/2026-05-12-openbuild-rbac/tasks.md
+     * @spec openspec/specs/openbuild-rbac/spec.md
      */
     public function register(IRegistrationContext $context): void
     {
@@ -122,6 +122,47 @@ class Application extends App implements IBootstrap
         // which is what this app actually relies on (the comment that the lazy
         // closures "never fatal NC bootstrap" only held for the closures, not for
         // resolving the Bootstrap class itself).
+        //
+        // LOAD-ORDER HAZARD (measured, not theoretical). OC_App::getEnabledApps()
+        // sort()s the app list, and Coordinator::registerApps() walks THAT sorted
+        // list calling OC_App::registerAutoloading($appId) and then $app->register()
+        // for one app at a time. So every app registers before the PSR-4 prefix of
+        // every alphabetically-LATER app exists: `openbuild` < `openregister`, so
+        // OCA\OpenRegister\ is not autoloadable at this point on a perfectly
+        // healthy instance with OpenRegister enabled.
+        //
+        // That is what actually happened here, under the CLI SAPI: `OpenBuild:
+        // OpenRegister AppHost\Bootstrap is not autoloadable` was logged on EVERY
+        // occ call in CI (3 per E2E run, run 31081906401) while
+        // lib/AppHost/Bootstrap.php existed on OpenRegister all along. The
+        // class_exists() guard below turned a fatal into a SILENT degradation, so
+        // for every occ command, background job and repair step the generic
+        // dashboard/settings/preferences controllers, the observability
+        // controllers, the install repair steps and the deep-link listener were
+        // simply absent — with nothing anywhere to say so.
+        //
+        // Scope, honestly: in that SAME run /api/health and /api/metrics answered
+        // 200, and those routes exist ONLY as Bootstrap::register() DI aliases, so
+        // under the web SAPI the guard was answering true. The CLI/web divergence
+        // is not explained — see REQ-OBS-006's Notes. The prelude removes the
+        // dependence on whatever that difference is.
+        //
+        // The fix is to put OpenRegister's prefix on the autoloader ourselves,
+        // which is exactly what Nextcloud will do a few iterations later. Two
+        // properties make this the correct call. First,
+        // OC_App::registerAutoloading() touches ONLY the autoloader and is
+        // idempotent — it early-returns on an $alreadyRegistered key. Second,
+        // IAppManager::loadApp() would NOT be correct here: it marks OpenRegister
+        // loaded and calls Coordinator::bootApp(), booting OpenRegister BEFORE
+        // its own register() has run.
+        //
+        // The prelude lives in its own class so the "never throws" contract is
+        // reachable from a unit test — Application cannot be constructed without
+        // a Nextcloud DI container. It swallows every Throwable and reports
+        // nothing: when OpenRegister really is absent, the class_exists() guard
+        // below still skips the AppHost plumbing exactly as before.
+        OpenRegisterAutoloader::register();
+
         if (class_exists(Bootstrap::class) === true) {
             Bootstrap::register(
                 $context,
@@ -132,17 +173,23 @@ class Application extends App implements IBootstrap
                     'observability' => true,
                 ]
             );
-        } else {
-            // No PSR logger is wired this early in register(); error_log is the
-            // safe channel and is captured by the NC log pipeline.
-            // phpcs:ignore Generic.PHP.ForbiddenFunctions.Found -- intentional: no PSR logger available this early in register().
-            error_log(
-                'OpenBuild: OpenRegister AppHost\\Bootstrap is not autoloadable — '
-                .'skipping generic AppHost plumbing; concrete controllers + domain '
-                .'listeners (RBAC + hybrid metadata-lock) still register.'
-            );
         }
 
+        // No else branch, deliberately. It used to write a line to the PHP error
+        // log, and with the prelude above in place that line no longer means what
+        // it said: before the prelude it fired on a HEALTHY instance, because the
+        // probe was answering "not autoloadable YET" — measured 3x per E2E run,
+        // once per occ call. It was the symptom, not a diagnostic: the very noise
+        // that made the real defect read as ambient log spam.
+        //
+        // Now a false class_exists() means OpenRegister genuinely is absent or
+        // disabled, which is a whole-instance condition an app cannot usefully
+        // narrate from its composition root: no PSR logger is resolvable this
+        // early, so the only channel left is the one hydra gate-2 forbids in
+        // lib/, for good reason. The degraded state is reported where it can be
+        // read instead — /api/health, wired by `observability => true` and bound
+        // below regardless of load order. Same choice doriath made.
+        //
         // OpenBuild keeps three concrete controllers + the settings service that
         // the AppHost generics cannot cover on OpenRegister `development` (see
         // openspec/changes/adopt-apphost/design.md "Engine reality"):
