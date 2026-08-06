@@ -151,9 +151,9 @@ class Application extends App implements IBootstrap
         //
         // The prelude lives in its own class so the "never throws" contract is
         // reachable from a unit test — Application cannot be constructed without
-        // a Nextcloud DI container. It returns false, never throws, when
-        // OpenRegister really is absent; the class_exists() guard below then
-        // still skips the AppHost plumbing exactly as before.
+        // a Nextcloud DI container. It swallows every Throwable and reports
+        // nothing: when OpenRegister really is absent, the class_exists() guard
+        // below still skips the AppHost plumbing exactly as before.
         OpenRegisterAutoloader::register();
 
         if (class_exists(Bootstrap::class) === true) {

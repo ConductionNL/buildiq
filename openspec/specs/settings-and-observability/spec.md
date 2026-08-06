@@ -209,7 +209,7 @@ than the one it exists to prevent.
 
 - **GIVEN** an instance with OpenRegister not installed
 - **WHEN** the prelude runs
-- **THEN** it MUST return `false` rather than throw, and the
+- **THEN** it MUST return control to its caller rather than throw, and the
   `class_exists()` guard MUST then skip the generic AppHost plumbing while
   OpenBuild's own concrete controllers and domain listeners still register
 - @e2e exclude composition-root load order — asserted by
