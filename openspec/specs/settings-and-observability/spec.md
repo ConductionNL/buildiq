@@ -212,10 +212,26 @@ asserted directly at the unit level, in
 an environment where `\OCP\Server::get()` resolves nothing and requires that
 control still returns to the caller.
 
-**Notes:** Measured 2026-08-06. `OpenBuild: OpenRegister AppHost\Bootstrap
-is not autoloadable` was logged on every `occ` call in the E2E workflow
-while `lib/AppHost/Bootstrap.php` existed on OpenRegister the whole time.
-Because the reference was guarded, this degraded silently: the generic
-plumbing above had apparently never been registered on any instance where
-no alphabetically-earlier app happened to pull OpenRegister's autoloader in
-first.
+**Notes:** Measured 2026-08-06 against the E2E workflow, and the measurement
+is narrower than the load-order argument alone predicts — both halves are
+recorded here because the difference is not yet explained.
+
+Before the prelude (run 31081906401, job 92555103075): `OpenBuild:
+OpenRegister AppHost\Bootstrap is not autoloadable` was logged **3 times**,
+once for each `occ` invocation in `tests/e2e/ci-seed.sh`, while
+`lib/AppHost/Bootstrap.php` existed on OpenRegister the whole time. So under
+the CLI SAPI the guard was answering `false` on a healthy instance and the
+generic plumbing was silently skipped — for every `occ` command, background
+job and repair step.
+
+In the *same* run, `GET /api/health` returned 200 with `status: ok` and
+`GET /api/metrics` rendered the manifest's gauges. OpenBuild ships no
+concrete `HealthController`/`MetricsController`, and `health#index` exists
+only as a `Bootstrap::register()` DI alias — so under the **web** SAPI the
+guard was answering `true` and the plumbing *was* registered. The mechanism
+behind the CLI/web divergence has not been established, so no claim is made
+here about web requests being degraded; what is claimed, and measured, is
+that the CLI path was.
+
+After the prelude (run 31085597692): the log line appears **0 times**, and
+both observability routes still answer 200.

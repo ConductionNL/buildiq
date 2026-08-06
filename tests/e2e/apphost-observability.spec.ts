@@ -15,23 +15,26 @@ import { test, expect } from '@playwright/test'
  * Nextcloud registers apps in sorted order — `OC_App::getEnabledApps()` does
  * `sort($apps)` and `Coordinator::registerApps()` calls
  * `OC_App::registerAutoloading($appId, $path)` and then `$app->register()` one
- * app at a time — and `openbuild` sorts BEFORE `openregister`. So without the
- * prelude, `class_exists(Bootstrap::class)` answered false inside OpenBuild's
- * own `register()`, `Bootstrap::register()` never ran, those aliases were never
- * created, and the routes resolved to a class with no binding: HTTP 500, not
- * 404. Measured on this very workflow — `OpenBuild: OpenRegister
- * AppHost\Bootstrap is not autoloadable` was logged on every occ call in
- * ci-seed.sh while OpenRegister was installed and enabled the whole time.
+ * app at a time — and `openbuild` sorts BEFORE `openregister`, so
+ * `OCA\OpenRegister\` is not on the autoloader when OpenBuild's own
+ * `register()` runs. If `class_exists(Bootstrap::class)` answers false there,
+ * `Bootstrap::register()` never runs, these aliases are never created, and both
+ * routes resolve to a class with no binding: HTTP 500, not 404.
  *
- * This test is the reason the fix is not a lint change: it FAILS on the code
- * before the prelude and passes after it. It is deliberately an HTTP-level
- * assertion rather than a UI one, because the defect lives in the composition
- * root and its first observable symptom is a route that cannot be dispatched.
+ * ⚠️ Honest scope of this test. It does NOT reproduce the pre-fix defect: on the
+ * run measured before the prelude landed (run 31081906401), both routes already
+ * answered 200, so the guard was evidently answering TRUE under the web SAPI.
+ * What WAS measured failing on that same run is the CLI SAPI — `OpenBuild:
+ * OpenRegister AppHost\Bootstrap is not autoloadable` was logged 3 times, once
+ * per `occ` call in ci-seed.sh, with OpenRegister installed and enabled
+ * throughout. The CLI/web divergence has not been explained; see REQ-OBS-006's
+ * Notes. So treat this file as a REGRESSION GUARD on the aliases, not as
+ * evidence that the prelude changed these two responses. The prelude's own
+ * contract is asserted where it can be: tests/Unit/AppInfo/OpenRegisterAutoloaderTest.php.
  *
- * CI is the environment that can see this. A dev instance where any
- * alphabetically-earlier app already pulls OpenRegister's autoloader in (e.g.
- * `doriath`, which carries the same prelude) registers the PSR-4 prefix
- * process-wide and masks the failure entirely.
+ * A dev instance where any alphabetically-earlier app already pulls
+ * OpenRegister's autoloader in (e.g. `doriath`, which carries the same prelude)
+ * registers the PSR-4 prefix process-wide and masks the load order entirely.
  */
 // @e2e openspec/specs/settings-and-observability/spec.md#the-apphost-bound-observability-routes-actually-dispatch
 test.describe('ADR-040 AppHost adoption', () => {

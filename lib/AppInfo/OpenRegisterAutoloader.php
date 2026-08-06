@@ -40,14 +40,20 @@ namespace OCA\OpenBuild\AppInfo;
  * autoloadable inside `Application::register()` on a perfectly healthy
  * instance with OpenRegister enabled. This was measured, not theorised:
  * `OpenBuild: OpenRegister AppHost\Bootstrap is not autoloadable` was logged on
- * EVERY occ call in CI, while `lib/AppHost/Bootstrap.php` existed and was
- * enabled the whole time.
+ * EVERY occ call in CI (3 per E2E run, run 31081906401), while
+ * `lib/AppHost/Bootstrap.php` existed and was enabled the whole time.
  *
  * OpenBuild's `class_exists()` guard meant this degraded SILENTLY rather than
- * fatally: `Bootstrap::register()` had apparently never run, so the generic
- * dashboard / settings / preferences controllers, the observability (health +
- * metrics) controllers, the install repair steps and the manifest-driven
- * deep-link listener were absent — with nothing in the UI to say so.
+ * fatally: under the CLI SAPI `Bootstrap::register()` did not run, so the
+ * generic dashboard / settings / preferences controllers, the observability
+ * (health + metrics) controllers, the install repair steps and the
+ * manifest-driven deep-link listener were absent from every occ command,
+ * background job and repair step — with nothing anywhere to say so.
+ *
+ * Scope, honestly: in that same run `/api/health` and `/api/metrics` answered
+ * 200, and those routes exist ONLY as `Bootstrap::register()` DI aliases, so
+ * under the web SAPI the guard was answering true. The CLI/web divergence is
+ * not explained. This prelude removes the dependence on whatever causes it.
  *
  * Lives in its own class rather than inline in `Application::register()` for
  * one reason: `Application` cannot be constructed without a Nextcloud DI
