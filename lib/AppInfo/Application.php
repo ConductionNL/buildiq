@@ -97,6 +97,25 @@ class Application extends App implements IBootstrap
      */
     public function register(IRegistrationContext $context): void
     {
+        // LOAD-ORDER HAZARD (ADR-040). OC_App::getEnabledApps() sort()s the app
+        // list, and Coordinator::registerApps() walks THAT sorted list calling
+        // OC_App::registerAutoloading($appId, $path) and then $app->register()
+        // for ONE APP AT A TIME. So every app's register() runs BEFORE the PSR-4
+        // prefix of every alphabetically-LATER app exists.
+        //
+        // Put OpenRegister's prefix on the autoloader ourselves, which is exactly
+        // what Nextcloud does a few iterations later. registerAutoloading()
+        // touches ONLY the autoloader and is idempotent (it early-returns on an
+        // $alreadyRegistered key). Deliberately NOT IAppManager::loadApp(), which
+        // would mark OpenRegister loaded and call Coordinator::bootApp(), booting
+        // it BEFORE its own register() has run.
+        try {
+            $openRegisterPath = \OCP\Server::get(\OCP\App\IAppManager::class)->getAppPath('openregister');
+            \OC_App::registerAutoloading('openregister', $openRegisterPath);
+        } catch (\Throwable) {
+            // OpenRegister absent/disabled — fall through to the degraded path.
+        }
+
         // ADR-040 AppHost adoption: one call wires the standard plumbing —
         // the generic dashboard/settings/preferences controllers, the
         // observability (health + metrics) controllers, the install repair
