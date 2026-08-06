@@ -188,32 +188,29 @@ The prelude MUST NOT throw under any instance state — an exception escaping
 it would abort the whole of `register()`, which is a strictly worse failure
 than the one it exists to prevent.
 
-#### Scenario: OpenRegister is enabled but has not registered yet
+#### Scenario: The AppHost-bound observability routes actually dispatch
 
 - **GIVEN** an instance with OpenRegister enabled, and OpenBuild's
   `register()` running at its sorted position ahead of `openregister`
-- **WHEN** `class_exists(Bootstrap::class)` is evaluated
-- **THEN** it MUST answer `true`, because the prelude has already put
-  OpenRegister's prefix on the autoloader, and `Bootstrap::register()` MUST
-  run — wiring the generic dashboard / settings / preferences controllers,
-  the observability controllers, the install repair steps and the
-  manifest-driven deep-link listener
+- **WHEN** `GET /apps/openbuild/api/health` is called
+- **THEN** the response MUST be HTTP 200 with the engine's canonical
+  `{status, app, version, checks}` shape and `app = "openbuild"` — which is
+  only possible if `class_exists(Bootstrap::class)` answered `true` and
+  `Bootstrap::register()` ran, because OpenBuild ships no concrete
+  `HealthController` and `health#index` exists ONLY as a Bootstrap DI alias
+- **AND** `GET /apps/openbuild/api/metrics` MUST NOT return a 5xx: an
+  anonymous caller must be turned away by the auth middleware, which only
+  runs once the route resolves to a bound controller
 - **AND** the log line `OpenRegister AppHost\Bootstrap is not autoloadable`
   MUST NOT be emitted
-- @e2e exclude composition-root load order — observable only in the app
-  registration phase, before any HTTP request or browser session exists;
-  asserted by tests/Unit/AppInfo/OpenRegisterAutoloaderTest.php and by
-  hydra gate-64 (apphost-autoload-prelude)
 
-#### Scenario: OpenRegister is genuinely absent
-
-- **GIVEN** an instance with OpenRegister not installed
-- **WHEN** the prelude runs
-- **THEN** it MUST return control to its caller rather than throw, and the
-  `class_exists()` guard MUST then skip the generic AppHost plumbing while
-  OpenBuild's own concrete controllers and domain listeners still register
-- @e2e exclude composition-root load order — asserted by
-  tests/Unit/AppInfo/OpenRegisterAutoloaderTest.php
+The absent-OpenRegister path has no scenario of its own on purpose: it is not
+reachable from a browser or an HTTP client, because an instance without
+OpenRegister cannot serve OpenBuild's OpenRegister-backed surface at all. It is
+asserted directly at the unit level, in
+`tests/Unit/AppInfo/OpenRegisterAutoloaderTest.php`, which runs the prelude in
+an environment where `\OCP\Server::get()` resolves nothing and requires that
+control still returns to the caller.
 
 **Notes:** Measured 2026-08-06. `OpenBuild: OpenRegister AppHost\Bootstrap
 is not autoloadable` was logged on every `occ` call in the E2E workflow
