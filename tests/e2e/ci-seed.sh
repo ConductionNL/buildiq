@@ -555,3 +555,19 @@ if [ "${GITHUB_ACTIONS:-}" = "true" ] || [ "${CI:-}" = "true" ]; then
 fi
 
 echo "[ci-seed] done."
+
+# ============================================================================
+# DO NOT MERGE — BUNDLE TRUNCATION CONTROL (throwaway diagnostic branch only)
+# ----------------------------------------------------------------------------
+# Deliberately destroy the built frontend bundle AFTER every seed + integrity
+# check above has passed. Any test that still passes with a 0-byte bundle is
+# not evidence about the OpenBuild frontend. The resulting pass count is the
+# measurement; this block is deleted with the branch.
+# ============================================================================
+echo "[DO-NOT-MERGE] truncating the built frontend bundle to 0 bytes"
+ls -l apps/openbuild/js/ || true
+for f in apps/openbuild/js/*.js; do
+	: > "$f"
+done
+ls -l apps/openbuild/js/ || true
+echo "[DO-NOT-MERGE] bundle truncated."
