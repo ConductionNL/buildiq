@@ -64,7 +64,7 @@ jobs:
       # The control argument above is unaffected: it concerns gate-5/gate-14,
       # which v1.3.0 does not touch.
       enable-hydra-gates: true
-      hydra-gates-ref: v1.3.0
+      hydra-gates-ref: v1.5.0
       # Newman stays disabled while the openbuild#33 fixes are in flight.
       # The collection bugs in this PR are fixed (uuid `@self.id` extraction,
       # `export-job` slug correction, hello-world `@self.slug` fallback). But
