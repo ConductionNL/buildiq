@@ -43,14 +43,16 @@ const PAGE_DESIGNER = (slug: string) => `${BASE}/apps/openbuild/builder/${slug}/
 // REQ-OBPDUI-001 — Controlled designer orchestrates pages, menu, undo/redo
 // ---------------------------------------------------------------------------
 
-// QUARANTINED (Conduction/openbuild#41): the openbuild builder/virtual-app surface is not
-// functional in this build — PageDesignerHost mounts but the virtual-app load returns 500
-// ("Failed to load the virtual app: Request failed with status code 500"), so the designer
-// panes never render. Same #41 family as openbuild-runtime.spec.ts / page-designer.spec.ts.
-// Re-enable when #41 is fixed (UI coverage is referenced by the page-designer-ui spec; the
-// host contract is also covered by Vitest unit tests in the meantime).
+// UN-QUARANTINED 2026-08-06. The recorded reason was that the virtual-app load
+// 500s so the designer panes never render. That is contradicted by this job's
+// own results: the NEXT test in this very file opens the same
+// `PAGE_DESIGNER('hello-world')` URL, waits for the same `.page-designer-host`
+// selector, and passes — as do every page-editor-coverage.spec.ts scenario and
+// the docudesk builder specs, all of which drive
+// `/apps/openbuild/builder/<slug>/pages`. The 500 was fixed weeks ago; this
+// file was last touched 2026-06-06 and simply never rechecked.
 // @e2e page-designer-ui::page-designer-renders-three-pane-layout
-test.skip('REQ-OBPDUI-001 — page designer route renders the three-pane layout', async ({ page }) => {
+test('REQ-OBPDUI-001 — page designer route renders the three-pane layout', async ({ page }) => {
 	// @e2e page-designer-ui::page-designer-renders-three-pane-layout
 	await page.goto(PAGE_DESIGNER('hello-world'))
 	await expect(page.locator('.page-designer-host'), 'designer must load').toBeVisible({ timeout: 15_000 })
@@ -76,19 +78,33 @@ test('REQ-OBPDUI-001 — undo button is disabled when no edits have been made', 
 // REQ-OBPDUI-002 — Route hosts resolve slug + version and persist manifest
 // ---------------------------------------------------------------------------
 
-// QUARANTINED (Conduction/openbuild#41): builder/virtual-app surface non-functional in this
-// build — the host renders a "Failed to load the virtual app: Request failed with status
-// code 500" error and a "Version not found" empty-state, so the route cannot resolve a slug.
-// Re-enable when #41 is fixed.
+// UN-QUARANTINED 2026-08-06 — same stale reason as REQ-OBPDUI-001 above, same
+// contradicting evidence: the neighbouring `unknown ?_version` test drives this
+// exact route and passes.
 // @e2e page-designer-ui::page-designer-route-renders-for-valid-slug
-test.skip('REQ-OBPDUI-002 — PageDesignerHost route renders for a known slug', async ({ page }) => {
+test('REQ-OBPDUI-002 — PageDesignerHost route renders for a known slug', async ({ page }) => {
 	// @e2e page-designer-ui::page-designer-route-renders-for-valid-slug
 	await page.goto(PAGE_DESIGNER('hello-world'))
 	await expect(page.locator('main'), 'main content must load').toBeVisible({ timeout: 15_000 })
 
-	// The page must not be a 404 error page.
-	const body = await page.textContent('body')
-	expect(body).not.toMatch(/404|not found/i)
+	// The route RESOLVED THE SLUG — that is the requirement, and it is asserted
+	// positively rather than by scanning the whole page for the word "404".
+	//
+	// The old body did the latter, and it was an assertion that could not
+	// distinguish success from failure: `page.textContent('body')` on this route
+	// includes the Nextcloud chrome and every string the designer renders, so
+	// any legitimate "not found" copy — the version-not-found empty state the
+	// very next test asserts EXISTS, for one — would have failed it, while a
+	// blank designer with no error text would have passed it. Asserting the
+	// host actually mounted for this slug is both stricter and honest.
+	await expect(
+		page.locator('.page-designer-host'),
+		'the designer host must mount for a known slug',
+	).toBeVisible({ timeout: 15_000 })
+	await expect(
+		page.getByText(/version not found/i),
+		'a known slug must NOT land on the version-not-found state',
+	).toHaveCount(0)
 })
 
 // @e2e page-designer-ui::unknown-version-renders-not-found-state

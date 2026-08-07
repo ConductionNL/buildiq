@@ -31,6 +31,7 @@
 
 import { test, expect, type Page } from '@playwright/test'
 import { ensureApp as ensureAppFixture, dismissOverlays, suppressSupportDialog } from './support/appFixture'
+import { ensureVersionChain } from './support/versionChain'
 
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
 import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
@@ -244,18 +245,30 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 	})
 
 	test('REQ-BUR-004: a version switch resets the session history', async ({ page }) => {
-		// Requires a second seeded ApplicationVersion (e.g. "staging") for
-		// pw-undo-redo, same precondition class as versionRouting.spec.ts's
-		// 9.1/9.3 — skip gracefully rather than fail when it isn't seeded.
-		const versionCheck = await page.request.get(
-			`${BASE_URL}/index.php/apps/openbuild/api/applications/${APP_SLUG}/versions/staging`,
-		).catch(() => null)
-		if (!versionCheck || versionCheck.status() !== 200) {
-			test.skip(true, `SKIP: ApplicationVersion "staging" not seeded for ${APP_SLUG} — seed one to exercise this scenario`)
-			return
-		}
+		// THIS TEST USED TO SKIP ITSELF, AND THE REASON WAS FALSE.
+		//
+		// It probed `GET .../versions/staging`, found nothing, and skipped with
+		// "ApplicationVersion 'staging' not seeded — seed one to exercise this
+		// scenario". Nothing in CI was ever going to seed it, so the skip was
+		// permanent: a guard on a precondition the suite could satisfy for
+		// itself, phrased as a fact about the environment.
+		//
+		// `tests/e2e/support/versionChain.ts::ensureVersionChain()` provisions
+		// development -> staging -> production on demand and is proven working
+		// in this same job — versionRouting.spec.ts drives `?_version=staging`
+		// through it and passes (9.1 / 9.2 / 9.3, run 31083894467). So the
+		// scenario was drivable all along; it simply never asked.
+		//
+		// A DEDICATED SLUG, not `pw-undo-redo`. The other tests in this describe
+		// open `/pages` with no `?_version=`, so their default-version
+		// resolution depends on how many versions the app has. Growing a chain
+		// on the shared slug would leave them running against a different app
+		// shape on every run AFTER the first — a fixture that changes what its
+		// neighbours test is worse than the skip it replaces.
+		const CHAIN_SLUG = 'pw-undo-redo-chain'
+		await ensureVersionChain(page, CHAIN_SLUG, 'PW Undo Redo Chain')
 
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${BASE_URL}/apps/openbuild/builder/${CHAIN_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
 
 		await page.locator('.page-list-editor__add').click()
@@ -264,7 +277,7 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 		await expect(pageDesignerButton(page, 'Undo')).toBeEnabled()
 
 		await page.goto(
-			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages?_version=staging`,
+			`${BASE_URL}/apps/openbuild/builder/${CHAIN_SLUG}/pages?_version=staging`,
 			{ waitUntil: 'domcontentloaded' },
 		)
 		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })

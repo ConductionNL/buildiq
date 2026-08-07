@@ -159,7 +159,26 @@ export default defineConfig({
 		// HTML page loads — which breaks the browser-based login redirect (no
 		// Location header is emitted, the page stays on /login). Specs that
 		// need it set it on their explicit `request` calls.
-		trace: 'on-first-retry',
+		// `on-first-retry` WROTE NOTHING IN THIS JOB, EVER.
+		//
+		// This config sets `retries: 0` (see above, deliberately). Playwright
+		// only records a trace on a RETRY under that mode, and a retry can
+		// never happen, so the trace file was never produced — while the
+		// workflow's trace-upload step dutifully ran, found nothing, and said
+		// so quietly under `if-no-files-found: ignore`. Two settings that are
+		// each individually defensible combined into an instrument that is
+		// switched off: every red run since this job existed had a screenshot
+		// and a video but no trace, which is the one artifact that carries the
+		// network log and the DOM at each step.
+		//
+		// `retain-on-failure` records every test and keeps the trace only for
+		// the ones that fail — no dependence on retries at all. The output
+		// lands under `outputDir` (APP_ROOT/test-results), which IS globbed by
+		// the shared workflow's upload step (it uploads both
+		// `server/apps/<app>/test-results/` and
+		// `server/apps/<app>/tests/e2e/test-results/`), so the traces actually
+		// leave the runner.
+		trace: 'retain-on-failure',
 		screenshot: 'only-on-failure',
 		video: 'retain-on-failure',
 		headless: true,

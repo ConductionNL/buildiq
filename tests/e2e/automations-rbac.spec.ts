@@ -27,6 +27,11 @@ const EDITOR_USER = process.env.NC_RBAC_EDITOR_USER ?? 'rbac-editor'
 const EDITOR_PASS = process.env.NC_RBAC_EDITOR_PASS ?? 'RbacEditor-1!'
 const OWNER_USER = process.env.NC_RBAC_OWNER_USER ?? 'rbac-owner'
 const OWNER_PASS = process.env.NC_RBAC_OWNER_PASS ?? 'RbacOwner-1!'
+// Admin credentials for the capability probe below ONLY. Same resolution the
+// config uses for `use.httpCredentials`; the tests themselves deliberately run
+// as non-admins.
+const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
+const ADMIN_PASS = process.env.NC_ADMIN_PASSWORD ?? process.env.NC_ADMIN_PASS ?? 'admin'
 // The seeded `hello-world` fixture only ever carries a single `production`
 // version (see lib/Command/SeedHelloWorldFixture.php) — there is no draft
 // version to author on, so REQ-AUTD-008's "editor authors on draft, gets 403
@@ -46,24 +51,48 @@ const APP_SLUG = process.env.NC_RBAC_TEST_SLUG ?? 'rbac-automations-app'
 const APP_TITLE_PATTERN = new RegExp(APP_SLUG.replace(/-/g, '.?'), 'i')
 
 /**
- * Same schema-slug-collision guard as automations.spec.ts (duplicated here
- * since each e2e spec file is self-contained) — see that file's
- * `automationSchemaIsUsable()` doc comment for the full root-cause writeup.
- * On this shared instance the openbuild `automation` schema slug collides
- * with a pre-existing, unrelated schema of the same slug from another app,
- * so `POST`ing a real automation payload 400s regardless of which
- * Application/Version it targets — this blocks BOTH scenarios in this file
- * (composing one, and toggling a pre-existing one) identically.
+ * Is openbuild's `automation` schema readable and shaped as this suite expects?
+ *
+ * THIS PROBE USED TO REPORT `false` HERE AND `true` EVERYWHERE ELSE, IN THE
+ * SAME RUN, AGAINST THE SAME INSTANCE.
+ *
+ * It is a copy of `automations.spec.ts`'s helper, and it carried that file's
+ * reason with it: "the openbuild `automation` schema slug collides with a
+ * pre-existing schema of the same slug on this shared instance — automation
+ * CREATE/SAVE 400s regardless of app/version". Run 31083894467 disproves that
+ * for CI outright. Seven tests in `automations.spec.ts` sit behind the very
+ * same guard and PASSED, composing and saving real automations end to end
+ * (REQ-AUTD-002 ×3, -003, -005, -006, -007). Both tests in THIS file skipped.
+ *
+ * The discriminator is not the instance, it is the auth context. This describe
+ * declares `test.use({ storageState: { cookies: [], origins: [] } })` so each
+ * test can log in as a non-admin — which also makes the `request` fixture
+ * anonymous. The probe's read of `api/schemas/automation` was therefore
+ * refused, `resp.ok()` was false, and the helper reported the refusal as a
+ * fact about the schema. A guard that returns "the feature is broken" when it
+ * means "I could not look" produces exactly this: a permanent skip with a
+ * confident, wrong explanation attached.
+ *
+ * Two changes. The probe authenticates with the admin credentials the config
+ * already uses for `httpCredentials`, independently of whatever storageState
+ * the test is running under. And a NON-OK response is now a thrown error
+ * rather than a `false`, so "cannot read the schema" fails the run loudly
+ * instead of silently becoming "the schema is unusable" — the failure mode
+ * this helper just spent a release exhibiting.
  *
  * @param request Playwright APIRequestContext (fixture-provided).
- * @return {Promise<boolean>} True when automation CREATE/SAVE is usable.
+ * @return {Promise<boolean>} True when the schema reads back with the expected shape.
  */
 async function automationSchemaIsUsable(request: APIRequestContext): Promise<boolean> {
+	const auth = Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`).toString('base64')
 	const resp = await request.get(`${NEXTCLOUD_URL}/index.php/apps/openregister/api/schemas/automation`, {
-		headers: { 'OCS-APIRequest': 'true' },
+		headers: { 'OCS-APIRequest': 'true', Authorization: `Basic ${auth}` },
 	})
 	if (resp.ok() === false) {
-		return false
+		throw new Error(
+			`automationSchemaIsUsable: could not read api/schemas/automation — HTTP ${resp.status()}. `
+			+ 'This is a broken probe, not a verdict about the schema; it must not be reported as one.',
+		)
 	}
 	const schema = await resp.json()
 	return schema?.properties?.trigger?.type === 'object'
@@ -93,7 +122,7 @@ test.describe('automation-designer — RBAC (REQ-AUTD-008)', () => {
 	test.use({ storageState: { cookies: [], origins: [] } })
 
 	test('editor authors + enables an automation on a non-production (draft) version', async ({ page, request }) => {
-		test.skip(await automationSchemaIsUsable(request) === false, 'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — automation CREATE/SAVE 400s regardless of app/version; see automationSchemaIsUsable()')
+		test.skip(await automationSchemaIsUsable(request) === false, 'openbuild `automation` schema does not read back with a `trigger` object property — see automationSchemaIsUsable() for why this must be a real verdict and not a failed lookup')
 		await loginAs(page, EDITOR_USER, EDITOR_PASS)
 		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/automations`)
 		await page.waitForSelector('.automations-page', { timeout: 20_000 })
@@ -121,7 +150,7 @@ test.describe('automation-designer — RBAC (REQ-AUTD-008)', () => {
 	})
 
 	test('editor gets 403 enabling on the production version; owner succeeds', async ({ page, browser, request }) => {
-		test.skip(await automationSchemaIsUsable(request) === false, 'requires a pre-existing automation on the production version, which cannot be created — openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance; see automationSchemaIsUsable()')
+		test.skip(await automationSchemaIsUsable(request) === false, 'openbuild `automation` schema does not read back with a `trigger` object property — see automationSchemaIsUsable() for why this must be a real verdict and not a failed lookup')
 		await loginAs(page, EDITOR_USER, EDITOR_PASS)
 		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/automations`)
 		await page.waitForSelector('.automations-page', { timeout: 20_000 })
