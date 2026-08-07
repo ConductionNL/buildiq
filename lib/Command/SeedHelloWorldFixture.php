@@ -73,6 +73,42 @@ class SeedHelloWorldFixture extends Command
     private const HYBRID_SLUG = 'opencatalogi';
 
     /**
+     * The hello-world fixture's access block, granting the CI/dev admin owner
+     * rights on the seeded app.
+     *
+     * A CONSTANT, and repeated on EVERY write to the Application — this is the
+     * point of it, not an accident.
+     *
+     * OR's `saveObject()` update path is PUT-semantic, not PATCH:
+     * `SaveObject::fillMissingSchemaPropertiesWithNull()` sets every schema
+     * property absent from the payload to null. The fixture writes the
+     * Application once with its permissions and then writes it again purely to
+     * attach `productionVersion` — and that second, "partial" write silently
+     * NULLED the block the first had just set.
+     *
+     * The result was not a missing badge. `permissions` is what the frontend
+     * `useRole()` and the backend `PermissionResolver` both read, and an empty
+     * block denies everyone (`allowAdminBypass` is false), so the seeded app
+     * came out owned by NOBODY. Measured on run 31040914410, that one omission
+     * produced: a `readonly` manifest editor for the admin (REQ-OBR-005 x4,
+     * REQ-OBR-006b, REQ-OBR-008b), no owner-only Settings menu entry, a 403
+     * from the copilot execute endpoint ("You do not have owner or editor
+     * access to application 'hello-world'"), and seven automation scenarios
+     * whose edit modal never closed because the save 403'd — 14 failures, every
+     * one of which reads like a permissions bug in the product.
+     *
+     * Wizard-created apps set the same shape; only the seed, which runs in
+     * system context, has to state it.
+     *
+     * @var array<string, array<int, string>>
+     */
+    private const SEED_PERMISSIONS = [
+        'owners'  => ['user:admin'],
+        'editors' => [],
+        'viewers' => [],
+    ];
+
+    /**
      * Constructor.
      *
      * @param ObjectService  $objectService  OpenRegister object service.
@@ -133,15 +169,8 @@ class SeedHelloWorldFixture extends Command
                     'description' => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
                     // Grant the admin user owner rights so automation ops
                     // (compile/enable/dry-run — WRITE_ROLES ['owners','editors'])
-                    // are permitted. Wizard-created apps set this; the seed ran
-                    // in system context with permissions=null, which makes
-                    // matchesCaller() deny everyone (empty-permissions = deny,
-                    // allowAdminBypass=false) and 403s every automation op.
-                    'permissions' => [
-                        'owners'  => ['user:admin'],
-                        'editors' => [],
-                        'viewers' => [],
-                    ],
+                    // are permitted. See SEED_PERMISSIONS.
+                    'permissions' => self::SEED_PERMISSIONS,
                 ]
             );
             $applicationUuid = $application->getUuid();
@@ -167,6 +196,11 @@ class SeedHelloWorldFixture extends Command
             $versionUuid = $version->getUuid();
 
             // 3. Point the Application at its production version.
+            //
+            // ⚠️ `permissions` IS REPEATED HERE ON PURPOSE — DO NOT TRIM IT.
+            // This write's only intent is the production pointer, but OR's
+            // saveObject() is PUT-semantic and nulls every property it omits.
+            // See the SEED_PERMISSIONS docblock for what that cost.
             $this->create(
                 register: $register,
                 schema: ApplicationVersionService::APPLICATION_SCHEMA,
@@ -174,6 +208,7 @@ class SeedHelloWorldFixture extends Command
                     'slug'              => self::SEED_SLUG,
                     'name'              => 'Hello World',
                     'description'       => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
+                    'permissions'       => self::SEED_PERMISSIONS,
                     'productionVersion' => $versionUuid,
                 ],
                 uuid: $applicationUuid
@@ -230,18 +265,43 @@ class SeedHelloWorldFixture extends Command
 
         $baseRef = ['kind' => 'fleet-app', 'id' => self::HYBRID_SLUG];
 
-        $application     = $this->create(
-            register: $register,
-            schema: ApplicationVersionService::APPLICATION_SCHEMA,
-            data: [
-                'slug'        => self::HYBRID_SLUG,
-                'name'        => 'OpenCatalogi',
-                'description' => 'Seeded hybrid example — a local layout customization layered over the installed OpenCatalogi app.',
-                'appType'     => 'hybrid',
-                'baseRef'     => $baseRef,
-            ]
-        );
-        $applicationUuid = $application->getUuid();
+        // The Application UUID is minted HERE rather than taken from a first
+        // create, so the whole hybrid app is written in exactly ONE create.
+        //
+        // WHY — read before restoring the create/create/update shape.
+        //
+        // HybridMetadataLockListener USED TO lock slug, name, description AND
+        // productionVersion on a hybrid app, and it fires on ObjectUpdatingEvent
+        // only: "a hybrid app is created with its locked identity, which is
+        // allowed". The previous shape created the Application, created the
+        // version, then UPDATED the Application to attach productionVersion —
+        // an update touching two locked fields at once. It was rejected with
+        //
+        // "A hybrid app's description is read-only — it mirrors the installed
+        // Nextcloud app it customizes."
+        //
+        // (description first only because it came first in LOCKED_FIELDS; the
+        // update dropped it under PUT semantics, and productionVersion was
+        // locked too). So the hybrid example could never be seeded once that
+        // listener shipped. Nothing said so: globalSetup swallows a seed failure
+        // as a warning, and the E2E job had never run in CI at all. It surfaced
+        // the first time it did — run 31029961494.
+        //
+        // Both of those locks have since been removed as defects in their own
+        // right — `productionVersion` because the canonical spec REQUIRES a
+        // hybrid app to point at its delta version, and `description` because
+        // OR's PUT-semantic saveObject delivers an unmentioned field as null,
+        // which the lock read as a deliberate edit. See
+        // HybridMetadataLockListener::LOCKED_FIELDS. The single-create shape is
+        // kept anyway: it is one write instead of three, and it does not depend
+        // on which fields the listener happens to guard today.
+        //
+        // Creating the version first requires the parent UUID up front, which is
+        // why it is minted. The forward reference is safe: OR only validates a
+        // relation target's existence for `$ref` properties carrying
+        // `validateReference`, and ApplicationVersion.application is an
+        // `x-openregister-relation` with neither.
+        $applicationUuid = $this->uuid4();
 
         $version     = $this->create(
             register: $register,
@@ -264,12 +324,19 @@ class SeedHelloWorldFixture extends Command
         );
         $versionUuid = $version->getUuid();
 
+        // One create, carrying the full locked identity + the production
+        // pointer. `uuid:` names an object that does not exist yet, which OR
+        // resolves to a CREATE with that identifier (SaveObject falls through
+        // to handleObjectCreation when the lookup finds nothing), so no
+        // ObjectUpdatingEvent is dispatched and the metadata lock is satisfied
+        // by construction rather than bypassed.
         $this->create(
             register: $register,
             schema: ApplicationVersionService::APPLICATION_SCHEMA,
             data: [
                 'slug'              => self::HYBRID_SLUG,
                 'name'              => 'OpenCatalogi',
+                'description'       => 'Seeded hybrid example — a local layout customization layered over the installed OpenCatalogi app.',
                 'appType'           => 'hybrid',
                 'baseRef'           => $baseRef,
                 'productionVersion' => $versionUuid,
@@ -279,6 +346,35 @@ class SeedHelloWorldFixture extends Command
 
         $output->writeln('<info>Seeded hybrid example app (application '.$applicationUuid.').</info>');
     }//end seedHybridExample()
+
+    /**
+     * Generate a UUIDv4.
+     *
+     * Same implementation as ExportJobService::uuid4() — kept local because this
+     * command must not take a service dependency for one identifier, and the
+     * seeder needs the parent Application's UUID BEFORE the object exists (see
+     * seedHybridExample()).
+     *
+     * @return string UUIDv4 in canonical 8-4-4-4-12 form.
+     *
+     * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+     */
+    private function uuid4(): string
+    {
+        $data    = random_bytes(16);
+        $data[6] = chr((ord($data[6]) & 0x0F) | 0x40);
+        $data[8] = chr((ord($data[8]) & 0x3F) | 0x80);
+        $hex     = bin2hex($data);
+
+        return sprintf(
+            '%s-%s-%s-%s-%s',
+            substr($hex, 0, 8),
+            substr($hex, 8, 4),
+            substr($hex, 12, 4),
+            substr($hex, 16, 4),
+            substr($hex, 20, 12)
+        );
+    }//end uuid4()
 
     /**
      * Whether the hybrid example Application already exists.

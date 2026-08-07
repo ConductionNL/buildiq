@@ -373,7 +373,7 @@ class ApplicationCreationService
                 // OR runs full-schema validation on saveObject even with UUID set;
                 // build a full Application payload with the productionVersion field
                 // patched, mirroring the chain-wiring fix above (issue #71).
-                $applicationFullPayload = [
+                $fullPayload = [
                     'slug'              => $appSlug,
                     'name'              => $appName,
                     'description'       => $description,
@@ -386,7 +386,7 @@ class ApplicationCreationService
                 ];
 
                 $this->objectService->saveObject(
-                object: $applicationFullPayload,
+                object: $fullPayload,
                 register: ApplicationVersionService::REGISTER_SLUG,
                 schema: ApplicationVersionService::APPLICATION_SCHEMA,
                 uuid: $state['applicationUuid']

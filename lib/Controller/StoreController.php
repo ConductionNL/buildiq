@@ -90,11 +90,11 @@ class StoreController extends Controller
     /**
      * Constructor.
      *
-     * @param IRequest               $request                The current HTTP request.
-     * @param LoggerInterface        $logger                 PSR logger.
-     * @param IUserSession           $userSession            Current NC user session.
-     * @param GenericStoreService    $storeService           Engine-owned store client.
-     * @param ApplicationsController $applicationsController Shared clone/install seam.
+     * @param IRequest               $request        The current HTTP request.
+     * @param LoggerInterface        $logger         PSR logger.
+     * @param IUserSession           $userSession    Current NC user session.
+     * @param GenericStoreService    $storeService   Engine-owned store client.
+     * @param ApplicationsController $appsController Shared clone/install seam.
      *
      * @return void
      */
@@ -103,7 +103,7 @@ class StoreController extends Controller
         private readonly LoggerInterface $logger,
         private readonly IUserSession $userSession,
         private readonly GenericStoreService $storeService,
-        private readonly ApplicationsController $applicationsController,
+        private readonly ApplicationsController $appsController,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
     }//end __construct()
@@ -267,7 +267,7 @@ class StoreController extends Controller
         // Reuse the exact local clone path (companion namespacing, manifest
         // rewrite, per-app register, owner-tagged persist). The seam returns a
         // {status, data} result; this thin action owns the JSONResponse.
-        $result = $this->applicationsController->installFromTemplateArray(
+        $result = $this->appsController->installFromTemplateArray(
             template: $template,
             name: $name,
             newSlug: $newSlug,

@@ -290,20 +290,7 @@ abstract class AbstractToolHandler
             $permissions = [];
         }
 
-        if ($this->permissionResolver !== null) {
-            $userGroups = $this->permissionResolver->resolveUserGroups($caller);
-            $hasRole    = $this->permissionResolver->matchesCaller(
-                permissions: $permissions,
-                caller: $caller,
-                userGroups: $userGroups,
-                allowAdminBypass: true,
-                roles: ['owners', 'editors', 'viewers']
-            );
-        } else {
-            $hasRole = $this->callerHasWriteRole(app: $app, uid: $uid, allowAdminBypass: true);
-        }
-
-        if ($hasRole === true) {
+        if ($this->hasAnyRole(app: $app, permissions: $permissions, caller: $caller, uid: $uid) === true) {
             return null;
         }
 
@@ -313,6 +300,39 @@ abstract class AbstractToolHandler
         );
 
     }//end requireAnyRoleOnApp()
+
+    /**
+     * Whether the caller holds ANY role on the Application.
+     *
+     * Extracted from {@see self::requireAnyRoleOnApp()}: the resolver-backed
+     * and legacy paths both yield a bool, so an early return expresses the
+     * choice without an else branch. Deny-by-default is preserved — every path
+     * still returns an explicit bool from a real check.
+     *
+     * @param array<string, mixed> $app         Application data array.
+     * @param array<string, mixed> $permissions The Application's permissions block.
+     * @param IUser                $caller      The authenticated caller.
+     * @param string               $uid         The caller's UID.
+     *
+     * @return bool True when the caller holds owner, editor or viewer.
+     */
+    private function hasAnyRole(array $app, array $permissions, IUser $caller, string $uid): bool
+    {
+        if ($this->permissionResolver === null) {
+            return $this->callerHasWriteRole(app: $app, uid: $uid, allowAdminBypass: true);
+        }
+
+        $userGroups = $this->permissionResolver->resolveUserGroups($caller);
+
+        return $this->permissionResolver->matchesCaller(
+            permissions: $permissions,
+            caller: $caller,
+            userGroups: $userGroups,
+            allowAdminBypass: true,
+            roles: ['owners', 'editors', 'viewers']
+        );
+
+    }//end hasAnyRole()
 
     /**
      * Check whether the session caller holds any WRITE_ROLES entry on the Application.

@@ -22,7 +22,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
 
 **Ondersteuning:** Voor ondersteuning, neem contact op via support@conduction.nl.
     ]]></description>
-    <version>0.9.0</version>
+    <version>0.10.0</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenBuild</namespace>
@@ -41,6 +41,16 @@ Vrij en open source onder de EUPL-1.2-licentie.
 
     <dependencies>
         <app>openregister</app>
+        <!--
+        min-version is 32, NOT 28, because <app>openregister</app> above is a HARD
+        dependency and openregister declares min-version="32" (its
+        lib/ContextChat/ContentProvider.php implements OCP\ContextChat\IContentProvider,
+        an interface that does not exist in core before Nextcloud 32). On NC 28-31
+        openregister refuses to install — "cannot be installed because it is not
+        compatible with this version of the server" — and every OpenBuild entity is
+        an OpenRegister object, so the app cannot function there. Declaring 28
+        advertised a range this app cannot deliver. Same defect as openconnector#1173.
+        -->
         <nextcloud min-version="28" max-version="34"/>
         <php min-version="8.3"/>
     </dependencies>

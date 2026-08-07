@@ -669,7 +669,6 @@
 						"label": "Marginal case"
 					},
 					{
-						"condities": {},
 						"waardes": {
 							"decision": "deny",
 							"reason": "Eligibility criteria not met"

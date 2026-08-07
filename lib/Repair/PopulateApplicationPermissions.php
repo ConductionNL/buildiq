@@ -98,15 +98,7 @@ class PopulateApplicationPermissions implements IRepairStep
         $output->info('Populating permissions on pre-existing Applications...');
 
         try {
-            $hasSystemContext = method_exists($this->objectService, 'runAsSystem') === true;
-
-            if ($hasSystemContext === true) {
-                $patched = $this->objectService->runAsSystem(
-                    fn (): ?int => $this->patchApplicationsMissingPermissions(output: $output)
-                );
-            } else {
-                $patched = $this->patchApplicationsMissingPermissions(output: $output);
-            }
+            $patched = $this->patchAllApplications(output: $output);
 
             if ($patched === null) {
                 $output->info('No Applications found; nothing to migrate.');
@@ -126,6 +118,31 @@ class PopulateApplicationPermissions implements IRepairStep
             );
         }//end try
     }//end run()
+
+    /**
+     * Patch every Application, elevating to a system context when the installed
+     * ObjectService offers one.
+     *
+     * Extracted from {@see self::run()}: the elevated and plain paths call the
+     * same worker, so an early return expresses the choice without an else
+     * branch. Older ObjectService builds have no `runAsSystem()`, hence the
+     * duck-typed probe.
+     *
+     * @param IOutput $output Repair output channel.
+     *
+     * @return int|null The number patched, or null when no Applications exist.
+     */
+    private function patchAllApplications(IOutput $output): ?int
+    {
+        if (method_exists($this->objectService, 'runAsSystem') === true) {
+            return $this->objectService->runAsSystem(
+                fn (): ?int => $this->patchApplicationsMissingPermissions(output: $output)
+            );
+        }
+
+        return $this->patchApplicationsMissingPermissions(output: $output);
+
+    }//end patchAllApplications()
 
     /**
      * Find every Application row and patch the ones missing `permissions`.

@@ -132,17 +132,7 @@ class AppOverrideController extends Controller
         $rawAdmin = ((string) $this->request->getParam('scope', '') === 'admin');
 
         try {
-            if ($rawAdmin === true) {
-                $record = $this->appOverrideService->findByAppId(appId: $appId);
-            } else {
-                $user = $this->userSession->getUser();
-                $uid  = null;
-                if ($user !== null) {
-                    $uid = (string) $user->getUID();
-                }
-
-                $record = $this->appOverrideService->resolveLayeredDelta(appId: $appId, uid: $uid);
-            }
+            $record = $this->loadDelta(appId: $appId, rawAdmin: $rawAdmin);
         } catch (Throwable $e) {
             $this->logger->error(
                 'OpenBuild: AppOverride get failed for appId '.$appId.': '.$e->getMessage(),
@@ -165,6 +155,36 @@ class AppOverrideController extends Controller
         return new JSONResponse(data: (object) $delta, statusCode: Http::STATUS_OK);
 
     }//end get()
+
+    /**
+     * Load the delta a `get()` call asked for.
+     *
+     * Extracted from {@see self::get()} so the raw-admin and layered paths read
+     * as an early return rather than an else branch. `?scope=admin` yields the
+     * RAW shared admin delta; the default yields the layered resolution
+     * (admin ⊕ the caller's own delta), which for an anonymous caller is
+     * exactly the admin delta.
+     *
+     * @param string $appId    The fleet app id.
+     * @param bool   $rawAdmin True for `?scope=admin`.
+     *
+     * @return array<string, mixed>|null The record, or null when no override exists.
+     */
+    private function loadDelta(string $appId, bool $rawAdmin): ?array
+    {
+        if ($rawAdmin === true) {
+            return $this->appOverrideService->findByAppId(appId: $appId);
+        }
+
+        $user = $this->userSession->getUser();
+        $uid  = null;
+        if ($user !== null) {
+            $uid = (string) $user->getUID();
+        }
+
+        return $this->appOverrideService->resolveLayeredDelta(appId: $appId, uid: $uid);
+
+    }//end loadDelta()
 
     /**
      * Return the calling user's OWN user-scoped delta for a fleet app (for editing).

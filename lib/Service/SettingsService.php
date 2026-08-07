@@ -353,12 +353,14 @@ class SettingsService
                 $overlayIsList = ($value === [] || array_keys($value) === range(0, (count($value) - 1)));
                 if ($baseIsList === true && $overlayIsList === true) {
                     $base[$key] = array_merge($base[$key], $value);
-                } else {
-                    $base[$key] = self::deepMergeConfig(base: $base[$key], overlay: $value);
+                    continue;
                 }
-            } else {
-                $base[$key] = $value;
+
+                $base[$key] = self::deepMergeConfig(base: $base[$key], overlay: $value);
+                continue;
             }
+
+            $base[$key] = $value;
         }
 
         return $base;

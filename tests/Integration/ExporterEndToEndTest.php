@@ -120,6 +120,66 @@ final class ExporterEndToEndTest extends TestCase
     }//end testResolvedTreeIsStandaloneAndComplete()
 
     /**
+     * A generated app declares the licence the export actually asked for, in
+     * every place it declares one.
+     *
+     * This exists because it did not. The embedded snapshot's
+     * `appinfo/info.xml` hardcoded `<licence>agpl</licence>` while the very
+     * same file's description read "Free and open source under the EUPL-1.2
+     * license", so every app OpenBuild has ever generated was born declaring a
+     * licence the fleet does not use — and nothing failed. The `{{license}}`
+     * token was already wired end to end (ExportJobService -> RunExportJob ->
+     * PlaceholderResolver, defaulting to EUPL-1.2 at all three layers) and
+     * reached exactly one file, `src/manifest.json`. info.xml never consumed
+     * it.
+     *
+     * The assertion is deliberately two-sided: it pins the resolved value AND
+     * rejects the specific wrong value that shipped. A one-sided "contains
+     * EUPL-1.2" would still pass on a file that declared both.
+     *
+     * @return void
+     */
+    public function testGeneratedAppDeclaresTheRequestedLicence(): void
+    {
+        if (is_dir($this->templateRoot) === false) {
+            self::markTestSkipped('Embedded template snapshot not present.');
+        }
+
+        $entries = $this->export(jobUuid: 'e2e-licence-'.bin2hex(random_bytes(4)));
+
+        self::assertArrayHasKey(
+            'appinfo/info.xml',
+            $entries,
+            'A generated app must ship appinfo/info.xml — without it there is no licence declaration to check.'
+        );
+
+        self::assertStringContainsString(
+            '<licence>EUPL-1.2</licence>',
+            $entries['appinfo/info.xml'],
+            'appinfo/info.xml must declare the licence the export requested (EUPL-1.2).'
+        );
+
+        self::assertStringNotContainsString(
+            '<licence>agpl</licence>',
+            $entries['appinfo/info.xml'],
+            'appinfo/info.xml still carries the legacy hardcoded AGPL declaration.'
+        );
+
+        // src/manifest.json and composer.json declare it too; all three must agree.
+        foreach (['src/manifest.json', 'composer.json'] as $manifest) {
+            if (array_key_exists($manifest, $entries) === false) {
+                continue;
+            }
+
+            self::assertStringContainsString(
+                'EUPL-1.2',
+                $entries[$manifest],
+                $manifest.' must declare the same licence as appinfo/info.xml.'
+            );
+        }
+    }//end testGeneratedAppDeclaresTheRequestedLicence()
+
+    /**
      * REQ-OBEX-008: re-exporting the same application + version yields
      * per-file SHA-256 digests that are identical across runs.
      *

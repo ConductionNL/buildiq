@@ -77,12 +77,12 @@ class ShopController extends Controller
     /**
      * Constructor.
      *
-     * @param IRequest               $request                The current HTTP request.
-     * @param LoggerInterface        $logger                 PSR logger.
-     * @param IUserSession           $userSession            Current NC user session.
-     * @param GitHubCatalogService   $catalogService         Fixed-host GitHub source.
-     * @param AppRepoParser          $repoParser             Strict repo-file-map parser (change 1).
-     * @param ApplicationsController $applicationsController Shared clone/install seam.
+     * @param IRequest               $request        The current HTTP request.
+     * @param LoggerInterface        $logger         PSR logger.
+     * @param IUserSession           $userSession    Current NC user session.
+     * @param GitHubCatalogService   $catalogService Fixed-host GitHub source.
+     * @param AppRepoParser          $repoParser     Strict repo-file-map parser (change 1).
+     * @param ApplicationsController $appsController Shared clone/install seam.
      *
      * @return void
      */
@@ -92,7 +92,7 @@ class ShopController extends Controller
         private readonly IUserSession $userSession,
         private readonly GitHubCatalogService $catalogService,
         private readonly AppRepoParser $repoParser,
-        private readonly ApplicationsController $applicationsController,
+        private readonly ApplicationsController $appsController,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
     }//end __construct()
@@ -219,7 +219,7 @@ class ShopController extends Controller
             return new JSONResponse(data: $e->toArray(), statusCode: Http::STATUS_UNPROCESSABLE_ENTITY);
         }
 
-        $result = $this->applicationsController->installFromTemplateArray(
+        $result = $this->appsController->installFromTemplateArray(
             template: $template,
             name: $name,
             newSlug: $newSlug,
