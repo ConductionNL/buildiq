@@ -33,9 +33,15 @@
 			<table v-else class="rule-set-test-sandbox__table">
 				<thead>
 					<tr>
-						<th>{{ t('openbuild', 'Name') }}</th>
-						<th>{{ t('openbuild', 'Description') }}</th>
-						<th>{{ t('openbuild', 'Last result') }}</th>
+						<th scope="col">
+							{{ t('openbuild', 'Name') }}
+						</th>
+						<th scope="col">
+							{{ t('openbuild', 'Description') }}
+						</th>
+						<th scope="col">
+							{{ t('openbuild', 'Last result') }}
+						</th>
 					</tr>
 				</thead>
 				<tbody>

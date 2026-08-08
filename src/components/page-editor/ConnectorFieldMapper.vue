@@ -51,10 +51,20 @@
 		<table v-if="fieldRows.length" class="connector-field-mapper__fields">
 			<thead>
 				<tr>
-					<th>{{ t('openbuild', 'Field') }}</th>
-					<th>{{ t('openbuild', 'Selector') }}</th>
-					<th>{{ t('openbuild', 'Sample value') }}</th>
-					<th />
+					<th scope="col">
+						{{ t('openbuild', 'Field') }}
+					</th>
+					<th scope="col">
+						{{ t('openbuild', 'Selector') }}
+					</th>
+					<th scope="col">
+						{{ t('openbuild', 'Sample value') }}
+					</th>
+					<!-- Row-actions column: no visible caption, but still a column
+					     header, so it keeps `scope="col"` and an sr-only name. -->
+					<th scope="col">
+						<span class="hidden-visually">{{ t('openbuild', 'Actions') }}</span>
+					</th>
 				</tr>
 			</thead>
 			<tbody>

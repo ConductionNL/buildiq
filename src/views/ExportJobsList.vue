@@ -11,10 +11,20 @@
 		<table v-if="jobs.length" class="export-jobs__table">
 			<thead>
 				<tr>
-					<th>{{ t('openbuild', 'Version') }}</th>
-					<th>{{ t('openbuild', 'Target') }}</th>
-					<th>{{ t('openbuild', 'Status') }}</th>
-					<th />
+					<th scope="col">
+						{{ t('openbuild', 'Version') }}
+					</th>
+					<th scope="col">
+						{{ t('openbuild', 'Target') }}
+					</th>
+					<th scope="col">
+						{{ t('openbuild', 'Status') }}
+					</th>
+					<!-- Actions column: no visible caption, but it is still a column
+					     header, so it keeps `scope="col"` and an sr-only name. -->
+					<th scope="col">
+						<span class="hidden-visually">{{ t('openbuild', 'Actions') }}</span>
+					</th>
 				</tr>
 			</thead>
 			<tbody>

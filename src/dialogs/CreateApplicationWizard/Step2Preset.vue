@@ -206,4 +206,17 @@ export default {
 	font-size: 0.8rem;
 	color: var(--color-text-maxcontrast, #555);
 }
+
+/*
+ * WCAG 2.2 AA 2.3.3 Animation from Interactions. The preset card animates its
+ * border and shadow on hover/selection; a reader who has asked their OS for
+ * reduced motion must not get it. Scoped to this component's own selector
+ * rather than a blanket `* { transition: none }` so it cannot reach into
+ * NcButton / NcSelect internals.
+ */
+@media (prefers-reduced-motion: reduce) {
+	.wizard-step2__preset-card {
+		transition: none;
+	}
+}
 </style>

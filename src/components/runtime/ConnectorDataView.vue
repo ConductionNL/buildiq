@@ -29,7 +29,7 @@
 			<table v-if="rows.length" class="connector-data-view__table">
 				<thead>
 					<tr>
-						<th v-for="col in columns" :key="col">
+						<th v-for="col in columns" :key="col" scope="col">
 							{{ col }}
 						</th>
 					</tr>
