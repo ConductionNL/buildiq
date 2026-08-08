@@ -42,16 +42,34 @@ Vrij en open source onder de EUPL-1.2-licentie.
     <dependencies>
         <app>openregister</app>
         <!--
-        min-version is 32, NOT 28, because <app>openregister</app> above is a HARD
-        dependency and openregister declares min-version="32" (its
-        lib/ContextChat/ContentProvider.php implements OCP\ContextChat\IContentProvider,
-        an interface that does not exist in core before Nextcloud 32). On NC 28-31
-        openregister refuses to install — "cannot be installed because it is not
-        compatible with this version of the server" — and every OpenBuild entity is
-        an OpenRegister object, so the app cannot function there. Declaring 28
-        advertised a range this app cannot deliver. Same defect as openconnector#1173.
+        min-version is 32 by product decision: the fleet standardises on
+        Nextcloud 32 so it can require PHP 8.3, which `<php min-version>` below
+        already declares. opencatalogi, openconnector and docudesk are already
+        at 32; this brings OpenBuild in line.
+
+        NOTE, so the next reader does not have to re-derive it: this is NOT the
+        openconnector#1172 dependency-floor rule firing. That rule says an app's
+        min-version must be >= the max of every `<app>` dependency's floor, and
+        measured on 2026-08-08 `ConductionNL/openregister@development` (and
+        @main) declares `min-version="28"` — it reverted its own 32 bump in
+        openregister#2380 after #2372 removed every eager reference to its
+        ContextChat provider. 32 >= 28, so the rule is satisfied either way, and
+        it stays satisfied if openregister moves back to 32.
+
+        The comment that stood here previously asserted "min-version is 32" while
+        the attribute said 28: #146 lowered the value and left the prose behind.
+        The prose was also the reason a reader would think the floor was forced
+        by openregister, which it no longer is.
+
+        The floor is enforced at INSTALL time, so it must not exceed what this
+        repo's own CI installs on. `.github/workflows/code-quality.yml` runs
+        `nextcloud-test-refs: ["stable32", "stable33"]` — stable31 was already
+        removed — so no CI leg targets NC < 32.
+
+        max-version stays 34, which is the fleet value everywhere except
+        openconnector (35).
         -->
-        <nextcloud min-version="28" max-version="34"/>
+        <nextcloud min-version="32" max-version="34"/>
         <php min-version="8.3"/>
     </dependencies>
 
