@@ -171,7 +171,17 @@ jobs:
       # exists after the leg's own `npm ci`, so CI is the first place it gets a
       # real verdict.
       # `test` / `test:unit` are NOT listed: "Frontend Tests (unit)" runs them.
-      frontend-checks: '["check:manifest", "test:l10n"]'
+      #
+      # `check:gitignore` added 2026-08-08. `.gitignore` carried the scaffold
+      # pattern `**/*references*`, a substring glob, which matched
+      # lib/Controller/PreferencesController.php and its test. Both were tracked,
+      # so nothing complained — but a `git archive`-and-re-add copy of the same
+      # commit lost them, and the hydra-gates runner enumerates controllers with
+      # `git ls-files`: gate-14 reported 7 findings against the working tree and
+      # 5 against that copy. Two numbers for one tree. The check fails if any
+      # tracked file under lib/src/appinfo/tests/scripts is matched by an ignore
+      # rule, and fails LOUDLY (exit 2) if it enumerated nothing at all.
+      frontend-checks: '["check:manifest", "test:l10n", "check:gitignore"]'
 
       # ── Coverage ratchet ─────────────────────────────────────────────────
       # `enable-coverage-guard` defaults to FALSE, which is why both
