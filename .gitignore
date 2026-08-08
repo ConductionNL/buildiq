@@ -59,6 +59,33 @@ phpqa_output.log
 !tests/vitest/setup.js
 !tests/e2e/global-setup.ts
 
+# ...but NEVER swallow real source.
+#
+# The block above is a scaffold inheritance aimed at stray notes-to-self with
+# odd or absent extensions ("PR notes", "endpoints list", a bare `references`).
+# The patterns are substring globs, so they also match source files whose NAME
+# happens to contain the word:
+#
+#   `**/*references*`  matches  lib/Controller/P-references-Controller.php
+#                      and      tests/Unit/Controller/PreferencesControllerTest.php
+#
+# Both of those are tracked, so git keeps versioning them and nothing complains
+# day to day. The damage is silent and shows up later: `git ls-files` in a fresh
+# clone-and-re-add, an archive round-trip, or any flow that untracks and re-adds
+# drops them, and a tool that enumerates the repo via `git ls-files` — which is
+# how the hydra-gates runner enumerates controllers — simply cannot see them.
+# Measured 2026-08-08: gate-14 reported 7 findings against the working tree and
+# 5 against a `git archive`-and-re-add copy of the SAME commit, because
+# PreferencesController.php was absent from the second. Two different numbers
+# for one tree.
+#
+# `git ls-files -i -c --exclude-standard` is the check: it lists tracked files
+# that the ignore rules match. Source directories must contribute zero.
+!lib/**
+!src/**
+!appinfo/**
+!tests/**
+
 # Temporary test files that shouldn't be committed
 simple-solr-test.php
 test-solr-connection.php
