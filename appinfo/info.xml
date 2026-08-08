@@ -47,19 +47,41 @@ Vrij en open source onder de EUPL-1.2-licentie.
         already declares. opencatalogi, openconnector and docudesk are already
         at 32; this brings OpenBuild in line.
 
-        NOTE, so the next reader does not have to re-derive it: this is NOT the
-        openconnector#1172 dependency-floor rule firing. That rule says an app's
-        min-version must be >= the max of every `<app>` dependency's floor, and
-        measured on 2026-08-08 `ConductionNL/openregister@development` (and
-        @main) declares `min-version="28"` — it reverted its own 32 bump in
-        openregister#2380 after #2372 removed every eager reference to its
-        ContextChat provider. 32 >= 28, so the rule is satisfied either way, and
-        it stays satisfied if openregister moves back to 32.
+        The openconnector#1172/#1173 dependency-floor rule ALSO requires 32 now.
+        That rule says an app's min-version must be >= the max of every `<app>`
+        dependency's floor, and `<app>openregister</app>` above is a HARD
+        dependency. openregister's floor has moved three times in two days:
+        raised to 32 in openregister#2378, reverted to 28 in #2380 (after #2372
+        removed every eager reference to its ContextChat provider), and raised
+        back to 32 in openregister#2384, merged 2026-08-08T10:45Z and deliberately
+        fleet-wide. Re-measured against the canonical repo immediately before this
+        merge, `ConductionNL/openregister@development` declares a nextcloud
+        min-version of 32 (max-version 34).
+
+        Deliberately spelled out in prose, with no angle brackets anywhere in
+        this comment: writing that dependency's declaration as a literal XML
+        element here would add a second match to the nextcloud-element COUNT
+        that check:nc-floor asserts, and the check reads raw file text, comments
+        included. To a regex a commented-out example is indistinguishable from a
+        real declaration — that is precisely how procest's and doriath's floors
+        were misread as 28 by a reviewer grepping this file.
+
+        So 32 here is not merely >= the dependency floor, it is EQUAL to it: 28
+        would now advertise an App Store range this app cannot deliver, because
+        below 32 openregister refuses to install and every OpenBuild entity is
+        an OpenRegister object.
+
+        Note that `openregister@main` still declares 28 — the fleet is mid-rollout
+        and main trails development by ~1000 commits. Do not read that as a
+        contradiction, and do not lower this floor to match it.
 
         The comment that stood here previously asserted "min-version is 32" while
         the attribute said 28: #146 lowered the value and left the prose behind.
-        The prose was also the reason a reader would think the floor was forced
-        by openregister, which it no longer is.
+        That is the failure this block is written to avoid — a floor comment is
+        only worth anything if it is true at MERGE time, so re-measure the
+        dependency's floor rather than repeating what this text says.
+        `check:nc-floor` (scripts/check-nc-floor.js, wired into the
+        frontend-checks matrix) enforces the value; only the prose can drift.
 
         The floor is enforced at INSTALL time, so it must not exceed what this
         repo's own CI installs on. `.github/workflows/code-quality.yml` runs
