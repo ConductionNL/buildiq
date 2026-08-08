@@ -9,7 +9,8 @@
  *   - 500 on rollback-complete failure
  *   - 500 on rollback-partial failure (orphanedResources in body)
  *   - 401 when caller is unauthenticated
- *   - NoAdminRequired: non-admin authenticated users succeed when payload is valid
+ *   - 403 for an authenticated non-admin (issue #157)
+ *   - the admin posture is declared at the MIDDLEWARE layer, not only in the body
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -34,6 +35,7 @@ use OCA\OpenBuild\Controller\ApplicationCreationController;
 use OCA\OpenBuild\Exception\WizardCreationException;
 use OCA\OpenBuild\Service\ApplicationCreationService;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -131,20 +133,38 @@ class ApplicationCreationControllerTest extends TestCase
     }//end authenticateAsAdmin()
 
     // -------------------------------------------------------------------------
-    // NoAdminRequired attribute
+    // Auth posture — declared at the middleware layer, not only in the body
     // -------------------------------------------------------------------------
 
     /**
+     * `wizard()` provisions an OpenRegister Register, so it is admin-only
+     * (issue #157). `#[NoAdminRequired]` does not ADD a layer, it REMOVES one:
+     * it tells NC's SecurityMiddleware that any logged-in user may reach the
+     * method, leaving the in-body `isAdmin()` gate as the only thing in the
+     * way. The attribute must therefore declare the admin posture the body
+     * already enforces — the same correction SetupController got in #127.
+     *
      * @test
      *
      * @return void
      */
-    public function wizardMethodCarriesNoAdminRequiredAttribute(): void
+    public function wizardDeclaresTheAdminPostureAtTheMiddlewareLayer(): void
     {
         $reflection = new ReflectionMethod(ApplicationCreationController::class, 'wizard');
-        $attrs      = $reflection->getAttributes(NoAdminRequired::class);
-        self::assertNotEmpty($attrs, 'wizard() must carry #[NoAdminRequired]');
-    }//end wizardMethodCarriesNoAdminRequiredAttribute()
+
+        self::assertCount(
+            0,
+            $reflection->getAttributes(NoAdminRequired::class),
+            'wizard() must not carry #[NoAdminRequired]: it disables the middleware admin check '
+            .'on an endpoint that provisions an OpenRegister Register.'
+        );
+
+        self::assertCount(
+            1,
+            $reflection->getAttributes(AuthorizedAdminSetting::class),
+            'wizard() must declare #[AuthorizedAdminSetting] so the middleware enforces admin before dispatch.'
+        );
+    }//end wizardDeclaresTheAdminPostureAtTheMiddlewareLayer()
 
     // -------------------------------------------------------------------------
     // 401 Unauthenticated
