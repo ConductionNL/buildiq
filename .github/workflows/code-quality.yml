@@ -171,7 +171,16 @@ jobs:
       # exists after the leg's own `npm ci`, so CI is the first place it gets a
       # real verdict.
       # `test` / `test:unit` are NOT listed: "Frontend Tests (unit)" runs them.
-      frontend-checks: '["check:manifest", "test:l10n"]'
+      #
+      # `check:nc-floor` added 2026-08-08 with the 28 -> 32 floor raise. It
+      # asserts that every `nextcloud-test-refs` entry above is >= the
+      # `<nextcloud min-version>` in appinfo/info.xml, and pins the floor to 32
+      # / PHP 8.3. It lives HERE and not in PHPUnit on purpose: the PHPUnit job
+      # runs against a DEPLOYED copy of the app under `server/apps/openbuild`,
+      # which is not the repository — `.github/workflows/` is not part of it.
+      # A first attempt at this invariant as a PHPUnit test went red on all four
+      # legs for exactly that reason.
+      frontend-checks: '["check:manifest", "test:l10n", "check:nc-floor"]'
 
       # ── Coverage ratchet ─────────────────────────────────────────────────
       # `enable-coverage-guard` defaults to FALSE, which is why both
