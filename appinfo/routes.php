@@ -18,7 +18,9 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
     [
         // App-creation wizard endpoint (openbuild-app-creation-wizard REQ-OBWIZ-001).
         // POST /api/applications/wizard — atomic creation of Application + N versions + N registers.
-        // #[NoAdminRequired] on the controller method; RBAC is implicit (caller becomes owner).
+        // ADMIN-ONLY (issue #157): #[AuthorizedAdminSetting(AdminSettings::class)] on the controller
+        // method so NC's middleware refuses before dispatch, plus an in-body isAdmin() gate as
+        // defence in depth. The caller becomes the sole owner of the new Application.
         // Must precede the {slug} + collection routes so it does not shadow them.
         ['name' => 'applicationCreation#wizard', 'url' => '/api/applications/wizard', 'verb' => 'POST'],
 
