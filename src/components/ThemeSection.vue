@@ -53,16 +53,25 @@
 			@save="onSave"
 			@clear="removeTheme"
 			@preview="$emit('preview', $event)" />
+
+		<ConfirmActionDialog
+			v-model:open="confirmRemoveOpen"
+			:name="t('openbuild', 'Remove theme')"
+			:message="t('openbuild', 'Remove the theme? This app will render in the default Nextcloud styling.')"
+			:confirm-label="t('openbuild', 'Remove')"
+			destructive
+			@confirm="onConfirmRemoveTheme" />
 	</section>
 </template>
 
 <script>
 import { NcButton } from '@nextcloud/vue'
 import ThemePickerDialog from '../dialogs/ThemePickerDialog.vue'
+import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 
 export default {
 	name: 'ThemeSection',
-	components: { NcButton, ThemePickerDialog },
+	components: { NcButton, ThemePickerDialog, ConfirmActionDialog },
 	props: {
 		manifest: {
 			type: Object,
@@ -85,6 +94,7 @@ export default {
 	data() {
 		return {
 			dialogOpen: false,
+			confirmRemoveOpen: false,
 		}
 	},
 	computed: {
@@ -124,12 +134,20 @@ export default {
 		 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002
 		 */
 		removeTheme() {
-			const ok = typeof window !== 'undefined' && window.confirm
-				? window.confirm(t('openbuild', 'Remove the theme? This app will render in the default Nextcloud styling.'))
-				: true
-			if (!ok) {
-				return
-			}
+			this.confirmRemoveOpen = true
+		},
+		/**
+		 * Apply the removal once the user has confirmed it in the dialog.
+		 *
+		 * Split from removeTheme() so the destructive step runs ONLY on an
+		 * explicit confirm — closing or cancelling the dialog emits nothing
+		 * and therefore leaves the manifest untouched.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 */
+		onConfirmRemoveTheme() {
+			this.confirmRemoveOpen = false
 			this.$emit('update:manifest', this.withTheme(null))
 		},
 		/**

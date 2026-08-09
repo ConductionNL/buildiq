@@ -115,6 +115,15 @@
 			v-if="testPanelOpen"
 			:automation="testingAutomation"
 			@close="testPanelOpen = false" />
+
+		<ConfirmActionDialog
+			v-model:open="confirmDeleteOpen"
+			:name="t('openbuild', 'Delete automation')"
+			:message="t('openbuild', 'Delete this automation? This also removes its compiled artifacts.')"
+			:confirm-label="t('openbuild', 'Delete')"
+			:busy="deleting"
+			destructive
+			@confirm="onConfirmDelete" />
 	</div>
 </template>
 
@@ -124,6 +133,7 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcCheckboxRadioSwitch, NcEmptyContent, NcLoadingIcon, NcNoteCard, NcSelect } from '@nextcloud/vue'
 import AutomationEditDialog from '../dialogs/AutomationEditDialog.vue'
 import AutomationTestPanelModal from '../modals/AutomationTestPanelModal.vue'
+import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 
 export default {
 	name: 'AutomationsPage',
@@ -136,6 +146,7 @@ export default {
 		NcSelect,
 		AutomationEditDialog,
 		AutomationTestPanelModal,
+		ConfirmActionDialog,
 	},
 	data() {
 		return {
@@ -153,6 +164,9 @@ export default {
 			editingAutomation: null,
 			testPanelOpen: false,
 			testingAutomation: null,
+			confirmDeleteOpen: false,
+			pendingDelete: null,
+			deleting: false,
 		}
 	},
 	computed: {
@@ -437,20 +451,49 @@ export default {
 		 * @param {object} automation - the automation to delete.
 		 * @return {Promise<void>}
 		 */
-		async remove(automation) {
-			const ok = typeof window !== 'undefined' && window.confirm
-				? window.confirm(t('openbuild', 'Delete this automation? This also removes its compiled artifacts.'))
-				: true
-			if (!ok) {
+		/**
+		 * Ask for confirmation before deleting an automation.
+		 *
+		 * This no longer deletes anything itself — it stages the target and
+		 * opens the dialog. The DELETE lives in onConfirmDelete().
+		 *
+		 * @param {object} automation - the automation to delete.
+		 * @return {void}
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-005
+		 */
+		remove(automation) {
+			this.pendingDelete = automation
+			this.confirmDeleteOpen = true
+		},
+		/**
+		 * Delete the pending automation once the user has confirmed it.
+		 *
+		 * The DELETE runs ONLY from here, so a cancelled or dismissed dialog
+		 * cannot reach the network. `deleting` keeps the dialog open and its
+		 * buttons disabled while the request is in flight, which the old
+		 * synchronous window.confirm could not express.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-005
+		 */
+		async onConfirmDelete() {
+			const automation = this.pendingDelete
+			if (!automation) {
+				this.confirmDeleteOpen = false
 				return
 			}
 			this.errorMessage = ''
+			this.deleting = true
 			try {
 				const url = generateUrl(`/apps/openregister/api/objects/openbuild/automation/${automation.id}`)
 				await axios.delete(url)
 				await this.fetchAutomations()
 			} catch (error) {
 				this.errorMessage = t('openbuild', 'Could not delete the automation.')
+			} finally {
+				this.deleting = false
+				this.confirmDeleteOpen = false
+				this.pendingDelete = null
 			}
 		},
 		/**

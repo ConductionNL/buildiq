@@ -80,10 +80,17 @@ describe('SchedulesSection', () => {
 		expect(emitted.schedules[0].interval).toBe(604800)
 	})
 
-	it('removing a schedule deletes it and drops the empty key', () => {
-		window.confirm = vi.fn(() => true)
+	it('removing a schedule asks first and emits nothing until confirmed', () => {
 		const wrapper = factory({ schedules: [entry] })
 		wrapper.vm.remove(entry)
+		expect(wrapper.vm.confirmRemoveOpen).toBe(true)
+		expect(wrapper.emitted()['update:manifest']).toBeUndefined()
+	})
+
+	it('removing a schedule deletes it once confirmed and drops the empty key', () => {
+		const wrapper = factory({ schedules: [entry] })
+		wrapper.vm.remove(entry)
+		wrapper.vm.onConfirmRemove()
 		const emitted = wrapper.emitted()['update:manifest'][0][0]
 		expect(emitted.schedules).toBeUndefined()
 	})
