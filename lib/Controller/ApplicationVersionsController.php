@@ -168,14 +168,12 @@ class ApplicationVersionsController extends Controller
             }
 
             $applicationUuid = (string) ($application['id'] ?? $application['uuid'] ?? '');
-            $registerId      = $this->registerMapper->find(
-                ApplicationVersionService::REGISTER_SLUG,
-                _multitenancy: false
-            )->getId();
-            $schemaId        = $this->schemaMapper->find(
-                ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
-                _multitenancy: false
-            )->getId();
+            $ids             = $this->resolveRegisterAndSchema(ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
+            if ($ids === null) {
+                return $this->errorResponse(code: 'not_found', detail: 'Application '.$appSlug.' not found', status: Http::STATUS_NOT_FOUND);
+            }
+
+            [$registerId, $schemaId] = $ids;
 
             // OR's searchObjects doesn't reliably filter by relation-string equality
             // on the `application` field (the value is stored both inline AND in
@@ -616,6 +614,37 @@ class ApplicationVersionsController extends Controller
     }//end resolveProductionRegister()
 
     /**
+     * Resolve the OpenBuild register + one of its schemas to the numeric IDs
+     * OR's `searchObjects` expects in `@self`.
+     *
+     * Both mapper find() calls THROW DoesNotExistException when absent — they do
+     * not return null, so uncaught they turn a #[NoAdminRequired] endpoint into a
+     * framework 500. Translated in ONE place so the four call sites cannot drift.
+     *
+     * @param string $schemaSlug Schema slug to resolve alongside the register.
+     *
+     * @return array{0:int,1:int}|null `[registerId, schemaId]`, null when absent.
+     */
+    private function resolveRegisterAndSchema(string $schemaSlug): ?array
+    {
+        try {
+            return [
+                $this->registerMapper->find(
+                    ApplicationVersionService::REGISTER_SLUG,
+                    _multitenancy: false
+                )->getId(),
+                $this->schemaMapper->find($schemaSlug, _multitenancy: false)->getId(),
+            ];
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                'OpenBuild: could not resolve register/schema {schema}: {message}',
+                ['schema' => $schemaSlug, 'message' => $e->getMessage(), 'exception' => $e]
+            );
+            return null;
+        }//end try
+    }//end resolveRegisterAndSchema()
+
+    /**
      * Find a version row by slug, scoped to the parent Application (robust).
      *
      * Mirrors {@see index()}'s client-side filter (OR relation-equality filters
@@ -630,27 +659,12 @@ class ApplicationVersionsController extends Controller
     {
         $applicationUuid = (string) ($application['id'] ?? $application['uuid'] ?? '');
 
-        // RegisterMapper/SchemaMapper::find() THROW DoesNotExistException when
-        // the register or schema is absent — they do not return null. Uncaught,
-        // that leaves a #[NoAdminRequired] endpoint answering with a framework
-        // 500 and a stack trace instead of this method's declared "null on
-        // miss". Translated here, with the real cause logged.
-        try {
-            $registerId = $this->registerMapper->find(
-                ApplicationVersionService::REGISTER_SLUG,
-                _multitenancy: false
-            )->getId();
-            $schemaId   = $this->schemaMapper->find(
-                ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
-                _multitenancy: false
-            )->getId();
-        } catch (Throwable $e) {
-            $this->logger->warning(
-                'OpenBuild: version lookup could not resolve the OpenRegister register/schema: {message}',
-                ['message' => $e->getMessage(), 'exception' => $e]
-            );
+        $ids = $this->resolveRegisterAndSchema(ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
+        if ($ids === null) {
             return null;
-        }//end try
+        }
+
+        [$registerId, $schemaId] = $ids;
 
         $rows = $this->objectService->searchObjects(
             query: ['@self' => ['register' => $registerId, 'schema' => $schemaId]]
@@ -704,25 +718,12 @@ class ApplicationVersionsController extends Controller
      */
     private function loadApplication(string $slug): ?array
     {
-        // See findVersionRowBySlug(): the mapper find() calls throw rather
-        // than returning null, so this catch is what makes the declared
-        // "null when missing" contract true instead of a framework 500.
-        try {
-            $registerId = $this->registerMapper->find(
-                ApplicationVersionService::REGISTER_SLUG,
-                _multitenancy: false
-            )->getId();
-            $schemaId   = $this->schemaMapper->find(
-                ApplicationVersionService::APPLICATION_SCHEMA,
-                _multitenancy: false
-            )->getId();
-        } catch (Throwable $e) {
-            $this->logger->warning(
-                'OpenBuild: application lookup could not resolve the OpenRegister register/schema: {message}',
-                ['message' => $e->getMessage(), 'exception' => $e]
-            );
+        $ids = $this->resolveRegisterAndSchema(ApplicationVersionService::APPLICATION_SCHEMA);
+        if ($ids === null) {
             return null;
-        }//end try
+        }
+
+        [$registerId, $schemaId] = $ids;
 
         $rows = $this->objectService->searchObjects(
             query: [
@@ -764,25 +765,12 @@ class ApplicationVersionsController extends Controller
 
         $applicationUuid = (string) ($application['id'] ?? $application['uuid'] ?? '');
 
-        // See findVersionRowBySlug(): the mapper find() calls throw rather
-        // than returning null, so this catch is what makes the declared
-        // "null on miss" contract true instead of a framework 500.
-        try {
-            $registerId = $this->registerMapper->find(
-                ApplicationVersionService::REGISTER_SLUG,
-                _multitenancy: false
-            )->getId();
-            $schemaId   = $this->schemaMapper->find(
-                ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
-                _multitenancy: false
-            )->getId();
-        } catch (Throwable $e) {
-            $this->logger->warning(
-                'OpenBuild: version lookup could not resolve the OpenRegister register/schema: {message}',
-                ['message' => $e->getMessage(), 'exception' => $e]
-            );
+        $ids = $this->resolveRegisterAndSchema(ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
+        if ($ids === null) {
             return null;
-        }//end try
+        }
+
+        [$registerId, $schemaId] = $ids;
 
         $rows = $this->objectService->searchObjects(
             query: [
