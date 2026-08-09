@@ -68,9 +68,18 @@ export default {
 		}
 	},
 	watch: {
+		/**
+		 * Re-seed the input each time the dialog opens.
+		 *
+		 * A previous edit must never leak into the next prompt —
+		 * `window.prompt`'s default argument behaved this way, and the
+		 * field-mapping flow depends on the suggestion being the leaf key.
+		 *
+		 * @param {boolean} shown - whether the dialog just became visible.
+		 * @return {void}
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-003
+		 */
 		open(shown) {
-			// Re-seed on every open so a previous edit never leaks into the
-			// next prompt — window.prompt's default argument behaved this way.
 			if (shown) {
 				this.value = this.initialValue
 			}
@@ -80,7 +89,11 @@ export default {
 		/**
 		 * Emit the trimmed value, ignoring a blank entry.
 		 *
+		 * Blank is refused here as well as by the disabled submit button, so
+		 * the caller can never receive an empty display-field name.
+		 *
 		 * @return {void}
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-003
 		 */
 		onSubmit() {
 			const trimmed = this.value.trim()
