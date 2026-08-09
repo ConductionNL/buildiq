@@ -193,7 +193,7 @@ function parseOpRow(op, auth) {
  *
  * @param {object|null|undefined} authorization Persisted schema `authorization` block.
  * @return {{rows: Array<object>, extraKeys: object}} The editor model.
- * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-002
+ * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-002
  */
 export function accessToEditor(authorization) {
 	const auth = (authorization && typeof authorization === 'object') ? authorization : {}
@@ -217,7 +217,7 @@ export function accessToEditor(authorization) {
  * @param {{rows: Array<object>, extraKeys?: object}} access Editor model.
  * @param {object|null|undefined} rawAuthorization The originally-persisted block.
  * @return {object|null} Compiled `authorization` block, or null when empty.
- * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-002
+ * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-002
  */
 export function editorToAccess(access, rawAuthorization) {
 	const raw = (rawAuthorization && typeof rawAuthorization === 'object') ? rawAuthorization : {}
@@ -291,7 +291,7 @@ export default {
 		 * The staged per-operation rows, defaulting to an empty list when
 		 * the parent has not yet staged anything.
 		 *
-		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-001
+		 * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-001
 		 * @return {Array<object>} Editor rows.
 		 */
 		rows() {

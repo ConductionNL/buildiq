@@ -3,7 +3,7 @@
 ## Purpose
 TBD - created by archiving change builder-undo-redo. Update Purpose after archive.
 ## Requirements
-### Requirement: Page-designer session undo/redo runs on the shared manifestEditHistory engine
+### Requirement: Page-designer session undo/redo runs on the shared manifestEditHistory engine (REQ-BUR-001)
 
 The page designer (`src/views/PageDesigner.vue`) SHALL provide
 editor-level undo/redo over the in-flight (unsaved) draft manifest,
@@ -44,7 +44,7 @@ the explicit save action.
 - **THEN** redo SHALL no longer be available (the undone branch is
   discarded)
 
-### Requirement: Undo/redo toolbar buttons reflect stack state via disabled states
+### Requirement: Undo/redo toolbar buttons reflect stack state via disabled states (REQ-BUR-002)
 
 The page designer toolbar SHALL render Undo and Redo buttons whose
 `disabled` state tracks the history: Undo SHALL be disabled when no
@@ -68,7 +68,7 @@ their keyboard shortcuts.
 - **AND WHEN** the user activates undo
 - **THEN** Undo SHALL become disabled and Redo SHALL become enabled
 
-### Requirement: Keyboard shortcuts with an editable-target guard
+### Requirement: Keyboard shortcuts with an editable-target guard (REQ-BUR-003)
 
 The designers SHALL bind `Ctrl+Z` to undo and both `Ctrl+Shift+Z` and
 `Ctrl+Y` to redo, treating `metaKey` (`Cmd`) as equivalent to `ctrlKey`
@@ -107,7 +107,7 @@ only when focus is outside editable fields. The handler SHALL call
 - **THEN** `Cmd+Z` SHALL undo and `Cmd+Shift+Z` SHALL redo, identically
   to the Ctrl chords
 
-### Requirement: History is per-editing-session — survives sub-editor switches, resets on save, publish, and version switch
+### Requirement: History is per-editing-session — survives sub-editor switches, resets on save, publish, and version switch (REQ-BUR-004)
 
 The undo/redo history SHALL be scoped to one editing session. Within a
 session, switching the selected page — and therefore the per-page-type
@@ -148,7 +148,7 @@ undo-bleed present at HEAD, where `reset()` had no callers).
 - **AND** undo SHALL NOT restore any state of version X's manifest into
   version Y's draft
 
-### Requirement: Schema designer gains staged-model undo/redo with an undoable discard
+### Requirement: Schema designer gains staged-model undo/redo with an undoable discard (REQ-BUR-005)
 
 The schema designer (`src/views/SchemaDesigner.vue`) SHALL provide the
 same undo/redo affordance over its staged editor model: toolbar Undo /
@@ -186,7 +186,7 @@ the discarded staged edits.
 - **THEN** Undo and Redo SHALL both be disabled
 - **AND** the saved state SHALL be the new history baseline
 
-### Requirement: A raw whole-manifest replacement is exactly one history entry
+### Requirement: A raw whole-manifest replacement is exactly one history entry (REQ-BUR-006)
 
 The history engine SHALL treat any single commit that replaces the
 whole draft manifest — the shape produced by a raw-JSON editing surface
@@ -216,7 +216,7 @@ the REQ-BUR-004 save boundary.
 - **THEN** the history SHALL record no entry for the rejected input
 - **AND** undo/redo availability SHALL be unchanged
 
-### Requirement: History depth is bounded at 100 entries
+### Requirement: History depth is bounded at 100 entries (REQ-BUR-007)
 
 The history SHALL be bounded to 100 entries per session. When a push
 overflows the bound, the oldest entry SHALL be dropped (the reachable

@@ -7,7 +7,7 @@
 ## Purpose
 TBD - created by archiving change automation-designer. Update Purpose after archive.
 ## Requirements
-### Requirement: Automations page lists automations per application version
+### Requirement: Automations page lists automations per application version (REQ-AUTD-001)
 
 The system SHALL render an **Automations** page
 (`src/views/AutomationsPage.vue`, registered in `src/registry.js` and routed
@@ -41,7 +41,7 @@ so an editor can inspect a non-production version's automations.
 - **THEN** the list shows only automations whose `versionUuid` matches the
   selected version
 
-### Requirement: Automation editor composes trigger, condition and actions
+### Requirement: Automation editor composes trigger, condition and actions (REQ-AUTD-002)
 
 The system SHALL provide a standalone `AutomationEditDialog`
 (`src/dialogs/`, `NcModal`-based per the modal-isolation gate) in which an
@@ -117,7 +117,7 @@ when `useAppStatus('docudesk')` reports Docudesk absent, mirroring
 - **WHEN** the editor opens the action-type picker
 - **THEN** `generateDocument` renders disabled with the missing-app hint
 
-### Requirement: Unsupported trigger and action combinations are blocked fail-closed
+### Requirement: Unsupported trigger and action combinations are blocked fail-closed (REQ-AUTD-003)
 
 The system SHALL enforce the v1 compilation matrix (design.md Decision 2 of
 `automation-designer`, extended by design.md Decision 1 of
@@ -171,7 +171,7 @@ or partially compile an unsupported automation. `approval` and
   document-generation actions are only supported on object-event and
   lifecycle-transition triggers in v1
 
-### Requirement: Automations compile deterministically to existing declarative primitives
+### Requirement: Automations compile deterministically to existing declarative primitives (REQ-AUTD-004)
 
 The system SHALL compile a saved automation (`AutomationCompilerService`)
 exclusively to existing declarative primitives or a listener-backed external
@@ -282,7 +282,7 @@ the existing SchedulesSection e2e surface
   `UnsupportedAutomationCombinationException` naming the missing `docudesk`
   dependency
 
-### Requirement: An automation is managed as one unit with provenance
+### Requirement: An automation is managed as one unit with provenance (REQ-AUTD-005)
 
 The system SHALL record in each automation's `provenance` block every
 artifact its last compile produced (`notificationKeys`, `lifecycleActions`,
@@ -313,7 +313,7 @@ mismatch), the list SHALL show a drift warning and offer a
 - **AND** activating "Recompile (overwrite)" restores the artifact to the
   automation definition's compiled shape
 
-### Requirement: Enable and disable toggle the compiled artifacts as a unit
+### Requirement: Enable and disable toggle the compiled artifacts as a unit (REQ-AUTD-006)
 
 The system SHALL let an authorised user enable or disable an automation from
 the list. Disabling SHALL recompile with every artifact inert (notification
@@ -336,7 +336,7 @@ disabled so re-enabling never loses configuration.
 - **THEN** the schedules entry has `enabled: true` again with its other
   fields unchanged
 
-### Requirement: Dry-run test panel evaluates an automation without side effects
+### Requirement: Dry-run test panel evaluates an automation without side effects (REQ-AUTD-007)
 
 The system SHALL provide a test panel (`AutomationTestPanelModal`,
 `src/modals/`, mirroring `RuleSetTestSandboxModal`) that accepts a sample
@@ -385,7 +385,7 @@ step, and SHALL NOT modify any compiled artifact.
 - **THEN** `AutomationsController::status()` reports `approvalState:
   "pending"` for that automation
 
-### Requirement: RBAC — editors author and test, owners enable on production
+### Requirement: RBAC — editors author and test, owners enable on production (REQ-AUTD-008)
 
 The system SHALL authorise the effectual automation routes
 (`compile`, `enable`, `disable`, `dry-run`) in `AutomationsController` via
@@ -413,7 +413,7 @@ security boundary.
 - **THEN** the enable call returns `403` and the automation stays disabled
 - **AND** an owner performing the same enable succeeds
 
-### Requirement: Automations are version-scoped and cloned on version branch
+### Requirement: Automations are version-scoped and cloned on version branch (REQ-AUTD-009)
 
 Each automation SHALL carry `applicationSlug` and `versionUuid` and SHALL
 compile only into that version's register schemas and manifest. When the
@@ -439,7 +439,7 @@ REQ-AUTD-001 version-selector scenario
   a distinct `aut-` rule-set slug, compiled into the new version's resources
 - **AND** disabling the clone does not change the source version's artifacts
 
-### Requirement: The rules engine dispatches side-effect actions through a wired dispatcher
+### Requirement: The rules engine dispatches side-effect actions through a wired dispatcher (REQ-AUTD-010)
 
 The system SHALL wire a `RuleActionDispatcher` into
 `RuleEngineService::evaluate()` (fixing the verified defect at
