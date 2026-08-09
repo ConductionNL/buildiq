@@ -169,7 +169,7 @@ export default {
 		 * Load the caller's Applications for the picker.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-001
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
 		 */
 		async fetchApplications() {
 			this.loadingApplications = true
@@ -232,7 +232,7 @@ export default {
 		 * Application + ApplicationVersion, then fetch drift status for each.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-001
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
 		 */
 		async fetchAutomations() {
 			this.loading = true
@@ -255,7 +255,7 @@ export default {
 		 * Refresh the drift-status badge for every listed automation.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-005
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-005
 		 */
 		async refreshStatuses() {
 			const entries = await Promise.all(

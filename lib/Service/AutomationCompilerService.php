@@ -96,15 +96,15 @@
  *
  * @spec openspec/changes/automation-designer/tasks.md#2.1
  * @spec openspec/changes/automation-designer/tasks.md#2.2
- * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-004
- * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-005
+ * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#req-autd-005
  * @spec openspec/changes/automation-approval-steps/tasks.md#1.1
  * @spec openspec/changes/automation-approval-steps/tasks.md#1.2
- * @spec openspec/changes/automation-approval-steps/specs/automation-designer/spec.md#req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#req-autd-004
  * @spec openspec/changes/automation-document-action/tasks.md#1.1
  * @spec openspec/changes/automation-document-action/tasks.md#1.2
  * @spec openspec/changes/automation-document-action/tasks.md#1.3
- * @spec openspec/changes/automation-document-action/specs/automation-designer/spec.md#req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#req-autd-004
  */
 
 declare(strict_types=1);
@@ -281,7 +281,7 @@ class AutomationCompilerService
      * @throws UnsupportedAutomationCombinationException When the matrix (or condition placement) rejects the shape.
      *
      * @spec openspec/changes/automation-designer/tasks.md#2.1
-     * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-004
+     * @spec openspec/specs/automation-designer/spec.md#req-autd-004
      */
     public function compile(array $automation): array
     {
@@ -429,7 +429,7 @@ class AutomationCompilerService
      * @return void
      *
      * @spec openspec/changes/automation-designer/tasks.md#2.2
-     * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-005
+     * @spec openspec/specs/automation-designer/spec.md#req-autd-005
      */
     public function remove(array $automation, array $provenance): void
     {
@@ -470,7 +470,7 @@ class AutomationCompilerService
      * @return array{drift:bool,compiledHash:?string,liveHash:?string}
      *
      * @spec openspec/changes/automation-designer/tasks.md#2.2
-     * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-005
+     * @spec openspec/specs/automation-designer/spec.md#req-autd-005
      */
     public function status(array $automation, array $provenance): array
     {
@@ -533,7 +533,7 @@ class AutomationCompilerService
      * @return string One of `none|pending|approved|rejected`.
      *
      * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
-     * @spec openspec/changes/automation-approval-steps/specs/automation-designer/spec.md#req-autd-007
+     * @spec openspec/specs/automation-designer/spec.md#req-autd-007
      */
     public function approvalState(array $automation, array $provenance): string
     {
@@ -951,7 +951,7 @@ class AutomationCompilerService
      * @return array<string,mixed> A synthetic ConditionActionRule-shaped record.
      *
      * @spec openspec/changes/automation-designer/tasks.md#3.1
-     * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-007
+     * @spec openspec/specs/automation-designer/spec.md#req-autd-007
      */
     public function compileDryRunRule(array $automation): array
     {

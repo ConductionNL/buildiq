@@ -390,4 +390,16 @@ export default {
 	background: var(--color-warning-default-background, rgba(201, 121, 0, 0.2));
 	color: var(--color-warning-text, #8a5300);
 }
+
+/*
+ * WCAG 2.2 AA 2.3.3 Animation from Interactions. The card animates its border
+ * and shadow on hover/selection; honour an OS-level reduced-motion preference.
+ * Scoped to this card's own selector so it cannot reach into NC component
+ * internals.
+ */
+@media (prefers-reduced-motion: reduce) {
+	.ob-app-card__inner {
+		transition: none;
+	}
+}
 </style>

@@ -33,7 +33,7 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/automation-designer/tasks.md#2.2
- * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-005
+ * @spec openspec/specs/automation-designer/spec.md#req-autd-005
  */
 
 declare(strict_types=1);

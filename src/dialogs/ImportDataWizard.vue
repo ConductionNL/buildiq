@@ -136,9 +136,24 @@
 						{{ t('openbuild', 'First rows') }}
 					</h4>
 					<div class="ob-import-wizard__sample-scroll">
+						<!--
+							`sampleRows` is populated only by readCsvSample(), and a
+							CSV's first line IS its header row — it was being rendered
+							as ordinary <td> data, so the table had no <th> at all.
+							Promoting row 0 to a <thead> of <th scope="col"> is both
+							the WCAG 1.3.1 fix (a screen reader can now announce which
+							column a cell belongs to) and a truer rendering of the file.
+						-->
 						<table class="ob-import-wizard__sample">
+							<thead v-if="sampleHeader.length">
+								<tr>
+									<th v-for="(cell, ci) in sampleHeader" :key="'h-' + ci" scope="col">
+										{{ cell }}
+									</th>
+								</tr>
+							</thead>
 							<tbody>
-								<tr v-for="(row, ri) in sampleRows" :key="ri">
+								<tr v-for="(row, ri) in sampleBody" :key="ri">
 									<td v-for="(cell, ci) in row" :key="ci">
 										{{ cell }}
 									</td>
@@ -303,6 +318,30 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * The sample table's header cells — the CSV's own header line.
+		 *
+		 * `sampleRows` is filled only by `readCsvSample()`, and a CSV's first
+		 * line is its header row, so row 0 is the header by construction. It
+		 * used to render as ordinary `<td>` data, which left the sample table
+		 * with no `<th>` at all (WCAG 2.2 AA 1.3.1 Info and Relationships).
+		 *
+		 * @return {Array<string>} Header cells, empty when there is no sample.
+		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 */
+		sampleHeader() {
+			return this.sampleRows.length > 0 ? this.sampleRows[0] : []
+		},
+		/**
+		 * The sample table's data rows — everything after the header line.
+		 *
+		 * @return {Array<Array<string>>} Data rows, empty when the sample is
+		 *                                header-only or absent.
+		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 */
+		sampleBody() {
+			return this.sampleRows.slice(1)
+		},
 		/**
 		 * Step-rail labels.
 		 *

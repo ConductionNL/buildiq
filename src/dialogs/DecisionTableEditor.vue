@@ -44,10 +44,12 @@
 			<table class="decision-table-editor__grid">
 				<thead>
 					<tr>
-						<th v-for="(col, index) in staged.inputColumns" :key="'h-' + index">
+						<th v-for="(col, index) in staged.inputColumns" :key="'h-' + index" scope="col">
 							{{ col.naam }}
 						</th>
-						<th>{{ t('openbuild', 'Decision') }}</th>
+						<th scope="col">
+							{{ t('openbuild', 'Decision') }}
+						</th>
 					</tr>
 				</thead>
 				<tbody>

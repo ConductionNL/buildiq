@@ -5,7 +5,7 @@
  * Playwright end-to-end spec for openspec change `builder-undo-redo`
  * (REQ-BUR-001 .. REQ-BUR-005; REQ-BUR-006/007 are engine-seam contracts
  * excluded from e2e per the spec's `@e2e exclude` notes — see
- * openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md).
+ * openspec/specs/builder-undo-redo/spec.md).
  *
  * Follows the same conventions as the other designer e2e suites
  * (`schema-designer.spec.ts`, `schema-access-scopes.spec.ts`,

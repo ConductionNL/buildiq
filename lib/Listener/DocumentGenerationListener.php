@@ -37,7 +37,7 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/automation-document-action/tasks.md#3.1
- * @spec openspec/changes/automation-document-action/specs/automation-designer/spec.md#req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#req-autd-004
  */
 
 declare(strict_types=1);
@@ -92,7 +92,7 @@ class DocumentGenerationListener implements IEventListener
      * @return void
      *
      * @spec openspec/changes/automation-document-action/tasks.md#3.1
-     * @spec openspec/changes/automation-document-action/specs/automation-designer/spec.md#req-autd-004
+     * @spec openspec/specs/automation-designer/spec.md#req-autd-004
      */
     public function handle(Event $event): void
     {

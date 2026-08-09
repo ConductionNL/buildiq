@@ -3,7 +3,7 @@
 ## Purpose
 TBD - created by archiving change data-scopes-authoring. Update Purpose after archive.
 ## Requirements
-### Requirement: The Schema Designer MUST provide an Access sub-editor with per-operation scopes
+### Requirement: The Schema Designer MUST provide an Access sub-editor with per-operation scopes (REQ-OBDSA-001)
 
 The Schema Designer detail view SHALL mount an `AccessEditor` sub-editor
 (following the `FieldEditor` / `LifecycleEditor` / `RelationEditor`
@@ -29,7 +29,7 @@ and Discard SHALL revert it.
 - WHEN the author sets the `delete` scope to group `admin` and leaves `create`/`update` as *everyone*
 - THEN the persisted `authorization` block contains exactly the `read` and `delete` keys
 
-### Requirement: Scopes MUST compile to OpenRegister authorization metadata and round-trip losslessly
+### Requirement: Scopes MUST compile to OpenRegister authorization metadata and round-trip losslessly (REQ-OBDSA-002)
 
 The Access sub-editor's output SHALL be compiled into the schema-level
 `authorization` block that OpenRegister enforces (per-operation NC group
@@ -55,7 +55,7 @@ as managed outside the designer.
 - THEN the unrepresentable entry is shown as read-only in the Access sub-editor
 - AND it is byte-identical in the persisted body after Save
 
-### Requirement: The editor MUST offer only scope kinds the connected OpenRegister supports
+### Requirement: The editor MUST offer only scope kinds the connected OpenRegister supports (REQ-OBDSA-003)
 
 Scope-kind availability SHALL be derived from
 `openregister.authorization.scopes` in the Nextcloud capabilities
@@ -81,7 +81,7 @@ enforce.
 
 @e2e exclude capability-injection spec — the deployed dev OR does not advertise `openregister.authorization.scopes`, so the unlocked branch cannot be driven through a live Playwright session; covered by Vitest tests mocking `@nextcloud/capabilities` for `useOrAccessCapabilities` and the AccessEditor option rendering (the baseline branch IS e2e-covered by the previous scenario)
 
-### Requirement: The designer MUST warn when scopes would hide the schema's data from the author
+### Requirement: The designer MUST warn when scopes would hide the schema's data from the author (REQ-OBDSA-004)
 
 The Schema Designer SHALL show a warning note when the staged `read` scope is group-based, the selected groups do not
 intersect the author's own group memberships (from
@@ -103,7 +103,7 @@ enabled. Own-records and condition scopes SHALL NOT trigger the warning.
 - WHEN they set the `read` scope to *specific groups* with `vets`
 - THEN no lock-out warning is shown
 
-### Requirement: SchemaListPanel MUST summarise scoped schemas with a badge
+### Requirement: SchemaListPanel MUST summarise scoped schemas with a badge (REQ-OBDSA-005)
 
 `SchemaListPanel` rows SHALL show a "Restricted" badge for any schema
 whose body carries an `authorization` block, with the per-operation
@@ -119,7 +119,7 @@ a pure exported helper so it is unit-testable.
 - THEN the scoped schema's row shows a "Restricted" badge whose title includes `read: vets`
 - AND the unscoped schema's row shows no badge
 
-### Requirement: Scope edits MUST be version-scoped like all schema edits
+### Requirement: Scope edits MUST be version-scoped like all schema edits (REQ-OBDSA-006)
 
 Editing under `?_version=` SHALL stage and save against that
 version's register only — access scopes live inside the schema body in the per-app/per-version
@@ -135,7 +135,7 @@ draft version MUST NOT alter the production version's `authorization`.
 - THEN the draft register's schema body carries the new `authorization.read`
 - AND the same schema in the production register is unchanged
 
-### Requirement: Production-version scope changes MUST be owner-only
+### Requirement: Production-version scope changes MUST be owner-only (REQ-OBDSA-007)
 
 The Access sub-editor SHALL render read-only with an i18n note that production access scopes can only
 be changed by an owner, when the active version is the Application's `productionVersion` and the
@@ -158,7 +158,7 @@ manage-permission.
 - WHEN they open the same production-version schema
 - THEN the Access sub-editor is editable
 
-### Requirement: Authored scopes MUST rely on OpenRegister enforcement, not designer gating
+### Requirement: Authored scopes MUST rely on OpenRegister enforcement, not designer gating (REQ-OBDSA-008)
 
 OpenBuild MUST NOT add client-side row filtering that substitutes for
 the compiled `authorization` metadata: the Access sub-editor is an authoring surface only, and the authoritative

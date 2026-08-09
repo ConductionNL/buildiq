@@ -231,7 +231,7 @@ export default {
 		 * validator's `/pages/<n>/config/steps` errors mark inline.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-		 * @spec openspec/changes/form-editor-logic/specs/form-editor-logic/spec.md#req-obfel-001
+		 * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-001
 		 */
 		validatedConfigKeys() {
 			return ['submitHandler', 'submitEndpoint', 'submitMethod', 'mode', 'submitLabel', 'successMessage', 'fields', 'initialValue', 'steps']

@@ -37,7 +37,7 @@
  *
  * @spec openspec/changes/automation-approval-steps/tasks.md#2.1
  * @spec openspec/changes/automation-approval-steps/tasks.md#2.2
- * @spec openspec/changes/automation-approval-steps/specs/automation-designer/spec.md#req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#req-autd-004
  */
 
 declare(strict_types=1);
