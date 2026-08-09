@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -206,4 +207,83 @@ class ApplicationVersionsControllerTest extends TestCase
         self::assertSame(Http::STATUS_OK, $response->getStatus());
         self::assertSame('v-uuid', $response->getData()['productionVersion']);
     }//end testReleaseOwnerReturns200()
+
+    /**
+     * An absent OpenRegister register must be TRANSLATED, not propagated.
+     *
+     * `RegisterMapper::find()` throws DoesNotExistException when the register
+     * is missing — it does not return null. `release()` calls
+     * `loadApplication()` OUTSIDE any try/catch, so before the translation was
+     * added the exception escaped the controller entirely and Nextcloud's
+     * dispatcher turned it into a framework 500 with a stack trace on a
+     * `#[NoAdminRequired]` endpoint.
+     *
+     * This test fails (by raising) against that older behaviour, which is what
+     * makes it a regression test rather than a restatement.
+     *
+     * @return void
+     */
+    public function testReleaseTranslatesMissingRegisterInsteadOfThrowing(): void
+    {
+        $registerMapper = $this->createMock(RegisterMapper::class);
+        $registerMapper->method('find')->willThrowException(
+            new DoesNotExistException('register openbuild not found')
+        );
+
+        $controller = new ApplicationVersionsController(
+            request: $this->request,
+            logger: $this->createMock(LoggerInterface::class),
+            objectService: $this->objectService,
+            registerMapper: $registerMapper,
+            schemaMapper: $this->schemaMapper,
+            userSession: $this->userSession,
+            groupManager: $this->groupManager,
+            versionService: $this->versionService,
+            auditTrailMapper: null,
+        );
+
+        $this->userSession->method('getUser')->willReturn($this->mockUser('admin'));
+
+        $response = $controller->release('test23', 'draft-1');
+
+        self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+        self::assertSame('not_found', $response->getData()['error']);
+    }//end testReleaseTranslatesMissingRegisterInsteadOfThrowing()
+
+    /**
+     * The same translation on the read path: `show()` also calls its lookup
+     * helper outside a try/catch, so an absent SCHEMA must come back as a 404
+     * rather than escaping.
+     *
+     * @return void
+     */
+    public function testShowTranslatesMissingSchemaInsteadOfThrowing(): void
+    {
+        $schemaMapper = $this->createMock(SchemaMapper::class);
+        $schemaMapper->method('find')->willThrowException(
+            new DoesNotExistException('schema application-version not found')
+        );
+
+        $controller = new ApplicationVersionsController(
+            request: $this->request,
+            logger: $this->createMock(LoggerInterface::class),
+            objectService: $this->objectService,
+            registerMapper: $this->registerMapper,
+            schemaMapper: $schemaMapper,
+            userSession: $this->userSession,
+            groupManager: $this->groupManager,
+            versionService: $this->versionService,
+            auditTrailMapper: null,
+        );
+
+        $this->userSession->method('getUser')->willReturn($this->mockUser('admin'));
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+        $this->objectService->method('searchObjects')->willReturn(
+            [['id' => 'app-uuid', 'slug' => 'test23', 'permissions' => ['owners' => ['user:admin']]]]
+        );
+
+        $response = $controller->show('test23', 'draft-1');
+
+        self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+    }//end testShowTranslatesMissingSchemaInsteadOfThrowing()
 }//end class
