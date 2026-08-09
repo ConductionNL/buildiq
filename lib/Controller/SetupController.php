@@ -43,7 +43,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-21
+ * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-2.1
  */
 
 declare(strict_types=1);
@@ -68,7 +68,7 @@ use Throwable;
 /**
  * First-time-setup status + config + actions for the abstract setup wizard.
  *
- * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-21
+ * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-2.1
  */
 class SetupController extends Controller
 {
@@ -120,7 +120,7 @@ class SetupController extends Controller
      *
      * @return JSONResponse `{ version, completed, steps: { <id>: { done } } }`.
      *
-     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-41
+     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-4.1
      */
     #[AuthorizedAdminSetting(AdminSettings::class)]
     public function status(): JSONResponse
@@ -162,7 +162,7 @@ class SetupController extends Controller
      *
      * @return JSONResponse `{ success }`.
      *
-     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-31
+     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-3.1
      */
     #[AuthorizedAdminSetting(AdminSettings::class)]
     public function saveConfig(): JSONResponse
@@ -187,7 +187,7 @@ class SetupController extends Controller
      *
      * @return JSONResponse `{ success, message, detail }`.
      *
-     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-21
+     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-2.1
      */
     #[AuthorizedAdminSetting(AdminSettings::class)]
     public function runAction(string $actionId): JSONResponse
@@ -246,7 +246,7 @@ class SetupController extends Controller
      *
      * @return JSONResponse|null A 401/403 response when denied, null when the caller is an admin.
      *
-     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-21
+     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-2.1
      */
     private function requireAdmin(): ?JSONResponse
     {

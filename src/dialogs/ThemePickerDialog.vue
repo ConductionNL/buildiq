@@ -138,7 +138,7 @@ export default {
 		}
 	},
 	computed: {
-		/** @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002 */
+		/** @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		tokenSetOptions() {
 			return this.tokenSets.map((s) => ({
 				label: s.name || s.id,
@@ -154,7 +154,7 @@ export default {
 		 * entry — the only population path left (REQ-NTS-002/006).
 		 *
 		 * @return {?object} - `{ tokenSet, tokenSetName, primaryColor, backgroundColor, designSystem }`.
-		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
 		 */
 		candidate() {
 			if (!this.selectedOption) {
@@ -175,7 +175,7 @@ export default {
 		 *   form from the manifest's current theme and (when NlDesign is installed)
 		 *   repopulates the selectable themes. Closing reverts the live preview, so
 		 *   dismissing the dialog never leaves the app wearing an unsaved theme.
-		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
 		 */
 		open(isOpen) {
 			if (isOpen) {
@@ -187,7 +187,7 @@ export default {
 				this.revertPreview()
 			}
 		},
-		/** @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-008 */
+		/** @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-008 */
 		selectedOption() {
 			this.evaluateCandidateContrast()
 		},
@@ -196,7 +196,7 @@ export default {
 		/**
 		 * Seed the form from the current theme when reopening.
 		 *
-		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
 		 */
 		hydrate() {
 			this.contrastResults = null
@@ -222,7 +222,7 @@ export default {
 		 * error handling is needed here.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
 		 */
 		async populateList() {
 			this.loadingList = true
@@ -246,7 +246,7 @@ export default {
 		 * correct role here.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-008
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-008
 		 */
 		async evaluateCandidateContrast() {
 			this.contrastResults = null
@@ -263,7 +263,7 @@ export default {
 		 * retargets the sandboxed live-preview-pane CnAppRoot (design.md
 		 * Decision 3).
 		 *
-		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
 		 */
 		onPreviewToggle() {
 			this.$emit('preview', this.livePreview ? this.buildTheme() : null)
@@ -271,7 +271,7 @@ export default {
 		/**
 		 * Revert any live preview (used on cancel/close).
 		 *
-		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
 		 */
 		revertPreview() {
 			if (this.livePreview) {
@@ -283,7 +283,7 @@ export default {
 		 * Assemble the runtime.theme object from the resolved candidate.
 		 *
 		 * @return {?object}
-		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-001
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-001
 		 */
 		buildTheme() {
 			const c = this.candidate
@@ -303,7 +303,7 @@ export default {
 			}
 			return theme
 		},
-		/** @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002 */
+		/** @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		onSave() {
 			const theme = this.buildTheme()
 			if (!theme) {
@@ -313,13 +313,13 @@ export default {
 			this.$emit('save', theme)
 			this.$emit('update:open', false)
 		},
-		/** @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002 */
+		/** @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		onClearTheme() {
 			this.revertPreview()
 			this.$emit('clear')
 			this.$emit('update:open', false)
 		},
-		/** @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002 */
+		/** @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		onClose() {
 			this.revertPreview()
 			this.$emit('update:open', false)

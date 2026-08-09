@@ -129,7 +129,7 @@ const SCOPE_OPS = ['read', 'create', 'update', 'delete']
  *
  * @param {object} schema Schema record (may carry `authorization`).
  * @return {{label: string, title: string}|null} Badge, or null.
- * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-005
+ * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-005
  */
 export function scopeSummary(schema) {
 	const auth = schema && schema.authorization
@@ -189,7 +189,7 @@ export default {
 		 * Expose the pure `scopeSummary` helper as an instance method so
 		 * the template can call it directly (REQ-OBDSA-005).
 		 *
-		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-005
+		 * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-005
 		 * @param {object} schema Schema record.
 		 * @return {{label: string, title: string}|null} Badge, or null.
 		 */

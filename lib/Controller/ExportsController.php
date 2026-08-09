@@ -418,7 +418,7 @@ class ExportsController extends Controller
      * the user's GitHub identity, so it stays CSRF-protected.
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
-     * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-11
+     * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-1.1
      */
     #[NoAdminRequired]
     public function submit(string $slug): JSONResponse
@@ -515,7 +515,7 @@ class ExportsController extends Controller
      * requires, and removing it would break the download link entirely.
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
-     * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-13
+     * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-1.3
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

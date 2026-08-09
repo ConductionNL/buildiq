@@ -46,7 +46,7 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/automation-approval-steps/tasks.md#1.3
- * @spec openspec/changes/automation-approval-steps/specs/automation-designer/spec.md#req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#req-autd-004
  */
 
 declare(strict_types=1);
@@ -114,7 +114,7 @@ class AutomationApprovalTriggerListener implements IEventListener
      * @return void
      *
      * @spec openspec/changes/automation-approval-steps/tasks.md#1.3
-     * @spec openspec/changes/automation-approval-steps/specs/automation-designer/spec.md#req-autd-004
+     * @spec openspec/specs/automation-designer/spec.md#req-autd-004
      */
     public function handle(Event $event): void
     {
@@ -365,7 +365,7 @@ class AutomationApprovalTriggerListener implements IEventListener
      * @return void
      *
      * @spec openspec/changes/automation-approval-steps/tasks.md#1.3
-     * @spec openspec/changes/automation-approval-steps/specs/automation-designer/spec.md#req-autd-004
+     * @spec openspec/specs/automation-designer/spec.md#req-autd-004
      */
     private function initializeFor(array $automation, string $objectUuid): void
     {

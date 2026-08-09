@@ -18,7 +18,7 @@
 // capabilities document, this composable picks it up automatically — no
 // OR version sniffing (design.md Decision 3).
 //
-// @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-003
+// @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-003
 
 import { getCapabilities } from '@nextcloud/capabilities'
 
@@ -34,7 +34,7 @@ export const BASELINE_SCOPES = Object.freeze(['group'])
  * baseline scope kinds (everyone / groups) are offered.
  *
  * @return {{ scopes: string[] }} The advertised (or baseline) scope kinds.
- * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-003
+ * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-003
  */
 export function useOrAccessCapabilities() {
 	try {

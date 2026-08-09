@@ -263,7 +263,7 @@ class TemplateSeedService
      *
      * @return int Number of the four bundled slugs currently present (0-4).
      *
-     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-42
+     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-4.2
      */
     public function countSeeded(): int
     {

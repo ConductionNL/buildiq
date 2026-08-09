@@ -493,7 +493,7 @@ final class ExportsControllerTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-21
+     * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-2.1
      */
     public function testSubmitDoesNotCarryNoCsrfRequiredWhileDownloadDoes(): void
     {
