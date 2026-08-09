@@ -8,11 +8,22 @@
  *
  * Endpoint: POST /apps/openbuild/api/applications/wizard
  *
- * The endpoint carries `#[NoAdminRequired]` so NC's middleware accepts the
- * request, but the controller gate (issue #157) restricts it to NC admins:
- * app creation provisions an OR Register, mirroring OR's admin-only
- * RegistersController gate (OR #1949). The wizard service sets the caller as
- * the sole owner in the new Application's `permissions.owners` (REQ-OBWIZ-010).
+ * The endpoint is ADMIN-ONLY (issue #157): app creation provisions an OR
+ * Register, mirroring OR's admin-only RegistersController gate (OR #1949).
+ * The wizard service sets the caller as the sole owner in the new
+ * Application's `permissions.owners` (REQ-OBWIZ-010).
+ *
+ * That posture is declared at BOTH layers:
+ *
+ *  - `#[AuthorizedAdminSetting(AdminSettings::class)]`, so NC's
+ *    SecurityMiddleware refuses before dispatch, and
+ *  - the `IGroupManager::isAdmin()` gate in the body, as defence in depth.
+ *
+ * The method used to carry `#[NoAdminRequired]`, which does not ADD a layer —
+ * it REMOVES one. It tells the middleware "any logged-in user may reach this",
+ * leaving the body check as the only thing between a regular user and register
+ * provisioning. Hydra gate-9 (semantic-auth) flags exactly that contradiction,
+ * and SetupController was corrected the same way in #127.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -40,9 +51,10 @@ namespace OCA\OpenBuild\Controller;
 use OCA\OpenBuild\AppInfo\Application;
 use OCA\OpenBuild\Exception\WizardCreationException;
 use OCA\OpenBuild\Service\ApplicationCreationService;
+use OCA\OpenBuild\Settings\AdminSettings;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
-use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
@@ -94,7 +106,7 @@ class ApplicationCreationController extends Controller
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
      */
-    #[NoAdminRequired]
+    #[AuthorizedAdminSetting(AdminSettings::class)]
     #[UserRateLimit(limit: 10, period: 3600)]
     public function wizard(): JSONResponse
     {
