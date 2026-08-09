@@ -25,12 +25,14 @@
 					type="text"
 					class="settings-section-builder__field"
 					:placeholder="t('openbuild', 'Section title (i18n key)')"
+					:aria-label="t('openbuild', 'Section title (i18n key)')"
 					@input="updateField(index, 'title', $event.target.value)">
 				<input
 					:value="section.id || ''"
 					type="text"
 					class="settings-section-builder__field settings-section-builder__field--narrow"
 					:placeholder="t('openbuild', 'id (optional)')"
+					:aria-label="t('openbuild', 'id (optional)')"
 					@input="updateField(index, 'id', $event.target.value)">
 				<button
 					type="button"
@@ -80,6 +82,7 @@
 						:value="section.component || ''"
 						type="text"
 						:placeholder="t('openbuild', 'e.g. AppSettingsPanel')"
+						:aria-label="t('openbuild', 'e.g. AppSettingsPanel')"
 						@input="updateField(index, 'component', $event.target.value)">
 				</label>
 				<label class="settings-section-builder__row">
@@ -110,12 +113,14 @@
 						type="text"
 						class="settings-section-builder__field"
 						:placeholder="t('openbuild', 'componentName (customComponents key)')"
+						:aria-label="t('openbuild', 'componentName (customComponents key)')"
 						@input="updateWidget(index, wIndex, 'componentName', $event.target.value)">
 					<input
 						:value="stringifyProps(widget.props)"
 						type="text"
 						class="settings-section-builder__field"
 						:placeholder="t('openbuild', 'props (JSON, optional)')"
+						:aria-label="t('openbuild', 'props (JSON, optional)')"
 						@input="onWidgetPropsInput(index, wIndex, $event.target.value)">
 					<button
 						type="button"

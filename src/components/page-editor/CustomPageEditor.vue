@@ -49,6 +49,7 @@
 				class="custom-page-editor__textarea"
 				spellcheck="false"
 				:value="propsDraft"
+				:aria-label="t('openbuild', 'Props (JSON, optional)')"
 				:aria-invalid="!!propsError || isInvalid('props')"
 				@input="onPropsInput($event.target.value)" />
 			<p v-if="propsError" class="custom-page-editor__error" role="alert">

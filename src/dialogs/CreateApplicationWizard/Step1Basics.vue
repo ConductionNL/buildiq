@@ -81,6 +81,9 @@
 			</div>
 
 			<div v-if="showAdvanced" class="wizard-step1__advanced">
+				<label class="wizard-step1__label" for="wizard-app-slug">
+					{{ t('openbuild', 'Slug') }}
+				</label>
 				<input
 					id="wizard-app-slug"
 					class="wizard-step1__input"

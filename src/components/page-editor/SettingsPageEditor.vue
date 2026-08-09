@@ -81,18 +81,21 @@
 						type="text"
 						class="settings-page-editor__field settings-page-editor__field--narrow"
 						:placeholder="t('openbuild', 'Tab id')"
+						:aria-label="t('openbuild', 'Tab id')"
 						@input="updateTabField(index, 'id', $event.target.value)">
 					<input
 						:value="tab.label || ''"
 						type="text"
 						class="settings-page-editor__field"
 						:placeholder="t('openbuild', 'Tab label (i18n key)')"
+						:aria-label="t('openbuild', 'Tab label (i18n key)')"
 						@input="updateTabField(index, 'label', $event.target.value)">
 					<input
 						:value="tab.icon || ''"
 						type="text"
 						class="settings-page-editor__field settings-page-editor__field--narrow"
 						:placeholder="t('openbuild', 'Icon (optional)')"
+						:aria-label="t('openbuild', 'Icon (optional)')"
 						@input="updateTabField(index, 'icon', $event.target.value)">
 					<button
 						type="button"

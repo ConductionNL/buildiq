@@ -11,18 +11,21 @@
 				type="text"
 				class="action-builder__field"
 				:placeholder="t('openbuild', 'Action id (e.g. edit)')"
+				:aria-label="t('openbuild', 'Action id (e.g. edit)')"
 				@input="updateField(index, 'id', $event.target.value)">
 			<input
 				:value="act.label || ''"
 				type="text"
 				class="action-builder__field"
 				:placeholder="t('openbuild', 'Label (i18n key)')"
+				:aria-label="t('openbuild', 'Label (i18n key)')"
 				@input="updateField(index, 'label', $event.target.value)">
 			<input
 				:value="act.icon || ''"
 				type="text"
 				class="action-builder__field action-builder__field--narrow"
 				:placeholder="t('openbuild', 'Icon')"
+				:aria-label="t('openbuild', 'Icon')"
 				@input="updateField(index, 'icon', $event.target.value)">
 			<select
 				:value="act.target || ''"

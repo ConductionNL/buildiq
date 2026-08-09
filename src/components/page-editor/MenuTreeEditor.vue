@@ -38,24 +38,28 @@
 							type="text"
 							class="menu-tree-editor__field"
 							:placeholder="t('openbuild', 'id (e.g. inbox)')"
+							:aria-label="t('openbuild', 'id (e.g. inbox)')"
 							@input="updateField(index, 'id', $event.target.value)">
 						<input
 							:value="entry.label || ''"
 							type="text"
 							class="menu-tree-editor__field"
 							:placeholder="t('openbuild', 'label (i18n key)')"
+							:aria-label="t('openbuild', 'label (i18n key)')"
 							@input="updateField(index, 'label', $event.target.value)">
 						<input
 							:value="entry.icon || ''"
 							type="text"
 							class="menu-tree-editor__field menu-tree-editor__field--narrow"
 							:placeholder="t('openbuild', 'icon')"
+							:aria-label="t('openbuild', 'icon')"
 							@input="updateField(index, 'icon', $event.target.value)">
 						<input
 							:value="entry.route || ''"
 							type="text"
 							class="menu-tree-editor__field"
 							:placeholder="t('openbuild', 'route name')"
+							:aria-label="t('openbuild', 'route name')"
 							:disabled="!!entry.action"
 							@input="updateField(index, 'route', $event.target.value)">
 						<input
@@ -63,6 +67,7 @@
 							type="text"
 							class="menu-tree-editor__field"
 							:placeholder="t('openbuild', 'href URL')"
+							:aria-label="t('openbuild', 'href URL')"
 							:disabled="!!entry.action"
 							@input="updateField(index, 'href', $event.target.value)">
 						<select
@@ -128,24 +133,28 @@
 									type="text"
 									class="menu-tree-editor__field"
 									:placeholder="t('openbuild', 'child id')"
+									:aria-label="t('openbuild', 'child id')"
 									@input="updateChildField(index, cIndex, 'id', $event.target.value)">
 								<input
 									:value="child.label || ''"
 									type="text"
 									class="menu-tree-editor__field"
 									:placeholder="t('openbuild', 'label (i18n key)')"
+									:aria-label="t('openbuild', 'label (i18n key)')"
 									@input="updateChildField(index, cIndex, 'label', $event.target.value)">
 								<input
 									:value="child.icon || ''"
 									type="text"
 									class="menu-tree-editor__field menu-tree-editor__field--narrow"
 									:placeholder="t('openbuild', 'icon')"
+									:aria-label="t('openbuild', 'icon')"
 									@input="updateChildField(index, cIndex, 'icon', $event.target.value)">
 								<input
 									:value="child.route || ''"
 									type="text"
 									class="menu-tree-editor__field"
 									:placeholder="t('openbuild', 'route name')"
+									:aria-label="t('openbuild', 'route name')"
 									@input="updateChildField(index, cIndex, 'route', $event.target.value)">
 								<button
 									type="button"
