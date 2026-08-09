@@ -31,6 +31,7 @@
 				type="text"
 				class="column-builder__label"
 				:placeholder="t('openbuild', 'Label (i18n key)')"
+				:aria-label="t('openbuild', 'Label (i18n key)')"
 				@input="onLabelInput(index, $event.target.value)">
 			<button
 				type="button"

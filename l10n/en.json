@@ -716,6 +716,7 @@
         "Re-link repository": "Re-link repository",
         "Read-only": "Read-only",
         "Read-only view of permission changes and admin-bypass events on this application. Sourced from OpenRegister's per-object audit trail.": "Read-only view of permission changes and admin-bypass events on this application. Sourced from OpenRegister's per-object audit trail.",
+        "Raw page configuration (JSON)": "Raw page configuration (JSON)",
         "Ready to import": "Ready to import",
         "Recent activity": "Recent activity",
         "Recent apps": "Recent apps",

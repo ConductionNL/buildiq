@@ -62,6 +62,7 @@
         "Output format (optional)": "Uitvoerformaat (optioneel)",
         "Preview failed. The template could not be rendered.": "Voorbeeld mislukt. Het sjabloon kon niet worden weergegeven.",
         "Preview with sample data": "Voorbeeld met voorbeeldgegevens",
+        "Raw page configuration (JSON)": "Ruwe paginaconfiguratie (JSON)",
         "Rendering preview…": "Voorbeeld renderen…",
         "Template": "Sjabloon",
         "Template default": "Sjabloonstandaard",

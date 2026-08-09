@@ -22,12 +22,14 @@
 				type="text"
 				class="form-field-builder__field"
 				:placeholder="t('openbuild', 'Key')"
+				:aria-label="t('openbuild', 'Key')"
 				@input="updateField(index, 'key', $event.target.value)">
 			<input
 				:value="field.label || ''"
 				type="text"
 				class="form-field-builder__field"
 				:placeholder="t('openbuild', 'Label')"
+				:aria-label="t('openbuild', 'Label')"
 				@input="updateField(index, 'label', $event.target.value)">
 			<select
 				:value="field.type || 'string'"
@@ -51,6 +53,7 @@
 					type="text"
 					class="form-field-builder__field form-field-builder__field--narrow"
 					:placeholder="t('openbuild', 'Pattern')"
+					:aria-label="t('openbuild', 'Pattern')"
 					@input="updateField(index, 'pattern', $event.target.value)">
 			</template>
 			<template v-else>

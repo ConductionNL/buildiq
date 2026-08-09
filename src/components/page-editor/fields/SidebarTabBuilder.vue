@@ -12,24 +12,28 @@
 				type="text"
 				class="sidebar-tab-builder__field"
 				:placeholder="t('openbuild', 'Tab id')"
+				:aria-label="t('openbuild', 'Tab id')"
 				@input="updateField(index, 'id', $event.target.value)">
 			<input
 				:value="tab.label || ''"
 				type="text"
 				class="sidebar-tab-builder__field"
 				:placeholder="t('openbuild', 'Label (i18n key)')"
+				:aria-label="t('openbuild', 'Label (i18n key)')"
 				@input="updateField(index, 'label', $event.target.value)">
 			<input
 				:value="tab.icon || ''"
 				type="text"
 				class="sidebar-tab-builder__field sidebar-tab-builder__field--narrow"
 				:placeholder="t('openbuild', 'Icon')"
+				:aria-label="t('openbuild', 'Icon')"
 				@input="updateField(index, 'icon', $event.target.value)">
 			<input
 				:value="tab.component || ''"
 				type="text"
 				class="sidebar-tab-builder__field"
 				:placeholder="t('openbuild', 'Component (registry key)')"
+				:aria-label="t('openbuild', 'Component (registry key)')"
 				@input="updateField(index, 'component', $event.target.value)">
 			<button
 				type="button"

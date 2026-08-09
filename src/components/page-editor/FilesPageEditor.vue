@@ -53,6 +53,7 @@
 					class="files-page-editor__tag-input"
 					list="files-page-editor-type-suggestions"
 					:placeholder="t('openbuild', 'Add type, press Enter')"
+					:aria-label="t('openbuild', 'Add type, press Enter')"
 					:aria-invalid="isInvalid('allowedTypes')"
 					@keydown.enter.prevent="commitDraft"
 					@keydown.,.prevent="commitDraft"

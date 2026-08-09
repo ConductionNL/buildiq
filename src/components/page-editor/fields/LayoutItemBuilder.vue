@@ -10,6 +10,7 @@
 				type="text"
 				class="layout-item-builder__field"
 				:placeholder="t('openbuild', 'widget id')"
+				:aria-label="t('openbuild', 'widget id')"
 				@input="updateField(index, 'widgetId', $event.target.value)">
 			<label class="layout-item-builder__pair">
 				X

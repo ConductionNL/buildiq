@@ -92,6 +92,7 @@
 				</h3>
 				<input
 					ref="fileInput"
+					:aria-label="t('openbuild', 'Choose a file')"
 					type="file"
 					class="ob-import-wizard__file-input"
 					accept=".xlsx,.xls,.csv,.json"

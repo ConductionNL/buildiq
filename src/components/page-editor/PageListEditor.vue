@@ -76,6 +76,7 @@
 						type="text"
 						class="page-list-editor__field"
 						:placeholder="t('openbuild', 'page id')"
+						:aria-label="t('openbuild', 'page id')"
 						@click.stop
 						@input="updateField(index, 'id', $event.target.value)">
 					<input
@@ -83,6 +84,7 @@
 						type="text"
 						class="page-list-editor__field"
 						:placeholder="t('openbuild', '/route/:param')"
+						:aria-label="t('openbuild', '/route/:param')"
 						@click.stop
 						@input="updateField(index, 'route', $event.target.value)">
 					<span class="page-list-editor__type-tag">{{ page.type }}</span>

@@ -59,10 +59,14 @@
 								v-model="rule.condities[col.naam]"
 								class="decision-table-editor__cell"
 								:class="{ 'decision-table-editor__cell--invalid': !isCellValid(rule.condities[col.naam]) }"
+								:aria-label="col.naam"
 								@input="markDirty">
 						</td>
 						<td>
-							<input v-model="rule.waardes.decision" class="decision-table-editor__cell">
+							<input
+								v-model="rule.waardes.decision"
+								class="decision-table-editor__cell"
+								:aria-label="t('openbuild', 'Decision')">
 						</td>
 					</tr>
 				</tbody>
