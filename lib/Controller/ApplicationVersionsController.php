@@ -168,7 +168,8 @@ class ApplicationVersionsController extends Controller
             }
 
             $applicationUuid = (string) ($application['id'] ?? $application['uuid'] ?? '');
-            $ids             = $this->resolveRegisterAndSchema(ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
+
+            $ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
             if ($ids === null) {
                 return $this->errorResponse(code: 'not_found', detail: 'Application '.$appSlug.' not found', status: Http::STATUS_NOT_FOUND);
             }
@@ -659,7 +660,7 @@ class ApplicationVersionsController extends Controller
     {
         $applicationUuid = (string) ($application['id'] ?? $application['uuid'] ?? '');
 
-        $ids = $this->resolveRegisterAndSchema(ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
+        $ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
         if ($ids === null) {
             return null;
         }
@@ -718,7 +719,7 @@ class ApplicationVersionsController extends Controller
      */
     private function loadApplication(string $slug): ?array
     {
-        $ids = $this->resolveRegisterAndSchema(ApplicationVersionService::APPLICATION_SCHEMA);
+        $ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_SCHEMA);
         if ($ids === null) {
             return null;
         }
@@ -765,7 +766,7 @@ class ApplicationVersionsController extends Controller
 
         $applicationUuid = (string) ($application['id'] ?? $application['uuid'] ?? '');
 
-        $ids = $this->resolveRegisterAndSchema(ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
+        $ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
         if ($ids === null) {
             return null;
         }
