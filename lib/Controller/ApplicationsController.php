@@ -709,8 +709,30 @@ class ApplicationsController extends Controller
         // applied at this layer (verified during smoke-test 2026-05-11).
         // _multitenancy=false bypasses the org filter on the LOOKUP only —
         // object-level multitenancy is still enforced via searchObjects below.
-        $registerId  = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
-        $routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
+        //
+        // Both find() calls THROW DoesNotExistException when the register or
+        // schema is absent — they do not return null. This method's whole
+        // contract is "a JSONResponse on failure or a tuple on success", and
+        // an uncaught throw here broke it: `getManifest` is #[NoAdminRequired],
+        // so an unprovisioned OpenRegister answered an unauthenticated-ish
+        // caller with a framework 500 and a stack trace rather than a
+        // translated error. Translated below, cause logged.
+        try {
+            $registerId  = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
+            $routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
+        } catch (Throwable $e) {
+            $this->logger->error(
+                'OpenBuild: could not resolve the openbuild register / built-app-route schema: {message}',
+                ['message' => $e->getMessage(), 'exception' => $e]
+            );
+            return new JSONResponse(
+                data: [
+                    'error'   => 'internal_error',
+                    'message' => 'The OpenBuild register is not available.',
+                ],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
 
         // Step 1 — resolve slug → applicationUuid via the BuiltAppRoute index.
         $routeResults = $this->objectService->searchObjects(
