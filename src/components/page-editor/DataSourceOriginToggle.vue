@@ -44,6 +44,14 @@
 				@update:fields="onFields"
 				@refetch-sample="onRefetch" />
 		</div>
+
+		<ConfirmActionDialog
+			v-model:open="confirmSwitchOpen"
+			:name="t('openbuild', 'Switch data source')"
+			:message="t('openbuild', 'Switching to OpenRegister discards the OpenConnector mapping. Continue?')"
+			:confirm-label="t('openbuild', 'Confirm')"
+			destructive
+			@confirm="onConfirmSwitch" />
 	</div>
 </template>
 
@@ -52,10 +60,11 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import ConnectorSourcePicker from './ConnectorSourcePicker.vue'
 import ConnectorFieldMapper from './ConnectorFieldMapper.vue'
+import ConfirmActionDialog from '../../dialogs/ConfirmActionDialog.vue'
 
 export default {
 	name: 'DataSourceOriginToggle',
-	components: { ConnectorSourcePicker, ConnectorFieldMapper },
+	components: { ConnectorSourcePicker, ConnectorFieldMapper, ConfirmActionDialog },
 	props: {
 		// The page/widget `dataSource` object.
 		dataSource: {
@@ -68,6 +77,7 @@ export default {
 		return {
 			sample: null,
 			sampleLoading: false,
+			confirmSwitchOpen: false,
 		}
 	},
 	computed: {
@@ -107,13 +117,31 @@ export default {
 			const hasMapping = this.connector && (this.connector.endpointPath
 				|| (this.connector.fields && Object.keys(this.connector.fields).length))
 			if (hasMapping) {
-				const ok = typeof window !== 'undefined' && window.confirm
-					? window.confirm(t('openbuild', 'Switching to OpenRegister discards the OpenConnector mapping. Continue?'))
-					: true
-				if (!ok) {
-					return
-				}
+				// There IS a mapping to lose — ask first. dropConnector() runs
+				// only from the dialog's confirm, so cancelling keeps it.
+				this.confirmSwitchOpen = true
+				return
 			}
+			this.dropConnector()
+		},
+		/**
+		 * Apply the switch to OpenRegister once the user has confirmed
+		 * discarding the OpenConnector mapping.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.2
+		 */
+		onConfirmSwitch() {
+			this.confirmSwitchOpen = false
+			this.dropConnector()
+		},
+		/**
+		 * Remove the connector block and emit the updated data source.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.2
+		 */
+		dropConnector() {
 			const next2 = { ...this.dataSource }
 			delete next2.connector
 			this.sample = null

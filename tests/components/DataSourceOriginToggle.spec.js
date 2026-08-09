@@ -41,21 +41,34 @@ describe('DataSourceOriginToggle', () => {
 		expect(emitted.connector).toEqual({ endpointPath: '', fields: {} })
 	})
 
-	it('switching back to OpenRegister with a mapping prompts confirm and clears on accept', async () => {
-		window.confirm = vi.fn(() => true)
+	it('switching back to OpenRegister with a mapping asks first and clears on accept', async () => {
 		const wrapper = factory({ connector: { endpointPath: 'x', fields: { a: 'a' } } })
 		const radios = wrapper.findAll('input[type="radio"]')
 		await radios.at(0).setChecked() // OpenRegister
-		expect(window.confirm).toHaveBeenCalled()
+		// The mapping is still intact at this point — only the dialog opened.
+		expect(wrapper.vm.confirmSwitchOpen).toBe(true)
+		expect(wrapper.emitted()['update:dataSource']).toBeUndefined()
+
+		wrapper.vm.onConfirmSwitch()
 		const emitted = wrapper.emitted()['update:dataSource'][0][0]
 		expect(emitted.connector).toBeUndefined()
 	})
 
 	it('cancelling the confirm keeps the connector binding', async () => {
-		window.confirm = vi.fn(() => false)
 		const wrapper = factory({ connector: { endpointPath: 'x', fields: { a: 'a' } } })
 		const radios = wrapper.findAll('input[type="radio"]')
 		await radios.at(0).setChecked()
+		// Simulate dismissing the dialog: onConfirmSwitch is never called.
+		wrapper.vm.confirmSwitchOpen = false
 		expect(wrapper.emitted()['update:dataSource']).toBeUndefined()
+	})
+
+	it('switching back with NO mapping to lose does not ask at all', async () => {
+		const wrapper = factory({ connector: { endpointPath: '', fields: {} } })
+		const radios = wrapper.findAll('input[type="radio"]')
+		await radios.at(0).setChecked()
+		expect(wrapper.vm.confirmSwitchOpen).toBe(false)
+		const emitted = wrapper.emitted()['update:dataSource'][0][0]
+		expect(emitted.connector).toBeUndefined()
 	})
 })

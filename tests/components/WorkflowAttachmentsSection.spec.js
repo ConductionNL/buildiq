@@ -50,10 +50,17 @@ describe('WorkflowAttachmentsSection', () => {
 		expect(emitted.runtime.workflows[0].id).toBe('wf-1')
 	})
 
-	it('detaching removes the entry and keeps zero-attachment manifests clean', () => {
-		window.confirm = vi.fn(() => true)
+	it('detaching asks first and emits nothing until confirmed', () => {
 		const wrapper = factory({ runtime: { workflows: [entry] } })
 		wrapper.vm.detach(entry)
+		expect(wrapper.vm.confirmDetachOpen).toBe(true)
+		expect(wrapper.emitted()['update:manifest']).toBeUndefined()
+	})
+
+	it('detaching removes the entry once confirmed and keeps zero-attachment manifests clean', () => {
+		const wrapper = factory({ runtime: { workflows: [entry] } })
+		wrapper.vm.detach(entry)
+		wrapper.vm.onConfirmDetach()
 		const emitted = wrapper.emitted()['update:manifest'][0][0]
 		expect(emitted.runtime).toBeUndefined() // runtime dropped when empty
 	})

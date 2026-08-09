@@ -53,12 +53,22 @@ describe('ThemeSection', () => {
 		expect(emitted.dependencies).toEqual(['procest'])
 	})
 
-	it('removing the theme deletes runtime.theme and keeps themeless manifests clean', () => {
-		window.confirm = vi.fn(() => true)
+	it('removing the theme asks first and emits nothing until confirmed', () => {
 		const wrapper = factory({ runtime: { theme } })
 		wrapper.vm.removeTheme()
+		// The destructive step MUST NOT have run yet — this is the property the
+		// old window.confirm gave us and the dialog has to preserve.
+		expect(wrapper.vm.confirmRemoveOpen).toBe(true)
+		expect(wrapper.emitted()['update:manifest']).toBeUndefined()
+	})
+
+	it('removing the theme deletes runtime.theme once confirmed and keeps themeless manifests clean', () => {
+		const wrapper = factory({ runtime: { theme } })
+		wrapper.vm.removeTheme()
+		wrapper.vm.onConfirmRemoveTheme()
 		const emitted = wrapper.emitted()['update:manifest'][0][0]
 		expect(emitted.runtime).toBeUndefined()
+		expect(wrapper.vm.confirmRemoveOpen).toBe(false)
 	})
 
 	it('disables Change when nldesign is absent but keeps the theme removable', () => {

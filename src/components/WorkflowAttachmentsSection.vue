@@ -50,16 +50,25 @@
 			:procest-available="procestAvailable"
 			@save="onDialogSave"
 			@create-link-property="$emit('create-link-property', $event)" />
+
+		<ConfirmActionDialog
+			v-model:open="confirmDetachOpen"
+			:name="t('openbuild', 'Detach case type')"
+			:message="t('openbuild', 'Detach this case type? Existing linked cases are NOT deleted and object links are kept.')"
+			:confirm-label="t('openbuild', 'Detach')"
+			destructive
+			@confirm="onConfirmDetach" />
 	</section>
 </template>
 
 <script>
 import { NcButton } from '@nextcloud/vue'
 import WorkflowAttachmentDialog from '../dialogs/WorkflowAttachmentDialog.vue'
+import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 
 export default {
 	name: 'WorkflowAttachmentsSection',
-	components: { NcButton, WorkflowAttachmentDialog },
+	components: { NcButton, WorkflowAttachmentDialog, ConfirmActionDialog },
 	props: {
 		manifest: {
 			type: Object,
@@ -80,6 +89,8 @@ export default {
 		return {
 			dialogOpen: false,
 			editingAttachment: null,
+			confirmDetachOpen: false,
+			pendingDetach: null,
 		}
 	},
 	computed: {
@@ -140,10 +151,23 @@ export default {
 		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		detach(wf) {
-			const ok = typeof window !== 'undefined' && window.confirm
-				? window.confirm(t('openbuild', 'Detach this case type? Existing linked cases are NOT deleted and object links are kept.'))
-				: true
-			if (!ok) {
+			this.pendingDetach = wf
+			this.confirmDetachOpen = true
+		},
+		/**
+		 * Detach the pending attachment once the user has confirmed.
+		 *
+		 * Held in `pendingDetach` rather than removed optimistically, so
+		 * cancelling or closing the dialog leaves the manifest untouched.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 */
+		onConfirmDetach() {
+			const wf = this.pendingDetach
+			this.confirmDetachOpen = false
+			this.pendingDetach = null
+			if (!wf) {
 				return
 			}
 			const list = this.attachments.filter((a) => a.id !== wf.id)
