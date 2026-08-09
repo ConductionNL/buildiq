@@ -217,4 +217,80 @@ final class RulesControllerTest extends TestCase
         $this->assertSame(Http::STATUS_REQUEST_ENTITY_TOO_LARGE, $response->getStatus());
 
     }//end testEvaluateRejectsOversizedPayload()
+
+    /**
+     * testAll: anonymous callers are rejected before any test gate runs.
+     *
+     * Wire-contract test for the `testAll` endpoint (gate-25).
+     *
+     * @return void
+     */
+    public function testTestAllRejectsAnonymous(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+        $this->versioningService->expects($this->never())->method('runTestGate');
+
+        $response = $this->controller()->testAll('loan-eligibility');
+
+        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+
+    }//end testTestAllRejectsAnonymous()
+
+    /**
+     * testAll: a missing RuleSet is a 404 and the gate is never run.
+     *
+     * @return void
+     */
+    public function testTestAllReturns404WhenRuleSetMissing(): void
+    {
+        $this->authenticate();
+        $this->objectService->method('searchObjectsBySlug')->willReturn([]);
+        $this->versioningService->expects($this->never())->method('runTestGate');
+
+        $response = $this->controller()->testAll('does-not-exist');
+
+        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+
+    }//end testTestAllReturns404WhenRuleSetMissing()
+
+    /**
+     * testAll: an existing RuleSet runs the gate and reports the tally.
+     *
+     * @return void
+     */
+    public function testTestAllRunsTheGateAndReportsTotals(): void
+    {
+        $this->authenticate();
+        $this->objectService->method('searchObjectsBySlug')->willReturn(
+            [['id' => 'rs-1', 'slug' => 'loan-eligibility']]
+        );
+        $this->versioningService->expects($this->once())
+            ->method('runTestGate')
+            ->willReturn([]);
+
+        $response = $this->controller()->testAll('loan-eligibility');
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+
+    }//end testTestAllRunsTheGateAndReportsTotals()
+
+    /**
+     * testAll: a throwing gate is translated to 422, not a framework 500.
+     *
+     * @return void
+     */
+    public function testTestAllTranslatesGateFailure(): void
+    {
+        $this->authenticate();
+        $this->objectService->method('searchObjectsBySlug')->willReturn(
+            [['id' => 'rs-1', 'slug' => 'loan-eligibility']]
+        );
+        $this->versioningService->method('runTestGate')
+            ->willThrowException(new \RuntimeException('engine exploded'));
+
+        $response = $this->controller()->testAll('loan-eligibility');
+
+        $this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+
+    }//end testTestAllTranslatesGateFailure()
 }//end class

@@ -369,4 +369,151 @@ class AppOverrideControllerTest extends TestCase
         self::assertSame('carol', $data['overrides'][0]['owner']);
 
     }//end testListUserOverridesAllowedForMaintainer()
+
+    /**
+     * saveUser: anonymous callers are rejected and nothing is persisted.
+     *
+     * Wire-contract test for the per-user override endpoints (gate-25). These
+     * are separate methods from the app-scoped save/get/clear above and had no
+     * coverage of their own.
+     *
+     * @return void
+     */
+    public function testAnonymousSaveUserIsRejected(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+        $this->service->expects(self::never())->method('upsertUserDelta');
+
+        $response = $this->controller()->saveUser(appId: 'pipelinq');
+
+        self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+
+    }//end testAnonymousSaveUserIsRejected()
+
+    /**
+     * saveUser: an out-of-scope user is forbidden and nothing is persisted.
+     *
+     * @return void
+     */
+    public function testOutOfScopeSaveUserIsForbidden(): void
+    {
+        $this->userSession->method('getUser')->willReturn($this->mockUser('carol'));
+        $this->appManager->method('isEnabledForUser')->willReturn(false);
+        $this->service->expects(self::never())->method('upsertUserDelta');
+
+        $response = $this->controller()->saveUser(appId: 'pipelinq');
+
+        self::assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+
+    }//end testOutOfScopeSaveUserIsForbidden()
+
+    /**
+     * saveUser: an in-scope user's delta is stored against their OWN uid.
+     *
+     * The owner in the response is the session uid — this endpoint is
+     * owner-scoped and must not accept an owner from the request body.
+     *
+     * @return void
+     */
+    public function testInScopeSaveUserIsAllowedAndOwnerScoped(): void
+    {
+        $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+        $this->appManager->method('isEnabledForUser')->willReturn(true);
+        $this->request->method('getParams')->willReturn(['pages' => [['id' => 'home', 'title' => 'X']]]);
+        $this->request->method('getParam')->willReturn(null);
+
+        $this->service->method('validateDeltaShape')->willReturn([]);
+        $this->service->method('wouldBlankApp')->willReturn(false);
+        $this->service->expects(self::once())
+            ->method('upsertUserDelta')
+            ->willReturn(['owner' => 'alice', 'updatedAt' => '2026-08-09T00:00:00+00:00', 'versionUuid' => null]);
+
+        $response = $this->controller()->saveUser(appId: 'pipelinq');
+
+        self::assertSame(Http::STATUS_OK, $response->getStatus());
+        self::assertSame('alice', $response->getData()['owner']);
+
+    }//end testInScopeSaveUserIsAllowedAndOwnerScoped()
+
+    /**
+     * saveUser: an invalid app id is a 400 before any auth or persistence.
+     *
+     * @return void
+     */
+    public function testSaveUserRejectsInvalidAppId(): void
+    {
+        $this->service->expects(self::never())->method('upsertUserDelta');
+
+        $response = $this->controller()->saveUser(appId: 'Not A Valid Id!');
+
+        self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+
+    }//end testSaveUserRejectsInvalidAppId()
+
+    /**
+     * getUser: anonymous callers get 401 and the service is never consulted.
+     *
+     * @return void
+     */
+    public function testAnonymousGetUserIsRejected(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+        $this->service->expects(self::never())->method('getUserDelta');
+
+        $response = $this->controller()->getUser(appId: 'pipelinq');
+
+        self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+
+    }//end testAnonymousGetUserIsRejected()
+
+    /**
+     * getUser: a logged-in user reads their own stored delta.
+     *
+     * @return void
+     */
+    public function testGetUserReturnsOwnDelta(): void
+    {
+        $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+        $this->service->expects(self::once())
+            ->method('getUserDelta')
+            ->willReturn(['delta' => ['pages' => []], 'owner' => 'alice']);
+
+        $response = $this->controller()->getUser(appId: 'pipelinq');
+
+        self::assertSame(Http::STATUS_OK, $response->getStatus());
+
+    }//end testGetUserReturnsOwnDelta()
+
+    /**
+     * clearUser: anonymous callers are rejected and nothing is deleted.
+     *
+     * @return void
+     */
+    public function testAnonymousClearUserIsRejected(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+        $this->service->expects(self::never())->method('deleteUserDelta');
+
+        $response = $this->controller()->clearUser(appId: 'pipelinq');
+
+        self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+
+    }//end testAnonymousClearUserIsRejected()
+
+    /**
+     * clearUser: an in-scope user clears their own delta and gets a success.
+     *
+     * @return void
+     */
+    public function testInScopeClearUserSucceeds(): void
+    {
+        $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+        $this->appManager->method('isEnabledForUser')->willReturn(true);
+        $this->service->expects(self::once())->method('deleteUserDelta');
+
+        $response = $this->controller()->clearUser(appId: 'pipelinq');
+
+        self::assertSame(Http::STATUS_OK, $response->getStatus());
+
+    }//end testInScopeClearUserSucceeds()
 }//end class

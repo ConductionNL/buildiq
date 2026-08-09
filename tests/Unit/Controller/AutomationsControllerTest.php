@@ -463,4 +463,60 @@ final class AutomationsControllerTest extends TestCase
         $this->assertSame('approved', $response->getData()['approvalState']);
 
     }//end testStatusReportsApprovalState()
+
+    /**
+     * disable(): an editor can disable an automation on a draft version, and
+     * the recompile is driven with `enabled: false`.
+     *
+     * Wire-contract test for the `disable` endpoint (gate-25). `enable` was
+     * covered from five angles and its mirror image from none.
+     *
+     * @return void
+     */
+    public function testEditorCanDisableOnDraftVersion(): void
+    {
+        $this->wireUser(uid: 'bob');
+        $this->wireLookup(
+            automation: ['id' => 'a-1', 'applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version', 'enabled' => true],
+            application: [
+                'id'                => 'app-1',
+                'slug'              => 'permit-tracker',
+                'permissions'       => ['owners' => ['user:alice'], 'editors' => ['user:bob']],
+                'productionVersion' => 'production-version',
+            ]
+        );
+
+        $this->compiler->method('compile')->willReturn(['notifications' => [], 'lifecycleActions' => [], 'schedules' => [], 'ruleSet' => null, 'conditionActionRule' => null, 'hash' => 'sha256:x']);
+        $this->compiler->method('apply')->willReturn(['notificationKeys' => [], 'lifecycleActions' => [], 'scheduleIds' => [], 'ruleSetSlug' => null, 'openconnectorObjects' => [], 'compiledHash' => 'sha256:x']);
+
+        $this->objectService->method('saveObject')->willReturn($this->buildEntity(['id' => 'a-1', 'enabled' => false]));
+
+        $response = $this->controller->disable(uuid: 'a-1');
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+
+    }//end testEditorCanDisableOnDraftVersion()
+
+    /**
+     * disable(): a non-member is forbidden and nothing is recompiled.
+     *
+     * @return void
+     */
+    public function testDisableReturns403ForNonMember(): void
+    {
+        $this->wireUser(uid: 'eve-outsider');
+        $this->wireLookup(
+            automation: ['id' => 'a-1', 'applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version', 'enabled' => true],
+            application: [
+                'id'          => 'app-1',
+                'slug'        => 'permit-tracker',
+                'permissions' => ['owners' => ['user:alice'], 'editors' => ['user:bob']],
+            ]
+        );
+
+        $this->compiler->expects($this->never())->method('compile');
+
+        $response = $this->controller->disable(uuid: 'a-1');
+        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+
+    }//end testDisableReturns403ForNonMember()
 }//end class
