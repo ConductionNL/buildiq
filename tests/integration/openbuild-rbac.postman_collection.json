@@ -26,7 +26,9 @@
 		{ "key": "editor_group", "value": "openbuild-rbac-editors", "type": "string" },
 		{ "key": "test_slug", "value": "hello-world", "type": "string" },
 		{ "key": "absent_slug", "value": "this-slug-definitely-does-not-exist", "type": "string" },
-		{ "key": "application_uuid", "value": "", "type": "string" }
+		{ "key": "application_uuid", "value": "", "type": "string" },
+		{ "key": "application_full", "value": "", "type": "string" },
+		{ "key": "merged_body", "value": "", "type": "string" }
 	],
 	"item": [
 		{
@@ -327,6 +329,16 @@
 									"if (app) {",
 									"    const uuid = app.uuid || (app['@self'] && app['@self'].id) || app.id;",
 									"    pm.collectionVariables.set('application_uuid', String(uuid));",
+									"    // Stash the WHOLE record — the three permission PUTs below merge",
+									"    // into it. OR's saveObject() is PUT-semantic and nulls every schema",
+									"    // property the body omits; Application.required is ['slug','name'];",
+									"    // so a bare {\"permissions\": {...}} body asked OR to null both",
+									"    // required fields and was refused with 400 Bad request. Nothing in",
+									"    // that failure mentions slug or name, so it read as an RBAC bug.",
+									"    // `@self` is server-owned metadata, not writable state.",
+									"    const full = JSON.parse(JSON.stringify(app));",
+									"    delete full['@self'];",
+									"    pm.collectionVariables.set('application_full', JSON.stringify(full));",
 									"}"
 								]
 							}
@@ -342,7 +354,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"permissions\":{\"owners\":[\"admin\"],\"editors\":[\"{{editor_group}}\"],\"viewers\":[\"{{viewer_group}}\"]}}"
+							"raw": "{{merged_body}}"
 						},
 						"url": {
 							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
@@ -352,12 +364,64 @@
 					},
 					"event": [
 						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// TWO DEFECTS IN ONE BODY.",
+									"//",
+									"// (1) It was a bare {\"permissions\": {...}}. OR's saveObject() is",
+									"//     PUT-semantic and nulls every schema property the body omits;",
+									"//     Application.required is ['slug','name']; so OR refused the",
+									"//     write with 400 and said nothing about slug or name. Three",
+									"//     assertions failed on that — and the three that follow were",
+									"//     then measuring an Application whose permissions had never",
+									"//     been written at all.",
+									"//",
+									"// (2) The principals were BARE. PermissionResolver::matchesCaller()",
+									"//     classifies principals by a `user:` / `group:` PREFIX. That is",
+									"//     the grammar SeedHelloWorldFixture.php writes",
+									"//     (owners: ['user:admin']) and the one appRoles.ts writes",
+									"//     (editors: ['group:rbac-editors']). A bare \"admin\" or a bare",
+									"//     group name matches nothing, so even a write that LANDED",
+									"//     would have granted no one — and the later 'outsider' checks",
+									"//     would still have been comparing against an app nobody could",
+									"//     reach by role.",
+									"const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"const permissions = {",
+									"    owners: ['user:' + pm.collectionVariables.get('admin_user')],",
+									"    editors: ['group:' + pm.collectionVariables.get('editor_group')],",
+									"    viewers: ['group:' + pm.collectionVariables.get('viewer_group')]",
+									"};",
+									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { permissions: permissions })));"
+								]
+							}
+						},
+						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('Permissions block written', function () {",
-									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+									"    pm.expect(pm.response.code, pm.response.code === 400",
+									"        ? 'got 400 — OR PUT is PUT-semantic, so a bare {permissions} body nulls the required slug/name; send the merged full record'",
+									"        : 'the permissions write must be accepted').to.be.oneOf([200, 201, 204]);",
+									"});",
+									"// Assert the grant actually READ BACK, and in the prefixed grammar.",
+									"// Without this the collection could go green on a write that landed",
+									"// but granted nobody — which is exactly what the bare principals did.",
+									"pm.test('the permissions read back with user:/group: principals', function () {",
+									"    const body = pm.response.json();",
+									"    const perms = (body && body.permissions) || {};",
+									"    pm.expect(perms.owners, 'owners must carry a user:-prefixed principal').to.include('user:' + pm.collectionVariables.get('admin_user'));",
+									"    pm.expect(perms.editors, 'editors must carry a group:-prefixed principal').to.include('group:' + pm.collectionVariables.get('editor_group'));",
+									"    pm.expect(perms.viewers, 'viewers must carry a group:-prefixed principal').to.include('group:' + pm.collectionVariables.get('viewer_group'));",
+									"});",
+									"pm.test('slug and name survived the write (PUT semantics did not null them)', function () {",
+									"    const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"    const body = pm.response.json();",
+									"    pm.expect(body.slug).to.eql(base.slug);",
+									"    pm.expect(body.name).to.eql(base.name);",
 									"});"
 								]
 							}
@@ -654,7 +718,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"permissions\":{\"owners\":[\"{{editor_group}}\"],\"editors\":[],\"viewers\":[\"{{viewer_group}}\"]}}"
+							"raw": "{{merged_body}}"
 						},
 						"url": {
 							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
@@ -663,6 +727,25 @@
 						}
 					},
 					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Same two fixes as 1.10: merge into the full record (OR's PUT is",
+									"// not a PATCH and slug/name are required) and use `group:`-prefixed",
+									"// principals, which is what PermissionResolver::matchesCaller()",
+									"// classifies on.",
+									"const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"const permissions = {",
+									"    owners: ['group:' + pm.collectionVariables.get('editor_group')],",
+									"    editors: [],",
+									"    viewers: ['group:' + pm.collectionVariables.get('viewer_group')]",
+									"};",
+									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { permissions: permissions })));"
+								]
+							}
+						},
 						{
 							"listen": "test",
 							"script": {
@@ -720,7 +803,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"permissions\":{\"owners\":[\"admin\"],\"editors\":[\"{{editor_group}}\"],\"viewers\":[\"{{viewer_group}}\"]}}"
+							"raw": "{{merged_body}}"
 						},
 						"url": {
 							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
@@ -729,6 +812,22 @@
 						}
 					},
 					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Restore 1.10's grant — same merge, same prefixed grammar.",
+									"const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"const permissions = {",
+									"    owners: ['user:' + pm.collectionVariables.get('admin_user')],",
+									"    editors: ['group:' + pm.collectionVariables.get('editor_group')],",
+									"    viewers: ['group:' + pm.collectionVariables.get('viewer_group')]",
+									"};",
+									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { permissions: permissions })));"
+								]
+							}
+						},
 						{
 							"listen": "test",
 							"script": {
