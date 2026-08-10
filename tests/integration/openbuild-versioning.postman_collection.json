@@ -73,7 +73,7 @@
 									"// means OR matched the slug. Log the shape when the client-side re-check",
 									"// disagrees — a silent miss here empties application_uuid and every later",
 									"// URL in this collection interpolates nothing.",
-									"if (!app) { const s = body['@self'] || {}; console.log('[diag] want=' + want + ' rows=' + rows.length + ' total=' + body.total + ' ignored=' + JSON.stringify(s.ignoredFilters) + ' slugs=' + JSON.stringify(rows.slice(0, 8).map(function (r) { return r.slug; }))); }",
+									"if (!app) { console.log('[diag] want=' + want + ' rows=' + rows.length); rows.slice(0, 8).forEach(function (r, i) { console.log('[diag' + i + '] slug=' + r.slug + ' self=' + ((r['@self'] || {}).slug) + ' k=' + Object.keys(r).slice(0, 8).join(',')); }); }",
 									"pm.test('hello-world present', function () { pm.expect(app, 'expected to find hello-world').to.not.be.undefined; });",
 									"if (app) {",
 									"    const uuid = app.uuid || (app['@self'] && app['@self'].id) || app.id;",
