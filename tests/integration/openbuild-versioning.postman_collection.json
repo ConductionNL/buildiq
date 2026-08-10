@@ -69,10 +69,11 @@
 									"const rows = (body && body.results) || (Array.isArray(body) ? body : []);",
 									"const want = pm.collectionVariables.get('test_slug');",
 									"const app = rows.find(r => (r.slug === want || (r['@self'] && r['@self'].slug === want)));",
-									"// The request is filtered server-side, so a non-empty result set already",
-									"// means OR matched the slug. Log the shape when the client-side re-check",
-									"// disagrees — a silent miss here empties application_uuid and every later",
-									"// URL in this collection interpolates nothing.",
+									"// Fetched UNFILTERED and matched here, because OpenRegister's",
+									"// property-filter dialect differs between builds and this suite must",
+									"// not depend on which one is installed. Log the shape on a miss: an",
+									"// empty application_uuid leaves every later URL in this collection",
+									"// interpolating an empty path segment.",
 									"if (!app) { console.log('[diag] want=' + want + ' rows=' + rows.length); rows.slice(0, 8).forEach(function (r, i) { console.log('[diag' + i + '] slug=' + r.slug + ' self=' + ((r['@self'] || {}).slug) + ' k=' + Object.keys(r).slice(0, 8).join(',')); }); }",
 									"pm.test('hello-world present', function () { pm.expect(app, 'expected to find hello-world').to.not.be.undefined; });",
 									"if (app) {",
@@ -90,9 +91,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?application={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?application={{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application-version"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
 							"query": [{ "key": "application", "value": "{{application_uuid}}" }]
 						}
 					},
@@ -158,9 +159,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?application={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?application={{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application-version"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
 							"query": [{ "key": "application", "value": "{{application_uuid}}" }]
 						}
 					},
@@ -275,9 +276,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?application={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?application={{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application-version"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
 							"query": [{ "key": "application", "value": "{{application_uuid}}" }]
 						}
 					},
