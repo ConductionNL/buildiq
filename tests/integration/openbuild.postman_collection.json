@@ -489,7 +489,7 @@
 					]
 				},
 				{
-					"name": "DELETE cleans up the round-trip ApplicationVersion",
+					"name": "DELETE the PRODUCTION version is refused with 422 (REQ-OBV-108 guard)",
 					"request": {
 						"method": "DELETE",
 						"header": [
@@ -503,7 +503,7 @@
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/newman-roundtrip/versions/production?strategy=delete-now",
-						"description": "Drop the version + its per-version register first so the parent Application can be safely deleted."
+						"description": "THIS STEP WAS A BROKEN TEARDOWN; IT IS NOW A REAL ASSERTION.\n\nIt used to send `strategy=hard` — not a strategy at all (the enum is delete-now | orphan-grace | keep-register) — and got a 400, so its 'returns 200 or 204' failed for a reason that had nothing to do with deletion.\n\nWith a valid strategy the answer is 422, and 422 is CORRECT: ApplicationVersionsController::destroy()'s own docblock says 'Attempts to delete the parent Application's production version yield 422', and this round-trip pointed the Application's productionVersion at exactly this row three steps earlier. Deleting it first was never going to work.\n\nSo the teardown is reordered — the Application goes first, then the version row via OR's object API — and the attempt itself is kept as the assertion it should always have been. That matters beyond tidiness: openbuild-application-versions carries a test named 'DESTROY — reject production version deletion (422)' which SKIPS ('production_version_slug not set — seed step not run'), so this guard had no executing coverage anywhere in the suite."
 					},
 					"event": [
 						{
@@ -511,15 +511,20 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"// `strategy=hard` IS NOT A STRATEGY. ApplicationVersionsController",
-									"// accepts exactly `delete-now | orphan-grace | keep-register` and",
-									"// answers anything else with 400 `invalid_strategy` — which is what",
-									"// this request had been getting. The assertion was right; the URL",
-									"// was wrong from the day it was written.",
-									"pm.test('returns 200 or 204', function () {",
-									"    pm.expect([200, 204], pm.response.code === 400",
-									"        ? 'got 400 — `strategy` must be one of delete-now | orphan-grace | keep-register'",
-									"        : 'the version delete must be accepted').to.include(pm.response.code);",
+									"// 422, and 422 is the CORRECT answer — see the request description.",
+									"// A 400 here would mean the strategy is being rejected before the",
+									"// guard is ever reached, which is the bug this step used to have.",
+									"pm.test('deleting the production version is refused with 422', function () {",
+									"    pm.expect(pm.response.code, pm.response.code === 400",
+									"        ? 'got 400 — the strategy was rejected before the production guard ran; it must be one of delete-now | orphan-grace | keep-register'",
+									"        : 'a version an Application still points at as productionVersion must not be deletable').to.eql(422);",
+									"});",
+									"pm.test('the refusal is the production guard, not a generic failure', function () {",
+									"    // Assert on WHICH refusal. Without this, any 422 from any cause —",
+									"    // a broken strategy, a missing register — would satisfy the test",
+									"    // above and read as 'the guard works'.",
+									"    const body = pm.response.json();",
+									"    pm.expect(String(body.code || body.error || ''), 'expected the delete to be refused, not merely to fail').to.match(/delete_failed|production/i);",
 									"});"
 								]
 							}
@@ -542,6 +547,31 @@
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{created_uuid}}",
 						"description": "Tear down the round-trip Application so re-runs stay idempotent. OR returns 200 or 204."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 204', function () {",
+									"    pm.expect([200, 204]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE cleans up the round-trip ApplicationVersion (after the Application)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion/{{created_version_uuid}}",
+						"description": "Now that the Application (and therefore its productionVersion pointer) is gone, the version row can be removed. Via OR's object API rather than openbuild's versions route, because that route resolves the version THROUGH its parent Application — which no longer exists — so it could only 404 here.\n\nOrdering, not preference: the openbuild route is the right surface while the app is alive, and it is exercised as such by the 422 guard assertion above."
 					},
 					"event": [
 						{
