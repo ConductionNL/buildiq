@@ -20,7 +20,9 @@
 		{ "key": "application_uuid", "value": "", "type": "string" },
 		{ "key": "v1_uuid", "value": "", "type": "string" },
 		{ "key": "v2_uuid", "value": "", "type": "string" },
-		{ "key": "original_manifest", "value": "", "type": "string" }
+		{ "key": "original_manifest", "value": "", "type": "string" },
+		{ "key": "application_full", "value": "", "type": "string" },
+		{ "key": "merged_body", "value": "", "type": "string" }
 	],
 	"item": [
 		{
@@ -81,6 +83,21 @@
 									"    pm.collectionVariables.set('application_uuid', String(uuid));",
 									"    pm.collectionVariables.set('application_id', String(app.id || (app['@self'] && app['@self'].id) || uuid));",
 									"    pm.collectionVariables.set('original_manifest', JSON.stringify(app.manifest || {}));",
+									"    // STASH THE WHOLE RECORD, not just the manifest.",
+									"    //",
+									"    // OpenRegister's saveObject() is PUT-SEMANTIC, not PATCH:",
+									"    // fillMissingSchemaPropertiesWithNull() sets every schema property",
+									"    // absent from the body to null. The Application schema declares",
+									"    // `required: ['slug', 'name']`, so the partial bodies this collection",
+									"    // used to PUT ({version, status, manifest} and nothing else) asked OR",
+									"    // to null out both required fields — and OR refused the whole write",
+									"    // with 400 Bad request. Three assertions failed on that, and none of",
+									"    // them was about versioning at all.",
+									"    //",
+									"    // `@self` is dropped: it is server-owned metadata, not writable state.",
+									"    const full = JSON.parse(JSON.stringify(app));",
+									"    delete full['@self'];",
+									"    pm.collectionVariables.set('application_full', JSON.stringify(full));",
 									"}"
 								]
 							}
@@ -92,10 +109,10 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?application={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?_limit=5000",
 							"host": ["{{base_url}}"],
 							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
-							"query": [{ "key": "application", "value": "{{application_uuid}}" }]
+							"query": [{ "key": "_limit", "value": "5000" }]
 						}
 					},
 					"event": [
@@ -113,6 +130,23 @@
 									"    // Accept any of the captured ones rather than betting on which field",
 									"    // the REST layer surfaces — a wrong guess here reads as 'the seed did",
 									"    // not run', which is the misdiagnosis this suite already made once.",
+									"    // ⚠️ FETCHED UNFILTERED — `?application={{uuid}}` RETURNS ZERO ROWS.",
+									"    //",
+									"    // OpenRegister does not match a RELATION property as a plain",
+									"    // query-string data filter. Measured against a live instance:",
+									"    //",
+									"    //   applicationVersion?_limit=5000        -> 119 rows",
+									"    //   applicationVersion?semver=1.0.0       ->  20 rows  (scalar prop: works)",
+									"    //   applicationVersion?application=<uuid> ->   0 rows  (relation: does NOT)",
+									"    //",
+									"    // and the third query used a uuid taken straight out of row 1 of the",
+									"    // first, so the value was demonstrably present. `application` is an",
+									"    // x-openregister-relation; the filter is simply not applied to it.",
+									"    //",
+									"    // An empty result from a filter that CANNOT match looks exactly like a",
+									"    // true zero — here, exactly like 'the seed never ran'. Step 0.2 already",
+									"    // fetches unfiltered and matches in-script for this reason; 0.3, 1.2 and",
+									"    // 3.2 did not, and five assertions in this collection failed as a result.",
 									"    const ids = [pm.collectionVariables.get('application_uuid'), pm.collectionVariables.get('application_id')].filter(Boolean);",
 									"    const v1 = rows.find(r => r.semver === '1.0.0' && ids.indexOf(String(r.application)) !== -1);",
 									"    if (!v1) { console.log('[diagv] ids=' + JSON.stringify(ids) + ' rows=' + rows.length); rows.slice(0, 5).forEach(function (r, i) { console.log('[diagv' + i + '] semver=' + r.semver + ' app=' + r.application + ' slug=' + r.slug); }); }",
@@ -140,7 +174,7 @@
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"version\":\"1.1.0\",\"status\":\"published\",\"manifest\":{\"version\":\"1.1.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuild.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuild.helloworld.title.messages\",\"config\":{\"register\":\"openbuild\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}},{\"id\":\"About\",\"route\":\"/about\",\"type\":\"detail\",\"title\":\"openbuild.helloworld.title.about\",\"config\":{\"register\":\"openbuild\",\"schema\":\"hello-message\"}}]}}"
+							"raw": "{{merged_body}}"
 						},
 						"url": {
 							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
@@ -150,12 +184,55 @@
 					},
 					"event": [
 						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// MERGE INTO THE WHOLE RECORD — OR's PUT IS NOT A PATCH.",
+									"//",
+									"// This request used to send only {version, status, manifest}.",
+									"// OpenRegister's saveObject() nulls every schema property the body",
+									"// omits, the Application schema declares `required: ['slug', 'name']`,",
+									"// and the write was therefore refused with 400 Bad request. Nothing in",
+									"// that failure mentions slug or name, so it read as a versioning bug;",
+									"// three assertions in this collection failed on it.",
+									"//",
+									"// The same trap is spelled out in lib/Command/SeedHelloWorldFixture.php",
+									"// ('⚠️ `permissions` IS REPEATED HERE ON PURPOSE — DO NOT TRIM IT') and",
+									"// in tests/e2e/support/appRoles.ts. This is the third place it has cost",
+									"// something.",
+									"const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"const manifest = {",
+									"    version: '1.1.0',",
+									"    dependencies: ['openregister'],",
+									"    menu: [{ id: 'Messages', label: 'openbuild.helloworld.menu.messages', icon: 'icon-comment', route: 'Messages', order: 1 }],",
+									"    pages: [",
+									"        { id: 'Messages', route: '/', type: 'index', title: 'openbuild.helloworld.title.messages', config: { register: 'openbuild', schema: 'hello-message', columns: ['title', 'body', '@self.created'] } },",
+									"        { id: 'About', route: '/about', type: 'detail', title: 'openbuild.helloworld.title.about', config: { register: 'openbuild', schema: 'hello-message' } }",
+									"    ]",
+									"};",
+									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { version: '1.1.0', status: 'published', manifest: manifest })));"
+								]
+							}
+						},
+						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('Publish PUT accepted', function () {",
-									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+									"    pm.expect(pm.response.code, pm.response.code === 400",
+									"        ? 'got 400 — OR PUT is PUT-semantic, so a partial body nulls the required slug/name; send the merged full record'",
+									"        : 'the publish write must be accepted').to.be.oneOf([200, 201, 204]);",
+									"});",
+									"// Assert the MERGE actually held, not merely that the write returned 200.",
+									"// Without this, trimming the merge back to a partial body would fail",
+									"// somewhere else entirely and this request would still look fine.",
+									"pm.test('slug and name survived the write (PUT semantics did not null them)', function () {",
+									"    const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"    const body = pm.response.json();",
+									"    pm.expect(body.slug, 'slug must still be the seeded one after the publish').to.eql(base.slug);",
+									"    pm.expect(body.name, 'name must still be the seeded one after the publish').to.eql(base.name);",
 									"});"
 								]
 							}
@@ -167,10 +244,10 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?application={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?_limit=5000",
 							"host": ["{{base_url}}"],
 							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
-							"query": [{ "key": "application", "value": "{{application_uuid}}" }]
+							"query": [{ "key": "_limit", "value": "5000" }]
 						}
 					},
 					"event": [
@@ -257,7 +334,7 @@
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"version\":\"1.0.0-rb1\",\"status\":\"published\",\"manifest\":{\"version\":\"1.0.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuild.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuild.helloworld.title.messages\",\"config\":{\"register\":\"openbuild\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}}]}}"
+							"raw": "{{merged_body}}"
 						},
 						"url": {
 							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
@@ -267,12 +344,34 @@
 					},
 					"event": [
 						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Same merge as 1.1 — OR's PUT nulls whatever the body omits, and",
+									"// `slug`/`name` are required. See 1.1's pre-request script.",
+									"const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"const manifest = {",
+									"    version: '1.0.0',",
+									"    dependencies: ['openregister'],",
+									"    menu: [{ id: 'Messages', label: 'openbuild.helloworld.menu.messages', icon: 'icon-comment', route: 'Messages', order: 1 }],",
+									"    pages: [",
+									"        { id: 'Messages', route: '/', type: 'index', title: 'openbuild.helloworld.title.messages', config: { register: 'openbuild', schema: 'hello-message', columns: ['title', 'body', '@self.created'] } }",
+									"    ]",
+									"};",
+									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { version: '1.0.0-rb1', status: 'published', manifest: manifest })));"
+								]
+							}
+						},
+						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('Rollback (re-publish) accepted', function () {",
-									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+									"    pm.expect(pm.response.code, pm.response.code === 400",
+									"        ? 'got 400 — OR PUT is PUT-semantic, so a partial body nulls the required slug/name; send the merged full record'",
+									"        : 'the rollback write must be accepted').to.be.oneOf([200, 201, 204]);",
 									"});"
 								]
 							}
@@ -284,10 +383,10 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?application={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?_limit=5000",
 							"host": ["{{base_url}}"],
 							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
-							"query": [{ "key": "application", "value": "{{application_uuid}}" }]
+							"query": [{ "key": "_limit", "value": "5000" }]
 						}
 					},
 					"event": [
@@ -325,7 +424,7 @@
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"version\":\"1.0.0\",\"status\":\"published\",\"manifest\":{\"version\":\"1.0.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuild.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuild.helloworld.title.messages\",\"config\":{\"register\":\"openbuild\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}}]}}"
+							"raw": "{{merged_body}}"
 						},
 						"url": {
 							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
@@ -335,12 +434,27 @@
 					},
 					"event": [
 						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Restore the ORIGINAL manifest captured in 0.2, merged into the full",
+									"// record for the same PUT-semantics reason as 1.1 and 3.1.",
+									"const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"const original = JSON.parse(pm.collectionVariables.get('original_manifest') || '{}');",
+									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { version: '1.0.0', status: 'published', manifest: original })));"
+								]
+							}
+						},
+						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('Teardown PUT accepted', function () {",
-									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+									"    pm.expect(pm.response.code, pm.response.code === 400",
+									"        ? 'got 400 — OR PUT is PUT-semantic, so a partial body nulls the required slug/name; send the merged full record'",
+									"        : 'the teardown write must be accepted').to.be.oneOf([200, 201, 204]);",
 									"});"
 								]
 							}

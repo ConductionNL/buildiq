@@ -354,6 +354,41 @@ class ExportsController extends Controller
             );
         }
 
+        // AND IT HAS TO BE A SEMVER, NOT JUST NON-EMPTY.
+        //
+        // `exportJob.applicationVersion` is declared in openbuild_register.json as
+        // `pattern: ^\d+\.\d+\.\d+(?:[-+][\w.-]+)?$` ("Semver of the Application
+        // version being exported"), and ExportDialog.vue duly sends a semver
+        // (`form.version.value`, defaulting to '0.1.0').
+        //
+        // Nothing checked it here, so any other string sailed through validation
+        // and only failed three layers down, where OpenRegister refused the
+        // record and ExportJobService::queue() rethrew as a RuntimeException.
+        // That surfaces to the caller as a bare HTTP 500, logged as: "OpenBuild
+        // export submit failed: Could not record the export job: Property
+        // 'applicationVersion' should match pattern
+        // '^\d+\.\d+\.\d+(?:[-+][\w.-]+)?$' but 'production' does not."
+        //
+        // A malformed client field is a 4xx by definition — the server did not
+        // fail, the request was wrong — and a 500 also loses the one thing the
+        // caller needs, which is WHICH field to correct. `target` was already
+        // validated exactly this way one block up; `applicationVersion` simply
+        // never got the same treatment.
+        //
+        // The pattern is repeated here rather than read from the schema on
+        // purpose: this is a request-shape guard on the way IN, and it must
+        // hold even when the register has not been imported yet (in which case
+        // the schema lookup that would supply it is itself unavailable).
+        if (preg_match('/^\d+\.\d+\.\d+(?:[-+][\w.-]+)?$/', $applicationVersion) !== 1) {
+            return new JSONResponse(
+                [
+                    'error' => 'applicationVersion must be a semver (e.g. 1.0.0), not a version slug. Received: '
+                        .$applicationVersion,
+                ],
+                Http::STATUS_UNPROCESSABLE_ENTITY
+            );
+        }
+
         if ($target === 'github') {
             return $this->validateGithubFields(body: $body);
         }

@@ -664,11 +664,47 @@ class ApplicationsController extends Controller
             ];
         }
 
-        $version = $this->objectService->find(
-            id: $token,
-            register: 'openbuild',
-            schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
-        );
+        // AN EMPTY TOKEN IS A MISS, NOT A LOOKUP.
+        //
+        // `GET .../versions/diff?from=&to=` arrives here with `''`. Asking the
+        // object store to find the object whose id is the empty string is not a
+        // question with an answer; it just throws further down. Answer it here,
+        // where it is still a 404 about a version the caller named badly.
+        if ($token === '') {
+            return null;
+        }
+
+        // `ObjectService::find()` THROWS when the object is absent — it does not
+        // return null. This method's own docblock says "Returns null on miss so
+        // the caller can surface 404", and diffVersions() duly has two
+        // `if (...Blob === null) return 404` branches — and NEITHER COULD EVER
+        // BE TAKEN. The throw went straight past them into diffVersions()'s
+        // outer `catch (Throwable)`, which answers 500 `internal_error` and logs
+        // "OpenBuild: diffVersions failed for slug hello-world: Object not found
+        // in magic table".
+        //
+        // This is the eighth instance of the family PR #159 fixed ("seven 404
+        // branches were unreachable — the lookup threw first"). It was not among
+        // those seven because gate-49 only flags an untranslated lookup OUTSIDE
+        // a try/catch, and this one sits inside diffVersions()'s. Being inside a
+        // catch does not make it correct: it converts a precise 404 naming the
+        // missing version into an opaque 500, on a #[NoAdminRequired] endpoint.
+        //
+        // Translated at the lookup, with the cause logged, so the null the
+        // signature has always promised is actually reachable.
+        try {
+            $version = $this->objectService->find(
+                id: $token,
+                register: 'openbuild',
+                schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+            );
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                'OpenBuild: diff token {token} did not resolve to an ApplicationVersion: {message}',
+                ['token' => $token, 'message' => $e->getMessage(), 'exception' => $e]
+            );
+            return null;
+        }//end try
 
         if ($version === null) {
             return null;

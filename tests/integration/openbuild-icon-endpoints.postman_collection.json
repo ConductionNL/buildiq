@@ -14,6 +14,7 @@
 	},
 	"variable": [
 		{ "key": "base_url",       "value": "http://localhost:8080", "type": "string" },
+		{ "key": "noAuthBase",     "value": "http://127.0.0.1:8080", "type": "string" },
 		{ "key": "admin_user",     "value": "admin",                 "type": "string" },
 		{ "key": "admin_password", "value": "admin",                 "type": "string" },
 		{ "key": "test_slug",      "value": "hello-world",           "type": "string" }
@@ -91,7 +92,7 @@
 						"auth": { "type": "noauth" },
 						"method": "GET",
 						"header": [],
-						"url": "{{base_url}}/index.php/apps/openbuild/icons/{{test_slug}}.svg"
+						"url": "{{noAuthBase}}/index.php/apps/openbuild/icons/{{test_slug}}.svg"
 					},
 					"event": [
 						{
@@ -99,8 +100,17 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
+									"// THIS PROBE RETURNED 200 AND WAS READ AS AN AUTHORIZATION HOLE.",
+									"// It was not one. `auth: noauth` removes the Authorization header but",
+									"// NOT the session cookie Newman already holds for {{base_url}}, so the",
+									"// request arrived as the logged-in ADMIN and was correctly served the",
+									"// icon. Pointing it at {{noAuthBase}} — the same server under its other",
+									"// name, and therefore a different cookie-jar origin — makes it the",
+									"// anonymous request this test always claimed to be making.",
 									"pm.test('unauthenticated icon request returns 401 or 403', function () {",
-									"    pm.expect([401, 403]).to.include(pm.response.code);",
+									"    pm.expect([401, 403], pm.response.code === 200",
+									"        ? 'got 200 — the probe carried a session cookie, so it was NOT anonymous; it must use {{noAuthBase}}'",
+									"        : 'an anonymous icon request must be refused').to.include(pm.response.code);",
 									"});"
 								]
 							}

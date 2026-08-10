@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "openbuild-application-versions-collection",
 		"name": "OpenBuild — Application Versions CRUD (spec C)",
-		"description": "Newman integration suite for the openbuild-versioning-model OpenSpec change\n(spec C, REQ-OBV-101 – REQ-OBV-108). Exercises the five ApplicationVersion\nendpoints registered in appinfo/routes.php:\n\n  GET  /api/applications/{slug}/versions\n  POST /api/applications/{slug}/versions\n  GET  /api/applications/{slug}/versions/{versionSlug}\n  PUT  /api/applications/{slug}/versions/{versionSlug}\n  DELETE /api/applications/{slug}/versions/{versionSlug}?strategy=\n\nEach folder asserts: HTTP status, response shape (semver, name, manifest,\nstatus, application relation), and basic 401 RBAC (unauthenticated request).\n\nThe suite is self-contained: it creates, reads, updates, and destroys a\ntest ApplicationVersion against the seeded hello-world Application so it\ndoes not leave state behind.",
+		"description": "Newman integration suite for the openbuild-versioning-model OpenSpec change\n(spec C, REQ-OBV-101 – REQ-OBV-108). Exercises the five ApplicationVersion\nendpoints registered in appinfo/routes.php:\n\n  GET  /api/applications/{slug}/versions\n  POST /api/applications/{slug}/versions\n  GET  /api/applications/{slug}/versions/{versionSlug}\n  PUT  /api/applications/{slug}/versions/{versionSlug}\n  DELETE /api/applications/{slug}/versions/{versionSlug}?strategy=\n\nEach folder asserts: HTTP status, response shape (semver, name, manifest,\nstatus, application relation), and basic 401 RBAC (unauthenticated request).\n\n⚠️ THE ANONYMOUS PROBES MUST USE {{noAuthBase}}, NOT {{base_url}}.\n\n`auth: { type: noauth }` removes the Authorization header. It does NOT remove\nthe SESSION COOKIE Newman is already holding for that origin, and a request\ncarrying a logged-in session cookie is not anonymous — it is a logged-in\nrequest with no CSRF token, which Nextcloud answers 412 (\"CSRF check failed\"),\nnot 401.\n\nMeasured directly (newman --verbose, identical request, one origin apart):\n\n  auth,   {{base_url}}    -> 324B up,  9 headers  (Authorization, no Cookie)\n  noauth, {{base_url}}    -> 576B up,  9 headers  (no Authorization, COOKIE)\n  noauth, {{noAuthBase}}  -> 285B up,  8 headers  (neither — truly anonymous)\n\nAnd in CI (run 31356594486) the flip is visible in the run order: the FIRST\nanonymous probe returned 401, and every anonymous probe AFTER the first\nauthenticated write returned 412. Three assertions in this collection were\nfailing for that reason and none of them was measuring anonymous access.\n\n{{noAuthBase}} is the SAME server reached by its other name, so the cookie jar\n(which is keyed by origin) has nothing for it. This is the pattern\nopenbuild-api-contract.postman_collection.json already uses, and all five of\nits anonymous assertions passed in the very run these failed.\n\nThe suite is self-contained: it creates, reads, updates, and destroys a\ntest ApplicationVersion against the seeded hello-world Application so it\ndoes not leave state behind.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -14,6 +14,7 @@
 	},
 	"variable": [
 		{ "key": "base_url",        "value": "http://localhost:8080", "type": "string" },
+		{ "key": "noAuthBase",      "value": "http://127.0.0.1:8080", "type": "string" },
 		{ "key": "admin_user",      "value": "admin",                 "type": "string" },
 		{ "key": "admin_password",  "value": "admin",                 "type": "string" },
 		{ "key": "test_slug",       "value": "hello-world",           "type": "string" },
@@ -69,7 +70,7 @@
 						"header": [
 							{ "key": "Accept", "value": "application/json" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions"
+						"url": "{{noAuthBase}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions"
 					},
 					"event": [
 						{
@@ -77,8 +78,14 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
+									"// 401 EXACTLY. A 412 here does not mean the endpoint is protected —",
+									"// it means this probe was not anonymous: Newman sent a logged-in",
+									"// session cookie and Nextcloud rejected it for a missing CSRF token.",
+									"// See the collection description.",
 									"pm.test('unauthenticated INDEX returns 401', function () {",
-									"    pm.expect([401, 403]).to.include(pm.response.code);",
+									"    pm.expect(pm.response.code, pm.response.code === 412",
+									"        ? 'got 412 (CSRF) — the probe carried a session cookie, so it was NOT anonymous; it must use {{noAuthBase}}'",
+									"        : 'anonymous read must be refused with 401').to.eql(401);",
 									"});"
 								]
 							}
@@ -150,7 +157,7 @@
 							"mode": "raw",
 							"raw": "{\"name\": \"x\", \"slug\": \"x\", \"manifest\": {}, \"register\": \"openbuild-hello-world-x\", \"semver\": \"0.1.0\"}"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions"
+						"url": "{{noAuthBase}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions"
 					},
 					"event": [
 						{
@@ -158,8 +165,12 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
+									"// 401 EXACTLY — a 412 means the probe carried a session cookie and",
+									"// was therefore NOT anonymous. See the collection description.",
 									"pm.test('unauthenticated CREATE returns 401', function () {",
-									"    pm.expect([401, 403]).to.include(pm.response.code);",
+									"    pm.expect(pm.response.code, pm.response.code === 412",
+									"        ? 'got 412 (CSRF) — this probe carried a session cookie, so it was NOT anonymous; it must use {{noAuthBase}}'",
+									"        : 'an anonymous create must be refused with 401').to.eql(401);",
 									"});"
 								]
 							}
@@ -214,7 +225,7 @@
 						"header": [
 							{ "key": "Accept", "value": "application/json" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{version_slug}}"
+						"url": "{{noAuthBase}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{version_slug}}"
 					},
 					"event": [
 						{
@@ -222,8 +233,12 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
+									"// 401 EXACTLY — a 412 means the probe carried a session cookie and",
+									"// was therefore NOT anonymous. See the collection description.",
 									"pm.test('unauthenticated SHOW returns 401', function () {",
-									"    pm.expect([401, 403]).to.include(pm.response.code);",
+									"    pm.expect(pm.response.code, pm.response.code === 412",
+									"        ? 'got 412 (CSRF) — this probe carried a session cookie, so it was NOT anonymous; it must use {{noAuthBase}}'",
+									"        : 'an anonymous read must be refused with 401').to.eql(401);",
 									"});"
 								]
 							}
@@ -280,7 +295,7 @@
 							"mode": "raw",
 							"raw": "{\"name\": \"x\"}"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{version_slug}}"
+						"url": "{{noAuthBase}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{version_slug}}"
 					},
 					"event": [
 						{
@@ -288,8 +303,12 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
+									"// 401 EXACTLY — a 412 means the probe carried a session cookie and",
+									"// was therefore NOT anonymous. See the collection description.",
 									"pm.test('unauthenticated UPDATE returns 401', function () {",
-									"    pm.expect([401, 403]).to.include(pm.response.code);",
+									"    pm.expect(pm.response.code, pm.response.code === 412",
+									"        ? 'got 412 (CSRF) — this probe carried a session cookie, so it was NOT anonymous; it must use {{noAuthBase}}'",
+									"        : 'an anonymous update must be refused with 401').to.eql(401);",
 									"});"
 								]
 							}
