@@ -211,9 +211,21 @@ async function ensureDisabledAutomation(adminPage: Page, slug: string, versionSl
 				// Starts DISABLED on purpose — the scenario under test is the
 				// ENABLE guard.
 				enabled: false,
-				trigger: { type: 'event', event: 'object.created', schema: 'hello-message' },
-				condition: {},
-				actions: [{ type: 'notification', subject: { en: 'fixture' } }],
+				// `type` comes from a CLOSED enum:
+				// object-created | object-updated | object-deleted |
+				// lifecycle-transition | schedule | manual. `event` is not a
+				// member and was rejected 400.
+				trigger: { type: 'object-created', schema: 'hello-message' },
+				// `actions[].type` is its own closed enum: send-notification |
+				// run-synchronization | object-op | webhook | approval |
+				// generateDocument. Only `type` is required per item, so this is
+				// the smallest schema-valid action — the fixture exists to be
+				// ENABLED, not to do anything.
+				actions: [{ type: 'send-notification' }],
+				// `condition` is deliberately OMITTED, not sent as `{}`.
+				// OpenRegister rejects both `{}` and `null` for an object-typed
+				// property, and the schema says condition is v1-supported only on
+				// the `manual` trigger anyway — this one is object-created.
 			}),
 		})
 		return resp.ok ? 'created' : `create failed: ${resp.status} ${(await resp.text()).slice(0, 200)}`
