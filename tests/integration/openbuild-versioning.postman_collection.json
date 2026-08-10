@@ -79,6 +79,7 @@
 									"if (app) {",
 									"    const uuid = app.uuid || (app['@self'] && app['@self'].id) || app.id;",
 									"    pm.collectionVariables.set('application_uuid', String(uuid));",
+									"    pm.collectionVariables.set('application_id', String(app.id || (app['@self'] && app['@self'].id) || uuid));",
 									"    pm.collectionVariables.set('original_manifest', JSON.stringify(app.manifest || {}));",
 									"}"
 								]
@@ -107,7 +108,14 @@
 									"const body = pm.response.json();",
 									"const rows = (body && body.results) || (Array.isArray(body) ? body : []);",
 									"pm.test('Seeded v1.0.0 ApplicationVersion exists', function () {",
-									"    const v1 = rows.find(r => r.semver === '1.0.0' && r.application === pm.collectionVariables.get('application_uuid'));",
+									"    // The Application object exposes more than one identifier (`id`,",
+									"    // `uuid`, `@self.id`) and the seed links the version by the OR uuid.",
+									"    // Accept any of the captured ones rather than betting on which field",
+									"    // the REST layer surfaces — a wrong guess here reads as 'the seed did",
+									"    // not run', which is the misdiagnosis this suite already made once.",
+									"    const ids = [pm.collectionVariables.get('application_uuid'), pm.collectionVariables.get('application_id')].filter(Boolean);",
+									"    const v1 = rows.find(r => r.semver === '1.0.0' && ids.indexOf(String(r.application)) !== -1);",
+									"    if (!v1) { console.log('[diagv] ids=' + JSON.stringify(ids) + ' rows=' + rows.length); rows.slice(0, 5).forEach(function (r, i) { console.log('[diagv' + i + '] semver=' + r.semver + ' app=' + r.application + ' slug=' + r.slug); }); }",
 									"    pm.expect(v1, 'expected the seeded v1.0.0 row from the SeedHelloWorld repair step').to.not.be.undefined;",
 									"    if (v1) {",
 									"        const uuid = v1.uuid || (v1['@self'] && v1['@self'].id) || v1.id;",
