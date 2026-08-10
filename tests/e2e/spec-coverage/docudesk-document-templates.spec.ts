@@ -35,6 +35,7 @@ import { test, expect } from '@playwright/test'
 import { ensureApp, dismissOverlays, suppressSupportDialog } from '../support/appFixture'
 import { readStagedManifest } from '../support/stagedManifest'
 import { E2E_BASE_URL as BASE } from '../support/baseUrl'
+import { confirmAction } from '../support/confirmDialog'
 
 const APP_SLUG = 'pw-docudesk'
 const SCHEMA_SLUG = 'hello-message'
@@ -314,11 +315,15 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		const item = page.locator('.ob-documents-section__item')
 		await expect(item).toHaveCount(1)
 		await expect(item.first()).toContainText('Generate confirmation letter')
-		// Detaching asks for confirmation through `window.confirm`, which
-		// Playwright auto-DISMISSES unless a handler accepts it — without this
-		// the click is a no-op and the list never changes.
-		page.once('dialog', (dialog) => dialog.accept())
+		// Detaching asks for confirmation. That ask WAS `window.confirm`; #163
+		// replaced it with an in-page ConfirmActionDialog, and a
+		// `page.once('dialog', …)` handler against a page that opens no native
+		// dialog never fires and never complains — the click then left the ask on
+		// screen unanswered, the manifest was never written, and the assertion
+		// below failed as though detach were broken. See
+		// tests/e2e/support/confirmDialog.ts.
 		await item.first().getByRole('button', { name: /^detach$/i }).click()
+		await confirmAction(page, 'Detach template', /^detach$/i)
 		await expect(page.locator('.ob-documents-section__item')).toHaveCount(0)
 	})
 })
