@@ -301,11 +301,11 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?filter[slug]={{test_slug}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?slug={{test_slug}}",
 							"host": ["{{base_url}}"],
 							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application"],
 							"query": [
-								{ "key": "filter[slug]", "value": "{{test_slug}}" }
+								{ "key": "slug", "value": "{{test_slug}}" }
 							]
 						}
 					},

@@ -52,10 +52,10 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?filter[slug]={{test_slug}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?slug={{test_slug}}",
 							"host": ["{{base_url}}"],
 							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application"],
-							"query": [{ "key": "filter[slug]", "value": "{{test_slug}}" }]
+							"query": [{ "key": "slug", "value": "{{test_slug}}" }]
 						}
 					},
 					"event": [
@@ -84,10 +84,10 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?filter[applicationUuid]={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?application={{application_uuid}}",
 							"host": ["{{base_url}}"],
 							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application-version"],
-							"query": [{ "key": "filter[applicationUuid]", "value": "{{application_uuid}}" }]
+							"query": [{ "key": "application", "value": "{{application_uuid}}" }]
 						}
 					},
 					"event": [
@@ -100,7 +100,7 @@
 									"const body = pm.response.json();",
 									"const rows = (body && body.results) || (Array.isArray(body) ? body : []);",
 									"pm.test('Seeded v1.0.0 ApplicationVersion exists', function () {",
-									"    const v1 = rows.find(r => r.version === '1.0.0' && r.applicationUuid === pm.collectionVariables.get('application_uuid'));",
+									"    const v1 = rows.find(r => r.semver === '1.0.0' && r.application === pm.collectionVariables.get('application_uuid'));",
 									"    pm.expect(v1, 'expected the seeded v1.0.0 row from the SeedHelloWorld repair step').to.not.be.undefined;",
 									"    if (v1) {",
 									"        const uuid = v1.uuid || (v1['@self'] && v1['@self'].id) || v1.id;",
@@ -152,10 +152,10 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?filter[applicationUuid]={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?application={{application_uuid}}",
 							"host": ["{{base_url}}"],
 							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application-version"],
-							"query": [{ "key": "filter[applicationUuid]", "value": "{{application_uuid}}" }]
+							"query": [{ "key": "application", "value": "{{application_uuid}}" }]
 						}
 					},
 					"event": [
@@ -168,7 +168,7 @@
 									"const body = pm.response.json();",
 									"const rows = (body && body.results) || (Array.isArray(body) ? body : []);",
 									"pm.test('v1.1.0 snapshot row created by the listener', function () {",
-									"    const v2 = rows.find(r => r.version === '1.1.0' && r.applicationUuid === pm.collectionVariables.get('application_uuid'));",
+									"    const v2 = rows.find(r => r.semver === '1.1.0' && r.application === pm.collectionVariables.get('application_uuid'));",
 									"    pm.expect(v2, 'listener must have appended a v1.1.0 row').to.not.be.undefined;",
 									"    if (v2) {",
 									"        const uuid = v2.uuid || (v2['@self'] && v2['@self'].id) || v2.id;",
@@ -176,7 +176,7 @@
 									"    }",
 									"});",
 									"pm.test('Append-only — v1.0.0 row still present (history not rewritten)', function () {",
-									"    const v1 = rows.find(r => r.version === '1.0.0' && r.applicationUuid === pm.collectionVariables.get('application_uuid'));",
+									"    const v1 = rows.find(r => r.semver === '1.0.0' && r.application === pm.collectionVariables.get('application_uuid'));",
 									"    pm.expect(v1, 'v1.0.0 must NOT have been deleted by the publish').to.not.be.undefined;",
 									"});"
 								]
@@ -269,10 +269,10 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?filter[applicationUuid]={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?application={{application_uuid}}",
 							"host": ["{{base_url}}"],
 							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application-version"],
-							"query": [{ "key": "filter[applicationUuid]", "value": "{{application_uuid}}" }]
+							"query": [{ "key": "application", "value": "{{application_uuid}}" }]
 						}
 					},
 					"event": [
@@ -284,12 +284,12 @@
 									"pm.test('Versions list returns 200', function () { pm.response.to.have.status(200); });",
 									"const body = pm.response.json();",
 									"const rows = (body && body.results) || (Array.isArray(body) ? body : []);",
-									"const own = rows.filter(r => r.applicationUuid === pm.collectionVariables.get('application_uuid'));",
+									"const own = rows.filter(r => r.application === pm.collectionVariables.get('application_uuid'));",
 									"pm.test('At least three ApplicationVersion rows after rollback (1.0.0 + 1.1.0 + rollback)', function () {",
 									"    pm.expect(own.length).to.be.at.least(3);",
 									"});",
 									"pm.test('Rollback row carries the old manifest version (1.0.0)', function () {",
-									"    const rollback = own.find(r => (r.version || '').startsWith('1.0.0') && r.version !== '1.0.0');",
+									"    const rollback = own.find(r => (r.semver || '').startsWith('1.0.0') && r.semver !== '1.0.0');",
 									"    pm.expect(rollback, 'expected an append-only rollback row with version like 1.0.0-rb1').to.not.be.undefined;",
 									"});"
 								]
