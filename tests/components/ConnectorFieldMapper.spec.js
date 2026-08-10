@@ -25,9 +25,8 @@ const factory = (props) => mount(ConnectorFieldMapper, {
 })
 
 describe('ConnectorFieldMapper', () => {
-	beforeEach(() => {
-		window.prompt = vi.fn((_msg, suggested) => suggested)
-	})
+	// window.prompt is no longer used — the field name is collected by
+	// PromptTextDialog, driven directly in the test below.
 
 	it('emits itemsPath when an array node is clicked', async () => {
 		const wrapper = factory({
@@ -41,14 +40,32 @@ describe('ConnectorFieldMapper', () => {
 		expect(wrapper.emitted()['update:itemsPath'][0]).toEqual(['resultaten'])
 	})
 
-	it('emits a field mapping when a leaf is clicked', async () => {
+	it('asks for the display name before emitting a field mapping', async () => {
 		const wrapper = factory({
 			binding: { itemsPath: 'resultaten', fields: {} },
 			sample: { resultaten: [{ naam: 'Acme', kvkNummer: '123' }] },
 		})
 		const leaf = wrapper.findAll('button').find((b) => b.text().includes('naam'))
 		await leaf.trigger('click')
+		// Clicking a leaf opens the prompt pre-filled with the leaf key and
+		// emits nothing yet — the mapping only exists once a name is given.
+		expect(wrapper.vm.promptOpen).toBe(true)
+		expect(wrapper.vm.promptSuggestion).toBe('naam')
+		expect(wrapper.emitted()['update:fields']).toBeUndefined()
+
+		wrapper.vm.onPromptSubmit('naam')
 		expect(wrapper.emitted()['update:fields'][0][0]).toEqual({ naam: 'naam' })
+	})
+
+	it('a dismissed prompt adds no mapping', async () => {
+		const wrapper = factory({
+			binding: { itemsPath: 'resultaten', fields: {} },
+			sample: { resultaten: [{ naam: 'Acme' }] },
+		})
+		const leaf = wrapper.findAll('button').find((b) => b.text().includes('naam'))
+		await leaf.trigger('click')
+		wrapper.vm.promptOpen = false
+		expect(wrapper.emitted()['update:fields']).toBeUndefined()
 	})
 
 	it('round-trips an existing mapping with live sample values', () => {

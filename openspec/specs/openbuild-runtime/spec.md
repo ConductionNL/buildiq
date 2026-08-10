@@ -304,7 +304,7 @@ to disambiguate from `REQ-OBR-006a` (Schema designer routes) and
 - **AND** the editor surfaces the validation error inline (same
   contract as Save)
 
-### Requirement: Draft-vs-published indicator surfaces lifecycle state
+### Requirement: Draft-vs-published indicator surfaces lifecycle state (REQ-OBR-007b)
 
 The OpenBuild shell SHALL surface the Application's current
 `status` (and a marker for "has unpublished draft changes") in two

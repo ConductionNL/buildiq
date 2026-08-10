@@ -54,6 +54,7 @@
 				class="copilot-panel__input"
 				:disabled="inputDisabled"
 				:placeholder="t('openbuild', 'Ask the copilot to add a page, widget, or menu item…')"
+				:aria-label="t('openbuild', 'Ask the copilot to add a page, widget, or menu item…')"
 				rows="2"
 				@keydown.enter.exact.prevent="onSend" />
 			<NcButton type="primary" :disabled="inputDisabled || !draft.trim()" @click="onSend">

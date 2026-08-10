@@ -19,6 +19,7 @@
 		"stylelint-fix": "stylelint src/**/*.vue src/**/*.scss src/**/*.css --fix",
 		"check:manifest": "node scripts/check-manifest.js",
     "check:gitignore": "node scripts/check-gitignore.js",
+    "check:nc-floor": "node scripts/check-nc-floor.js",
 		"test": "vitest run",
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",

@@ -142,4 +142,40 @@ describe('ImportDataWizard', () => {
 		expect(wrapper.vm.step).toBe(4) // stayed on confirm; no fake summary
 		expect(wrapper.vm.error).toContain('permission')
 	})
+
+	// -------------------------------------------------------------------
+	// WCAG 2.2 AA 1.3.1 Info and Relationships.
+	//
+	// `sampleRows` is filled only by readCsvSample(), so row 0 is the CSV's
+	// own header line. It used to render as ordinary <td> data, leaving the
+	// sample table with no <th> at all — a screen reader could not tell a
+	// user which column a cell belonged to.
+	//
+	// Asserted on the CELLS, not on the <thead> wrapper: an empty <thead>
+	// would satisfy a container assertion while announcing nothing.
+	// -------------------------------------------------------------------
+	it('renders the CSV header line as scoped column headers, and not as a data row', async () => {
+		const wrapper = mountWizard()
+		await wrapper.setData({
+			step: 3,
+			sampleRows: [
+				['name', 'email'],
+				['Ada', 'ada@example.org'],
+				['Grace', 'grace@example.org'],
+			],
+		})
+
+		const headerCells = wrapper.findAll('.ob-import-wizard__sample thead th')
+		expect(headerCells).toHaveLength(2)
+		expect(headerCells.at(0).text()).toBe('name')
+		expect(headerCells.at(1).text()).toBe('email')
+		expect(headerCells.at(0).attributes('scope')).toBe('col')
+		expect(headerCells.at(1).attributes('scope')).toBe('col')
+
+		// The header must not ALSO appear as a body row.
+		const bodyRows = wrapper.findAll('.ob-import-wizard__sample tbody tr')
+		expect(bodyRows).toHaveLength(2)
+		expect(bodyRows.at(0).text()).toContain('Ada')
+		expect(wrapper.find('.ob-import-wizard__sample tbody').text()).not.toContain('email')
+	})
 })

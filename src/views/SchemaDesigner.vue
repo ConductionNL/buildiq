@@ -363,7 +363,7 @@ export default {
 		 * Field names from the staged FieldEditor model, fed to
 		 * `AccessEditor`'s condition-row field picker.
 		 *
-		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-001
+		 * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-001
 		 * @return {string[]} Staged field names.
 		 */
 		fieldNames() {
@@ -377,7 +377,7 @@ export default {
 		 * block, seeding the AccessEditor group picker without a new
 		 * full-group-directory endpoint (design.md Decision 2).
 		 *
-		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-001
+		 * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-001
 		 * @return {string[]} Deduplicated group ids.
 		 */
 		availableGroups() {
@@ -406,7 +406,7 @@ export default {
 		 * Whether the caller is a Nextcloud admin (bypasses OR enforcement,
 		 * so admins are never subject to the author lock-out warning).
 		 *
-		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-004
+		 * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-004
 		 * @return {boolean}
 		 */
 		isNcAdmin() {
@@ -416,7 +416,7 @@ export default {
 		 * Whether the active ApplicationVersion is the Application's
 		 * `productionVersion`.
 		 *
-		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-007
+		 * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-007
 		 * @return {boolean}
 		 */
 		isProductionVersion() {
@@ -435,7 +435,7 @@ export default {
 		 * authoritative write gate remains OR's register manage-permission
 		 * plus the publish guard, this is a consistency surface only.
 		 *
-		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-007
+		 * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-007
 		 * @return {boolean}
 		 */
 		accessReadOnly() {
@@ -450,7 +450,7 @@ export default {
 		 * is not an NC admin — saving would hide this schema's own records
 		 * from the author. Save stays enabled regardless (REQ-OBDSA-004).
 		 *
-		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-004
+		 * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-004
 		 * @return {boolean}
 		 */
 		authorLockedOut() {
@@ -577,7 +577,7 @@ export default {
 			 * undo/redo history (design.md D3/D5).
 			 *
 			 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
-			 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-005
+			 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-005
 			 * @return {void}
 			 */
 			handler() {
@@ -595,7 +595,7 @@ export default {
 			 * undo/redo history (design.md D3/D5).
 			 *
 			 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
-			 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-005
+			 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-005
 			 * @return {void}
 			 */
 			handler() {
@@ -964,7 +964,7 @@ export default {
 		 * like any other; leaving it out of undo/redo would be an
 		 * inconsistent gap in the same feature.
 		 *
-		 * @spec openspec/changes/data-scopes-authoring/specs/data-scopes-authoring/spec.md#req-obdsa-001
+		 * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-001
 		 * @param {object} access Updated access editor model ({ rows, extraKeys }).
 		 * @return {void}
 		 */
@@ -1255,7 +1255,7 @@ export default {
 		 * the discarded staged edits back.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
-		 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-005
+		 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-005
 		 * @return {void}
 		 */
 		discardChanges() {
@@ -1299,7 +1299,7 @@ export default {
 		 *
 		 * @param {KeyboardEvent} event - the keydown event.
 		 * @return {void}
-		 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-003
+		 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-003
 		 */
 		onKeydown(event) {
 			if (!this.schemaId || !this.staged) {

@@ -95,6 +95,7 @@
 					class="map-page-editor__row-url"
 					:value="layer.url || ''"
 					:placeholder="t('openbuild', 'Layer URL')"
+					:aria-label="t('openbuild', 'Layer URL')"
 					@input="updateLayerField(index, 'url', $event.target.value)">
 				<button
 					type="button"

@@ -42,13 +42,32 @@
 			class="page-list-editor__list"
 			@update:model-value="onReorder">
 			<template #item="{ element: page, index }">
+				<!--
+					The row is selected by CLICK, and until now by click only:
+					every field inside carries `@click.stop`, so a keyboard user
+					tabbing into a row's inputs was editing a page that was never
+					selected. `@focusin` is the substantive repair — it gives the
+					keyboard the same selection the mouse always had.
+
+					`role="group"` + `aria-label` (not `role="button"`) because the
+					row CONTAINS interactive controls; a button's children are
+					presentational, so `role="button"` here would hide the inputs
+					from assistive technology. `tabindex="-1"` makes the row
+					programmatically focusable without adding a second tab stop in
+					front of the fields it wraps.
+				-->
 				<div
 					class="page-list-editor__row"
 					:class="{
 						'page-list-editor__row--selected': index === selectedIndex,
 						'page-list-editor__row--error': hasError(page, index),
 					}"
-					@click="$emit('select', index)">
+					role="group"
+					:aria-label="t('openbuild', 'Page {position}', { position: index + 1 })"
+					tabindex="-1"
+					@click="$emit('select', index)"
+					@focusin="$emit('select', index)"
+					@keydown.enter="$emit('select', index)">
 					<span class="page-list-editor__drag-handle" :title="t('openbuild', 'Drag to reorder')">
 						⠿
 					</span>
@@ -57,6 +76,7 @@
 						type="text"
 						class="page-list-editor__field"
 						:placeholder="t('openbuild', 'page id')"
+						:aria-label="t('openbuild', 'page id')"
 						@click.stop
 						@input="updateField(index, 'id', $event.target.value)">
 					<input
@@ -64,6 +84,7 @@
 						type="text"
 						class="page-list-editor__field"
 						:placeholder="t('openbuild', '/route/:param')"
+						:aria-label="t('openbuild', '/route/:param')"
 						@click.stop
 						@input="updateField(index, 'route', $event.target.value)">
 					<span class="page-list-editor__type-tag">{{ page.type }}</span>

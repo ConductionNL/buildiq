@@ -260,17 +260,29 @@ class VersionPromotionController extends Controller
     /**
      * Load the parent Application by UUID via OR's object service.
      *
+     * `ObjectService::find()` throws when the object is not found rather than
+     * returning null, so without this catch the caller's `null` branch — the
+     * 404 — was unreachable and a missing Application became a 500.
+     *
      * @param string $uuid Application UUID
      *
      * @return array<string,mixed>|null
      */
     private function loadApplication(string $uuid): ?array
     {
-        $entity = $this->objectService->find(
-            id: $uuid,
-            register: VersionPromotionService::REGISTER_SLUG,
-            schema: VersionPromotionService::APPLICATION_SCHEMA
-        );
+        try {
+            $entity = $this->objectService->find(
+                id: $uuid,
+                register: VersionPromotionService::REGISTER_SLUG,
+                schema: VersionPromotionService::APPLICATION_SCHEMA
+            );
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                'OpenBuild: Application {uuid} could not be loaded: {message}',
+                ['uuid' => $uuid, 'message' => $e->getMessage(), 'exception' => $e]
+            );
+            return null;
+        }//end try
 
         if ($entity === null) {
             return null;
@@ -282,17 +294,29 @@ class VersionPromotionController extends Controller
     /**
      * Load an ApplicationVersion by UUID via OR's object service.
      *
+     * Same shape as {@see loadApplication()}: `ObjectService::find()` throws
+     * on a miss rather than returning null, so the caller's 404 branch only
+     * becomes reachable once that is caught here.
+     *
      * @param string $uuid ApplicationVersion UUID
      *
      * @return array<string,mixed>|null
      */
     private function loadVersion(string $uuid): ?array
     {
-        $entity = $this->objectService->find(
-            id: $uuid,
-            register: VersionPromotionService::REGISTER_SLUG,
-            schema: VersionPromotionService::APPLICATION_VERSION_SCHEMA
-        );
+        try {
+            $entity = $this->objectService->find(
+                id: $uuid,
+                register: VersionPromotionService::REGISTER_SLUG,
+                schema: VersionPromotionService::APPLICATION_VERSION_SCHEMA
+            );
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                'OpenBuild: ApplicationVersion {uuid} could not be loaded: {message}',
+                ['uuid' => $uuid, 'message' => $e->getMessage(), 'exception' => $e]
+            );
+            return null;
+        }//end try
 
         if ($entity === null) {
             return null;

@@ -405,7 +405,7 @@ export default {
 		 * rather than leaving stale internal state.
 		 *
 		 * @return {?object} preview props, or null when preview is unavailable.
-		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-22
+		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-2.2
 		 */
 		livePreviewProps() {
 			if (!this.previewAvailable) {
@@ -420,7 +420,7 @@ export default {
 		 * resolves identically in the preview as it will in the built app.
 		 *
 		 * @return {object} v2 registry map.
-		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-23
+		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-2.3
 		 */
 		previewRegistry() {
 			// Shallow clone: the lib exports frozen module objects in some
@@ -435,7 +435,7 @@ export default {
 		 * needs both to resolve slot/custom-page names.
 		 *
 		 * @return {object} Map of registry key → Vue component.
-		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-23
+		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-2.3
 		 */
 		previewFlatRegistry() {
 			const out = {}
@@ -454,7 +454,7 @@ export default {
 		 * `page.type` against — the same `defaultPageTypes` App.vue passes.
 		 *
 		 * @return {object} page-type map.
-		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-23
+		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-2.3
 		 */
 		previewPageTypes() {
 			return { ...defaultPageTypes }
@@ -464,7 +464,7 @@ export default {
 		 * App.vue's `permissions` computed.
 		 *
 		 * @return {Array} Permission identifiers (empty when unavailable).
-		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-23
+		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-2.3
 		 */
 		previewPermissions() {
 			return window.OC?.currentUser?.permissions ?? []
@@ -785,7 +785,7 @@ export default {
 		 *
 		 * @param {string} key - Translation key.
 		 * @return {string} Translated string (or the key on miss).
-		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-23
+		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-2.3
 		 */
 		translateForPreview(key) {
 			return ncT('openbuild', key)
@@ -831,7 +831,7 @@ export default {
 		 *   else, and any chord fired while an editable element has focus, is ignored.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
-		 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-003
+		 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-003
 		 */
 		onKeydown(event) {
 			if (!event || !(event.ctrlKey || event.metaKey)) {

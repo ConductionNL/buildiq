@@ -25,7 +25,7 @@
  * `openbuild.formLogic.error.*` for hard errors and
  * `openbuild.formLogic.warning.*` for the one warning-level rule.
  *
- * @spec openspec/changes/form-editor-logic/specs/form-editor-logic/spec.md#req-obfel-005
+ * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-005
  */
 
 /** The visibleWhen op allow-list (mirrors `$defs/visibleWhen.properties.op.enum`). */
@@ -175,7 +175,7 @@ function validateFieldLogic(field, fieldPath, declaredKeys) {
  *
  * @param {object} manifest - the in-flight manifest.
  * @return {string[]} - `<pointer>: <code>` error/warning strings.
- * @spec openspec/changes/form-editor-logic/specs/form-editor-logic/spec.md#req-obfel-005
+ * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-005
  */
 export function validateFormLogic(manifest) {
 	const errors = []
@@ -220,7 +220,7 @@ export function validateFormLogic(manifest) {
  * @param {object} manifest - the in-flight manifest.
  * @return {object} - the manifest, with any unassigned form-step fields
  *   appended to their page's final step.
- * @spec openspec/changes/form-editor-logic/specs/form-editor-logic/spec.md#req-obfel-001
+ * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-001
  */
 export function assignUnassignedFieldsToFinalStep(manifest) {
 	if (!manifest || !Array.isArray(manifest.pages)) {

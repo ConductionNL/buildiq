@@ -12,7 +12,7 @@
  * shape is the canonical reference the PHP docblock cites back to.
  *
  * @spec openspec/changes/automation-document-action/tasks.md#4.3
- * @spec openspec/changes/automation-document-action/specs/automation-designer/spec.md#req-autd-003
+ * @spec openspec/specs/automation-designer/spec.md#req-autd-003
  *
  * DEVIATION FROM design.md (documented, mirrored from the backend — see
  * `lib/Service/AutomationCompilerService.php` class docblock): design.md's
@@ -24,9 +24,9 @@
  * originally-proposed table.
  *
  * @spec openspec/changes/automation-designer/tasks.md#5.4
- * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-003
+ * @spec openspec/specs/automation-designer/spec.md#req-autd-003
  * @spec openspec/changes/automation-approval-steps/tasks.md#3.2
- * @spec openspec/changes/automation-approval-steps/specs/automation-designer/spec.md#req-autd-003
+ * @spec openspec/specs/automation-designer/spec.md#req-autd-003
  */
 
 /** Every trigger type the v1 designer supports. */

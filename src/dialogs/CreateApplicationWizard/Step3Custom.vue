@@ -37,6 +37,7 @@
 						type="text"
 						:value="row.name"
 						:placeholder="t('openbuild', 'Version name (e.g. Production)')"
+						:aria-label="t('openbuild', 'Version name (e.g. Production)')"
 						autocomplete="off"
 						@input="onNameInput(index, $event)">
 				</div>
@@ -67,6 +68,7 @@
 						type="text"
 						:value="row.slug"
 						:placeholder="t('openbuild', 'kebab-case-slug')"
+						:aria-label="t('openbuild', 'kebab-case-slug')"
 						autocomplete="off"
 						@input="onSlugInput(index, $event)">
 					<p v-if="getSlugError(index)" class="wizard-step3__error-msg" role="alert">

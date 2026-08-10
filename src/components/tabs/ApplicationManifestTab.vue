@@ -19,7 +19,8 @@
 			data-testid="openbuild-editor-textarea"
 			spellcheck="false"
 			:readonly="obAppRole === 'viewer' || obAppRole === 'none'"
-			:placeholder="t('openbuild', 'Paste or edit the JSON manifest here.')" />
+			:placeholder="t('openbuild', 'Paste or edit the JSON manifest here.')"
+			:aria-label="t('openbuild', 'Paste or edit the JSON manifest here.')" />
 		<div v-if="error" class="ob-manifest-tab__error">
 			{{ t('openbuild', 'Invalid manifest') }}: {{ error }}
 		</div>

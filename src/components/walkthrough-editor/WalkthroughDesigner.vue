@@ -161,11 +161,24 @@
 					</NcButton>
 				</div>
 				<ul class="wt-designer__tours">
+					<!--
+						The tour rail is a list of choosers. The <li> carries no
+						nested interactive content, so `role="button"` is correct
+						here and the Enter/Space handlers give it the keyboard
+						behaviour a real <button> would have had. `aria-current`
+						announces which tour is open rather than leaving it to the
+						visual `--active` class alone.
+					-->
 					<li v-for="(tour, ti) in tours"
 						:key="tour.id || ti"
 						class="wt-designer__tour"
 						:class="{ 'wt-designer__tour--active': ti === activeTourIndex }"
-						@click="activeTourIndex = ti">
+						role="button"
+						tabindex="0"
+						:aria-current="ti === activeTourIndex ? 'true' : undefined"
+						@click="activeTourIndex = ti"
+						@keydown.enter.prevent="activeTourIndex = ti"
+						@keydown.space.prevent="activeTourIndex = ti">
 						<span class="wt-designer__tour-name">{{ tour.title || tour.id || t('openbuild', '(untitled)') }}</span>
 						<span class="wt-designer__tour-count">{{ (tour.steps || []).length }}</span>
 					</li>

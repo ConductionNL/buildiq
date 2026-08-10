@@ -32,19 +32,23 @@
 		<table v-else class="ob-apps-list-widget__table">
 			<thead>
 				<tr>
-					<th class="ob-apps-list-widget__col-name">
+					<th scope="col" class="ob-apps-list-widget__col-name">
 						{{ t('openbuild', 'App') }}
 					</th>
-					<th class="ob-apps-list-widget__col-status">
+					<th scope="col" class="ob-apps-list-widget__col-status">
 						{{ t('openbuild', 'Status') }}
 					</th>
-					<th class="ob-apps-list-widget__col-version">
+					<th scope="col" class="ob-apps-list-widget__col-version">
 						{{ t('openbuild', 'Version') }}
 					</th>
-					<th class="ob-apps-list-widget__col-updated">
+					<th scope="col" class="ob-apps-list-widget__col-updated">
 						{{ t('openbuild', 'Updated') }}
 					</th>
-					<th class="ob-apps-list-widget__col-actions" />
+					<!-- Row-actions column: no visible caption, but still a column
+					     header, so it keeps `scope="col"` and an sr-only name. -->
+					<th scope="col" class="ob-apps-list-widget__col-actions">
+						<span class="hidden-visually">{{ t('openbuild', 'Actions') }}</span>
+					</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -341,5 +345,16 @@ export default {
 	text-align: center;
 	border-top: 1px solid var(--color-border, #ddd);
 	margin-top: auto;
+}
+
+/*
+ * WCAG 2.2 AA 2.3.3 Animation from Interactions. The row animates its
+ * background on hover; honour an OS-level reduced-motion preference. Scoped to
+ * this widget's own selector so it cannot reach into NC component internals.
+ */
+@media (prefers-reduced-motion: reduce) {
+	.ob-apps-list-widget__row {
+		transition: none;
+	}
 }
 </style>

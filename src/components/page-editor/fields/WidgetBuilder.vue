@@ -10,18 +10,21 @@
 				type="text"
 				class="widget-builder__field"
 				:placeholder="t('openbuild', 'Widget id')"
+				:aria-label="t('openbuild', 'Widget id')"
 				@input="updateField(index, 'id', $event.target.value)">
 			<input
 				:value="widget.title || ''"
 				type="text"
 				class="widget-builder__field"
 				:placeholder="t('openbuild', 'Title')"
+				:aria-label="t('openbuild', 'Title')"
 				@input="updateField(index, 'title', $event.target.value)">
 			<input
 				:value="widget.type || ''"
 				type="text"
 				class="widget-builder__field widget-builder__field--narrow"
 				:placeholder="t('openbuild', 'Type')"
+				:aria-label="t('openbuild', 'Type')"
 				@input="updateField(index, 'type', $event.target.value)">
 			<button
 				type="button"

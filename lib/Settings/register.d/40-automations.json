@@ -59,6 +59,7 @@
 						"title": "Application Version UUID",
 						"type": "string",
 						"format": "uuid",
+						"$ref": "ApplicationVersion",
 						"description": "UUID of the owning ApplicationVersion. An automation belongs to exactly one version; branching a version clones its automations with new uuids (design.md Decision 6)."
 					},
 					"enabled": {
@@ -78,6 +79,7 @@
 							"type": {
 								"title": "Trigger Type",
 								"type": "string",
+								"description": "Which event starts the automation. `object-created` / `object-updated` / `object-deleted` fire on writes to the schema named in `schema`; `lifecycle-transition` fires on the named transition; `schedule` fires on `interval` or `cron`; `manual` runs only when invoked through the rules backend.",
 								"enum": [
 									"object-created",
 									"object-updated",
@@ -117,6 +119,7 @@
 							"type": {
 								"title": "Condition Type",
 								"type": "string",
+								"description": "How the condition is expressed: `feel` for an inline FEEL-subset expression, or `rule-set` to delegate to an existing rule set by reference.",
 								"enum": [
 									"feel",
 									"rule-set"
@@ -172,10 +175,14 @@
 										"type": "object",
 										"properties": {
 											"kind": {
-												"type": "string"
+												"title": "Recipient Kind",
+												"type": "string",
+												"description": "How this recipient set is resolved — e.g. `object-acl` to derive recipients from the object's own access-control list, matching the x-openregister-notifications dialect."
 											},
 											"permission": {
-												"type": "string"
+												"title": "Required Permission",
+												"type": "string",
+												"description": "The permission a user must hold on the object to be included in this recipient set — e.g. `manage`. Only meaningful for ACL-derived recipient kinds."
 											}
 										}
 									},
@@ -186,10 +193,14 @@
 									"type": "object",
 									"properties": {
 										"nl": {
-											"type": "string"
+											"title": "Subject (Dutch)",
+											"type": "string",
+											"description": "Dutch subject line for the notification. Supports `{{field}}` placeholders resolved against the triggering object."
 										},
 										"en": {
-											"type": "string"
+											"title": "Subject (English)",
+											"type": "string",
+											"description": "English subject line for the notification. Supports `{{field}}` placeholders resolved against the triggering object."
 										}
 									},
 									"description": "send-notification: localized subject templates ({{field}} placeholders)."
@@ -253,7 +264,8 @@
 									"title": "Document Template",
 									"type": "string",
 									"format": "uuid",
-									"description": "generateDocument: UUID of the Docudesk template to render, picked from the same `GET /apps/docudesk/api/templates` list the Documents-section builder UI uses."
+									"x-external-register": "docudesk",
+									"description": "generateDocument: UUID of the Docudesk template to render, picked from the same `GET /apps/docudesk/api/templates` list the Documents-section builder UI uses. The template is an object in DOCUDESK's register, not OpenBuild's, so this carries the bare identifier and no `$ref` — OpenRegister resolves `$ref` within one register set and cannot reach another app's schema."
 								},
 								"output": {
 									"title": "Output Mode(s)",
@@ -284,10 +296,14 @@
 									"type": "object",
 									"properties": {
 										"schema": {
-											"type": "string"
+											"title": "Schema Slug",
+											"type": "string",
+											"description": "Slug of the schema whose x-openregister-notifications block carries this generated entry."
 										},
 										"key": {
-											"type": "string"
+											"title": "Notification Key",
+											"type": "string",
+											"description": "The generated notification key, of the form `aut-<automation-slug>-<n>`. Recorded so recompiling can replace exactly the entries this automation owns and leave hand-written ones untouched."
 										}
 									}
 								},
@@ -300,13 +316,19 @@
 									"type": "object",
 									"properties": {
 										"schema": {
-											"type": "string"
+											"title": "Schema Slug",
+											"type": "string",
+											"description": "Slug of the schema whose x-openregister-lifecycle block carries this generated transition."
 										},
 										"transition": {
-											"type": "string"
+											"title": "Transition Action",
+											"type": "string",
+											"description": "Name of the lifecycle transition action this automation compiled onto the schema."
 										},
 										"marker": {
-											"type": "string"
+											"title": "Ownership Marker",
+											"type": "string",
+											"description": "Marker stamped on the generated transition identifying this automation as its owner, so a recompile rewrites only what it created."
 										}
 									}
 								},

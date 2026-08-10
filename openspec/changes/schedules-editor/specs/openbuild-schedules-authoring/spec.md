@@ -1,6 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: Schedules section renders the app's schedules as a list
+### Requirement: Schedules section renders the app's schedules as a list (REQ-OBSA-001)
 
 The system SHALL render a **Schedules** section in the OpenBuild page designer
 (`SchedulesSection.vue`, mounted in `PageDesignerHost.vue` beside the Theme,
@@ -27,7 +27,7 @@ via `@update:manifest`; it never calls a save API of its own.
   `src/dialogs/`) opens with default values (enabled = true, no id yet, cadence
   and action unset)
 
-### Requirement: Cadence preset writes interval or validated cron
+### Requirement: Cadence preset writes interval or validated cron (REQ-OBSA-002)
 
 The edit dialog SHALL present a **Cadence** `NcSelect` with presets Hourly /
 Daily / Weekly / Monthly / Custom. Non-custom presets write an `interval` in
@@ -57,7 +57,7 @@ entry SHALL carry exactly one of `interval` or `cron`, never both.
 - **THEN** the written entry has `interval: 604800` and the previous `cron`
   key is removed — the manifest never carries both `interval` and `cron`
 
-### Requirement: Action select and synchronization picker write the action arguments
+### Requirement: Action select and synchronization picker write the action arguments (REQ-OBSA-003)
 
 The edit dialog SHALL present an **Action** `NcSelect` (`:input-label`) whose
 first and currently only option "Run a synchronization" maps to
@@ -85,7 +85,7 @@ action types add options without removing the sync action.
 - **AND** any already-stored `arguments.synchronizationId` remains visible and
   is preserved on save
 
-### Requirement: Enabled switch and stable id
+### Requirement: Enabled switch and stable id (REQ-OBSA-004)
 
 The edit dialog SHALL present an **Enabled** `NcCheckboxRadioSwitch`
 (`type="switch"`, default true) writing the entry's `enabled` boolean, and a
@@ -107,7 +107,7 @@ id field) that is unique within `manifest.schedules[]`.
 - **AND** attempting to save a second entry with an id already used in
   `manifest.schedules[]` is blocked with a uniqueness message
 
-### Requirement: Edit updates in place and remove deletes the entry
+### Requirement: Edit updates in place and remove deletes the entry (REQ-OBSA-005)
 
 The Schedules section SHALL let the developer edit an existing entry (opening
 the dialog pre-filled and writing changes back to the same array position,
@@ -129,7 +129,7 @@ preserving its `id`) and remove an entry (deleting it from
 - **THEN** that entry is deleted from `manifest.schedules[]` and the section
   emits the updated manifest
 
-### Requirement: Invalid entries are blocked with a message
+### Requirement: Invalid entries are blocked with a message (REQ-OBSA-006)
 
 The system SHALL run `services/manifestValidation/schedules.js` (wired into
 `useManifestValidator`) and block an invalid entry with a clear message rather
@@ -165,7 +165,7 @@ than writing it. An entry is invalid when it has both or neither of
 - **THEN** validation reports the missing synchronization and the entry cannot
   be saved
 
-### Requirement: Edits persist via the existing ApplicationVersion save
+### Requirement: Edits persist via the existing ApplicationVersion save (REQ-OBSA-007)
 
 The system SHALL persist schedule edits through the page designer's existing
 save path — `PageDesignerHost.save()` PUTs the whole ApplicationVersion

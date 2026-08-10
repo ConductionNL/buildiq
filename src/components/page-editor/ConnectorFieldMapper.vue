@@ -51,10 +51,20 @@
 		<table v-if="fieldRows.length" class="connector-field-mapper__fields">
 			<thead>
 				<tr>
-					<th>{{ t('openbuild', 'Field') }}</th>
-					<th>{{ t('openbuild', 'Selector') }}</th>
-					<th>{{ t('openbuild', 'Sample value') }}</th>
-					<th />
+					<th scope="col">
+						{{ t('openbuild', 'Field') }}
+					</th>
+					<th scope="col">
+						{{ t('openbuild', 'Selector') }}
+					</th>
+					<th scope="col">
+						{{ t('openbuild', 'Sample value') }}
+					</th>
+					<!-- Row-actions column: no visible caption, but still a column
+					     header, so it keeps `scope="col"` and an sr-only name. -->
+					<th scope="col">
+						<span class="hidden-visually">{{ t('openbuild', 'Actions') }}</span>
+					</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -75,16 +85,25 @@
 				</tr>
 			</tbody>
 		</table>
+
+		<PromptTextDialog
+			v-model:open="promptOpen"
+			:name="t('openbuild', 'Add field')"
+			:label="t('openbuild', 'Display field name')"
+			:initial-value="promptSuggestion"
+			:confirm-label="t('openbuild', 'Confirm')"
+			@submit="onPromptSubmit" />
 	</div>
 </template>
 
 <script>
 import { NcButton } from '@nextcloud/vue'
 import { flattenSample, resolveSelector } from '../../services/selectors.js'
+import PromptTextDialog from '../../dialogs/PromptTextDialog.vue'
 
 export default {
 	name: 'ConnectorFieldMapper',
-	components: { NcButton },
+	components: { NcButton, PromptTextDialog },
 	props: {
 		// The `dataSource.connector` binding being edited.
 		binding: {
@@ -102,6 +121,13 @@ export default {
 		},
 	},
 	emits: ['update:itemsPath', 'update:fields'],
+	data() {
+		return {
+			promptOpen: false,
+			promptSuggestion: '',
+			pendingNode: null,
+		}
+	},
 	computed: {
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
 		itemsPath() {
@@ -194,11 +220,26 @@ export default {
 		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.1
 		 */
 		addField(node) {
-			const suggested = this.nodeLabel(node)
-			const name = (typeof window !== 'undefined' && window.prompt)
-				? window.prompt(t('openbuild', 'Display field name'), suggested)
-				: suggested
-			if (!name) {
+			this.pendingNode = node
+			this.promptSuggestion = this.nodeLabel(node)
+			this.promptOpen = true
+		},
+		/**
+		 * Add the mapping once the user has named the display field.
+		 *
+		 * The dialog disables its submit while the value is blank and emits
+		 * nothing on cancel, so the empty-name guard window.prompt needed
+		 * (`if (!name) return`) is now enforced at the source.
+		 *
+		 * @param {string} name - the entered display-field name.
+		 * @return {void}
+		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.1
+		 */
+		onPromptSubmit(name) {
+			const node = this.pendingNode
+			this.promptOpen = false
+			this.pendingNode = null
+			if (!node || !name) {
 				return
 			}
 			const next = { ...this.fields, [name]: node.path }

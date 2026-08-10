@@ -53,12 +53,21 @@
 			:entry="editingEntry"
 			:existing-ids="otherIds"
 			@save="onDialogSave" />
+
+		<ConfirmActionDialog
+			v-model:open="confirmRemoveOpen"
+			:name="t('openbuild', 'Remove scheduled task')"
+			:message="t('openbuild', 'Remove this scheduled task?')"
+			:confirm-label="t('openbuild', 'Remove')"
+			destructive
+			@confirm="onConfirmRemove" />
 	</section>
 </template>
 
 <script>
 import { NcButton } from '@nextcloud/vue'
 import ScheduleEditDialog from '../dialogs/ScheduleEditDialog.vue'
+import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 
 /** Known interval presets, seconds → i18n cadence label key. */
 const INTERVAL_LABELS = Object.freeze({
@@ -70,7 +79,7 @@ const INTERVAL_LABELS = Object.freeze({
 
 export default {
 	name: 'SchedulesSection',
-	components: { NcButton, ScheduleEditDialog },
+	components: { NcButton, ScheduleEditDialog, ConfirmActionDialog },
 	props: {
 		manifest: {
 			type: Object,
@@ -82,6 +91,8 @@ export default {
 		return {
 			dialogOpen: false,
 			editingEntry: null,
+			confirmRemoveOpen: false,
+			pendingRemoval: null,
 		}
 	},
 	computed: {
@@ -188,10 +199,24 @@ export default {
 		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-005
 		 */
 		remove(schedule) {
-			const ok = typeof window !== 'undefined' && window.confirm
-				? window.confirm(t('openbuild', 'Remove this scheduled task?'))
-				: true
-			if (!ok) {
+			this.pendingRemoval = schedule
+			this.confirmRemoveOpen = true
+		},
+		/**
+		 * Drop the pending entry once the user has confirmed it.
+		 *
+		 * The entry is held in `pendingRemoval` rather than removed
+		 * optimistically, so cancelling or closing the dialog leaves the
+		 * manifest untouched.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-005
+		 */
+		onConfirmRemove() {
+			const schedule = this.pendingRemoval
+			this.confirmRemoveOpen = false
+			this.pendingRemoval = null
+			if (!schedule) {
 				return
 			}
 			const list = this.schedules.filter((s) => s.id !== schedule.id)

@@ -965,7 +965,7 @@ class ApplicationVersionService
      * @return int The number of automations successfully cloned.
      *
      * @spec openspec/changes/automation-designer/tasks.md#2.6
-     * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-009
+     * @spec openspec/specs/automation-designer/spec.md#req-autd-009
      */
     public function cloneAutomationsToVersion(string $applicationSlug, string $sourceVersionUuid, string $newVersionUuid): int
     {

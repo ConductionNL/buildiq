@@ -201,6 +201,45 @@ describe('PageListEditor', () => {
 		expect(wrapper.emitted('select')[0][0]).toBe(1)
 	})
 
+	// ---------------------------------------------------------------------
+	// Keyboard parity (WCAG 2.2 AA 2.1.1 Keyboard).
+	//
+	// Every field inside a row carries `@click.stop`, so the row's own
+	// `@click` never fires for a user who reaches the fields with Tab — they
+	// were editing a page that had never been selected. `@focusin` closes
+	// that: focus reaching any descendant selects the row, which is the same
+	// outcome the mouse always had.
+	//
+	// Asserted on the EMITTED EVENT, not on the presence of the attribute:
+	// an `aria-*`/`tabindex` assertion would pass over a handler that does
+	// nothing.
+	// ---------------------------------------------------------------------
+	it('focusing a field inside a row emits select(index) — keyboard parity with click', async () => {
+		const wrapper = mountEditor([
+			{ id: 'a', type: 'index' },
+			{ id: 'b', type: 'detail' },
+		])
+		const secondRow = wrapper.findAll('.page-list-editor__row').at(1)
+
+		// The field's own click is stopped, so this is genuinely the only
+		// path a keyboard user has.
+		await secondRow.findAll('input').at(0).trigger('click')
+		expect(wrapper.emitted('select')).toBeUndefined()
+
+		await secondRow.findAll('input').at(0).trigger('focusin')
+		expect(wrapper.emitted('select')[0][0]).toBe(1)
+	})
+
+	it('a row is a named group rather than a button, so its inputs stay exposed', () => {
+		const wrapper = mountEditor([{ id: 'a', type: 'index' }])
+		const row = wrapper.findAll('.page-list-editor__row').at(0)
+
+		// role="button" would make the row's children presentational and hide
+		// the inputs from assistive technology — the wrong fix for gate-32.
+		expect(row.attributes('role')).toBe('group')
+		expect(row.attributes('aria-label')).toBeTruthy()
+	})
+
 	it('cancelAdd hides the picker without emitting', async () => {
 		const wrapper = mountEditor([])
 		wrapper.vm.startAdd()

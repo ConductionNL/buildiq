@@ -255,6 +255,7 @@
         "Delete": "Delete",
         "Delete \"{name}\" and all of its versions? This cannot be undone.": "Delete \"{name}\" and all of its versions? This cannot be undone.",
         "Delete app": "Delete app",
+        "Delete automation": "Delete automation",
         "Delete failed": "Delete failed",
         "Delete failed: {error}": "Delete failed: {error}",
         "Delete property": "Delete property",
@@ -271,6 +272,8 @@
         "Design the pages and menu of this virtual app, then publish from Virtual apps.": "Design the pages and menu of this virtual app, then publish from Virtual apps.",
         "Design walkthrough": "Design walkthrough",
         "Detach": "Detach",
+        "Detach case type": "Detach case type",
+        "Detach template": "Detach template",
         "Detach this case type? Existing linked cases are NOT deleted and object links are kept.": "Detach this case type? Existing linked cases are NOT deleted and object links are kept.",
         "Detach this template? Previously generated documents are NOT deleted.": "Detach this template? Previously generated documents are NOT deleted.",
         "Detail page": "Detail page",
@@ -716,6 +719,7 @@
         "Re-link repository": "Re-link repository",
         "Read-only": "Read-only",
         "Read-only view of permission changes and admin-bypass events on this application. Sourced from OpenRegister's per-object audit trail.": "Read-only view of permission changes and admin-bypass events on this application. Sourced from OpenRegister's per-object audit trail.",
+        "Raw page configuration (JSON)": "Raw page configuration (JSON)",
         "Ready to import": "Ready to import",
         "Recent activity": "Recent activity",
         "Recent apps": "Recent apps",
@@ -738,6 +742,8 @@
         "Release": "Release",
         "Release failed": "Release failed",
         "Remove": "Remove",
+        "Remove scheduled task": "Remove scheduled task",
+        "Remove theme": "Remove theme",
         "Remove action": "Remove action",
         "Remove child": "Remove child",
         "Remove column": "Remove column",
@@ -793,6 +799,7 @@
         "sample": "sample",
         "Sample value": "Sample value",
         "Save": "Save",
+        "Switch data source": "Switch data source",
         "Save & open preview": "Save & open preview",
         "Save & preview": "Save & preview",
         "Save as template": "Save as template",
@@ -1398,7 +1405,8 @@
         "This block references schemas that do not exist under the same name in this app. Map each one to a schema here, or leave it unresolved — an unresolved binding inserts as a visible \"needs remap\" placeholder, it is never silently dropped.": "This block references schemas that do not exist under the same name in this app. Map each one to a schema here, or leave it unresolved — an unresolved binding inserts as a visible \"needs remap\" placeholder, it is never silently dropped.",
         "This page has no widgets yet.": "This page has no widgets yet.",
         "Visible only to group (optional)": "Visible only to group (optional)",
-        "Widgets on this page": "Widgets on this page"
+        "Widgets on this page": "Widgets on this page",
+        "Page {position}": "Page {position}"
     },
     "plurals": ""
 }

@@ -170,7 +170,7 @@ export default {
 	 * pane is actually mounted.
 	 *
 	 * @return {{copilot: object, livePreview: object}}
-	 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+	 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
 	 */
 	setup() {
 		return { copilot: useCopilot(), livePreview: useLivePreview() }
@@ -314,7 +314,7 @@ export default {
 		 * `reset()` had no callers).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-004
+		 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-004
 		 */
 		sessionKey() {
 			return `${this.routeSlug}:${this.versionSlug || ''}:${this.saveCounter}`
@@ -328,7 +328,7 @@ export default {
 		 * no-op'ing when the pane cannot be mounted.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
 		 */
 		livePreviewAvailable() {
 			return this.livePreview.available.value
@@ -358,7 +358,7 @@ export default {
 		 * flight.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
-		 * @spec openspec/changes/builder-undo-redo/specs/builder-undo-redo/spec.md#req-bur-004
+		 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-004
 		 */
 		async versionSlug() {
 			await this.resolveVersion()
@@ -425,7 +425,7 @@ export default {
 		 *
 		 * @param {?object} theme - the candidate runtime.theme, or null to revert.
 		 * @return {void}
-		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
 		 */
 		onThemePreview(theme) {
 			if (theme) {
@@ -452,7 +452,7 @@ export default {
 		 * @param {object} manifest - the manifest to copy.
 		 * @param {?object} theme - the theme object, or null/undefined to clear.
 		 * @return {object}
-		 * @spec openspec/changes/theme-picker-consumes-nldesign/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
 		 */
 		withRuntimeTheme(manifest, theme) {
 			const next = { ...manifest }

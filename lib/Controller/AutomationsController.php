@@ -41,8 +41,8 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/automation-designer/tasks.md#3.1
- * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-007
- * @spec openspec/changes/automation-designer/specs/automation-designer/spec.md#req-autd-008
+ * @spec openspec/specs/automation-designer/spec.md#req-autd-007
+ * @spec openspec/specs/automation-designer/spec.md#req-autd-008
  * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
  * @spec openspec/changes/automation-approval-steps/tasks.md#5.2
  */

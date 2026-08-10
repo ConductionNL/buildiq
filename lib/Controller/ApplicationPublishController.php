@@ -297,17 +297,38 @@ class ApplicationPublishController extends Controller
     /**
      * Load the Application object by UUID.
      *
+     * OpenRegister's `ObjectService::find()` documents `@throws Exception If
+     * the object is not found` — it does NOT return null on a miss. So the
+     * `$entity === null` branch below could never be the thing that made this
+     * method return null, and every caller's `if ($application === null)`
+     * 404 branch was unreachable: a missing Application escaped as an
+     * exception and surfaced as a 500 `internal_error` from the outer
+     * `catch (Throwable)` instead of the intended 404.
+     *
+     * Catching here is what makes the declared `?array` contract true. The
+     * cause is logged at debug level so a genuine provisioning fault (no
+     * `openbuild` register at all) is still traceable rather than silently
+     * flattened into "not found".
+     *
      * @param string $uuid Application UUID.
      *
      * @return array<string,mixed>|null Normalised application array, or null when absent.
      */
     private function loadApplication(string $uuid): ?array
     {
-        $entity = $this->objectService->find(
-            id: $uuid,
-            register: VersionPromotionService::REGISTER_SLUG,
-            schema: VersionPromotionService::APPLICATION_SCHEMA
-        );
+        try {
+            $entity = $this->objectService->find(
+                id: $uuid,
+                register: VersionPromotionService::REGISTER_SLUG,
+                schema: VersionPromotionService::APPLICATION_SCHEMA
+            );
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                'OpenBuild: Application {uuid} could not be loaded: {message}',
+                ['uuid' => $uuid, 'message' => $e->getMessage(), 'exception' => $e]
+            );
+            return null;
+        }//end try
 
         if ($entity === null) {
             return null;

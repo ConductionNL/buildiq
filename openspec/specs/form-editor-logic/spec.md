@@ -4,7 +4,7 @@
 TBD - created by archiving change form-editor-logic. Update Purpose after archive.
 ## Requirements
 
-### Requirement: Steps manager authors multi-step wizards over the existing field list
+### Requirement: Steps manager authors multi-step wizards over the existing field list (REQ-OBFEL-001)
 
 The form page sub-editor (`FormPageEditor.vue`) SHALL present a **Steps**
 section (`FormStepsManager.vue`) that authors `config.steps[]` per the
@@ -60,7 +60,7 @@ entirely rather than writing `steps: []`.
 - **AND** the config round-trips without a `steps` key until a step is
   added
 
-### Requirement: Conditions builder authors per-field visibleWhen from the form's own fields
+### Requirement: Conditions builder authors per-field visibleWhen from the form's own fields (REQ-OBFEL-002)
 
 Each field row in `FormFieldBuilder.vue` SHALL expose a **Conditions**
 section (`VisibleWhenBuilder.vue`) that authors the field's `visibleWhen`
@@ -109,7 +109,7 @@ by the builder.
 - **AND** editing any other property of that field leaves the advanced
   `visibleWhen` object byte-for-byte identical
 
-### Requirement: Validation builder authors the structured validation object
+### Requirement: Validation builder authors the structured validation object (REQ-OBFEL-003)
 
 Each field row in `FormFieldBuilder.vue` SHALL expose a **Validation**
 section (`FieldValidationBuilder.vue`) that authors the field's
@@ -154,7 +154,7 @@ SHALL be marked invalid inline and not written.
 - **THEN** the pattern input is marked invalid with an inline message
 - **AND** the invalid pattern is not written to the manifest
 
-### Requirement: Dangling condition and step references warn live and are never auto-deleted
+### Requirement: Dangling condition and step references warn live and are never auto-deleted (REQ-OBFEL-004)
 
 The editor SHALL detect, on every render against the current
 `config.fields[]`, any `visibleWhen.field` (LOCAL mode) or step
@@ -186,7 +186,7 @@ resolves it.
 - **AND** the step's `fields` array still contains `"email"` in the
   manifest
 
-### Requirement: The formLogic manifest validator reports structural and semantic errors
+### Requirement: The formLogic manifest validator reports structural and semantic errors (REQ-OBFEL-005)
 
 The system SHALL provide `src/services/manifestValidation/formLogic.js`
 exporting `validateFormLogic(manifest)`, wired into
@@ -238,7 +238,7 @@ field carrying both a `validation` object and legacy flat
   form pages at all)
 - **THEN** it returns no errors
 
-### Requirement: Raw JSON round-trip and existing persistence are preserved
+### Requirement: Raw JSON round-trip and existing persistence are preserved (REQ-OBFEL-006)
 
 The form sub-editor SHALL preserve externally authored manifest content
 across every interaction: unknown keys on the page config, on field

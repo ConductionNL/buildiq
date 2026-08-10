@@ -31,13 +31,27 @@
 		<table v-else class="rule-sets-page__table">
 			<thead>
 				<tr>
-					<th>{{ t('openbuild', 'Name') }}</th>
-					<th>{{ t('openbuild', 'Type') }}</th>
-					<th>{{ t('openbuild', 'Status') }}</th>
-					<th>{{ t('openbuild', 'Version') }}</th>
-					<th>{{ t('openbuild', 'Owner app') }}</th>
-					<th>{{ t('openbuild', 'Tests') }}</th>
-					<th>{{ t('openbuild', 'Actions') }}</th>
+					<th scope="col">
+						{{ t('openbuild', 'Name') }}
+					</th>
+					<th scope="col">
+						{{ t('openbuild', 'Type') }}
+					</th>
+					<th scope="col">
+						{{ t('openbuild', 'Status') }}
+					</th>
+					<th scope="col">
+						{{ t('openbuild', 'Version') }}
+					</th>
+					<th scope="col">
+						{{ t('openbuild', 'Owner app') }}
+					</th>
+					<th scope="col">
+						{{ t('openbuild', 'Tests') }}
+					</th>
+					<th scope="col">
+						{{ t('openbuild', 'Actions') }}
+					</th>
 				</tr>
 			</thead>
 			<tbody>

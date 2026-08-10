@@ -58,16 +58,25 @@
 			:attachment="editingAttachment"
 			:docudesk-available="docudeskAvailable"
 			@save="onDialogSave" />
+
+		<ConfirmActionDialog
+			v-model:open="confirmDetachOpen"
+			:name="t('openbuild', 'Detach template')"
+			:message="t('openbuild', 'Detach this template? Previously generated documents are NOT deleted.')"
+			:confirm-label="t('openbuild', 'Detach')"
+			destructive
+			@confirm="onConfirmDetach" />
 	</section>
 </template>
 
 <script>
 import { NcButton } from '@nextcloud/vue'
 import DocumentTemplateAttachmentDialog from '../dialogs/DocumentTemplateAttachmentDialog.vue'
+import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 
 export default {
 	name: 'DocumentAttachmentsSection',
-	components: { NcButton, DocumentTemplateAttachmentDialog },
+	components: { NcButton, DocumentTemplateAttachmentDialog, ConfirmActionDialog },
 	props: {
 		manifest: {
 			type: Object,
@@ -88,6 +97,8 @@ export default {
 		return {
 			dialogOpen: false,
 			editingAttachment: null,
+			confirmDetachOpen: false,
+			pendingDetach: null,
 		}
 	},
 	computed: {
@@ -147,10 +158,23 @@ export default {
 		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		detach(doc) {
-			const ok = typeof window !== 'undefined' && window.confirm
-				? window.confirm(t('openbuild', 'Detach this template? Previously generated documents are NOT deleted.'))
-				: true
-			if (!ok) {
+			this.pendingDetach = doc
+			this.confirmDetachOpen = true
+		},
+		/**
+		 * Detach the pending attachment once the user has confirmed.
+		 *
+		 * Held in `pendingDetach` rather than removed optimistically, so
+		 * cancelling or closing the dialog leaves the manifest untouched.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 */
+		onConfirmDetach() {
+			const doc = this.pendingDetach
+			this.confirmDetachOpen = false
+			this.pendingDetach = null
+			if (!doc) {
 				return
 			}
 			const list = this.attachments.filter((a) => a.id !== doc.id)

@@ -37,6 +37,7 @@
 				class="form-page-editor__input"
 				:value="config.submitHandler || ''"
 				:placeholder="t('openbuild', 'customComponents registry key')"
+				:aria-label="t('openbuild', 'customComponents registry key')"
 				:aria-invalid="isInvalid('submitHandler')"
 				@input="setSubmitHandler($event.target.value)">
 			<input
@@ -45,6 +46,7 @@
 				class="form-page-editor__input"
 				:value="config.submitEndpoint || ''"
 				:placeholder="t('openbuild', '/api/objects/:slug/...')"
+				:aria-label="t('openbuild', '/api/objects/:slug/...')"
 				:aria-invalid="isInvalid('submitEndpoint')"
 				@input="setSubmitEndpoint($event.target.value)">
 			<InlineFieldMark :error="markFor(submitShape === 'endpoint' ? 'submitEndpoint' : 'submitHandler')" />
@@ -231,7 +233,7 @@ export default {
 		 * validator's `/pages/<n>/config/steps` errors mark inline.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-		 * @spec openspec/changes/form-editor-logic/specs/form-editor-logic/spec.md#req-obfel-001
+		 * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-001
 		 */
 		validatedConfigKeys() {
 			return ['submitHandler', 'submitEndpoint', 'submitMethod', 'mode', 'submitLabel', 'successMessage', 'fields', 'initialValue', 'steps']

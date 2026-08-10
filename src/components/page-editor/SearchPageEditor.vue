@@ -119,11 +119,13 @@
 						type="text"
 						:value="facet.key || ''"
 						:placeholder="t('openbuild', 'Facet key')"
+						:aria-label="t('openbuild', 'Facet key')"
 						@input="updateFacetField(index, 'key', $event.target.value)">
 					<input
 						type="text"
 						:value="facet.label || ''"
 						:placeholder="t('openbuild', 'Label (optional)')"
+						:aria-label="t('openbuild', 'Label (optional)')"
 						@input="updateFacetField(index, 'label', $event.target.value)">
 					<label class="search-page-editor__inline">
 						<input
@@ -146,11 +148,13 @@
 							type="text"
 							:value="option.value || ''"
 							:placeholder="t('openbuild', 'Option value')"
+							:aria-label="t('openbuild', 'Option value')"
 							@input="updateFacetOptionField(index, optIndex, 'value', $event.target.value)">
 						<input
 							type="text"
 							:value="option.label || ''"
 							:placeholder="t('openbuild', 'Option label (optional)')"
+							:aria-label="t('openbuild', 'Option label (optional)')"
 							@input="updateFacetOptionField(index, optIndex, 'label', $event.target.value)">
 						<button
 							type="button"
