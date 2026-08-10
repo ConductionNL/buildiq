@@ -60,13 +60,17 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
 		// so it burned its whole budget in EVERY test of this file — including
 		// the ones that then immediately skip on an unreachable chat backend.
 		//
-		// `templates/index.php` ships an empty `<div id="content">`; the app
+		// `templates/index.php` ships an empty `<div id="content">`, so the app
 		// content region only acquires a box once CnAppRoot has rendered into
-		// it, which makes its visibility a genuine hydration signal. The FAB
-		// itself is deliberately NOT waited for here — whether it renders is
-		// what the tests assert.
+		// it. The Dashboard's "Create app" entry point counts too — that is the
+		// signal copilot-wizard-generate.spec.ts live-verified on this exact
+		// route when it removed its own networkidle wait. The FAB itself is
+		// deliberately NOT waited for here: whether it renders is what the
+		// tests below assert.
+		const appShell = page.locator('main, #app-content, .app-content, #content-vue').first()
+		const createApp = page.getByRole('button', { name: /create app|add application/i }).first()
 		await expect(
-			page.locator('main, #app-content, .app-content, #content-vue').first(),
+			appShell.or(createApp).first(),
 			'the OpenBuild app shell must mount',
 		).toBeVisible({ timeout: 30_000 })
 	})
