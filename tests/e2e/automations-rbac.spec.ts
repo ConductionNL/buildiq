@@ -199,6 +199,11 @@ async function ensureDisabledAutomation(adminPage: Page, slug: string, versionSl
 			method: 'POST',
 			headers,
 			body: JSON.stringify({
+				// `slug` IS REQUIRED. The Automation schema declares
+				// `required: ['slug', 'name', 'applicationSlug', 'versionUuid', 'trigger']`
+				// (lib/Settings/register.d/40-automations.json), and omitting it is a
+				// 400: "The required property (slug) is missing."
+				slug: 'rbac-production-automation',
 				name,
 				description: 'e2e fixture automation for REQ-AUTD-008',
 				applicationSlug: slug,
