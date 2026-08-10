@@ -34,6 +34,7 @@
 import { test, expect } from '@playwright/test'
 import { ensureApp, dismissOverlays, suppressSupportDialog } from '../support/appFixture'
 import { readStagedManifest } from '../support/stagedManifest'
+import { confirmAction } from '../support/overlays'
 import { E2E_BASE_URL as BASE } from '../support/baseUrl'
 
 const APP_SLUG = 'pw-docudesk'
@@ -314,11 +315,13 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		const item = page.locator('.ob-documents-section__item')
 		await expect(item).toHaveCount(1)
 		await expect(item.first()).toContainText('Generate confirmation letter')
-		// Detaching asks for confirmation through `window.confirm`, which
-		// Playwright auto-DISMISSES unless a handler accepts it — without this
-		// the click is a no-op and the list never changes.
-		page.once('dialog', (dialog) => dialog.accept())
+		// Detaching asks for confirmation through ConfirmActionDialog, NOT native
+		// `window.confirm` — PR #163 replaced all seven native confirm/prompt
+		// calls (gate-34). The stale `page.once('dialog', …)` that used to stand
+		// here waited for an event that can no longer fire, so the click only
+		// opened the dialog and the detach never ran. See confirmAction().
 		await item.first().getByRole('button', { name: /^detach$/i }).click()
+		await confirmAction(page, 'Detach template', 'Detach')
 		await expect(page.locator('.ob-documents-section__item')).toHaveCount(0)
 	})
 })

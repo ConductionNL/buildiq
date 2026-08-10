@@ -19,23 +19,26 @@
  * not left alone. The whole record is therefore read, merged and written back;
  * never PUT a bare `{ permissions }`.
  *
- * ⚠️ NOT YET SUFFICIENT ON ITS OWN — see Conduction/openbuild#76.
+ * ✅ THE BLOCKER THIS FILE USED TO CARRY IS CLOSED — openbuild#76, 2026-08-01.
  *
- * This helper does what it says: the grant lands and reads back as
- * `{owners:['user:admin'], editors:['group:rbac-editors'], viewers:['group:rbac-viewers']}`.
- * But a member still cannot LIST the application. Measured on a live instance
- * with everything else verified correct:
+ * The warning that stood here said a member still could not LIST the
+ * application, and concluded that "this helper is groundwork, not a fix, and
+ * the role-scoped scenarios stay skipped". That is no longer true, and leaving
+ * it in place is an active instruction to skip scenarios that now run.
  *
- *   - `rbac-viewer` is in `rbac-viewers`, `rbac-editor` in `rbac-editors`
- *     (OCS `cloud/users/{uid}/groups`), and both groups exist;
- *   - PermissionResolver::matchesCaller() classifies `group:` principals and
- *     intersects them with the caller's groups, so the grammar is right;
- *   - yet `GET /api/applications` returns 200 with an EMPTY list for both.
+ * The cause was one layer BELOW openbuild: every openbuild schema declared
+ * `{create, update, delete: ["admin"]}` and NO `read`, so OpenRegister's own
+ * SQL gate filtered the object out for every non-admin — the app-level grants
+ * this helper writes landed correctly and were then discarded underneath.
+ * `read: ["authenticated"]` on all 15 schemas (6 in the monolith, 9 in
+ * `register.d/` fragments) fixed it; anonymous stays excluded because
+ * `authenticated` requires `$userId !== null`. Measured after the re-import:
+ * `rbac-editor` and `rbac-viewer` went 0 -> 21 objects on the OR object API and
+ * each sees exactly the 1 application it holds a role on, while `rbac-outsider`
+ * still sees 0 and anonymous still gets 401.
  *
- * So something below openbuild's own permission layer is filtering the object
- * out — most likely OpenRegister-level object visibility, which is a separate
- * grant from the manifest `permissions` block. Until that is resolved this
- * helper is groundwork, not a fix, and the role-scoped scenarios stay skipped.
+ * So both layers now behave as designed, and a grant made here is visible to
+ * the grantee. `versionRouting` 9.2 was un-skipped on the back of it.
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2026 Conduction B.V.
@@ -48,10 +51,18 @@ import type { Page } from '@playwright/test'
 const OR_APPLICATIONS = '/index.php/apps/openregister/api/objects/openbuild/application'
 
 /**
- * Grant editor / viewer roles on an application to the given principals.
+ * Grant owner / editor / viewer roles on an application to the given principals.
  *
  * Idempotent: a principal already present is not duplicated, and existing
- * owners are preserved.
+ * entries in every role are preserved — including `owners`, which is why the
+ * admin that created the app never loses its own grant when a second owner is
+ * added.
+ *
+ * `owners` is accepted for REQ-AUTD-008, which needs a NON-admin owner: the
+ * scenario is "the editor is refused on the production version and an OWNER
+ * succeeds where the editor was rejected", and if that owner were the admin the
+ * success could come from the admin bypass rather than from the ownership
+ * grant — the test would pass without proving anything about ownership.
  *
  * @param page       Playwright page (authenticated as an owner/admin).
  * @param slug       The application slug.
@@ -61,7 +72,7 @@ const OR_APPLICATIONS = '/index.php/apps/openregister/api/objects/openbuild/appl
 export async function grantAppRoles(
 	page: Page,
 	slug: string,
-	principals: { editors?: string[], viewers?: string[] },
+	principals: { owners?: string[], editors?: string[], viewers?: string[] },
 ): Promise<void> {
 	const result = await page.evaluate(async ({ api, slug, principals }) => {
 		const tok = (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken
@@ -84,7 +95,7 @@ export async function grantAppRoles(
 		const next = {
 			...app,
 			permissions: {
-				owners: merge(current.owners, []),
+				owners: merge(current.owners, principals.owners),
 				editors: merge(current.editors, principals.editors),
 				viewers: merge(current.viewers, principals.viewers),
 			},

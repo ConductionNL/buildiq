@@ -20,6 +20,7 @@
  */
 
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test'
+import { confirmAction } from './support/overlays'
 
 const APP_SLUG = process.env.NC_OPENBUILD_TEST_SLUG ?? 'hello-world'
 // The app-picker option's accessible name is the Application TITLE
@@ -288,8 +289,13 @@ test.describe('automation-designer — Automations page', () => {
 
 		// Delete — compiled artifact removal is server-side (AutomationCleanupListener);
 		// this asserts the row disappears from the list, the user-visible half of REQ-AUTD-005.
-		page.once('dialog', (dialog) => dialog.accept())
+		//
+		// The confirmation is ConfirmActionDialog, NOT native `window.confirm`
+		// (PR #163 / gate-34). A `page.once('dialog', …)` here waits for an event
+		// that can no longer fire, so the click only opened the dialog and the
+		// delete never ran — see confirmAction()'s docblock.
 		await row.getByRole('button', { name: /delete/i }).click()
+		await confirmAction(page, 'Delete automation', 'Delete')
 		await expect(row).toHaveCount(0, { timeout: 10_000 })
 	})
 
