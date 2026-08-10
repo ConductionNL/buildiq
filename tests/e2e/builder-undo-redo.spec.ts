@@ -32,6 +32,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { ensureApp as ensureAppFixture, dismissOverlays, suppressSupportDialog } from './support/appFixture'
 import { ensureVersionChain } from './support/versionChain'
+import { saveSchemaAndAwait } from './support/schemaSave'
 
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
 import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
@@ -378,8 +379,14 @@ test.describe('builder-undo-redo — schema designer (REQ-BUR-005)', () => {
 		await page.getByLabel('Name', { exact: false }).last().fill(`undo_redo_${Date.now().toString(36)}`)
 
 		// Save → both buttons disabled (new baseline).
-		await page.getByRole('button', { name: /^save$/i }).click()
-		await page.waitForLoadState('networkidle')
+		//
+		// REQ-BUR-005 re-baselines the history in `SchemaDesigner.save()`'s
+		// SUCCESS path only, so the assertions below are only meaningful once
+		// the write has actually landed 2xx. `networkidle` proved neither — it
+		// never settles on Nextcloud (ADR-074 rule 4) and does not wait for the
+		// save XHR, so a 404'd save left the buttons disabled for the wrong
+		// reason (nothing was ever staged back) and this test still passed.
+		await saveSchemaAndAwait(page)
 		await expect(undoBtn).toBeDisabled()
 		await expect(redoBtn).toBeDisabled()
 	})

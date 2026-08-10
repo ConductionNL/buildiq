@@ -176,7 +176,6 @@ async function putActiveManifest(page: import('@playwright/test').Page, manifest
  */
 async function openVersionHistory(page: import('@playwright/test').Page, uuid: string): Promise<void> {
 	await page.goto(`${BASE_URL}/apps/openbuild/applications/${uuid}`, { waitUntil: 'domcontentloaded' })
-	await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {})
 
 	// Target the TAB, not its label. `getByText('Version history')` resolves to
 	// the `<span class="_sidebarTabsButton__name_…">` inside the tab button, and
@@ -184,6 +183,21 @@ async function openVersionHistory(page: import('@playwright/test').Page, uuid: s
 	// waiting on ITS visibility waits forever. Five nodes carry that exact text;
 	// the deepest is the panel's own <h3>.
 	const tab = page.getByRole('tab', { name: /version history/i }).first()
+
+	// The sidebar chrome is the readiness signal. This used to be
+	// `waitForLoadState('networkidle', 60s).catch(() => {})`, which can never
+	// settle on Nextcloud (ADR-074 rule 4) — it ran to the full minute on every
+	// call and then swallowed its own timeout, so the `isVisible()` probe below
+	// was reached at an arbitrary moment rather than a known one. On an
+	// unrendered page that probe returns false, the "Open sidebar" click finds
+	// nothing and is swallowed too, and the only thing left to report the
+	// failure is a bare test-timeout. Wait for whichever of the two controls
+	// the detail page renders, and say so when neither arrives.
+	const openSidebar = page.getByRole('button', { name: 'Open sidebar', exact: true })
+	await expect(
+		tab.or(openSidebar).first(),
+		'the application detail page must render its sidebar chrome (the Version history tab, or the toggle that reveals it)',
+	).toBeVisible({ timeout: 60_000 })
 
 	if (!(await tab.isVisible().catch(() => false))) {
 		// The control is a button labelled exactly "Open sidebar". An

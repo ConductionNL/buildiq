@@ -96,9 +96,10 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 	})
 
 	test('5.1 — empty-start: Confirm is disabled until exact slug is typed', async ({ page }) => {
-		// Navigate to the detail page for hello-world.
-		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`)
-		await page.waitForLoadState('networkidle', { timeout: 20_000 })
+		// Navigate to the detail page for hello-world. `networkidle` never
+		// settles on Nextcloud (ADR-074 rule 4); the Promote button becoming
+		// visible is the readiness signal these scenarios actually need.
+		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, { waitUntil: 'domcontentloaded' })
 
 		// Open the Promote dialog (call site added by spec B).
 		const promoteBtn = page.locator(TODO_PROMOTE_BUTTON_SELECTOR).first()
@@ -135,10 +136,10 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 	})
 
 	test('5.2 — start-with-source-data: Confirm is enabled by default', async ({ page }) => {
-		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`)
-		await page.waitForLoadState('networkidle', { timeout: 20_000 })
+		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, { waitUntil: 'domcontentloaded' })
 
 		const promoteBtn = page.locator(TODO_PROMOTE_BUTTON_SELECTOR).first()
+		await expect(promoteBtn).toBeVisible({ timeout: 10_000 })
 		await promoteBtn.click()
 
 		const dialog = page.locator('[role="dialog"]')
@@ -155,10 +156,10 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 	})
 
 	test('5.2 — migrate-existing-data: Confirm is enabled by default', async ({ page }) => {
-		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`)
-		await page.waitForLoadState('networkidle', { timeout: 20_000 })
+		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, { waitUntil: 'domcontentloaded' })
 
 		const promoteBtn = page.locator(TODO_PROMOTE_BUTTON_SELECTOR).first()
+		await expect(promoteBtn).toBeVisible({ timeout: 10_000 })
 		await promoteBtn.click()
 
 		const dialog = page.locator('[role="dialog"]')
