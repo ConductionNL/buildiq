@@ -156,7 +156,14 @@ jobs:
       # `php occ openbuild:seed-hello-world-fixture`. It is `set -euo pipefail`
       # and refuses to run outside CI without an explicit base URL, so it stays
       # able to fail — no `|| true` anywhere in the path.
-      newman-seed-command: 'bash apps/openbuild/tests/e2e/ci-seed.sh'
+      # `SEED_REQUIRE_BUNDLE=0` — this job never loads the SPA. It calls the
+      # REST API and asserts on JSON, and it does not run the frontend build,
+      # so there is no bundle for it to serve. The default in ci-seed.sh is to
+      # ENFORCE the bundle gate (Playwright still does, unchanged); this opts
+      # out deliberately and the script ANNOUNCES the skip in its output, so a
+      # skipped browser check can never read as a passed one. Every API fixture
+      # this suite depends on is still seeded and still able to fail.
+      newman-seed-command: 'SEED_REQUIRE_BUNDLE=0 bash apps/openbuild/tests/e2e/ci-seed.sh'
       # OpenRegister `development` carries the runtime-schema-API (auto-create
       # Register on application-type imports — OR PR #1464) and the lifecycle
       # engine (ObjectTransitionedEvent) that OpenBuild's repair steps + the
