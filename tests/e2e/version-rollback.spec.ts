@@ -184,31 +184,34 @@ async function openVersionHistory(page: import('@playwright/test').Page, uuid: s
 	// the deepest is the panel's own <h3>.
 	const tab = page.getByRole('tab', { name: /version history/i }).first()
 
-	// The sidebar chrome is the readiness signal. This used to be
-	// `waitForLoadState('networkidle', 60s).catch(() => {})`, which can never
-	// settle on Nextcloud (ADR-074 rule 4) — it ran to the full minute on every
-	// call and then swallowed its own timeout, so the `isVisible()` probe below
-	// was reached at an arbitrary moment rather than a known one. On an
-	// unrendered page that probe returns false, the "Open sidebar" click finds
-	// nothing and is swallowed too, and the only thing left to report the
-	// failure is a bare test-timeout. Wait for whichever of the two controls
-	// the detail page renders, and say so when neither arrives.
+	// This used to open with `waitForLoadState('networkidle', 60s).catch(…)`,
+	// which can never settle on Nextcloud (ADR-074 rule 4). What it actually
+	// bought was a minute of dead time during which the sidebar finished
+	// moving — and the sidebar DOES move after first paint. Measured on CI when
+	// the wait was replaced by a one-shot "tab is visible, now click it": the
+	// click log reads `element is not stable` and then `element is not visible`,
+	// i.e. the tab renders, the strip collapses, and the click misses. A single
+	// visibility assertion cannot express "and it has stopped moving".
+	//
+	// So poll the END STATE instead of guessing a moment. Each attempt opens the
+	// sidebar if it is closed, clicks the tab, and only succeeds once the tab
+	// reports itself SELECTED — which is what the callers actually need and is
+	// more than the original ever checked (it just clicked and hoped).
+	//
+	// The toggle is a button labelled exactly "Open sidebar". An
+	// `[aria-label*="sidebar" i]` match is NOT good enough — "Close sidebar" is
+	// also present and matches first.
 	const openSidebar = page.getByRole('button', { name: 'Open sidebar', exact: true })
-	await expect(
-		tab.or(openSidebar).first(),
-		'the application detail page must render its sidebar chrome (the Version history tab, or the toggle that reveals it)',
-	).toBeVisible({ timeout: 60_000 })
-
-	if (!(await tab.isVisible().catch(() => false))) {
-		// The control is a button labelled exactly "Open sidebar". An
-		// `[aria-label*="sidebar" i]` match is NOT good enough — "Close sidebar"
-		// is also present and matches first.
-		await page.getByRole('button', { name: 'Open sidebar', exact: true })
-			.click({ timeout: 15_000 })
-			.catch(() => {})
-		await expect(tab, 'the Version history tab must become reachable').toBeVisible({ timeout: 20_000 })
-	}
-	await tab.click({ timeout: 20_000 })
+	await expect(async () => {
+		if (!(await tab.isVisible().catch(() => false))) {
+			await openSidebar.click({ timeout: 10_000 })
+		}
+		await tab.click({ timeout: 10_000 })
+		await expect(tab).toHaveAttribute('aria-selected', 'true', { timeout: 5_000 })
+	}, 'the Version history tab must become reachable and selected').toPass({
+		timeout: 60_000,
+		intervals: [500, 1_000, 2_000],
+	})
 }
 
 test.describe('openbuild-versioning — rollback (REQ-OBV-003)', () => {
