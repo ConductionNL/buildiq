@@ -130,7 +130,33 @@ jobs:
       # override. The `database` input also feeds PHPUnit, Newman and the
       # journeydoc capture, so those move to Postgres with it.
       database: pgsql
-      newman-seed-command: 'php occ app:disable openbuild && php occ app:enable openbuild'
+      # Was `php occ app:disable openbuild && php occ app:enable openbuild`.
+      # That command seeded NOTHING and exited 0 while doing it — the exact
+      # shape this programme exists to find. Nextcloud runs repair steps on
+      # install and upgrade, not on disable/enable of an app that is already
+      # installed, so the hello-world fixture was never created; and the
+      # dedicated `openbuild:seed-hello-world-fixture` occ command was never
+      # invoked at all. Disabling and re-enabling an app genuinely succeeds,
+      # so the step was green for a true reason while leaving the instance
+      # unseeded.
+      #
+      # Measured 2026-08-10 by logging the register contents from inside the
+      # suite: the three Applications present in CI were `newman-wizard-single`,
+      # `newman-wizard-dsp` and `newman-permits` — every one of them created by
+      # the collections themselves during the run. There was no `hello-world`.
+      # Four collections (versioning, application-versions, rbac, page-editor)
+      # open by locating it, so the lookup returned nothing, the
+      # `application_uuid` variable stayed empty, and every later URL in those
+      # collections interpolated an empty path segment — the `//` and trailing
+      # `/` 404s that dominated the failure list.
+      #
+      # This is the seed Playwright has been using all along
+      # (`playwright-seed-command` below is the same script), and it really
+      # does the work: ci-seed.sh line ~358 runs
+      # `php occ openbuild:seed-hello-world-fixture`. It is `set -euo pipefail`
+      # and refuses to run outside CI without an explicit base URL, so it stays
+      # able to fail — no `|| true` anywhere in the path.
+      newman-seed-command: 'bash apps/openbuild/tests/e2e/ci-seed.sh'
       # OpenRegister `development` carries the runtime-schema-API (auto-create
       # Register on application-type imports — OR PR #1464) and the lifecycle
       # engine (ObjectTransitionedEvent) that OpenBuild's repair steps + the
