@@ -53,10 +53,26 @@ const chatUnavailable = (status: number) => status !== 200
 test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-companion-streaming)', () => {
 
 	test.beforeEach(async ({ page }) => {
-		await page.goto('/apps/openbuild/')
-		// The OpenBuild SPA hydrates async; wait for the FAB or for the
-		// health probe to surface a no_provider deployment.
-		await page.waitForLoadState('networkidle')
+		await page.goto('/apps/openbuild/', { waitUntil: 'domcontentloaded' })
+		// The OpenBuild SPA hydrates async, so every test below needs the shell
+		// mounted before it looks for the FAB. `waitForLoadState('networkidle')`
+		// cannot provide that: it never settles on Nextcloud (ADR-074 rule 4),
+		// so it burned its whole budget in EVERY test of this file — including
+		// the ones that then immediately skip on an unreachable chat backend.
+		//
+		// `templates/index.php` ships an empty `<div id="content">`, so the app
+		// content region only acquires a box once CnAppRoot has rendered into
+		// it. The Dashboard's "Create app" entry point counts too — that is the
+		// signal copilot-wizard-generate.spec.ts live-verified on this exact
+		// route when it removed its own networkidle wait. The FAB itself is
+		// deliberately NOT waited for here: whether it renders is what the
+		// tests below assert.
+		const appShell = page.locator('main, #app-content, .app-content, #content-vue').first()
+		const createApp = page.getByRole('button', { name: /create app|add application/i }).first()
+		await expect(
+			appShell.or(createApp).first(),
+			'the OpenBuild app shell must mount',
+		).toBeVisible({ timeout: 30_000 })
 	})
 
 	test('FAB renders on app pages when chat health is 200', async ({ page, request }) => {

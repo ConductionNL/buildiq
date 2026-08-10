@@ -176,7 +176,6 @@ async function putActiveManifest(page: import('@playwright/test').Page, manifest
  */
 async function openVersionHistory(page: import('@playwright/test').Page, uuid: string): Promise<void> {
 	await page.goto(`${BASE_URL}/apps/openbuild/applications/${uuid}`, { waitUntil: 'domcontentloaded' })
-	await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {})
 
 	// Target the TAB, not its label. `getByText('Version history')` resolves to
 	// the `<span class="_sidebarTabsButton__name_…">` inside the tab button, and
@@ -185,16 +184,53 @@ async function openVersionHistory(page: import('@playwright/test').Page, uuid: s
 	// the deepest is the panel's own <h3>.
 	const tab = page.getByRole('tab', { name: /version history/i }).first()
 
-	if (!(await tab.isVisible().catch(() => false))) {
-		// The control is a button labelled exactly "Open sidebar". An
-		// `[aria-label*="sidebar" i]` match is NOT good enough — "Close sidebar"
-		// is also present and matches first.
-		await page.getByRole('button', { name: 'Open sidebar', exact: true })
-			.click({ timeout: 15_000 })
-			.catch(() => {})
-		await expect(tab, 'the Version history tab must become reachable').toBeVisible({ timeout: 20_000 })
-	}
-	await tab.click({ timeout: 20_000 })
+	// This used to open with `waitForLoadState('networkidle', 60s).catch(…)`,
+	// which can never settle on Nextcloud (ADR-074 rule 4). What it actually
+	// bought was a minute of dead time during which the sidebar finished
+	// moving — and the sidebar DOES move after first paint. Measured on CI when
+	// the wait was replaced by a one-shot "tab is visible, now click it": the
+	// click log reads `element is not stable` and then `element is not visible`,
+	// i.e. the tab renders, the strip collapses, and the click misses. A single
+	// visibility assertion cannot express "and it has stopped moving".
+	//
+	// So poll the END STATE instead of guessing a moment. Each attempt opens the
+	// sidebar if it is closed, clicks the tab, and only succeeds once the PANEL
+	// IS ON SCREEN.
+	//
+	// `aria-selected="true"` alone is not that end state, and measuring it was
+	// the second wrong answer here: a run that stopped at the attribute went on
+	// to fail the caller's own `.version-history__row` visibility check, which
+	// re-polled for a full 20s and saw `hidden` all 38 times. The detail page
+	// finishes loading AFTER the first paint and re-mounts the sidebar, which
+	// silently undoes an early tab selection — nothing about that is brief, so
+	// only re-clicking recovers it. Requiring the rows themselves means an
+	// attempt that got undone is retried rather than reported as the app's
+	// fault.
+	//
+	// Accept the empty state too: this helper is also the way in for an app with
+	// no history, and asserting WHICH of the two renders is the caller's job.
+	//
+	// The toggle is a button labelled exactly "Open sidebar". An
+	// `[aria-label*="sidebar" i]` match is NOT good enough — "Close sidebar" is
+	// also present and matches first.
+	//
+	// The poll window is 60s, not more: the slowest test here calls this helper
+	// TWICE inside a 150s budget, so a larger window could not elapse before the
+	// test timeout swallowed its message — the same "guard that cannot fire"
+	// trap the describe below records about its own 45s waits.
+	const openSidebar = page.getByRole('button', { name: 'Open sidebar', exact: true })
+	const panelBody = page.locator('.version-history__row, .version-history__empty').first()
+	await expect(async () => {
+		if (!(await tab.isVisible().catch(() => false))) {
+			await openSidebar.click({ timeout: 10_000 })
+		}
+		await tab.click({ timeout: 10_000 })
+		await expect(tab).toHaveAttribute('aria-selected', 'true', { timeout: 5_000 })
+		await expect(panelBody).toBeVisible({ timeout: 5_000 })
+	}, 'the Version history panel must open and render its body').toPass({
+		timeout: 60_000,
+		intervals: [500, 1_000, 2_000],
+	})
 }
 
 test.describe('openbuild-versioning — rollback (REQ-OBV-003)', () => {

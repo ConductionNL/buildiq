@@ -40,6 +40,7 @@
 
 import { test, expect } from '@playwright/test'
 import { ensureApp, dismissOverlays } from './support/appFixture'
+import { saveSchemaAndAwait } from './support/schemaSave'
 
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts. This used to be
 // `NC_BASE_URL ?? 'http://localhost:8080'`, i.e. the SHARED dev instance.
@@ -150,9 +151,10 @@ test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 		await addFieldButton.click()
 		await page.getByLabel('Name', { exact: false }).nth(1).fill('body')
 
-		await page.getByRole('button', { name: /^save$/i }).click()
-		// Expect either the toast or the saving state to settle.
-		await page.waitForLoadState('networkidle')
+		// Wait for the schema WRITE to land 2xx. `networkidle` never settles on
+		// Nextcloud (ADR-074 rule 4) and does not wait for the save XHR anyway,
+		// so the reload below could race it and read back the PRE-save schema.
+		await saveSchemaAndAwait(page)
 
 		// Reload and verify persistence.
 		await page.reload({ waitUntil: 'domcontentloaded' })
@@ -161,8 +163,7 @@ test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 
 		// Step 6 — edit the title and save.
 		await page.getByLabel(/title/i).first().fill('Message v2')
-		await page.getByRole('button', { name: /^save$/i }).click()
-		await page.waitForLoadState('networkidle')
+		await saveSchemaAndAwait(page)
 
 		// Back to the list — the row should reflect the new title.
 		await page.getByRole('button', { name: /back to schemas/i }).click()

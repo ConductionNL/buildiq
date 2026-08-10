@@ -36,6 +36,7 @@ import { test, expect, type Page } from '@playwright/test'
 
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
 import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
+import { saveSchemaAndAwait } from './support/schemaSave'
 const APP_SLUG = process.env.NC_ACCESS_RBAC_SLUG ?? 'hello-world'
 const STAGING_VERSION = process.env.NC_STAGING_VERSION ?? 'staging'
 const PRODUCTION_VERSION = process.env.NC_PRODUCTION_VERSION ?? 'production'
@@ -208,8 +209,11 @@ test.describe.skip('data-scopes-authoring — multi-user / multi-version (REQ-OB
 		const groupInput = readRow.getByLabel(/groups/i)
 		await groupInput.fill('staging-only-group')
 		await groupInput.press('Enter')
-		await page.getByRole('button', { name: /^save$/i }).click()
-		await page.waitForLoadState('networkidle')
+		// Wait for the schema WRITE, not for `networkidle`: the latter never
+		// settles on Nextcloud (ADR-074 rule 4) and, more to the point, does not
+		// wait for the save XHR at all — the read-back below would race it and
+		// assert against the schema's PREVIOUS contents.
+		await saveSchemaAndAwait(page)
 
 		const draftAfter = await page.request.get(
 			`${BASE_URL}/index.php/apps/openregister/api/schemas/${draftSlug}`,
