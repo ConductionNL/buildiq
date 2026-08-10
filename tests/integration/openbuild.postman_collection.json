@@ -27,6 +27,11 @@
 			"type": "string"
 		},
 		{
+			"key": "route_uuid",
+			"value": "",
+			"type": "string"
+		},
+		{
 			"key": "admin_user",
 			"value": "admin",
 			"type": "string"
@@ -408,6 +413,43 @@
 					]
 				},
 				{
+					"name": "POST register the BuiltAppRoute so the slug is resolvable",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"applicationUuid\": \"{{created_uuid}}\"\n}"
+						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/built-app-route",
+						"description": "THE STEP THIS ROUND-TRIP WAS MISSING.\n\nApplicationsController::resolveApplicationBySlug() does not search Applications by slug — it resolves the slug through the `built-app-route` schema. A published Application with a productionVersion pointer is still unreachable by slug until a route exists, which is why `GET /api/applications/newman-roundtrip/manifest` returned 404 after every preceding step in this folder had succeeded (Application 201, version 201, pointer 200, transition 200). Three assertions failed on it and the cause was in none of them.\n\nThis folder deliberately drives the RAW OpenRegister object API (ADR-022) rather than POST /api/applications/wizard, and the wizard is what normally creates this route — so the round-trip has to create it itself. lib/Command/SeedHelloWorldFixture.php does exactly the same for hello-world, as its step 4."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('BuiltAppRoute created', function () {",
+									"    pm.expect([200, 201]).to.include(pm.response.code);",
+									"});",
+									"pm.test('the route points at the Application this folder created', function () {",
+									"    const body = pm.response.json();",
+									"    pm.expect(body.slug).to.eql('newman-roundtrip');",
+									"    pm.expect(body.applicationUuid, 'a route pointing at the wrong or an empty Application resolves nothing').to.eql(pm.collectionVariables.get('created_uuid'));",
+									"});",
+									"const routeUuid = (pm.response.json()['@self'] || {}).id || pm.response.json().uuid || pm.response.json().id;",
+									"pm.collectionVariables.set('route_uuid', String(routeUuid));"
+								]
+							}
+						}
+					]
+				},
+				{
 					"name": "GET the manifest endpoint after publish (newman-roundtrip)",
 					"request": {
 						"method": "GET",
@@ -460,7 +502,7 @@
 								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/newman-roundtrip/versions/production?strategy=hard",
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/newman-roundtrip/versions/production?strategy=delete-now",
 						"description": "Drop the version + its per-version register first so the parent Application can be safely deleted."
 					},
 					"event": [
@@ -469,8 +511,15 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
+									"// `strategy=hard` IS NOT A STRATEGY. ApplicationVersionsController",
+									"// accepts exactly `delete-now | orphan-grace | keep-register` and",
+									"// answers anything else with 400 `invalid_strategy` — which is what",
+									"// this request had been getting. The assertion was right; the URL",
+									"// was wrong from the day it was written.",
 									"pm.test('returns 200 or 204', function () {",
-									"    pm.expect([200, 204]).to.include(pm.response.code);",
+									"    pm.expect([200, 204], pm.response.code === 400",
+									"        ? 'got 400 — `strategy` must be one of delete-now | orphan-grace | keep-register'",
+									"        : 'the version delete must be accepted').to.include(pm.response.code);",
 									"});"
 								]
 							}
@@ -493,6 +542,31 @@
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{created_uuid}}",
 						"description": "Tear down the round-trip Application so re-runs stay idempotent. OR returns 200 or 204."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 204', function () {",
+									"    pm.expect([200, 204]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE cleans up the round-trip BuiltAppRoute",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/built-app-route/{{route_uuid}}",
+						"description": "MUST be torn down, not merely tidy.\n\nA leftover route means the next run creates a SECOND built-app-route for `newman-roundtrip`, and resolveApplicationBySlug() resolves a single object per slug — so an ambiguous set makes the slug 404 on a run where everything else was correct. lib/Command/SeedHelloWorldFixture.php carries the same warning about duplicate hello-world rows making loadApplication() 404."
 					},
 					"event": [
 						{
