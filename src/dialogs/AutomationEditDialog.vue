@@ -1057,6 +1057,18 @@ export default {
 				return webhook
 			})
 		},
+		/**
+		 * Persist the working automation through OpenBuild's own write routes.
+		 *
+		 * This method is the whole reason those routes exist: it used to POST/PUT
+		 * `openregister/api/objects/openbuild/automation` directly, which the
+		 * `automation` schema's admin-only `create`/`update` ACL refused for every
+		 * editor and owner — precisely the people REQ-AUTD-008 says may author one.
+		 *
+		 * @return {Promise<void>} Resolves once the save (and compile) has settled.
+		 *
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+		 */
 		async onSave() {
 			this.showValidation = true
 			if (!this.valid) {
