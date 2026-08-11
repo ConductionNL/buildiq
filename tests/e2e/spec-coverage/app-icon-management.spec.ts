@@ -124,6 +124,16 @@ function iconRow(page: Page, variant: 'Light' | 'Dark') {
 }
 
 test.describe('app-icon-management — removing an icon (REQ-OBICON-004)', () => {
+	// The Application detail page is a three-pane desktop surface. At the
+	// project default of 1280x720 the right-hand sidebar collapses: the Icons
+	// TAB PANEL still mounts (so `cn-object-sidebar-tab-icons` is visible) but
+	// `IconUploadSection` inside it is laid out at zero width and reports
+	// `hidden`. That is exactly how this failed on CI while passing locally —
+	// "Expected: visible / Received: hidden" on `.ob-icon-section`, one
+	// assertion after the panel check passed. An earlier draft of this file
+	// carried the override and got past this point; the rewrite dropped it.
+	test.use({ viewport: { width: 1600, height: 1200 } })
+
 	test.beforeEach(async ({ page }) => {
 		await suppressSupportDialog(page)
 		await suppressSetupWizard(page)
