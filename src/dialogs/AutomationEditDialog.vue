@@ -1076,13 +1076,21 @@ export default {
 				actions: this.buildActions(),
 			}
 			try {
-				const base = generateUrl('/apps/openregister/api/objects/openbuild/automation')
+				// OpenBuild's own endpoints, NOT OR REST directly.
+				//
+				// The `automation` schema is admin-only on `create`/`update` at
+				// the OpenRegister layer, so this dialog used to 403 for every
+				// editor and owner — the exact people REQ-AUTD-008 says may
+				// author one. These routes authorise against the parent
+				// Application's `permissions` block first and then write in
+				// system context. See Conduction/openbuild#173.
+				const base = generateUrl('/apps/openbuild/api/automations')
 				let uuid = this.id
 				if (this.editing && this.id) {
 					await axios.put(`${base}/${this.id}`, payload)
 				} else {
 					const { data } = await axios.post(base, payload)
-					uuid = data && (data.id || data.uuid)
+					uuid = data && (data.id || data.uuid || (data['@self'] && data['@self'].id))
 				}
 				if (uuid) {
 					await axios.post(generateUrl(`/apps/openbuild/api/automations/${uuid}/compile`), {})
