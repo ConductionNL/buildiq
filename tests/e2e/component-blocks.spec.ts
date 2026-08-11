@@ -419,7 +419,24 @@ test.describe('OpenBuild component blocks', () => {
 	})
 
 	// @e2e component-blocks::blocks-filter-shows-only-blocks
-	// @e2e component-blocks::blocks-filter-shows-blocks-without-the-clone-action
+	// @e2e openspec/specs/openbuild-template-catalogue/spec.md#blocks-filter-shows-blocks-without-the-clone-action
+	//
+	// ⚠️ The second anchor used to read `component-blocks::blocks-filter-shows-
+	// blocks-without-the-clone-action`. That scenario lives in
+	// `openbuild-template-catalogue`, not `component-blocks`, so the ref
+	// resolved to NOTHING: gate-19 credited no scenario, reported no error, and
+	// the real scenario sat in the uncovered list while a test that proves it
+	// was right here. A dangling anchor is silent — it looks exactly like
+	// coverage in the file and exactly like an absence in the gate.
+	//
+	// Found by walking every anchor in the suite against the gate's own parser
+	// (script on the fleet board); openbuild had 15 such anchors, 14 of them
+	// pointing at `page-designer-ui` scenario names that no longer exist.
+	//
+	// NOT ASSERTED, stated so nobody reads more into this anchor than it earns:
+	// the scenario's THEN says the cards carry "name, description, category and
+	// a preview"; this test asserts the NAME and the AND (no clone action). The
+	// distinguishing behaviour — browse-only, no clone affordance — is covered.
 	test('the template gallery Blocks tab lists blocks, without a clone action', async ({ page }) => {
 		const block = await seedBlock(page)
 		await page.goto(`${BASE_URL}/apps/openbuild/templates`, { waitUntil: 'domcontentloaded' })
