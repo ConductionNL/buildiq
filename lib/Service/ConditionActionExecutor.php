@@ -5,12 +5,12 @@
  *
  * Evaluates a chain of ConditionActionRules against a payload and executes the
  * actions of each rule whose FEEL condition is true. Rules fire in
- * prioriteit DESC, then salience DESC, then declaration order (design.md
+ * priority DESC, then salience DESC, then declaration order (design.md
  * Decision 4). Actions run synchronously in declaration order; a failing action
  * aborts the rule's remaining actions unless `continueOnError` is set. In
  * dry-run mode side-effecting actions (send-notification, start-workflow,
  * call-rule-set, object-op, webhook) are recorded but NOT dispatched;
- * `set-veld` always mutates the working payload because it is in-memory and
+ * `set-field` always mutates the working payload because it is in-memory and
  * side-effect-free.
  *
  * Side-effect dispatch (NC notifications, n8n workflows) is delegated to an
@@ -107,15 +107,15 @@ class ConditionActionExecutor
         $working   = $payload;
 
         foreach ($ordered as $rule) {
-            if (($rule['actief'] ?? true) === false) {
+            if (($rule['active'] ?? true) === false) {
                 continue;
             }
 
-            $condition = (string) ($rule['conditie'] ?? '');
+            $condition = (string) ($rule['condition'] ?? '');
             try {
                 $matches = ($condition === '' || (bool) $this->expressionEvaluator->evaluateExpression($condition, $working) === true);
             } catch (Throwable $e) {
-                $errors[] = 'Condition error in rule "'.(string) ($rule['naam'] ?? '').'": '.$e->getMessage();
+                $errors[] = 'Condition error in rule "'.(string) ($rule['name'] ?? '').'": '.$e->getMessage();
                 continue;
             }
 
@@ -127,8 +127,8 @@ class ConditionActionExecutor
             $working     = $outcome['payload'];
             $errors      = array_merge($errors, $outcome['errors']);
             $triggered[] = [
-                'id'               => (string) ($rule['naam'] ?? ($rule['ruleSetId'] ?? 'rule')),
-                'name'             => (string) ($rule['naam'] ?? ''),
+                'id'               => (string) ($rule['name'] ?? ($rule['ruleSetId'] ?? 'rule')),
+                'name'             => (string) ($rule['name'] ?? ''),
                 'actions_executed' => $outcome['executed'],
             ];
         }//end foreach
@@ -158,15 +158,15 @@ class ConditionActionExecutor
         $errors          = [];
         $working         = $payload;
 
-        foreach (($rule['acties'] ?? []) as $action) {
+        foreach (($rule['actions'] ?? []) as $action) {
             $type   = (string) ($action['type'] ?? '');
             $params = ($action['parameters'] ?? []);
 
             try {
-                if ($type === 'set-veld') {
-                    $field = (string) ($params['veld'] ?? '');
+                if ($type === 'set-field') {
+                    $field = (string) ($params['field'] ?? '');
                     if ($field !== '') {
-                        $working[$field] = ($params['waarde'] ?? null);
+                        $working[$field] = ($params['value'] ?? null);
                     }
 
                     $executed[] = $type;
@@ -187,9 +187,9 @@ class ConditionActionExecutor
                     continue;
                 }
 
-                $errors[] = 'Unknown action type "'.$type.'" in rule "'.(string) ($rule['naam'] ?? '').'".';
+                $errors[] = 'Unknown action type "'.$type.'" in rule "'.(string) ($rule['name'] ?? '').'".';
             } catch (Throwable $e) {
-                $errors[] = 'Action "'.$type.'" failed in rule "'.(string) ($rule['naam'] ?? '').'": '.$e->getMessage();
+                $errors[] = 'Action "'.$type.'" failed in rule "'.(string) ($rule['name'] ?? '').'": '.$e->getMessage();
                 if ($continueOnError === false) {
                     break;
                 }
@@ -205,7 +205,7 @@ class ConditionActionExecutor
     }//end runActions()
 
     /**
-     * Sort rules by prioriteit DESC, salience DESC, declaration order.
+     * Sort rules by priority DESC, salience DESC, declaration order.
      *
      * @param array<int,array<string,mixed>> $rules The rules to sort.
      *
@@ -221,8 +221,8 @@ class ConditionActionExecutor
         usort(
             $indexed,
             static function (array $a, array $b): int {
-                $prioA = (int) ($a['rule']['prioriteit'] ?? 0);
-                $prioB = (int) ($b['rule']['prioriteit'] ?? 0);
+                $prioA = (int) ($a['rule']['priority'] ?? 0);
+                $prioB = (int) ($b['rule']['priority'] ?? 0);
                 if ($prioA !== $prioB) {
                     return ($prioB <=> $prioA);
                 }
