@@ -188,6 +188,10 @@ test.describe('openbuild form-editor-logic', () => {
 	})
 
 	test('REQ-OBFEL-001: add/assign/reorder/delete steps', async ({ page }) => {
+		// @e2e openspec/specs/form-editor-logic/spec.md#adding-a-step-groups-fields-by-reference
+		// @e2e openspec/specs/form-editor-logic/spec.md#reordering-steps-reorders-the-wizard
+		// @e2e openspec/specs/form-editor-logic/spec.md#absent-steps-renders-the-single-step-state
+		// @e2e openspec/specs/form-editor-logic/spec.md#deleting-a-step-returns-its-fields-to-the-unassigned-pool
 		await seedFormPageAndSelect(page)
 
 		// Absent-steps single-step state before the first add.
@@ -239,9 +243,53 @@ test.describe('openbuild form-editor-logic', () => {
 		manifest = await readManifest(page)
 		formPage = manifest.pages.find((p) => p.id === FORM_PAGE_ID)
 		expect(formPage.config).not.toHaveProperty('steps')
+
+		// The scenario's final AND: saving while `steps` is non-empty and a field
+		// is still unassigned auto-assigns that field to the FINAL step with a
+		// warning mark, so the written manifest satisfies the leaf validator's
+		// complete-partition rule (every declared field in exactly one step).
+		//
+		// Re-add one step and assign only `wantsContact`, leaving `email` and
+		// `phone` in the pool. The warning mark is the pool's own note, which
+		// renders only while at least one step exists — exactly the condition
+		// under which the save-time normalisation fires (FormStepsManager's
+		// `__pool-note` is the live-editor half of the contract,
+		// `assignUnassignedFieldsToFinalStep()` in
+		// src/services/manifestValidation/formLogic.js the save-time half).
+		await addStepBtn.click()
+		const finalStep = page.locator('.form-steps-manager__step').first()
+		await finalStep.getByLabel(/step title/i).fill('Everything')
+		await finalStep.locator('.form-steps-manager__select').selectOption('wantsContact')
+		await finalStep.locator('.form-steps-manager__assign button').click()
+		await expect(page.locator('.form-steps-manager__pool-note')).toBeVisible()
+
+		// Save LAST. A successful save is a session boundary: the host bumps its
+		// session key, which resets the designer and its page selection, so
+		// nothing after this may read the staged manifest. Assert against the
+		// PERSISTED manifest instead — which is also the stronger check, since the
+		// complete-partition rule is a claim about what was WRITTEN.
+		await page.getByRole('button', { name: /save pages/i }).click()
+		await expect.poll(async () => {
+			const persisted = await fetchManifest(page)
+			const persistedPage = (persisted.pages || []).find((p) => p.id === FORM_PAGE_ID)
+			return persistedPage?.config?.steps?.[0]?.fields ?? null
+		}, {
+			// The repo's `expect` default (playwright.config.ts). NOT 30_000:
+			// that equals the whole per-test budget, so the poll could never
+			// actually reach it — the test would die first and report a test
+			// timeout instead of this assertion's own message, which is the
+			// exact failure mode the config's comment says the shorter expect
+			// timeout exists to prevent.
+			timeout: 15_000,
+			message: 'saving must append the still-unassigned field keys to the final step',
+		}).toEqual(['wantsContact', 'email', 'phone'])
 	})
 
 	test('REQ-OBFEL-002: condition builder writes LOCAL visibleWhen', async ({ page }) => {
+		// @e2e openspec/specs/form-editor-logic/spec.md#authoring-a-condition-with-the-field-op-and-value-pickers
+		// @e2e openspec/specs/form-editor-logic/spec.md#ordering-op-coerces-the-value-to-a-number
+		// @e2e openspec/specs/form-editor-logic/spec.md#clearing-the-condition-removes-the-key
+		// @e2e openspec/specs/form-editor-logic/spec.md#advanced-endpoint-or-source-conditions-pass-through-untouched
 		await seedFormPageAndSelect(page)
 
 		const emailRow = fieldRow(page, 1)
@@ -295,6 +343,9 @@ test.describe('openbuild form-editor-logic', () => {
 	})
 
 	test('REQ-OBFEL-003: validation builder writes the structured object', async ({ page }) => {
+		// @e2e openspec/specs/form-editor-logic/spec.md#authoring-validation-writes-the-structured-object
+		// @e2e openspec/specs/form-editor-logic/spec.md#legacy-flat-keys-prefill-and-normalise-on-first-edit
+		// @e2e openspec/specs/form-editor-logic/spec.md#a-non-compiling-pattern-is-rejected-inline
 		await seedFormPageAndSelect(page)
 
 		const emailRow = fieldRow(page, 1)
@@ -349,6 +400,8 @@ test.describe('openbuild form-editor-logic', () => {
 	})
 
 	test('REQ-OBFEL-004: dangling references warn live without deletion', async ({ page }) => {
+		// @e2e openspec/specs/form-editor-logic/spec.md#deleting-a-field-warns-on-the-condition-that-references-it
+		// @e2e openspec/specs/form-editor-logic/spec.md#a-step-referencing-a-removed-field-warns
 		await seedFormPageAndSelect(page)
 
 		await fieldRow(page, 1).locator('.form-field-builder__disclosure').click()
@@ -376,6 +429,21 @@ test.describe('openbuild form-editor-logic', () => {
 	})
 
 	test('REQ-OBFEL-006: externally-authored shapes round-trip through Design and survive save', async ({ page }) => {
+		// @e2e openspec/specs/form-editor-logic/spec.md#authored-logic-persists-via-the-existing-applicationversion-save
+		//
+		// NOT anchored here: REQ-OBFEL-006's sibling scenario
+		// `raw-json-authored-logic-survives-unrelated-editor-edits`. That scenario
+		// asserts a Design <-> Raw JSON TAB round-trip ("switching back to Raw
+		// JSON shows all four byte-for-byte unchanged"), and no such tab exists on
+		// this route: the raw-JSON editor is `ApplicationManifestTab`, a sidebar
+		// tab on the VirtualAppDetail page (`/applications/:objectId`) that reads
+		// and writes the Application object, while the designer here saves onto
+		// the ApplicationVersion. PageDesigner.vue records the decision explicitly
+		// ("resolved: sidebar, not a designer tab"). The seeding below therefore
+		// goes through the manifest API, which exercises externally-authored
+		// shapes surviving a Design edit + save — but not the tab round-trip the
+		// scenario names.
+		//
 		// Author every shape Design cannot itself produce — an advanced condition,
 		// a pre-built steps array, a structured validation object, and a wholly
 		// unknown key — then edit ONE thing in Design and save. Nothing else may
