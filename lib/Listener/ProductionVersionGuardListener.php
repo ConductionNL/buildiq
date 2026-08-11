@@ -205,10 +205,18 @@ class ProductionVersionGuardListener implements IEventListener
      */
     private function extractUuid(object $entity, array $object): string
     {
-        if (method_exists($entity, 'getUuid') === true) {
-            $uuid = $entity->getUuid();
-            if (is_string($uuid) === true && $uuid !== '') {
-                return $uuid;
+        // NOT method_exists(): getUuid() is an `@method` docblock on ObjectEntity,
+        // served by Entity::__call, so method_exists() is false and this branch
+        // never ran. is_callable() is true for any name on a __call class, so the
+        // call itself must be exception-safe.
+        if (is_callable([$entity, 'getUuid']) === true) {
+            try {
+                $uuid = $entity->getUuid();
+                if (is_string($uuid) === true && $uuid !== '') {
+                    return $uuid;
+                }
+            } catch (Throwable $e) {
+                $this->logger->debug('OpenBuild: getUuid() unavailable on '.$entity::class.': '.$e->getMessage());
             }
         }
 
