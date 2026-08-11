@@ -89,6 +89,8 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 	})
 
 	test('REQ-BUR-001: undo restores the previous draft state, redo re-applies it, no network write', async ({ page }) => {
+		// @e2e openspec/specs/builder-undo-redo/spec.md#undo-restores-the-previous-draft-state
+		// @e2e openspec/specs/builder-undo-redo/spec.md#redo-re-applies-an-undone-edit
 		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
 
@@ -116,6 +118,7 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 	})
 
 	test('REQ-BUR-001: a new edit after undo truncates the redo tail', async ({ page }) => {
+		// @e2e openspec/specs/builder-undo-redo/spec.md#a-new-edit-after-undo-truncates-the-redo-tail
 		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
 
@@ -136,6 +139,8 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 	})
 
 	test('REQ-BUR-002: toolbar disabled states across the edit/undo cycle', async ({ page }) => {
+		// @e2e openspec/specs/builder-undo-redo/spec.md#both-buttons-disabled-in-a-fresh-session
+		// @e2e openspec/specs/builder-undo-redo/spec.md#buttons-enable-and-disable-as-the-stack-moves
 		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
 
@@ -203,6 +208,7 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 	})
 
 	test('REQ-BUR-004: history survives a sub-editor (page) switch', async ({ page }) => {
+		// @e2e openspec/specs/builder-undo-redo/spec.md#history-survives-a-sub-editor-switch
 		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
 
@@ -226,6 +232,7 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 	})
 
 	test('REQ-BUR-004: a successful save resets the session history', async ({ page }) => {
+		// @e2e openspec/specs/builder-undo-redo/spec.md#save-resets-the-session-history
 		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('.page-designer__left')).toBeVisible({ timeout: 15_000 })
 
@@ -246,6 +253,8 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 	})
 
 	test('REQ-BUR-004: a version switch resets the session history', async ({ page }) => {
+		// @e2e openspec/specs/builder-undo-redo/spec.md#version-switch-resets-the-session-history
+		//
 		// THIS TEST USED TO SKIP ITSELF, AND THE REASON WAS FALSE.
 		//
 		// It probed `GET .../versions/staging`, found nothing, and skipped with
@@ -297,6 +306,10 @@ test.describe('builder-undo-redo — schema designer (REQ-BUR-005)', () => {
 	})
 
 	test('REQ-BUR-005: undo a field add, undo a discard, and a save resets the schema session history', async ({ page }) => {
+		// @e2e openspec/specs/builder-undo-redo/spec.md#undo-restores-a-staged-field-edit
+		// @e2e openspec/specs/builder-undo-redo/spec.md#discard-staged-edits-is-one-undoable-entry
+		// @e2e openspec/specs/builder-undo-redo/spec.md#schema-save-resets-the-schema-session-history
+		//
 		// `?_version=production` is REQUIRED, not decoration. Without it the
 		// designer falls back to the legacy `openbuild-{slug}` register, which a
 		// wizard-created app does not have — the schema is then created but the
