@@ -128,6 +128,12 @@ test.describe('Icon upload on the Application detail page (spec A task 7.5)', ()
 		await expect(inputs.nth(1)).toHaveAttribute('accept', '.svg')
 	})
 
+	// @e2e app-icon-management::non-svg-file-is-rejected-client-side
+	//
+	// The scenario is "the uploader displays an inline error message and does not
+	// submit the file to OR". Both halves are asserted below: the inline error by
+	// its literal text, and the negative half by recording every POST the page
+	// issues and requiring the list to be empty.
 	test('a non-SVG pick is rejected inline and never reaches the server', async ({ page, request }) => {
 		const { objectId } = await resolveApp(request)
 		await openIconsTab(page, objectId)
@@ -156,6 +162,12 @@ test.describe('Icon upload on the Application detail page (spec A task 7.5)', ()
 		expect(uploads, 'a rejected file must not be uploaded').toEqual([])
 	})
 
+	// @e2e app-icon-management::user-uploads-a-light-icon
+	//
+	// The scenario's three clauses map onto the assertions below: the file is
+	// POSTed to OR's attachment endpoint and `icon.ref` is patched (proven by
+	// reading the Application back independently rather than trusting optimistic
+	// UI state), and the light-background preview renders the SVG.
 	test('uploading an SVG persists it on the Application and shows it in the preview', async ({ page, request }) => {
 		// Two navigations plus an upload round-trip. The 30s project default is
 		// sized for single-navigation tests; every assertion below keeps its own

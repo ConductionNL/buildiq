@@ -359,12 +359,33 @@ export default {
 		 * emits `updated` with a `null` ref. Never throws: a failed request surfaces in
 		 * `uploadError`.
 		 *
+		 * ⚠️ THE DELETE IS ADDRESSED BY NUMERIC FILE ID, NOT BY FILENAME.
+		 *
+		 * This method used to call
+		 * `DELETE .../objects/{register}/{schema}/{uuid}/files/app-icon-dark.svg`.
+		 * OpenRegister's route for that verb is
+		 *
+		 *   ['name' => 'files#delete',
+		 *    'url'  => '/api/objects/{register}/{schema}/{id}/files/{fileId}',
+		 *    'verb' => 'DELETE',
+		 *    'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']]
+		 *
+		 * — `fileId` is constrained to `\d+`, so a filename never matched the
+		 * route at all and Nextcloud answered its HTML **404** page. The
+		 * `catch` below then painted the generic "Remove failed" string, so the
+		 * button looked implemented and could never work. Measured both ways on
+		 * a live instance: DELETE by filename → 404; DELETE by the numeric id
+		 * from `GET .../files` → 200 and the attachment is gone.
+		 *
+		 * The id is therefore resolved from the object's own file index, where
+		 * each entry carries `{ id: <int>, title: '<filename>' }`.
+		 *
 		 * @param {'light'|'dark'} variant - Which icon slot to clear; selects both the
 		 *   attached filename to delete (`app-icon.svg` / `app-icon-dark.svg`) and the
 		 *   Application field to null out (`icon` / `iconDark`).
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/specs/app-icon-management/spec.md#user-removes-the-dark-icon
 		 */
 		async removeIcon(variant) {
 			if (!this.objectUuid) return
@@ -374,11 +395,26 @@ export default {
 			const field = variant === 'dark' ? 'iconDark' : 'icon'
 
 			try {
-				// 1. Delete the file from OR.
-				const deleteUrl = generateUrl(
-					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files/${filename}`,
+				// 1. Resolve the attachment's NUMERIC id, then delete by it.
+				const filesUrl = generateUrl(
+					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files`,
 				)
-				await axios.delete(deleteUrl)
+				const listed = await axios.get(filesUrl)
+				const attachment = (listed?.data?.results || [])
+					.find((f) => f?.title === filename)
+
+				if (!attachment?.id) {
+					// The ref points at a file OR no longer holds. Nothing to
+					// detach — fall through and clear the ref so the record stops
+					// advertising an attachment that is not there.
+					// eslint-disable-next-line no-console
+					console.warn(`[openbuild] no OR attachment named ${filename}; clearing the ref only`)
+				} else {
+					const deleteUrl = generateUrl(
+						`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files/${attachment.id}`,
+					)
+					await axios.delete(deleteUrl)
+				}
 
 				// 2. Clear the ref on the Application (partial merge, not replace).
 				const patchUrl = generateUrl(
