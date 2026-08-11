@@ -28,6 +28,10 @@
  * FINE-GRAINED, per-object rule — "an editor of THIS Application, or an owner
  * when the version is the production one".
  *
+ * The three CRUD writes themselves live in
+ * {@see \OCA\OpenBuild\Service\AutomationWriteService} — this controller is the
+ * HTTP surface, that service is the write path and the create-side RBAC scope.
+ *
  * Before this controller took the writes, the designer POSTed OR REST
  * directly, so the app-level `permissions` block was never consulted on
  * create/update at all and the OR gate refused every non-admin. The `automation`
@@ -75,9 +79,9 @@ namespace OCA\OpenBuild\Controller;
 use OCA\OpenBuild\AppInfo\Application;
 use OCA\OpenBuild\Exception\UnsupportedAutomationCombinationException;
 use OCA\OpenBuild\Service\AutomationCompilerService;
+use OCA\OpenBuild\Service\AutomationWriteService;
 use OCA\OpenBuild\Service\ConditionActionExecutor;
 use OCA\OpenBuild\Service\PermissionResolver;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -95,16 +99,6 @@ use Throwable;
  */
 class AutomationsController extends Controller
 {
-    /**
-     * Shared OpenBuild register slug.
-     */
-    private const REGISTER_SLUG = 'openbuild';
-
-    /**
-     * Schema slug of the Automation object.
-     */
-    private const AUTOMATION_SCHEMA = 'automation';
-
     /**
      * Roles allowed to author/dry-run/disable, and to enable on a
      * non-production version (design.md Decision 7).
@@ -127,22 +121,22 @@ class AutomationsController extends Controller
      *
      * @param IRequest                  $request            The current HTTP request.
      * @param LoggerInterface           $logger             PSR logger.
-     * @param ObjectService             $objectService      OpenRegister object service.
      * @param AutomationCompilerService $compiler           Compiler/apply/remove/status service.
      * @param ConditionActionExecutor   $conditionExecutor  Rules engine executor (dry-run panel).
      * @param PermissionResolver        $permissionResolver Shared permission-grammar resolver.
      * @param IUserSession              $userSession        Current user session.
+     * @param AutomationWriteService    $writeService       Create/update/delete write path.
      *
      * @return void
      */
     public function __construct(
         IRequest $request,
         private readonly LoggerInterface $logger,
-        private readonly ObjectService $objectService,
         private readonly AutomationCompilerService $compiler,
         private readonly ConditionActionExecutor $conditionExecutor,
         private readonly PermissionResolver $permissionResolver,
         private readonly IUserSession $userSession,
+        private readonly AutomationWriteService $writeService,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
 
@@ -151,9 +145,11 @@ class AutomationsController extends Controller
     /**
      * Create an automation on an Application version (REQ-AUTD-008).
      *
-     * Authorises against the PARENT APPLICATION's `permissions` block and then
-     * writes in system context. See the class docblock for why this route
-     * exists rather than the designer POSTing OR REST directly.
+     * Delegates to {@see AutomationWriteService::create()}, which authorises
+     * against the PARENT APPLICATION's `permissions` block (named by the body's
+     * mandatory `applicationSlug`/`versionUuid`) and only then writes, in
+     * system context. See the class docblock for why this route exists rather
+     * than the designer POSTing OR REST directly.
      *
      * @return JSONResponse The created Automation, or an error envelope.
      *
@@ -163,27 +159,9 @@ class AutomationsController extends Controller
     #[UserRateLimit(limit: 30, period: 60)]
     public function create(): JSONResponse
     {
-        $payload         = $this->requestBody();
-        $applicationSlug = (string) ($payload['applicationSlug'] ?? '');
-        $versionUuid     = (string) ($payload['versionUuid'] ?? '');
-
-        return $this->withApplication(
-            applicationSlug: $applicationSlug,
-            versionUuid: $versionUuid,
-            roles: self::WRITE_ROLES,
-            productionRoles: null,
-            action: function () use ($payload): JSONResponse {
-                // No uuid — OR mints one. `_rbac: false` for the reason
-                // documented on recompileAndRespond()'s save.
-                $saved = $this->objectService->saveObject(
-                    object: $payload,
-                    register: self::REGISTER_SLUG,
-                    schema: self::AUTOMATION_SCHEMA,
-                    _rbac: false
-                );
-
-                return new JSONResponse(data: $this->normalise(object: $saved), statusCode: Http::STATUS_CREATED);
-            }
+        return $this->writeService->create(
+            payload: $this->writeService->requestBody(request: $this->request),
+            roles: self::WRITE_ROLES
         );
 
     }//end create()
@@ -206,29 +184,17 @@ class AutomationsController extends Controller
     #[UserRateLimit(limit: 30, period: 60)]
     public function update(string $uuid): JSONResponse
     {
-        $payload = $this->requestBody();
+        $payload = $this->writeService->requestBody(request: $this->request);
 
         return $this->withAutomation(
             uuid: $uuid,
             roles: self::WRITE_ROLES,
             productionRoles: null,
-            action: function (array $automation) use ($payload, $uuid): JSONResponse {
-                // Pin the ownership fields to the STORED values. A client may
-                // rewrite the definition; it may not re-parent the record into
-                // an application or version it was not authorised against.
-                $payload['applicationSlug'] = ($automation['applicationSlug'] ?? null);
-                $payload['versionUuid']     = ($automation['versionUuid'] ?? null);
-
-                $saved = $this->objectService->saveObject(
-                    object: $payload,
-                    register: self::REGISTER_SLUG,
-                    schema: self::AUTOMATION_SCHEMA,
-                    uuid: $uuid,
-                    _rbac: false
-                );
-
-                return new JSONResponse(data: $this->normalise(object: $saved), statusCode: Http::STATUS_OK);
-            }
+            action: fn (array $automation): JSONResponse => $this->writeService->update(
+                uuid: $uuid,
+                payload: $payload,
+                automation: $automation
+            )
         );
 
     }//end update()
@@ -254,21 +220,10 @@ class AutomationsController extends Controller
             uuid: $uuid,
             roles: self::WRITE_ROLES,
             productionRoles: null,
-            action: function (array $automation) use ($uuid): JSONResponse {
-                $this->compiler->remove(
-                    automation: $automation,
-                    provenance: $this->orArray(value: $automation['provenance'] ?? null)
-                );
-
-                $this->objectService->deleteObject(
-                    uuid: $uuid,
-                    register: self::REGISTER_SLUG,
-                    schema: self::AUTOMATION_SCHEMA,
-                    _rbac: false
-                );
-
-                return new JSONResponse(data: ['deleted' => $uuid], statusCode: Http::STATUS_OK);
-            }
+            action: fn (array $automation): JSONResponse => $this->writeService->destroy(
+                uuid: $uuid,
+                automation: $automation
+            )
         );
 
     }//end destroy()
@@ -468,13 +423,13 @@ class AutomationsController extends Controller
         }
 
         try {
-            $automation = $this->loadAutomation(uuid: $uuid);
+            $automation = $this->writeService->loadAutomation(uuid: $uuid);
             if ($automation === null) {
                 return $this->error(code: 'not_found', detail: 'Automation '.$uuid.' not found', status: Http::STATUS_NOT_FOUND);
             }
 
             $applicationSlug = (string) ($automation['applicationSlug'] ?? '');
-            $application     = $this->loadApplication(slug: $applicationSlug);
+            $application     = $this->writeService->loadApplication(slug: $applicationSlug);
             if ($application === null) {
                 return $this->error(code: 'not_found', detail: 'Application '.$applicationSlug.' not found', status: Http::STATUS_NOT_FOUND);
             }
@@ -511,109 +466,6 @@ class AutomationsController extends Controller
     }//end withAutomation()
 
     /**
-     * Authorise against an Application + version, then run `$action`.
-     *
-     * The create-side counterpart to `withAutomation()`: there is no stored
-     * Automation yet, so the scope comes from the request's `applicationSlug`
-     * and `versionUuid`. Both are REQUIRED — an unscoped create would have no
-     * `permissions` block to check against and would therefore be
-     * unauthorised by construction, which must be a 400 and never a silent
-     * allow.
-     *
-     * @param string                 $applicationSlug Parent Application slug.
-     * @param string                 $versionUuid     ApplicationVersion uuid the automation belongs to.
-     * @param array<int,string>      $roles           Roles required on a non-production version.
-     * @param array<int,string>|null $productionRoles Roles required instead on the production version.
-     * @param callable               $action          `fn(): JSONResponse`.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/specs/automation-designer/spec.md#req-autd-008
-     */
-    private function withApplication(
-        string $applicationSlug,
-        string $versionUuid,
-        array $roles,
-        ?array $productionRoles,
-        callable $action
-    ): JSONResponse {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return $this->error(code: 'unauthenticated', detail: null, status: Http::STATUS_UNAUTHORIZED);
-        }
-
-        if ($applicationSlug === '' || $versionUuid === '') {
-            return $this->error(
-                code: 'invalid_request',
-                detail: 'applicationSlug and versionUuid are required — they are the authorization scope.',
-                status: Http::STATUS_BAD_REQUEST
-            );
-        }
-
-        try {
-            $application = $this->loadApplication(slug: $applicationSlug);
-            if ($application === null) {
-                return $this->error(
-                    code: 'not_found',
-                    detail: 'Application '.$applicationSlug.' not found',
-                    status: Http::STATUS_NOT_FOUND
-                );
-            }
-
-            $effectiveRoles = $roles;
-            if ($productionRoles !== null
-                && $this->isProductionVersion(application: $application, versionUuid: $versionUuid) === true
-            ) {
-                $effectiveRoles = $productionRoles;
-            }
-
-            $allowed = $this->permissionResolver->matchesCaller(
-                permissions: $this->orArray(value: $application['permissions'] ?? null),
-                caller: $user,
-                userGroups: $this->permissionResolver->resolveUserGroups(user: $user),
-                allowAdminBypass: false,
-                roles: $effectiveRoles
-            );
-
-            if ($allowed === false) {
-                return $this->error(code: 'insufficient_permission', detail: null, status: Http::STATUS_FORBIDDEN);
-            }
-
-            return $action();
-        } catch (Throwable $e) {
-            $this->logger->error(
-                'OpenBuild: AutomationsController failed for application '.$applicationSlug.': '.$e->getMessage(),
-                ['exception' => $e]
-            );
-            return $this->error(code: 'internal_error', detail: $e->getMessage(), status: Http::STATUS_INTERNAL_SERVER_ERROR);
-        }//end try
-
-    }//end withApplication()
-
-    /**
-     * Decode the JSON request body to an associative array.
-     *
-     * `IRequest::getParams()` already merges a decoded JSON body for
-     * `Content-Type: application/json`, and carries the route placeholders
-     * with it — those are stripped so they can never be written onto the
-     * stored object as if they were properties.
-     *
-     * @return array<string,mixed>
-     */
-    private function requestBody(): array
-    {
-        $params = $this->request->getParams();
-        if (is_array($params) === false) {
-            return [];
-        }
-
-        unset($params['_route'], $params['uuid']);
-
-        return $params;
-
-    }//end requestBody()
-
-    /**
      * Compile + apply + persist an automation's provenance, returning the
      * uniform success envelope. Fail-closed matrix rejections map to 422.
      *
@@ -635,47 +487,16 @@ class AutomationsController extends Controller
         $automation['provenance'] = $provenance;
         $uuid = (string) ($automation['id'] ?? $automation['uuid'] ?? '');
 
-        // `_rbac: false` — SYSTEM CONTEXT, and it is the whole point of this
-        // controller.
-        //
-        // Every caller of this method has already passed `withAutomation()`,
-        // which resolved the parent Application and matched the caller against
-        // its `permissions` block with `allowAdminBypass: false`. That is the
-        // authorization decision for this write, and it is finer-grained than
-        // anything OpenRegister can express: OR's schema gate is a coarse
-        // group ACL (`authorization.update: ["admin"]` on the `automation`
-        // schema — lib/Settings/register.d/40-automations.json), while the
-        // requirement is "an OWNER of THIS Application on THIS version".
-        //
-        // Leaving the default `_rbac: true` here made OR re-litigate a decision
-        // openbuild had already made and reach the opposite answer. MEASURED on
-        // a live instance (NC 34, openregister 0.2.17-unstable.36) before this
-        // change, with the Application's `permissions` granting
-        // `owners: ['user:rbac-owner']`:
-        //
-        //   POST /api/automations/{uuid}/enable as rbac-editor -> 403 insufficient_permission  (correct)
-        //   POST /api/automations/{uuid}/enable as rbac-owner  -> 500 internal_error
-        //       "User 'rbac-owner' does not have permission to 'update' objects in schema 'Automation'"
-        //
-        // i.e. the legitimate owner was refused, and the refusal surfaced as a
-        // 500 because OR throws and `withAutomation()`'s outer
-        // `catch (Throwable)` maps anything unrecognised to internal_error. A
-        // permission failure that reads as a server fault is worse than either
-        // a 200 or a 403, because it accuses the wrong component.
-        //
-        // This is NOT a widening: the route is `#[NoAdminRequired]` but the
-        // per-Application check above is unconditional, runs before this line
-        // is reached, and grants nothing to NC admins on its own
-        // (`allowAdminBypass: false`). See Conduction/openbuild#173.
-        $saved = $this->objectService->saveObject(
-            object: $automation,
-            register: self::REGISTER_SLUG,
-            schema: self::AUTOMATION_SCHEMA,
-            uuid: $uuid,
-            _rbac: false
-        );
+        // SYSTEM CONTEXT (`_rbac: false`). Every caller of this method has
+        // already passed `withAutomation()`, which resolved the parent
+        // Application and matched the caller against its `permissions` block
+        // with `allowAdminBypass: false` — that is the authorization decision
+        // for this write. The full rationale, including the live measurement
+        // that forced it, lives with the write itself on
+        // AutomationWriteService::saveAuthorised().
+        $saved = $this->writeService->saveCompiled(automation: $automation, uuid: $uuid);
 
-        return new JSONResponse(data: $this->normalise(object: $saved), statusCode: Http::STATUS_OK);
+        return new JSONResponse(data: $saved, statusCode: Http::STATUS_OK);
 
     }//end recompileAndRespond()
 
@@ -706,56 +527,6 @@ class AutomationsController extends Controller
     }//end isProductionVersion()
 
     /**
-     * Load an Automation object by uuid.
-     *
-     * @param string $uuid The Automation object uuid.
-     *
-     * @return array<string,mixed>|null
-     */
-    private function loadAutomation(string $uuid): ?array
-    {
-        try {
-            $entity = $this->objectService->find(id: $uuid, register: self::REGISTER_SLUG, schema: self::AUTOMATION_SCHEMA);
-        } catch (Throwable $e) {
-            return null;
-        }
-
-        if ($entity === null) {
-            return null;
-        }
-
-        return $this->normalise(object: $entity);
-
-    }//end loadAutomation()
-
-    /**
-     * Load the parent Application by slug.
-     *
-     * @param string $slug The Application slug.
-     *
-     * @return array<string,mixed>|null
-     */
-    private function loadApplication(string $slug): ?array
-    {
-        if ($slug === '') {
-            return null;
-        }
-
-        try {
-            $entity = $this->objectService->find(id: $slug, register: self::REGISTER_SLUG, schema: 'application');
-        } catch (Throwable $e) {
-            return null;
-        }
-
-        if ($entity === null) {
-            return null;
-        }
-
-        return $this->normalise(object: $entity);
-
-    }//end loadApplication()
-
-    /**
      * Return `$value` when it is an array, otherwise an empty array.
      *
      * @param mixed $value The candidate value.
@@ -771,37 +542,6 @@ class AutomationsController extends Controller
         return [];
 
     }//end orArray()
-
-    /**
-     * Coerce an OR result entry to a plain associative array.
-     *
-     * @param mixed $object The OR object/result entry.
-     *
-     * @return array<string,mixed>
-     */
-    private function normalise(mixed $object): array
-    {
-        if (is_array($object) === true) {
-            return $object;
-        }
-
-        if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-            $serialised = $object->jsonSerialize();
-            if (is_array($serialised) === true) {
-                return $serialised;
-            }
-        }
-
-        if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-            $inner = $object->getObject();
-            if (is_array($inner) === true) {
-                return $inner;
-            }
-        }
-
-        return [];
-
-    }//end normalise()
 
     /**
      * Build a uniform error envelope.

@@ -28,6 +28,7 @@ namespace OCA\OpenBuild\Tests\Unit\Controller;
 
 use OCA\OpenBuild\Controller\AutomationsController;
 use OCA\OpenBuild\Service\AutomationCompilerService;
+use OCA\OpenBuild\Service\AutomationWriteService;
 use OCA\OpenBuild\Service\ConditionActionExecutor;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -103,14 +104,26 @@ final class AutomationsControllerTest extends TestCase
 
         $permissionResolver = new PermissionResolver($this->groupManager, $this->createMock(LoggerInterface::class));
 
-        $this->controller = new AutomationsController(
-            request: $this->request,
+        // The write service is wired REAL (over the same mocked boundaries)
+        // rather than mocked: the controller's create/update/destroy are pure
+        // delegation, so a mocked collaborator would assert only that the
+        // delegation happened and nothing about what it does.
+        $writeService = new AutomationWriteService(
             logger: $this->createMock(LoggerInterface::class),
             objectService: $this->objectService,
             compiler: $this->compiler,
-            conditionExecutor: $this->conditionExecutor,
             permissionResolver: $permissionResolver,
             userSession: $this->userSession
+        );
+
+        $this->controller = new AutomationsController(
+            request: $this->request,
+            logger: $this->createMock(LoggerInterface::class),
+            compiler: $this->compiler,
+            conditionExecutor: $this->conditionExecutor,
+            permissionResolver: $permissionResolver,
+            userSession: $this->userSession,
+            writeService: $writeService
         );
 
     }//end setUp()
@@ -519,4 +532,245 @@ final class AutomationsControllerTest extends TestCase
         $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
 
     }//end testDisableReturns403ForNonMember()
+
+
+    /**
+     * REQ-AUTD-008 / Conduction/openbuild#173: create() authorises against the
+     * parent Application named in the body and 201s an editor.
+     *
+     * @return void
+     */
+    public function testCreateReturns201ForEditorOfTheNamedApplication(): void
+    {
+        $this->wireUser(uid: 'bob');
+        $this->request->method('getParams')->willReturn(
+            [
+                '_route'          => 'openbuild.automations.create',
+                'applicationSlug' => 'permit-tracker',
+                'versionUuid'     => 'draft-version',
+                'slug'            => 'nag-on-overdue',
+            ]
+        );
+        // create() resolves ONLY the Application (there is no stored
+        // automation yet).
+        $this->objectService->method('find')->willReturn(
+            $this->buildEntity(
+                [
+                    'id'          => 'app-1',
+                    'slug'        => 'permit-tracker',
+                    'permissions' => ['owners' => ['user:alice'], 'editors' => ['user:bob']],
+                ]
+            )
+        );
+        $this->objectService->expects($this->once())
+            ->method('saveObject')
+            ->willReturn($this->buildEntity(['id' => 'a-new', 'slug' => 'nag-on-overdue']));
+
+        $response = $this->controller->create();
+
+        $this->assertSame(Http::STATUS_CREATED, $response->getStatus());
+        $this->assertSame('a-new', $response->getData()['id']);
+
+    }//end testCreateReturns201ForEditorOfTheNamedApplication()
+
+
+    /**
+     * REQ-AUTD-008: a caller holding no role on the named Application cannot
+     * create an automation on it, and nothing is written.
+     *
+     * @return void
+     */
+    public function testCreateReturns403ForNonMember(): void
+    {
+        $this->wireUser(uid: 'eve-outsider');
+        $this->request->method('getParams')->willReturn(
+            [
+                'applicationSlug' => 'permit-tracker',
+                'versionUuid'     => 'draft-version',
+            ]
+        );
+        $this->objectService->method('find')->willReturn(
+            $this->buildEntity(
+                [
+                    'id'          => 'app-1',
+                    'slug'        => 'permit-tracker',
+                    'permissions' => ['owners' => ['user:alice'], 'editors' => ['user:bob']],
+                ]
+            )
+        );
+        $this->objectService->expects($this->never())->method('saveObject');
+
+        $response = $this->controller->create();
+
+        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+
+    }//end testCreateReturns403ForNonMember()
+
+
+    /**
+     * REQ-AUTD-008: `applicationSlug`/`versionUuid` ARE the authorization
+     * scope, so a create without them is a 400 — never an unscoped write.
+     *
+     * @return void
+     */
+    public function testCreateReturns400WithoutAuthorizationScope(): void
+    {
+        $this->wireUser(uid: 'alice');
+        $this->request->method('getParams')->willReturn(['slug' => 'nag-on-overdue']);
+        $this->objectService->expects($this->never())->method('saveObject');
+
+        $response = $this->controller->create();
+
+        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+        $this->assertSame('invalid_request', $response->getData()['error']);
+
+    }//end testCreateReturns400WithoutAuthorizationScope()
+
+
+    /**
+     * REQ-AUTD-008: update() is authorised against the STORED record's parent
+     * Application, so a non-member is forbidden and nothing is written.
+     *
+     * @return void
+     */
+    public function testUpdateReturns403ForNonMember(): void
+    {
+        $this->wireUser(uid: 'eve-outsider');
+        $this->request->method('getParams')->willReturn(['slug' => 'renamed']);
+        $this->wireLookup(
+            automation: ['id' => 'a-1', 'applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version'],
+            application: [
+                'id'          => 'app-1',
+                'slug'        => 'permit-tracker',
+                'permissions' => ['owners' => ['user:alice'], 'editors' => ['user:bob']],
+            ]
+        );
+        $this->objectService->expects($this->never())->method('saveObject');
+
+        $response = $this->controller->update(uuid: 'a-1');
+
+        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+
+    }//end testUpdateReturns403ForNonMember()
+
+
+    /**
+     * REQ-AUTD-008: end-to-end through the route, the ownership fields are
+     * pinned to the STORED values — a body naming a different application does
+     * not re-parent the record.
+     *
+     * @return void
+     */
+    public function testUpdatePinsApplicationScopeThroughTheRoute(): void
+    {
+        $this->wireUser(uid: 'bob');
+        $this->request->method('getParams')->willReturn(
+            [
+                'uuid'            => 'a-1',
+                'applicationSlug' => 'attacker-owned-app',
+                'versionUuid'     => 'attacker-version',
+                'slug'            => 'renamed',
+            ]
+        );
+        $this->wireLookup(
+            automation: ['id' => 'a-1', 'applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version'],
+            application: [
+                'id'          => 'app-1',
+                'slug'        => 'permit-tracker',
+                'permissions' => ['owners' => ['user:alice'], 'editors' => ['user:bob']],
+            ]
+        );
+
+        $written = null;
+        $this->objectService->expects($this->once())
+            ->method('saveObject')
+            ->willReturnCallback(function (...$arguments) use (&$written): ObjectEntity {
+                $written = $arguments[0];
+                return $this->buildEntity(['id' => 'a-1']);
+            });
+
+        $response = $this->controller->update(uuid: 'a-1');
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertIsArray($written);
+        $this->assertSame('permit-tracker', $written['applicationSlug']);
+        $this->assertSame('draft-version', $written['versionUuid']);
+        $this->assertSame('renamed', $written['slug']);
+        // The route placeholder must never land on the stored object.
+        $this->assertArrayNotHasKey('uuid', $written);
+
+    }//end testUpdatePinsApplicationScopeThroughTheRoute()
+
+
+    /**
+     * REQ-AUTD-008: destroy() is forbidden for a non-member, and no compiled
+     * artifact is touched.
+     *
+     * @return void
+     */
+    public function testDestroyReturns403ForNonMember(): void
+    {
+        $this->wireUser(uid: 'eve-outsider');
+        $this->wireLookup(
+            automation: ['id' => 'a-1', 'applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version'],
+            application: [
+                'id'          => 'app-1',
+                'slug'        => 'permit-tracker',
+                'permissions' => ['owners' => ['user:alice'], 'editors' => ['user:bob']],
+            ]
+        );
+
+        $this->compiler->expects($this->never())->method('remove');
+        $this->objectService->expects($this->never())->method('deleteObject');
+
+        $response = $this->controller->destroy(uuid: 'a-1');
+
+        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+
+    }//end testDestroyReturns403ForNonMember()
+
+
+    /**
+     * REQ-AUTD-008: end-to-end through the route, an editor's delete removes
+     * the compiled artifacts BEFORE the definition itself.
+     *
+     * @return void
+     */
+    public function testDestroyRemovesArtifactsBeforeDeletingThroughTheRoute(): void
+    {
+        $this->wireUser(uid: 'bob');
+        $this->wireLookup(
+            automation: [
+                'id'              => 'a-1',
+                'applicationSlug' => 'permit-tracker',
+                'versionUuid'     => 'draft-version',
+                'provenance'      => ['notificationKeys' => ['k-1']],
+            ],
+            application: [
+                'id'          => 'app-1',
+                'slug'        => 'permit-tracker',
+                'permissions' => ['owners' => ['user:alice'], 'editors' => ['user:bob']],
+            ]
+        );
+
+        $order = [];
+        $this->compiler->expects($this->once())
+            ->method('remove')
+            ->willReturnCallback(function () use (&$order): void {
+                $order[] = 'remove';
+            });
+        $this->objectService->expects($this->once())
+            ->method('deleteObject')
+            ->willReturnCallback(function () use (&$order): bool {
+                $order[] = 'deleteObject';
+                return true;
+            });
+
+        $response = $this->controller->destroy(uuid: 'a-1');
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertSame(['deleted' => 'a-1'], $response->getData());
+        $this->assertSame(['remove', 'deleteObject'], $order);
+
+    }//end testDestroyRemovesArtifactsBeforeDeletingThroughTheRoute()
 }//end class
