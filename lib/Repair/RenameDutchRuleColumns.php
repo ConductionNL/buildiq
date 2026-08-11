@@ -65,6 +65,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Rename the Dutch business-rules columns to their English equivalents.
+ *
+ * @spec openspec/specs/business-rules-engine/spec.md
  */
 class RenameDutchRuleColumns implements IRepairStep
 {
@@ -92,29 +94,29 @@ class RenameDutchRuleColumns implements IRepairStep
      * @var array<string, string>
      */
     private const COLUMN_MAP = [
-        'naam'               => 'name',
-        'beschrijving'       => 'description',
-        'versie'             => 'version',
-        'eigenaar_app'       => 'owner_app',
-        'geactiveerd_op'     => 'activated_on',
-        'ingangsdatum'       => 'valid_from',
-        'einddatum'          => 'valid_until',
-        'regels'             => 'rules',
-        'condities'          => 'conditions',
-        'waardes'            => 'values',
-        'defaultwaarde'      => 'default_value',
-        'expressie_pad'      => 'expression_path',
-        'prioriteit'         => 'priority',
-        'conditie'           => 'condition',
-        'acties'             => 'actions',
-        'actief'             => 'active',
-        'geraakt_regels'     => 'triggered_rules',
-        'rule_set_versie'    => 'rule_set_version',
-        'tijdstip'           => 'timestamp',
-        'output_resultaat'   => 'output_result',
-        'executie_duur_ms'   => 'execution_duration_ms',
-        'fouten'             => 'errors',
-        'verwacht_resultaat' => 'expected_result',
+        'naam'                   => 'name',
+        'beschrijving'           => 'description',
+        'versie'                 => 'version',
+        'eigenaar_app'           => 'owner_app',
+        'geactiveerd_op'         => 'activated_on',
+        'ingangsdatum'           => 'valid_from',
+        'einddatum'              => 'valid_until',
+        'regels'                 => 'rules',
+        'condities'              => 'conditions',
+        'waardes'                => 'values',
+        'defaultwaarde'          => 'default_value',
+        'expressie_pad'          => 'expression_path',
+        'prioriteit'             => 'priority',
+        'conditie'               => 'condition',
+        'acties'                 => 'actions',
+        'actief'                 => 'active',
+        'geraakt_regels'         => 'triggered_rules',
+        'rule_set_versie'        => 'rule_set_version',
+        'tijdstip'               => 'timestamp',
+        'output_resultaat'       => 'output_result',
+        'executie_duur_ms'       => 'execution_duration_ms',
+        'fouten'                 => 'errors',
+        'verwacht_resultaat'     => 'expected_result',
         'laatste_test_resultaat' => 'last_test_result',
         'laatste_test_output'    => 'last_test_output',
     ];
@@ -135,6 +137,8 @@ class RenameDutchRuleColumns implements IRepairStep
      * Human-readable step name.
      *
      * @return string
+     *
+     * @spec openspec/specs/business-rules-engine/spec.md
      */
     public function getName(): string
     {
@@ -148,6 +152,8 @@ class RenameDutchRuleColumns implements IRepairStep
      * @param IOutput $output Repair output.
      *
      * @return void
+     *
+     * @spec openspec/specs/business-rules-engine/spec.md
      */
     public function run(IOutput $output): void
     {
@@ -162,6 +168,7 @@ class RenameDutchRuleColumns implements IRepairStep
 
         foreach ($tables as $table) {
             $columns = $this->columnsOf(table: $table);
+            $qTable  = $this->quote(identifier: $table);
 
             foreach (self::COLUMN_MAP as $old => $new) {
                 $hasOld = in_array($old, $columns, true);
@@ -172,9 +179,13 @@ class RenameDutchRuleColumns implements IRepairStep
                     continue;
                 }
 
+                $qOld = $this->quote(identifier: $old);
+                $qNew = $this->quote(identifier: $new);
+
                 if ($hasNew === false) {
                     // Clean case: the mapper has not yet added the English column.
-                    if ($this->exec(sql: 'ALTER TABLE '.$this->quote($table).' RENAME COLUMN '.$this->quote($old).' TO '.$this->quote($new)) === true) {
+                    $sql = 'ALTER TABLE '.$qTable.' RENAME COLUMN '.$qOld.' TO '.$qNew;
+                    if ($this->exec(sql: $sql) === true) {
                         $renamed++;
                     }
 
@@ -184,7 +195,9 @@ class RenameDutchRuleColumns implements IRepairStep
                 // The mapper already added an empty English column. Copy the data
                 // across and LEAVE the Dutch column in place — dropping it here
                 // would make the step irreversible for no benefit.
-                if ($this->exec(sql: 'UPDATE '.$this->quote($table).' SET '.$this->quote($new).' = '.$this->quote($old).' WHERE '.$this->quote($new).' IS NULL AND '.$this->quote($old).' IS NOT NULL') === true) {
+                $sql = 'UPDATE '.$qTable.' SET '.$qNew.' = '.$qOld
+                    .' WHERE '.$qNew.' IS NULL AND '.$qOld.' IS NOT NULL';
+                if ($this->exec(sql: $sql) === true) {
                     $copied++;
                 }
             }//end foreach
@@ -252,20 +265,38 @@ class RenameDutchRuleColumns implements IRepairStep
         $tables = [];
         while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
             $name = (string) ($row['table_name'] ?? '');
-            if ($name === '' || strpos($name, 'openregister_table_') === false) {
-                continue;
-            }
-
-            foreach ($suffixes as $suffix) {
-                if (substr($name, -strlen($suffix)) === $suffix) {
-                    $tables[] = $name;
-                }
+            if ($this->isShardOfSchema(table: $name, suffixes: $suffixes) === true) {
+                $tables[] = $name;
             }
         }
 
         return array_values(array_unique($tables));
 
     }//end shardTables()
+
+    /**
+     * Whether a table name is an openregister shard ending in one of the ids.
+     *
+     * @param string             $table    Table name from information_schema.
+     * @param array<int, string> $suffixes `_<schemaId>` suffixes to accept.
+     *
+     * @return bool
+     */
+    private function isShardOfSchema(string $table, array $suffixes): bool
+    {
+        if ($table === '' || strpos($table, 'openregister_table_') === false) {
+            return false;
+        }
+
+        foreach ($suffixes as $suffix) {
+            if (substr($table, -strlen($suffix)) === $suffix) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end isShardOfSchema()
 
     /**
      * List the column names of a table.
@@ -276,7 +307,7 @@ class RenameDutchRuleColumns implements IRepairStep
      */
     private function columnsOf(string $table): array
     {
-        // information_schema again — IDBConnection has no getSchema().
+        // Queried from information_schema — IDBConnection has no getSchema().
         try {
             $stmt = $this->db->prepare(
                 'SELECT column_name FROM information_schema.columns WHERE table_name = :table'
