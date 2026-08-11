@@ -223,12 +223,41 @@ class RenameDutchRuleColumns implements IRepairStep
             return [];
         }
 
+        // Table discovery goes through information_schema, NOT IDBConnection.
+        // OCP\IDBConnection exposes neither getSchema() nor getPrefix(); both
+        // exist only on the concrete OC\DB\Connection. Calling them is a runtime
+        // fatal that `php -l` and phpcs both report as clean — only phpstan
+        // catches it. Pattern follows openregister's own RegisterService: anchor
+        // on the `openregister_table_` MARKER, never on a computed prefix.
+        try {
+            $stmt = $this->db->prepare(
+                'SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern'
+            );
+            $stmt->bindValue('pattern', '%openregister\_table\_%');
+            $stmt->execute();
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                'RenameDutchRuleColumns: could not list tables; skipping.',
+                ['exception' => $e->getMessage()]
+            );
+            return [];
+        }
+
+        // Suffix match on the schema id, so every register's shard is found.
+        $suffixes = [];
+        foreach ($ids as $id) {
+            $suffixes[] = '_'.((int) $id);
+        }
+
         $tables = [];
-        foreach ($this->db->getSchema()->getTableNames() as $qualified) {
-            $name = substr($qualified, (strrpos($qualified, '.') + 1));
-            foreach ($ids as $id) {
-                // Suffix match on the schema id, so every register's shard is found.
-                if (preg_match('/^'.preg_quote($this->db->getPrefix(), '/').'openregister_table_\d+_'.((int) $id).'$/', $name) === 1) {
+        while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
+            $name = (string) ($row['table_name'] ?? '');
+            if ($name === '' || strpos($name, 'openregister_table_') === false) {
+                continue;
+            }
+
+            foreach ($suffixes as $suffix) {
+                if (substr($name, -strlen($suffix)) === $suffix) {
                     $tables[] = $name;
                 }
             }
@@ -247,8 +276,13 @@ class RenameDutchRuleColumns implements IRepairStep
      */
     private function columnsOf(string $table): array
     {
+        // information_schema again — IDBConnection has no getSchema().
         try {
-            return array_keys($this->db->getSchema()->getTable($table)->getColumns());
+            $stmt = $this->db->prepare(
+                'SELECT column_name FROM information_schema.columns WHERE table_name = :table'
+            );
+            $stmt->bindValue('table', $table);
+            $stmt->execute();
         } catch (\Throwable $e) {
             $this->logger->warning(
                 'RenameDutchRuleColumns: could not read columns; skipping table.',
@@ -256,6 +290,16 @@ class RenameDutchRuleColumns implements IRepairStep
             );
             return [];
         }
+
+        $columns = [];
+        while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
+            $name = (string) ($row['column_name'] ?? '');
+            if ($name !== '') {
+                $columns[] = $name;
+            }
+        }
+
+        return $columns;
 
     }//end columnsOf()
 
