@@ -111,7 +111,7 @@ class RuleExecutionLogCleanup extends TimedJob
         $purged = 0;
         foreach ($results as $row) {
             $data      = $this->normalise(object: $row);
-            $timestamp = (string) ($data['tijdstip'] ?? '');
+            $timestamp = (string) ($data['timestamp'] ?? '');
             if ($timestamp === '' || $timestamp >= $cutoff) {
                 continue;
             }

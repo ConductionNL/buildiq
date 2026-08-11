@@ -81,19 +81,19 @@ class DecisionTableEvaluator
         $hitPolicy = (string) ($table['hitPolicy'] ?? 'first');
         $inputs    = ($table['inputColumns'] ?? []);
         $outputs   = ($table['outputColumns'] ?? []);
-        $rules     = ($table['regels'] ?? []);
+        $rules     = ($table['rules'] ?? []);
 
         // Resolve each input column's value from the payload once.
         $columnValues = [];
         foreach ($inputs as $col) {
-            $name = (string) ($col['naam'] ?? '');
-            $path = (string) ($col['expressiePad'] ?? $name);
+            $name = (string) ($col['name'] ?? '');
+            $path = (string) ($col['expressionPath'] ?? $name);
             $columnValues[$name] = $this->expressionEvaluator->evaluateExpression($path, $payload);
         }
 
         $matchedIndexes = [];
         foreach ($rules as $index => $rule) {
-            if ($this->ruleMatches(conditions: ($rule['condities'] ?? []), columnValues: $columnValues) === true) {
+            if ($this->ruleMatches(conditions: ($rule['conditions'] ?? []), columnValues: $columnValues) === true) {
                 $matchedIndexes[] = $index;
             }
         }
@@ -139,9 +139,9 @@ class DecisionTableEvaluator
 
             case 'priority':
                 $best     = $matched[0];
-                $bestPrio = (int) ($rules[$best]['prioriteit'] ?? 0);
+                $bestPrio = (int) ($rules[$best]['priority'] ?? 0);
                 foreach ($matched as $idx) {
-                    $prio = (int) ($rules[$idx]['prioriteit'] ?? 0);
+                    $prio = (int) ($rules[$idx]['priority'] ?? 0);
                     if ($prio > $bestPrio) {
                         $best     = $idx;
                         $bestPrio = $prio;
@@ -153,7 +153,7 @@ class DecisionTableEvaluator
             case 'collect':
                 $collected = [];
                 foreach ($matched as $idx) {
-                    $collected[] = ($rules[$idx]['waardes'] ?? []);
+                    $collected[] = ($rules[$idx]['values'] ?? []);
                 }
                 return [
                     'output' => ['collected' => $collected],
@@ -179,7 +179,7 @@ class DecisionTableEvaluator
     private function singleOutput(int $index, array $rules): array
     {
         return [
-            'output' => ($rules[$index]['waardes'] ?? []),
+            'output' => ($rules[$index]['values'] ?? []),
             'ruleId' => $this->ruleLabel(index: $index, rules: $rules),
         ];
 
@@ -215,12 +215,12 @@ class DecisionTableEvaluator
     {
         $out = [];
         foreach ($outputs as $col) {
-            $name = (string) ($col['naam'] ?? '');
+            $name = (string) ($col['name'] ?? '');
             if ($name === '') {
                 continue;
             }
 
-            $out[$name] = ($col['defaultwaarde'] ?? null);
+            $out[$name] = ($col['defaultValue'] ?? null);
         }
 
         return $out;
@@ -325,7 +325,7 @@ class DecisionTableEvaluator
      */
     public function detectIssues(array $table): array
     {
-        $rules     = array_values(($table['regels'] ?? []));
+        $rules     = array_values(($table['rules'] ?? []));
         $hitPolicy = (string) ($table['hitPolicy'] ?? 'first');
         $count     = count($rules);
 
@@ -334,11 +334,11 @@ class DecisionTableEvaluator
 
         for ($i = 0; $i < $count; $i++) {
             for ($j = ($i + 1); $j < $count; $j++) {
-                if ($this->rulesOverlap(a: ($rules[$i]['condities'] ?? []), b: ($rules[$j]['condities'] ?? [])) === true) {
+                if ($this->rulesOverlap(a: ($rules[$i]['conditions'] ?? []), b: ($rules[$j]['conditions'] ?? [])) === true) {
                     $overlaps[] = 'Rules '.$i.' and '.$j.' overlap.';
 
                     if (in_array($hitPolicy, ['first', 'rule-order'], true) === true
-                        && $this->subsumes(a: ($rules[$i]['condities'] ?? []), b: ($rules[$j]['condities'] ?? [])) === true
+                        && $this->subsumes(a: ($rules[$i]['conditions'] ?? []), b: ($rules[$j]['conditions'] ?? [])) === true
                     ) {
                         $unreachable[] = 'Rule '.$j.' is unreachable — shadowed by rule '.$i.'.';
                     }

@@ -156,7 +156,7 @@ class RuleImpactAnalysisService
             }
 
             // Filter: only include entries within the window.
-            $timestamp = (string) ($entry['tijdstip'] ?? '');
+            $timestamp = (string) ($entry['timestamp'] ?? '');
             if ($timestamp !== '' && $timestamp < $since) {
                 continue;
             }
@@ -180,7 +180,7 @@ class RuleImpactAnalysisService
         $grouped = [];
         foreach ($logs as $entry) {
             $appId     = (string) ($entry['userId'] ?? '');
-            $timestamp = (string) ($entry['tijdstip'] ?? '');
+            $timestamp = (string) ($entry['timestamp'] ?? '');
 
             if (isset($grouped[$appId]) === false) {
                 $grouped[$appId] = ['callCount' => 0, 'lastCallAt' => $timestamp];

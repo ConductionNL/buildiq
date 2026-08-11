@@ -56,15 +56,15 @@
 			</thead>
 			<tbody>
 				<tr v-for="rs in ruleSets" :key="rs.slug" data-testid="rule-set-row">
-					<td>{{ rs.naam }}</td>
+					<td>{{ rs.name }}</td>
 					<td>{{ rs.ruleType }}</td>
 					<td>
 						<span class="rule-sets-page__status" :class="'rule-sets-page__status--' + rs.status">
 							{{ rs.status }}
 						</span>
 					</td>
-					<td>{{ rs.versie }}</td>
-					<td>{{ rs.eigenaarApp }}</td>
+					<td>{{ rs.version }}</td>
+					<td>{{ rs.ownerApp }}</td>
 					<td>
 						<span class="rule-sets-page__test" :class="testBadgeClass(rs.slug)">
 							{{ testBadgeLabel(rs.slug) }}
@@ -182,7 +182,7 @@ export default {
 			this.showSandbox = true
 		},
 		openCreate() {
-			this.activeRuleSet = { slug: '', naam: '', ruleType: 'decision-table', status: 'draft', versie: '1.0.0' }
+			this.activeRuleSet = { slug: '', name: '', ruleType: 'decision-table', status: 'draft', version: '1.0.0' }
 			this.showDecisionEditor = true
 		},
 		async runTests(ruleSet) {

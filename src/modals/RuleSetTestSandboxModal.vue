@@ -10,7 +10,7 @@
 <template>
 	<NcModal size="large" @close="$emit('close')">
 		<div class="rule-set-test-sandbox">
-			<h2>{{ t('openbuild', 'Test sandbox') }} — {{ ruleSet.naam }}</h2>
+			<h2>{{ t('openbuild', 'Test sandbox') }} — {{ ruleSet.name }}</h2>
 
 			<div class="rule-set-test-sandbox__toolbar">
 				<NcButton type="primary" :disabled="running" @click="runAll">
@@ -45,9 +45,9 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-for="tc in testCases" :key="tc.slug || tc.naam" data-testid="test-case-row">
-						<td>{{ tc.naam }}</td>
-						<td>{{ tc.beschrijving }}</td>
+					<tr v-for="tc in testCases" :key="tc.slug || tc.name" data-testid="test-case-row">
+						<td>{{ tc.name }}</td>
+						<td>{{ tc.description }}</td>
 						<td>
 							<span class="rule-set-test-sandbox__result" :class="resultClass(tc)">
 								{{ resultLabel(tc) }}
@@ -58,7 +58,7 @@
 			</table>
 
 			<div v-if="showAdd" class="rule-set-test-sandbox__add">
-				<NcTextField v-model="draft.naam" :label="t('openbuild', 'Test case name')" />
+				<NcTextField v-model="draft.name" :label="t('openbuild', 'Test case name')" />
 				<NcTextArea v-model="draft.inputPayloadText" :label="t('openbuild', 'Input payload (JSON)')" />
 				<NcTextArea v-model="draft.expectedText" :label="t('openbuild', 'Expected result (JSON)')" />
 				<NcButton type="primary" :disabled="saving" @click="addTestCase">
@@ -106,7 +106,7 @@ export default {
 			errorMessage: '',
 			failedNames: [],
 			draft: {
-				naam: '',
+				name: '',
 				inputPayloadText: '{}',
 				expectedText: '{}',
 			},
@@ -144,7 +144,7 @@ export default {
 			}
 		},
 		resultClass(tc) {
-			if (this.failedNames.includes(tc.naam)) {
+			if (this.failedNames.includes(tc.name)) {
 				return 'rule-set-test-sandbox__result--fail'
 			}
 			if (this.summary) {
@@ -153,7 +153,7 @@ export default {
 			return 'rule-set-test-sandbox__result--unknown'
 		},
 		resultLabel(tc) {
-			if (this.failedNames.includes(tc.naam)) {
+			if (this.failedNames.includes(tc.name)) {
 				return t('openbuild', 'Failed')
 			}
 			if (this.summary) {
@@ -170,13 +170,13 @@ export default {
 				const url = generateUrl('/apps/openregister/api/objects/openbuild/rule-test-case')
 				await axios.post(url, {
 					ruleSetId: this.ruleSet.slug,
-					naam: this.draft.naam,
+					name: this.draft.name,
 					inputPayload: payload,
-					verwachtResultaat: expected,
-					laatsteTestResultaat: 'niet-uitgevoerd',
+					expectedResult: expected,
+					lastTestResult: 'not-run',
 				})
 				this.showAdd = false
-				this.draft = { naam: '', inputPayloadText: '{}', expectedText: '{}' }
+				this.draft = { name: '', inputPayloadText: '{}', expectedText: '{}' }
 				this.fetchTestCases()
 			} catch (error) {
 				this.errorMessage = t('openbuild', 'Could not save the test case — check the JSON is valid.')

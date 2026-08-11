@@ -122,9 +122,9 @@ class RuleSetVersioningService
             );
         }
 
-        $ruleSet['versie']        = $this->bumpVersion(current: (string) ($ruleSet['versie'] ?? '1.0.0'), bump: $bump);
-        $ruleSet['status']        = 'active';
-        $ruleSet['geactiveerdOp'] = gmdate('Y-m-d\TH:i:s\Z');
+        $ruleSet['version']     = $this->bumpVersion(current: (string) ($ruleSet['version'] ?? '1.0.0'), bump: $bump);
+        $ruleSet['status']      = 'active';
+        $ruleSet['activatedOn'] = gmdate('Y-m-d\TH:i:s\Z');
 
         try {
             $this->objectService->saveObject(
@@ -156,7 +156,7 @@ class RuleSetVersioningService
     {
         $failures = [];
         foreach ($testCases as $testCase) {
-            $expected = ($testCase['verwachtResultaat'] ?? []);
+            $expected = ($testCase['expectedResult'] ?? []);
             $payload  = ($testCase['inputPayload'] ?? []);
 
             $outcome = $this->ruleEngineService->evaluate(
@@ -167,7 +167,7 @@ class RuleSetVersioningService
             );
 
             if ($this->matchesExpected(expected: $expected, actual: $outcome['result']) === false) {
-                $failures[] = (string) ($testCase['naam'] ?? 'unnamed');
+                $failures[] = (string) ($testCase['name'] ?? 'unnamed');
             }
         }
 

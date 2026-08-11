@@ -18,7 +18,7 @@
 		@closing="$emit('close')">
 		<div class="decision-table-editor">
 			<NcTextField
-				v-model="staged.naam"
+				v-model="staged.name"
 				:label="t('openbuild', 'Rule set name')"
 				data-testid="rule-set-name" />
 
@@ -30,8 +30,8 @@
 
 			<h4>{{ t('openbuild', 'Input columns') }}</h4>
 			<div v-for="(col, index) in staged.inputColumns" :key="'in-' + index" class="decision-table-editor__col">
-				<NcTextField v-model="col.naam" :label="t('openbuild', 'Name')" />
-				<NcTextField v-model="col.expressiePad" :label="t('openbuild', 'Payload path')" />
+				<NcTextField v-model="col.name" :label="t('openbuild', 'Name')" />
+				<NcTextField v-model="col.expressionPath" :label="t('openbuild', 'Payload path')" />
 				<NcButton type="tertiary" @click="removeInput(index)">
 					{{ t('openbuild', 'Remove') }}
 				</NcButton>
@@ -45,7 +45,7 @@
 				<thead>
 					<tr>
 						<th v-for="(col, index) in staged.inputColumns" :key="'h-' + index" scope="col">
-							{{ col.naam }}
+							{{ col.name }}
 						</th>
 						<th scope="col">
 							{{ t('openbuild', 'Decision') }}
@@ -53,18 +53,18 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-for="(rule, rIndex) in staged.regels" :key="'r-' + rIndex">
+					<tr v-for="(rule, rIndex) in staged.rules" :key="'r-' + rIndex">
 						<td v-for="(col, cIndex) in staged.inputColumns" :key="'c-' + cIndex">
 							<input
-								v-model="rule.condities[col.naam]"
+								v-model="rule.conditions[col.name]"
 								class="decision-table-editor__cell"
-								:class="{ 'decision-table-editor__cell--invalid': !isCellValid(rule.condities[col.naam]) }"
-								:aria-label="col.naam"
+								:class="{ 'decision-table-editor__cell--invalid': !isCellValid(rule.conditions[col.name]) }"
+								:aria-label="col.name"
 								@input="markDirty">
 						</td>
 						<td>
 							<input
-								v-model="rule.waardes.decision"
+								v-model="rule.values.decision"
 								class="decision-table-editor__cell"
 								:aria-label="t('openbuild', 'Decision')">
 						</td>
@@ -124,11 +124,11 @@ export default {
 		return {
 			staged: {
 				slug: this.ruleSet.slug || '',
-				naam: this.ruleSet.naam || '',
+				name: this.ruleSet.name || '',
 				ruleType: 'decision-table',
 				hitPolicy: this.ruleSet.hitPolicy || 'first',
 				inputColumns: this.ruleSet.inputColumns ? JSON.parse(JSON.stringify(this.ruleSet.inputColumns)) : [],
-				regels: this.ruleSet.regels ? JSON.parse(JSON.stringify(this.ruleSet.regels)) : [],
+				rules: this.ruleSet.rules ? JSON.parse(JSON.stringify(this.ruleSet.rules)) : [],
 			},
 			hitPolicies: ['unique', 'first', 'priority', 'any', 'collect', 'rule-order'],
 			saving: false,
@@ -138,8 +138,8 @@ export default {
 	computed: {
 		warnings() {
 			const issues = []
-			const catchAllIndex = this.staged.regels.findIndex((r) => Object.keys(r.condities || {}).length === 0)
-			if (catchAllIndex !== -1 && catchAllIndex < this.staged.regels.length - 1) {
+			const catchAllIndex = this.staged.rules.findIndex((r) => Object.keys(r.conditions || {}).length === 0)
+			if (catchAllIndex !== -1 && catchAllIndex < this.staged.rules.length - 1) {
 				issues.push(t('openbuild', 'A catch-all rule appears before other rules — later rules are unreachable.'))
 			}
 			return issues
@@ -151,13 +151,13 @@ export default {
 		},
 		markDirty() {},
 		addInput() {
-			this.staged.inputColumns.push({ naam: '', type: 'string', expressiePad: '' })
+			this.staged.inputColumns.push({ name: '', type: 'string', expressionPath: '' })
 		},
 		removeInput(index) {
 			this.staged.inputColumns.splice(index, 1)
 		},
 		addRule() {
-			this.staged.regels.push({ condities: {}, waardes: { decision: '' }, label: '' })
+			this.staged.rules.push({ conditions: {}, values: { decision: '' }, label: '' })
 		},
 		async save() {
 			this.saving = true
@@ -166,7 +166,7 @@ export default {
 				const ruleSetUrl = generateUrl('/apps/openregister/api/objects/openbuild/rule-set')
 				await axios.post(ruleSetUrl, {
 					slug: this.staged.slug,
-					naam: this.staged.naam,
+					name: this.staged.name,
 					ruleType: 'decision-table',
 					status: this.ruleSet.status || 'draft',
 				})
@@ -175,7 +175,7 @@ export default {
 					ruleSetId: this.staged.slug,
 					hitPolicy: this.staged.hitPolicy,
 					inputColumns: this.staged.inputColumns,
-					regels: this.staged.regels,
+					rules: this.staged.rules,
 				})
 				this.$emit('saved')
 			} catch (error) {
