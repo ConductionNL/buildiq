@@ -274,7 +274,13 @@ test.describe('openbuild form-editor-logic', () => {
 			const persistedPage = (persisted.pages || []).find((p) => p.id === FORM_PAGE_ID)
 			return persistedPage?.config?.steps?.[0]?.fields ?? null
 		}, {
-			timeout: 30_000,
+			// The repo's `expect` default (playwright.config.ts). NOT 30_000:
+			// that equals the whole per-test budget, so the poll could never
+			// actually reach it — the test would die first and report a test
+			// timeout instead of this assertion's own message, which is the
+			// exact failure mode the config's comment says the shorter expect
+			// timeout exists to prevent.
+			timeout: 15_000,
 			message: 'saving must append the still-unassigned field keys to the final step',
 		}).toEqual(['wantsContact', 'email', 'phone'])
 	})
