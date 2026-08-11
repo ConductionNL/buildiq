@@ -143,6 +143,13 @@ export default {
 				this.running = false
 			}
 		},
+		/**
+		 * CSS modifier for a test case's last-run outcome.
+		 *
+		 * @param {object} tc - the test case.
+		 * @return {string}
+		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-004-test-case-driven-sandbox-validation
+		 */
 		resultClass(tc) {
 			if (this.failedNames.includes(tc.name)) {
 				return 'rule-set-test-sandbox__result--fail'
@@ -152,6 +159,13 @@ export default {
 			}
 			return 'rule-set-test-sandbox__result--unknown'
 		},
+		/**
+		 * Human-readable label for a test case's last-run outcome.
+		 *
+		 * @param {object} tc - the test case.
+		 * @return {string}
+		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-004-test-case-driven-sandbox-validation
+		 */
 		resultLabel(tc) {
 			if (this.failedNames.includes(tc.name)) {
 				return t('openbuild', 'Failed')
@@ -161,6 +175,12 @@ export default {
 			}
 			return t('openbuild', 'Not run')
 		},
+		/**
+		 * Create a new TestCase against the current RuleSet.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-004-test-case-driven-sandbox-validation
+		 */
 		async addTestCase() {
 			this.saving = true
 			this.errorMessage = ''

@@ -112,6 +112,8 @@ class RuleSetVersioningService
      * @return array<string,mixed> The updated RuleSet data.
      *
      * @throws RuntimeException When one or more TestCases fail.
+     *
+     * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-005-versioning-on-activation-with-semver-auto-increment
      */
     public function promoteToActive(array $ruleSet, array $testCases, string $bump=self::BUMP_PATCH): array
     {
@@ -151,6 +153,8 @@ class RuleSetVersioningService
      * @param array<int,array<string,mixed>> $testCases The TestCases.
      *
      * @return array<int,string> Names of failing test cases.
+     *
+     * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-004-test-case-driven-sandbox-validation
      */
     public function runTestGate(string $slug, array $testCases): array
     {

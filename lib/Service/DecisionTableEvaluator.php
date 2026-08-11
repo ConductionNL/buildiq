@@ -75,6 +75,8 @@ class DecisionTableEvaluator
      * @return array{outputColumns:array<string,mixed>,triggeredRuleId:string|null,matches:array<int,int>,overlap_warnings:array<int,string>,unreachable_rules:array<int,int>}
      *
      * @throws RuntimeException When hit policy `unique` matches more than one rule.
+     *
+     * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-002-decisiontable-schema-for-dmn-based-multi-condition-rules
      */
     public function evaluate(array $table, array $payload): array
     {
@@ -322,6 +324,8 @@ class DecisionTableEvaluator
      * @param array<string,mixed> $table The DecisionTable object data.
      *
      * @return array{overlaps:array<int,string>,unreachable:array<int,string>}
+     *
+     * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-012-visual-editor-feedback-overlap-and-completeness-detection
      */
     public function detectIssues(array $table): array
     {

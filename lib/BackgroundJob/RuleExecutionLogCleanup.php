@@ -79,6 +79,8 @@ class RuleExecutionLogCleanup extends TimedJob
      *
      * @return void
      *
+     * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-013-cleanup-job-for-aged-execution-logs
+     *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     protected function run($argument): void

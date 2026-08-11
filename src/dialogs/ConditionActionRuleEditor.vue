@@ -41,7 +41,7 @@
 				{{ t('openbuild', 'Add action') }}
 			</NcButton>
 
-			<NcCheckboxRadioSwitch v-model="staged.active">
+			<NcCheckboxRadioSwitch v-model="staged.active" :aria-label="t('openbuild', 'Active')">
 				{{ t('openbuild', 'Active') }}
 			</NcCheckboxRadioSwitch>
 
@@ -102,12 +102,31 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * Append an empty action row to the staged rule.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-003-conditionactionrule-schema-for-sequential-workflow-decisions
+		 */
 		addAction() {
 			this.staged.actions.push({ type: 'set-field', parameters: {} })
 		},
+		/**
+		 * Remove one action row from the staged rule.
+		 *
+		 * @param {number} index - position of the action to drop.
+		 * @return {void}
+		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-003-conditionactionrule-schema-for-sequential-workflow-decisions
+		 */
 		removeAction(index) {
 			this.staged.actions.splice(index, 1)
 		},
+		/**
+		 * Persist the RuleSet and its ConditionActionRule via OpenRegister.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-003-conditionactionrule-schema-for-sequential-workflow-decisions
+		 */
 		async save() {
 			this.saving = true
 			this.errorMessage = ''

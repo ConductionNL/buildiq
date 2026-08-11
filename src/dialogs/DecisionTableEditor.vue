@@ -136,6 +136,12 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Editor feedback: flag a catch-all rule that makes later rules unreachable.
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-012-visual-editor-feedback-overlap-and-completeness-detection
+		 */
 		warnings() {
 			const issues = []
 			const catchAllIndex = this.staged.rules.findIndex((r) => Object.keys(r.conditions || {}).length === 0)
@@ -150,15 +156,40 @@ export default {
 			return isCellConditionValid(value)
 		},
 		markDirty() {},
+		/**
+		 * Append an empty input column to the staged table.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-002-decisiontable-schema-for-dmn-based-multi-condition-rules
+		 */
 		addInput() {
 			this.staged.inputColumns.push({ name: '', type: 'string', expressionPath: '' })
 		},
+		/**
+		 * Remove one input column from the staged table.
+		 *
+		 * @param {number} index - position of the column to drop.
+		 * @return {void}
+		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-002-decisiontable-schema-for-dmn-based-multi-condition-rules
+		 */
 		removeInput(index) {
 			this.staged.inputColumns.splice(index, 1)
 		},
+		/**
+		 * Append an empty rule row to the staged table.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-002-decisiontable-schema-for-dmn-based-multi-condition-rules
+		 */
 		addRule() {
 			this.staged.rules.push({ conditions: {}, values: { decision: '' }, label: '' })
 		},
+		/**
+		 * Persist the RuleSet and its DecisionTable via OpenRegister.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-002-decisiontable-schema-for-dmn-based-multi-condition-rules
+		 */
 		async save() {
 			this.saving = true
 			this.errorMessage = ''
