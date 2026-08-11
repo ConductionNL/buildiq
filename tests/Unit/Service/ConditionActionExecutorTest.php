@@ -61,9 +61,9 @@ final class ConditionActionExecutorTest extends TestCase
     public function testPriorityAndSalienceOrdering(): void
     {
         $rules = [
-            ['naam' => 'C', 'prioriteit' => 100, 'salience' => 5, 'conditie' => '', 'acties' => []],
-            ['naam' => 'A', 'prioriteit' => 200, 'salience' => 0, 'conditie' => '', 'acties' => []],
-            ['naam' => 'B', 'prioriteit' => 100, 'salience' => 10, 'conditie' => '', 'acties' => []],
+            ['name' => 'C', 'priority' => 100, 'salience' => 5, 'condition' => '', 'actions' => []],
+            ['name' => 'A', 'priority' => 200, 'salience' => 0, 'condition' => '', 'actions' => []],
+            ['name' => 'B', 'priority' => 100, 'salience' => 10, 'condition' => '', 'actions' => []],
         ];
         $result = $this->executor->execute($rules, []);
         $order  = array_column($result['triggeredRules'], 'name');
@@ -72,7 +72,7 @@ final class ConditionActionExecutorTest extends TestCase
     }//end testPriorityAndSalienceOrdering()
 
     /**
-     * A matching condition runs a set-veld action that mutates the payload.
+     * A matching condition runs a set-field action that mutates the payload.
      *
      * @return void
      */
@@ -80,9 +80,9 @@ final class ConditionActionExecutorTest extends TestCase
     {
         $rules = [
             [
-                'naam'     => 'escalate',
-                'conditie' => "severity == 'critical'",
-                'acties'   => [['type' => 'set-veld', 'parameters' => ['veld' => 'escalated', 'waarde' => true]]],
+                'name'     => 'escalate',
+                'condition' => "severity == 'critical'",
+                'actions'   => [['type' => 'set-field', 'parameters' => ['field' => 'escalated', 'value' => true]]],
             ],
         ];
         $result = $this->executor->execute($rules, ['severity' => 'critical']);
@@ -99,7 +99,7 @@ final class ConditionActionExecutorTest extends TestCase
     public function testConditionNotMet(): void
     {
         $rules = [
-            ['naam' => 'x', 'conditie' => 'amount > 5000', 'acties' => [['type' => 'set-veld', 'parameters' => ['veld' => 'big', 'waarde' => true]]]],
+            ['name' => 'x', 'condition' => 'amount > 5000', 'actions' => [['type' => 'set-field', 'parameters' => ['field' => 'big', 'value' => true]]]],
         ];
         $result = $this->executor->execute($rules, ['amount' => 100]);
         $this->assertEmpty($result['triggeredRules']);
@@ -120,9 +120,9 @@ final class ConditionActionExecutorTest extends TestCase
         };
         $rules = [
             [
-                'naam'     => 'notify',
-                'conditie' => '',
-                'acties'   => [['type' => 'send-notification', 'parameters' => ['recipient' => 'x']]],
+                'name'     => 'notify',
+                'condition' => '',
+                'actions'   => [['type' => 'send-notification', 'parameters' => ['recipient' => 'x']]],
             ],
         ];
         $result = $this->executor->execute($rules, [], true, $dispatcher);
@@ -143,9 +143,9 @@ final class ConditionActionExecutorTest extends TestCase
     {
         $rules = [
             [
-                'naam'     => 'route-for-approval',
-                'conditie' => '',
-                'acties'   => [['type' => 'approval', 'parameters' => ['assigneeGroup' => 'permit-reviewers']]],
+                'name'     => 'route-for-approval',
+                'condition' => '',
+                'actions'   => [['type' => 'approval', 'parameters' => ['assigneeGroup' => 'permit-reviewers']]],
             ],
         ];
 
@@ -169,7 +169,7 @@ final class ConditionActionExecutorTest extends TestCase
             $dispatched[] = $type;
         };
         $rules = [
-            ['naam' => 'notify', 'conditie' => '', 'acties' => [['type' => 'send-notification', 'parameters' => []]]],
+            ['name' => 'notify', 'condition' => '', 'actions' => [['type' => 'send-notification', 'parameters' => []]]],
         ];
         $this->executor->execute($rules, [], false, $dispatcher);
         $this->assertSame(['send-notification'], $dispatched);
@@ -184,7 +184,7 @@ final class ConditionActionExecutorTest extends TestCase
     public function testInactiveRuleSkipped(): void
     {
         $rules = [
-            ['naam' => 'off', 'actief' => false, 'conditie' => '', 'acties' => []],
+            ['name' => 'off', 'active' => false, 'condition' => '', 'actions' => []],
         ];
         $result = $this->executor->execute($rules, []);
         $this->assertEmpty($result['triggeredRules']);

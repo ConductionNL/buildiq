@@ -128,7 +128,7 @@ final class RulesControllerTest extends TestCase
         $this->authenticate();
         $this->request->method('getParams')->willReturn(['payload' => ['x' => 1]]);
         $this->ruleEngine->method('evaluate')->willReturn(
-            ['result' => ['decision' => 'approve'], 'geraaktRegels' => ['r1'], 'executieDuur' => 3, 'fouten' => []]
+            ['result' => ['decision' => 'approve'], 'triggeredRules' => ['r1'], 'executionTime' => 3, 'errors' => []]
         );
 
         $response = $this->controller()->evaluate('loan-eligibility');
@@ -176,7 +176,7 @@ final class RulesControllerTest extends TestCase
         $this->authenticate();
         $this->request->method('getParams')->willReturn(['payload' => []]);
         $this->ruleEngine->method('evaluate')->willReturn(
-            ['result' => [], 'geraaktRegels' => [], 'executieDuur' => 999, 'fouten' => ['Evaluation exceeded the 500ms soft timeout (999ms).']]
+            ['result' => [], 'triggeredRules' => [], 'executionTime' => 999, 'errors' => ['Evaluation exceeded the 500ms soft timeout (999ms).']]
         );
 
         $response = $this->controller()->evaluate('slow');
