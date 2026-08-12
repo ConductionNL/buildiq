@@ -193,22 +193,27 @@ export default {
 	color: var(--color-error);
 	margin: 4px 0 0;
 }
+
 .connector-source-picker__hint {
 	color: var(--color-text-maxcontrast);
 	margin: 4px 0 0;
 }
+
 .connector-source-picker__hint--warning {
 	color: var(--color-warning-text, var(--color-warning));
 }
+
 .connector-source-picker__unverified {
 	color: var(--color-warning-text, var(--color-warning));
 	margin: 4px 0 0;
 	font-size: 0.9em;
 }
+
 .connector-source-picker__manual-label {
 	display: block;
 	margin-top: 8px;
 }
+
 .connector-source-picker__manual-label input {
 	width: 100%;
 }

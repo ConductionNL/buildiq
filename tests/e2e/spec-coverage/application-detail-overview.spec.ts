@@ -33,10 +33,16 @@ async function gotoHelloWorldDetail(page: import('@playwright/test').Page) {
 	await page.waitForURL(/\/applications\//, { timeout: 15_000 })
 }
 
-// @e2e application-detail-overview::page-renders-six-rows-in-order
 // QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+//
+// ANCHORS REMOVED. The requirement names six rows IN DOM ORDER, plus four
+// sidebar tabs present and one absent. This body asserts `main` is visible, the
+// document title matches /openbuild/i, and the string "Hello World" appears —
+// which is true of any detail page that does not white-screen, and would stay
+// true with all six rows deleted. The test title says so itself: "renders main
+// area without crashing". That is a smoke test, and a smoke test is a fine
+// thing to have; it is just not this requirement.
 test.skip('REQ-OBADO-001 — application detail page renders main area without crashing', async ({ page }) => {
-	// @e2e application-detail-overview::page-renders-six-rows-in-order
 	await gotoHelloWorldDetail(page)
 
 	// Main content area must be visible
@@ -49,10 +55,15 @@ test.skip('REQ-OBADO-001 — application detail page renders main area without c
 	await expect(page.getByText('Hello World').first(), 'app name must be visible in detail').toBeVisible({ timeout: 10_000 })
 })
 
-// @e2e application-detail-overview::hero-icon-comes-from-the-application-record
 // QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+//
+// ANCHORS REMOVED. The requirement is that the hero strip shows the icon from
+// the APPLICATION record rather than a per-version one (ADR-001). This body
+// counts hero images, then discards the count — `iconCount` is computed and
+// never asserted on — and finishes on the same two white-screen checks as the
+// test above. Its own comment concedes it: "the page still passes if main
+// rendered". A computed-but-unasserted value is the tell.
 test.skip('REQ-OBADO-001 — detail page renders the app icon from the Application record', async ({ page }) => {
-	// @e2e application-detail-overview::hero-icon-comes-from-the-application-record
 	await gotoHelloWorldDetail(page)
 
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })

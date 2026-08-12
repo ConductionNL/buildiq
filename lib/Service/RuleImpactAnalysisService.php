@@ -58,197 +58,187 @@ use Throwable;
  *
  * @spec openspec/changes/business-rules-engine/tasks.md#7.1
  */
-class RuleImpactAnalysisService
-{
+class RuleImpactAnalysisService {
 
-    /**
-     * How many days of log history to look back.
-     */
-    public const WINDOW_DAYS = 30;
+	/**
+	 * How many days of log history to look back.
+	 */
+	public const WINDOW_DAYS = 30;
 
-    /**
-     * Constructor.
-     *
-     * @param ObjectService   $objectService OpenRegister object service.
-     * @param LoggerInterface $logger        PSR logger.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly ObjectService $objectService,
-        private readonly LoggerInterface $logger,
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param ObjectService $objectService OpenRegister object service.
+	 * @param LoggerInterface $logger PSR logger.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly ObjectService $objectService,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Analyse which apps/users have called a RuleSet in the last 30 days.
-     *
-     * Queries RuleExecutionLog entries for the given `$ruleSetId`, groups them
-     * by `userId` (treated as the app identifier in single-tenant usage; in
-     * multi-tenant setups the consuming app registers its own userId). Returns
-     * an ImpactReport array suitable for displaying to an operator before
-     * activating a new RuleSet version.
-     *
-     * @param string $ruleSetId  The slug of the RuleSet to analyse.
-     * @param int    $windowDays Number of days to look back (default 30).
-     *
-     * @return array{ruleSetId:string,windowDays:int,consumerApps:array<int,array{appId:string,callCount:int,lastCallAt:string}>,notification_recipients:string[]}
-     *
-     * @spec openspec/changes/business-rules-engine/tasks.md#7.1
-     */
-    public function analyzeImpactOnActivation(string $ruleSetId, int $windowDays=self::WINDOW_DAYS): array
-    {
-        $logs       = $this->fetchLogs(ruleSetId: $ruleSetId, windowDays: $windowDays);
-        $grouped    = $this->groupByApp(logs: $logs);
-        $apps       = $this->buildConsumerApps(grouped: $grouped);
-        $uniqueIds  = array_unique(array_column($apps, 'appId'));
-        $recipients = array_values(array_filter($uniqueIds, fn(string $id): bool => $id !== ''));
+	/**
+	 * Analyse which apps/users have called a RuleSet in the last 30 days.
+	 *
+	 * Queries RuleExecutionLog entries for the given `$ruleSetId`, groups them
+	 * by `userId` (treated as the app identifier in single-tenant usage; in
+	 * multi-tenant setups the consuming app registers its own userId). Returns
+	 * an ImpactReport array suitable for displaying to an operator before
+	 * activating a new RuleSet version.
+	 *
+	 * @param string $ruleSetId The slug of the RuleSet to analyse.
+	 * @param int $windowDays Number of days to look back (default 30).
+	 *
+	 * @return array{ruleSetId:string,windowDays:int,consumerApps:array<int,array{appId:string,callCount:int,lastCallAt:string}>,notification_recipients:string[]}
+	 *
+	 * @spec openspec/changes/business-rules-engine/tasks.md#7.1
+	 */
+	public function analyzeImpactOnActivation(string $ruleSetId, int $windowDays = self::WINDOW_DAYS): array {
+		$logs = $this->fetchLogs(ruleSetId: $ruleSetId, windowDays: $windowDays);
+		$grouped = $this->groupByApp(logs: $logs);
+		$apps = $this->buildConsumerApps(grouped: $grouped);
+		$uniqueIds = array_unique(array_column($apps, 'appId'));
+		$recipients = array_values(array_filter($uniqueIds, fn (string $id): bool => $id !== ''));
 
-        return [
-            'ruleSetId'               => $ruleSetId,
-            'windowDays'              => $windowDays,
-            'consumerApps'            => $apps,
-            'notification_recipients' => $recipients,
-        ];
+		return [
+			'ruleSetId' => $ruleSetId,
+			'windowDays' => $windowDays,
+			'consumerApps' => $apps,
+			'notification_recipients' => $recipients,
+		];
 
-    }//end analyzeImpactOnActivation()
+	}//end analyzeImpactOnActivation()
 
-    /**
-     * Fetch RuleExecutionLog records for a RuleSet within the look-back window.
-     *
-     * @param string $ruleSetId  The RuleSet slug.
-     * @param int    $windowDays Number of days to look back.
-     *
-     * @return array<int,array<string,mixed>>
-     */
-    private function fetchLogs(string $ruleSetId, int $windowDays): array
-    {
-        $since = gmdate('Y-m-d\TH:i:s\Z', strtotime("-{$windowDays} days"));
+	/**
+	 * Fetch RuleExecutionLog records for a RuleSet within the look-back window.
+	 *
+	 * @param string $ruleSetId The RuleSet slug.
+	 * @param int $windowDays Number of days to look back.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function fetchLogs(string $ruleSetId, int $windowDays): array {
+		$since = gmdate('Y-m-d\TH:i:s\Z', strtotime("-{$windowDays} days"));
 
-        try {
-            $results = $this->objectService->findAll(
-                config: [
-                    'filters' => [
-                        'register'  => RuleEngineService::REGISTER_SLUG,
-                        'schema'    => RuleEngineService::EXECUTION_LOG_SCHEMA,
-                        'ruleSetId' => $ruleSetId,
-                    ],
-                ]
-            );
-        } catch (Throwable $e) {
-            $this->logger->warning(
-                'OpenBuild: RuleImpactAnalysisService cannot fetch logs',
-                ['ruleSetId' => $ruleSetId, 'exception' => $e->getMessage()]
-            );
-            return [];
-        }
+		try {
+			$results = $this->objectService->findAll(
+				config: [
+					'filters' => [
+						'register' => RuleEngineService::REGISTER_SLUG,
+						'schema' => RuleEngineService::EXECUTION_LOG_SCHEMA,
+						'ruleSetId' => $ruleSetId,
+					],
+				]
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'OpenBuild: RuleImpactAnalysisService cannot fetch logs',
+				['ruleSetId' => $ruleSetId, 'exception' => $e->getMessage()]
+			);
+			return [];
+		}
 
-        if (is_array($results) === false) {
-            return [];
-        }
+		if (is_array($results) === false) {
+			return [];
+		}
 
-        $logs = [];
-        foreach ($results as $row) {
-            $entry = $this->normalise(object: $row);
-            if ($entry === []) {
-                continue;
-            }
+		$logs = [];
+		foreach ($results as $row) {
+			$entry = $this->normalise(object: $row);
+			if ($entry === []) {
+				continue;
+			}
 
-            // Filter: only include entries within the window.
-            $timestamp = (string) ($entry['tijdstip'] ?? '');
-            if ($timestamp !== '' && $timestamp < $since) {
-                continue;
-            }
+			// Filter: only include entries within the window.
+			$timestamp = (string)($entry['timestamp'] ?? '');
+			if ($timestamp !== '' && $timestamp < $since) {
+				continue;
+			}
 
-            $logs[] = $entry;
-        }
+			$logs[] = $entry;
+		}
 
-        return $logs;
+		return $logs;
+	}//end fetchLogs()
 
-    }//end fetchLogs()
+	/**
+	 * Group log entries by the userId / appId field.
+	 *
+	 * @param array<int,array<string,mixed>> $logs The raw log entries.
+	 *
+	 * @return array<string,array{callCount:int,lastCallAt:string}>
+	 */
+	private function groupByApp(array $logs): array {
+		$grouped = [];
+		foreach ($logs as $entry) {
+			$appId = (string)($entry['userId'] ?? '');
+			$timestamp = (string)($entry['timestamp'] ?? '');
 
-    /**
-     * Group log entries by the userId / appId field.
-     *
-     * @param array<int,array<string,mixed>> $logs The raw log entries.
-     *
-     * @return array<string,array{callCount:int,lastCallAt:string}>
-     */
-    private function groupByApp(array $logs): array
-    {
-        $grouped = [];
-        foreach ($logs as $entry) {
-            $appId     = (string) ($entry['userId'] ?? '');
-            $timestamp = (string) ($entry['tijdstip'] ?? '');
+			if (isset($grouped[$appId]) === false) {
+				$grouped[$appId] = ['callCount' => 0, 'lastCallAt' => $timestamp];
+			}
 
-            if (isset($grouped[$appId]) === false) {
-                $grouped[$appId] = ['callCount' => 0, 'lastCallAt' => $timestamp];
-            }
+			$grouped[$appId]['callCount']++;
+			if ($timestamp > $grouped[$appId]['lastCallAt']) {
+				$grouped[$appId]['lastCallAt'] = $timestamp;
+			}
+		}
 
-            $grouped[$appId]['callCount']++;
-            if ($timestamp > $grouped[$appId]['lastCallAt']) {
-                $grouped[$appId]['lastCallAt'] = $timestamp;
-            }
-        }
+		// Sort by callCount descending so the most active consumer is first.
+		uasort($grouped, fn (array $a, array $b): int => $b['callCount'] <=> $a['callCount']);
 
-        // Sort by callCount descending so the most active consumer is first.
-        uasort($grouped, fn(array $a, array $b): int => $b['callCount'] <=> $a['callCount']);
+		return $grouped;
+	}//end groupByApp()
 
-        return $grouped;
+	/**
+	 * Convert the grouped map into the consumerApps list format.
+	 *
+	 * @param array<string,array{callCount:int,lastCallAt:string}> $grouped Grouped entries.
+	 *
+	 * @return array<int,array{appId:string,callCount:int,lastCallAt:string}>
+	 */
+	private function buildConsumerApps(array $grouped): array {
+		$apps = [];
+		foreach ($grouped as $appId => $data) {
+			$apps[] = [
+				'appId' => $appId,
+				'callCount' => $data['callCount'],
+				'lastCallAt' => $data['lastCallAt'],
+			];
+		}
 
-    }//end groupByApp()
+		return $apps;
+	}//end buildConsumerApps()
 
-    /**
-     * Convert the grouped map into the consumerApps list format.
-     *
-     * @param array<string,array{callCount:int,lastCallAt:string}> $grouped Grouped entries.
-     *
-     * @return array<int,array{appId:string,callCount:int,lastCallAt:string}>
-     */
-    private function buildConsumerApps(array $grouped): array
-    {
-        $apps = [];
-        foreach ($grouped as $appId => $data) {
-            $apps[] = [
-                'appId'      => $appId,
-                'callCount'  => $data['callCount'],
-                'lastCallAt' => $data['lastCallAt'],
-            ];
-        }
+	/**
+	 * Coerce an OR result entry to a plain array.
+	 *
+	 * @param mixed $object The OR object / result entry.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function normalise(mixed $object): array {
+		if (is_array($object) === true) {
+			return $object;
+		}
 
-        return $apps;
+		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
+			$serialised = $object->jsonSerialize();
+			if (is_array($serialised) === true) {
+				return $serialised;
+			}
+		}
 
-    }//end buildConsumerApps()
+		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
+			$inner = $object->getObject();
+			if (is_array($inner) === true) {
+				return $inner;
+			}
+		}
 
-    /**
-     * Coerce an OR result entry to a plain array.
-     *
-     * @param mixed $object The OR object / result entry.
-     *
-     * @return array<string,mixed>
-     */
-    private function normalise(mixed $object): array
-    {
-        if (is_array($object) === true) {
-            return $object;
-        }
-
-        if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-            $serialised = $object->jsonSerialize();
-            if (is_array($serialised) === true) {
-                return $serialised;
-            }
-        }
-
-        if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-            $inner = $object->getObject();
-            if (is_array($inner) === true) {
-                return $inner;
-            }
-        }
-
-        return [];
-
-    }//end normalise()
+		return [];
+	}//end normalise()
 }//end class

@@ -45,185 +45,177 @@ use Psr\Log\NullLogger;
 /**
  * Tests for {@see RuleActionDispatcher}.
  */
-final class RuleActionDispatcherTest extends TestCase
-{
-    /**
-     * @var ObjectService&MockObject
-     */
-    private ObjectService&MockObject $objectService;
+final class RuleActionDispatcherTest extends TestCase {
+	/**
+	 * @var ObjectService&MockObject
+	 */
+	private ObjectService&MockObject $objectService;
 
-    /**
-     * @var IManager&MockObject
-     */
-    private IManager&MockObject $notificationManager;
+	/**
+	 * @var IManager&MockObject
+	 */
+	private IManager&MockObject $notificationManager;
 
-    /**
-     * @var IClientService&MockObject
-     */
-    private IClientService&MockObject $httpClientService;
+	/**
+	 * @var IClientService&MockObject
+	 */
+	private IClientService&MockObject $httpClientService;
 
-    /**
-     * @var IUserSession&MockObject
-     */
-    private IUserSession&MockObject $userSession;
+	/**
+	 * @var IUserSession&MockObject
+	 */
+	private IUserSession&MockObject $userSession;
 
-    /**
-     * The dispatcher under test.
-     *
-     * @var RuleActionDispatcher
-     */
-    private RuleActionDispatcher $dispatcher;
+	/**
+	 * The dispatcher under test.
+	 *
+	 * @var RuleActionDispatcher
+	 */
+	private RuleActionDispatcher $dispatcher;
 
-    /**
-     * Wire the dispatcher with mocked boundaries.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->objectService       = $this->createMock(ObjectService::class);
-        $this->notificationManager = $this->createMock(IManager::class);
-        $this->httpClientService   = $this->createMock(IClientService::class);
-        $this->userSession         = $this->createMock(IUserSession::class);
+	/**
+	 * Wire the dispatcher with mocked boundaries.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->objectService = $this->createMock(ObjectService::class);
+		$this->notificationManager = $this->createMock(IManager::class);
+		$this->httpClientService = $this->createMock(IClientService::class);
+		$this->userSession = $this->createMock(IUserSession::class);
 
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('alice');
-        $this->userSession->method('getUser')->willReturn($user);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
 
-        $this->dispatcher = new RuleActionDispatcher(
-            $this->objectService,
-            $this->notificationManager,
-            $this->httpClientService,
-            $this->userSession,
-            $this->createMock(JobOwnerImpersonator::class),
-            $this->createMock(ContainerInterface::class),
-            new NullLogger()
-        );
+		$this->dispatcher = new RuleActionDispatcher(
+			$this->objectService,
+			$this->notificationManager,
+			$this->httpClientService,
+			$this->userSession,
+			$this->createMock(JobOwnerImpersonator::class),
+			$this->createMock(ContainerInterface::class),
+			new NullLogger()
+		);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * send-notification creates and dispatches a Nextcloud notification for
-     * the resolved recipient via IManager.
-     *
-     * @return void
-     */
-    public function testSendNotificationHitsNotificationManager(): void
-    {
-        $notification = $this->createMock(INotification::class);
-        $notification->method('setApp')->willReturnSelf();
-        $notification->method('setUser')->willReturnSelf();
-        $notification->method('setDateTime')->willReturnSelf();
-        $notification->method('setObject')->willReturnSelf();
-        $notification->method('setSubject')->willReturnSelf();
+	/**
+	 * send-notification creates and dispatches a Nextcloud notification for
+	 * the resolved recipient via IManager.
+	 *
+	 * @return void
+	 */
+	public function testSendNotificationHitsNotificationManager(): void {
+		$notification = $this->createMock(INotification::class);
+		$notification->method('setApp')->willReturnSelf();
+		$notification->method('setUser')->willReturnSelf();
+		$notification->method('setDateTime')->willReturnSelf();
+		$notification->method('setObject')->willReturnSelf();
+		$notification->method('setSubject')->willReturnSelf();
 
-        $this->notificationManager->method('createNotification')->willReturn($notification);
-        $this->notificationManager->expects($this->once())->method('notify')->with($notification);
+		$this->notificationManager->method('createNotification')->willReturn($notification);
+		$this->notificationManager->expects($this->once())->method('notify')->with($notification);
 
-        $sent = ($this->dispatcher)('send-notification', ['subject' => 'hello', 'recipientUid' => 'bob'], []);
+		$sent = ($this->dispatcher)('send-notification', ['subject' => 'hello', 'recipientUid' => 'bob'], []);
 
-        $this->assertSame(1, $sent);
+		$this->assertSame(1, $sent);
 
-    }//end testSendNotificationHitsNotificationManager()
+	}//end testSendNotificationHitsNotificationManager()
 
-    /**
-     * send-notification with no resolvable recipient is a silent no-op.
-     *
-     * @return void
-     */
-    public function testSendNotificationWithoutRecipientIsNoOp(): void
-    {
-        $this->notificationManager->expects($this->never())->method('createNotification');
+	/**
+	 * send-notification with no resolvable recipient is a silent no-op.
+	 *
+	 * @return void
+	 */
+	public function testSendNotificationWithoutRecipientIsNoOp(): void {
+		$this->notificationManager->expects($this->never())->method('createNotification');
 
-        $sent = ($this->dispatcher)('send-notification', ['subject' => 'hello'], []);
+		$sent = ($this->dispatcher)('send-notification', ['subject' => 'hello'], []);
 
-        $this->assertSame(0, $sent);
+		$this->assertSame(0, $sent);
 
-    }//end testSendNotificationWithoutRecipientIsNoOp()
+	}//end testSendNotificationWithoutRecipientIsNoOp()
 
-    /**
-     * object-op create writes through ObjectService::saveObject with the
-     * mapped fields.
-     *
-     * @return void
-     */
-    public function testObjectOpCreateHitsObjectService(): void
-    {
-        $captured = [];
-        $this->objectService->expects($this->once())
-            ->method('saveObject')
-            ->willReturnCallback(
-                function (...$args) use (&$captured) {
-                    $captured = $args;
-                    $entity = new \OCA\OpenRegister\Db\ObjectEntity();
-                    $entity->setUuid('new-1');
-                    $entity->setObject(['title' => 'from automation']);
-                    return $entity;
-                }
-            );
+	/**
+	 * object-op create writes through ObjectService::saveObject with the
+	 * mapped fields.
+	 *
+	 * @return void
+	 */
+	public function testObjectOpCreateHitsObjectService(): void {
+		$captured = [];
+		$this->objectService->expects($this->once())
+			->method('saveObject')
+			->willReturnCallback(
+				function (...$args) use (&$captured) {
+					$captured = $args;
+					$entity = new \OCA\OpenRegister\Db\ObjectEntity();
+					$entity->setUuid('new-1');
+					$entity->setObject(['title' => 'from automation']);
+					return $entity;
+				}
+			);
 
-        $result = ($this->dispatcher)(
-            'object-op',
-            ['schema' => 'permit', 'operation' => 'create', 'object' => ['title' => 'from automation']],
-            []
-        );
+		$result = ($this->dispatcher)(
+			'object-op',
+			['schema' => 'permit', 'operation' => 'create', 'object' => ['title' => 'from automation']],
+			[]
+		);
 
-        $this->assertSame(['title' => 'from automation'], $captured[0]);
-        $this->assertSame('openbuild', $captured[2] ?? null);
-        $this->assertSame('permit', $captured[3] ?? null);
-        $this->assertSame('from automation', $result['title']);
+		$this->assertSame(['title' => 'from automation'], $captured[0]);
+		$this->assertSame('openbuild', $captured[2] ?? null);
+		$this->assertSame('permit', $captured[3] ?? null);
+		$this->assertSame('from automation', $result['title']);
 
-    }//end testObjectOpCreateHitsObjectService()
+	}//end testObjectOpCreateHitsObjectService()
 
-    /**
-     * object-op update requires an id and passes the uuid through.
-     *
-     * @return void
-     */
-    public function testObjectOpUpdateRequiresId(): void
-    {
-        $this->objectService->expects($this->never())->method('saveObject');
+	/**
+	 * object-op update requires an id and passes the uuid through.
+	 *
+	 * @return void
+	 */
+	public function testObjectOpUpdateRequiresId(): void {
+		$this->objectService->expects($this->never())->method('saveObject');
 
-        $result = ($this->dispatcher)('object-op', ['schema' => 'permit', 'operation' => 'update'], []);
+		$result = ($this->dispatcher)('object-op', ['schema' => 'permit', 'operation' => 'update'], []);
 
-        $this->assertNull($result);
+		$this->assertNull($result);
 
-    }//end testObjectOpUpdateRequiresId()
+	}//end testObjectOpUpdateRequiresId()
 
-    /**
-     * webhook POSTs the compiled target URL + payload and returns the status.
-     *
-     * @return void
-     */
-    public function testWebhookPostsCompiledTarget(): void
-    {
-        $client = $this->createMock(IClient::class);
-        $response = $this->createMock(IResponse::class);
-        $response->method('getStatusCode')->willReturn(200);
+	/**
+	 * webhook POSTs the compiled target URL + payload and returns the status.
+	 *
+	 * @return void
+	 */
+	public function testWebhookPostsCompiledTarget(): void {
+		$client = $this->createMock(IClient::class);
+		$response = $this->createMock(IResponse::class);
+		$response->method('getStatusCode')->willReturn(200);
 
-        $client->expects($this->once())
-            ->method('post')
-            ->with('https://example.test/hook', $this->arrayHasKey('json'))
-            ->willReturn($response);
+		$client->expects($this->once())
+			->method('post')
+			->with('https://example.test/hook', $this->arrayHasKey('json'))
+			->willReturn($response);
 
-        $this->httpClientService->method('newClient')->willReturn($client);
+		$this->httpClientService->method('newClient')->willReturn($client);
 
-        $status = ($this->dispatcher)('webhook', ['url' => 'https://example.test/hook', 'payload' => ['a' => 1]], []);
+		$status = ($this->dispatcher)('webhook', ['url' => 'https://example.test/hook', 'payload' => ['a' => 1]], []);
 
-        $this->assertSame(200, $status);
+		$this->assertSame(200, $status);
 
-    }//end testWebhookPostsCompiledTarget()
+	}//end testWebhookPostsCompiledTarget()
 
-    /**
-     * An unrecognised action type never throws — it is logged and no-op'd.
-     *
-     * @return void
-     */
-    public function testUnknownActionTypeIsNoOp(): void
-    {
-        $result = ($this->dispatcher)('not-a-real-action', [], []);
+	/**
+	 * An unrecognised action type never throws — it is logged and no-op'd.
+	 *
+	 * @return void
+	 */
+	public function testUnknownActionTypeIsNoOp(): void {
+		$result = ($this->dispatcher)('not-a-real-action', [], []);
 
-        $this->assertNull($result);
+		$this->assertNull($result);
 
-    }//end testUnknownActionTypeIsNoOp()
+	}//end testUnknownActionTypeIsNoOp()
 }//end class

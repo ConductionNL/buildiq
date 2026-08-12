@@ -40,125 +40,123 @@ use Throwable;
 /**
  * Retention-policy cleanup job for RuleExecutionLog records.
  */
-class RuleExecutionLogCleanup extends TimedJob
-{
+class RuleExecutionLogCleanup extends TimedJob {
 
-    /**
-     * Run interval: 7 days.
-     */
-    private const INTERVAL_SECONDS = 604800;
+	/**
+	 * Run interval: 7 days.
+	 */
+	private const INTERVAL_SECONDS = 604800;
 
-    /**
-     * Retention window: 90 days.
-     */
-    private const RETENTION_SECONDS = 7776000;
+	/**
+	 * Retention window: 90 days.
+	 */
+	private const RETENTION_SECONDS = 7776000;
 
-    /**
-     * Constructor.
-     *
-     * @param ITimeFactory    $time          Time factory.
-     * @param ObjectService   $objectService OpenRegister object service.
-     * @param LoggerInterface $logger        PSR logger.
-     *
-     * @return void
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly ObjectService $objectService,
-        private readonly LoggerInterface $logger,
-    ) {
-        parent::__construct(time: $time);
-        $this->setInterval(seconds: self::INTERVAL_SECONDS);
+	/**
+	 * Constructor.
+	 *
+	 * @param ITimeFactory $time Time factory.
+	 * @param ObjectService $objectService OpenRegister object service.
+	 * @param LoggerInterface $logger PSR logger.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly ObjectService $objectService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
+		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Archive then purge RuleExecutionLog records past the retention window.
-     *
-     * @param mixed $argument Job argument injected by Nextcloud (unused).
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    protected function run($argument): void
-    {
-        unset($argument);
+	/**
+	 * Archive then purge RuleExecutionLog records past the retention window.
+	 *
+	 * @param mixed $argument Job argument injected by Nextcloud (unused).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-013-cleanup-job-for-aged-execution-logs
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 */
+	protected function run($argument): void {
+		unset($argument);
 
-        $cutoff = gmdate('Y-m-d\TH:i:s\Z', (time() - self::RETENTION_SECONDS));
+		$cutoff = gmdate('Y-m-d\TH:i:s\Z', (time() - self::RETENTION_SECONDS));
 
-        try {
-            $results = $this->objectService->findAll(
-                config: [
-                    'filters' => [
-                        'register' => RuleEngineService::REGISTER_SLUG,
-                        'schema'   => RuleEngineService::EXECUTION_LOG_SCHEMA,
-                    ],
-                ]
-            );
-        } catch (Throwable $e) {
-            $this->logger->error(
-                'OpenBuild: RuleExecutionLog cleanup query failed',
-                ['exception' => $e->getMessage()]
-            );
-            return;
-        }
+		try {
+			$results = $this->objectService->findAll(
+				config: [
+					'filters' => [
+						'register' => RuleEngineService::REGISTER_SLUG,
+						'schema' => RuleEngineService::EXECUTION_LOG_SCHEMA,
+					],
+				]
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'OpenBuild: RuleExecutionLog cleanup query failed',
+				['exception' => $e->getMessage()]
+			);
+			return;
+		}
 
-        if (is_array($results) === false) {
-            return;
-        }
+		if (is_array($results) === false) {
+			return;
+		}
 
-        $purged = 0;
-        foreach ($results as $row) {
-            $data      = $this->normalise(object: $row);
-            $timestamp = (string) ($data['tijdstip'] ?? '');
-            if ($timestamp === '' || $timestamp >= $cutoff) {
-                continue;
-            }
+		$purged = 0;
+		foreach ($results as $row) {
+			$data = $this->normalise(object: $row);
+			$timestamp = (string)($data['timestamp'] ?? '');
+			if ($timestamp === '' || $timestamp >= $cutoff) {
+				continue;
+			}
 
-            $uuid = (string) ($data['id'] ?? ($data['uuid'] ?? ''));
-            if ($uuid === '') {
-                continue;
-            }
+			$uuid = (string)($data['id'] ?? ($data['uuid'] ?? ''));
+			if ($uuid === '') {
+				continue;
+			}
 
-            try {
-                $this->objectService->deleteObject(uuid: $uuid);
-                ++$purged;
-            } catch (Throwable $e) {
-                $this->logger->warning(
-                    'OpenBuild: failed to purge RuleExecutionLog record',
-                    ['uuid' => $uuid, 'exception' => $e->getMessage()]
-                );
-            }
-        }//end foreach
+			try {
+				$this->objectService->deleteObject(uuid: $uuid);
+				++$purged;
+			} catch (Throwable $e) {
+				$this->logger->warning(
+					'OpenBuild: failed to purge RuleExecutionLog record',
+					['uuid' => $uuid, 'exception' => $e->getMessage()]
+				);
+			}
+		}//end foreach
 
-        if ($purged > 0) {
-            $this->logger->info('OpenBuild cleanup: purged '.$purged.' expired rule-execution log(s)');
-        }
+		if ($purged > 0) {
+			$this->logger->info('OpenBuild cleanup: purged ' . $purged . ' expired rule-execution log(s)');
+		}
 
-    }//end run()
+	}//end run()
 
-    /**
-     * Coerce an OR result entry to a plain array.
-     *
-     * @param mixed $object The OR object/result entry.
-     *
-     * @return array<string,mixed>
-     */
-    private function normalise(mixed $object): array
-    {
-        if (is_array($object) === true) {
-            return $object;
-        }
+	/**
+	 * Coerce an OR result entry to a plain array.
+	 *
+	 * @param mixed $object The OR object/result entry.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function normalise(mixed $object): array {
+		if (is_array($object) === true) {
+			return $object;
+		}
 
-        if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-            $serialised = $object->jsonSerialize();
-            if (is_array($serialised) === true) {
-                return $serialised;
-            }
-        }
+		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
+			$serialised = $object->jsonSerialize();
+			if (is_array($serialised) === true) {
+				return $serialised;
+			}
+		}
 
-        return [];
-
-    }//end normalise()
+		return [];
+	}//end normalise()
 }//end class

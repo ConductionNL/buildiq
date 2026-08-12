@@ -40,17 +40,26 @@ Vrij en open source onder de EUPL-1.2-licentie.
     <screenshot>https://codeberg.org/Conduction/openbuild/raw/branch/main/img/app-store.svg</screenshot>
 
     <dependencies>
-        <app>openregister</app>
+        <!--
+        App dependency: openregister. Recorded as prose, not as an element. The
+        App Store schema (info.xsd) has no app child under dependencies, so
+        shipping one fails App Store validation; Nextcloud's DependencyAnalyzer
+        does not read it either (it handles only php, database, command, lib,
+        os, architecture and the server version), so the element never enforced
+        anything at install time. src/manifest.json is where the requirement is
+        declared machine-readably.
+        -->
+        <php min-version="8.3"/>
         <!--
         min-version is 32 by product decision: the fleet standardises on
-        Nextcloud 32 so it can require PHP 8.3, which `<php min-version>` below
+        Nextcloud 32 so it can require PHP 8.3, which `<php min-version>` above
         already declares. opencatalogi, openconnector and docudesk are already
         at 32; this brings OpenBuild in line.
 
         The openconnector#1172/#1173 dependency-floor rule ALSO requires 32 now.
-        That rule says an app's min-version must be >= the max of every `<app>`
-        dependency's floor, and `<app>openregister</app>` above is a HARD
-        dependency. openregister's floor has moved three times in two days:
+        That rule says an app's min-version must be >= the max of every app
+        dependency's floor, and the openregister dependency noted above is a
+        HARD dependency. openregister's floor has moved three times in two days:
         raised to 32 in openregister#2378, reverted to 28 in #2380 (after #2372
         removed every eager reference to its ContextChat provider), and raised
         back to 32 in openregister#2384, merged 2026-08-08T10:45Z and deliberately
@@ -92,8 +101,46 @@ Vrij en open source onder de EUPL-1.2-licentie.
         openconnector (35).
         -->
         <nextcloud min-version="32" max-version="34"/>
-        <php min-version="8.3"/>
     </dependencies>
+
+    <background-jobs>
+        <job>OCA\OpenBuild\BackgroundJob\CleanupExpiredExports</job>
+        <job>OCA\OpenBuild\BackgroundJob\RuleExecutionLogCleanup</job>
+    </background-jobs>
+
+    <repair-steps>
+        <post-migration>
+            <step>OCA\OpenBuild\Repair\InitializeSettings</step>
+            <step>OCA\OpenBuild\Repair\MigrateToVersionedModel</step>
+            <step>OCA\OpenBuild\Repair\MigrateAppOverridesToHybrid</step>
+            <step>OCA\OpenBuild\Repair\PopulateApplicationPermissions</step>
+            <step>OCA\OpenBuild\Repair\SeedApplicationTemplates</step>
+            <step>OCA\OpenBuild\Repair\FlagRegistryTokenSensitive</step>
+            <!--
+                Must run AFTER the register sync that adds the English columns, so
+                it can detect the "mapper already added an empty column" case and
+                back-fill rather than rename. Idempotent; safe to re-run.
+            -->
+            <step>OCA\OpenBuild\Repair\RenameDutchRuleColumns</step>
+        </post-migration>
+        <install>
+            <step>OCA\OpenBuild\Repair\InitializeSettings</step>
+            <step>OCA\OpenBuild\Repair\MigrateToVersionedModel</step>
+            <step>OCA\OpenBuild\Repair\MigrateAppOverridesToHybrid</step>
+            <step>OCA\OpenBuild\Repair\PopulateApplicationPermissions</step>
+            <step>OCA\OpenBuild\Repair\SeedApplicationTemplates</step>
+        </install>
+    </repair-steps>
+
+    <commands>
+        <command>OCA\OpenBuild\Command\SeedHelloWorldFixture</command>
+        <command>OCA\OpenBuild\Command\PublishTemplates</command>
+    </commands>
+
+    <settings>
+        <admin>OCA\OpenBuild\Settings\AdminSettings</admin>
+        <admin-section>OCA\OpenBuild\Sections\SettingsSection</admin-section>
+    </settings>
 
     <!--
         openbuild.use navigation-entry gate (REQ-OBRBAC-006).
@@ -125,37 +172,4 @@ Vrij en open source onder de EUPL-1.2-licentie.
             <icon>app.svg</icon>
         </navigation>
     </navigations>
-
-    <settings>
-        <admin>OCA\OpenBuild\Settings\AdminSettings</admin>
-        <admin-section>OCA\OpenBuild\Sections\SettingsSection</admin-section>
-    </settings>
-
-    <repair-steps>
-        <install>
-            <step>OCA\OpenBuild\Repair\InitializeSettings</step>
-            <step>OCA\OpenBuild\Repair\MigrateToVersionedModel</step>
-            <step>OCA\OpenBuild\Repair\MigrateAppOverridesToHybrid</step>
-            <step>OCA\OpenBuild\Repair\PopulateApplicationPermissions</step>
-            <step>OCA\OpenBuild\Repair\SeedApplicationTemplates</step>
-        </install>
-        <post-migration>
-            <step>OCA\OpenBuild\Repair\InitializeSettings</step>
-            <step>OCA\OpenBuild\Repair\MigrateToVersionedModel</step>
-            <step>OCA\OpenBuild\Repair\MigrateAppOverridesToHybrid</step>
-            <step>OCA\OpenBuild\Repair\PopulateApplicationPermissions</step>
-            <step>OCA\OpenBuild\Repair\SeedApplicationTemplates</step>
-            <step>OCA\OpenBuild\Repair\FlagRegistryTokenSensitive</step>
-        </post-migration>
-    </repair-steps>
-
-    <background-jobs>
-        <job>OCA\OpenBuild\BackgroundJob\CleanupExpiredExports</job>
-        <job>OCA\OpenBuild\BackgroundJob\RuleExecutionLogCleanup</job>
-    </background-jobs>
-
-    <commands>
-        <command>OCA\OpenBuild\Command\SeedHelloWorldFixture</command>
-        <command>OCA\OpenBuild\Command\PublishTemplates</command>
-    </commands>
 </info>

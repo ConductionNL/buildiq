@@ -37,125 +37,117 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for PermissionResolver::matchesUserScopeOwner.
  */
-class PermissionResolverUserScopeTest extends TestCase
-{
+class PermissionResolverUserScopeTest extends TestCase {
 
-    /**
-     * Mocked group manager.
-     *
-     * @var IGroupManager&MockObject
-     */
-    private IGroupManager&MockObject $groupManager;
+	/**
+	 * Mocked group manager.
+	 *
+	 * @var IGroupManager&MockObject
+	 */
+	private IGroupManager&MockObject $groupManager;
 
-    /**
-     * Resolver under test (real, with mocked group manager + logger).
-     *
-     * @var PermissionResolver
-     */
-    private PermissionResolver $resolver;
+	/**
+	 * Resolver under test (real, with mocked group manager + logger).
+	 *
+	 * @var PermissionResolver
+	 */
+	private PermissionResolver $resolver;
 
-    /**
-     * Wire the resolver.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->groupManager = $this->createMock(originalClassName: IGroupManager::class);
-        $logger         = $this->createMock(originalClassName: LoggerInterface::class);
-        $this->resolver = new PermissionResolver(groupManager: $this->groupManager, logger: $logger);
-    }//end setUp()
+	/**
+	 * Wire the resolver.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->groupManager = $this->createMock(originalClassName: IGroupManager::class);
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$this->resolver = new PermissionResolver(groupManager: $this->groupManager, logger: $logger);
+	}//end setUp()
 
-    /**
-     * Build a mocked caller with a UID and admin flag.
-     *
-     * @param string $uid     The caller UID.
-     * @param bool   $isAdmin Whether the caller is an NC admin.
-     *
-     * @return IUser&MockObject
-     */
-    private function caller(string $uid, bool $isAdmin=false): IUser&MockObject
-    {
-        $user = $this->createMock(originalClassName: IUser::class);
-        $user->method('getUID')->willReturn($uid);
-        $this->groupManager->method('isAdmin')->willReturn($isAdmin);
-        return $user;
-    }//end caller()
+	/**
+	 * Build a mocked caller with a UID and admin flag.
+	 *
+	 * @param string $uid The caller UID.
+	 * @param bool $isAdmin Whether the caller is an NC admin.
+	 *
+	 * @return IUser&MockObject
+	 */
+	private function caller(string $uid, bool $isAdmin = false): IUser&MockObject {
+		$user = $this->createMock(originalClassName: IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$this->groupManager->method('isAdmin')->willReturn($isAdmin);
+		return $user;
+	}//end caller()
 
-    /**
-     * The owner of a user-scoped row is authorised.
-     *
-     * @return void
-     */
-    public function testOwnerIsMatched(): void
-    {
-        $caller = $this->caller(uid: 'alice');
-        $result = $this->resolver->matchesUserScopeOwner(
-            version: ['scope' => 'user', 'owner' => 'alice'],
-            caller: $caller
-        );
-        self::assertTrue(condition: $result);
-    }//end testOwnerIsMatched()
+	/**
+	 * The owner of a user-scoped row is authorised.
+	 *
+	 * @return void
+	 */
+	public function testOwnerIsMatched(): void {
+		$caller = $this->caller(uid: 'alice');
+		$result = $this->resolver->matchesUserScopeOwner(
+			version: ['scope' => 'user', 'owner' => 'alice'],
+			caller: $caller
+		);
+		self::assertTrue(condition: $result);
+	}//end testOwnerIsMatched()
 
-    /**
-     * A non-owner, non-admin caller is denied a foreign user delta (no-admin-idor).
-     *
-     * @return void
-     */
-    public function testForeignUserDenied(): void
-    {
-        $caller = $this->caller(uid: 'bob', isAdmin: false);
-        $result = $this->resolver->matchesUserScopeOwner(
-            version: ['scope' => 'user', 'owner' => 'alice'],
-            caller: $caller
-        );
-        self::assertFalse(condition: $result);
-    }//end testForeignUserDenied()
+	/**
+	 * A non-owner, non-admin caller is denied a foreign user delta (no-admin-idor).
+	 *
+	 * @return void
+	 */
+	public function testForeignUserDenied(): void {
+		$caller = $this->caller(uid: 'bob', isAdmin: false);
+		$result = $this->resolver->matchesUserScopeOwner(
+			version: ['scope' => 'user', 'owner' => 'alice'],
+			caller: $caller
+		);
+		self::assertFalse(condition: $result);
+	}//end testForeignUserDenied()
 
-    /**
-     * An NC admin is granted via the audited bypass (default on).
-     *
-     * @return void
-     */
-    public function testAdminBypassGrantsForeignDelta(): void
-    {
-        $caller = $this->caller(uid: 'admin', isAdmin: true);
-        $result = $this->resolver->matchesUserScopeOwner(
-            version: ['scope' => 'user', 'owner' => 'alice'],
-            caller: $caller
-        );
-        self::assertTrue(condition: $result);
-    }//end testAdminBypassGrantsForeignDelta()
+	/**
+	 * An NC admin is granted via the audited bypass (default on).
+	 *
+	 * @return void
+	 */
+	public function testAdminBypassGrantsForeignDelta(): void {
+		$caller = $this->caller(uid: 'admin', isAdmin: true);
+		$result = $this->resolver->matchesUserScopeOwner(
+			version: ['scope' => 'user', 'owner' => 'alice'],
+			caller: $caller
+		);
+		self::assertTrue(condition: $result);
+	}//end testAdminBypassGrantsForeignDelta()
 
-    /**
-     * With the bypass explicitly disabled, even an admin is denied a foreign delta.
-     *
-     * @return void
-     */
-    public function testAdminDeniedWhenBypassDisabled(): void
-    {
-        $caller = $this->caller(uid: 'admin', isAdmin: true);
-        $result = $this->resolver->matchesUserScopeOwner(
-            version: ['scope' => 'user', 'owner' => 'alice'],
-            caller: $caller,
-            allowAdminBypass: false
-        );
-        self::assertFalse(condition: $result);
-    }//end testAdminDeniedWhenBypassDisabled()
+	/**
+	 * With the bypass explicitly disabled, even an admin is denied a foreign delta.
+	 *
+	 * @return void
+	 */
+	public function testAdminDeniedWhenBypassDisabled(): void {
+		$caller = $this->caller(uid: 'admin', isAdmin: true);
+		$result = $this->resolver->matchesUserScopeOwner(
+			version: ['scope' => 'user', 'owner' => 'alice'],
+			caller: $caller,
+			allowAdminBypass: false
+		);
+		self::assertFalse(condition: $result);
+	}//end testAdminDeniedWhenBypassDisabled()
 
-    /**
-     * A user-scoped row with no resolvable owner is never matchable (fail-closed).
-     *
-     * @return void
-     */
-    public function testMissingOwnerFailsClosed(): void
-    {
-        $caller = $this->caller(uid: 'alice', isAdmin: true);
-        $result = $this->resolver->matchesUserScopeOwner(
-            version: ['scope' => 'user'],
-            caller: $caller
-        );
-        self::assertFalse(condition: $result);
-    }//end testMissingOwnerFailsClosed()
+	/**
+	 * A user-scoped row with no resolvable owner is never matchable (fail-closed).
+	 *
+	 * @return void
+	 */
+	public function testMissingOwnerFailsClosed(): void {
+		$caller = $this->caller(uid: 'alice', isAdmin: true);
+		$result = $this->resolver->matchesUserScopeOwner(
+			version: ['scope' => 'user'],
+			caller: $caller
+		);
+		self::assertFalse(condition: $result);
+	}//end testMissingOwnerFailsClosed()
 }//end class

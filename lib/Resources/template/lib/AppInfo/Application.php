@@ -1,4 +1,5 @@
 <?php
+
 // SPDX-License-Identifier: EUPL-1.2
 
 /**
@@ -32,54 +33,50 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 /**
  * Main application class for the AppTemplate Nextcloud app.
  */
-class Application extends App implements IBootstrap
-{
-    public const APP_ID = 'app-template';
+class Application extends App implements IBootstrap {
+	public const APP_ID = 'app-template';
 
-    /**
-     * Constructor for the Application class.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct(appName: self::APP_ID);
-    }//end __construct()
+	/**
+	 * Constructor for the Application class.
+	 *
+	 * @return void
+	 */
+	public function __construct() {
+		parent::__construct(appName: self::APP_ID);
+	}//end __construct()
 
-    /**
-     * Register event listeners and services.
-     *
-     * @param IRegistrationContext $context The registration context
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function register(IRegistrationContext $context): void
-    {
-        // Register deep link patterns with OpenRegister's unified search provider.
-        // Only fires when OpenRegister is installed and dispatches the event.
-        $context->registerEventListener(
-            event: DeepLinkRegistrationEvent::class,
-            listener: DeepLinkRegistrationListener::class
-        );
+	/**
+	 * Register event listeners and services.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 */
+	public function register(IRegistrationContext $context): void {
+		// Register deep link patterns with OpenRegister's unified search provider.
+		// Only fires when OpenRegister is installed and dispatches the event.
+		$context->registerEventListener(
+			event: DeepLinkRegistrationEvent::class,
+			listener: DeepLinkRegistrationListener::class
+		);
 
-        // NB: the InitializeSettings repair step is declared in
-        // appinfo/info.xml <repair-steps>, not registered here —
-        // IRegistrationContext has no registerRepairStep() method (calling it
-        // is a fatal on modern Nextcloud, incl. NC34).
-    }//end register()
+		// NB: the InitializeSettings repair step is declared in
+		// appinfo/info.xml <repair-steps>, not registered here —
+		// IRegistrationContext has no registerRepairStep() method (calling it
+		// is a fatal on modern Nextcloud, incl. NC34).
+	}//end register()
 
-    /**
-     * Boot the application.
-     *
-     * @param IBootContext $context The boot context
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function boot(IBootContext $context): void
-    {
-    }//end boot()
+	/**
+	 * Boot the application.
+	 *
+	 * @param IBootContext $context The boot context
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 */
+	public function boot(IBootContext $context): void {
+	}//end boot()
 }//end class

@@ -335,9 +335,13 @@ export default {
 }
 
 .ob-apps-list-widget__col-name { width: 45%; }
+
 .ob-apps-list-widget__col-status { width: 15%; }
+
 .ob-apps-list-widget__col-version { width: 12%; font-family: monospace; font-size: 12px; }
+
 .ob-apps-list-widget__col-updated { width: 18%; color: var(--color-text-maxcontrast, #888); font-size: 12px; }
+
 .ob-apps-list-widget__col-actions { width: 10%; text-align: right; }
 
 .ob-apps-list-widget__footer {

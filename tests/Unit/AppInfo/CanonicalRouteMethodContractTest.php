@@ -60,194 +60,190 @@ use ReflectionClass;
  *
  * @spec openspec/specs/settings-and-observability/spec.md#req-obs-002
  */
-class CanonicalRouteMethodContractTest extends TestCase
-{
+class CanonicalRouteMethodContractTest extends TestCase {
 
-    /**
-     * The canonical route names supplied by the AppHost table
-     * (`\OCA\OpenRegister\AppHost\Routes::canonicalRoutes()` plus the
-     * separately-appended SPA catch-all), keyed `controllerPrefix => [method]`.
-     *
-     * @var array<string, array<int, string>>
-     */
-    private const CANONICAL_ROUTES = [
-        'Dashboard'   => ['page', 'catchAll'],
-        'Settings'    => ['index', 'create', 'update', 'load'],
-        'Preferences' => ['getPreference', 'setPreference'],
-        'Metrics'     => ['index'],
-        'Health'      => ['index'],
-    ];
+	/**
+	 * The canonical route names supplied by the AppHost table
+	 * (`\OCA\OpenRegister\AppHost\Routes::canonicalRoutes()` plus the
+	 * separately-appended SPA catch-all), keyed `controllerPrefix => [method]`.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	private const CANONICAL_ROUTES = [
+		'Dashboard' => ['page', 'catchAll'],
+		'Settings' => ['index', 'create', 'update', 'load'],
+		'Preferences' => ['getPreference', 'setPreference'],
+		'Metrics' => ['index'],
+		'Health' => ['index'],
+	];
 
-    /**
-     * Candidate locations for the OpenRegister sources, mirroring the probe
-     * order used by `tests/bootstrap-unit.php`.
-     *
-     * @var array<int, string>
-     */
-    private const OPENREGISTER_LIB_CANDIDATES = [
-        __DIR__.'/../../../../openregister/lib',
-        '/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib',
-    ];
+	/**
+	 * Candidate locations for the OpenRegister sources, mirroring the probe
+	 * order used by `tests/bootstrap-unit.php`.
+	 *
+	 * @var array<int, string>
+	 */
+	private const OPENREGISTER_LIB_CANDIDATES = [
+		__DIR__ . '/../../../../openregister/lib',
+		'/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib',
+	];
 
-    /**
-     * Positive control #1 — the canonical table must actually be in play.
-     *
-     * OpenBuild's `appinfo/routes.php` declares NO settings routes of its own;
-     * it delegates the whole canonical set to `Routes::standard()`. If that
-     * call were ever removed, the method assertions below would still pass
-     * while nothing routed to them — a vacuous green. Read a green from the
-     * contract test only together with a green here.
-     *
-     * @return void
-     */
-    public function testRoutesFileDelegatesToTheCanonicalAppHostTable(): void
-    {
-        $routesSource = file_get_contents(__DIR__.'/../../../appinfo/routes.php');
+	/**
+	 * Positive control #1 — the canonical table must actually be in play.
+	 *
+	 * OpenBuild's `appinfo/routes.php` declares NO settings routes of its own;
+	 * it delegates the whole canonical set to `Routes::standard()`. If that
+	 * call were ever removed, the method assertions below would still pass
+	 * while nothing routed to them — a vacuous green. Read a green from the
+	 * contract test only together with a green here.
+	 *
+	 * @return void
+	 */
+	public function testRoutesFileDelegatesToTheCanonicalAppHostTable(): void {
+		$routesSource = file_get_contents(__DIR__ . '/../../../appinfo/routes.php');
 
-        $this->assertIsString($routesSource, 'appinfo/routes.php must be readable');
+		$this->assertIsString($routesSource, 'appinfo/routes.php must be readable');
 
-        $this->assertStringContainsString(
-            'AppHost\Routes::standard(',
-            $routesSource,
-            'appinfo/routes.php no longer delegates to the AppHost canonical route '
-            .'table, so the canonical method contract asserted by this test class '
-            .'is no longer the thing that is actually routed.'
-        );
+		$this->assertStringContainsString(
+			'AppHost\Routes::standard(',
+			$routesSource,
+			'appinfo/routes.php no longer delegates to the AppHost canonical route '
+			. 'table, so the canonical method contract asserted by this test class '
+			. 'is no longer the thing that is actually routed.'
+		);
 
-        $this->assertStringNotContainsString(
-            "'settings#",
-            $routesSource,
-            'appinfo/routes.php declares a settings route of its own; the canonical '
-            .'set is supposed to come exclusively from Routes::standard().'
-        );
-    }//end testRoutesFileDelegatesToTheCanonicalAppHostTable()
+		$this->assertStringNotContainsString(
+			"'settings#",
+			$routesSource,
+			'appinfo/routes.php declares a settings route of its own; the canonical '
+			. 'set is supposed to come exclusively from Routes::standard().'
+		);
+	}//end testRoutesFileDelegatesToTheCanonicalAppHostTable()
 
-    /**
-     * Positive control #2 — guard the hard-coded expectation against drift.
-     *
-     * `self::CANONICAL_ROUTES` is a local transcription of OpenRegister's
-     * table. When the OpenRegister sources are resolvable, assert the
-     * transcription still matches reality, so this suite cannot keep asserting
-     * a contract the engine has since changed. When they are not resolvable
-     * (a stripped CI checkout), the test is skipped rather than silently
-     * passing on nothing.
-     *
-     * @return void
-     */
-    public function testTranscribedCanonicalSettingsRoutesMatchOpenRegisterSource(): void
-    {
-        $routesFile = null;
-        foreach (self::OPENREGISTER_LIB_CANDIDATES as $candidate) {
-            $path = $candidate.'/AppHost/Routes.php';
-            if (file_exists($path) === true) {
-                $routesFile = $path;
-                break;
-            }
-        }
+	/**
+	 * Positive control #2 — guard the hard-coded expectation against drift.
+	 *
+	 * `self::CANONICAL_ROUTES` is a local transcription of OpenRegister's
+	 * table. When the OpenRegister sources are resolvable, assert the
+	 * transcription still matches reality, so this suite cannot keep asserting
+	 * a contract the engine has since changed. When they are not resolvable
+	 * (a stripped CI checkout), the test is skipped rather than silently
+	 * passing on nothing.
+	 *
+	 * @return void
+	 */
+	public function testTranscribedCanonicalSettingsRoutesMatchOpenRegisterSource(): void {
+		$routesFile = null;
+		foreach (self::OPENREGISTER_LIB_CANDIDATES as $candidate) {
+			$path = $candidate . '/AppHost/Routes.php';
+			if (file_exists($path) === true) {
+				$routesFile = $path;
+				break;
+			}
+		}
 
-        if ($routesFile === null) {
-            $this->markTestSkipped(
-                'OpenRegister sources are not resolvable in this checkout, so the '
-                .'transcription in self::CANONICAL_ROUTES cannot be cross-checked.'
-            );
-        }
+		if ($routesFile === null) {
+			$this->markTestSkipped(
+				'OpenRegister sources are not resolvable in this checkout, so the '
+				. 'transcription in self::CANONICAL_ROUTES cannot be cross-checked.'
+			);
+		}
 
-        $source = file_get_contents($routesFile);
-        $this->assertIsString($source, 'OpenRegister AppHost/Routes.php must be readable');
+		$source = file_get_contents($routesFile);
+		$this->assertIsString($source, 'OpenRegister AppHost/Routes.php must be readable');
 
-        foreach (self::CANONICAL_ROUTES['Settings'] as $method) {
-            $this->assertStringContainsString(
-                "'settings#".$method."'",
-                $source,
-                sprintf(
-                    'OpenRegister no longer ships the canonical route "settings#%s"; '
-                    .'self::CANONICAL_ROUTES is stale.',
-                    $method
-                )
-            );
-        }
+		foreach (self::CANONICAL_ROUTES['Settings'] as $method) {
+			$this->assertStringContainsString(
+				"'settings#" . $method . "'",
+				$source,
+				sprintf(
+					'OpenRegister no longer ships the canonical route "settings#%s"; '
+					. 'self::CANONICAL_ROUTES is stale.',
+					$method
+				)
+			);
+		}
 
-        // The specific regression this whole file exists for: PUT /api/settings.
-        $this->assertMatchesRegularExpression(
-            "/'name'\s*=>\s*'settings#update'.*'verb'\s*=>\s*'PUT'/",
-            $source,
-            'OpenRegister no longer routes PUT /api/settings to settings#update.'
-        );
-    }//end testTranscribedCanonicalSettingsRoutesMatchOpenRegisterSource()
+		// The specific regression this whole file exists for: PUT /api/settings.
+		$this->assertMatchesRegularExpression(
+			"/'name'\s*=>\s*'settings#update'.*'verb'\s*=>\s*'PUT'/",
+			$source,
+			'OpenRegister no longer routes PUT /api/settings to settings#update.'
+		);
+	}//end testTranscribedCanonicalSettingsRoutesMatchOpenRegisterSource()
 
-    /**
-     * A controller this app ships itself must implement every canonical
-     * method routed to it — the AppHost generic will not fill the gap.
-     *
-     * @return void
-     */
-    public function testLeafOwnedControllersImplementEveryCanonicalMethodRoutedToThem(): void
-    {
-        $inspected = 0;
-        $missing   = [];
+	/**
+	 * A controller this app ships itself must implement every canonical
+	 * method routed to it — the AppHost generic will not fill the gap.
+	 *
+	 * @return void
+	 */
+	public function testLeafOwnedControllersImplementEveryCanonicalMethodRoutedToThem(): void {
+		$inspected = 0;
+		$missing = [];
 
-        foreach (self::CANONICAL_ROUTES as $prefix => $methods) {
-            $class = 'OCA\\OpenBuild\\Controller\\'.$prefix.'Controller';
+		foreach (self::CANONICAL_ROUTES as $prefix => $methods) {
+			$class = 'OCA\\OpenBuild\\Controller\\' . $prefix . 'Controller';
 
-            // The class file existing on disk is what makes the AppHost skip
-            // the alias. `class_exists()` alone would also be satisfied by the
-            // DI alias target in a booted container, which is precisely the
-            // case this test must NOT treat as leaf-owned.
-            $file = __DIR__.'/../../../lib/Controller/'.$prefix.'Controller.php';
-            if (file_exists($file) === false) {
-                continue;
-            }
+			// The class file existing on disk is what makes the AppHost skip
+			// the alias. `class_exists()` alone would also be satisfied by the
+			// DI alias target in a booted container, which is precisely the
+			// case this test must NOT treat as leaf-owned.
+			$file = __DIR__ . '/../../../lib/Controller/' . $prefix . 'Controller.php';
+			if (file_exists($file) === false) {
+				continue;
+			}
 
-            $this->assertTrue(
-                class_exists($class),
-                sprintf('%s exists on disk but does not autoload as %s', $file, $class)
-            );
+			$this->assertTrue(
+				class_exists($class),
+				sprintf('%s exists on disk but does not autoload as %s', $file, $class)
+			);
 
-            $reflection = new ReflectionClass($class);
+			$reflection = new ReflectionClass($class);
 
-            foreach ($methods as $method) {
-                $inspected++;
+			foreach ($methods as $method) {
+				$inspected++;
 
-                if ($reflection->hasMethod($method) === false) {
-                    $missing[] = $prefix.'Controller::'.$method.'()';
-                    continue;
-                }
+				if ($reflection->hasMethod($method) === false) {
+					$missing[] = $prefix . 'Controller::' . $method . '()';
+					continue;
+				}
 
-                $reflected = $reflection->getMethod($method);
+				$reflected = $reflection->getMethod($method);
 
-                $this->assertTrue(
-                    $reflected->isPublic(),
-                    sprintf('%s::%s() must be public to be dispatchable', $class, $method)
-                );
+				$this->assertTrue(
+					$reflected->isPublic(),
+					sprintf('%s::%s() must be public to be dispatchable', $class, $method)
+				);
 
-                $this->assertFalse(
-                    $reflected->isStatic(),
-                    sprintf('%s::%s() must not be static to be dispatchable', $class, $method)
-                );
-            }
-        }//end foreach
+				$this->assertFalse(
+					$reflected->isStatic(),
+					sprintf('%s::%s() must not be static to be dispatchable', $class, $method)
+				);
+			}
+		}//end foreach
 
-        // Positive control: an empty `$missing` list is only meaningful if
-        // something was actually inspected. Zero inspections would mean the
-        // file-existence probe above silently matched nothing.
-        $this->assertGreaterThan(
-            0,
-            $inspected,
-            'No leaf-owned canonical controller method was inspected — the '
-            .'lib/Controller path probe is broken, so the empty finding list '
-            .'means nothing.'
-        );
+		// Positive control: an empty `$missing` list is only meaningful if
+		// something was actually inspected. Zero inspections would mean the
+		// file-existence probe above silently matched nothing.
+		$this->assertGreaterThan(
+			0,
+			$inspected,
+			'No leaf-owned canonical controller method was inspected — the '
+			. 'lib/Controller path probe is broken, so the empty finding list '
+			. 'means nothing.'
+		);
 
-        $this->assertSame(
-            [],
-            $missing,
-            sprintf(
-                "The canonical AppHost route table routes to these method(s), but "
-                ."OpenBuild ships the controller itself so no generic is aliased in. "
-                ."Each of these is a 500, not a 404.\n  - %s",
-                implode("\n  - ", $missing)
-            )
-        );
-    }//end testLeafOwnedControllersImplementEveryCanonicalMethodRoutedToThem()
+		$this->assertSame(
+			[],
+			$missing,
+			sprintf(
+				'The canonical AppHost route table routes to these method(s), but '
+				. 'OpenBuild ships the controller itself so no generic is aliased in. '
+				. "Each of these is a 500, not a 404.\n  - %s",
+				implode("\n  - ", $missing)
+			)
+		);
+	}//end testLeafOwnedControllersImplementEveryCanonicalMethodRoutedToThem()
 
 }//end class

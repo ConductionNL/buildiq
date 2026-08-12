@@ -46,60 +46,56 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/openbuild-inline-edit-persistence/specs/openbuild-capability/spec.md
  */
-class Capabilities implements ICapability
-{
-    /**
-     * Constructor.
-     *
-     * @param IUserSession $userSession Current Nextcloud user session.
-     * @param IAppManager  $appManager  Resolves OpenBuild-access for the calling user.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly IUserSession $userSession,
-        private readonly IAppManager $appManager,
-    ) {
-    }//end __construct()
+class Capabilities implements ICapability {
+	/**
+	 * Constructor.
+	 *
+	 * @param IUserSession $userSession Current Nextcloud user session.
+	 * @param IAppManager $appManager Resolves OpenBuild-access for the calling user.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly IUserSession $userSession,
+		private readonly IAppManager $appManager,
+	) {
+	}//end __construct()
 
-    /**
-     * Return OpenBuild's capabilities block.
-     *
-     * `enabled` is always true (this method only runs when the app is enabled).
-     * `canEdit` is true when the calling user is within OpenBuild's NC app
-     * group-restriction (the same condition the write guard enforces), false
-     * for an out-of-scope or anonymous caller.
-     *
-     * @return array<string, array<string, mixed>> The capabilities document fragment.
-     *
-     * @spec openspec/changes/openbuild-inline-edit-persistence/specs/openbuild-capability/spec.md
-     */
-    public function getCapabilities(): array
-    {
-        return [
-            'openbuild' => [
-                'enabled' => true,
-                'canEdit' => $this->computeCanEdit(),
-            ],
-        ];
+	/**
+	 * Return OpenBuild's capabilities block.
+	 *
+	 * `enabled` is always true (this method only runs when the app is enabled).
+	 * `canEdit` is true when the calling user is within OpenBuild's NC app
+	 * group-restriction (the same condition the write guard enforces), false
+	 * for an out-of-scope or anonymous caller.
+	 *
+	 * @return array<string, array<string, mixed>> The capabilities document fragment.
+	 *
+	 * @spec openspec/changes/openbuild-inline-edit-persistence/specs/openbuild-capability/spec.md
+	 */
+	public function getCapabilities(): array {
+		return [
+			'openbuild' => [
+				'enabled' => true,
+				'canEdit' => $this->computeCanEdit(),
+			],
+		];
 
-    }//end getCapabilities()
+	}//end getCapabilities()
 
-    /**
-     * Compute `canEdit` for the calling user.
-     *
-     * @return bool True when the user can reach the enabled OpenBuild app.
-     *
-     * @spec openspec/changes/openbuild-inline-edit-persistence/specs/openbuild-capability/spec.md
-     */
-    private function computeCanEdit(): bool
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return false;
-        }
+	/**
+	 * Compute `canEdit` for the calling user.
+	 *
+	 * @return bool True when the user can reach the enabled OpenBuild app.
+	 *
+	 * @spec openspec/changes/openbuild-inline-edit-persistence/specs/openbuild-capability/spec.md
+	 */
+	private function computeCanEdit(): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
 
-        return $this->appManager->isEnabledForUser(Application::APP_ID, $user);
-
-    }//end computeCanEdit()
+		return $this->appManager->isEnabledForUser(Application::APP_ID, $user);
+	}//end computeCanEdit()
 }//end class

@@ -45,346 +45,329 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for ApplicationVersionOwnerGuard::check.
  */
-class ApplicationVersionOwnerGuardTest extends TestCase
-{
+class ApplicationVersionOwnerGuardTest extends TestCase {
 
-    /**
-     * Mocked ObjectService for stub-loading the parent Application.
-     *
-     * @var ObjectService&MockObject
-     */
-    private ObjectService&MockObject $objectService;
+	/**
+	 * Mocked ObjectService for stub-loading the parent Application.
+	 *
+	 * @var ObjectService&MockObject
+	 */
+	private ObjectService&MockObject $objectService;
 
-    /**
-     * Mocked IGroupManager passed to the real PermissionResolver.
-     *
-     * @var IGroupManager&MockObject
-     */
-    private IGroupManager&MockObject $groupManager;
+	/**
+	 * Mocked IGroupManager passed to the real PermissionResolver.
+	 *
+	 * @var IGroupManager&MockObject
+	 */
+	private IGroupManager&MockObject $groupManager;
 
-    /**
-     * Mocked IUserManager for resolving the acting caller.
-     *
-     * @var IUserManager&MockObject
-     */
-    private IUserManager&MockObject $userManager;
+	/**
+	 * Mocked IUserManager for resolving the acting caller.
+	 *
+	 * @var IUserManager&MockObject
+	 */
+	private IUserManager&MockObject $userManager;
 
-    /**
-     * Mocked PSR logger for fail-closed diagnostic assertions.
-     *
-     * @var LoggerInterface&MockObject
-     */
-    private LoggerInterface&MockObject $logger;
+	/**
+	 * Mocked PSR logger for fail-closed diagnostic assertions.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
+	private LoggerInterface&MockObject $logger;
 
-    /**
-     * Guard under test, wired with a real PermissionResolver.
-     *
-     * @var ApplicationVersionOwnerGuard
-     */
-    private ApplicationVersionOwnerGuard $guard;
+	/**
+	 * Guard under test, wired with a real PermissionResolver.
+	 *
+	 * @var ApplicationVersionOwnerGuard
+	 */
+	private ApplicationVersionOwnerGuard $guard;
 
-    /**
-     * Wire mocks and a real PermissionResolver.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Wire mocks and a real PermissionResolver.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->objectService = $this->createMock(originalClassName: ObjectService::class);
-        $this->groupManager  = $this->createMock(originalClassName: IGroupManager::class);
-        $this->userManager   = $this->createMock(originalClassName: IUserManager::class);
-        $this->logger        = $this->createMock(originalClassName: LoggerInterface::class);
+		$this->objectService = $this->createMock(originalClassName: ObjectService::class);
+		$this->groupManager = $this->createMock(originalClassName: IGroupManager::class);
+		$this->userManager = $this->createMock(originalClassName: IUserManager::class);
+		$this->logger = $this->createMock(originalClassName: LoggerInterface::class);
 
-        $resolver = new PermissionResolver(groupManager: $this->groupManager, logger: $this->logger);
+		$resolver = new PermissionResolver(groupManager: $this->groupManager, logger: $this->logger);
 
-        $this->guard = new ApplicationVersionOwnerGuard(
-            objectService: $this->objectService,
-            permissionResolver: $resolver,
-            userManager: $this->userManager,
-            logger: $this->logger
-        );
-    }//end setUp()
+		$this->guard = new ApplicationVersionOwnerGuard(
+			objectService: $this->objectService,
+			permissionResolver: $resolver,
+			userManager: $this->userManager,
+			logger: $this->logger
+		);
+	}//end setUp()
 
-    /**
-     * An owner of the parent Application may publish.
-     *
-     * @return void
-     */
-    public function testOwnerMayPublish(): void
-    {
-        $this->arrangeCaller(uid: 'alice', groups: ['team-alpha'], isAdmin: false);
-        $this->arrangeParentApplication(
-            applicationUuid: 'app-A',
-            permissions: ['owners' => ['group:team-alpha'], 'editors' => [], 'viewers' => []]
-        );
+	/**
+	 * An owner of the parent Application may publish.
+	 *
+	 * @return void
+	 */
+	public function testOwnerMayPublish(): void {
+		$this->arrangeCaller(uid: 'alice', groups: ['team-alpha'], isAdmin: false);
+		$this->arrangeParentApplication(
+			applicationUuid: 'app-A',
+			permissions: ['owners' => ['group:team-alpha'], 'editors' => [], 'viewers' => []]
+		);
 
-        $result = $this->guard->check(['application' => 'app-A'], 'publish', 'alice');
+		$result = $this->guard->check(['application' => 'app-A'], 'publish', 'alice');
 
-        self::assertTrue(condition: $result->isAllowed());
-    }//end testOwnerMayPublish()
+		self::assertTrue(condition: $result->isAllowed());
+	}//end testOwnerMayPublish()
 
-    /**
-     * An owner referenced by `user:` prefix may archive.
-     *
-     * @return void
-     */
-    public function testUserPrefixOwnerMayArchive(): void
-    {
-        $this->arrangeCaller(uid: 'alice', groups: [], isAdmin: false);
-        $this->arrangeParentApplication(
-            applicationUuid: 'app-A',
-            permissions: ['owners' => ['user:alice'], 'editors' => [], 'viewers' => []]
-        );
+	/**
+	 * An owner referenced by `user:` prefix may archive.
+	 *
+	 * @return void
+	 */
+	public function testUserPrefixOwnerMayArchive(): void {
+		$this->arrangeCaller(uid: 'alice', groups: [], isAdmin: false);
+		$this->arrangeParentApplication(
+			applicationUuid: 'app-A',
+			permissions: ['owners' => ['user:alice'], 'editors' => [], 'viewers' => []]
+		);
 
-        $result = $this->guard->check(['application' => 'app-A'], 'archive', 'alice');
+		$result = $this->guard->check(['application' => 'app-A'], 'archive', 'alice');
 
-        self::assertTrue(condition: $result->isAllowed());
-    }//end testUserPrefixOwnerMayArchive()
+		self::assertTrue(condition: $result->isAllowed());
+	}//end testUserPrefixOwnerMayArchive()
 
-    /**
-     * An editor (not owner) is denied a destructive transition.
-     *
-     * @return void
-     */
-    public function testEditorIsDenied(): void
-    {
-        $this->arrangeCaller(uid: 'bob', groups: ['team-editors'], isAdmin: false);
-        $this->arrangeParentApplication(
-            applicationUuid: 'app-A',
-            permissions: ['owners' => ['group:team-alpha'], 'editors' => ['group:team-editors'], 'viewers' => []]
-        );
+	/**
+	 * An editor (not owner) is denied a destructive transition.
+	 *
+	 * @return void
+	 */
+	public function testEditorIsDenied(): void {
+		$this->arrangeCaller(uid: 'bob', groups: ['team-editors'], isAdmin: false);
+		$this->arrangeParentApplication(
+			applicationUuid: 'app-A',
+			permissions: ['owners' => ['group:team-alpha'], 'editors' => ['group:team-editors'], 'viewers' => []]
+		);
 
-        $result = $this->guard->check(['application' => 'app-A'], 'publish', 'bob');
+		$result = $this->guard->check(['application' => 'app-A'], 'publish', 'bob');
 
-        self::assertFalse(condition: $result->isAllowed());
-        self::assertNotNull(actual: $result->getMessage());
-    }//end testEditorIsDenied()
+		self::assertFalse(condition: $result->isAllowed());
+		self::assertNotNull(actual: $result->getMessage());
+	}//end testEditorIsDenied()
 
-    /**
-     * A viewer is denied a destructive transition.
-     *
-     * @return void
-     */
-    public function testViewerIsDenied(): void
-    {
-        $this->arrangeCaller(uid: 'carol', groups: ['team-viewers'], isAdmin: false);
-        $this->arrangeParentApplication(
-            applicationUuid: 'app-A',
-            permissions: ['owners' => ['group:team-alpha'], 'editors' => [], 'viewers' => ['group:team-viewers']]
-        );
+	/**
+	 * A viewer is denied a destructive transition.
+	 *
+	 * @return void
+	 */
+	public function testViewerIsDenied(): void {
+		$this->arrangeCaller(uid: 'carol', groups: ['team-viewers'], isAdmin: false);
+		$this->arrangeParentApplication(
+			applicationUuid: 'app-A',
+			permissions: ['owners' => ['group:team-alpha'], 'editors' => [], 'viewers' => ['group:team-viewers']]
+		);
 
-        $result = $this->guard->check(['application' => 'app-A'], 'reopen', 'carol');
+		$result = $this->guard->check(['application' => 'app-A'], 'reopen', 'carol');
 
-        self::assertFalse(condition: $result->isAllowed());
-    }//end testViewerIsDenied()
+		self::assertFalse(condition: $result->isAllowed());
+	}//end testViewerIsDenied()
 
-    /**
-     * A user with no role on the parent Application is denied.
-     *
-     * @return void
-     */
-    public function testNonMemberIsDenied(): void
-    {
-        $this->arrangeCaller(uid: 'eve', groups: ['outsiders'], isAdmin: false);
-        $this->arrangeParentApplication(
-            applicationUuid: 'app-A',
-            permissions: ['owners' => ['group:team-alpha'], 'editors' => [], 'viewers' => []]
-        );
+	/**
+	 * A user with no role on the parent Application is denied.
+	 *
+	 * @return void
+	 */
+	public function testNonMemberIsDenied(): void {
+		$this->arrangeCaller(uid: 'eve', groups: ['outsiders'], isAdmin: false);
+		$this->arrangeParentApplication(
+			applicationUuid: 'app-A',
+			permissions: ['owners' => ['group:team-alpha'], 'editors' => [], 'viewers' => []]
+		);
 
-        $result = $this->guard->check(['application' => 'app-A'], 'publish', 'eve');
+		$result = $this->guard->check(['application' => 'app-A'], 'publish', 'eve');
 
-        self::assertFalse(condition: $result->isAllowed());
-    }//end testNonMemberIsDenied()
+		self::assertFalse(condition: $result->isAllowed());
+	}//end testNonMemberIsDenied()
 
-    /**
-     * A Nextcloud admin is granted as the audited incident-response escape hatch.
-     *
-     * @return void
-     */
-    public function testAdminBypassIsAllowed(): void
-    {
-        $this->arrangeCaller(uid: 'root', groups: ['admin'], isAdmin: true);
-        $this->arrangeParentApplication(
-            applicationUuid: 'app-A',
-            permissions: ['owners' => ['group:team-alpha'], 'editors' => [], 'viewers' => []]
-        );
+	/**
+	 * A Nextcloud admin is granted as the audited incident-response escape hatch.
+	 *
+	 * @return void
+	 */
+	public function testAdminBypassIsAllowed(): void {
+		$this->arrangeCaller(uid: 'root', groups: ['admin'], isAdmin: true);
+		$this->arrangeParentApplication(
+			applicationUuid: 'app-A',
+			permissions: ['owners' => ['group:team-alpha'], 'editors' => [], 'viewers' => []]
+		);
 
-        $result = $this->guard->check(['application' => 'app-A'], 'archive', 'root');
+		$result = $this->guard->check(['application' => 'app-A'], 'archive', 'root');
 
-        self::assertTrue(condition: $result->isAllowed());
-    }//end testAdminBypassIsAllowed()
+		self::assertTrue(condition: $result->isAllowed());
+	}//end testAdminBypassIsAllowed()
 
-    /**
-     * IDOR: a caller who owns a DIFFERENT Application cannot drive a transition
-     * on a version whose parent is an Application they do not own. The guard
-     * resolves the parent from the version's own `application` relation, so the
-     * check is always against the correct Application.
-     *
-     * @return void
-     */
-    public function testIdorOwnerOfDifferentApplicationIsDenied(): void
-    {
-        // Caller owns app-B (team-beta) but the version belongs to app-A.
-        $this->arrangeCaller(uid: 'mallory', groups: ['team-beta'], isAdmin: false);
-        $this->arrangeParentApplication(
-            applicationUuid: 'app-A',
-            permissions: ['owners' => ['group:team-alpha'], 'editors' => [], 'viewers' => []]
-        );
+	/**
+	 * IDOR: a caller who owns a DIFFERENT Application cannot drive a transition
+	 * on a version whose parent is an Application they do not own. The guard
+	 * resolves the parent from the version's own `application` relation, so the
+	 * check is always against the correct Application.
+	 *
+	 * @return void
+	 */
+	public function testIdorOwnerOfDifferentApplicationIsDenied(): void {
+		// Caller owns app-B (team-beta) but the version belongs to app-A.
+		$this->arrangeCaller(uid: 'mallory', groups: ['team-beta'], isAdmin: false);
+		$this->arrangeParentApplication(
+			applicationUuid: 'app-A',
+			permissions: ['owners' => ['group:team-alpha'], 'editors' => [], 'viewers' => []]
+		);
 
-        $result = $this->guard->check(['application' => 'app-A'], 'publish', 'mallory');
+		$result = $this->guard->check(['application' => 'app-A'], 'publish', 'mallory');
 
-        self::assertFalse(condition: $result->isAllowed());
-    }//end testIdorOwnerOfDifferentApplicationIsDenied()
+		self::assertFalse(condition: $result->isAllowed());
+	}//end testIdorOwnerOfDifferentApplicationIsDenied()
 
-    /**
-     * Fail-closed: an unresolvable caller UID denies the transition.
-     *
-     * @return void
-     */
-    public function testUnresolvableCallerIsDenied(): void
-    {
-        $this->userManager->method('get')->with('ghost')->willReturn(null);
-        // ObjectService must never be consulted once the caller is unresolved.
-        $this->objectService->expects(self::never())->method('find');
+	/**
+	 * Fail-closed: an unresolvable caller UID denies the transition.
+	 *
+	 * @return void
+	 */
+	public function testUnresolvableCallerIsDenied(): void {
+		$this->userManager->method('get')->with('ghost')->willReturn(null);
+		// ObjectService must never be consulted once the caller is unresolved.
+		$this->objectService->expects(self::never())->method('find');
 
-        $result = $this->guard->check(['application' => 'app-A'], 'publish', 'ghost');
+		$result = $this->guard->check(['application' => 'app-A'], 'publish', 'ghost');
 
-        self::assertFalse(condition: $result->isAllowed());
-    }//end testUnresolvableCallerIsDenied()
+		self::assertFalse(condition: $result->isAllowed());
+	}//end testUnresolvableCallerIsDenied()
 
-    /**
-     * Fail-closed: a missing `application` relation denies the transition.
-     *
-     * @return void
-     */
-    public function testMissingApplicationRelationIsDenied(): void
-    {
-        $this->arrangeCaller(uid: 'alice', groups: ['team-alpha'], isAdmin: false);
-        $this->objectService->expects(self::never())->method('find');
+	/**
+	 * Fail-closed: a missing `application` relation denies the transition.
+	 *
+	 * @return void
+	 */
+	public function testMissingApplicationRelationIsDenied(): void {
+		$this->arrangeCaller(uid: 'alice', groups: ['team-alpha'], isAdmin: false);
+		$this->objectService->expects(self::never())->method('find');
 
-        $result = $this->guard->check([], 'publish', 'alice');
+		$result = $this->guard->check([], 'publish', 'alice');
 
-        self::assertFalse(condition: $result->isAllowed());
-    }//end testMissingApplicationRelationIsDenied()
+		self::assertFalse(condition: $result->isAllowed());
+	}//end testMissingApplicationRelationIsDenied()
 
-    /**
-     * Fail-closed: an unresolved parent Application denies the transition.
-     *
-     * @return void
-     */
-    public function testUnresolvedParentApplicationIsDenied(): void
-    {
-        $this->arrangeCaller(uid: 'alice', groups: ['team-alpha'], isAdmin: false);
-        $this->objectService->method('find')->willReturn(null);
+	/**
+	 * Fail-closed: an unresolved parent Application denies the transition.
+	 *
+	 * @return void
+	 */
+	public function testUnresolvedParentApplicationIsDenied(): void {
+		$this->arrangeCaller(uid: 'alice', groups: ['team-alpha'], isAdmin: false);
+		$this->objectService->method('find')->willReturn(null);
 
-        $result = $this->guard->check(['application' => 'app-missing'], 'publish', 'alice');
+		$result = $this->guard->check(['application' => 'app-missing'], 'publish', 'alice');
 
-        self::assertFalse(condition: $result->isAllowed());
-    }//end testUnresolvedParentApplicationIsDenied()
+		self::assertFalse(condition: $result->isAllowed());
+	}//end testUnresolvedParentApplicationIsDenied()
 
-    /**
-     * No rechtenblok + NC admin caller: the audited admin escape hatch is
-     * granted, so a programmatically / synthetically created Application (which
-     * never materialised a permissions block) can still be published by an
-     * admin instead of bricking with a 422. Regression for the publish-422
-     * reported during fleet Newman verification.
-     *
-     * @return void
-     */
-    public function testParentWithoutPermissionsAllowsAdminEscapeHatch(): void
-    {
-        $this->arrangeCaller(uid: 'root', groups: ['admin'], isAdmin: true);
-        $this->arrangeParentApplication(applicationUuid: 'app-A', permissions: null);
+	/**
+	 * No rechtenblok + NC admin caller: the audited admin escape hatch is
+	 * granted, so a programmatically / synthetically created Application (which
+	 * never materialised a permissions block) can still be published by an
+	 * admin instead of bricking with a 422. Regression for the publish-422
+	 * reported during fleet Newman verification.
+	 *
+	 * @return void
+	 */
+	public function testParentWithoutPermissionsAllowsAdminEscapeHatch(): void {
+		$this->arrangeCaller(uid: 'root', groups: ['admin'], isAdmin: true);
+		$this->arrangeParentApplication(applicationUuid: 'app-A', permissions: null);
 
-        $result = $this->guard->check(['application' => 'app-A'], 'publish', 'root');
+		$result = $this->guard->check(['application' => 'app-A'], 'publish', 'root');
 
-        self::assertTrue(condition: $result->isAllowed());
-    }//end testParentWithoutPermissionsAllowsAdminEscapeHatch()
+		self::assertTrue(condition: $result->isAllowed());
+	}//end testParentWithoutPermissionsAllowsAdminEscapeHatch()
 
-    /**
-     * No rechtenblok + ordinary (non-admin) caller: still denied. The absence
-     * of a permissions block must NOT widen access to ordinary users — no
-     * owner can be proven, so the guard stays fail-closed for everyone but the
-     * audited admin escape hatch. Guards the security boundary of the fix.
-     *
-     * @return void
-     */
-    public function testParentWithoutPermissionsDeniesNonAdmin(): void
-    {
-        $this->arrangeCaller(uid: 'alice', groups: ['team-alpha'], isAdmin: false);
-        $this->arrangeParentApplication(applicationUuid: 'app-A', permissions: null);
+	/**
+	 * No rechtenblok + ordinary (non-admin) caller: still denied. The absence
+	 * of a permissions block must NOT widen access to ordinary users — no
+	 * owner can be proven, so the guard stays fail-closed for everyone but the
+	 * audited admin escape hatch. Guards the security boundary of the fix.
+	 *
+	 * @return void
+	 */
+	public function testParentWithoutPermissionsDeniesNonAdmin(): void {
+		$this->arrangeCaller(uid: 'alice', groups: ['team-alpha'], isAdmin: false);
+		$this->arrangeParentApplication(applicationUuid: 'app-A', permissions: null);
 
-        $result = $this->guard->check(['application' => 'app-A'], 'publish', 'alice');
+		$result = $this->guard->check(['application' => 'app-A'], 'publish', 'alice');
 
-        self::assertFalse(condition: $result->isAllowed());
-        self::assertNotNull(actual: $result->getMessage());
-    }//end testParentWithoutPermissionsDeniesNonAdmin()
+		self::assertFalse(condition: $result->isAllowed());
+		self::assertNotNull(actual: $result->getMessage());
+	}//end testParentWithoutPermissionsDeniesNonAdmin()
 
-    /**
-     * No rechtenblok + an EMPTY permissions block (vs the omitted-key case) is
-     * treated identically: admin allowed, semantics unchanged. Confirms the
-     * `permissions === []` arm of the guard behaves like the missing-key arm.
-     *
-     * @return void
-     */
-    public function testParentWithEmptyPermissionsBlockAllowsAdmin(): void
-    {
-        $this->arrangeCaller(uid: 'root', groups: ['admin'], isAdmin: true);
-        $this->arrangeParentApplication(applicationUuid: 'app-A', permissions: []);
+	/**
+	 * No rechtenblok + an EMPTY permissions block (vs the omitted-key case) is
+	 * treated identically: admin allowed, semantics unchanged. Confirms the
+	 * `permissions === []` arm of the guard behaves like the missing-key arm.
+	 *
+	 * @return void
+	 */
+	public function testParentWithEmptyPermissionsBlockAllowsAdmin(): void {
+		$this->arrangeCaller(uid: 'root', groups: ['admin'], isAdmin: true);
+		$this->arrangeParentApplication(applicationUuid: 'app-A', permissions: []);
 
-        $result = $this->guard->check(['application' => 'app-A'], 'archive', 'root');
+		$result = $this->guard->check(['application' => 'app-A'], 'archive', 'root');
 
-        self::assertTrue(condition: $result->isAllowed());
-    }//end testParentWithEmptyPermissionsBlockAllowsAdmin()
+		self::assertTrue(condition: $result->isAllowed());
+	}//end testParentWithEmptyPermissionsBlockAllowsAdmin()
 
-    /**
-     * Arrange the caller: an IUser resolved by IUserManager, with the given
-     * group memberships and admin status on IGroupManager.
-     *
-     * @param string        $uid     The caller UID.
-     * @param array<string> $groups  The caller's group GIDs.
-     * @param bool          $isAdmin Whether the caller is a Nextcloud admin.
-     *
-     * @return void
-     */
-    private function arrangeCaller(string $uid, array $groups, bool $isAdmin): void
-    {
-        $user = $this->createMock(originalClassName: IUser::class);
-        $user->method('getUID')->willReturn($uid);
+	/**
+	 * Arrange the caller: an IUser resolved by IUserManager, with the given
+	 * group memberships and admin status on IGroupManager.
+	 *
+	 * @param string $uid The caller UID.
+	 * @param array<string> $groups The caller's group GIDs.
+	 * @param bool $isAdmin Whether the caller is a Nextcloud admin.
+	 *
+	 * @return void
+	 */
+	private function arrangeCaller(string $uid, array $groups, bool $isAdmin): void {
+		$user = $this->createMock(originalClassName: IUser::class);
+		$user->method('getUID')->willReturn($uid);
 
-        $this->userManager->method('get')->with($uid)->willReturn($user);
+		$this->userManager->method('get')->with($uid)->willReturn($user);
 
-        $groupObjects = [];
-        foreach ($groups as $gid) {
-            $group = $this->createMock(originalClassName: IGroup::class);
-            $group->method('getGID')->willReturn($gid);
-            $groupObjects[] = $group;
-        }
+		$groupObjects = [];
+		foreach ($groups as $gid) {
+			$group = $this->createMock(originalClassName: IGroup::class);
+			$group->method('getGID')->willReturn($gid);
+			$groupObjects[] = $group;
+		}
 
-        $this->groupManager->method('getUserGroups')->willReturn($groupObjects);
-        $this->groupManager->method('isAdmin')->willReturn($isAdmin);
-    }//end arrangeCaller()
+		$this->groupManager->method('getUserGroups')->willReturn($groupObjects);
+		$this->groupManager->method('isAdmin')->willReturn($isAdmin);
+	}//end arrangeCaller()
 
-    /**
-     * Arrange the parent Application returned by ObjectService::find.
-     *
-     * @param string                    $applicationUuid The Application UUID the version points at.
-     * @param array<string, mixed>|null $permissions     The Application's permissions block (or null to omit it).
-     *
-     * @return void
-     */
-    private function arrangeParentApplication(string $applicationUuid, ?array $permissions): void
-    {
-        $data = ['uuid' => $applicationUuid, 'slug' => 'demo-app'];
-        if ($permissions !== null) {
-            $data['permissions'] = $permissions;
-        }
+	/**
+	 * Arrange the parent Application returned by ObjectService::find.
+	 *
+	 * @param string $applicationUuid The Application UUID the version points at.
+	 * @param array<string, mixed>|null $permissions The Application's permissions block (or null to omit it).
+	 *
+	 * @return void
+	 */
+	private function arrangeParentApplication(string $applicationUuid, ?array $permissions): void {
+		$data = ['uuid' => $applicationUuid, 'slug' => 'demo-app'];
+		if ($permissions !== null) {
+			$data['permissions'] = $permissions;
+		}
 
-        $entity = $this->createMock(originalClassName: ObjectEntity::class);
-        $entity->method('jsonSerialize')->willReturn($data);
+		$entity = $this->createMock(originalClassName: ObjectEntity::class);
+		$entity->method('jsonSerialize')->willReturn($data);
 
-        $this->objectService->method('find')->willReturn($entity);
-    }//end arrangeParentApplication()
+		$this->objectService->method('find')->willReturn($entity);
+	}//end arrangeParentApplication()
 }//end class

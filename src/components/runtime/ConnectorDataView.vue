@@ -119,17 +119,21 @@ export default {
 	padding: 12px;
 	color: var(--color-text-maxcontrast);
 }
+
 .connector-data-view__state--error {
 	color: var(--color-error);
 }
+
 .connector-data-view__stale {
 	color: var(--color-warning-text, var(--color-warning));
 	margin: 0 0 8px;
 }
+
 .connector-data-view__table {
 	width: 100%;
 	border-collapse: collapse;
 }
+
 .connector-data-view__table th,
 .connector-data-view__table td {
 	text-align: left;

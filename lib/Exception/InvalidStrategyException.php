@@ -30,20 +30,19 @@ use Throwable;
 /**
  * 400-mapped — strategy is missing or not in the closed enum.
  */
-final class InvalidStrategyException extends VersionPromotionException
-{
-    /**
-     * Constructor.
-     *
-     * @param string         $message  Diagnostic message naming the offending value
-     * @param Throwable|null $previous Wrapped causal exception
-     *
-     * @return void
-     */
-    public function __construct(
-        string $message='Unknown or missing promotion strategy.',
-        ?Throwable $previous=null
-    ) {
-        parent::__construct(errorCode: 'invalid_strategy', message: $message, previous: $previous);
-    }//end __construct()
+final class InvalidStrategyException extends VersionPromotionException {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Diagnostic message naming the offending value
+	 * @param Throwable|null $previous Wrapped causal exception
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		string $message = 'Unknown or missing promotion strategy.',
+		?Throwable $previous = null,
+	) {
+		parent::__construct(errorCode: 'invalid_strategy', message: $message, previous: $previous);
+	}//end __construct()
 }//end class

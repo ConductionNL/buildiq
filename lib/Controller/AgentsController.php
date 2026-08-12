@@ -64,282 +64,274 @@ use Throwable;
  *
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
  */
-class AgentsController extends Controller
-{
-    /**
-     * Shared OpenBuild register slug.
-     */
-    private const REGISTER_SLUG = 'openbuild';
+class AgentsController extends Controller {
+	/**
+	 * Shared OpenBuild register slug.
+	 */
+	private const REGISTER_SLUG = 'openbuild';
 
-    /**
-     * Schema slug of the Agent object.
-     */
-    private const AGENT_SCHEMA = 'agent';
+	/**
+	 * Schema slug of the Agent object.
+	 */
+	private const AGENT_SCHEMA = 'agent';
 
-    /**
-     * Schema slug of the AgentRun object.
-     */
-    private const AGENT_RUN_SCHEMA = 'agentRun';
+	/**
+	 * Schema slug of the AgentRun object.
+	 */
+	private const AGENT_RUN_SCHEMA = 'agentRun';
 
-    /**
-     * Roles allowed to view an agent's run history — matches
-     * `CopilotService::assertWriteRoleOnApp()`'s posture for anything
-     * execute-adjacent (design.md Open Questions).
-     *
-     * @var array<int,string>
-     */
-    private const READ_ROLES = ['owners', 'editors'];
+	/**
+	 * Roles allowed to view an agent's run history — matches
+	 * `CopilotService::assertWriteRoleOnApp()`'s posture for anything
+	 * execute-adjacent (design.md Open Questions).
+	 *
+	 * @var array<int,string>
+	 */
+	private const READ_ROLES = ['owners', 'editors'];
 
-    /**
-     * Constructor.
-     *
-     * @param IRequest           $request            The current HTTP request.
-     * @param LoggerInterface    $logger             PSR logger.
-     * @param ObjectService      $objectService      OpenRegister object service.
-     * @param RegisterMapper     $registerMapper     Resolves register slugs to ids.
-     * @param SchemaMapper       $schemaMapper       Resolves schema slugs to ids.
-     * @param PermissionResolver $permissionResolver Shared permission-grammar resolver.
-     * @param IGroupManager      $groupManager       Group manager (admin bypass logging).
-     * @param IUserSession       $userSession        Current user session.
-     *
-     * @return void
-     */
-    public function __construct(
-        IRequest $request,
-        private readonly LoggerInterface $logger,
-        private readonly ObjectService $objectService,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly PermissionResolver $permissionResolver,
-        private readonly IGroupManager $groupManager,
-        private readonly IUserSession $userSession,
-    ) {
-        parent::__construct(appName: Application::APP_ID, request: $request);
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest $request The current HTTP request.
+	 * @param LoggerInterface $logger PSR logger.
+	 * @param ObjectService $objectService OpenRegister object service.
+	 * @param RegisterMapper $registerMapper Resolves register slugs to ids.
+	 * @param SchemaMapper $schemaMapper Resolves schema slugs to ids.
+	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver.
+	 * @param IGroupManager $groupManager Group manager (admin bypass logging).
+	 * @param IUserSession $userSession Current user session.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		IRequest $request,
+		private readonly LoggerInterface $logger,
+		private readonly ObjectService $objectService,
+		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly PermissionResolver $permissionResolver,
+		private readonly IGroupManager $groupManager,
+		private readonly IUserSession $userSession,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+	}//end __construct()
 
-    /**
-     * GET /api/agents/{uuid}/runs — an agent's transparent run-history list,
-     * newest first (agent-workspace spec "Every agent run is transparently
-     * logged and reviewable").
-     *
-     * @param string $uuid The Agent object uuid.
-     *
-     * @return JSONResponse 200 with the ordered `AgentRun` list, or an error envelope.
-     *
-     * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
-     */
-    #[NoAdminRequired]
-    public function runs(string $uuid): JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return $this->error(code: 'unauthenticated', detail: null, status: Http::STATUS_UNAUTHORIZED);
-        }
+	/**
+	 * GET /api/agents/{uuid}/runs — an agent's transparent run-history list,
+	 * newest first (agent-workspace spec "Every agent run is transparently
+	 * logged and reviewable").
+	 *
+	 * @param string $uuid The Agent object uuid.
+	 *
+	 * @return JSONResponse 200 with the ordered `AgentRun` list, or an error envelope.
+	 *
+	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
+	 */
+	#[NoAdminRequired]
+	public function runs(string $uuid): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return $this->error(code: 'unauthenticated', detail: null, status: Http::STATUS_UNAUTHORIZED);
+		}
 
-        try {
-            $agent = $this->loadAgent(uuid: $uuid);
-            if ($agent === null) {
-                return $this->error(code: 'not_found', detail: 'Agent '.$uuid.' not found', status: Http::STATUS_NOT_FOUND);
-            }
+		try {
+			$agent = $this->loadAgent(uuid: $uuid);
+			if ($agent === null) {
+				return $this->error(code: 'not_found', detail: 'Agent ' . $uuid . ' not found', status: Http::STATUS_NOT_FOUND);
+			}
 
-            $applicationSlug = (string) ($agent['applicationSlug'] ?? '');
-            $application     = $this->loadApplication(slug: $applicationSlug);
-            if ($application === null) {
-                return $this->error(code: 'not_found', detail: 'Application '.$applicationSlug.' not found', status: Http::STATUS_NOT_FOUND);
-            }
+			$applicationSlug = (string)($agent['applicationSlug'] ?? '');
+			$application = $this->loadApplication(slug: $applicationSlug);
+			if ($application === null) {
+				return $this->error(code: 'not_found', detail: 'Application ' . $applicationSlug . ' not found', status: Http::STATUS_NOT_FOUND);
+			}
 
-            $permissions = $this->orArray(value: $application['permissions'] ?? null);
-            $userGroups  = $this->permissionResolver->resolveUserGroups(user: $user);
-            $allowed     = $this->permissionResolver->matchesCaller(
-                permissions: $permissions,
-                caller: $user,
-                userGroups: $userGroups,
-                allowAdminBypass: true,
-                roles: self::READ_ROLES
-            );
+			$permissions = $this->orArray(value: $application['permissions'] ?? null);
+			$userGroups = $this->permissionResolver->resolveUserGroups(user: $user);
+			$allowed = $this->permissionResolver->matchesCaller(
+				permissions: $permissions,
+				caller: $user,
+				userGroups: $userGroups,
+				allowAdminBypass: true,
+				roles: self::READ_ROLES
+			);
 
-            if ($allowed === false) {
-                return $this->error(code: 'insufficient_permission', detail: null, status: Http::STATUS_FORBIDDEN);
-            }
+			if ($allowed === false) {
+				return $this->error(code: 'insufficient_permission', detail: null, status: Http::STATUS_FORBIDDEN);
+			}
 
-            if ($this->groupManager->isAdmin($user->getUID()) === true) {
-                $this->logger->info(
-                    'OpenBuild AgentsController: rbac.admin_bypass',
-                    ['actor' => $user->getUID(), 'applicationSlug' => $applicationSlug]
-                );
-            }
+			if ($this->groupManager->isAdmin($user->getUID()) === true) {
+				$this->logger->info(
+					'OpenBuild AgentsController: rbac.admin_bypass',
+					['actor' => $user->getUID(), 'applicationSlug' => $applicationSlug]
+				);
+			}
 
-            $agentUuid = (string) ($agent['id'] ?? $agent['uuid'] ?? $uuid);
-            $runs      = $this->loadRunsForAgent(agentUuid: $agentUuid);
+			$agentUuid = (string)($agent['id'] ?? $agent['uuid'] ?? $uuid);
+			$runs = $this->loadRunsForAgent(agentUuid: $agentUuid);
 
-            return new JSONResponse(data: $runs, statusCode: Http::STATUS_OK);
-        } catch (Throwable $e) {
-            $this->logger->error('OpenBuild: AgentsController::runs failed for '.$uuid.': '.$e->getMessage(), ['exception' => $e]);
-            return $this->error(code: 'internal_error', detail: $e->getMessage(), status: Http::STATUS_INTERNAL_SERVER_ERROR);
-        }//end try
-    }//end runs()
+			return new JSONResponse(data: $runs, statusCode: Http::STATUS_OK);
+		} catch (Throwable $e) {
+			$this->logger->error('OpenBuild: AgentsController::runs failed for ' . $uuid . ': ' . $e->getMessage(), ['exception' => $e]);
+			return $this->error(code: 'internal_error', detail: $e->getMessage(), status: Http::STATUS_INTERNAL_SERVER_ERROR);
+		}//end try
+	}//end runs()
 
-    /**
-     * Load every `AgentRun` row belonging to the given agent uuid, newest first.
-     *
-     * OR's `searchObjects` does not reliably filter by relation-string
-     * equality on the `agentId` field (mirrors the same limitation
-     * `ApplicationVersionsController::index()` documents) — fetch every row
-     * in the `agentRun` schema and filter client-side. Cheap: run volume per
-     * agent is expected to stay small (design.md Risks — retention is a
-     * follow-up, not a v1 blocker).
-     *
-     * @param string $agentUuid The Agent object uuid.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private function loadRunsForAgent(string $agentUuid): array
-    {
-        $registerId = $this->registerMapper->find(self::REGISTER_SLUG, _multitenancy: false)->getId();
-        $schemaId   = $this->schemaMapper->find(self::AGENT_RUN_SCHEMA, _multitenancy: false)->getId();
+	/**
+	 * Load every `AgentRun` row belonging to the given agent uuid, newest first.
+	 *
+	 * OR's `searchObjects` does not reliably filter by relation-string
+	 * equality on the `agentId` field (mirrors the same limitation
+	 * `ApplicationVersionsController::index()` documents) — fetch every row
+	 * in the `agentRun` schema and filter client-side. Cheap: run volume per
+	 * agent is expected to stay small (design.md Risks — retention is a
+	 * follow-up, not a v1 blocker).
+	 *
+	 * @param string $agentUuid The Agent object uuid.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function loadRunsForAgent(string $agentUuid): array {
+		$registerId = $this->registerMapper->find(self::REGISTER_SLUG, _multitenancy: false)->getId();
+		$schemaId = $this->schemaMapper->find(self::AGENT_RUN_SCHEMA, _multitenancy: false)->getId();
 
-        $rows = $this->objectService->searchObjects(
-            query: [
-                '@self' => [
-                    'register' => $registerId,
-                    'schema'   => $schemaId,
-                ],
-            ]
-        );
+		$rows = $this->objectService->searchObjects(
+			query: [
+				'@self' => [
+					'register' => $registerId,
+					'schema' => $schemaId,
+				],
+			]
+		);
 
-        $rowsList = [];
-        if (is_array($rows) === true) {
-            $rowsList = $rows;
-        }
+		$rowsList = [];
+		if (is_array($rows) === true) {
+			$rowsList = $rows;
+		}
 
-        $matching = [];
-        foreach ($rowsList as $row) {
-            $normalised = $this->normalise(object: $row);
-            if ((string) ($normalised['agentId'] ?? '') !== $agentUuid) {
-                continue;
-            }
+		$matching = [];
+		foreach ($rowsList as $row) {
+			$normalised = $this->normalise(object: $row);
+			if ((string)($normalised['agentId'] ?? '') !== $agentUuid) {
+				continue;
+			}
 
-            $matching[] = $normalised;
-        }
+			$matching[] = $normalised;
+		}
 
-        usort(
-            $matching,
-            static fn (array $a, array $b): int => strcmp((string) ($b['createdAt'] ?? ''), (string) ($a['createdAt'] ?? ''))
-        );
+		usort(
+			$matching,
+			static fn (array $a, array $b): int => strcmp((string)($b['createdAt'] ?? ''), (string)($a['createdAt'] ?? ''))
+		);
 
-        return array_values($matching);
-    }//end loadRunsForAgent()
+		return array_values($matching);
+	}//end loadRunsForAgent()
 
-    /**
-     * Load an Agent object by uuid.
-     *
-     * @param string $uuid The Agent object uuid.
-     *
-     * @return array<string,mixed>|null
-     */
-    private function loadAgent(string $uuid): ?array
-    {
-        try {
-            $entity = $this->objectService->find(id: $uuid, register: self::REGISTER_SLUG, schema: self::AGENT_SCHEMA);
-        } catch (Throwable $e) {
-            return null;
-        }
+	/**
+	 * Load an Agent object by uuid.
+	 *
+	 * @param string $uuid The Agent object uuid.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function loadAgent(string $uuid): ?array {
+		try {
+			$entity = $this->objectService->find(id: $uuid, register: self::REGISTER_SLUG, schema: self::AGENT_SCHEMA);
+		} catch (Throwable $e) {
+			return null;
+		}
 
-        if ($entity === null) {
-            return null;
-        }
+		if ($entity === null) {
+			return null;
+		}
 
-        return $this->normalise(object: $entity);
-    }//end loadAgent()
+		return $this->normalise(object: $entity);
+	}//end loadAgent()
 
-    /**
-     * Load the parent Application by slug.
-     *
-     * @param string $slug The Application slug.
-     *
-     * @return array<string,mixed>|null
-     */
-    private function loadApplication(string $slug): ?array
-    {
-        if ($slug === '') {
-            return null;
-        }
+	/**
+	 * Load the parent Application by slug.
+	 *
+	 * @param string $slug The Application slug.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function loadApplication(string $slug): ?array {
+		if ($slug === '') {
+			return null;
+		}
 
-        try {
-            $entity = $this->objectService->find(id: $slug, register: self::REGISTER_SLUG, schema: 'application');
-        } catch (Throwable $e) {
-            return null;
-        }
+		try {
+			$entity = $this->objectService->find(id: $slug, register: self::REGISTER_SLUG, schema: 'application');
+		} catch (Throwable $e) {
+			return null;
+		}
 
-        if ($entity === null) {
-            return null;
-        }
+		if ($entity === null) {
+			return null;
+		}
 
-        return $this->normalise(object: $entity);
-    }//end loadApplication()
+		return $this->normalise(object: $entity);
+	}//end loadApplication()
 
-    /**
-     * Return `$value` when it is an array, otherwise an empty array.
-     *
-     * @param mixed $value The candidate value.
-     *
-     * @return array<string,mixed>
-     */
-    private function orArray(mixed $value): array
-    {
-        if (is_array($value) === true) {
-            return $value;
-        }
+	/**
+	 * Return `$value` when it is an array, otherwise an empty array.
+	 *
+	 * @param mixed $value The candidate value.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function orArray(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
+		}
 
-        return [];
-    }//end orArray()
+		return [];
+	}//end orArray()
 
-    /**
-     * Coerce an OR result entry to a plain associative array.
-     *
-     * @param mixed $object The OR object/result entry.
-     *
-     * @return array<string,mixed>
-     */
-    private function normalise(mixed $object): array
-    {
-        if (is_array($object) === true) {
-            return $object;
-        }
+	/**
+	 * Coerce an OR result entry to a plain associative array.
+	 *
+	 * @param mixed $object The OR object/result entry.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function normalise(mixed $object): array {
+		if (is_array($object) === true) {
+			return $object;
+		}
 
-        if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-            $serialised = $object->jsonSerialize();
-            if (is_array($serialised) === true) {
-                return $serialised;
-            }
-        }
+		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
+			$serialised = $object->jsonSerialize();
+			if (is_array($serialised) === true) {
+				return $serialised;
+			}
+		}
 
-        if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-            $inner = $object->getObject();
-            if (is_array($inner) === true) {
-                return $inner;
-            }
-        }
+		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
+			$inner = $object->getObject();
+			if (is_array($inner) === true) {
+				return $inner;
+			}
+		}
 
-        return [];
-    }//end normalise()
+		return [];
+	}//end normalise()
 
-    /**
-     * Build a uniform error envelope.
-     *
-     * @param string      $code   Error code.
-     * @param string|null $detail Optional detail.
-     * @param int         $status HTTP status code.
-     *
-     * @return JSONResponse
-     */
-    private function error(string $code, ?string $detail, int $status): JSONResponse
-    {
-        $body = ['error' => $code];
-        if ($detail !== null) {
-            $body['detail'] = $detail;
-        }
+	/**
+	 * Build a uniform error envelope.
+	 *
+	 * @param string $code Error code.
+	 * @param string|null $detail Optional detail.
+	 * @param int $status HTTP status code.
+	 *
+	 * @return JSONResponse
+	 */
+	private function error(string $code, ?string $detail, int $status): JSONResponse {
+		$body = ['error' => $code];
+		if ($detail !== null) {
+			$body['detail'] = $detail;
+		}
 
-        return new JSONResponse(data: $body, statusCode: $status);
-    }//end error()
+		return new JSONResponse(data: $body, statusCode: $status);
+	}//end error()
 }//end class

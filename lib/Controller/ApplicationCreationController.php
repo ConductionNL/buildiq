@@ -68,125 +68,122 @@ use Throwable;
  *
  * Single action: `wizard()` (POST /api/applications/wizard).
  */
-class ApplicationCreationController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param IRequest                   $request         The current HTTP request
-     * @param LoggerInterface            $logger          PSR logger for diagnostics
-     * @param ApplicationCreationService $creationService Atomic creation orchestrator
-     * @param IUserSession               $userSession     Current Nextcloud user session
-     * @param IGroupManager              $groupManager    Group membership resolver
-     *
-     * @return void
-     */
-    public function __construct(
-        IRequest $request,
-        private readonly LoggerInterface $logger,
-        private readonly ApplicationCreationService $creationService,
-        private readonly IUserSession $userSession,
-        private readonly IGroupManager $groupManager,
-    ) {
-        parent::__construct(appName: Application::APP_ID, request: $request);
-    }//end __construct()
+class ApplicationCreationController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest $request The current HTTP request
+	 * @param LoggerInterface $logger PSR logger for diagnostics
+	 * @param ApplicationCreationService $creationService Atomic creation orchestrator
+	 * @param IUserSession $userSession Current Nextcloud user session
+	 * @param IGroupManager $groupManager Group membership resolver
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		IRequest $request,
+		private readonly LoggerInterface $logger,
+		private readonly ApplicationCreationService $creationService,
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+	}//end __construct()
 
-    /**
-     * Execute the wizard payload and return the newly-created Application UUID.
-     *
-     * Returns 201 `{ "applicationUuid": "<uuid>" }` on success.
-     * Returns 403 when the caller is not an NC admin (issue #157).
-     * Returns 422 when the payload fails server-side validation.
-     * Returns 500 with rollback details when creation fails mid-flight.
-     * Returns 401 when the caller is not authenticated.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
-     */
-    #[AuthorizedAdminSetting(AdminSettings::class)]
-    #[UserRateLimit(limit: 10, period: 3600)]
-    public function wizard(): JSONResponse
-    {
-        // Require authentication.
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return new JSONResponse(
-                data: ['error' => 'unauthenticated'],
-                statusCode: Http::STATUS_UNAUTHORIZED
-            );
-        }
+	/**
+	 * Execute the wizard payload and return the newly-created Application UUID.
+	 *
+	 * Returns 201 `{ "applicationUuid": "<uuid>" }` on success.
+	 * Returns 403 when the caller is not an NC admin (issue #157).
+	 * Returns 422 when the payload fails server-side validation.
+	 * Returns 500 with rollback details when creation fails mid-flight.
+	 * Returns 401 when the caller is not authenticated.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
+	 */
+	#[AuthorizedAdminSetting(AdminSettings::class)]
+	#[UserRateLimit(limit: 10, period: 3600)]
+	public function wizard(): JSONResponse {
+		// Require authentication.
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(
+				data: ['error' => 'unauthenticated'],
+				statusCode: Http::STATUS_UNAUTHORIZED
+			);
+		}
 
-        // Creating a virtual app provisions an OR Register, which mirrors the
-        // admin-only gate on OR's RegistersController (OR #1949). Non-admin
-        // users who have been denied register-create rights in OR must not be
-        // able to regain that privilege via openbuild (issue #157).
-        if ($this->groupManager->isAdmin($user->getUID()) === false) {
-            return new JSONResponse(
-                data: ['error' => 'forbidden', 'message' => 'Creating virtual apps requires Nextcloud admin privileges.'],
-                statusCode: Http::STATUS_FORBIDDEN
-            );
-        }
+		// Creating a virtual app provisions an OR Register, which mirrors the
+		// admin-only gate on OR's RegistersController (OR #1949). Non-admin
+		// users who have been denied register-create rights in OR must not be
+		// able to regain that privilege via openbuild (issue #157).
+		if ($this->groupManager->isAdmin($user->getUID()) === false) {
+			return new JSONResponse(
+				data: ['error' => 'forbidden', 'message' => 'Creating virtual apps requires Nextcloud admin privileges.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
 
-        // Collect the JSON payload from the request body.
-        $payload = $this->collectPayload();
+		// Collect the JSON payload from the request body.
+		$payload = $this->collectPayload();
 
-        try {
-            $applicationUuid = $this->creationService->createApplication(payload: $payload);
+		try {
+			$applicationUuid = $this->creationService->createApplication(payload: $payload);
 
-            return new JSONResponse(
-                data: ['applicationUuid' => $applicationUuid],
-                statusCode: Http::STATUS_CREATED
-            );
-        } catch (WizardCreationException $e) {
-            // Decide HTTP status based on whether this was a validation failure
-            // (failedAtStep=validate) or a mid-flight creation failure (500).
-            $httpStatus = Http::STATUS_INTERNAL_SERVER_ERROR;
-            if ($e->getFailedAtStep() === 'validate') {
-                $httpStatus = Http::STATUS_UNPROCESSABLE_ENTITY;
-            }
+			return new JSONResponse(
+				data: ['applicationUuid' => $applicationUuid],
+				statusCode: Http::STATUS_CREATED
+			);
+		} catch (WizardCreationException $e) {
+			// Decide HTTP status based on whether this was a validation failure
+			// (failedAtStep=validate) or a mid-flight creation failure (500).
+			$httpStatus = Http::STATUS_INTERNAL_SERVER_ERROR;
+			if ($e->getFailedAtStep() === 'validate') {
+				$httpStatus = Http::STATUS_UNPROCESSABLE_ENTITY;
+			}
 
-            $body = [
-                'code'           => $e->getErrorCode(),
-                'failedAtStep'   => $e->getFailedAtStep(),
-                'message'        => $e->getMessage(),
-                'rollbackStatus' => $e->getRollbackStatus(),
-            ];
+			$body = [
+				'code' => $e->getErrorCode(),
+				'failedAtStep' => $e->getFailedAtStep(),
+				'message' => $e->getMessage(),
+				'rollbackStatus' => $e->getRollbackStatus(),
+			];
 
-            if ($e->getOrphanedResources() !== []) {
-                $body['orphanedResources'] = $e->getOrphanedResources();
-            }
+			if ($e->getOrphanedResources() !== []) {
+				$body['orphanedResources'] = $e->getOrphanedResources();
+			}
 
-            return new JSONResponse(data: $body, statusCode: $httpStatus);
-        } catch (Throwable $e) {
-            $this->logger->error(
-                'OpenBuild: ApplicationCreationController::wizard unhandled exception: '.$e->getMessage(),
-                ['exception' => $e]
-            );
+			return new JSONResponse(data: $body, statusCode: $httpStatus);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'OpenBuild: ApplicationCreationController::wizard unhandled exception: ' . $e->getMessage(),
+				['exception' => $e]
+			);
 
-            return new JSONResponse(
-                data: [
-                    'code'           => 'wizard_rollback',
-                    'failedAtStep'   => 'unknown',
-                    'message'        => $e->getMessage(),
-                    'rollbackStatus' => 'unknown',
-                ],
-                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }//end try
-    }//end wizard()
+			return new JSONResponse(
+				data: [
+					'code' => 'wizard_rollback',
+					'failedAtStep' => 'unknown',
+					'message' => $e->getMessage(),
+					'rollbackStatus' => 'unknown',
+				],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}//end try
+	}//end wizard()
 
-    /**
-     * Read the JSON / form payload from the current request.
-     *
-     * @return array<string,mixed>
-     */
-    private function collectPayload(): array
-    {
-        $params = $this->request->getParams();
-        unset($params['_route']);
-        return $params;
-    }//end collectPayload()
+	/**
+	 * Read the JSON / form payload from the current request.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function collectPayload(): array {
+		$params = $this->request->getParams();
+		unset($params['_route']);
+		return $params;
+	}//end collectPayload()
 }//end class

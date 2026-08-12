@@ -75,277 +75,261 @@ use Throwable;
 /**
  * Wired dispatcher for ConditionActionExecutor side-effecting actions.
  */
-class RuleActionDispatcher
-{
-    /**
-     * App identifier stamped on every created NC notification.
-     */
-    private const NOTIFICATION_APP = 'openbuild';
+class RuleActionDispatcher {
+	/**
+	 * App identifier stamped on every created NC notification.
+	 */
+	private const NOTIFICATION_APP = 'openbuild';
 
-    /**
-     * Constructor.
-     *
-     * @param ObjectService        $objectService       OpenRegister object service (object-op).
-     * @param IManager             $notificationManager NC notification manager (send-notification).
-     * @param IClientService       $httpClientService   NC HTTP client factory (webhook).
-     * @param IUserSession         $userSession         Current NC user session (notification actor + object-op attribution).
-     * @param JobOwnerImpersonator $ownerImpersonator   Impersonates an object's owner for owner-less write contexts.
-     * @param ContainerInterface   $container           PSR container — lazily resolves RuleEngineService
-     *                                                  for `call-rule-set` to avoid a constructor cycle.
-     * @param LoggerInterface      $logger              PSR logger.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly ObjectService $objectService,
-        private readonly IManager $notificationManager,
-        private readonly IClientService $httpClientService,
-        private readonly IUserSession $userSession,
-        private readonly JobOwnerImpersonator $ownerImpersonator,
-        private readonly ContainerInterface $container,
-        private readonly LoggerInterface $logger,
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param ObjectService $objectService OpenRegister object service (object-op).
+	 * @param IManager $notificationManager NC notification manager (send-notification).
+	 * @param IClientService $httpClientService NC HTTP client factory (webhook).
+	 * @param IUserSession $userSession Current NC user session (notification actor + object-op attribution).
+	 * @param JobOwnerImpersonator $ownerImpersonator Impersonates an object's owner for owner-less write contexts.
+	 * @param ContainerInterface $container PSR container — lazily resolves RuleEngineService
+	 *                                      for `call-rule-set` to avoid a constructor cycle.
+	 * @param LoggerInterface $logger PSR logger.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly ObjectService $objectService,
+		private readonly IManager $notificationManager,
+		private readonly IClientService $httpClientService,
+		private readonly IUserSession $userSession,
+		private readonly JobOwnerImpersonator $ownerImpersonator,
+		private readonly ContainerInterface $container,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Dispatch one side-effecting action.
-     *
-     * @param string              $type    Action type (see class docblock).
-     * @param array<string,mixed> $params  Action-specific parameters.
-     * @param array<string,mixed> $payload The working payload at dispatch time.
-     *
-     * @return mixed Action-specific result (ignored by the executor); never throws.
-     */
-    public function __invoke(string $type, array $params, array $payload): mixed
-    {
-        try {
-            return match ($type) {
-                'send-notification' => $this->dispatchNotification(params: $params),
-                'object-op' => $this->dispatchObjectOp(params: $params),
-                'webhook' => $this->dispatchWebhook(params: $params),
-                'start-workflow' => $this->dispatchStartWorkflow(params: $params),
-                'call-rule-set' => $this->dispatchCallRuleSet(params: $params, payload: $payload),
-                default => $this->logUnknown(type: $type),
-            };
-        } catch (Throwable $e) {
-            $this->logger->error(
-                'OpenBuild: RuleActionDispatcher failed for action "'.$type.'": '.$e->getMessage(),
-                ['exception' => $e]
-            );
-            return null;
-        }//end try
+	/**
+	 * Dispatch one side-effecting action.
+	 *
+	 * @param string $type Action type (see class docblock).
+	 * @param array<string,mixed> $params Action-specific parameters.
+	 * @param array<string,mixed> $payload The working payload at dispatch time.
+	 *
+	 * @return mixed Action-specific result (ignored by the executor); never throws.
+	 */
+	public function __invoke(string $type, array $params, array $payload): mixed {
+		try {
+			return match ($type) {
+				'send-notification' => $this->dispatchNotification(params: $params),
+				'object-op' => $this->dispatchObjectOp(params: $params),
+				'webhook' => $this->dispatchWebhook(params: $params),
+				'start-workflow' => $this->dispatchStartWorkflow(params: $params),
+				'call-rule-set' => $this->dispatchCallRuleSet(params: $params, payload: $payload),
+				default => $this->logUnknown(type: $type),
+			};
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'OpenBuild: RuleActionDispatcher failed for action "' . $type . '": ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			return null;
+		}//end try
 
-    }//end __invoke()
+	}//end __invoke()
 
-    /**
-     * Send-notification — create an NC notification for the resolved recipient(s).
-     *
-     * @param array<string,mixed> $params Action parameters.
-     *
-     * @return int Number of notifications created.
-     */
-    private function dispatchNotification(array $params): int
-    {
-        $subject = (string) ($params['subject'] ?? '');
-        if ($subject === '') {
-            $subject = 'Automation notification';
-        }
+	/**
+	 * Send-notification — create an NC notification for the resolved recipient(s).
+	 *
+	 * @param array<string,mixed> $params Action parameters.
+	 *
+	 * @return int Number of notifications created.
+	 */
+	private function dispatchNotification(array $params): int {
+		$subject = (string)($params['subject'] ?? '');
+		if ($subject === '') {
+			$subject = 'Automation notification';
+		}
 
-        $recipients = [];
-        if (isset($params['recipientUid']) === true && is_string($params['recipientUid']) === true && $params['recipientUid'] !== '') {
-            $recipients[] = $params['recipientUid'];
-        }
+		$recipients = [];
+		if (isset($params['recipientUid']) === true && is_string($params['recipientUid']) === true && $params['recipientUid'] !== '') {
+			$recipients[] = $params['recipientUid'];
+		}
 
-        if (isset($params['recipientUids']) === true && is_array($params['recipientUids']) === true) {
-            foreach ($params['recipientUids'] as $uid) {
-                if (is_string($uid) === true && $uid !== '') {
-                    $recipients[] = $uid;
-                }
-            }
-        }
+		if (isset($params['recipientUids']) === true && is_array($params['recipientUids']) === true) {
+			foreach ($params['recipientUids'] as $uid) {
+				if (is_string($uid) === true && $uid !== '') {
+					$recipients[] = $uid;
+				}
+			}
+		}
 
-        if ($recipients === []) {
-            $this->logger->info('OpenBuild: send-notification action had no resolvable recipient — skipped.');
-            return 0;
-        }
+		if ($recipients === []) {
+			$this->logger->info('OpenBuild: send-notification action had no resolvable recipient — skipped.');
+			return 0;
+		}
 
-        $sent = 0;
-        foreach (array_unique($recipients) as $uid) {
-            $notification = $this->notificationManager->createNotification();
-            $notification->setApp(self::NOTIFICATION_APP)
-                ->setUser($uid)
-                ->setDateTime(new DateTime())
-                ->setObject('automation', (string) ($params['objectId'] ?? 'n/a'))
-                ->setSubject('automation-action', ['subject' => $subject]);
+		$sent = 0;
+		foreach (array_unique($recipients) as $uid) {
+			$notification = $this->notificationManager->createNotification();
+			$notification->setApp(self::NOTIFICATION_APP)
+				->setUser($uid)
+				->setDateTime(new DateTime())
+				->setObject('automation', (string)($params['objectId'] ?? 'n/a'))
+				->setSubject('automation-action', ['subject' => $subject]);
 
-            $this->notificationManager->notify($notification);
-            $sent++;
-        }
+			$this->notificationManager->notify($notification);
+			$sent++;
+		}
 
-        return $sent;
+		return $sent;
+	}//end dispatchNotification()
 
-    }//end dispatchNotification()
+	/**
+	 * Object-op — create or update an object via OpenRegister's ObjectService.
+	 *
+	 * @param array<string,mixed> $params Action parameters.
+	 *
+	 * @return array<string,mixed>|null The saved object, normalised, or null on skip.
+	 */
+	private function dispatchObjectOp(array $params): ?array {
+		$schema = (string)($params['schema'] ?? '');
+		if ($schema === '') {
+			$this->logger->warning('OpenBuild: object-op action missing "schema" — skipped.');
+			return null;
+		}
 
-    /**
-     * Object-op — create or update an object via OpenRegister's ObjectService.
-     *
-     * @param array<string,mixed> $params Action parameters.
-     *
-     * @return array<string,mixed>|null The saved object, normalised, or null on skip.
-     */
-    private function dispatchObjectOp(array $params): ?array
-    {
-        $schema = (string) ($params['schema'] ?? '');
-        if ($schema === '') {
-            $this->logger->warning('OpenBuild: object-op action missing "schema" — skipped.');
-            return null;
-        }
+		$register = (string)($params['register'] ?? 'openbuild');
+		$operation = (string)($params['operation'] ?? 'create');
+		$object = [];
+		if (is_array($params['object'] ?? null) === true) {
+			$object = $params['object'];
+		}
 
-        $register  = (string) ($params['register'] ?? 'openbuild');
-        $operation = (string) ($params['operation'] ?? 'create');
-        $object    = [];
-        if (is_array($params['object'] ?? null) === true) {
-            $object = $params['object'];
-        }
+		$id = (string)($params['id'] ?? '');
 
-        $id = (string) ($params['id'] ?? '');
+		if ($operation === 'update' && $id === '') {
+			$this->logger->warning('OpenBuild: object-op update action missing "id" — skipped.');
+			return null;
+		}
 
-        if ($operation === 'update' && $id === '') {
-            $this->logger->warning('OpenBuild: object-op update action missing "id" — skipped.');
-            return null;
-        }
+		$write = function () use ($object, $register, $schema, $operation, $id) {
+			if ($operation === 'update') {
+				return $this->objectService->saveObject(object: $object, register: $register, schema: $schema, uuid: $id);
+			}
 
-        $write = function () use ($object, $register, $schema, $operation, $id) {
-            if ($operation === 'update') {
-                return $this->objectService->saveObject(object: $object, register: $register, schema: $schema, uuid: $id);
-            }
+			return $this->objectService->saveObject(object: $object, register: $register, schema: $schema);
+		};
 
-            return $this->objectService->saveObject(object: $object, register: $register, schema: $schema);
-        };
+		if ($this->userSession->getUser() === null && $id !== '') {
+			$saved = $this->ownerImpersonator->runAsOwner(objectId: $id, work: $write);
+		} else {
+			$saved = $write();
+		}
 
-        if ($this->userSession->getUser() === null && $id !== '') {
-            $saved = $this->ownerImpersonator->runAsOwner(objectId: $id, work: $write);
-        } else {
-            $saved = $write();
-        }
+		return $this->normalise(object: $saved);
+	}//end dispatchObjectOp()
 
-        return $this->normalise(object: $saved);
+	/**
+	 * Webhook — POST the compiled target via NC's HTTP client service.
+	 *
+	 * @param array<string,mixed> $params Action parameters.
+	 *
+	 * @return int|null The response status code, or null on skip/failure.
+	 */
+	private function dispatchWebhook(array $params): ?int {
+		$url = (string)($params['url'] ?? '');
+		if ($url === '') {
+			$this->logger->warning('OpenBuild: webhook action missing "url" — skipped.');
+			return null;
+		}
 
-    }//end dispatchObjectOp()
+		$payload = [];
+		if (is_array($params['payload'] ?? null) === true) {
+			$payload = $params['payload'];
+		}
 
-    /**
-     * Webhook — POST the compiled target via NC's HTTP client service.
-     *
-     * @param array<string,mixed> $params Action parameters.
-     *
-     * @return int|null The response status code, or null on skip/failure.
-     */
-    private function dispatchWebhook(array $params): ?int
-    {
-        $url = (string) ($params['url'] ?? '');
-        if ($url === '') {
-            $this->logger->warning('OpenBuild: webhook action missing "url" — skipped.');
-            return null;
-        }
+		$client = $this->httpClientService->newClient();
+		$response = $client->post($url, ['json' => $payload, 'timeout' => 10]);
 
-        $payload = [];
-        if (is_array($params['payload'] ?? null) === true) {
-            $payload = $params['payload'];
-        }
+		return $response->getStatusCode();
+	}//end dispatchWebhook()
 
-        $client   = $this->httpClientService->newClient();
-        $response = $client->post($url, ['json' => $payload, 'timeout' => 10]);
+	/**
+	 * Start-workflow — reserved: no workflow engine exists in openbuild
+	 * (design.md non-goal). Logged, never throws.
+	 *
+	 * @param array<string,mixed> $params Action parameters.
+	 *
+	 * @return null
+	 */
+	private function dispatchStartWorkflow(array $params): null {
+		$this->logger->info(
+			'OpenBuild: start-workflow action dispatched but no workflow engine is wired in openbuild — no-op.',
+			['workflowId' => ($params['workflowId'] ?? null)]
+		);
+		return null;
+	}//end dispatchStartWorkflow()
 
-        return $response->getStatusCode();
+	/**
+	 * Call-rule-set — recursively evaluate the referenced RuleSet.
+	 *
+	 * Resolved lazily via the PSR container to avoid a constructor cycle
+	 * with RuleEngineService (mirrors JobOwnerImpersonator's pattern).
+	 *
+	 * @param array<string,mixed> $params Action parameters (`ruleSetSlug`).
+	 * @param array<string,mixed> $payload The payload to forward.
+	 *
+	 * @return array<string,mixed>|null The nested evaluation result, or null on skip/failure.
+	 */
+	private function dispatchCallRuleSet(array $params, array $payload): ?array {
+		$ruleSetSlug = (string)($params['ruleSetSlug'] ?? '');
+		if ($ruleSetSlug === '') {
+			$this->logger->warning('OpenBuild: call-rule-set action missing "ruleSetSlug" — skipped.');
+			return null;
+		}
 
-    }//end dispatchWebhook()
+		if ($this->container->has(RuleEngineService::class) === false) {
+			$this->logger->warning('OpenBuild: call-rule-set could not resolve RuleEngineService — skipped.');
+			return null;
+		}
 
-    /**
-     * Start-workflow — reserved: no workflow engine exists in openbuild
-     * (design.md non-goal). Logged, never throws.
-     *
-     * @param array<string,mixed> $params Action parameters.
-     *
-     * @return null
-     */
-    private function dispatchStartWorkflow(array $params): null
-    {
-        $this->logger->info(
-            'OpenBuild: start-workflow action dispatched but no workflow engine is wired in openbuild — no-op.',
-            ['workflowId' => ($params['workflowId'] ?? null)]
-        );
-        return null;
+		// phpcs:ignore -- inline @var hint for the container's untyped get().
+		/* @var RuleEngineService $engine */
 
-    }//end dispatchStartWorkflow()
+		$engine = $this->container->get(RuleEngineService::class);
+		return $engine->evaluate(ruleSetSlug: $ruleSetSlug, payload: $payload);
+	}//end dispatchCallRuleSet()
 
-    /**
-     * Call-rule-set — recursively evaluate the referenced RuleSet.
-     *
-     * Resolved lazily via the PSR container to avoid a constructor cycle
-     * with RuleEngineService (mirrors JobOwnerImpersonator's pattern).
-     *
-     * @param array<string,mixed> $params  Action parameters (`ruleSetSlug`).
-     * @param array<string,mixed> $payload The payload to forward.
-     *
-     * @return array<string,mixed>|null The nested evaluation result, or null on skip/failure.
-     */
-    private function dispatchCallRuleSet(array $params, array $payload): ?array
-    {
-        $ruleSetSlug = (string) ($params['ruleSetSlug'] ?? '');
-        if ($ruleSetSlug === '') {
-            $this->logger->warning('OpenBuild: call-rule-set action missing "ruleSetSlug" — skipped.');
-            return null;
-        }
+	/**
+	 * Log and no-op an unrecognised action type.
+	 *
+	 * @param string $type The unrecognised action type.
+	 *
+	 * @return null
+	 */
+	private function logUnknown(string $type): null {
+		$this->logger->warning('OpenBuild: RuleActionDispatcher received an unrecognised action type "' . $type . '".');
+		return null;
+	}//end logUnknown()
 
-        if ($this->container->has(RuleEngineService::class) === false) {
-            $this->logger->warning('OpenBuild: call-rule-set could not resolve RuleEngineService — skipped.');
-            return null;
-        }
+	/**
+	 * Coerce an OR result entry to a plain associative array.
+	 *
+	 * @param mixed $object The OR object/result entry.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function normalise(mixed $object): ?array {
+		if (is_array($object) === true) {
+			return $object;
+		}
 
-        // phpcs:ignore -- inline @var hint for the container's untyped get().
-        /* @var RuleEngineService $engine */
+		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
+			$serialised = $object->jsonSerialize();
+			if (is_array($serialised) === true) {
+				return $serialised;
+			}
+		}
 
-        $engine = $this->container->get(RuleEngineService::class);
-        return $engine->evaluate(ruleSetSlug: $ruleSetSlug, payload: $payload);
-
-    }//end dispatchCallRuleSet()
-
-    /**
-     * Log and no-op an unrecognised action type.
-     *
-     * @param string $type The unrecognised action type.
-     *
-     * @return null
-     */
-    private function logUnknown(string $type): null
-    {
-        $this->logger->warning('OpenBuild: RuleActionDispatcher received an unrecognised action type "'.$type.'".');
-        return null;
-
-    }//end logUnknown()
-
-    /**
-     * Coerce an OR result entry to a plain associative array.
-     *
-     * @param mixed $object The OR object/result entry.
-     *
-     * @return array<string,mixed>|null
-     */
-    private function normalise(mixed $object): ?array
-    {
-        if (is_array($object) === true) {
-            return $object;
-        }
-
-        if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-            $serialised = $object->jsonSerialize();
-            if (is_array($serialised) === true) {
-                return $serialised;
-            }
-        }
-
-        return null;
-
-    }//end normalise()
+		return null;
+	}//end normalise()
 }//end class

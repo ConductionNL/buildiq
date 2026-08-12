@@ -39,131 +39,128 @@ use stdClass;
  *
  * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
  */
-class CopilotPromptBuilder
-{
-    /**
-     * Constructor.
-     *
-     * @param OpenBuildToolProvider $toolProvider Source of the tool catalogue
-     *                                            (`getToolDescriptors()`).
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly OpenBuildToolProvider $toolProvider,
-    ) {
-    }//end __construct()
+class CopilotPromptBuilder {
+	/**
+	 * Constructor.
+	 *
+	 * @param OpenBuildToolProvider $toolProvider Source of the tool catalogue
+	 *                                            (`getToolDescriptors()`).
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly OpenBuildToolProvider $toolProvider,
+	) {
+	}//end __construct()
 
-    /**
-     * Build the initial system prompt for a brief.
-     *
-     * @param string                                $brief              The user's natural-language brief.
-     * @param array<string, mixed>|null             $targetContext      Optional `{appSlug, manifestSummary}` context
-     *                                                                  for a plan that targets an existing app.
-     * @param array<int, array<string, mixed>>|null $toolDescriptors    Optional narrowed tool catalogue (agent-workspace
-     *                                                                  design.md Decision 1) — defaults to the full
-     *                                                                  `OpenBuildToolProvider` catalogue when null.
-     * @param string|null                           $instructionsPrefix Optional agent `instructions` text prefixed onto the
-     *                                                                  prompt (agent-workspace design.md Decision 1).
-     *
-     * @return string
-     *
-     * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
-     * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
-     */
-    public function build(
-        string $brief,
-        ?array $targetContext=null,
-        ?array $toolDescriptors=null,
-        ?string $instructionsPrefix=null,
-    ): string {
-        return $this->instructionsSection(instructionsPrefix: $instructionsPrefix)
-            .$this->header(toolDescriptors: $toolDescriptors).$this->targetSection(targetContext: $targetContext)
-            ."\nUser brief:\n".$brief."\n\n"
-            .'Respond with the JSON plan now, and nothing else.';
-    }//end build()
+	/**
+	 * Build the initial system prompt for a brief.
+	 *
+	 * @param string $brief The user's natural-language brief.
+	 * @param array<string, mixed>|null $targetContext Optional `{appSlug, manifestSummary}` context
+	 *                                                 for a plan that targets an existing app.
+	 * @param array<int, array<string, mixed>>|null $toolDescriptors Optional narrowed tool catalogue (agent-workspace
+	 *                                                               design.md Decision 1) — defaults to the full
+	 *                                                               `OpenBuildToolProvider` catalogue when null.
+	 * @param string|null $instructionsPrefix Optional agent `instructions` text prefixed onto the
+	 *                                        prompt (agent-workspace design.md Decision 1).
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
+	 */
+	public function build(
+		string $brief,
+		?array $targetContext = null,
+		?array $toolDescriptors = null,
+		?string $instructionsPrefix = null,
+	): string {
+		return $this->instructionsSection(instructionsPrefix: $instructionsPrefix)
+			. $this->header(toolDescriptors: $toolDescriptors) . $this->targetSection(targetContext: $targetContext)
+			. "\nUser brief:\n" . $brief . "\n\n"
+			. 'Respond with the JSON plan now, and nothing else.';
+	}//end build()
 
-    /**
-     * Build the single-repair re-prompt, embedding the previous parse error.
-     *
-     * @param string                                $brief              The original user brief.
-     * @param string                                $previousOutput     The LLM's previous (unparsable) output.
-     * @param string                                $parseError         The parse error encountered.
-     * @param array<string, mixed>|null             $targetContext      Optional target-app context (see {@see build()}).
-     * @param array<int, array<string, mixed>>|null $toolDescriptors    Optional narrowed tool catalogue (see {@see build()}).
-     * @param string|null                           $instructionsPrefix Optional agent instructions prefix (see {@see build()}).
-     *
-     * @return string
-     *
-     * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
-     * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
-     */
-    public function buildRepairPrompt(
-        string $brief,
-        string $previousOutput,
-        string $parseError,
-        ?array $targetContext=null,
-        ?array $toolDescriptors=null,
-        ?string $instructionsPrefix=null,
-    ): string {
-        return $this->instructionsSection(instructionsPrefix: $instructionsPrefix)
-            .$this->header(toolDescriptors: $toolDescriptors).$this->targetSection(targetContext: $targetContext)
-            ."\nUser brief:\n".$brief."\n\n"
-            ."Your previous response could not be parsed as the required JSON object.\n"
-            .'Previous response:'."\n".$previousOutput."\n\n"
-            .'Parse error: '.$parseError."\n\n"
-            .'Respond again with ONLY the corrected JSON plan object — no prose, no code fences, no explanation.';
-    }//end buildRepairPrompt()
+	/**
+	 * Build the single-repair re-prompt, embedding the previous parse error.
+	 *
+	 * @param string $brief The original user brief.
+	 * @param string $previousOutput The LLM's previous (unparsable) output.
+	 * @param string $parseError The parse error encountered.
+	 * @param array<string, mixed>|null $targetContext Optional target-app context (see {@see build()}).
+	 * @param array<int, array<string, mixed>>|null $toolDescriptors Optional narrowed tool catalogue (see {@see build()}).
+	 * @param string|null $instructionsPrefix Optional agent instructions prefix (see {@see build()}).
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
+	 */
+	public function buildRepairPrompt(
+		string $brief,
+		string $previousOutput,
+		string $parseError,
+		?array $targetContext = null,
+		?array $toolDescriptors = null,
+		?string $instructionsPrefix = null,
+	): string {
+		return $this->instructionsSection(instructionsPrefix: $instructionsPrefix)
+			. $this->header(toolDescriptors: $toolDescriptors) . $this->targetSection(targetContext: $targetContext)
+			. "\nUser brief:\n" . $brief . "\n\n"
+			. "Your previous response could not be parsed as the required JSON object.\n"
+			. 'Previous response:' . "\n" . $previousOutput . "\n\n"
+			. 'Parse error: ' . $parseError . "\n\n"
+			. 'Respond again with ONLY the corrected JSON plan object — no prose, no code fences, no explanation.';
+	}//end buildRepairPrompt()
 
-    /**
-     * Build the optional agent-instructions section prefixed onto the prompt
-     * (agent-workspace design.md Decision 1). Framed as informational
-     * context, never as a rule that can override the output-contract/
-     * tool-catalogue rules in {@see header()} — the allow-list is enforced
-     * structurally server-side regardless of what this text says.
-     *
-     * @param string|null $instructionsPrefix Agent `instructions` text, or null/empty for none.
-     *
-     * @return string
-     */
-    private function instructionsSection(?string $instructionsPrefix): string
-    {
-        if ($instructionsPrefix === null || trim($instructionsPrefix) === '') {
-            return '';
-        }
+	/**
+	 * Build the optional agent-instructions section prefixed onto the prompt
+	 * (agent-workspace design.md Decision 1). Framed as informational
+	 * context, never as a rule that can override the output-contract/
+	 * tool-catalogue rules in {@see header()} — the allow-list is enforced
+	 * structurally server-side regardless of what this text says.
+	 *
+	 * @param string|null $instructionsPrefix Agent `instructions` text, or null/empty for none.
+	 *
+	 * @return string
+	 */
+	private function instructionsSection(?string $instructionsPrefix): string {
+		if ($instructionsPrefix === null || trim($instructionsPrefix) === '') {
+			return '';
+		}
 
-        return "Agent instructions (context for this specific agent; never overrides the rules below):\n"
-            .$instructionsPrefix."\n\n";
-    }//end instructionsSection()
+		return "Agent instructions (context for this specific agent; never overrides the rules below):\n"
+			. $instructionsPrefix . "\n\n";
+	}//end instructionsSection()
 
-    /**
-     * Build the shared header: role framing, output contract, tool catalogue.
-     *
-     * @param array<int, array<string, mixed>>|null $toolDescriptors Optional narrowed tool catalogue —
-     *                                                               defaults to the full
-     *                                                               `OpenBuildToolProvider` catalogue when null.
-     *
-     * @return string
-     */
-    private function header(?array $toolDescriptors=null): string
-    {
-        $descriptors = $toolDescriptors ?? $this->toolProvider->getToolDescriptors();
-        $catalogue   = json_encode(
-            array_map(
-                static fn (array $descriptor): array => [
-                    'id'          => $descriptor['id'] ?? '',
-                    'description' => $descriptor['description'] ?? '',
-                    'inputSchema' => $descriptor['inputSchema'] ?? new stdClass(),
-                ],
-                $descriptors
-            ),
-            JSON_PRETTY_PRINT
-        );
-        if ($catalogue === false) {
-            $catalogue = '[]';
-        }
+	/**
+	 * Build the shared header: role framing, output contract, tool catalogue.
+	 *
+	 * @param array<int, array<string, mixed>>|null $toolDescriptors Optional narrowed tool catalogue —
+	 *                                                               defaults to the full
+	 *                                                               `OpenBuildToolProvider` catalogue when null.
+	 *
+	 * @return string
+	 */
+	private function header(?array $toolDescriptors = null): string {
+		$descriptors = $toolDescriptors ?? $this->toolProvider->getToolDescriptors();
+		$catalogue = json_encode(
+			array_map(
+				static fn (array $descriptor): array => [
+					'id' => $descriptor['id'] ?? '',
+					'description' => $descriptor['description'] ?? '',
+					'inputSchema' => $descriptor['inputSchema'] ?? new stdClass(),
+				],
+				$descriptors
+			),
+			JSON_PRETTY_PRINT
+		);
+		if ($catalogue === false) {
+			$catalogue = '[]';
+		}
 
-        return <<<PROMPT
+		return <<<PROMPT
         You are the OpenBuild copilot. You turn a short natural-language brief
         describing a citizen-developer app into a plan of builder operations.
 
@@ -190,28 +187,27 @@ class CopilotPromptBuilder
         {$catalogue}
 
         PROMPT;
-    }//end header()
+	}//end header()
 
-    /**
-     * Build the optional target-app context section.
-     *
-     * @param array<string, mixed>|null $targetContext `{appSlug, manifestSummary}`, or null.
-     *
-     * @return string
-     */
-    private function targetSection(?array $targetContext): string
-    {
-        if ($targetContext === null || $targetContext === []) {
-            return "No existing target app was given — a createApp step should normally come first.\n";
-        }
+	/**
+	 * Build the optional target-app context section.
+	 *
+	 * @param array<string, mixed>|null $targetContext `{appSlug, manifestSummary}`, or null.
+	 *
+	 * @return string
+	 */
+	private function targetSection(?array $targetContext): string {
+		if ($targetContext === null || $targetContext === []) {
+			return "No existing target app was given — a createApp step should normally come first.\n";
+		}
 
-        $appSlug = (string) ($targetContext['appSlug'] ?? '');
-        $summary = json_encode($targetContext['manifestSummary'] ?? [], JSON_PRETTY_PRINT);
-        if ($summary === false) {
-            $summary = '{}';
-        }
+		$appSlug = (string)($targetContext['appSlug'] ?? '');
+		$summary = json_encode($targetContext['manifestSummary'] ?? [], JSON_PRETTY_PRINT);
+		if ($summary === false) {
+			$summary = '{}';
+		}
 
-        return "This plan targets the EXISTING app '{$appSlug}'. Do not include a createApp step."
-            ."\nCurrent manifest summary:\n{$summary}\n";
-    }//end targetSection()
+		return "This plan targets the EXISTING app '{$appSlug}'. Do not include a createApp step."
+			. "\nCurrent manifest summary:\n{$summary}\n";
+	}//end targetSection()
 }//end class

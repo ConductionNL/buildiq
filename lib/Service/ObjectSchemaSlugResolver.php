@@ -51,149 +51,201 @@ use Psr\Log\LoggerInterface;
 /**
  * Turns the register/schema ids an OpenRegister event carries into slugs.
  */
-class ObjectSchemaSlugResolver
-{
+class ObjectSchemaSlugResolver {
 
-    /**
-     * The register slug openbuild's own objects live in.
-     *
-     * @var string
-     */
-    public const REGISTER_SLUG = 'openbuild';
+	/**
+	 * The register slug openbuild's own objects live in.
+	 *
+	 * @var string
+	 */
+	public const REGISTER_SLUG = 'openbuild';
 
-    /**
-     * Resolved slugs keyed by "<mapperFqn>:<id>", for the request lifetime.
-     *
-     * The mappers cache too, but memoising here also caches the MISSES, so a
-     * payload referencing a schema this instance does not have costs one failed
-     * lookup per request rather than one per event. openbuild's listeners fire
-     * on every object write, so an unmemoised lookup is an N+1 on bulk imports
-     * (docudesk measured 1,471 SchemaMapper::find() calls per object save from
-     * exactly this shape).
-     *
-     * @var array<string, string>
-     */
-    private array $slugs = [];
+	/**
+	 * Resolved slugs keyed by "<mapperFqn>:<id>", for the request lifetime.
+	 *
+	 * The mappers cache too, but memoising here also caches the MISSES, so a
+	 * payload referencing a schema this instance does not have costs one failed
+	 * lookup per request rather than one per event. openbuild's listeners fire
+	 * on every object write, so an unmemoised lookup is an N+1 on bulk imports
+	 * (docudesk measured 1,471 SchemaMapper::find() calls per object save from
+	 * exactly this shape).
+	 *
+	 * @var array<string, string>
+	 */
+	private array $slugs = [];
 
-    /**
-     * Constructor.
-     *
-     * @param ContainerInterface $container The DI container, used to reach
-     *                                      OpenRegister's mappers lazily so
-     *                                      openbuild still boots without it.
-     * @param LoggerInterface    $logger    Logger.
-     */
-    public function __construct(
-        private readonly ContainerInterface $container,
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param ContainerInterface $container The DI container, used to reach
+	 *                                      OpenRegister's mappers lazily so
+	 *                                      openbuild still boots without it.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		private readonly ContainerInterface $container,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Resolve the schema slug for an ObjectEntity.
-     *
-     * @param object $entity The OpenRegister ObjectEntity.
-     *
-     * @return string The schema slug, or '' when unresolvable. An empty string
-     *                never equals a slug literal, so an unresolvable schema
-     *                keeps the handler's existing fail-closed behaviour.
-     */
-    public function schemaSlug(object $entity): string
-    {
-        if (method_exists($entity, 'getSchema') === false) {
-            return '';
-        }
+	/**
+	 * Resolve the schema slug for an ObjectEntity.
+	 *
+	 * @param object $entity The OpenRegister ObjectEntity.
+	 *
+	 * @return string The schema slug, or '' when unresolvable. An empty string
+	 *                never equals a slug literal, so an unresolvable schema
+	 *                keeps the handler's existing fail-closed behaviour.
+	 *
+	 * @spec openspec/specs/openbuild-application-register/spec.md#requirement-application-carries-a-productionversion-relation
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
+	 */
+	public function schemaSlug(object $entity): string {
+		$schemaId = $this->readAccessor(entity: $entity, accessor: 'getSchema');
+		if ($schemaId === null) {
+			return '';
+		}
 
-        return $this->resolve(
-            mapper: 'OCA\OpenRegister\Db\SchemaMapper',
-            id: (string) $entity->getSchema()
-        );
-    }//end schemaSlug()
+		return $this->resolve(
+			mapper: 'OCA\OpenRegister\Db\SchemaMapper',
+			id: $schemaId
+		);
+	}//end schemaSlug()
 
-    /**
-     * Resolve the register slug for an ObjectEntity.
-     *
-     * @param object $entity The OpenRegister ObjectEntity.
-     *
-     * @return string The register slug, or '' when unresolvable.
-     */
-    public function registerSlug(object $entity): string
-    {
-        if (method_exists($entity, 'getRegister') === false) {
-            return '';
-        }
+	/**
+	 * Resolve the register slug for an ObjectEntity.
+	 *
+	 * @param object $entity The OpenRegister ObjectEntity.
+	 *
+	 * @return string The register slug, or '' when unresolvable.
+	 *
+	 * @spec openspec/specs/openbuild-application-register/spec.md#requirement-application-carries-a-productionversion-relation
+	 * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
+	 */
+	public function registerSlug(object $entity): string {
+		$registerId = $this->readAccessor(entity: $entity, accessor: 'getRegister');
+		if ($registerId === null) {
+			return '';
+		}
 
-        return $this->resolve(
-            mapper: 'OCA\OpenRegister\Db\RegisterMapper',
-            id: (string) $entity->getRegister()
-        );
-    }//end registerSlug()
+		return $this->resolve(
+			mapper: 'OCA\OpenRegister\Db\RegisterMapper',
+			id: $registerId
+		);
+	}//end registerSlug()
 
-    /**
-     * Test whether an entity is an openbuild object of the given schema.
-     *
-     * @param object $entity     The OpenRegister ObjectEntity.
-     * @param string $schemaSlug The schema slug to match.
-     *
-     * @return bool True when the entity is that schema in the openbuild register.
-     */
-    public function isOpenBuildSchema(object $entity, string $schemaSlug): bool
-    {
-        if ($this->schemaSlug(entity: $entity) !== $schemaSlug) {
-            return false;
-        }
+	/**
+	 * Call a magic accessor on an OpenRegister entity, defensively.
+	 *
+	 * `method_exists()` MUST NOT be used to probe for these accessors.
+	 * `ObjectEntity`, `Schema` and `Register` extend Nextcloud's
+	 * `OCP\AppFramework\Db\Entity`, which serves every column accessor through
+	 * `__call()` and declares it as an `@method` docblock only. `method_exists()`
+	 * is therefore **false** for `getSchema()`, `getRegister()` and `getSlug()`
+	 * on the real classes, while `is_callable()` is true — so a `method_exists()`
+	 * guard here silently disabled the whole resolver, and with it both
+	 * listeners that depend on it. Measured on this instance:
+	 * `method_exists($objectEntity, 'getSchema')` false / `is_callable` true,
+	 * against the concrete control `getObject()` which is true for both.
+	 *
+	 * Note `is_callable()` is not a membership test on a `__call` class — it is
+	 * true for ANY name — so the call itself must be exception-safe. `Entity`
+	 * throws `BadFunctionCallException` for a column it does not have.
+	 *
+	 * @param object $entity The OpenRegister entity.
+	 * @param string $accessor The accessor to call.
+	 *
+	 * @return string|null The stringified value, or null when unreachable.
+	 */
+	private function readAccessor(object $entity, string $accessor): ?string {
+		if (is_callable([$entity, $accessor]) === false) {
+			return null;
+		}
 
-        // Guard the register too: `automation` is not a unique slug instance-wide.
-        return $this->registerSlug(entity: $entity) === self::REGISTER_SLUG;
-    }//end isOpenBuildSchema()
+		try {
+			$value = $entity->$accessor();
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				'OpenBuild: ' . $accessor . '() unavailable on ' . $entity::class,
+				['exception' => $e->getMessage()]
+			);
+			return null;
+		}
 
-    /**
-     * Resolve a slug from an id via one of OpenRegister's mappers.
-     *
-     * @param string $mapper Fully-qualified mapper class name.
-     * @param string $id     The register or schema id.
-     *
-     * @return string The slug, or '' when unresolvable.
-     */
-    private function resolve(string $mapper, string $id): string
-    {
-        $id = trim($id);
-        if ($id === '') {
-            return '';
-        }
+		if (is_scalar($value) === false) {
+			return null;
+		}
 
-        // A non-numeric value is already a slug; ids are always digits. This
-        // keeps the resolver correct if OpenRegister ever starts emitting slugs.
-        if (ctype_digit($id) === false) {
-            return $id;
-        }
+		return (string)$value;
+	}//end readAccessor()
 
-        $key = $mapper.':'.$id;
-        if (array_key_exists($key, $this->slugs) === true) {
-            return $this->slugs[$key];
-        }
+	/**
+	 * Test whether an entity is an openbuild object of the given schema.
+	 *
+	 * @param object $entity The OpenRegister ObjectEntity.
+	 * @param string $schemaSlug The schema slug to match.
+	 *
+	 * @return bool True when the entity is that schema in the openbuild register.
+	 */
+	public function isOpenBuildSchema(object $entity, string $schemaSlug): bool {
+		if ($this->schemaSlug(entity: $entity) !== $schemaSlug) {
+			return false;
+		}
 
-        $slug = '';
+		// Guard the register too: `automation` is not a unique slug instance-wide.
+		return $this->registerSlug(entity: $entity) === self::REGISTER_SLUG;
+	}//end isOpenBuildSchema()
 
-        try {
-            // Signature is find($id, $_extend, $_rbac, $_multitenancy). RBAC and
-            // multitenancy are off: this runs inside an event handler that may
-            // have no active organisation, and a register/schema slug is
-            // metadata rather than tenant data. An organisation-scoped read
-            // would return nothing and silently reopen the same hole.
-            $entity = $this->container->get($mapper)->find($id, [], false, false);
-            if (is_object($entity) === true && method_exists($entity, 'getSlug') === true) {
-                $slug = (string) $entity->getSlug();
-            }
-        } catch (\Throwable $e) {
-            $this->logger->debug(
-                'OpenBuild: could not resolve slug for '.$mapper.' id '.$id,
-                ['exception' => $e->getMessage()]
-            );
-        }
+	/**
+	 * Resolve a slug from an id via one of OpenRegister's mappers.
+	 *
+	 * @param string $mapper Fully-qualified mapper class name.
+	 * @param string $id The register or schema id.
+	 *
+	 * @return string The slug, or '' when unresolvable.
+	 */
+	private function resolve(string $mapper, string $id): string {
+		$id = trim($id);
+		if ($id === '') {
+			return '';
+		}
 
-        $this->slugs[$key] = $slug;
+		// A non-numeric value is already a slug; ids are always digits. This
+		// keeps the resolver correct if OpenRegister ever starts emitting slugs.
+		if (ctype_digit($id) === false) {
+			return $id;
+		}
 
-        return $slug;
-    }//end resolve()
+		$key = $mapper . ':' . $id;
+		if (array_key_exists($key, $this->slugs) === true) {
+			return $this->slugs[$key];
+		}
+
+		$slug = '';
+
+		try {
+			// Signature is find($id, $_extend, $_rbac, $_multitenancy). RBAC and
+			// multitenancy are off: this runs inside an event handler that may
+			// have no active organisation, and a register/schema slug is
+			// metadata rather than tenant data. An organisation-scoped read
+			// would return nothing and silently reopen the same hole.
+			$entity = $this->container->get($mapper)->find($id, [], false, false);
+			// `getSlug()` is an `@method` docblock on Schema and Register, served
+			// by Entity::__call — see readAccessor(). Probing it with
+			// method_exists() returned '' for every real entity, which is what
+			// kept isOpenBuildSchema() false even for openbuild's own objects.
+			if (is_object($entity) === true) {
+				$slug = (string)($this->readAccessor(entity: $entity, accessor: 'getSlug') ?? '');
+			}
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				'OpenBuild: could not resolve slug for ' . $mapper . ' id ' . $id,
+				['exception' => $e->getMessage()]
+			);
+		}
+
+		$this->slugs[$key] = $slug;
+
+		return $slug;
+	}//end resolve()
 }//end class

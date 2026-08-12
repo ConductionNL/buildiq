@@ -70,201 +70,196 @@ use Throwable;
  *
  * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-2.1
  */
-class SetupController extends Controller
-{
+class SetupController extends Controller {
 
-    /**
-     * Setup contract version; MUST match `manifest.setup.version`.
-     *
-     * @var int
-     */
-    private const SETUP_VERSION = 1;
+	/**
+	 * Setup contract version; MUST match `manifest.setup.version`.
+	 *
+	 * @var int
+	 */
+	private const SETUP_VERSION = 1;
 
-    /**
-     * App-config key stamped when setup completes (`manifest.setup.completionConfigKey`).
-     *
-     * @var string
-     */
-    private const COMPLETION_KEY = 'setup_completed_version';
+	/**
+	 * App-config key stamped when setup completes (`manifest.setup.completionConfigKey`).
+	 *
+	 * @var string
+	 */
+	private const COMPLETION_KEY = 'setup_completed_version';
 
-    /**
-     * Constructor.
-     *
-     * @param IRequest            $request      The current HTTP request
-     * @param LoggerInterface     $logger       PSR logger for diagnostics
-     * @param IAppConfig          $appConfig    App-config reader/writer
-     * @param IUserSession        $userSession  Current Nextcloud user session
-     * @param IGroupManager       $groupManager Group membership resolver (admin gate)
-     * @param SettingsService     $settings     Settings write path (registry_* + secret token)
-     * @param TemplateSeedService $seedService  Shared idempotent seeding service
-     *
-     * @return void
-     */
-    public function __construct(
-        IRequest $request,
-        private readonly LoggerInterface $logger,
-        private readonly IAppConfig $appConfig,
-        private readonly IUserSession $userSession,
-        private readonly IGroupManager $groupManager,
-        private readonly SettingsService $settings,
-        private readonly TemplateSeedService $seedService,
-    ) {
-        parent::__construct(appName: Application::APP_ID, request: $request);
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest $request The current HTTP request
+	 * @param LoggerInterface $logger PSR logger for diagnostics
+	 * @param IAppConfig $appConfig App-config reader/writer
+	 * @param IUserSession $userSession Current Nextcloud user session
+	 * @param IGroupManager $groupManager Group membership resolver (admin gate)
+	 * @param SettingsService $settings Settings write path (registry_* + secret token)
+	 * @param TemplateSeedService $seedService Shared idempotent seeding service
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		IRequest $request,
+		private readonly LoggerInterface $logger,
+		private readonly IAppConfig $appConfig,
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
+		private readonly SettingsService $settings,
+		private readonly TemplateSeedService $seedService,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+	}//end __construct()
 
-    /**
-     * Report per-step setup status for the wizard, and stamp the completion
-     * key when the required step (templates seeded) is satisfied — so an
-     * already-seeded instance is pre-satisfied on first boot after upgrade
-     * without showing the wizard.
-     *
-     * @return JSONResponse `{ version, completed, steps: { <id>: { done } } }`.
-     *
-     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-4.1
-     */
-    #[AuthorizedAdminSetting(AdminSettings::class)]
-    public function status(): JSONResponse
-    {
-        $denied = $this->requireAdmin();
-        if ($denied !== null) {
-            return $denied;
-        }
+	/**
+	 * Report per-step setup status for the wizard, and stamp the completion
+	 * key when the required step (templates seeded) is satisfied — so an
+	 * already-seeded instance is pre-satisfied on first boot after upgrade
+	 * without showing the wizard.
+	 *
+	 * @return JSONResponse `{ version, completed, steps: { <id>: { done } } }`.
+	 *
+	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-4.1
+	 */
+	#[AuthorizedAdminSetting(AdminSettings::class)]
+	public function status(): JSONResponse {
+		$denied = $this->requireAdmin();
+		if ($denied !== null) {
+			return $denied;
+		}
 
-        $seedDone  = $this->seedService->countSeeded() > 0;
-        $storeDone = $this->appConfig->getValueString(Application::APP_ID, 'registry_url', '') !== '';
-        $completed = $seedDone;
+		$seedDone = $this->seedService->countSeeded() > 0;
+		$storeDone = $this->appConfig->getValueString(Application::APP_ID, 'registry_url', '') !== '';
+		$completed = $seedDone;
 
-        if ($completed === true) {
-            $this->appConfig->setValueString(
-                Application::APP_ID,
-                self::COMPLETION_KEY,
-                (string) self::SETUP_VERSION
-            );
-        }
+		if ($completed === true) {
+			$this->appConfig->setValueString(
+				Application::APP_ID,
+				self::COMPLETION_KEY,
+				(string)self::SETUP_VERSION
+			);
+		}
 
-        return new JSONResponse(
-            [
-                'version'   => self::SETUP_VERSION,
-                'completed' => $completed,
-                'steps'     => [
-                    'seed'  => ['done' => $seedDone],
-                    'store' => ['done' => $storeDone],
-                ],
-            ]
-        );
-    }//end status()
+		return new JSONResponse(
+			[
+				'version' => self::SETUP_VERSION,
+				'completed' => $completed,
+				'steps' => [
+					'seed' => ['done' => $seedDone],
+					'store' => ['done' => $storeDone],
+				],
+			]
+		);
+	}//end status()
 
-    /**
-     * Persist app-config values from a `config-fields` step (the remote
-     * template store: `registry_url`, `registry_register`, `registry_token`).
-     * Routed through SettingsService so the write-only secret semantics on
-     * `registry_token` are preserved.
-     *
-     * @return JSONResponse `{ success }`.
-     *
-     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-3.1
-     */
-    #[AuthorizedAdminSetting(AdminSettings::class)]
-    public function saveConfig(): JSONResponse
-    {
-        $denied = $this->requireAdmin();
-        if ($denied !== null) {
-            return $denied;
-        }
+	/**
+	 * Persist app-config values from a `config-fields` step (the remote
+	 * template store: `registry_url`, `registry_register`, `registry_token`).
+	 * Routed through SettingsService so the write-only secret semantics on
+	 * `registry_token` are preserved.
+	 *
+	 * @return JSONResponse `{ success }`.
+	 *
+	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-3.1
+	 */
+	#[AuthorizedAdminSetting(AdminSettings::class)]
+	public function saveConfig(): JSONResponse {
+		$denied = $this->requireAdmin();
+		if ($denied !== null) {
+			return $denied;
+		}
 
-        $params = $this->request->getParams();
-        unset($params['_route']);
+		$params = $this->request->getParams();
+		unset($params['_route']);
 
-        $this->settings->updateSettings($params);
+		$this->settings->updateSettings($params);
 
-        return new JSONResponse(['success' => true]);
-    }//end saveConfig()
+		return new JSONResponse(['success' => true]);
+	}//end saveConfig()
 
-    /**
-     * Run a privileged server-side setup action.
-     *
-     * @param string $actionId The action id; `seed-templates` is the only one.
-     *
-     * @return JSONResponse `{ success, message, detail }`.
-     *
-     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-2.1
-     */
-    #[AuthorizedAdminSetting(AdminSettings::class)]
-    public function runAction(string $actionId): JSONResponse
-    {
-        $denied = $this->requireAdmin();
-        if ($denied !== null) {
-            return $denied;
-        }
+	/**
+	 * Run a privileged server-side setup action.
+	 *
+	 * @param string $actionId The action id; `seed-templates` is the only one.
+	 *
+	 * @return JSONResponse `{ success, message, detail }`.
+	 *
+	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-2.1
+	 */
+	#[AuthorizedAdminSetting(AdminSettings::class)]
+	public function runAction(string $actionId): JSONResponse {
+		$denied = $this->requireAdmin();
+		if ($denied !== null) {
+			return $denied;
+		}
 
-        if ($actionId !== 'seed-templates') {
-            return new JSONResponse(
-                ['success' => false, 'message' => 'Unknown setup action: '.$actionId],
-                Http::STATUS_NOT_FOUND
-            );
-        }
+		if ($actionId !== 'seed-templates') {
+			return new JSONResponse(
+				['success' => false, 'message' => 'Unknown setup action: ' . $actionId],
+				Http::STATUS_NOT_FOUND
+			);
+		}
 
-        try {
-            $result = $this->seedService->seed();
-        } catch (Throwable $e) {
-            $this->logger->error(
-                'OpenBuild: setup seed-templates action failed',
-                ['exception' => $e->getMessage()]
-            );
+		try {
+			$result = $this->seedService->seed();
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'OpenBuild: setup seed-templates action failed',
+				['exception' => $e->getMessage()]
+			);
 
-            return new JSONResponse(
-                ['success' => false, 'message' => 'Template seeding failed unexpectedly.'],
-                Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }
+			return new JSONResponse(
+				['success' => false, 'message' => 'Template seeding failed unexpectedly.'],
+				Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}
 
-        if (empty($result['errors']) === false) {
-            return new JSONResponse(
-                [
-                    'success' => false,
-                    'message' => 'Seeded '.$result['seeded'].' template(s) with errors: '.implode('; ', $result['errors']),
-                    'detail'  => $result,
-                ],
-                Http::STATUS_UNPROCESSABLE_ENTITY
-            );
-        }
+		if (empty($result['errors']) === false) {
+			return new JSONResponse(
+				[
+					'success' => false,
+					'message' => 'Seeded ' . $result['seeded'] . ' template(s) with errors: ' . implode('; ', $result['errors']),
+					'detail' => $result,
+				],
+				Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
 
-        return new JSONResponse(
-            [
-                'success' => true,
-                'message' => 'Seeded '.$result['seeded'].' template(s), updated '.$result['updated']
-                    .', skipped '.$result['skipped'].' already present.',
-                'detail'  => $result,
-            ]
-        );
-    }//end runAction()
+		return new JSONResponse(
+			[
+				'success' => true,
+				'message' => 'Seeded ' . $result['seeded'] . ' template(s), updated ' . $result['updated']
+					. ', skipped ' . $result['skipped'] . ' already present.',
+				'detail' => $result,
+			]
+		);
+	}//end runAction()
 
-    /**
-     * Enforce the explicit admin gate (ADR-005): setup actions provision
-     * admin-only records / write global config, so a non-admin authenticated
-     * caller must be rejected in-body, not merely by the framework default.
-     *
-     * @return JSONResponse|null A 401/403 response when denied, null when the caller is an admin.
-     *
-     * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-2.1
-     */
-    private function requireAdmin(): ?JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return new JSONResponse(
-                ['error' => 'unauthenticated'],
-                Http::STATUS_UNAUTHORIZED
-            );
-        }
+	/**
+	 * Enforce the explicit admin gate (ADR-005): setup actions provision
+	 * admin-only records / write global config, so a non-admin authenticated
+	 * caller must be rejected in-body, not merely by the framework default.
+	 *
+	 * @return JSONResponse|null A 401/403 response when denied, null when the caller is an admin.
+	 *
+	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-2.1
+	 */
+	private function requireAdmin(): ?JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(
+				['error' => 'unauthenticated'],
+				Http::STATUS_UNAUTHORIZED
+			);
+		}
 
-        if ($this->groupManager->isAdmin($user->getUID()) === false) {
-            return new JSONResponse(
-                ['error' => 'forbidden', 'message' => 'Setup requires Nextcloud admin privileges.'],
-                Http::STATUS_FORBIDDEN
-            );
-        }
+		if ($this->groupManager->isAdmin($user->getUID()) === false) {
+			return new JSONResponse(
+				['error' => 'forbidden', 'message' => 'Setup requires Nextcloud admin privileges.'],
+				Http::STATUS_FORBIDDEN
+			);
+		}
 
-        return null;
-    }//end requireAdmin()
+		return null;
+	}//end requireAdmin()
 }//end class
