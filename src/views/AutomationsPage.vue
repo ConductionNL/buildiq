@@ -485,7 +485,14 @@ export default {
 			this.errorMessage = ''
 			this.deleting = true
 			try {
-				const url = generateUrl(`/apps/openregister/api/objects/openbuild/automation/${automation.id}`)
+				// OpenBuild's own endpoint: it authorises against the parent
+				// Application's `permissions` block and removes the COMPILED
+				// ARTIFACTS before deleting the definition. Deleting straight
+				// over OR REST 403s for every non-admin (the `automation`
+				// schema is admin-only on `delete`) and, for an admin, would
+				// leave the compiled notifications/schedules live with no
+				// definition left to edit them from. Conduction/openbuild#173.
+				const url = generateUrl(`/apps/openbuild/api/automations/${automation.id}`)
 				await axios.delete(url)
 				await this.fetchAutomations()
 			} catch (error) {

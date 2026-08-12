@@ -191,12 +191,40 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'rules#testAll',  'url' => '/api/rules/{ruleSetSlug}/test-all', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Automation designer (spec automation-designer REQ-AUTD-005/006/007/008).
-        // Thin, value-adding routes only — CRUD on the `automation` object itself
-        // stays on OR REST per ADR-022; these five uuid-addressed routes are the
-        // security boundary (AutomationsController enforces RBAC via
-        // PermissionResolver before any compile side effect, no admin bypass).
-        // All POST except the read-only `status` GET; uuid requirement guards
+        //
+        // ⚠️ CRUD ON `automation` LIVES HERE, NOT ON OR REST — and that is a
+        // deliberate departure from the ADR-022 "consume OR abstractions"
+        // default, scoped to this one schema. Conduction/openbuild#173.
+        //
+        // ADR-022 holds wherever OR's own authorization can express the
+        // requirement. For `automation` it cannot. OR gates writes with a
+        // COARSE, schema-level group ACL — `lib/Settings/register.d/40-automations.json`
+        // declares `authorization.create/update/delete: ["admin"]` — while
+        // REQ-AUTD-008 needs a FINE-GRAINED, per-object rule: "an editor of
+        // THIS Application, or an owner when the version is production".
+        // Those are not the same shape, and the two ways of reconciling them
+        // are not equivalent:
+        //
+        //   (a) widen the schema to `create/update: ["authenticated"]` — then
+        //       ANY authenticated user could rewrite ANY automation on ANY
+        //       application straight over OR REST, with no per-application
+        //       filter anywhere. That is a real regression.
+        //   (b) route the writes through this controller, which authorises per
+        //       application and then writes in system context, leaving the OR
+        //       schema gate SHUT for direct callers.
+        //
+        // (b) is what these routes are. The schema stays admin-only on
+        // purpose: it is the backstop that makes the check below the only way
+        // in for a non-admin, so the authorization boundary is one place
+        // instead of two.
+        //
+        // Every route is `#[NoAdminRequired]` and every one runs
+        // PermissionResolver::matchesCaller() with `allowAdminBypass: false`
+        // BEFORE any write or compile side effect. The uuid requirement guards
         // against a kebab-case slug accidentally matching another route.
+        ['name' => 'automations#create',   'url' => '/api/automations',                'verb' => 'POST'],
+        ['name' => 'automations#update',   'url' => '/api/automations/{uuid}',         'verb' => 'PUT',    'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#destroy',  'url' => '/api/automations/{uuid}',         'verb' => 'DELETE', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         ['name' => 'automations#compile',  'url' => '/api/automations/{uuid}/compile',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         ['name' => 'automations#enable',   'url' => '/api/automations/{uuid}/enable',   'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         ['name' => 'automations#disable',  'url' => '/api/automations/{uuid}/disable',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],

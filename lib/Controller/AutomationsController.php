@@ -4,17 +4,42 @@
  * OpenBuild AutomationsController
  *
  * REST surface for the automation-designer change (spec automation-designer
- * REQ-AUTD-005/006/007/008). Thin, value-adding routes only — CRUD on the
- * `automation` object itself stays on OR REST per ADR-022
- * (`/apps/openregister/api/objects/openbuild/automation`); this controller
- * owns exactly the five EFFECTUAL actions that turn a stored automation
+ * REQ-AUTD-005/006/007/008). This controller owns BOTH the CRUD on the
+ * `automation` object and the EFFECTUAL actions that turn a stored automation
  * definition into (or out of) live compiled artifacts:
  *
- *   - POST /api/automations/{uuid}/compile   — recompile in place (upsert)
- *   - POST /api/automations/{uuid}/enable    — flip enabled:true and recompile
- *   - POST /api/automations/{uuid}/disable   — flip enabled:false and recompile
- *   - POST /api/automations/{uuid}/dry-run   — evaluate via the rules engine, no side effects
- *   - GET  /api/automations/{uuid}/status    — recompute drift against live artifacts
+ *   - POST   /api/automations                — create on an Application version
+ *   - PUT    /api/automations/{uuid}         — replace the definition
+ *   - DELETE /api/automations/{uuid}         — remove artifacts, then the object
+ *   - POST   /api/automations/{uuid}/compile — recompile in place (upsert)
+ *   - POST   /api/automations/{uuid}/enable  — flip enabled:true and recompile
+ *   - POST   /api/automations/{uuid}/disable — flip enabled:false and recompile
+ *   - POST   /api/automations/{uuid}/dry-run — evaluate via the rules engine, no side effects
+ *   - GET    /api/automations/{uuid}/status  — recompute drift against live artifacts
+ *
+ * WHY CRUD IS HERE AND NOT ON OR REST (Conduction/openbuild#173)
+ * -------------------------------------------------------------
+ * ADR-022 says apps consume OpenRegister's abstractions rather than wrapping
+ * them, and that default holds wherever OR's own authorization can express the
+ * requirement. For `automation` it cannot, and the mismatch is structural, not
+ * cosmetic: OR gates writes with a COARSE, schema-level group ACL
+ * (`lib/Settings/register.d/40-automations.json` declares
+ * `authorization.create/update/delete: ["admin"]`), while REQ-AUTD-008 needs a
+ * FINE-GRAINED, per-object rule — "an editor of THIS Application, or an owner
+ * when the version is the production one".
+ *
+ * The three CRUD writes themselves live in
+ * {@see \OCA\OpenBuild\Service\AutomationWriteService} — this controller is the
+ * HTTP surface, that service is the write path and the create-side RBAC scope.
+ *
+ * Before this controller took the writes, the designer POSTed OR REST
+ * directly, so the app-level `permissions` block was never consulted on
+ * create/update at all and the OR gate refused every non-admin. The `automation`
+ * schema stays admin-only ON PURPOSE — that gate is the backstop that makes
+ * this controller the only way in for a non-admin, keeping the authorization
+ * boundary in one place instead of two. Widening the schema instead would have
+ * let any authenticated user rewrite any automation on any application over OR
+ * REST, with no per-application filter anywhere.
  *
  * RBAC (design.md Decision 7 / spec REQ-AUTD-008), enforced via the shared
  * `PermissionResolver::matchesCaller()` grammar — never NC-admin auto-granted
@@ -54,9 +79,9 @@ namespace OCA\OpenBuild\Controller;
 use OCA\OpenBuild\AppInfo\Application;
 use OCA\OpenBuild\Exception\UnsupportedAutomationCombinationException;
 use OCA\OpenBuild\Service\AutomationCompilerService;
+use OCA\OpenBuild\Service\AutomationWriteService;
 use OCA\OpenBuild\Service\ConditionActionExecutor;
 use OCA\OpenBuild\Service\PermissionResolver;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -74,16 +99,6 @@ use Throwable;
  */
 class AutomationsController extends Controller
 {
-    /**
-     * Shared OpenBuild register slug.
-     */
-    private const REGISTER_SLUG = 'openbuild';
-
-    /**
-     * Schema slug of the Automation object.
-     */
-    private const AUTOMATION_SCHEMA = 'automation';
-
     /**
      * Roles allowed to author/dry-run/disable, and to enable on a
      * non-production version (design.md Decision 7).
@@ -106,26 +121,112 @@ class AutomationsController extends Controller
      *
      * @param IRequest                  $request            The current HTTP request.
      * @param LoggerInterface           $logger             PSR logger.
-     * @param ObjectService             $objectService      OpenRegister object service.
      * @param AutomationCompilerService $compiler           Compiler/apply/remove/status service.
      * @param ConditionActionExecutor   $conditionExecutor  Rules engine executor (dry-run panel).
      * @param PermissionResolver        $permissionResolver Shared permission-grammar resolver.
      * @param IUserSession              $userSession        Current user session.
+     * @param AutomationWriteService    $writeService       Create/update/delete write path.
      *
      * @return void
      */
     public function __construct(
         IRequest $request,
         private readonly LoggerInterface $logger,
-        private readonly ObjectService $objectService,
         private readonly AutomationCompilerService $compiler,
         private readonly ConditionActionExecutor $conditionExecutor,
         private readonly PermissionResolver $permissionResolver,
         private readonly IUserSession $userSession,
+        private readonly AutomationWriteService $writeService,
     ) {
         parent::__construct(appName: Application::APP_ID, request: $request);
 
     }//end __construct()
+
+    /**
+     * Create an automation on an Application version (REQ-AUTD-008).
+     *
+     * Delegates to {@see AutomationWriteService::create()}, which authorises
+     * against the PARENT APPLICATION's `permissions` block (named by the body's
+     * mandatory `applicationSlug`/`versionUuid`) and only then writes, in
+     * system context. See the class docblock for why this route exists rather
+     * than the designer POSTing OR REST directly.
+     *
+     * @return JSONResponse The created Automation, or an error envelope.
+     *
+     * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+     */
+    #[NoAdminRequired]
+    #[UserRateLimit(limit: 30, period: 60)]
+    public function create(): JSONResponse
+    {
+        return $this->writeService->create(
+            payload: $this->writeService->requestBody(request: $this->request),
+            roles: self::WRITE_ROLES
+        );
+
+    }//end create()
+
+    /**
+     * Replace an automation's definition (REQ-AUTD-008).
+     *
+     * The stored record's OWN `applicationSlug`/`versionUuid` decide the
+     * authorization scope, never the client's body — otherwise a caller who
+     * holds a role on application A could move an automation belonging to
+     * application B by posting A's slug.
+     *
+     * @param string $uuid The Automation object uuid.
+     *
+     * @return JSONResponse The saved Automation, or an error envelope.
+     *
+     * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+     */
+    #[NoAdminRequired]
+    #[UserRateLimit(limit: 30, period: 60)]
+    public function update(string $uuid): JSONResponse
+    {
+        $payload = $this->writeService->requestBody(request: $this->request);
+
+        return $this->withAutomation(
+            uuid: $uuid,
+            roles: self::WRITE_ROLES,
+            productionRoles: null,
+            action: fn (array $automation): JSONResponse => $this->writeService->update(
+                uuid: $uuid,
+                payload: $payload,
+                automation: $automation
+            )
+        );
+
+    }//end update()
+
+    /**
+     * Delete an automation and remove its compiled artifacts (REQ-AUTD-008).
+     *
+     * The artifacts are removed FIRST: a deleted definition whose compiled
+     * artifacts are still live is the one outcome that leaves the instance
+     * acting on a rule nobody can see or edit any more.
+     *
+     * @param string $uuid The Automation object uuid.
+     *
+     * @return JSONResponse Empty success envelope, or an error envelope.
+     *
+     * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+     */
+    #[NoAdminRequired]
+    #[UserRateLimit(limit: 30, period: 60)]
+    public function destroy(string $uuid): JSONResponse
+    {
+        return $this->withAutomation(
+            uuid: $uuid,
+            roles: self::WRITE_ROLES,
+            productionRoles: null,
+            action: fn (array $automation): JSONResponse => $this->writeService->destroy(
+                uuid: $uuid,
+                automation: $automation
+            )
+        );
+
+    }//end destroy()
 
     /**
      * Recompile an automation in place (upsert its artifacts).
@@ -322,13 +423,13 @@ class AutomationsController extends Controller
         }
 
         try {
-            $automation = $this->loadAutomation(uuid: $uuid);
+            $automation = $this->writeService->loadAutomation(uuid: $uuid);
             if ($automation === null) {
                 return $this->error(code: 'not_found', detail: 'Automation '.$uuid.' not found', status: Http::STATUS_NOT_FOUND);
             }
 
             $applicationSlug = (string) ($automation['applicationSlug'] ?? '');
-            $application     = $this->loadApplication(slug: $applicationSlug);
+            $application     = $this->writeService->loadApplication(slug: $applicationSlug);
             if ($application === null) {
                 return $this->error(code: 'not_found', detail: 'Application '.$applicationSlug.' not found', status: Http::STATUS_NOT_FOUND);
             }
@@ -386,14 +487,16 @@ class AutomationsController extends Controller
         $automation['provenance'] = $provenance;
         $uuid = (string) ($automation['id'] ?? $automation['uuid'] ?? '');
 
-        $saved = $this->objectService->saveObject(
-            object: $automation,
-            register: self::REGISTER_SLUG,
-            schema: self::AUTOMATION_SCHEMA,
-            uuid: $uuid
-        );
+        // SYSTEM CONTEXT (`_rbac: false`). Every caller of this method has
+        // already passed `withAutomation()`, which resolved the parent
+        // Application and matched the caller against its `permissions` block
+        // with `allowAdminBypass: false` — that is the authorization decision
+        // for this write. The full rationale, including the live measurement
+        // that forced it, lives with the write itself on
+        // AutomationWriteService::saveAuthorised().
+        $saved = $this->writeService->saveCompiled(automation: $automation, uuid: $uuid);
 
-        return new JSONResponse(data: $this->normalise(object: $saved), statusCode: Http::STATUS_OK);
+        return new JSONResponse(data: $saved, statusCode: Http::STATUS_OK);
 
     }//end recompileAndRespond()
 
@@ -424,56 +527,6 @@ class AutomationsController extends Controller
     }//end isProductionVersion()
 
     /**
-     * Load an Automation object by uuid.
-     *
-     * @param string $uuid The Automation object uuid.
-     *
-     * @return array<string,mixed>|null
-     */
-    private function loadAutomation(string $uuid): ?array
-    {
-        try {
-            $entity = $this->objectService->find(id: $uuid, register: self::REGISTER_SLUG, schema: self::AUTOMATION_SCHEMA);
-        } catch (Throwable $e) {
-            return null;
-        }
-
-        if ($entity === null) {
-            return null;
-        }
-
-        return $this->normalise(object: $entity);
-
-    }//end loadAutomation()
-
-    /**
-     * Load the parent Application by slug.
-     *
-     * @param string $slug The Application slug.
-     *
-     * @return array<string,mixed>|null
-     */
-    private function loadApplication(string $slug): ?array
-    {
-        if ($slug === '') {
-            return null;
-        }
-
-        try {
-            $entity = $this->objectService->find(id: $slug, register: self::REGISTER_SLUG, schema: 'application');
-        } catch (Throwable $e) {
-            return null;
-        }
-
-        if ($entity === null) {
-            return null;
-        }
-
-        return $this->normalise(object: $entity);
-
-    }//end loadApplication()
-
-    /**
      * Return `$value` when it is an array, otherwise an empty array.
      *
      * @param mixed $value The candidate value.
@@ -489,37 +542,6 @@ class AutomationsController extends Controller
         return [];
 
     }//end orArray()
-
-    /**
-     * Coerce an OR result entry to a plain associative array.
-     *
-     * @param mixed $object The OR object/result entry.
-     *
-     * @return array<string,mixed>
-     */
-    private function normalise(mixed $object): array
-    {
-        if (is_array($object) === true) {
-            return $object;
-        }
-
-        if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-            $serialised = $object->jsonSerialize();
-            if (is_array($serialised) === true) {
-                return $serialised;
-            }
-        }
-
-        if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-            $inner = $object->getObject();
-            if (is_array($inner) === true) {
-                return $inner;
-            }
-        }
-
-        return [];
-
-    }//end normalise()
 
     /**
      * Build a uniform error envelope.
