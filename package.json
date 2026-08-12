@@ -15,7 +15,7 @@
 		"watch": "NODE_ENV=development webpack --config webpack.config.js --progress --watch",
 		"lint": "eslint src",
 		"lint-fix": "npm run lint -- --fix",
-		"stylelint": "stylelint src/**/*.vue src/**/*.scss src/**/*.css",
+		"stylelint": "stylelint \"src/**/*.{vue,scss,css}\"",
 		"stylelint-fix": "stylelint src/**/*.vue src/**/*.scss src/**/*.css --fix",
 		"check:manifest": "node scripts/check-manifest.js",
     "check:gitignore": "node scripts/check-gitignore.js",

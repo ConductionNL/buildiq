@@ -22,7 +22,7 @@ jobs:
       # leg was testing an impossible configuration, so its red said nothing.
       # Newman, Playwright and journeydoc-capture all pin `fromJSON(...)[0]`, so
       # the FIRST entry has to be a version openregister can load.
-      nextcloud-test-refs: '["stable32", "stable33"]'
+      nextcloud-test-refs: '["stable34"]'
       enable-psalm: true
       enable-phpstan: true
       enable-phpmetrics: true
