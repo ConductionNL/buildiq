@@ -16,7 +16,7 @@
 		"lint": "eslint src",
 		"lint-fix": "npm run lint -- --fix",
 		"stylelint": "stylelint \"src/**/*.{vue,scss,css}\"",
-		"stylelint-fix": "stylelint src/**/*.vue src/**/*.scss src/**/*.css --fix",
+		"stylelint-fix": "stylelint \"src/**/*.{vue,scss,css}\" --fix",
 		"check:manifest": "node scripts/check-manifest.js",
     "check:gitignore": "node scripts/check-gitignore.js",
     "check:nc-floor": "node scripts/check-nc-floor.js",

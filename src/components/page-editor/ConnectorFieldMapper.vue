@@ -267,6 +267,7 @@ export default {
 	gap: 12px;
 	margin-bottom: 8px;
 }
+
 .connector-field-mapper__tree {
 	max-height: 240px;
 	overflow: auto;
@@ -274,11 +275,13 @@ export default {
 	border-radius: var(--border-radius);
 	padding: 8px;
 }
+
 .connector-field-mapper__tree-list {
 	list-style: none;
 	margin: 0;
 	padding: 0;
 }
+
 .connector-field-mapper__node-btn {
 	background: none;
 	border: none;
@@ -287,28 +290,34 @@ export default {
 	text-align: left;
 	color: var(--color-main-text);
 }
+
 .connector-field-mapper__node-btn:hover {
 	background: var(--color-background-hover);
 	border-radius: var(--border-radius);
 }
+
 .connector-field-mapper__node-type,
 .connector-field-mapper__node-value {
 	color: var(--color-text-maxcontrast);
 }
+
 .connector-field-mapper__fields {
 	width: 100%;
 	margin-top: 12px;
 	border-collapse: collapse;
 }
+
 .connector-field-mapper__fields th,
 .connector-field-mapper__fields td {
 	text-align: left;
 	padding: 4px 8px;
 	border-bottom: 1px solid var(--color-border);
 }
+
 .connector-field-mapper__row--dead .connector-field-mapper__warn {
 	color: var(--color-warning-text, var(--color-warning));
 }
+
 .connector-field-mapper__hint {
 	color: var(--color-text-maxcontrast);
 }
