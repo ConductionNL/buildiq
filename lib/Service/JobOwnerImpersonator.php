@@ -61,126 +61,123 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
  */
-class JobOwnerImpersonator
-{
-    /**
-     * Constructor.
-     *
-     * @param ContainerInterface $container   Container — used to lazily fetch the OR ObjectService.
-     * @param IUserSession       $userSession Session impersonated for the duration of the work.
-     * @param IUserManager       $userManager Resolves the owner UID to an IUser.
-     * @param LoggerInterface    $logger      Logger.
-     */
-    public function __construct(
-        private ContainerInterface $container,
-        private IUserSession $userSession,
-        private IUserManager $userManager,
-        private LoggerInterface $logger,
-    ) {
-    }//end __construct()
+class JobOwnerImpersonator {
+	/**
+	 * Constructor.
+	 *
+	 * @param ContainerInterface $container Container — used to lazily fetch the OR ObjectService.
+	 * @param IUserSession $userSession Session impersonated for the duration of the work.
+	 * @param IUserManager $userManager Resolves the owner UID to an IUser.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		private ContainerInterface $container,
+		private IUserSession $userSession,
+		private IUserManager $userManager,
+		private LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Resolve the OR object's owner, impersonate them for the duration of
-     * `$work`, then ALWAYS restore the pre-impersonation session user —
-     * success, failure, or thrown exception (hermiq
-     * ScheduleService::runAgentAsOwner precedent).
-     *
-     * When the owner cannot be resolved (missing owner, deleted user, OR
-     * unavailable, etc.) `$work` still runs, just without impersonation —
-     * this helper never turns a resolution failure into a hard error; the
-     * downstream OR call is left to fail (or succeed, e.g. if a session
-     * user is already active) on its own terms.
-     *
-     * @param string   $objectId OR object id/uuid/slug whose owner should be impersonated.
-     * @param callable $work     Zero-argument callback to run while impersonating.
-     *
-     * @return mixed Whatever `$work` returns.
-     *
-     * @throws \Throwable Whatever `$work` throws — propagated after the
-     *                    session user is restored.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
-     */
-    public function runAsOwner(string $objectId, callable $work): mixed
-    {
-        [$priorUser, $impersonating] = $this->impersonate(objectId: $objectId);
+	/**
+	 * Resolve the OR object's owner, impersonate them for the duration of
+	 * `$work`, then ALWAYS restore the pre-impersonation session user —
+	 * success, failure, or thrown exception (hermiq
+	 * ScheduleService::runAgentAsOwner precedent).
+	 *
+	 * When the owner cannot be resolved (missing owner, deleted user, OR
+	 * unavailable, etc.) `$work` still runs, just without impersonation —
+	 * this helper never turns a resolution failure into a hard error; the
+	 * downstream OR call is left to fail (or succeed, e.g. if a session
+	 * user is already active) on its own terms.
+	 *
+	 * @param string $objectId OR object id/uuid/slug whose owner should be impersonated.
+	 * @param callable $work Zero-argument callback to run while impersonating.
+	 *
+	 * @return mixed Whatever `$work` returns.
+	 *
+	 * @throws \Throwable Whatever `$work` throws — propagated after the
+	 *                    session user is restored.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
+	 */
+	public function runAsOwner(string $objectId, callable $work): mixed {
+		[$priorUser, $impersonating] = $this->impersonate(objectId: $objectId);
 
-        try {
-            return $work();
-        } finally {
-            // ALWAYS restore — a background-job process can be reused
-            // across multiple queued jobs, so leaking an impersonated
-            // identity forward would misattribute the NEXT job's actions.
-            if ($impersonating === true) {
-                $this->userSession->setUser($priorUser);
-            }
-        }
-    }//end runAsOwner()
+		try {
+			return $work();
+		} finally {
+			// ALWAYS restore — a background-job process can be reused
+			// across multiple queued jobs, so leaking an impersonated
+			// identity forward would misattribute the NEXT job's actions.
+			if ($impersonating === true) {
+				$this->userSession->setUser($priorUser);
+			}
+		}
+	}//end runAsOwner()
 
-    /**
-     * Resolve the object's owner and swap the session user, if possible.
-     *
-     * Best-effort: any failure to resolve the object, its owner, or the
-     * corresponding IUser is logged and treated as "do not impersonate".
-     *
-     * @param string $objectId OR object id/uuid/slug.
-     *
-     * @return array{0: ?\OCP\IUser, 1: bool} Tuple of [priorSessionUser,
-     *                                        didImpersonate].
-     */
-    private function impersonate(string $objectId): array
-    {
-        try {
-            if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
-                return [null, false];
-            }
+	/**
+	 * Resolve the object's owner and swap the session user, if possible.
+	 *
+	 * Best-effort: any failure to resolve the object, its owner, or the
+	 * corresponding IUser is logged and treated as "do not impersonate".
+	 *
+	 * @param string $objectId OR object id/uuid/slug.
+	 *
+	 * @return array{0: ?\OCP\IUser, 1: bool} Tuple of [priorSessionUser,
+	 *                                        didImpersonate].
+	 */
+	private function impersonate(string $objectId): array {
+		try {
+			if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
+				return [null, false];
+			}
 
-            $service = $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
-            if (method_exists($service, 'find') === false) {
-                return [null, false];
-            }
+			$service = $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
+			if (method_exists($service, 'find') === false) {
+				return [null, false];
+			}
 
-            $object = $service->find($objectId);
-            if ($object === null) {
-                return [null, false];
-            }
+			$object = $service->find($objectId);
+			if ($object === null) {
+				return [null, false];
+			}
 
-            // NOTE: no `method_exists($object, 'getOwner')` guard here —
-            // unlike getObject()/find(), `getOwner()` is NOT a declared
-            // method on ObjectEntity (real OR class or the test stub); it
-            // only resolves via NC Entity's magic __call(), which
-            // method_exists() cannot see (it returns false for magic-only
-            // accessors). Calling it directly is safe: the surrounding
-            // try/catch handles the (unexpected) case where $object isn't
-            // an Entity that supports it.
-            $ownerUid = $object->getOwner();
-            if ($ownerUid === null || $ownerUid === '') {
-                $this->logger->warning(
-                    'OpenBuild: object '.$objectId.' has no recorded owner — '
-                    .'cannot impersonate for this background-job write.'
-                );
-                return [null, false];
-            }
+			// NOTE: no `method_exists($object, 'getOwner')` guard here —
+			// unlike getObject()/find(), `getOwner()` is NOT a declared
+			// method on ObjectEntity (real OR class or the test stub); it
+			// only resolves via NC Entity's magic __call(), which
+			// method_exists() cannot see (it returns false for magic-only
+			// accessors). Calling it directly is safe: the surrounding
+			// try/catch handles the (unexpected) case where $object isn't
+			// an Entity that supports it.
+			$ownerUid = $object->getOwner();
+			if ($ownerUid === null || $ownerUid === '') {
+				$this->logger->warning(
+					'OpenBuild: object ' . $objectId . ' has no recorded owner — '
+					. 'cannot impersonate for this background-job write.'
+				);
+				return [null, false];
+			}
 
-            $user = $this->userManager->get($ownerUid);
-            if ($user === null) {
-                $this->logger->warning(
-                    'OpenBuild: object '.$objectId.' owner "'.$ownerUid.'" '
-                    .'no longer resolves to a Nextcloud user — cannot impersonate.'
-                );
-                return [null, false];
-            }
+			$user = $this->userManager->get($ownerUid);
+			if ($user === null) {
+				$this->logger->warning(
+					'OpenBuild: object ' . $objectId . ' owner "' . $ownerUid . '" '
+					. 'no longer resolves to a Nextcloud user — cannot impersonate.'
+				);
+				return [null, false];
+			}
 
-            $priorUser = $this->userSession->getUser();
-            $this->userSession->setUser($user);
+			$priorUser = $this->userSession->getUser();
+			$this->userSession->setUser($user);
 
-            return [$priorUser, true];
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                'OpenBuild: owner impersonation lookup failed for object '
-                .$objectId.': '.$e->getMessage()
-            );
-            return [null, false];
-        }//end try
-    }//end impersonate()
+			return [$priorUser, true];
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'OpenBuild: owner impersonation lookup failed for object '
+				. $objectId . ': ' . $e->getMessage()
+			);
+			return [null, false];
+		}//end try
+	}//end impersonate()
 }//end class

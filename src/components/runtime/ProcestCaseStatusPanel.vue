@@ -174,27 +174,33 @@ export default {
 	padding: 12px;
 	color: var(--color-text-maxcontrast);
 }
+
 .procest-case-status-panel__state--error {
 	color: var(--color-error);
 }
+
 .procest-case-status-panel__warn {
 	color: var(--color-warning-text, var(--color-warning));
 	margin-top: 8px;
 }
+
 .procest-case-status-panel__timeline {
 	list-style: none;
 	padding: 0;
 	margin: 8px 0;
 }
+
 .procest-case-status-panel__timeline li {
 	display: flex;
 	justify-content: space-between;
 	padding: 4px 0;
 	border-bottom: 1px solid var(--color-border);
 }
+
 .procest-case-status-panel__status-date {
 	color: var(--color-text-maxcontrast);
 }
+
 .procest-case-status-panel__link {
 	display: inline-block;
 	margin-top: 8px;

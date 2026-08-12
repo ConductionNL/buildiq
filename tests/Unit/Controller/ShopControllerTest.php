@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -41,209 +42,200 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl
  * @link     https://github.com/ConductionNL/openbuild
  */
-class ShopControllerTest extends TestCase
-{
+class ShopControllerTest extends TestCase {
 
-    /**
-     * Request mock.
-     *
-     * @var IRequest&MockObject
-     */
-    private $request;
+	/**
+	 * Request mock.
+	 *
+	 * @var IRequest&MockObject
+	 */
+	private $request;
 
-    /**
-     * Session mock.
-     *
-     * @var IUserSession&MockObject
-     */
-    private $userSession;
+	/**
+	 * Session mock.
+	 *
+	 * @var IUserSession&MockObject
+	 */
+	private $userSession;
 
-    /**
-     * GitHub catalogue service mock.
-     *
-     * @var GitHubCatalogService&MockObject
-     */
-    private $catalogService;
+	/**
+	 * GitHub catalogue service mock.
+	 *
+	 * @var GitHubCatalogService&MockObject
+	 */
+	private $catalogService;
 
-    /**
-     * Repo parser mock.
-     *
-     * @var AppRepoParser&MockObject
-     */
-    private $repoParser;
+	/**
+	 * Repo parser mock.
+	 *
+	 * @var AppRepoParser&MockObject
+	 */
+	private $repoParser;
 
-    /**
-     * Applications controller mock (install delegates to it).
-     *
-     * @var ApplicationsController&MockObject
-     */
-    private $appsController;
+	/**
+	 * Applications controller mock (install delegates to it).
+	 *
+	 * @var ApplicationsController&MockObject
+	 */
+	private $appsController;
 
-    /**
-     * Wire the collaborator mocks.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Wire the collaborator mocks.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request        = $this->createMock(IRequest::class);
-        $this->userSession    = $this->createMock(IUserSession::class);
-        $this->catalogService = $this->createMock(GitHubCatalogService::class);
-        $this->repoParser     = $this->createMock(AppRepoParser::class);
-        $this->appsController = $this->createMock(ApplicationsController::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->catalogService = $this->createMock(GitHubCatalogService::class);
+		$this->repoParser = $this->createMock(AppRepoParser::class);
+		$this->appsController = $this->createMock(ApplicationsController::class);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Build the controller under test.
-     *
-     * @return ShopController
-     */
-    private function controller(): ShopController
-    {
-        return new ShopController(
-            request: $this->request,
-            logger: $this->createMock(LoggerInterface::class),
-            userSession: $this->userSession,
-            catalogService: $this->catalogService,
-            repoParser: $this->repoParser,
-            appsController: $this->appsController
-        );
+	/**
+	 * Build the controller under test.
+	 *
+	 * @return ShopController
+	 */
+	private function controller(): ShopController {
+		return new ShopController(
+			request: $this->request,
+			logger: $this->createMock(LoggerInterface::class),
+			userSession: $this->userSession,
+			catalogService: $this->catalogService,
+			repoParser: $this->repoParser,
+			appsController: $this->appsController
+		);
 
-    }//end controller()
+	}//end controller()
 
-    /**
-     * Wire an authenticated user into the session mock.
-     *
-     * @param string $uid The UID.
-     *
-     * @return void
-     */
-    private function authenticate(string $uid='bob'): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($uid);
-        $this->userSession->method('getUser')->willReturn($user);
+	/**
+	 * Wire an authenticated user into the session mock.
+	 *
+	 * @param string $uid The UID.
+	 *
+	 * @return void
+	 */
+	private function authenticate(string $uid = 'bob'): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$this->userSession->method('getUser')->willReturn($user);
 
-    }//end authenticate()
+	}//end authenticate()
 
-    /**
-     * githubSearch: anonymous callers get 401 and no outbound call is made.
-     *
-     * @return void
-     */
-    public function testGithubSearchRejectsAnonymous(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
-        $this->catalogService->expects(self::never())->method('search');
+	/**
+	 * githubSearch: anonymous callers get 401 and no outbound call is made.
+	 *
+	 * @return void
+	 */
+	public function testGithubSearchRejectsAnonymous(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->catalogService->expects(self::never())->method('search');
 
-        $response = $this->controller()->githubSearch();
+		$response = $this->controller()->githubSearch();
 
-        self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-    }//end testGithubSearchRejectsAnonymous()
+	}//end testGithubSearchRejectsAnonymous()
 
-    /**
-     * githubSearch: an authenticated caller reaches the catalogue service and
-     * gets its outcome back.
-     *
-     * @return void
-     */
-    public function testGithubSearchReturnsCards(): void
-    {
-        $this->authenticate();
-        $this->request->method('getParam')->willReturn(null);
-        $this->catalogService->expects(self::once())
-            ->method('search')
-            ->willReturn(
-                // The full documented return shape of
-                // GitHubCatalogService::search() —
-                // {outcome, cards, brokerUsed, rateLimited}. Returning less
-                // makes the controller read an undefined key, which is a
-                // defect in the fixture rather than in the controller.
-                [
-                    'outcome'     => 'ok',
-                    'cards'       => [['slug' => 'demo-app']],
-                    'brokerUsed'  => false,
-                    'rateLimited' => false,
-                ]
-            );
+	/**
+	 * githubSearch: an authenticated caller reaches the catalogue service and
+	 * gets its outcome back.
+	 *
+	 * @return void
+	 */
+	public function testGithubSearchReturnsCards(): void {
+		$this->authenticate();
+		$this->request->method('getParam')->willReturn(null);
+		$this->catalogService->expects(self::once())
+			->method('search')
+			->willReturn(
+				// The full documented return shape of
+				// GitHubCatalogService::search() —
+				// {outcome, cards, brokerUsed, rateLimited}. Returning less
+				// makes the controller read an undefined key, which is a
+				// defect in the fixture rather than in the controller.
+				[
+					'outcome' => 'ok',
+					'cards' => [['slug' => 'demo-app']],
+					'brokerUsed' => false,
+					'rateLimited' => false,
+				]
+			);
 
-        $response = $this->controller()->githubSearch();
+		$response = $this->controller()->githubSearch();
 
-        self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
 
-    }//end testGithubSearchReturnsCards()
+	}//end testGithubSearchReturnsCards()
 
-    /**
-     * githubInstall: anonymous callers get 401 before any validation or work.
-     *
-     * @return void
-     */
-    public function testGithubInstallRejectsAnonymous(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
-        $this->repoParser->expects(self::never())->method(self::anything());
+	/**
+	 * githubInstall: anonymous callers get 401 before any validation or work.
+	 *
+	 * @return void
+	 */
+	public function testGithubInstallRejectsAnonymous(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->repoParser->expects(self::never())->method(self::anything());
 
-        $response = $this->controller()->githubInstall();
+		$response = $this->controller()->githubInstall();
 
-        self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-    }//end testGithubInstallRejectsAnonymous()
+	}//end testGithubInstallRejectsAnonymous()
 
-    /**
-     * githubInstall: an owner/repo that fails the pattern is a 400, and
-     * nothing is fetched.
-     *
-     * This is the guard that keeps an attacker-supplied string out of the
-     * outbound GitHub URL, so it is worth pinning explicitly.
-     *
-     * @return void
-     */
-    public function testGithubInstallRejectsMalformedRepo(): void
-    {
-        $this->authenticate();
-        $this->request->method('getParam')->willReturnMap(
-            [
-                ['owner', null, 'not a valid owner/../..'],
-                ['repo', null, 'also bad'],
-                ['ref', null, null],
-                ['name', null, 'Demo'],
-                ['slug', null, 'demo-app'],
-            ]
-        );
+	/**
+	 * githubInstall: an owner/repo that fails the pattern is a 400, and
+	 * nothing is fetched.
+	 *
+	 * This is the guard that keeps an attacker-supplied string out of the
+	 * outbound GitHub URL, so it is worth pinning explicitly.
+	 *
+	 * @return void
+	 */
+	public function testGithubInstallRejectsMalformedRepo(): void {
+		$this->authenticate();
+		$this->request->method('getParam')->willReturnMap(
+			[
+				['owner', null, 'not a valid owner/../..'],
+				['repo', null, 'also bad'],
+				['ref', null, null],
+				['name', null, 'Demo'],
+				['slug', null, 'demo-app'],
+			]
+		);
 
-        $response = $this->controller()->githubInstall();
+		$response = $this->controller()->githubInstall();
 
-        self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-        self::assertSame('invalid_repo', $response->getData()['error']);
+		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		self::assertSame('invalid_repo', $response->getData()['error']);
 
-    }//end testGithubInstallRejectsMalformedRepo()
+	}//end testGithubInstallRejectsMalformedRepo()
 
-    /**
-     * githubInstall: a well-formed repo with a missing name/slug is a 400.
-     *
-     * @return void
-     */
-    public function testGithubInstallRequiresNameAndSlug(): void
-    {
-        $this->authenticate();
-        $this->request->method('getParam')->willReturnMap(
-            [
-                ['owner', null, 'ConductionNL'],
-                ['repo', null, 'openbuild'],
-                ['ref', null, null],
-                ['name', null, ''],
-                ['slug', null, ''],
-            ]
-        );
+	/**
+	 * githubInstall: a well-formed repo with a missing name/slug is a 400.
+	 *
+	 * @return void
+	 */
+	public function testGithubInstallRequiresNameAndSlug(): void {
+		$this->authenticate();
+		$this->request->method('getParam')->willReturnMap(
+			[
+				['owner', null, 'ConductionNL'],
+				['repo', null, 'openbuild'],
+				['ref', null, null],
+				['name', null, ''],
+				['slug', null, ''],
+			]
+		);
 
-        $response = $this->controller()->githubInstall();
+		$response = $this->controller()->githubInstall();
 
-        self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 
-    }//end testGithubInstallRequiresNameAndSlug()
+	}//end testGithubInstallRequiresNameAndSlug()
 
 }//end class

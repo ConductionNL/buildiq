@@ -30,38 +30,35 @@ use PHPUnit\Framework\TestCase;
  * APP_ID constant is intact — both invariants other tests (and the route
  * registration) depend on.
  */
-class OpenBuildTest extends TestCase
-{
+class OpenBuildTest extends TestCase {
 
-    /**
-     * Application::APP_ID must equal the registered Nextcloud app slug. Any
-     * downstream code that builds URLs or DI namespaces off APP_ID breaks if
-     * this changes silently.
-     *
-     * @return void
-     */
-    public function testAppIdConstantMatchesNextcloudSlug(): void
-    {
-        self::assertSame(expected: 'openbuild', actual: Application::APP_ID);
+	/**
+	 * Application::APP_ID must equal the registered Nextcloud app slug. Any
+	 * downstream code that builds URLs or DI namespaces off APP_ID breaks if
+	 * this changes silently.
+	 *
+	 * @return void
+	 */
+	public function testAppIdConstantMatchesNextcloudSlug(): void {
+		self::assertSame(expected: 'openbuild', actual: Application::APP_ID);
 
-    }//end testAppIdConstantMatchesNextcloudSlug()
+	}//end testAppIdConstantMatchesNextcloudSlug()
 
-    /**
-     * The PSR-4 prefix `OCA\OpenBuild\` must resolve to the worktree's lib/
-     * directory. This protects against autoload regressions where a stale
-     * sibling checkout's `vendor/composer/autoload_classmap.php` masks the
-     * local sources (the exact failure mode hit during this branch's
-     * bootstrap refactor).
-     *
-     * @return void
-     */
-    public function testAutoloadResolvesWorktreeLibDirectory(): void
-    {
-        $reflection = new \ReflectionClass(Application::class);
-        $file       = $reflection->getFileName();
-        self::assertIsString($file);
-        self::assertStringContainsString(needle: 'lib/AppInfo/Application.php', haystack: $file);
+	/**
+	 * The PSR-4 prefix `OCA\OpenBuild\` must resolve to the worktree's lib/
+	 * directory. This protects against autoload regressions where a stale
+	 * sibling checkout's `vendor/composer/autoload_classmap.php` masks the
+	 * local sources (the exact failure mode hit during this branch's
+	 * bootstrap refactor).
+	 *
+	 * @return void
+	 */
+	public function testAutoloadResolvesWorktreeLibDirectory(): void {
+		$reflection = new \ReflectionClass(Application::class);
+		$file = $reflection->getFileName();
+		self::assertIsString($file);
+		self::assertStringContainsString(needle: 'lib/AppInfo/Application.php', haystack: $file);
 
-    }//end testAutoloadResolvesWorktreeLibDirectory()
+	}//end testAutoloadResolvesWorktreeLibDirectory()
 
 }//end class

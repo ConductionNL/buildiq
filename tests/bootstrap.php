@@ -28,17 +28,17 @@ require_once __DIR__ . '/stubs/nc-hooks-emitter.stub.php';
 // stubs.
 $ocpStubs = __DIR__ . '/../vendor/nextcloud/ocp/OCP';
 if (is_dir($ocpStubs)) {
-    spl_autoload_register(static function (string $class) use ($ocpStubs): void {
-        if (str_starts_with($class, 'OCP\\') === false) {
-            return;
-        }
+	spl_autoload_register(static function (string $class) use ($ocpStubs): void {
+		if (str_starts_with($class, 'OCP\\') === false) {
+			return;
+		}
 
-        $relative = substr($class, strlen('OCP\\'));
-        $path     = $ocpStubs . '/' . str_replace('\\', '/', $relative) . '.php';
-        if (file_exists($path)) {
-            require_once $path;
-        }
-    });
+		$relative = substr($class, strlen('OCP\\'));
+		$path = $ocpStubs . '/' . str_replace('\\', '/', $relative) . '.php';
+		if (file_exists($path)) {
+			require_once $path;
+		}
+	});
 }
 
 // OpenRegister types are referenced by hard-typed constructor parameters in
@@ -57,22 +57,22 @@ require_once __DIR__ . '/Stubs/Mcp/IMcpToolProvider.php';
 // the full NC runtime; outside (CI / local dev) we fall back to the
 // vendor/nextcloud/ocp stubs and run only the pure-unit subset.
 if (!defined('OC_CONSOLE')) {
-    $ncBase = __DIR__ . '/../../../lib/base.php';
-    if (file_exists($ncBase)) {
-        require_once $ncBase;
+	$ncBase = __DIR__ . '/../../../lib/base.php';
+	if (file_exists($ncBase)) {
+		require_once $ncBase;
 
-        $ncAutoload = __DIR__ . '/../../../tests/autoload.php';
-        if (file_exists($ncAutoload)) {
-            require_once $ncAutoload;
-        }
+		$ncAutoload = __DIR__ . '/../../../tests/autoload.php';
+		if (file_exists($ncAutoload)) {
+			require_once $ncAutoload;
+		}
 
-        if (class_exists(\OC_App::class)) {
-            \OC_App::loadApps();
-            \OC_App::loadApp('openbuild');
-        }
+		if (class_exists(\OC_App::class)) {
+			\OC_App::loadApps();
+			\OC_App::loadApp('openbuild');
+		}
 
-        if (class_exists(\OC_Hook::class)) {
-            \OC_Hook::clear();
-        }
-    }
+		if (class_exists(\OC_Hook::class)) {
+			\OC_Hook::clear();
+		}
+	}
 }

@@ -19,23 +19,27 @@
  * not left alone. The whole record is therefore read, merged and written back;
  * never PUT a bare `{ permissions }`.
  *
- * ⚠️ NOT YET SUFFICIENT ON ITS OWN — see Conduction/openbuild#76.
+ * ✅ THIS HELPER IS SUFFICIENT ON ITS OWN. An earlier revision of this comment,
+ * and issues Conduction/openbuild#171 and #173, claimed the opposite: that a
+ * grantee still could not LIST the application. RETRACTED — re-measured
+ * 2026-08-11 on a live instance (NC 34, openregister 0.2.17-unstable.36),
+ * printing the status code on every probe:
  *
- * This helper does what it says: the grant lands and reads back as
- * `{owners:['user:admin'], editors:['group:rbac-editors'], viewers:['group:rbac-viewers']}`.
- * But a member still cannot LIST the application. Measured on a live instance
- * with everything else verified correct:
+ *   - `GET /apps/openregister/api/objects/openbuild/application` as
+ *     `rbac-editor` → 200 with FIVE rows. OR's multitenancy/ownership scoping
+ *     does not drop the row, so that hypothesis is dead.
+ *   - `GET /apps/openbuild/api/applications` as `rbac-editor`, BEFORE any
+ *     grant → 200 `[]`. Correct: the fixture's `permissions` was `null`.
+ *   - After PUTting `{owners:['user:rbac-owner'], editors:['user:rbac-editor']}`
+ *     onto a WIZARD-CREATED app → `listMine` returns that app for `rbac-editor`
+ *     AND for `rbac-owner`.
  *
- *   - `rbac-viewer` is in `rbac-viewers`, `rbac-editor` in `rbac-editors`
- *     (OCS `cloud/users/{uid}/groups`), and both groups exist;
- *   - PermissionResolver::matchesCaller() classifies `group:` principals and
- *     intersects them with the caller's groups, so the grammar is right;
- *   - yet `GET /api/applications` returns 200 with an EMPTY list for both.
- *
- * So something below openbuild's own permission layer is filtering the object
- * out — most likely OpenRegister-level object visibility, which is a separate
- * grant from the manifest `permissions` block. Until that is resolved this
- * helper is groundwork, not a fix, and the role-scoped scenarios stay skipped.
+ * The original claim came from a Playwright locator timing out on an app-picker
+ * option, which was then reported as a fact about `GET /api/applications`.
+ * 🔑 A UI locator that finds nothing is not evidence about the API underneath
+ * it. Two issues, one of them an architecture issue, were written on that
+ * inference. If this helper ever appears not to work again, probe the endpoint
+ * directly and read the status code before concluding anything.
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2026 Conduction B.V.
@@ -48,20 +52,29 @@ import type { Page } from '@playwright/test'
 const OR_APPLICATIONS = '/index.php/apps/openregister/api/objects/openbuild/application'
 
 /**
- * Grant editor / viewer roles on an application to the given principals.
+ * Grant owner / editor / viewer roles on an application to the given principals.
  *
- * Idempotent: a principal already present is not duplicated, and existing
- * owners are preserved.
+ * Idempotent: a principal already present is not duplicated, and roles the
+ * caller does not mention are preserved as they were.
  *
- * @param page       Playwright page (authenticated as an owner/admin).
- * @param slug       The application slug.
- * @param principals `user:`/`group:` prefixed entries to add per role.
+ * `owners` is grantable because REQ-AUTD-008 needs a NON-ADMIN owner: the
+ * production-scoped actions run with `allowAdminBypass: false`, so `admin` being
+ * the implicit owner proves nothing about the owner path — the suite has to be
+ * able to hand ownership to `rbac-owner` and watch a non-admin succeed where an
+ * editor was refused.
+ *
+ * @param page               Playwright page (authenticated as an owner/admin).
+ * @param slug               The application slug.
+ * @param principals         `user:`/`group:` prefixed entries to add per role.
+ * @param principals.owners  Principals to add to `owners`.
+ * @param principals.editors Principals to add to `editors`.
+ * @param principals.viewers Principals to add to `viewers`.
  * @return {Promise<void>}
  */
 export async function grantAppRoles(
 	page: Page,
 	slug: string,
-	principals: { editors?: string[], viewers?: string[] },
+	principals: { owners?: string[], editors?: string[], viewers?: string[] },
 ): Promise<void> {
 	const result = await page.evaluate(async ({ api, slug, principals }) => {
 		const tok = (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken
@@ -84,7 +97,7 @@ export async function grantAppRoles(
 		const next = {
 			...app,
 			permissions: {
-				owners: merge(current.owners, []),
+				owners: merge(current.owners, principals.owners),
 				editors: merge(current.editors, principals.editors),
 				viewers: merge(current.viewers, principals.viewers),
 			},

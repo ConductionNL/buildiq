@@ -199,11 +199,13 @@ export default {
 	gap: 6px;
 	align-items: flex-start;
 }
+
 .ob-track-link-action__result {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 }
+
 .ob-track-link-action__result code {
 	word-break: break-all;
 	font-size: 0.85em;

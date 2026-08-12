@@ -44,393 +44,378 @@ use RuntimeException;
 /**
  * Tests for {@see RuleEngineService}.
  */
-final class RuleEngineServiceTest extends TestCase
-{
+final class RuleEngineServiceTest extends TestCase {
 
-    /**
-     * Mock OpenRegister object service.
-     *
-     * @var ObjectService&MockObject
-     */
-    private ObjectService&MockObject $objectService;
+	/**
+	 * Mock OpenRegister object service.
+	 *
+	 * @var ObjectService&MockObject
+	 */
+	private ObjectService&MockObject $objectService;
 
-    /**
-     * Mock cache manager (always a miss so OR is queried).
-     *
-     * @var RuleSetCacheManager&MockObject
-     */
-    private RuleSetCacheManager&MockObject $cacheManager;
+	/**
+	 * Mock cache manager (always a miss so OR is queried).
+	 *
+	 * @var RuleSetCacheManager&MockObject
+	 */
+	private RuleSetCacheManager&MockObject $cacheManager;
 
-    /**
-     * Mock user session.
-     *
-     * @var IUserSession&MockObject
-     */
-    private IUserSession&MockObject $userSession;
+	/**
+	 * Mock user session.
+	 *
+	 * @var IUserSession&MockObject
+	 */
+	private IUserSession&MockObject $userSession;
 
-    /**
-     * The service under test.
-     *
-     * @var RuleEngineService
-     */
-    private RuleEngineService $service;
+	/**
+	 * The service under test.
+	 *
+	 * @var RuleEngineService
+	 */
+	private RuleEngineService $service;
 
-    /**
-     * Mock wired action dispatcher (spec REQ-AUTD-010).
-     *
-     * @var RuleActionDispatcher&MockObject
-     */
-    private RuleActionDispatcher&MockObject $actionDispatcher;
+	/**
+	 * Mock wired action dispatcher (spec REQ-AUTD-010).
+	 *
+	 * @var RuleActionDispatcher&MockObject
+	 */
+	private RuleActionDispatcher&MockObject $actionDispatcher;
 
-    /**
-     * Wire the service with real evaluators and mocked boundaries.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->objectService = $this->createMock(ObjectService::class);
-        $this->cacheManager  = $this->createMock(RuleSetCacheManager::class);
-        $this->userSession   = $this->createMock(IUserSession::class);
+	/**
+	 * Wire the service with real evaluators and mocked boundaries.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->objectService = $this->createMock(ObjectService::class);
+		$this->cacheManager = $this->createMock(RuleSetCacheManager::class);
+		$this->userSession = $this->createMock(IUserSession::class);
 
-        $this->cacheManager->method('get')->willReturn(null);
+		$this->cacheManager->method('get')->willReturn(null);
 
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('alice');
-        $this->userSession->method('getUser')->willReturn($user);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
 
-        $evaluator = new ExpressionEvaluator();
-        $this->actionDispatcher = $this->createMock(RuleActionDispatcher::class);
-        $this->service = new RuleEngineService(
-            $this->objectService,
-            new DecisionTableEvaluator($evaluator),
-            new ConditionActionExecutor($evaluator),
-            $this->cacheManager,
-            $this->userSession,
-            $this->createMock(LoggerInterface::class),
-            $this->actionDispatcher
-        );
+		$evaluator = new ExpressionEvaluator();
+		$this->actionDispatcher = $this->createMock(RuleActionDispatcher::class);
+		$this->service = new RuleEngineService(
+			$this->objectService,
+			new DecisionTableEvaluator($evaluator),
+			new ConditionActionExecutor($evaluator),
+			$this->cacheManager,
+			$this->userSession,
+			$this->createMock(LoggerInterface::class),
+			$this->actionDispatcher
+		);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Build the loan RuleSet + DecisionTable rows returned by findAll.
-     *
-     * @return array<int,array<string,mixed>>
-     */
-    private function loanFindAllResults(string $schema): array
-    {
-        if ($schema === 'rule-set') {
-            return [['slug' => 'loan-eligibility', 'version' => '1.0.0', 'ruleType' => 'decision-table']];
-        }
+	/**
+	 * Build the loan RuleSet + DecisionTable rows returned by findAll.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function loanFindAllResults(string $schema): array {
+		if ($schema === 'rule-set') {
+			return [['slug' => 'loan-eligibility', 'version' => '1.0.0', 'ruleType' => 'decision-table']];
+		}
 
-        if ($schema === 'decision-table') {
-            return [
-                [
-                    'ruleSetId'    => 'loan-eligibility',
-                    'hitPolicy'    => 'first',
-                    'inputColumns' => [
-                        ['name' => 'applicantAge', 'expressionPath' => 'applicant.age'],
-                        ['name' => 'monthlyIncome', 'expressionPath' => 'applicant.monthlyIncome'],
-                        ['name' => 'creditScore', 'expressionPath' => 'applicant.creditScore'],
-                    ],
-                    'outputColumns' => [['name' => 'decision', 'defaultValue' => 'deny']],
-                    'rules'        => [
-                        [
-                            'conditions' => ['applicantAge' => '>=18', 'monthlyIncome' => '>=2000', 'creditScore' => '>=600'],
-                            'values'   => ['decision' => 'approve'],
-                            'label'     => 'approve',
-                        ],
-                        ['conditions' => [], 'values' => ['decision' => 'deny'], 'label' => 'deny'],
-                    ],
-                ],
-            ];
-        }
+		if ($schema === 'decision-table') {
+			return [
+				[
+					'ruleSetId' => 'loan-eligibility',
+					'hitPolicy' => 'first',
+					'inputColumns' => [
+						['name' => 'applicantAge', 'expressionPath' => 'applicant.age'],
+						['name' => 'monthlyIncome', 'expressionPath' => 'applicant.monthlyIncome'],
+						['name' => 'creditScore', 'expressionPath' => 'applicant.creditScore'],
+					],
+					'outputColumns' => [['name' => 'decision', 'defaultValue' => 'deny']],
+					'rules' => [
+						[
+							'conditions' => ['applicantAge' => '>=18', 'monthlyIncome' => '>=2000', 'creditScore' => '>=600'],
+							'values' => ['decision' => 'approve'],
+							'label' => 'approve',
+						],
+						['conditions' => [], 'values' => ['decision' => 'deny'], 'label' => 'deny'],
+					],
+				],
+			];
+		}
 
-        return [];
+		return [];
+	}//end loanFindAllResults()
 
-    }//end loanFindAllResults()
+	/**
+	 * A valid loan payload yields an approve decision and logs the execution.
+	 *
+	 * @return void
+	 */
+	public function testEvaluateLoanApprove(): void {
+		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+			function (string $registerSlug, string $schema, array $filters = []): array {
+				return $this->loanFindAllResults($schema);
+			}
+		);
 
-    /**
-     * A valid loan payload yields an approve decision and logs the execution.
-     *
-     * @return void
-     */
-    public function testEvaluateLoanApprove(): void
-    {
-        $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
-            function (string $registerSlug, string $schema, array $filters = []): array {
-                return $this->loanFindAllResults($schema);
-            }
-        );
+		// The audit log write happens once.
+		$this->objectService->expects($this->once())->method('saveObject');
 
-        // The audit log write happens once.
-        $this->objectService->expects($this->once())->method('saveObject');
+		$outcome = $this->service->evaluate(
+			'loan-eligibility',
+			['applicant' => ['age' => 30, 'monthlyIncome' => 3000, 'creditScore' => 700]]
+		);
 
-        $outcome = $this->service->evaluate(
-            'loan-eligibility',
-            ['applicant' => ['age' => 30, 'monthlyIncome' => 3000, 'creditScore' => 700]]
-        );
+		$this->assertSame('approve', $outcome['result']['decision']);
+		$this->assertContains('approve', $outcome['triggeredRules']);
+		$this->assertSame([], $outcome['errors']);
 
-        $this->assertSame('approve', $outcome['result']['decision']);
-        $this->assertContains('approve', $outcome['triggeredRules']);
-        $this->assertSame([], $outcome['errors']);
+	}//end testEvaluateLoanApprove()
 
-    }//end testEvaluateLoanApprove()
+	/**
+	 * An unknown RuleSet slug raises a 404-coded exception.
+	 *
+	 * @return void
+	 */
+	public function testEvaluateNotFound(): void {
+		$this->objectService->method('searchObjectsBySlug')->willReturn([]);
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionCode(404);
+		$this->service->evaluate('does-not-exist', []);
 
-    /**
-     * An unknown RuleSet slug raises a 404-coded exception.
-     *
-     * @return void
-     */
-    public function testEvaluateNotFound(): void
-    {
-        $this->objectService->method('searchObjectsBySlug')->willReturn([]);
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionCode(404);
-        $this->service->evaluate('does-not-exist', []);
+	}//end testEvaluateNotFound()
 
-    }//end testEvaluateNotFound()
+	/**
+	 * PII fields are masked in the persisted RuleExecutionLog input.
+	 *
+	 * @return void
+	 */
+	public function testPiiMasking(): void {
+		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+			function (string $registerSlug, string $schema, array $filters = []): array {
+				return $this->loanFindAllResults($schema);
+			}
+		);
 
-    /**
-     * PII fields are masked in the persisted RuleExecutionLog input.
-     *
-     * @return void
-     */
-    public function testPiiMasking(): void
-    {
-        $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
-            function (string $registerSlug, string $schema, array $filters = []): array {
-                return $this->loanFindAllResults($schema);
-            }
-        );
+		$capturedLog = null;
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$capturedLog): \OCA\OpenRegister\Db\ObjectEntity {
+				$capturedLog = $object;
+				return new \OCA\OpenRegister\Db\ObjectEntity();
+			}
+		);
 
-        $capturedLog = null;
-        $this->objectService->method('saveObject')->willReturnCallback(
-            function (array $object) use (&$capturedLog): \OCA\OpenRegister\Db\ObjectEntity {
-                $capturedLog = $object;
-                return new \OCA\OpenRegister\Db\ObjectEntity();
-            }
-        );
+		$this->service->evaluate(
+			'loan-eligibility',
+			['applicant' => ['age' => 30, 'monthlyIncome' => 3000, 'creditScore' => 700], 'bsn' => '123456789'],
+			null,
+			false,
+			true
+		);
 
-        $this->service->evaluate(
-            'loan-eligibility',
-            ['applicant' => ['age' => 30, 'monthlyIncome' => 3000, 'creditScore' => 700], 'bsn' => '123456789'],
-            null,
-            false,
-            true
-        );
+		$this->assertNotNull($capturedLog);
+		$this->assertSame('***', $capturedLog['inputPayload']['bsn']);
 
-        $this->assertNotNull($capturedLog);
-        $this->assertSame('***', $capturedLog['inputPayload']['bsn']);
+	}//end testPiiMasking()
 
-    }//end testPiiMasking()
+	/**
+	 * Build a condition-action RuleSet + one unconditional rule carrying a
+	 * send-notification action.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function conditionActionFindAllResults(string $schema): array {
+		if ($schema === 'rule-set') {
+			return [['slug' => 'escalate', 'version' => '1.0.0', 'ruleType' => 'condition-action']];
+		}
 
-    /**
-     * Build a condition-action RuleSet + one unconditional rule carrying a
-     * send-notification action.
-     *
-     * @return array<int,array<string,mixed>>
-     */
-    private function conditionActionFindAllResults(string $schema): array
-    {
-        if ($schema === 'rule-set') {
-            return [['slug' => 'escalate', 'version' => '1.0.0', 'ruleType' => 'condition-action']];
-        }
+		if ($schema === 'condition-action-rule') {
+			return [
+				[
+					'ruleSetId' => 'escalate',
+					'name' => 'always-notify',
+					'condition' => '',
+					'actions' => [
+						['type' => 'send-notification', 'parameters' => ['subject' => 'hello', 'recipientUid' => 'alice']],
+					],
+					'active' => true,
+				],
+			];
+		}
 
-        if ($schema === 'condition-action-rule') {
-            return [
-                [
-                    'ruleSetId' => 'escalate',
-                    'name'      => 'always-notify',
-                    'condition'  => '',
-                    'actions'    => [
-                        ['type' => 'send-notification', 'parameters' => ['subject' => 'hello', 'recipientUid' => 'alice']],
-                    ],
-                    'active'    => true,
-                ],
-            ];
-        }
+		return [];
+	}//end conditionActionFindAllResults()
 
-        return [];
+	/**
+	 * REQ-AUTD-010: a wet (non-dry-run) evaluation invokes the wired dispatcher
+	 * for a triggered rule's side-effecting action.
+	 *
+	 * @return void
+	 */
+	public function testWetEvaluationInvokesDispatcher(): void {
+		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+			function (string $registerSlug, string $schema, array $filters = []): array {
+				return $this->conditionActionFindAllResults($schema);
+			}
+		);
 
-    }//end conditionActionFindAllResults()
+		$this->actionDispatcher->expects($this->once())
+			->method('__invoke')
+			->with('send-notification', $this->anything(), $this->anything());
 
-    /**
-     * REQ-AUTD-010: a wet (non-dry-run) evaluation invokes the wired dispatcher
-     * for a triggered rule's side-effecting action.
-     *
-     * @return void
-     */
-    public function testWetEvaluationInvokesDispatcher(): void
-    {
-        $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
-            function (string $registerSlug, string $schema, array $filters = []): array {
-                return $this->conditionActionFindAllResults($schema);
-            }
-        );
+		$outcome = $this->service->evaluate('escalate', [], null, false);
 
-        $this->actionDispatcher->expects($this->once())
-            ->method('__invoke')
-            ->with('send-notification', $this->anything(), $this->anything());
+		$this->assertContains('always-notify', $outcome['triggeredRules'] ?? [], 'sanity: rule fired');
 
-        $outcome = $this->service->evaluate('escalate', [], null, false);
+	}//end testWetEvaluationInvokesDispatcher()
 
-        $this->assertContains('always-notify', $outcome['triggeredRules'] ?? [], 'sanity: rule fired');
+	/**
+	 * REQ-AUTD-010: a dry-run evaluation never invokes the dispatcher.
+	 *
+	 * @return void
+	 */
+	public function testDryRunDoesNotInvokeDispatcher(): void {
+		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+			function (string $registerSlug, string $schema, array $filters = []): array {
+				return $this->conditionActionFindAllResults($schema);
+			}
+		);
 
-    }//end testWetEvaluationInvokesDispatcher()
+		$this->actionDispatcher->expects($this->never())->method('__invoke');
 
-    /**
-     * REQ-AUTD-010: a dry-run evaluation never invokes the dispatcher.
-     *
-     * @return void
-     */
-    public function testDryRunDoesNotInvokeDispatcher(): void
-    {
-        $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
-            function (string $registerSlug, string $schema, array $filters = []): array {
-                return $this->conditionActionFindAllResults($schema);
-            }
-        );
+		$this->service->evaluate('escalate', [], null, true);
 
-        $this->actionDispatcher->expects($this->never())->method('__invoke');
+	}//end testDryRunDoesNotInvokeDispatcher()
 
-        $this->service->evaluate('escalate', [], null, true);
+	/**
+	 * DoS guard: a rule set whose evaluation re-enters itself (a self-referential
+	 * call-rule-set) is refused as a cycle rather than recursing forever.
+	 *
+	 * @return void
+	 */
+	public function testCallRuleSetSelfReferenceIsRefused(): void {
+		$conditionExecutor = $this->createMock(ConditionActionExecutor::class);
+		$service = new RuleEngineService(
+			$this->objectService,
+			$this->createMock(DecisionTableEvaluator::class),
+			$conditionExecutor,
+			$this->cacheManager,
+			$this->userSession,
+			$this->createMock(LoggerInterface::class),
+			$this->actionDispatcher
+		);
 
-    }//end testDryRunDoesNotInvokeDispatcher()
+		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+			function (string $registerSlug, string $schema, array $filters = []): array {
+				if ($schema === RuleEngineService::RULE_SET_SCHEMA) {
+					return [['slug' => 'loop', 'version' => '1.0', 'ruleType' => 'condition-action']];
+				}
 
-    /**
-     * DoS guard: a rule set whose evaluation re-enters itself (a self-referential
-     * call-rule-set) is refused as a cycle rather than recursing forever.
-     *
-     * @return void
-     */
-    public function testCallRuleSetSelfReferenceIsRefused(): void
-    {
-        $conditionExecutor = $this->createMock(ConditionActionExecutor::class);
-        $service           = new RuleEngineService(
-            $this->objectService,
-            $this->createMock(DecisionTableEvaluator::class),
-            $conditionExecutor,
-            $this->cacheManager,
-            $this->userSession,
-            $this->createMock(LoggerInterface::class),
-            $this->actionDispatcher
-        );
+				if ($schema === RuleEngineService::CONDITION_RULE_SCHEMA) {
+					return [['name' => 'r1']];
+				}
 
-        $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
-            function (string $registerSlug, string $schema, array $filters = []): array {
-                if ($schema === RuleEngineService::RULE_SET_SCHEMA) {
-                    return [['slug' => 'loop', 'version' => '1.0', 'ruleType' => 'condition-action']];
-                }
+				return [];
+			}
+		);
 
-                if ($schema === RuleEngineService::CONDITION_RULE_SCHEMA) {
-                    return [['name' => 'r1']];
-                }
+		// The executor re-enters the engine with the SAME slug (a call-rule-set
+		// action pointing at its own rule set) — the nested call is refused and
+		// surfaced as an evaluation error.
+		$conditionExecutor->method('execute')->willReturnCallback(
+			function () use ($service): array {
+				$service->evaluate(ruleSetSlug: 'loop', payload: []);
+				return ['result' => [], 'errors' => [], 'triggeredRules' => []];
+			}
+		);
 
-                return [];
-            }
-        );
+		$outcome = $service->evaluate(ruleSetSlug: 'loop', payload: []);
+		$this->assertStringContainsStringIgnoringCase('cycle', implode(' ', $outcome['errors']));
 
-        // The executor re-enters the engine with the SAME slug (a call-rule-set
-        // action pointing at its own rule set) — the nested call is refused and
-        // surfaced as an evaluation error.
-        $conditionExecutor->method('execute')->willReturnCallback(
-            function () use ($service): array {
-                $service->evaluate(ruleSetSlug: 'loop', payload: []);
-                return ['result' => [], 'errors' => [], 'triggeredRules' => []];
-            }
-        );
+	}//end testCallRuleSetSelfReferenceIsRefused()
 
-        $outcome = $service->evaluate(ruleSetSlug: 'loop', payload: []);
-        $this->assertStringContainsStringIgnoringCase('cycle', implode(' ', $outcome['errors']));
+	/**
+	 * DoS guard: a chain of distinct rule sets calling one another is bounded by
+	 * the maximum call depth — the executor fires at most MAX_CALL_DEPTH times.
+	 *
+	 * @return void
+	 */
+	public function testCallRuleSetDepthIsBounded(): void {
+		$conditionExecutor = $this->createMock(ConditionActionExecutor::class);
+		$service = new RuleEngineService(
+			$this->objectService,
+			$this->createMock(DecisionTableEvaluator::class),
+			$conditionExecutor,
+			$this->cacheManager,
+			$this->userSession,
+			$this->createMock(LoggerInterface::class),
+			$this->actionDispatcher
+		);
 
-    }//end testCallRuleSetSelfReferenceIsRefused()
+		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+			function (string $registerSlug, string $schema, array $filters = []): array {
+				if ($schema === RuleEngineService::RULE_SET_SCHEMA) {
+					return [['slug' => 'chain', 'version' => '1.0', 'ruleType' => 'condition-action']];
+				}
 
-    /**
-     * DoS guard: a chain of distinct rule sets calling one another is bounded by
-     * the maximum call depth — the executor fires at most MAX_CALL_DEPTH times.
-     *
-     * @return void
-     */
-    public function testCallRuleSetDepthIsBounded(): void
-    {
-        $conditionExecutor = $this->createMock(ConditionActionExecutor::class);
-        $service           = new RuleEngineService(
-            $this->objectService,
-            $this->createMock(DecisionTableEvaluator::class),
-            $conditionExecutor,
-            $this->cacheManager,
-            $this->userSession,
-            $this->createMock(LoggerInterface::class),
-            $this->actionDispatcher
-        );
+				if ($schema === RuleEngineService::CONDITION_RULE_SCHEMA) {
+					return [['name' => 'r1']];
+				}
 
-        $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
-            function (string $registerSlug, string $schema, array $filters = []): array {
-                if ($schema === RuleEngineService::RULE_SET_SCHEMA) {
-                    return [['slug' => 'chain', 'version' => '1.0', 'ruleType' => 'condition-action']];
-                }
+				return [];
+			}
+		);
 
-                if ($schema === RuleEngineService::CONDITION_RULE_SCHEMA) {
-                    return [['name' => 'r1']];
-                }
+		$calls = 0;
+		$conditionExecutor->method('execute')->willReturnCallback(
+			function () use ($service, &$calls): array {
+				++$calls;
+				// Distinct slug each level (not a cycle) — the depth guard stops it.
+				$service->evaluate(ruleSetSlug: 'chain-' . $calls, payload: []);
+				return ['result' => [], 'errors' => [], 'triggeredRules' => []];
+			}
+		);
 
-                return [];
-            }
-        );
+		$service->evaluate(ruleSetSlug: 'chain-0', payload: []);
+		$this->assertGreaterThan(1, $calls);
+		$this->assertLessThanOrEqual(10, $calls);
 
-        $calls = 0;
-        $conditionExecutor->method('execute')->willReturnCallback(
-            function () use ($service, &$calls): array {
-                ++$calls;
-                // Distinct slug each level (not a cycle) — the depth guard stops it.
-                $service->evaluate(ruleSetSlug: 'chain-'.$calls, payload: []);
-                return ['result' => [], 'errors' => [], 'triggeredRules' => []];
-            }
-        );
+	}//end testCallRuleSetDepthIsBounded()
 
-        $service->evaluate(ruleSetSlug: 'chain-0', payload: []);
-        $this->assertGreaterThan(1, $calls);
-        $this->assertLessThanOrEqual(10, $calls);
+	/**
+	 * M1: rule-set resolution is authorization-scoped — it uses
+	 * `searchObjectsBySlug` (RBAC + org) and never the unscoped `findAll`.
+	 *
+	 * @return void
+	 */
+	public function testResolutionUsesAuthorizationScopedSearch(): void {
+		$this->objectService->expects($this->never())->method('findAll');
+		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+			function (string $registerSlug, string $schema, array $filters = []): array {
+				return $this->loanFindAllResults($schema);
+			}
+		);
 
-    }//end testCallRuleSetDepthIsBounded()
+		$outcome = $this->service->evaluate(
+			'loan-eligibility',
+			['applicant' => ['age' => 30, 'monthlyIncome' => 3000, 'creditScore' => 700]]
+		);
+		$this->assertSame('approve', $outcome['result']['decision']);
 
-    /**
-     * M1: rule-set resolution is authorization-scoped — it uses
-     * `searchObjectsBySlug` (RBAC + org) and never the unscoped `findAll`.
-     *
-     * @return void
-     */
-    public function testResolutionUsesAuthorizationScopedSearch(): void
-    {
-        $this->objectService->expects($this->never())->method('findAll');
-        $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
-            function (string $registerSlug, string $schema, array $filters = []): array {
-                return $this->loanFindAllResults($schema);
-            }
-        );
+	}//end testResolutionUsesAuthorizationScopedSearch()
 
-        $outcome = $this->service->evaluate(
-            'loan-eligibility',
-            ['applicant' => ['age' => 30, 'monthlyIncome' => 3000, 'creditScore' => 700]]
-        );
-        $this->assertSame('approve', $outcome['result']['decision']);
+	/**
+	 * M1: a rule-set outside the caller's authorization scope (searchObjects
+	 * returns nothing) resolves to a 404 — it is not evaluated by slug.
+	 *
+	 * @return void
+	 */
+	public function testOutOfScopeRuleSetResolvesNotFound(): void {
+		$this->objectService->method('searchObjectsBySlug')->willReturn([]);
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionCode(404);
+		$this->service->evaluate('foreign-rule-set', []);
 
-    }//end testResolutionUsesAuthorizationScopedSearch()
-
-    /**
-     * M1: a rule-set outside the caller's authorization scope (searchObjects
-     * returns nothing) resolves to a 404 — it is not evaluated by slug.
-     *
-     * @return void
-     */
-    public function testOutOfScopeRuleSetResolvesNotFound(): void
-    {
-        $this->objectService->method('searchObjectsBySlug')->willReturn([]);
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionCode(404);
-        $this->service->evaluate('foreign-rule-set', []);
-
-    }//end testOutOfScopeRuleSetResolvesNotFound()
+	}//end testOutOfScopeRuleSetResolvesNotFound()
 }//end class

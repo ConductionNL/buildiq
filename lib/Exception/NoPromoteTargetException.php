@@ -32,20 +32,19 @@ use Throwable;
 /**
  * 422-mapped — source version's `promotesTo` is null.
  */
-final class NoPromoteTargetException extends VersionPromotionException
-{
-    /**
-     * Constructor.
-     *
-     * @param string         $message  Human-readable diagnostic
-     * @param Throwable|null $previous Wrapped causal exception
-     *
-     * @return void
-     */
-    public function __construct(
-        string $message='Source version has no promotesTo target.',
-        ?Throwable $previous=null
-    ) {
-        parent::__construct(errorCode: 'no_promote_target', message: $message, previous: $previous);
-    }//end __construct()
+final class NoPromoteTargetException extends VersionPromotionException {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Human-readable diagnostic
+	 * @param Throwable|null $previous Wrapped causal exception
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		string $message = 'Source version has no promotesTo target.',
+		?Throwable $previous = null,
+	) {
+		parent::__construct(errorCode: 'no_promote_target', message: $message, previous: $previous);
+	}//end __construct()
 }//end class

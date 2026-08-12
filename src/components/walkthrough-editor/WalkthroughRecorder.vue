@@ -147,10 +147,16 @@ export default {
 
 <style scoped>
 .wt-recorder { display: flex; flex-direction: column; gap: 8px; }
+
 .wt-recorder__bar { display: flex; align-items: center; gap: 12px; }
+
 .wt-recorder__spacer { flex: 1 1 auto; }
+
 .wt-recorder__last code { background: var(--color-background-dark); padding: 2px 6px; border-radius: var(--border-radius); }
+
 .wt-recorder__frame-wrap { border: 2px solid var(--color-border); border-radius: var(--border-radius-large); overflow: hidden; height: 70vh; }
+
 .wt-recorder__frame-wrap--armed { border-color: var(--color-primary-element); box-shadow: 0 0 0 2px var(--color-primary-element-light); }
+
 .wt-recorder__frame { width: 100%; height: 100%; border: 0; }
 </style>

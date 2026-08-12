@@ -25,15 +25,27 @@ import type { Page } from '@playwright/test'
 /**
  * Ensure an OpenBuild virtual app exists (create it if absent). Idempotent.
  *
- * @param page Playwright page (authenticated via the shared admin storageState).
- * @param slug The app slug (lower-kebab).
- * @param name The app display name.
+ * @param page     Playwright page (authenticated via the shared admin storageState).
+ * @param slug     The app slug (lower-kebab).
+ * @param name     The app display name.
+ * @param versions Version slugs to provision, in order. Defaults to a single
+ *                 `production` version, which is what every caller wanted until
+ *                 the RBAC suites needed a DRAFT to author on: REQ-AUTD-008
+ *                 distinguishes "editor may author on a non-production version"
+ *                 from "editor may not enable on production", and a fixture with
+ *                 only one version cannot express that difference at all. The
+ *                 wizard treats the LAST entry as the production one.
  * @return {Promise<void>}
  */
-export async function ensureApp(page: Page, slug: string, name: string): Promise<void> {
+export async function ensureApp(
+	page: Page,
+	slug: string,
+	name: string,
+	versions: string[] = ['production'],
+): Promise<void> {
 	await page.goto('/apps/openbuild/', { waitUntil: 'domcontentloaded' })
 	await page.waitForTimeout(500)
-	const result = await page.evaluate(async ({ slug, name }) => {
+	const result = await page.evaluate(async ({ slug, name, versions }) => {
 		const tok = (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken
 			|| document.querySelector('head')?.getAttribute('data-requesttoken')
 			|| ''
@@ -66,11 +78,11 @@ export async function ensureApp(page: Page, slug: string, name: string): Promise
 				slug,
 				name,
 				description: 'e2e fixture app',
-				versions: [{ slug: 'production', name: 'production' }],
+				versions: versions.map((v) => ({ slug: v, name: v })),
 			}),
 		})
 		return resp.status === 201 ? 'created' : `error:${resp.status}:${(await resp.text()).slice(0, 200)}`
-	}, { slug, name })
+	}, { slug, name, versions })
 	if (result !== 'exists' && result !== 'created') {
 		throw new Error(`ensureApp(${slug}) failed — ${result}`)
 	}

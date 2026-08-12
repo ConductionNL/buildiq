@@ -43,218 +43,207 @@ use Psr\Log\NullLogger;
 /**
  * Tests for {@see ApprovalOutcomeListener}.
  */
-final class ApprovalOutcomeListenerTest extends TestCase
-{
-    /**
-     * @var ObjectService&MockObject
-     */
-    private ObjectService&MockObject $objectService;
+final class ApprovalOutcomeListenerTest extends TestCase {
+	/**
+	 * @var ObjectService&MockObject
+	 */
+	private ObjectService&MockObject $objectService;
 
-    /**
-     * @var AutomationCompilerService&MockObject
-     */
-    private AutomationCompilerService&MockObject $compiler;
+	/**
+	 * @var AutomationCompilerService&MockObject
+	 */
+	private AutomationCompilerService&MockObject $compiler;
 
-    /**
-     * @var RuleActionDispatcher&MockObject
-     */
-    private RuleActionDispatcher&MockObject $dispatcher;
+	/**
+	 * @var RuleActionDispatcher&MockObject
+	 */
+	private RuleActionDispatcher&MockObject $dispatcher;
 
-    /**
-     * Listener under test.
-     *
-     * @var ApprovalOutcomeListener
-     */
-    private ApprovalOutcomeListener $listener;
+	/**
+	 * Listener under test.
+	 *
+	 * @var ApprovalOutcomeListener
+	 */
+	private ApprovalOutcomeListener $listener;
 
-    /**
-     * Set up mocks + SUT.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->objectService = $this->createMock(ObjectService::class);
-        $this->compiler       = $this->createMock(AutomationCompilerService::class);
-        $this->dispatcher     = $this->createMock(RuleActionDispatcher::class);
-        $this->listener       = new ApprovalOutcomeListener($this->objectService, $this->compiler, $this->dispatcher, new NullLogger());
+	/**
+	 * Set up mocks + SUT.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->objectService = $this->createMock(ObjectService::class);
+		$this->compiler = $this->createMock(AutomationCompilerService::class);
+		$this->dispatcher = $this->createMock(RuleActionDispatcher::class);
+		$this->listener = new ApprovalOutcomeListener($this->objectService, $this->compiler, $this->dispatcher, new NullLogger());
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Build a mock ApprovalChain with the given `name`.
-     *
-     * @param string $name The chain name.
-     *
-     * @return ApprovalChain&MockObject
-     */
-    private function chainNamed(string $name): ApprovalChain&MockObject
-    {
-        $chain = $this->createMock(ApprovalChain::class);
-        $chain->method('getName')->willReturn($name);
+	/**
+	 * Build a mock ApprovalChain with the given `name`.
+	 *
+	 * @param string $name The chain name.
+	 *
+	 * @return ApprovalChain&MockObject
+	 */
+	private function chainNamed(string $name): ApprovalChain&MockObject {
+		$chain = $this->createMock(ApprovalChain::class);
+		$chain->method('getName')->willReturn($name);
 
-        return $chain;
+		return $chain;
+	}//end chainNamed()
 
-    }//end chainNamed()
+	/**
+	 * Build a mock ApprovalStep carrying the given object uuid.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 *
+	 * @return ApprovalStep&MockObject
+	 */
+	private function stepFor(string $objectUuid): ApprovalStep&MockObject {
+		$step = $this->createMock(ApprovalStep::class);
+		$step->method('getObjectUuid')->willReturn($objectUuid);
 
-    /**
-     * Build a mock ApprovalStep carrying the given object uuid.
-     *
-     * @param string $objectUuid The object uuid.
-     *
-     * @return ApprovalStep&MockObject
-     */
-    private function stepFor(string $objectUuid): ApprovalStep&MockObject
-    {
-        $step = $this->createMock(ApprovalStep::class);
-        $step->method('getObjectUuid')->willReturn($objectUuid);
+		return $step;
+	}//end stepFor()
 
-        return $step;
+	/**
+	 * On approve: the automation's `onApprove` follow-up actions dispatch;
+	 * `onReject` does NOT.
+	 *
+	 * @return void
+	 */
+	public function testApprovedDispatchesOnApproveFollowUps(): void {
+		$chain = $this->chainNamed('aut-route-permit-application-for-approval');
+		$step = $this->stepFor('object-uuid-1');
+		$event = new ApprovalStepApprovedEvent(chain: $chain, step: $step, userId: 'alice', statusOnApprove: 'approved', nextStep: null);
 
-    }//end stepFor()
+		$automation = [
+			'slug' => 'route-permit-application-for-approval',
+			'actions' => [
+				[
+					'type' => 'approval',
+					'assigneeGroup' => 'permit-reviewers',
+					'onApprove' => [['type' => 'object-op', 'operation' => 'update', 'schema' => 'permit-application', 'fieldMapping' => ['status' => 'approved']]],
+					'onReject' => [['type' => 'send-notification', 'subject' => ['en' => 'Rejected']]],
+				],
+			],
+		];
 
-    /**
-     * On approve: the automation's `onApprove` follow-up actions dispatch;
-     * `onReject` does NOT.
-     *
-     * @return void
-     */
-    public function testApprovedDispatchesOnApproveFollowUps(): void
-    {
-        $chain = $this->chainNamed('aut-route-permit-application-for-approval');
-        $step  = $this->stepFor('object-uuid-1');
-        $event = new ApprovalStepApprovedEvent(chain: $chain, step: $step, userId: 'alice', statusOnApprove: 'approved', nextStep: null);
+		$this->objectService->method('findAll')->willReturn([$automation]);
+		$this->compiler->method('mapActionToRuleAction')->willReturnCallback(
+			static fn (array $a): array => [
+				'type' => $a['type'],
+				'parameters' => match ($a['type']) {
+					'object-op' => ['schema' => $a['schema'], 'operation' => $a['operation'], 'object' => $a['fieldMapping'], 'register' => 'openbuild'],
+					default => [],
+				},
+			]
+		);
 
-        $automation = [
-            'slug'    => 'route-permit-application-for-approval',
-            'actions' => [
-                [
-                    'type'          => 'approval',
-                    'assigneeGroup' => 'permit-reviewers',
-                    'onApprove'     => [['type' => 'object-op', 'operation' => 'update', 'schema' => 'permit-application', 'fieldMapping' => ['status' => 'approved']]],
-                    'onReject'      => [['type' => 'send-notification', 'subject' => ['en' => 'Rejected']]],
-                ],
-            ],
-        ];
+		$this->dispatcher->expects($this->once())
+			->method('__invoke')
+			->with(
+				'object-op',
+				$this->callback(static fn (array $params): bool => ($params['id'] ?? null) === 'object-uuid-1' && $params['operation'] === 'update'),
+				[]
+			);
 
-        $this->objectService->method('findAll')->willReturn([$automation]);
-        $this->compiler->method('mapActionToRuleAction')->willReturnCallback(
-            static fn (array $a): array => [
-                'type'       => $a['type'],
-                'parameters' => match ($a['type']) {
-                    'object-op' => ['schema' => $a['schema'], 'operation' => $a['operation'], 'object' => $a['fieldMapping'], 'register' => 'openbuild'],
-                    default => [],
-                },
-            ]
-        );
+		$this->listener->handle($event);
 
-        $this->dispatcher->expects($this->once())
-            ->method('__invoke')
-            ->with(
-                'object-op',
-                $this->callback(static fn (array $params): bool => ($params['id'] ?? null) === 'object-uuid-1' && $params['operation'] === 'update'),
-                []
-            );
+	}//end testApprovedDispatchesOnApproveFollowUps()
 
-        $this->listener->handle($event);
+	/**
+	 * On reject: the automation's `onReject` follow-up actions dispatch;
+	 * `onApprove` does NOT.
+	 *
+	 * @return void
+	 */
+	public function testRejectedDispatchesOnRejectFollowUps(): void {
+		$chain = $this->chainNamed('aut-route-permit-application-for-approval');
+		$step = $this->stepFor('object-uuid-2');
+		$event = new ApprovalStepRejectedEvent(chain: $chain, step: $step, userId: 'bob', statusOnReject: 'rejected');
 
-    }//end testApprovedDispatchesOnApproveFollowUps()
+		$automation = [
+			'slug' => 'route-permit-application-for-approval',
+			'actions' => [
+				[
+					'type' => 'approval',
+					'assigneeGroup' => 'permit-reviewers',
+					'onApprove' => [['type' => 'object-op', 'operation' => 'update', 'schema' => 'permit-application', 'fieldMapping' => ['status' => 'approved']]],
+					'onReject' => [['type' => 'send-notification', 'subject' => ['en' => 'Your application was rejected']]],
+				],
+			],
+		];
 
-    /**
-     * On reject: the automation's `onReject` follow-up actions dispatch;
-     * `onApprove` does NOT.
-     *
-     * @return void
-     */
-    public function testRejectedDispatchesOnRejectFollowUps(): void
-    {
-        $chain = $this->chainNamed('aut-route-permit-application-for-approval');
-        $step  = $this->stepFor('object-uuid-2');
-        $event = new ApprovalStepRejectedEvent(chain: $chain, step: $step, userId: 'bob', statusOnReject: 'rejected');
+		$this->objectService->method('findAll')->willReturn([$automation]);
+		$this->compiler->method('mapActionToRuleAction')->willReturnCallback(
+			static fn (array $a): array => [
+				'type' => $a['type'],
+				'parameters' => match ($a['type']) {
+					'send-notification' => ['subject' => ($a['subject']['en'] ?? ''), 'recipientUid' => ''],
+					default => [],
+				},
+			]
+		);
 
-        $automation = [
-            'slug'    => 'route-permit-application-for-approval',
-            'actions' => [
-                [
-                    'type'          => 'approval',
-                    'assigneeGroup' => 'permit-reviewers',
-                    'onApprove'     => [['type' => 'object-op', 'operation' => 'update', 'schema' => 'permit-application', 'fieldMapping' => ['status' => 'approved']]],
-                    'onReject'      => [['type' => 'send-notification', 'subject' => ['en' => 'Your application was rejected']]],
-                ],
-            ],
-        ];
+		$this->dispatcher->expects($this->once())
+			->method('__invoke')
+			->with('send-notification', ['subject' => 'Your application was rejected', 'recipientUid' => ''], []);
 
-        $this->objectService->method('findAll')->willReturn([$automation]);
-        $this->compiler->method('mapActionToRuleAction')->willReturnCallback(
-            static fn (array $a): array => [
-                'type'       => $a['type'],
-                'parameters' => match ($a['type']) {
-                    'send-notification' => ['subject' => ($a['subject']['en'] ?? ''), 'recipientUid' => ''],
-                    default => [],
-                },
-            ]
-        );
+		$this->listener->handle($event);
 
-        $this->dispatcher->expects($this->once())
-            ->method('__invoke')
-            ->with('send-notification', ['subject' => 'Your application was rejected', 'recipientUid' => ''], []);
+	}//end testRejectedDispatchesOnRejectFollowUps()
 
-        $this->listener->handle($event);
+	/**
+	 * A chain NOT owned by any automation (name has no `aut-` prefix) is a
+	 * single string check — no register scan, no dispatch (task 2.2).
+	 *
+	 * @return void
+	 */
+	public function testNonAutomationChainIsNoOp(): void {
+		$chain = $this->chainNamed('hand-authored-chain');
+		$step = $this->stepFor('object-uuid-3');
+		$event = new ApprovalStepApprovedEvent(chain: $chain, step: $step, userId: 'alice', statusOnApprove: 'approved', nextStep: null);
 
-    }//end testRejectedDispatchesOnRejectFollowUps()
+		$this->objectService->expects($this->never())->method('findAll');
+		$this->dispatcher->expects($this->never())->method('__invoke');
 
-    /**
-     * A chain NOT owned by any automation (name has no `aut-` prefix) is a
-     * single string check — no register scan, no dispatch (task 2.2).
-     *
-     * @return void
-     */
-    public function testNonAutomationChainIsNoOp(): void
-    {
-        $chain = $this->chainNamed('hand-authored-chain');
-        $step  = $this->stepFor('object-uuid-3');
-        $event = new ApprovalStepApprovedEvent(chain: $chain, step: $step, userId: 'alice', statusOnApprove: 'approved', nextStep: null);
+		$this->listener->handle($event);
 
-        $this->objectService->expects($this->never())->method('findAll');
-        $this->dispatcher->expects($this->never())->method('__invoke');
+	}//end testNonAutomationChainIsNoOp()
 
-        $this->listener->handle($event);
+	/**
+	 * An `aut-`-prefixed chain name that matches no automation slug is a
+	 * single lookup, no dispatch.
+	 *
+	 * @return void
+	 */
+	public function testUnmatchedAutomationSlugIsNoOp(): void {
+		$chain = $this->chainNamed('aut-does-not-exist');
+		$step = $this->stepFor('object-uuid-4');
+		$event = new ApprovalStepApprovedEvent(chain: $chain, step: $step, userId: 'alice', statusOnApprove: 'approved', nextStep: null);
 
-    }//end testNonAutomationChainIsNoOp()
+		$this->objectService->method('findAll')->willReturn([]);
 
-    /**
-     * An `aut-`-prefixed chain name that matches no automation slug is a
-     * single lookup, no dispatch.
-     *
-     * @return void
-     */
-    public function testUnmatchedAutomationSlugIsNoOp(): void
-    {
-        $chain = $this->chainNamed('aut-does-not-exist');
-        $step  = $this->stepFor('object-uuid-4');
-        $event = new ApprovalStepApprovedEvent(chain: $chain, step: $step, userId: 'alice', statusOnApprove: 'approved', nextStep: null);
+		$this->dispatcher->expects($this->never())->method('__invoke');
 
-        $this->objectService->method('findAll')->willReturn([]);
+		$this->listener->handle($event);
 
-        $this->dispatcher->expects($this->never())->method('__invoke');
+	}//end testUnmatchedAutomationSlugIsNoOp()
 
-        $this->listener->handle($event);
+	/**
+	 * A different event type entirely is ignored.
+	 *
+	 * @return void
+	 */
+	public function testIgnoresOtherEventTypes(): void {
+		$entity = $this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class);
+		$event = new ObjectUpdatingEvent($entity);
 
-    }//end testUnmatchedAutomationSlugIsNoOp()
+		$this->dispatcher->expects($this->never())->method('__invoke');
 
-    /**
-     * A different event type entirely is ignored.
-     *
-     * @return void
-     */
-    public function testIgnoresOtherEventTypes(): void
-    {
-        $entity = $this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class);
-        $event  = new ObjectUpdatingEvent($entity);
+		$this->listener->handle($event);
 
-        $this->dispatcher->expects($this->never())->method('__invoke');
-
-        $this->listener->handle($event);
-
-    }//end testIgnoresOtherEventTypes()
+	}//end testIgnoresOtherEventTypes()
 }//end class

@@ -38,118 +38,111 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for Capabilities.
  */
-class CapabilitiesTest extends TestCase
-{
-    /**
-     * Mock user session.
-     *
-     * @var IUserSession&MockObject
-     */
-    private IUserSession&MockObject $userSession;
+class CapabilitiesTest extends TestCase {
+	/**
+	 * Mock user session.
+	 *
+	 * @var IUserSession&MockObject
+	 */
+	private IUserSession&MockObject $userSession;
 
-    /**
-     * Mock app manager.
-     *
-     * @var IAppManager&MockObject
-     */
-    private IAppManager&MockObject $appManager;
+	/**
+	 * Mock app manager.
+	 *
+	 * @var IAppManager&MockObject
+	 */
+	private IAppManager&MockObject $appManager;
 
-    /**
-     * Set up shared mocks.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up shared mocks.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->appManager  = $this->createMock(IAppManager::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->appManager = $this->createMock(IAppManager::class);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Build the Capabilities SUT.
-     *
-     * @return Capabilities
-     */
-    private function capabilities(): Capabilities
-    {
-        return new Capabilities(
-            userSession: $this->userSession,
-            appManager: $this->appManager
-        );
+	/**
+	 * Build the Capabilities SUT.
+	 *
+	 * @return Capabilities
+	 */
+	private function capabilities(): Capabilities {
+		return new Capabilities(
+			userSession: $this->userSession,
+			appManager: $this->appManager
+		);
 
-    }//end capabilities()
+	}//end capabilities()
 
-    /**
-     * The document carries openbuild.enabled === true and a boolean canEdit.
-     *
-     * @return void
-     */
-    public function testDocumentShapeIsPresent(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('alice');
-        $this->userSession->method('getUser')->willReturn($user);
-        $this->appManager->method('isEnabledForUser')->willReturn(true);
+	/**
+	 * The document carries openbuild.enabled === true and a boolean canEdit.
+	 *
+	 * @return void
+	 */
+	public function testDocumentShapeIsPresent(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->appManager->method('isEnabledForUser')->willReturn(true);
 
-        $doc = $this->capabilities()->getCapabilities();
+		$doc = $this->capabilities()->getCapabilities();
 
-        self::assertArrayHasKey('openbuild', $doc);
-        self::assertTrue($doc['openbuild']['enabled']);
-        self::assertIsBool($doc['openbuild']['canEdit']);
+		self::assertArrayHasKey('openbuild', $doc);
+		self::assertTrue($doc['openbuild']['enabled']);
+		self::assertIsBool($doc['openbuild']['canEdit']);
 
-    }//end testDocumentShapeIsPresent()
+	}//end testDocumentShapeIsPresent()
 
-    /**
-     * An in-scope user sees canEdit === true.
-     *
-     * @return void
-     */
-    public function testCanEditTrueForInScopeUser(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('alice');
-        $this->userSession->method('getUser')->willReturn($user);
-        $this->appManager->method('isEnabledForUser')->willReturn(true);
+	/**
+	 * An in-scope user sees canEdit === true.
+	 *
+	 * @return void
+	 */
+	public function testCanEditTrueForInScopeUser(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->appManager->method('isEnabledForUser')->willReturn(true);
 
-        $doc = $this->capabilities()->getCapabilities();
+		$doc = $this->capabilities()->getCapabilities();
 
-        self::assertTrue($doc['openbuild']['canEdit']);
+		self::assertTrue($doc['openbuild']['canEdit']);
 
-    }//end testCanEditTrueForInScopeUser()
+	}//end testCanEditTrueForInScopeUser()
 
-    /**
-     * An out-of-scope user sees canEdit === false.
-     *
-     * @return void
-     */
-    public function testCanEditFalseForOutOfScopeUser(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('carol');
-        $this->userSession->method('getUser')->willReturn($user);
-        $this->appManager->method('isEnabledForUser')->willReturn(false);
+	/**
+	 * An out-of-scope user sees canEdit === false.
+	 *
+	 * @return void
+	 */
+	public function testCanEditFalseForOutOfScopeUser(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('carol');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->appManager->method('isEnabledForUser')->willReturn(false);
 
-        $doc = $this->capabilities()->getCapabilities();
+		$doc = $this->capabilities()->getCapabilities();
 
-        self::assertFalse($doc['openbuild']['canEdit']);
+		self::assertFalse($doc['openbuild']['canEdit']);
 
-    }//end testCanEditFalseForOutOfScopeUser()
+	}//end testCanEditFalseForOutOfScopeUser()
 
-    /**
-     * An anonymous caller sees canEdit === false.
-     *
-     * @return void
-     */
-    public function testCanEditFalseForAnonymous(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
+	/**
+	 * An anonymous caller sees canEdit === false.
+	 *
+	 * @return void
+	 */
+	public function testCanEditFalseForAnonymous(): void {
+		$this->userSession->method('getUser')->willReturn(null);
 
-        $doc = $this->capabilities()->getCapabilities();
+		$doc = $this->capabilities()->getCapabilities();
 
-        self::assertFalse($doc['openbuild']['canEdit']);
+		self::assertFalse($doc['openbuild']['canEdit']);
 
-    }//end testCanEditFalseForAnonymous()
+	}//end testCanEditFalseForAnonymous()
 }//end class

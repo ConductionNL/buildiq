@@ -1057,6 +1057,18 @@ export default {
 				return webhook
 			})
 		},
+		/**
+		 * Persist the working automation through OpenBuild's own write routes.
+		 *
+		 * This method is the whole reason those routes exist: it used to POST/PUT
+		 * `openregister/api/objects/openbuild/automation` directly, which the
+		 * `automation` schema's admin-only `create`/`update` ACL refused for every
+		 * editor and owner — precisely the people REQ-AUTD-008 says may author one.
+		 *
+		 * @return {Promise<void>} Resolves once the save (and compile) has settled.
+		 *
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+		 */
 		async onSave() {
 			this.showValidation = true
 			if (!this.valid) {
@@ -1076,13 +1088,21 @@ export default {
 				actions: this.buildActions(),
 			}
 			try {
-				const base = generateUrl('/apps/openregister/api/objects/openbuild/automation')
+				// OpenBuild's own endpoints, NOT OR REST directly.
+				//
+				// The `automation` schema is admin-only on `create`/`update` at
+				// the OpenRegister layer, so this dialog used to 403 for every
+				// editor and owner — the exact people REQ-AUTD-008 says may
+				// author one. These routes authorise against the parent
+				// Application's `permissions` block first and then write in
+				// system context. See Conduction/openbuild#173.
+				const base = generateUrl('/apps/openbuild/api/automations')
 				let uuid = this.id
 				if (this.editing && this.id) {
 					await axios.put(`${base}/${this.id}`, payload)
 				} else {
 					const { data } = await axios.post(base, payload)
-					uuid = data && (data.id || data.uuid)
+					uuid = data && (data.id || data.uuid || (data['@self'] && data['@self'].id))
 				}
 				if (uuid) {
 					await axios.post(generateUrl(`/apps/openbuild/api/automations/${uuid}/compile`), {})

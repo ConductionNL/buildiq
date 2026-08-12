@@ -43,39 +43,38 @@ use OCP\IAppConfig;
 /**
  * Reports whether the corrected listener schema matching is enabled.
  */
-class ListenerSlugContract
-{
+class ListenerSlugContract {
 
-    /**
-     * The app id the flag is stored under.
-     *
-     * @var string
-     */
-    private const APP_ID = 'openbuild';
+	/**
+	 * The app id the flag is stored under.
+	 *
+	 * @var string
+	 */
+	private const APP_ID = 'openbuild';
 
-    /**
-     * The config key holding the flag.
-     *
-     * @var string
-     */
-    private const CONFIG_KEY = 'listener_slug_contract';
+	/**
+	 * The config key holding the flag.
+	 *
+	 * @var string
+	 */
+	private const CONFIG_KEY = 'listener_slug_contract';
 
-    /**
-     * Constructor.
-     *
-     * @param IAppConfig $appConfig Nextcloud app configuration.
-     */
-    public function __construct(private readonly IAppConfig $appConfig)
-    {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param IAppConfig $appConfig Nextcloud app configuration.
+	 */
+	public function __construct(
+		private readonly IAppConfig $appConfig,
+	) {
+	}//end __construct()
 
-    /**
-     * Whether the corrected slug comparison should be honoured.
-     *
-     * @return bool True when the contract is enabled for this instance.
-     */
-    public function isEnabled(): bool
-    {
-        return $this->appConfig->getValueBool(self::APP_ID, self::CONFIG_KEY, false);
-    }//end isEnabled()
+	/**
+	 * Whether the corrected slug comparison should be honoured.
+	 *
+	 * @return bool True when the contract is enabled for this instance.
+	 */
+	public function isEnabled(): bool {
+		return $this->appConfig->getValueBool(self::APP_ID, self::CONFIG_KEY, false);
+	}//end isEnabled()
 }//end class

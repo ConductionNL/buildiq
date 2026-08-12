@@ -53,291 +53,279 @@ use Throwable;
  *
  * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
  */
-class MigrateAppOverridesToHybrid implements IRepairStep
-{
-    /**
-     * The retired schema slug being migrated away from.
-     */
-    private const LEGACY_SCHEMA_SLUG = 'app-override';
+class MigrateAppOverridesToHybrid implements IRepairStep {
+	/**
+	 * The retired schema slug being migrated away from.
+	 */
+	private const LEGACY_SCHEMA_SLUG = 'app-override';
 
-    /**
-     * Constructor.
-     *
-     * @param LoggerInterface    $logger             PSR logger for diagnostics.
-     * @param ObjectService      $objectService      OpenRegister object service.
-     * @param RegisterMapper     $registerMapper     Resolves the openbuild register id.
-     * @param SchemaMapper       $schemaMapper       Resolves + drops the app-override schema.
-     * @param AppOverrideService $appOverrideService Unified hybrid-app store (create/update path).
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly LoggerInterface $logger,
-        private readonly ObjectService $objectService,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly AppOverrideService $appOverrideService,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param LoggerInterface $logger PSR logger for diagnostics.
+	 * @param ObjectService $objectService OpenRegister object service.
+	 * @param RegisterMapper $registerMapper Resolves the openbuild register id.
+	 * @param SchemaMapper $schemaMapper Resolves + drops the app-override schema.
+	 * @param AppOverrideService $appOverrideService Unified hybrid-app store (create/update path).
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly LoggerInterface $logger,
+		private readonly ObjectService $objectService,
+		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly AppOverrideService $appOverrideService,
+	) {
+	}//end __construct()
 
-    /**
-     * Get the human-readable name of this repair step.
-     *
-     * @return string
-     *
-     * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
-     */
-    public function getName(): string
-    {
-        return 'Migrate OpenBuild AppOverride records to hybrid Applications';
+	/**
+	 * Get the human-readable name of this repair step.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 */
+	public function getName(): string {
+		return 'Migrate OpenBuild AppOverride records to hybrid Applications';
+	}//end getName()
 
-    }//end getName()
+	/**
+	 * Execute the migration.
+	 *
+	 * @param IOutput $output The output channel for progress reporting.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 */
+	public function run(IOutput $output): void {
+		$schemaId = $this->resolveLegacySchemaId();
+		if ($schemaId === null) {
+			$output->info('Migrate-app-overrides-to-hybrid: no app-override schema present, nothing to migrate.');
+			return;
+		}
 
-    /**
-     * Execute the migration.
-     *
-     * @param IOutput $output The output channel for progress reporting.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
-     */
-    public function run(IOutput $output): void
-    {
-        $schemaId = $this->resolveLegacySchemaId();
-        if ($schemaId === null) {
-            $output->info('Migrate-app-overrides-to-hybrid: no app-override schema present, nothing to migrate.');
-            return;
-        }
+		$rows = $this->enumerateLegacyOverrides(schemaId: $schemaId);
+		$migrated = 0;
+		$failed = 0;
+		foreach ($rows as $row) {
+			if ($this->migrateOne(row: $row, output: $output) === true) {
+				$migrated++;
+				continue;
+			}
 
-        $rows     = $this->enumerateLegacyOverrides(schemaId: $schemaId);
-        $migrated = 0;
-        $failed   = 0;
-        foreach ($rows as $row) {
-            if ($this->migrateOne(row: $row, output: $output) === true) {
-                $migrated++;
-                continue;
-            }
+			$failed++;
+		}
 
-            $failed++;
-        }
+		$output->info('Migrate-app-overrides-to-hybrid: migrated ' . $migrated . ' override(s) to hybrid apps.');
 
-        $output->info('Migrate-app-overrides-to-hybrid: migrated '.$migrated.' override(s) to hybrid apps.');
+		// Clean break: drop the legacy schema so the unified model is the single
+		// source of truth (D-RETIRE) — but ONLY when EVERY row migrated. Dropping
+		// the schema cascade-deletes any rows still under it, so a partial failure
+		// must retain the schema (and its un-migrated rows) for the next run to
+		// retry; otherwise un-migrated overrides would be silently destroyed.
+		if ($failed === 0) {
+			$this->dropLegacySchema(schemaId: $schemaId, output: $output);
+			return;
+		}
 
-        // Clean break: drop the legacy schema so the unified model is the single
-        // source of truth (D-RETIRE) — but ONLY when EVERY row migrated. Dropping
-        // the schema cascade-deletes any rows still under it, so a partial failure
-        // must retain the schema (and its un-migrated rows) for the next run to
-        // retry; otherwise un-migrated overrides would be silently destroyed.
-        if ($failed === 0) {
-            $this->dropLegacySchema(schemaId: $schemaId, output: $output);
-            return;
-        }
+		$output->warning(
+			'Migrate-app-overrides-to-hybrid: ' . $failed . ' override(s) failed to migrate; '
+			. 'retaining the app-override schema and its rows for retry (schema NOT dropped).'
+		);
+		$this->logger->warning(
+			'OpenBuild: MigrateAppOverridesToHybrid: schema retained — ' . $failed . ' override(s) un-migrated'
+		);
 
-        $output->warning(
-            'Migrate-app-overrides-to-hybrid: '.$failed.' override(s) failed to migrate; '
-            .'retaining the app-override schema and its rows for retry (schema NOT dropped).'
-        );
-        $this->logger->warning(
-            'OpenBuild: MigrateAppOverridesToHybrid: schema retained — '.$failed.' override(s) un-migrated'
-        );
+	}//end run()
 
-    }//end run()
+	/**
+	 * Resolve the numeric id of the legacy `app-override` schema, if present.
+	 *
+	 * @return int|null The schema id, or null when the schema does not exist.
+	 */
+	private function resolveLegacySchemaId(): ?int {
+		try {
+			return $this->schemaMapper->find(self::LEGACY_SCHEMA_SLUG, _multitenancy: false)->getId();
+		} catch (Throwable $e) {
+			$this->logger->debug(
+				'OpenBuild: MigrateAppOverridesToHybrid: no app-override schema (' . $e->getMessage() . ').'
+			);
+			return null;
+		}
 
-    /**
-     * Resolve the numeric id of the legacy `app-override` schema, if present.
-     *
-     * @return int|null The schema id, or null when the schema does not exist.
-     */
-    private function resolveLegacySchemaId(): ?int
-    {
-        try {
-            return $this->schemaMapper->find(self::LEGACY_SCHEMA_SLUG, _multitenancy: false)->getId();
-        } catch (Throwable $e) {
-            $this->logger->debug(
-                'OpenBuild: MigrateAppOverridesToHybrid: no app-override schema ('.$e->getMessage().').'
-            );
-            return null;
-        }
+	}//end resolveLegacySchemaId()
 
-    }//end resolveLegacySchemaId()
+	/**
+	 * Fetch every legacy AppOverride row in the openbuild register.
+	 *
+	 * @param int $schemaId The resolved app-override schema id.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function enumerateLegacyOverrides(int $schemaId): array {
+		try {
+			$registerId = $this->registerMapper->find(
+				AppOverrideService::REGISTER_SLUG,
+				_multitenancy: false
+			)->getId();
+		} catch (Throwable $e) {
+			$this->logger->debug(
+				'OpenBuild: MigrateAppOverridesToHybrid: openbuild register not found (' . $e->getMessage() . ').'
+			);
+			return [];
+		}
 
-    /**
-     * Fetch every legacy AppOverride row in the openbuild register.
-     *
-     * @param int $schemaId The resolved app-override schema id.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private function enumerateLegacyOverrides(int $schemaId): array
-    {
-        try {
-            $registerId = $this->registerMapper->find(
-                AppOverrideService::REGISTER_SLUG,
-                _multitenancy: false
-            )->getId();
-        } catch (Throwable $e) {
-            $this->logger->debug(
-                'OpenBuild: MigrateAppOverridesToHybrid: openbuild register not found ('.$e->getMessage().').'
-            );
-            return [];
-        }
+		$rows = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => $registerId,
+					'schema' => $schemaId,
+				],
+			]
+		);
 
-        $rows = $this->objectService->findAll(
-            config: [
-                'filters' => [
-                    'register' => $registerId,
-                    'schema'   => $schemaId,
-                ],
-            ]
-        );
+		if (is_array($rows) === false) {
+			return [];
+		}
 
-        if (is_array($rows) === false) {
-            return [];
-        }
+		$normalised = [];
+		foreach ($rows as $row) {
+			$normalised[] = $this->normaliseObjectArray(object: $row);
+		}
 
-        $normalised = [];
-        foreach ($rows as $row) {
-            $normalised[] = $this->normaliseObjectArray(object: $row);
-        }
+		return $normalised;
+	}//end enumerateLegacyOverrides()
 
-        return $normalised;
+	/**
+	 * Migrate one legacy override row into the unified hybrid-app model.
+	 *
+	 * Delegates the create-or-update to AppOverrideService::upsert (idempotent
+	 * find-by-appId), then deletes the source row once the copy succeeded.
+	 *
+	 * @param array<string, mixed> $row The legacy AppOverride row.
+	 * @param IOutput $output Output channel for progress.
+	 *
+	 * @return bool True when the row was migrated (or already migrated) and removed.
+	 */
+	private function migrateOne(array $row, IOutput $output): bool {
+		$appId = (string)($row['appId'] ?? '');
+		if ($appId === '') {
+			$this->logger->warning(
+				'OpenBuild: MigrateAppOverridesToHybrid skipped a row without appId',
+				['row' => $row]
+			);
+			return false;
+		}
 
-    }//end enumerateLegacyOverrides()
+		$delta = ($row['manifestDelta'] ?? []);
+		if (is_array($delta) === false) {
+			$delta = [];
+		}
 
-    /**
-     * Migrate one legacy override row into the unified hybrid-app model.
-     *
-     * Delegates the create-or-update to AppOverrideService::upsert (idempotent
-     * find-by-appId), then deletes the source row once the copy succeeded.
-     *
-     * @param array<string, mixed> $row    The legacy AppOverride row.
-     * @param IOutput              $output Output channel for progress.
-     *
-     * @return bool True when the row was migrated (or already migrated) and removed.
-     */
-    private function migrateOne(array $row, IOutput $output): bool
-    {
-        $appId = (string) ($row['appId'] ?? '');
-        if ($appId === '') {
-            $this->logger->warning(
-                'OpenBuild: MigrateAppOverridesToHybrid skipped a row without appId',
-                ['row' => $row]
-            );
-            return false;
-        }
+		$baseRef = null;
+		if (isset($row['baseRef']) === true && is_array($row['baseRef']) === true) {
+			$encoded = json_encode($row['baseRef']);
+			if (is_string($encoded) === true) {
+				$baseRef = $encoded;
+			}
+		}
 
-        $delta = ($row['manifestDelta'] ?? []);
-        if (is_array($delta) === false) {
-            $delta = [];
-        }
+		$updatedBy = (string)($row['updatedBy'] ?? '');
 
-        $baseRef = null;
-        if (isset($row['baseRef']) === true && is_array($row['baseRef']) === true) {
-            $encoded = json_encode($row['baseRef']);
-            if (is_string($encoded) === true) {
-                $baseRef = $encoded;
-            }
-        }
+		try {
+			// Repair steps run as the Anonymous system user, which cannot
+			// satisfy the Application schema's create:[admin] guard — write in
+			// system context so OR RBAC + multitenancy are bypassed.
+			$this->appOverrideService->upsert(
+				appId: $appId,
+				delta: $delta,
+				baseRef: $baseRef,
+				updatedBy: $updatedBy,
+				systemContext: true
+			);
+		} catch (Throwable $e) {
+			$output->warning(
+				'Migrate-app-overrides-to-hybrid: FAILED to migrate override \'' . $appId . '\' (' . $e->getMessage() . '); source row preserved.'
+			);
+			$this->logger->error(
+				'OpenBuild: MigrateAppOverridesToHybrid: upsert failed; preserving source row',
+				['appId' => $appId, 'exception' => $e->getMessage()]
+			);
+			return false;
+		}//end try
 
-        $updatedBy = (string) ($row['updatedBy'] ?? '');
+		// Copy verified — delete the source AppOverride row (clean break).
+		$uuid = (string)($row['id'] ?? ($row['uuid'] ?? ($row['@self']['id'] ?? '')));
+		if ($uuid !== '') {
+			try {
+				// System-context delete — Anonymous cannot satisfy the
+				// app-override delete:[admin] guard during a repair run.
+				$this->objectService->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false);
+			} catch (Throwable $e) {
+				$this->logger->error(
+					'OpenBuild: MigrateAppOverridesToHybrid: migrated but failed to delete source row',
+					['appId' => $appId, 'exception' => $e->getMessage()]
+				);
+			}
+		}
 
-        try {
-            // Repair steps run as the Anonymous system user, which cannot
-            // satisfy the Application schema's create:[admin] guard — write in
-            // system context so OR RBAC + multitenancy are bypassed.
-            $this->appOverrideService->upsert(
-                appId: $appId,
-                delta: $delta,
-                baseRef: $baseRef,
-                updatedBy: $updatedBy,
-                systemContext: true
-            );
-        } catch (Throwable $e) {
-            $output->warning(
-                'Migrate-app-overrides-to-hybrid: FAILED to migrate override \''.$appId.'\' ('.$e->getMessage().'); source row preserved.'
-            );
-            $this->logger->error(
-                'OpenBuild: MigrateAppOverridesToHybrid: upsert failed; preserving source row',
-                ['appId' => $appId, 'exception' => $e->getMessage()]
-            );
-            return false;
-        }//end try
+		$output->info('Migrate-app-overrides-to-hybrid: migrated override \'' . $appId . '\' to a hybrid app.');
+		return true;
+	}//end migrateOne()
 
-        // Copy verified — delete the source AppOverride row (clean break).
-        $uuid = (string) ($row['id'] ?? ($row['uuid'] ?? ($row['@self']['id'] ?? '')));
-        if ($uuid !== '') {
-            try {
-                // System-context delete — Anonymous cannot satisfy the
-                // app-override delete:[admin] guard during a repair run.
-                $this->objectService->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false);
-            } catch (Throwable $e) {
-                $this->logger->error(
-                    'OpenBuild: MigrateAppOverridesToHybrid: migrated but failed to delete source row',
-                    ['appId' => $appId, 'exception' => $e->getMessage()]
-                );
-            }
-        }
+	/**
+	 * Drop the now-empty legacy `app-override` schema (best-effort).
+	 *
+	 * @param int $schemaId The schema id resolved at the start of the run.
+	 * @param IOutput $output Output channel for progress.
+	 *
+	 * @return void
+	 */
+	private function dropLegacySchema(int $schemaId, IOutput $output): void {
+		try {
+			$schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
+			$this->schemaMapper->delete($schema);
+			$output->info('Migrate-app-overrides-to-hybrid: dropped the retired app-override schema.');
+		} catch (Throwable $e) {
+			$output->warning(
+				'Migrate-app-overrides-to-hybrid: could not drop the app-override schema (' . $e->getMessage() . '); it is empty and harmless.'
+			);
+			$this->logger->warning(
+				'OpenBuild: MigrateAppOverridesToHybrid: schema drop failed',
+				['exception' => $e->getMessage()]
+			);
+		}
 
-        $output->info('Migrate-app-overrides-to-hybrid: migrated override \''.$appId.'\' to a hybrid app.');
-        return true;
+	}//end dropLegacySchema()
 
-    }//end migrateOne()
+	/**
+	 * Coerce an OR result entry to a plain associative array.
+	 *
+	 * @param mixed $object The OR object/result entry.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function normaliseObjectArray(mixed $object): array {
+		if (is_array($object) === true) {
+			return $object;
+		}
 
-    /**
-     * Drop the now-empty legacy `app-override` schema (best-effort).
-     *
-     * @param int     $schemaId The schema id resolved at the start of the run.
-     * @param IOutput $output   Output channel for progress.
-     *
-     * @return void
-     */
-    private function dropLegacySchema(int $schemaId, IOutput $output): void
-    {
-        try {
-            $schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
-            $this->schemaMapper->delete($schema);
-            $output->info('Migrate-app-overrides-to-hybrid: dropped the retired app-override schema.');
-        } catch (Throwable $e) {
-            $output->warning(
-                'Migrate-app-overrides-to-hybrid: could not drop the app-override schema ('.$e->getMessage().'); it is empty and harmless.'
-            );
-            $this->logger->warning(
-                'OpenBuild: MigrateAppOverridesToHybrid: schema drop failed',
-                ['exception' => $e->getMessage()]
-            );
-        }
+		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
+			$serialised = $object->jsonSerialize();
+			if (is_array($serialised) === true) {
+				return $serialised;
+			}
+		}
 
-    }//end dropLegacySchema()
+		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
+			$inner = $object->getObject();
+			if (is_array($inner) === true) {
+				return $inner;
+			}
+		}
 
-    /**
-     * Coerce an OR result entry to a plain associative array.
-     *
-     * @param mixed $object The OR object/result entry.
-     *
-     * @return array<string, mixed>
-     */
-    private function normaliseObjectArray(mixed $object): array
-    {
-        if (is_array($object) === true) {
-            return $object;
-        }
-
-        if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-            $serialised = $object->jsonSerialize();
-            if (is_array($serialised) === true) {
-                return $serialised;
-            }
-        }
-
-        if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-            $inner = $object->getObject();
-            if (is_array($inner) === true) {
-                return $inner;
-            }
-        }
-
-        return [];
-
-    }//end normaliseObjectArray()
+		return [];
+	}//end normaliseObjectArray()
 }//end class

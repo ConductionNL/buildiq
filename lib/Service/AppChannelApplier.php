@@ -62,466 +62,452 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class AppChannelApplier
-{
+class AppChannelApplier {
 
-    /**
-     * The OpenRegister register that holds OpenConnector objects. OpenConnector is
-     * re-platformed onto OpenRegister — there are no `openconnector_*` tables.
-     *
-     * @var string
-     */
-    private const CONNECTOR_REGISTER = 'openconnector';
+	/**
+	 * The OpenRegister register that holds OpenConnector objects. OpenConnector is
+	 * re-platformed onto OpenRegister — there are no `openconnector_*` tables.
+	 *
+	 * @var string
+	 */
+	private const CONNECTOR_REGISTER = 'openconnector';
 
-    /**
-     * Connector schemas, matching AppRepoSerializer::CONNECTOR_KINDS.
-     *
-     * @var array<int,string>
-     */
-    private const CONNECTOR_KINDS = ['source', 'mapping', 'synchronization', 'job'];
+	/**
+	 * Connector schemas, matching AppRepoSerializer::CONNECTOR_KINDS.
+	 *
+	 * @var array<int,string>
+	 */
+	private const CONNECTOR_KINDS = ['source', 'mapping', 'synchronization', 'job'];
 
-    /**
-     * The register holding broker credentials.
-     *
-     * @var string
-     */
-    private const CREDENTIAL_REGISTER = 'credential-broker';
+	/**
+	 * The register holding broker credentials.
+	 *
+	 * @var string
+	 */
+	private const CREDENTIAL_REGISTER = 'credential-broker';
 
-    /**
-     * The schema holding broker credentials.
-     *
-     * @var string
-     */
-    private const CREDENTIAL_SCHEMA = 'brokeredcredential';
+	/**
+	 * The schema holding broker credentials.
+	 *
+	 * @var string
+	 */
+	private const CREDENTIAL_SCHEMA = 'brokeredcredential';
 
-    /**
-     * Maximum connectors applied per kind.
-     *
-     * @var int
-     */
-    private const MAX_CONNECTORS_PER_KIND = 2048;
+	/**
+	 * Maximum connectors applied per kind.
+	 *
+	 * @var int
+	 */
+	private const MAX_CONNECTORS_PER_KIND = 2048;
 
-    /**
-     * Maximum automations applied from one repo.
-     *
-     * @var int
-     */
-    private const MAX_AUTOMATIONS = 512;
+	/**
+	 * Maximum automations applied from one repo.
+	 *
+	 * @var int
+	 */
+	private const MAX_AUTOMATIONS = 512;
 
-    /**
-     * Reason recorded when OpenConnector is not available.
-     *
-     * @var string
-     */
-    private const REASON_NO_OPENCONNECTOR = 'openconnector-unavailable';
+	/**
+	 * Reason recorded when OpenConnector is not available.
+	 *
+	 * @var string
+	 */
+	private const REASON_NO_OPENCONNECTOR = 'openconnector-unavailable';
 
-    /**
-     * Constructor.
-     *
-     * @param ObjectService           $objectService       OpenRegister object read/write.
-     * @param DataRegisterProvisioner $registerProvisioner The data-registers channel.
-     * @param SkillChannelDelegate    $skillDelegate       The skills channel (delegated to hermiq).
-     * @param IAppManager             $appManager          Optional-dependency detection.
-     * @param LoggerInterface         $logger              PSR logger (secret-free diagnostics).
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly ObjectService $objectService,
-        private readonly DataRegisterProvisioner $registerProvisioner,
-        private readonly SkillChannelDelegate $skillDelegate,
-        private readonly IAppManager $appManager,
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param ObjectService $objectService OpenRegister object read/write.
+	 * @param DataRegisterProvisioner $registerProvisioner The data-registers channel.
+	 * @param SkillChannelDelegate $skillDelegate The skills channel (delegated to hermiq).
+	 * @param IAppManager $appManager Optional-dependency detection.
+	 * @param LoggerInterface $logger PSR logger (secret-free diagnostics).
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly ObjectService $objectService,
+		private readonly DataRegisterProvisioner $registerProvisioner,
+		private readonly SkillChannelDelegate $skillDelegate,
+		private readonly IAppManager $appManager,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Apply every channel a parsed template declares.
-     *
-     * Best-effort by design: a channel that cannot be applied is reported, and the
-     * remaining channels are still applied.
-     *
-     * Repo coordinates are derived from the template's own `templateOrigin.repo`
-     * when the caller does not supply them, so that every install path can call
-     * this with what it already has. A path that had to thread extra arguments
-     * through is a path that eventually gets added without them.
-     *
-     * @param array<string,mixed> $template     The parsed repo template.
-     * @param string|null         $owner        Repo owner (for the skills delegation).
-     * @param string|null         $repo         Repo name (for the skills delegation).
-     * @param string|null         $ref          Optional git ref.
-     * @param string|null         $actingUserId The session UID.
-     * @param string|null         $credentialId Optional broker credential UUID.
-     *
-     * @return array<string,mixed> The channel report.
-     *
-     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-every-install-path-applies-the-v2-channels
-     */
-    public function apply(
-        array $template,
-        ?string $owner=null,
-        ?string $repo=null,
-        ?string $ref=null,
-        ?string $actingUserId=null,
-        ?string $credentialId=null
-    ): array {
-        $report = new ChannelApplyReport();
+	/**
+	 * Apply every channel a parsed template declares.
+	 *
+	 * Best-effort by design: a channel that cannot be applied is reported, and the
+	 * remaining channels are still applied.
+	 *
+	 * Repo coordinates are derived from the template's own `templateOrigin.repo`
+	 * when the caller does not supply them, so that every install path can call
+	 * this with what it already has. A path that had to thread extra arguments
+	 * through is a path that eventually gets added without them.
+	 *
+	 * @param array<string,mixed> $template The parsed repo template.
+	 * @param string|null $owner Repo owner (for the skills delegation).
+	 * @param string|null $repo Repo name (for the skills delegation).
+	 * @param string|null $ref Optional git ref.
+	 * @param string|null $actingUserId The session UID.
+	 * @param string|null $credentialId Optional broker credential UUID.
+	 *
+	 * @return array<string,mixed> The channel report.
+	 *
+	 * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-every-install-path-applies-the-v2-channels
+	 */
+	public function apply(
+		array $template,
+		?string $owner = null,
+		?string $repo = null,
+		?string $ref = null,
+		?string $actingUserId = null,
+		?string $credentialId = null,
+	): array {
+		$report = new ChannelApplyReport();
 
-        [$owner, $repo] = $this->coordinatesFor(template: $template, owner: $owner, repo: $repo);
+		[$owner, $repo] = $this->coordinatesFor(template: $template, owner: $owner, repo: $repo);
 
-        $this->registerProvisioner->apply(
-            registers: $this->channelOf(template: $template, name: 'dataRegisters'),
-            report: $report
-        );
+		$this->registerProvisioner->apply(
+			registers: $this->channelOf(template: $template, name: 'dataRegisters'),
+			report: $report
+		);
 
-        $this->applyConnectors(
-            connectors: $this->channelOf(template: $template, name: 'connectors'),
-            report: $report
-        );
+		$this->applyConnectors(
+			connectors: $this->channelOf(template: $template, name: 'connectors'),
+			report: $report
+		);
 
-        $this->applyAutomations(
-            automations: $this->channelOf(template: $template, name: 'automations'),
-            report: $report
-        );
+		$this->applyAutomations(
+			automations: $this->channelOf(template: $template, name: 'automations'),
+			report: $report
+		);
 
-        $this->skillDelegate->apply(
-            skills: $this->channelOf(template: $template, name: 'skills'),
-            owner: $owner,
-            repo: $repo,
-            ref: $ref,
-            actingUserId: $actingUserId,
-            credentialId: $credentialId,
-            report: $report
-        );
+		$this->skillDelegate->apply(
+			skills: $this->channelOf(template: $template, name: 'skills'),
+			owner: $owner,
+			repo: $repo,
+			ref: $ref,
+			actingUserId: $actingUserId,
+			credentialId: $credentialId,
+			report: $report
+		);
 
-        return $report->toArray();
+		return $report->toArray();
+	}//end apply()
 
-    }//end apply()
+	/**
+	 * Resolve the repo coordinates, falling back to the template's own origin.
+	 *
+	 * @param array<string,mixed> $template The parsed template.
+	 * @param string|null $owner Caller-supplied owner, if any.
+	 * @param string|null $repo Caller-supplied repo name, if any.
+	 *
+	 * @return array{0:string,1:string} Owner and repo name, possibly empty.
+	 */
+	private function coordinatesFor(array $template, ?string $owner, ?string $repo): array {
+		if ($owner !== null && $owner !== '' && $repo !== null && $repo !== '') {
+			return [$owner, $repo];
+		}
 
-    /**
-     * Resolve the repo coordinates, falling back to the template's own origin.
-     *
-     * @param array<string,mixed> $template The parsed template.
-     * @param string|null         $owner    Caller-supplied owner, if any.
-     * @param string|null         $repo     Caller-supplied repo name, if any.
-     *
-     * @return array{0:string,1:string} Owner and repo name, possibly empty.
-     */
-    private function coordinatesFor(array $template, ?string $owner, ?string $repo): array
-    {
-        if ($owner !== null && $owner !== '' && $repo !== null && $repo !== '') {
-            return [$owner, $repo];
-        }
+		$origin = ($template['templateOrigin'] ?? []);
+		$slug = '';
+		if (is_array($origin) === true) {
+			$slug = (string)($origin['repo'] ?? '');
+		}
 
-        $origin = ($template['templateOrigin'] ?? []);
-        $slug   = '';
-        if (is_array($origin) === true) {
-            $slug = (string) ($origin['repo'] ?? '');
-        }
+		$parts = explode('/', $slug);
+		if (count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
+			return [(string)$owner, (string)$repo];
+		}
 
-        $parts = explode('/', $slug);
-        if (count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
-            return [(string) $owner, (string) $repo];
-        }
+		return [$parts[0], $parts[1]];
+	}//end coordinatesFor()
 
-        return [$parts[0], $parts[1]];
+	/**
+	 * Read one channel from the template, tolerating its absence (a v1 repo).
+	 *
+	 * @param array<string,mixed> $template The parsed template.
+	 * @param string $name The channel key.
+	 *
+	 * @return array<string,mixed> The channel, or an empty array.
+	 */
+	private function channelOf(array $template, string $name): array {
+		// AppRepoParser NESTS the v2 channels under `channels`, and adds the key
+		// only for a v2 repo. Reading them from the top level instead returns
+		// nothing for every channel — which is not an error, just a silent
+		// `declared: 0`, i.e. exactly the do-nothing-and-report-success failure
+		// this class exists to end. Verified against the parser, not assumed.
+		$channels = ($template['channels'] ?? []);
+		if (is_array($channels) === false) {
+			return [];
+		}
 
-    }//end coordinatesFor()
+		$channel = ($channels[$name] ?? []);
+		if (is_array($channel) === false) {
+			return [];
+		}
 
-    /**
-     * Read one channel from the template, tolerating its absence (a v1 repo).
-     *
-     * @param array<string,mixed> $template The parsed template.
-     * @param string              $name     The channel key.
-     *
-     * @return array<string,mixed> The channel, or an empty array.
-     */
-    private function channelOf(array $template, string $name): array
-    {
-        // AppRepoParser NESTS the v2 channels under `channels`, and adds the key
-        // only for a v2 repo. Reading them from the top level instead returns
-        // nothing for every channel — which is not an error, just a silent
-        // `declared: 0`, i.e. exactly the do-nothing-and-report-success failure
-        // this class exists to end. Verified against the parser, not assumed.
-        $channels = ($template['channels'] ?? []);
-        if (is_array($channels) === false) {
-            return [];
-        }
+		return $channel;
+	}//end channelOf()
 
-        $channel = ($channels[$name] ?? []);
-        if (is_array($channel) === false) {
-            return [];
-        }
+	/**
+	 * Apply the connectors channel at the PUBLISHED uuids, so that the installed
+	 * application's `connectors[]` bindings still resolve.
+	 *
+	 * A uuid that already exists is skipped, never overwritten — see the class
+	 * docblock.
+	 *
+	 * @param array<string,mixed> $connectors The channel (kind → name → blob).
+	 * @param ChannelApplyReport $report The report to write into.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-an-existing-connector-is-skipped-and-never-overwritten
+	 */
+	private function applyConnectors(array $connectors, ChannelApplyReport $report): void {
+		$declared = 0;
+		foreach (self::CONNECTOR_KINDS as $kind) {
+			$declared += count((array)($connectors[$kind] ?? []));
+		}
 
-        return $channel;
+		$report->declareChannel(channel: 'connectors', declared: $declared);
 
-    }//end channelOf()
+		if ($declared === 0) {
+			return;
+		}
 
-    /**
-     * Apply the connectors channel at the PUBLISHED uuids, so that the installed
-     * application's `connectors[]` bindings still resolve.
-     *
-     * A uuid that already exists is skipped, never overwritten — see the class
-     * docblock.
-     *
-     * @param array<string,mixed> $connectors The channel (kind → name → blob).
-     * @param ChannelApplyReport  $report     The report to write into.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-an-existing-connector-is-skipped-and-never-overwritten
-     */
-    private function applyConnectors(array $connectors, ChannelApplyReport $report): void
-    {
-        $declared = 0;
-        foreach (self::CONNECTOR_KINDS as $kind) {
-            $declared += count((array) ($connectors[$kind] ?? []));
-        }
+		if ($this->appManager->isEnabledForUser('openconnector') === false) {
+			$this->logger->info(
+				'OpenBuild channel apply: openconnector is not enabled — skipping ' . $declared . ' declared connectors.'
+			);
+			$report->skipChannel(channel: 'connectors', reason: self::REASON_NO_OPENCONNECTOR);
+			return;
+		}
 
-        $report->declareChannel(channel: 'connectors', declared: $declared);
+		foreach (self::CONNECTOR_KINDS as $kind) {
+			$applied = 0;
+			foreach ((array)($connectors[$kind] ?? []) as $name => $blob) {
+				$item = $kind . '/' . (string)$name;
 
-        if ($declared === 0) {
-            return;
-        }
+				if ($applied >= self::MAX_CONNECTORS_PER_KIND) {
+					$this->logTruncation(
+						channel: 'connectors/' . $kind,
+						declared: count((array)($connectors[$kind] ?? [])),
+						bound: self::MAX_CONNECTORS_PER_KIND
+					);
+					$report->recordTruncated(channel: 'connectors', item: $item);
+					continue;
+				}
 
-        if ($this->appManager->isEnabledForUser('openconnector') === false) {
-            $this->logger->info(
-                'OpenBuild channel apply: openconnector is not enabled — skipping '.$declared.' declared connectors.'
-            );
-            $report->skipChannel(channel: 'connectors', reason: self::REASON_NO_OPENCONNECTOR);
-            return;
-        }
+				$applied++;
+				$this->applyOneConnector(kind: $kind, item: $item, blob: (array)$blob, report: $report);
+			}
+		}//end foreach
 
-        foreach (self::CONNECTOR_KINDS as $kind) {
-            $applied = 0;
-            foreach ((array) ($connectors[$kind] ?? []) as $name => $blob) {
-                $item = $kind.'/'.(string) $name;
+	}//end applyConnectors()
 
-                if ($applied >= self::MAX_CONNECTORS_PER_KIND) {
-                    $this->logTruncation(
-                        channel: 'connectors/'.$kind,
-                        declared: count((array) ($connectors[$kind] ?? [])),
-                        bound: self::MAX_CONNECTORS_PER_KIND
-                    );
-                    $report->recordTruncated(channel: 'connectors', item: $item);
-                    continue;
-                }
+	/**
+	 * Apply a single connector at its published uuid.
+	 *
+	 * @param string $kind The connector kind (schema).
+	 * @param string $item The report item identity.
+	 * @param array<string,mixed> $blob The published connector body.
+	 * @param ChannelApplyReport $report The report to write into.
+	 *
+	 * @return void
+	 */
+	private function applyOneConnector(string $kind, string $item, array $blob, ChannelApplyReport $report): void {
+		// The published body carries its identity in `id` — verified across all 42
+		// connectors of a real published artefact. `uuid` is present but null,
+		// because the serializer emits ObjectEntity::getObject(), the body only.
+		$uuid = (string)($blob['id'] ?? '');
+		if ($uuid === '') {
+			$report->recordFailed(channel: 'connectors', item: $item, reason: 'no-identity-in-blob');
+			return;
+		}
 
-                $applied++;
-                $this->applyOneConnector(kind: $kind, item: $item, blob: (array) $blob, report: $report);
-            }
-        }//end foreach
+		try {
+			// The never-overwrite guarantee lives IN this call via failIfExists. A
+			// check-then-write would both race and drift.
+			$this->objectService->saveObject(
+				object: $blob,
+				register: self::CONNECTOR_REGISTER,
+				schema: $kind,
+				uuid: $uuid,
+				_rbac: false,
+				_multitenancy: false,
+				failIfExists: true
+			);
 
-    }//end applyConnectors()
+			$report->recordCreated(channel: 'connectors', item: $item);
+			$this->collectCredentialRefs(blob: $blob, connector: $item, report: $report);
+		} catch (ObjectExistsException) {
+			// Collision detected BY TYPE, never by message text. An earlier draft
+			// matched on strings, which meant a plain PHP "Unknown named parameter
+			// $failIfExists" error was reported as a benign "already exists" — a
+			// wiring bug wearing the costume of a normal, expected outcome.
+			$report->recordSkipped(
+				channel: 'connectors',
+				item: $item,
+				reason: ChannelApplyReport::REASON_EXISTS
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning('OpenBuild channel apply: connector "' . $item . '" failed: ' . $e->getMessage());
+			$report->recordFailed(channel: 'connectors', item: $item, reason: $e->getMessage());
+		}//end try
 
-    /**
-     * Apply a single connector at its published uuid.
-     *
-     * @param string              $kind   The connector kind (schema).
-     * @param string              $item   The report item identity.
-     * @param array<string,mixed> $blob   The published connector body.
-     * @param ChannelApplyReport  $report The report to write into.
-     *
-     * @return void
-     */
-    private function applyOneConnector(string $kind, string $item, array $blob, ChannelApplyReport $report): void
-    {
-        // The published body carries its identity in `id` — verified across all 42
-        // connectors of a real published artefact. `uuid` is present but null,
-        // because the serializer emits ObjectEntity::getObject(), the body only.
-        $uuid = (string) ($blob['id'] ?? '');
-        if ($uuid === '') {
-            $report->recordFailed(channel: 'connectors', item: $item, reason: 'no-identity-in-blob');
-            return;
-        }
+	}//end applyOneConnector()
 
-        try {
-            // The never-overwrite guarantee lives IN this call via failIfExists. A
-            // check-then-write would both race and drift.
-            $this->objectService->saveObject(
-                object: $blob,
-                register: self::CONNECTOR_REGISTER,
-                schema: $kind,
-                uuid: $uuid,
-                _rbac: false,
-                _multitenancy: false,
-                failIfExists: true
-            );
+	/**
+	 * Collect credential references that do not resolve on this instance.
+	 *
+	 * Publishing blanks secrets but keeps `credentialRef`, so an applied connector
+	 * can be perfectly installed and still unable to run.
+	 *
+	 * @param array<string,mixed> $blob The connector body.
+	 * @param string $connector The connector identity.
+	 * @param ChannelApplyReport $report The report to write into.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-unresolvable-credential-references-are-reported
+	 */
+	private function collectCredentialRefs(array $blob, string $connector, ChannelApplyReport $report): void {
+		foreach ($this->credentialNames(node: $blob) as $name) {
+			if ($this->credentialExists(name: $name) === false) {
+				$report->needsCredential(credential: $name, connector: $connector);
+			}
+		}
 
-            $report->recordCreated(channel: 'connectors', item: $item);
-            $this->collectCredentialRefs(blob: $blob, connector: $item, report: $report);
-        } catch (ObjectExistsException) {
-            // Collision detected BY TYPE, never by message text. An earlier draft
-            // matched on strings, which meant a plain PHP "Unknown named parameter
-            // $failIfExists" error was reported as a benign "already exists" — a
-            // wiring bug wearing the costume of a normal, expected outcome.
-            $report->recordSkipped(
-                channel: 'connectors',
-                item: $item,
-                reason: ChannelApplyReport::REASON_EXISTS
-            );
-        } catch (Throwable $e) {
-            $this->logger->warning('OpenBuild channel apply: connector "'.$item.'" failed: '.$e->getMessage());
-            $report->recordFailed(channel: 'connectors', item: $item, reason: $e->getMessage());
-        }//end try
+	}//end collectCredentialRefs()
 
-    }//end applyOneConnector()
+	/**
+	 * Walk a connector body collecting `credentialRef` names.
+	 *
+	 * @param mixed $node The node to walk.
+	 *
+	 * @return array<int,string> The referenced credential names.
+	 */
+	private function credentialNames(mixed $node): array {
+		if (is_array($node) === false) {
+			return [];
+		}
 
-    /**
-     * Collect credential references that do not resolve on this instance.
-     *
-     * Publishing blanks secrets but keeps `credentialRef`, so an applied connector
-     * can be perfectly installed and still unable to run.
-     *
-     * @param array<string,mixed> $blob      The connector body.
-     * @param string              $connector The connector identity.
-     * @param ChannelApplyReport  $report    The report to write into.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-unresolvable-credential-references-are-reported
-     */
-    private function collectCredentialRefs(array $blob, string $connector, ChannelApplyReport $report): void
-    {
-        foreach ($this->credentialNames(node: $blob) as $name) {
-            if ($this->credentialExists(name: $name) === false) {
-                $report->needsCredential(credential: $name, connector: $connector);
-            }
-        }
+		$names = [];
+		foreach ($node as $key => $value) {
+			if ($key === 'credentialRef' && is_array($value) === true) {
+				$name = (string)($value['credentialName'] ?? '');
+				if ($name !== '') {
+					$names[] = $name;
+				}
 
-    }//end collectCredentialRefs()
+				continue;
+			}
 
-    /**
-     * Walk a connector body collecting `credentialRef` names.
-     *
-     * @param mixed $node The node to walk.
-     *
-     * @return array<int,string> The referenced credential names.
-     */
-    private function credentialNames(mixed $node): array
-    {
-        if (is_array($node) === false) {
-            return [];
-        }
+			$names = array_merge($names, $this->credentialNames(node: $value));
+		}
 
-        $names = [];
-        foreach ($node as $key => $value) {
-            if ($key === 'credentialRef' && is_array($value) === true) {
-                $name = (string) ($value['credentialName'] ?? '');
-                if ($name !== '') {
-                    $names[] = $name;
-                }
+		return array_values(array_unique($names));
+	}//end credentialNames()
 
-                continue;
-            }
+	/**
+	 * Whether a credential of this name resolves on the instance.
+	 *
+	 * Absence is the answer we act on, so a lookup FAILURE must not be reported as
+	 * a confident "does not exist" — an unavailable broker would otherwise
+	 * manufacture a list of missing credentials that are in fact present.
+	 *
+	 * @param string $name The credential name.
+	 *
+	 * @return bool True when it resolves, or when the lookup was inconclusive.
+	 */
+	private function credentialExists(string $name): bool {
+		try {
+			// Broker credentials live in register `credential-broker`, schema
+			// `brokeredcredential` — verified against the live instance rather
+			// than assumed, because a lookup pointed at the wrong table returns
+			// "nothing matched", which is indistinguishable from a true absence
+			// and would manufacture a list of missing credentials that are in
+			// fact present. register/schema are FILTER keys on findAll(), not
+			// parameters of their own.
+			$found = $this->objectService->findAll(
+				config: [
+					'filters' => [
+						'register' => self::CREDENTIAL_REGISTER,
+						'schema' => self::CREDENTIAL_SCHEMA,
+						'name' => $name,
+					],
+				],
+				_rbac: false,
+				_multitenancy: false
+			);
 
-            $names = array_merge($names, $this->credentialNames(node: $value));
-        }
+			return (is_array($found) === true && $found !== []);
+		} catch (Throwable $e) {
+			$this->logger->debug(
+				'OpenBuild channel apply: credential lookup for "' . $name . '" was inconclusive: ' . $e->getMessage()
+			);
 
-        return array_values(array_unique($names));
+			return true;
+		}//end try
 
-    }//end credentialNames()
+	}//end credentialExists()
 
-    /**
-     * Whether a credential of this name resolves on the instance.
-     *
-     * Absence is the answer we act on, so a lookup FAILURE must not be reported as
-     * a confident "does not exist" — an unavailable broker would otherwise
-     * manufacture a list of missing credentials that are in fact present.
-     *
-     * @param string $name The credential name.
-     *
-     * @return bool True when it resolves, or when the lookup was inconclusive.
-     */
-    private function credentialExists(string $name): bool
-    {
-        try {
-            // Broker credentials live in register `credential-broker`, schema
-            // `brokeredcredential` — verified against the live instance rather
-            // than assumed, because a lookup pointed at the wrong table returns
-            // "nothing matched", which is indistinguishable from a true absence
-            // and would manufacture a list of missing credentials that are in
-            // fact present. register/schema are FILTER keys on findAll(), not
-            // parameters of their own.
-            $found = $this->objectService->findAll(
-                config: [
-                    'filters' => [
-                        'register' => self::CREDENTIAL_REGISTER,
-                        'schema'   => self::CREDENTIAL_SCHEMA,
-                        'name'     => $name,
-                    ],
-                ],
-                _rbac: false,
-                _multitenancy: false
-            );
+	/**
+	 * Apply the automations channel with the same create-or-skip rules.
+	 *
+	 * @param array<string,mixed> $automations The channel (slug → blob).
+	 * @param ChannelApplyReport $report The report to write into.
+	 *
+	 * @return void
+	 */
+	private function applyAutomations(array $automations, ChannelApplyReport $report): void {
+		$report->declareChannel(channel: 'automations', declared: count($automations));
 
-            return (is_array($found) === true && $found !== []);
-        } catch (Throwable $e) {
-            $this->logger->debug(
-                'OpenBuild channel apply: credential lookup for "'.$name.'" was inconclusive: '.$e->getMessage()
-            );
+		if ($automations === []) {
+			return;
+		}
 
-            return true;
-        }//end try
+		if ($this->appManager->isEnabledForUser('openconnector') === false) {
+			$report->skipChannel(channel: 'automations', reason: self::REASON_NO_OPENCONNECTOR);
+			return;
+		}
 
-    }//end credentialExists()
+		$applied = 0;
+		foreach ($automations as $slug => $blob) {
+			$slug = (string)$slug;
+			if ($applied >= self::MAX_AUTOMATIONS) {
+				$this->logTruncation(
+					channel: 'automations',
+					declared: count($automations),
+					bound: self::MAX_AUTOMATIONS
+				);
+				$report->recordTruncated(channel: 'automations', item: $slug);
+				continue;
+			}
 
-    /**
-     * Apply the automations channel with the same create-or-skip rules.
-     *
-     * @param array<string,mixed> $automations The channel (slug → blob).
-     * @param ChannelApplyReport  $report      The report to write into.
-     *
-     * @return void
-     */
-    private function applyAutomations(array $automations, ChannelApplyReport $report): void
-    {
-        $report->declareChannel(channel: 'automations', declared: count($automations));
+			$applied++;
+			$this->applyOneConnector(kind: 'job', item: 'automations/' . $slug, blob: (array)$blob, report: $report);
+		}
 
-        if ($automations === []) {
-            return;
-        }
+	}//end applyAutomations()
 
-        if ($this->appManager->isEnabledForUser('openconnector') === false) {
-            $report->skipChannel(channel: 'automations', reason: self::REASON_NO_OPENCONNECTOR);
-            return;
-        }
+	/**
+	 * Log that a channel bound was reached. Never silent: an install that quietly
+	 * drops half an app is the precise failure this class exists to prevent.
+	 *
+	 * @param string $channel The channel name.
+	 * @param int $declared How many items were declared.
+	 * @param int $bound The configured maximum.
+	 *
+	 * @return void
+	 */
+	private function logTruncation(string $channel, int $declared, int $bound): void {
+		$this->logger->warning(
+			'OpenBuild channel apply: channel "' . $channel . '" declared ' . $declared
+			. ' items but the bound is ' . $bound . ' — the excess was NOT applied.'
+		);
 
-        $applied = 0;
-        foreach ($automations as $slug => $blob) {
-            $slug = (string) $slug;
-            if ($applied >= self::MAX_AUTOMATIONS) {
-                $this->logTruncation(
-                    channel: 'automations',
-                    declared: count($automations),
-                    bound: self::MAX_AUTOMATIONS
-                );
-                $report->recordTruncated(channel: 'automations', item: $slug);
-                continue;
-            }
-
-            $applied++;
-            $this->applyOneConnector(kind: 'job', item: 'automations/'.$slug, blob: (array) $blob, report: $report);
-        }
-
-    }//end applyAutomations()
-
-    /**
-     * Log that a channel bound was reached. Never silent: an install that quietly
-     * drops half an app is the precise failure this class exists to prevent.
-     *
-     * @param string $channel  The channel name.
-     * @param int    $declared How many items were declared.
-     * @param int    $bound    The configured maximum.
-     *
-     * @return void
-     */
-    private function logTruncation(string $channel, int $declared, int $bound): void
-    {
-        $this->logger->warning(
-            'OpenBuild channel apply: channel "'.$channel.'" declared '.$declared
-            .' items but the bound is '.$bound.' — the excess was NOT applied.'
-        );
-
-    }//end logTruncation()
+	}//end logTruncation()
 }//end class
