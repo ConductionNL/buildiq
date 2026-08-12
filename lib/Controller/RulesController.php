@@ -155,7 +155,7 @@ class RulesController extends Controller
         }//end try
 
         $hasTimeout = false;
-        foreach ($outcome['fouten'] as $fout) {
+        foreach ($outcome['errors'] as $fout) {
             if (str_contains($fout, 'timeout') === true) {
                 $hasTimeout = true;
                 break;
@@ -195,8 +195,8 @@ class RulesController extends Controller
         return new JSONResponse(
             data: [
                 'slug'     => (string) ($ruleSet['slug'] ?? $ruleSetSlug),
-                'naam'     => (string) ($ruleSet['naam'] ?? ''),
-                'versie'   => (string) ($ruleSet['versie'] ?? ''),
+                'name'     => (string) ($ruleSet['name'] ?? ''),
+                'version'  => (string) ($ruleSet['version'] ?? ''),
                 'status'   => (string) ($ruleSet['status'] ?? ''),
                 'ruleType' => (string) ($ruleSet['ruleType'] ?? ''),
             ],

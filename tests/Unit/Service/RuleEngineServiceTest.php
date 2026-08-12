@@ -121,7 +121,7 @@ final class RuleEngineServiceTest extends TestCase
     private function loanFindAllResults(string $schema): array
     {
         if ($schema === 'rule-set') {
-            return [['slug' => 'loan-eligibility', 'versie' => '1.0.0', 'ruleType' => 'decision-table']];
+            return [['slug' => 'loan-eligibility', 'version' => '1.0.0', 'ruleType' => 'decision-table']];
         }
 
         if ($schema === 'decision-table') {
@@ -130,18 +130,18 @@ final class RuleEngineServiceTest extends TestCase
                     'ruleSetId'    => 'loan-eligibility',
                     'hitPolicy'    => 'first',
                     'inputColumns' => [
-                        ['naam' => 'applicantAge', 'expressiePad' => 'applicant.age'],
-                        ['naam' => 'monthlyIncome', 'expressiePad' => 'applicant.monthlyIncome'],
-                        ['naam' => 'creditScore', 'expressiePad' => 'applicant.creditScore'],
+                        ['name' => 'applicantAge', 'expressionPath' => 'applicant.age'],
+                        ['name' => 'monthlyIncome', 'expressionPath' => 'applicant.monthlyIncome'],
+                        ['name' => 'creditScore', 'expressionPath' => 'applicant.creditScore'],
                     ],
-                    'outputColumns' => [['naam' => 'decision', 'defaultwaarde' => 'deny']],
-                    'regels'        => [
+                    'outputColumns' => [['name' => 'decision', 'defaultValue' => 'deny']],
+                    'rules'        => [
                         [
-                            'condities' => ['applicantAge' => '>=18', 'monthlyIncome' => '>=2000', 'creditScore' => '>=600'],
-                            'waardes'   => ['decision' => 'approve'],
+                            'conditions' => ['applicantAge' => '>=18', 'monthlyIncome' => '>=2000', 'creditScore' => '>=600'],
+                            'values'   => ['decision' => 'approve'],
                             'label'     => 'approve',
                         ],
-                        ['condities' => [], 'waardes' => ['decision' => 'deny'], 'label' => 'deny'],
+                        ['conditions' => [], 'values' => ['decision' => 'deny'], 'label' => 'deny'],
                     ],
                 ],
             ];
@@ -173,8 +173,8 @@ final class RuleEngineServiceTest extends TestCase
         );
 
         $this->assertSame('approve', $outcome['result']['decision']);
-        $this->assertContains('approve', $outcome['geraaktRegels']);
-        $this->assertSame([], $outcome['fouten']);
+        $this->assertContains('approve', $outcome['triggeredRules']);
+        $this->assertSame([], $outcome['errors']);
 
     }//end testEvaluateLoanApprove()
 
@@ -235,19 +235,19 @@ final class RuleEngineServiceTest extends TestCase
     private function conditionActionFindAllResults(string $schema): array
     {
         if ($schema === 'rule-set') {
-            return [['slug' => 'escalate', 'versie' => '1.0.0', 'ruleType' => 'condition-action']];
+            return [['slug' => 'escalate', 'version' => '1.0.0', 'ruleType' => 'condition-action']];
         }
 
         if ($schema === 'condition-action-rule') {
             return [
                 [
                     'ruleSetId' => 'escalate',
-                    'naam'      => 'always-notify',
-                    'conditie'  => '',
-                    'acties'    => [
+                    'name'      => 'always-notify',
+                    'condition'  => '',
+                    'actions'    => [
                         ['type' => 'send-notification', 'parameters' => ['subject' => 'hello', 'recipientUid' => 'alice']],
                     ],
-                    'actief'    => true,
+                    'active'    => true,
                 ],
             ];
         }
@@ -276,7 +276,7 @@ final class RuleEngineServiceTest extends TestCase
 
         $outcome = $this->service->evaluate('escalate', [], null, false);
 
-        $this->assertContains('always-notify', $outcome['geraaktRegels'] ?? [], 'sanity: rule fired');
+        $this->assertContains('always-notify', $outcome['triggeredRules'] ?? [], 'sanity: rule fired');
 
     }//end testWetEvaluationInvokesDispatcher()
 
@@ -321,7 +321,7 @@ final class RuleEngineServiceTest extends TestCase
         $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
             function (string $registerSlug, string $schema, array $filters = []): array {
                 if ($schema === RuleEngineService::RULE_SET_SCHEMA) {
-                    return [['slug' => 'loop', 'versie' => '1.0', 'ruleType' => 'condition-action']];
+                    return [['slug' => 'loop', 'version' => '1.0', 'ruleType' => 'condition-action']];
                 }
 
                 if ($schema === RuleEngineService::CONDITION_RULE_SCHEMA) {
@@ -343,7 +343,7 @@ final class RuleEngineServiceTest extends TestCase
         );
 
         $outcome = $service->evaluate(ruleSetSlug: 'loop', payload: []);
-        $this->assertStringContainsStringIgnoringCase('cycle', implode(' ', $outcome['fouten']));
+        $this->assertStringContainsStringIgnoringCase('cycle', implode(' ', $outcome['errors']));
 
     }//end testCallRuleSetSelfReferenceIsRefused()
 
@@ -369,7 +369,7 @@ final class RuleEngineServiceTest extends TestCase
         $this->objectService->method('searchObjectsBySlug')->willReturnCallback(
             function (string $registerSlug, string $schema, array $filters = []): array {
                 if ($schema === RuleEngineService::RULE_SET_SCHEMA) {
-                    return [['slug' => 'chain', 'versie' => '1.0', 'ruleType' => 'condition-action']];
+                    return [['slug' => 'chain', 'version' => '1.0', 'ruleType' => 'condition-action']];
                 }
 
                 if ($schema === RuleEngineService::CONDITION_RULE_SCHEMA) {

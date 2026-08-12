@@ -26,7 +26,7 @@
 				"type": "object",
 				"required": [
 					"slug",
-					"naam"
+					"name"
 				],
 				"properties": {
 					"slug": {
@@ -37,17 +37,17 @@
 						"maxLength": 64,
 						"description": "Kebab-case slug; uniquely identifies the RuleSet. Drives POST /api/rules/{ruleSetSlug}/evaluate."
 					},
-					"naam": {
+					"name": {
 						"title": "Name",
 						"type": "string",
 						"description": "Human-readable name of the RuleSet."
 					},
-					"beschrijving": {
+					"description": {
 						"title": "Description",
 						"type": "string",
 						"description": "Optional long-form description."
 					},
-					"versie": {
+					"version": {
 						"title": "Version",
 						"type": "string",
 						"default": "1.0.0",
@@ -75,25 +75,25 @@
 						"default": "decision-table",
 						"description": "Which paradigm the RuleSet uses: a DMN DecisionTable or a chain of ConditionActionRules."
 					},
-					"eigenaarApp": {
+					"ownerApp": {
 						"title": "Owner App",
 						"type": "string",
 						"description": "Owning consumer app identifier (e.g. openbuild-lending)."
 					},
-					"geactiveerdOp": {
+					"activatedOn": {
 						"title": "Activated At",
 						"type": "string",
 						"format": "date-time",
 						"description": "Timestamp of the last test → active transition."
 					},
-					"ingangsdatum": {
-						"title": "Effective Date",
+					"validFrom": {
+						"title": "Valid From",
 						"type": "string",
 						"format": "date",
 						"description": "Date from which the active version takes effect."
 					},
-					"einddatum": {
-						"title": "End Date",
+					"validUntil": {
+						"title": "Valid Until",
 						"type": "string",
 						"format": "date",
 						"description": "Optional end-of-validity date."
@@ -170,8 +170,8 @@
 							}
 						],
 						"subject": {
-							"nl": "Regelset {{naam}} is geactiveerd (versie {{versie}})",
-							"en": "Rule set {{naam}} has been activated (version {{versie}})"
+							"nl": "Regelset {{name}} is geactiveerd (versie {{version}})",
+							"en": "Rule set {{name}} has been activated (version {{version}})"
 						}
 					},
 					"ruleset-archived": {
@@ -190,8 +190,8 @@
 							}
 						],
 						"subject": {
-							"nl": "Regelset {{naam}} is gearchiveerd",
-							"en": "Rule set {{naam}} has been archived"
+							"nl": "Regelset {{name}} is gearchiveerd",
+							"en": "Rule set {{name}} has been archived"
 						}
 					}
 				}
@@ -248,7 +248,7 @@
 						"items": {
 							"type": "object",
 							"properties": {
-								"naam": {
+								"name": {
 									"title": "Column Name",
 									"description": "Name of the input column.",
 									"type": "string"
@@ -258,7 +258,7 @@
 									"description": "Data type of the input column (e.g. string, integer, number).",
 									"type": "string"
 								},
-								"expressiePad": {
+								"expressionPath": {
 									"title": "Expression Path",
 									"description": "Dot-notation path into the payload for this input column.",
 									"type": "string"
@@ -273,7 +273,7 @@
 						"items": {
 							"type": "object",
 							"properties": {
-								"naam": {
+								"name": {
 									"title": "Column Name",
 									"description": "Name of the output column.",
 									"type": "string"
@@ -283,7 +283,7 @@
 									"description": "Data type of the output column.",
 									"type": "string"
 								},
-								"defaultwaarde": {
+								"defaultValue": {
 									"title": "Default Value",
 									"description": "Optional default value for this output column, expressed as text.",
 									"type": "string"
@@ -291,19 +291,19 @@
 							}
 						}
 					},
-					"regels": {
+					"rules": {
 						"title": "Rules",
 						"type": "array",
 						"description": "The rule rows: each maps input-column FEEL conditions to output-column values.",
 						"items": {
 							"type": "object",
 							"properties": {
-								"condities": {
+								"conditions": {
 									"title": "Conditions",
 									"description": "Map of input-column names to FEEL condition expressions for this rule row.",
 									"type": "object"
 								},
-								"waardes": {
+								"values": {
 									"title": "Output Values",
 									"description": "Map of output-column names to their values when this rule row matches.",
 									"type": "object"
@@ -313,7 +313,7 @@
 									"description": "Human-readable label for this rule row.",
 									"type": "string"
 								},
-								"prioriteit": {
+								"priority": {
 									"title": "Priority",
 									"description": "Execution priority for this rule row (higher = evaluated first).",
 									"type": "integer",
@@ -329,7 +329,7 @@
 				"icon": "Flash",
 				"version": "1.0.0",
 				"title": "ConditionActionRule",
-				"description": "A condition-driven action chain belonging to a RuleSet. When its FEEL condition is true, its actions execute in declaration order (set-veld / send-notification / start-workflow / call-rule-set).",
+				"description": "A condition-driven action chain belonging to a RuleSet. When its FEEL condition is true, its actions execute in declaration order (set-field / send-notification / start-workflow / call-rule-set).",
 				"authorization": {
 					"read": [
 						"authenticated"
@@ -347,8 +347,8 @@
 				"type": "object",
 				"required": [
 					"ruleSetId",
-					"naam",
-					"conditie"
+					"name",
+					"condition"
 				],
 				"properties": {
 					"ruleSetId": {
@@ -356,17 +356,17 @@
 						"type": "string",
 						"description": "Slug of the owning RuleSet."
 					},
-					"naam": {
+					"name": {
 						"title": "Name",
 						"type": "string",
 						"description": "Human-readable name of the rule."
 					},
-					"beschrijving": {
+					"description": {
 						"title": "Description",
 						"type": "string",
 						"description": "Optional description."
 					},
-					"prioriteit": {
+					"priority": {
 						"title": "Priority",
 						"type": "integer",
 						"default": 0,
@@ -378,12 +378,12 @@
 						"default": 0,
 						"description": "Secondary ordering key (DESC), tie-broken by declaration order."
 					},
-					"conditie": {
+					"condition": {
 						"title": "Condition",
 						"type": "string",
 						"description": "FEEL-subset boolean expression evaluated against the payload."
 					},
-					"acties": {
+					"actions": {
 						"title": "Actions",
 						"type": "array",
 						"description": "Ordered actions to execute when the condition is true.",
@@ -392,10 +392,10 @@
 							"properties": {
 								"type": {
 									"title": "Action Type",
-									"description": "Type of action to execute (set-veld, send-notification, start-workflow, call-rule-set).",
+									"description": "Type of action to execute (set-field, send-notification, start-workflow, call-rule-set).",
 									"type": "string",
 									"enum": [
-										"set-veld",
+										"set-field",
 										"send-notification",
 										"start-workflow",
 										"call-rule-set"
@@ -415,7 +415,7 @@
 						"default": false,
 						"description": "When true, a failing action does not abort the remaining actions in this rule."
 					},
-					"actief": {
+					"active": {
 						"title": "Active",
 						"type": "boolean",
 						"default": true,
@@ -429,7 +429,7 @@
 				"icon": "ClipboardText",
 				"version": "1.0.0",
 				"title": "RuleExecutionLog",
-				"description": "Append-only audit record of a single rule evaluation (AVG art. 22 explainability). Captures input (optionally PII-masked), output, triggered rules, duration and any errors.",
+				"description": "Append-only audit record of a single rule evaluation (GDPR art. 22 explainability). Captures input (optionally PII-masked), output, triggered rules, duration and any errors.",
 				"authorization": {
 					"read": [
 						"authenticated"
@@ -454,12 +454,12 @@
 						"type": "string",
 						"description": "Slug of the evaluated RuleSet."
 					},
-					"ruleSetVersie": {
+					"ruleSetVersion": {
 						"title": "Rule Set Version",
 						"type": "string",
 						"description": "Semver of the evaluated version."
 					},
-					"tijdstip": {
+					"timestamp": {
 						"title": "Timestamp",
 						"type": "string",
 						"format": "date-time",
@@ -475,12 +475,12 @@
 						"type": "object",
 						"description": "Input payload, with configured PII fields masked."
 					},
-					"outputResultaat": {
+					"outputResult": {
 						"title": "Output Result",
 						"type": "object",
 						"description": "Evaluation result."
 					},
-					"geraaktRegels": {
+					"triggeredRules": {
 						"title": "Triggered Rules",
 						"type": "array",
 						"description": "Triggered rule identifiers.",
@@ -488,12 +488,12 @@
 							"type": "string"
 						}
 					},
-					"executieDuurMs": {
+					"executionDurationMs": {
 						"title": "Execution Duration (ms)",
 						"type": "integer",
 						"description": "Execution duration in milliseconds."
 					},
-					"fouten": {
+					"errors": {
 						"title": "Errors",
 						"type": "array",
 						"description": "Any errors raised during evaluation.",
@@ -543,7 +543,7 @@
 				"type": "object",
 				"required": [
 					"ruleSetId",
-					"naam"
+					"name"
 				],
 				"properties": {
 					"ruleSetId": {
@@ -551,12 +551,12 @@
 						"type": "string",
 						"description": "Slug of the RuleSet under test."
 					},
-					"naam": {
+					"name": {
 						"title": "Name",
 						"type": "string",
 						"description": "Test case name."
 					},
-					"beschrijving": {
+					"description": {
 						"title": "Description",
 						"type": "string",
 						"description": "What the case verifies."
@@ -566,23 +566,23 @@
 						"type": "object",
 						"description": "Sample input payload."
 					},
-					"verwachtResultaat": {
+					"expectedResult": {
 						"title": "Expected Result",
 						"type": "object",
 						"description": "Expected evaluation output."
 					},
-					"laatsteTestResultaat": {
+					"lastTestResult": {
 						"title": "Last Test Result",
 						"type": "string",
 						"enum": [
-							"geslaagd",
-							"gefaald",
-							"niet-uitgevoerd"
+							"passed",
+							"failed",
+							"not-run"
 						],
-						"default": "niet-uitgevoerd",
+						"default": "not-run",
 						"description": "Result of the most recent run."
 					},
-					"laatsteTestOutput": {
+					"lastTestOutput": {
 						"title": "Last Test Output",
 						"type": "object",
 						"description": "Actual output of the most recent run."
@@ -598,13 +598,13 @@
 					"slug": "loan-eligibility"
 				},
 				"slug": "loan-eligibility",
-				"naam": "Loan Eligibility Decision",
-				"beschrijving": "Multi-factor lending decision based on age, income, and credit score",
-				"versie": "1.0.0",
+				"name": "Loan Eligibility Decision",
+				"description": "Multi-factor lending decision based on age, income, and credit score",
+				"version": "1.0.0",
 				"status": "active",
 				"ruleType": "decision-table",
-				"eigenaarApp": "openbuild-lending",
-				"ingangsdatum": "2026-05-22"
+				"ownerApp": "openbuild-lending",
+				"validFrom": "2026-05-22"
 			},
 			{
 				"@self": {
@@ -616,60 +616,60 @@
 				"hitPolicy": "first",
 				"inputColumns": [
 					{
-						"naam": "applicantAge",
+						"name": "applicantAge",
 						"type": "integer",
-						"expressiePad": "applicant.age"
+						"expressionPath": "applicant.age"
 					},
 					{
-						"naam": "monthlyIncome",
+						"name": "monthlyIncome",
 						"type": "number",
-						"expressiePad": "applicant.monthlyIncome"
+						"expressionPath": "applicant.monthlyIncome"
 					},
 					{
-						"naam": "creditScore",
+						"name": "creditScore",
 						"type": "integer",
-						"expressiePad": "applicant.creditScore"
+						"expressionPath": "applicant.creditScore"
 					}
 				],
 				"outputColumns": [
 					{
-						"naam": "decision",
+						"name": "decision",
 						"type": "string",
-						"defaultwaarde": "deny"
+						"defaultValue": "deny"
 					},
 					{
-						"naam": "reason",
+						"name": "reason",
 						"type": "string",
-						"defaultwaarde": "Eligibility criteria not met"
+						"defaultValue": "Eligibility criteria not met"
 					}
 				],
-				"regels": [
+				"rules": [
 					{
-						"condities": {
+						"conditions": {
 							"applicantAge": ">=18",
 							"monthlyIncome": ">=2000",
 							"creditScore": ">=600"
 						},
-						"waardes": {
+						"values": {
 							"decision": "approve",
 							"reason": "All criteria met"
 						},
 						"label": "Standard approval"
 					},
 					{
-						"condities": {
+						"conditions": {
 							"applicantAge": ">=18",
 							"monthlyIncome": ">=1500",
 							"creditScore": ">=500"
 						},
-						"waardes": {
+						"values": {
 							"decision": "review",
 							"reason": "Manual review required"
 						},
 						"label": "Marginal case"
 					},
 					{
-						"waardes": {
+						"values": {
 							"decision": "deny",
 							"reason": "Eligibility criteria not met"
 						},
@@ -684,8 +684,8 @@
 					"slug": "loan-eligibility-test-1"
 				},
 				"ruleSetId": "loan-eligibility",
-				"naam": "Eligible applicant",
-				"beschrijving": "A 25-year-old with EUR 3,000 monthly income and 650 credit score should be approved",
+				"name": "Eligible applicant",
+				"description": "A 25-year-old with EUR 3,000 monthly income and 650 credit score should be approved",
 				"inputPayload": {
 					"applicant": {
 						"age": 25,
@@ -693,11 +693,11 @@
 						"creditScore": 650
 					}
 				},
-				"verwachtResultaat": {
+				"expectedResult": {
 					"decision": "approve",
 					"reason": "All criteria met"
 				},
-				"laatsteTestResultaat": "niet-uitgevoerd"
+				"lastTestResult": "not-run"
 			},
 			{
 				"@self": {
@@ -706,13 +706,13 @@
 					"slug": "invoice-routing"
 				},
 				"slug": "invoice-routing",
-				"naam": "Invoice Routing Rules",
-				"beschrijving": "Route invoices to approvers based on amount and department",
-				"versie": "1.0.0",
+				"name": "Invoice Routing Rules",
+				"description": "Route invoices to approvers based on amount and department",
+				"version": "1.0.0",
 				"status": "active",
 				"ruleType": "condition-action",
-				"eigenaarApp": "openbuild-invoicing",
-				"ingangsdatum": "2026-05-22"
+				"ownerApp": "openbuild-invoicing",
+				"validFrom": "2026-05-22"
 			},
 			{
 				"@self": {
@@ -721,11 +721,11 @@
 					"slug": "invoice-routing-rule-1"
 				},
 				"ruleSetId": "invoice-routing",
-				"naam": "High-value invoice escalation",
-				"prioriteit": 100,
+				"name": "High-value invoice escalation",
+				"priority": 100,
 				"salience": 10,
-				"conditie": "invoice.total > 5000 and invoice.department == 'procurement'",
-				"acties": [
+				"condition": "invoice.total > 5000 and invoice.department == 'procurement'",
+				"actions": [
 					{
 						"type": "send-notification",
 						"parameters": {
@@ -740,7 +740,7 @@
 						}
 					}
 				],
-				"actief": true
+				"active": true
 			},
 			{
 				"@self": {
@@ -749,13 +749,13 @@
 					"slug": "complaint-escalation"
 				},
 				"slug": "complaint-escalation",
-				"naam": "Complaint Escalation Rules",
-				"beschrijving": "Auto-escalate complaints based on severity and age",
-				"versie": "2.1.0",
+				"name": "Complaint Escalation Rules",
+				"description": "Auto-escalate complaints based on severity and age",
+				"version": "2.1.0",
 				"status": "active",
 				"ruleType": "condition-action",
-				"eigenaarApp": "openbuild-complaints",
-				"ingangsdatum": "2026-05-15"
+				"ownerApp": "openbuild-complaints",
+				"validFrom": "2026-05-15"
 			},
 			{
 				"@self": {
@@ -764,11 +764,11 @@
 					"slug": "complaint-escalation-rule-1"
 				},
 				"ruleSetId": "complaint-escalation",
-				"naam": "Critical complaint auto-escalate",
-				"prioriteit": 200,
+				"name": "Critical complaint auto-escalate",
+				"priority": 200,
 				"salience": 0,
-				"conditie": "complaint.severity == 'critical' or complaint.status == 'open'",
-				"acties": [
+				"condition": "complaint.severity == 'critical' or complaint.status == 'open'",
+				"actions": [
 					{
 						"type": "send-notification",
 						"parameters": {
@@ -777,14 +777,14 @@
 						}
 					},
 					{
-						"type": "set-veld",
+						"type": "set-field",
 						"parameters": {
-							"veld": "escalatedAt",
-							"waarde": "@now"
+							"field": "escalatedAt",
+							"value": "@now"
 						}
 					}
 				],
-				"actief": true
+				"active": true
 			}
 		]
 	}

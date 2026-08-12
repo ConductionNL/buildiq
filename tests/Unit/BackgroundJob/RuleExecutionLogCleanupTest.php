@@ -92,8 +92,8 @@ final class RuleExecutionLogCleanupTest extends TestCase
 
         $this->objectService->method('findAll')->willReturn(
             [
-                ['id' => 'uuid-old', 'tijdstip' => $old],
-                ['id' => 'uuid-recent', 'tijdstip' => $recent],
+                ['id' => 'uuid-old', 'timestamp' => $old],
+                ['id' => 'uuid-recent', 'timestamp' => $recent],
             ]
         );
 

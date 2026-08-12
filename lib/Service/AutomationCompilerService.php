@@ -96,15 +96,15 @@
  *
  * @spec openspec/changes/automation-designer/tasks.md#2.1
  * @spec openspec/changes/automation-designer/tasks.md#2.2
- * @spec openspec/specs/automation-designer/spec.md#req-autd-004
- * @spec openspec/specs/automation-designer/spec.md#req-autd-005
+ * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
  * @spec openspec/changes/automation-approval-steps/tasks.md#1.1
  * @spec openspec/changes/automation-approval-steps/tasks.md#1.2
- * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
  * @spec openspec/changes/automation-document-action/tasks.md#1.1
  * @spec openspec/changes/automation-document-action/tasks.md#1.2
  * @spec openspec/changes/automation-document-action/tasks.md#1.3
- * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+ * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
  */
 
 declare(strict_types=1);
@@ -281,7 +281,7 @@ class AutomationCompilerService
      * @throws UnsupportedAutomationCombinationException When the matrix (or condition placement) rejects the shape.
      *
      * @spec openspec/changes/automation-designer/tasks.md#2.1
-     * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+     * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
      */
     public function compile(array $automation): array
     {
@@ -429,7 +429,7 @@ class AutomationCompilerService
      * @return void
      *
      * @spec openspec/changes/automation-designer/tasks.md#2.2
-     * @spec openspec/specs/automation-designer/spec.md#req-autd-005
+     * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
      */
     public function remove(array $automation, array $provenance): void
     {
@@ -470,7 +470,7 @@ class AutomationCompilerService
      * @return array{drift:bool,compiledHash:?string,liveHash:?string}
      *
      * @spec openspec/changes/automation-designer/tasks.md#2.2
-     * @spec openspec/specs/automation-designer/spec.md#req-autd-005
+     * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
      */
     public function status(array $automation, array $provenance): array
     {
@@ -533,7 +533,7 @@ class AutomationCompilerService
      * @return string One of `none|pending|approved|rejected`.
      *
      * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
-     * @spec openspec/specs/automation-designer/spec.md#req-autd-007
+     * @spec openspec/specs/automation-designer/spec.md#requirement-dry-run-test-panel-evaluates-an-automation-without-side-effects-req-autd-007
      */
     public function approvalState(array $automation, array $provenance): string
     {
@@ -916,23 +916,23 @@ class AutomationCompilerService
     private function compileRulesBackend(array $automation, string $slug, mixed $condition, array $actions, bool $enabled, array &$plan): void
     {
         $ruleSetSlug = 'aut-'.$this->shortUuid(automation: $automation);
-        ['conditie' => $conditie, 'acties' => $mappedActions] = $this->buildConditionAndActions(condition: $condition, actions: $actions);
+        ['condition' => $compiledCondition, 'actions' => $mappedActions] = $this->buildConditionAndActions(condition: $condition, actions: $actions);
 
         $plan['ruleSet'] = [
-            'slug'        => $ruleSetSlug,
-            'naam'        => (string) ($automation['name'] ?? $slug),
-            'versie'      => '1.0.0',
-            'status'      => 'active',
-            'ruleType'    => 'condition-action',
-            'eigenaarApp' => (string) ($automation['applicationSlug'] ?? ''),
+            'slug'     => $ruleSetSlug,
+            'name'     => (string) ($automation['name'] ?? $slug),
+            'version'  => '1.0.0',
+            'status'   => 'active',
+            'ruleType' => 'condition-action',
+            'ownerApp' => (string) ($automation['applicationSlug'] ?? ''),
         ];
 
         $plan['conditionActionRule'] = [
             'ruleSetId' => $ruleSetSlug,
-            'naam'      => (string) ($automation['name'] ?? $slug),
-            'conditie'  => $conditie,
-            'acties'    => $mappedActions,
-            'actief'    => $enabled,
+            'name'      => (string) ($automation['name'] ?? $slug),
+            'condition' => $compiledCondition,
+            'actions'   => $mappedActions,
+            'active'    => $enabled,
         ];
 
     }//end compileRulesBackend()
@@ -951,44 +951,44 @@ class AutomationCompilerService
      * @return array<string,mixed> A synthetic ConditionActionRule-shaped record.
      *
      * @spec openspec/changes/automation-designer/tasks.md#3.1
-     * @spec openspec/specs/automation-designer/spec.md#req-autd-007
+     * @spec openspec/specs/automation-designer/spec.md#requirement-dry-run-test-panel-evaluates-an-automation-without-side-effects-req-autd-007
      */
     public function compileDryRunRule(array $automation): array
     {
         $condition = ($automation['condition'] ?? null);
         $actions   = array_values($this->orArray(value: $automation['actions'] ?? null));
 
-        ['conditie' => $conditie, 'acties' => $mappedActions] = $this->buildConditionAndActions(condition: $condition, actions: $actions);
+        ['condition' => $compiledCondition, 'actions' => $mappedActions] = $this->buildConditionAndActions(condition: $condition, actions: $actions);
 
         return [
-            'naam'       => (string) ($automation['name'] ?? ($automation['slug'] ?? '')),
-            'conditie'   => $conditie,
-            'acties'     => $mappedActions,
-            'actief'     => true,
-            'prioriteit' => 0,
-            'salience'   => 0,
+            'name'      => (string) ($automation['name'] ?? ($automation['slug'] ?? '')),
+            'condition' => $compiledCondition,
+            'actions'   => $mappedActions,
+            'active'    => true,
+            'priority'  => 0,
+            'salience'  => 0,
         ];
 
     }//end compileDryRunRule()
 
     /**
-     * Shared condition→`conditie` + actions→`acties` mapping used by both the
+     * Shared condition→`condition` + actions→`actions` mapping used by both the
      * rules backend and the dry-run panel.
      *
      * @param mixed            $condition Condition block (or null).
      * @param array<int,mixed> $actions   Automation action records.
      *
-     * @return array{conditie:string,acties:array<int,array<string,mixed>>}
+     * @return array{condition:string,actions:array<int,array<string,mixed>>}
      */
     private function buildConditionAndActions(mixed $condition, array $actions): array
     {
-        $conditie      = '';
-        $mappedActions = [];
+        $compiledCondition = '';
+        $mappedActions     = [];
 
         if (is_array($condition) === true) {
             $conditionType = (string) ($condition['type'] ?? '');
             if ($conditionType === 'feel') {
-                $conditie = (string) ($condition['expression'] ?? '');
+                $compiledCondition = (string) ($condition['expression'] ?? '');
             } else if ($conditionType === 'rule-set') {
                 $refSlug = (string) ($condition['ruleSetSlug'] ?? '');
                 if ($refSlug !== '') {
@@ -1006,7 +1006,7 @@ class AutomationCompilerService
             $mappedActions[] = $this->mapActionToRuleAction(action: $this->orArray(value: $action));
         }
 
-        return ['conditie' => $conditie, 'acties' => $mappedActions];
+        return ['condition' => $compiledCondition, 'actions' => $mappedActions];
 
     }//end buildConditionAndActions()
 
@@ -1784,12 +1784,12 @@ class AutomationCompilerService
         }
 
         return [
-            'slug'        => (string) ($ruleSet['slug'] ?? ''),
-            'naam'        => (string) ($ruleSet['naam'] ?? ''),
-            'versie'      => (string) ($ruleSet['versie'] ?? ''),
-            'status'      => (string) ($ruleSet['status'] ?? ''),
-            'ruleType'    => (string) ($ruleSet['ruleType'] ?? ''),
-            'eigenaarApp' => (string) ($ruleSet['eigenaarApp'] ?? ''),
+            'slug'     => (string) ($ruleSet['slug'] ?? ''),
+            'name'     => (string) ($ruleSet['name'] ?? ''),
+            'version'  => (string) ($ruleSet['version'] ?? ''),
+            'status'   => (string) ($ruleSet['status'] ?? ''),
+            'ruleType' => (string) ($ruleSet['ruleType'] ?? ''),
+            'ownerApp' => (string) ($ruleSet['ownerApp'] ?? ''),
         ];
 
     }//end fetchLiveRuleSet()
@@ -1814,10 +1814,10 @@ class AutomationCompilerService
 
         return [
             'ruleSetId' => (string) ($rule['ruleSetId'] ?? ''),
-            'naam'      => (string) ($rule['naam'] ?? ''),
-            'conditie'  => (string) ($rule['conditie'] ?? ''),
-            'acties'    => (array) ($rule['acties'] ?? []),
-            'actief'    => (bool) ($rule['actief'] ?? true),
+            'name'      => (string) ($rule['name'] ?? ''),
+            'condition' => (string) ($rule['condition'] ?? ''),
+            'actions'   => (array) ($rule['actions'] ?? []),
+            'active'    => (bool) ($rule['active'] ?? true),
         ];
 
     }//end fetchLiveConditionActionRule()

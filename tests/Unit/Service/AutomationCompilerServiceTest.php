@@ -242,12 +242,12 @@ final class AutomationCompilerServiceTest extends TestCase
 
         $this->assertSame(
             [
-                'slug'        => 'aut-11112222',
-                'naam'        => 'Flag large claims',
-                'versie'      => '1.0.0',
-                'status'      => 'active',
-                'ruleType'    => 'condition-action',
-                'eigenaarApp' => 'claims',
+                'slug'     => 'aut-11112222',
+                'name'     => 'Flag large claims',
+                'version'  => '1.0.0',
+                'status'   => 'active',
+                'ruleType' => 'condition-action',
+                'ownerApp' => 'claims',
             ],
             $plan['ruleSet']
         );
@@ -255,9 +255,9 @@ final class AutomationCompilerServiceTest extends TestCase
         $this->assertSame(
             [
                 'ruleSetId' => 'aut-11112222',
-                'naam'      => 'Flag large claims',
-                'conditie'  => 'payload.amount > 1000',
-                'acties'    => [
+                'name'      => 'Flag large claims',
+                'condition' => 'payload.amount > 1000',
+                'actions'   => [
                     [
                         'type'       => 'object-op',
                         'parameters' => [
@@ -268,7 +268,7 @@ final class AutomationCompilerServiceTest extends TestCase
                         ],
                     ],
                 ],
-                'actief'    => true,
+                'active'    => true,
             ],
             $plan['conditionActionRule']
         );

@@ -82,9 +82,9 @@ final class RuleImpactAnalysisServiceTest extends TestCase
             ->method('findAll')
             ->willReturn(
                 [
-                    ['userId' => 'app-alpha', 'tijdstip' => $recent, 'ruleSetId' => 'loan-eligibility'],
-                    ['userId' => 'app-alpha', 'tijdstip' => $recent, 'ruleSetId' => 'loan-eligibility'],
-                    ['userId' => 'app-beta', 'tijdstip' => $recent, 'ruleSetId' => 'loan-eligibility'],
+                    ['userId' => 'app-alpha', 'timestamp' => $recent, 'ruleSetId' => 'loan-eligibility'],
+                    ['userId' => 'app-alpha', 'timestamp' => $recent, 'ruleSetId' => 'loan-eligibility'],
+                    ['userId' => 'app-beta', 'timestamp' => $recent, 'ruleSetId' => 'loan-eligibility'],
                 ]
             );
 
@@ -119,8 +119,8 @@ final class RuleImpactAnalysisServiceTest extends TestCase
             ->method('findAll')
             ->willReturn(
                 [
-                    ['userId' => 'app-old', 'tijdstip' => $old,    'ruleSetId' => 'invoice-routing'],
-                    ['userId' => 'app-new', 'tijdstip' => $recent,  'ruleSetId' => 'invoice-routing'],
+                    ['userId' => 'app-old', 'timestamp' => $old,    'ruleSetId' => 'invoice-routing'],
+                    ['userId' => 'app-new', 'timestamp' => $recent,  'ruleSetId' => 'invoice-routing'],
                 ]
             );
 
@@ -183,8 +183,8 @@ final class RuleImpactAnalysisServiceTest extends TestCase
             ->method('findAll')
             ->willReturn(
                 [
-                    ['userId' => 'app-alpha', 'tijdstip' => $earlier, 'ruleSetId' => 'complaint-escalation'],
-                    ['userId' => 'app-alpha', 'tijdstip' => $later,   'ruleSetId' => 'complaint-escalation'],
+                    ['userId' => 'app-alpha', 'timestamp' => $earlier, 'ruleSetId' => 'complaint-escalation'],
+                    ['userId' => 'app-alpha', 'timestamp' => $later,   'ruleSetId' => 'complaint-escalation'],
                 ]
             );
 

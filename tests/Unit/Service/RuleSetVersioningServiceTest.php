@@ -94,15 +94,15 @@ final class RuleSetVersioningServiceTest extends TestCase
     public function testPromoteToActivePassing(): void
     {
         $this->ruleEngine->method('evaluate')->willReturn(
-            ['result' => ['decision' => 'approve'], 'geraaktRegels' => [], 'executieDuur' => 1, 'fouten' => []]
+            ['result' => ['decision' => 'approve'], 'triggeredRules' => [], 'executionTime' => 1, 'errors' => []]
         );
         $this->objectService->expects($this->once())->method('saveObject');
 
-        $ruleSet = ['slug' => 'loan-eligibility', 'versie' => '1.0.0', 'status' => 'test'];
-        $tests   = [['naam' => 't1', 'inputPayload' => [], 'verwachtResultaat' => ['decision' => 'approve']]];
+        $ruleSet = ['slug' => 'loan-eligibility', 'version' => '1.0.0', 'status' => 'test'];
+        $tests   = [['name' => 't1', 'inputPayload' => [], 'expectedResult' => ['decision' => 'approve']]];
 
         $updated = $this->service->promoteToActive($ruleSet, $tests, 'patch');
-        $this->assertSame('1.0.1', $updated['versie']);
+        $this->assertSame('1.0.1', $updated['version']);
         $this->assertSame('active', $updated['status']);
 
     }//end testPromoteToActivePassing()
@@ -115,12 +115,12 @@ final class RuleSetVersioningServiceTest extends TestCase
     public function testPromoteBlockedByFailingTest(): void
     {
         $this->ruleEngine->method('evaluate')->willReturn(
-            ['result' => ['decision' => 'deny'], 'geraaktRegels' => [], 'executieDuur' => 1, 'fouten' => []]
+            ['result' => ['decision' => 'deny'], 'triggeredRules' => [], 'executionTime' => 1, 'errors' => []]
         );
         $this->objectService->expects($this->never())->method('saveObject');
 
-        $ruleSet = ['slug' => 'loan-eligibility', 'versie' => '1.0.0', 'status' => 'test'];
-        $tests   = [['naam' => 'should-approve', 'inputPayload' => [], 'verwachtResultaat' => ['decision' => 'approve']]];
+        $ruleSet = ['slug' => 'loan-eligibility', 'version' => '1.0.0', 'status' => 'test'];
+        $tests   = [['name' => 'should-approve', 'inputPayload' => [], 'expectedResult' => ['decision' => 'approve']]];
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('should-approve');
