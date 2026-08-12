@@ -38,38 +38,35 @@ use Throwable;
  * context (lockedBy/expiresAt, chosen strategy, …) so the controller can
  * map exceptions to HTTP responses without parsing message strings.
  */
-abstract class VersionPromotionException extends RuntimeException
-{
+abstract class VersionPromotionException extends RuntimeException {
 
-    /**
-     * Machine-readable error code (the spec's `code` value).
-     *
-     * @var string
-     */
-    protected string $errorCode;
+	/**
+	 * Machine-readable error code (the spec's `code` value).
+	 *
+	 * @var string
+	 */
+	protected string $errorCode;
 
-    /**
-     * Constructor.
-     *
-     * @param string         $errorCode Machine-readable error code
-     * @param string         $message   Human-readable diagnostic message
-     * @param Throwable|null $previous  Wrapped causal exception, if any
-     *
-     * @return void
-     */
-    public function __construct(string $errorCode, string $message='', ?Throwable $previous=null)
-    {
-        parent::__construct(message: $message, code: 0, previous: $previous);
-        $this->errorCode = $errorCode;
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param string $errorCode Machine-readable error code
+	 * @param string $message Human-readable diagnostic message
+	 * @param Throwable|null $previous Wrapped causal exception, if any
+	 *
+	 * @return void
+	 */
+	public function __construct(string $errorCode, string $message = '', ?Throwable $previous = null) {
+		parent::__construct(message: $message, code: 0, previous: $previous);
+		$this->errorCode = $errorCode;
+	}//end __construct()
 
-    /**
-     * Get the machine-readable error code.
-     *
-     * @return string
-     */
-    public function getErrorCode(): string
-    {
-        return $this->errorCode;
-    }//end getErrorCode()
+	/**
+	 * Get the machine-readable error code.
+	 *
+	 * @return string
+	 */
+	public function getErrorCode(): string {
+		return $this->errorCode;
+	}//end getErrorCode()
 }//end class

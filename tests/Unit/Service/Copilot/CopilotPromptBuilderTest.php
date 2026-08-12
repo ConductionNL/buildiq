@@ -33,111 +33,104 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for CopilotPromptBuilder.
  */
-class CopilotPromptBuilderTest extends TestCase
-{
+class CopilotPromptBuilderTest extends TestCase {
 
-    /**
-     * @var OpenBuildToolProvider&MockObject
-     */
-    private OpenBuildToolProvider&MockObject $toolProvider;
+	/**
+	 * @var OpenBuildToolProvider&MockObject
+	 */
+	private OpenBuildToolProvider&MockObject $toolProvider;
 
-    /**
-     * Set up shared mocks + the SUT dependency.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up shared mocks + the SUT dependency.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->toolProvider = $this->createMock(OpenBuildToolProvider::class);
-        $this->toolProvider->method('getToolDescriptors')->willReturn(
-                [
-                    ['id' => 'openbuild.createApp', 'description' => 'Create app', 'inputSchema' => ['type' => 'object']],
-                    ['id' => 'openbuild.upsertPage', 'description' => 'Upsert page', 'inputSchema' => ['type' => 'object']],
-                ]
-                );
-    }//end setUp()
+		$this->toolProvider = $this->createMock(OpenBuildToolProvider::class);
+		$this->toolProvider->method('getToolDescriptors')->willReturn(
+			[
+				['id' => 'openbuild.createApp', 'description' => 'Create app', 'inputSchema' => ['type' => 'object']],
+				['id' => 'openbuild.upsertPage', 'description' => 'Upsert page', 'inputSchema' => ['type' => 'object']],
+			]
+		);
+	}//end setUp()
 
-    /**
-     * With no override, build() embeds the FULL tool catalogue (bare copilot, unchanged).
-     *
-     * @return void
-     */
-    public function testBuildEmbedsFullCatalogueByDefault(): void
-    {
-        $builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
-        $prompt  = $builder->build(brief: 'x');
+	/**
+	 * With no override, build() embeds the FULL tool catalogue (bare copilot, unchanged).
+	 *
+	 * @return void
+	 */
+	public function testBuildEmbedsFullCatalogueByDefault(): void {
+		$builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
+		$prompt = $builder->build(brief: 'x');
 
-        self::assertStringContainsString('openbuild.createApp', $prompt);
-        self::assertStringContainsString('openbuild.upsertPage', $prompt);
-    }//end testBuildEmbedsFullCatalogueByDefault()
+		self::assertStringContainsString('openbuild.createApp', $prompt);
+		self::assertStringContainsString('openbuild.upsertPage', $prompt);
+	}//end testBuildEmbedsFullCatalogueByDefault()
 
-    /**
-     * A narrowed `toolDescriptors` override embeds ONLY the narrowed set —
-     * the excluded tool never appears in the prompt sent to the LLM
-     * (agent-workspace design.md Decision 1).
-     *
-     * @return void
-     */
-    public function testBuildEmbedsOnlyNarrowedCatalogueWhenGiven(): void
-    {
-        $builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
-        $prompt  = $builder->build(
-            brief: 'x',
-            toolDescriptors: [['id' => 'openbuild.upsertPage', 'description' => 'Upsert page', 'inputSchema' => ['type' => 'object']]]
-        );
+	/**
+	 * A narrowed `toolDescriptors` override embeds ONLY the narrowed set —
+	 * the excluded tool never appears in the prompt sent to the LLM
+	 * (agent-workspace design.md Decision 1).
+	 *
+	 * @return void
+	 */
+	public function testBuildEmbedsOnlyNarrowedCatalogueWhenGiven(): void {
+		$builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
+		$prompt = $builder->build(
+			brief: 'x',
+			toolDescriptors: [['id' => 'openbuild.upsertPage', 'description' => 'Upsert page', 'inputSchema' => ['type' => 'object']]]
+		);
 
-        self::assertStringContainsString('openbuild.upsertPage', $prompt);
-        self::assertStringNotContainsString('openbuild.createApp', $prompt);
-    }//end testBuildEmbedsOnlyNarrowedCatalogueWhenGiven()
+		self::assertStringContainsString('openbuild.upsertPage', $prompt);
+		self::assertStringNotContainsString('openbuild.createApp', $prompt);
+	}//end testBuildEmbedsOnlyNarrowedCatalogueWhenGiven()
 
-    /**
-     * An `instructionsPrefix` is prefixed onto the prompt when given.
-     *
-     * @return void
-     */
-    public function testBuildPrefixesInstructionsWhenGiven(): void
-    {
-        $builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
-        $prompt  = $builder->build(brief: 'x', instructionsPrefix: 'Never touch existing schemas.');
+	/**
+	 * An `instructionsPrefix` is prefixed onto the prompt when given.
+	 *
+	 * @return void
+	 */
+	public function testBuildPrefixesInstructionsWhenGiven(): void {
+		$builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
+		$prompt = $builder->build(brief: 'x', instructionsPrefix: 'Never touch existing schemas.');
 
-        self::assertStringContainsString('Never touch existing schemas.', $prompt);
-        self::assertStringStartsWith('Agent instructions', $prompt);
-    }//end testBuildPrefixesInstructionsWhenGiven()
+		self::assertStringContainsString('Never touch existing schemas.', $prompt);
+		self::assertStringStartsWith('Agent instructions', $prompt);
+	}//end testBuildPrefixesInstructionsWhenGiven()
 
-    /**
-     * With no `instructionsPrefix`, the prompt carries no agent-instructions
-     * section (bare copilot, unchanged).
-     *
-     * @return void
-     */
-    public function testBuildOmitsInstructionsSectionByDefault(): void
-    {
-        $builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
-        $prompt  = $builder->build(brief: 'x');
+	/**
+	 * With no `instructionsPrefix`, the prompt carries no agent-instructions
+	 * section (bare copilot, unchanged).
+	 *
+	 * @return void
+	 */
+	public function testBuildOmitsInstructionsSectionByDefault(): void {
+		$builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
+		$prompt = $builder->build(brief: 'x');
 
-        self::assertStringNotContainsString('Agent instructions', $prompt);
-    }//end testBuildOmitsInstructionsSectionByDefault()
+		self::assertStringNotContainsString('Agent instructions', $prompt);
+	}//end testBuildOmitsInstructionsSectionByDefault()
 
-    /**
-     * buildRepairPrompt() also honours the narrowed catalogue + instructions prefix.
-     *
-     * @return void
-     */
-    public function testBuildRepairPromptHonoursNarrowingAndInstructions(): void
-    {
-        $builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
-        $prompt  = $builder->buildRepairPrompt(
-            brief: 'x',
-            previousOutput: 'not json',
-            parseError: 'syntax error',
-            toolDescriptors: [['id' => 'openbuild.upsertPage', 'description' => 'Upsert page', 'inputSchema' => ['type' => 'object']]],
-            instructionsPrefix: 'Be concise.'
-        );
+	/**
+	 * buildRepairPrompt() also honours the narrowed catalogue + instructions prefix.
+	 *
+	 * @return void
+	 */
+	public function testBuildRepairPromptHonoursNarrowingAndInstructions(): void {
+		$builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
+		$prompt = $builder->buildRepairPrompt(
+			brief: 'x',
+			previousOutput: 'not json',
+			parseError: 'syntax error',
+			toolDescriptors: [['id' => 'openbuild.upsertPage', 'description' => 'Upsert page', 'inputSchema' => ['type' => 'object']]],
+			instructionsPrefix: 'Be concise.'
+		);
 
-        self::assertStringContainsString('openbuild.upsertPage', $prompt);
-        self::assertStringNotContainsString('openbuild.createApp', $prompt);
-        self::assertStringContainsString('Be concise.', $prompt);
-    }//end testBuildRepairPromptHonoursNarrowingAndInstructions()
+		self::assertStringContainsString('openbuild.upsertPage', $prompt);
+		self::assertStringNotContainsString('openbuild.createApp', $prompt);
+		self::assertStringContainsString('Be concise.', $prompt);
+	}//end testBuildRepairPromptHonoursNarrowingAndInstructions()
 }//end class

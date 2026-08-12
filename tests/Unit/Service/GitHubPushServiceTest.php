@@ -43,179 +43,170 @@ use RuntimeException;
 /**
  * Tests for {@see GitHubPushService} — the no-token contract + fail-closed guards.
  */
-final class GitHubPushServiceTest extends TestCase
-{
-    /**
-     * A scratch tree with one file, cleaned up by the caller.
-     *
-     * @return string Absolute path to the tree.
-     */
-    private function makeTree(): string
-    {
-        $treeDir = sys_get_temp_dir().'/openbuild-test-tree-'.uniqid();
-        mkdir($treeDir, 0o755, true);
-        file_put_contents($treeDir.'/README.md', '# hello');
+final class GitHubPushServiceTest extends TestCase {
+	/**
+	 * A scratch tree with one file, cleaned up by the caller.
+	 *
+	 * @return string Absolute path to the tree.
+	 */
+	private function makeTree(): string {
+		$treeDir = sys_get_temp_dir() . '/openbuild-test-tree-' . uniqid();
+		mkdir($treeDir, 0o755, true);
+		file_put_contents($treeDir . '/README.md', '# hello');
 
-        return $treeDir;
-    }//end makeTree()
+		return $treeDir;
+	}//end makeTree()
 
-    /**
-     * Remove a scratch tree.
-     *
-     * @param string $treeDir The tree to remove.
-     *
-     * @return void
-     */
-    private function removeTree(string $treeDir): void
-    {
-        if (is_file($treeDir.'/README.md') === true) {
-            unlink($treeDir.'/README.md');
-        }
+	/**
+	 * Remove a scratch tree.
+	 *
+	 * @param string $treeDir The tree to remove.
+	 *
+	 * @return void
+	 */
+	private function removeTree(string $treeDir): void {
+		if (is_file($treeDir . '/README.md') === true) {
+			unlink($treeDir . '/README.md');
+		}
 
-        if (is_dir($treeDir) === true) {
-            rmdir($treeDir);
-        }
-    }//end removeTree()
+		if (is_dir($treeDir) === true) {
+			rmdir($treeDir);
+		}
+	}//end removeTree()
 
-    /**
-     * The core regression: NO method on this service may take a PAT.
-     *
-     * A `$pat` parameter reappearing anywhere means the app has taken custody of the
-     * user's token again, which is the whole thing this change removes. Asserted over
-     * every method — public and private — so it cannot creep back in via a helper.
-     *
-     * @return void
-     */
-    public function testNoMethodAcceptsAToken(): void
-    {
-        $reflection = new \ReflectionClass(GitHubPushService::class);
+	/**
+	 * The core regression: NO method on this service may take a PAT.
+	 *
+	 * A `$pat` parameter reappearing anywhere means the app has taken custody of the
+	 * user's token again, which is the whole thing this change removes. Asserted over
+	 * every method — public and private — so it cannot creep back in via a helper.
+	 *
+	 * @return void
+	 */
+	public function testNoMethodAcceptsAToken(): void {
+		$reflection = new \ReflectionClass(GitHubPushService::class);
 
-        foreach ($reflection->getMethods() as $method) {
-            foreach ($method->getParameters() as $parameter) {
-                $name = strtolower($parameter->getName());
-                self::assertNotSame(
-                    'pat',
-                    $name,
-                    $method->getName().'() must NOT take a PAT — GitHub auth belongs to the broker'
-                );
-                self::assertStringNotContainsString(
-                    'token',
-                    $name,
-                    $method->getName().'() must NOT take a token — GitHub auth belongs to the broker'
-                );
-            }
-        }
-    }//end testNoMethodAcceptsAToken()
+		foreach ($reflection->getMethods() as $method) {
+			foreach ($method->getParameters() as $parameter) {
+				$name = strtolower($parameter->getName());
+				self::assertNotSame(
+					'pat',
+					$name,
+					$method->getName() . '() must NOT take a PAT — GitHub auth belongs to the broker'
+				);
+				self::assertStringNotContainsString(
+					'token',
+					$name,
+					$method->getName() . '() must NOT take a token — GitHub auth belongs to the broker'
+				);
+			}
+		}
+	}//end testNoMethodAcceptsAToken()
 
-    /**
-     * push() names a credential, not a secret.
-     *
-     * @return void
-     */
-    public function testPushTakesACredentialIdAndAnActingUser(): void
-    {
-        $reflection = new \ReflectionMethod(GitHubPushService::class, 'push');
-        $names      = array_map(static fn ($p) => $p->getName(), $reflection->getParameters());
+	/**
+	 * push() names a credential, not a secret.
+	 *
+	 * @return void
+	 */
+	public function testPushTakesACredentialIdAndAnActingUser(): void {
+		$reflection = new \ReflectionMethod(GitHubPushService::class, 'push');
+		$names = array_map(static fn ($p) => $p->getName(), $reflection->getParameters());
 
-        self::assertContains('credentialId', $names, 'push() must take a broker credential UUID');
-        self::assertContains(
-            'actingUserId',
-            $names,
-            'push() must take the credential owner — the background job has no session for the broker to read'
-        );
-    }//end testPushTakesACredentialIdAndAnActingUser()
+		self::assertContains('credentialId', $names, 'push() must take a broker credential UUID');
+		self::assertContains(
+			'actingUserId',
+			$names,
+			'push() must take the credential owner — the background job has no session for the broker to read'
+		);
+	}//end testPushTakesACredentialIdAndAnActingUser()
 
-    /**
-     * The service holds no HTTP client: it makes no outbound call of its own, so
-     * there is no request it could attach an Authorization header to.
-     *
-     * @return void
-     */
-    public function testServiceHoldsNoHttpClient(): void
-    {
-        $reflection = new \ReflectionClass(GitHubPushService::class);
+	/**
+	 * The service holds no HTTP client: it makes no outbound call of its own, so
+	 * there is no request it could attach an Authorization header to.
+	 *
+	 * @return void
+	 */
+	public function testServiceHoldsNoHttpClient(): void {
+		$reflection = new \ReflectionClass(GitHubPushService::class);
 
-        foreach ($reflection->getConstructor()->getParameters() as $parameter) {
-            $type = (string) $parameter->getType();
-            self::assertStringNotContainsString(
-                'IClientService',
-                $type,
-                'GitHubPushService must not hold an HTTP client — every call goes through the broker'
-            );
-        }
-    }//end testServiceHoldsNoHttpClient()
+		foreach ($reflection->getConstructor()->getParameters() as $parameter) {
+			$type = (string)$parameter->getType();
+			self::assertStringNotContainsString(
+				'IClientService',
+				$type,
+				'GitHubPushService must not hold an HTTP client — every call goes through the broker'
+			);
+		}
+	}//end testServiceHoldsNoHttpClient()
 
-    /**
-     * Fail closed when the broker cannot serve the call: no fallback, no push.
-     *
-     * OpenRegister IS on the unit-test autoloader, so `isBrokerAvailable()` is true
-     * here and `push()` gets as far as the first broker call — which cannot resolve a
-     * real `Server::get()` container in a unit test. It must throw rather than degrade
-     * to any token-bearing path. Whether the broker is missing, denies the call, or is
-     * simply unreachable, the outcome has to be the same: no repository is created.
-     *
-     * @return void
-     */
-    public function testPushFailsClosedWhenTheBrokerCannotServeTheCall(): void
-    {
-        $treeDir = $this->makeTree();
-        $service = new GitHubPushService(new NullLogger());
+	/**
+	 * Fail closed when the broker cannot serve the call: no fallback, no push.
+	 *
+	 * OpenRegister IS on the unit-test autoloader, so `isBrokerAvailable()` is true
+	 * here and `push()` gets as far as the first broker call — which cannot resolve a
+	 * real `Server::get()` container in a unit test. It must throw rather than degrade
+	 * to any token-bearing path. Whether the broker is missing, denies the call, or is
+	 * simply unreachable, the outcome has to be the same: no repository is created.
+	 *
+	 * @return void
+	 */
+	public function testPushFailsClosedWhenTheBrokerCannotServeTheCall(): void {
+		$treeDir = $this->makeTree();
+		$service = new GitHubPushService(new NullLogger());
 
-        $this->expectException(RuntimeException::class);
+		$this->expectException(RuntimeException::class);
 
-        try {
-            $service->push(
-                jobUuid: 'job-123',
-                treeDir: $treeDir,
-                credentialId: 'cred-uuid',
-                org: 'acme',
-                repo: 'app',
-                visibility: 'public'
-            );
-        } finally {
-            $this->removeTree($treeDir);
-        }
-    }//end testPushFailsClosedWhenTheBrokerCannotServeTheCall()
+		try {
+			$service->push(
+				jobUuid: 'job-123',
+				treeDir: $treeDir,
+				credentialId: 'cred-uuid',
+				org: 'acme',
+				repo: 'app',
+				visibility: 'public'
+			);
+		} finally {
+			$this->removeTree($treeDir);
+		}
+	}//end testPushFailsClosedWhenTheBrokerCannotServeTheCall()
 
-    /**
-     * The broker-availability check is a real `class_exists` on OpenRegister's broker,
-     * so an instance without OpenRegister cannot reach the push path at all.
-     *
-     * @return void
-     */
-    public function testBrokerAvailabilityIsCheckedAgainstOpenRegister(): void
-    {
-        $service = new GitHubPushService(new NullLogger());
+	/**
+	 * The broker-availability check is a real `class_exists` on OpenRegister's broker,
+	 * so an instance without OpenRegister cannot reach the push path at all.
+	 *
+	 * @return void
+	 */
+	public function testBrokerAvailabilityIsCheckedAgainstOpenRegister(): void {
+		$service = new GitHubPushService(new NullLogger());
 
-        self::assertTrue(
-            $service->isBrokerAvailable(),
-            'OpenRegister is on the test autoloader, so the broker must resolve'
-        );
-    }//end testBrokerAvailabilityIsCheckedAgainstOpenRegister()
+		self::assertTrue(
+			$service->isBrokerAvailable(),
+			'OpenRegister is on the test autoloader, so the broker must resolve'
+		);
+	}//end testBrokerAvailabilityIsCheckedAgainstOpenRegister()
 
-    /**
-     * An empty credential is refused too — a GitHub export cannot proceed
-     * unauthenticated.
-     *
-     * @return void
-     */
-    public function testPushRefusesAnEmptyCredential(): void
-    {
-        $treeDir = $this->makeTree();
-        $service = new GitHubPushService(new NullLogger());
+	/**
+	 * An empty credential is refused too — a GitHub export cannot proceed
+	 * unauthenticated.
+	 *
+	 * @return void
+	 */
+	public function testPushRefusesAnEmptyCredential(): void {
+		$treeDir = $this->makeTree();
+		$service = new GitHubPushService(new NullLogger());
 
-        $this->expectException(RuntimeException::class);
+		$this->expectException(RuntimeException::class);
 
-        try {
-            $service->push(
-                jobUuid: 'job-123',
-                treeDir: $treeDir,
-                credentialId: '',
-                org: 'acme',
-                repo: 'app'
-            );
-        } finally {
-            $this->removeTree($treeDir);
-        }
-    }//end testPushRefusesAnEmptyCredential()
+		try {
+			$service->push(
+				jobUuid: 'job-123',
+				treeDir: $treeDir,
+				credentialId: '',
+				org: 'acme',
+				repo: 'app'
+			);
+		} finally {
+			$this->removeTree($treeDir);
+		}
+	}//end testPushRefusesAnEmptyCredential()
 }//end class

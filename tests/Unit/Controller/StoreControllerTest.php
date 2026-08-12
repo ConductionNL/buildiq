@@ -34,7 +34,6 @@ use OCA\OpenBuild\Controller\ApplicationsController;
 use OCA\OpenBuild\Controller\StoreController;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCP\AppFramework\Http;
-use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -45,249 +44,237 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for StoreController.
  */
-class StoreControllerTest extends TestCase
-{
-    /**
-     * Mock HTTP request.
-     *
-     * @var IRequest&MockObject
-     */
-    private IRequest&MockObject $request;
+class StoreControllerTest extends TestCase {
+	/**
+	 * Mock HTTP request.
+	 *
+	 * @var IRequest&MockObject
+	 */
+	private IRequest&MockObject $request;
 
-    /**
-     * Mock logger.
-     *
-     * @var LoggerInterface&MockObject
-     */
-    private LoggerInterface&MockObject $logger;
+	/**
+	 * Mock logger.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
+	private LoggerInterface&MockObject $logger;
 
-    /**
-     * Mock user session.
-     *
-     * @var IUserSession&MockObject
-     */
-    private IUserSession&MockObject $userSession;
+	/**
+	 * Mock user session.
+	 *
+	 * @var IUserSession&MockObject
+	 */
+	private IUserSession&MockObject $userSession;
 
-    /**
-     * Mock store service.
-     *
-     * @var GenericStoreService&MockObject
-     */
-    private GenericStoreService&MockObject $storeService;
+	/**
+	 * Mock store service.
+	 *
+	 * @var GenericStoreService&MockObject
+	 */
+	private GenericStoreService&MockObject $storeService;
 
-    /**
-     * Mock shared install seam.
-     *
-     * @var ApplicationsController&MockObject
-     */
-    private ApplicationsController&MockObject $appsController;
+	/**
+	 * Mock shared install seam.
+	 *
+	 * @var ApplicationsController&MockObject
+	 */
+	private ApplicationsController&MockObject $appsController;
 
-    /**
-     * Set up shared mocks.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up shared mocks.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request               = $this->createMock(IRequest::class);
-        $this->logger                = $this->createMock(LoggerInterface::class);
-        $this->userSession           = $this->createMock(IUserSession::class);
-        $this->storeService          = $this->createMock(GenericStoreService::class);
-        $this->appsController = $this->createMock(ApplicationsController::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->storeService = $this->createMock(GenericStoreService::class);
+		$this->appsController = $this->createMock(ApplicationsController::class);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Build the controller under test.
-     *
-     * @return StoreController
-     */
-    private function controller(): StoreController
-    {
-        return new StoreController(
-            request: $this->request,
-            logger: $this->logger,
-            userSession: $this->userSession,
-            storeService: $this->storeService,
-            appsController: $this->appsController
-        );
+	/**
+	 * Build the controller under test.
+	 *
+	 * @return StoreController
+	 */
+	private function controller(): StoreController {
+		return new StoreController(
+			request: $this->request,
+			logger: $this->logger,
+			userSession: $this->userSession,
+			storeService: $this->storeService,
+			appsController: $this->appsController
+		);
 
-    }//end controller()
+	}//end controller()
 
-    /**
-     * Build a mock IUser with the given UID.
-     *
-     * @param string $uid The user UID.
-     *
-     * @return IUser&MockObject
-     */
-    private function mockUser(string $uid): IUser&MockObject
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($uid);
+	/**
+	 * Build a mock IUser with the given UID.
+	 *
+	 * @param string $uid The user UID.
+	 *
+	 * @return IUser&MockObject
+	 */
+	private function mockUser(string $uid): IUser&MockObject {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
 
-        return $user;
+		return $user;
+	}//end mockUser()
 
-    }//end mockUser()
+	/**
+	 * Anonymous search is rejected 401 and the store service is never queried.
+	 *
+	 * @return void
+	 */
+	public function testAnonymousSearchIsRejected(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->storeService->expects(self::never())->method('search');
 
-    /**
-     * Anonymous search is rejected 401 and the store service is never queried.
-     *
-     * @return void
-     */
-    public function testAnonymousSearchIsRejected(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
-        $this->storeService->expects(self::never())->method('search');
+		$response = $this->controller()->search();
 
-        $response = $this->controller()->search();
+		self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-        self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+	}//end testAnonymousSearchIsRejected()
 
-    }//end testAnonymousSearchIsRejected()
+	/**
+	 * Anonymous install is rejected 401 and nothing is resolved/installed.
+	 *
+	 * @return void
+	 */
+	public function testAnonymousInstallIsRejected(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->storeService->expects(self::never())->method('resolve');
+		$this->appsController->expects(self::never())->method('installFromTemplateArray');
 
-    /**
-     * Anonymous install is rejected 401 and nothing is resolved/installed.
-     *
-     * @return void
-     */
-    public function testAnonymousInstallIsRejected(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
-        $this->storeService->expects(self::never())->method('resolve');
-        $this->appsController->expects(self::never())->method('installFromTemplateArray');
+		$response = $this->controller()->install(slug: 'permit-tracker');
 
-        $response = $this->controller()->install(slug: 'permit-tracker');
+		self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
-        self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+	}//end testAnonymousInstallIsRejected()
 
-    }//end testAnonymousInstallIsRejected()
+	/**
+	 * An authenticated search proxies the store service and returns its cards.
+	 *
+	 * @return void
+	 */
+	public function testAuthenticatedSearchProxiesStoreService(): void {
+		$this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+		// Key-aware: the search action reads `q` AND `kind` separately
+		// (ADR-080 Decision 5). A blanket willReturn() would hand the same
+		// value to both and quietly assert the wrong call shape.
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key) => $key === 'q' ? 'permits' : null
+		);
 
-    /**
-     * An authenticated search proxies the store service and returns its cards.
-     *
-     * @return void
-     */
-    public function testAuthenticatedSearchProxiesStoreService(): void
-    {
-        $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
-        // Key-aware: the search action reads `q` AND `kind` separately
-        // (ADR-080 Decision 5). A blanket willReturn() would hand the same
-        // value to both and quietly assert the wrong call shape.
-        $this->request->method('getParam')->willReturnCallback(
-            static fn (string $key) => $key === 'q' ? 'permits' : null
-        );
+		$cards = [['slug' => 'permit-tracker', 'title' => 'Permit Tracker']];
+		$this->storeService->expects(self::once())
+			->method('search')
+			// ADR-080: discovery is parameterised by the app's StoreDescriptor,
+			// so the query is the SECOND argument now, not the first.
+			->with(self::anything(), 'permits', null)
+			->willReturn(['outcome' => GenericStoreService::OUTCOME_OK, 'cards' => $cards]);
 
-        $cards = [['slug' => 'permit-tracker', 'title' => 'Permit Tracker']];
-        $this->storeService->expects(self::once())
-            ->method('search')
-            // ADR-080: discovery is parameterised by the app's StoreDescriptor,
-            // so the query is the SECOND argument now, not the first.
-            ->with(self::anything(), 'permits', null)
-            ->willReturn(['outcome' => GenericStoreService::OUTCOME_OK, 'cards' => $cards]);
+		$response = $this->controller()->search();
 
-        $response = $this->controller()->search();
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		$data = $response->getData();
+		self::assertSame(GenericStoreService::OUTCOME_OK, $data['outcome']);
+		self::assertSame($cards, $data['cards']);
 
-        self::assertSame(Http::STATUS_OK, $response->getStatus());
-        $data = $response->getData();
-        self::assertSame(GenericStoreService::OUTCOME_OK, $data['outcome']);
-        self::assertSame($cards, $data['cards']);
+	}//end testAuthenticatedSearchProxiesStoreService()
 
-    }//end testAuthenticatedSearchProxiesStoreService()
+	/**
+	 * An unresolvable slug (resolve → null) yields 404 and never
+	 * delegates to the install seam.
+	 *
+	 * @return void
+	 */
+	public function testInstallUnresolvableSlugIsNotFound(): void {
+		$this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+		$this->request->method('getParam')
+			->willReturnCallback(static function (string $key): ?string {
+				return match ($key) {
+					'name' => 'My Permits',
+					'slug' => 'my-permits',
+					default => null,
+				};
+			});
 
-    /**
-     * An unresolvable slug (resolve → null) yields 404 and never
-     * delegates to the install seam.
-     *
-     * @return void
-     */
-    public function testInstallUnresolvableSlugIsNotFound(): void
-    {
-        $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
-        $this->request->method('getParam')
-            ->willReturnCallback(static function (string $key): ?string {
-                return match ($key) {
-                    'name' => 'My Permits',
-                    'slug' => 'my-permits',
-                    default => null,
-                };
-            });
+		$this->storeService->method('resolve')->willReturn(null);
+		$this->appsController->expects(self::never())->method('installFromTemplateArray');
 
-        $this->storeService->method('resolve')->willReturn(null);
-        $this->appsController->expects(self::never())->method('installFromTemplateArray');
+		$response = $this->controller()->install(slug: 'permit-tracker');
 
-        $response = $this->controller()->install(slug: 'permit-tracker');
+		self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 
-        self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testInstallUnresolvableSlugIsNotFound()
 
-    }//end testInstallUnresolvableSlugIsNotFound()
+	/**
+	 * A resolvable slug delegates exactly once to the install seam with the
+	 * resolved payload + body name/slug + owner UID, and returns its response.
+	 *
+	 * @return void
+	 */
+	public function testInstallHappyPathDelegatesToInstallSeam(): void {
+		$this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+		$this->request->method('getParam')
+			->willReturnCallback(static function (string $key): ?string {
+				return match ($key) {
+					'name' => 'My Permits',
+					'slug' => 'my-permits',
+					default => null,
+				};
+			});
 
-    /**
-     * A resolvable slug delegates exactly once to the install seam with the
-     * resolved payload + body name/slug + owner UID, and returns its response.
-     *
-     * @return void
-     */
-    public function testInstallHappyPathDelegatesToInstallSeam(): void
-    {
-        $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
-        $this->request->method('getParam')
-            ->willReturnCallback(static function (string $key): ?string {
-                return match ($key) {
-                    'name' => 'My Permits',
-                    'slug' => 'my-permits',
-                    default => null,
-                };
-            });
+		$template = ['slug' => 'permit-tracker', 'manifest' => ['pages' => []]];
+		$this->storeService->method('resolve')->with(self::anything(), 'permit-tracker')->willReturn($template);
 
-        $template = ['slug' => 'permit-tracker', 'manifest' => ['pages' => []]];
-        $this->storeService->method('resolve')->with(self::anything(), 'permit-tracker')->willReturn($template);
+		// The seam returns a {status, data} result; the controller wraps it.
+		$this->appsController->expects(self::once())
+			->method('installFromTemplateArray')
+			->with($template, 'My Permits', 'my-permits', 'alice')
+			->willReturn(['status' => Http::STATUS_CREATED, 'data' => ['uuid' => 'new-app', 'slug' => 'my-permits']]);
 
-        // The seam returns a {status, data} result; the controller wraps it.
-        $this->appsController->expects(self::once())
-            ->method('installFromTemplateArray')
-            ->with($template, 'My Permits', 'my-permits', 'alice')
-            ->willReturn(['status' => Http::STATUS_CREATED, 'data' => ['uuid' => 'new-app', 'slug' => 'my-permits']]);
+		$response = $this->controller()->install(slug: 'permit-tracker');
 
-        $response = $this->controller()->install(slug: 'permit-tracker');
+		self::assertSame(Http::STATUS_CREATED, $response->getStatus());
+		self::assertSame('new-app', $response->getData()['uuid']);
 
-        self::assertSame(Http::STATUS_CREATED, $response->getStatus());
-        self::assertSame('new-app', $response->getData()['uuid']);
+	}//end testInstallHappyPathDelegatesToInstallSeam()
 
-    }//end testInstallHappyPathDelegatesToInstallSeam()
+	/**
+	 * An invalid (non-kebab) template slug is rejected 400 before resolution.
+	 *
+	 * @return void
+	 */
+	public function testInstallInvalidSlugIsBadRequest(): void {
+		$this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+		$this->storeService->expects(self::never())->method('resolve');
 
-    /**
-     * An invalid (non-kebab) template slug is rejected 400 before resolution.
-     *
-     * @return void
-     */
-    public function testInstallInvalidSlugIsBadRequest(): void
-    {
-        $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
-        $this->storeService->expects(self::never())->method('resolve');
+		$response = $this->controller()->install(slug: 'Not_Valid');
 
-        $response = $this->controller()->install(slug: 'Not_Valid');
+		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 
-        self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testInstallInvalidSlugIsBadRequest()
 
-    }//end testInstallInvalidSlugIsBadRequest()
+	/**
+	 * A missing name / invalid new slug body is rejected 400 before resolution.
+	 *
+	 * @return void
+	 */
+	public function testInstallMissingNameIsBadRequest(): void {
+		$this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+		$this->request->method('getParam')->willReturn(null);
+		$this->storeService->expects(self::never())->method('resolve');
 
-    /**
-     * A missing name / invalid new slug body is rejected 400 before resolution.
-     *
-     * @return void
-     */
-    public function testInstallMissingNameIsBadRequest(): void
-    {
-        $this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
-        $this->request->method('getParam')->willReturn(null);
-        $this->storeService->expects(self::never())->method('resolve');
+		$response = $this->controller()->install(slug: 'permit-tracker');
 
-        $response = $this->controller()->install(slug: 'permit-tracker');
+		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 
-        self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-
-    }//end testInstallMissingNameIsBadRequest()
+	}//end testInstallMissingNameIsBadRequest()
 }//end class

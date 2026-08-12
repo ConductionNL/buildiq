@@ -44,53 +44,50 @@ use Throwable;
 /**
  * Lazily resolves optional cross-app services.
  */
-class ContainerLocator
-{
-    /**
-     * Constructor.
-     *
-     * @param IServerContainer $container The server container.
-     * @param LoggerInterface  $logger    PSR logger.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly IServerContainer $container,
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+class ContainerLocator {
+	/**
+	 * Constructor.
+	 *
+	 * @param IServerContainer $container The server container.
+	 * @param LoggerInterface $logger PSR logger.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly IServerContainer $container,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Resolve a service by class name.
-     *
-     * @param string $className Fully-qualified class name.
-     *
-     * @return object|null The service, or null when it cannot be resolved.
-     *
-     * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-an-absent-optional-dependency-degrades-with-a-stated-reason
-     */
-    public function get(string $className): ?object
-    {
-        $name = ltrim($className, '\\');
-        if (class_exists($name) === false && interface_exists($name) === false) {
-            return null;
-        }
+	/**
+	 * Resolve a service by class name.
+	 *
+	 * @param string $className Fully-qualified class name.
+	 *
+	 * @return object|null The service, or null when it cannot be resolved.
+	 *
+	 * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-an-absent-optional-dependency-degrades-with-a-stated-reason
+	 */
+	public function get(string $className): ?object {
+		$name = ltrim($className, '\\');
+		if (class_exists($name) === false && interface_exists($name) === false) {
+			return null;
+		}
 
-        try {
-            $service = $this->container->get($name);
-        } catch (Throwable $e) {
-            $this->logger->debug(
-                'OpenBuild: optional service "'.$name.'" could not be resolved: '.$e->getMessage()
-            );
+		try {
+			$service = $this->container->get($name);
+		} catch (Throwable $e) {
+			$this->logger->debug(
+				'OpenBuild: optional service "' . $name . '" could not be resolved: ' . $e->getMessage()
+			);
 
-            return null;
-        }
+			return null;
+		}
 
-        if (is_object($service) === false) {
-            return null;
-        }
+		if (is_object($service) === false) {
+			return null;
+		}
 
-        return $service;
-
-    }//end get()
+		return $service;
+	}//end get()
 }//end class

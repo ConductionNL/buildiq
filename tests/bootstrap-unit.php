@@ -25,11 +25,11 @@ $autoloader->setPsr4('OCA\\OpenBuild\\', [$openBuildLib]);
 $rii = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($openBuildLib));
 $classMap = [];
 foreach ($rii as $file) {
-    if ($file->isFile() === false || $file->getExtension() !== 'php') {
-        continue;
-    }
-    $relative = substr($file->getPathname(), strlen($openBuildLib) + 1);
-    $classMap['OCA\\OpenBuild\\' . str_replace(['/', '.php'], ['\\', ''], $relative)] = $file->getPathname();
+	if ($file->isFile() === false || $file->getExtension() !== 'php') {
+		continue;
+	}
+	$relative = substr($file->getPathname(), strlen($openBuildLib) + 1);
+	$classMap['OCA\\OpenBuild\\' . str_replace(['/', '.php'], ['\\', ''], $relative)] = $file->getPathname();
 }
 $autoloader->addClassMap($classMap);
 
@@ -38,15 +38,15 @@ $autoloader->addClassMap($classMap);
 // the typehint reflection resolves; the actual implementations are
 // replaced with PHPUnit mocks in each test.
 $orCandidates = [
-    __DIR__ . '/../../openregister/lib',                                                            // git-worktree sibling
-    dirname(realpath(__DIR__ . '/../vendor'), levels: 1) . '/../openregister/lib',                  // symlinked vendor → apps-extra/openregister/lib
-    '/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib',           // dev fallback
+	__DIR__ . '/../../openregister/lib',                                                            // git-worktree sibling
+	dirname(realpath(__DIR__ . '/../vendor'), levels: 1) . '/../openregister/lib',                  // symlinked vendor → apps-extra/openregister/lib
+	'/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib',           // dev fallback
 ];
 foreach ($orCandidates as $orPath) {
-    if (is_dir($orPath) === true) {
-        $autoloader->addPsr4('OCA\\OpenRegister\\', realpath($orPath));
-        break;
-    }
+	if (is_dir($orPath) === true) {
+		$autoloader->addPsr4('OCA\\OpenRegister\\', realpath($orPath));
+		break;
+	}
 }
 
 // Final fallback — if OpenRegister sources aren't present at all,
@@ -68,13 +68,13 @@ require_once __DIR__ . '/Stubs/Mcp/IMcpToolProvider.php';
 // the docker container), boot it so functional tests can talk to OC.
 // In a stripped CI environment we skip — unit tests don't need it.
 if (file_exists(__DIR__ . '/../../../lib/base.php') === true
-    && getenv('OPENBUILD_SKIP_NC_BOOTSTRAP') === false
+	&& getenv('OPENBUILD_SKIP_NC_BOOTSTRAP') === false
 ) {
-    require_once __DIR__ . '/../../../lib/base.php';
+	require_once __DIR__ . '/../../../lib/base.php';
 
-    // Register Test\ namespace for NC test classes.
-    $serverTestsLib = __DIR__ . '/../../../tests/lib/';
-    if (is_dir($serverTestsLib) === true) {
-        $autoloader->addPsr4('Test\\', $serverTestsLib);
-    }
+	// Register Test\ namespace for NC test classes.
+	$serverTestsLib = __DIR__ . '/../../../tests/lib/';
+	if (is_dir($serverTestsLib) === true) {
+		$autoloader->addPsr4('Test\\', $serverTestsLib);
+	}
 }

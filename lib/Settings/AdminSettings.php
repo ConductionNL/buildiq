@@ -37,6 +37,5 @@ use OCA\OpenRegister\AppHost\Settings\GenericAdminSettings;
  *
  * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md — Requirement: Boilerplate Adoption
  */
-class AdminSettings extends GenericAdminSettings
-{
+class AdminSettings extends GenericAdminSettings {
 }//end class

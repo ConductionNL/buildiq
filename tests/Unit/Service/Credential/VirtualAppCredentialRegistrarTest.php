@@ -38,248 +38,233 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenBuild\Service\Credential\VirtualAppCredentialRegistrar
  */
-class VirtualAppCredentialRegistrarTest extends TestCase
-{
-    /**
-     * @var ManifestResolverService&MockObject
-     */
-    private $manifestResolver;
+class VirtualAppCredentialRegistrarTest extends TestCase {
+	/**
+	 * @var ManifestResolverService&MockObject
+	 */
+	private $manifestResolver;
 
-    /**
-     * @var LoggerInterface&MockObject
-     */
-    private $logger;
+	/**
+	 * @var LoggerInterface&MockObject
+	 */
+	private $logger;
 
-    /**
-     * Recording fake for OpenRegister's broker app-key service.
-     *
-     * @var object
-     */
-    private $tokenFake;
+	/**
+	 * Recording fake for OpenRegister's broker app-key service.
+	 *
+	 * @var object
+	 */
+	private $tokenFake;
 
-    /**
-     * Recording fake for OpenRegister's per-app Doriath registrar.
-     *
-     * @var object
-     */
-    private $registrarFake;
+	/**
+	 * Recording fake for OpenRegister's per-app Doriath registrar.
+	 *
+	 * @var object
+	 */
+	private $registrarFake;
 
-    /**
-     * Set up common fakes.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up common fakes.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->manifestResolver = $this->createMock(ManifestResolverService::class);
-        $this->logger           = $this->createMock(LoggerInterface::class);
+		$this->manifestResolver = $this->createMock(ManifestResolverService::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->tokenFake = new class {
-            /** @var bool */
-            public $registered = false;
-            /** @var array<int,string> */
-            public $registerAppCalls = [];
-            /** @var bool */
-            public $throwOnRegister = false;
+		$this->tokenFake = new class {
+			/** @var bool */
+			public $registered = false;
+			/** @var array<int,string> */
+			public $registerAppCalls = [];
+			/** @var bool */
+			public $throwOnRegister = false;
 
-            public function isRegistered(string $appId): bool
-            {
-                return $this->registered;
-            }
+			public function isRegistered(string $appId): bool {
+				return $this->registered;
+			}
 
-            public function registerApp(string $appId): string
-            {
-                if ($this->throwOnRegister === true) {
-                    throw new \RuntimeException('boom');
-                }
+			public function registerApp(string $appId): string {
+				if ($this->throwOnRegister === true) {
+					throw new \RuntimeException('boom');
+				}
 
-                $this->registerAppCalls[] = $appId;
-                return 'secret';
-            }
-        };
+				$this->registerAppCalls[] = $appId;
+				return 'secret';
+			}
+		};
 
-        $this->registrarFake = new class {
-            /** @var array<int,array{0:string,1:?string}> */
-            public $calls = [];
-            /** @var bool */
-            public $throwOnRegister = false;
+		$this->registrarFake = new class {
+			/** @var array<int,array{0:string,1:?string}> */
+			public $calls = [];
+			/** @var bool */
+			public $throwOnRegister = false;
 
-            public function registerApplication(string $appId, ?string $description=null): void
-            {
-                if ($this->throwOnRegister === true) {
-                    throw new \RuntimeException('boom');
-                }
+			public function registerApplication(string $appId, ?string $description = null): void {
+				if ($this->throwOnRegister === true) {
+					throw new \RuntimeException('boom');
+				}
 
-                $this->calls[] = [$appId, $description];
-            }
-        };
-    }//end setUp()
+				$this->calls[] = [$appId, $description];
+			}
+		};
+	}//end setUp()
 
-    /**
-     * Build a registrar whose service resolution returns the in-test fakes.
-     *
-     * @param bool $tokenAvailable     Whether the broker app-key service resolves.
-     * @param bool $registrarAvailable Whether the Doriath registrar resolves.
-     *
-     * @return VirtualAppCredentialRegistrar
-     */
-    private function makeRegistrar(bool $tokenAvailable=true, bool $registrarAvailable=true): VirtualAppCredentialRegistrar
-    {
-        $tokenFake     = $this->tokenFake;
-        $registrarFake = $this->registrarFake;
+	/**
+	 * Build a registrar whose service resolution returns the in-test fakes.
+	 *
+	 * @param bool $tokenAvailable Whether the broker app-key service resolves.
+	 * @param bool $registrarAvailable Whether the Doriath registrar resolves.
+	 *
+	 * @return VirtualAppCredentialRegistrar
+	 */
+	private function makeRegistrar(bool $tokenAvailable = true, bool $registrarAvailable = true): VirtualAppCredentialRegistrar {
+		$tokenFake = $this->tokenFake;
+		$registrarFake = $this->registrarFake;
 
-        return new class($this->manifestResolver, $this->logger, $tokenFake, $registrarFake, $tokenAvailable, $registrarAvailable) extends VirtualAppCredentialRegistrar {
-            public function __construct(
-                ManifestResolverService $manifestResolver,
-                LoggerInterface $logger,
-                private $tokenFake,
-                private $registrarFake,
-                private bool $tokenAvailable,
-                private bool $registrarAvailable,
-            ) {
-                parent::__construct($manifestResolver, $logger);
-            }
+		return new class($this->manifestResolver, $this->logger, $tokenFake, $registrarFake, $tokenAvailable, $registrarAvailable) extends VirtualAppCredentialRegistrar {
+			public function __construct(
+				ManifestResolverService $manifestResolver,
+				LoggerInterface $logger,
+				private $tokenFake,
+				private $registrarFake,
+				private bool $tokenAvailable,
+				private bool $registrarAvailable,
+			) {
+				parent::__construct($manifestResolver, $logger);
+			}
 
-            protected function resolveService(string $fqcn): ?object
-            {
-                if (str_contains($fqcn, 'CredentialAppTokenService') === true) {
-                    return $this->tokenAvailable ? $this->tokenFake : null;
-                }
+			protected function resolveService(string $fqcn): ?object {
+				if (str_contains($fqcn, 'CredentialAppTokenService') === true) {
+					return $this->tokenAvailable ? $this->tokenFake : null;
+				}
 
-                if (str_contains($fqcn, 'DoriathApplicationRegistrar') === true) {
-                    return $this->registrarAvailable ? $this->registrarFake : null;
-                }
+				if (str_contains($fqcn, 'DoriathApplicationRegistrar') === true) {
+					return $this->registrarAvailable ? $this->registrarFake : null;
+				}
 
-                return null;
-            }
-        };
-    }//end makeRegistrar()
+				return null;
+			}
+		};
+	}//end makeRegistrar()
 
-    /**
-     * A manifest declaring credentials[] onboards the app under `openbuild-{slug}`.
-     *
-     * @return void
-     */
-    public function testDeclaredCredentialsOnboardsBothPaths(): void
-    {
-        $this->manifestResolver->method('resolve')->willReturn(
-            ['credentials' => [['provider' => 'github']], 'name' => 'Spectr']
-        );
+	/**
+	 * A manifest declaring credentials[] onboards the app under `openbuild-{slug}`.
+	 *
+	 * @return void
+	 */
+	public function testDeclaredCredentialsOnboardsBothPaths(): void {
+		$this->manifestResolver->method('resolve')->willReturn(
+			['credentials' => [['provider' => 'github']], 'name' => 'Spectr']
+		);
 
-        $this->makeRegistrar()->onPublish(slug: 'spectr', caller: $this->createMock(IUser::class));
+		$this->makeRegistrar()->onPublish(slug: 'spectr', caller: $this->createMock(IUser::class));
 
-        $this->assertSame(['openbuild-spectr'], $this->tokenFake->registerAppCalls);
-        $this->assertSame([['openbuild-spectr', 'Spectr']], $this->registrarFake->calls);
-    }//end testDeclaredCredentialsOnboardsBothPaths()
+		$this->assertSame(['openbuild-spectr'], $this->tokenFake->registerAppCalls);
+		$this->assertSame([['openbuild-spectr', 'Spectr']], $this->registrarFake->calls);
+	}//end testDeclaredCredentialsOnboardsBothPaths()
 
-    /**
-     * A manifest without credentials[] is a no-op on both paths.
-     *
-     * @return void
-     */
-    public function testNoCredentialsIsNoOp(): void
-    {
-        $this->manifestResolver->method('resolve')->willReturn(['name' => 'Spectr']);
+	/**
+	 * A manifest without credentials[] is a no-op on both paths.
+	 *
+	 * @return void
+	 */
+	public function testNoCredentialsIsNoOp(): void {
+		$this->manifestResolver->method('resolve')->willReturn(['name' => 'Spectr']);
 
-        $this->makeRegistrar()->onPublish(slug: 'spectr', caller: null);
+		$this->makeRegistrar()->onPublish(slug: 'spectr', caller: null);
 
-        $this->assertSame([], $this->tokenFake->registerAppCalls);
-        $this->assertSame([], $this->registrarFake->calls);
-    }//end testNoCredentialsIsNoOp()
+		$this->assertSame([], $this->tokenFake->registerAppCalls);
+		$this->assertSame([], $this->registrarFake->calls);
+	}//end testNoCredentialsIsNoOp()
 
-    /**
-     * An empty credentials[] array is treated as "no credentials".
-     *
-     * @return void
-     */
-    public function testEmptyCredentialsArrayIsNoOp(): void
-    {
-        $this->manifestResolver->method('resolve')->willReturn(['credentials' => []]);
+	/**
+	 * An empty credentials[] array is treated as "no credentials".
+	 *
+	 * @return void
+	 */
+	public function testEmptyCredentialsArrayIsNoOp(): void {
+		$this->manifestResolver->method('resolve')->willReturn(['credentials' => []]);
 
-        $this->makeRegistrar()->onPublish(slug: 'spectr', caller: null);
+		$this->makeRegistrar()->onPublish(slug: 'spectr', caller: null);
 
-        $this->assertSame([], $this->tokenFake->registerAppCalls);
-        $this->assertSame([], $this->registrarFake->calls);
-    }//end testEmptyCredentialsArrayIsNoOp()
+		$this->assertSame([], $this->tokenFake->registerAppCalls);
+		$this->assertSame([], $this->registrarFake->calls);
+	}//end testEmptyCredentialsArrayIsNoOp()
 
-    /**
-     * A null (unresolvable) manifest never throws and onboards nothing.
-     *
-     * @return void
-     */
-    public function testNullManifestIsNoOp(): void
-    {
-        $this->manifestResolver->method('resolve')->willReturn(null);
+	/**
+	 * A null (unresolvable) manifest never throws and onboards nothing.
+	 *
+	 * @return void
+	 */
+	public function testNullManifestIsNoOp(): void {
+		$this->manifestResolver->method('resolve')->willReturn(null);
 
-        $this->makeRegistrar()->onPublish(slug: 'spectr', caller: null);
+		$this->makeRegistrar()->onPublish(slug: 'spectr', caller: null);
 
-        $this->assertSame([], $this->tokenFake->registerAppCalls);
-        $this->assertSame([], $this->registrarFake->calls);
-    }//end testNullManifestIsNoOp()
+		$this->assertSame([], $this->tokenFake->registerAppCalls);
+		$this->assertSame([], $this->registrarFake->calls);
+	}//end testNullManifestIsNoOp()
 
-    /**
-     * An already-registered broker key is NEVER rotated by a re-publish, but the
-     * (idempotent) Doriath registration still runs.
-     *
-     * @return void
-     */
-    public function testExistingBrokerKeyIsNotRotated(): void
-    {
-        $this->tokenFake->registered = true;
-        $this->manifestResolver->method('resolve')->willReturn(['credentials' => [['provider' => 'github']]]);
+	/**
+	 * An already-registered broker key is NEVER rotated by a re-publish, but the
+	 * (idempotent) Doriath registration still runs.
+	 *
+	 * @return void
+	 */
+	public function testExistingBrokerKeyIsNotRotated(): void {
+		$this->tokenFake->registered = true;
+		$this->manifestResolver->method('resolve')->willReturn(['credentials' => [['provider' => 'github']]]);
 
-        $this->makeRegistrar()->onPublish(slug: 'spectr', caller: null);
+		$this->makeRegistrar()->onPublish(slug: 'spectr', caller: null);
 
-        $this->assertSame([], $this->tokenFake->registerAppCalls, 'existing signing secret must not be rotated');
-        $this->assertSame([['openbuild-spectr', null]], $this->registrarFake->calls);
-    }//end testExistingBrokerKeyIsNotRotated()
+		$this->assertSame([], $this->tokenFake->registerAppCalls, 'existing signing secret must not be rotated');
+		$this->assertSame([['openbuild-spectr', null]], $this->registrarFake->calls);
+	}//end testExistingBrokerKeyIsNotRotated()
 
-    /**
-     * Absent OpenRegister services degrade silently (never-throw) and onboard nothing.
-     *
-     * @return void
-     */
-    public function testAbsentServicesDegrade(): void
-    {
-        $this->manifestResolver->method('resolve')->willReturn(['credentials' => [['provider' => 'github']]]);
+	/**
+	 * Absent OpenRegister services degrade silently (never-throw) and onboard nothing.
+	 *
+	 * @return void
+	 */
+	public function testAbsentServicesDegrade(): void {
+		$this->manifestResolver->method('resolve')->willReturn(['credentials' => [['provider' => 'github']]]);
 
-        $this->makeRegistrar(tokenAvailable: false, registrarAvailable: false)
-            ->onPublish(slug: 'spectr', caller: null);
+		$this->makeRegistrar(tokenAvailable: false, registrarAvailable: false)
+			->onPublish(slug: 'spectr', caller: null);
 
-        $this->assertSame([], $this->tokenFake->registerAppCalls);
-        $this->assertSame([], $this->registrarFake->calls);
-    }//end testAbsentServicesDegrade()
+		$this->assertSame([], $this->tokenFake->registerAppCalls);
+		$this->assertSame([], $this->registrarFake->calls);
+	}//end testAbsentServicesDegrade()
 
-    /**
-     * A failure in one onboarding path never throws and never blocks the other.
-     *
-     * @return void
-     */
-    public function testOnePathThrowingDoesNotBlockTheOther(): void
-    {
-        $this->tokenFake->throwOnRegister = true;
-        $this->manifestResolver->method('resolve')->willReturn(['credentials' => [['provider' => 'github']]]);
+	/**
+	 * A failure in one onboarding path never throws and never blocks the other.
+	 *
+	 * @return void
+	 */
+	public function testOnePathThrowingDoesNotBlockTheOther(): void {
+		$this->tokenFake->throwOnRegister = true;
+		$this->manifestResolver->method('resolve')->willReturn(['credentials' => [['provider' => 'github']]]);
 
-        $this->makeRegistrar()->onPublish(slug: 'spectr', caller: null);
+		$this->makeRegistrar()->onPublish(slug: 'spectr', caller: null);
 
-        // Broker path threw and was swallowed; Doriath path still ran.
-        $this->assertSame([['openbuild-spectr', null]], $this->registrarFake->calls);
-    }//end testOnePathThrowingDoesNotBlockTheOther()
+		// Broker path threw and was swallowed; Doriath path still ran.
+		$this->assertSame([['openbuild-spectr', null]], $this->registrarFake->calls);
+	}//end testOnePathThrowingDoesNotBlockTheOther()
 
-    /**
-     * An unsafe slug (would form an invalid app id) is skipped, not registered.
-     *
-     * @return void
-     */
-    public function testUnsafeSlugIsSkipped(): void
-    {
-        $this->manifestResolver->method('resolve')->willReturn(['credentials' => [['provider' => 'github']]]);
+	/**
+	 * An unsafe slug (would form an invalid app id) is skipped, not registered.
+	 *
+	 * @return void
+	 */
+	public function testUnsafeSlugIsSkipped(): void {
+		$this->manifestResolver->method('resolve')->willReturn(['credentials' => [['provider' => 'github']]]);
 
-        $this->makeRegistrar()->onPublish(slug: 'Bad Slug!', caller: null);
+		$this->makeRegistrar()->onPublish(slug: 'Bad Slug!', caller: null);
 
-        $this->assertSame([], $this->tokenFake->registerAppCalls);
-        $this->assertSame([], $this->registrarFake->calls);
-    }//end testUnsafeSlugIsSkipped()
+		$this->assertSame([], $this->tokenFake->registerAppCalls);
+		$this->assertSame([], $this->registrarFake->calls);
+	}//end testUnsafeSlugIsSkipped()
 }//end class

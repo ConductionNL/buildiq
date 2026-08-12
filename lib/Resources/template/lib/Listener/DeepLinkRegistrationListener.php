@@ -33,30 +33,28 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @implements IEventListener<Event>
  */
-class DeepLinkRegistrationListener implements IEventListener
-{
-    /**
-     * Handle the deep link registration event.
-     *
-     * @param Event $event The event to handle
-     *
-     * @return void
-     */
-    public function handle(Event $event): void
-    {
-        if ($event instanceof DeepLinkRegistrationEvent === false) {
-            return;
-        }
+class DeepLinkRegistrationListener implements IEventListener {
+	/**
+	 * Handle the deep link registration event.
+	 *
+	 * @param Event $event The event to handle
+	 *
+	 * @return void
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof DeepLinkRegistrationEvent === false) {
+			return;
+		}
 
-        // Register example object deep links.
-        // Replace 'app-template' with your app ID and update the register slug,
-        // schema slug, and URL template to match your app's actual schemas.
-        $event->register(
-            appId: 'app-template',
-            registerSlug: 'app-template',
-            schemaSlug: 'example',
-            urlTemplate: '/apps/app-template/#/examples/{uuid}'
-        );
+		// Register example object deep links.
+		// Replace 'app-template' with your app ID and update the register slug,
+		// schema slug, and URL template to match your app's actual schemas.
+		$event->register(
+			appId: 'app-template',
+			registerSlug: 'app-template',
+			schemaSlug: 'example',
+			urlTemplate: '/apps/app-template/#/examples/{uuid}'
+		);
 
-    }//end handle()
+	}//end handle()
 }//end class

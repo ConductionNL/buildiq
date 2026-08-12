@@ -41,65 +41,61 @@ use Throwable;
  *
  * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
  */
-final class AppRepoParseException extends RuntimeException
-{
-    /**
-     * Constructor.
-     *
-     * @param string         $errorCode Stable failure code (design.md Decision 4 taxonomy).
-     * @param string         $message   Human-readable, PII-free diagnostic.
-     * @param string|null    $filePath  The offending repo-relative file path, when applicable.
-     * @param Throwable|null $previous  Wrapped causal exception (never surfaced to the caller).
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly string $errorCode,
-        string $message,
-        private readonly ?string $filePath=null,
-        ?Throwable $previous=null,
-    ) {
-        parent::__construct(message: $message, code: 0, previous: $previous);
-    }//end __construct()
+final class AppRepoParseException extends RuntimeException {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $errorCode Stable failure code (design.md Decision 4 taxonomy).
+	 * @param string $message Human-readable, PII-free diagnostic.
+	 * @param string|null $filePath The offending repo-relative file path, when applicable.
+	 * @param Throwable|null $previous Wrapped causal exception (never surfaced to the caller).
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly string $errorCode,
+		string $message,
+		private readonly ?string $filePath = null,
+		?Throwable $previous = null,
+	) {
+		parent::__construct(message: $message, code: 0, previous: $previous);
+	}//end __construct()
 
-    /**
-     * The stable failure code (e.g. `descriptor_missing`, `manifest_invalid`).
-     *
-     * @return string
-     *
-     * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
-     */
-    public function getErrorCode(): string
-    {
-        return $this->errorCode;
-    }//end getErrorCode()
+	/**
+	 * The stable failure code (e.g. `descriptor_missing`, `manifest_invalid`).
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 */
+	public function getErrorCode(): string {
+		return $this->errorCode;
+	}//end getErrorCode()
 
-    /**
-     * The offending repo-relative file path, when the failure names one.
-     *
-     * @return string|null
-     *
-     * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
-     */
-    public function getFilePath(): ?string
-    {
-        return $this->filePath;
-    }//end getFilePath()
+	/**
+	 * The offending repo-relative file path, when the failure names one.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 */
+	public function getFilePath(): ?string {
+		return $this->filePath;
+	}//end getFilePath()
 
-    /**
-     * A caller-safe structured payload (code + path + message; no secret, no PII).
-     *
-     * @return array{error:string,code:string,file:string|null,detail:string}
-     *
-     * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
-     */
-    public function toArray(): array
-    {
-        return [
-            'error'  => 'repo_parse_failed',
-            'code'   => $this->errorCode,
-            'file'   => $this->filePath,
-            'detail' => $this->getMessage(),
-        ];
-    }//end toArray()
+	/**
+	 * A caller-safe structured payload (code + path + message; no secret, no PII).
+	 *
+	 * @return array{error:string,code:string,file:string|null,detail:string}
+	 *
+	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 */
+	public function toArray(): array {
+		return [
+			'error' => 'repo_parse_failed',
+			'code' => $this->errorCode,
+			'file' => $this->filePath,
+			'detail' => $this->getMessage(),
+		];
+	}//end toArray()
 }//end class

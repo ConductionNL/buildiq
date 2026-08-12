@@ -65,113 +65,107 @@ use Throwable;
  *
  * @spec openspec/changes/automation-document-action/tasks.md#2.4
  */
-class GeneratedDocumentController extends Controller
-{
-    /**
-     * Appdata folder name (matches {@see DocumentGenerationService::APPDATA_FOLDER}).
-     *
-     * @spec openspec/changes/automation-document-action/tasks.md#2.4
-     */
-    private const APPDATA_FOLDER = 'generated-documents';
+class GeneratedDocumentController extends Controller {
+	/**
+	 * Appdata folder name (matches {@see DocumentGenerationService::APPDATA_FOLDER}).
+	 *
+	 * @spec openspec/changes/automation-document-action/tasks.md#2.4
+	 */
+	private const APPDATA_FOLDER = 'generated-documents';
 
-    /**
-     * Constructor.
-     *
-     * @param IRequest        $request        Current HTTP request.
-     * @param IAppDataFactory $appDataFactory Resolves OpenBuild's app-private storage.
-     * @param LoggerInterface $logger         PSR logger.
-     *
-     * @return void
-     */
-    public function __construct(
-        IRequest $request,
-        private readonly IAppDataFactory $appDataFactory,
-        private readonly LoggerInterface $logger,
-    ) {
-        parent::__construct(appName: Application::APP_ID, request: $request);
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest $request Current HTTP request.
+	 * @param IAppDataFactory $appDataFactory Resolves OpenBuild's app-private storage.
+	 * @param LoggerInterface $logger PSR logger.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		IRequest $request,
+		private readonly IAppDataFactory $appDataFactory,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+	}//end __construct()
 
-    /**
-     * Stream a `download-link`-mode generated document, or a uniform 404 for
-     * any unknown/expired/malformed token.
-     *
-     * @param string $token The random download token.
-     *
-     * @return DataDownloadResponse|JSONResponse
-     *
-     * @NoAdminRequired
-     * @PublicPage
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/automation-document-action/tasks.md#2.4
-     */
-    #[PublicPage]
-    #[NoCSRFRequired]
-    #[AnonRateLimit(limit: 30, period: 60)]
-    public function download(string $token): DataDownloadResponse|JSONResponse
-    {
-        if (preg_match('/^[a-f0-9]{48}$/', $token) !== 1) {
-            return $this->notFound();
-        }
+	/**
+	 * Stream a `download-link`-mode generated document, or a uniform 404 for
+	 * any unknown/expired/malformed token.
+	 *
+	 * @param string $token The random download token.
+	 *
+	 * @return DataDownloadResponse|JSONResponse
+	 *
+	 * @NoAdminRequired
+	 * @PublicPage
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/automation-document-action/tasks.md#2.4
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 30, period: 60)]
+	public function download(string $token): DataDownloadResponse|JSONResponse {
+		if (preg_match('/^[a-f0-9]{48}$/', $token) !== 1) {
+			return $this->notFound();
+		}
 
-        try {
-            $folder = $this->appDataFactory->get('openbuild')
-                ->getFolder(self::APPDATA_FOLDER)
-                ->getFolder($token);
+		try {
+			$folder = $this->appDataFactory->get('openbuild')
+				->getFolder(self::APPDATA_FOLDER)
+				->getFolder($token);
 
-            $meta = json_decode($folder->getFile('meta.json')->getContent(), true);
-        } catch (Throwable $e) {
-            return $this->notFound();
-        }
+			$meta = json_decode($folder->getFile('meta.json')->getContent(), true);
+		} catch (Throwable $e) {
+			return $this->notFound();
+		}
 
-        if (is_array($meta) === false) {
-            return $this->notFound();
-        }
+		if (is_array($meta) === false) {
+			return $this->notFound();
+		}
 
-        $expiresAt = (int) ($meta['expiresAt'] ?? 0);
-        if ($expiresAt <= time()) {
-            $this->deleteQuietly(folder: $folder);
-            return $this->notFound();
-        }
+		$expiresAt = (int)($meta['expiresAt'] ?? 0);
+		if ($expiresAt <= time()) {
+			$this->deleteQuietly(folder: $folder);
+			return $this->notFound();
+		}
 
-        try {
-            $body        = $folder->getFile('document')->getContent();
-            $filename    = (string) ($meta['filename'] ?? 'document.pdf');
-            $contentType = (string) ($meta['contentType'] ?? 'application/octet-stream');
-        } catch (Throwable $e) {
-            return $this->notFound();
-        }
+		try {
+			$body = $folder->getFile('document')->getContent();
+			$filename = (string)($meta['filename'] ?? 'document.pdf');
+			$contentType = (string)($meta['contentType'] ?? 'application/octet-stream');
+		} catch (Throwable $e) {
+			return $this->notFound();
+		}
 
-        return new DataDownloadResponse($body, $filename, $contentType);
+		return new DataDownloadResponse($body, $filename, $contentType);
+	}//end download()
 
-    }//end download()
+	/**
+	 * Best-effort delete of an expired artifact — never throws.
+	 *
+	 * @param ISimpleFolder $folder The token's folder.
+	 *
+	 * @return void
+	 */
+	private function deleteQuietly(ISimpleFolder $folder): void {
+		try {
+			$folder->delete();
+		} catch (Throwable $e) {
+			$this->logger->warning('OpenBuild: GeneratedDocumentController could not delete an expired artifact: ' . $e->getMessage());
+		}
 
-    /**
-     * Best-effort delete of an expired artifact — never throws.
-     *
-     * @param ISimpleFolder $folder The token's folder.
-     *
-     * @return void
-     */
-    private function deleteQuietly(ISimpleFolder $folder): void
-    {
-        try {
-            $folder->delete();
-        } catch (Throwable $e) {
-            $this->logger->warning('OpenBuild: GeneratedDocumentController could not delete an expired artifact: '.$e->getMessage());
-        }
+	}//end deleteQuietly()
 
-    }//end deleteQuietly()
-
-    /**
-     * Uniform 404 — never distinguishes "unknown" from "expired" (mirrors
-     * `ShareTokenService`'s fail-closed posture).
-     *
-     * @return JSONResponse
-     */
-    private function notFound(): JSONResponse
-    {
-        return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
-
-    }//end notFound()
+	/**
+	 * Uniform 404 — never distinguishes "unknown" from "expired" (mirrors
+	 * `ShareTokenService`'s fail-closed posture).
+	 *
+	 * @return JSONResponse
+	 */
+	private function notFound(): JSONResponse {
+		return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
+	}//end notFound()
 }//end class

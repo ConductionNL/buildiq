@@ -37,32 +37,31 @@
 declare(strict_types=1);
 
 namespace OC\Hooks {
-    if (interface_exists(\OC\Hooks\Emitter::class, false) === false) {
-        /**
-         * Minimal shape mirror of Nextcloud core's `OC\Hooks\Emitter` — only
-         * what `IRootFolder`'s `extends` clause needs to resolve for
-         * PHPUnit's mock generator; no test in this suite calls these
-         * methods directly.
-         */
-        interface Emitter
-        {
-            /**
-             * @param string   $scope    Hook scope.
-             * @param string   $method   Hook method name.
-             * @param callable $callback Listener callback.
-             *
-             * @return void
-             */
-            public function listen($scope, $method, callable $callback);
+	if (interface_exists(\OC\Hooks\Emitter::class, false) === false) {
+		/**
+		 * Minimal shape mirror of Nextcloud core's `OC\Hooks\Emitter` — only
+		 * what `IRootFolder`'s `extends` clause needs to resolve for
+		 * PHPUnit's mock generator; no test in this suite calls these
+		 * methods directly.
+		 */
+		interface Emitter {
+			/**
+			 * @param string $scope Hook scope.
+			 * @param string $method Hook method name.
+			 * @param callable $callback Listener callback.
+			 *
+			 * @return void
+			 */
+			public function listen($scope, $method, callable $callback);
 
-            /**
-             * @param string        $scope    Hook scope.
-             * @param string        $method   Hook method name.
-             * @param callable|null $callback Listener callback, or null to remove all.
-             *
-             * @return void
-             */
-            public function removeListener($scope=null, $method=null, ?callable $callback=null);
-        }
-    }
+			/**
+			 * @param string $scope Hook scope.
+			 * @param string $method Hook method name.
+			 * @param callable|null $callback Listener callback, or null to remove all.
+			 *
+			 * @return void
+			 */
+			public function removeListener($scope = null, $method = null, ?callable $callback = null);
+		}
+	}
 }//end namespace OC\Hooks
