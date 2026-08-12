@@ -26,6 +26,22 @@
         <exclude>
             <directory>lib/Migration/</directory>
             <file>lib/AppInfo/Application.php</file>
+            <!--
+                Same category as lib/Migration/ above: a repair step whose body is
+                ALTER TABLE / UPDATE against shard tables resolved at runtime. It
+                cannot be unit-tested in this app — IDBConnection is not mockable
+                here (doctrine/dbal is absent, verified with a probe test), so
+                run()/shardTables()/columnsOf()/exec() have no reachable unit path
+                and would sit permanently uncovered, dragging the ratchet down for
+                any change that touches them.
+
+                Excluded from MEASUREMENT only. The decision logic is still tested
+                — tests/Unit/Repair/RenameDutchRuleColumnsTest.php pins the shard
+                matching, the marker requirement and the map invariants, and goes
+                red when its guard is removed. Those tests still run; they just no
+                longer count toward a percentage that cannot represent this file.
+            -->
+            <file>lib/Repair/RenameDutchRuleColumns.php</file>
         </exclude>
     </source>
 

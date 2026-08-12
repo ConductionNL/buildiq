@@ -142,7 +142,7 @@ class RuleEngineService
      * @param bool                $dryRun      When true, side-effecting actions are suppressed.
      * @param bool                $maskPii     When true, mask PII fields in the audit log.
      *
-     * @return array{result:array<string,mixed>,geraaktRegels:array<int,mixed>,executieDuur:int,fouten:array<int,string>}
+     * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
      *
      * @throws RuntimeException When the RuleSet is not found / not owned, or on timeout.
      */
@@ -197,7 +197,7 @@ class RuleEngineService
      * @param bool                $dryRun      When true, side-effecting actions are suppressed.
      * @param bool                $maskPii     When true, mask PII fields in the audit log.
      *
-     * @return array{result:array<string,mixed>,geraaktRegels:array<int,mixed>,executieDuur:int,fouten:array<int,string>}
+     * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
      *
      * @throws RuntimeException When the RuleSet is not found / not owned, or on timeout.
      */
@@ -250,7 +250,7 @@ class RuleEngineService
 
         $this->persistLog(
             ruleSetSlug: $ruleSetSlug,
-            version: (string) ($bundle['ruleSet']['versie'] ?? ''),
+            version: (string) ($bundle['ruleSet']['version'] ?? ''),
             payload: $payload,
             result: $result,
             triggeredRules: $triggeredRules,
@@ -260,10 +260,10 @@ class RuleEngineService
         );
 
         return [
-            'result'        => $result,
-            'geraaktRegels' => $triggeredRules,
-            'executieDuur'  => $durationMs,
-            'fouten'        => $errors,
+            'result'         => $result,
+            'triggeredRules' => $triggeredRules,
+            'executionTime'  => $durationMs,
+            'errors'         => $errors,
         ];
 
     }//end evaluateChain()
@@ -296,7 +296,7 @@ class RuleEngineService
             return null;
         }
 
-        if ($version !== null && (string) ($ruleSet['versie'] ?? '') !== $version) {
+        if ($version !== null && (string) ($ruleSet['version'] ?? '') !== $version) {
             // Pinned version requested but the active row is a different one.
             // Without version-history storage we only serve the active row, so
             // a mismatch is a not-found for the pinned request.
@@ -351,17 +351,17 @@ class RuleEngineService
         }
 
         $log = [
-            'ruleSetId'       => $ruleSetSlug,
-            'ruleSetVersie'   => $version,
-            'tijdstip'        => gmdate('Y-m-d\TH:i:s\Z'),
-            'triggerContext'  => 'api',
-            'inputPayload'    => $loggedInput,
-            'outputResultaat' => $result,
-            'geraaktRegels'   => array_map('strval', $triggeredRules),
-            'executieDuurMs'  => $durationMs,
-            'fouten'          => $errors,
-            'userId'          => $userId,
-            'archived'        => false,
+            'ruleSetId'           => $ruleSetSlug,
+            'ruleSetVersion'      => $version,
+            'timestamp'           => gmdate('Y-m-d\TH:i:s\Z'),
+            'triggerContext'      => 'api',
+            'inputPayload'        => $loggedInput,
+            'outputResult'        => $result,
+            'triggeredRules'      => array_map('strval', $triggeredRules),
+            'executionDurationMs' => $durationMs,
+            'errors'              => $errors,
+            'userId'              => $userId,
+            'archived'            => false,
         ];
 
         try {
