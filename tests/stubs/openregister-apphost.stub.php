@@ -26,8 +26,8 @@ namespace OCA\OpenRegister\AppHost\Settings;
 
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\AppFramework\Services\IInitialState;
 use OCP\IAppConfig;
-use OCP\IInitialState;
 use OCP\IURLGenerator;
 use OCP\Settings\IDelegatedSettings;
 use OCP\Settings\IIconSection;
