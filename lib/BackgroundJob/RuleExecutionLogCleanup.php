@@ -79,6 +79,8 @@ class RuleExecutionLogCleanup extends TimedJob
      *
      * @return void
      *
+     * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-013-cleanup-job-for-aged-execution-logs
+     *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     protected function run($argument): void
@@ -111,7 +113,7 @@ class RuleExecutionLogCleanup extends TimedJob
         $purged = 0;
         foreach ($results as $row) {
             $data      = $this->normalise(object: $row);
-            $timestamp = (string) ($data['tijdstip'] ?? '');
+            $timestamp = (string) ($data['timestamp'] ?? '');
             if ($timestamp === '' || $timestamp >= $cutoff) {
                 continue;
             }

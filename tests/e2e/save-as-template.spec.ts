@@ -150,8 +150,23 @@ test.describe('OpenBuild save as template', () => {
 		expect(JSON.stringify(stored.manifest)).not.toContain('"results"')
 	})
 
-	// @e2e save-as-template::viewer-cannot-save-a-template
-	// @e2e save-as-template::seeded-cards-remain-read-only
+	// ⚠️ TWO `@e2e` ANCHORS WERE REMOVED FROM HERE. DO NOT PUT THEM BACK.
+	//
+	// This test used to carry
+	//     @e2e save-as-template::viewer-cannot-save-a-template
+	//     @e2e save-as-template::seeded-cards-remain-read-only
+	// and hydra gate-19 counted both scenarios as COVERED — while the comment
+	// immediately below, written by the same hand, states in plain words that
+	// the test proves neither of them. The gate has no way to notice that: it
+	// matches the tag and checks only that the enclosing test runs
+	// (ConductionNL/.github#343). A green scenario that nothing exercises is
+	// worse than a red one, because nobody looks at it again.
+	//
+	// Both scenarios are now correctly reported as uncovered. Writing them for
+	// real is tracked in Conduction/openbuild#178 — and the "no provisioned
+	// user" reason below is STALE: `tests/e2e/global-setup.ts` mints
+	// `.auth/rbac-viewer.json` on every run.
+	//
 	// The capture action is scoped to a single application, never to the list.
 	//
 	// This test used to be called "a viewer sees neither the save action nor the

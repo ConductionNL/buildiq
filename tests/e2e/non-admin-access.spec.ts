@@ -57,7 +57,19 @@ test.describe('a non-admin with an app role can use the app', () => {
 		const page = await context.newPage()
 		try {
 			await page.goto(`${BASE_URL}/apps/openbuild/builder/${TEST_SLUG}/schemas`, { waitUntil: 'domcontentloaded' })
-			await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {})
+
+			// The positive half goes FIRST, because it is also the readiness
+			// signal. This used to sit behind
+			// `waitForLoadState('networkidle', 30s).catch(() => {})`, which can
+			// never settle on Nextcloud (ADR-074 rule 4): it burned the whole 30s
+			// and swallowed the timeout, and the absence assertion below then ran
+			// at an arbitrary moment. Asserting only the absence of the wizard
+			// would pass on a blank page — so prove the real surface rendered,
+			// then prove the wizard is not on it.
+			await expect(
+				page.locator('.openbuild-schema-list'),
+				'the schema designer must render for an editor',
+			).toBeVisible({ timeout: 30_000 })
 
 			// The setup wizard is admin-only work. A non-admin meeting it is the
 			// regression — they cannot complete it, and it covers the whole app.
@@ -65,13 +77,6 @@ test.describe('a non-admin with an app role can use the app', () => {
 				page.getByText(/Set up this app|Welcome to OpenBuild/i),
 				'a non-admin must never be shown the first-time-setup wizard',
 			).toHaveCount(0)
-
-			// And the positive half: they must reach the real surface. Asserting
-			// only the absence of the wizard would pass on a blank page.
-			await expect(
-				page.locator('.openbuild-schema-list'),
-				'the schema designer must render for an editor',
-			).toBeVisible({ timeout: 20_000 })
 		} finally {
 			await context.close()
 		}

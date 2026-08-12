@@ -64,28 +64,28 @@ final class DecisionTableEvaluatorTest extends TestCase
         return [
             'hitPolicy'     => 'first',
             'inputColumns'  => [
-                ['naam' => 'applicantAge', 'type' => 'integer', 'expressiePad' => 'applicant.age'],
-                ['naam' => 'monthlyIncome', 'type' => 'number', 'expressiePad' => 'applicant.monthlyIncome'],
-                ['naam' => 'creditScore', 'type' => 'integer', 'expressiePad' => 'applicant.creditScore'],
+                ['name' => 'applicantAge', 'type' => 'integer', 'expressionPath' => 'applicant.age'],
+                ['name' => 'monthlyIncome', 'type' => 'number', 'expressionPath' => 'applicant.monthlyIncome'],
+                ['name' => 'creditScore', 'type' => 'integer', 'expressionPath' => 'applicant.creditScore'],
             ],
             'outputColumns' => [
-                ['naam' => 'decision', 'type' => 'string', 'defaultwaarde' => 'deny'],
-                ['naam' => 'reason', 'type' => 'string', 'defaultwaarde' => 'Eligibility criteria not met'],
+                ['name' => 'decision', 'type' => 'string', 'defaultValue' => 'deny'],
+                ['name' => 'reason', 'type' => 'string', 'defaultValue' => 'Eligibility criteria not met'],
             ],
-            'regels'        => [
+            'rules'        => [
                 [
-                    'condities' => ['applicantAge' => '>=18', 'monthlyIncome' => '>=2000', 'creditScore' => '>=600'],
-                    'waardes'   => ['decision' => 'approve', 'reason' => 'All criteria met'],
+                    'conditions' => ['applicantAge' => '>=18', 'monthlyIncome' => '>=2000', 'creditScore' => '>=600'],
+                    'values'   => ['decision' => 'approve', 'reason' => 'All criteria met'],
                     'label'     => 'Standard approval',
                 ],
                 [
-                    'condities' => ['applicantAge' => '>=18', 'monthlyIncome' => '>=1500', 'creditScore' => '>=500'],
-                    'waardes'   => ['decision' => 'review', 'reason' => 'Manual review required'],
+                    'conditions' => ['applicantAge' => '>=18', 'monthlyIncome' => '>=1500', 'creditScore' => '>=500'],
+                    'values'   => ['decision' => 'review', 'reason' => 'Manual review required'],
                     'label'     => 'Marginal case',
                 ],
                 [
-                    'condities' => [],
-                    'waardes'   => ['decision' => 'deny', 'reason' => 'Eligibility criteria not met'],
+                    'conditions' => [],
+                    'values'   => ['decision' => 'deny', 'reason' => 'Eligibility criteria not met'],
                     'label'     => 'Default deny',
                 ],
             ],
@@ -148,10 +148,10 @@ final class DecisionTableEvaluatorTest extends TestCase
     {
         $table = [
             'hitPolicy'    => 'unique',
-            'inputColumns' => [['naam' => 'age', 'expressiePad' => 'age']],
-            'regels'       => [
-                ['condities' => ['age' => '>=18'], 'waardes' => ['x' => 1], 'label' => 'a'],
-                ['condities' => ['age' => '>=21'], 'waardes' => ['x' => 2], 'label' => 'b'],
+            'inputColumns' => [['name' => 'age', 'expressionPath' => 'age']],
+            'rules'       => [
+                ['conditions' => ['age' => '>=18'], 'values' => ['x' => 1], 'label' => 'a'],
+                ['conditions' => ['age' => '>=21'], 'values' => ['x' => 2], 'label' => 'b'],
             ],
         ];
         $this->expectException(RuntimeException::class);
@@ -168,10 +168,10 @@ final class DecisionTableEvaluatorTest extends TestCase
     {
         $table = [
             'hitPolicy'    => 'priority',
-            'inputColumns' => [['naam' => 'age', 'expressiePad' => 'age']],
-            'regels'       => [
-                ['condities' => ['age' => '>=18'], 'waardes' => ['band' => 'adult'], 'prioriteit' => 10, 'label' => 'low'],
-                ['condities' => ['age' => '>=18'], 'waardes' => ['band' => 'senior'], 'prioriteit' => 50, 'label' => 'high'],
+            'inputColumns' => [['name' => 'age', 'expressionPath' => 'age']],
+            'rules'       => [
+                ['conditions' => ['age' => '>=18'], 'values' => ['band' => 'adult'], 'priority' => 10, 'label' => 'low'],
+                ['conditions' => ['age' => '>=18'], 'values' => ['band' => 'senior'], 'priority' => 50, 'label' => 'high'],
             ],
         ];
         $result = $this->evaluator->evaluate($table, ['age' => 40]);
@@ -189,10 +189,10 @@ final class DecisionTableEvaluatorTest extends TestCase
     {
         $table = [
             'hitPolicy'    => 'collect',
-            'inputColumns' => [['naam' => 'age', 'expressiePad' => 'age']],
-            'regels'       => [
-                ['condities' => ['age' => '>=18'], 'waardes' => ['tag' => 'adult'], 'label' => 'a'],
-                ['condities' => ['age' => '>=65'], 'waardes' => ['tag' => 'senior'], 'label' => 'b'],
+            'inputColumns' => [['name' => 'age', 'expressionPath' => 'age']],
+            'rules'       => [
+                ['conditions' => ['age' => '>=18'], 'values' => ['tag' => 'adult'], 'label' => 'a'],
+                ['conditions' => ['age' => '>=65'], 'values' => ['tag' => 'senior'], 'label' => 'b'],
             ],
         ];
         $result = $this->evaluator->evaluate($table, ['age' => 70]);
@@ -209,9 +209,9 @@ final class DecisionTableEvaluatorTest extends TestCase
     {
         $table = [
             'hitPolicy' => 'first',
-            'regels'    => [
-                ['condities' => [], 'waardes' => ['x' => 1], 'label' => 'catch-all'],
-                ['condities' => ['age' => '>=18'], 'waardes' => ['x' => 2], 'label' => 'never'],
+            'rules'    => [
+                ['conditions' => [], 'values' => ['x' => 1], 'label' => 'catch-all'],
+                ['conditions' => ['age' => '>=18'], 'values' => ['x' => 2], 'label' => 'never'],
             ],
         ];
         $issues = $this->evaluator->detectIssues($table);
@@ -228,9 +228,9 @@ final class DecisionTableEvaluatorTest extends TestCase
     {
         $table = [
             'hitPolicy' => 'first',
-            'regels'    => [
-                ['condities' => ['status' => 'open'], 'waardes' => ['x' => 1], 'label' => 'a'],
-                ['condities' => ['status' => 'closed'], 'waardes' => ['x' => 2], 'label' => 'b'],
+            'rules'    => [
+                ['conditions' => ['status' => 'open'], 'values' => ['x' => 1], 'label' => 'a'],
+                ['conditions' => ['status' => 'closed'], 'values' => ['x' => 2], 'label' => 'b'],
             ],
         ];
         $issues = $this->evaluator->detectIssues($table);

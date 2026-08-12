@@ -105,8 +105,19 @@ async function dismissOverlays(page: Page): Promise<void> {
 async function go(page: Page, route: string): Promise<void> {
 	await ensureLoggedIn(page)
 	const url = route.startsWith('/apps/') || route.startsWith('/settings/') ? route : `${APP}${route.startsWith('/') ? route : `/${route}`}`
-	await page.goto(url).catch(() => { /* tolerate a 404 — caller decides */ })
-	await page.waitForLoadState('networkidle').catch(() => { /* idle never fires on some pages */ })
+	await page.goto(url, { waitUntil: 'domcontentloaded' }).catch(() => { /* tolerate a 404 — caller decides */ })
+	// `networkidle` never fires on Nextcloud — the notification poll keeps a
+	// request in flight for the whole session (ADR-074 rule 4) — so the wait
+	// that used to sit here always ran to its full budget before being
+	// swallowed, on every one of this suite's ~60 navigations. `templates/
+	// index.php` ships an empty `<div id="content">`, so the app content region
+	// only acquires a box once the SPA has rendered into it: that is the real
+	// "page is ready to photograph" signal. Best-effort by design — some routes
+	// this suite visits are deliberately 404s that never render one, and the
+	// caller decides what to do about that.
+	await page.locator('main, #app-content, .app-content, #content-vue').first()
+		.waitFor({ state: 'visible', timeout: 15_000 })
+		.catch(() => { /* an error/404 route renders no app content */ })
 	await dismissOverlays(page)
 	await page.waitForTimeout(900)
 }

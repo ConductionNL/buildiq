@@ -393,7 +393,7 @@ final class AutomationsControllerTest extends TestCase
 
         $this->compiler->expects($this->once())
             ->method('compileDryRunRule')
-            ->willReturn(['naam' => 'a', 'conditie' => '', 'acties' => [['type' => 'send-notification', 'parameters' => []]], 'actief' => true]);
+            ->willReturn(['name' => 'a', 'condition' => '', 'actions' => [['type' => 'send-notification', 'parameters' => []]], 'active' => true]);
 
         $this->conditionExecutor->expects($this->once())
             ->method('execute')
@@ -429,7 +429,7 @@ final class AutomationsControllerTest extends TestCase
         );
 
         $this->request->method('getParams')->willReturn(['payload' => []]);
-        $this->compiler->method('compileDryRunRule')->willReturn(['naam' => 'a', 'conditie' => '', 'acties' => [], 'actief' => true]);
+        $this->compiler->method('compileDryRunRule')->willReturn(['name' => 'a', 'condition' => '', 'actions' => [], 'active' => true]);
         $this->conditionExecutor->method('execute')->willReturn(['triggeredRules' => [], 'result' => [], 'errors' => []]);
         $this->compiler->expects($this->once())->method('approvalState')->willReturn('pending');
 

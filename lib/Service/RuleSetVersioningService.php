@@ -112,6 +112,8 @@ class RuleSetVersioningService
      * @return array<string,mixed> The updated RuleSet data.
      *
      * @throws RuntimeException When one or more TestCases fail.
+     *
+     * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-005-versioning-on-activation-with-semver-auto-increment
      */
     public function promoteToActive(array $ruleSet, array $testCases, string $bump=self::BUMP_PATCH): array
     {
@@ -122,9 +124,9 @@ class RuleSetVersioningService
             );
         }
 
-        $ruleSet['versie']        = $this->bumpVersion(current: (string) ($ruleSet['versie'] ?? '1.0.0'), bump: $bump);
-        $ruleSet['status']        = 'active';
-        $ruleSet['geactiveerdOp'] = gmdate('Y-m-d\TH:i:s\Z');
+        $ruleSet['version']     = $this->bumpVersion(current: (string) ($ruleSet['version'] ?? '1.0.0'), bump: $bump);
+        $ruleSet['status']      = 'active';
+        $ruleSet['activatedOn'] = gmdate('Y-m-d\TH:i:s\Z');
 
         try {
             $this->objectService->saveObject(
@@ -151,12 +153,14 @@ class RuleSetVersioningService
      * @param array<int,array<string,mixed>> $testCases The TestCases.
      *
      * @return array<int,string> Names of failing test cases.
+     *
+     * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-004-test-case-driven-sandbox-validation
      */
     public function runTestGate(string $slug, array $testCases): array
     {
         $failures = [];
         foreach ($testCases as $testCase) {
-            $expected = ($testCase['verwachtResultaat'] ?? []);
+            $expected = ($testCase['expectedResult'] ?? []);
             $payload  = ($testCase['inputPayload'] ?? []);
 
             $outcome = $this->ruleEngineService->evaluate(
@@ -167,7 +171,7 @@ class RuleSetVersioningService
             );
 
             if ($this->matchesExpected(expected: $expected, actual: $outcome['result']) === false) {
-                $failures[] = (string) ($testCase['naam'] ?? 'unnamed');
+                $failures[] = (string) ($testCase['name'] ?? 'unnamed');
             }
         }
 

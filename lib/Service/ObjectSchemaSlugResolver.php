@@ -97,16 +97,20 @@ class ObjectSchemaSlugResolver
      * @return string The schema slug, or '' when unresolvable. An empty string
      *                never equals a slug literal, so an unresolvable schema
      *                keeps the handler's existing fail-closed behaviour.
+     *
+     * @spec openspec/specs/openbuild-application-register/spec.md#requirement-application-carries-a-productionversion-relation
+     * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
      */
     public function schemaSlug(object $entity): string
     {
-        if (method_exists($entity, 'getSchema') === false) {
+        $schemaId = $this->readAccessor(entity: $entity, accessor: 'getSchema');
+        if ($schemaId === null) {
             return '';
         }
 
         return $this->resolve(
             mapper: 'OCA\OpenRegister\Db\SchemaMapper',
-            id: (string) $entity->getSchema()
+            id: $schemaId
         );
     }//end schemaSlug()
 
@@ -116,18 +120,68 @@ class ObjectSchemaSlugResolver
      * @param object $entity The OpenRegister ObjectEntity.
      *
      * @return string The register slug, or '' when unresolvable.
+     *
+     * @spec openspec/specs/openbuild-application-register/spec.md#requirement-application-carries-a-productionversion-relation
+     * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
      */
     public function registerSlug(object $entity): string
     {
-        if (method_exists($entity, 'getRegister') === false) {
+        $registerId = $this->readAccessor(entity: $entity, accessor: 'getRegister');
+        if ($registerId === null) {
             return '';
         }
 
         return $this->resolve(
             mapper: 'OCA\OpenRegister\Db\RegisterMapper',
-            id: (string) $entity->getRegister()
+            id: $registerId
         );
     }//end registerSlug()
+
+    /**
+     * Call a magic accessor on an OpenRegister entity, defensively.
+     *
+     * `method_exists()` MUST NOT be used to probe for these accessors.
+     * `ObjectEntity`, `Schema` and `Register` extend Nextcloud's
+     * `OCP\AppFramework\Db\Entity`, which serves every column accessor through
+     * `__call()` and declares it as an `@method` docblock only. `method_exists()`
+     * is therefore **false** for `getSchema()`, `getRegister()` and `getSlug()`
+     * on the real classes, while `is_callable()` is true — so a `method_exists()`
+     * guard here silently disabled the whole resolver, and with it both
+     * listeners that depend on it. Measured on this instance:
+     * `method_exists($objectEntity, 'getSchema')` false / `is_callable` true,
+     * against the concrete control `getObject()` which is true for both.
+     *
+     * Note `is_callable()` is not a membership test on a `__call` class — it is
+     * true for ANY name — so the call itself must be exception-safe. `Entity`
+     * throws `BadFunctionCallException` for a column it does not have.
+     *
+     * @param object $entity   The OpenRegister entity.
+     * @param string $accessor The accessor to call.
+     *
+     * @return string|null The stringified value, or null when unreachable.
+     */
+    private function readAccessor(object $entity, string $accessor): ?string
+    {
+        if (is_callable([$entity, $accessor]) === false) {
+            return null;
+        }
+
+        try {
+            $value = $entity->$accessor();
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                'OpenBuild: '.$accessor.'() unavailable on '.$entity::class,
+                ['exception' => $e->getMessage()]
+            );
+            return null;
+        }
+
+        if (is_scalar($value) === false) {
+            return null;
+        }
+
+        return (string) $value;
+    }//end readAccessor()
 
     /**
      * Test whether an entity is an openbuild object of the given schema.
@@ -182,8 +236,12 @@ class ObjectSchemaSlugResolver
             // metadata rather than tenant data. An organisation-scoped read
             // would return nothing and silently reopen the same hole.
             $entity = $this->container->get($mapper)->find($id, [], false, false);
-            if (is_object($entity) === true && method_exists($entity, 'getSlug') === true) {
-                $slug = (string) $entity->getSlug();
+            // `getSlug()` is an `@method` docblock on Schema and Register, served
+            // by Entity::__call — see readAccessor(). Probing it with
+            // method_exists() returned '' for every real entity, which is what
+            // kept isOpenBuildSchema() false even for openbuild's own objects.
+            if (is_object($entity) === true) {
+                $slug = (string) ($this->readAccessor(entity: $entity, accessor: 'getSlug') ?? '');
             }
         } catch (\Throwable $e) {
             $this->logger->debug(

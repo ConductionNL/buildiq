@@ -74,8 +74,20 @@ test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008
 		// No `/index.php` prefix: every other spec navigates the pretty form, and the
 		// SPA's router base is resolved from it.
 		const targetUrl = `${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`
-		await page.goto(targetUrl)
-		await page.waitForLoadState('networkidle', { timeout: 20_000 })
+		await page.goto(targetUrl, { waitUntil: 'domcontentloaded' })
+
+		// The mount assertion comes FIRST and is now the readiness signal. It
+		// used to sit behind `waitForLoadState('networkidle', 20s)`, which never
+		// settles on Nextcloud (ADR-074 rule 4): the wait always ran to its full
+		// budget and the URL was then read at an arbitrary moment that only
+		// happened to be after SPA init. Waiting for the router-rendered panel
+		// makes "after SPA init" the thing actually observed.
+		//
+		// The original looked for `[data-testid="schema-designer"]` /
+		// `.ob-schema-designer`, neither of which exists in src/, with an
+		// `h2, h3` text fallback — so it would have passed on any page with a
+		// matching heading. The real panel is `.openbuild-schema-list`.
+		await expect(page.locator('.openbuild-schema-list')).toBeVisible({ timeout: 30_000 })
 
 		// Assert the URL still contains ?_version= after SPA init.
 		expect(
@@ -83,25 +95,17 @@ test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008
 			`URL must still contain ?_version=${STAGING_VERSION} after initial navigation`,
 		).toContain(`_version=${STAGING_VERSION}`)
 
-		// Assert the schema designer actually mounted. The original looked for
-		// `[data-testid="schema-designer"]` / `.ob-schema-designer`, neither of
-		// which exists in src/, with an `h2, h3` text fallback — so it would have
-		// passed on any page with a matching heading. The real panel is
-		// `.openbuild-schema-list`.
+		// Reload and re-check. The schema designer must still be mounted after
+		// the reload — the point of the requirement is that a bookmarked version
+		// URL is fully usable — and its render is again what proves the URL is
+		// being read after the SPA has had its say.
+		await page.reload({ waitUntil: 'domcontentloaded' })
 		await expect(page.locator('.openbuild-schema-list')).toBeVisible({ timeout: 30_000 })
-
-		// Reload and re-check.
-		await page.reload()
-		await page.waitForLoadState('networkidle', { timeout: 20_000 })
 
 		expect(
 			page.url(),
 			`URL must still contain ?_version=${STAGING_VERSION} after page reload`,
 		).toContain(`_version=${STAGING_VERSION}`)
-
-		// The schema designer must still be mounted after the reload — the point
-		// of the requirement is that a bookmarked version URL is fully usable.
-		await expect(page.locator('.openbuild-schema-list')).toBeVisible({ timeout: 30_000 })
 	})
 })
 
@@ -237,13 +241,29 @@ test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', 
 		const context = await browser.newContext({ storageState: 'tests/e2e/.auth/rbac-viewer.json' })
 		const page = await context.newPage()
 		try {
-			await page.goto(`${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`)
-			await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {})
+			await page.goto(
+				`${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`,
+				{ waitUntil: 'domcontentloaded' },
+			)
 
 			// What actually matters: no schema of the forbidden version is named.
 			// `.openbuild-schema-list` renders as empty chrome; asserting its
 			// ABSENCE measured nothing, asserting its emptiness measures the leak.
-			const listText = await page.locator('.openbuild-schema-list').innerText().catch(() => '')
+			//
+			// Wait for that panel to RENDER before reading it. The old
+			// `waitForLoadState('networkidle', 20s).catch(() => {})` never settles
+			// on Nextcloud (ADR-074 rule 4) — it burned the full 20s and swallowed
+			// the timeout — and the `innerText().catch(() => '')` under it turned
+			// an unrendered page into an empty string that passes the assertion
+			// below trivially. Measured (see the note above this test): the viewer
+			// gets the same `.openbuild-schema-list` the editor does, empty, so its
+			// visibility is a signal both roles genuinely reach.
+			const list = page.locator('.openbuild-schema-list')
+			await expect(
+				list,
+				'the builder must render for the viewer — otherwise the leak assertion below reads an empty page',
+			).toBeVisible({ timeout: 30_000 })
+			const listText = await list.innerText()
 			expect(
 				listText,
 				'the builder must not name any schema belonging to a version the caller may not see',

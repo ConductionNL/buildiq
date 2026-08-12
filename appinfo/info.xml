@@ -146,6 +146,12 @@ Vrij en open source onder de EUPL-1.2-licentie.
             <step>OCA\OpenBuild\Repair\PopulateApplicationPermissions</step>
             <step>OCA\OpenBuild\Repair\SeedApplicationTemplates</step>
             <step>OCA\OpenBuild\Repair\FlagRegistryTokenSensitive</step>
+            <!--
+                Must run AFTER the register sync that adds the English columns, so
+                it can detect the "mapper already added an empty column" case and
+                back-fill rather than rename. Idempotent; safe to re-run.
+            -->
+            <step>OCA\OpenBuild\Repair\RenameDutchRuleColumns</step>
         </post-migration>
     </repair-steps>
 

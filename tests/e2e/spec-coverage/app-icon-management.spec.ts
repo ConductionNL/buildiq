@@ -25,10 +25,13 @@ async function getFirstAppDetailUrl(page: Page): Promise<string> {
 	return href ? (href.startsWith('http') ? href : `${BASE}${href}`) : `${BASE}/apps/openbuild/applications`
 }
 
-// @e2e app-icon-management::user-uploads-a-light-icon
 // QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+//
+// ANCHORS REMOVED. The requirement is that a user UPLOADS a light icon and it
+// is stored on the Application. Nothing here uploads anything: the body clicks
+// into the detail page, asserts `main` is visible, guards a fatal-error check
+// behind `if (errorCount > 0)`, and ends on the app name being visible.
 test.skip('REQ-OBICON-004 — detail page exposes icon upload section', async ({ page }) => {
-	// @e2e app-icon-management::user-uploads-a-light-icon
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
@@ -58,10 +61,19 @@ test.skip('REQ-OBICON-004 — detail page exposes icon upload section', async ({
 	).toBeVisible({ timeout: 10_000 })
 })
 
-// @e2e app-icon-management::user-removes-the-dark-icon
 // QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+//
+// ANCHORS REMOVED. The requirement is that REMOVING the dark icon deletes the
+// OR attachment and clears `iconDark.ref`. This body removes nothing and reads
+// no attachment. Both of its branches are satisfiable without the feature: if a
+// tab matching /icon|image|brand/i exists it clicks it and asserts `main`; if
+// none exists it asserts the app name. There is no input under which it fails
+// while the product is broken — which is the definition of an unfalsifiable
+// test, and gate-19 cannot see that through the tag.
+//
+// No test on this branch asserts the removal path; a real one must delete the
+// dark icon and read back the cleared reference.
 test.skip('REQ-OBICON-004 — icon tab/section is accessible on the detail page', async ({ page }) => {
-	// @e2e app-icon-management::user-removes-the-dark-icon
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
@@ -89,10 +101,15 @@ test.skip('REQ-OBICON-004 — icon tab/section is accessible on the detail page'
 	}
 })
 
-// @e2e app-icon-management::non-svg-file-is-rejected-client-side
 // QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+//
+// ANCHORS REMOVED. The requirement is that a non-SVG file is REJECTED client
+// side. The rejection assertion here sits under TWO nested conditions —
+// `if (fileInputCount > 0)` and then `if (errorCount > 0)` — so the product
+// failing to reject is precisely the case in which nothing is asserted. The
+// body says so out loud: "the test passes vacuously because the UI is not
+// built". A vacuous pass and a real one are the same green.
 test.skip('REQ-OBICON-004 — non-SVG upload is rejected (icon section validation)', async ({ page }) => {
-	// @e2e app-icon-management::non-svg-file-is-rejected-client-side
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
