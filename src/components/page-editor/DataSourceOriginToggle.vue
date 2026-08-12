@@ -223,9 +223,11 @@ export default {
 	margin: 0 0 8px;
 	padding: 0;
 }
+
 .ds-origin-toggle__radio {
 	margin-right: 16px;
 }
+
 .ds-origin-toggle__connector {
 	border-left: 3px solid var(--color-border);
 	padding-left: 12px;

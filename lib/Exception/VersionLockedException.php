@@ -35,61 +35,58 @@ use Throwable;
  *
  * Carries `lockedBy` (UID) and `expiresAt` (ISO-8601) from OR's lock metadata.
  */
-final class VersionLockedException extends VersionPromotionException
-{
+final class VersionLockedException extends VersionPromotionException {
 
-    /**
-     * UID of the lock holder, or null when OR did not surface the field.
-     *
-     * @var string|null
-     */
-    private ?string $lockedBy;
+	/**
+	 * UID of the lock holder, or null when OR did not surface the field.
+	 *
+	 * @var string|null
+	 */
+	private ?string $lockedBy;
 
-    /**
-     * ISO-8601 expiry timestamp, or null when OR did not surface the field.
-     *
-     * @var string|null
-     */
-    private ?string $expiresAt;
+	/**
+	 * ISO-8601 expiry timestamp, or null when OR did not surface the field.
+	 *
+	 * @var string|null
+	 */
+	private ?string $expiresAt;
 
-    /**
-     * Constructor.
-     *
-     * @param string|null    $lockedBy  UID of the existing lock holder
-     * @param string|null    $expiresAt ISO-8601 timestamp of lock expiry
-     * @param string         $message   Diagnostic message
-     * @param Throwable|null $previous  Wrapped causal exception
-     *
-     * @return void
-     */
-    public function __construct(
-        ?string $lockedBy=null,
-        ?string $expiresAt=null,
-        string $message='Target ApplicationVersion row is locked.',
-        ?Throwable $previous=null
-    ) {
-        parent::__construct(errorCode: 'version_locked', message: $message, previous: $previous);
-        $this->lockedBy  = $lockedBy;
-        $this->expiresAt = $expiresAt;
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param string|null $lockedBy UID of the existing lock holder
+	 * @param string|null $expiresAt ISO-8601 timestamp of lock expiry
+	 * @param string $message Diagnostic message
+	 * @param Throwable|null $previous Wrapped causal exception
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		?string $lockedBy = null,
+		?string $expiresAt = null,
+		string $message = 'Target ApplicationVersion row is locked.',
+		?Throwable $previous = null,
+	) {
+		parent::__construct(errorCode: 'version_locked', message: $message, previous: $previous);
+		$this->lockedBy = $lockedBy;
+		$this->expiresAt = $expiresAt;
+	}//end __construct()
 
-    /**
-     * Get the UID of the lock holder.
-     *
-     * @return string|null
-     */
-    public function getLockedBy(): ?string
-    {
-        return $this->lockedBy;
-    }//end getLockedBy()
+	/**
+	 * Get the UID of the lock holder.
+	 *
+	 * @return string|null
+	 */
+	public function getLockedBy(): ?string {
+		return $this->lockedBy;
+	}//end getLockedBy()
 
-    /**
-     * Get the ISO-8601 expiry timestamp.
-     *
-     * @return string|null
-     */
-    public function getExpiresAt(): ?string
-    {
-        return $this->expiresAt;
-    }//end getExpiresAt()
+	/**
+	 * Get the ISO-8601 expiry timestamp.
+	 *
+	 * @return string|null
+	 */
+	public function getExpiresAt(): ?string {
+		return $this->expiresAt;
+	}//end getExpiresAt()
 }//end class

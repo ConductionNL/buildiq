@@ -54,106 +54,103 @@ use Throwable;
  *
  * @template-implements IEventListener<Event>
  */
-class AutomationCleanupListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param LoggerInterface           $logger   PSR logger for diagnostics.
-     * @param AutomationCompilerService $compiler Owns the artifact-removal logic.
-     * @param ObjectSchemaSlugResolver  $slugs    Resolves the event's schema id to a slug.
-     * @param ListenerSlugContract      $contract Gates the corrected comparison.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly LoggerInterface $logger,
-        private readonly AutomationCompilerService $compiler,
-        private readonly ObjectSchemaSlugResolver $slugs,
-        private readonly ListenerSlugContract $contract,
-    ) {
-    }//end __construct()
+class AutomationCleanupListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param LoggerInterface $logger PSR logger for diagnostics.
+	 * @param AutomationCompilerService $compiler Owns the artifact-removal logic.
+	 * @param ObjectSchemaSlugResolver $slugs Resolves the event's schema id to a slug.
+	 * @param ListenerSlugContract $contract Gates the corrected comparison.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly LoggerInterface $logger,
+		private readonly AutomationCompilerService $compiler,
+		private readonly ObjectSchemaSlugResolver $slugs,
+		private readonly ListenerSlugContract $contract,
+	) {
+	}//end __construct()
 
-    /**
-     * Handle a delete event, removing the automation's compiled artifacts
-     * when the deleted row is an `automation` object.
-     *
-     * @param Event $event Dispatched event.
-     *
-     * @return void
-     */
-    public function handle(Event $event): void
-    {
-        if (($event instanceof ObjectDeletedEvent) === false) {
-            return;
-        }
+	/**
+	 * Handle a delete event, removing the automation's compiled artifacts
+	 * when the deleted row is an `automation` object.
+	 *
+	 * @param Event $event Dispatched event.
+	 *
+	 * @return void
+	 */
+	public function handle(Event $event): void {
+		if (($event instanceof ObjectDeletedEvent) === false) {
+			return;
+		}
 
-        $entity = $event->getObject();
+		$entity = $event->getObject();
 
-        // GATED ON PURPOSE — see ListenerSlugContract.
-        //
-        // extractSchemaSlug() returned the schema's numeric id and compared it
-        // to the slug 'automation', so this cleanup has never once run and
-        // every deleted automation has left its compiled artifacts behind. The
-        // comparison below is correct; enabling it starts DELETING those
-        // artifacts on automation delete, which is the desired behaviour but is
-        // still a behaviour change on a path that has never executed.
-        if ($this->contract->isEnabled() === false) {
-            return;
-        }
+		// GATED ON PURPOSE — see ListenerSlugContract.
+		//
+		// extractSchemaSlug() returned the schema's numeric id and compared it
+		// to the slug 'automation', so this cleanup has never once run and
+		// every deleted automation has left its compiled artifacts behind. The
+		// comparison below is correct; enabling it starts DELETING those
+		// artifacts on automation delete, which is the desired behaviour but is
+		// still a behaviour change on a path that has never executed.
+		if ($this->contract->isEnabled() === false) {
+			return;
+		}
 
-        // The register is checked as well as the schema: `automation` is not a
-        // unique slug on this instance (two schemas carry it), so matching on
-        // the schema slug alone would delete artifacts for another app's rows.
-        if ($this->slugs->isOpenBuildSchema(
-            entity: $entity,
-            schemaSlug: AutomationCompilerService::AUTOMATION_SCHEMA
-        ) === false
-        ) {
-            return;
-        }
+		// The register is checked as well as the schema: `automation` is not a
+		// unique slug on this instance (two schemas carry it), so matching on
+		// the schema slug alone would delete artifacts for another app's rows.
+		if ($this->slugs->isOpenBuildSchema(
+			entity: $entity,
+			schemaSlug: AutomationCompilerService::AUTOMATION_SCHEMA
+		) === false
+		) {
+			return;
+		}
 
-        $automation = $this->extractObjectData(entity: $entity);
-        $provenance = $automation['provenance'] ?? [];
-        if (is_array($provenance) === false) {
-            $provenance = [];
-        }
+		$automation = $this->extractObjectData(entity: $entity);
+		$provenance = $automation['provenance'] ?? [];
+		if (is_array($provenance) === false) {
+			$provenance = [];
+		}
 
-        try {
-            $this->compiler->remove(automation: $automation, provenance: $provenance);
-        } catch (Throwable $e) {
-            $slug = (string) ($automation['slug'] ?? '');
-            $this->logger->error(
-                'OpenBuild: AutomationCleanupListener failed to remove compiled artifacts for deleted automation "'.$slug.'": '.$e->getMessage(),
-                ['exception' => $e]
-            );
-        }
-    }//end handle()
+		try {
+			$this->compiler->remove(automation: $automation, provenance: $provenance);
+		} catch (Throwable $e) {
+			$slug = (string)($automation['slug'] ?? '');
+			$this->logger->error(
+				'OpenBuild: AutomationCleanupListener failed to remove compiled artifacts for deleted automation "' . $slug . '": ' . $e->getMessage(),
+				['exception' => $e]
+			);
+		}
+	}//end handle()
 
-    /**
-     * Read the object payload (post-`@self`) from the ObjectEntity.
-     *
-     * @param object $entity The ObjectEntity instance.
-     *
-     * @return array<string,mixed>
-     */
-    private function extractObjectData(object $entity): array
-    {
-        if (method_exists($entity, 'getObject') === true) {
-            $object = $entity->getObject();
-            if (is_array($object) === true) {
-                return $object;
-            }
-        }
+	/**
+	 * Read the object payload (post-`@self`) from the ObjectEntity.
+	 *
+	 * @param object $entity The ObjectEntity instance.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function extractObjectData(object $entity): array {
+		if (method_exists($entity, 'getObject') === true) {
+			$object = $entity->getObject();
+			if (is_array($object) === true) {
+				return $object;
+			}
+		}
 
-        if (method_exists($entity, 'jsonSerialize') === true) {
-            $serialised = $entity->jsonSerialize();
-            if (is_array($serialised) === true) {
-                unset($serialised['@self']);
-                return $serialised;
-            }
-        }
+		if (method_exists($entity, 'jsonSerialize') === true) {
+			$serialised = $entity->jsonSerialize();
+			if (is_array($serialised) === true) {
+				unset($serialised['@self']);
+				return $serialised;
+			}
+		}
 
-        return [];
-    }//end extractObjectData()
+		return [];
+	}//end extractObjectData()
 }//end class

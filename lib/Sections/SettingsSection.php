@@ -36,6 +36,5 @@ use OCA\OpenRegister\AppHost\Settings\GenericSettingsSection;
  *
  * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md — Requirement: Boilerplate Adoption
  */
-class SettingsSection extends GenericSettingsSection
-{
+class SettingsSection extends GenericSettingsSection {
 }//end class

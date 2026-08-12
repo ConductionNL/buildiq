@@ -234,14 +234,17 @@ export default {
 	flex-direction: column;
 	gap: 8px;
 }
+
 .ob-document-actions__row {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 }
+
 .ob-document-actions__error {
 	color: var(--color-error);
 }
+
 .ob-document-actions__unavailable {
 	color: var(--color-text-maxcontrast);
 	padding: 8px 0;

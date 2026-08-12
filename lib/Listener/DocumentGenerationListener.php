@@ -64,315 +64,298 @@ use Throwable;
  *
  * @spec openspec/changes/automation-document-action/tasks.md#3.1
  */
-class DocumentGenerationListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param ObjectService             $objectService     Scans the `automation` register for matching triggers.
-     * @param DocumentGenerationService $documentGenerator Calls Docudesk + writes the configured output(s).
-     * @param LoggerInterface           $logger            PSR logger.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly ObjectService $objectService,
-        private readonly DocumentGenerationService $documentGenerator,
-        private readonly LoggerInterface $logger,
-    ) {
+class DocumentGenerationListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param ObjectService $objectService Scans the `automation` register for matching triggers.
+	 * @param DocumentGenerationService $documentGenerator Calls Docudesk + writes the configured output(s).
+	 * @param LoggerInterface $logger PSR logger.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly ObjectService $objectService,
+		private readonly DocumentGenerationService $documentGenerator,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Handle a dispatched object event, generating a document for every
-     * matching automation's `generateDocument` action(s).
-     *
-     * @param Event $event Dispatched event.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/automation-document-action/tasks.md#3.1
-     * @spec openspec/specs/automation-designer/spec.md#req-autd-004
-     */
-    public function handle(Event $event): void
-    {
-        $fired = $this->resolveFiredTrigger(event: $event);
-        if ($fired === null) {
-            return;
-        }
+	/**
+	 * Handle a dispatched object event, generating a document for every
+	 * matching automation's `generateDocument` action(s).
+	 *
+	 * @param Event $event Dispatched event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/automation-document-action/tasks.md#3.1
+	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+	 */
+	public function handle(Event $event): void {
+		$fired = $this->resolveFiredTrigger(event: $event);
+		if ($fired === null) {
+			return;
+		}
 
-        [$triggerType, $schemaSlug, $objectUuid, $transitionAction] = $fired;
-        if ($schemaSlug === '' || $objectUuid === '') {
-            return;
-        }
+		[$triggerType, $schemaSlug, $objectUuid, $transitionAction] = $fired;
+		if ($schemaSlug === '' || $objectUuid === '') {
+			return;
+		}
 
-        $automations = $this->findMatchingAutomations(
-            triggerType: $triggerType,
-            schemaSlug: $schemaSlug,
-            transitionAction: $transitionAction
-        );
+		$automations = $this->findMatchingAutomations(
+			triggerType: $triggerType,
+			schemaSlug: $schemaSlug,
+			transitionAction: $transitionAction
+		);
 
-        foreach ($automations as $automation) {
-            foreach ($this->generateDocumentActions(automation: $automation) as $action) {
-                try {
-                    $this->documentGenerator->generate(
-                        automation: $automation,
-                        action: $action,
-                        schemaSlug: $schemaSlug,
-                        objectUuid: $objectUuid
-                    );
-                } catch (Throwable $e) {
-                    $this->logger->error(
-                        'OpenBuild: DocumentGenerationListener failed for automation "'.($automation['slug'] ?? '')
-                        .'" / object "'.$objectUuid.'": '.$e->getMessage(),
-                        ['exception' => $e]
-                    );
-                }
-            }
-        }
+		foreach ($automations as $automation) {
+			foreach ($this->generateDocumentActions(automation: $automation) as $action) {
+				try {
+					$this->documentGenerator->generate(
+						automation: $automation,
+						action: $action,
+						schemaSlug: $schemaSlug,
+						objectUuid: $objectUuid
+					);
+				} catch (Throwable $e) {
+					$this->logger->error(
+						'OpenBuild: DocumentGenerationListener failed for automation "' . ($automation['slug'] ?? '')
+						. '" / object "' . $objectUuid . '": ' . $e->getMessage(),
+						['exception' => $e]
+					);
+				}
+			}
+		}
 
-    }//end handle()
+	}//end handle()
 
-    /**
-     * Resolve `[triggerType, schemaSlug, objectUuid, transitionAction]` from
-     * the dispatched event, or null when the event is not one this listener
-     * acts on.
-     *
-     * @param Event $event Dispatched event.
-     *
-     * @return array{0:string,1:string,2:string,3:?string}|null
-     */
-    private function resolveFiredTrigger(Event $event): ?array
-    {
-        if ($event instanceof ObjectCreatedEvent) {
-            return ['object-created', $this->schemaOf(entity: $event->getObject()), $this->uuidOf(entity: $event->getObject()), null];
-        }
+	/**
+	 * Resolve `[triggerType, schemaSlug, objectUuid, transitionAction]` from
+	 * the dispatched event, or null when the event is not one this listener
+	 * acts on.
+	 *
+	 * @param Event $event Dispatched event.
+	 *
+	 * @return array{0:string,1:string,2:string,3:?string}|null
+	 */
+	private function resolveFiredTrigger(Event $event): ?array {
+		if ($event instanceof ObjectCreatedEvent) {
+			return ['object-created', $this->schemaOf(entity: $event->getObject()), $this->uuidOf(entity: $event->getObject()), null];
+		}
 
-        if ($event instanceof ObjectUpdatedEvent) {
-            return ['object-updated', $this->schemaOf(entity: $event->getObject()), $this->uuidOf(entity: $event->getObject()), null];
-        }
+		if ($event instanceof ObjectUpdatedEvent) {
+			return ['object-updated', $this->schemaOf(entity: $event->getObject()), $this->uuidOf(entity: $event->getObject()), null];
+		}
 
-        if ($event instanceof ObjectDeletedEvent) {
-            return ['object-deleted', $this->schemaOf(entity: $event->getObject()), $this->uuidOf(entity: $event->getObject()), null];
-        }
+		if ($event instanceof ObjectDeletedEvent) {
+			return ['object-deleted', $this->schemaOf(entity: $event->getObject()), $this->uuidOf(entity: $event->getObject()), null];
+		}
 
-        if ($event instanceof ObjectTransitionedEvent) {
-            return [
-                'lifecycle-transition',
-                $event->getSchema(),
-                $this->uuidOf(entity: $event->getObject()),
-                $event->getAction(),
-            ];
-        }
+		if ($event instanceof ObjectTransitionedEvent) {
+			return [
+				'lifecycle-transition',
+				$event->getSchema(),
+				$this->uuidOf(entity: $event->getObject()),
+				$event->getAction(),
+			];
+		}
 
-        return null;
+		return null;
+	}//end resolveFiredTrigger()
 
-    }//end resolveFiredTrigger()
+	/**
+	 * Read a schema slug off an `ObjectEntity`, defensively.
+	 *
+	 * @param object $entity The `ObjectEntity` instance.
+	 *
+	 * @return string
+	 */
+	private function schemaOf(object $entity): string {
+		if (method_exists($entity, 'getSchema') === true) {
+			$schema = $entity->getSchema();
+			if (is_string($schema) === true) {
+				return $schema;
+			}
+		}
 
-    /**
-     * Read a schema slug off an `ObjectEntity`, defensively.
-     *
-     * @param object $entity The `ObjectEntity` instance.
-     *
-     * @return string
-     */
-    private function schemaOf(object $entity): string
-    {
-        if (method_exists($entity, 'getSchema') === true) {
-            $schema = $entity->getSchema();
-            if (is_string($schema) === true) {
-                return $schema;
-            }
-        }
+		return '';
+	}//end schemaOf()
 
-        return '';
+	/**
+	 * Read the uuid off an `ObjectEntity`, defensively.
+	 *
+	 * @param object $entity The `ObjectEntity` instance.
+	 *
+	 * @return string
+	 */
+	private function uuidOf(object $entity): string {
+		if (method_exists($entity, 'getUuid') === true) {
+			$uuid = $entity->getUuid();
+			if (is_string($uuid) === true) {
+				return $uuid;
+			}
+		}
 
-    }//end schemaOf()
+		return '';
+	}//end uuidOf()
 
-    /**
-     * Read the uuid off an `ObjectEntity`, defensively.
-     *
-     * @param object $entity The `ObjectEntity` instance.
-     *
-     * @return string
-     */
-    private function uuidOf(object $entity): string
-    {
-        if (method_exists($entity, 'getUuid') === true) {
-            $uuid = $entity->getUuid();
-            if (is_string($uuid) === true) {
-                return $uuid;
-            }
-        }
+	/**
+	 * Scan the shared `openbuild` register's `automation` objects for every
+	 * ENABLED automation whose `trigger` matches the fired event and whose
+	 * `actions[]` includes at least one `generateDocument` action.
+	 *
+	 * @param string $triggerType The fired trigger type.
+	 * @param string $schemaSlug The fired object's schema slug.
+	 * @param string|null $transitionAction The matched transition action name (lifecycle-transition only).
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function findMatchingAutomations(string $triggerType, string $schemaSlug, ?string $transitionAction): array {
+		try {
+			$results = $this->objectService->findAll(
+				config: [
+					'filters' => [
+						'register' => AutomationCompilerService::REGISTER_SLUG,
+						'schema' => AutomationCompilerService::AUTOMATION_SCHEMA,
+					],
+				]
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning('OpenBuild: DocumentGenerationListener could not scan automations: ' . $e->getMessage());
+			return [];
+		}
 
-        return '';
+		if (is_array($results) === false) {
+			return [];
+		}
 
-    }//end uuidOf()
+		$matches = [];
+		foreach ($results as $row) {
+			$automation = $this->normalise(object: $row);
+			$isMatch = $this->matches(
+				automation: $automation,
+				triggerType: $triggerType,
+				schemaSlug: $schemaSlug,
+				transitionAction: $transitionAction
+			);
+			if ($isMatch === true) {
+				$matches[] = $automation;
+			}
+		}
 
-    /**
-     * Scan the shared `openbuild` register's `automation` objects for every
-     * ENABLED automation whose `trigger` matches the fired event and whose
-     * `actions[]` includes at least one `generateDocument` action.
-     *
-     * @param string      $triggerType      The fired trigger type.
-     * @param string      $schemaSlug       The fired object's schema slug.
-     * @param string|null $transitionAction The matched transition action name (lifecycle-transition only).
-     *
-     * @return array<int,array<string,mixed>>
-     */
-    private function findMatchingAutomations(string $triggerType, string $schemaSlug, ?string $transitionAction): array
-    {
-        try {
-            $results = $this->objectService->findAll(
-                config: [
-                    'filters' => [
-                        'register' => AutomationCompilerService::REGISTER_SLUG,
-                        'schema'   => AutomationCompilerService::AUTOMATION_SCHEMA,
-                    ],
-                ]
-            );
-        } catch (Throwable $e) {
-            $this->logger->warning('OpenBuild: DocumentGenerationListener could not scan automations: '.$e->getMessage());
-            return [];
-        }
+		return $matches;
+	}//end findMatchingAutomations()
 
-        if (is_array($results) === false) {
-            return [];
-        }
+	/**
+	 * Whether an automation's trigger matches the fired event, it is
+	 * enabled, and it carries at least one `generateDocument` action.
+	 *
+	 * @param array<string,mixed> $automation The candidate automation.
+	 * @param string $triggerType The fired trigger type.
+	 * @param string $schemaSlug The fired object's schema slug.
+	 * @param string|null $transitionAction The matched transition action name.
+	 *
+	 * @return bool
+	 */
+	private function matches(array $automation, string $triggerType, string $schemaSlug, ?string $transitionAction): bool {
+		if (($automation['enabled'] ?? true) === false) {
+			return false;
+		}
 
-        $matches = [];
-        foreach ($results as $row) {
-            $automation = $this->normalise(object: $row);
-            $isMatch    = $this->matches(
-                automation: $automation,
-                triggerType: $triggerType,
-                schemaSlug: $schemaSlug,
-                transitionAction: $transitionAction
-            );
-            if ($isMatch === true) {
-                $matches[] = $automation;
-            }
-        }
+		$trigger = $automation['trigger'] ?? null;
+		if (is_array($trigger) === false) {
+			return false;
+		}
 
-        return $matches;
+		$triggerMatches = $this->triggerMatches(
+			trigger: $trigger,
+			triggerType: $triggerType,
+			schemaSlug: $schemaSlug,
+			transitionAction: $transitionAction
+		);
+		if ($triggerMatches === false) {
+			return false;
+		}
 
-    }//end findMatchingAutomations()
+		return $this->generateDocumentActions(automation: $automation) !== [];
+	}//end matches()
 
-    /**
-     * Whether an automation's trigger matches the fired event, it is
-     * enabled, and it carries at least one `generateDocument` action.
-     *
-     * @param array<string,mixed> $automation       The candidate automation.
-     * @param string              $triggerType      The fired trigger type.
-     * @param string              $schemaSlug       The fired object's schema slug.
-     * @param string|null         $transitionAction The matched transition action name.
-     *
-     * @return bool
-     */
-    private function matches(array $automation, string $triggerType, string $schemaSlug, ?string $transitionAction): bool
-    {
-        if (($automation['enabled'] ?? true) === false) {
-            return false;
-        }
+	/**
+	 * Whether the automation's `trigger` block matches the fired event.
+	 *
+	 * @param array<string,mixed> $trigger The automation's `trigger` block.
+	 * @param string $triggerType The fired trigger type.
+	 * @param string $schemaSlug The fired object's schema slug.
+	 * @param string|null $transitionAction The matched transition action name.
+	 *
+	 * @return bool
+	 */
+	private function triggerMatches(array $trigger, string $triggerType, string $schemaSlug, ?string $transitionAction): bool {
+		if ((string)($trigger['type'] ?? '') !== $triggerType) {
+			return false;
+		}
 
-        $trigger = $automation['trigger'] ?? null;
-        if (is_array($trigger) === false) {
-            return false;
-        }
+		if ((string)($trigger['schema'] ?? '') !== $schemaSlug) {
+			return false;
+		}
 
-        $triggerMatches = $this->triggerMatches(
-            trigger: $trigger,
-            triggerType: $triggerType,
-            schemaSlug: $schemaSlug,
-            transitionAction: $transitionAction
-        );
-        if ($triggerMatches === false) {
-            return false;
-        }
+		if ($triggerType !== 'lifecycle-transition') {
+			return true;
+		}
 
-        return $this->generateDocumentActions(automation: $automation) !== [];
+		return (string)($trigger['transition'] ?? '') === (string)$transitionAction;
+	}//end triggerMatches()
 
-    }//end matches()
+	/**
+	 * Every `generateDocument` action record on the automation.
+	 *
+	 * @param array<string,mixed> $automation The candidate automation.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function generateDocumentActions(array $automation): array {
+		$actions = $automation['actions'] ?? [];
+		if (is_array($actions) === false) {
+			return [];
+		}
 
-    /**
-     * Whether the automation's `trigger` block matches the fired event.
-     *
-     * @param array<string,mixed> $trigger          The automation's `trigger` block.
-     * @param string              $triggerType      The fired trigger type.
-     * @param string              $schemaSlug       The fired object's schema slug.
-     * @param string|null         $transitionAction The matched transition action name.
-     *
-     * @return bool
-     */
-    private function triggerMatches(array $trigger, string $triggerType, string $schemaSlug, ?string $transitionAction): bool
-    {
-        if ((string) ($trigger['type'] ?? '') !== $triggerType) {
-            return false;
-        }
+		return array_values(
+			array_filter(
+				$actions,
+				static fn ($action): bool => is_array($action) === true && ($action['type'] ?? '') === 'generateDocument'
+			)
+		);
 
-        if ((string) ($trigger['schema'] ?? '') !== $schemaSlug) {
-            return false;
-        }
+	}//end generateDocumentActions()
 
-        if ($triggerType !== 'lifecycle-transition') {
-            return true;
-        }
+	/**
+	 * Coerce an OR result entry to a plain associative array.
+	 *
+	 * @param mixed $object The OR object/result entry.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function normalise(mixed $object): array {
+		if (is_array($object) === true) {
+			return $object;
+		}
 
-        return (string) ($trigger['transition'] ?? '') === (string) $transitionAction;
+		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
+			$serialised = $object->jsonSerialize();
+			if (is_array($serialised) === true) {
+				return $serialised;
+			}
+		}
 
-    }//end triggerMatches()
+		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
+			$inner = $object->getObject();
+			if (is_array($inner) === true) {
+				return $inner;
+			}
+		}
 
-    /**
-     * Every `generateDocument` action record on the automation.
-     *
-     * @param array<string,mixed> $automation The candidate automation.
-     *
-     * @return array<int,array<string,mixed>>
-     */
-    private function generateDocumentActions(array $automation): array
-    {
-        $actions = $automation['actions'] ?? [];
-        if (is_array($actions) === false) {
-            return [];
-        }
-
-        return array_values(
-            array_filter(
-                $actions,
-                static fn ($action): bool => is_array($action) === true && ($action['type'] ?? '') === 'generateDocument'
-            )
-        );
-
-    }//end generateDocumentActions()
-
-    /**
-     * Coerce an OR result entry to a plain associative array.
-     *
-     * @param mixed $object The OR object/result entry.
-     *
-     * @return array<string,mixed>
-     */
-    private function normalise(mixed $object): array
-    {
-        if (is_array($object) === true) {
-            return $object;
-        }
-
-        if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-            $serialised = $object->jsonSerialize();
-            if (is_array($serialised) === true) {
-                return $serialised;
-            }
-        }
-
-        if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-            $inner = $object->getObject();
-            if (is_array($inner) === true) {
-                return $inner;
-            }
-        }
-
-        return [];
-
-    }//end normalise()
+		return [];
+	}//end normalise()
 }//end class

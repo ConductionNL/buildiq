@@ -33,20 +33,19 @@ use Throwable;
 /**
  * 403-mapped — caller is not an owner or editor on the parent Application.
  */
-final class InsufficientPermissionException extends VersionPromotionException
-{
-    /**
-     * Constructor.
-     *
-     * @param string         $message  Diagnostic message
-     * @param Throwable|null $previous Wrapped causal exception
-     *
-     * @return void
-     */
-    public function __construct(
-        string $message='Caller is not an owner or editor on the parent Application.',
-        ?Throwable $previous=null
-    ) {
-        parent::__construct(errorCode: 'insufficient_permission', message: $message, previous: $previous);
-    }//end __construct()
+final class InsufficientPermissionException extends VersionPromotionException {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Diagnostic message
+	 * @param Throwable|null $previous Wrapped causal exception
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		string $message = 'Caller is not an owner or editor on the parent Application.',
+		?Throwable $previous = null,
+	) {
+		parent::__construct(errorCode: 'insufficient_permission', message: $message, previous: $previous);
+	}//end __construct()
 }//end class

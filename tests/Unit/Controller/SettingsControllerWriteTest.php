@@ -63,261 +63,250 @@ use PHPUnit\Framework\TestCase;
  *
  * @spec openspec/specs/settings-and-observability/spec.md#req-obs-002
  */
-class SettingsControllerWriteTest extends TestCase
-{
+class SettingsControllerWriteTest extends TestCase {
 
-    /**
-     * The mocked request.
-     *
-     * @var IRequest&MockObject
-     */
-    private IRequest&MockObject $request;
+	/**
+	 * The mocked request.
+	 *
+	 * @var IRequest&MockObject
+	 */
+	private IRequest&MockObject $request;
 
-    /**
-     * The mocked settings service.
-     *
-     * @var SettingsService&MockObject
-     */
-    private SettingsService&MockObject $settingsService;
+	/**
+	 * The mocked settings service.
+	 *
+	 * @var SettingsService&MockObject
+	 */
+	private SettingsService&MockObject $settingsService;
 
-    /**
-     * The mocked user session.
-     *
-     * @var IUserSession&MockObject
-     */
-    private IUserSession&MockObject $userSession;
+	/**
+	 * The mocked user session.
+	 *
+	 * @var IUserSession&MockObject
+	 */
+	private IUserSession&MockObject $userSession;
 
-    /**
-     * The mocked group manager.
-     *
-     * @var IGroupManager&MockObject
-     */
-    private IGroupManager&MockObject $groupManager;
+	/**
+	 * The mocked group manager.
+	 *
+	 * @var IGroupManager&MockObject
+	 */
+	private IGroupManager&MockObject $groupManager;
 
-    /**
-     * Set up the mocks shared by every test.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up the mocks shared by every test.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request         = $this->createMock(IRequest::class);
-        $this->settingsService = $this->createMock(SettingsService::class);
-        $this->userSession     = $this->createMock(IUserSession::class);
-        $this->groupManager    = $this->createMock(IGroupManager::class);
-    }//end setUp()
+		$this->request = $this->createMock(IRequest::class);
+		$this->settingsService = $this->createMock(SettingsService::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+	}//end setUp()
 
-    /**
-     * Build the controller under test with the collaborators mocked.
-     *
-     * @return SettingsController The controller under test.
-     */
-    private function controller(): SettingsController
-    {
-        return new SettingsController(
-            request: $this->request,
-            settingsService: $this->settingsService,
-            userSession: $this->userSession,
-            groupManager: $this->groupManager
-        );
-    }//end controller()
+	/**
+	 * Build the controller under test with the collaborators mocked.
+	 *
+	 * @return SettingsController The controller under test.
+	 */
+	private function controller(): SettingsController {
+		return new SettingsController(
+			request: $this->request,
+			settingsService: $this->settingsService,
+			userSession: $this->userSession,
+			groupManager: $this->groupManager
+		);
+	}//end controller()
 
-    /**
-     * Put a signed-in user with the given uid into the session.
-     *
-     * @param string $uid The user id to report.
-     *
-     * @return void
-     */
-    private function signIn(string $uid): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($uid);
-        $this->userSession->method('getUser')->willReturn($user);
-    }//end signIn()
+	/**
+	 * Put a signed-in user with the given uid into the session.
+	 *
+	 * @param string $uid The user id to report.
+	 *
+	 * @return void
+	 */
+	private function signIn(string $uid): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$this->userSession->method('getUser')->willReturn($user);
+	}//end signIn()
 
-    /**
-     * PUT /api/settings must persist the request parameters and return the
-     * config the service stored (not the submission).
-     *
-     * @return void
-     */
-    public function testUpdatePersistsTheRequestParametersAndReturnsTheStoredConfig(): void
-    {
-        $submitted = [
-            'register'     => 'openbuild',
-            'registry_url' => 'https://store.example.org',
-        ];
+	/**
+	 * PUT /api/settings must persist the request parameters and return the
+	 * config the service stored (not the submission).
+	 *
+	 * @return void
+	 */
+	public function testUpdatePersistsTheRequestParametersAndReturnsTheStoredConfig(): void {
+		$submitted = [
+			'register' => 'openbuild',
+			'registry_url' => 'https://store.example.org',
+		];
 
-        // The service whitelists keys and re-reads, so the stored shape is not
-        // the submitted shape — asserting on it proves the response comes from
-        // the service rather than being echoed back.
-        $stored = [
-            'register'           => 'openbuild',
-            'registry_url'       => 'https://store.example.org',
-            'openregisters'      => true,
-            'isAdmin'            => true,
-            'registry_token_set' => false,
-            'storeConfigured'    => true,
-        ];
+		// The service whitelists keys and re-reads, so the stored shape is not
+		// the submitted shape — asserting on it proves the response comes from
+		// the service rather than being echoed back.
+		$stored = [
+			'register' => 'openbuild',
+			'registry_url' => 'https://store.example.org',
+			'openregisters' => true,
+			'isAdmin' => true,
+			'registry_token_set' => false,
+			'storeConfigured' => true,
+		];
 
-        $this->signIn('alice');
-        $this->groupManager->method('isInGroup')->with('alice', 'admin')->willReturn(true);
-        $this->request->method('getParams')->willReturn($submitted);
+		$this->signIn('alice');
+		$this->groupManager->method('isInGroup')->with('alice', 'admin')->willReturn(true);
+		$this->request->method('getParams')->willReturn($submitted);
 
-        // The ITEM: the write reaches the service, with the submitted params.
-        $this->settingsService->expects($this->once())
-            ->method('updateSettings')
-            ->with($submitted)
-            ->willReturn($stored);
+		// The ITEM: the write reaches the service, with the submitted params.
+		$this->settingsService->expects($this->once())
+			->method('updateSettings')
+			->with($submitted)
+			->willReturn($stored);
 
-        $response = $this->controller()->update();
+		$response = $this->controller()->update();
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame(
-            [
-                'success' => true,
-                'config'  => $stored,
-            ],
-            $response->getData(),
-            'update() must return the config the service actually stored, not the submission'
-        );
-    }//end testUpdatePersistsTheRequestParametersAndReturnsTheStoredConfig()
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(
+			[
+				'success' => true,
+				'config' => $stored,
+			],
+			$response->getData(),
+			'update() must return the config the service actually stored, not the submission'
+		);
+	}//end testUpdatePersistsTheRequestParametersAndReturnsTheStoredConfig()
 
-    /**
-     * POST /api/settings is a legacy alias and must write identically.
-     *
-     * The canonical table still ships `settings#create`, so the alias staying a
-     * real write — not an empty success — is load-bearing (ADR-029).
-     *
-     * @return void
-     */
-    public function testCreateDelegatesToUpdateAndStillWrites(): void
-    {
-        $submitted = ['register' => 'openbuild'];
-        $stored    = [
-            'register' => 'openbuild',
-            'isAdmin'  => true,
-        ];
+	/**
+	 * POST /api/settings is a legacy alias and must write identically.
+	 *
+	 * The canonical table still ships `settings#create`, so the alias staying a
+	 * real write — not an empty success — is load-bearing (ADR-029).
+	 *
+	 * @return void
+	 */
+	public function testCreateDelegatesToUpdateAndStillWrites(): void {
+		$submitted = ['register' => 'openbuild'];
+		$stored = [
+			'register' => 'openbuild',
+			'isAdmin' => true,
+		];
 
-        $this->signIn('alice');
-        $this->groupManager->method('isInGroup')->with('alice', 'admin')->willReturn(true);
-        $this->request->method('getParams')->willReturn($submitted);
+		$this->signIn('alice');
+		$this->groupManager->method('isInGroup')->with('alice', 'admin')->willReturn(true);
+		$this->request->method('getParams')->willReturn($submitted);
 
-        $this->settingsService->expects($this->once())
-            ->method('updateSettings')
-            ->with($submitted)
-            ->willReturn($stored);
+		$this->settingsService->expects($this->once())
+			->method('updateSettings')
+			->with($submitted)
+			->willReturn($stored);
 
-        $response = $this->controller()->create();
+		$response = $this->controller()->create();
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame(
-            [
-                'success' => true,
-                'config'  => $stored,
-            ],
-            $response->getData(),
-            'create() must produce the same written result as update()'
-        );
-    }//end testCreateDelegatesToUpdateAndStillWrites()
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(
+			[
+				'success' => true,
+				'config' => $stored,
+			],
+			$response->getData(),
+			'create() must produce the same written result as update()'
+		);
+	}//end testCreateDelegatesToUpdateAndStillWrites()
 
-    /**
-     * A signed-in NON-ADMIN must be refused on the canonical write with 403,
-     * and nothing may be persisted.
-     *
-     * This is the guard that `#[NoAdminRequired]` does NOT provide.
-     *
-     * @return void
-     */
-    public function testUpdateRejectsANonAdminWithForbiddenAndWritesNothing(): void
-    {
-        $this->signIn('mallory');
-        $this->groupManager->method('isInGroup')->with('mallory', 'admin')->willReturn(false);
+	/**
+	 * A signed-in NON-ADMIN must be refused on the canonical write with 403,
+	 * and nothing may be persisted.
+	 *
+	 * This is the guard that `#[NoAdminRequired]` does NOT provide.
+	 *
+	 * @return void
+	 */
+	public function testUpdateRejectsANonAdminWithForbiddenAndWritesNothing(): void {
+		$this->signIn('mallory');
+		$this->groupManager->method('isInGroup')->with('mallory', 'admin')->willReturn(false);
 
-        $this->settingsService->expects($this->never())->method('updateSettings');
+		$this->settingsService->expects($this->never())->method('updateSettings');
 
-        $response = $this->controller()->update();
+		$response = $this->controller()->update();
 
-        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
-        $this->assertSame(['error' => 'Forbidden.'], $response->getData());
-    }//end testUpdateRejectsANonAdminWithForbiddenAndWritesNothing()
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertSame(['error' => 'Forbidden.'], $response->getData());
+	}//end testUpdateRejectsANonAdminWithForbiddenAndWritesNothing()
 
-    /**
-     * An unauthenticated caller must be refused on the canonical write with
-     * 401, and nothing may be persisted.
-     *
-     * @return void
-     */
-    public function testUpdateRejectsAnUnauthenticatedCallerAndWritesNothing(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
+	/**
+	 * An unauthenticated caller must be refused on the canonical write with
+	 * 401, and nothing may be persisted.
+	 *
+	 * @return void
+	 */
+	public function testUpdateRejectsAnUnauthenticatedCallerAndWritesNothing(): void {
+		$this->userSession->method('getUser')->willReturn(null);
 
-        $this->settingsService->expects($this->never())->method('updateSettings');
+		$this->settingsService->expects($this->never())->method('updateSettings');
 
-        $response = $this->controller()->update();
+		$response = $this->controller()->update();
 
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-        $this->assertSame(['error' => 'Unauthenticated.'], $response->getData());
-    }//end testUpdateRejectsAnUnauthenticatedCallerAndWritesNothing()
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		$this->assertSame(['error' => 'Unauthenticated.'], $response->getData());
+	}//end testUpdateRejectsAnUnauthenticatedCallerAndWritesNothing()
 
-    /**
-     * The legacy POST alias must inherit the same guard through delegation.
-     *
-     * @return void
-     */
-    public function testCreateRejectsANonAdminWithForbiddenAndWritesNothing(): void
-    {
-        $this->signIn('mallory');
-        $this->groupManager->method('isInGroup')->with('mallory', 'admin')->willReturn(false);
+	/**
+	 * The legacy POST alias must inherit the same guard through delegation.
+	 *
+	 * @return void
+	 */
+	public function testCreateRejectsANonAdminWithForbiddenAndWritesNothing(): void {
+		$this->signIn('mallory');
+		$this->groupManager->method('isInGroup')->with('mallory', 'admin')->willReturn(false);
 
-        $this->settingsService->expects($this->never())->method('updateSettings');
+		$this->settingsService->expects($this->never())->method('updateSettings');
 
-        $response = $this->controller()->create();
+		$response = $this->controller()->create();
 
-        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
-        $this->assertSame(['error' => 'Forbidden.'], $response->getData());
-    }//end testCreateRejectsANonAdminWithForbiddenAndWritesNothing()
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertSame(['error' => 'Forbidden.'], $response->getData());
+	}//end testCreateRejectsANonAdminWithForbiddenAndWritesNothing()
 
-    /**
-     * The legacy POST alias must still reject an unauthenticated caller.
-     *
-     * @return void
-     */
-    public function testCreateRejectsAnUnauthenticatedCallerAndWritesNothing(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
+	/**
+	 * The legacy POST alias must still reject an unauthenticated caller.
+	 *
+	 * @return void
+	 */
+	public function testCreateRejectsAnUnauthenticatedCallerAndWritesNothing(): void {
+		$this->userSession->method('getUser')->willReturn(null);
 
-        $this->settingsService->expects($this->never())->method('updateSettings');
+		$this->settingsService->expects($this->never())->method('updateSettings');
 
-        $response = $this->controller()->create();
+		$response = $this->controller()->create();
 
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-        $this->assertSame(['error' => 'Unauthenticated.'], $response->getData());
-    }//end testCreateRejectsAnUnauthenticatedCallerAndWritesNothing()
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		$this->assertSame(['error' => 'Unauthenticated.'], $response->getData());
+	}//end testCreateRejectsAnUnauthenticatedCallerAndWritesNothing()
 
-    /**
-     * `settings#load` re-provisions registers and schemas instance-wide, so its
-     * unauthenticated branch must reject too.
-     *
-     * This branch was the one statement in the controller left uncovered by the
-     * existing suite; a guard whose rejecting branch is never executed is a
-     * guard nobody has ever seen work.
-     *
-     * @return void
-     */
-    public function testLoadRejectsAnUnauthenticatedCallerAndReloadsNothing(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
+	/**
+	 * `settings#load` re-provisions registers and schemas instance-wide, so its
+	 * unauthenticated branch must reject too.
+	 *
+	 * This branch was the one statement in the controller left uncovered by the
+	 * existing suite; a guard whose rejecting branch is never executed is a
+	 * guard nobody has ever seen work.
+	 *
+	 * @return void
+	 */
+	public function testLoadRejectsAnUnauthenticatedCallerAndReloadsNothing(): void {
+		$this->userSession->method('getUser')->willReturn(null);
 
-        $this->settingsService->expects($this->never())->method('reloadConfiguration');
+		$this->settingsService->expects($this->never())->method('reloadConfiguration');
 
-        $response = $this->controller()->load();
+		$response = $this->controller()->load();
 
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-        $this->assertSame(['error' => 'Unauthenticated.'], $response->getData());
-    }//end testLoadRejectsAnUnauthenticatedCallerAndReloadsNothing()
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		$this->assertSame(['error' => 'Unauthenticated.'], $response->getData());
+	}//end testLoadRejectsAnUnauthenticatedCallerAndReloadsNothing()
 
 }//end class

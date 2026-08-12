@@ -33,208 +33,197 @@ use RuntimeException;
 /**
  * Tests for {@see DecisionTableEvaluator}.
  */
-final class DecisionTableEvaluatorTest extends TestCase
-{
+final class DecisionTableEvaluatorTest extends TestCase {
 
-    /**
-     * The evaluator under test.
-     *
-     * @var DecisionTableEvaluator
-     */
-    private DecisionTableEvaluator $evaluator;
+	/**
+	 * The evaluator under test.
+	 *
+	 * @var DecisionTableEvaluator
+	 */
+	private DecisionTableEvaluator $evaluator;
 
-    /**
-     * Build a fresh evaluator before each test.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->evaluator = new DecisionTableEvaluator(new ExpressionEvaluator());
+	/**
+	 * Build a fresh evaluator before each test.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->evaluator = new DecisionTableEvaluator(new ExpressionEvaluator());
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * The canonical loan-eligibility table.
-     *
-     * @return array<string,mixed>
-     */
-    private function loanTable(): array
-    {
-        return [
-            'hitPolicy'     => 'first',
-            'inputColumns'  => [
-                ['name' => 'applicantAge', 'type' => 'integer', 'expressionPath' => 'applicant.age'],
-                ['name' => 'monthlyIncome', 'type' => 'number', 'expressionPath' => 'applicant.monthlyIncome'],
-                ['name' => 'creditScore', 'type' => 'integer', 'expressionPath' => 'applicant.creditScore'],
-            ],
-            'outputColumns' => [
-                ['name' => 'decision', 'type' => 'string', 'defaultValue' => 'deny'],
-                ['name' => 'reason', 'type' => 'string', 'defaultValue' => 'Eligibility criteria not met'],
-            ],
-            'rules'        => [
-                [
-                    'conditions' => ['applicantAge' => '>=18', 'monthlyIncome' => '>=2000', 'creditScore' => '>=600'],
-                    'values'   => ['decision' => 'approve', 'reason' => 'All criteria met'],
-                    'label'     => 'Standard approval',
-                ],
-                [
-                    'conditions' => ['applicantAge' => '>=18', 'monthlyIncome' => '>=1500', 'creditScore' => '>=500'],
-                    'values'   => ['decision' => 'review', 'reason' => 'Manual review required'],
-                    'label'     => 'Marginal case',
-                ],
-                [
-                    'conditions' => [],
-                    'values'   => ['decision' => 'deny', 'reason' => 'Eligibility criteria not met'],
-                    'label'     => 'Default deny',
-                ],
-            ],
-        ];
+	/**
+	 * The canonical loan-eligibility table.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function loanTable(): array {
+		return [
+			'hitPolicy' => 'first',
+			'inputColumns' => [
+				['name' => 'applicantAge', 'type' => 'integer', 'expressionPath' => 'applicant.age'],
+				['name' => 'monthlyIncome', 'type' => 'number', 'expressionPath' => 'applicant.monthlyIncome'],
+				['name' => 'creditScore', 'type' => 'integer', 'expressionPath' => 'applicant.creditScore'],
+			],
+			'outputColumns' => [
+				['name' => 'decision', 'type' => 'string', 'defaultValue' => 'deny'],
+				['name' => 'reason', 'type' => 'string', 'defaultValue' => 'Eligibility criteria not met'],
+			],
+			'rules' => [
+				[
+					'conditions' => ['applicantAge' => '>=18', 'monthlyIncome' => '>=2000', 'creditScore' => '>=600'],
+					'values' => ['decision' => 'approve', 'reason' => 'All criteria met'],
+					'label' => 'Standard approval',
+				],
+				[
+					'conditions' => ['applicantAge' => '>=18', 'monthlyIncome' => '>=1500', 'creditScore' => '>=500'],
+					'values' => ['decision' => 'review', 'reason' => 'Manual review required'],
+					'label' => 'Marginal case',
+				],
+				[
+					'conditions' => [],
+					'values' => ['decision' => 'deny', 'reason' => 'Eligibility criteria not met'],
+					'label' => 'Default deny',
+				],
+			],
+		];
 
-    }//end loanTable()
+	}//end loanTable()
 
-    /**
-     * First-match returns the first matching rule's output.
-     *
-     * @return void
-     */
-    public function testFirstHitApproval(): void
-    {
-        $result = $this->evaluator->evaluate(
-            $this->loanTable(),
-            ['applicant' => ['age' => 30, 'monthlyIncome' => 3000, 'creditScore' => 650]]
-        );
-        $this->assertSame('approve', $result['outputColumns']['decision']);
-        $this->assertSame('Standard approval', $result['triggeredRuleId']);
+	/**
+	 * First-match returns the first matching rule's output.
+	 *
+	 * @return void
+	 */
+	public function testFirstHitApproval(): void {
+		$result = $this->evaluator->evaluate(
+			$this->loanTable(),
+			['applicant' => ['age' => 30, 'monthlyIncome' => 3000, 'creditScore' => 650]]
+		);
+		$this->assertSame('approve', $result['outputColumns']['decision']);
+		$this->assertSame('Standard approval', $result['triggeredRuleId']);
 
-    }//end testFirstHitApproval()
+	}//end testFirstHitApproval()
 
-    /**
-     * A marginal applicant falls through to the review rule.
-     *
-     * @return void
-     */
-    public function testFirstHitFallthroughToReview(): void
-    {
-        $result = $this->evaluator->evaluate(
-            $this->loanTable(),
-            ['applicant' => ['age' => 30, 'monthlyIncome' => 1600, 'creditScore' => 520]]
-        );
-        $this->assertSame('review', $result['outputColumns']['decision']);
+	/**
+	 * A marginal applicant falls through to the review rule.
+	 *
+	 * @return void
+	 */
+	public function testFirstHitFallthroughToReview(): void {
+		$result = $this->evaluator->evaluate(
+			$this->loanTable(),
+			['applicant' => ['age' => 30, 'monthlyIncome' => 1600, 'creditScore' => 520]]
+		);
+		$this->assertSame('review', $result['outputColumns']['decision']);
 
-    }//end testFirstHitFallthroughToReview()
+	}//end testFirstHitFallthroughToReview()
 
-    /**
-     * The empty default rule denies when nothing else matches.
-     *
-     * @return void
-     */
-    public function testDefaultDeny(): void
-    {
-        $result = $this->evaluator->evaluate(
-            $this->loanTable(),
-            ['applicant' => ['age' => 16, 'monthlyIncome' => 100, 'creditScore' => 300]]
-        );
-        $this->assertSame('deny', $result['outputColumns']['decision']);
+	/**
+	 * The empty default rule denies when nothing else matches.
+	 *
+	 * @return void
+	 */
+	public function testDefaultDeny(): void {
+		$result = $this->evaluator->evaluate(
+			$this->loanTable(),
+			['applicant' => ['age' => 16, 'monthlyIncome' => 100, 'creditScore' => 300]]
+		);
+		$this->assertSame('deny', $result['outputColumns']['decision']);
 
-    }//end testDefaultDeny()
+	}//end testDefaultDeny()
 
-    /**
-     * The `unique` policy throws when more than one rule matches.
-     *
-     * @return void
-     */
-    public function testUniquePolicyThrowsOnOverlap(): void
-    {
-        $table = [
-            'hitPolicy'    => 'unique',
-            'inputColumns' => [['name' => 'age', 'expressionPath' => 'age']],
-            'rules'       => [
-                ['conditions' => ['age' => '>=18'], 'values' => ['x' => 1], 'label' => 'a'],
-                ['conditions' => ['age' => '>=21'], 'values' => ['x' => 2], 'label' => 'b'],
-            ],
-        ];
-        $this->expectException(RuntimeException::class);
-        $this->evaluator->evaluate($table, ['age' => 30]);
+	/**
+	 * The `unique` policy throws when more than one rule matches.
+	 *
+	 * @return void
+	 */
+	public function testUniquePolicyThrowsOnOverlap(): void {
+		$table = [
+			'hitPolicy' => 'unique',
+			'inputColumns' => [['name' => 'age', 'expressionPath' => 'age']],
+			'rules' => [
+				['conditions' => ['age' => '>=18'], 'values' => ['x' => 1], 'label' => 'a'],
+				['conditions' => ['age' => '>=21'], 'values' => ['x' => 2], 'label' => 'b'],
+			],
+		];
+		$this->expectException(RuntimeException::class);
+		$this->evaluator->evaluate($table, ['age' => 30]);
 
-    }//end testUniquePolicyThrowsOnOverlap()
+	}//end testUniquePolicyThrowsOnOverlap()
 
-    /**
-     * The `priority` policy returns the highest-priority matching rule.
-     *
-     * @return void
-     */
-    public function testPriorityPolicy(): void
-    {
-        $table = [
-            'hitPolicy'    => 'priority',
-            'inputColumns' => [['name' => 'age', 'expressionPath' => 'age']],
-            'rules'       => [
-                ['conditions' => ['age' => '>=18'], 'values' => ['band' => 'adult'], 'priority' => 10, 'label' => 'low'],
-                ['conditions' => ['age' => '>=18'], 'values' => ['band' => 'senior'], 'priority' => 50, 'label' => 'high'],
-            ],
-        ];
-        $result = $this->evaluator->evaluate($table, ['age' => 40]);
-        $this->assertSame('senior', $result['outputColumns']['band']);
-        $this->assertSame('high', $result['triggeredRuleId']);
+	/**
+	 * The `priority` policy returns the highest-priority matching rule.
+	 *
+	 * @return void
+	 */
+	public function testPriorityPolicy(): void {
+		$table = [
+			'hitPolicy' => 'priority',
+			'inputColumns' => [['name' => 'age', 'expressionPath' => 'age']],
+			'rules' => [
+				['conditions' => ['age' => '>=18'], 'values' => ['band' => 'adult'], 'priority' => 10, 'label' => 'low'],
+				['conditions' => ['age' => '>=18'], 'values' => ['band' => 'senior'], 'priority' => 50, 'label' => 'high'],
+			],
+		];
+		$result = $this->evaluator->evaluate($table, ['age' => 40]);
+		$this->assertSame('senior', $result['outputColumns']['band']);
+		$this->assertSame('high', $result['triggeredRuleId']);
 
-    }//end testPriorityPolicy()
+	}//end testPriorityPolicy()
 
-    /**
-     * The `collect` policy gathers every matching rule's output.
-     *
-     * @return void
-     */
-    public function testCollectPolicy(): void
-    {
-        $table = [
-            'hitPolicy'    => 'collect',
-            'inputColumns' => [['name' => 'age', 'expressionPath' => 'age']],
-            'rules'       => [
-                ['conditions' => ['age' => '>=18'], 'values' => ['tag' => 'adult'], 'label' => 'a'],
-                ['conditions' => ['age' => '>=65'], 'values' => ['tag' => 'senior'], 'label' => 'b'],
-            ],
-        ];
-        $result = $this->evaluator->evaluate($table, ['age' => 70]);
-        $this->assertCount(2, $result['outputColumns']['collected']);
+	/**
+	 * The `collect` policy gathers every matching rule's output.
+	 *
+	 * @return void
+	 */
+	public function testCollectPolicy(): void {
+		$table = [
+			'hitPolicy' => 'collect',
+			'inputColumns' => [['name' => 'age', 'expressionPath' => 'age']],
+			'rules' => [
+				['conditions' => ['age' => '>=18'], 'values' => ['tag' => 'adult'], 'label' => 'a'],
+				['conditions' => ['age' => '>=65'], 'values' => ['tag' => 'senior'], 'label' => 'b'],
+			],
+		];
+		$result = $this->evaluator->evaluate($table, ['age' => 70]);
+		$this->assertCount(2, $result['outputColumns']['collected']);
 
-    }//end testCollectPolicy()
+	}//end testCollectPolicy()
 
-    /**
-     * detectIssues flags an unreachable rule shadowed by a don't-care rule.
-     *
-     * @return void
-     */
-    public function testDetectUnreachable(): void
-    {
-        $table = [
-            'hitPolicy' => 'first',
-            'rules'    => [
-                ['conditions' => [], 'values' => ['x' => 1], 'label' => 'catch-all'],
-                ['conditions' => ['age' => '>=18'], 'values' => ['x' => 2], 'label' => 'never'],
-            ],
-        ];
-        $issues = $this->evaluator->detectIssues($table);
-        $this->assertNotEmpty($issues['unreachable']);
+	/**
+	 * detectIssues flags an unreachable rule shadowed by a don't-care rule.
+	 *
+	 * @return void
+	 */
+	public function testDetectUnreachable(): void {
+		$table = [
+			'hitPolicy' => 'first',
+			'rules' => [
+				['conditions' => [], 'values' => ['x' => 1], 'label' => 'catch-all'],
+				['conditions' => ['age' => '>=18'], 'values' => ['x' => 2], 'label' => 'never'],
+			],
+		];
+		$issues = $this->evaluator->detectIssues($table);
+		$this->assertNotEmpty($issues['unreachable']);
 
-    }//end testDetectUnreachable()
+	}//end testDetectUnreachable()
 
-    /**
-     * A well-formed table with disjoint literals reports no overlaps.
-     *
-     * @return void
-     */
-    public function testNoIssuesOnDisjointLiterals(): void
-    {
-        $table = [
-            'hitPolicy' => 'first',
-            'rules'    => [
-                ['conditions' => ['status' => 'open'], 'values' => ['x' => 1], 'label' => 'a'],
-                ['conditions' => ['status' => 'closed'], 'values' => ['x' => 2], 'label' => 'b'],
-            ],
-        ];
-        $issues = $this->evaluator->detectIssues($table);
-        $this->assertEmpty($issues['overlaps']);
+	/**
+	 * A well-formed table with disjoint literals reports no overlaps.
+	 *
+	 * @return void
+	 */
+	public function testNoIssuesOnDisjointLiterals(): void {
+		$table = [
+			'hitPolicy' => 'first',
+			'rules' => [
+				['conditions' => ['status' => 'open'], 'values' => ['x' => 1], 'label' => 'a'],
+				['conditions' => ['status' => 'closed'], 'values' => ['x' => 2], 'label' => 'b'],
+			],
+		];
+		$issues = $this->evaluator->detectIssues($table);
+		$this->assertEmpty($issues['overlaps']);
 
-    }//end testNoIssuesOnDisjointLiterals()
+	}//end testNoIssuesOnDisjointLiterals()
 }//end class

@@ -39,108 +39,103 @@ use Throwable;
  * Carries enough metadata for the controller to return the spec-defined
  * JSON body without parsing the message string.
  */
-class WizardCreationException extends RuntimeException
-{
+class WizardCreationException extends RuntimeException {
 
-    /**
-     * Machine-readable error code.
-     *
-     * `validation_error` — payload failed server-side validation (→ 422).
-     * `wizard_rollback`  — creation failed mid-flight (→ 500).
-     *
-     * @var string
-     */
-    private string $errorCode;
+	/**
+	 * Machine-readable error code.
+	 *
+	 * `validation_error` — payload failed server-side validation (→ 422).
+	 * `wizard_rollback`  — creation failed mid-flight (→ 500).
+	 *
+	 * @var string
+	 */
+	private string $errorCode;
 
-    /**
-     * The creation step that failed (e.g. `validate`, `create-application`,
-     * `create-version-development`, `register-provision-staging`, etc.).
-     *
-     * @var string
-     */
-    private string $failedAtStep;
+	/**
+	 * The creation step that failed (e.g. `validate`, `create-application`,
+	 * `create-version-development`, `register-provision-staging`, etc.).
+	 *
+	 * @var string
+	 */
+	private string $failedAtStep;
 
-    /**
-     * `complete` — rollback succeeded for all created resources.
-     * `partial`  — one or more resources could not be deleted during rollback.
-     * `none`     — no rollback was needed (validation-only failure).
-     *
-     * @var string
-     */
-    private string $rollbackStatus;
+	/**
+	 * `complete` — rollback succeeded for all created resources.
+	 * `partial`  — one or more resources could not be deleted during rollback.
+	 * `none`     — no rollback was needed (validation-only failure).
+	 *
+	 * @var string
+	 */
+	private string $rollbackStatus;
 
-    /**
-     * Resources that could not be cleaned up during a partial rollback.
-     * Each entry is a string identifying the register name or object UUID.
-     *
-     * @var array<int,string>
-     */
-    private array $orphanedResources;
+	/**
+	 * Resources that could not be cleaned up during a partial rollback.
+	 * Each entry is a string identifying the register name or object UUID.
+	 *
+	 * @var array<int,string>
+	 */
+	private array $orphanedResources;
 
-    /**
-     * Constructor.
-     *
-     * @param string            $errorCode         Machine-readable error code
-     * @param string            $failedAtStep      Step identifier where failure occurred
-     * @param string            $message           Human-readable diagnostic
-     * @param string            $rollbackStatus    `complete`, `partial`, or `none`
-     * @param array<int,string> $orphanedResources Resources that could not be cleaned
-     * @param Throwable|null    $previous          Wrapped causal exception
-     *
-     * @return void
-     */
-    public function __construct(
-        string $errorCode,
-        string $failedAtStep,
-        string $message='',
-        string $rollbackStatus='none',
-        array $orphanedResources=[],
-        ?Throwable $previous=null,
-    ) {
-        parent::__construct(message: $message, code: 0, previous: $previous);
-        $this->errorCode         = $errorCode;
-        $this->failedAtStep      = $failedAtStep;
-        $this->rollbackStatus    = $rollbackStatus;
-        $this->orphanedResources = $orphanedResources;
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param string $errorCode Machine-readable error code
+	 * @param string $failedAtStep Step identifier where failure occurred
+	 * @param string $message Human-readable diagnostic
+	 * @param string $rollbackStatus `complete`, `partial`, or `none`
+	 * @param array<int,string> $orphanedResources Resources that could not be cleaned
+	 * @param Throwable|null $previous Wrapped causal exception
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		string $errorCode,
+		string $failedAtStep,
+		string $message = '',
+		string $rollbackStatus = 'none',
+		array $orphanedResources = [],
+		?Throwable $previous = null,
+	) {
+		parent::__construct(message: $message, code: 0, previous: $previous);
+		$this->errorCode = $errorCode;
+		$this->failedAtStep = $failedAtStep;
+		$this->rollbackStatus = $rollbackStatus;
+		$this->orphanedResources = $orphanedResources;
+	}//end __construct()
 
-    /**
-     * Get the machine-readable error code.
-     *
-     * @return string
-     */
-    public function getErrorCode(): string
-    {
-        return $this->errorCode;
-    }//end getErrorCode()
+	/**
+	 * Get the machine-readable error code.
+	 *
+	 * @return string
+	 */
+	public function getErrorCode(): string {
+		return $this->errorCode;
+	}//end getErrorCode()
 
-    /**
-     * Get the step at which the creation failure occurred.
-     *
-     * @return string
-     */
-    public function getFailedAtStep(): string
-    {
-        return $this->failedAtStep;
-    }//end getFailedAtStep()
+	/**
+	 * Get the step at which the creation failure occurred.
+	 *
+	 * @return string
+	 */
+	public function getFailedAtStep(): string {
+		return $this->failedAtStep;
+	}//end getFailedAtStep()
 
-    /**
-     * Get the rollback completion status.
-     *
-     * @return string `complete`, `partial`, or `none`
-     */
-    public function getRollbackStatus(): string
-    {
-        return $this->rollbackStatus;
-    }//end getRollbackStatus()
+	/**
+	 * Get the rollback completion status.
+	 *
+	 * @return string `complete`, `partial`, or `none`
+	 */
+	public function getRollbackStatus(): string {
+		return $this->rollbackStatus;
+	}//end getRollbackStatus()
 
-    /**
-     * Get the list of resources that could not be cleaned up during rollback.
-     *
-     * @return array<int,string>
-     */
-    public function getOrphanedResources(): array
-    {
-        return $this->orphanedResources;
-    }//end getOrphanedResources()
+	/**
+	 * Get the list of resources that could not be cleaned up during rollback.
+	 *
+	 * @return array<int,string>
+	 */
+	public function getOrphanedResources(): array {
+		return $this->orphanedResources;
+	}//end getOrphanedResources()
 }//end class

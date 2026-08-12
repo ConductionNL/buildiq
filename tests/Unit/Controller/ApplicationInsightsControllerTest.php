@@ -40,135 +40,129 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for ApplicationInsightsController.
  */
-class ApplicationInsightsControllerTest extends TestCase
-{
-    /**
-     * @var IRequest&MockObject
-     */
-    private IRequest&MockObject $request;
+class ApplicationInsightsControllerTest extends TestCase {
+	/**
+	 * @var IRequest&MockObject
+	 */
+	private IRequest&MockObject $request;
 
-    /**
-     * @var IUserSession&MockObject
-     */
-    private IUserSession&MockObject $userSession;
+	/**
+	 * @var IUserSession&MockObject
+	 */
+	private IUserSession&MockObject $userSession;
 
-    /**
-     * @var ApplicationInsightsService&MockObject
-     */
-    private ApplicationInsightsService&MockObject $service;
+	/**
+	 * @var ApplicationInsightsService&MockObject
+	 */
+	private ApplicationInsightsService&MockObject $service;
 
-    /**
-     * Controller under test.
-     */
-    private ApplicationInsightsController $controller;
+	/**
+	 * Controller under test.
+	 */
+	private ApplicationInsightsController $controller;
 
-    /**
-     * Set up shared mocks + SUT.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up shared mocks + SUT.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request     = $this->createMock(IRequest::class);
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->service     = $this->createMock(ApplicationInsightsService::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->service = $this->createMock(ApplicationInsightsService::class);
 
-        $this->controller = new ApplicationInsightsController(
-            request: $this->request,
-            userSession: $this->userSession,
-            service: $this->service,
-        );
-    }//end setUp()
+		$this->controller = new ApplicationInsightsController(
+			request: $this->request,
+			userSession: $this->userSession,
+			service: $this->service,
+		);
+	}//end setUp()
 
-    /**
-     * Missing `window` parameter → 400 with the spec-defined body.
-     *
-     * @return void
-     */
-    public function testMissingWindowReturns400(): void
-    {
-        $this->request->method('getParam')->willReturn('');
+	/**
+	 * Missing `window` parameter → 400 with the spec-defined body.
+	 *
+	 * @return void
+	 */
+	public function testMissingWindowReturns400(): void {
+		$this->request->method('getParam')->willReturn('');
 
-        $response = $this->controller->getInsights('app-uuid', 'version-uuid');
-        self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$response = $this->controller->getInsights('app-uuid', 'version-uuid');
+		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 
-        $body = $response->getData();
-        self::assertSame(Http::STATUS_BAD_REQUEST, $body['status']);
-        self::assertStringContainsString('Invalid window parameter', $body['message']);
-    }//end testMissingWindowReturns400()
+		$body = $response->getData();
+		self::assertSame(Http::STATUS_BAD_REQUEST, $body['status']);
+		self::assertStringContainsString('Invalid window parameter', $body['message']);
+	}//end testMissingWindowReturns400()
 
-    /**
-     * Invalid `window` value (`24h`) → 400.
-     *
-     * @return void
-     */
-    public function testInvalidWindowReturns400(): void
-    {
-        $this->request->method('getParam')->willReturn('24h');
+	/**
+	 * Invalid `window` value (`24h`) → 400.
+	 *
+	 * @return void
+	 */
+	public function testInvalidWindowReturns400(): void {
+		$this->request->method('getParam')->willReturn('24h');
 
-        $response = $this->controller->getInsights('app-uuid', 'version-uuid');
-        self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-    }//end testInvalidWindowReturns400()
+		$response = $this->controller->getInsights('app-uuid', 'version-uuid');
+		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testInvalidWindowReturns400()
 
-    /**
-     * Successful response carries 200 + `Cache-Control: private, max-age=10`.
-     *
-     * @return void
-     */
-    public function testSuccessfulResponseCarriesCacheHeader(): void
-    {
-        $this->request->method('getParam')->willReturn('7d');
-        $payload = [
-            'kpis' => [
-                'activeUsers' => 12,
-                'objectCount' => 487,
-                'filesCount' => 89,
-                'auditEventCount' => 1043,
-            ],
-            'activity' => [
-                ['timestamp' => '2026-05-08T00:00:00Z', 'eventCount' => 142],
-            ],
-        ];
-        $this->service->method('requireAuthorisedCaller')->willReturn([
-            ['uuid' => 'app-uuid'],
-            ['uuid' => 'version-uuid', 'application' => 'app-uuid'],
-        ]);
-        $this->service->method('computeInsights')->willReturn($payload);
+	/**
+	 * Successful response carries 200 + `Cache-Control: private, max-age=10`.
+	 *
+	 * @return void
+	 */
+	public function testSuccessfulResponseCarriesCacheHeader(): void {
+		$this->request->method('getParam')->willReturn('7d');
+		$payload = [
+			'kpis' => [
+				'activeUsers' => 12,
+				'objectCount' => 487,
+				'filesCount' => 89,
+				'auditEventCount' => 1043,
+			],
+			'activity' => [
+				['timestamp' => '2026-05-08T00:00:00Z', 'eventCount' => 142],
+			],
+		];
+		$this->service->method('requireAuthorisedCaller')->willReturn([
+			['uuid' => 'app-uuid'],
+			['uuid' => 'version-uuid', 'application' => 'app-uuid'],
+		]);
+		$this->service->method('computeInsights')->willReturn($payload);
 
-        $response = $this->controller->getInsights('app-uuid', 'version-uuid');
-        self::assertSame(Http::STATUS_OK, $response->getStatus());
-        self::assertSame($payload, $response->getData());
+		$response = $this->controller->getInsights('app-uuid', 'version-uuid');
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame($payload, $response->getData());
 
-        // getHeaders() requires OC::$server in unit context — read via Reflection.
-        $headersProp = new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers');
-        $headersProp->setAccessible(true);
-        $headers = $headersProp->getValue($response);
-        self::assertArrayHasKey('Cache-Control', $headers);
-        self::assertSame('private, max-age=10', $headers['Cache-Control']);
-    }//end testSuccessfulResponseCarriesCacheHeader()
+		// getHeaders() requires OC::$server in unit context — read via Reflection.
+		$headersProp = new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers');
+		$headersProp->setAccessible(true);
+		$headers = $headersProp->getValue($response);
+		self::assertArrayHasKey('Cache-Control', $headers);
+		self::assertSame('private, max-age=10', $headers['Cache-Control']);
+	}//end testSuccessfulResponseCarriesCacheHeader()
 
-    /**
-     * 404 response does NOT carry the Cache-Control header from this spec.
-     *
-     * @return void
-     */
-    public function testServiceNullMapsToNotFoundWithoutCacheHeader(): void
-    {
-        $this->request->method('getParam')->willReturn('7d');
-        // requireAuthorisedCaller returns null on RBAC failure / 404; the
-        // controller short-circuits to 404 before reaching computeInsights.
-        $this->service->method('requireAuthorisedCaller')->willReturn(null);
+	/**
+	 * 404 response does NOT carry the Cache-Control header from this spec.
+	 *
+	 * @return void
+	 */
+	public function testServiceNullMapsToNotFoundWithoutCacheHeader(): void {
+		$this->request->method('getParam')->willReturn('7d');
+		// requireAuthorisedCaller returns null on RBAC failure / 404; the
+		// controller short-circuits to 404 before reaching computeInsights.
+		$this->service->method('requireAuthorisedCaller')->willReturn(null);
 
-        $response = $this->controller->getInsights('app-uuid', 'version-uuid');
-        self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$response = $this->controller->getInsights('app-uuid', 'version-uuid');
+		self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 
-        // getHeaders() requires OC::$server in unit context — read via Reflection.
-        $headersProp = new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers');
-        $headersProp->setAccessible(true);
-        $headers = $headersProp->getValue($response);
-        $cacheHeader = $headers['Cache-Control'] ?? null;
-        self::assertNotSame('private, max-age=10', $cacheHeader);
-    }//end testServiceNullMapsToNotFoundWithoutCacheHeader()
+		// getHeaders() requires OC::$server in unit context — read via Reflection.
+		$headersProp = new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers');
+		$headersProp->setAccessible(true);
+		$headers = $headersProp->getValue($response);
+		$cacheHeader = $headers['Cache-Control'] ?? null;
+		self::assertNotSame('private, max-age=10', $cacheHeader);
+	}//end testServiceNullMapsToNotFoundWithoutCacheHeader()
 }//end class

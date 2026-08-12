@@ -35,145 +35,138 @@ use RuntimeException;
 /**
  * Tests for AgentRunLogger.
  */
-class AgentRunLoggerTest extends TestCase
-{
+class AgentRunLoggerTest extends TestCase {
 
-    /**
-     * @var ObjectService&MockObject
-     */
-    private ObjectService&MockObject $objectService;
+	/**
+	 * @var ObjectService&MockObject
+	 */
+	private ObjectService&MockObject $objectService;
 
-    /**
-     * @var LoggerInterface&MockObject
-     */
-    private LoggerInterface&MockObject $logger;
+	/**
+	 * @var LoggerInterface&MockObject
+	 */
+	private LoggerInterface&MockObject $logger;
 
-    /**
-     * Set up shared mocks + the SUT.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up shared mocks + the SUT.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->objectService = $this->createMock(ObjectService::class);
-        $this->logger        = $this->createMock(LoggerInterface::class);
-    }//end setUp()
+		$this->objectService = $this->createMock(ObjectService::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+	}//end setUp()
 
-    /**
-     * log() persists an `AgentRun` via `ObjectService::saveObject()` in the shared
-     * `openbuild` register / `agentRun` schema, carrying every field.
-     *
-     * @return void
-     */
-    public function testLogPersistsAgentRunWithAllFields(): void
-    {
-        $agent = ['id' => 'agent-1', 'applicationSlug' => 'tool-library'];
-        $plan  = ['summary' => 'x', 'steps' => [['tool' => 'openbuild.upsertPage', 'arguments' => []]]];
-        $calls = [['tool' => 'openbuild.upsertPage', 'arguments' => [], 'result' => ['success' => true]]];
+	/**
+	 * log() persists an `AgentRun` via `ObjectService::saveObject()` in the shared
+	 * `openbuild` register / `agentRun` schema, carrying every field.
+	 *
+	 * @return void
+	 */
+	public function testLogPersistsAgentRunWithAllFields(): void {
+		$agent = ['id' => 'agent-1', 'applicationSlug' => 'tool-library'];
+		$plan = ['summary' => 'x', 'steps' => [['tool' => 'openbuild.upsertPage', 'arguments' => []]]];
+		$calls = [['tool' => 'openbuild.upsertPage', 'arguments' => [], 'result' => ['success' => true]]];
 
-        // ObjectService::saveObject()'s real signature interleaves several
-        // optional params (extend/register/schema/uuid/...) — with() matches
-        // positionally against the fully-resolved invocation, so position 1
-        // (`extend`, defaulted to []) must be constrained explicitly too.
-        $this->objectService->expects(self::once())->method('saveObject')
-            ->with(
-                self::callback(
-                        static function (array $payload) use ($agent, $plan, $calls): bool {
-                            return $payload['agentId'] === 'agent-1'
-                            && $payload['applicationSlug'] === 'tool-library'
-                            && $payload['prompt'] === 'Add a page'
-                            && $payload['plan'] === $plan
-                            && $payload['toolCalls'] === $calls
-                            && $payload['outcome'] === 'applied'
-                            && is_string($payload['createdAt']) === true
-                            && $payload['createdAt'] !== '';
-                        }
-                        ),
-                self::anything(),
-                'openbuild',
-                'agentRun'
-            )
-            ->willReturn($this->objectEntity(['id' => 'run-1', 'outcome' => 'applied']));
+		// ObjectService::saveObject()'s real signature interleaves several
+		// optional params (extend/register/schema/uuid/...) — with() matches
+		// positionally against the fully-resolved invocation, so position 1
+		// (`extend`, defaulted to []) must be constrained explicitly too.
+		$this->objectService->expects(self::once())->method('saveObject')
+			->with(
+				self::callback(
+					static function (array $payload) use ($agent, $plan, $calls): bool {
+						return $payload['agentId'] === 'agent-1'
+						&& $payload['applicationSlug'] === 'tool-library'
+						&& $payload['prompt'] === 'Add a page'
+						&& $payload['plan'] === $plan
+						&& $payload['toolCalls'] === $calls
+						&& $payload['outcome'] === 'applied'
+						&& is_string($payload['createdAt']) === true
+						&& $payload['createdAt'] !== '';
+					}
+				),
+				self::anything(),
+				'openbuild',
+				'agentRun'
+			)
+			->willReturn($this->objectEntity(['id' => 'run-1', 'outcome' => 'applied']));
 
-        $logger = new AgentRunLogger(objectService: $this->objectService, logger: $this->logger);
-        $result = $logger->log(agent: $agent, userId: 'alice', prompt: 'Add a page', plan: $plan, toolCalls: $calls, outcome: 'applied');
+		$logger = new AgentRunLogger(objectService: $this->objectService, logger: $this->logger);
+		$result = $logger->log(agent: $agent, userId: 'alice', prompt: 'Add a page', plan: $plan, toolCalls: $calls, outcome: 'applied');
 
-        self::assertSame('run-1', $result['id']);
-        self::assertSame('applied', $result['outcome']);
-    }//end testLogPersistsAgentRunWithAllFields()
+		self::assertSame('run-1', $result['id']);
+		self::assertSame('applied', $result['outcome']);
+	}//end testLogPersistsAgentRunWithAllFields()
 
-    /**
-     * Build a mocked `ObjectEntity` whose `jsonSerialize()` returns the given payload
-     * (mirrors `PrincipalMatcherTest`'s pattern for a strictly-typed OR return value).
-     *
-     * @param array<string, mixed> $payload The payload `jsonSerialize()` should return.
-     *
-     * @return ObjectEntity&MockObject
-     */
-    private function objectEntity(array $payload): ObjectEntity&MockObject
-    {
-        $entity = $this->createMock(ObjectEntity::class);
-        $entity->method('jsonSerialize')->willReturn($payload);
-        return $entity;
-    }//end objectEntity()
+	/**
+	 * Build a mocked `ObjectEntity` whose `jsonSerialize()` returns the given payload
+	 * (mirrors `PrincipalMatcherTest`'s pattern for a strictly-typed OR return value).
+	 *
+	 * @param array<string, mixed> $payload The payload `jsonSerialize()` should return.
+	 *
+	 * @return ObjectEntity&MockObject
+	 */
+	private function objectEntity(array $payload): ObjectEntity&MockObject {
+		$entity = $this->createMock(ObjectEntity::class);
+		$entity->method('jsonSerialize')->willReturn($payload);
+		return $entity;
+	}//end objectEntity()
 
-    /**
-     * log() resolves the agent id from either `id` or `uuid`, and defaults
-     * `applicationSlug` when absent.
-     *
-     * @return void
-     */
-    public function testLogResolvesAgentIdFromUuidFallback(): void
-    {
-        $agent = ['uuid' => 'agent-2'];
+	/**
+	 * log() resolves the agent id from either `id` or `uuid`, and defaults
+	 * `applicationSlug` when absent.
+	 *
+	 * @return void
+	 */
+	public function testLogResolvesAgentIdFromUuidFallback(): void {
+		$agent = ['uuid' => 'agent-2'];
 
-        $this->objectService->expects(self::once())->method('saveObject')
-            ->with(
-                self::callback(static fn (array $payload): bool => $payload['agentId'] === 'agent-2' && $payload['applicationSlug'] === ''),
-                self::anything(),
-                'openbuild',
-                'agentRun'
-            )
-            ->willReturn($this->objectEntity([]));
+		$this->objectService->expects(self::once())->method('saveObject')
+			->with(
+				self::callback(static fn (array $payload): bool => $payload['agentId'] === 'agent-2' && $payload['applicationSlug'] === ''),
+				self::anything(),
+				'openbuild',
+				'agentRun'
+			)
+			->willReturn($this->objectEntity([]));
 
-        $logger = new AgentRunLogger(objectService: $this->objectService, logger: $this->logger);
-        $logger->log(agent: $agent, userId: 'alice', prompt: 'x', plan: [], toolCalls: [], outcome: 'discarded');
-    }//end testLogResolvesAgentIdFromUuidFallback()
+		$logger = new AgentRunLogger(objectService: $this->objectService, logger: $this->logger);
+		$logger->log(agent: $agent, userId: 'alice', prompt: 'x', plan: [], toolCalls: [], outcome: 'discarded');
+	}//end testLogResolvesAgentIdFromUuidFallback()
 
-    /**
-     * log() swallows a persistence failure (logs it, does not throw) — a broken
-     * audit write must never turn a completed plan/execute/discard action into
-     * a user-facing 500.
-     *
-     * @return void
-     */
-    public function testLogSwallowsPersistenceFailure(): void
-    {
-        $this->objectService->method('saveObject')->willThrowException(new RuntimeException('db down'));
-        $this->logger->expects(self::once())->method('error');
+	/**
+	 * log() swallows a persistence failure (logs it, does not throw) — a broken
+	 * audit write must never turn a completed plan/execute/discard action into
+	 * a user-facing 500.
+	 *
+	 * @return void
+	 */
+	public function testLogSwallowsPersistenceFailure(): void {
+		$this->objectService->method('saveObject')->willThrowException(new RuntimeException('db down'));
+		$this->logger->expects(self::once())->method('error');
 
-        $logger = new AgentRunLogger(objectService: $this->objectService, logger: $this->logger);
-        $result = $logger->log(agent: ['id' => 'agent-1'], userId: 'alice', prompt: 'x', plan: [], toolCalls: [], outcome: 'plan-rejected');
+		$logger = new AgentRunLogger(objectService: $this->objectService, logger: $this->logger);
+		$result = $logger->log(agent: ['id' => 'agent-1'], userId: 'alice', prompt: 'x', plan: [], toolCalls: [], outcome: 'plan-rejected');
 
-        self::assertSame([], $result);
-    }//end testLogSwallowsPersistenceFailure()
+		self::assertSame([], $result);
+	}//end testLogSwallowsPersistenceFailure()
 
-    /**
-     * log() coerces the persisted `ObjectEntity`'s `jsonSerialize()` payload
-     * into the returned plain array.
-     *
-     * @return void
-     */
-    public function testLogCoercesPersistedEntityToArray(): void
-    {
-        $this->objectService->method('saveObject')->willReturn($this->objectEntity(['id' => 'run-9', 'outcome' => 'rolled-back']));
+	/**
+	 * log() coerces the persisted `ObjectEntity`'s `jsonSerialize()` payload
+	 * into the returned plain array.
+	 *
+	 * @return void
+	 */
+	public function testLogCoercesPersistedEntityToArray(): void {
+		$this->objectService->method('saveObject')->willReturn($this->objectEntity(['id' => 'run-9', 'outcome' => 'rolled-back']));
 
-        $logger = new AgentRunLogger(objectService: $this->objectService, logger: $this->logger);
-        $result = $logger->log(agent: ['id' => 'agent-1'], userId: 'alice', prompt: 'x', plan: [], toolCalls: [], outcome: 'rolled-back');
+		$logger = new AgentRunLogger(objectService: $this->objectService, logger: $this->logger);
+		$result = $logger->log(agent: ['id' => 'agent-1'], userId: 'alice', prompt: 'x', plan: [], toolCalls: [], outcome: 'rolled-back');
 
-        self::assertSame('run-9', $result['id']);
-        self::assertSame('rolled-back', $result['outcome']);
-    }//end testLogCoercesPersistedEntityToArray()
+		self::assertSame('run-9', $result['id']);
+		self::assertSame('rolled-back', $result['outcome']);
+	}//end testLogCoercesPersistedEntityToArray()
 }//end class

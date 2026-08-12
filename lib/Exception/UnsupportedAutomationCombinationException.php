@@ -40,35 +40,31 @@ use Throwable;
  * 422-mapped — the automation's trigger/condition/action shape cannot be
  * compiled to any existing declarative primitive.
  */
-final class UnsupportedAutomationCombinationException extends RuntimeException
-{
-    /**
-     * Machine-readable error code.
-     */
-    private const ERROR_CODE = 'unsupported_automation_combination';
+final class UnsupportedAutomationCombinationException extends RuntimeException {
+	/**
+	 * Machine-readable error code.
+	 */
+	private const ERROR_CODE = 'unsupported_automation_combination';
 
-    /**
-     * Constructor.
-     *
-     * @param string         $message  Human-readable message naming the unsupported combination.
-     * @param Throwable|null $previous Wrapped causal exception, if any.
-     *
-     * @return void
-     */
-    public function __construct(string $message, ?Throwable $previous=null)
-    {
-        parent::__construct(message: $message, code: 0, previous: $previous);
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Human-readable message naming the unsupported combination.
+	 * @param Throwable|null $previous Wrapped causal exception, if any.
+	 *
+	 * @return void
+	 */
+	public function __construct(string $message, ?Throwable $previous = null) {
+		parent::__construct(message: $message, code: 0, previous: $previous);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the machine-readable error code.
-     *
-     * @return string
-     */
-    public function getErrorCode(): string
-    {
-        return self::ERROR_CODE;
-
-    }//end getErrorCode()
+	/**
+	 * Get the machine-readable error code.
+	 *
+	 * @return string
+	 */
+	public function getErrorCode(): string {
+		return self::ERROR_CODE;
+	}//end getErrorCode()
 }//end class
