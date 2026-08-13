@@ -17,7 +17,12 @@
  * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
  */
 
-import { deepClone, deNamespaceSlug, rewriteSchemaRefs, SlugCollisionError } from './templateCapture.js'
+import {
+	deepClone,
+	deNamespaceSlug,
+	rewriteSchemaRefs,
+	SlugCollisionError,
+} from './templateCapture.js'
 
 export { SlugCollisionError }
 
@@ -52,7 +57,11 @@ export function collectSchemaRefs(node, acc = new Set()) {
 		return acc
 	}
 	for (const [key, value] of Object.entries(node)) {
-		if ((key === 'schema' || key === 'relatedSchema') && typeof value === 'string' && value) {
+		if (
+			(key === 'schema' || key === 'relatedSchema')
+			&& typeof value === 'string'
+			&& value
+		) {
 			acc.add(value)
 		} else {
 			collectSchemaRefs(value, acc)
@@ -103,9 +112,14 @@ export function captureBlock(fragment, appSlug, metadata) {
 	const summaryEntries = []
 	for (const sourceSlug of sourceSlugs) {
 		const { slug: canonical, shared } = deNamespaceSlug(sourceSlug, appSlug)
-		if (Object.prototype.hasOwnProperty.call(canonicalToSource, canonical)
-			&& canonicalToSource[canonical] !== sourceSlug) {
-			throw new SlugCollisionError(canonical, [canonicalToSource[canonical], sourceSlug])
+		if (
+			Object.prototype.hasOwnProperty.call(canonicalToSource, canonical)
+			&& canonicalToSource[canonical] !== sourceSlug
+		) {
+			throw new SlugCollisionError(canonical, [
+				canonicalToSource[canonical],
+				sourceSlug,
+			])
 		}
 		canonicalToSource[canonical] = sourceSlug
 		rewriteMap[sourceSlug] = canonical
@@ -143,5 +157,9 @@ export function captureBlock(fragment, appSlug, metadata) {
  * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
  */
 export function isSectionFragment(fragment) {
-	return !!(fragment && typeof fragment === 'object' && Array.isArray(fragment.widgets))
+	return !!(
+		fragment
+		&& typeof fragment === 'object'
+		&& Array.isArray(fragment.widgets)
+	)
 }

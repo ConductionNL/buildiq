@@ -52,7 +52,7 @@
 				:placeholder="t('openbuild', 'Value')"
 				:aria-label="t('openbuild', 'Condition value')"
 				:value="currentValueDisplay"
-				@input="onValueInput($event.target.value)">
+				@input="onValueInput($event.target.value)" />
 			<button
 				v-if="currentField"
 				type="button"
@@ -114,7 +114,10 @@ export default {
 		 * @return {boolean}
 		 */
 		isAdvanced() {
-			return !!(this.modelValue && (this.modelValue.endpoint || this.modelValue.source))
+			return !!(
+				this.modelValue
+				&& (this.modelValue.endpoint || this.modelValue.source)
+			)
 		},
 		/**
 		 * The currently-picked sibling field key, or '' (no condition).
@@ -122,7 +125,11 @@ export default {
 		 * @return {string}
 		 */
 		currentField() {
-			if (this.isAdvanced || !this.modelValue || typeof this.modelValue.field !== 'string') {
+			if (
+				this.isAdvanced
+				|| !this.modelValue
+				|| typeof this.modelValue.field !== 'string'
+			) {
 				return ''
 			}
 			return this.modelValue.field
@@ -133,7 +140,9 @@ export default {
 		 * @return {string}
 		 */
 		currentOp() {
-			return (this.modelValue && this.modelValue.op !== undefined) ? this.modelValue.op : 'eq'
+			return this.modelValue && this.modelValue.op !== undefined
+				? this.modelValue.op
+				: 'eq'
 		},
 		/**
 		 * The current value, stringified for the text input.

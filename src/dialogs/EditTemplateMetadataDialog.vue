@@ -46,7 +46,11 @@
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
 			<NcButton type="primary" :disabled="!canSave || saving" @click="save">
-				{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save changes') }}
+				{{
+					saving
+						? t('openbuild', 'Saving…')
+						: t('openbuild', 'Save changes')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -55,7 +59,13 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcDialog, NcSelect, NcTextField, NcTextArea } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcDialog,
+	NcSelect,
+	NcTextField,
+	NcTextArea,
+} from '@nextcloud/vue'
 import { TEMPLATE_CATEGORIES } from '../services/templateCapture.js'
 
 const OR_TEMPLATES = '/apps/openregister/api/objects/openbuild/application-template'
@@ -134,7 +144,10 @@ export default {
 				description: tpl.description || '',
 				sourceUrl: tpl.sourceUrl || '',
 			}
-			this.categoryOption = this.categoryOptions.find((o) => o.id === tpl.category) || this.categoryOptions[0] || null
+			this.categoryOption =
+				this.categoryOptions.find((o) => o.id === tpl.category)
+				|| this.categoryOptions[0]
+				|| null
 			this.saving = false
 			this.saveError = ''
 		},
@@ -164,7 +177,10 @@ export default {
 			this.saveError = ''
 			try {
 				const existing = this.template
-				const uuid = (existing['@self'] && existing['@self'].id) || existing.uuid || existing.id
+				const uuid =
+					(existing['@self'] && existing['@self'].id)
+					|| existing.uuid
+					|| existing.id
 				const patch = {
 					...existing,
 					title: this.form.title.trim(),
@@ -177,13 +193,19 @@ export default {
 				} else {
 					delete patch.sourceUrl
 				}
-				const url = generateUrl(`${OR_TEMPLATES}/${encodeURIComponent(uuid)}`)
+				const url = generateUrl(
+					`${OR_TEMPLATES}/${encodeURIComponent(uuid)}`,
+				)
 				await axios.put(url, patch)
 				this.$emit('saved', { slug: existing.slug })
 				this.$emit('update:open', false)
 			} catch (e) {
 				const data = e?.response?.data
-				this.saveError = data?.detail || data?.error || e?.message || t('openbuild', 'Saving the template failed.')
+				this.saveError =
+					data?.detail
+					|| data?.error
+					|| e?.message
+					|| t('openbuild', 'Saving the template failed.')
 			} finally {
 				this.saving = false
 			}

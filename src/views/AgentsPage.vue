@@ -39,7 +39,12 @@
 		<NcEmptyContent
 			v-else-if="selectedApp && agents.length === 0"
 			:name="t('openbuild', 'No agents yet')"
-			:description="t('openbuild', 'Create an agent to give it instructions and a scoped subset of the builder tools.')" />
+			:description="
+				t(
+					'openbuild',
+					'Create an agent to give it instructions and a scoped subset of the builder tools.',
+				)
+			" />
 
 		<p v-else-if="!selectedApp" class="agents-page__hint">
 			{{ t('openbuild', 'Select an application to see its agents.') }}
@@ -51,12 +56,21 @@
 					v-for="agent in agents"
 					:key="agent.id"
 					class="agents-page__item"
-					:class="{ 'agents-page__item--active': selectedAgent && selectedAgent.id === agent.id }"
+					:class="{
+						'agents-page__item--active':
+							selectedAgent && selectedAgent.id === agent.id,
+					}"
 					data-testid="agent-row">
-					<button class="agents-page__item-main" @click="selectAgent(agent)">
+					<button
+						class="agents-page__item-main"
+						@click="selectAgent(agent)">
 						<strong>{{ agent.name }}</strong>
 						<span class="agents-page__item-meta">
-							{{ t('openbuild', '{count} tool(s) enabled', { count: (agent.enabledTools || []).length }) }}
+							{{
+								t('openbuild', '{count} tool(s) enabled', {
+									count: (agent.enabledTools || []).length,
+								})
+							}}
 						</span>
 					</button>
 					<div class="agents-page__item-side">
@@ -72,10 +86,14 @@
 
 			<div v-if="selectedAgent" class="agents-page__detail">
 				<div class="agents-page__detail-tabs">
-					<NcButton :type="activeTab === 'chat' ? 'primary' : 'tertiary'" @click="activeTab = 'chat'">
+					<NcButton
+						:type="activeTab === 'chat' ? 'primary' : 'tertiary'"
+						@click="activeTab = 'chat'">
 						{{ t('openbuild', 'Chat') }}
 					</NcButton>
-					<NcButton :type="activeTab === 'history' ? 'primary' : 'tertiary'" @click="activeTab = 'history'">
+					<NcButton
+						:type="activeTab === 'history' ? 'primary' : 'tertiary'"
+						@click="activeTab = 'history'">
 						{{ t('openbuild', 'Run history') }}
 					</NcButton>
 				</div>
@@ -89,7 +107,10 @@
 					:instructions="selectedAgent.instructions"
 					:enabled-tools="selectedAgent.enabledTools || []" />
 
-				<AgentRunHistory v-else :key="`history-${selectedAgent.id}`" :agent-id="selectedAgent.id" />
+				<AgentRunHistory
+					v-else
+					:key="`history-${selectedAgent.id}`"
+					:agent-id="selectedAgent.id" />
 			</div>
 		</div>
 
@@ -108,7 +129,13 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard, NcSelect } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcNoteCard,
+	NcSelect,
+} from '@nextcloud/vue'
 import CopilotPanel from '../components/copilot/CopilotPanel.vue'
 import AgentRunHistory from '../components/agents/AgentRunHistory.vue'
 import AgentEditDialog from '../dialogs/AgentEditDialog.vue'
@@ -187,10 +214,14 @@ export default {
 			this.loading = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/agent')
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openbuild/agent',
+				)
 				const { data } = await axios.get(url)
 				const all = this.extractResults(data)
-				this.agents = all.filter((a) => a.applicationSlug === this.selectedApp.slug)
+				this.agents = all.filter(
+					(a) => a.applicationSlug === this.selectedApp.slug,
+				)
 			} catch (error) {
 				this.errorMessage = t('openbuild', 'Could not load agents.')
 			} finally {
@@ -242,7 +273,9 @@ export default {
 		 */
 		async remove(agent) {
 			try {
-				const url = generateUrl(`/apps/openregister/api/objects/openbuild/agent/${agent.id}`)
+				const url = generateUrl(
+					`/apps/openregister/api/objects/openbuild/agent/${agent.id}`,
+				)
 				await axios.delete(url)
 				if (this.selectedAgent && this.selectedAgent.id === agent.id) {
 					this.selectedAgent = null

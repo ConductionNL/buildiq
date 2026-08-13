@@ -35,7 +35,8 @@ const baseStubs = {
 		name: 'NcButton',
 		props: ['type', 'disabled'],
 		emits: ['click'],
-		template: '<button :disabled="disabled" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
+		template:
+			'<button :disabled="disabled" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
 	},
 	// Vue 3 model API throughout: `modelValue` in, `update:modelValue` out.
 	// The Vue 2 `checked` / `value` props receive nothing from the component's
@@ -44,13 +45,15 @@ const baseStubs = {
 		name: 'NcCheckboxRadioSwitch',
 		props: ['modelValue', 'type', 'disabled'],
 		emits: ['update:modelValue'],
-		template: '<input type="checkbox" :checked="modelValue" :disabled="disabled" @change="$emit(\'update:modelValue\', $event.target.checked)" />',
+		template:
+			'<input type="checkbox" :checked="modelValue" :disabled="disabled" @change="$emit(\'update:modelValue\', $event.target.checked)" />',
 	},
 	NcTextField: {
 		name: 'NcTextField',
 		props: ['modelValue', 'label', 'disabled'],
 		emits: ['update:modelValue'],
-		template: '<input class="nc-textfield-stub" :data-label="label" :value="modelValue" :disabled="disabled" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+		template:
+			'<input class="nc-textfield-stub" :data-label="label" :value="modelValue" :disabled="disabled" @input="$emit(\'update:modelValue\', $event.target.value)" />',
 	},
 }
 
@@ -73,7 +76,9 @@ describe('AppSettingsModal — Data registers section (data-registers-runtime ta
 		expect(rows).toHaveLength(2)
 		const textFields = wrapper.findAll('.nc-textfield-stub')
 		expect(textFields.at(0).element.value).toBe('spectr')
-		expect(textFields.at(1).element.value).toBe('Spectr market intelligence data')
+		expect(textFields.at(1).element.value).toBe(
+			'Spectr market intelligence data',
+		)
 		expect(textFields.at(2).element.value).toBe('bag-adressen')
 		expect(textFields.at(3).element.value).toBe('')
 	})
@@ -105,7 +110,9 @@ describe('AppSettingsModal — Data registers section (data-registers-runtime ta
 		wrapper.vm.updateRow(0, 'label', 'Spectr market intelligence data')
 		await wrapper.vm.$nextTick()
 		let last = wrapper.emitted('update:data-registers').pop()[0]
-		expect(last).toEqual([{ register: 'spectr', label: 'Spectr market intelligence data' }])
+		expect(last).toEqual([
+			{ register: 'spectr', label: 'Spectr market intelligence data' },
+		])
 
 		wrapper.vm.updateRow(0, 'label', '')
 		await wrapper.vm.$nextTick()
@@ -127,7 +134,9 @@ describe('AppSettingsModal — Data registers section (data-registers-runtime ta
 	it('re-syncs displayed rows when the dataRegisters prop changes', async () => {
 		const wrapper = mountModal({ dataRegisters: [] })
 		expect(wrapper.vm.rows).toEqual([])
-		await wrapper.setProps({ dataRegisters: [{ register: 'spectr', label: 'Spectr' }] })
+		await wrapper.setProps({
+			dataRegisters: [{ register: 'spectr', label: 'Spectr' }],
+		})
 		expect(wrapper.vm.rows).toEqual([{ register: 'spectr', label: 'Spectr' }])
 	})
 

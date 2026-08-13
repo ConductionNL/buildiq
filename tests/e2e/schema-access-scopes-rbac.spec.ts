@@ -127,13 +127,19 @@ async function openSchemaDetail(page: Page, versionSlug?: string): Promise<void>
 // Un-skipping before that fixture exists would make every scenario skip itself
 // on a missing precondition, which is what this file already did for months
 // while reporting as covered.
-test.describe.skip('data-scopes-authoring — multi-user / multi-version (REQ-OBDSA-004/006/007)', () => {
+test.describe
+	.skip('data-scopes-authoring — multi-user / multi-version (REQ-OBDSA-004/006/007)', () => {
 	// Skip storageState — each test needs a freshly authed, specific-role session.
 	test.use({ storageState: { cookies: [], origins: [] } })
 
-	test('REQ-OBDSA-004: non-member editor sees the lock-out warning; a member editor does not', async ({ page }) => {
+	test('REQ-OBDSA-004: non-member editor sees the lock-out warning; a member editor does not', async ({
+		page,
+	}) => {
 		await loginAs(page, EDITOR_NONVET.user, EDITOR_NONVET.pass).catch(() => {
-			test.skip(true, `SKIP: user ${EDITOR_NONVET.user} not found — provision via Newman RBAC setup (editor role, NOT in "vets")`)
+			test.skip(
+				true,
+				`SKIP: user ${EDITOR_NONVET.user} not found — provision via Newman RBAC setup (editor role, NOT in "vets")`,
+			)
 		})
 		if (/\/login(\?|$|\/)/.test(page.url())) {
 			return
@@ -143,14 +149,18 @@ test.describe.skip('data-scopes-authoring — multi-user / multi-version (REQ-OB
 		const accessSection = page.locator('.openbuild-access-editor')
 		await expect(accessSection).toBeVisible({ timeout: 10_000 })
 
-		const readRow = accessSection.locator('.openbuild-access-editor__row').filter({ hasText: /^read$/i })
+		const readRow = accessSection
+			.locator('.openbuild-access-editor__row')
+			.filter({ hasText: /^read$/i })
 		await readRow.getByLabel(/scope/i).click()
 		await page.getByRole('option', { name: /specific groups/i }).click()
 		const groupInput = readRow.getByLabel(/groups/i)
 		await groupInput.fill('vets')
 		await groupInput.press('Enter')
 
-		const warning = page.locator('.note-stub, [type="warning"]').filter({ hasText: /invisible to you/i })
+		const warning = page
+			.locator('.note-stub, [type="warning"]')
+			.filter({ hasText: /invisible to you/i })
 		await expect(warning).toBeVisible({ timeout: 10_000 })
 		// Save must remain enabled — the warning is advisory only.
 		await expect(page.getByRole('button', { name: /^save$/i })).toBeEnabled()
@@ -158,19 +168,28 @@ test.describe.skip('data-scopes-authoring — multi-user / multi-version (REQ-OB
 		// Second half — a `vets` member editor sets the SAME scope and sees
 		// no warning (their own records remain visible).
 		await loginAs(page, EDITOR_VET.user, EDITOR_VET.pass).catch(() => {
-			test.skip(true, `SKIP: user ${EDITOR_VET.user} not found — provision via Newman RBAC setup (editor role, member of "vets")`)
+			test.skip(
+				true,
+				`SKIP: user ${EDITOR_VET.user} not found — provision via Newman RBAC setup (editor role, member of "vets")`,
+			)
 		})
 		if (/\/login(\?|$|\/)/.test(page.url())) {
 			return
 		}
 		await openSchemaDetail(page)
-		await expect(page.locator('.openbuild-access-editor')).toBeVisible({ timeout: 10_000 })
+		await expect(page.locator('.openbuild-access-editor')).toBeVisible({
+			timeout: 10_000,
+		})
 		await expect(
-			page.locator('.note-stub, [type="warning"]').filter({ hasText: /invisible to you/i }),
+			page
+				.locator('.note-stub, [type="warning"]')
+				.filter({ hasText: /invisible to you/i }),
 		).toHaveCount(0)
 	})
 
-	test('REQ-OBDSA-006: a draft-version scope change leaves the production schema unchanged', async ({ page }) => {
+	test('REQ-OBDSA-006: a draft-version scope change leaves the production schema unchanged', async ({
+		page,
+	}) => {
 		await loginAs(page, OWNER.user, OWNER.pass)
 
 		// Verify the staging version exists before proceeding (mirrors the
@@ -180,7 +199,10 @@ test.describe.skip('data-scopes-authoring — multi-user / multi-version (REQ-OB
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		if (stagingCheck.status() !== 200) {
-			test.skip(true, `SKIP: ApplicationVersion "${STAGING_VERSION}" not found — seed a version with this slug first`)
+			test.skip(
+				true,
+				`SKIP: ApplicationVersion "${STAGING_VERSION}" not found — seed a version with this slug first`,
+			)
 			return
 		}
 
@@ -195,7 +217,10 @@ test.describe.skip('data-scopes-authoring — multi-user / multi-version (REQ-OB
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		if (!prodBefore.ok()) {
-			test.skip(true, `SKIP: production schema ${prodSlug} not found — seed the version chain's schemas first`)
+			test.skip(
+				true,
+				`SKIP: production schema ${prodSlug} not found — seed the version chain's schemas first`,
+			)
 			return
 		}
 		const prodBeforeBody = await prodBefore.json()
@@ -203,7 +228,9 @@ test.describe.skip('data-scopes-authoring — multi-user / multi-version (REQ-OB
 		await openSchemaDetail(page, STAGING_VERSION)
 		const accessSection = page.locator('.openbuild-access-editor')
 		await expect(accessSection).toBeVisible({ timeout: 10_000 })
-		const readRow = accessSection.locator('.openbuild-access-editor__row').filter({ hasText: /^read$/i })
+		const readRow = accessSection
+			.locator('.openbuild-access-editor__row')
+			.filter({ hasText: /^read$/i })
 		await readRow.getByLabel(/scope/i).click()
 		await page.getByRole('option', { name: /specific groups/i }).click()
 		const groupInput = readRow.getByLabel(/groups/i)
@@ -227,12 +254,20 @@ test.describe.skip('data-scopes-authoring — multi-user / multi-version (REQ-OB
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		const prodAfterBody = await prodAfter.json()
-		expect(prodAfterBody.authorization, 'the production schema authorization must be untouched').toEqual(prodBeforeBody.authorization)
+		expect(
+			prodAfterBody.authorization,
+			'the production schema authorization must be untouched',
+		).toEqual(prodBeforeBody.authorization)
 	})
 
-	test('REQ-OBDSA-007: editor sees a disabled Access sub-editor on production; owner sees it enabled', async ({ page }) => {
+	test('REQ-OBDSA-007: editor sees a disabled Access sub-editor on production; owner sees it enabled', async ({
+		page,
+	}) => {
 		await loginAs(page, EDITOR_NONVET.user, EDITOR_NONVET.pass).catch(() => {
-			test.skip(true, `SKIP: user ${EDITOR_NONVET.user} not found — provision via Newman RBAC setup`)
+			test.skip(
+				true,
+				`SKIP: user ${EDITOR_NONVET.user} not found — provision via Newman RBAC setup`,
+			)
 		})
 		if (/\/login(\?|$|\/)/.test(page.url())) {
 			return
@@ -240,7 +275,9 @@ test.describe.skip('data-scopes-authoring — multi-user / multi-version (REQ-OB
 		await openSchemaDetail(page, PRODUCTION_VERSION)
 		const accessSection = page.locator('.openbuild-access-editor')
 		await expect(accessSection).toBeVisible({ timeout: 10_000 })
-		await expect(accessSection.getByText(/only be changed by an owner/i)).toBeVisible({ timeout: 10_000 })
+		await expect(
+			accessSection.getByText(/only be changed by an owner/i),
+		).toBeVisible({ timeout: 10_000 })
 		// Every scope-kind picker in the sub-editor must be disabled.
 		const pickers = accessSection.getByLabel(/scope/i)
 		const count = await pickers.count()
@@ -252,6 +289,8 @@ test.describe.skip('data-scopes-authoring — multi-user / multi-version (REQ-OB
 		await openSchemaDetail(page, PRODUCTION_VERSION)
 		const ownerAccessSection = page.locator('.openbuild-access-editor')
 		await expect(ownerAccessSection).toBeVisible({ timeout: 10_000 })
-		await expect(ownerAccessSection.getByText(/only be changed by an owner/i)).toHaveCount(0)
+		await expect(
+			ownerAccessSection.getByText(/only be changed by an owner/i),
+		).toHaveCount(0)
 	})
 })

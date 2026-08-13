@@ -12,7 +12,12 @@
 <template>
 	<div class="block-library-panel">
 		<p class="block-library-panel__intro">
-			{{ t('openbuild', 'Blocks saved by anyone in your organisation. Insert deep-copies a block onto this page — editing the source later never changes an already-inserted copy.') }}
+			{{
+				t(
+					'openbuild',
+					'Blocks saved by anyone in your organisation. Insert deep-copies a block onto this page — editing the source later never changes an already-inserted copy.',
+				)
+			}}
 		</p>
 
 		<NcSelect
@@ -24,7 +29,7 @@
 
 		<label class="block-library-panel__import">
 			{{ t('openbuild', 'Import a block') }}
-			<input type="file" accept="application/json" @change="onImportFile">
+			<input type="file" accept="application/json" @change="onImportFile" />
 		</label>
 
 		<p v-if="importError" class="block-library-panel__error" role="alert">
@@ -38,7 +43,12 @@
 		<NcEmptyContent
 			v-else-if="filteredBlocks.length === 0"
 			:name="t('openbuild', 'No blocks yet')"
-			:description="t('openbuild', 'Save a widget or section from the designer to build your first block.')" />
+			:description="
+				t(
+					'openbuild',
+					'Save a widget or section from the designer to build your first block.',
+				)
+			" />
 
 		<ul v-else class="block-library-panel__list">
 			<li v-for="block in filteredBlocks" :key="block.slug" class="block-card">
@@ -46,7 +56,9 @@
 					<h4 class="block-card__title">
 						{{ block.name }}
 					</h4>
-					<span v-if="block.category" class="block-card__category">{{ block.category }}</span>
+					<span v-if="block.category" class="block-card__category">{{
+						block.category
+					}}</span>
 					<p class="block-card__description">
 						{{ block.description }}
 					</p>
@@ -92,14 +104,28 @@ import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect } from '@nextcloud/vu
 
 import BlockRemapDialog from '../../dialogs/BlockRemapDialog.vue'
 import { isSectionFragment } from '../../services/blockCapture.js'
-import { computeSchemaMismatches, insertBlock, remapBlockRecord } from '../../services/blockInsert.js'
-import { downloadBlockExport, BlockImportError, parseBlockImport } from '../../services/blockExport.js'
+import {
+	computeSchemaMismatches,
+	insertBlock,
+	remapBlockRecord,
+} from '../../services/blockInsert.js'
+import {
+	downloadBlockExport,
+	BlockImportError,
+	parseBlockImport,
+} from '../../services/blockExport.js'
 
 const OR_BLOCKS = '/apps/openregister/api/objects/openbuild/component-block'
 
 export default {
 	name: 'BlockLibraryPanel',
-	components: { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect, BlockRemapDialog },
+	components: {
+		NcButton,
+		NcEmptyContent,
+		NcLoadingIcon,
+		NcSelect,
+		BlockRemapDialog,
+	},
 	props: {
 		// Whether the panel is currently visible — controls the fetch.
 		open: { type: Boolean, default: false },
@@ -146,7 +172,9 @@ export default {
 		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		filteredBlocks() {
-			const selected = this.categoryFilter && (this.categoryFilter.id ?? this.categoryFilter)
+			const selected =
+				this.categoryFilter
+				&& (this.categoryFilter.id ?? this.categoryFilter)
 			if (!selected) {
 				return this.blocks
 			}
@@ -190,7 +218,11 @@ export default {
 			this.loading = true
 			try {
 				const { data } = await axios.get(generateUrl(OR_BLOCKS))
-				this.blocks = Array.isArray(data && data.results) ? data.results : (Array.isArray(data) ? data : [])
+				this.blocks = Array.isArray(data && data.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 			} catch (e) {
 				this.blocks = []
 			} finally {
@@ -207,10 +239,14 @@ export default {
 		previewLabel(block) {
 			const fragment = block && block.fragment
 			if (isSectionFragment(fragment)) {
-				const count = Array.isArray(fragment.widgets) ? fragment.widgets.length : 0
+				const count = Array.isArray(fragment.widgets)
+					? fragment.widgets.length
+					: 0
 				return t('openbuild', '{count} widget(s) in this section', { count })
 			}
-			return (fragment && fragment.widgetKey) || t('openbuild', 'Single widget')
+			return (
+				(fragment && fragment.widgetKey) || t('openbuild', 'Single widget')
+			)
 		},
 		/**
 		 * Begin the insert flow for a block: compute schema-dependency
@@ -222,7 +258,10 @@ export default {
 		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		onInsert(block) {
-			const mismatches = computeSchemaMismatches(block.schemaDependencies, this.targetSchemaSlugs)
+			const mismatches = computeSchemaMismatches(
+				block.schemaDependencies,
+				this.targetSchemaSlugs,
+			)
 			if (mismatches.length === 0) {
 				this.emitInsert(block, {})
 				return
@@ -269,7 +308,8 @@ export default {
 		 */
 		async onImportFile(event) {
 			this.importError = ''
-			const file = event && event.target && event.target.files && event.target.files[0]
+			const file =
+				event && event.target && event.target.files && event.target.files[0]
 			event.target.value = ''
 			if (!file) {
 				return
@@ -277,7 +317,10 @@ export default {
 			try {
 				const text = await file.text()
 				const record = parseBlockImport(text)
-				const mismatches = computeSchemaMismatches(record.schemaDependencies, this.targetSchemaSlugs)
+				const mismatches = computeSchemaMismatches(
+					record.schemaDependencies,
+					this.targetSchemaSlugs,
+				)
 				if (mismatches.length === 0) {
 					await this.createBlock(record)
 					return
@@ -286,9 +329,12 @@ export default {
 				this.remapDependencies = mismatches
 				this.remapOpen = true
 			} catch (e) {
-				this.importError = e instanceof BlockImportError
-					? t('openbuild', 'That file is not a valid block export.')
-					: (t('openbuild', 'Import failed: {message}', { message: e && e.message ? e.message : String(e) }))
+				this.importError =
+					e instanceof BlockImportError
+						? t('openbuild', 'That file is not a valid block export.')
+						: t('openbuild', 'Import failed: {message}', {
+								message: e && e.message ? e.message : String(e),
+							})
 			}
 		},
 		/**
@@ -309,7 +355,11 @@ export default {
 				this.emitInsert(pending.block, resolution)
 				return
 			}
-			const finalRecord = remapBlockRecord(pending.record, resolution.remapMap, resolution.unresolvedDependencies)
+			const finalRecord = remapBlockRecord(
+				pending.record,
+				resolution.remapMap,
+				resolution.unresolvedDependencies,
+			)
 			await this.createBlock(finalRecord)
 		},
 		/**
@@ -325,7 +375,11 @@ export default {
 				await this.fetchBlocks()
 			} catch (e) {
 				const data = e?.response?.data
-				this.importError = data?.detail || data?.error || e?.message || t('openbuild', 'Import failed.')
+				this.importError =
+					data?.detail
+					|| data?.error
+					|| e?.message
+					|| t('openbuild', 'Import failed.')
 			}
 		},
 		/**
@@ -338,8 +392,11 @@ export default {
 		async onDelete(block) {
 			this.confirmDeleteSlug = ''
 			try {
-				const uuid = (block['@self'] && block['@self'].id) || block.uuid || block.id
-				await axios.delete(generateUrl(`${OR_BLOCKS}/${encodeURIComponent(uuid)}`))
+				const uuid =
+					(block['@self'] && block['@self'].id) || block.uuid || block.id
+				await axios.delete(
+					generateUrl(`${OR_BLOCKS}/${encodeURIComponent(uuid)}`),
+				)
 				this.blocks = this.blocks.filter((b) => b.slug !== block.slug)
 			} catch (e) {
 				this.importError = t('openbuild', 'Deleting the block failed.')

@@ -185,7 +185,9 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 		await rollbackBtn.trigger('click')
 		await wrapper.vm.$nextTick()
 
-		expect(wrapper.find('.rollback-confirm-modal-stub').attributes('data-open')).toBe('true')
+		expect(
+			wrapper.find('.rollback-confirm-modal-stub').attributes('data-open'),
+		).toBe('true')
 		// rollbackTarget is seeded with the row's blob.
 		expect(wrapper.vm.rollbackTarget).toMatchObject({
 			uuid: 'snap-1',
@@ -216,11 +218,15 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 
 		await wrapper.find('.version-history__btn--danger').trigger('click')
 		await wrapper.vm.$nextTick()
-		expect(wrapper.find('.rollback-confirm-modal-stub').attributes('data-open')).toBe('true')
+		expect(
+			wrapper.find('.rollback-confirm-modal-stub').attributes('data-open'),
+		).toBe('true')
 
 		await wrapper.find('.rollback-confirm-modal-stub__cancel').trigger('click')
 		await wrapper.vm.$nextTick()
-		expect(wrapper.find('.rollback-confirm-modal-stub').attributes('data-open')).toBe('false')
+		expect(
+			wrapper.find('.rollback-confirm-modal-stub').attributes('data-open'),
+		).toBe('false')
 		// No `rollback` event emitted on cancel.
 		expect(wrapper.emitted('rollback')).toBeFalsy()
 		// Target cleared so the next open isn't pre-seeded with the prior pick.
@@ -263,6 +269,8 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 			manifest: { v: 1, pages: [] },
 		})
 		// Modal closed after confirm.
-		expect(wrapper.find('.rollback-confirm-modal-stub').attributes('data-open')).toBe('false')
+		expect(
+			wrapper.find('.rollback-confirm-modal-stub').attributes('data-open'),
+		).toBe('false')
 	})
 })

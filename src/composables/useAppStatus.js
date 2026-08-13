@@ -78,7 +78,11 @@ export function useAppStatus(appId, opts = {}) {
 			const status = e && e.response && e.response.status
 			// 404 / 501 → route does not exist → app absent/disabled.
 			// Any other status (incl. 400/401/403) means the app answered.
-			available.value = !(status === 404 || status === 501 || status === undefined)
+			available.value = !(
+				status === 404
+				|| status === 501
+				|| status === undefined
+			)
 		}
 		checked.value = true
 		statusCache.set(appId, available.value)

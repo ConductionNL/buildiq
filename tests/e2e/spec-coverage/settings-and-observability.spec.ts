@@ -18,7 +18,9 @@ import { test, expect } from '@playwright/test'
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 
 // @e2e settings-and-observability::authenticated-read
-test('REQ-OBS-001 — authenticated settings read returns config + booleans', async ({ request }) => {
+test('REQ-OBS-001 — authenticated settings read returns config + booleans', async ({
+	request,
+}) => {
 	// @e2e settings-and-observability::authenticated-read
 	const res = await request.get('/index.php/apps/openbuild/api/settings', {
 		headers: { 'OCS-APIRequest': 'true' },
@@ -32,7 +34,9 @@ test('REQ-OBS-001 — authenticated settings read returns config + booleans', as
 })
 
 // @e2e settings-and-observability::unauthenticated-read
-test('REQ-OBS-001 — unauthenticated settings read is gated (401 or 302 without valid session)', async ({ playwright }) => {
+test('REQ-OBS-001 — unauthenticated settings read is gated (401 or 302 without valid session)', async ({
+	playwright,
+}) => {
 	// @e2e settings-and-observability::unauthenticated-read
 	// Verify the endpoint requires authentication.
 	// Playwright's global httpCredentials (basic auth) still satisfy the auth gate;
@@ -48,7 +52,9 @@ test('REQ-OBS-001 — unauthenticated settings read is gated (401 or 302 without
 })
 
 // @e2e settings-and-observability::persist-a-known-key
-test('REQ-OBS-002 — POST settings persists a known key and echoes success', async ({ request }) => {
+test('REQ-OBS-002 — POST settings persists a known key and echoes success', async ({
+	request,
+}) => {
 	// @e2e settings-and-observability::persist-a-known-key
 	const res = await request.post('/index.php/apps/openbuild/api/settings', {
 		headers: { 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' },
@@ -61,7 +67,9 @@ test('REQ-OBS-002 — POST settings persists a known key and echoes success', as
 })
 
 // @e2e settings-and-observability::unknown-key-ignored
-test('REQ-OBS-002 — unknown key in POST is ignored (no 4xx)', async ({ request }) => {
+test('REQ-OBS-002 — unknown key in POST is ignored (no 4xx)', async ({
+	request,
+}) => {
 	// @e2e settings-and-observability::unknown-key-ignored
 	const res = await request.post('/index.php/apps/openbuild/api/settings', {
 		headers: { 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' },
@@ -75,7 +83,9 @@ test('REQ-OBS-002 — unknown key in POST is ignored (no 4xx)', async ({ request
 })
 
 // @e2e settings-and-observability::first-import-succeeds
-test('REQ-OBS-003 — force reload endpoint returns success result', async ({ request }) => {
+test('REQ-OBS-003 — force reload endpoint returns success result', async ({
+	request,
+}) => {
 	// @e2e settings-and-observability::first-import-succeeds
 	const res = await request.post('/index.php/apps/openbuild/api/settings/load', {
 		headers: { 'OCS-APIRequest': 'true' },
@@ -87,7 +97,9 @@ test('REQ-OBS-003 — force reload endpoint returns success result', async ({ re
 })
 
 // @e2e settings-and-observability::openregister-absent
-test('REQ-OBS-003 — settings response includes openregisters flag', async ({ request }) => {
+test('REQ-OBS-003 — settings response includes openregisters flag', async ({
+	request,
+}) => {
 	// @e2e settings-and-observability::openregister-absent
 	// On this env OR is installed → openregisters must be true
 	const res = await request.get('/index.php/apps/openbuild/api/settings', {
@@ -100,7 +112,9 @@ test('REQ-OBS-003 — settings response includes openregisters flag', async ({ r
 })
 
 // @e2e settings-and-observability::forced-reload
-test('REQ-OBS-003 — reload endpoint accepts POST and responds', async ({ request }) => {
+test('REQ-OBS-003 — reload endpoint accepts POST and responds', async ({
+	request,
+}) => {
 	// @e2e settings-and-observability::forced-reload
 	const res = await request.post('/index.php/apps/openbuild/api/settings/load', {
 		headers: { 'OCS-APIRequest': 'true' },
@@ -109,7 +123,9 @@ test('REQ-OBS-003 — reload endpoint accepts POST and responds', async ({ reque
 })
 
 // @e2e settings-and-observability::health-probe
-test('REQ-OBS-005 — health endpoint returns status:ok with 200', async ({ request }) => {
+test('REQ-OBS-005 — health endpoint returns status:ok with 200', async ({
+	request,
+}) => {
 	// @e2e settings-and-observability::health-probe
 	const res = await request.get('/index.php/apps/openbuild/api/health', {
 		headers: { 'OCS-APIRequest': 'true' },
@@ -127,7 +143,9 @@ test('REQ-OBS-005 — health endpoint returns status:ok with 200', async ({ requ
 // Prometheus text exposition (ADR-006) — not JSON. The assertions below follow
 // the real contract and are stricter than the old ones: the placeholder array
 // was always empty, whereas these require the manifest's gauges to be rendered.
-test('REQ-OBS-005 — metrics endpoint returns a Prometheus exposition with 200', async ({ request }) => {
+test('REQ-OBS-005 — metrics endpoint returns a Prometheus exposition with 200', async ({
+	request,
+}) => {
 	// @e2e settings-and-observability::metrics-probe
 	const res = await request.get('/index.php/apps/openbuild/api/metrics', {
 		headers: { 'OCS-APIRequest': 'true' },
@@ -141,7 +159,11 @@ test('REQ-OBS-005 — metrics endpoint returns a Prometheus exposition with 200'
 	// loaded and rendered rather than an empty body being returned. The engine
 	// namespaces each declared metric with the app id, so the manifest's
 	// `applications_total` is exposed as `openbuild_applications_total`.
-	for (const name of ['export_jobs_total', 'applications_total', 'application_versions_total']) {
+	for (const name of [
+		'export_jobs_total',
+		'applications_total',
+		'application_versions_total',
+	]) {
 		expect(body).toContain(`# HELP openbuild_${name}`)
 		expect(body).toContain(`# TYPE openbuild_${name} gauge`)
 	}

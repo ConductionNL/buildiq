@@ -12,7 +12,10 @@
   - caller's role.
   -->
 <template>
-	<div v-if="!hiddenByFilter" class="ob-app-card" :class="{ 'ob-app-card--selected': selected }">
+	<div
+		v-if="!hiddenByFilter"
+		class="ob-app-card"
+		:class="{ 'ob-app-card--selected': selected }">
 		<div
 			class="ob-app-card__inner"
 			tabindex="0"
@@ -26,20 +29,34 @@
 					:alt="app.name || app.slug"
 					width="20"
 					height="20"
-					@error="onIconError">
+					@error="onIconError" />
 				<h3 class="ob-app-card__title">
 					{{ app.name || app.slug || t('openbuild', 'Untitled app') }}
 				</h3>
-				<span class="ob-app-card__type" :class="`ob-app-card__type--${appTypeKey}`">{{ appTypeLabel }}</span>
-				<span class="ob-app-card__badge" :class="`ob-app-card__badge--${statusKey}`">{{ statusLabel }}</span>
+				<span
+					class="ob-app-card__type"
+					:class="`ob-app-card__type--${appTypeKey}`"
+					>{{ appTypeLabel }}</span
+				>
+				<span
+					class="ob-app-card__badge"
+					:class="`ob-app-card__badge--${statusKey}`"
+					>{{ statusLabel }}</span
+				>
 			</div>
 			<p v-if="app.description" class="ob-app-card__desc">
 				{{ app.description }}
 			</p>
 			<div class="ob-app-card__meta">
-				<span class="ob-app-card__chip">{{ t('openbuild', 'Version') }} {{ productionSemver }}</span>
-				<span v-if="role !== 'none'" class="ob-app-card__chip">{{ roleLabel }}</span>
-				<span class="ob-app-card__chip ob-app-card__chip--muted">/{{ app.slug }}</span>
+				<span class="ob-app-card__chip"
+					>{{ t('openbuild', 'Version') }} {{ productionSemver }}</span
+				>
+				<span v-if="role !== 'none'" class="ob-app-card__chip">{{
+					roleLabel
+				}}</span>
+				<span class="ob-app-card__chip ob-app-card__chip--muted"
+					>/{{ app.slug }}</span
+				>
 			</div>
 		</div>
 	</div>
@@ -165,7 +182,8 @@ export default {
 		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 		 */
 		hiddenByFilter() {
-			const filter = this.$route && this.$route.query ? this.$route.query.filter : null
+			const filter =
+				this.$route && this.$route.query ? this.$route.query.filter : null
 			if (!filter || filter === 'all') {
 				return false
 			}
@@ -181,7 +199,9 @@ export default {
 		 */
 		statusKey() {
 			const status = this.productionVersion && this.productionVersion.status
-			return ['draft', 'published', 'archived'].includes(status) ? status : 'draft'
+			return ['draft', 'published', 'archived'].includes(status)
+				? status
+				: 'draft'
 		},
 		/**
 		 * Observed behaviour of `statusLabel` (retrofit annotation).
@@ -209,11 +229,13 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		roleLabel() {
-			return {
-				owner: t('openbuild', 'Owner'),
-				editor: t('openbuild', 'Editor'),
-				viewer: t('openbuild', 'Viewer'),
-			}[this.role] || ''
+			return (
+				{
+					owner: t('openbuild', 'Owner'),
+					editor: t('openbuild', 'Editor'),
+					viewer: t('openbuild', 'Viewer'),
+				}[this.role] || ''
+			)
 		},
 	},
 	/**
@@ -268,7 +290,10 @@ export default {
 		onCardActivate(event) {
 			this.$emit('click', event)
 			if (this.$router) {
-				this.$router.push({ name: 'VirtualAppDetail', params: { objectId: this.appUuid } })
+				this.$router.push({
+					name: 'VirtualAppDetail',
+					params: { objectId: this.appUuid },
+				})
 			}
 		},
 	},
@@ -289,7 +314,9 @@ export default {
 	border-radius: var(--border-radius-large, 8px);
 	cursor: pointer;
 	background: var(--color-main-background, #fff);
-	transition: border-color 0.1s ease, box-shadow 0.1s ease;
+	transition:
+		border-color 0.1s ease,
+		box-shadow 0.1s ease;
 }
 
 .ob-app-card__inner:hover,

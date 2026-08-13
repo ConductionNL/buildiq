@@ -35,7 +35,9 @@ export function renderDescription(template, object) {
 		return ''
 	}
 	return template.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key) => {
-		const value = (object && object[key]) ?? (object && object['@self'] && object['@self'][key])
+		const value =
+			(object && object[key])
+			?? (object && object['@self'] && object['@self'][key])
 		return value === undefined || value === null ? '' : String(value)
 	})
 }
@@ -69,7 +71,12 @@ export function useProcestCase(opts = {}) {
 	 * @return {string}
 	 */
 	function objectUuid(object) {
-		return (object && object['@self'] && object['@self'].id) || (object && object.uuid) || (object && object.id) || ''
+		return (
+			(object && object['@self'] && object['@self'].id)
+			|| (object && object.uuid)
+			|| (object && object.id)
+			|| ''
+		)
 	}
 
 	/**
@@ -111,9 +118,15 @@ export function useProcestCase(opts = {}) {
 			const body = {
 				zaaktype: attachment.caseTypeUuid,
 				kenmerken: uuid ? [{ kenmerk: uuid, bron: 'openbuild' }] : [],
-				omschrijving: renderDescription(attachment.descriptionTemplate, object),
+				omschrijving: renderDescription(
+					attachment.descriptionTemplate,
+					object,
+				),
 			}
-			const { data: zaak } = await client.post(generateUrl(`${ZRC}/zaken`), body)
+			const { data: zaak } = await client.post(
+				generateUrl(`${ZRC}/zaken`),
+				body,
+			)
 			await writeBack(object, zaak)
 			caseDetail.value = zaak
 			return zaak
@@ -134,17 +147,26 @@ export function useProcestCase(opts = {}) {
 	 * @return {Promise<void>}
 	 */
 	async function writeBack(object, zaak) {
-		const linkValue = (zaak && (zaak.url || zaak.uuid || (zaak['@self'] && zaak['@self'].id))) || ''
+		const linkValue =
+			(zaak && (zaak.url || zaak.uuid || (zaak['@self'] && zaak['@self'].id)))
+			|| ''
 		if (!attachment.linkProperty || !linkValue) {
 			return
 		}
-		const register = (object && object['@self'] && object['@self'].register) || object.register
-		const schema = (object && object['@self'] && object['@self'].schema) || object.schema || attachment.schema
+		const register =
+			(object && object['@self'] && object['@self'].register)
+			|| object.register
+		const schema =
+			(object && object['@self'] && object['@self'].schema)
+			|| object.schema
+			|| attachment.schema
 		const id = objectUuid(object)
 		if (!register || !schema || !id) {
 			return
 		}
-		const url = generateUrl(`/apps/openregister/api/objects/${register}/${schema}/${id}`)
+		const url = generateUrl(
+			`/apps/openregister/api/objects/${register}/${schema}/${id}`,
+		)
 		await client.put(url, { ...object, [attachment.linkProperty]: linkValue })
 	}
 
@@ -158,7 +180,8 @@ export function useProcestCase(opts = {}) {
 	 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-003
 	 */
 	async function reconcileOrStart(object) {
-		const existingRef = object && attachment.linkProperty ? object[attachment.linkProperty] : ''
+		const existingRef =
+			object && attachment.linkProperty ? object[attachment.linkProperty] : ''
 		if (existingRef) {
 			// Already linked — adopt, never duplicate.
 			await loadDetail(existingRef)
@@ -189,10 +212,14 @@ export function useProcestCase(opts = {}) {
 		detailError.value = null
 		noAccess.value = false
 		try {
-			const { data: zaak } = await client.get(generateUrl(`${ZRC}/zaken/${uuid}`))
+			const { data: zaak } = await client.get(
+				generateUrl(`${ZRC}/zaken/${uuid}`),
+			)
 			caseDetail.value = zaak
 			try {
-				const { data } = await client.get(generateUrl(`${ZRC}/statussen`), { params: { zaak: uuid } })
+				const { data } = await client.get(generateUrl(`${ZRC}/statussen`), {
+					params: { zaak: uuid },
+				})
 				const list = (data && (data.results || data)) || []
 				statusHistory.value = Array.isArray(list) ? list : []
 			} catch {

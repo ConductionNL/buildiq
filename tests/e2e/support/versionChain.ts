@@ -45,53 +45,68 @@ const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
  * @param name The app display name.
  * @return {Promise<void>}
  */
-export async function ensureVersionChain(page: Page, slug: string, name: string): Promise<void> {
+export async function ensureVersionChain(
+	page: Page,
+	slug: string,
+	name: string,
+): Promise<void> {
 	// The wizard creates the app with its `production` version.
 	await ensureApp(page, slug, name)
 
-	const result = await page.evaluate(async ({ slug, manifest }) => {
-		const tok = (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken
-			|| document.querySelector('head')?.getAttribute('data-requesttoken')
-			|| ''
-		const headers = { requesttoken: tok, 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' }
-		const versionsUrl = `/index.php/apps/openbuild/api/applications/${slug}/versions`
-
-		const list = async () => {
-			const resp = await fetch(versionsUrl, { headers })
-			const data = await resp.json().catch(() => null)
-			return Array.isArray(data) ? data : (data?.results ?? [])
-		}
-
-		// Build downstream-first so each new version can point at the one it
-		// promotes into: staging -> production, then development -> staging.
-		for (const [versionSlug, semver, promotesToSlug] of [
-			['staging', '0.2.0', 'production'],
-			['development', '0.3.0', 'staging'],
-		]) {
-			const current = await list()
-			if (current.some((v) => v?.slug === versionSlug)) {
-				continue
+	const result = await page.evaluate(
+		async ({ slug, manifest }) => {
+			const tok =
+				(window as unknown as { OC?: { requestToken?: string } }).OC
+					?.requestToken
+				|| document.querySelector('head')?.getAttribute('data-requesttoken')
+				|| ''
+			const headers = {
+				requesttoken: tok,
+				'OCS-APIRequest': 'true',
+				'Content-Type': 'application/json',
 			}
-			const upstream = current.find((v) => v?.slug === promotesToSlug)
-			const resp = await fetch(versionsUrl, {
-				method: 'POST',
-				headers,
-				body: JSON.stringify({
-					slug: versionSlug,
-					name: versionSlug,
-					semver,
-					status: 'draft',
-					manifest,
-					...(upstream ? { promotesTo: upstream.id ?? upstream.uuid } : {}),
-				}),
-			})
-			if (!resp.ok) {
-				return `error creating ${versionSlug}: ${resp.status} ${(await resp.text()).slice(0, 200)}`
-			}
-		}
+			const versionsUrl = `/index.php/apps/openbuild/api/applications/${slug}/versions`
 
-		return (await list()).map((v) => v?.slug).join(',')
-	}, { slug, manifest: EMPTY_MANIFEST })
+			const list = async () => {
+				const resp = await fetch(versionsUrl, { headers })
+				const data = await resp.json().catch(() => null)
+				return Array.isArray(data) ? data : (data?.results ?? [])
+			}
+
+			// Build downstream-first so each new version can point at the one it
+			// promotes into: staging -> production, then development -> staging.
+			for (const [versionSlug, semver, promotesToSlug] of [
+				['staging', '0.2.0', 'production'],
+				['development', '0.3.0', 'staging'],
+			]) {
+				const current = await list()
+				if (current.some((v) => v?.slug === versionSlug)) {
+					continue
+				}
+				const upstream = current.find((v) => v?.slug === promotesToSlug)
+				const resp = await fetch(versionsUrl, {
+					method: 'POST',
+					headers,
+					body: JSON.stringify({
+						slug: versionSlug,
+						name: versionSlug,
+						semver,
+						status: 'draft',
+						manifest,
+						...(upstream
+							? { promotesTo: upstream.id ?? upstream.uuid }
+							: {}),
+					}),
+				})
+				if (!resp.ok) {
+					return `error creating ${versionSlug}: ${resp.status} ${(await resp.text()).slice(0, 200)}`
+				}
+			}
+
+			return (await list()).map((v) => v?.slug).join(',')
+		},
+		{ slug, manifest: EMPTY_MANIFEST },
+	)
 
 	if (typeof result === 'string' && result.startsWith('error')) {
 		throw new Error(`ensureVersionChain(${slug}) failed — ${result}`)
@@ -105,11 +120,17 @@ export async function ensureVersionChain(page: Page, slug: string, name: string)
  * @param slug The app slug.
  * @return {Promise<Array<Record<string, unknown>>>} The ApplicationVersion rows.
  */
-export async function listVersions(page: Page, slug: string): Promise<Array<Record<string, unknown>>> {
+export async function listVersions(
+	page: Page,
+	slug: string,
+): Promise<Array<Record<string, unknown>>> {
 	return page.evaluate(async (slug) => {
-		const resp = await fetch(`/index.php/apps/openbuild/api/applications/${slug}/versions`, {
-			headers: { 'OCS-APIRequest': 'true' },
-		})
+		const resp = await fetch(
+			`/index.php/apps/openbuild/api/applications/${slug}/versions`,
+			{
+				headers: { 'OCS-APIRequest': 'true' },
+			},
+		)
 		const data = await resp.json().catch(() => null)
 		return Array.isArray(data) ? data : (data?.results ?? [])
 	}, slug)

@@ -94,8 +94,12 @@ describe('useApplicationVersion — named versionSlug (REQ-OBVR-005 fetch-by-slu
 		const versionRecord = { uuid: 'staging-uuid', slug: 'staging' }
 		axios.get.mockResolvedValueOnce({ data: versionRecord })
 
-		const { useApplicationVersion } = await import('../../src/composables/useApplicationVersion.js')
-		const { applicationVersion, loading, error } = useApplicationVersion('hello-world', 'staging')
+		const { useApplicationVersion } =
+			await import('../../src/composables/useApplicationVersion.js')
+		const { applicationVersion, loading, error } = useApplicationVersion(
+			'hello-world',
+			'staging',
+		)
 
 		// Initial state: loading true, version null
 		expect(loading.value).toBe(true)
@@ -116,8 +120,12 @@ describe('useApplicationVersion — named versionSlug (REQ-OBVR-005 fetch-by-slu
 		const { default: axios } = await import('@nextcloud/axios')
 		axios.get.mockRejectedValueOnce(new Error('404 Not Found'))
 
-		const { useApplicationVersion } = await import('../../src/composables/useApplicationVersion.js')
-		const { applicationVersion, loading, error } = useApplicationVersion('hello-world', 'unknown-slug')
+		const { useApplicationVersion } =
+			await import('../../src/composables/useApplicationVersion.js')
+		const { applicationVersion, loading, error } = useApplicationVersion(
+			'hello-world',
+			'unknown-slug',
+		)
 
 		await new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -154,11 +162,17 @@ describe('useApplicationVersion — no versionSlug (REQ-OBVR-004 fallback rule)'
 		axios.get.mockResolvedValueOnce({ data: [dev, staging, prod] })
 		// Second call: application record (to get productionVersion)
 		axios.get.mockResolvedValueOnce({
-			data: { results: [{ slug: 'hello-world', productionVersion: 'prod-uuid' }] },
+			data: {
+				results: [{ slug: 'hello-world', productionVersion: 'prod-uuid' }],
+			},
 		})
 
-		const { useApplicationVersion } = await import('../../src/composables/useApplicationVersion.js')
-		const { applicationVersion, loading } = useApplicationVersion('hello-world', undefined)
+		const { useApplicationVersion } =
+			await import('../../src/composables/useApplicationVersion.js')
+		const { applicationVersion, loading } = useApplicationVersion(
+			'hello-world',
+			undefined,
+		)
 
 		await new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -175,8 +189,12 @@ describe('useApplicationVersion — no versionSlug (REQ-OBVR-004 fallback rule)'
 		// Application fetch fails — productionUuid stays null
 		axios.get.mockRejectedValueOnce(new Error('network error'))
 
-		const { useApplicationVersion } = await import('../../src/composables/useApplicationVersion.js')
-		const { applicationVersion, loading } = useApplicationVersion('hello-world', undefined)
+		const { useApplicationVersion } =
+			await import('../../src/composables/useApplicationVersion.js')
+		const { applicationVersion, loading } = useApplicationVersion(
+			'hello-world',
+			undefined,
+		)
 
 		await new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -191,8 +209,12 @@ describe('useApplicationVersion — no versionSlug (REQ-OBVR-004 fallback rule)'
 		axios.get.mockResolvedValueOnce({ data: [] })
 		axios.get.mockResolvedValueOnce({ data: { results: [] } })
 
-		const { useApplicationVersion } = await import('../../src/composables/useApplicationVersion.js')
-		const { applicationVersion, loading } = useApplicationVersion('hello-world', undefined)
+		const { useApplicationVersion } =
+			await import('../../src/composables/useApplicationVersion.js')
+		const { applicationVersion, loading } = useApplicationVersion(
+			'hello-world',
+			undefined,
+		)
 
 		await new Promise((resolve) => setTimeout(resolve, 0))
 

@@ -24,7 +24,9 @@ test.describe('bootstrap-openbuild hello-world', () => {
 	// this identical journey (goto /apps/openbuild/builder/hello-world, then
 	// assert the same three seeded titles) and PASSES in CI — measured in run
 	// 31083894467. One of the two files was simply never revisited.
-	test('renders the three seeded hello-message objects on the index page', async ({ page }) => {
+	test('renders the three seeded hello-message objects on the index page', async ({
+		page,
+	}) => {
 		await page.goto('/apps/openbuild/builder/hello-world')
 
 		// The SPA needs a moment to fetch the manifest and resolve the index page.
@@ -38,7 +40,9 @@ test.describe('bootstrap-openbuild hello-world', () => {
 		// produces there and the old anchored regex could not have matched. The
 		// app path is still asserted in full — only the webroot style, an
 		// instance-configuration artifact, is allowed to vary.
-		await expect(page).toHaveURL(/(\/index\.php)?\/apps\/openbuild\/builder\/hello-world/)
+		await expect(page).toHaveURL(
+			/(\/index\.php)?\/apps\/openbuild\/builder\/hello-world/,
+		)
 
 		// Seed bodies — anchored on the canonical strings written by
 		// SeedHelloWorld::buildSampleMessages(). At minimum the page must
@@ -61,9 +65,16 @@ test.describe('bootstrap-openbuild hello-world', () => {
 	// API/contract is covered by tests/integration/*.postman_collection.json
 	// ("GET hello-world manifest returns 200 with version/menu/pages").
 	// Playwright is UI-only.
-	test.skip('returns the seeded manifest from the public endpoint', async ({ request }) => {
-		const response = await request.get('/index.php/apps/openbuild/api/applications/hello-world/manifest')
-		expect(response.status(), 'manifest endpoint must return 200 for the seeded slug').toBe(200)
+	test.skip('returns the seeded manifest from the public endpoint', async ({
+		request,
+	}) => {
+		const response = await request.get(
+			'/index.php/apps/openbuild/api/applications/hello-world/manifest',
+		)
+		expect(
+			response.status(),
+			'manifest endpoint must return 200 for the seeded slug',
+		).toBe(200)
 
 		const body = await response.json()
 		expect(body).toHaveProperty('version')

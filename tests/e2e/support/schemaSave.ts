@@ -40,8 +40,10 @@ import { expect, type Page } from '@playwright/test'
  * @return {boolean} whether this response is the schema write.
  */
 function isSchemaWrite(url: string, method: string): boolean {
-	return /\/apps\/openregister\/api\/schemas\/[^/?#]+(\?|#|$)/.test(url)
+	return (
+		/\/apps\/openregister\/api\/schemas\/[^/?#]+(\?|#|$)/.test(url)
 		&& ['PUT', 'PATCH', 'POST'].includes(method)
+	)
 }
 
 /**
@@ -62,5 +64,8 @@ export async function saveSchemaAndAwait(
 	)
 	await page.getByRole('button', { name: /^save$/i }).click()
 	const res = await saved
-	expect(res.ok(), `the schema write must succeed, got HTTP ${res.status()} from ${res.url()}`).toBeTruthy()
+	expect(
+		res.ok(),
+		`the schema write must succeed, got HTTP ${res.status()} from ${res.url()}`,
+	).toBeTruthy()
 }

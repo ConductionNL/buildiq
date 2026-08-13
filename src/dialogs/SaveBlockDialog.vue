@@ -20,9 +20,17 @@
 		@closing="onClose">
 		<div class="ob-save-block">
 			<p class="ob-save-block__intro">
-				{{ isSection
-					? t('openbuild', 'Save the selected widgets as a reusable block your organisation can insert into any page.')
-					: t('openbuild', 'Save this widget as a reusable block your organisation can insert into any page.') }}
+				{{
+					isSection
+						? t(
+								'openbuild',
+								'Save the selected widgets as a reusable block your organisation can insert into any page.',
+							)
+						: t(
+								'openbuild',
+								'Save this widget as a reusable block your organisation can insert into any page.',
+							)
+				}}
 			</p>
 
 			<NcTextField
@@ -39,33 +47,62 @@
 				@update:modelValue="form.description = $event" />
 			<NcTextField
 				:model-value="form.category"
-				:label="t('openbuild', 'Category (e.g. {examples})', { examples: categoryHint })"
+				:label="
+					t('openbuild', 'Category (e.g. {examples})', {
+						examples: categoryHint,
+					})
+				"
 				@update:modelValue="form.category = $event" />
 
 			<!-- Capture summary -->
 			<section class="ob-save-block__summary">
 				<h3>{{ t('openbuild', 'What will be captured') }}</h3>
 				<p v-if="dependencySummary.length">
-					{{ t('openbuild', 'Bindings reference {count} schema(s).', { count: dependencySummary.length }) }}
+					{{
+						t('openbuild', 'Bindings reference {count} schema(s).', {
+							count: dependencySummary.length,
+						})
+					}}
 				</p>
 				<ul v-if="dependencySummary.length" class="ob-save-block__schemas">
 					<li v-for="entry in dependencySummary" :key="entry.sourceSlug">
 						<code>{{ entry.slug }}</code>
 						<span v-if="entry.shared" class="ob-save-block__shared-flag">
-							{{ t('openbuild', '(shared schema — captured unchanged)') }}
+							{{
+								t(
+									'openbuild',
+									'(shared schema — captured unchanged)',
+								)
+							}}
 						</span>
 					</li>
 				</ul>
 				<p class="ob-save-block__no-rows">
-					{{ t('openbuild', 'No object data (rows) is captured — only structure.') }}
+					{{
+						t(
+							'openbuild',
+							'No object data (rows) is captured — only structure.',
+						)
+					}}
 				</p>
 			</section>
 
 			<p v-if="collisionError" class="ob-save-block__error" role="alert">
-				{{ t('openbuild', 'Two schemas would collide under the same name: {schemas}. Rename one before saving.', { schemas: collisionError }) }}
+				{{
+					t(
+						'openbuild',
+						'Two schemas would collide under the same name: {schemas}. Rename one before saving.',
+						{ schemas: collisionError },
+					)
+				}}
 			</p>
 			<p v-if="slugTakenError" class="ob-save-block__error" role="alert">
-				{{ t('openbuild', 'That slug is already used by a block in your organisation. Pick another slug.') }}
+				{{
+					t(
+						'openbuild',
+						'That slug is already used by a block in your organisation. Pick another slug.',
+					)
+				}}
 			</p>
 			<p v-if="saveError" class="ob-save-block__error" role="alert">
 				{{ saveError }}
@@ -76,10 +113,7 @@
 			<NcButton @click="onClose">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton
-				type="primary"
-				:disabled="!canSave || saving"
-				@click="save">
+			<NcButton type="primary" :disabled="!canSave || saving" @click="save">
 				{{ saveLabel }}
 			</NcButton>
 		</template>
@@ -218,7 +252,10 @@ export default {
 		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		slugValid() {
-			return /^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(this.form.slug) && this.form.slug.length <= 48
+			return (
+				/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(this.form.slug)
+				&& this.form.slug.length <= 48
+			)
 		},
 		/**
 		 * Whether the chosen slug already belongs to a visible block (v1:
@@ -238,12 +275,14 @@ export default {
 		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		canSave() {
-			return this.form.name.trim().length > 0
+			return (
+				this.form.name.trim().length > 0
 				&& this.slugValid
 				&& this.form.category.trim().length > 0
 				&& !!this.capture
 				&& !this.collisionError
 				&& !this.slugTakenError
+			)
 		},
 		/**
 		 * Save button label.
@@ -252,7 +291,9 @@ export default {
 		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		saveLabel() {
-			return this.saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save block')
+			return this.saving
+				? t('openbuild', 'Saving…')
+				: t('openbuild', 'Save block')
 		},
 	},
 	watch: {
@@ -306,8 +347,11 @@ export default {
 		 */
 		resetForm() {
 			const first = this.isSection
-				? ((this.fragment && this.fragment.widgets && this.fragment.widgets[0]) || {})
-				: (this.fragment || {})
+				? (this.fragment
+						&& this.fragment.widgets
+						&& this.fragment.widgets[0])
+					|| {}
+				: this.fragment || {}
 			const seedName = first.widgetKey || first.id || ''
 			this.form = {
 				name: seedName,
@@ -392,7 +436,11 @@ export default {
 				this.$emit('update:open', false)
 			} catch (e) {
 				const data = e?.response?.data
-				this.saveError = data?.detail || data?.error || e?.message || t('openbuild', 'Saving the block failed.')
+				this.saveError =
+					data?.detail
+					|| data?.error
+					|| e?.message
+					|| t('openbuild', 'Saving the block failed.')
 			} finally {
 				this.saving = false
 			}

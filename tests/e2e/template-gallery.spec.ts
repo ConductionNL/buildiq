@@ -50,9 +50,15 @@ test.describe('OpenBuild template gallery', () => {
 		await suppressSupportDialog(page)
 	})
 
-	test('REQ-OBTC-003: the gallery renders its Templates/Blocks tabs', async ({ page }) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/templates`, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('.template-gallery')).toBeVisible({ timeout: 45_000 })
+	test('REQ-OBTC-003: the gallery renders its Templates/Blocks tabs', async ({
+		page,
+	}) => {
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/templates`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await expect(page.locator('.template-gallery')).toBeVisible({
+			timeout: 45_000,
+		})
 		await dismissOverlays(page)
 
 		const tabs = page.getByRole('tab')
@@ -60,12 +66,20 @@ test.describe('OpenBuild template gallery', () => {
 		await expect(tabs.filter({ hasText: /^Blocks$/ })).toBeVisible()
 
 		// Templates is the default view.
-		await expect(page.locator('.template-gallery__view-btn--active')).toHaveText(/Templates/i)
+		await expect(page.locator('.template-gallery__view-btn--active')).toHaveText(
+			/Templates/i,
+		)
 	})
 
-	test('the Templates tab searches through OpenBuild, not the browser, and settles into a real state', async ({ page }) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/templates`, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('.template-gallery')).toBeVisible({ timeout: 45_000 })
+	test('the Templates tab searches through OpenBuild, not the browser, and settles into a real state', async ({
+		page,
+	}) => {
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/templates`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await expect(page.locator('.template-gallery')).toBeVisible({
+			timeout: 45_000,
+		})
 		await dismissOverlays(page)
 
 		// The search is server-backed: the browser must never call github.com
@@ -76,7 +90,10 @@ test.describe('OpenBuild template gallery', () => {
 		)
 		await page.getByRole('textbox', { name: /search github/i }).fill('openbuild')
 		const req = await searchRequest
-		expect(req.url(), 'the query must be forwarded to OpenBuild\'s own search endpoint').toContain('q=openbuild')
+		expect(
+			req.url(),
+			"the query must be forwarded to OpenBuild's own search endpoint",
+		).toContain('q=openbuild')
 
 		// Whatever GitHub answers, the tab must reach a terminal state rather
 		// than spin: cards, the "no matches" empty state, or the

@@ -17,7 +17,12 @@
 		@update:open="onClose">
 		<div class="openbuild-permission-history">
 			<p class="openbuild-permission-history__help">
-				{{ t('openbuild', 'Read-only view of permission changes and admin-bypass events on this application. Sourced from OpenRegister\'s per-object audit trail.') }}
+				{{
+					t(
+						'openbuild',
+						"Read-only view of permission changes and admin-bypass events on this application. Sourced from OpenRegister's per-object audit trail.",
+					)
+				}}
 			</p>
 
 			<NcEmptyContent
@@ -31,7 +36,12 @@
 			<NcEmptyContent
 				v-else-if="entries.length === 0"
 				:name="t('openbuild', 'No permission changes recorded')"
-				:description="t('openbuild', 'Future updates to owners / editors / viewers and any admin-bypass events will appear here.')">
+				:description="
+					t(
+						'openbuild',
+						'Future updates to owners / editors / viewers and any admin-bypass events will appear here.',
+					)
+				">
 				<template #icon>
 					<HistoryIcon :size="48" />
 				</template>
@@ -54,7 +64,9 @@
 					<div class="openbuild-permission-history__row-event">
 						{{ eventLabel(entry) }}
 					</div>
-					<div v-if="entry.before && entry.after" class="openbuild-permission-history__row-diff">
+					<div
+						v-if="entry.before && entry.after"
+						class="openbuild-permission-history__row-diff">
 						<div class="openbuild-permission-history__row-diff-col">
 							<span class="openbuild-permission-history__row-diff-h">
 								{{ t('openbuild', 'Before') }}
@@ -171,7 +183,9 @@ export default {
 					// state; the modal would not be visible to non-owners.
 					this.entries = []
 				} else {
-					showError(this.t('openbuild', 'Failed to load permission history'))
+					showError(
+						this.t('openbuild', 'Failed to load permission history'),
+					)
 				}
 			} finally {
 				this.loading = false

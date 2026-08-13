@@ -10,7 +10,7 @@ import { describe, it, expect } from 'vitest'
 import { isCellConditionValid } from '../../src/utils/feelCell.js'
 
 describe('isCellConditionValid', () => {
-	it('accepts don\'t-care tokens', () => {
+	it("accepts don't-care tokens", () => {
 		expect(isCellConditionValid('')).toBe(true)
 		expect(isCellConditionValid('-')).toBe(true)
 		expect(isCellConditionValid('*')).toBe(true)
@@ -19,7 +19,7 @@ describe('isCellConditionValid', () => {
 
 	it('accepts comparison operators', () => {
 		expect(isCellConditionValid('>=18')).toBe(true)
-		expect(isCellConditionValid('== \'open\'')).toBe(true)
+		expect(isCellConditionValid("== 'open'")).toBe(true)
 		expect(isCellConditionValid('< 100')).toBe(true)
 	})
 

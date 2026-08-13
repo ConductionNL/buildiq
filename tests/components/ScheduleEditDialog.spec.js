@@ -24,7 +24,8 @@ const NcSelectStub = {
 const NcTextFieldStub = {
 	name: 'NcTextField',
 	props: ['value', 'label', 'placeholder', 'type', 'error', 'helperText'],
-	template: '<input class="nctextfield-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)">',
+	template:
+		'<input class="nctextfield-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)">',
 }
 const NcCheckboxRadioSwitchStub = {
 	name: 'NcCheckboxRadioSwitch',
@@ -34,7 +35,8 @@ const NcCheckboxRadioSwitchStub = {
 const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled'],
-	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+	template:
+		'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 const NcModalStub = {
 	name: 'NcModal',
@@ -52,10 +54,11 @@ const stubs = {
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
 
-const factory = (propsData = {}) => mount(ScheduleEditDialog, {
-	propsData: { open: false, ...propsData },
-	stubs,
-})
+const factory = (propsData = {}) =>
+	mount(ScheduleEditDialog, {
+		propsData: { open: false, ...propsData },
+		stubs,
+	})
 
 /** Open the dialog (fires the watcher → hydrate + fetch). */
 const openDialog = async (wrapper) => {
@@ -164,7 +167,9 @@ describe('ScheduleEditDialog', () => {
 	})
 
 	it('populates the sync picker when the list loads', async () => {
-		axios.get.mockResolvedValueOnce({ data: { results: [{ id: 's1', name: 'BRP sync' }] } })
+		axios.get.mockResolvedValueOnce({
+			data: { results: [{ id: 's1', name: 'BRP sync' }] },
+		})
 		const wrapper = factory()
 		await openDialog(wrapper)
 		expect(wrapper.vm.syncPickerAvailable).toBe(true)
@@ -183,7 +188,13 @@ describe('ScheduleEditDialog', () => {
 	})
 
 	it('reverse-maps an existing entry: preset interval selects its preset', async () => {
-		const entry = { id: 'weekly-one', enabled: true, interval: 604800, action: 'openconnector:synchronization', arguments: { synchronizationId: 'abc' } }
+		const entry = {
+			id: 'weekly-one',
+			enabled: true,
+			interval: 604800,
+			action: 'openconnector:synchronization',
+			arguments: { synchronizationId: 'abc' },
+		}
 		const wrapper = factory({ entry })
 		await openDialog(wrapper)
 		expect(wrapper.vm.cadenceOption.id).toBe('weekly')
@@ -191,7 +202,13 @@ describe('ScheduleEditDialog', () => {
 	})
 
 	it('reverse-maps a non-preset interval to the custom-interval escape hatch', async () => {
-		const entry = { id: 'odd-one', enabled: true, interval: 43200, action: 'openconnector:synchronization', arguments: { synchronizationId: 'abc' } }
+		const entry = {
+			id: 'odd-one',
+			enabled: true,
+			interval: 43200,
+			action: 'openconnector:synchronization',
+			arguments: { synchronizationId: 'abc' },
+		}
 		const wrapper = factory({ entry })
 		await openDialog(wrapper)
 		expect(wrapper.vm.cadenceOption.id).toBe('custom-interval')
@@ -200,7 +217,13 @@ describe('ScheduleEditDialog', () => {
 	})
 
 	it('reverse-maps a cron entry to custom-cron', async () => {
-		const entry = { id: 'cron-one', enabled: false, cron: '0 3 * * 1', action: 'openconnector:synchronization', arguments: { synchronizationId: 'abc' } }
+		const entry = {
+			id: 'cron-one',
+			enabled: false,
+			cron: '0 3 * * 1',
+			action: 'openconnector:synchronization',
+			arguments: { synchronizationId: 'abc' },
+		}
 		const wrapper = factory({ entry })
 		await openDialog(wrapper)
 		expect(wrapper.vm.cadenceOption.id).toBe('custom-cron')

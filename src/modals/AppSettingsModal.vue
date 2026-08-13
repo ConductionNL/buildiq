@@ -10,7 +10,10 @@
   - calls. Kept in its own file per ADR-004 gate-modal-isolation.
   -->
 <template>
-	<NcModal v-if="open" :name="t('openbuild', 'App settings')" @close="$emit('update:open', false)">
+	<NcModal
+		v-if="open"
+		:name="t('openbuild', 'App settings')"
+		@close="$emit('update:open', false)">
 		<div class="app-settings">
 			<h3 class="app-settings__title">
 				{{ appName }}
@@ -25,7 +28,12 @@
 					{{ t('openbuild', 'Published') }}
 				</NcCheckboxRadioSwitch>
 				<p class="app-settings__hint">
-					{{ t('openbuild', 'Published apps appear in the Nextcloud app menu. Drafts are hidden.') }}
+					{{
+						t(
+							'openbuild',
+							'Published apps appear in the Nextcloud app menu. Drafts are hidden.',
+						)
+					}}
 				</p>
 			</div>
 
@@ -38,7 +46,12 @@
 					{{ t('openbuild', 'Allow per-user customisation') }}
 				</NcCheckboxRadioSwitch>
 				<p class="app-settings__hint">
-					{{ t('openbuild', 'Let each user layer their own manifest changes on top of the shared app.') }}
+					{{
+						t(
+							'openbuild',
+							'Let each user layer their own manifest changes on top of the shared app.',
+						)
+					}}
 				</p>
 			</div>
 
@@ -47,9 +60,17 @@
 					{{ t('openbuild', 'Data registers') }}
 				</h4>
 				<p class="app-settings__hint app-settings__hint--inline">
-					{{ t('openbuild', 'Shared, non-versioned OpenRegister registers this app binds to alongside its own per-version register (e.g. a dataset fed by OpenConnector). Not owned by this app — promotion and export treat them as reference-only.') }}
+					{{
+						t(
+							'openbuild',
+							'Shared, non-versioned OpenRegister registers this app binds to alongside its own per-version register (e.g. a dataset fed by OpenConnector). Not owned by this app — promotion and export treat them as reference-only.',
+						)
+					}}
 				</p>
-				<div v-for="(row, index) in rows" :key="index" class="app-settings__data-register-row">
+				<div
+					v-for="(row, index) in rows"
+					:key="index"
+					class="app-settings__data-register-row">
 					<NcTextField
 						:model-value="row.register"
 						:label="t('openbuild', 'Register slug')"
@@ -85,7 +106,10 @@ import NcTextField from '@nextcloud/vue/components/NcTextField'
 export default {
 	name: 'AppSettingsModal',
 	components: {
-		NcModal, NcButton, NcCheckboxRadioSwitch, NcTextField,
+		NcModal,
+		NcButton,
+		NcCheckboxRadioSwitch,
+		NcTextField,
 	},
 	props: {
 		/** Whether the modal is shown (bind with `.sync`). */
@@ -101,7 +125,12 @@ export default {
 		/** Whether an action is in flight (disables the switches). */
 		busy: { type: Boolean, default: false },
 	},
-	emits: ['update:open', 'set-published', 'update:allow-overrides', 'update:data-registers'],
+	emits: [
+		'update:open',
+		'set-published',
+		'update:allow-overrides',
+		'update:data-registers',
+	],
 	data() {
 		return {
 			// Staged editing rows, kept in sync with the `dataRegisters` prop
@@ -190,7 +219,10 @@ export default {
 		 */
 		emitRows() {
 			const cleaned = this.rows
-				.map((row) => ({ register: (row.register || '').trim(), label: (row.label || '').trim() }))
+				.map((row) => ({
+					register: (row.register || '').trim(),
+					label: (row.label || '').trim(),
+				}))
 				.filter((row) => row.register !== '')
 				.map((row) => (row.label !== '' ? row : { register: row.register }))
 			this.$emit('update:data-registers', cleaned)

@@ -7,7 +7,12 @@
  * Spec: openconnector-api-sources (REQ-OCAS-003, REQ-OCAS-006).
  */
 import { describe, it, expect } from 'vitest'
-import { resolveSelector, projectFields, extractItems, flattenSample } from '../../src/services/selectors.js'
+import {
+	resolveSelector,
+	projectFields,
+	extractItems,
+	flattenSample,
+} from '../../src/services/selectors.js'
 
 describe('resolveSelector', () => {
 	it('resolves a nested dot path', () => {

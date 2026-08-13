@@ -40,7 +40,12 @@ import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'DashboardPageEditor',
-	components: { WidgetBuilder, LayoutItemBuilder, InlineFieldMark, DataSourceOriginToggle },
+	components: {
+		WidgetBuilder,
+		LayoutItemBuilder,
+		InlineFieldMark,
+		DataSourceOriginToggle,
+	},
 	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {

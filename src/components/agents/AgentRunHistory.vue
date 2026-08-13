@@ -17,10 +17,16 @@
 		<NcEmptyContent
 			v-else-if="runs.length === 0"
 			:name="t('openbuild', 'No runs yet')"
-			:description="t('openbuild', 'Every plan this agent generates — applied, rolled back, or discarded — appears here with full tool-call detail.')" />
+			:description="
+				t(
+					'openbuild',
+					'Every plan this agent generates — applied, rolled back, or discarded — appears here with full tool-call detail.',
+				)
+			" />
 
 		<ul v-else class="agent-run-history__list">
-			<li v-for="run in runs"
+			<li
+				v-for="run in runs"
 				:key="run.id || run.uuid"
 				class="agent-run-history__run"
 				data-testid="agent-run-row">
@@ -31,22 +37,35 @@
 						data-testid="agent-run-outcome">
 						{{ outcomeLabel(run.outcome) }}
 					</span>
-					<time class="agent-run-history__timestamp">{{ run.createdAt }}</time>
+					<time class="agent-run-history__timestamp">{{
+						run.createdAt
+					}}</time>
 				</div>
 				<p class="agent-run-history__prompt">
 					{{ run.prompt }}
 				</p>
 
-				<ul v-if="(run.toolCalls || []).length > 0" class="agent-run-history__tool-calls">
-					<li v-for="(call, idx) in run.toolCalls"
+				<ul
+					v-if="(run.toolCalls || []).length > 0"
+					class="agent-run-history__tool-calls">
+					<li
+						v-for="(call, idx) in run.toolCalls"
 						:key="idx"
 						class="agent-run-history__tool-call"
 						data-testid="agent-run-tool-call">
-						<code class="agent-run-history__tool-name">{{ call.tool }}</code>
+						<code class="agent-run-history__tool-name">{{
+							call.tool
+						}}</code>
 						<details class="agent-run-history__tool-detail">
-							<summary>{{ t('openbuild', 'Arguments & result') }}</summary>
-							<pre class="agent-run-history__tool-json">{{ formatJson(call.arguments) }}</pre>
-							<pre class="agent-run-history__tool-json">{{ formatJson(call.result) }}</pre>
+							<summary>
+								{{ t('openbuild', 'Arguments & result') }}
+							</summary>
+							<pre class="agent-run-history__tool-json">{{
+								formatJson(call.arguments)
+							}}</pre>
+							<pre class="agent-run-history__tool-json">{{
+								formatJson(call.result)
+							}}</pre>
 						</details>
 					</li>
 				</ul>
@@ -116,7 +135,9 @@ export default {
 			this.loading = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl(`/apps/openbuild/api/agents/${this.agentId}/runs`)
+				const url = generateUrl(
+					`/apps/openbuild/api/agents/${this.agentId}/runs`,
+				)
 				const { data } = await axios.get(url)
 				this.runs = Array.isArray(data) ? data : []
 			} catch (error) {

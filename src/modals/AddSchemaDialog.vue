@@ -24,7 +24,11 @@
 				type="primary"
 				:disabled="!isValid || submitting"
 				@click="onConfirm">
-				{{ submitting ? t('openbuild', 'Saving…') : t('openbuild', 'Add schema') }}
+				{{
+					submitting
+						? t('openbuild', 'Saving…')
+						: t('openbuild', 'Add schema')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -64,9 +68,11 @@ export default {
 		 * @return {boolean} True when the form is valid.
 		 */
 		isValid() {
-			return SLUG_PATTERN.test(this.local.slug)
+			return (
+				SLUG_PATTERN.test(this.local.slug)
 				&& this.local.title.trim().length > 0
 				&& SEMVER_PATTERN.test(this.local.version)
+			)
 		},
 	},
 	watch: {
@@ -79,7 +85,12 @@ export default {
 		 */
 		open(value) {
 			if (value) {
-				this.local = { slug: '', title: '', description: '', version: '0.1.0' }
+				this.local = {
+					slug: '',
+					title: '',
+					description: '',
+					version: '0.1.0',
+				}
 			}
 		},
 	},

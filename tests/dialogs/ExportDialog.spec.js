@@ -28,12 +28,14 @@ const baseStubs = {
 	NcDialog: {
 		name: 'NcDialog',
 		props: ['name', 'canClose', 'size'],
-		template: '<div class="nc-dialog-stub"><slot /><div class="nc-dialog-actions"><slot name="actions" /></div></div>',
+		template:
+			'<div class="nc-dialog-stub"><slot /><div class="nc-dialog-actions"><slot name="actions" /></div></div>',
 	},
 	NcButton: {
 		name: 'NcButton',
 		props: ['type', 'disabled'],
-		template: '<button :disabled="disabled" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
+		template:
+			'<button :disabled="disabled" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
 	},
 	NcSelect: {
 		name: 'NcSelect',
@@ -43,12 +45,14 @@ const baseStubs = {
 	NcCheckboxRadioSwitch: {
 		name: 'NcCheckboxRadioSwitch',
 		props: ['checked', 'disabled'],
-		template: '<label class="nc-checkbox-stub"><input type="checkbox" :checked="checked" :disabled="disabled" @change="$emit(\'update:checked\', $event.target.checked)"><slot /></label>',
+		template:
+			'<label class="nc-checkbox-stub"><input type="checkbox" :checked="checked" :disabled="disabled" @change="$emit(\'update:checked\', $event.target.checked)"><slot /></label>',
 	},
 	NcTextField: {
 		name: 'NcTextField',
 		props: ['value', 'label', 'disabled', 'type', 'autocomplete'],
-		template: '<input class="nc-textfield-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
+		template:
+			'<input class="nc-textfield-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
 	},
 }
 
@@ -86,7 +90,11 @@ describe('ExportDialog — Data registers includeData toggle (data-registers-run
 		// meaningful here: the test-harness t() stub does not interpolate
 		// {placeholder} tokens, see tests/vitest/setup.js).
 		expect(wrapper.vm.dataRegisterChoices).toEqual([
-			{ register: 'spectr', label: 'Spectr market intelligence data', includeData: false },
+			{
+				register: 'spectr',
+				label: 'Spectr market intelligence data',
+				includeData: false,
+			},
 			{ register: 'bag-adressen', label: undefined, includeData: false },
 		])
 		// One toggle per binding, plus the pre-existing "Include seed data" switch.
@@ -97,7 +105,9 @@ describe('ExportDialog — Data registers includeData toggle (data-registers-run
 		const wrapper = mountDialog({
 			dataRegisters: [{ register: 'spectr' }, { register: 'bag-adressen' }],
 		})
-		expect(wrapper.vm.dataRegisterChoices.every((c) => c.includeData === false)).toBe(true)
+		expect(
+			wrapper.vm.dataRegisterChoices.every((c) => c.includeData === false),
+		).toBe(true)
 	})
 
 	it('submit payload mirrors the bindings 1:1 with the resolved includeData flags', async () => {

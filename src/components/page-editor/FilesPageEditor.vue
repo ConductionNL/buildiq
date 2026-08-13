@@ -28,7 +28,7 @@
 					:value="config.folder || ''"
 					:placeholder="t('openbuild', 'e.g. /Documents or Attachments')"
 					:aria-invalid="isInvalid('folder')"
-					@input="update('folder', $event.target.value)">
+					@input="update('folder', $event.target.value)" />
 				<InlineFieldMark :error="markFor('folder')" />
 			</label>
 		</fieldset>
@@ -36,7 +36,10 @@
 		<fieldset class="files-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Allowed types (optional)') }}</legend>
 			<div class="files-page-editor__tags">
-				<span v-for="(typ, index) in allowedTypes" :key="index" class="files-page-editor__tag">
+				<span
+					v-for="(typ, index) in allowedTypes"
+					:key="index"
+					class="files-page-editor__tag">
 					{{ typ }}
 					<button
 						type="button"
@@ -57,14 +60,22 @@
 					:aria-invalid="isInvalid('allowedTypes')"
 					@keydown.enter.prevent="commitDraft"
 					@keydown.,.prevent="commitDraft"
-					@blur="commitDraft">
+					@blur="commitDraft" />
 				<datalist id="files-page-editor-type-suggestions">
-					<option v-for="opt in TYPE_SUGGESTIONS" :key="opt" :value="opt" />
+					<option
+						v-for="opt in TYPE_SUGGESTIONS"
+						:key="opt"
+						:value="opt" />
 				</datalist>
 			</div>
 			<InlineFieldMark :error="markFor('allowedTypes')" />
 			<p class="files-page-editor__hint">
-				{{ t('openbuild', 'MIME types (image/png) or extensions (.pdf). Leave empty to allow everything.') }}
+				{{
+					t(
+						'openbuild',
+						'MIME types (image/png) or extensions (.pdf). Leave empty to allow everything.',
+					)
+				}}
 			</p>
 		</fieldset>
 	</div>
@@ -135,7 +146,9 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		allowedTypes() {
-			return Array.isArray(this.config.allowedTypes) ? this.config.allowedTypes : []
+			return Array.isArray(this.config.allowedTypes)
+				? this.config.allowedTypes
+				: []
 		},
 	},
 	methods: {
@@ -150,7 +163,11 @@ export default {
 		 */
 		update(key, value) {
 			const next = { ...this.config }
-			if (value === '' || value === null || (Array.isArray(value) && value.length === 0)) {
+			if (
+				value === ''
+				|| value === null
+				|| (Array.isArray(value) && value.length === 0)
+			) {
 				delete next[key]
 			} else {
 				next[key] = value

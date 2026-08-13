@@ -26,12 +26,22 @@
 		<header class="openbuild-access-editor__header">
 			<h3>{{ t('openbuild', 'Access') }}</h3>
 			<p class="openbuild-access-editor__hint">
-				{{ t('openbuild', 'Scope who can read, create, update, or delete records of this schema. This is enforced by OpenRegister — it is the actual security boundary, not just navigation hiding.') }}
+				{{
+					t(
+						'openbuild',
+						'Scope who can read, create, update, or delete records of this schema. This is enforced by OpenRegister — it is the actual security boundary, not just navigation hiding.',
+					)
+				}}
 			</p>
 		</header>
 
 		<NcNoteCard v-if="readOnly" type="info">
-			{{ t('openbuild', 'Access scopes on the production version can only be changed by an owner.') }}
+			{{
+				t(
+					'openbuild',
+					'Access scopes on the production version can only be changed by an owner.',
+				)
+			}}
 		</NcNoteCard>
 
 		<ul class="openbuild-access-editor__rows">
@@ -52,7 +62,9 @@
 						:disabled="readOnly"
 						label="label"
 						track-by="value"
-						@update:modelValue="onKindChange(row.op, $event ? $event.value : 'everyone')" />
+						@update:modelValue="
+							onKindChange(row.op, $event ? $event.value : 'everyone')
+						" />
 
 					<NcSelect
 						v-if="row.kind === 'group'"
@@ -67,44 +79,78 @@
 						@update:modelValue="onGroupsChange(row.op, $event)"
 						@tag="onGroupTag(row.op, $event)" />
 
-					<div v-if="row.kind === 'condition'" class="openbuild-access-editor__condition">
+					<div
+						v-if="row.kind === 'condition'"
+						class="openbuild-access-editor__condition">
 						<NcSelect
 							:input-label="t('openbuild', 'Field')"
-							:model-value="fieldOption(row.condition && row.condition.field)"
+							:model-value="
+								fieldOption(row.condition && row.condition.field)
+							"
 							:options="fieldOptions"
 							:clearable="false"
 							:disabled="readOnly"
 							label="label"
 							track-by="value"
-							@update:modelValue="onConditionFieldChange(row.op, $event ? $event.value : '')" />
+							@update:modelValue="
+								onConditionFieldChange(
+									row.op,
+									$event ? $event.value : '',
+								)
+							" />
 						<NcSelect
 							:input-label="t('openbuild', 'Operator')"
-							:model-value="{ value: 'equals', label: t('openbuild', 'equals') }"
-							:options="[{ value: 'equals', label: t('openbuild', 'equals') }]"
+							:model-value="{
+								value: 'equals',
+								label: t('openbuild', 'equals'),
+							}"
+							:options="[
+								{ value: 'equals', label: t('openbuild', 'equals') },
+							]"
 							:clearable="false"
 							:disabled="true"
 							label="label"
 							track-by="value" />
 						<NcTextField
-							:model-value="(row.condition && row.condition.value) || ''"
+							:model-value="
+								(row.condition && row.condition.value) || ''
+							"
 							:label="t('openbuild', 'Value (@user.uid or a literal)')"
 							:disabled="readOnly"
-							@update:modelValue="onConditionValueChange(row.op, $event)" />
+							@update:modelValue="
+								onConditionValueChange(row.op, $event)
+							" />
 					</div>
 				</template>
 
 				<template v-else>
 					<p class="openbuild-access-editor__managed-note">
-						{{ t('openbuild', 'Managed outside the designer — this entry is preserved as-is on save.') }}
+						{{
+							t(
+								'openbuild',
+								'Managed outside the designer — this entry is preserved as-is on save.',
+							)
+						}}
 					</p>
-					<pre class="openbuild-access-editor__managed-raw">{{ rawPreview(row) }}</pre>
+					<pre class="openbuild-access-editor__managed-raw">{{
+						rawPreview(row)
+					}}</pre>
 				</template>
 			</li>
 		</ul>
 
 		<div v-if="hasExtraKeys" class="openbuild-access-editor__extra">
-			<h4>{{ t('openbuild', 'Additional authorization metadata (managed outside the designer)') }}</h4>
-			<pre class="openbuild-access-editor__managed-raw">{{ extraKeysPreview }}</pre>
+			<h4>
+				{{
+					t(
+						'openbuild',
+						'Additional authorization metadata (managed outside the designer)',
+					)
+				}}
+			</h4>
+			<pre class="openbuild-access-editor__managed-raw">{{
+				extraKeysPreview
+			}}</pre>
 		</div>
 	</section>
 </template>
@@ -125,12 +171,14 @@ const OPS = ['read', 'create', 'update', 'delete']
  * @return {boolean} True when the shape is well-formed.
  */
 function isValidCondition(entry) {
-	return !!entry
+	return (
+		!!entry
 		&& typeof entry === 'object'
 		&& typeof entry.field === 'string'
 		&& entry.field !== ''
 		&& entry.operator === 'equals'
 		&& typeof entry.value === 'string'
+	)
 }
 
 /**
@@ -142,8 +190,12 @@ function isValidCondition(entry) {
  * @return {boolean} True when the array is a representable group list.
  */
 function isGroupList(list) {
-	return Array.isArray(list) && list.length > 0 && list.every(
-		(v) => typeof v === 'string' && v !== '@creator' && !v.startsWith('@'),
+	return (
+		Array.isArray(list)
+		&& list.length > 0
+		&& list.every(
+			(v) => typeof v === 'string' && v !== '@creator' && !v.startsWith('@'),
+		)
 	)
 }
 
@@ -168,7 +220,11 @@ function parseOpRow(op, auth) {
 				},
 			}
 		}
-		return { op, kind: 'unrepresentable', raw: { [op]: auth[op], conditions: conditionEntry } }
+		return {
+			op,
+			kind: 'unrepresentable',
+			raw: { [op]: auth[op], conditions: conditionEntry },
+		}
 	}
 	const list = auth[op]
 	if (list === undefined) {
@@ -196,7 +252,8 @@ function parseOpRow(op, auth) {
  * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-002
  */
 export function accessToEditor(authorization) {
-	const auth = (authorization && typeof authorization === 'object') ? authorization : {}
+	const auth =
+		authorization && typeof authorization === 'object' ? authorization : {}
 	const rows = OPS.map((op) => parseOpRow(op, auth))
 	const extraKeys = {}
 	Object.keys(auth).forEach((key) => {
@@ -220,7 +277,10 @@ export function accessToEditor(authorization) {
  * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-002
  */
 export function editorToAccess(access, rawAuthorization) {
-	const raw = (rawAuthorization && typeof rawAuthorization === 'object') ? rawAuthorization : {}
+	const raw =
+		rawAuthorization && typeof rawAuthorization === 'object'
+			? rawAuthorization
+			: {}
 	const result = {}
 	// Preserve unrelated top-level keys verbatim (e.g. hand-authored `_note`).
 	Object.keys(raw).forEach((key) => {
@@ -229,7 +289,7 @@ export function editorToAccess(access, rawAuthorization) {
 		}
 	})
 	const conditions = {}
-	const rows = (access && Array.isArray(access.rows)) ? access.rows : []
+	const rows = access && Array.isArray(access.rows) ? access.rows : []
 	rows.forEach((row) => {
 		const { op } = row
 		if (row.kind === 'unrepresentable') {
@@ -237,7 +297,10 @@ export function editorToAccess(access, rawAuthorization) {
 			if (Object.prototype.hasOwnProperty.call(raw, op)) {
 				result[op] = raw[op]
 			}
-			if (raw.conditions && Object.prototype.hasOwnProperty.call(raw.conditions, op)) {
+			if (
+				raw.conditions
+				&& Object.prototype.hasOwnProperty.call(raw.conditions, op)
+			) {
 				conditions[op] = raw.conditions[op]
 			}
 			return
@@ -247,7 +310,9 @@ export function editorToAccess(access, rawAuthorization) {
 			return
 		}
 		if (row.kind === 'group') {
-			const groups = Array.isArray(row.groups) ? row.groups.filter((g) => !!g) : []
+			const groups = Array.isArray(row.groups)
+				? row.groups.filter((g) => !!g)
+				: []
 			if (groups.length > 0) {
 				result[op] = groups
 			}
@@ -316,14 +381,23 @@ export default {
 		 */
 		kindOptions() {
 			const options = [
-				{ value: 'everyone', label: this.t('openbuild', 'Everyone with app access') },
+				{
+					value: 'everyone',
+					label: this.t('openbuild', 'Everyone with app access'),
+				},
 				{ value: 'group', label: this.t('openbuild', 'Specific groups') },
 			]
 			if (this.capabilityScopes.includes('creator')) {
-				options.push({ value: 'own', label: this.t('openbuild', 'Own records (creator)') })
+				options.push({
+					value: 'own',
+					label: this.t('openbuild', 'Own records (creator)'),
+				})
 			}
 			if (this.capabilityScopes.includes('condition')) {
-				options.push({ value: 'condition', label: this.t('openbuild', 'Condition') })
+				options.push({
+					value: 'condition',
+					label: this.t('openbuild', 'Condition'),
+				})
 			}
 			return options
 		},
@@ -334,7 +408,10 @@ export default {
 		 * @return {Array<{value: string, label: string}>} Group options.
 		 */
 		availableGroupOptions() {
-			return (this.availableGroups || []).map((gid) => ({ value: gid, label: gid }))
+			return (this.availableGroups || []).map((gid) => ({
+				value: gid,
+				label: gid,
+			}))
 		},
 		/**
 		 * Field picker options for condition rows, sourced from the
@@ -343,7 +420,10 @@ export default {
 		 * @return {Array<{value: string, label: string}>} Field options.
 		 */
 		fieldOptions() {
-			return (this.fieldNames || []).map((name) => ({ value: name, label: name }))
+			return (this.fieldNames || []).map((name) => ({
+				value: name,
+				label: name,
+			}))
 		},
 		/**
 		 * Whether any unrelated top-level authorization keys are present.
@@ -351,7 +431,11 @@ export default {
 		 * @return {boolean} True when `extraKeys` is non-empty.
 		 */
 		hasExtraKeys() {
-			return !!(this.access && this.access.extraKeys && Object.keys(this.access.extraKeys).length > 0)
+			return !!(
+				this.access
+				&& this.access.extraKeys
+				&& Object.keys(this.access.extraKeys).length > 0
+			)
 		},
 		/**
 		 * Pretty-printed preview of the preserved extra top-level keys.
@@ -359,7 +443,11 @@ export default {
 		 * @return {string} JSON preview.
 		 */
 		extraKeysPreview() {
-			return JSON.stringify((this.access && this.access.extraKeys) || {}, null, 2)
+			return JSON.stringify(
+				(this.access && this.access.extraKeys) || {},
+				null,
+				2,
+			)
 		},
 	},
 	methods: {
@@ -396,7 +484,10 @@ export default {
 			if (row.kind === 'own' && !this.capabilityScopes.includes('creator')) {
 				return false
 			}
-			if (row.kind === 'condition' && !this.capabilityScopes.includes('condition')) {
+			if (
+				row.kind === 'condition'
+				&& !this.capabilityScopes.includes('condition')
+			) {
 				return false
 			}
 			return true
@@ -423,7 +514,9 @@ export default {
 		 * @return {object|null} Matching option.
 		 */
 		kindOption(kind) {
-			return this.kindOptions.find((o) => o.value === kind) || this.kindOptions[0]
+			return (
+				this.kindOptions.find((o) => o.value === kind) || this.kindOptions[0]
+			)
 		},
 		/**
 		 * Resolve the selected group options for a row's group tag input.
@@ -467,7 +560,11 @@ export default {
 			} else if (kind === 'own') {
 				this.emitRowChange(op, { op, kind: 'own' })
 			} else if (kind === 'condition') {
-				this.emitRowChange(op, { op, kind: 'condition', condition: { field: '', operator: 'equals', value: '' } })
+				this.emitRowChange(op, {
+					op,
+					kind: 'condition',
+					condition: { field: '', operator: 'equals', value: '' },
+				})
 			} else {
 				this.emitRowChange(op, { op, kind: 'everyone' })
 			}
@@ -489,8 +586,8 @@ export default {
 			// shapes and drop anything empty.
 			const groups = Array.isArray(options)
 				? options
-					.map((o) => (typeof o === 'string' ? o : o?.value))
-					.filter((g) => g !== undefined && g !== null && g !== '')
+						.map((o) => (typeof o === 'string' ? o : o?.value))
+						.filter((g) => g !== undefined && g !== null && g !== '')
 				: []
 			this.emitRowChange(op, { op, kind: 'group', groups })
 		},
@@ -518,7 +615,11 @@ export default {
 		 */
 		onConditionFieldChange(op, field) {
 			const row = this.rows.find((r) => r.op === op)
-			const condition = { ...(row && row.condition), field, operator: 'equals' }
+			const condition = {
+				...(row && row.condition),
+				field,
+				operator: 'equals',
+			}
 			this.emitRowChange(op, { op, kind: 'condition', condition })
 		},
 		/**
@@ -530,7 +631,11 @@ export default {
 		 */
 		onConditionValueChange(op, value) {
 			const row = this.rows.find((r) => r.op === op)
-			const condition = { ...(row && row.condition), operator: 'equals', value }
+			const condition = {
+				...(row && row.condition),
+				operator: 'equals',
+				value,
+			}
 			this.emitRowChange(op, { op, kind: 'condition', condition })
 		},
 	},

@@ -29,12 +29,14 @@ const baseStubs = {
 	NcButton: {
 		name: 'NcButton',
 		props: ['type', 'disabled'],
-		template: '<button :disabled="disabled" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
+		template:
+			'<button :disabled="disabled" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
 	},
 	NcTextField: {
 		name: 'NcTextField',
 		props: ['value', 'label', 'placeholder'],
-		template: '<input class="nc-textfield-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
+		template:
+			'<input class="nc-textfield-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
 	},
 }
 
@@ -70,7 +72,10 @@ describe('CloneTemplateDialog.vue', () => {
 		const submitEvents = wrapper.emitted('submit')
 		expect(submitEvents).toBeTruthy()
 		expect(submitEvents.length).toBe(1)
-		expect(submitEvents[0][0]).toEqual({ name: 'My permits', slug: 'my-permits' })
+		expect(submitEvents[0][0]).toEqual({
+			name: 'My permits',
+			slug: 'my-permits',
+		})
 	})
 
 	it('does not emit submit and surfaces an error when the slug shape is invalid', async () => {

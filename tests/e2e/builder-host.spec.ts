@@ -21,7 +21,9 @@ import { dismissFirstVisitOverlays } from './support/overlays'
 // URL assertion on the inner router's path, and the seeded body text), so they
 // are un-skipped as written rather than rewritten.
 test.describe('BuilderHost — hello-world journey', () => {
-	test('loads /builder/hello-world and renders the seeded index page', async ({ page }) => {
+	test('loads /builder/hello-world and renders the seeded index page', async ({
+		page,
+	}) => {
 		await page.goto('/apps/openbuild/builder/hello-world')
 
 		await expect(page).toHaveURL(/\/apps\/openbuild\/builder\/hello-world/)
@@ -52,13 +54,17 @@ test.describe('BuilderHost — hello-world journey', () => {
 
 		// Click the first seeded message — the manifest defines the detail
 		// page at /messages/:id so the inner router forwards us there.
-		const firstMessage = page.getByText('Welcome to OpenBuild', { exact: false }).first()
+		const firstMessage = page
+			.getByText('Welcome to OpenBuild', { exact: false })
+			.first()
 		await expect(firstMessage).toBeVisible({ timeout: 15_000 })
 		await firstMessage.click()
 
 		// The URL should now include /messages/<uuid> (the inner router's path,
 		// captured by BuilderHost's :pathMatch wildcard).
-		await expect(page).toHaveURL(/\/builder\/hello-world\/messages\//, { timeout: 10_000 })
+		await expect(page).toHaveURL(/\/builder\/hello-world\/messages\//, {
+			timeout: 10_000,
+		})
 
 		// And the detail page must show the message body.
 		await expect(
@@ -95,7 +101,10 @@ test.describe('BuilderHost — hello-world journey', () => {
 		).toBeVisible({ timeout: 15_000 })
 		// …and it must be an editable control, not just a labelled wrapper.
 		const titleInput = titleField.locator('input, textarea').first()
-		await expect(titleInput, 'the title field must expose an editable control').toBeVisible({ timeout: 10_000 })
+		await expect(
+			titleInput,
+			'the title field must expose an editable control',
+		).toBeVisible({ timeout: 10_000 })
 		await expect(titleInput).toBeEditable()
 
 		// The form is the manifest's `MessageCreate` page, so it must also carry

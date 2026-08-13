@@ -19,7 +19,7 @@
 						type="radio"
 						:checked="submitShape === 'handler'"
 						value="handler"
-						@change="setSubmitShape('handler')">
+						@change="setSubmitShape('handler')" />
 					{{ t('openbuild', 'submitHandler (registry key)') }}
 				</label>
 				<label class="form-page-editor__inline">
@@ -27,7 +27,7 @@
 						type="radio"
 						:checked="submitShape === 'endpoint'"
 						value="endpoint"
-						@change="setSubmitShape('endpoint')">
+						@change="setSubmitShape('endpoint')" />
 					{{ t('openbuild', 'submitEndpoint (URL)') }}
 				</label>
 			</div>
@@ -39,7 +39,7 @@
 				:placeholder="t('openbuild', 'customComponents registry key')"
 				:aria-label="t('openbuild', 'customComponents registry key')"
 				:aria-invalid="isInvalid('submitHandler')"
-				@input="setSubmitHandler($event.target.value)">
+				@input="setSubmitHandler($event.target.value)" />
 			<input
 				v-else-if="submitShape === 'endpoint'"
 				type="text"
@@ -48,22 +48,23 @@
 				:placeholder="t('openbuild', '/api/objects/:slug/...')"
 				:aria-label="t('openbuild', '/api/objects/:slug/...')"
 				:aria-invalid="isInvalid('submitEndpoint')"
-				@input="setSubmitEndpoint($event.target.value)">
-			<InlineFieldMark :error="markFor(submitShape === 'endpoint' ? 'submitEndpoint' : 'submitHandler')" />
+				@input="setSubmitEndpoint($event.target.value)" />
+			<InlineFieldMark
+				:error="
+					markFor(
+						submitShape === 'endpoint'
+							? 'submitEndpoint'
+							: 'submitHandler',
+					)
+				" />
 			<label class="form-page-editor__group-row">
 				{{ t('openbuild', 'Method') }}
 				<select
 					:value="config.submitMethod || 'POST'"
 					@change="update('submitMethod', $event.target.value)">
-					<option value="POST">
-						POST
-					</option>
-					<option value="PUT">
-						PUT
-					</option>
-					<option value="PATCH">
-						PATCH
-					</option>
+					<option value="POST">POST</option>
+					<option value="PUT">PUT</option>
+					<option value="PATCH">PATCH</option>
 				</select>
 			</label>
 			<label class="form-page-editor__group-row">
@@ -71,15 +72,9 @@
 				<select
 					:value="config.mode || 'public'"
 					@change="update('mode', $event.target.value)">
-					<option value="public">
-						public
-					</option>
-					<option value="create">
-						create
-					</option>
-					<option value="edit">
-						edit
-					</option>
+					<option value="public">public</option>
+					<option value="create">create</option>
+					<option value="edit">edit</option>
 				</select>
 			</label>
 			<label class="form-page-editor__group-row">
@@ -88,7 +83,7 @@
 					type="text"
 					:value="config.submitLabel || ''"
 					:placeholder="t('openbuild', 'i18n key')"
-					@input="update('submitLabel', $event.target.value)">
+					@input="update('submitLabel', $event.target.value)" />
 			</label>
 			<label class="form-page-editor__group-row">
 				{{ t('openbuild', 'Success message (optional)') }}
@@ -96,7 +91,7 @@
 					type="text"
 					:value="config.successMessage || ''"
 					:placeholder="t('openbuild', 'i18n key')"
-					@input="update('successMessage', $event.target.value)">
+					@input="update('successMessage', $event.target.value)" />
 			</label>
 		</fieldset>
 
@@ -127,11 +122,24 @@
 			<legend>{{ t('openbuild', 'External access') }}</legend>
 			<template v-if="externalTarget">
 				<p class="form-page-editor__external-status">
-					{{ externalFormEntry && externalFormEntry.status === 'enabled'
-						? t('openbuild', 'Externally fillable ({register}/{schema})', externalTarget)
-						: t('openbuild', 'Not externally fillable yet ({register}/{schema})', externalTarget) }}
+					{{
+						externalFormEntry && externalFormEntry.status === 'enabled'
+							? t(
+									'openbuild',
+									'Externally fillable ({register}/{schema})',
+									externalTarget,
+								)
+							: t(
+									'openbuild',
+									'Not externally fillable yet ({register}/{schema})',
+									externalTarget,
+								)
+					}}
 				</p>
-				<button type="button" class="form-page-editor__external-btn" @click="externalDialogOpen = true">
+				<button
+					type="button"
+					class="form-page-editor__external-btn"
+					@click="externalDialogOpen = true">
 					{{ t('openbuild', 'Configure') }}
 				</button>
 				<ExternalFormAccessDialog
@@ -143,7 +151,12 @@
 					@save="onExternalFormSave" />
 			</template>
 			<p v-else class="form-page-editor__hint">
-				{{ t('openbuild', 'External access requires a submitEndpoint shaped like /api/objects/{register}/{schema}.') }}
+				{{
+					t(
+						'openbuild',
+						'External access requires a submitEndpoint shaped like /api/objects/{register}/{schema}.',
+					)
+				}}
 			</p>
 		</fieldset>
 	</div>
@@ -158,7 +171,12 @@ import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'FormPageEditor',
-	components: { FormFieldBuilder, FormStepsManager, InlineFieldMark, ExternalFormAccessDialog },
+	components: {
+		FormFieldBuilder,
+		FormStepsManager,
+		InlineFieldMark,
+		ExternalFormAccessDialog,
+	},
 	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
@@ -212,7 +230,10 @@ export default {
 				return null
 			}
 			const endpoint = this.config.submitEndpoint || ''
-			const match = /^\/(?:apps\/openregister\/)?api\/objects\/([^/]+)\/([^/]+)\/?$/.exec(endpoint)
+			const match =
+				/^\/(?:apps\/openregister\/)?api\/objects\/([^/]+)\/([^/]+)\/?$/.exec(
+					endpoint,
+				)
 			return match ? { register: match[1], schema: match[2] } : null
 		},
 		/**
@@ -225,7 +246,11 @@ export default {
 			if (!this.pageId) {
 				return null
 			}
-			return (this.runtimeExternalForms || []).find((e) => e && e.pageId === this.pageId) || null
+			return (
+				(this.runtimeExternalForms || []).find(
+					(e) => e && e.pageId === this.pageId,
+				) || null
+			)
 		},
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
@@ -236,7 +261,17 @@ export default {
 		 * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-001
 		 */
 		validatedConfigKeys() {
-			return ['submitHandler', 'submitEndpoint', 'submitMethod', 'mode', 'submitLabel', 'successMessage', 'fields', 'initialValue', 'steps']
+			return [
+				'submitHandler',
+				'submitEndpoint',
+				'submitMethod',
+				'mode',
+				'submitLabel',
+				'successMessage',
+				'fields',
+				'initialValue',
+				'steps',
+			]
 		},
 		/**
 		 * Observed behaviour of `submitShape` (retrofit annotation).

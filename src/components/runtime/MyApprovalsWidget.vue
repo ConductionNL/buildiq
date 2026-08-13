@@ -30,14 +30,19 @@
 			{{ t('openbuild', 'Loading…') }}
 		</div>
 
-		<div v-else-if="error" class="my-approvals-widget__state my-approvals-widget__state--error">
+		<div
+			v-else-if="error"
+			class="my-approvals-widget__state my-approvals-widget__state--error">
 			<p>{{ t('openbuild', 'Could not load pending approvals.') }}</p>
 			<NcButton type="secondary" @click="load">
 				{{ t('openbuild', 'Retry') }}
 			</NcButton>
 		</div>
 
-		<p v-else-if="pendingSteps.length === 0" class="my-approvals-widget__state" data-testid="my-approvals-empty">
+		<p
+			v-else-if="pendingSteps.length === 0"
+			class="my-approvals-widget__state"
+			data-testid="my-approvals-empty">
 			{{ t('openbuild', 'No approvals are waiting for you.') }}
 		</p>
 
@@ -49,7 +54,9 @@
 				data-testid="my-approvals-row">
 				<div class="my-approvals-widget__row-main">
 					<span class="my-approvals-widget__role">{{ step.role }}</span>
-					<span class="my-approvals-widget__object">{{ step.objectUuid }}</span>
+					<span class="my-approvals-widget__object">{{
+						step.objectUuid
+					}}</span>
 				</div>
 				<div class="my-approvals-widget__row-actions">
 					<NcButton
@@ -125,7 +132,9 @@ export default {
 			this.error = false
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-steps')
-				const { data } = await axios.get(url, { params: { status: 'pending' } })
+				const { data } = await axios.get(url, {
+					params: { status: 'pending' },
+				})
 				this.steps = Array.isArray(data) ? data : []
 			} catch (err) {
 				this.error = true
@@ -147,13 +156,16 @@ export default {
 			this.decideError = ''
 			this.deciding = { ...this.deciding, [step.id]: true }
 			try {
-				const url = generateUrl(`/apps/openregister/api/approval-steps/${step.id}/${action}`)
+				const url = generateUrl(
+					`/apps/openregister/api/approval-steps/${step.id}/${action}`,
+				)
 				await axios.post(url, {})
 				await this.load()
 			} catch (err) {
-				this.decideError = action === 'approve'
-					? t('openbuild', 'Could not approve this step.')
-					: t('openbuild', 'Could not reject this step.')
+				this.decideError =
+					action === 'approve'
+						? t('openbuild', 'Could not approve this step.')
+						: t('openbuild', 'Could not reject this step.')
 			} finally {
 				const next = { ...this.deciding }
 				delete next[step.id]

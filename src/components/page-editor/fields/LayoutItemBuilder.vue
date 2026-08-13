@@ -4,14 +4,17 @@
   -->
 <template>
 	<div class="layout-item-builder">
-		<div v-for="(item, index) in localItems" :key="index" class="layout-item-builder__row">
+		<div
+			v-for="(item, index) in localItems"
+			:key="index"
+			class="layout-item-builder__row">
 			<input
 				:value="item.widgetId || ''"
 				type="text"
 				class="layout-item-builder__field"
 				:placeholder="t('openbuild', 'widget id')"
 				:aria-label="t('openbuild', 'widget id')"
-				@input="updateField(index, 'widgetId', $event.target.value)">
+				@input="updateField(index, 'widgetId', $event.target.value)" />
 			<label class="layout-item-builder__pair">
 				X
 				<input
@@ -19,7 +22,7 @@
 					type="number"
 					min="0"
 					class="layout-item-builder__num"
-					@input="updateNum(index, 'gridX', $event.target.value)">
+					@input="updateNum(index, 'gridX', $event.target.value)" />
 			</label>
 			<label class="layout-item-builder__pair">
 				Y
@@ -28,7 +31,7 @@
 					type="number"
 					min="0"
 					class="layout-item-builder__num"
-					@input="updateNum(index, 'gridY', $event.target.value)">
+					@input="updateNum(index, 'gridY', $event.target.value)" />
 			</label>
 			<label class="layout-item-builder__pair">
 				W
@@ -37,7 +40,7 @@
 					type="number"
 					min="1"
 					class="layout-item-builder__num"
-					@input="updateNum(index, 'gridWidth', $event.target.value)">
+					@input="updateNum(index, 'gridWidth', $event.target.value)" />
 			</label>
 			<label class="layout-item-builder__pair">
 				H
@@ -46,7 +49,7 @@
 					type="number"
 					min="1"
 					class="layout-item-builder__num"
-					@input="updateNum(index, 'gridHeight', $event.target.value)">
+					@input="updateNum(index, 'gridHeight', $event.target.value)" />
 			</label>
 			<button
 				type="button"
@@ -117,7 +120,14 @@ export default {
 		 */
 		addItem() {
 			const next = this.localItems.slice()
-			next.push({ id: next.length + 1, widgetId: '', gridX: 0, gridY: 0, gridWidth: 6, gridHeight: 2 })
+			next.push({
+				id: next.length + 1,
+				widgetId: '',
+				gridX: 0,
+				gridY: 0,
+				gridWidth: 6,
+				gridHeight: 2,
+			})
 			this.$emit('update:modelValue', next)
 		},
 		/**

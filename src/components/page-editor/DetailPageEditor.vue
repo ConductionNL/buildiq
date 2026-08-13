@@ -12,11 +12,17 @@
 		<div class="detail-page-editor__group">
 			<label>
 				{{ t('openbuild', 'Register') }}
-				<select :value="config.register || ''" :aria-invalid="isInvalid('register')" @change="update('register', $event.target.value)">
+				<select
+					:value="config.register || ''"
+					:aria-invalid="isInvalid('register')"
+					@change="update('register', $event.target.value)">
 					<option value="">
 						{{ t('openbuild', '— select register —') }}
 					</option>
-					<option v-for="r in registers" :key="r.slug || r.id" :value="r.slug">
+					<option
+						v-for="r in registers"
+						:key="r.slug || r.id"
+						:value="r.slug">
 						{{ r.title || r.slug }}
 					</option>
 				</select>
@@ -32,7 +38,10 @@
 					<option value="">
 						{{ t('openbuild', '— select schema —') }}
 					</option>
-					<option v-for="s in schemas" :key="s.slug || s.id" :value="s.slug">
+					<option
+						v-for="s in schemas"
+						:key="s.slug || s.id"
+						:value="s.slug">
 						{{ s.title || s.slug }}
 					</option>
 				</select>
@@ -41,10 +50,16 @@
 		</div>
 
 		<p v-if="!routeHasParam" class="detail-page-editor__warn" role="alert">
-			{{ t('openbuild', 'The parent page route has no :param segment — detail pages typically need one (e.g. /messages/:id).') }}
+			{{
+				t(
+					'openbuild',
+					'The parent page route has no :param segment — detail pages typically need one (e.g. /messages/:id).',
+				)
+			}}
 		</p>
 		<p v-else class="detail-page-editor__note">
-			{{ t('openbuild', 'Route params detected:') }} {{ routeParams.join(', ') }}
+			{{ t('openbuild', 'Route params detected:') }}
+			{{ routeParams.join(', ') }}
 		</p>
 
 		<fieldset class="detail-page-editor__fieldset">
@@ -55,7 +70,7 @@
 						type="radio"
 						:checked="sidebarShape === 'object'"
 						value="object"
-						@change="setSidebarShape('object')">
+						@change="setSidebarShape('object')" />
 					{{ t('openbuild', 'Object form (preferred)') }}
 				</label>
 				<label class="detail-page-editor__inline">
@@ -63,7 +78,7 @@
 						type="radio"
 						:checked="sidebarShape === 'boolean'"
 						value="boolean"
-						@change="setSidebarShape('boolean')">
+						@change="setSidebarShape('boolean')" />
 					{{ t('openbuild', 'Boolean form (legacy)') }}
 				</label>
 				<label class="detail-page-editor__inline">
@@ -71,30 +86,36 @@
 						type="radio"
 						:checked="sidebarShape === 'none'"
 						value="none"
-						@change="setSidebarShape('none')">
+						@change="setSidebarShape('none')" />
 					{{ t('openbuild', 'Not set') }}
 				</label>
 			</div>
-			<label v-if="sidebarShape === 'boolean'" class="detail-page-editor__inline">
+			<label
+				v-if="sidebarShape === 'boolean'"
+				class="detail-page-editor__inline">
 				<input
 					type="checkbox"
 					:checked="config.sidebar === true"
-					@change="update('sidebar', $event.target.checked)">
+					@change="update('sidebar', $event.target.checked)" />
 				{{ t('openbuild', 'Sidebar enabled') }}
 			</label>
-			<div v-else-if="sidebarShape === 'object'" class="detail-page-editor__sidebar-object">
+			<div
+				v-else-if="sidebarShape === 'object'"
+				class="detail-page-editor__sidebar-object">
 				<label class="detail-page-editor__inline">
 					<input
 						type="checkbox"
 						:checked="(config.sidebar || {}).enabled !== false"
-						@change="updateSidebarKey('enabled', $event.target.checked)">
+						@change="
+							updateSidebarKey('enabled', $event.target.checked)
+						" />
 					{{ t('openbuild', 'Enabled') }}
 				</label>
 				<label class="detail-page-editor__inline">
 					<input
 						type="checkbox"
 						:checked="(config.sidebar || {}).show !== false"
-						@change="updateSidebarKey('show', $event.target.checked)">
+						@change="updateSidebarKey('show', $event.target.checked)" />
 					{{ t('openbuild', 'Show') }}
 				</label>
 				<SidebarTabBuilder
@@ -105,9 +126,13 @@
 		</fieldset>
 
 		<fieldset class="detail-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'sidebarProps.tabs (alternate path)') }}</legend>
+			<legend>
+				{{ t('openbuild', 'sidebarProps.tabs (alternate path)') }}
+			</legend>
 			<SidebarTabBuilder
-				:model-value="(config.sidebarProps && config.sidebarProps.tabs) || []"
+				:model-value="
+					(config.sidebarProps && config.sidebarProps.tabs) || []
+				"
 				@update:modelValue="updateSidebarPropsTabs($event)" />
 			<InlineFieldMark :error="markFor('sidebarProps')" />
 		</fieldset>
@@ -162,7 +187,10 @@ export default {
 	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1
 	 */
 	setup(props) {
-		const picker = useRegisterPicker({ appSlug: props.appSlug, dataRegisters: props.dataRegisters })
+		const picker = useRegisterPicker({
+			appSlug: props.appSlug,
+			dataRegisters: props.dataRegisters,
+		})
 		return { picker }
 	},
 	data() {
@@ -186,7 +214,8 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		routeParams() {
-			const matches = this.parentRoute.match(/:([A-Za-z_][A-Za-z0-9_]*)/g) || []
+			const matches =
+				this.parentRoute.match(/:([A-Za-z_][A-Za-z0-9_]*)/g) || []
 			return matches.map((m) => m.slice(1))
 		},
 		/**
@@ -286,7 +315,9 @@ export default {
 		 */
 		updateSidebarKey(key, value) {
 			const next = { ...this.config }
-			const current = (typeof next.sidebar === 'object' && next.sidebar) || { enabled: true }
+			const current = (typeof next.sidebar === 'object' && next.sidebar) || {
+				enabled: true,
+			}
 			next.sidebar = { ...current, [key]: value }
 			this.$emit('update:config', next)
 		},

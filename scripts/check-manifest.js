@@ -45,7 +45,8 @@ const SCHEMA_V2_PATH = path.join(SCHEMA_DIR, 'app-manifest-v2.schema.json')
  * @returns {'v1'|'v2'} The schema version to validate against.
  */
 function schemaVersionFor(manifest) {
-	const ref = manifest && typeof manifest.$schema === 'string' ? manifest.$schema : ''
+	const ref =
+		manifest && typeof manifest.$schema === 'string' ? manifest.$schema : ''
 	return ref.includes('app-manifest-v2') ? 'v2' : 'v1'
 }
 

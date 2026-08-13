@@ -19,7 +19,13 @@ const {
 	resetProductionVersions,
 } = await import('../../src/store/productionVersions.js')
 
-const DETAIL = { uuid: 'v-1', slug: 'production', name: '1.0.0', semver: '1.0.0', status: 'published' }
+const DETAIL = {
+	uuid: 'v-1',
+	slug: 'production',
+	name: '1.0.0',
+	semver: '1.0.0',
+	status: 'published',
+}
 
 describe('productionVersions (REQ-OBR-007b)', () => {
 	beforeEach(() => {
@@ -27,12 +33,20 @@ describe('productionVersions (REQ-OBR-007b)', () => {
 		get.mockReset()
 	})
 
-	it('indexes the resolved detail by the Application\'s productionVersion UUID', async () => {
+	it("indexes the resolved detail by the Application's productionVersion UUID", async () => {
 		get.mockResolvedValue({
 			data: [
-				{ slug: 'hello-world', productionVersion: 'v-1', productionVersionDetail: DETAIL },
+				{
+					slug: 'hello-world',
+					productionVersion: 'v-1',
+					productionVersionDetail: DETAIL,
+				},
 				// An app with no production version must simply be absent, not null.
-				{ slug: 'opencatalogi', productionVersion: null, productionVersionDetail: null },
+				{
+					slug: 'opencatalogi',
+					productionVersion: null,
+					productionVersionDetail: null,
+				},
 			],
 		})
 
@@ -52,7 +66,10 @@ describe('productionVersions (REQ-OBR-007b)', () => {
 		])
 		await ensureProductionVersionsLoaded()
 
-		expect(get, 'a grid of N cards must not issue N requests').toHaveBeenCalledTimes(1)
+		expect(
+			get,
+			'a grid of N cards must not issue N requests',
+		).toHaveBeenCalledTimes(1)
 	})
 
 	it('reads the RBAC-filtered OpenBuild endpoint, not the bulk OR version list', async () => {
@@ -68,7 +85,11 @@ describe('productionVersions (REQ-OBR-007b)', () => {
 
 	it('accepts the enveloped {results:[...]} shape as well as a bare array', async () => {
 		get.mockResolvedValue({
-			data: { results: [{ productionVersion: 'v-1', productionVersionDetail: DETAIL }] },
+			data: {
+				results: [
+					{ productionVersion: 'v-1', productionVersionDetail: DETAIL },
+				],
+			},
 		})
 		await ensureProductionVersionsLoaded()
 		expect(productionVersions['v-1']).toEqual(DETAIL)

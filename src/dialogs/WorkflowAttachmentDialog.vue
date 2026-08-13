@@ -13,13 +13,22 @@
 <template>
 	<NcDialog
 		:open="open"
-		:name="editing ? t('openbuild', 'Edit workflow attachment') : t('openbuild', 'Attach a Procest case type')"
+		:name="
+			editing
+				? t('openbuild', 'Edit workflow attachment')
+				: t('openbuild', 'Attach a Procest case type')
+		"
 		size="normal"
 		@update:open="$emit('update:open', $event)"
 		@closing="onClose">
 		<div class="ob-workflow-attach">
 			<p v-if="!procestAvailable" class="ob-workflow-attach__warn">
-				{{ t('openbuild', 'Procest is not installed or enabled on this instance. The case-type list cannot be loaded.') }}
+				{{
+					t(
+						'openbuild',
+						'Procest is not installed or enabled on this instance. The case-type list cannot be loaded.',
+					)
+				}}
 			</p>
 
 			<NcSelect
@@ -42,7 +51,9 @@
 					:input-label="t('openbuild', 'Link property')"
 					:options="linkPropertyOptions"
 					label="label" />
-				<NcButton type="tertiary" @click="$emit('create-link-property', selectedSchemaSlug)">
+				<NcButton
+					type="tertiary"
+					@click="$emit('create-link-property', selectedSchemaSlug)">
 					{{ t('openbuild', 'Create zaakUrl property') }}
 				</NcButton>
 			</div>
@@ -54,8 +65,13 @@
 				@update:modelValue="descriptionTemplate = $event" />
 
 			<label class="ob-workflow-attach__toggle">
-				<input v-model="addStatusTab" type="checkbox">
-				{{ t('openbuild', 'Add a case-status tab to this schema\'s detail page') }}
+				<input v-model="addStatusTab" type="checkbox" />
+				{{
+					t(
+						'openbuild',
+						"Add a case-status tab to this schema's detail page",
+					)
+				}}
 			</label>
 
 			<p v-if="error" class="ob-workflow-attach__error" role="alert">
@@ -89,12 +105,12 @@ export default {
 		// The app's schemas as `[{ slug, title, properties }]`.
 		schemas: {
 			type: Array,
-			default: () => ([]),
+			default: () => [],
 		},
 		// Schema slugs already attached (excluded from the schema picker).
 		attachedSchemas: {
 			type: Array,
-			default: () => ([]),
+			default: () => [],
 		},
 		// Existing attachment when editing (null when adding).
 		attachment: {
@@ -128,7 +144,9 @@ export default {
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		caseTypeOptions() {
 			return this.caseTypes.map((ct) => ({
-				label: ct.identificatie ? `${ct.omschrijving} (${ct.identificatie})` : ct.omschrijving,
+				label: ct.identificatie
+					? `${ct.omschrijving} (${ct.identificatie})`
+					: ct.omschrijving,
 				uuid: ct.uuid || ct.url || ct.identificatie,
 				name: ct.omschrijving || ct.identificatie || '',
 			}))
@@ -146,19 +164,28 @@ export default {
 		},
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		linkPropertyOptions() {
-			const schema = this.schemas.find((s) => s.slug === this.selectedSchemaSlug)
+			const schema = this.schemas.find(
+				(s) => s.slug === this.selectedSchemaSlug,
+			)
 			const props = (schema && schema.properties) || {}
 			return Object.keys(props)
 				.filter((name) => {
 					const p = props[name]
 					const type = p && (p.type || (p.format ? 'string' : undefined))
-					return type === 'string' || (p && (p.format === 'uri' || p.format === 'url'))
+					return (
+						type === 'string'
+						|| (p && (p.format === 'uri' || p.format === 'url'))
+					)
 				})
 				.map((name) => ({ label: name, name }))
 		},
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		canSave() {
-			return !!(this.caseTypeOption && this.schemaOption && this.linkPropertyOption)
+			return !!(
+				this.caseTypeOption
+				&& this.schemaOption
+				&& this.linkPropertyOption
+			)
 		},
 	},
 	watch: {
@@ -186,9 +213,19 @@ export default {
 		hydrate() {
 			this.error = ''
 			if (this.attachment) {
-				this.caseTypeOption = { label: this.attachment.caseTypeName, uuid: this.attachment.caseTypeUuid, name: this.attachment.caseTypeName }
-				this.schemaOption = { label: this.attachment.schema, slug: this.attachment.schema }
-				this.linkPropertyOption = { label: this.attachment.linkProperty, name: this.attachment.linkProperty }
+				this.caseTypeOption = {
+					label: this.attachment.caseTypeName,
+					uuid: this.attachment.caseTypeUuid,
+					name: this.attachment.caseTypeName,
+				}
+				this.schemaOption = {
+					label: this.attachment.schema,
+					slug: this.attachment.schema,
+				}
+				this.linkPropertyOption = {
+					label: this.attachment.linkProperty,
+					name: this.attachment.linkProperty,
+				}
 				this.descriptionTemplate = this.attachment.descriptionTemplate || ''
 			} else {
 				this.caseTypeOption = null
@@ -207,7 +244,9 @@ export default {
 		async fetchCaseTypes() {
 			this.loadingCaseTypes = true
 			try {
-				const url = generateUrl('/apps/procest/api/zgw/catalogi/v1/zaaktypen')
+				const url = generateUrl(
+					'/apps/procest/api/zgw/catalogi/v1/zaaktypen',
+				)
 				const { data } = await axios.get(url)
 				const list = (data && (data.results || data)) || []
 				this.caseTypes = Array.isArray(list) ? list : []
@@ -226,7 +265,8 @@ export default {
 			if (!this.canSave) {
 				return
 			}
-			const id = (this.attachment && this.attachment.id)
+			const id =
+				(this.attachment && this.attachment.id)
 				|| `wf-${this.schemaOption.slug}-${Date.now()}`
 			const entry = {
 				id,

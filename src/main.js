@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: EUPL-1.2
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
-import { translate as t, translatePlural as n, loadTranslations } from '@nextcloud/l10n'
+import {
+	translate as t,
+	translatePlural as n,
+	loadTranslations,
+} from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
 	CnPageRenderer,
@@ -49,7 +53,10 @@ try {
 	registerTranslations()
 } catch (e) {
 	// eslint-disable-next-line no-console
-	console.warn('[openbuild] registerTranslations failed; lib strings fall back to English source', e)
+	console.warn(
+		'[openbuild] registerTranslations failed; lib strings fall back to English source',
+		e,
+	)
 }
 
 // Fire-and-forget translation load. `@nextcloud/l10n`'s loadTranslations()
@@ -61,7 +68,10 @@ function tryLoadTranslations() {
 	try {
 		const result = loadTranslations('openbuild', () => {})
 		if (result && typeof result.then === 'function') {
-			result.then(() => {}, () => {})
+			result.then(
+				() => {},
+				() => {},
+			)
 		}
 	} catch {
 		// no-op — translations are best-effort
@@ -84,7 +94,10 @@ const RoutePageRenderer = { ...CnPageRenderer }
 // changes; it ships all-empty today, so `buildManifest()` reproduces the prior
 // pages/menu concatenation exactly.
 const manifestFragmentContext = require.context('./manifest.d/', false, /\.json$/)
-const manifestFragments = manifestFragmentContext.keys().sort().map((key) => manifestFragmentContext(key))
+const manifestFragments = manifestFragmentContext
+	.keys()
+	.sort()
+	.map((key) => manifestFragmentContext(key))
 const mergedManifest = buildManifest(bundledManifest, manifestFragments, menuLayout)
 
 /**

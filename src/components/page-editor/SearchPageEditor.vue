@@ -35,7 +35,10 @@
 					<option value="">
 						{{ t('openbuild', '— select register —') }}
 					</option>
-					<option v-for="r in registers" :key="r.slug || r.id" :value="r.slug">
+					<option
+						v-for="r in registers"
+						:key="r.slug || r.id"
+						:value="r.slug">
 						{{ r.title || r.slug }}
 					</option>
 				</select>
@@ -51,14 +54,22 @@
 					<option value="">
 						{{ t('openbuild', '— select schema —') }}
 					</option>
-					<option v-for="s in schemas" :key="s.slug || s.id" :value="s.slug">
+					<option
+						v-for="s in schemas"
+						:key="s.slug || s.id"
+						:value="s.slug">
 						{{ s.title || s.slug }}
 					</option>
 				</select>
 				<InlineFieldMark :error="markFor('schema')" />
 			</label>
 			<p class="search-page-editor__hint" role="note">
-				{{ t('openbuild', 'Query execution is wired by the consuming app via the page\'s @search contract; a freshly built page renders the search UI without live results.') }}
+				{{
+					t(
+						'openbuild',
+						"Query execution is wired by the consuming app via the page's @search contract; a freshly built page renders the search UI without live results.",
+					)
+				}}
 			</p>
 		</fieldset>
 
@@ -70,7 +81,7 @@
 					type="text"
 					:value="config.title || ''"
 					:aria-invalid="isInvalid('title')"
-					@input="update('title', $event.target.value)">
+					@input="update('title', $event.target.value)" />
 				<InlineFieldMark :error="markFor('title')" />
 			</label>
 			<label class="search-page-editor__group-row">
@@ -79,7 +90,7 @@
 					type="text"
 					:value="config.placeholder || ''"
 					:aria-invalid="isInvalid('placeholder')"
-					@input="update('placeholder', $event.target.value)">
+					@input="update('placeholder', $event.target.value)" />
 				<InlineFieldMark :error="markFor('placeholder')" />
 			</label>
 			<label class="search-page-editor__group-row">
@@ -88,7 +99,7 @@
 					type="text"
 					:value="config.searchLabel || ''"
 					:aria-invalid="isInvalid('searchLabel')"
-					@input="update('searchLabel', $event.target.value)">
+					@input="update('searchLabel', $event.target.value)" />
 				<InlineFieldMark :error="markFor('searchLabel')" />
 			</label>
 			<label class="search-page-editor__group-row">
@@ -97,7 +108,7 @@
 					type="text"
 					:value="config.idleLabel || ''"
 					:aria-invalid="isInvalid('idleLabel')"
-					@input="update('idleLabel', $event.target.value)">
+					@input="update('idleLabel', $event.target.value)" />
 				<InlineFieldMark :error="markFor('idleLabel')" />
 			</label>
 			<label class="search-page-editor__group-row">
@@ -106,32 +117,45 @@
 					type="text"
 					:value="config.emptyLabel || ''"
 					:aria-invalid="isInvalid('emptyLabel')"
-					@input="update('emptyLabel', $event.target.value)">
+					@input="update('emptyLabel', $event.target.value)" />
 				<InlineFieldMark :error="markFor('emptyLabel')" />
 			</label>
 		</fieldset>
 
 		<fieldset class="search-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Facets') }}</legend>
-			<div v-for="(facet, index) in facets" :key="index" class="search-page-editor__facet">
+			<div
+				v-for="(facet, index) in facets"
+				:key="index"
+				class="search-page-editor__facet">
 				<div class="search-page-editor__row">
 					<input
 						type="text"
 						:value="facet.key || ''"
 						:placeholder="t('openbuild', 'Facet key')"
 						:aria-label="t('openbuild', 'Facet key')"
-						@input="updateFacetField(index, 'key', $event.target.value)">
+						@input="
+							updateFacetField(index, 'key', $event.target.value)
+						" />
 					<input
 						type="text"
 						:value="facet.label || ''"
 						:placeholder="t('openbuild', 'Label (optional)')"
 						:aria-label="t('openbuild', 'Label (optional)')"
-						@input="updateFacetField(index, 'label', $event.target.value)">
+						@input="
+							updateFacetField(index, 'label', $event.target.value)
+						" />
 					<label class="search-page-editor__inline">
 						<input
 							type="checkbox"
 							:checked="!!facet.multiple"
-							@change="updateFacetField(index, 'multiple', $event.target.checked)">
+							@change="
+								updateFacetField(
+									index,
+									'multiple',
+									$event.target.checked,
+								)
+							" />
 						{{ t('openbuild', 'Multiple') }}
 					</label>
 					<button
@@ -143,19 +167,36 @@
 					</button>
 				</div>
 				<div class="search-page-editor__options">
-					<div v-for="(option, optIndex) in facetOptions(facet)" :key="optIndex" class="search-page-editor__row">
+					<div
+						v-for="(option, optIndex) in facetOptions(facet)"
+						:key="optIndex"
+						class="search-page-editor__row">
 						<input
 							type="text"
 							:value="option.value || ''"
 							:placeholder="t('openbuild', 'Option value')"
 							:aria-label="t('openbuild', 'Option value')"
-							@input="updateFacetOptionField(index, optIndex, 'value', $event.target.value)">
+							@input="
+								updateFacetOptionField(
+									index,
+									optIndex,
+									'value',
+									$event.target.value,
+								)
+							" />
 						<input
 							type="text"
 							:value="option.label || ''"
 							:placeholder="t('openbuild', 'Option label (optional)')"
 							:aria-label="t('openbuild', 'Option label (optional)')"
-							@input="updateFacetOptionField(index, optIndex, 'label', $event.target.value)">
+							@input="
+								updateFacetOptionField(
+									index,
+									optIndex,
+									'label',
+									$event.target.value,
+								)
+							" />
 						<button
 							type="button"
 							class="search-page-editor__row-remove"
@@ -164,12 +205,18 @@
 							✕
 						</button>
 					</div>
-					<button type="button" class="search-page-editor__row-add" @click="addFacetOption(index)">
+					<button
+						type="button"
+						class="search-page-editor__row-add"
+						@click="addFacetOption(index)">
 						+ {{ t('openbuild', 'Add option') }}
 					</button>
 				</div>
 			</div>
-			<button type="button" class="search-page-editor__row-add" @click="addFacet">
+			<button
+				type="button"
+				class="search-page-editor__row-add"
+				@click="addFacet">
 				+ {{ t('openbuild', 'Add facet') }}
 			</button>
 			<InlineFieldMark :error="markFor('facets')" />
@@ -210,7 +257,10 @@ export default {
 	},
 	emits: ['update:config'],
 	setup(props) {
-		const picker = useRegisterPicker({ appSlug: props.appSlug, dataRegisters: props.dataRegisters })
+		const picker = useRegisterPicker({
+			appSlug: props.appSlug,
+			dataRegisters: props.dataRegisters,
+		})
 		return { picker }
 	},
 	data() {
@@ -221,7 +271,16 @@ export default {
 	},
 	computed: {
 		validatedConfigKeys() {
-			return ['register', 'schema', 'title', 'placeholder', 'searchLabel', 'idleLabel', 'emptyLabel', 'facets']
+			return [
+				'register',
+				'schema',
+				'title',
+				'placeholder',
+				'searchLabel',
+				'idleLabel',
+				'emptyLabel',
+				'facets',
+			]
 		},
 		facets() {
 			return Array.isArray(this.config.facets) ? this.config.facets : []
@@ -252,7 +311,11 @@ export default {
 		 */
 		update(key, value) {
 			const next = { ...this.config }
-			if (value === '' || value === null || (Array.isArray(value) && value.length === 0)) {
+			if (
+				value === ''
+				|| value === null
+				|| (Array.isArray(value) && value.length === 0)
+			) {
 				delete next[key]
 			} else {
 				next[key] = value

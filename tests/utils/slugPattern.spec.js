@@ -11,7 +11,11 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { SLUG_PATTERN, toKebabCase, validateSlug } from '../../src/utils/slugPattern.js'
+import {
+	SLUG_PATTERN,
+	toKebabCase,
+	validateSlug,
+} from '../../src/utils/slugPattern.js'
 
 // ─── SLUG_PATTERN ────────────────────────────────────────────────────────────
 

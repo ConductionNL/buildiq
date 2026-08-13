@@ -16,7 +16,15 @@
 				:placeholder="t('openbuild', 'kebab-case, e.g. customer')"
 				:disabled="lockedSlug"
 				:error="!!slugError || (touched.slug && !slugValid)"
-				:helper-text="slugError || (touched.slug && !slugValid ? t('openbuild', 'Slug must be kebab-case (lowercase letters, digits, hyphens) and start with a letter.') : '')"
+				:helper-text="
+					slugError
+					|| (touched.slug && !slugValid
+						? t(
+								'openbuild',
+								'Slug must be kebab-case (lowercase letters, digits, hyphens) and start with a letter.',
+							)
+						: '')
+				"
 				@update:modelValue="onChange('slug', $event)"
 				@blur="touched.slug = true" />
 		</div>
@@ -25,7 +33,11 @@
 				:model-value="value.title"
 				:label="t('openbuild', 'Title')"
 				:error="touched.title && !titleValid"
-				:helper-text="touched.title && !titleValid ? t('openbuild', 'Title is required.') : ''"
+				:helper-text="
+					touched.title && !titleValid
+						? t('openbuild', 'Title is required.')
+						: ''
+				"
 				@update:modelValue="onChange('title', $event)"
 				@blur="touched.title = true" />
 		</div>
@@ -42,7 +54,14 @@
 				:label="t('openbuild', 'Version (semver)')"
 				:placeholder="'0.1.0'"
 				:error="touched.version && !versionValid"
-				:helper-text="touched.version && !versionValid ? t('openbuild', 'Version must follow semver MAJOR.MINOR.PATCH.') : ''"
+				:helper-text="
+					touched.version && !versionValid
+						? t(
+								'openbuild',
+								'Version must follow semver MAJOR.MINOR.PATCH.',
+							)
+						: ''
+				"
 				@update:modelValue="onChange('version', $event)"
 				@blur="touched.version = true" />
 		</div>

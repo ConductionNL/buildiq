@@ -8,17 +8,26 @@
  * Spec: automation-document-action ("Template list is shared, not duplicated").
  */
 import { describe, it, expect, vi } from 'vitest'
-import { fetchDocudeskTemplates, templateToOption } from '../../src/composables/useDocudeskTemplates.js'
+import {
+	fetchDocudeskTemplates,
+	templateToOption,
+} from '../../src/composables/useDocudeskTemplates.js'
 
 describe('fetchDocudeskTemplates', () => {
 	it('returns the results array from the response', async () => {
-		const client = { get: vi.fn().mockResolvedValue({ data: { results: [{ id: '1', name: 'A' }] } }) }
+		const client = {
+			get: vi
+				.fn()
+				.mockResolvedValue({ data: { results: [{ id: '1', name: 'A' }] } }),
+		}
 		const templates = await fetchDocudeskTemplates({ client })
 		expect(templates).toEqual([{ id: '1', name: 'A' }])
 	})
 
 	it('tolerates a bare-array response shape', async () => {
-		const client = { get: vi.fn().mockResolvedValue({ data: [{ id: '2', name: 'B' }] }) }
+		const client = {
+			get: vi.fn().mockResolvedValue({ data: [{ id: '2', name: 'B' }] }),
+		}
 		const templates = await fetchDocudeskTemplates({ client })
 		expect(templates).toEqual([{ id: '2', name: 'B' }])
 	})
@@ -38,7 +47,9 @@ describe('fetchDocudeskTemplates', () => {
 
 describe('templateToOption', () => {
 	it('maps name/id to the shared option shape', () => {
-		expect(templateToOption({ id: 'uuid-1', name: 'Bevestigingsbrief' })).toEqual({
+		expect(
+			templateToOption({ id: 'uuid-1', name: 'Bevestigingsbrief' }),
+		).toEqual({
 			label: 'Bevestigingsbrief',
 			uuid: 'uuid-1',
 			name: 'Bevestigingsbrief',

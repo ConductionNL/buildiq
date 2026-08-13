@@ -26,7 +26,12 @@ const fetchSchemas = vi.fn(async () => [{ slug: 'audit', title: 'Audit' }])
 const fetchSchemaProperties = vi.fn(async () => ({ action: { type: 'string' } }))
 
 vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
-	useRegisterPicker: () => ({ fetchRegisters, fetchSchemas, fetchSchemaProperties, resolveAppRegister: () => '' }),
+	useRegisterPicker: () => ({
+		fetchRegisters,
+		fetchSchemas,
+		fetchSchemaProperties,
+		resolveAppRegister: () => '',
+	}),
 }))
 // `vi.mock` factories are hoisted above the imports, so `h` is pulled in with
 // a lazy dynamic import inside the (async) factory. Vue 3 does not pass `h`
@@ -37,12 +42,16 @@ vi.mock('../../../src/components/page-editor/fields/ColumnBuilder.vue', async ()
 		default: {
 			name: 'ColumnBuilder',
 			props: ['modelValue', 'schemaProperties'],
-			render() { return h('div', { class: 'column-builder-stub' }) },
+			render() {
+				return h('div', { class: 'column-builder-stub' })
+			},
 		},
 	}
 })
 
-const LogsPageEditor = (await import('../../../src/components/page-editor/LogsPageEditor.vue')).default
+const LogsPageEditor = (
+	await import('../../../src/components/page-editor/LogsPageEditor.vue')
+).default
 
 function mountEditor(config = {}) {
 	return mount(LogsPageEditor, { propsData: { config, appSlug: 'hello-world' } })
@@ -73,7 +82,9 @@ describe('LogsPageEditor', () => {
 	})
 
 	it('a config with both register and source still reports register shape', () => {
-		expect(mountEditor({ register: 'r', source: '/x' }).vm.sourceShape).toBe('register')
+		expect(mountEditor({ register: 'r', source: '/x' }).vm.sourceShape).toBe(
+			'register',
+		)
 	})
 
 	it('switching to the source branch drops register + schema', async () => {
@@ -117,7 +128,9 @@ describe('LogsPageEditor', () => {
 
 	it('ColumnBuilder forwards through update:config', async () => {
 		const wrapper = mountEditor({ register: 'r', schema: 's' })
-		wrapper.findComponent({ name: 'ColumnBuilder' }).vm.$emit('update:modelValue', [{ key: 'action' }])
+		wrapper
+			.findComponent({ name: 'ColumnBuilder' })
+			.vm.$emit('update:modelValue', [{ key: 'action' }])
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
 		expect(next.columns).toEqual([{ key: 'action' }])
@@ -125,7 +138,9 @@ describe('LogsPageEditor', () => {
 
 	it('clearing columns to [] deletes the key', async () => {
 		const wrapper = mountEditor({ source: '/x', columns: [{ key: 'a' }] })
-		wrapper.findComponent({ name: 'ColumnBuilder' }).vm.$emit('update:modelValue', [])
+		wrapper
+			.findComponent({ name: 'ColumnBuilder' })
+			.vm.$emit('update:modelValue', [])
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
 		expect(next).not.toHaveProperty('columns')

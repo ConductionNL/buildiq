@@ -22,13 +22,31 @@ import {
 
 describe('automationMatrix — MATRIX cell-for-cell', () => {
 	it('object-created/updated/deleted allow send-notification, approval and generateDocument', () => {
-		expect(MATRIX['object-created']).toEqual(['send-notification', 'approval', 'generateDocument'])
-		expect(MATRIX['object-updated']).toEqual(['send-notification', 'approval', 'generateDocument'])
-		expect(MATRIX['object-deleted']).toEqual(['send-notification', 'approval', 'generateDocument'])
+		expect(MATRIX['object-created']).toEqual([
+			'send-notification',
+			'approval',
+			'generateDocument',
+		])
+		expect(MATRIX['object-updated']).toEqual([
+			'send-notification',
+			'approval',
+			'generateDocument',
+		])
+		expect(MATRIX['object-deleted']).toEqual([
+			'send-notification',
+			'approval',
+			'generateDocument',
+		])
 	})
 
 	it('lifecycle-transition allows send-notification, object-op, webhook, approval, generateDocument', () => {
-		expect(MATRIX['lifecycle-transition']).toEqual(['send-notification', 'object-op', 'webhook', 'approval', 'generateDocument'])
+		expect(MATRIX['lifecycle-transition']).toEqual([
+			'send-notification',
+			'object-op',
+			'webhook',
+			'approval',
+			'generateDocument',
+		])
 	})
 
 	it('schedule allows only run-synchronization', () => {
@@ -82,13 +100,17 @@ describe('isActionAllowed', () => {
 		expect(isActionAllowed('object-created', 'generateDocument')).toBe(true)
 		expect(isActionAllowed('object-updated', 'generateDocument')).toBe(true)
 		expect(isActionAllowed('object-deleted', 'generateDocument')).toBe(true)
-		expect(isActionAllowed('lifecycle-transition', 'generateDocument')).toBe(true)
+		expect(isActionAllowed('lifecycle-transition', 'generateDocument')).toBe(
+			true,
+		)
 		expect(isActionAllowed('schedule', 'generateDocument')).toBe(false)
 		expect(isActionAllowed('manual', 'generateDocument')).toBe(false)
 	})
 
 	it('blocks an unknown trigger type', () => {
-		expect(isActionAllowed('not-a-real-trigger', 'send-notification')).toBe(false)
+		expect(isActionAllowed('not-a-real-trigger', 'send-notification')).toBe(
+			false,
+		)
 	})
 })
 

@@ -22,7 +22,12 @@
 				{{ t('openbuild', 'Edit your override') }}
 			</h2>
 			<p class="ob-user-delta-modal__hint">
-				{{ t('openbuild', 'This personal delta is layered on top of the shared admin delta. Use the keyed delta format (pages by id, widgets by id, "$op":"remove" to delete).') }}
+				{{
+					t(
+						'openbuild',
+						'This personal delta is layered on top of the shared admin delta. Use the keyed delta format (pages by id, widgets by id, "$op":"remove" to delete).',
+					)
+				}}
 			</p>
 
 			<CnJsonViewer
@@ -40,7 +45,11 @@
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
 				<NcButton type="primary" :disabled="saving" @click="save">
-					{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save override') }}
+					{{
+						saving
+							? t('openbuild', 'Saving…')
+							: t('openbuild', 'Save override')
+					}}
 				</NcButton>
 			</div>
 		</div>
@@ -104,7 +113,11 @@ export default {
 				this.error = t('openbuild', 'The delta is not valid JSON.')
 				return
 			}
-			if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+			if (
+				parsed === null
+				|| typeof parsed !== 'object'
+				|| Array.isArray(parsed)
+			) {
 				this.error = t('openbuild', 'The delta must be a JSON object.')
 				return
 			}
@@ -112,12 +125,19 @@ export default {
 			this.saving = true
 			this.error = ''
 			try {
-				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user', { appId: this.appSlug })
+				const url = generateUrl(
+					'/apps/openbuild/api/app-overrides/{appId}/user',
+					{ appId: this.appSlug },
+				)
 				await axios.put(url, parsed)
 				this.$emit('saved')
 				this.onClose()
 			} catch (e) {
-				const detail = e && e.response && e.response.data && (e.response.data.detail || e.response.data.error)
+				const detail =
+					e
+					&& e.response
+					&& e.response.data
+					&& (e.response.data.detail || e.response.data.error)
 				this.error = detail
 					? `${t('openbuild', 'Could not save your override')}: ${detail}`
 					: t('openbuild', 'Could not save your override')

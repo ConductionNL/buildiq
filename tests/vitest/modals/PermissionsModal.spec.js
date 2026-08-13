@@ -95,7 +95,7 @@ vi.mock('@nextcloud/vue/components/NcSelect', async () => {
 			// span listing the currently selected option values so tests can
 			// read them.
 			render() {
-				const values = (this.modelValue || []).map(v => v.value).join(',')
+				const values = (this.modelValue || []).map((v) => v.value).join(',')
 				return h(
 					'div',
 					{ class: 'nc-select-stub', 'data-label': this.inputLabel },
@@ -120,7 +120,9 @@ import PermissionsModal from '../../../src/modals/PermissionsModal.vue'
  */
 function findSelectByLabel(wrapper, label) {
 	// VTU v2 returns a plain array from findAll(); `.wrappers` is gone.
-	return wrapper.findAll('.nc-select-stub').find(w => w.attributes('data-label') === label)
+	return wrapper
+		.findAll('.nc-select-stub')
+		.find((w) => w.attributes('data-label') === label)
 }
 
 describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
@@ -146,7 +148,9 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 				propsData: { open: true, application, availableGroups },
 			})
 			expect(findSelectByLabel(wrapper, 'Owners (full control)')).toBeTruthy()
-			expect(findSelectByLabel(wrapper, 'Editors (can save drafts)')).toBeTruthy()
+			expect(
+				findSelectByLabel(wrapper, 'Editors (can save drafts)'),
+			).toBeTruthy()
 			expect(findSelectByLabel(wrapper, 'Viewers (read-only)')).toBeTruthy()
 		})
 
@@ -154,20 +158,32 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 			const wrapper = mount(PermissionsModal, {
 				propsData: { open: true, application, availableGroups },
 			})
-			expect(findSelectByLabel(wrapper, 'Owners (full control)').text()).toContain('team-alpha')
-			expect(findSelectByLabel(wrapper, 'Editors (can save drafts)').text()).toContain('team-beta')
-			expect(findSelectByLabel(wrapper, 'Viewers (read-only)').text()).toContain('team-gamma')
+			expect(
+				findSelectByLabel(wrapper, 'Owners (full control)').text(),
+			).toContain('team-alpha')
+			expect(
+				findSelectByLabel(wrapper, 'Editors (can save drafts)').text(),
+			).toContain('team-beta')
+			expect(
+				findSelectByLabel(wrapper, 'Viewers (read-only)').text(),
+			).toContain('team-gamma')
 		})
 
 		it('renders zero entries when the application has no permissions block', () => {
 			const wrapper = mount(PermissionsModal, {
 				propsData: {
 					open: true,
-					application: { uuid: 'fresh', slug: 'fresh', permissions: undefined },
+					application: {
+						uuid: 'fresh',
+						slug: 'fresh',
+						permissions: undefined,
+					},
 					availableGroups,
 				},
 			})
-			expect(findSelectByLabel(wrapper, 'Owners (full control)').text()).not.toContain('team-')
+			expect(
+				findSelectByLabel(wrapper, 'Owners (full control)').text(),
+			).not.toContain('team-')
 		})
 	})
 
@@ -205,7 +221,10 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 			})
 			const buttons = wrapper.findAll('button')
 			await buttons.at(buttons.length - 1).trigger('click')
-			expect(wrapper.emitted('save')[0][0].owners).toEqual(['team-alpha', 'team-delta'])
+			expect(wrapper.emitted('save')[0][0].owners).toEqual([
+				'team-alpha',
+				'team-delta',
+			])
 		})
 	})
 
@@ -223,8 +242,12 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 			// No save event must be emitted.
 			expect(wrapper.emitted('save')).toBeFalsy()
 			// The inline orphan-error must be visible.
-			expect(wrapper.find('.openbuild-permissions-modal__error').exists()).toBe(true)
-			expect(wrapper.find('.openbuild-permissions-modal__error').text()).toMatch(/owner/i)
+			expect(
+				wrapper.find('.openbuild-permissions-modal__error').exists(),
+			).toBe(true)
+			expect(
+				wrapper.find('.openbuild-permissions-modal__error').text(),
+			).toMatch(/owner/i)
 		})
 
 		it('clears the orphan error when the application prop is re-supplied', async () => {
@@ -234,7 +257,9 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 			await wrapper.setData({ ownersModel: [] })
 			const buttons = wrapper.findAll('button')
 			await buttons.at(buttons.length - 1).trigger('click')
-			expect(wrapper.find('.openbuild-permissions-modal__error').exists()).toBe(true)
+			expect(
+				wrapper.find('.openbuild-permissions-modal__error').exists(),
+			).toBe(true)
 
 			// Re-supply application — the watcher re-syncs from props and
 			// resets `orphanError` to false.
@@ -242,10 +267,16 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 				application: {
 					uuid: 'app-uuid-2',
 					slug: 'fresh',
-					permissions: { owners: ['team-omega'], editors: [], viewers: [] },
+					permissions: {
+						owners: ['team-omega'],
+						editors: [],
+						viewers: [],
+					},
 				},
 			})
-			expect(wrapper.find('.openbuild-permissions-modal__error').exists()).toBe(false)
+			expect(
+				wrapper.find('.openbuild-permissions-modal__error').exists(),
+			).toBe(false)
 		})
 	})
 

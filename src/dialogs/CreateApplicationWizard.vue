@@ -43,7 +43,9 @@
 		<template #step-preset="{ stepData, setStepData }">
 			<Step2Preset
 				:payload="stepData"
-				@update:payload="(partial) => onPresetUpdate(partial, setStepData)" />
+				@update:payload="
+					(partial) => onPresetUpdate(partial, setStepData)
+				" />
 		</template>
 
 		<template #step-custom="{ stepData, setStepData }">
@@ -163,13 +165,19 @@ export default {
 		 */
 		validateStep(stepId, stepData) {
 			if (stepId === 'basics') {
-				return stepData._step1Valid ? true : t('openbuild', 'Enter a name and a valid slug.')
+				return stepData._step1Valid
+					? true
+					: t('openbuild', 'Enter a name and a valid slug.')
 			}
 			if (stepId === 'preset') {
-				return stepData._step2Valid ? true : t('openbuild', 'Choose a version preset.')
+				return stepData._step2Valid
+					? true
+					: t('openbuild', 'Choose a version preset.')
 			}
 			if (stepId === 'custom') {
-				return stepData._step3Valid ? true : t('openbuild', 'Complete the custom version chain.')
+				return stepData._step3Valid
+					? true
+					: t('openbuild', 'Complete the custom version chain.')
 			}
 			return true
 		},
@@ -233,7 +241,12 @@ export default {
 					await this.attachIcon(uuid, 'icon', 'app-icon.svg', lightSvg)
 				}
 				if (darkSvg) {
-					await this.attachIcon(uuid, 'iconDark', 'app-icon-dark.svg', darkSvg)
+					await this.attachIcon(
+						uuid,
+						'iconDark',
+						'app-icon-dark.svg',
+						darkSvg,
+					)
 				}
 			} catch (err) {
 				console.error('OpenBuild: failed to attach app icon', err)
@@ -277,11 +290,17 @@ export default {
 		reportError(data, err) {
 			let message = data.message || data.detail
 			if (!message && err) message = err.message
-			if (!message) message = t('openbuild', 'Failed to create the application.')
-			if (Array.isArray(data.orphanedResources) && data.orphanedResources.length > 0) {
-				message += ' ' + t('openbuild', 'Some resources need manual cleanup: {list}', {
-					list: data.orphanedResources.join(', '),
-				})
+			if (!message)
+				message = t('openbuild', 'Failed to create the application.')
+			if (
+				Array.isArray(data.orphanedResources)
+				&& data.orphanedResources.length > 0
+			) {
+				message +=
+					' '
+					+ t('openbuild', 'Some resources need manual cleanup: {list}', {
+						list: data.orphanedResources.join(', '),
+					})
 			}
 			if (this.$refs.wizard) {
 				this.$refs.wizard.setError(message)
@@ -310,7 +329,9 @@ export default {
 		onAiAppCreated(appSlug) {
 			this.onClose()
 			if (this.$router && appSlug) {
-				this.$router.push({ name: 'PageDesigner', params: { slug: appSlug } }).catch(() => {})
+				this.$router
+					.push({ name: 'PageDesigner', params: { slug: appSlug } })
+					.catch(() => {})
 			}
 			// Emit with no uuid so a parent's `created(applicationUuid)` handler
 			// (e.g. DashboardIndex.onAppCreated) refreshes its listing instead of

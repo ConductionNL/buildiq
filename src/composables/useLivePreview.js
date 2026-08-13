@@ -25,8 +25,7 @@ import { useAppManifest } from '@conduction/nextcloud-vue'
 export function useLivePreview() {
 	// Spec #2 adds a second positional `manifestObject` parameter; arity
 	// is the discriminator. Older versions ship as a 1-arg function.
-	const fnArity
-		= typeof useAppManifest === 'function' ? useAppManifest.length : 0
+	const fnArity = typeof useAppManifest === 'function' ? useAppManifest.length : 0
 	const available = computed(() => fnArity >= 2)
 
 	/**
@@ -64,7 +63,7 @@ function manifestHash(manifest) {
 		const json = JSON.stringify(manifest)
 		let hash = 0
 		for (let i = 0; i < json.length; i++) {
-			hash = ((hash << 5) - hash) + json.charCodeAt(i)
+			hash = (hash << 5) - hash + json.charCodeAt(i)
 			hash |= 0
 		}
 		return String(hash)

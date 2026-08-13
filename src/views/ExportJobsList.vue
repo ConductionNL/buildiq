@@ -23,7 +23,9 @@
 					<!-- Actions column: no visible caption, but it is still a column
 					     header, so it keeps `scope="col"` and an sr-only name. -->
 					<th scope="col">
-						<span class="hidden-visually">{{ t('openbuild', 'Actions') }}</span>
+						<span class="hidden-visually">{{
+							t('openbuild', 'Actions')
+						}}</span>
 					</th>
 				</tr>
 			</thead>
@@ -34,22 +36,34 @@
 				  makes every key identical and lets Vue reuse the wrong <tr>
 				  as statuses change under polling.
 				-->
-				<tr v-for="(job, i) in jobs" :key="(job['@self'] && job['@self'].id) || i">
+				<tr
+					v-for="(job, i) in jobs"
+					:key="(job['@self'] && job['@self'].id) || i">
 					<td>{{ job.applicationVersion }}</td>
 					<td>{{ job.target }}</td>
 					<td>{{ statusLabel(job.status) }}</td>
 					<td>
 						<NcButton
-							v-if="job.status === 'succeeded' && job.target === 'zip' && job.downloadUrl"
+							v-if="
+								job.status === 'succeeded'
+								&& job.target === 'zip'
+								&& job.downloadUrl
+							"
 							:href="job.downloadUrl">
 							{{ t('openbuild', 'Download ZIP') }}
 						</NcButton>
 						<NcButton
-							v-else-if="job.status === 'succeeded' && job.target === 'github' && job.githubPullRequestUrl"
+							v-else-if="
+								job.status === 'succeeded'
+								&& job.target === 'github'
+								&& job.githubPullRequestUrl
+							"
 							:href="job.githubPullRequestUrl">
 							{{ t('openbuild', 'View pull request') }}
 						</NcButton>
-						<span v-else-if="job.status === 'failed'" class="export-jobs__error">
+						<span
+							v-else-if="job.status === 'failed'"
+							class="export-jobs__error">
 							{{ job.errorMessage }}
 						</span>
 					</td>
@@ -164,7 +178,12 @@ export default {
 				//
 				// `applicationSlug` is still the right key for the SUBMIT endpoint
 				// (/api/applications/{slug}/exports), so both props are kept.
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/export-job') + '?applicationUuid=' + encodeURIComponent(this.applicationUuid)
+				const url =
+					generateUrl(
+						'/apps/openregister/api/objects/openbuild/export-job',
+					)
+					+ '?applicationUuid='
+					+ encodeURIComponent(this.applicationUuid)
 				const response = await fetch(url)
 				if (!response.ok) {
 					return

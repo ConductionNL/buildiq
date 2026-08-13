@@ -18,10 +18,11 @@ const t = (app, str) => str
  * (v-if) when the active `?filter=` URL query selects a different app type.
  */
 describe('ApplicationCard — appType pill + filter', () => {
-	const factory = (object, route = { query: {} }, extra = {}) => shallowMount(ApplicationCard, {
-		propsData: { object, ...extra },
-		mocks: { t, $router: { push: vi.fn() }, $route: route },
-	})
+	const factory = (object, route = { query: {} }, extra = {}) =>
+		shallowMount(ApplicationCard, {
+			propsData: { object, ...extra },
+			mocks: { t, $router: { push: vi.fn() }, $route: route },
+		})
 
 	// --- type pill ---------------------------------------------------------
 
@@ -55,23 +56,35 @@ describe('ApplicationCard — appType pill + filter', () => {
 	})
 
 	it('renders the card when the filter is "all"', () => {
-		const w = factory({ slug: 'my-app', appType: 'hybrid' }, { query: { filter: 'all' } })
+		const w = factory(
+			{ slug: 'my-app', appType: 'hybrid' },
+			{ query: { filter: 'all' } },
+		)
 		expect(w.find('.ob-app-card').exists()).toBe(true)
 	})
 
 	it('renders the card when the filter equals the appTypeKey', () => {
-		const w = factory({ slug: 'my-app', appType: 'hybrid' }, { query: { filter: 'hybrid' } })
+		const w = factory(
+			{ slug: 'my-app', appType: 'hybrid' },
+			{ query: { filter: 'hybrid' } },
+		)
 		expect(w.find('.ob-app-card').exists()).toBe(true)
 	})
 
 	it('hides a virtual card when the filter is "hybrid"', () => {
-		const w = factory({ slug: 'my-app', appType: 'virtual' }, { query: { filter: 'hybrid' } })
+		const w = factory(
+			{ slug: 'my-app', appType: 'virtual' },
+			{ query: { filter: 'hybrid' } },
+		)
 		expect(w.find('.ob-app-card').exists()).toBe(false)
 		expect(w.vm.hiddenByFilter).toBe(true)
 	})
 
 	it('shows a hybrid card when the filter is "hybrid"', () => {
-		const w = factory({ slug: 'my-app', appType: 'hybrid' }, { query: { filter: 'hybrid' } })
+		const w = factory(
+			{ slug: 'my-app', appType: 'hybrid' },
+			{ query: { filter: 'hybrid' } },
+		)
 		expect(w.find('.ob-app-card').exists()).toBe(true)
 		expect(w.vm.hiddenByFilter).toBe(false)
 	})

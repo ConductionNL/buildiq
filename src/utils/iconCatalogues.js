@@ -109,13 +109,17 @@ export function resolveAppIcon(value, { dark = false } = {}) {
 		// Raw SVG (custom editor / uploaded file) — sanitize before use so an
 		// author-supplied <script>/event-handler cannot execute in a preview or
 		// once persisted and served (harden-xss-dos-csrf).
-		return DOMPurify.sanitize(trimmed, { USE_PROFILES: { svg: true, svgFilters: true } })
+		return DOMPurify.sanitize(trimmed, {
+			USE_PROFILES: { svg: true, svgFilters: true },
+		})
 	}
 	const glyph = lookupGlyph(trimmed)
 	if (!glyph) {
 		return null
 	}
 	const fill = dark ? '' : ' fill="#ffffff"'
-	return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${glyph.viewBox}">`
+	return (
+		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${glyph.viewBox}">`
 		+ `<path d="${escapePath(glyph.path)}"${fill}/></svg>`
+	)
 }

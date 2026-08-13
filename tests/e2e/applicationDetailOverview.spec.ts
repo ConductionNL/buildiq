@@ -67,7 +67,9 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 	})
 
-	test('renders the six stacked rows when the hello-world app is opened', async ({ page }) => {
+	test('renders the six stacked rows when the hello-world app is opened', async ({
+		page,
+	}) => {
 		const appUuidRes = await page.request.get(
 			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
@@ -89,11 +91,19 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		await expect(page.locator('.ob-detail-header__hero')).toBeVisible()
 		await expect(page.locator('.ob-detail-header__controls')).toBeVisible()
 		await expect(page.locator('.ob-detail-dashboard__kpis')).toBeVisible()
-		await expect(page.locator('.ob-detail-dashboard__activity, .ob-detail-dashboard__activity-empty').first()).toBeVisible()
+		await expect(
+			page
+				.locator(
+					'.ob-detail-dashboard__activity, .ob-detail-dashboard__activity-empty',
+				)
+				.first(),
+		).toBeVisible()
 		await expect(page.locator('.ob-detail-dashboard__widgets')).toBeVisible()
 	})
 
-	test('pill strip carries production-asterisk marker (REQ-OBADO-002)', async ({ page }) => {
+	test('pill strip carries production-asterisk marker (REQ-OBADO-002)', async ({
+		page,
+	}) => {
 		const appUuidRes = await page.request.get(
 			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
@@ -113,7 +123,9 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		expect(allText.some((t) => t.includes('*'))).toBe(true)
 	})
 
-	test('window toggle change reloads the insights payload (REQ-OBADO-003)', async ({ page }) => {
+	test('window toggle change reloads the insights payload (REQ-OBADO-003)', async ({
+		page,
+	}) => {
 		const appUuidRes = await page.request.get(
 			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
@@ -136,16 +148,25 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		// have reported coverage of REQ-OBADO-003 while proving only that a button
 		// highlights. The whole requirement is that changing the window reloads the
 		// payload, so the request is the assertion.
-		const requestPromise = page.waitForRequest(/\/insights\?.*window=30d/, { timeout: 15_000 })
+		const requestPromise = page.waitForRequest(/\/insights\?.*window=30d/, {
+			timeout: 15_000,
+		})
 		await windowButtons.nth(1).click()
 		const req = await requestPromise
-		expect(req.url(), 'changing the window must re-fetch insights for that window').toMatch(/window=30d/)
+		expect(
+			req.url(),
+			'changing the window must re-fetch insights for that window',
+		).toMatch(/window=30d/)
 
-		const activeBtn = page.locator('.ob-detail-dashboard__range button[aria-pressed="true"]')
+		const activeBtn = page.locator(
+			'.ob-detail-dashboard__range button[aria-pressed="true"]',
+		)
 		await expect(activeBtn).toHaveText('30d')
 	})
 
-	test('Promote affordance does not appear on the terminal production pill (REQ-OBADO-012)', async ({ page }) => {
+	test('Promote affordance does not appear on the terminal production pill (REQ-OBADO-012)', async ({
+		page,
+	}) => {
 		const appUuidRes = await page.request.get(
 			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
@@ -189,7 +210,9 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 	})
 
-	async function loadFirstApp(page: import('@playwright/test').Page): Promise<string | null> {
+	async function loadFirstApp(
+		page: import('@playwright/test').Page,
+	): Promise<string | null> {
 		const lookup = await page.request.get(
 			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 			{ headers: { 'OCS-APIRequest': 'true' } },
@@ -200,14 +223,18 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		return apps[0].uuid || apps[0].id
 	}
 
-	test('REQ-OBADO-002 (14.4) — viewer / non-member sees only the production pill', async ({ page }) => {
+	test('REQ-OBADO-002 (14.4) — viewer / non-member sees only the production pill', async ({
+		page,
+	}) => {
 		const objectId = await loadFirstApp(page)
 		test.skip(!objectId, 'hello-world app not seeded')
 
 		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__pill', { timeout: 15_000 })
 
-		const pillTexts = await page.locator('.ob-detail-header__pill').allTextContents()
+		const pillTexts = await page
+			.locator('.ob-detail-header__pill')
+			.allTextContents()
 		// The viewer-blackout assertion is exercised by openbuild-rbac;
 		// this case asserts the contract that the admin/owner sees ALL
 		// pills AND the production pill carries the `*` marker.
@@ -215,7 +242,9 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		expect(hasProductionMarker).toBe(true)
 	})
 
-	test('REQ-OBADO-002 (14.5) — clicking a pill updates `?_version=` and re-renders the page', async ({ page }) => {
+	test('REQ-OBADO-002 (14.5) — clicking a pill updates `?_version=` and re-renders the page', async ({
+		page,
+	}) => {
 		const objectId = await loadFirstApp(page)
 		test.skip(!objectId, 'hello-world app not seeded')
 
@@ -231,14 +260,21 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		await firstPill.click()
 
 		// URL must carry `?_version=<slug>` after the click.
-		await page.waitForURL((url) => /[?&]_version=/.test(url.toString()), { timeout: 5_000 })
+		await page.waitForURL((url) => /[?&]_version=/.test(url.toString()), {
+			timeout: 5_000,
+		})
 		const url = new URL(page.url())
 		const versionParam = url.searchParams.get('_version')
-		expect(versionParam, 'pill click must add ?_version= to the URL').toBeTruthy()
+		expect(
+			versionParam,
+			'pill click must add ?_version= to the URL',
+		).toBeTruthy()
 		expect(firstPillText).toContain((versionParam || '').toLowerCase())
 	})
 
-	test('REQ-OBADO-007/009/010 (14.7) — structural widget deep-links preserve ?_version=', async ({ page }) => {
+	test('REQ-OBADO-007/009/010 (14.7) — structural widget deep-links preserve ?_version=', async ({
+		page,
+	}) => {
 		const objectId = await loadFirstApp(page)
 		test.skip(!objectId, 'hello-world app not seeded')
 
@@ -250,7 +286,9 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		const count = await pills.count()
 		test.skip(count < 2, 'need at least two versions')
 		await pills.first().click()
-		await page.waitForURL((url) => /[?&]_version=/.test(url.toString()), { timeout: 5_000 })
+		await page.waitForURL((url) => /[?&]_version=/.test(url.toString()), {
+			timeout: 5_000,
+		})
 
 		const versionSlug = new URL(page.url()).searchParams.get('_version')
 		expect(versionSlug).toBeTruthy()
@@ -266,25 +304,32 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		for (let i = 0; i < linkCount; i++) {
 			const href = await widgetLinks.nth(i).getAttribute('href')
 			if (!href) continue
-			const carriesVersion
-				= href.includes(`-${versionSlug}`)
+			const carriesVersion =
+				href.includes(`-${versionSlug}`)
 				|| href.includes(`_version=${versionSlug}`)
 				|| href.includes(`?_version=${versionSlug}`)
 			if (!carriesVersion) {
 				// Some links (e.g. external Open in OpenRegister) carry the version
 				// in the register slug itself; the assertion above already covers that.
 				// If neither path nor query carries the slug, fail.
-				expect(carriesVersion, `widget link ${href} must carry ?_version=${versionSlug} or the register-suffix form`).toBe(true)
+				expect(
+					carriesVersion,
+					`widget link ${href} must carry ?_version=${versionSlug} or the register-suffix form`,
+				).toBe(true)
 			}
 		}
 	})
 
-	test('REQ-OBADO-005 (14.8) — activity row renders either the chart or the empty-state', async ({ page }) => {
+	test('REQ-OBADO-005 (14.8) — activity row renders either the chart or the empty-state', async ({
+		page,
+	}) => {
 		const objectId = await loadFirstApp(page)
 		test.skip(!objectId, 'hello-world app not seeded')
 
 		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
-		await page.waitForSelector('.ob-detail-dashboard__activity', { timeout: 20_000 })
+		await page.waitForSelector('.ob-detail-dashboard__activity', {
+			timeout: 20_000,
+		})
 
 		// EITHER the chart is rendered (non-empty activity[]) OR the empty-state
 		// copy is ("No activity in the selected window").
@@ -295,9 +340,16 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		// wrapper and empty state are both visible by construction.
 		const chart = page.locator('.ob-detail-dashboard__activity-chart').first()
 		const empty = page.locator('.ob-detail-dashboard__activity-empty').first()
-		const chartVisible = await chart.isVisible({ timeout: 2_000 }).catch(() => false)
-		const emptyVisible = await empty.isVisible({ timeout: 2_000 }).catch(() => false)
-		expect(chartVisible || emptyVisible, 'activity row must render either chart or empty-state').toBe(true)
+		const chartVisible = await chart
+			.isVisible({ timeout: 2_000 })
+			.catch(() => false)
+		const emptyVisible = await empty
+			.isVisible({ timeout: 2_000 })
+			.catch(() => false)
+		expect(
+			chartVisible || emptyVisible,
+			'activity row must render either chart or empty-state',
+		).toBe(true)
 
 		// Never both at the same time.
 		if (chartVisible) expect(emptyVisible).toBe(false)
@@ -311,7 +363,9 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 // `public, max-age=60` cache header a 200 carries). A non-functional admin UI
 // could not have affected either.
 test.describe('Application insights — endpoint surface', () => {
-	test('invalid window enum returns 400 with the spec-defined body', async ({ request }) => {
+	test('invalid window enum returns 400 with the spec-defined body', async ({
+		request,
+	}) => {
 		test.skip(!LIVE, 'OPENBUILD_E2E_LIVE not set')
 		const res = await request.get(
 			`${BASE}/index.php/apps/openbuild/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/insights?window=24h`,
@@ -323,7 +377,9 @@ test.describe('Application insights — endpoint surface', () => {
 		expect(String(body.message || '')).toMatch(/Invalid window/)
 	})
 
-	test('unknown appUuid returns 404 without the public cache header', async ({ request }) => {
+	test('unknown appUuid returns 404 without the public cache header', async ({
+		request,
+	}) => {
 		test.skip(!LIVE, 'OPENBUILD_E2E_LIVE not set')
 		const res = await request.get(
 			`${BASE}/index.php/apps/openbuild/api/applications/ffffffff-ffff-ffff-ffff-ffffffffffff/versions/00000000-0000-0000-0000-000000000002/insights?window=7d`,

@@ -34,7 +34,7 @@
 					:value="config.saveEndpoint || ''"
 					:placeholder="t('openbuild', '/api/objects/:slug/settings')"
 					:aria-invalid="isInvalid('saveEndpoint')"
-					@input="update('saveEndpoint', $event.target.value)">
+					@input="update('saveEndpoint', $event.target.value)" />
 				<InlineFieldMark :error="markFor('saveEndpoint')" />
 			</label>
 		</fieldset>
@@ -47,7 +47,7 @@
 						type="radio"
 						:checked="layoutShape === 'sections'"
 						value="sections"
-						@change="setLayoutShape('sections')">
+						@change="setLayoutShape('sections')" />
 					{{ t('openbuild', 'Flat sections') }}
 				</label>
 				<label class="settings-page-editor__inline">
@@ -55,7 +55,7 @@
 						type="radio"
 						:checked="layoutShape === 'tabs'"
 						value="tabs"
-						@change="setLayoutShape('tabs')">
+						@change="setLayoutShape('tabs')" />
 					{{ t('openbuild', 'Tabbed sections') }}
 				</label>
 			</div>
@@ -64,7 +64,9 @@
 			</p>
 		</fieldset>
 
-		<fieldset v-if="layoutShape === 'sections'" class="settings-page-editor__fieldset">
+		<fieldset
+			v-if="layoutShape === 'sections'"
+			class="settings-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Sections') }}</legend>
 			<SettingsSectionBuilder
 				:model-value="config.sections || []"
@@ -74,7 +76,10 @@
 
 		<fieldset v-else class="settings-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Tabs') }}</legend>
-			<div v-for="(tab, index) in tabs" :key="index" class="settings-page-editor__tab">
+			<div
+				v-for="(tab, index) in tabs"
+				:key="index"
+				class="settings-page-editor__tab">
 				<div class="settings-page-editor__tab-head">
 					<input
 						:value="tab.id || ''"
@@ -82,21 +87,25 @@
 						class="settings-page-editor__field settings-page-editor__field--narrow"
 						:placeholder="t('openbuild', 'Tab id')"
 						:aria-label="t('openbuild', 'Tab id')"
-						@input="updateTabField(index, 'id', $event.target.value)">
+						@input="updateTabField(index, 'id', $event.target.value)" />
 					<input
 						:value="tab.label || ''"
 						type="text"
 						class="settings-page-editor__field"
 						:placeholder="t('openbuild', 'Tab label (i18n key)')"
 						:aria-label="t('openbuild', 'Tab label (i18n key)')"
-						@input="updateTabField(index, 'label', $event.target.value)">
+						@input="
+							updateTabField(index, 'label', $event.target.value)
+						" />
 					<input
 						:value="tab.icon || ''"
 						type="text"
 						class="settings-page-editor__field settings-page-editor__field--narrow"
 						:placeholder="t('openbuild', 'Icon (optional)')"
 						:aria-label="t('openbuild', 'Icon (optional)')"
-						@input="updateTabField(index, 'icon', $event.target.value)">
+						@input="
+							updateTabField(index, 'icon', $event.target.value)
+						" />
 					<button
 						type="button"
 						class="settings-page-editor__remove"
@@ -162,7 +171,10 @@ export default {
 		layoutShape() {
 			// `tabs` wins only when there is no `sections` array so a
 			// half-edited config never silently flips branches.
-			if (Array.isArray(this.config.tabs) && !Array.isArray(this.config.sections)) {
+			if (
+				Array.isArray(this.config.tabs)
+				&& !Array.isArray(this.config.sections)
+			) {
 				return 'tabs'
 			}
 			return 'sections'
@@ -190,8 +202,14 @@ export default {
 		 */
 		update(key, value) {
 			const next = { ...this.config }
-			if (value === '' || value === null || value === undefined
-				|| (Array.isArray(value) && value.length === 0 && key === 'saveEndpoint')) {
+			if (
+				value === ''
+				|| value === null
+				|| value === undefined
+				|| (Array.isArray(value)
+					&& value.length === 0
+					&& key === 'saveEndpoint')
+			) {
 				delete next[key]
 			} else {
 				next[key] = value

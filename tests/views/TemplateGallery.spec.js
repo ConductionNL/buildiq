@@ -35,14 +35,29 @@ vi.mock('../../src/modals/CloneTemplateDialog.vue', () => ({
 		name: 'CloneTemplateDialog',
 		props: ['open', 'template', 'github', 'githubRepo'],
 		emits: ['close', 'installed'],
-		render() { return null },
+		render() {
+			return null
+		},
 	},
 }))
 
 import TemplateGallery from '../../src/views/TemplateGallery.vue'
 
 const githubCards = [
-	{ owner: 'conduction', repo: 'petstore', slug: 'petstore', name: 'Pet Store', description: 'A pet store app', category: 'internal-operations', appType: 'virtual', version: '1.0.0', stars: 12, installable: true, unparseable: false, credentials: [] },
+	{
+		owner: 'conduction',
+		repo: 'petstore',
+		slug: 'petstore',
+		name: 'Pet Store',
+		description: 'A pet store app',
+		category: 'internal-operations',
+		appType: 'virtual',
+		version: '1.0.0',
+		stars: 12,
+		installable: true,
+		unparseable: false,
+		credentials: [],
+	},
 ]
 
 /**
@@ -57,7 +72,9 @@ async function mountGallery(routerOverrides = {}) {
 	axiosMock.get.mockImplementation((url) => {
 		const u = String(url)
 		if (u.includes('shop/github/search')) {
-			return Promise.resolve({ data: { outcome: 'ok', cards: githubCards, rateLimited: false } })
+			return Promise.resolve({
+				data: { outcome: 'ok', cards: githubCards, rateLimited: false },
+			})
 		}
 		if (u.includes('credentials')) {
 			return Promise.resolve({ data: [] })
@@ -69,7 +86,13 @@ async function mountGallery(routerOverrides = {}) {
 		// redirectAfterClone probes registered route names via hasRoute(), which
 		// reads $router.options.routes (routes are built flat from the manifest
 		// with name = page.id). Provide the surfaces it feature-detects.
-		options: { routes: [{ name: 'PageEditor' }, { name: 'VirtualApps' }, { name: 'Dashboard' }] },
+		options: {
+			routes: [
+				{ name: 'PageEditor' },
+				{ name: 'VirtualApps' },
+				{ name: 'Dashboard' },
+			],
+		},
 		push: vi.fn(),
 		...routerOverrides,
 	}
@@ -82,16 +105,27 @@ async function mountGallery(routerOverrides = {}) {
 			NcButton: {
 				name: 'NcButton',
 				props: ['type', 'disabled'],
-				template: '<button class="nc-button-stub" @click="$emit(\'click\', $event)"><slot /></button>',
+				template:
+					'<button class="nc-button-stub" @click="$emit(\'click\', $event)"><slot /></button>',
 			},
 			NcTextField: {
 				name: 'NcTextField',
 				props: ['value', 'label', 'placeholder'],
-				template: '<input class="nc-textfield-stub" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
+				template:
+					'<input class="nc-textfield-stub" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
 			},
 			NcLoadingIcon: true,
-			NcEmptyContent: { name: 'NcEmptyContent', props: ['name'], template: '<div class="nc-empty-stub">{{ name }}</div>' },
-			NcNoteCard: { name: 'NcNoteCard', props: ['type'], template: '<div class="nc-note-stub" :data-type="type"><slot /></div>' },
+			NcEmptyContent: {
+				name: 'NcEmptyContent',
+				props: ['name'],
+				template: '<div class="nc-empty-stub">{{ name }}</div>',
+			},
+			NcNoteCard: {
+				name: 'NcNoteCard',
+				props: ['type'],
+				template:
+					'<div class="nc-note-stub" :data-type="type"><slot /></div>',
+			},
 		},
 	})
 
@@ -116,7 +150,9 @@ describe('TemplateGallery.vue — GitHub-only store', () => {
 
 		expect(axiosMock.get).toHaveBeenCalled()
 		const urls = axiosMock.get.mock.calls.map((c) => String(c[0]))
-		expect(urls.some((u) => u.includes('/apps/openbuild/api/shop/github/search'))).toBe(true)
+		expect(
+			urls.some((u) => u.includes('/apps/openbuild/api/shop/github/search')),
+		).toBe(true)
 
 		const cards = wrapper.findAll('.template-card')
 		expect(cards.length).toBe(1)
@@ -130,7 +166,10 @@ describe('TemplateGallery.vue — GitHub-only store', () => {
 		await wrapper.vm.$nextTick()
 
 		expect(wrapper.vm.cloneOpen).toBe(true)
-		expect(wrapper.vm.cloneGithubRepo).toEqual({ owner: 'conduction', repo: 'petstore' })
+		expect(wrapper.vm.cloneGithubRepo).toEqual({
+			owner: 'conduction',
+			repo: 'petstore',
+		})
 		expect(wrapper.vm.cloneTarget.slug).toBe('petstore')
 	})
 

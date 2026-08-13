@@ -79,7 +79,11 @@ vi.mock('../../src/composables/useAppStatus.js', () => ({
 		return {
 			available,
 			checked: ref(false),
-			check: () => Promise.resolve().then(() => { available.value = statusAvailable; return statusAvailable }),
+			check: () =>
+				Promise.resolve().then(() => {
+					available.value = statusAvailable
+					return statusAvailable
+				}),
 		}
 	},
 }))
@@ -92,7 +96,11 @@ vi.mock('../../src/composables/useAppStatus.js', () => ({
 let livePreviewAvailableValue = true
 vi.mock('../../src/composables/useLivePreview.js', () => ({
 	useLivePreview: () => ({
-		available: { get value() { return livePreviewAvailableValue } },
+		available: {
+			get value() {
+				return livePreviewAvailableValue
+			},
+		},
 		previewProps: () => null,
 	}),
 }))
@@ -102,24 +110,44 @@ async function childStub(name) {
 	return {
 		default: {
 			name,
-			props: ['manifest', 'slug', 'schemas', 'procestAvailable', 'nldesignAvailable', 'docudeskAvailable'],
-			render() { return h('div', { class: `${name.toLowerCase()}-stub` }) },
+			props: [
+				'manifest',
+				'slug',
+				'schemas',
+				'procestAvailable',
+				'nldesignAvailable',
+				'docudeskAvailable',
+			],
+			render() {
+				return h('div', { class: `${name.toLowerCase()}-stub` })
+			},
 		},
 	}
 }
 vi.mock('../../src/views/PageDesigner.vue', () => childStub('PageDesigner'))
-vi.mock('../../src/components/WorkflowAttachmentsSection.vue', () => childStub('WorkflowAttachmentsSection'))
+vi.mock('../../src/components/WorkflowAttachmentsSection.vue', () =>
+	childStub('WorkflowAttachmentsSection'),
+)
 vi.mock('../../src/components/ThemeSection.vue', () => childStub('ThemeSection'))
-vi.mock('../../src/components/DocumentAttachmentsSection.vue', () => childStub('DocumentAttachmentsSection'))
+vi.mock('../../src/components/DocumentAttachmentsSection.vue', () =>
+	childStub('DocumentAttachmentsSection'),
+)
 
-const PageDesignerHost = (await import('../../src/views/PageDesignerHost.vue')).default
+const PageDesignerHost = (await import('../../src/views/PageDesignerHost.vue'))
+	.default
 
 const flush = async (wrapper) => {
 	await new Promise((r) => setTimeout(r, 0))
 	if (wrapper) await wrapper.vm.$nextTick()
 }
 
-function mountHost({ slug = 'petstore', query = {}, version = null, appList = [], available = true } = {}) {
+function mountHost({
+	slug = 'petstore',
+	query = {},
+	version = null,
+	appList = [],
+	available = true,
+} = {}) {
 	versionHolder = version
 	statusAvailable = available
 	axiosGetMock.mockReset()
@@ -150,12 +178,20 @@ describe('PageDesignerHost', () => {
 		// pages yet" for an app whose manifest carried pages, and offered to Save
 		// that emptiness over the real thing.
 		versionResolvesAsync = true
-		const version = { manifest: { version: '2.0.0', menu: [{ label: 'Dashboard' }], pages: [{ id: 'Dashboard' }, { id: 'MessagesIndex' }] } }
+		const version = {
+			manifest: {
+				version: '2.0.0',
+				menu: [{ label: 'Dashboard' }],
+				pages: [{ id: 'Dashboard' }, { id: 'MessagesIndex' }],
+			},
+		}
 		const wrapper = mountHost({
 			version,
 			// The versioned model keeps NO manifest on the Application itself, so
 			// there is nothing to fall back to — the version is the only source.
-			appList: [{ slug: 'petstore', name: 'Pet Store', '@self': { id: 'app-1' } }],
+			appList: [
+				{ slug: 'petstore', name: 'Pet Store', '@self': { id: 'app-1' } },
+			],
 		})
 		// Long enough for the version's (macrotask) resolution to land.
 		await new Promise((resolve) => setTimeout(resolve, 40))
@@ -173,7 +209,14 @@ describe('PageDesignerHost', () => {
 		const version = { manifest: { version: '2.0.0', pages: [{ id: 'a' }] } }
 		const wrapper = mountHost({
 			version,
-			appList: [{ slug: 'petstore', name: 'Pet Store', '@self': { id: 'app-1' }, manifest: { version: '1.0.0' } }],
+			appList: [
+				{
+					slug: 'petstore',
+					name: 'Pet Store',
+					'@self': { id: 'app-1' },
+					manifest: { version: '1.0.0' },
+				},
+			],
 		})
 		await flush(wrapper)
 		expect(wrapper.vm.loading).toBe(false)
@@ -184,7 +227,9 @@ describe('PageDesignerHost', () => {
 	})
 
 	it('falls back to the app manifest, then to the empty manifest', async () => {
-		const withApp = mountHost({ appList: [{ slug: 'petstore', manifest: { version: '7.0.0' } }] })
+		const withApp = mountHost({
+			appList: [{ slug: 'petstore', manifest: { version: '7.0.0' } }],
+		})
 		await flush(withApp)
 		expect(withApp.vm.manifest.version).toBe('7.0.0')
 
@@ -212,7 +257,10 @@ describe('PageDesignerHost', () => {
 	})
 
 	it('flips the soft capability flags once the probes resolve', async () => {
-		const wrapper = mountHost({ appList: [{ slug: 'petstore' }], available: false })
+		const wrapper = mountHost({
+			appList: [{ slug: 'petstore' }],
+			available: false,
+		})
 		await flush(wrapper)
 		expect(wrapper.vm.procestAvailable).toBe(false)
 		expect(wrapper.vm.nldesignAvailable).toBe(false)
@@ -223,14 +271,22 @@ describe('PageDesignerHost', () => {
 		it('normalizes an array of schemas', async () => {
 			const wrapper = mountHost({ appList: [{ slug: 'petstore' }] })
 			await flush(wrapper)
-			wrapper.vm.manifest = { schemas: [{ slug: 'pet', title: 'Pet', properties: { a: {} } }] }
-			expect(wrapper.vm.appSchemas).toEqual([{ slug: 'pet', title: 'Pet', properties: { a: {} } }])
+			wrapper.vm.manifest = {
+				schemas: [{ slug: 'pet', title: 'Pet', properties: { a: {} } }],
+			}
+			expect(wrapper.vm.appSchemas).toEqual([
+				{ slug: 'pet', title: 'Pet', properties: { a: {} } },
+			])
 		})
 		it('normalizes a schema map', async () => {
 			const wrapper = mountHost({ appList: [{ slug: 'petstore' }] })
 			await flush(wrapper)
-			wrapper.vm.manifest = { schemas: { pet: { title: 'Pet', properties: { a: {} } } } }
-			expect(wrapper.vm.appSchemas).toEqual([{ slug: 'pet', title: 'Pet', properties: { a: {} } }])
+			wrapper.vm.manifest = {
+				schemas: { pet: { title: 'Pet', properties: { a: {} } } },
+			}
+			expect(wrapper.vm.appSchemas).toEqual([
+				{ slug: 'pet', title: 'Pet', properties: { a: {} } },
+			])
 		})
 		it('returns [] when the manifest has no schemas', async () => {
 			const wrapper = mountHost({ appList: [{ slug: 'petstore' }] })
@@ -241,7 +297,11 @@ describe('PageDesignerHost', () => {
 	})
 
 	it('exposes routeSlug and versionSlug from the route', async () => {
-		const wrapper = mountHost({ slug: 'shop', query: { _version: 'draft-3' }, appList: [{ slug: 'shop' }] })
+		const wrapper = mountHost({
+			slug: 'shop',
+			query: { _version: 'draft-3' },
+			appList: [{ slug: 'shop' }],
+		})
 		await flush(wrapper)
 		expect(wrapper.vm.routeSlug).toBe('shop')
 		expect(wrapper.vm.versionSlug).toBe('draft-3')
@@ -258,7 +318,9 @@ describe('PageDesignerHost', () => {
 	})
 
 	it('applicationUuid reads the @self id then the uuid field', async () => {
-		const wrapper = mountHost({ appList: [{ slug: 'petstore', '@self': { id: 'self-id' } }] })
+		const wrapper = mountHost({
+			appList: [{ slug: 'petstore', '@self': { id: 'self-id' } }],
+		})
 		await flush(wrapper)
 		expect(wrapper.vm.applicationUuid).toBe('self-id')
 		wrapper.vm.application = { uuid: 'plain-uuid' }
@@ -266,7 +328,9 @@ describe('PageDesignerHost', () => {
 	})
 
 	it('builderUrl links only when the app is published', async () => {
-		const wrapper = mountHost({ appList: [{ slug: 'petstore', status: 'draft' }] })
+		const wrapper = mountHost({
+			appList: [{ slug: 'petstore', status: 'draft' }],
+		})
 		await flush(wrapper)
 		expect(wrapper.vm.builderUrl).toBe('')
 		wrapper.vm.application = { slug: 'petstore', status: 'published' }
@@ -287,7 +351,10 @@ describe('PageDesignerHost', () => {
 	it('onThemePreview mutates the in-flight manifest and reverts to the pre-preview baseline on null (design.md Decision 3)', async () => {
 		const wrapper = mountHost({ appList: [{ slug: 'petstore' }] })
 		await flush(wrapper)
-		wrapper.vm.manifest = { version: '1.0.0', runtime: { theme: { source: 'nldesign', tokenSet: 'saved-theme' } } }
+		wrapper.vm.manifest = {
+			version: '1.0.0',
+			runtime: { theme: { source: 'nldesign', tokenSet: 'saved-theme' } },
+		}
 		wrapper.vm.onThemePreview({ primaryColor: '#123' })
 		// Mutates THIS SAME manifest object (the one bound to PageDesigner's
 		// prop, and therefore the live-preview-pane's CnAppRoot) — no
@@ -296,7 +363,10 @@ describe('PageDesignerHost', () => {
 		wrapper.vm.onThemePreview(null)
 		// Reverts to the theme that was persisted BEFORE the first preview
 		// mutation this session — not simply "whatever was there a moment ago".
-		expect(wrapper.vm.manifest.runtime.theme).toEqual({ source: 'nldesign', tokenSet: 'saved-theme' })
+		expect(wrapper.vm.manifest.runtime.theme).toEqual({
+			source: 'nldesign',
+			tokenSet: 'saved-theme',
+		})
 	})
 
 	it('onThemePreview(null) with no active preview is a no-op', async () => {
@@ -315,18 +385,31 @@ describe('PageDesignerHost', () => {
 	})
 
 	it('onCreateLinkProperty deep-links to the schema designer (and no-ops on empty)', async () => {
-		const wrapper = mountHost({ slug: 'petstore', appList: [{ slug: 'petstore' }] })
+		const wrapper = mountHost({
+			slug: 'petstore',
+			appList: [{ slug: 'petstore' }],
+		})
 		await flush(wrapper)
 		// jsdom blocks real navigation, so swap window.location for a writable stub.
 		const original = window.location
-		Object.defineProperty(window, 'location', { configurable: true, writable: true, value: { href: 'about:blank' } })
+		Object.defineProperty(window, 'location', {
+			configurable: true,
+			writable: true,
+			value: { href: 'about:blank' },
+		})
 		try {
 			wrapper.vm.onCreateLinkProperty('')
 			expect(window.location.href).toBe('about:blank')
 			wrapper.vm.onCreateLinkProperty('pet')
-			expect(window.location.href).toBe('/apps/openbuild/builder/petstore/schemas?schema=pet&addProperty=zaakUrl')
+			expect(window.location.href).toBe(
+				'/apps/openbuild/builder/petstore/schemas?schema=pet&addProperty=zaakUrl',
+			)
 		} finally {
-			Object.defineProperty(window, 'location', { configurable: true, writable: true, value: original })
+			Object.defineProperty(window, 'location', {
+				configurable: true,
+				writable: true,
+				value: original,
+			})
 		}
 	})
 
@@ -345,7 +428,9 @@ describe('PageDesignerHost', () => {
 			appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
 		})
 		await flush(wrapper)
-		axiosPatchMock.mockResolvedValueOnce({ data: { '@self': { id: 'ver-uuid' }, saved: true } })
+		axiosPatchMock.mockResolvedValueOnce({
+			data: { '@self': { id: 'ver-uuid' }, saved: true },
+		})
 		await wrapper.vm.save()
 		// PATCH the manifest only — a full-object PUT trips the reserved `register`
 		// property collision on the ApplicationVersion schema.
@@ -363,7 +448,9 @@ describe('PageDesignerHost', () => {
 			appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
 		})
 		await flush(wrapper)
-		axiosPutMock.mockResolvedValueOnce({ data: { '@self': { id: 'app-1' }, saved: true } })
+		axiosPutMock.mockResolvedValueOnce({
+			data: { '@self': { id: 'app-1' }, saved: true },
+		})
 		await wrapper.vm.save()
 		expect(axiosPutMock).toHaveBeenCalledWith(
 			'/apps/openregister/api/objects/openbuild/application/app-1',
@@ -403,7 +490,9 @@ describe('PageDesignerHost', () => {
 			})
 			await flush(wrapper)
 			expect(wrapper.vm.sessionKey).toBe('petstore:staging:0')
-			axiosPatchMock.mockResolvedValueOnce({ data: { '@self': { id: 'ver-uuid' } } })
+			axiosPatchMock.mockResolvedValueOnce({
+				data: { '@self': { id: 'ver-uuid' } },
+			})
 			await wrapper.vm.save()
 			expect(wrapper.vm.saveCounter).toBe(1)
 			expect(wrapper.vm.sessionKey).toBe('petstore:staging:1')
@@ -415,7 +504,9 @@ describe('PageDesignerHost', () => {
 				appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
 			})
 			await flush(wrapper)
-			axiosPutMock.mockResolvedValueOnce({ data: { '@self': { id: 'app-1' } } })
+			axiosPutMock.mockResolvedValueOnce({
+				data: { '@self': { id: 'app-1' } },
+			})
 			await wrapper.vm.save()
 			expect(wrapper.vm.saveCounter).toBe(1)
 		})
@@ -436,12 +527,20 @@ describe('PageDesignerHost', () => {
 				slug: 'petstore',
 				query: {},
 				version: { manifest: { version: '1.0.0', pages: [] } },
-				appList: [{ slug: 'petstore', '@self': { id: 'app-1' }, manifest: { version: '0.0.1' } }],
+				appList: [
+					{
+						slug: 'petstore',
+						'@self': { id: 'app-1' },
+						manifest: { version: '0.0.1' },
+					},
+				],
 			})
 			await flush(wrapper)
 			expect(wrapper.vm.manifest.version).toBe('1.0.0')
 			// Simulate the resolved version changing for the new ?_version=.
-			versionHolder = { manifest: { version: '2.0.0', pages: [{ id: 'staged' }] } }
+			versionHolder = {
+				manifest: { version: '2.0.0', pages: [{ id: 'staged' }] },
+			}
 			wrapper.vm.$route.query._version = 'staging'
 			// Invoke the versionSlug watcher directly — the static `mocks.$route`
 			// harness isn't reactive, so this proves the watcher body itself

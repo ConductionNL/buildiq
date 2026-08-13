@@ -66,7 +66,10 @@ const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 // unchanged, and it now runs against the element it was written for.
 const navLink = (page: import('@playwright/test').Page, path: string) => {
 	const suffix = path === '/' ? '/apps/openbuild/' : `/apps/openbuild${path}`
-	return page.locator('#app-navigation-vue').locator(`a[href$="${suffix}"]`).first()
+	return page
+		.locator('#app-navigation-vue')
+		.locator(`a[href$="${suffix}"]`)
+		.first()
 }
 
 test.describe('OpenBuild Dashboard', () => {
@@ -77,7 +80,12 @@ test.describe('OpenBuild Dashboard', () => {
 		// Widget titles come from DashboardIndex's `widgets` definition and are
 		// independent of the data. They render as headings, which distinguishes
 		// the "Apps" KPI card from the same word in the nav entry / app rows.
-		for (const title of ['Apps', 'Hybrid apps', 'Published versions', 'Recent apps']) {
+		for (const title of [
+			'Apps',
+			'Hybrid apps',
+			'Published versions',
+			'Recent apps',
+		]) {
 			await expect(
 				page.getByRole('heading', { name: title, exact: true }),
 				`dashboard must render the "${title}" widget title`,
@@ -85,7 +93,9 @@ test.describe('OpenBuild Dashboard', () => {
 		}
 	})
 
-	test('exposes the in-app navigation entries (Dashboard, Apps, Store, Features & roadmap)', async ({ page }) => {
+	test('exposes the in-app navigation entries (Dashboard, Apps, Store, Features & roadmap)', async ({
+		page,
+	}) => {
 		await page.goto(`${BASE}/apps/openbuild/`)
 
 		for (const [label, path] of [
@@ -101,11 +111,16 @@ test.describe('OpenBuild Dashboard', () => {
 			).toBeVisible({ timeout: 15_000 })
 			// The href alone could match an unrelated link; pin the label too so a
 			// renamed menu entry fails here instead of passing silently.
-			await expect(link, `nav entry for ${path} must be labelled "${label}"`).toHaveText(label)
+			await expect(
+				link,
+				`nav entry for ${path} must be labelled "${label}"`,
+			).toHaveText(label)
 		}
 	})
 
-	test('clicking the Apps nav entry routes to the applications index', async ({ page }) => {
+	test('clicking the Apps nav entry routes to the applications index', async ({
+		page,
+	}) => {
 		await page.goto(`${BASE}/apps/openbuild/`)
 		await expect(navLink(page, '/applications')).toBeVisible({ timeout: 15_000 })
 		// The first-visit tour's full-viewport dim swallows this click.
@@ -124,20 +139,31 @@ test.describe('OpenBuild Dashboard', () => {
 		).toBeVisible({ timeout: 15_000 })
 	})
 
-	test('dashboard load produces no openbuild-originated console errors', async ({ page }) => {
+	test('dashboard load produces no openbuild-originated console errors', async ({
+		page,
+	}) => {
 		const errors: string[] = []
 		page.on('console', (m) => {
 			if (m.type() !== 'error') return
 			const text = m.text()
 			// NC-core/env noise on the dev container, not openbuild.
-			if (/user_status|Failed to load user status|Failed to load resource/i.test(text)) return
+			if (
+				/user_status|Failed to load user status|Failed to load resource/i.test(
+					text,
+				)
+			)
+				return
 			errors.push(text)
 		})
 
 		await page.goto(`${BASE}/apps/openbuild/`)
-		await expect(page.getByRole('heading', { name: 'Apps', exact: true })).toBeVisible({ timeout: 15_000 })
+		await expect(
+			page.getByRole('heading', { name: 'Apps', exact: true }),
+		).toBeVisible({ timeout: 15_000 })
 		await page.waitForTimeout(2000)
 
-		expect(errors, `unexpected console errors:\n${errors.join('\n')}`).toEqual([])
+		expect(errors, `unexpected console errors:\n${errors.join('\n')}`).toEqual(
+			[],
+		)
 	})
 })

@@ -25,10 +25,7 @@
 <template>
 	<div class="ob-detail-dashboard">
 		<!-- 1. Banner -->
-		<section
-			v-if="banner"
-			class="ob-detail-dashboard__banner"
-			role="alert">
+		<section v-if="banner" class="ob-detail-dashboard__banner" role="alert">
 			<p>{{ banner.message }}</p>
 			<NcButton v-if="banner.action" type="primary" @click="banner.action">
 				{{ banner.actionLabel }}
@@ -62,7 +59,9 @@
 				     The wrapper makes the whole card a clickable OpenRegister link. -->
 				<div
 					class="ob-detail-dashboard__kpi-link"
-					:class="{ 'ob-detail-dashboard__kpi-link--clickable': !!registerSlug }"
+					:class="{
+						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
+					}"
 					role="button"
 					tabindex="0"
 					:title="t('openbuild', 'Open in OpenRegister')"
@@ -82,7 +81,9 @@
 				</div>
 				<div
 					class="ob-detail-dashboard__kpi-link"
-					:class="{ 'ob-detail-dashboard__kpi-link--clickable': !!registerSlug }"
+					:class="{
+						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
+					}"
 					role="button"
 					tabindex="0"
 					:title="t('openbuild', 'Open in OpenRegister')"
@@ -107,7 +108,9 @@
 				     one keeps CnStatsBlock's built-in spinner. -->
 				<div
 					class="ob-detail-dashboard__kpi-link"
-					:class="{ 'ob-detail-dashboard__kpi-link--clickable': !!registerSlug }"
+					:class="{
+						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
+					}"
 					role="button"
 					tabindex="0"
 					:title="t('openbuild', 'Open in OpenRegister')"
@@ -140,7 +143,9 @@
 				</div>
 				<div
 					class="ob-detail-dashboard__kpi-link"
-					:class="{ 'ob-detail-dashboard__kpi-link--clickable': !!registerSlug }"
+					:class="{
+						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
+					}"
 					role="button"
 					tabindex="0"
 					:title="t('openbuild', 'Open in OpenRegister')"
@@ -163,9 +168,17 @@
 
 		<!-- 3. Activity graph -->
 		<section class="ob-detail-dashboard__activity">
-			<div v-if="activity && activity.length > 0" class="ob-detail-dashboard__activity-card">
+			<div
+				v-if="activity && activity.length > 0"
+				class="ob-detail-dashboard__activity-card">
 				<header class="ob-detail-dashboard__activity-header">
-					<h3>{{ t('openbuild', 'Activity ({window})', { window: selectedWindow }) }}</h3>
+					<h3>
+						{{
+							t('openbuild', 'Activity ({window})', {
+								window: selectedWindow,
+							})
+						}}
+					</h3>
 				</header>
 				<svg
 					class="ob-detail-dashboard__activity-chart"
@@ -180,7 +193,12 @@
 						stroke-width="0.5" />
 				</svg>
 				<p class="ob-detail-dashboard__activity-summary">
-					{{ t('openbuild', '{count} buckets, {sum} total events', { count: activity.length, sum: totalActivityEvents }) }}
+					{{
+						t('openbuild', '{count} buckets, {sum} total events', {
+							count: activity.length,
+							sum: totalActivityEvents,
+						})
+					}}
 				</p>
 			</div>
 			<p v-else class="ob-detail-dashboard__activity-empty">
@@ -294,7 +312,12 @@ export default {
 			application: this.object || null,
 			versions: [],
 			selectedVersionUuid: null,
-			kpis: { activeUsers: 0, objectCount: 0, filesCount: 0, auditEventCount: 0 },
+			kpis: {
+				activeUsers: 0,
+				objectCount: 0,
+				filesCount: 0,
+				auditEventCount: 0,
+			},
 			activity: [],
 			versionNoLongerAccessible: false,
 			loading: false,
@@ -344,7 +367,9 @@ export default {
 			if (all.length === 0) return []
 			const byUuid = new Map()
 			all.forEach((v) => byUuid.set(v.uuid, v))
-			const roots = all.filter((v) => !all.some((u) => u.promotesTo === v.uuid))
+			const roots = all.filter(
+				(v) => !all.some((u) => u.promotesTo === v.uuid),
+			)
 			const ordered = []
 			const visited = new Set()
 			const walk = (v) => {
@@ -367,9 +392,12 @@ export default {
 		 */
 		activeVersion() {
 			if (!this.selectedVersionUuid) {
-				return this.productionVersion || (this.orderedVersions[0] || null)
+				return this.productionVersion || this.orderedVersions[0] || null
 			}
-			return this.orderedVersions.find((v) => v.uuid === this.selectedVersionUuid) || null
+			return (
+				this.orderedVersions.find((v) => v.uuid === this.selectedVersionUuid)
+				|| null
+			)
 		},
 		/**
 		 * Active version UUID.
@@ -444,7 +472,11 @@ export default {
 		 */
 		productionVersion() {
 			if (!this.productionVersionUuid) return null
-			return this.orderedVersions.find((v) => v.uuid === this.productionVersionUuid) || null
+			return (
+				this.orderedVersions.find(
+					(v) => v.uuid === this.productionVersionUuid,
+				) || null
+			)
 		},
 		/**
 		 * Total activity events across all buckets.
@@ -453,7 +485,10 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		totalActivityEvents() {
-			return this.activity.reduce((acc, b) => acc + ((b && Number(b.eventCount)) || 0), 0)
+			return this.activity.reduce(
+				(acc, b) => acc + ((b && Number(b.eventCount)) || 0),
+				0,
+			)
 		},
 		/**
 		 * SVG polyline points for the activity sparkline.
@@ -463,12 +498,21 @@ export default {
 		 */
 		sparklinePoints() {
 			if (!this.activity || this.activity.length === 0) return '0,30 100,30'
-			const max = this.activity.reduce((m, b) => Math.max(m, Number(b.eventCount) || 0), 1) || 1
-			return this.activity.map((b, idx) => {
-				const x = this.activity.length > 1 ? (idx / (this.activity.length - 1)) * 100 : 50
-				const y = 30 - ((Number(b.eventCount) || 0) / max) * 28
-				return `${x.toFixed(2)},${y.toFixed(2)}`
-			}).join(' ')
+			const max =
+				this.activity.reduce(
+					(m, b) => Math.max(m, Number(b.eventCount) || 0),
+					1,
+				) || 1
+			return this.activity
+				.map((b, idx) => {
+					const x =
+						this.activity.length > 1
+							? (idx / (this.activity.length - 1)) * 100
+							: 50
+					const y = 30 - ((Number(b.eventCount) || 0) / max) * 28
+					return `${x.toFixed(2)},${y.toFixed(2)}`
+				})
+				.join(' ')
 		},
 		/**
 		 * The "version no longer accessible" banner descriptor, or null.
@@ -485,7 +529,10 @@ export default {
 			}
 			if (this.versionNoLongerAccessible) {
 				return {
-					message: t('openbuild', 'This version is no longer accessible. Switch to production?'),
+					message: t(
+						'openbuild',
+						'This version is no longer accessible. Switch to production?',
+					),
 					actionLabel: t('openbuild', 'Switch to production'),
 					action: () => this.switchToProduction(),
 				}
@@ -580,7 +627,8 @@ export default {
 		},
 		'$route.query._version'(newSlug) {
 			if (!newSlug) {
-				if (this.productionVersionUuid) this.selectedVersionUuid = this.productionVersionUuid
+				if (this.productionVersionUuid)
+					this.selectedVersionUuid = this.productionVersionUuid
 				return
 			}
 			const match = this.orderedVersions.find((v) => v.slug === newSlug)
@@ -644,7 +692,9 @@ export default {
 		 */
 		openInRegister(tab) {
 			if (!this.registerSlug) return
-			let url = generateUrl(`/apps/openregister/registers/${encodeURIComponent(this.registerSlug)}`)
+			let url = generateUrl(
+				`/apps/openregister/registers/${encodeURIComponent(this.registerSlug)}`,
+			)
 			if (typeof tab === 'string' && tab !== '') {
 				url += `?tab=${encodeURIComponent(tab)}`
 			}
@@ -665,7 +715,7 @@ export default {
 			const units = ['KB', 'MB', 'GB', 'TB', 'PB']
 			let value = n / 1024
 			let i = 0
-			while (value >= 1024 && i < (units.length - 1)) {
+			while (value >= 1024 && i < units.length - 1) {
 				value /= 1024
 				i++
 			}
@@ -728,9 +778,16 @@ export default {
 		 * @return {void}
 		 */
 		openManifestDetail() {
-			const uuid = (this.application && (this.application.uuid || this.application.id)) || this.objectId
+			const uuid =
+				(this.application && (this.application.uuid || this.application.id))
+				|| this.objectId
 			if (this.$router && uuid) {
-				this.$router.push({ name: 'ApplicationManifestDetail', params: { objectId: uuid } }).catch(() => {})
+				this.$router
+					.push({
+						name: 'ApplicationManifestDetail',
+						params: { objectId: uuid },
+					})
+					.catch(() => {})
 			}
 		},
 
@@ -755,7 +812,10 @@ export default {
 				return
 			}
 			try {
-				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user', { appId: this.appSlug })
+				const url = generateUrl(
+					'/apps/openbuild/api/app-overrides/{appId}/user',
+					{ appId: this.appSlug },
+				)
 				const { data } = await axios.get(url)
 				this.userDeltaContent = (data && data.manifestDelta) || {}
 			} catch (e) {
@@ -780,7 +840,9 @@ export default {
 				prod.slug,
 			)
 			if (this.$router) {
-				this.$router.replace(route).catch(() => { /* ignore duplicate nav */ })
+				this.$router.replace(route).catch(() => {
+					/* ignore duplicate nav */
+				})
 			}
 		},
 
@@ -792,7 +854,10 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		async refreshApplication() {
-			const uuid = this.objectId || (this.$route && this.$route.params && this.$route.params.objectId) || ''
+			const uuid =
+				this.objectId
+				|| (this.$route && this.$route.params && this.$route.params.objectId)
+				|| ''
 			if (!uuid) return
 
 			// Latest-request-wins if the uuid changes mid-flight (route change).
@@ -822,19 +887,27 @@ export default {
 		async loadVersions() {
 			if (!this.appSlug) return
 			try {
-				const url = generateUrl(`/apps/openbuild/api/applications/${encodeURIComponent(this.appSlug)}/versions`)
+				const url = generateUrl(
+					`/apps/openbuild/api/applications/${encodeURIComponent(this.appSlug)}/versions`,
+				)
 				const { data } = await axios.get(url)
 				const list = Array.isArray(data)
 					? data
-					: (data && Array.isArray(data.results) ? data.results : [])
+					: data && Array.isArray(data.results)
+						? data.results
+						: []
 				this.versions = list.map((v) => ({
 					...v,
 					uuid: v.uuid || v.id || (v['@self'] && v['@self'].id) || null,
 				}))
 
-				const versionSlugFromRoute = (this.$route && this.$route.query && this.$route.query._version) || ''
+				const versionSlugFromRoute =
+					(this.$route && this.$route.query && this.$route.query._version)
+					|| ''
 				const match = versionSlugFromRoute
-					? this.orderedVersions.find((v) => v.slug === versionSlugFromRoute)
+					? this.orderedVersions.find(
+							(v) => v.slug === versionSlugFromRoute,
+						)
 					: null
 				if (match) {
 					this.selectedVersionUuid = match.uuid
@@ -870,7 +943,9 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		async fetchInsights() {
-			const appUuid = (this.application && (this.application.uuid || this.application.id)) || this.objectId
+			const appUuid =
+				(this.application && (this.application.uuid || this.application.id))
+				|| this.objectId
 			if (!appUuid || !this.activeVersionUuid) return
 			this.loading = true
 			this.error = null
@@ -879,16 +954,29 @@ export default {
 				const url = generateUrl(
 					`/apps/openbuild/api/applications/${encodeURIComponent(appUuid)}/versions/${encodeURIComponent(this.activeVersionUuid)}/insights`,
 				)
-				const { data } = await axios.get(url, { params: { window: this.selectedWindow } })
+				const { data } = await axios.get(url, {
+					params: { window: this.selectedWindow },
+				})
 				if (data && typeof data === 'object') {
-					this.kpis = { activeUsers: 0, objectCount: 0, filesCount: 0, auditEventCount: 0, ...(data.kpis || {}) }
+					this.kpis = {
+						activeUsers: 0,
+						objectCount: 0,
+						filesCount: 0,
+						auditEventCount: 0,
+						...(data.kpis || {}),
+					}
 					this.activity = Array.isArray(data.activity) ? data.activity : []
 				}
 			} catch (e) {
 				const status = (e && e.response && e.response.status) || 0
 				if (status === 404) {
 					this.versionNoLongerAccessible = true
-					this.kpis = { activeUsers: 0, objectCount: 0, filesCount: 0, auditEventCount: 0 }
+					this.kpis = {
+						activeUsers: 0,
+						objectCount: 0,
+						filesCount: 0,
+						auditEventCount: 0,
+					}
 					this.activity = []
 				} else {
 					this.error = e instanceof Error ? e : new Error(String(e))

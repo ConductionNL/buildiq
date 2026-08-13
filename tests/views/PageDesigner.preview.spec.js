@@ -43,7 +43,10 @@ vi.mock('../../src/registry.js', async () => {
 	const { h } = await import('vue')
 	return {
 		default: {
-			SomePage: { kind: 'page', component: { name: 'SomePage', render: () => h('div') } },
+			SomePage: {
+				kind: 'page',
+				component: { name: 'SomePage', render: () => h('div') },
+			},
 		},
 	}
 })
@@ -79,23 +82,58 @@ async function stub(name) {
 	return {
 		default: {
 			name,
-			props: ['config', 'pageType', 'appSlug', 'dataRegisters', 'parentRoute', 'pages', 'selectedIndex', 'menu'],
-			render() { return h('div', { class: `${name.toLowerCase()}-stub` }, name) },
+			props: [
+				'config',
+				'pageType',
+				'appSlug',
+				'dataRegisters',
+				'parentRoute',
+				'pages',
+				'selectedIndex',
+				'menu',
+			],
+			render() {
+				return h('div', { class: `${name.toLowerCase()}-stub` }, name)
+			},
 		},
 	}
 }
-vi.mock('../../src/components/page-editor/IndexPageEditor.vue', () => stub('IndexPageEditor'))
-vi.mock('../../src/components/page-editor/DetailPageEditor.vue', () => stub('DetailPageEditor'))
-vi.mock('../../src/components/page-editor/DashboardPageEditor.vue', () => stub('DashboardPageEditor'))
-vi.mock('../../src/components/page-editor/FormPageEditor.vue', () => stub('FormPageEditor'))
-vi.mock('../../src/components/page-editor/LogsPageEditor.vue', () => stub('LogsPageEditor'))
-vi.mock('../../src/components/page-editor/SettingsPageEditor.vue', () => stub('SettingsPageEditor'))
-vi.mock('../../src/components/page-editor/ChatPageEditor.vue', () => stub('ChatPageEditor'))
-vi.mock('../../src/components/page-editor/FilesPageEditor.vue', () => stub('FilesPageEditor'))
-vi.mock('../../src/components/page-editor/CustomPageEditor.vue', () => stub('CustomPageEditor'))
-vi.mock('../../src/components/page-editor/StubPageEditor.vue', () => stub('StubPageEditor'))
-vi.mock('../../src/components/page-editor/PageListEditor.vue', () => stub('PageListEditor'))
-vi.mock('../../src/components/page-editor/MenuTreeEditor.vue', () => stub('MenuTreeEditor'))
+vi.mock('../../src/components/page-editor/IndexPageEditor.vue', () =>
+	stub('IndexPageEditor'),
+)
+vi.mock('../../src/components/page-editor/DetailPageEditor.vue', () =>
+	stub('DetailPageEditor'),
+)
+vi.mock('../../src/components/page-editor/DashboardPageEditor.vue', () =>
+	stub('DashboardPageEditor'),
+)
+vi.mock('../../src/components/page-editor/FormPageEditor.vue', () =>
+	stub('FormPageEditor'),
+)
+vi.mock('../../src/components/page-editor/LogsPageEditor.vue', () =>
+	stub('LogsPageEditor'),
+)
+vi.mock('../../src/components/page-editor/SettingsPageEditor.vue', () =>
+	stub('SettingsPageEditor'),
+)
+vi.mock('../../src/components/page-editor/ChatPageEditor.vue', () =>
+	stub('ChatPageEditor'),
+)
+vi.mock('../../src/components/page-editor/FilesPageEditor.vue', () =>
+	stub('FilesPageEditor'),
+)
+vi.mock('../../src/components/page-editor/CustomPageEditor.vue', () =>
+	stub('CustomPageEditor'),
+)
+vi.mock('../../src/components/page-editor/StubPageEditor.vue', () =>
+	stub('StubPageEditor'),
+)
+vi.mock('../../src/components/page-editor/PageListEditor.vue', () =>
+	stub('PageListEditor'),
+)
+vi.mock('../../src/components/page-editor/MenuTreeEditor.vue', () =>
+	stub('MenuTreeEditor'),
+)
 
 const PageDesigner = (await import('../../src/views/PageDesigner.vue')).default
 
@@ -110,7 +148,9 @@ describe('PageDesigner live-preview pane (REQ-OBPD-008)', () => {
 		previewPropsMock.mockReset()
 		previewPropsMock.mockReturnValue(null)
 		axiosGetMock.mockReset()
-		axiosGetMock.mockResolvedValue({ data: { results: [{ slug: 'hello-world' }] } })
+		axiosGetMock.mockResolvedValue({
+			data: { results: [{ slug: 'hello-world' }] },
+		})
 	})
 
 	it('mounts the sandboxed CnAppRoot when preview is available', async () => {
@@ -133,7 +173,9 @@ describe('PageDesigner live-preview pane (REQ-OBPD-008)', () => {
 
 		// The prop bag the sandbox mounts from (the lib stub declares no
 		// props, so assert the resolved computed the template binds to).
-		expect(wrapper.vm.livePreviewProps.appId).toBe('openbuild-preview-hello-world')
+		expect(wrapper.vm.livePreviewProps.appId).toBe(
+			'openbuild-preview-hello-world',
+		)
 		expect(wrapper.vm.livePreviewProps.manifest).toEqual(manifest)
 
 		// previewProps was called with the in-flight (slug, manifest).

@@ -16,7 +16,11 @@
 
 import { createApp, h, reactive } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
-import { translate as t, translatePlural as n, loadTranslations } from '@nextcloud/l10n'
+import {
+	translate as t,
+	translatePlural as n,
+	loadTranslations,
+} from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { loadState } from '@nextcloud/initial-state'
 import axios from '@nextcloud/axios'
@@ -58,7 +62,10 @@ try {
 	registerTranslations()
 } catch (e) {
 	// eslint-disable-next-line no-console
-	console.warn('[openbuild:builder] registerTranslations failed; lib strings fall back to English source', e)
+	console.warn(
+		'[openbuild:builder] registerTranslations failed; lib strings fall back to English source',
+		e,
+	)
 }
 
 const slug = loadState('openbuild', 'builderSlug', '')
@@ -68,7 +75,10 @@ const versionSlug = loadState('openbuild', 'builderVersion', '')
 try {
 	const r = loadTranslations('openbuild', () => {})
 	if (r && typeof r.then === 'function') {
-		r.then(() => {}, () => {})
+		r.then(
+			() => {},
+			() => {},
+		)
 	}
 } catch {
 	// no-op
@@ -93,7 +103,10 @@ const AppNotFound = {
 	render() {
 		return h(NcEmptyContent, {
 			name: t('openbuild', 'App not found'),
-			description: t('openbuild', 'This app could not be loaded — it may have been deleted, or it has no pages yet.'),
+			description: t(
+				'openbuild',
+				'This app could not be loaded — it may have been deleted, or it has no pages yet.',
+			),
 		})
 	},
 }
@@ -120,7 +133,11 @@ function routesFromManifest(manifest) {
 	if (pages.length === 0) {
 		// No pages → no real home route. A catch-all redirect to '/' would loop
 		// forever ('/' matches the catch-all again), so render a not-found screen.
-		routes.push({ name: CATCH_ALL_ROUTE, path: '/:catchAll(.*)', component: AppNotFound })
+		routes.push({
+			name: CATCH_ALL_ROUTE,
+			path: '/:catchAll(.*)',
+			component: AppNotFound,
+		})
 		return routes
 	}
 	const home = pages[0].route || '/'
@@ -195,9 +212,13 @@ function brandTopBar(appName, appSlug) {
 			// The header background is coloured; force any icon to white.
 			iconEl.style.filter = 'brightness(0) invert(1)'
 		}
-		const trigger = document.querySelector('[aria-label^="Open apps menu, currently in"]')
+		const trigger = document.querySelector(
+			'[aria-label^="Open apps menu, currently in"]',
+		)
 		if (trigger && state.name) {
-			const label = t('openbuild', 'Open apps menu, currently in {app}', { app: state.name })
+			const label = t('openbuild', 'Open apps menu, currently in {app}', {
+				app: state.name,
+			})
 			if (trigger.getAttribute('aria-label') !== label) {
 				trigger.setAttribute('aria-label', label)
 			}
@@ -207,7 +228,11 @@ function brandTopBar(appName, appSlug) {
 	state.apply()
 	const header = document.querySelector('header#header') || document.body
 	if (header) {
-		new MutationObserver(state.apply).observe(header, { childList: true, subtree: true, characterData: true })
+		new MutationObserver(state.apply).observe(header, {
+			childList: true,
+			subtree: true,
+			characterData: true,
+		})
 	}
 }
 
@@ -245,10 +270,17 @@ function normalizeManifestPages(manifest) {
 	const pages = Array.isArray(manifest.pages) ? manifest.pages : []
 	for (const page of pages) {
 		if (!page || typeof page !== 'object') continue
-		if (!page.config || typeof page.config !== 'object' || Array.isArray(page.config)) {
+		if (
+			!page.config
+			|| typeof page.config !== 'object'
+			|| Array.isArray(page.config)
+		) {
 			page.config = {}
 		}
-		if ((page.type === 'index' || page.type === 'detail') && page.config.showTitle === undefined) {
+		if (
+			(page.type === 'index' || page.type === 'detail')
+			&& page.config.showTitle === undefined
+		) {
 			page.config.showTitle = true
 		}
 	}
@@ -285,7 +317,7 @@ async function boot() {
 		// so must see everything client-side too — CnAppNav treats an empty
 		// array as "show everything").
 		// Reflect the app's identity in the browser tab and the global NC top-bar.
-		const appName = (manifest.name || manifest.title || slug)
+		const appName = manifest.name || manifest.title || slug
 		if (appName) {
 			document.title = `${appName} – Nextcloud`
 			brandTopBar(appName, slug)
@@ -306,8 +338,10 @@ async function boot() {
 	//
 	// It also stops the fetch happening at boot at all: this list is only ever read
 	// inside an editor modal, which most users never open.
-	const dataSourcesLoader = () => useRegisterPicker({ appSlug: slug })
-		.fetchDataSources(registerScope(registerSlugForApp(slug, versionSlug), manifest))
+	const dataSourcesLoader = () =>
+		useRegisterPicker({ appSlug: slug }).fetchDataSources(
+			registerScope(registerSlugForApp(slug, versionSlug), manifest),
+		)
 
 	const router = createRouter({
 		history: createWebHistory(generateUrl(`/apps/openbuild/builder/${slug}`)),
@@ -323,9 +357,10 @@ async function boot() {
 	// only when pages actually change, so menu / settings / sidebar edits never
 	// disturb it.
 	const shellState = reactive({ routerEpoch: 0 })
-	const pageSignature = () => (Array.isArray(manifest.pages)
-		? manifest.pages.map((p) => `${p && p.id}:${p && p.route}`).join('|')
-		: '')
+	const pageSignature = () =>
+		Array.isArray(manifest.pages)
+			? manifest.pages.map((p) => `${p && p.id}:${p && p.route}`).join('|')
+			: ''
 	let lastPageSig = pageSignature()
 
 	// Static props for the shell. `routerViewKey` is deliberately NOT in here:
@@ -342,7 +377,11 @@ async function boot() {
 		// runtime-group-scoped-access REQ-1: forwarded to CnAppNav /
 		// CnPageRenderer's permission filter — client-side mirror of the
 		// server-side filtering already applied to `manifest.menu`/`pages`.
-		permissions: (manifest.runtime && manifest.runtime.user && manifest.runtime.user.permissions) || [],
+		permissions:
+			(manifest.runtime
+				&& manifest.runtime.user
+				&& manifest.runtime.user.permissions)
+			|| [],
 		isLoading: false,
 		registry: { ...runtimeRegistry },
 		pageTypes: { ...defaultPageTypes },
@@ -358,7 +397,9 @@ async function boot() {
 		// a persist handler the editor computes a delta and discards it —
 		// edits would vanish on refresh.
 		persistManifestDelta: async () => {
-			const saveUrl = generateUrl(`/apps/openbuild/api/applications/${slug}/manifest`)
+			const saveUrl = generateUrl(
+				`/apps/openbuild/api/applications/${slug}/manifest`,
+			)
 			await axios.put(saveUrl, { manifest })
 			// Only touch the router when the PAGE SET actually changed — a
 			// menu / settings / sidebar / actions edit leaves routes intact.
@@ -386,7 +427,10 @@ async function boot() {
 				}
 			} catch (e) {
 				// eslint-disable-next-line no-console
-				console.warn('[openbuild:builder] router rebuild after save failed (edit is saved; reload to pick up new routes)', e)
+				console.warn(
+					'[openbuild:builder] router rebuild after save failed (edit is saved; reload to pick up new routes)',
+					e,
+				)
 			}
 			// Remount the routed view AFTER the router rebuild so it mounts
 			// the added/removed page routes (see shellState / routerViewKey).
@@ -398,7 +442,8 @@ async function boot() {
 	// the routed view (CnAppRoot keys its <router-view> on `routerViewKey`).
 	const app = createApp({
 		name: 'OpenBuildBuilderRoot',
-		render: () => h(CnAppRoot, { ...shellProps, routerViewKey: shellState.routerEpoch }),
+		render: () =>
+			h(CnAppRoot, { ...shellProps, routerViewKey: shellState.routerEpoch }),
 	})
 
 	app.mixin({ methods: { t, n } })

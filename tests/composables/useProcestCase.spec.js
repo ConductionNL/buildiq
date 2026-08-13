@@ -10,15 +10,29 @@ import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
 
-import { useProcestCase, renderDescription } from '../../src/composables/useProcestCase.js'
+import {
+	useProcestCase,
+	renderDescription,
+} from '../../src/composables/useProcestCase.js'
 
 const UUID = '11111111-2222-3333-4444-555555555555'
-const attachment = { caseTypeUuid: UUID, caseTypeName: 'Kapvergunning', linkProperty: 'zaakUrl', schema: 'kapaanvraag', descriptionTemplate: 'Application for {{title}}' }
-const object = { '@self': { id: 'obj-1', register: 'r', schema: 'kapaanvraag' }, title: 'tree removal' }
+const attachment = {
+	caseTypeUuid: UUID,
+	caseTypeName: 'Kapvergunning',
+	linkProperty: 'zaakUrl',
+	schema: 'kapaanvraag',
+	descriptionTemplate: 'Application for {{title}}',
+}
+const object = {
+	'@self': { id: 'obj-1', register: 'r', schema: 'kapaanvraag' },
+	title: 'tree removal',
+}
 
 describe('renderDescription', () => {
 	it('interpolates object properties', () => {
-		expect(renderDescription('Application for {{title}}', { title: 'X' })).toBe('Application for X')
+		expect(renderDescription('Application for {{title}}', { title: 'X' })).toBe(
+			'Application for X',
+		)
 	})
 	it('renders empty placeholders for missing keys', () => {
 		expect(renderDescription('a {{missing}} b', {})).toBe('a  b')
@@ -28,7 +42,10 @@ describe('renderDescription', () => {
 describe('useProcestCase', () => {
 	it('starts a case and writes the reference back onto the object', async () => {
 		const zaak = { uuid: UUID, url: `https://host/zaken/${UUID}` }
-		const client = { post: vi.fn().mockResolvedValue({ data: zaak }), put: vi.fn().mockResolvedValue({ data: {} }) }
+		const client = {
+			post: vi.fn().mockResolvedValue({ data: zaak }),
+			put: vi.fn().mockResolvedValue({ data: {} }),
+		}
 		const pc = useProcestCase({ attachment, client })
 		const result = await pc.startCase(object)
 		expect(result).toEqual(zaak)
@@ -43,7 +60,10 @@ describe('useProcestCase', () => {
 	})
 
 	it('preserves the object and surfaces startError on failure', async () => {
-		const client = { post: vi.fn().mockRejectedValue(new Error('500')), put: vi.fn() }
+		const client = {
+			post: vi.fn().mockRejectedValue(new Error('500')),
+			put: vi.fn(),
+		}
 		const pc = useProcestCase({ attachment, client })
 		const result = await pc.startCase(object)
 		expect(result).toBeNull()
@@ -56,7 +76,9 @@ describe('useProcestCase', () => {
 		const client = {
 			post: vi.fn(),
 			put: vi.fn(),
-			get: vi.fn().mockResolvedValue({ data: { uuid: UUID, identificatie: 'ZAAK-1' } }),
+			get: vi.fn().mockResolvedValue({
+				data: { uuid: UUID, identificatie: 'ZAAK-1' },
+			}),
 		}
 		const pc = useProcestCase({ attachment, client })
 		await pc.reconcileOrStart(linked)
@@ -78,7 +100,9 @@ describe('useProcestCase', () => {
 	})
 
 	it('loadDetail renders a no-access state on 403, not an error', async () => {
-		const client = { get: vi.fn().mockRejectedValue({ response: { status: 403 } }) }
+		const client = {
+			get: vi.fn().mockRejectedValue({ response: { status: 403 } }),
+		}
 		const pc = useProcestCase({ attachment, client })
 		await pc.loadDetail(UUID)
 		expect(pc.noAccess.value).toBe(true)

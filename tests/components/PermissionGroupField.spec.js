@@ -17,7 +17,16 @@ import PermissionGroupField from '../../src/components/page-editor/fields/Permis
 // `value` receives nothing and `props('value')` reads `undefined`.
 const NcSelectStub = {
 	name: 'NcSelect',
-	props: ['modelValue', 'options', 'taggable', 'clearable', 'placeholder', 'inputLabel', 'label', 'trackBy'],
+	props: [
+		'modelValue',
+		'options',
+		'taggable',
+		'clearable',
+		'placeholder',
+		'inputLabel',
+		'label',
+		'trackBy',
+	],
 	emits: ['update:modelValue', 'tag'],
 	template: '<div class="ncselect-stub" :data-input-label="inputLabel" />',
 }

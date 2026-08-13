@@ -63,12 +63,16 @@
 						'page-list-editor__row--error': hasError(page, index),
 					}"
 					role="group"
-					:aria-label="t('openbuild', 'Page {position}', { position: index + 1 })"
+					:aria-label="
+						t('openbuild', 'Page {position}', { position: index + 1 })
+					"
 					tabindex="-1"
 					@click="$emit('select', index)"
 					@focusin="$emit('select', index)"
 					@keydown.enter="$emit('select', index)">
-					<span class="page-list-editor__drag-handle" :title="t('openbuild', 'Drag to reorder')">
+					<span
+						class="page-list-editor__drag-handle"
+						:title="t('openbuild', 'Drag to reorder')">
 						⠿
 					</span>
 					<input
@@ -78,7 +82,7 @@
 						:placeholder="t('openbuild', 'page id')"
 						:aria-label="t('openbuild', 'page id')"
 						@click.stop
-						@input="updateField(index, 'id', $event.target.value)">
+						@input="updateField(index, 'id', $event.target.value)" />
 					<input
 						:value="page.route || ''"
 						type="text"
@@ -86,7 +90,7 @@
 						:placeholder="t('openbuild', '/route/:param')"
 						:aria-label="t('openbuild', '/route/:param')"
 						@click.stop
-						@input="updateField(index, 'route', $event.target.value)">
+						@input="updateField(index, 'route', $event.target.value)" />
 					<span class="page-list-editor__type-tag">{{ page.type }}</span>
 					<!-- `.native` was removed in Vue 3; a plain listener falls
 					     through to the component's root element via $attrs. -->
@@ -95,7 +99,9 @@
 						:permission="page.permission || ''"
 						:known-groups="knownGroups"
 						@click.stop
-						@update:permission="updateField(index, 'permission', $event || '')" />
+						@update:permission="
+							updateField(index, 'permission', $event || '')
+						" />
 					<button
 						type="button"
 						class="page-list-editor__remove"
@@ -187,7 +193,10 @@ export default {
 		knownGroups() {
 			const gids = new Set()
 			for (const page of this.pages) {
-				const value = page && typeof page.permission === 'string' ? page.permission : ''
+				const value =
+					page && typeof page.permission === 'string'
+						? page.permission
+						: ''
 				if (value.startsWith('group:')) {
 					gids.add(value.slice('group:'.length))
 				}
@@ -206,7 +215,9 @@ export default {
 					counts.set(p.id, (counts.get(p.id) || 0) + 1)
 				}
 			}
-			return Array.from(counts.entries()).filter(([, c]) => c > 1).map(([id]) => id)
+			return Array.from(counts.entries())
+				.filter(([, c]) => c > 1)
+				.map(([id]) => id)
 		},
 		/**
 		 * Observed behaviour of `invalidRoutes` (retrofit annotation).

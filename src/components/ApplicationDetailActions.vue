@@ -49,55 +49,80 @@
 						<template #icon>
 							<PencilRulerOutline :size="20" />
 						</template>
-						{{ t('openbuild', 'Edit {name}', { name: versionLabel(v) }) }}
+						{{
+							t('openbuild', 'Edit {name}', { name: versionLabel(v) })
+						}}
 					</NcActionButton>
 				</template>
 			</NcActions>
 		</div>
-		<NcButton
-			:disabled="!obApp"
-			@click="exportOpen = true">
+		<NcButton :disabled="!obApp" @click="exportOpen = true">
 			{{ t('openbuild', 'Export') }}
 		</NcButton>
 
 		<NcActions :menu-name="t('openbuild', 'Actions')" :force-menu="true">
-			<NcActionButton v-if="obAppRole === 'owner'" :disabled="!obApp" @click="settingsOpen = true">
+			<NcActionButton
+				v-if="obAppRole === 'owner'"
+				:disabled="!obApp"
+				@click="settingsOpen = true">
 				<template #icon>
 					<CogOutline :size="20" />
 				</template>
 				{{ t('openbuild', 'Settings') }}
 			</NcActionButton>
-			<NcActionButton v-if="obApp && obApp.slug" :disabled="!obApp" @click="githubOpen = true">
+			<NcActionButton
+				v-if="obApp && obApp.slug"
+				:disabled="!obApp"
+				@click="githubOpen = true">
 				<template #icon>
 					<Github :size="20" />
 				</template>
 				{{ t('openbuild', 'GitHub') }}
 			</NcActionButton>
-			<NcActionButton v-if="obAppRole === 'owner'" :disabled="!obApp" @click="permissionsOpen = true">
+			<NcActionButton
+				v-if="obAppRole === 'owner'"
+				:disabled="!obApp"
+				@click="permissionsOpen = true">
 				<template #icon>
 					<AccountMultipleOutline :size="20" />
 				</template>
 				{{ t('openbuild', 'Manage permissions') }}
 			</NcActionButton>
-			<NcActionButton v-if="obAppRole === 'owner'" :disabled="!obApp" @click="historyOpen = true">
+			<NcActionButton
+				v-if="obAppRole === 'owner'"
+				:disabled="!obApp"
+				@click="historyOpen = true">
 				<template #icon>
 					<History :size="20" />
 				</template>
 				{{ t('openbuild', 'Permission history') }}
 			</NcActionButton>
-			<NcActionButton v-if="canSaveAsTemplate" :disabled="!obApp || saveTemplateLoading" @click="openSaveAsTemplate">
+			<NcActionButton
+				v-if="canSaveAsTemplate"
+				:disabled="!obApp || saveTemplateLoading"
+				@click="openSaveAsTemplate">
 				<template #icon>
 					<ContentSaveOutline :size="20" />
 				</template>
-				{{ saveTemplateLoading ? t('openbuild', 'Preparing…') : t('openbuild', 'Save as template') }}
+				{{
+					saveTemplateLoading
+						? t('openbuild', 'Preparing…')
+						: t('openbuild', 'Save as template')
+				}}
 			</NcActionButton>
-			<NcActionLink href="https://openbuild.conduction.nl" target="_blank" rel="noopener noreferrer">
+			<NcActionLink
+				href="https://openbuild.conduction.nl"
+				target="_blank"
+				rel="noopener noreferrer">
 				<template #icon>
 					<HelpCircleOutline :size="20" />
 				</template>
 				{{ t('openbuild', 'Documentation') }}
 			</NcActionLink>
-			<NcActionButton v-if="obAppRole === 'owner'" :disabled="!obApp" @click="deleteOpen = true">
+			<NcActionButton
+				v-if="obAppRole === 'owner'"
+				:disabled="!obApp"
+				@click="deleteOpen = true">
 				<template #icon>
 					<DeleteOutline :size="20" />
 				</template>
@@ -191,7 +216,9 @@ import applicationContext from '../mixins/applicationContext.js'
 // still no dialog ever appeared: Export was dead for every user of the app
 // detail page. This is the only such import left in src/; every sibling dialog
 // here is imported eagerly.
-const ExportDialog = defineAsyncComponent(() => import('../dialogs/ExportDialog.vue'))
+const ExportDialog = defineAsyncComponent(
+	() => import('../dialogs/ExportDialog.vue'),
+)
 
 const OR_TEMPLATES = '/apps/openregister/api/objects/openbuild/application-template'
 
@@ -283,7 +310,7 @@ export default {
 			if (!pv) {
 				return ''
 			}
-			return (typeof pv === 'string') ? pv : (pv.uuid || pv.id || '')
+			return typeof pv === 'string' ? pv : pv.uuid || pv.id || ''
 		},
 		/**
 		 * Versions offered in the Open-a-version chevron — non-archived, with the
@@ -293,9 +320,13 @@ export default {
 		 */
 		openableVersions() {
 			return this.versions
-				.filter(v => (v.status || 'draft') !== 'archived')
+				.filter((v) => (v.status || 'draft') !== 'archived')
 				.slice()
-				.sort((a, b) => (this.isProductionVersion(b) ? 1 : 0) - (this.isProductionVersion(a) ? 1 : 0))
+				.sort(
+					(a, b) =>
+						(this.isProductionVersion(b) ? 1 : 0)
+						- (this.isProductionVersion(a) ? 1 : 0),
+				)
 		},
 		/**
 		 * Group ids selectable in the permissions modal (current user's groups
@@ -345,9 +376,16 @@ export default {
 				return
 			}
 			try {
-				const url = generateUrl('/apps/openbuild/api/applications/{slug}/versions', { slug: this.obApp.slug })
+				const url = generateUrl(
+					'/apps/openbuild/api/applications/{slug}/versions',
+					{ slug: this.obApp.slug },
+				)
 				const { data } = await axios.get(url)
-				this.versions = Array.isArray(data) ? data : ((data && data.results) ? data.results : [])
+				this.versions = Array.isArray(data)
+					? data
+					: data && data.results
+						? data.results
+						: []
 			} catch (e) {
 				this.versions = []
 			}
@@ -369,7 +407,10 @@ export default {
 		 * @return {boolean}
 		 */
 		isProductionVersion(v) {
-			return !!this.productionUuid && this.versionRowUuid(v) === this.productionUuid
+			return (
+				!!this.productionUuid
+				&& this.versionRowUuid(v) === this.productionUuid
+			)
 		},
 		/**
 		 * Human label for a version in the chevron (name + semver + marker).
@@ -379,8 +420,10 @@ export default {
 		 */
 		versionLabel(v) {
 			const name = (v && (v.name || v.slug)) || ''
-			const semver = (v && v.semver) ? ` (${v.semver})` : ''
-			const prod = this.isProductionVersion(v) ? ` — ${t('openbuild', 'Production')}` : ''
+			const semver = v && v.semver ? ` (${v.semver})` : ''
+			const prod = this.isProductionVersion(v)
+				? ` — ${t('openbuild', 'Production')}`
+				: ''
 			return `${name}${semver}${prod}`
 		},
 		/**
@@ -412,7 +455,9 @@ export default {
 			if (!this.obApp || !this.obApp.slug) {
 				return
 			}
-			const base = generateUrl(`/apps/openbuild/builder/${this.obApp.slug}/pages`)
+			const base = generateUrl(
+				`/apps/openbuild/builder/${this.obApp.slug}/pages`,
+			)
 			window.location.href = this.isProductionVersion(v)
 				? base
 				: `${base}?_version=${encodeURIComponent(v.slug)}`
@@ -433,16 +478,27 @@ export default {
 			this.error = ''
 			try {
 				const action = shouldPublish ? 'publish' : 'unpublish'
-				await axios.post(generateUrl(`/apps/openbuild/api/applications/${this.obAppUuid}/${action}`), {})
+				await axios.post(
+					generateUrl(
+						`/apps/openbuild/api/applications/${this.obAppUuid}/${action}`,
+					),
+					{},
+				)
 				// Force a refetch — the `object` prop snapshot still carries the
 				// pre-publish status, so the default load path would keep the
 				// toggle/badge stale until a full page reload.
 				await this.obLoadApp(true)
 				this.toast = shouldPublish
-					? t('openbuild', 'App published — it now appears in the app menu.')
+					? t(
+							'openbuild',
+							'App published — it now appears in the app menu.',
+						)
 					: t('openbuild', 'App unpublished — removed from the app menu.')
 			} catch (e) {
-				const detail = (e.response && e.response.data && e.response.data.detail) || e.message || e
+				const detail =
+					(e.response && e.response.data && e.response.data.detail)
+					|| e.message
+					|| e
 				this.error = shouldPublish
 					? `${t('openbuild', 'Publish failed')}: ${detail}`
 					: `${t('openbuild', 'Unpublish failed')}: ${detail}`
@@ -502,17 +558,27 @@ export default {
 			this.deleting = true
 			this.error = ''
 			try {
-				await axios.delete(generateUrl(`/apps/openbuild/api/applications/${this.obAppUuid}`), {
-					params: { deleteData: deleteData ? 1 : 0 },
-				})
+				await axios.delete(
+					generateUrl(
+						`/apps/openbuild/api/applications/${this.obAppUuid}`,
+					),
+					{
+						params: { deleteData: deleteData ? 1 : 0 },
+					},
+				)
 				this.deleteOpen = false
 				if (this.$router) {
 					this.$router.push({ name: 'VirtualApps' }).catch(() => {})
 				} else {
-					window.location.href = generateUrl('/apps/openbuild/applications')
+					window.location.href = generateUrl(
+						'/apps/openbuild/applications',
+					)
 				}
 			} catch (e) {
-				const detail = (e.response && e.response.data && e.response.data.detail) || e.message || e
+				const detail =
+					(e.response && e.response.data && e.response.data.detail)
+					|| e.message
+					|| e
 				this.error = `${t('openbuild', 'Delete failed')}: ${detail}`
 			} finally {
 				this.deleting = false
@@ -568,12 +634,19 @@ export default {
 					`/apps/openbuild/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
 				)
 				const { data: resolvedManifest } = await axios.get(manifestUrl)
-				this.saveTemplateManifest = resolvedManifest
+				this.saveTemplateManifest =
+					resolvedManifest
 					|| this.obApp.manifest
-					|| (this.obApp.currentVersion && this.obApp.currentVersion.manifest)
+					|| (this.obApp.currentVersion
+						&& this.obApp.currentVersion.manifest)
 					|| {}
-				const picker = useRegisterPicker({ appSlug: this.obApp.slug, dataRegisters: this.obApp.dataRegisters || [] })
-				this.saveTemplateSchemas = await picker.fetchSchemas(picker.resolveAppRegister())
+				const picker = useRegisterPicker({
+					appSlug: this.obApp.slug,
+					dataRegisters: this.obApp.dataRegisters || [],
+				})
+				this.saveTemplateSchemas = await picker.fetchSchemas(
+					picker.resolveAppRegister(),
+				)
 				this.existingTemplates = await this.loadExistingTemplates()
 				this.saveTemplateOpen = true
 			} catch (e) {
@@ -592,7 +665,11 @@ export default {
 		async loadExistingTemplates() {
 			try {
 				const { data } = await axios.get(generateUrl(OR_TEMPLATES))
-				return Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				return Array.isArray(data?.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 			} catch (e) {
 				return []
 			}
@@ -606,9 +683,14 @@ export default {
 		 */
 		onTemplateSaved(payload) {
 			this.saveTemplateOpen = false
-			this.toast = payload && payload.mode === 'update'
-				? t('openbuild', 'Template "{slug}" updated', { slug: payload.slug })
-				: t('openbuild', 'Saved as template "{slug}"', { slug: payload.slug })
+			this.toast =
+				payload && payload.mode === 'update'
+					? t('openbuild', 'Template "{slug}" updated', {
+							slug: payload.slug,
+						})
+					: t('openbuild', 'Saved as template "{slug}"', {
+							slug: payload.slug,
+						})
 		},
 	},
 }

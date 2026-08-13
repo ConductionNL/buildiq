@@ -60,7 +60,7 @@ export function useConnectorDataSource(opts = {}) {
 		// eslint-disable-next-line no-console
 		console.warn(
 			`[openbuild] connector field "${fieldName}" selector "${selector}" `
-			+ `resolved to no value for endpoint "${binding.endpointPath}"`,
+				+ `resolved to no value for endpoint "${binding.endpointPath}"`,
 		)
 	}
 
@@ -107,7 +107,11 @@ export function useConnectorDataSource(opts = {}) {
 		const key = cacheKey(appId, binding.endpointPath, binding.query)
 		const ttlMs = ttlToMs(binding.cacheTtl)
 		try {
-			const { data: raw, isStale: stale } = await readThrough(key, ttlMs, fetchRaw)
+			const { data: raw, isStale: stale } = await readThrough(
+				key,
+				ttlMs,
+				fetchRaw,
+			)
 			data.value = project(raw)
 			isStale.value = stale
 		} catch (e) {

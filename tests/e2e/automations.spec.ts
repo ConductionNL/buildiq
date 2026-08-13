@@ -90,11 +90,18 @@ function looseOptionName(text: string): RegExp {
  * @param slug  The schema slug (the fallback textbox value).
  * @return {Promise<void>}
  */
-async function selectTriggerSchema(page: Page, title: string, slug: string): Promise<void> {
+async function selectTriggerSchema(
+	page: Page,
+	title: string,
+	slug: string,
+): Promise<void> {
 	const combo = page.getByRole('combobox', { name: /^schema$/i })
-	if (await combo.count() > 0) {
+	if ((await combo.count()) > 0) {
 		await combo.click()
-		await page.getByRole('option', { name: looseOptionName(title) }).first().click()
+		await page
+			.getByRole('option', { name: looseOptionName(title) })
+			.first()
+			.click()
 		return
 	}
 	await page.getByRole('textbox', { name: /schema slug/i }).fill(slug)
@@ -113,18 +120,26 @@ async function selectTriggerSchema(page: Page, title: string, slug: string): Pro
  */
 async function selectAssigneeGroup(page: Page, group: string): Promise<void> {
 	const combo = page.getByRole('combobox', { name: /^assignee group$/i })
-	if (await combo.count() > 0) {
+	if ((await combo.count()) > 0) {
 		await combo.click()
-		await page.getByRole('option', { name: looseOptionName(group) }).first().click()
+		await page
+			.getByRole('option', { name: looseOptionName(group) })
+			.first()
+			.click()
 		return
 	}
 	await page.getByRole('textbox', { name: /assignee group/i }).fill(group)
 }
 
-async function automationSchemaIsUsable(request: APIRequestContext): Promise<boolean> {
-	const resp = await request.get('/index.php/apps/openregister/api/schemas/automation', {
-		headers: { 'OCS-APIRequest': 'true' },
-	})
+async function automationSchemaIsUsable(
+	request: APIRequestContext,
+): Promise<boolean> {
+	const resp = await request.get(
+		'/index.php/apps/openregister/api/schemas/automation',
+		{
+			headers: { 'OCS-APIRequest': 'true' },
+		},
+	)
 	if (resp.ok() === false) {
 		return false
 	}
@@ -198,9 +213,12 @@ const FIXED_AUTOMATION_NAMES = [
  * @return {Promise<void>}
  */
 async function deleteStaleAutomations(request: APIRequestContext): Promise<void> {
-	const resp = await request.get('/index.php/apps/openregister/api/objects/openbuild/automation', {
-		headers: { 'OCS-APIRequest': 'true' },
-	})
+	const resp = await request.get(
+		'/index.php/apps/openregister/api/objects/openbuild/automation',
+		{
+			headers: { 'OCS-APIRequest': 'true' },
+		},
+	)
 	if (resp.ok() === false) {
 		return
 	}
@@ -208,9 +226,14 @@ async function deleteStaleAutomations(request: APIRequestContext): Promise<void>
 	const items = Array.isArray(body) ? body : (body.results ?? [])
 	for (const automation of items) {
 		if (FIXED_AUTOMATION_NAMES.includes(automation?.name) && automation?.id) {
-			await request.delete(`/index.php/apps/openregister/api/objects/openbuild/automation/${automation.id}`, {
-				headers: { 'OCS-APIRequest': 'true' },
-			}).catch(() => {})
+			await request
+				.delete(
+					`/index.php/apps/openregister/api/objects/openbuild/automation/${automation.id}`,
+					{
+						headers: { 'OCS-APIRequest': 'true' },
+					},
+				)
+				.catch(() => {})
 		}
 	}
 }
@@ -244,19 +267,31 @@ test.describe('automation-designer — Automations page', () => {
 		await page.getByRole('option').first().click()
 	})
 
-	test('REQ-AUTD-001: list renders for a seeded version, empty state on a fresh version, version selector switches the list', async ({ page }) => {
+	test('REQ-AUTD-001: list renders for a seeded version, empty state on a fresh version, version selector switches the list', async ({
+		page,
+	}) => {
 		// Either the empty state or existing rows render without error. Scoped
 		// to `.automations-page` — an unscoped `[class*="empty-content"]` also
 		// matches an unrelated NcEmptyContent elsewhere on the shell (a
 		// "No contacts found" widget), causing a strict-mode violation.
 		const automationsPage = page.locator('.automations-page')
-		const emptyState = automationsPage.locator('.ncempty-stub, [class*="empty-content"]')
+		const emptyState = automationsPage.locator(
+			'.ncempty-stub, [class*="empty-content"]',
+		)
 		const rows = automationsPage.locator('[data-testid="automation-row"]')
-		await expect(emptyState.first().or(rows.first())).toBeVisible({ timeout: 10_000 })
+		await expect(emptyState.first().or(rows.first())).toBeVisible({
+			timeout: 10_000,
+		})
 	})
 
-	test('REQ-AUTD-002 + REQ-AUTD-005: compose an event-triggered notification, then delete removes exactly its compiled artifact', async ({ page, request }) => {
-		test.skip(await automationSchemaIsUsable(request) === false, 'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file')
+	test('REQ-AUTD-002 + REQ-AUTD-005: compose an event-triggered notification, then delete removes exactly its compiled artifact', async ({
+		page,
+		request,
+	}) => {
+		test.skip(
+			(await automationSchemaIsUsable(request)) === false,
+			'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
+		)
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
 		// Brief settle before interacting — NcModal's open transition plus this
@@ -268,13 +303,19 @@ test.describe('automation-designer — Automations page', () => {
 		// fetch can 404-and-retry indefinitely, so networkidle never resolves).
 		await page.waitForTimeout(1_500)
 
-		await page.getByRole('textbox', { name: /^name$/i }).fill('E2E notify on hello-message created')
+		await page
+			.getByRole('textbox', { name: /^name$/i })
+			.fill('E2E notify on hello-message created')
 		await page.getByRole('combobox', { name: /^when$/i }).click()
-		await page.getByRole('option', { name: looseOptionName('Object created') }).click()
+		await page
+			.getByRole('option', { name: looseOptionName('Object created') })
+			.click()
 		await selectTriggerSchema(page, 'Hello Message', 'hello-message')
 
 		await page.getByRole('button', { name: /add action/i }).click()
-		await page.getByRole('textbox', { name: /subject \(english\)/i }).fill('New hello-message')
+		await page
+			.getByRole('textbox', { name: /subject \(english\)/i })
+			.fill('New hello-message')
 
 		await page.getByRole('button', { name: /^save$/i }).click()
 		// Save closes the dialog only after the compile POST returns. Compiling a
@@ -282,9 +323,13 @@ test.describe('automation-designer — Automations page', () => {
 		// markers), which fans out OpenRegister's schema-changed cascade
 		// (cross-ref resolution, webhooks, notifications) and can take well over
 		// 10s on a loaded shared instance — so allow 30s for the dialog to close.
-		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 30_000 })
+		await expect(page.locator('.automation-edit')).toHaveCount(0, {
+			timeout: 30_000,
+		})
 
-		const row = page.locator('[data-testid="automation-row"]', { hasText: 'E2E notify on hello-message created' })
+		const row = page.locator('[data-testid="automation-row"]', {
+			hasText: 'E2E notify on hello-message created',
+		})
 		await expect(row).toBeVisible()
 
 		// Delete — compiled artifact removal is server-side (AutomationCleanupListener);
@@ -298,8 +343,14 @@ test.describe('automation-designer — Automations page', () => {
 		await expect(row).toHaveCount(0, { timeout: 10_000 })
 	})
 
-	test('REQ-AUTD-002: compose a scheduled synchronization run', async ({ page, request }) => {
-		test.skip(await automationSchemaIsUsable(request) === false, 'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file')
+	test('REQ-AUTD-002: compose a scheduled synchronization run', async ({
+		page,
+		request,
+	}) => {
+		test.skip(
+			(await automationSchemaIsUsable(request)) === false,
+			'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
+		)
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
 		// Brief settle before interacting — NcModal's open transition plus this
@@ -313,14 +364,20 @@ test.describe('automation-designer — Automations page', () => {
 
 		await page.getByRole('textbox', { name: /^name$/i }).fill('E2E nightly sync')
 		await page.getByRole('combobox', { name: /^when$/i }).click()
-		await page.getByRole('option', { name: looseOptionName('Cron schedule') }).click()
+		await page
+			.getByRole('option', { name: looseOptionName('Cron schedule') })
+			.click()
 		await page.getByRole('combobox', { name: /cadence/i }).click()
 		await page.getByRole('option', { name: looseOptionName('Daily') }).click()
 
 		await page.getByRole('button', { name: /add action/i }).click()
 		await page.getByRole('combobox', { name: /action type/i }).click()
-		await page.getByRole('option', { name: looseOptionName('Run a synchronization') }).click()
-		await page.getByRole('textbox', { name: /synchronization id/i }).fill('00000000-0000-0000-0000-000000000000')
+		await page
+			.getByRole('option', { name: looseOptionName('Run a synchronization') })
+			.click()
+		await page
+			.getByRole('textbox', { name: /synchronization id/i })
+			.fill('00000000-0000-0000-0000-000000000000')
 
 		await page.getByRole('button', { name: /^save$/i }).click()
 		// Save closes the dialog only after the compile POST returns. Compiling a
@@ -328,12 +385,24 @@ test.describe('automation-designer — Automations page', () => {
 		// markers), which fans out OpenRegister's schema-changed cascade
 		// (cross-ref resolution, webhooks, notifications) and can take well over
 		// 10s on a loaded shared instance — so allow 30s for the dialog to close.
-		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 30_000 })
-		await expect(page.locator('[data-testid="automation-row"]', { hasText: 'E2E nightly sync' })).toBeVisible()
+		await expect(page.locator('.automation-edit')).toHaveCount(0, {
+			timeout: 30_000,
+		})
+		await expect(
+			page.locator('[data-testid="automation-row"]', {
+				hasText: 'E2E nightly sync',
+			}),
+		).toBeVisible()
 	})
 
-	test('REQ-AUTD-002: compose a manual automation with a condition + object-op', async ({ page, request }) => {
-		test.skip(await automationSchemaIsUsable(request) === false, 'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file')
+	test('REQ-AUTD-002: compose a manual automation with a condition + object-op', async ({
+		page,
+		request,
+	}) => {
+		test.skip(
+			(await automationSchemaIsUsable(request)) === false,
+			'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
+		)
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
 		// Brief settle before interacting — NcModal's open transition plus this
@@ -345,16 +414,28 @@ test.describe('automation-designer — Automations page', () => {
 		// fetch can 404-and-retry indefinitely, so networkidle never resolves).
 		await page.waitForTimeout(1_500)
 
-		await page.getByRole('textbox', { name: /^name$/i }).fill('E2E flag large claims')
+		await page
+			.getByRole('textbox', { name: /^name$/i })
+			.fill('E2E flag large claims')
 		// Manual is the default trigger — no picker interaction needed.
 		await page.getByRole('combobox', { name: /condition type/i }).click()
-		await page.getByRole('option', { name: looseOptionName('Feel expression') }).click()
-		await page.getByPlaceholder('payload.amount > 1000').fill('payload.amount > 1000')
+		await page
+			.getByRole('option', { name: looseOptionName('Feel expression') })
+			.click()
+		await page
+			.getByPlaceholder('payload.amount > 1000')
+			.fill('payload.amount > 1000')
 
 		await page.getByRole('button', { name: /add action/i }).click()
 		await page.getByRole('combobox', { name: /action type/i }).click()
-		await page.getByRole('option', { name: looseOptionName('Create/update an object') }).click()
-		await page.getByRole('textbox', { name: /target schema/i }).fill('hello-message')
+		await page
+			.getByRole('option', {
+				name: looseOptionName('Create/update an object'),
+			})
+			.click()
+		await page
+			.getByRole('textbox', { name: /target schema/i })
+			.fill('hello-message')
 
 		await page.getByRole('button', { name: /^save$/i }).click()
 		// Save closes the dialog only after the compile POST returns. Compiling a
@@ -362,11 +443,19 @@ test.describe('automation-designer — Automations page', () => {
 		// markers), which fans out OpenRegister's schema-changed cascade
 		// (cross-ref resolution, webhooks, notifications) and can take well over
 		// 10s on a loaded shared instance — so allow 30s for the dialog to close.
-		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 30_000 })
-		await expect(page.locator('[data-testid="automation-row"]', { hasText: 'E2E flag large claims' })).toBeVisible()
+		await expect(page.locator('.automation-edit')).toHaveCount(0, {
+			timeout: 30_000,
+		})
+		await expect(
+			page.locator('[data-testid="automation-row"]', {
+				hasText: 'E2E flag large claims',
+			}),
+		).toBeVisible()
 	})
 
-	test('REQ-AUTD-003: event trigger + webhook action is blocked with a message; condition on a schedule trigger is blocked', async ({ page }) => {
+	test('REQ-AUTD-003: event trigger + webhook action is blocked with a message; condition on a schedule trigger is blocked', async ({
+		page,
+	}) => {
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
 		// Brief settle before interacting — NcModal's open transition plus this
@@ -379,7 +468,9 @@ test.describe('automation-designer — Automations page', () => {
 		await page.waitForTimeout(1_500)
 
 		await page.getByRole('combobox', { name: /^when$/i }).click()
-		await page.getByRole('option', { name: looseOptionName('Object created') }).click()
+		await page
+			.getByRole('option', { name: looseOptionName('Object created') })
+			.click()
 		await page.getByRole('button', { name: /add action/i }).click()
 		await page.getByRole('combobox', { name: /action type/i }).click()
 		await page.getByRole('option', { name: looseOptionName('Webhook') }).click()
@@ -395,12 +486,20 @@ test.describe('automation-designer — Automations page', () => {
 
 		// Condition on schedule trigger.
 		await page.getByRole('combobox', { name: /^when$/i }).click()
-		await page.getByRole('option', { name: looseOptionName('Cron schedule') }).click()
+		await page
+			.getByRole('option', { name: looseOptionName('Cron schedule') })
+			.click()
 		await expect(page.locator('[data-testid="condition-blocked"]')).toBeVisible()
 	})
 
-	test('REQ-AUTD-005: hand-edit a compiled schedules entry surfaces a drift badge; Recompile (overwrite) restores it', async ({ page, request }) => {
-		test.skip(await automationSchemaIsUsable(request) === false, 'requires the "E2E nightly sync" automation from an earlier scenario in this file, which cannot be created — openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance, see automationSchemaIsUsable()')
+	test('REQ-AUTD-005: hand-edit a compiled schedules entry surfaces a drift badge; Recompile (overwrite) restores it', async ({
+		page,
+		request,
+	}) => {
+		test.skip(
+			(await automationSchemaIsUsable(request)) === false,
+			'requires the "E2E nightly sync" automation from an earlier scenario in this file, which cannot be created — openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance, see automationSchemaIsUsable()',
+		)
 		// Assumes a schedule automation named "E2E nightly sync" from an
 		// earlier scenario in this file exists; if the suite runs this spec
 		// in isolation, seed one first via the UI (skipped here — the drift
@@ -413,36 +512,60 @@ test.describe('automation-designer — Automations page', () => {
 		// section); here we just assert the drift-badge UI affordance exists
 		// and its Recompile action is wired when drift is flagged.
 		const driftBadge = row.locator('[data-testid="drift-badge"]')
-		if (await driftBadge.count() > 0) {
+		if ((await driftBadge.count()) > 0) {
 			await driftBadge.getByRole('button', { name: /recompile/i }).click()
 			await expect(driftBadge).toHaveCount(0, { timeout: 10_000 })
 		}
 	})
 
-	test('REQ-AUTD-006: disable flips the enabled switch and re-enable restores it', async ({ page, request }) => {
-		test.skip(await automationSchemaIsUsable(request) === false, 'requires an existing automation row from an earlier scenario in this file, which cannot be created — openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance, see automationSchemaIsUsable()')
+	test('REQ-AUTD-006: disable flips the enabled switch and re-enable restores it', async ({
+		page,
+		request,
+	}) => {
+		test.skip(
+			(await automationSchemaIsUsable(request)) === false,
+			'requires an existing automation row from an earlier scenario in this file, which cannot be created — openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance, see automationSchemaIsUsable()',
+		)
 		const row = page.locator('[data-testid="automation-row"]').first()
 		await expect(row).toBeVisible({ timeout: 10_000 })
 
-		const toggle = row.locator('.ncswitch-stub, [class*="checkbox-radio-switch"]').first()
+		const toggle = row
+			.locator('.ncswitch-stub, [class*="checkbox-radio-switch"]')
+			.first()
 		await toggle.click()
 		await page.waitForTimeout(500)
 		await toggle.click()
 	})
 
-	test('REQ-AUTD-007: test panel dry-run shows would-be actions for a matching payload and "condition did not match" otherwise', async ({ page, request }) => {
-		test.skip(await automationSchemaIsUsable(request) === false, 'requires the "E2E flag large claims" automation from an earlier scenario in this file, which cannot be created — openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance, see automationSchemaIsUsable()')
-		const row = page.locator('[data-testid="automation-row"]', { hasText: 'E2E flag large claims' })
+	test('REQ-AUTD-007: test panel dry-run shows would-be actions for a matching payload and "condition did not match" otherwise', async ({
+		page,
+		request,
+	}) => {
+		test.skip(
+			(await automationSchemaIsUsable(request)) === false,
+			'requires the "E2E flag large claims" automation from an earlier scenario in this file, which cannot be created — openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance, see automationSchemaIsUsable()',
+		)
+		const row = page.locator('[data-testid="automation-row"]', {
+			hasText: 'E2E flag large claims',
+		})
 		await expect(row).toBeVisible({ timeout: 10_000 })
 		await row.getByRole('button', { name: /^test$/i }).click()
 
-		await page.locator('[data-testid="dry-run-payload"]').fill('{"payload":{"amount":5000}}')
+		await page
+			.locator('[data-testid="dry-run-payload"]')
+			.fill('{"payload":{"amount":5000}}')
 		await page.locator('[data-testid="dry-run-button"]').click()
-		await expect(page.locator('[data-testid="dry-run-action"]').first()).toBeVisible({ timeout: 10_000 })
+		await expect(
+			page.locator('[data-testid="dry-run-action"]').first(),
+		).toBeVisible({ timeout: 10_000 })
 
-		await page.locator('[data-testid="dry-run-payload"]').fill('{"payload":{"amount":1}}')
+		await page
+			.locator('[data-testid="dry-run-payload"]')
+			.fill('{"payload":{"amount":1}}')
 		await page.locator('[data-testid="dry-run-button"]').click()
-		await expect(page.locator('[data-testid="dry-run-no-match"]')).toBeVisible({ timeout: 10_000 })
+		await expect(page.locator('[data-testid="dry-run-no-match"]')).toBeVisible({
+			timeout: 10_000,
+		})
 	})
 })
 
@@ -466,8 +589,14 @@ test.describe('automation-approval-steps — approval action end to end', () => 
 		await page.getByRole('option').first().click()
 	})
 
-	test('composes an approval automation end to end, approves via My Approvals, confirms the on-approve follow-up fires', async ({ page, request }) => {
-		test.skip(await automationSchemaIsUsable(request) === false, 'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file')
+	test('composes an approval automation end to end, approves via My Approvals, confirms the on-approve follow-up fires', async ({
+		page,
+		request,
+	}) => {
+		test.skip(
+			(await automationSchemaIsUsable(request)) === false,
+			'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
+		)
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
 		// Brief settle before interacting — NcModal's open transition plus this
@@ -479,18 +608,30 @@ test.describe('automation-approval-steps — approval action end to end', () => 
 		// fetch can 404-and-retry indefinitely, so networkidle never resolves).
 		await page.waitForTimeout(1_500)
 
-		await page.getByRole('textbox', { name: /^name$/i }).fill('E2E route hello-message for approval')
+		await page
+			.getByRole('textbox', { name: /^name$/i })
+			.fill('E2E route hello-message for approval')
 		await page.getByRole('combobox', { name: /^when$/i }).click()
-		await page.getByRole('option', { name: looseOptionName('Object created') }).click()
+		await page
+			.getByRole('option', { name: looseOptionName('Object created') })
+			.click()
 		await selectTriggerSchema(page, 'Hello Message', 'hello-message')
 
 		await page.getByRole('button', { name: /add action/i }).click()
-		await page.locator('[data-testid="action-row"] .ncselect-stub, [data-testid="action-row"]').first()
-			.getByRole('combobox').click().catch(() => {
-			// Fallback: NcSelect may render without an accessible combobox role
-			// in the built app-store bundle — click the visible trigger instead.
+		await page
+			.locator(
+				'[data-testid="action-row"] .ncselect-stub, [data-testid="action-row"]',
+			)
+			.first()
+			.getByRole('combobox')
+			.click()
+			.catch(() => {
+				// Fallback: NcSelect may render without an accessible combobox role
+				// in the built app-store bundle — click the visible trigger instead.
 			})
-		await page.getByRole('option', { name: looseOptionName('Require approval') }).click()
+		await page
+			.getByRole('option', { name: looseOptionName('Require approval') })
+			.click()
 		await selectAssigneeGroup(page, 'admin')
 
 		await page.getByRole('button', { name: /^save$/i }).click()
@@ -499,9 +640,13 @@ test.describe('automation-approval-steps — approval action end to end', () => 
 		// markers), which fans out OpenRegister's schema-changed cascade
 		// (cross-ref resolution, webhooks, notifications) and can take well over
 		// 10s on a loaded shared instance — so allow 30s for the dialog to close.
-		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 30_000 })
+		await expect(page.locator('.automation-edit')).toHaveCount(0, {
+			timeout: 30_000,
+		})
 
-		const row = page.locator('[data-testid="automation-row"]', { hasText: 'E2E route hello-message for approval' })
+		const row = page.locator('[data-testid="automation-row"]', {
+			hasText: 'E2E route hello-message for approval',
+		})
 		await expect(row).toBeVisible({ timeout: 10_000 })
 
 		// Trigger the automation by creating a matching `hello-message` object
@@ -510,18 +655,26 @@ test.describe('automation-approval-steps — approval action end to end', () => 
 		// asserted here; live trigger-fire + My Approvals decisioning is
 		// covered by the PHPUnit AutomationApprovalTriggerListenerTest /
 		// ApprovalOutcomeListenerTest for the underlying logic).
-		await expect(row.locator('[data-testid="approval-state-badge"]').or(row)).toBeVisible({ timeout: 10_000 })
+		await expect(
+			row.locator('[data-testid="approval-state-badge"]').or(row),
+		).toBeVisible({ timeout: 10_000 })
 	})
 
-	test('My Approvals widget lists a pending step and approve/reject call OpenRegister directly (no OpenBuild pass-through route)', async ({ page }) => {
+	test('My Approvals widget lists a pending step and approve/reject call OpenRegister directly (no OpenBuild pass-through route)', async ({
+		page,
+	}) => {
 		// The widget is placed on a built-app page via the page designer in a
 		// full fixture; here we assert its runtime surface renders and its
 		// actions target OpenRegister's REST API directly, per REQ (no
 		// OpenBuild controller mediates approve/reject).
-		const responsePromise = page.waitForResponse(
-			(res) => res.url().includes('/apps/openregister/api/approval-steps') && res.request().method() === 'GET',
-			{ timeout: 15_000 },
-		).catch(() => null)
+		const responsePromise = page
+			.waitForResponse(
+				(res) =>
+					res.url().includes('/apps/openregister/api/approval-steps')
+					&& res.request().method() === 'GET',
+				{ timeout: 15_000 },
+			)
+			.catch(() => null)
 
 		await page.goto(`/apps/openbuild/builder/${APP_SLUG}`)
 		const response = await responsePromise
@@ -552,9 +705,18 @@ test.describe('automation-document-action — generateDocument action', () => {
 	})
 
 	// @e2e automation-designer::compose-a-document-generation-action
-	test('REQ-AUTD-002 scenario 4: composes a document-generation automation on a lifecycle transition and confirms the generated document is attached', async ({ page, request }) => {
-		test.skip(await automationSchemaIsUsable(request) === false, 'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file')
-		test.skip(await docudeskIsAvailable(request) === false, 'Docudesk is not installed on this instance, so the `generateDocument` action renders its documented blocked-state NoteCard instead of a config sub-form and there is nothing to compose — see the docudeskIsAvailable() note at the top of this file')
+	test('REQ-AUTD-002 scenario 4: composes a document-generation automation on a lifecycle transition and confirms the generated document is attached', async ({
+		page,
+		request,
+	}) => {
+		test.skip(
+			(await automationSchemaIsUsable(request)) === false,
+			'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
+		)
+		test.skip(
+			(await docudeskIsAvailable(request)) === false,
+			'Docudesk is not installed on this instance, so the `generateDocument` action renders its documented blocked-state NoteCard instead of a config sub-form and there is nothing to compose — see the docudeskIsAvailable() note at the top of this file',
+		)
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
 		// Brief settle before interacting — NcModal's open transition plus this
@@ -566,19 +728,31 @@ test.describe('automation-document-action — generateDocument action', () => {
 		// fetch can 404-and-retry indefinitely, so networkidle never resolves).
 		await page.waitForTimeout(1_500)
 
-		await page.getByRole('textbox', { name: /^name$/i }).fill('E2E generate decision letter on approve')
+		await page
+			.getByRole('textbox', { name: /^name$/i })
+			.fill('E2E generate decision letter on approve')
 		await page.getByRole('combobox', { name: /^when$/i }).click()
-		await page.getByRole('option', { name: looseOptionName('Lifecycle transition') }).click()
+		await page
+			.getByRole('option', { name: looseOptionName('Lifecycle transition') })
+			.click()
 		await selectTriggerSchema(page, 'Hello Message', 'hello-message')
-		await page.getByRole('textbox', { name: /transition action name/i }).fill('approve')
+		await page
+			.getByRole('textbox', { name: /transition action name/i })
+			.fill('approve')
 
 		await page.getByRole('button', { name: /add action/i }).click()
-		await page.locator('[data-testid="action-row"]').first()
-			.getByRole('combobox').click().catch(() => {
-			// Fallback: NcSelect may render without an accessible combobox role
-			// in the built app-store bundle — click the visible trigger instead.
+		await page
+			.locator('[data-testid="action-row"]')
+			.first()
+			.getByRole('combobox')
+			.click()
+			.catch(() => {
+				// Fallback: NcSelect may render without an accessible combobox role
+				// in the built app-store bundle — click the visible trigger instead.
 			})
-		await page.getByRole('option', { name: looseOptionName('Generate document') }).click()
+		await page
+			.getByRole('option', { name: looseOptionName('Generate document') })
+			.click()
 
 		// Template picker degrades to a free-text "Template id" field when
 		// Docudesk is installed but has no seeded templates
@@ -587,17 +761,30 @@ test.describe('automation-document-action — generateDocument action', () => {
 		// Docudesk being ABSENT is a different case and does not reach here at
 		// all: the action is blocked outright, which is what the
 		// `docudeskIsAvailable` guard above covers.
-		const templateSelect = page.locator('[data-testid="generate-document-template-select"]')
-		const templateText = page.locator('[data-testid="generate-document-template-text"]')
+		const templateSelect = page.locator(
+			'[data-testid="generate-document-template-select"]',
+		)
+		const templateText = page.locator(
+			'[data-testid="generate-document-template-text"]',
+		)
 		if (await templateSelect.isVisible().catch(() => false)) {
-			await templateSelect.getByRole('combobox').click().catch(() => {})
+			await templateSelect
+				.getByRole('combobox')
+				.click()
+				.catch(() => {})
 			await page.getByRole('option').first().click()
 		} else {
 			await templateText.fill('00000000-0000-0000-0000-000000000000')
 		}
 
-		await page.locator('[data-testid="generate-document-output-select"]').getByRole('combobox').click().catch(() => {})
-		await page.getByRole('option', { name: looseOptionName('Attach to object') }).click()
+		await page
+			.locator('[data-testid="generate-document-output-select"]')
+			.getByRole('combobox')
+			.click()
+			.catch(() => {})
+		await page
+			.getByRole('option', { name: looseOptionName('Attach to object') })
+			.click()
 
 		await page.getByRole('button', { name: /^save$/i }).click()
 		// Save closes the dialog only after the compile POST returns. Compiling a
@@ -605,9 +792,13 @@ test.describe('automation-document-action — generateDocument action', () => {
 		// markers), which fans out OpenRegister's schema-changed cascade
 		// (cross-ref resolution, webhooks, notifications) and can take well over
 		// 10s on a loaded shared instance — so allow 30s for the dialog to close.
-		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 30_000 })
+		await expect(page.locator('.automation-edit')).toHaveCount(0, {
+			timeout: 30_000,
+		})
 
-		const row = page.locator('[data-testid="automation-row"]', { hasText: 'E2E generate decision letter on approve' })
+		const row = page.locator('[data-testid="automation-row"]', {
+			hasText: 'E2E generate decision letter on approve',
+		})
 		await expect(row).toBeVisible({ timeout: 10_000 })
 
 		// Live trigger-fire (transitioning a `hello-message` object through
@@ -619,7 +810,9 @@ test.describe('automation-document-action — generateDocument action', () => {
 	})
 
 	// @e2e automation-designer::generatedocument-action-on-a-schedule-trigger-is-blocked
-	test('REQ-AUTD-002/003: generateDocument action is blocked on a schedule trigger', async ({ page }) => {
+	test('REQ-AUTD-002/003: generateDocument action is blocked on a schedule trigger', async ({
+		page,
+	}) => {
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
 		// Brief settle before interacting — NcModal's open transition plus this
@@ -631,16 +824,28 @@ test.describe('automation-document-action — generateDocument action', () => {
 		// fetch can 404-and-retry indefinitely, so networkidle never resolves).
 		await page.waitForTimeout(1_500)
 
-		await page.getByRole('textbox', { name: /^name$/i }).fill('E2E bad generateDocument automation')
+		await page
+			.getByRole('textbox', { name: /^name$/i })
+			.fill('E2E bad generateDocument automation')
 		await page.getByRole('combobox', { name: /^when$/i }).click()
-		await page.getByRole('option', { name: looseOptionName('Cron schedule') }).click()
+		await page
+			.getByRole('option', { name: looseOptionName('Cron schedule') })
+			.click()
 
 		await page.getByRole('button', { name: /add action/i }).click()
-		await page.locator('[data-testid="action-row"]').first()
-			.getByRole('combobox').click().catch(() => {})
-		await page.getByRole('option', { name: looseOptionName('Generate document') }).click()
+		await page
+			.locator('[data-testid="action-row"]')
+			.first()
+			.getByRole('combobox')
+			.click()
+			.catch(() => {})
+		await page
+			.getByRole('option', { name: looseOptionName('Generate document') })
+			.click()
 
-		await expect(page.locator('[data-testid="action-blocked"]')).toBeVisible({ timeout: 10_000 })
+		await expect(page.locator('[data-testid="action-blocked"]')).toBeVisible({
+			timeout: 10_000,
+		})
 
 		// Save is clickable but a matrix-invalid shape never persists (mirrors
 		// the REQ-AUTD-003 webhook-on-event-trigger scenario above).

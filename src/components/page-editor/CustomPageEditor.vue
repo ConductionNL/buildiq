@@ -32,14 +32,19 @@
 					list="custom-page-editor-component-suggestions"
 					:placeholder="t('openbuild', 'e.g. LaunchPadboard')"
 					:aria-invalid="isInvalid('component')"
-					@input="update('component', $event.target.value)">
+					@input="update('component', $event.target.value)" />
 				<datalist id="custom-page-editor-component-suggestions">
 					<option v-for="key in registryKeys" :key="key" :value="key" />
 				</datalist>
 				<InlineFieldMark :error="markFor('component')" />
 			</label>
 			<p v-if="!registryKeys.length" class="custom-page-editor__hint">
-				{{ t('openbuild', 'The component must be registered in the consuming app’s customComponents map. The key is resolved at render time, so it is entered free-form here.') }}
+				{{
+					t(
+						'openbuild',
+						'The component must be registered in the consuming app’s customComponents map. The key is resolved at render time, so it is entered free-form here.',
+					)
+				}}
 			</p>
 		</fieldset>
 
@@ -59,7 +64,8 @@
 		</fieldset>
 
 		<p v-if="otherKeys.length" class="custom-page-editor__other">
-			{{ t('openbuild', 'Other config keys preserved on save:') }} {{ otherKeys.join(', ') }}
+			{{ t('openbuild', 'Other config keys preserved on save:') }}
+			{{ otherKeys.join(', ') }}
 		</p>
 	</div>
 </template>
@@ -140,7 +146,9 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		otherKeys() {
-			return Object.keys(this.config || {}).filter((k) => k !== 'component' && k !== 'props')
+			return Object.keys(this.config || {}).filter(
+				(k) => k !== 'component' && k !== 'props',
+			)
 		},
 	},
 	watch: {

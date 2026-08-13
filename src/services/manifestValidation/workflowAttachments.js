@@ -20,11 +20,18 @@ export const WORKFLOW_TRIGGERS = Object.freeze(['on-create'])
 
 /** The only keys a workflow entry may carry. */
 const ALLOWED_KEYS = Object.freeze([
-	'id', 'schema', 'caseTypeUuid', 'caseTypeName', 'trigger', 'linkProperty', 'descriptionTemplate',
+	'id',
+	'schema',
+	'caseTypeUuid',
+	'caseTypeName',
+	'trigger',
+	'linkProperty',
+	'descriptionTemplate',
 ])
 
 /** Loose UUID check (8-4-4-4-12 hex). */
-const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+const UUID_RE =
+	/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
 
 /**
  * Resolve the declared property names for a schema in the manifest. Looks at
@@ -47,7 +54,8 @@ function schemaPropsAccessor(manifest, schemaSlug) {
 	if (!entry) {
 		return null
 	}
-	const props = entry.properties || (entry.schema && entry.schema.properties) || null
+	const props =
+		entry.properties || (entry.schema && entry.schema.properties) || null
 	if (!props || typeof props !== 'object') {
 		return null
 	}
@@ -123,7 +131,9 @@ export function validateWorkflowAttachments(manifest) {
 		}
 		for (const key of Object.keys(wf)) {
 			if (!ALLOWED_KEYS.includes(key)) {
-				errors.push(`/runtime/workflows/${idx}/${key}: openbuild.workflow.error.unknown-key`)
+				errors.push(
+					`/runtime/workflows/${idx}/${key}: openbuild.workflow.error.unknown-key`,
+				)
 			}
 		}
 		// id
@@ -165,20 +175,31 @@ export function validateWorkflowAttachments(manifest) {
 				if (!accessor.has(wf.linkProperty)) {
 					errors.push(at('openbuild.workflow.error.link-property-missing'))
 				} else if (!accessor.isString(wf.linkProperty)) {
-					errors.push(at('openbuild.workflow.error.link-property-not-string'))
+					errors.push(
+						at('openbuild.workflow.error.link-property-not-string'),
+					)
 				}
 			}
 		}
 		// descriptionTemplate
-		if (wf.descriptionTemplate !== undefined && typeof wf.descriptionTemplate !== 'string') {
+		if (
+			wf.descriptionTemplate !== undefined
+			&& typeof wf.descriptionTemplate !== 'string'
+		) {
 			errors.push(at('openbuild.workflow.error.description-template-invalid'))
 		}
 	})
 
 	// Mark every entry that shares a schema with another (duplicate-schema).
 	workflows.forEach((wf, idx) => {
-		if (wf && typeof wf.schema === 'string' && (schemaCounts.get(wf.schema) || 0) > 1) {
-			errors.push(`/runtime/workflows/${idx}: openbuild.workflow.error.duplicate-schema-attachment`)
+		if (
+			wf
+			&& typeof wf.schema === 'string'
+			&& (schemaCounts.get(wf.schema) || 0) > 1
+		) {
+			errors.push(
+				`/runtime/workflows/${idx}: openbuild.workflow.error.duplicate-schema-attachment`,
+			)
 		}
 	})
 

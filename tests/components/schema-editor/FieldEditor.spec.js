@@ -34,12 +34,14 @@ const stubs = {
 	NcButton: {
 		name: 'NcButton',
 		props: ['type', 'disabled', 'ariaLabel'],
-		template: '<button :disabled="disabled" :aria-label="ariaLabel" @click="$emit(\'click\', $event)"><slot name="icon" /><slot /></button>',
+		template:
+			'<button :disabled="disabled" :aria-label="ariaLabel" @click="$emit(\'click\', $event)"><slot name="icon" /><slot /></button>',
 	},
 	NcTextField: {
 		name: 'NcTextField',
 		props: ['value', 'label', 'error', 'helperText', 'placeholder'],
-		template: '<label class="nc-textfield-stub" :data-label="label" :data-error="error"><input :value="value" @input="$emit(\'update:value\', $event.target.value)" /><span class="helper">{{ helperText }}</span></label>',
+		template:
+			'<label class="nc-textfield-stub" :data-label="label" :data-error="error"><input :value="value" @input="$emit(\'update:value\', $event.target.value)" /><span class="helper">{{ helperText }}</span></label>',
 	},
 	NcSelect: {
 		name: 'NcSelect',
@@ -49,12 +51,14 @@ const stubs = {
 	NcCheckboxRadioSwitch: {
 		name: 'NcCheckboxRadioSwitch',
 		props: ['checked', 'type'],
-		template: '<label class="nc-cbrs-stub"><input type="checkbox" :checked="checked" @change="$emit(\'update:checked\', $event.target.checked)" /><slot /></label>',
+		template:
+			'<label class="nc-cbrs-stub"><input type="checkbox" :checked="checked" @change="$emit(\'update:checked\', $event.target.checked)" /><slot /></label>',
 	},
 	DeleteFieldDialog: {
 		name: 'DeleteFieldDialog',
 		props: ['open', 'fieldName'],
-		template: '<div class="delete-field-stub" :data-open="open" :data-name="fieldName" />',
+		template:
+			'<div class="delete-field-stub" :data-open="open" :data-name="fieldName" />',
 	},
 }
 
@@ -127,18 +131,21 @@ describe('FieldEditor', () => {
 			defaultField({ name: 'b' }),
 			defaultField({ name: 'c' }),
 		]
-		const wrapper = mount(FieldEditor, { propsData: { fields, schemaSlugs: [] }, stubs })
+		const wrapper = mount(FieldEditor, {
+			propsData: { fields, schemaSlugs: [] },
+			stubs,
+		})
 		wrapper.vm.moveUp(2)
 		const next = wrapper.emitted('update:fields')[0][0]
 		expect(next.map((f) => f.name)).toEqual(['a', 'c', 'b'])
 	})
 
 	it('REQ-OBSD-003: moveDown swaps adjacent fields and is a no-op at the tail', () => {
-		const fields = [
-			defaultField({ name: 'a' }),
-			defaultField({ name: 'b' }),
-		]
-		const wrapper = mount(FieldEditor, { propsData: { fields, schemaSlugs: [] }, stubs })
+		const fields = [defaultField({ name: 'a' }), defaultField({ name: 'b' })]
+		const wrapper = mount(FieldEditor, {
+			propsData: { fields, schemaSlugs: [] },
+			stubs,
+		})
 		wrapper.vm.moveDown(0)
 		const next = wrapper.emitted('update:fields')[0][0]
 		expect(next.map((f) => f.name)).toEqual(['b', 'a'])
@@ -153,7 +160,11 @@ describe('FieldEditor', () => {
 	it('REQ-OBSD-003: type-change resets validation map (no leftover string format on a number)', () => {
 		const wrapper = mount(FieldEditor, {
 			propsData: {
-				fields: [defaultField({ validation: { format: 'email', maxLength: 100 } })],
+				fields: [
+					defaultField({
+						validation: { format: 'email', maxLength: 100 },
+					}),
+				],
 				schemaSlugs: [],
 			},
 			stubs,
@@ -194,10 +205,15 @@ describe('FieldEditor', () => {
 			defaultField({ name: '1bad' }), // pattern violation
 			defaultField({ name: '' }), // missing
 		]
-		const wrapper = mount(FieldEditor, { propsData: { fields, schemaSlugs: [] }, stubs })
+		const wrapper = mount(FieldEditor, {
+			propsData: { fields, schemaSlugs: [] },
+			stubs,
+		})
 		expect(wrapper.vm.nameError(fields[0], 0)).toContain('unique')
 		expect(wrapper.vm.nameError(fields[1], 1)).toContain('unique')
-		expect(wrapper.vm.nameError(fields[2], 2)).toContain('Name must start with a letter')
+		expect(wrapper.vm.nameError(fields[2], 2)).toContain(
+			'Name must start with a letter',
+		)
 		expect(wrapper.vm.nameError(fields[3], 3)).toContain('Name is required')
 	})
 

@@ -34,7 +34,9 @@ describe('ChatPageEditor', () => {
 	})
 
 	it('a config with only postUrl reports the postUrl shape', () => {
-		expect(mountEditor({ postUrl: '/api/x/messages' }).vm.transportShape).toBe('postUrl')
+		expect(mountEditor({ postUrl: '/api/x/messages' }).vm.transportShape).toBe(
+			'postUrl',
+		)
 	})
 
 	it('setTransport(conversationSource) clears postUrl (mutex)', async () => {

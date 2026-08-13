@@ -14,12 +14,16 @@ import SchedulesSection from '../../src/components/SchedulesSection.vue'
 const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled'],
-	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+	template:
+		'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 
 const stubs = {
 	NcButton: NcButtonStub,
-	ScheduleEditDialog: { name: 'ScheduleEditDialog', template: '<div class="dialog-stub" />' },
+	ScheduleEditDialog: {
+		name: 'ScheduleEditDialog',
+		template: '<div class="dialog-stub" />',
+	},
 }
 
 const entry = {
@@ -30,10 +34,11 @@ const entry = {
 	arguments: { synchronizationId: '00000000-0000-0000-0000-000000000000' },
 }
 
-const factory = (manifest) => mount(SchedulesSection, {
-	propsData: { manifest },
-	stubs,
-})
+const factory = (manifest) =>
+	mount(SchedulesSection, {
+		propsData: { manifest },
+		stubs,
+	})
 
 describe('SchedulesSection', () => {
 	it('renders the empty state with no schedules', () => {
@@ -54,7 +59,12 @@ describe('SchedulesSection', () => {
 	})
 
 	it('summarizes a cron cadence', () => {
-		const cronEntry = { ...entry, id: 'weekly', interval: undefined, cron: '0 3 * * 1' }
+		const cronEntry = {
+			...entry,
+			id: 'weekly',
+			interval: undefined,
+			cron: '0 3 * * 1',
+		}
 		delete cronEntry.interval
 		const wrapper = factory({ schedules: [cronEntry] })
 		// the test t() stub does not interpolate, but the raw key contains "Cron"
@@ -102,7 +112,10 @@ describe('SchedulesSection', () => {
 	})
 
 	it('keeps other top-level manifest keys unchanged on save', () => {
-		const wrapper = factory({ pages: [{ id: 'p1' }], theme: { source: 'nldesign' } })
+		const wrapper = factory({
+			pages: [{ id: 'p1' }],
+			theme: { source: 'nldesign' },
+		})
 		wrapper.vm.onDialogSave(entry)
 		const emitted = wrapper.emitted()['update:manifest'][0][0]
 		expect(emitted.pages).toEqual([{ id: 'p1' }])

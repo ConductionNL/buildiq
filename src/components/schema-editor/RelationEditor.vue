@@ -37,7 +37,9 @@
 					:clearable="false"
 					label="label"
 					track-by="value"
-					@update:modelValue="updateRelation(index, 'target', $event ? $event.value : '')" />
+					@update:modelValue="
+						updateRelation(index, 'target', $event ? $event.value : '')
+					" />
 				<NcSelect
 					:input-label="t('openbuild', 'Cardinality')"
 					:model-value="cardinalityOption(relation.cardinality)"
@@ -45,11 +47,19 @@
 					:clearable="false"
 					label="label"
 					track-by="value"
-					@update:modelValue="updateRelation(index, 'cardinality', $event ? $event.value : 'one')" />
+					@update:modelValue="
+						updateRelation(
+							index,
+							'cardinality',
+							$event ? $event.value : 'one',
+						)
+					" />
 				<NcTextField
 					:model-value="relation.inverseOf || ''"
 					:label="t('openbuild', 'Inverse-of (optional)')"
-					@update:modelValue="updateRelation(index, 'inverseOf', $event)" />
+					@update:modelValue="
+						updateRelation(index, 'inverseOf', $event)
+					" />
 				<NcButton
 					type="error"
 					:aria-label="t('openbuild', 'Remove relation')"
@@ -103,9 +113,10 @@ export default {
 		cardinalityOptions() {
 			return CARDINALITIES.map((value) => ({
 				value,
-				label: value === 'one'
-					? this.t('openbuild', 'One')
-					: this.t('openbuild', 'Many'),
+				label:
+					value === 'one'
+						? this.t('openbuild', 'One')
+						: this.t('openbuild', 'Many'),
 			}))
 		},
 	},
@@ -128,7 +139,10 @@ export default {
 		 * @return {object} The matching option (defaults to first).
 		 */
 		cardinalityOption(value) {
-			return this.cardinalityOptions.find((o) => o.value === value) || this.cardinalityOptions[0]
+			return (
+				this.cardinalityOptions.find((o) => o.value === value)
+				|| this.cardinalityOptions[0]
+			)
 		},
 		/**
 		 * Emit the updated relations array to the parent.

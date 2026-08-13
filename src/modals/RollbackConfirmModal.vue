@@ -7,14 +7,15 @@
   - the confirm/cancel UX only.
   -->
 <template>
-	<NcDialog
-		:open="open"
-		:name="title"
-		size="normal"
-		@update:open="onUpdateOpen">
+	<NcDialog :open="open" :name="title" size="normal" @update:open="onUpdateOpen">
 		<template #default>
 			<p class="rollback-confirm__body">
-				{{ t('openbuild', 'Rolling back copies this snapshot\'s manifest onto the current draft. Existing history is preserved (append-only).') }}
+				{{
+					t(
+						'openbuild',
+						"Rolling back copies this snapshot's manifest onto the current draft. Existing history is preserved (append-only).",
+					)
+				}}
 			</p>
 			<dl v-if="version" class="rollback-confirm__meta">
 				<dt>{{ t('openbuild', 'Version') }}</dt>

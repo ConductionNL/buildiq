@@ -41,7 +41,9 @@ const singleWidgetBlock = {
 
 describe('blockInsert — fragmentWidgets', () => {
 	it('wraps a single-widget fragment as a one-item list', () => {
-		expect(fragmentWidgets(singleWidgetBlock.fragment)).toEqual([singleWidgetBlock.fragment])
+		expect(fragmentWidgets(singleWidgetBlock.fragment)).toEqual([
+			singleWidgetBlock.fragment,
+		])
 	})
 
 	it('unwraps a section fragment into its widgets', () => {
@@ -56,11 +58,18 @@ describe('blockInsert — fragmentWidgets', () => {
 
 describe('blockInsert — computeSchemaMismatches (remap trigger condition)', () => {
 	it('returns empty when every dependency exact-matches a target schema', () => {
-		expect(computeSchemaMismatches(['permit-application'], ['permit-application', 'other'])).toEqual([])
+		expect(
+			computeSchemaMismatches(
+				['permit-application'],
+				['permit-application', 'other'],
+			),
+		).toEqual([])
 	})
 
 	it('returns the mismatched dependency when no target schema matches', () => {
-		expect(computeSchemaMismatches(['permit-application'], ['other'])).toEqual(['permit-application'])
+		expect(computeSchemaMismatches(['permit-application'], ['other'])).toEqual([
+			'permit-application',
+		])
 	})
 
 	it('treats an empty schemaDependencies list as no mismatch', () => {
@@ -92,7 +101,7 @@ describe('blockInsert — mintWidgetId', () => {
 })
 
 describe('blockInsert — insertBlock (deep-copy + id-mint)', () => {
-	it('mints a fresh id and never reuses the fragment\'s original id', () => {
+	it("mints a fresh id and never reuses the fragment's original id", () => {
 		const [widget] = insertBlock(singleWidgetBlock, { targetWidgets: [] })
 		expect(widget.id).not.toBe('status-badge')
 		expect(widget.widgetKey).toBe('status-badge')
@@ -148,7 +157,10 @@ describe('blockInsert — insertBlock (deep-copy + id-mint)', () => {
 		const widgets = insertBlock(section, { targetWidgets: [] })
 		expect(widgets).toHaveLength(2)
 		expect(new Set(widgets.map((w) => w.id)).size).toBe(2)
-		expect(widgets.map((w) => w.widgetKey)).toEqual(['field-display', 'status-badge'])
+		expect(widgets.map((w) => w.widgetKey)).toEqual([
+			'field-display',
+			'status-badge',
+		])
 	})
 })
 
@@ -161,27 +173,39 @@ describe('blockInsert — markUnresolvedRefs', () => {
 	it('recurses into nested arrays and objects', () => {
 		const node = { widgets: [{ dataSource: { relatedSchema: 'x' } }] }
 		const marked = markUnresolvedRefs(node, ['x'])
-		expect(marked.widgets[0].dataSource.relatedSchema).toBe(UNRESOLVED_SCHEMA_PLACEHOLDER)
+		expect(marked.widgets[0].dataSource.relatedSchema).toBe(
+			UNRESOLVED_SCHEMA_PLACEHOLDER,
+		)
 		expect(marked.widgets[0].dataSource.needsRemap).toBe(true)
 	})
 })
 
 describe('blockInsert — remapBlockRecord (import-time remap finalisation)', () => {
 	it('rewrites the fragment and updates schemaDependencies to the resolved target slugs', () => {
-		const record = remapBlockRecord(singleWidgetBlock, { 'permit-application': 'vergunning' }, [])
+		const record = remapBlockRecord(
+			singleWidgetBlock,
+			{ 'permit-application': 'vergunning' },
+			[],
+		)
 		expect(record.fragment.dataSource.schema).toBe('vergunning')
 		expect(record.schemaDependencies).toEqual(['vergunning'])
 	})
 
 	it('keeps an unresolved dependency slug and marks the fragment placeholder', () => {
-		const record = remapBlockRecord(singleWidgetBlock, {}, ['permit-application'])
+		const record = remapBlockRecord(singleWidgetBlock, {}, [
+			'permit-application',
+		])
 		expect(record.fragment.dataSource.schema).toBe(UNRESOLVED_SCHEMA_PLACEHOLDER)
 		expect(record.schemaDependencies).toEqual(['permit-application'])
 	})
 
 	it('does not mutate the source record', () => {
 		const copy = JSON.parse(JSON.stringify(singleWidgetBlock))
-		remapBlockRecord(singleWidgetBlock, { 'permit-application': 'vergunning' }, [])
+		remapBlockRecord(
+			singleWidgetBlock,
+			{ 'permit-application': 'vergunning' },
+			[],
+		)
 		expect(singleWidgetBlock).toEqual(copy)
 	})
 })

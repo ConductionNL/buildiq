@@ -12,7 +12,11 @@ import { validateWorkflowAttachments } from '../../src/services/manifestValidati
 const UUID = '11111111-2222-3333-4444-555555555555'
 
 const baseManifest = (workflows) => ({
-	schemas: { kapaanvraag: { properties: { zaakUrl: { type: 'string' }, count: { type: 'integer' } } } },
+	schemas: {
+		kapaanvraag: {
+			properties: { zaakUrl: { type: 'string' }, count: { type: 'integer' } },
+		},
+	},
 	runtime: { workflows },
 })
 
@@ -33,41 +37,53 @@ describe('validateWorkflowAttachments', () => {
 		expect(validateWorkflowAttachments({ schemas: {} })).toEqual([])
 	})
 	it('rejects a second attachment on the same schema', () => {
-		const errs = validateWorkflowAttachments(baseManifest([
-			validEntry,
-			{ ...validEntry, id: 'kap-2' },
-		]))
-		expect(errs.some((e) => e.includes('duplicate-schema-attachment'))).toBe(true)
+		const errs = validateWorkflowAttachments(
+			baseManifest([validEntry, { ...validEntry, id: 'kap-2' }]),
+		)
+		expect(errs.some((e) => e.includes('duplicate-schema-attachment'))).toBe(
+			true,
+		)
 	})
 	it('rejects a duplicate id', () => {
-		const errs = validateWorkflowAttachments(baseManifest([
-			validEntry,
-			{ ...validEntry, schema: 'other' },
-		]))
+		const errs = validateWorkflowAttachments(
+			baseManifest([validEntry, { ...validEntry, schema: 'other' }]),
+		)
 		expect(errs.some((e) => e.includes('duplicate-id'))).toBe(true)
 	})
 	it('rejects a missing linkProperty on the schema', () => {
-		const errs = validateWorkflowAttachments(baseManifest([{ ...validEntry, linkProperty: 'nope' }]))
+		const errs = validateWorkflowAttachments(
+			baseManifest([{ ...validEntry, linkProperty: 'nope' }]),
+		)
 		expect(errs.some((e) => e.includes('link-property-missing'))).toBe(true)
 	})
 	it('rejects a non-string linkProperty', () => {
-		const errs = validateWorkflowAttachments(baseManifest([{ ...validEntry, linkProperty: 'count' }]))
+		const errs = validateWorkflowAttachments(
+			baseManifest([{ ...validEntry, linkProperty: 'count' }]),
+		)
 		expect(errs.some((e) => e.includes('link-property-not-string'))).toBe(true)
 	})
 	it('rejects an invalid caseTypeUuid', () => {
-		const errs = validateWorkflowAttachments(baseManifest([{ ...validEntry, caseTypeUuid: 'not-a-uuid' }]))
+		const errs = validateWorkflowAttachments(
+			baseManifest([{ ...validEntry, caseTypeUuid: 'not-a-uuid' }]),
+		)
 		expect(errs.some((e) => e.includes('casetype-uuid-invalid'))).toBe(true)
 	})
 	it('rejects an unknown trigger', () => {
-		const errs = validateWorkflowAttachments(baseManifest([{ ...validEntry, trigger: 'on-update' }]))
+		const errs = validateWorkflowAttachments(
+			baseManifest([{ ...validEntry, trigger: 'on-update' }]),
+		)
 		expect(errs.some((e) => e.includes('trigger-unsupported'))).toBe(true)
 	})
 	it('rejects an unknown key', () => {
-		const errs = validateWorkflowAttachments(baseManifest([{ ...validEntry, bogus: 1 }]))
+		const errs = validateWorkflowAttachments(
+			baseManifest([{ ...validEntry, bogus: 1 }]),
+		)
 		expect(errs.some((e) => e.includes('unknown-key'))).toBe(true)
 	})
 	it('rejects an unknown schema', () => {
-		const errs = validateWorkflowAttachments(baseManifest([{ ...validEntry, schema: 'ghost', linkProperty: 'x' }]))
+		const errs = validateWorkflowAttachments(
+			baseManifest([{ ...validEntry, schema: 'ghost', linkProperty: 'x' }]),
+		)
 		expect(errs.some((e) => e.includes('schema-unknown'))).toBe(true)
 	})
 })

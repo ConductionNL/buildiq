@@ -19,25 +19,50 @@
 			<NcButton
 				type="secondary"
 				:disabled="!docudeskAvailable"
-				:title="docudeskAvailable ? '' : t('openbuild', 'Docudesk is not installed or enabled on this instance.')"
+				:title="
+					docudeskAvailable
+						? ''
+						: t(
+								'openbuild',
+								'Docudesk is not installed or enabled on this instance.',
+							)
+				"
 				@click="openAdd">
 				{{ t('openbuild', 'Attach template') }}
 			</NcButton>
 		</header>
 
 		<p v-if="!docudeskAvailable" class="ob-documents-section__hint">
-			{{ t('openbuild', 'Docudesk is not available. Existing attachments stay viewable and removable, but you cannot add new ones.') }}
+			{{
+				t(
+					'openbuild',
+					'Docudesk is not available. Existing attachments stay viewable and removable, but you cannot add new ones.',
+				)
+			}}
 		</p>
 
 		<p v-if="attachments.length === 0" class="ob-documents-section__empty">
-			{{ t('openbuild', 'No Docudesk templates are attached yet. Attach one to let users generate a branded document from an object.') }}
+			{{
+				t(
+					'openbuild',
+					'No Docudesk templates are attached yet. Attach one to let users generate a branded document from an object.',
+				)
+			}}
 		</p>
 		<ul v-else class="ob-documents-section__list">
-			<li v-for="doc in attachments" :key="doc.id" class="ob-documents-section__item">
+			<li
+				v-for="doc in attachments"
+				:key="doc.id"
+				class="ob-documents-section__item">
 				<div class="ob-documents-section__item-main">
 					<strong>{{ doc.label }}</strong>
 					<span class="ob-documents-section__item-meta">
-						{{ t('openbuild', '{template} on schema {schema}', { template: doc.templateName, schema: doc.schema }) }}
+						{{
+							t('openbuild', '{template} on schema {schema}', {
+								template: doc.templateName,
+								schema: doc.schema,
+							})
+						}}
 					</span>
 				</div>
 				<div class="ob-documents-section__item-actions">
@@ -62,7 +87,12 @@
 		<ConfirmActionDialog
 			v-model:open="confirmDetachOpen"
 			:name="t('openbuild', 'Detach template')"
-			:message="t('openbuild', 'Detach this template? Previously generated documents are NOT deleted.')"
+			:message="
+				t(
+					'openbuild',
+					'Detach this template? Previously generated documents are NOT deleted.',
+				)
+			"
 			:confirm-label="t('openbuild', 'Detach')"
 			destructive
 			@confirm="onConfirmDetach" />
@@ -85,7 +115,7 @@ export default {
 		// The app's schemas, passed through to the dialog's pickers.
 		schemas: {
 			type: Array,
-			default: () => ([]),
+			default: () => [],
 		},
 		docudeskAvailable: {
 			type: Boolean,
@@ -104,7 +134,12 @@ export default {
 	computed: {
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		attachments() {
-			return (this.manifest && this.manifest.runtime && this.manifest.runtime.documents) || []
+			return (
+				(this.manifest
+					&& this.manifest.runtime
+					&& this.manifest.runtime.documents)
+				|| []
+			)
 		},
 	},
 	methods: {
@@ -217,14 +252,24 @@ export default {
 			const next = { ...manifest, pages: (manifest.pages || []).slice() }
 			next.pages = next.pages.map((page) => {
 				const cfg = page && page.config
-				const isDetail = page && (page.type === 'detail') && cfg && cfg.schema === entry.schema
+				const isDetail =
+					page
+					&& page.type === 'detail'
+					&& cfg
+					&& cfg.schema === entry.schema
 				if (!isDetail) {
 					return page
 				}
 				const sidebarProps = { ...(cfg.sidebarProps || {}) }
 				const tabs = (sidebarProps.tabs || []).slice()
-				if (!tabs.some((t2) => t2.component === 'docudesk-document-actions')) {
-					tabs.push({ id: 'docudesk-document-actions', label: 'Documents', component: 'docudesk-document-actions' })
+				if (
+					!tabs.some((t2) => t2.component === 'docudesk-document-actions')
+				) {
+					tabs.push({
+						id: 'docudesk-document-actions',
+						label: 'Documents',
+						component: 'docudesk-document-actions',
+					})
 				}
 				sidebarProps.tabs = tabs
 				return { ...page, config: { ...cfg, sidebarProps } }

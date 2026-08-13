@@ -15,13 +15,20 @@ vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn() } }))
 import axios from '@nextcloud/axios'
 import AgentRunHistory from '../../src/components/agents/AgentRunHistory.vue'
 
-const NcLoadingIconStub = { name: 'NcLoadingIcon', template: '<div class="ncloading-stub" />' }
+const NcLoadingIconStub = {
+	name: 'NcLoadingIcon',
+	template: '<div class="ncloading-stub" />',
+}
 const NcEmptyContentStub = {
 	name: 'NcEmptyContent',
 	props: ['name', 'description'],
 	template: '<div class="ncempty-stub">{{ name }}</div>',
 }
-const NcNoteCardStub = { name: 'NcNoteCard', props: ['type'], template: '<div class="ncnotecard-stub"><slot /></div>' }
+const NcNoteCardStub = {
+	name: 'NcNoteCard',
+	props: ['type'],
+	template: '<div class="ncnotecard-stub"><slot /></div>',
+}
 
 const stubs = {
 	NcLoadingIcon: NcLoadingIconStub,
@@ -38,7 +45,11 @@ const run = (overrides = {}) => ({
 	outcome: 'applied',
 	createdAt: '2026-07-23T10:00:00+00:00',
 	toolCalls: [
-		{ tool: 'openbuild.upsertPage', arguments: { pageId: 'contact' }, result: { isError: false } },
+		{
+			tool: 'openbuild.upsertPage',
+			arguments: { pageId: 'contact' },
+			result: { isError: false },
+		},
 	],
 	...overrides,
 })
@@ -53,12 +64,17 @@ describe('AgentRunHistory', () => {
 		mount(AgentRunHistory, { propsData: { agentId: 'agent-1' }, stubs })
 		await flush()
 
-		expect(axios.get).toHaveBeenCalledWith('/apps/openbuild/api/agents/agent-1/runs')
+		expect(axios.get).toHaveBeenCalledWith(
+			'/apps/openbuild/api/agents/agent-1/runs',
+		)
 	})
 
 	it('renders each run with outcome badge, prompt, and tool-call detail', async () => {
 		axios.get.mockResolvedValueOnce({ data: [run()] })
-		const wrapper = mount(AgentRunHistory, { propsData: { agentId: 'agent-1' }, stubs })
+		const wrapper = mount(AgentRunHistory, {
+			propsData: { agentId: 'agent-1' },
+			stubs,
+		})
 		await flush()
 		await flush()
 
@@ -73,7 +89,10 @@ describe('AgentRunHistory', () => {
 
 	it('shows an empty state when the agent has no runs yet', async () => {
 		axios.get.mockResolvedValueOnce({ data: [] })
-		const wrapper = mount(AgentRunHistory, { propsData: { agentId: 'agent-1' }, stubs })
+		const wrapper = mount(AgentRunHistory, {
+			propsData: { agentId: 'agent-1' },
+			stubs,
+		})
 		await flush()
 		await flush()
 
@@ -82,7 +101,10 @@ describe('AgentRunHistory', () => {
 
 	it('shows an error note card when the fetch fails', async () => {
 		axios.get.mockRejectedValueOnce(new Error('network error'))
-		const wrapper = mount(AgentRunHistory, { propsData: { agentId: 'agent-1' }, stubs })
+		const wrapper = mount(AgentRunHistory, {
+			propsData: { agentId: 'agent-1' },
+			stubs,
+		})
 		await flush()
 		await flush()
 
@@ -91,22 +113,34 @@ describe('AgentRunHistory', () => {
 
 	it('re-fetches when the agentId prop changes', async () => {
 		axios.get.mockResolvedValue({ data: [] })
-		const wrapper = mount(AgentRunHistory, { propsData: { agentId: 'agent-1' }, stubs })
+		const wrapper = mount(AgentRunHistory, {
+			propsData: { agentId: 'agent-1' },
+			stubs,
+		})
 		await flush()
 
 		await wrapper.setProps({ agentId: 'agent-2' })
 		await flush()
 
-		expect(axios.get).toHaveBeenCalledWith('/apps/openbuild/api/agents/agent-2/runs')
+		expect(axios.get).toHaveBeenCalledWith(
+			'/apps/openbuild/api/agents/agent-2/runs',
+		)
 	})
 
 	it('a discarded run with no tool calls renders the no-calls hint', async () => {
-		axios.get.mockResolvedValueOnce({ data: [run({ outcome: 'discarded', toolCalls: [] })] })
-		const wrapper = mount(AgentRunHistory, { propsData: { agentId: 'agent-1' }, stubs })
+		axios.get.mockResolvedValueOnce({
+			data: [run({ outcome: 'discarded', toolCalls: [] })],
+		})
+		const wrapper = mount(AgentRunHistory, {
+			propsData: { agentId: 'agent-1' },
+			stubs,
+		})
 		await flush()
 		await flush()
 
 		expect(wrapper.find('.agent-run-history__no-calls').exists()).toBe(true)
-		expect(wrapper.find('[data-testid="agent-run-outcome"]').text()).toBe('Discarded')
+		expect(wrapper.find('[data-testid="agent-run-outcome"]').text()).toBe(
+			'Discarded',
+		)
 	})
 })

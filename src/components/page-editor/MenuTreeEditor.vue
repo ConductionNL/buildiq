@@ -27,10 +27,11 @@
 			class="menu-tree-editor__list"
 			@update:model-value="onTopLevelReorder">
 			<template #item="{ element: entry, index }">
-				<div
-					class="menu-tree-editor__entry">
+				<div class="menu-tree-editor__entry">
 					<div class="menu-tree-editor__row">
-						<span class="menu-tree-editor__drag-handle" :title="t('openbuild', 'Drag to reorder')">
+						<span
+							class="menu-tree-editor__drag-handle"
+							:title="t('openbuild', 'Drag to reorder')">
 							⠿
 						</span>
 						<input
@@ -39,21 +40,25 @@
 							class="menu-tree-editor__field"
 							:placeholder="t('openbuild', 'id (e.g. inbox)')"
 							:aria-label="t('openbuild', 'id (e.g. inbox)')"
-							@input="updateField(index, 'id', $event.target.value)">
+							@input="updateField(index, 'id', $event.target.value)" />
 						<input
 							:value="entry.label || ''"
 							type="text"
 							class="menu-tree-editor__field"
 							:placeholder="t('openbuild', 'label (i18n key)')"
 							:aria-label="t('openbuild', 'label (i18n key)')"
-							@input="updateField(index, 'label', $event.target.value)">
+							@input="
+								updateField(index, 'label', $event.target.value)
+							" />
 						<input
 							:value="entry.icon || ''"
 							type="text"
 							class="menu-tree-editor__field menu-tree-editor__field--narrow"
 							:placeholder="t('openbuild', 'icon')"
 							:aria-label="t('openbuild', 'icon')"
-							@input="updateField(index, 'icon', $event.target.value)">
+							@input="
+								updateField(index, 'icon', $event.target.value)
+							" />
 						<input
 							:value="entry.route || ''"
 							type="text"
@@ -61,7 +66,9 @@
 							:placeholder="t('openbuild', 'route name')"
 							:aria-label="t('openbuild', 'route name')"
 							:disabled="!!entry.action"
-							@input="updateField(index, 'route', $event.target.value)">
+							@input="
+								updateField(index, 'route', $event.target.value)
+							" />
 						<input
 							:value="entry.href || ''"
 							type="text"
@@ -69,17 +76,17 @@
 							:placeholder="t('openbuild', 'href URL')"
 							:aria-label="t('openbuild', 'href URL')"
 							:disabled="!!entry.action"
-							@input="updateField(index, 'href', $event.target.value)">
+							@input="
+								updateField(index, 'href', $event.target.value)
+							" />
 						<select
 							:value="entry.target || 'main'"
 							class="menu-tree-editor__field menu-tree-editor__field--narrow"
-							@change="updateField(index, 'target', $event.target.value)">
-							<option value="main">
-								main
-							</option>
-							<option value="settings">
-								settings
-							</option>
+							@change="
+								updateField(index, 'target', $event.target.value)
+							">
+							<option value="main">main</option>
+							<option value="settings">settings</option>
 						</select>
 						<select
 							:value="entry.action || ''"
@@ -88,9 +95,7 @@
 							<option value="">
 								{{ t('openbuild', '— action —') }}
 							</option>
-							<option value="user-settings">
-								user-settings
-							</option>
+							<option value="user-settings">user-settings</option>
 						</select>
 						<button
 							type="button"
@@ -108,12 +113,19 @@
 						</button>
 					</div>
 					<p v-if="entry.action" class="menu-tree-editor__note">
-						{{ t('openbuild', 'Route and href are ignored when an action is set.') }}
+						{{
+							t(
+								'openbuild',
+								'Route and href are ignored when an action is set.',
+							)
+						}}
 					</p>
 					<PermissionGroupField
 						:permission="entry.permission || ''"
 						:known-groups="knownGroups"
-						@update:permission="updateField(index, 'permission', $event || '')" />
+						@update:permission="
+							updateField(index, 'permission', $event || '')
+						" />
 					<Draggable
 						v-if="entry.children && entry.children.length"
 						:model-value="entry.children"
@@ -134,28 +146,56 @@
 									class="menu-tree-editor__field"
 									:placeholder="t('openbuild', 'child id')"
 									:aria-label="t('openbuild', 'child id')"
-									@input="updateChildField(index, cIndex, 'id', $event.target.value)">
+									@input="
+										updateChildField(
+											index,
+											cIndex,
+											'id',
+											$event.target.value,
+										)
+									" />
 								<input
 									:value="child.label || ''"
 									type="text"
 									class="menu-tree-editor__field"
 									:placeholder="t('openbuild', 'label (i18n key)')"
 									:aria-label="t('openbuild', 'label (i18n key)')"
-									@input="updateChildField(index, cIndex, 'label', $event.target.value)">
+									@input="
+										updateChildField(
+											index,
+											cIndex,
+											'label',
+											$event.target.value,
+										)
+									" />
 								<input
 									:value="child.icon || ''"
 									type="text"
 									class="menu-tree-editor__field menu-tree-editor__field--narrow"
 									:placeholder="t('openbuild', 'icon')"
 									:aria-label="t('openbuild', 'icon')"
-									@input="updateChildField(index, cIndex, 'icon', $event.target.value)">
+									@input="
+										updateChildField(
+											index,
+											cIndex,
+											'icon',
+											$event.target.value,
+										)
+									" />
 								<input
 									:value="child.route || ''"
 									type="text"
 									class="menu-tree-editor__field"
 									:placeholder="t('openbuild', 'route name')"
 									:aria-label="t('openbuild', 'route name')"
-									@input="updateChildField(index, cIndex, 'route', $event.target.value)">
+									@input="
+										updateChildField(
+											index,
+											cIndex,
+											'route',
+											$event.target.value,
+										)
+									" />
 								<button
 									type="button"
 									class="menu-tree-editor__icon-btn menu-tree-editor__icon-btn--remove"
@@ -170,7 +210,12 @@
 			</template>
 		</Draggable>
 		<p v-if="!menu.length" class="menu-tree-editor__empty">
-			{{ t('openbuild', 'No menu entries yet. Click "Add menu entry" to start.') }}
+			{{
+				t(
+					'openbuild',
+					'No menu entries yet. Click "Add menu entry" to start.',
+				)
+			}}
 		</p>
 	</section>
 </template>
@@ -207,7 +252,10 @@ export default {
 		knownGroups() {
 			const gids = new Set()
 			for (const entry of this.menu) {
-				const value = entry && typeof entry.permission === 'string' ? entry.permission : ''
+				const value =
+					entry && typeof entry.permission === 'string'
+						? entry.permission
+						: ''
 				if (value.startsWith('group:')) {
 					gids.add(value.slice('group:'.length))
 				}
@@ -307,7 +355,9 @@ export default {
 		addChild(index) {
 			const next = this.menu.slice()
 			const current = { ...next[index] }
-			const children = Array.isArray(current.children) ? current.children.slice() : []
+			const children = Array.isArray(current.children)
+				? current.children.slice()
+				: []
 			children.push({ id: '', label: '' })
 			current.children = children
 			next[index] = current

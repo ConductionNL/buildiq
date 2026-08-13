@@ -18,7 +18,7 @@
 					type="radio"
 					:checked="origin === 'openregister'"
 					value="openregister"
-					@change="selectOrigin('openregister')">
+					@change="selectOrigin('openregister')" />
 				{{ t('openbuild', 'OpenRegister') }}
 			</label>
 			<label class="ds-origin-toggle__radio">
@@ -26,7 +26,7 @@
 					type="radio"
 					:checked="origin === 'openconnector'"
 					value="openconnector"
-					@change="selectOrigin('openconnector')">
+					@change="selectOrigin('openconnector')" />
 				{{ t('openbuild', 'OpenConnector') }}
 			</label>
 		</fieldset>
@@ -48,7 +48,12 @@
 		<ConfirmActionDialog
 			v-model:open="confirmSwitchOpen"
 			:name="t('openbuild', 'Switch data source')"
-			:message="t('openbuild', 'Switching to OpenRegister discards the OpenConnector mapping. Continue?')"
+			:message="
+				t(
+					'openbuild',
+					'Switching to OpenRegister discards the OpenConnector mapping. Continue?',
+				)
+			"
 			:confirm-label="t('openbuild', 'Confirm')"
 			destructive
 			@confirm="onConfirmSwitch" />
@@ -89,7 +94,9 @@ export default {
 		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
 		 */
 		origin() {
-			return this.dataSource && this.dataSource.connector ? 'openconnector' : 'openregister'
+			return this.dataSource && this.dataSource.connector
+				? 'openconnector'
+				: 'openregister'
 		},
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002 */
 		connector() {
@@ -114,8 +121,11 @@ export default {
 				return
 			}
 			// next === openregister
-			const hasMapping = this.connector && (this.connector.endpointPath
-				|| (this.connector.fields && Object.keys(this.connector.fields).length))
+			const hasMapping =
+				this.connector
+				&& (this.connector.endpointPath
+					|| (this.connector.fields
+						&& Object.keys(this.connector.fields).length))
 			if (hasMapping) {
 				// There IS a mapping to lose — ask first. dropConnector() runs
 				// only from the dialog's confirm, so cancelling keeps it.
@@ -201,7 +211,9 @@ export default {
 			try {
 				const path = String(endpointPath).replace(/^\/+/, '')
 				const url = generateUrl(`/apps/openconnector/api/endpoint/${path}`)
-				const { data } = await axios.get(url, { params: this.connector.query || {} })
+				const { data } = await axios.get(url, {
+					params: this.connector.query || {},
+				})
 				this.sample = data && data.data !== undefined ? data.data : data
 			} catch {
 				this.sample = null

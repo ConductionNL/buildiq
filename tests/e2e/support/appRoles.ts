@@ -49,7 +49,8 @@
 import type { Page } from '@playwright/test'
 
 /** OR object API for the openbuild Application schema. */
-const OR_APPLICATIONS = '/index.php/apps/openregister/api/objects/openbuild/application'
+const OR_APPLICATIONS =
+	'/index.php/apps/openregister/api/objects/openbuild/application'
 
 /**
  * Grant owner / editor / viewer roles on an application to the given principals.
@@ -74,47 +75,67 @@ const OR_APPLICATIONS = '/index.php/apps/openregister/api/objects/openbuild/appl
 export async function grantAppRoles(
 	page: Page,
 	slug: string,
-	principals: { owners?: string[], editors?: string[], viewers?: string[] },
+	principals: { owners?: string[]; editors?: string[]; viewers?: string[] },
 ): Promise<void> {
-	const result = await page.evaluate(async ({ api, slug, principals }) => {
-		const tok = (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken
-			|| document.querySelector('head')?.getAttribute('data-requesttoken')
-			|| ''
-		const headers = { requesttoken: tok, 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' }
+	const result = await page.evaluate(
+		async ({ api, slug, principals }) => {
+			const tok =
+				(window as unknown as { OC?: { requestToken?: string } }).OC
+					?.requestToken
+				|| document.querySelector('head')?.getAttribute('data-requesttoken')
+				|| ''
+			const headers = {
+				requesttoken: tok,
+				'OCS-APIRequest': 'true',
+				'Content-Type': 'application/json',
+			}
 
-		const listed = await (await fetch(`${api}?_limit=200`, { headers })).json().catch(() => null)
-		const rows = Array.isArray(listed) ? listed : (listed?.results ?? [])
-		const app = rows.find((r: Record<string, unknown>) => r?.slug === slug)
-		if (!app) {
-			return `application ${slug} not found`
-		}
+			const listed = await (
+				await fetch(`${api}?_limit=200`, { headers })
+			)
+				.json()
+				.catch(() => null)
+			const rows = Array.isArray(listed) ? listed : (listed?.results ?? [])
+			const app = rows.find((r: Record<string, unknown>) => r?.slug === slug)
+			if (!app) {
+				return `application ${slug} not found`
+			}
 
-		const uuid = app['@self']?.id ?? app.id
-		const current = app.permissions ?? {}
-		const merge = (existing: string[] | undefined, added: string[] | undefined) =>
-			[...new Set([...(Array.isArray(existing) ? existing : []), ...(added ?? [])])]
+			const uuid = app['@self']?.id ?? app.id
+			const current = app.permissions ?? {}
+			const merge = (
+				existing: string[] | undefined,
+				added: string[] | undefined,
+			) => [
+				...new Set([
+					...(Array.isArray(existing) ? existing : []),
+					...(added ?? []),
+				]),
+			]
 
-		const next = {
-			...app,
-			permissions: {
-				owners: merge(current.owners, principals.owners),
-				editors: merge(current.editors, principals.editors),
-				viewers: merge(current.viewers, principals.viewers),
-			},
-		}
-		// OR is PUT-semantic — `next` is the FULL record, not a patch.
-		delete next['@self']
+			const next = {
+				...app,
+				permissions: {
+					owners: merge(current.owners, principals.owners),
+					editors: merge(current.editors, principals.editors),
+					viewers: merge(current.viewers, principals.viewers),
+				},
+			}
+			// OR is PUT-semantic — `next` is the FULL record, not a patch.
+			delete next['@self']
 
-		const resp = await fetch(`${api}/${encodeURIComponent(String(uuid))}`, {
-			method: 'PUT',
-			headers,
-			body: JSON.stringify(next),
-		})
-		if (!resp.ok) {
-			return `grant failed: ${resp.status} ${(await resp.text()).slice(0, 200)}`
-		}
-		return 'ok'
-	}, { api: OR_APPLICATIONS, slug, principals })
+			const resp = await fetch(`${api}/${encodeURIComponent(String(uuid))}`, {
+				method: 'PUT',
+				headers,
+				body: JSON.stringify(next),
+			})
+			if (!resp.ok) {
+				return `grant failed: ${resp.status} ${(await resp.text()).slice(0, 200)}`
+			}
+			return 'ok'
+		},
+		{ api: OR_APPLICATIONS, slug, principals },
+	)
 
 	if (result !== 'ok') {
 		throw new Error(`grantAppRoles(${slug}) — ${result}`)

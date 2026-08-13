@@ -33,7 +33,9 @@ vi.mock('@nextcloud/axios', () => ({
 vi.mock('@nextcloud/router', () => ({
 	generateUrl: (p, params) => {
 		let out = p
-		if (params) for (const [k, v] of Object.entries(params)) out = out.replace(`{${k}}`, v)
+		if (params)
+			for (const [k, v] of Object.entries(params))
+				out = out.replace(`{${k}}`, v)
 		return out
 	},
 }))
@@ -57,9 +59,17 @@ vi.mock('../../src/views/VersionHistory.vue', async () => {
 	return {
 		default: {
 			name: 'VersionHistory',
-			props: ['appSlug', 'applicationUuid', 'currentVersionUuid', 'canEdit', 'canRelease'],
+			props: [
+				'appSlug',
+				'applicationUuid',
+				'currentVersionUuid',
+				'canEdit',
+				'canRelease',
+			],
 			methods: { refresh: vi.fn().mockResolvedValue(undefined) },
-			render() { return h('div', { class: 'version-history-stub' }) },
+			render() {
+				return h('div', { class: 'version-history-stub' })
+			},
 		},
 	}
 })
@@ -69,13 +79,17 @@ vi.mock('../../src/modals/UserDeltaEditModal.vue', async () => {
 		default: {
 			name: 'UserDeltaEditModal',
 			props: ['open', 'appSlug', 'delta'],
-			render() { return h('div', { class: 'user-delta-edit-modal-stub' }) },
+			render() {
+				return h('div', { class: 'user-delta-edit-modal-stub' })
+			},
 		},
 	}
 })
 
 import { showSuccess } from '@nextcloud/dialogs'
-const ManifestLayersDetail = (await import('../../src/views/ManifestLayersDetail.vue')).default
+const ManifestLayersDetail = (
+	await import('../../src/views/ManifestLayersDetail.vue')
+).default
 
 const flush = async (wrapper) => {
 	await new Promise((r) => setTimeout(r, 0))
@@ -95,7 +109,9 @@ function installGet({ app, userDelta, overrides, versions } = {}) {
 		}
 		if (url.endsWith('/user')) {
 			if (userDelta === 'error') return Promise.reject(new Error('boom'))
-			return Promise.resolve({ data: userDelta ?? { allowed: false, exists: false } })
+			return Promise.resolve({
+				data: userDelta ?? { allowed: false, exists: false },
+			})
 		}
 		if (url.includes('/objects/openbuild/application/')) {
 			if (app === 'error') return Promise.reject(new Error('boom'))
@@ -105,7 +121,11 @@ function installGet({ app, userDelta, overrides, versions } = {}) {
 	})
 }
 
-function mountDetail({ objectId = 'app-uuid', routeObjectId, push = vi.fn().mockResolvedValue(undefined) } = {}) {
+function mountDetail({
+	objectId = 'app-uuid',
+	routeObjectId,
+	push = vi.fn().mockResolvedValue(undefined),
+} = {}) {
 	return mount(ManifestLayersDetail, {
 		propsData: { objectId },
 		mocks: {
@@ -138,14 +158,30 @@ describe('ManifestLayersDetail', () => {
 	it('loads the app, admin version, user delta, and maintainer overrides', async () => {
 		installGet({
 			app: APP,
-			userDelta: { allowed: true, exists: true, versionUuid: 'user-ver', manifestDelta: { x: 1 } },
-			overrides: [{ owner: 'bob', versionUuid: 'v-bob', updatedAt: '2026-01-01T00:00:00Z' }],
+			userDelta: {
+				allowed: true,
+				exists: true,
+				versionUuid: 'user-ver',
+				manifestDelta: { x: 1 },
+			},
+			overrides: [
+				{
+					owner: 'bob',
+					versionUuid: 'v-bob',
+					updatedAt: '2026-01-01T00:00:00Z',
+				},
+			],
 		})
 		const wrapper = mountDetail()
 		await flush(wrapper)
 		expect(wrapper.vm.application.name).toBe('Pet Store')
 		expect(wrapper.vm.adminVersionUuid).toBe('prod-ver')
-		expect(wrapper.vm.userDelta).toEqual({ allowed: true, exists: true, versionUuid: 'user-ver', manifestDelta: { x: 1 } })
+		expect(wrapper.vm.userDelta).toEqual({
+			allowed: true,
+			exists: true,
+			versionUuid: 'user-ver',
+			manifestDelta: { x: 1 },
+		})
 		expect(wrapper.vm.canViewUserOverrides).toBe(true)
 		expect(wrapper.vm.userOverrides).toHaveLength(1)
 		// Title + overrides list render.
@@ -232,12 +268,16 @@ describe('ManifestLayersDetail', () => {
 			installGet({ app: { ...APP, allowUserOverrides: false } })
 			const off = mountDetail()
 			await flush(off)
-			expect(off.vm.userMeta).toBe('Per-user overrides are turned off for this app.')
+			expect(off.vm.userMeta).toBe(
+				'Per-user overrides are turned off for this app.',
+			)
 
 			installGet({ app: APP, userDelta: { allowed: true, exists: true } })
 			const has = mountDetail()
 			await flush(has)
-			expect(has.vm.userMeta).toBe('Your personal delta, layered over the admin delta.')
+			expect(has.vm.userMeta).toBe(
+				'Your personal delta, layered over the admin delta.',
+			)
 
 			installGet({ app: APP, userDelta: { allowed: true, exists: false } })
 			const none = mountDetail()
@@ -252,7 +292,9 @@ describe('ManifestLayersDetail', () => {
 			const wrapper = mountDetail()
 			await flush(wrapper)
 			expect(wrapper.vm.formatDate('')).toBe('')
-			expect(typeof wrapper.vm.formatDate('2026-01-01T00:00:00Z')).toBe('string')
+			expect(typeof wrapper.vm.formatDate('2026-01-01T00:00:00Z')).toBe(
+				'string',
+			)
 		})
 
 		it('rowUuid resolves id / @self envelope / uuid', async () => {
@@ -279,7 +321,10 @@ describe('ManifestLayersDetail', () => {
 			const wrapper = mountDetail()
 			await flush(wrapper)
 			await wrapper.vm.createOverride()
-			expect(axiosPutMock).toHaveBeenCalledWith('/apps/openbuild/api/app-overrides/petstore/user', {})
+			expect(axiosPutMock).toHaveBeenCalledWith(
+				'/apps/openbuild/api/app-overrides/petstore/user',
+				{},
+			)
 		})
 
 		it('createOverride surfaces an error on failure', async () => {
@@ -296,7 +341,9 @@ describe('ManifestLayersDetail', () => {
 			const wrapper = mountDetail()
 			await flush(wrapper)
 			await wrapper.vm.resetOverride()
-			expect(axiosDeleteMock).toHaveBeenCalledWith('/apps/openbuild/api/app-overrides/petstore/user')
+			expect(axiosDeleteMock).toHaveBeenCalledWith(
+				'/apps/openbuild/api/app-overrides/petstore/user',
+			)
 		})
 
 		it('resetOverride surfaces an error on failure', async () => {
@@ -309,7 +356,10 @@ describe('ManifestLayersDetail', () => {
 		})
 
 		it('onUserDeltaSaved re-loads the user delta', async () => {
-			installGet({ app: APP, userDelta: { allowed: true, exists: true, versionUuid: 'uv' } })
+			installGet({
+				app: APP,
+				userDelta: { allowed: true, exists: true, versionUuid: 'uv' },
+			})
 			const wrapper = mountDetail()
 			await flush(wrapper)
 			const spy = vi.spyOn(wrapper.vm, 'loadUserDelta')
@@ -332,7 +382,11 @@ describe('ManifestLayersDetail', () => {
 			installGet({
 				app: APP,
 				versions: [
-					{ id: 'prod-ver', slug: 'production', manifest: { version: '1.0.0', pages: [{ id: 'x' }] } },
+					{
+						id: 'prod-ver',
+						slug: 'production',
+						manifest: { version: '1.0.0', pages: [{ id: 'x' }] },
+					},
 					{ id: 'd1', slug: 'draft-1' },
 				],
 			})
@@ -354,7 +408,9 @@ describe('ManifestLayersDetail', () => {
 			installGet({ app: APP, versions: [] })
 			const wrapper = mountDetail()
 			await flush(wrapper)
-			axiosPostMock.mockRejectedValueOnce({ response: { data: { detail: 'slug taken' } } })
+			axiosPostMock.mockRejectedValueOnce({
+				response: { data: { detail: 'slug taken' } },
+			})
 			await wrapper.vm.createDraft()
 			expect(wrapper.vm.error).toContain('Could not create a draft.')
 			expect(wrapper.vm.error).toContain('slug taken')
@@ -367,14 +423,24 @@ describe('ManifestLayersDetail', () => {
 			const wrapper = mountDetail()
 			await flush(wrapper)
 			const original = window.location
-			Object.defineProperty(window, 'location', { configurable: true, writable: true, value: { href: 'about:blank' } })
+			Object.defineProperty(window, 'location', {
+				configurable: true,
+				writable: true,
+				value: { href: 'about:blank' },
+			})
 			try {
 				wrapper.vm.openInOpenRegister('')
 				expect(window.location.href).toBe('about:blank')
 				wrapper.vm.openInOpenRegister('ver-9')
-				expect(window.location.href).toBe('/apps/openregister/objects/openbuild/applicationVersion/ver-9')
+				expect(window.location.href).toBe(
+					'/apps/openregister/objects/openbuild/applicationVersion/ver-9',
+				)
 			} finally {
-				Object.defineProperty(window, 'location', { configurable: true, writable: true, value: original })
+				Object.defineProperty(window, 'location', {
+					configurable: true,
+					writable: true,
+					value: original,
+				})
 			}
 		})
 
@@ -384,7 +450,10 @@ describe('ManifestLayersDetail', () => {
 			const wrapper = mountDetail({ push })
 			await flush(wrapper)
 			wrapper.vm.goBack()
-			expect(push).toHaveBeenCalledWith({ name: 'VirtualAppDetail', params: { objectId: 'app-uuid' } })
+			expect(push).toHaveBeenCalledWith({
+				name: 'VirtualAppDetail',
+				params: { objectId: 'app-uuid' },
+			})
 		})
 	})
 })

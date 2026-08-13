@@ -1,6 +1,7 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <template>
-	<NcModal v-if="open"
+	<NcModal
+		v-if="open"
 		size="normal"
 		label-id="clone-template-dialog-title"
 		@close="onClose">
@@ -10,7 +11,8 @@
 			</h2>
 			<p v-if="template" class="clone-dialog__summary">
 				{{ dialogSummaryLead }}
-				<strong>{{ resolvedTitle }}</strong>.
+				<strong>{{ resolvedTitle }}</strong
+				>.
 				{{ t('openbuild', 'You can edit everything after cloning.') }}
 			</p>
 			<NcTextField
@@ -30,7 +32,10 @@
 				<NcButton @click="onClose">
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" :disabled="!canSubmit || submitting" @click="submit">
+				<NcButton
+					type="primary"
+					:disabled="!canSubmit || submitting"
+					@click="submit">
 					{{ submitLabel }}
 				</NcButton>
 			</div>
@@ -78,7 +83,9 @@ export default {
 		 * @return {string} The translated dialog title.
 		 */
 		dialogTitle() {
-			return this.remote ? t('openbuild', 'Install template') : t('openbuild', 'Use this template')
+			return this.remote
+				? t('openbuild', 'Install template')
+				: t('openbuild', 'Use this template')
 		},
 		/**
 		 * Observed behaviour of `resolvedTitle` (retrofit annotation).
@@ -95,9 +102,11 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		canSubmit() {
-			return this.localName.trim().length > 0
+			return (
+				this.localName.trim().length > 0
 				&& /^[a-z0-9]+(-[a-z0-9]+)*$/.test(this.localSlug)
 				&& this.localSlug.length <= 32
+			)
 		},
 		/**
 		 * Label for the primary action button — installing for a remote store
@@ -108,9 +117,13 @@ export default {
 		 */
 		submitLabel() {
 			if (this.remote || this.github) {
-				return this.submitting ? t('openbuild', 'Installing…') : t('openbuild', 'Install')
+				return this.submitting
+					? t('openbuild', 'Installing…')
+					: t('openbuild', 'Install')
 			}
-			return this.submitting ? t('openbuild', 'Cloning…') : t('openbuild', 'Clone template')
+			return this.submitting
+				? t('openbuild', 'Cloning…')
+				: t('openbuild', 'Clone template')
 		},
 		/**
 		 * Modal heading — install wording for a remote store / GitHub app,
@@ -123,7 +136,9 @@ export default {
 			if (this.github) {
 				return t('openbuild', 'Install app from GitHub')
 			}
-			return this.remote ? t('openbuild', 'Install template') : t('openbuild', 'Use this template')
+			return this.remote
+				? t('openbuild', 'Install template')
+				: t('openbuild', 'Use this template')
 		},
 		/**
 		 * Lead-in sentence of the summary line, matching the install/clone verb.
@@ -177,10 +192,16 @@ export default {
 		 */
 		async submit() {
 			if (!this.canSubmit) {
-				this.error = t('openbuild', 'Provide a name and a kebab-case slug (max 32 chars).')
+				this.error = t(
+					'openbuild',
+					'Provide a name and a kebab-case slug (max 32 chars).',
+				)
 				return
 			}
-			const payload = { name: this.localName.trim(), slug: this.localSlug.trim() }
+			const payload = {
+				name: this.localName.trim(),
+				slug: this.localSlug.trim(),
+			}
 			this.submitting = true
 			this.error = ''
 			if (this.github) {
@@ -218,7 +239,11 @@ export default {
 				this.$emit('close')
 			} catch (e) {
 				const data = e?.response?.data
-				this.error = data?.detail || data?.error || e?.message || t('openbuild', 'Install failed.')
+				this.error =
+					data?.detail
+					|| data?.error
+					|| e?.message
+					|| t('openbuild', 'Install failed.')
 				this.submitting = false
 			}
 		},
@@ -235,7 +260,10 @@ export default {
 		async installGithub(payload) {
 			const repo = this.githubRepo || {}
 			if (!repo.owner || !repo.repo) {
-				this.error = t('openbuild', 'This GitHub app is missing its repository identity.')
+				this.error = t(
+					'openbuild',
+					'This GitHub app is missing its repository identity.',
+				)
 				this.submitting = false
 				return
 			}
@@ -258,9 +286,16 @@ export default {
 				// The install endpoint returns a generic-but-actionable error
 				// carrying the parser error code + offending file path.
 				const file = data?.file || data?.path
-				const base = data?.detail || data?.error || e?.message || t('openbuild', 'Install failed.')
+				const base =
+					data?.detail
+					|| data?.error
+					|| e?.message
+					|| t('openbuild', 'Install failed.')
 				this.error = file
-					? t('openbuild', '{message} (in {file})', { message: base, file })
+					? t('openbuild', '{message} (in {file})', {
+							message: base,
+							file,
+						})
 					: base
 				this.submitting = false
 			}

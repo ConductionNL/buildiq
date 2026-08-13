@@ -8,7 +8,14 @@
 		@closing="onCancel">
 		<!-- No-target state -->
 		<div v-if="!targetVersion" class="promote-dialog promote-dialog--no-target">
-			<p>{{ t('openbuild', 'This version has no downstream target. Set a "Promotes to" relation to enable promotion.') }}</p>
+			<p>
+				{{
+					t(
+						'openbuild',
+						'This version has no downstream target. Set a "Promotes to" relation to enable promotion.',
+					)
+				}}
+			</p>
 		</div>
 
 		<!-- Form state -->
@@ -16,8 +23,14 @@
 			<header class="promote-dialog__header">
 				<h3>{{ summaryText }}</h3>
 				<p class="promote-dialog__registers">
-					<span>{{ t('openbuild', 'Source register:') }} <code>{{ sourceVersion.register }}</code></span>
-					<span>{{ t('openbuild', 'Target register:') }} <code>{{ targetVersion.register }}</code></span>
+					<span
+						>{{ t('openbuild', 'Source register:') }}
+						<code>{{ sourceVersion.register }}</code></span
+					>
+					<span
+						>{{ t('openbuild', 'Target register:') }}
+						<code>{{ targetVersion.register }}</code></span
+					>
 				</p>
 			</header>
 
@@ -31,9 +44,16 @@
 					value="start-with-source-data"
 					name="promote-strategy"
 					type="radio">
-					<strong>{{ t('openbuild', 'Start target with source data') }}</strong>
+					<strong>{{
+						t('openbuild', 'Start target with source data')
+					}}</strong>
 					<span class="promote-dialog__strategy-description">
-						{{ t('openbuild', "Replace the target version's rows with copies of the source's rows. Useful when the test data is the new shape of production data.") }}
+						{{
+							t(
+								'openbuild',
+								"Replace the target version's rows with copies of the source's rows. Useful when the test data is the new shape of production data.",
+							)
+						}}
 					</span>
 				</NcCheckboxRadioSwitch>
 
@@ -42,9 +62,16 @@
 					value="migrate-existing-data"
 					name="promote-strategy"
 					type="radio">
-					<strong>{{ t('openbuild', "Migrate target's existing data") }}</strong>
+					<strong>{{
+						t('openbuild', "Migrate target's existing data")
+					}}</strong>
 					<span class="promote-dialog__strategy-description">
-						{{ t('openbuild', "Keep the target version's existing rows and apply the source's schema set. OpenRegister handles column-level migration for breaking changes.") }}
+						{{
+							t(
+								'openbuild',
+								"Keep the target version's existing rows and apply the source's schema set. OpenRegister handles column-level migration for breaking changes.",
+							)
+						}}
 					</span>
 				</NcCheckboxRadioSwitch>
 
@@ -53,14 +80,24 @@
 					value="empty-start"
 					name="promote-strategy"
 					type="radio">
-					<strong>{{ t('openbuild', 'Empty start (destructive)') }}</strong>
-					<span class="promote-dialog__strategy-description promote-dialog__strategy-description--destructive">
-						{{ t('openbuild', "Drop every row in the target's register and install the source's schema set without copying data. This cannot be undone.") }}
+					<strong>{{
+						t('openbuild', 'Empty start (destructive)')
+					}}</strong>
+					<span
+						class="promote-dialog__strategy-description promote-dialog__strategy-description--destructive">
+						{{
+							t(
+								'openbuild',
+								"Drop every row in the target's register and install the source's schema set without copying data. This cannot be undone.",
+							)
+						}}
 					</span>
 				</NcCheckboxRadioSwitch>
 			</fieldset>
 
-			<div v-if="selectedStrategy === 'empty-start'" class="promote-dialog__confirm-gate">
+			<div
+				v-if="selectedStrategy === 'empty-start'"
+				class="promote-dialog__confirm-gate">
 				<NcTextField
 					v-model="typedSlug"
 					:label="confirmInputLabel"
@@ -154,9 +191,14 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-2
 		 */
 		summaryText() {
-			const sourceName = this.sourceVersion?.name || this.sourceVersion?.slug || '?'
-			const targetName = this.targetVersion?.name || this.targetVersion?.slug || '?'
-			return t('openbuild', 'Promote {source} to {target}', { source: sourceName, target: targetName })
+			const sourceName =
+				this.sourceVersion?.name || this.sourceVersion?.slug || '?'
+			const targetName =
+				this.targetVersion?.name || this.targetVersion?.slug || '?'
+			return t('openbuild', 'Promote {source} to {target}', {
+				source: sourceName,
+				target: targetName,
+			})
 		},
 
 		/**
@@ -196,7 +238,11 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-2
 		 */
 		confirmHelperText() {
-			return t('openbuild', "Empty start will permanently delete every row in the target's register. Type \"{slug}\" to confirm.", { slug: this.application?.slug || '' })
+			return t(
+				'openbuild',
+				'Empty start will permanently delete every row in the target\'s register. Type "{slug}" to confirm.',
+				{ slug: this.application?.slug || '' },
+			)
 		},
 	},
 	watch: {

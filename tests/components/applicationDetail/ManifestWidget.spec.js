@@ -37,7 +37,10 @@ vi.mock('@nextcloud/router', () => ({
 import ManifestWidget from '../../../src/components/applicationDetail/widgets/ManifestWidget.vue'
 
 const stubs = {
-	NcButton: { template: '<button class="ncbtn" @click="$emit(\'click\')"><slot /></button>' },
+	NcButton: {
+		template:
+			'<button class="ncbtn" @click="$emit(\'click\')"><slot /></button>',
+	},
 	NcLoadingIcon: { template: '<span class="ncloading" />' },
 }
 
@@ -64,12 +67,18 @@ describe('ManifestWidget', () => {
 		axiosGetMock.mockReset()
 		axiosPutMock.mockReset()
 		axiosDeleteMock.mockReset()
-		axiosGetMock.mockResolvedValue({ data: { allowed: false, exists: false, versionUuid: null } })
+		axiosGetMock.mockResolvedValue({
+			data: { allowed: false, exists: false, versionUuid: null },
+		})
 	})
 
 	it('renders the three customization layers', async () => {
 		const wrapper = shallowMount(ManifestWidget, {
-			propsData: { appSlug: 'opencatalogi', isHybrid: true, allowUserOverrides: false },
+			propsData: {
+				appSlug: 'opencatalogi',
+				isHybrid: true,
+				allowUserOverrides: false,
+			},
 			stubs,
 		})
 		await flush(wrapper)
@@ -80,9 +89,15 @@ describe('ManifestWidget', () => {
 	})
 
 	it('shows "Create override" only when allowed and no user delta exists', async () => {
-		axiosGetMock.mockResolvedValue({ data: { allowed: true, exists: false, versionUuid: null } })
+		axiosGetMock.mockResolvedValue({
+			data: { allowed: true, exists: false, versionUuid: null },
+		})
 		const wrapper = shallowMount(ManifestWidget, {
-			propsData: { appSlug: 'opencatalogi', isHybrid: true, allowUserOverrides: true },
+			propsData: {
+				appSlug: 'opencatalogi',
+				isHybrid: true,
+				allowUserOverrides: true,
+			},
 			stubs,
 		})
 		await flush(wrapper)
@@ -91,9 +106,15 @@ describe('ManifestWidget', () => {
 	})
 
 	it('shows Edit + Reset once a user delta exists', async () => {
-		axiosGetMock.mockResolvedValue({ data: { allowed: true, exists: true, versionUuid: 'u1' } })
+		axiosGetMock.mockResolvedValue({
+			data: { allowed: true, exists: true, versionUuid: 'u1' },
+		})
 		const wrapper = shallowMount(ManifestWidget, {
-			propsData: { appSlug: 'opencatalogi', isHybrid: true, allowUserOverrides: true },
+			propsData: {
+				appSlug: 'opencatalogi',
+				isHybrid: true,
+				allowUserOverrides: true,
+			},
 			stubs,
 		})
 		await flush(wrapper)
@@ -104,7 +125,11 @@ describe('ManifestWidget', () => {
 
 	it('shows a Disabled badge when the app does not allow user overrides', async () => {
 		const wrapper = shallowMount(ManifestWidget, {
-			propsData: { appSlug: 'intake-tracker', isHybrid: false, allowUserOverrides: false },
+			propsData: {
+				appSlug: 'intake-tracker',
+				isHybrid: false,
+				allowUserOverrides: false,
+			},
 			stubs,
 		})
 		await flush(wrapper)
@@ -114,7 +139,11 @@ describe('ManifestWidget', () => {
 
 	it('emits open-detail when "View versions" is clicked', async () => {
 		const wrapper = shallowMount(ManifestWidget, {
-			propsData: { appSlug: 'opencatalogi', isHybrid: true, allowUserOverrides: false },
+			propsData: {
+				appSlug: 'opencatalogi',
+				isHybrid: true,
+				allowUserOverrides: false,
+			},
 			stubs,
 		})
 		await flush(wrapper)
@@ -123,15 +152,24 @@ describe('ManifestWidget', () => {
 	})
 
 	it('PUTs an empty delta and refetches on "Create override"', async () => {
-		axiosGetMock.mockResolvedValue({ data: { allowed: true, exists: false, versionUuid: null } })
+		axiosGetMock.mockResolvedValue({
+			data: { allowed: true, exists: false, versionUuid: null },
+		})
 		axiosPutMock.mockResolvedValue({ data: { versionUuid: 'new' } })
 		const wrapper = shallowMount(ManifestWidget, {
-			propsData: { appSlug: 'opencatalogi', isHybrid: true, allowUserOverrides: true },
+			propsData: {
+				appSlug: 'opencatalogi',
+				isHybrid: true,
+				allowUserOverrides: true,
+			},
 			stubs,
 		})
 		await flush(wrapper)
 		await wrapper.vm.createOverride()
-		expect(axiosPutMock).toHaveBeenCalledWith('/apps/openbuild/api/app-overrides/opencatalogi/user', {})
+		expect(axiosPutMock).toHaveBeenCalledWith(
+			'/apps/openbuild/api/app-overrides/opencatalogi/user',
+			{},
+		)
 		expect(wrapper.emitted('changed')).toBeTruthy()
 	})
 })

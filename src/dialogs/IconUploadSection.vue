@@ -41,7 +41,7 @@
 					:src="iconLightUrl"
 					:alt="t('openbuild', 'Light icon preview')"
 					class="ob-icon-section__preview-img"
-					@error="onLightPreviewError">
+					@error="onLightPreviewError" />
 				<span v-else class="ob-icon-section__preview-empty">—</span>
 			</div>
 			<label class="ob-icon-section__file-label">
@@ -51,7 +51,7 @@
 					accept=".svg"
 					class="ob-icon-section__file-input"
 					:disabled="uploading"
-					@change="onLightFileChange">
+					@change="onLightFileChange" />
 				<span>{{ t('openbuild', 'Upload SVG') }}</span>
 			</label>
 			<button
@@ -61,7 +61,9 @@
 				@click="removeLightIcon">
 				{{ t('openbuild', 'Remove') }}
 			</button>
-			<span v-if="lightError" class="ob-icon-section__error">{{ lightError }}</span>
+			<span v-if="lightError" class="ob-icon-section__error">{{
+				lightError
+			}}</span>
 		</div>
 
 		<!-- Dark icon -->
@@ -75,7 +77,7 @@
 					:src="iconDarkUrl"
 					:alt="t('openbuild', 'Dark icon preview')"
 					class="ob-icon-section__preview-img"
-					@error="onDarkPreviewError">
+					@error="onDarkPreviewError" />
 				<span v-else class="ob-icon-section__preview-empty">—</span>
 			</div>
 			<label class="ob-icon-section__file-label">
@@ -85,7 +87,7 @@
 					accept=".svg"
 					class="ob-icon-section__file-input"
 					:disabled="uploading"
-					@change="onDarkFileChange">
+					@change="onDarkFileChange" />
 				<span>{{ t('openbuild', 'Upload SVG') }}</span>
 			</label>
 			<button
@@ -95,7 +97,9 @@
 				@click="removeDarkIcon">
 				{{ t('openbuild', 'Remove') }}
 			</button>
-			<span v-if="darkError" class="ob-icon-section__error">{{ darkError }}</span>
+			<span v-if="darkError" class="ob-icon-section__error">{{
+				darkError
+			}}</span>
 		</div>
 
 		<p v-if="uploadError" class="ob-icon-section__global-error">
@@ -292,7 +296,8 @@ export default {
 			if (!this.objectUuid) return
 			this.uploading = true
 			this.uploadError = ''
-			const filename = variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
+			const filename =
+				variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
 
 			try {
 				// 1. Upload the SVG to OR's files#create endpoint, which takes
@@ -322,7 +327,8 @@ export default {
 
 				this.$emit('updated', { field, ref: filename })
 			} catch (error) {
-				this.uploadError = error?.response?.data?.message
+				this.uploadError =
+					error?.response?.data?.message
 					|| t('openbuild', 'Upload failed — please try again')
 			} finally {
 				this.uploading = false
@@ -370,7 +376,8 @@ export default {
 			if (!this.objectUuid) return
 			this.uploading = true
 			this.uploadError = ''
-			const filename = variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
+			const filename =
+				variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
 			const field = variant === 'dark' ? 'iconDark' : 'icon'
 
 			try {
@@ -397,7 +404,8 @@ export default {
 
 				this.$emit('updated', { field, ref: null })
 			} catch (error) {
-				this.uploadError = error?.response?.data?.message
+				this.uploadError =
+					error?.response?.data?.message
 					|| t('openbuild', 'Remove failed — please try again')
 			} finally {
 				this.uploading = false

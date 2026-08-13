@@ -43,7 +43,11 @@
  *                                          undefined, the returned object carries `query: {}`.
  * @return {{ name: string, params: object, query: object }} A Vue Router RouteLocationRaw.
  */
-export function buildVersionedRoute(routeName, params = {}, currentVersion = undefined) {
+export function buildVersionedRoute(
+	routeName,
+	params = {},
+	currentVersion = undefined,
+) {
 	return {
 		name: routeName,
 		params,

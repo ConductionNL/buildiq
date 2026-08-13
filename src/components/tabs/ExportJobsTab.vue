@@ -10,7 +10,10 @@
   -->
 <template>
 	<div class="ob-exports-tab">
-		<ExportJobsList v-if="obApp && obApp.slug" :application-slug="obApp.slug" :application-uuid="obAppUuid" />
+		<ExportJobsList
+			v-if="obApp && obApp.slug"
+			:application-slug="obApp.slug"
+			:application-uuid="obAppUuid" />
 		<p v-else-if="obAppError" class="ob-exports-tab__error">
 			{{ obAppError }}
 		</p>

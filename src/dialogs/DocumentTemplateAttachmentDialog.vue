@@ -16,7 +16,11 @@
 <template>
 	<NcDialog
 		:open="open"
-		:name="editing ? t('openbuild', 'Edit document attachment') : t('openbuild', 'Attach a Docudesk template')"
+		:name="
+			editing
+				? t('openbuild', 'Edit document attachment')
+				: t('openbuild', 'Attach a Docudesk template')
+		"
 		size="normal"
 		@update:open="$emit('update:open', $event)"
 		@closing="onClose">
@@ -42,10 +46,23 @@
 				one.
 			-->
 			<p v-if="!docudeskAvailable" class="ob-document-attach__warn">
-				{{ t('openbuild', 'Docudesk is not installed or enabled on this instance. The template list cannot be loaded.') }}
+				{{
+					t(
+						'openbuild',
+						'Docudesk is not installed or enabled on this instance. The template list cannot be loaded.',
+					)
+				}}
 			</p>
-			<p v-else-if="templateMissing" class="ob-document-attach__warn" role="alert">
-				{{ t('openbuild', 'The attached template no longer exists in Docudesk. Pick another template or detach.') }}
+			<p
+				v-else-if="templateMissing"
+				class="ob-document-attach__warn"
+				role="alert">
+				{{
+					t(
+						'openbuild',
+						'The attached template no longer exists in Docudesk. Pick another template or detach.',
+					)
+				}}
 			</p>
 
 			<NcSelect
@@ -77,12 +94,19 @@
 			<NcTextField
 				:model-value="filenameTemplate"
 				:label="t('openbuild', 'Filename template (optional)')"
-				:placeholder="t('openbuild', 'e.g. bevestiging-{{dossiernummer}}.pdf')"
+				:placeholder="
+					t('openbuild', 'e.g. bevestiging-{{dossiernummer}}.pdf')
+				"
 				@update:modelValue="filenameTemplate = $event" />
 
 			<label class="ob-document-attach__toggle">
-				<input v-model="addActionsTab" type="checkbox">
-				{{ t('openbuild', 'Add document actions to this schema\'s detail page') }}
+				<input v-model="addActionsTab" type="checkbox" />
+				{{
+					t(
+						'openbuild',
+						"Add document actions to this schema's detail page",
+					)
+				}}
 			</label>
 
 			<div class="ob-document-attach__preview">
@@ -90,10 +114,22 @@
 					type="secondary"
 					:disabled="!canPreview || previewing"
 					@click="onPreview">
-					{{ previewing ? t('openbuild', 'Rendering preview…') : t('openbuild', 'Preview with sample data') }}
+					{{
+						previewing
+							? t('openbuild', 'Rendering preview…')
+							: t('openbuild', 'Preview with sample data')
+					}}
 				</NcButton>
-				<p v-if="previewError" class="ob-document-attach__error" role="alert">
-					{{ t('openbuild', 'Preview failed. The template could not be rendered.') }}
+				<p
+					v-if="previewError"
+					class="ob-document-attach__error"
+					role="alert">
+					{{
+						t(
+							'openbuild',
+							'Preview failed. The template could not be rendered.',
+						)
+					}}
 				</p>
 				<!-- Rendering a Docudesk template preview as markup is the point of
 				     this pane, so v-html is required. It is safe here because
@@ -101,11 +137,19 @@
 				     `DOMPurify.sanitize(raw)` in onPreview() — so no unsanitised
 				     value can ever reach this binding. Verified, not assumed. -->
 				<!-- eslint-disable-next-line vue/no-v-html -->
-				<div v-if="previewContent" class="ob-document-attach__preview-body" v-html="previewContent" />
+				<div
+					v-if="previewContent"
+					class="ob-document-attach__preview-body"
+					v-html="previewContent" />
 			</div>
 
 			<p v-if="duplicateLabel" class="ob-document-attach__error" role="alert">
-				{{ t('openbuild', 'An attachment with this label already exists on this schema. Choose a different label.') }}
+				{{
+					t(
+						'openbuild',
+						'An attachment with this label already exists on this schema. Choose a different label.',
+					)
+				}}
 			</p>
 		</div>
 		<template #actions>
@@ -125,7 +169,10 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import DOMPurify from 'dompurify'
 import { DOCUMENT_FORMATS } from '../services/manifestValidation/documentAttachments.js'
-import { fetchDocudeskTemplates, templateToOption } from '../composables/useDocudeskTemplates.js'
+import {
+	fetchDocudeskTemplates,
+	templateToOption,
+} from '../composables/useDocudeskTemplates.js'
 
 export default {
 	name: 'DocumentTemplateAttachmentDialog',
@@ -138,12 +185,12 @@ export default {
 		// The app's schemas as `[{ slug, title, properties }]`.
 		schemas: {
 			type: Array,
-			default: () => ([]),
+			default: () => [],
 		},
 		// Existing attachments (for the (schema,label) uniqueness check).
 		attachments: {
 			type: Array,
-			default: () => ([]),
+			default: () => [],
 		},
 		// Existing attachment when editing (null when adding).
 		attachment: {
@@ -187,12 +234,16 @@ export default {
 		},
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		schemaOptions() {
-			return this.schemas.map((s) => ({ label: s.title || s.slug, slug: s.slug }))
+			return this.schemas.map((s) => ({
+				label: s.title || s.slug,
+				slug: s.slug,
+			}))
 		},
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-001 */
 		formatOptions() {
-			return [{ label: t('openbuild', 'Template default'), value: '' }]
-				.concat(DOCUMENT_FORMATS.map((f) => ({ label: f.toUpperCase(), value: f })))
+			return [{ label: t('openbuild', 'Template default'), value: '' }].concat(
+				DOCUMENT_FORMATS.map((f) => ({ label: f.toUpperCase(), value: f })),
+			)
 		},
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		selectedSchemaSlug() {
@@ -220,12 +271,22 @@ export default {
 				return false
 			}
 			const editingId = this.attachment && this.attachment.id
-			return this.attachments.some((a) =>
-				a && a.schema === schema && a.label === label && a.id !== editingId)
+			return this.attachments.some(
+				(a) =>
+					a
+					&& a.schema === schema
+					&& a.label === label
+					&& a.id !== editingId,
+			)
 		},
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		canSave() {
-			return !!(this.templateOption && this.schemaOption && this.label.trim() && !this.duplicateLabel)
+			return !!(
+				this.templateOption
+				&& this.schemaOption
+				&& this.label.trim()
+				&& !this.duplicateLabel
+			)
 		},
 	},
 	watch: {
@@ -259,11 +320,21 @@ export default {
 			this.previewError = false
 			this.templateMissing = false
 			if (this.attachment) {
-				this.templateOption = { label: this.attachment.templateName, uuid: this.attachment.templateId, name: this.attachment.templateName }
-				this.schemaOption = { label: this.attachment.schema, slug: this.attachment.schema }
+				this.templateOption = {
+					label: this.attachment.templateName,
+					uuid: this.attachment.templateId,
+					name: this.attachment.templateName,
+				}
+				this.schemaOption = {
+					label: this.attachment.schema,
+					slug: this.attachment.schema,
+				}
 				this.label = this.attachment.label || ''
 				this.formatOption = this.attachment.format
-					? { label: this.attachment.format.toUpperCase(), value: this.attachment.format }
+					? {
+							label: this.attachment.format.toUpperCase(),
+							value: this.attachment.format,
+						}
 					: { label: t('openbuild', 'Template default'), value: '' }
 				this.filenameTemplate = this.attachment.filenameTemplate || ''
 				this.addActionsTab = false
@@ -271,7 +342,10 @@ export default {
 				this.templateOption = null
 				this.schemaOption = null
 				this.label = ''
-				this.formatOption = { label: t('openbuild', 'Template default'), value: '' }
+				this.formatOption = {
+					label: t('openbuild', 'Template default'),
+					value: '',
+				}
 				this.filenameTemplate = ''
 				this.addActionsTab = false
 			}
@@ -331,9 +405,12 @@ export default {
 			this.previewError = false
 			this.previewContent = ''
 			try {
-				const url = generateUrl(`/apps/docudesk/api/templates/${this.selectedTemplateId}/preview`)
+				const url = generateUrl(
+					`/apps/docudesk/api/templates/${this.selectedTemplateId}/preview`,
+				)
 				const { data } = await axios.post(url, {})
-				const raw = (data && (data.html || data.content || data.preview)) || ''
+				const raw =
+					(data && (data.html || data.content || data.preview)) || ''
 				// Sanitize before the v-html binding: the preview is authored in a
 				// (possibly shared) Docudesk template and renders in this user's
 				// session, so it is an untrusted cross-user XSS sink (harden-xss-dos-csrf).
@@ -353,7 +430,8 @@ export default {
 			if (!this.canSave) {
 				return
 			}
-			const id = (this.attachment && this.attachment.id)
+			const id =
+				(this.attachment && this.attachment.id)
 				|| `doc-${this.schemaOption.slug}-${Date.now()}`
 			const entry = {
 				id,

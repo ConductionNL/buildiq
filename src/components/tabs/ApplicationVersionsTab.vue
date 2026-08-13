@@ -17,7 +17,9 @@
 			v-if="obAppUuid"
 			:app-slug="(obApp && obApp.slug) || ''"
 			:application-uuid="obAppUuid"
-			:current-version-uuid="(obApp && (obApp.productionVersion || obApp.currentVersion)) || ''"
+			:current-version-uuid="
+				(obApp && (obApp.productionVersion || obApp.currentVersion)) || ''
+			"
 			:can-edit="canEdit"
 			:can-release="canRelease"
 			@rollback="onRollback"
@@ -113,7 +115,9 @@ export default {
 				// Note the endpoint's asymmetry: GET returns the manifest bare,
 				// PUT expects it wrapped in `{ manifest }`.
 				await axios.put(
-					generateUrl(`/apps/openbuild/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`),
+					generateUrl(
+						`/apps/openbuild/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+					),
 					{ manifest: version.manifest },
 				)
 				// `status` IS a real property, so this one always worked.

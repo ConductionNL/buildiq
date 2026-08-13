@@ -19,7 +19,8 @@ import { clearAppStatusCache } from '../../src/composables/useAppStatus.js'
 const NcSelectStub = {
 	name: 'NcSelect',
 	props: ['value', 'options', 'loading', 'inputLabel', 'placeholder', 'label'],
-	template: '<div class="ncselect-stub" :data-label="inputLabel">{{ JSON.stringify(options) }}</div>',
+	template:
+		'<div class="ncselect-stub" :data-label="inputLabel">{{ JSON.stringify(options) }}</div>',
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
@@ -34,9 +35,21 @@ describe('ConnectorSourcePicker', () => {
 
 	it('lists endpoints with path + source name only, never credentials', async () => {
 		axios.get.mockResolvedValueOnce({
-			data: { results: [{ path: 'kvk/companies', sourceName: 'KvK', apiKey: 'SECRET', token: 'SECRET2' }] },
+			data: {
+				results: [
+					{
+						path: 'kvk/companies',
+						sourceName: 'KvK',
+						apiKey: 'SECRET',
+						token: 'SECRET2',
+					},
+				],
+			},
 		})
-		const wrapper = mount(ConnectorSourcePicker, { propsData: { binding: {} }, stubs: { NcSelect: NcSelectStub } })
+		const wrapper = mount(ConnectorSourcePicker, {
+			propsData: { binding: {} },
+			stubs: { NcSelect: NcSelectStub },
+		})
 		await flush()
 		await flush()
 		const html = wrapper.html()
@@ -47,7 +60,10 @@ describe('ConnectorSourcePicker', () => {
 
 	it('carries an inputLabel on NcSelect (a11y gate)', async () => {
 		axios.get.mockResolvedValueOnce({ data: { results: [] } })
-		const wrapper = mount(ConnectorSourcePicker, { propsData: { binding: {} }, stubs: { NcSelect: NcSelectStub } })
+		const wrapper = mount(ConnectorSourcePicker, {
+			propsData: { binding: {} },
+			stubs: { NcSelect: NcSelectStub },
+		})
 		await flush()
 		expect(wrapper.find('.ncselect-stub').attributes('data-label')).toBeTruthy()
 	})
@@ -56,24 +72,34 @@ describe('ConnectorSourcePicker', () => {
 		// eslint-disable-next-line no-global-assign
 		global.OC = { appswebroots: {} }
 		axios.get.mockRejectedValueOnce({ response: { status: 404 } })
-		const wrapper = mount(ConnectorSourcePicker, { propsData: { binding: {} }, stubs: { NcSelect: NcSelectStub } })
+		const wrapper = mount(ConnectorSourcePicker, {
+			propsData: { binding: {} },
+			stubs: { NcSelect: NcSelectStub },
+		})
 		await flush()
 		await flush()
 		expect(wrapper.find('.connector-source-picker__manual').exists()).toBe(true)
 		const input = wrapper.find('input[type="text"]')
 		await input.setValue('kvk/companies')
-		expect(wrapper.emitted()['update:endpointPath'].pop()).toEqual(['kvk/companies'])
+		expect(wrapper.emitted()['update:endpointPath'].pop()).toEqual([
+			'kvk/companies',
+		])
 	})
 
 	it('strips scheme/host from a manually entered path', async () => {
 		// eslint-disable-next-line no-global-assign
 		global.OC = { appswebroots: {} }
 		axios.get.mockRejectedValueOnce({ response: { status: 404 } })
-		const wrapper = mount(ConnectorSourcePicker, { propsData: { binding: {} }, stubs: { NcSelect: NcSelectStub } })
+		const wrapper = mount(ConnectorSourcePicker, {
+			propsData: { binding: {} },
+			stubs: { NcSelect: NcSelectStub },
+		})
 		await flush()
 		await flush()
 		const input = wrapper.find('input[type="text"]')
 		await input.setValue('https://evil.example/kvk/companies')
-		expect(wrapper.emitted()['update:endpointPath'].pop()).toEqual(['kvk/companies'])
+		expect(wrapper.emitted()['update:endpointPath'].pop()).toEqual([
+			'kvk/companies',
+		])
 	})
 })

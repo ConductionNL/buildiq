@@ -20,7 +20,12 @@
 		</header>
 
 		<NcNoteCard type="warning">
-			{{ t('openbuild', 'No widget catalogue registered yet — widget IDs are free-text. The page editor (chain spec #5) will narrow this to a picker once it ships.') }}
+			{{
+				t(
+					'openbuild',
+					'No widget catalogue registered yet — widget IDs are free-text. The page editor (chain spec #5) will narrow this to a picker once it ships.',
+				)
+			}}
 		</NcNoteCard>
 
 		<p v-if="widgets.length === 0" class="openbuild-widget-editor__empty">

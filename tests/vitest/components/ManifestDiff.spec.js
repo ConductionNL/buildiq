@@ -64,14 +64,18 @@ describe('ManifestDiff — design.md Decision 5 (client-side jsdiff)', () => {
 		})
 		// Directly set the data so we skip the async fetch — the computed
 		// `diffParts` is the only thing under test.
-		await wrapper.setData({ fromBlob: sampleFrom, toBlob: sampleTo, loading: false })
+		await wrapper.setData({
+			fromBlob: sampleFrom,
+			toBlob: sampleTo,
+			loading: false,
+		})
 
 		const parts = wrapper.vm.diffParts
 		expect(parts.length).toBeGreaterThan(0)
 		// At least one hunk must be `added` (the new page) and one must be
 		// `removed` (the version line changes).
-		const added = parts.filter(p => p.added)
-		const removed = parts.filter(p => p.removed)
+		const added = parts.filter((p) => p.added)
+		const removed = parts.filter((p) => p.removed)
 		expect(added.length).toBeGreaterThan(0)
 		expect(removed.length).toBeGreaterThan(0)
 		// Belt-and-braces: the rendered <pre> contains the new route.
@@ -93,7 +97,7 @@ describe('ManifestDiff — design.md Decision 5 (client-side jsdiff)', () => {
 		const parts = wrapper.vm.diffParts
 		// At least one (unchanged) part should exist.
 		expect(parts.length).toBeGreaterThan(0)
-		expect(parts.every(p => !p.added && !p.removed)).toBe(true)
+		expect(parts.every((p) => !p.added && !p.removed)).toBe(true)
 	})
 
 	it('handles large blobs without truncating (smoke test on ~2KB manifest)', async () => {
@@ -118,7 +122,10 @@ describe('ManifestDiff — design.md Decision 5 (client-side jsdiff)', () => {
 		expect(parts.length).toBeGreaterThan(0)
 		// One of the added hunks must mention the last page (page-49) — proves
 		// the JSON.stringify+diffLines pipeline is feeding the full string in.
-		const addedText = parts.filter(p => p.added).map(p => p.value).join('\n')
+		const addedText = parts
+			.filter((p) => p.added)
+			.map((p) => p.value)
+			.join('\n')
 		expect(addedText).toContain('page-49')
 	})
 
@@ -129,6 +136,8 @@ describe('ManifestDiff — design.md Decision 5 (client-side jsdiff)', () => {
 		// No fromBlob/toBlob seeded — hasAnyContent is false. The component
 		// renders the empty-state paragraph.
 		expect(wrapper.find('.manifest-diff__empty').exists()).toBe(true)
-		expect(wrapper.find('.manifest-diff__empty').text()).toContain('Nothing to diff')
+		expect(wrapper.find('.manifest-diff__empty').text()).toContain(
+			'Nothing to diff',
+		)
 	})
 })

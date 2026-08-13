@@ -79,7 +79,8 @@ function substituteRegisterTokens(manifest) {
 }
 
 const SCHEMA_DIR = 'node_modules/@conduction/nextcloud-vue/src/schemas'
-const loadSchema = (name) => JSON.parse(readFileSync(resolve(REPO_ROOT, SCHEMA_DIR, name), 'utf-8'))
+const loadSchema = (name) =>
+	JSON.parse(readFileSync(resolve(REPO_ROOT, SCHEMA_DIR, name), 'utf-8'))
 const ajv = new Ajv.default({ allErrors: true, strict: false })
 const validators = {
 	v1: ajv.compile(loadSchema('app-manifest.schema.json')),
@@ -89,7 +90,8 @@ const validators = {
 // Validate each manifest against the schema version it declares via `$schema`
 // (v2 shell manifest vs v1 wizard seed), mirroring scripts/check-manifest.js.
 function validatorFor(manifest) {
-	const ref = manifest && typeof manifest.$schema === 'string' ? manifest.$schema : ''
+	const ref =
+		manifest && typeof manifest.$schema === 'string' ? manifest.$schema : ''
 	return ref.includes('app-manifest-v2') ? validators.v2 : validators.v1
 }
 
@@ -105,7 +107,9 @@ describe('manifest round-trip', () => {
 			it('round-tripped manifest still validates against the ADR-024 schema', () => {
 				const { parsed } = loadManifest(target.path)
 				const re = JSON.parse(JSON.stringify(parsed))
-				const tokenised = target.substituteTokens ? substituteRegisterTokens(re) : re
+				const tokenised = target.substituteTokens
+					? substituteRegisterTokens(re)
+					: re
 				const candidate = stripEngineBlocks(tokenised)
 				const validate = validatorFor(candidate)
 				const ok = validate(candidate)
@@ -116,7 +120,9 @@ describe('manifest round-trip', () => {
 						.slice(0, 5)
 						.map((e) => `${e.instancePath || '(root)'} ${e.message}`)
 						.join('; ')
-					throw new Error(`round-tripped manifest failed schema: ${summary}`)
+					throw new Error(
+						`round-tripped manifest failed schema: ${summary}`,
+					)
 				}
 				expect(ok).toBe(true)
 			})
@@ -135,10 +141,22 @@ describe('manifest round-trip', () => {
 			const manifest = {
 				version: '1.0.0',
 				menu: [
-					{ id: 'h', label: 'Home', icon: 'icon-home', route: 'Home', order: 10 },
+					{
+						id: 'h',
+						label: 'Home',
+						icon: 'icon-home',
+						route: 'Home',
+						order: 10,
+					},
 				],
 				pages: [
-					{ id: 'Home', route: '/', type: 'dashboard', title: 'Home', config: { widgets: [], layout: [] } },
+					{
+						id: 'Home',
+						route: '/',
+						type: 'dashboard',
+						title: 'Home',
+						config: { widgets: [], layout: [] },
+					},
 				],
 			}
 			const re = JSON.parse(JSON.stringify(manifest))
@@ -150,7 +168,13 @@ describe('manifest round-trip', () => {
 			const manifest = {
 				version: '1.0.0',
 				menu: [
-					{ id: 'm', label: 'Msgs', icon: 'icon-comment', route: 'Msgs', order: 10 },
+					{
+						id: 'm',
+						label: 'Msgs',
+						icon: 'icon-comment',
+						route: 'Msgs',
+						order: 10,
+					},
 				],
 				pages: [
 					{
@@ -168,7 +192,10 @@ describe('manifest round-trip', () => {
 				],
 			}
 			const re = JSON.parse(JSON.stringify(manifest))
-			expect(re.pages[0].config.sort).toEqual({ field: 'created', dir: 'desc' })
+			expect(re.pages[0].config.sort).toEqual({
+				field: 'created',
+				dir: 'desc',
+			})
 			expect(re.pages[0].config.columns).toEqual(['title', 'body'])
 		})
 	})

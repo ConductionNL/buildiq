@@ -50,9 +50,12 @@ export function fragmentWidgets(fragment) {
  * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
  */
 export function computeSchemaMismatches(schemaDependencies, targetSchemaSlugs) {
-	const targetSet = new Set(Array.isArray(targetSchemaSlugs) ? targetSchemaSlugs : [])
-	return (Array.isArray(schemaDependencies) ? schemaDependencies : [])
-		.filter((slug) => !targetSet.has(slug))
+	const targetSet = new Set(
+		Array.isArray(targetSchemaSlugs) ? targetSchemaSlugs : [],
+	)
+	return (Array.isArray(schemaDependencies) ? schemaDependencies : []).filter(
+		(slug) => !targetSet.has(slug),
+	)
 }
 
 /**
@@ -71,10 +74,11 @@ export function computeSchemaMismatches(schemaDependencies, targetSchemaSlugs) {
  */
 export function mintWidgetId(baseId, existingIds) {
 	const ids = existingIds instanceof Set ? existingIds : new Set()
-	const base = String(baseId || 'widget')
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-+|-+$/g, '') || 'widget'
+	const base =
+		String(baseId || 'widget')
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, '-')
+			.replace(/^-+|-+$/g, '') || 'widget'
 	let candidate = base
 	do {
 		const suffix = Math.random().toString(36).slice(2, 8)
@@ -109,9 +113,11 @@ export function markUnresolvedRefs(node, unresolvedSlugs) {
 	const out = {}
 	let hit = false
 	for (const [key, value] of Object.entries(node)) {
-		if ((key === 'schema' || key === 'relatedSchema')
+		if (
+			(key === 'schema' || key === 'relatedSchema')
 			&& typeof value === 'string'
-			&& unresolvedSlugs.includes(value)) {
+			&& unresolvedSlugs.includes(value)
+		) {
 			out[key] = UNRESOLVED_SCHEMA_PLACEHOLDER
 			hit = true
 			continue
@@ -156,7 +162,9 @@ export function insertBlock(block, options = {}) {
 	const unresolvedDependencies = Array.isArray(options.unresolvedDependencies)
 		? options.unresolvedDependencies
 		: []
-	const targetWidgets = Array.isArray(options.targetWidgets) ? options.targetWidgets : []
+	const targetWidgets = Array.isArray(options.targetWidgets)
+		? options.targetWidgets
+		: []
 
 	const existingIds = new Set(targetWidgets.map((w) => w && w.id).filter(Boolean))
 
@@ -188,9 +196,13 @@ export function insertBlock(block, options = {}) {
  */
 export function remapBlockRecord(record, remapMap, unresolvedDependencies) {
 	const source = record || {}
-	const fragment = rewriteSchemaRefs(deepClone(source.fragment || {}), remapMap || {})
+	const fragment = rewriteSchemaRefs(
+		deepClone(source.fragment || {}),
+		remapMap || {},
+	)
 	const marked = markUnresolvedRefs(fragment, unresolvedDependencies || [])
-	const schemaDependencies = (Array.isArray(source.schemaDependencies) ? source.schemaDependencies : [])
-		.map((dep) => (remapMap && remapMap[dep]) || dep)
+	const schemaDependencies = (
+		Array.isArray(source.schemaDependencies) ? source.schemaDependencies : []
+	).map((dep) => (remapMap && remapMap[dep]) || dep)
 	return { ...source, fragment: marked, schemaDependencies }
 }

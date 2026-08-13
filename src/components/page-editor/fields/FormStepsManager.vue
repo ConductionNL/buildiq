@@ -25,15 +25,32 @@
 <template>
 	<div class="form-steps-manager">
 		<div v-if="unassignedKeys.length" class="form-steps-manager__pool">
-			<span class="form-steps-manager__pool-label">{{ t('openbuild', 'Unassigned fields:') }}</span>
-			<span v-for="key in unassignedKeys" :key="key" class="form-steps-manager__pool-key">{{ key }}</span>
+			<span class="form-steps-manager__pool-label">{{
+				t('openbuild', 'Unassigned fields:')
+			}}</span>
+			<span
+				v-for="key in unassignedKeys"
+				:key="key"
+				class="form-steps-manager__pool-key"
+				>{{ key }}</span
+			>
 			<p v-if="localSteps.length" class="form-steps-manager__pool-note">
-				{{ t('openbuild', 'Unassigned fields are automatically added to the last step when you save.') }}
+				{{
+					t(
+						'openbuild',
+						'Unassigned fields are automatically added to the last step when you save.',
+					)
+				}}
 			</p>
 		</div>
 
 		<p v-if="!localSteps.length" class="form-steps-manager__empty">
-			{{ t('openbuild', 'This form renders as a single step. Add a step to build a multi-step wizard.') }}
+			{{
+				t(
+					'openbuild',
+					'This form renders as a single step. Add a step to build a multi-step wizard.',
+				)
+			}}
 		</p>
 
 		<div
@@ -47,14 +64,14 @@
 					class="form-steps-manager__field"
 					:placeholder="t('openbuild', 'Step title')"
 					:aria-label="t('openbuild', 'Step title')"
-					@input="onTitleInput(index, $event.target.value)">
+					@input="onTitleInput(index, $event.target.value)" />
 				<input
 					:value="step.id || ''"
 					type="text"
 					class="form-steps-manager__field form-steps-manager__field--narrow"
 					:placeholder="t('openbuild', 'step-id')"
 					:aria-label="t('openbuild', 'Step id')"
-					@input="updateStepField(index, 'id', $event.target.value)">
+					@input="updateStepField(index, 'id', $event.target.value)" />
 				<button
 					type="button"
 					class="form-steps-manager__icon-button"
@@ -85,14 +102,18 @@
 				class="form-steps-manager__field form-steps-manager__description"
 				:placeholder="t('openbuild', 'Description (optional)')"
 				:aria-label="t('openbuild', 'Step description')"
-				@input="updateStepField(index, 'description', $event.target.value)">
+				@input="
+					updateStepField(index, 'description', $event.target.value)
+				" />
 
 			<div class="form-steps-manager__fields">
 				<span
 					v-for="(key, fIndex) in step.fields || []"
 					:key="key + fIndex"
 					class="form-steps-manager__field-chip"
-					:class="{ 'form-steps-manager__field-chip--dangling': isDangling(key) }">
+					:class="{
+						'form-steps-manager__field-chip--dangling': isDangling(key),
+					}">
 					{{ key }}
 					<button
 						type="button"
@@ -102,7 +123,9 @@
 						✕
 					</button>
 				</span>
-				<span v-if="!(step.fields || []).length" class="form-steps-manager__no-fields">
+				<span
+					v-if="!(step.fields || []).length"
+					class="form-steps-manager__no-fields">
 					{{ t('openbuild', 'No fields assigned yet.') }}
 				</span>
 			</div>
@@ -220,7 +243,11 @@ export default {
 		 */
 		unassignedKeys() {
 			const assigned = new Set()
-			this.localSteps.forEach((s) => (Array.isArray(s && s.fields) ? s.fields : []).forEach((k) => assigned.add(k)))
+			this.localSteps.forEach((s) =>
+				(Array.isArray(s && s.fields) ? s.fields : []).forEach((k) =>
+					assigned.add(k),
+				),
+			)
 			return this.declaredKeys.filter((k) => !assigned.has(k))
 		},
 	},
@@ -254,13 +281,17 @@ export default {
 		 * @return {{hasError: boolean, message: string}}
 		 */
 		danglingMark(step) {
-			const dangling = (Array.isArray(step && step.fields) ? step.fields : []).filter((k) => this.isDangling(k))
+			const dangling = (
+				Array.isArray(step && step.fields) ? step.fields : []
+			).filter((k) => this.isDangling(k))
 			if (!dangling.length) {
 				return { hasError: false, message: '' }
 			}
 			return {
 				hasError: true,
-				message: t('openbuild', 'Step references removed field(s): {keys}', { keys: dangling.join(', ') }),
+				message: t('openbuild', 'Step references removed field(s): {keys}', {
+					keys: dangling.join(', '),
+				}),
 			}
 		},
 		/**
@@ -313,7 +344,10 @@ export default {
 		 */
 		onTitleInput(index, value) {
 			const step = this.localSteps[index] || {}
-			const prevAutoSlug = uniqueSlug(slugify(step.title || ''), this.otherIds(index))
+			const prevAutoSlug = uniqueSlug(
+				slugify(step.title || ''),
+				this.otherIds(index),
+			)
 			const isTracking = !step.id || step.id === prevAutoSlug
 			const next = this.localSteps.slice()
 			const updated = { ...step, title: value }
@@ -361,7 +395,10 @@ export default {
 		addStep() {
 			const next = this.localSteps.slice()
 			const title = t('openbuild', 'Step {n}', { n: next.length + 1 })
-			const id = uniqueSlug(slugify(title), next.map((s) => s && s.id).filter(Boolean))
+			const id = uniqueSlug(
+				slugify(title),
+				next.map((s) => s && s.id).filter(Boolean),
+			)
 			next.push({ id, title, fields: [] })
 			this.emitSteps(next)
 		},

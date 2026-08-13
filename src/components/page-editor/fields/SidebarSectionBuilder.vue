@@ -5,28 +5,31 @@
   -->
 <template>
 	<div class="sidebar-section-builder">
-		<div v-for="(section, index) in localSections" :key="index" class="sidebar-section-builder__row">
+		<div
+			v-for="(section, index) in localSections"
+			:key="index"
+			class="sidebar-section-builder__row">
 			<input
 				:value="section.id || ''"
 				type="text"
 				class="sidebar-section-builder__field"
 				:placeholder="t('openbuild', 'Section id')"
 				:aria-label="t('openbuild', 'Section id')"
-				@input="updateField(index, 'id', $event.target.value)">
+				@input="updateField(index, 'id', $event.target.value)" />
 			<input
 				:value="section.label || ''"
 				type="text"
 				class="sidebar-section-builder__field"
 				:placeholder="t('openbuild', 'Label')"
 				:aria-label="t('openbuild', 'Label')"
-				@input="updateField(index, 'label', $event.target.value)">
+				@input="updateField(index, 'label', $event.target.value)" />
 			<input
 				:value="(section.columns || []).join(',')"
 				type="text"
 				class="sidebar-section-builder__field"
 				:placeholder="t('openbuild', 'Columns (comma-separated)')"
 				:aria-label="t('openbuild', 'Columns (comma-separated)')"
-				@input="updateColumns(index, $event.target.value)">
+				@input="updateColumns(index, $event.target.value)" />
 			<button
 				type="button"
 				class="sidebar-section-builder__remove"
@@ -35,7 +38,10 @@
 				✕
 			</button>
 		</div>
-		<button type="button" class="sidebar-section-builder__add" @click="addSection">
+		<button
+			type="button"
+			class="sidebar-section-builder__add"
+			@click="addSection">
 			+ {{ t('openbuild', 'Add section') }}
 		</button>
 	</div>
@@ -87,7 +93,10 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateColumns(index, value) {
-			const cols = value.split(',').map((s) => s.trim()).filter(Boolean)
+			const cols = value
+				.split(',')
+				.map((s) => s.trim())
+				.filter(Boolean)
 			this.updateField(index, 'columns', cols)
 		},
 		/**

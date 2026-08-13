@@ -16,21 +16,24 @@
   -->
 <template>
 	<div class="form-field-builder">
-		<div v-for="(field, index) in localFields" :key="index" class="form-field-builder__row">
+		<div
+			v-for="(field, index) in localFields"
+			:key="index"
+			class="form-field-builder__row">
 			<input
 				:value="field.key || ''"
 				type="text"
 				class="form-field-builder__field"
 				:placeholder="t('openbuild', 'Key')"
 				:aria-label="t('openbuild', 'Key')"
-				@input="updateField(index, 'key', $event.target.value)">
+				@input="updateField(index, 'key', $event.target.value)" />
 			<input
 				:value="field.label || ''"
 				type="text"
 				class="form-field-builder__field"
 				:placeholder="t('openbuild', 'Label')"
 				:aria-label="t('openbuild', 'Label')"
-				@input="updateField(index, 'label', $event.target.value)">
+				@input="updateField(index, 'label', $event.target.value)" />
 			<select
 				:value="field.type || 'string'"
 				class="form-field-builder__field form-field-builder__field--narrow"
@@ -45,7 +48,9 @@
 					<input
 						type="checkbox"
 						:checked="!!field.required"
-						@change="updateField(index, 'required', $event.target.checked)">
+						@change="
+							updateField(index, 'required', $event.target.checked)
+						" />
 					{{ t('openbuild', 'Required') }}
 				</label>
 				<input
@@ -54,16 +59,19 @@
 					class="form-field-builder__field form-field-builder__field--narrow"
 					:placeholder="t('openbuild', 'Pattern')"
 					:aria-label="t('openbuild', 'Pattern')"
-					@input="updateField(index, 'pattern', $event.target.value)">
+					@input="updateField(index, 'pattern', $event.target.value)" />
 			</template>
 			<template v-else>
-				<span class="form-field-builder__summary">{{ summaryFor(field) }}</span>
+				<span class="form-field-builder__summary">{{
+					summaryFor(field)
+				}}</span>
 				<button
 					type="button"
 					class="form-field-builder__disclosure"
 					:aria-expanded="isExpanded(index)"
 					@click="toggleExpanded(index)">
-					{{ isExpanded(index) ? '▲' : '▼' }} {{ t('openbuild', 'Details') }}
+					{{ isExpanded(index) ? '▲' : '▼' }}
+					{{ t('openbuild', 'Details') }}
 				</button>
 			</template>
 
@@ -75,9 +83,13 @@
 				✕
 			</button>
 
-			<div v-if="showLogic && isExpanded(index)" class="form-field-builder__details">
+			<div
+				v-if="showLogic && isExpanded(index)"
+				class="form-field-builder__details">
 				<div class="form-field-builder__section">
-					<span class="form-field-builder__section-label">{{ t('openbuild', 'Conditions') }}</span>
+					<span class="form-field-builder__section-label">{{
+						t('openbuild', 'Conditions')
+					}}</span>
 					<VisibleWhenBuilder
 						:model-value="field.visibleWhen || null"
 						:field-options="siblingKeys(index)"
@@ -85,7 +97,9 @@
 					<InlineFieldMark :error="danglingConditionMark(field)" />
 				</div>
 				<div class="form-field-builder__section">
-					<span class="form-field-builder__section-label">{{ t('openbuild', 'Validation') }}</span>
+					<span class="form-field-builder__section-label">{{
+						t('openbuild', 'Validation')
+					}}</span>
 					<FieldValidationBuilder
 						:model-value="field.validation || null"
 						:legacy-required="!!field.required"
@@ -169,7 +183,12 @@ export default {
 		updateField(index, key, value) {
 			const next = this.localFields.slice()
 			const current = next[index] || {}
-			if ((value === '' || value === false) && key !== 'key' && key !== 'label' && key !== 'type') {
+			if (
+				(value === '' || value === false)
+				&& key !== 'key'
+				&& key !== 'label'
+				&& key !== 'type'
+			) {
 				const { [key]: _omit, ...rest } = current
 				next[index] = rest
 			} else {
@@ -286,7 +305,11 @@ export default {
 			}
 			return {
 				hasError: true,
-				message: t('openbuild', "Condition references removed field '{key}'", { key: vw.field }),
+				message: t(
+					'openbuild',
+					"Condition references removed field '{key}'",
+					{ key: vw.field },
+				),
 			}
 		},
 		/**
@@ -299,13 +322,16 @@ export default {
 		summaryFor(field) {
 			const validation = field && field.validation
 			const parts = []
-			const hasRequired = validation ? !!validation.required : !!(field && field.required)
+			const hasRequired = validation
+				? !!validation.required
+				: !!(field && field.required)
 			if (hasRequired) {
 				parts.push(t('openbuild', 'required'))
 			}
-			const hasPattern = validation && validation.pattern !== undefined
-				? true
-				: !!(field && field.pattern)
+			const hasPattern =
+				validation && validation.pattern !== undefined
+					? true
+					: !!(field && field.pattern)
 			if (hasPattern) {
 				parts.push(t('openbuild', 'pattern'))
 			}

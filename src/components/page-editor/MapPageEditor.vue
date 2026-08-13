@@ -37,7 +37,7 @@
 						step="any"
 						:value="centerLat"
 						:aria-invalid="isInvalid('center')"
-						@input="updateCenterPart(0, $event.target.value)">
+						@input="updateCenterPart(0, $event.target.value)" />
 				</label>
 				<label class="map-page-editor__group-row">
 					{{ t('openbuild', 'Centre longitude') }}
@@ -46,7 +46,7 @@
 						step="any"
 						:value="centerLng"
 						:aria-invalid="isInvalid('center')"
-						@input="updateCenterPart(1, $event.target.value)">
+						@input="updateCenterPart(1, $event.target.value)" />
 				</label>
 				<InlineFieldMark :error="markFor('center')" />
 			</div>
@@ -56,7 +56,7 @@
 					type="number"
 					:value="config.zoom"
 					:aria-invalid="isInvalid('zoom')"
-					@input="updateZoom($event.target.value)">
+					@input="updateZoom($event.target.value)" />
 				<InlineFieldMark :error="markFor('zoom')" />
 			</label>
 			<label class="map-page-editor__group-row">
@@ -66,29 +66,24 @@
 					:value="config.height || ''"
 					:placeholder="t('openbuild', 'e.g. 500px')"
 					:aria-invalid="isInvalid('height')"
-					@input="update('height', $event.target.value)">
+					@input="update('height', $event.target.value)" />
 				<InlineFieldMark :error="markFor('height')" />
 			</label>
 		</fieldset>
 
 		<fieldset class="map-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Layers') }}</legend>
-			<div v-for="(layer, index) in layers" :key="index" class="map-page-editor__row">
+			<div
+				v-for="(layer, index) in layers"
+				:key="index"
+				class="map-page-editor__row">
 				<select
 					:value="layer.type || 'tile'"
 					@change="updateLayerField(index, 'type', $event.target.value)">
-					<option value="tile">
-						tile
-					</option>
-					<option value="wms">
-						wms
-					</option>
-					<option value="wfs">
-						wfs
-					</option>
-					<option value="geojson">
-						geojson
-					</option>
+					<option value="tile">tile</option>
+					<option value="wms">wms</option>
+					<option value="wfs">wfs</option>
+					<option value="geojson">geojson</option>
 				</select>
 				<input
 					type="text"
@@ -96,7 +91,7 @@
 					:value="layer.url || ''"
 					:placeholder="t('openbuild', 'Layer URL')"
 					:aria-label="t('openbuild', 'Layer URL')"
-					@input="updateLayerField(index, 'url', $event.target.value)">
+					@input="updateLayerField(index, 'url', $event.target.value)" />
 				<button
 					type="button"
 					class="map-page-editor__row-remove"
@@ -119,7 +114,7 @@
 						type="radio"
 						:checked="markerSourceShape === 'url'"
 						value="url"
-						@change="setMarkerSourceShape('url')">
+						@change="setMarkerSourceShape('url')" />
 					{{ t('openbuild', 'Source URL') }}
 				</label>
 				<label class="map-page-editor__inline">
@@ -127,7 +122,7 @@
 						type="radio"
 						:checked="markerSourceShape === 'register'"
 						value="register"
-						@change="setMarkerSourceShape('register')">
+						@change="setMarkerSourceShape('register')" />
 					{{ t('openbuild', 'Register + schema') }}
 				</label>
 			</div>
@@ -137,24 +132,46 @@
 					{{ t('openbuild', 'Marker source URL') }}
 					<input
 						type="text"
-						:value="(config.markers && config.markers.dataSource && config.markers.dataSource.url) || ''"
+						:value="
+							(config.markers
+								&& config.markers.dataSource
+								&& config.markers.dataSource.url)
+							|| ''
+						"
 						:placeholder="t('openbuild', 'https://.../markers.json')"
-						@input="updateMarkerDataSourceField('url', $event.target.value)">
+						@input="
+							updateMarkerDataSourceField('url', $event.target.value)
+						" />
 				</label>
 			</div>
 			<div v-else class="map-page-editor__group">
 				<p class="map-page-editor__hint" role="note">
-					{{ t('openbuild', 'Renderer support for register-bound markers is pending in the library — the built page will show an empty marker layer until it ships.') }}
+					{{
+						t(
+							'openbuild',
+							'Renderer support for register-bound markers is pending in the library — the built page will show an empty marker layer until it ships.',
+						)
+					}}
 				</p>
 				<label class="map-page-editor__group-row">
 					{{ t('openbuild', 'Register') }}
 					<select
-						:value="(config.markers && config.markers.dataSource && config.markers.dataSource.register) || ''"
-						@change="updateMarkerDataSourceRegister($event.target.value)">
+						:value="
+							(config.markers
+								&& config.markers.dataSource
+								&& config.markers.dataSource.register)
+							|| ''
+						"
+						@change="
+							updateMarkerDataSourceRegister($event.target.value)
+						">
 						<option value="">
 							{{ t('openbuild', '— select register —') }}
 						</option>
-						<option v-for="r in registers" :key="r.slug || r.id" :value="r.slug">
+						<option
+							v-for="r in registers"
+							:key="r.slug || r.id"
+							:value="r.slug">
 							{{ r.title || r.slug }}
 						</option>
 					</select>
@@ -162,13 +179,32 @@
 				<label class="map-page-editor__group-row">
 					{{ t('openbuild', 'Schema') }}
 					<select
-						:value="(config.markers && config.markers.dataSource && config.markers.dataSource.schema) || ''"
-						:disabled="!(config.markers && config.markers.dataSource && config.markers.dataSource.register)"
-						@change="updateMarkerDataSourceField('schema', $event.target.value)">
+						:value="
+							(config.markers
+								&& config.markers.dataSource
+								&& config.markers.dataSource.schema)
+							|| ''
+						"
+						:disabled="
+							!(
+								config.markers
+								&& config.markers.dataSource
+								&& config.markers.dataSource.register
+							)
+						"
+						@change="
+							updateMarkerDataSourceField(
+								'schema',
+								$event.target.value,
+							)
+						">
 						<option value="">
 							{{ t('openbuild', '— select schema —') }}
 						</option>
-						<option v-for="s in schemas" :key="s.slug || s.id" :value="s.slug">
+						<option
+							v-for="s in schemas"
+							:key="s.slug || s.id"
+							:value="s.slug">
 							{{ s.title || s.slug }}
 						</option>
 					</select>
@@ -178,11 +214,17 @@
 			<div class="map-page-editor__group">
 				<label class="map-page-editor__group-row">
 					{{ t('openbuild', 'Latitude field') }}
-					<select v-if="hasBoundSchema" :value="config.markers && config.markers.latField || ''" @change="updateMarkerField('latField', $event.target.value)">
+					<select
+						v-if="hasBoundSchema"
+						:value="(config.markers && config.markers.latField) || ''"
+						@change="updateMarkerField('latField', $event.target.value)">
 						<option value="">
 							{{ t('openbuild', '— select property —') }}
 						</option>
-						<option v-for="key in schemaPropertyKeys" :key="key" :value="key">
+						<option
+							v-for="key in schemaPropertyKeys"
+							:key="key"
+							:value="key">
 							{{ key }}
 						</option>
 					</select>
@@ -190,15 +232,23 @@
 						v-else
 						type="text"
 						:value="(config.markers && config.markers.latField) || ''"
-						@input="updateMarkerField('latField', $event.target.value)">
+						@input="
+							updateMarkerField('latField', $event.target.value)
+						" />
 				</label>
 				<label class="map-page-editor__group-row">
 					{{ t('openbuild', 'Longitude field') }}
-					<select v-if="hasBoundSchema" :value="config.markers && config.markers.lngField || ''" @change="updateMarkerField('lngField', $event.target.value)">
+					<select
+						v-if="hasBoundSchema"
+						:value="(config.markers && config.markers.lngField) || ''"
+						@change="updateMarkerField('lngField', $event.target.value)">
 						<option value="">
 							{{ t('openbuild', '— select property —') }}
 						</option>
-						<option v-for="key in schemaPropertyKeys" :key="key" :value="key">
+						<option
+							v-for="key in schemaPropertyKeys"
+							:key="key"
+							:value="key">
 							{{ key }}
 						</option>
 					</select>
@@ -206,15 +256,25 @@
 						v-else
 						type="text"
 						:value="(config.markers && config.markers.lngField) || ''"
-						@input="updateMarkerField('lngField', $event.target.value)">
+						@input="
+							updateMarkerField('lngField', $event.target.value)
+						" />
 				</label>
 				<label class="map-page-editor__group-row">
 					{{ t('openbuild', 'Popup field') }}
-					<select v-if="hasBoundSchema" :value="config.markers && config.markers.popupField || ''" @change="updateMarkerField('popupField', $event.target.value)">
+					<select
+						v-if="hasBoundSchema"
+						:value="(config.markers && config.markers.popupField) || ''"
+						@change="
+							updateMarkerField('popupField', $event.target.value)
+						">
 						<option value="">
 							{{ t('openbuild', '— select property —') }}
 						</option>
-						<option v-for="key in schemaPropertyKeys" :key="key" :value="key">
+						<option
+							v-for="key in schemaPropertyKeys"
+							:key="key"
+							:value="key">
 							{{ key }}
 						</option>
 					</select>
@@ -222,13 +282,17 @@
 						v-else
 						type="text"
 						:value="(config.markers && config.markers.popupField) || ''"
-						@input="updateMarkerField('popupField', $event.target.value)">
+						@input="
+							updateMarkerField('popupField', $event.target.value)
+						" />
 				</label>
 				<label class="map-page-editor__inline">
 					<input
 						type="checkbox"
 						:checked="!!(config.markers && config.markers.clustering)"
-						@change="updateMarkerField('clustering', $event.target.checked)">
+						@change="
+							updateMarkerField('clustering', $event.target.checked)
+						" />
 					{{ t('openbuild', 'Clustering') }}
 				</label>
 			</div>
@@ -270,7 +334,10 @@ export default {
 	},
 	emits: ['update:config'],
 	setup(props) {
-		const picker = useRegisterPicker({ appSlug: props.appSlug, dataRegisters: props.dataRegisters })
+		const picker = useRegisterPicker({
+			appSlug: props.appSlug,
+			dataRegisters: props.dataRegisters,
+		})
 		return { picker }
 	},
 	data() {
@@ -305,7 +372,11 @@ export default {
 			return 'url'
 		},
 		hasBoundSchema() {
-			return this.markerSourceShape === 'register' && !!this.markerDataSource.register && !!this.markerDataSource.schema
+			return (
+				this.markerSourceShape === 'register'
+				&& !!this.markerDataSource.register
+				&& !!this.markerDataSource.schema
+			)
 		},
 		schemaPropertyKeys() {
 			return Object.keys(this.schemaProperties || {})
@@ -343,7 +414,11 @@ export default {
 		 */
 		update(key, value) {
 			const next = { ...this.config }
-			if (value === '' || value === null || (Array.isArray(value) && value.length === 0)) {
+			if (
+				value === ''
+				|| value === null
+				|| (Array.isArray(value) && value.length === 0)
+			) {
 				delete next[key]
 			} else {
 				next[key] = value
@@ -357,7 +432,9 @@ export default {
 		 * @param {string} rawValue - raw input value.
 		 */
 		updateCenterPart(index, rawValue) {
-			const current = Array.isArray(this.config.center) ? this.config.center.slice() : [0, 0]
+			const current = Array.isArray(this.config.center)
+				? this.config.center.slice()
+				: [0, 0]
 			const num = parseFloat(rawValue)
 			current[index] = Number.isFinite(num) ? num : current[index]
 			this.update('center', current)
@@ -505,7 +582,10 @@ export default {
 		 * @param {string} schema - schema slug.
 		 */
 		async fetchSchemaProperties(register, schema) {
-			this.schemaProperties = await this.picker.fetchSchemaProperties(register, schema)
+			this.schemaProperties = await this.picker.fetchSchemaProperties(
+				register,
+				schema,
+			)
 		},
 	},
 }

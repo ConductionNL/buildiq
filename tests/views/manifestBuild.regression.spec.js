@@ -37,7 +37,11 @@ const fragments = [placeholderFragment, businessRulesFragment]
  * @return {object} merged manifest.
  */
 function oldMergeManifestFragments(base, frags) {
-	const merged = { ...base, pages: [...(base.pages || [])], menu: [...(base.menu || [])] }
+	const merged = {
+		...base,
+		pages: [...(base.pages || [])],
+		menu: [...(base.menu || [])],
+	}
 	frags.forEach((frag) => {
 		if (Array.isArray(frag.pages)) {
 			merged.pages.push(...frag.pages)

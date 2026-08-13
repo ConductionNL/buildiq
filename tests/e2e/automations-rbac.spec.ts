@@ -47,7 +47,8 @@ const OWNER_PASS = process.env.NC_RBAC_OWNER_PASS ?? 'RbacOwner-1!'
 // config uses for `use.httpCredentials`; the tests themselves deliberately run
 // as non-admins.
 const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
-const ADMIN_PASS = process.env.NC_ADMIN_PASSWORD ?? process.env.NC_ADMIN_PASS ?? 'admin'
+const ADMIN_PASS =
+	process.env.NC_ADMIN_PASSWORD ?? process.env.NC_ADMIN_PASS ?? 'admin'
 // The seeded `hello-world` fixture only ever carries a single `production`
 // version (see lib/Command/SeedHelloWorldFixture.php) — there is no draft
 // version to author on, so REQ-AUTD-008's "editor authors on draft, gets 403
@@ -106,7 +107,9 @@ const APP_TITLE = 'RBAC Automations App'
  * @return {import('@playwright/test').Locator} The matching option.
  */
 function selectOption(page: Page, title: string) {
-	return page.getByRole('option').filter({ has: page.locator(`[title="${title}"]`) })
+	return page
+		.getByRole('option')
+		.filter({ has: page.locator(`[title="${title}"]`) })
 }
 
 /** Name of the automation the production-scoped test toggles. */
@@ -147,27 +150,42 @@ const DRAFT_AUTOMATION_SLUG = 'rbac-editor-draft-automation'
  * @return {Promise<void>}
  */
 async function deleteAutomationsBySlug(page: Page, slugs: string[]): Promise<void> {
-	await page.evaluate(async ({ slugs }) => {
-		const tok = (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken
-			|| document.querySelector('head')?.getAttribute('data-requesttoken')
-			|| ''
-		const headers = { requesttoken: tok, 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' }
-		const listResp = await fetch('/index.php/apps/openregister/api/objects/openbuild/automation?_limit=200', { headers })
-		if (!listResp.ok) {
-			return
-		}
-		const listed = await listResp.json().catch(() => null)
-		const rows = Array.isArray(listed) ? listed : (listed?.results ?? [])
-		for (const row of rows) {
-			if (slugs.includes(row?.slug)) {
-				// OpenBuild's own DELETE: it removes the COMPILED ARTIFACTS
-				// first. Deleting straight over OR REST would orphan live
-				// notifications and schedules with no definition left to
-				// manage them from.
-				await fetch(`/index.php/apps/openbuild/api/automations/${row['@self']?.id ?? row.id}`, { method: 'DELETE', headers })
+	await page.evaluate(
+		async ({ slugs }) => {
+			const tok =
+				(window as unknown as { OC?: { requestToken?: string } }).OC
+					?.requestToken
+				|| document.querySelector('head')?.getAttribute('data-requesttoken')
+				|| ''
+			const headers = {
+				requesttoken: tok,
+				'OCS-APIRequest': 'true',
+				'Content-Type': 'application/json',
 			}
-		}
-	}, { slugs })
+			const listResp = await fetch(
+				'/index.php/apps/openregister/api/objects/openbuild/automation?_limit=200',
+				{ headers },
+			)
+			if (!listResp.ok) {
+				return
+			}
+			const listed = await listResp.json().catch(() => null)
+			const rows = Array.isArray(listed) ? listed : (listed?.results ?? [])
+			for (const row of rows) {
+				if (slugs.includes(row?.slug)) {
+					// OpenBuild's own DELETE: it removes the COMPILED ARTIFACTS
+					// first. Deleting straight over OR REST would orphan live
+					// notifications and schedules with no definition left to
+					// manage them from.
+					await fetch(
+						`/index.php/apps/openbuild/api/automations/${row['@self']?.id ?? row.id}`,
+						{ method: 'DELETE', headers },
+					)
+				}
+			}
+		},
+		{ slugs },
+	)
 }
 
 /**
@@ -186,43 +204,65 @@ async function deleteAutomationsBySlug(page: Page, slugs: string[]): Promise<voi
  * @return {Promise<void>}
  */
 async function seedDisabledProductionAutomation(page: Page): Promise<void> {
-	const result = await page.evaluate(async ({ appSlug, name, slug }) => {
-		const tok = (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken
-			|| document.querySelector('head')?.getAttribute('data-requesttoken')
-			|| ''
-		const headers = { requesttoken: tok, 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' }
+	const result = await page.evaluate(
+		async ({ appSlug, name, slug }) => {
+			const tok =
+				(window as unknown as { OC?: { requestToken?: string } }).OC
+					?.requestToken
+				|| document.querySelector('head')?.getAttribute('data-requesttoken')
+				|| ''
+			const headers = {
+				requesttoken: tok,
+				'OCS-APIRequest': 'true',
+				'Content-Type': 'application/json',
+			}
 
-		const versionsResp = await fetch(`/index.php/apps/openbuild/api/applications/${appSlug}/versions`, { headers })
-		if (!versionsResp.ok) {
-			return `versions ${versionsResp.status}`
-		}
-		const versions = await versionsResp.json()
-		const production = (Array.isArray(versions) ? versions : []).find((v) => v?.slug === 'production')
-		const versionUuid = production?.['@self']?.id ?? production?.id
-		if (!versionUuid) {
-			return `no production version among ${JSON.stringify((versions ?? []).map((v) => v?.slug))}`
-		}
+			const versionsResp = await fetch(
+				`/index.php/apps/openbuild/api/applications/${appSlug}/versions`,
+				{ headers },
+			)
+			if (!versionsResp.ok) {
+				return `versions ${versionsResp.status}`
+			}
+			const versions = await versionsResp.json()
+			const production = (Array.isArray(versions) ? versions : []).find(
+				(v) => v?.slug === 'production',
+			)
+			const versionUuid = production?.['@self']?.id ?? production?.id
+			if (!versionUuid) {
+				return `no production version among ${JSON.stringify((versions ?? []).map((v) => v?.slug))}`
+			}
 
-		const resp = await fetch('/index.php/apps/openbuild/api/automations', {
-			method: 'POST',
-			headers,
-			body: JSON.stringify({
-				slug,
-				name,
-				applicationSlug: appSlug,
-				versionUuid,
-				enabled: false,
-				trigger: { type: 'manual' },
-				// `send-notification` is one of the six values the schema's
-				// `actions[].type` enum accepts. ⚠️ OR's validation message
-				// renders that enum as an EMPTY list ("should be one of: , but
-				// is 'x'"), so read the allowed values from
-				// GET /api/schemas/automation, never from the error.
-				actions: [{ type: 'send-notification', channels: ['nc-notification'] }],
-			}),
-		})
-		return resp.status === 201 ? 'created' : `create ${resp.status}: ${(await resp.text()).slice(0, 200)}`
-	}, { appSlug: APP_SLUG, name: PROD_AUTOMATION_NAME, slug: PROD_AUTOMATION_SLUG })
+			const resp = await fetch('/index.php/apps/openbuild/api/automations', {
+				method: 'POST',
+				headers,
+				body: JSON.stringify({
+					slug,
+					name,
+					applicationSlug: appSlug,
+					versionUuid,
+					enabled: false,
+					trigger: { type: 'manual' },
+					// `send-notification` is one of the six values the schema's
+					// `actions[].type` enum accepts. ⚠️ OR's validation message
+					// renders that enum as an EMPTY list ("should be one of: , but
+					// is 'x'"), so read the allowed values from
+					// GET /api/schemas/automation, never from the error.
+					actions: [
+						{ type: 'send-notification', channels: ['nc-notification'] },
+					],
+				}),
+			})
+			return resp.status === 201
+				? 'created'
+				: `create ${resp.status}: ${(await resp.text()).slice(0, 200)}`
+		},
+		{
+			appSlug: APP_SLUG,
+			name: PROD_AUTOMATION_NAME,
+			slug: PROD_AUTOMATION_SLUG,
+		},
+	)
 
 	if (result !== 'created') {
 		throw new Error(`seedDisabledProductionAutomation failed — ${result}`)
@@ -262,15 +302,20 @@ async function seedDisabledProductionAutomation(page: Page): Promise<void> {
  * @param request Playwright APIRequestContext (fixture-provided).
  * @return {Promise<boolean>} True when the schema reads back with the expected shape.
  */
-async function automationSchemaIsUsable(request: APIRequestContext): Promise<boolean> {
+async function automationSchemaIsUsable(
+	request: APIRequestContext,
+): Promise<boolean> {
 	const auth = Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`).toString('base64')
-	const resp = await request.get(`${NEXTCLOUD_URL}/index.php/apps/openregister/api/schemas/automation`, {
-		headers: { 'OCS-APIRequest': 'true', Authorization: `Basic ${auth}` },
-	})
+	const resp = await request.get(
+		`${NEXTCLOUD_URL}/index.php/apps/openregister/api/schemas/automation`,
+		{
+			headers: { 'OCS-APIRequest': 'true', Authorization: `Basic ${auth}` },
+		},
+	)
 	if (resp.ok() === false) {
 		throw new Error(
 			`automationSchemaIsUsable: could not read api/schemas/automation — HTTP ${resp.status()}. `
-			+ 'This is a broken probe, not a verdict about the schema; it must not be reported as one.',
+				+ 'This is a broken probe, not a verdict about the schema; it must not be reported as one.',
 		)
 	}
 	const schema = await resp.json()
@@ -293,7 +338,9 @@ async function loginAs(page: Page, user: string, pass: string): Promise<void> {
 	await page.locator('button[type="submit"]').first().click()
 	await page.waitForSelector('#header, header.header', { timeout: 20_000 })
 	if (/\/login(\?|$|\/)/.test(page.url())) {
-		throw new Error(`Login as ${user} appears to have failed — still on ${page.url()}.`)
+		throw new Error(
+			`Login as ${user} appears to have failed — still on ${page.url()}.`,
+		)
 	}
 }
 
@@ -322,7 +369,10 @@ test.describe('automation-designer — RBAC (REQ-AUTD-008)', () => {
 			// Two versions, production LAST — REQ-AUTD-008 is precisely the
 			// difference between a draft and the production version, so a
 			// single-version fixture cannot express the requirement at all.
-			await ensureApp(adminPage, APP_SLUG, APP_TITLE, ['development', 'production'])
+			await ensureApp(adminPage, APP_SLUG, APP_TITLE, [
+				'development',
+				'production',
+			])
 			// A NON-ADMIN owner. The production-scoped check runs with
 			// `allowAdminBypass: false`, so `admin` being the implicit owner
 			// would prove nothing about the owner path.
@@ -344,16 +394,25 @@ test.describe('automation-designer — RBAC (REQ-AUTD-008)', () => {
 			// Reset before seeding: both the row the production test toggles and
 			// the row the draft test AUTHORS have to be absent at the start of a
 			// run, or a second run inherits the first run's state.
-			await deleteAutomationsBySlug(adminPage, [PROD_AUTOMATION_SLUG, DRAFT_AUTOMATION_SLUG])
+			await deleteAutomationsBySlug(adminPage, [
+				PROD_AUTOMATION_SLUG,
+				DRAFT_AUTOMATION_SLUG,
+			])
 			await seedDisabledProductionAutomation(adminPage)
 		} finally {
 			await admin.close()
 		}
 	})
 
-	test('editor authors + enables an automation on a non-production (draft) version', async ({ page, request }) => {
+	test('editor authors + enables an automation on a non-production (draft) version', async ({
+		page,
+		request,
+	}) => {
 		// @e2e openspec/specs/automation-designer/spec.md#editor-authors-and-enables-on-a-draft-version
-		test.skip(await automationSchemaIsUsable(request) === false, 'openbuild `automation` schema does not read back with a `trigger` object property — see automationSchemaIsUsable() for why this must be a real verdict and not a failed lookup')
+		test.skip(
+			(await automationSchemaIsUsable(request)) === false,
+			'openbuild `automation` schema does not read back with a `trigger` object property — see automationSchemaIsUsable() for why this must be a real verdict and not a failed lookup',
+		)
 		await loginAs(page, EDITOR_USER, EDITOR_PASS)
 		await suppressSupportDialog(page)
 		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/automations`)
@@ -368,23 +427,39 @@ test.describe('automation-designer — RBAC (REQ-AUTD-008)', () => {
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
 		await page.waitForTimeout(1_500)
-		await page.getByRole('textbox', { name: /^name$/i }).fill(DRAFT_AUTOMATION_NAME)
+		await page
+			.getByRole('textbox', { name: /^name$/i })
+			.fill(DRAFT_AUTOMATION_NAME)
 		await page.getByRole('button', { name: /add action/i }).click()
 		await page.getByRole('textbox', { name: /subject \(english\)/i }).fill('x')
 		await page.getByRole('button', { name: /^save$/i }).click()
-		await expect(page.locator('.automation-edit')).toHaveCount(0, { timeout: 10_000 })
+		await expect(page.locator('.automation-edit')).toHaveCount(0, {
+			timeout: 10_000,
+		})
 
-		const row = page.locator('[data-testid="automation-row"]', { hasText: DRAFT_AUTOMATION_NAME })
+		const row = page.locator('[data-testid="automation-row"]', {
+			hasText: DRAFT_AUTOMATION_NAME,
+		})
 		await expect(row).toBeVisible()
-		const toggle = row.locator('.ncswitch-stub, [class*="checkbox-radio-switch"]').first()
+		const toggle = row
+			.locator('.ncswitch-stub, [class*="checkbox-radio-switch"]')
+			.first()
 		await toggle.click()
 		// No error note card on a non-production enable.
-		await expect(page.locator('.ncnotecard-stub, [class*="note-card"][class*="error"]')).toHaveCount(0)
+		await expect(
+			page.locator('.ncnotecard-stub, [class*="note-card"][class*="error"]'),
+		).toHaveCount(0)
 	})
 
-	test('editor gets 403 enabling on the production version; owner succeeds', async ({ browser, request }) => {
+	test('editor gets 403 enabling on the production version; owner succeeds', async ({
+		browser,
+		request,
+	}) => {
 		// @e2e openspec/specs/automation-designer/spec.md#editor-cannot-enable-on-the-production-version
-		test.skip(await automationSchemaIsUsable(request) === false, 'openbuild `automation` schema does not read back with a `trigger` object property — see automationSchemaIsUsable() for why this must be a real verdict and not a failed lookup')
+		test.skip(
+			(await automationSchemaIsUsable(request)) === false,
+			'openbuild `automation` schema does not read back with a `trigger` object property — see automationSchemaIsUsable() for why this must be a real verdict and not a failed lookup',
+		)
 
 		/**
 		 * Open the automations page for the fixture's PRODUCTION version, as
@@ -414,11 +489,15 @@ test.describe('automation-designer — RBAC (REQ-AUTD-008)', () => {
 			await p.getByRole('combobox', { name: /version/i }).click()
 			await selectOption(p, 'production').first().click()
 
-			const row = p.locator('[data-testid="automation-row"]', { hasText: PROD_AUTOMATION_NAME })
+			const row = p.locator('[data-testid="automation-row"]', {
+				hasText: PROD_AUTOMATION_NAME,
+			})
 			await expect(row).toBeVisible({ timeout: 20_000 })
 			return {
 				page: p,
-				toggle: row.locator('.ncswitch-stub, [class*="checkbox-radio-switch"]').first(),
+				toggle: row
+					.locator('.ncswitch-stub, [class*="checkbox-radio-switch"]')
+					.first(),
 				close: () => context.close(),
 			}
 		}
@@ -430,8 +509,14 @@ test.describe('automation-designer — RBAC (REQ-AUTD-008)', () => {
 		// raise the budget. `tests/e2e/global-setup.ts` mints
 		// `.auth/rbac-{owner,editor,viewer,outsider}.json` on every run and this
 		// file was ignoring all four.
-		const editor = await openProductionRowAs(`tests/e2e/.auth/${EDITOR_USER}.json`)
-		const editorResponse = editor.page.waitForResponse((resp) => resp.url().includes('/api/automations/') && resp.url().includes('/enable'))
+		const editor = await openProductionRowAs(
+			`tests/e2e/.auth/${EDITOR_USER}.json`,
+		)
+		const editorResponse = editor.page.waitForResponse(
+			(resp) =>
+				resp.url().includes('/api/automations/')
+				&& resp.url().includes('/enable'),
+		)
 		await editor.toggle.click()
 		expect((await editorResponse).status()).toBe(403)
 		await editor.close()
@@ -441,7 +526,11 @@ test.describe('automation-designer — RBAC (REQ-AUTD-008)', () => {
 		// `allowAdminBypass: false`, so this asserts the owner ROLE and nothing
 		// else.
 		const owner = await openProductionRowAs(`tests/e2e/.auth/${OWNER_USER}.json`)
-		const ownerResponse = owner.page.waitForResponse((resp) => resp.url().includes('/api/automations/') && resp.url().includes('/enable'))
+		const ownerResponse = owner.page.waitForResponse(
+			(resp) =>
+				resp.url().includes('/api/automations/')
+				&& resp.url().includes('/enable'),
+		)
 		await owner.toggle.click()
 		expect((await ownerResponse).status()).toBe(200)
 		await owner.close()

@@ -22,13 +22,23 @@ const fetchRegisters = vi.fn(async () => [
 	{ slug: 'openbuild-hello-world', title: 'Hello World' },
 ])
 const fetchSchemas = vi.fn(async () => [{ slug: 'locations', title: 'Locations' }])
-const fetchSchemaProperties = vi.fn(async () => ({ lat: { type: 'number' }, lng: { type: 'number' } }))
-
-vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
-	useRegisterPicker: () => ({ fetchRegisters, fetchSchemas, fetchSchemaProperties, resolveAppRegister: () => '' }),
+const fetchSchemaProperties = vi.fn(async () => ({
+	lat: { type: 'number' },
+	lng: { type: 'number' },
 }))
 
-const MapPageEditor = (await import('../../../src/components/page-editor/MapPageEditor.vue')).default
+vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
+	useRegisterPicker: () => ({
+		fetchRegisters,
+		fetchSchemas,
+		fetchSchemaProperties,
+		resolveAppRegister: () => '',
+	}),
+}))
+
+const MapPageEditor = (
+	await import('../../../src/components/page-editor/MapPageEditor.vue')
+).default
 
 function mountEditor(config = {}) {
 	return mount(MapPageEditor, { propsData: { config, appSlug: 'hello-world' } })
@@ -46,7 +56,12 @@ describe('MapPageEditor', () => {
 	})
 
 	it('mounting with the pinned default config renders centre + zoom pre-filled', () => {
-		const wrapper = mountEditor({ center: [52.1326, 5.2913], zoom: 7, layers: [], markers: {} })
+		const wrapper = mountEditor({
+			center: [52.1326, 5.2913],
+			zoom: 7,
+			layers: [],
+			markers: {},
+		})
 		expect(wrapper.vm.centerLat).toBe(52.1326)
 		expect(wrapper.vm.centerLng).toBe(5.2913)
 		expect(wrapper.find('input[type="number"]').element.value).toBeTruthy()
@@ -60,7 +75,11 @@ describe('MapPageEditor', () => {
 	})
 
 	it('editing zoom emits update:config preserving an unsurfaced key', async () => {
-		const wrapper = mountEditor({ center: [1, 2], zoom: 7, attributionPosition: 'bottomleft' })
+		const wrapper = mountEditor({
+			center: [1, 2],
+			zoom: 7,
+			attributionPosition: 'bottomleft',
+		})
 		wrapper.vm.updateZoom('10')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
@@ -93,13 +112,17 @@ describe('MapPageEditor', () => {
 	})
 
 	it('switching the marker branch to register+schema clears dataSource.url and shows the reserved-shape hint', async () => {
-		const wrapper = mountEditor({ markers: { dataSource: { url: 'https://example.test/markers.json' } } })
+		const wrapper = mountEditor({
+			markers: { dataSource: { url: 'https://example.test/markers.json' } },
+		})
 		wrapper.vm.setMarkerSourceShape('register')
 		await wrapper.vm.$nextTick()
 		let next = wrapper.emitted('update:config')[0][0]
 		// The only dataSource key was `url`; clearing it leaves dataSource
 		// (and thus markers) with no residue.
-		expect((next.markers && next.markers.dataSource) || {}).not.toHaveProperty('url')
+		expect((next.markers && next.markers.dataSource) || {}).not.toHaveProperty(
+			'url',
+		)
 		await wrapper.setProps({ config: next })
 
 		wrapper.vm.updateMarkerDataSourceRegister('openbuild-hello-world')
@@ -110,16 +133,24 @@ describe('MapPageEditor', () => {
 
 		await wrapper.setProps({ config: next })
 		await wrapper.vm.$nextTick()
-		expect(wrapper.text()).toContain('Renderer support for register-bound markers is pending')
+		expect(wrapper.text()).toContain(
+			'Renderer support for register-bound markers is pending',
+		)
 	})
 
 	it('setting a marker source URL clears dataSource.register/schema (mutex)', async () => {
-		const wrapper = mountEditor({ markers: { dataSource: { register: 'r', schema: 's' } } })
+		const wrapper = mountEditor({
+			markers: { dataSource: { register: 'r', schema: 's' } },
+		})
 		wrapper.vm.setMarkerSourceShape('url')
 		await wrapper.vm.$nextTick()
 		let next = wrapper.emitted('update:config')[0][0]
-		expect((next.markers && next.markers.dataSource) || {}).not.toHaveProperty('register')
-		expect((next.markers && next.markers.dataSource) || {}).not.toHaveProperty('schema')
+		expect((next.markers && next.markers.dataSource) || {}).not.toHaveProperty(
+			'register',
+		)
+		expect((next.markers && next.markers.dataSource) || {}).not.toHaveProperty(
+			'schema',
+		)
 		await wrapper.setProps({ config: next })
 
 		wrapper.vm.updateMarkerDataSourceField('url', 'https://example.test/x.json')
@@ -137,7 +168,11 @@ describe('MapPageEditor', () => {
 		let next = wrapper.emitted('update:config')[0][0]
 		expect(next.layers).toEqual([{ type: 'tile', url: '' }])
 
-		wrapper.vm.updateLayerField(0, 'url', 'https://tiles.example.test/{z}/{x}/{y}.png')
+		wrapper.vm.updateLayerField(
+			0,
+			'url',
+			'https://tiles.example.test/{z}/{x}/{y}.png',
+		)
 		await wrapper.vm.$nextTick()
 		next = wrapper.emitted('update:config')[1][0]
 		expect(next.layers[0].url).toBe('https://tiles.example.test/{z}/{x}/{y}.png')
@@ -149,7 +184,13 @@ describe('MapPageEditor', () => {
 	})
 
 	it('validatedConfigKeys equals the five surfaced keys', () => {
-		expect(mountEditor().vm.validatedConfigKeys).toEqual(['center', 'zoom', 'height', 'layers', 'markers'])
+		expect(mountEditor().vm.validatedConfigKeys).toEqual([
+			'center',
+			'zoom',
+			'height',
+			'layers',
+			'markers',
+		])
 	})
 
 	it('preserves unsurfaced config keys on a markers field edit (lossless round-trip)', async () => {

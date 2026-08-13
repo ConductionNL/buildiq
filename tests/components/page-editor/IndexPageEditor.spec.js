@@ -59,7 +59,9 @@ vi.mock('../../../src/components/page-editor/fields/ColumnBuilder.vue', async ()
 		default: {
 			name: 'ColumnBuilder',
 			props: ['modelValue', 'schemaProperties'],
-			render() { return h('div', { class: 'column-builder-stub' }) },
+			render() {
+				return h('div', { class: 'column-builder-stub' })
+			},
 		},
 	}
 })
@@ -69,22 +71,31 @@ vi.mock('../../../src/components/page-editor/fields/ActionBuilder.vue', async ()
 		default: {
 			name: 'ActionBuilder',
 			props: ['modelValue'],
-			render() { return h('div', { class: 'action-builder-stub' }) },
+			render() {
+				return h('div', { class: 'action-builder-stub' })
+			},
 		},
 	}
 })
-vi.mock('../../../src/components/page-editor/fields/SidebarSectionBuilder.vue', async () => {
-	const { h } = await import('vue')
-	return {
-		default: {
-			name: 'SidebarSectionBuilder',
-			props: ['modelValue'],
-			render() { return h('div', { class: 'sidebar-section-builder-stub' }) },
-		},
-	}
-})
+vi.mock(
+	'../../../src/components/page-editor/fields/SidebarSectionBuilder.vue',
+	async () => {
+		const { h } = await import('vue')
+		return {
+			default: {
+				name: 'SidebarSectionBuilder',
+				props: ['modelValue'],
+				render() {
+					return h('div', { class: 'sidebar-section-builder-stub' })
+				},
+			},
+		}
+	},
+)
 
-const IndexPageEditor = (await import('../../../src/components/page-editor/IndexPageEditor.vue')).default
+const IndexPageEditor = (
+	await import('../../../src/components/page-editor/IndexPageEditor.vue')
+).default
 
 function mountEditor(config = {}, appSlug = 'hello-world', dataRegisters) {
 	const propsData = { config, appSlug }
@@ -139,7 +150,10 @@ describe('IndexPageEditor', () => {
 	})
 
 	it('picking a register clears the previously-set schema', async () => {
-		const wrapper = mountEditor({ register: 'openbuild-hello-world', schema: 'page' })
+		const wrapper = mountEditor({
+			register: 'openbuild-hello-world',
+			schema: 'page',
+		})
 		wrapper.vm.update('register', 'openbuild')
 		await wrapper.vm.$nextTick()
 		const emitted = wrapper.emitted('update:config')
@@ -160,7 +174,11 @@ describe('IndexPageEditor', () => {
 	})
 
 	it('clearing columns to [] deletes the key from config', async () => {
-		const wrapper = mountEditor({ register: 'r', schema: 's', columns: [{ key: 'foo' }] })
+		const wrapper = mountEditor({
+			register: 'r',
+			schema: 's',
+			columns: [{ key: 'foo' }],
+		})
 		const cb = wrapper.findComponent({ name: 'ColumnBuilder' })
 		cb.vm.$emit('update:modelValue', [])
 		await wrapper.vm.$nextTick()
@@ -208,13 +226,21 @@ describe('IndexPageEditor', () => {
 
 	// data-registers-runtime task 2.4/2.1: dataRegisters prop pass-through.
 	it('forwards the dataRegisters prop into useRegisterPicker', () => {
-		const dataRegisters = [{ register: 'spectr', label: 'Spectr market intelligence data' }]
+		const dataRegisters = [
+			{ register: 'spectr', label: 'Spectr market intelligence data' },
+		]
 		mountEditor({}, 'hello-world', dataRegisters)
-		expect(useRegisterPickerSpy).toHaveBeenCalledWith({ appSlug: 'hello-world', dataRegisters })
+		expect(useRegisterPickerSpy).toHaveBeenCalledWith({
+			appSlug: 'hello-world',
+			dataRegisters,
+		})
 	})
 
 	it('defaults dataRegisters to [] when the prop is not passed', () => {
 		mountEditor({}, 'hello-world')
-		expect(useRegisterPickerSpy).toHaveBeenCalledWith({ appSlug: 'hello-world', dataRegisters: [] })
+		expect(useRegisterPickerSpy).toHaveBeenCalledWith({
+			appSlug: 'hello-world',
+			dataRegisters: [],
+		})
 	})
 })

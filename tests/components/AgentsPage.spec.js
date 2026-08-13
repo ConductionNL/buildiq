@@ -10,7 +10,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
-vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn(), post: vi.fn(), delete: vi.fn() } }))
+vi.mock('@nextcloud/axios', () => ({
+	default: { get: vi.fn(), post: vi.fn(), delete: vi.fn() },
+}))
 
 import axios from '@nextcloud/axios'
 import AgentsPage from '../../src/views/AgentsPage.vue'
@@ -22,7 +24,8 @@ const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled'],
 	emits: ['click'],
-	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+	template:
+		'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 // Vue 3 model API: `modelValue` in, `update:modelValue` out.
 const NcSelectStub = {
@@ -31,13 +34,20 @@ const NcSelectStub = {
 	emits: ['update:modelValue'],
 	template: '<div class="ncselect-stub" :data-label="inputLabel" />',
 }
-const NcLoadingIconStub = { name: 'NcLoadingIcon', template: '<div class="ncloading-stub" />' }
+const NcLoadingIconStub = {
+	name: 'NcLoadingIcon',
+	template: '<div class="ncloading-stub" />',
+}
 const NcEmptyContentStub = {
 	name: 'NcEmptyContent',
 	props: ['name', 'description'],
 	template: '<div class="ncempty-stub">{{ name }}</div>',
 }
-const NcNoteCardStub = { name: 'NcNoteCard', props: ['type'], template: '<div class="ncnotecard-stub"><slot /></div>' }
+const NcNoteCardStub = {
+	name: 'NcNoteCard',
+	props: ['type'],
+	template: '<div class="ncnotecard-stub"><slot /></div>',
+}
 
 const stubs = {
 	NcButton: NcButtonStub,
@@ -45,9 +55,21 @@ const stubs = {
 	NcLoadingIcon: NcLoadingIconStub,
 	NcEmptyContent: NcEmptyContentStub,
 	NcNoteCard: NcNoteCardStub,
-	CopilotPanel: { name: 'CopilotPanel', props: ['appSlug', 'agentId', 'name', 'instructions', 'enabledTools'], template: '<div class="copilot-panel-stub" />' },
-	AgentRunHistory: { name: 'AgentRunHistory', props: ['agentId'], template: '<div class="agent-run-history-stub" />' },
-	AgentEditDialog: { name: 'AgentEditDialog', props: ['open', 'agent', 'applicationSlug'], template: '<div class="edit-dialog-stub" />' },
+	CopilotPanel: {
+		name: 'CopilotPanel',
+		props: ['appSlug', 'agentId', 'name', 'instructions', 'enabledTools'],
+		template: '<div class="copilot-panel-stub" />',
+	},
+	AgentRunHistory: {
+		name: 'AgentRunHistory',
+		props: ['agentId'],
+		template: '<div class="agent-run-history-stub" />',
+	},
+	AgentEditDialog: {
+		name: 'AgentEditDialog',
+		props: ['open', 'agent', 'applicationSlug'],
+		template: '<div class="edit-dialog-stub" />',
+	},
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
@@ -156,14 +178,19 @@ describe('AgentsPage', () => {
 		await wrapper.vm.remove(agent())
 		await flush()
 
-		expect(axios.delete).toHaveBeenCalledWith('/apps/openregister/api/objects/openbuild/agent/agent-1')
+		expect(axios.delete).toHaveBeenCalledWith(
+			'/apps/openregister/api/objects/openbuild/agent/agent-1',
+		)
 	})
 
 	it('the "New agent" button is disabled until an application is selected', async () => {
 		const wrapper = mount(AgentsPage, { stubs })
 		await flush()
 
-		const newButton = wrapper.findAll('button').filter((b) => b.text().includes('New agent')).at(0)
+		const newButton = wrapper
+			.findAll('button')
+			.filter((b) => b.text().includes('New agent'))
+			.at(0)
 		// Vue 3 renders a true boolean attribute as `disabled=""` (Vue 2 used
 		// `disabled="disabled"`), so the value is the falsy empty string —
 		// presence, not truthiness, is what says "disabled".

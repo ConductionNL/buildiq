@@ -31,7 +31,9 @@ const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const ROUTE = `${BASE}/apps/openbuild/exports`
 
 test.describe('OpenBuild Exports view', () => {
-	test('renders the Exports index surface and the Add Export Job action', async ({ page }) => {
+	test('renders the Exports index surface and the Add Export Job action', async ({
+		page,
+	}) => {
 		await page.goto(ROUTE)
 		await expect(page).toHaveTitle(/openbuild/i)
 		await expect(page).toHaveURL(/\/exports\b/)
@@ -57,7 +59,9 @@ test.describe('OpenBuild Exports view', () => {
 
 	test('exposes a Cards / Table view toggle', async ({ page }) => {
 		await page.goto(ROUTE)
-		await expect(page.getByRole('button', { name: /add export job/i })).toBeVisible({ timeout: 15_000 })
+		await expect(
+			page.getByRole('button', { name: /add export job/i }),
+		).toBeVisible({ timeout: 15_000 })
 
 		// The list view header offers a Cards/Table presentation toggle. These
 		// are rendered as buttons by CnIndexPage, not as radios — an earlier
@@ -66,15 +70,21 @@ test.describe('OpenBuild Exports view', () => {
 		await expect(page.getByRole('button', { name: /^table$/i })).toBeVisible()
 	})
 
-	test('renders a deterministic list surface (empty state or row list)', async ({ page }) => {
+	test('renders a deterministic list surface (empty state or row list)', async ({
+		page,
+	}) => {
 		await page.goto(ROUTE)
-		await expect(page.getByRole('button', { name: /add export job/i })).toBeVisible({ timeout: 15_000 })
+		await expect(
+			page.getByRole('button', { name: /add export job/i }),
+		).toBeVisible({ timeout: 15_000 })
 
 		// Data-independent: the index must render a coherent list surface and
 		// never white-screen — either the empty state (unseeded register) or a
 		// populated row count summary (seeded register). Assert that at least
 		// one of those deterministic surfaces is present.
-		const emptyState = page.getByText(/no items found|no exports|nothing/i).first()
+		const emptyState = page
+			.getByText(/no items found|no exports|nothing/i)
+			.first()
 		const rowSummary = page.getByText(/showing \d+ of \d+/i).first()
 		await expect(emptyState.or(rowSummary)).toBeVisible({ timeout: 15_000 })
 	})

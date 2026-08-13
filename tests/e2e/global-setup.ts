@@ -79,11 +79,17 @@ function resolveContainerFor(baseURL: string): string | null {
 		return null
 	}
 	try {
-		const out = execSync(`docker ps --format '{{.Names}}' --filter publish=${port}`, {
-			encoding: 'utf8',
-			stdio: ['ignore', 'pipe', 'pipe'],
-		})
-		const names = out.split('\n').map((n) => n.trim()).filter(Boolean)
+		const out = execSync(
+			`docker ps --format '{{.Names}}' --filter publish=${port}`,
+			{
+				encoding: 'utf8',
+				stdio: ['ignore', 'pipe', 'pipe'],
+			},
+		)
+		const names = out
+			.split('\n')
+			.map((n) => n.trim())
+			.filter(Boolean)
 		return names[0] ?? null
 	} catch {
 		return null
@@ -91,7 +97,8 @@ function resolveContainerFor(baseURL: string): string | null {
 }
 
 function seedHelloWorldFixture(container: string | null): void {
-	const cmd = process.env.OPENBUILD_SEED_CMD
+	const cmd =
+		process.env.OPENBUILD_SEED_CMD
 		|| (container
 			? `docker exec -u www-data ${container} php occ openbuild:seed-hello-world-fixture`
 			: null)
@@ -99,18 +106,25 @@ function seedHelloWorldFixture(container: string | null): void {
 		// eslint-disable-next-line no-console
 		console.warn(
 			'[globalSetup] hello-world fixture NOT seeded: could not resolve the container '
-			+ 'serving the instance under test. Set OPENBUILD_E2E_CONTAINER or OPENBUILD_SEED_CMD. '
-			+ 'Deliberately not falling back to a hardcoded container — that would seed a DIFFERENT instance.',
+				+ 'serving the instance under test. Set OPENBUILD_E2E_CONTAINER or OPENBUILD_SEED_CMD. '
+				+ 'Deliberately not falling back to a hardcoded container — that would seed a DIFFERENT instance.',
 		)
 		return
 	}
 	try {
-		const out = execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+		const out = execSync(cmd, {
+			encoding: 'utf8',
+			stdio: ['ignore', 'pipe', 'pipe'],
+		})
 		// eslint-disable-next-line no-console
-		console.log(`[globalSetup] hello-world fixture: ${out.trim().split('\n').pop()}`)
+		console.log(
+			`[globalSetup] hello-world fixture: ${out.trim().split('\n').pop()}`,
+		)
 	} catch (e) {
 		// eslint-disable-next-line no-console
-		console.warn(`[globalSetup] hello-world fixture seed failed (specs needing it will fail): ${(e as Error).message}`)
+		console.warn(
+			`[globalSetup] hello-world fixture seed failed (specs needing it will fail): ${(e as Error).message}`,
+		)
 	}
 }
 
@@ -148,7 +162,8 @@ function disableRateLimitProtection(container: string | null): void {
 	// new value can be served stale for up to a minute — long enough for the
 	// first specs to 429 anyway. Measured: setting the value alone left the
 	// endpoint still returning 429; it only took effect after the reload.
-	const cmd = process.env.OPENBUILD_RATELIMIT_CMD
+	const cmd =
+		process.env.OPENBUILD_RATELIMIT_CMD
 		|| (container
 			? `docker exec -u www-data ${container} php occ config:system:set `
 				+ 'ratelimit.protection.enabled --value=false --type=boolean '
@@ -158,8 +173,8 @@ function disableRateLimitProtection(container: string | null): void {
 		// eslint-disable-next-line no-console
 		console.warn(
 			'[globalSetup] rate-limit protection left ALONE: could not resolve the container '
-			+ 'serving the instance under test. Set OPENBUILD_E2E_CONTAINER or OPENBUILD_RATELIMIT_CMD. '
-			+ 'This one writes config and gracefully restarts Apache, so it must never guess an instance.',
+				+ 'serving the instance under test. Set OPENBUILD_E2E_CONTAINER or OPENBUILD_RATELIMIT_CMD. '
+				+ 'This one writes config and gracefully restarts Apache, so it must never guess an instance.',
 		)
 		return
 	}
@@ -171,7 +186,7 @@ function disableRateLimitProtection(container: string | null): void {
 		// eslint-disable-next-line no-console
 		console.warn(
 			'[globalSetup] could not disable rate-limit protection — expect 429s '
-			+ `from the app-creation wizard after 10 creates: ${(e as Error).message}`,
+				+ `from the app-creation wizard after 10 creates: ${(e as Error).message}`,
 		)
 	}
 }
@@ -215,7 +230,9 @@ async function seedDocudeskTemplateFixtures(
 ): Promise<void> {
 	if (process.env.OPENBUILD_DOCUDESK_SEED === '0') {
 		// eslint-disable-next-line no-console
-		console.log('[globalSetup] docudesk seeding skipped (OPENBUILD_DOCUDESK_SEED=0)')
+		console.log(
+			'[globalSetup] docudesk seeding skipped (OPENBUILD_DOCUDESK_SEED=0)',
+		)
 		return
 	}
 	// Basic auth is sent PREEMPTIVELY rather than via `httpCredentials`: that
@@ -226,19 +243,24 @@ async function seedDocudeskTemplateFixtures(
 		baseURL,
 		extraHTTPHeaders: {
 			'OCS-APIRequest': 'true',
-			Authorization: 'Basic ' + Buffer.from(`${user}:${password}`).toString('base64'),
+			Authorization:
+				'Basic ' + Buffer.from(`${user}:${password}`).toString('base64'),
 		},
 	})
 	try {
 		const settingsResp = await api.get('/index.php/apps/docudesk/api/settings')
 		if (settingsResp.status() === 404 || settingsResp.status() === 501) {
 			// eslint-disable-next-line no-console
-			console.log('[globalSetup] docudesk not installed — template fixtures skipped')
+			console.log(
+				'[globalSetup] docudesk not installed — template fixtures skipped',
+			)
 			return
 		}
 		if (settingsResp.ok() === false) {
 			// eslint-disable-next-line no-console
-			console.warn(`[globalSetup] docudesk settings probe returned ${settingsResp.status()} — template fixtures skipped`)
+			console.warn(
+				`[globalSetup] docudesk settings probe returned ${settingsResp.status()} — template fixtures skipped`,
+			)
 			return
 		}
 		const settings = await settingsResp.json()
@@ -250,11 +272,17 @@ async function seedDocudeskTemplateFixtures(
 		// where the numeric ids are not.
 		if (!configuration.template_register || !configuration.template_schema) {
 			const registers = settings.availableRegisters || []
-			const register = registers.find((r: Record<string, any>) => r.slug === 'docudesk')
-			const schema = (register?.schemas || []).find((s: Record<string, any>) => s.slug === 'template')
+			const register = registers.find(
+				(r: Record<string, any>) => r.slug === 'docudesk',
+			)
+			const schema = (register?.schemas || []).find(
+				(s: Record<string, any>) => s.slug === 'template',
+			)
 			if (!register || !schema) {
 				// eslint-disable-next-line no-console
-				console.warn('[globalSetup] docudesk register/`template` schema not found — template fixtures skipped')
+				console.warn(
+					'[globalSetup] docudesk register/`template` schema not found — template fixtures skipped',
+				)
 				return
 			}
 			const written = await api.post('/index.php/apps/docudesk/api/settings', {
@@ -267,7 +295,7 @@ async function seedDocudeskTemplateFixtures(
 			// eslint-disable-next-line no-console
 			console.log(
 				`[globalSetup] docudesk template register configured (register=${register.id}, schema=${schema.id}, `
-				+ `status=${written.status()})`,
+					+ `status=${written.status()})`,
 			)
 		}
 
@@ -275,11 +303,14 @@ async function seedDocudeskTemplateFixtures(
 		const listResp = await api.get('/index.php/apps/docudesk/api/templates')
 		if (listResp.ok() === false) {
 			// eslint-disable-next-line no-console
-			console.warn(`[globalSetup] docudesk template list returned ${listResp.status()} — template fixtures skipped`)
+			console.warn(
+				`[globalSetup] docudesk template list returned ${listResp.status()} — template fixtures skipped`,
+			)
 			return
 		}
-		const existing = ((await listResp.json()).results || [])
-			.map((tpl: Record<string, any>) => tpl.name)
+		const existing = ((await listResp.json()).results || []).map(
+			(tpl: Record<string, any>) => tpl.name,
+		)
 		const created: string[] = []
 		for (const name of DOCUDESK_TEMPLATE_NAMES) {
 			if (existing.includes(name)) {
@@ -301,17 +332,23 @@ async function seedDocudeskTemplateFixtures(
 				created.push(name)
 			} else {
 				// eslint-disable-next-line no-console
-				console.warn(`[globalSetup] docudesk template "${name}" create returned ${resp.status()}`)
+				console.warn(
+					`[globalSetup] docudesk template "${name}" create returned ${resp.status()}`,
+				)
 			}
 		}
 		// eslint-disable-next-line no-console
 		console.log(
 			`[globalSetup] docudesk templates ready: ${DOCUDESK_TEMPLATE_NAMES.join(', ')}`
-			+ (created.length ? ` (created ${created.join(', ')})` : ' (already present)'),
+				+ (created.length
+					? ` (created ${created.join(', ')})`
+					: ' (already present)'),
 		)
 	} catch (e) {
 		// eslint-disable-next-line no-console
-		console.warn(`[globalSetup] docudesk template seeding failed: ${(e as Error).message}`)
+		console.warn(
+			`[globalSetup] docudesk template seeding failed: ${(e as Error).message}`,
+		)
 	} finally {
 		await api.dispose()
 	}
@@ -356,7 +393,8 @@ async function seedRoleUsersAndSessions(
 	adminUser: string,
 	adminPassword: string,
 ): Promise<void> {
-	const auth = 'Basic ' + Buffer.from(`${adminUser}:${adminPassword}`).toString('base64')
+	const auth =
+		'Basic ' + Buffer.from(`${adminUser}:${adminPassword}`).toString('base64')
 	const headers = {
 		Authorization: auth,
 		'OCS-APIRequest': 'true',
@@ -374,13 +412,18 @@ async function seedRoleUsersAndSessions(
 			})
 		} catch (e) {
 			// eslint-disable-next-line no-console
-			console.warn(`[globalSetup] could not create group ${group}: ${(e as Error).message}`)
+			console.warn(
+				`[globalSetup] could not create group ${group}: ${(e as Error).message}`,
+			)
 		}
 	}
 
 	for (const user of ROLE_USERS) {
 		try {
-			const body = new URLSearchParams({ userid: user.id, password: user.pass })
+			const body = new URLSearchParams({
+				userid: user.id,
+				password: user.pass,
+			})
 			for (const group of user.groups) {
 				body.append('groups[]', group)
 			}
@@ -392,9 +435,15 @@ async function seedRoleUsersAndSessions(
 			const text = await resp.text()
 			// OCS v2 answers 200 on success; the v1 shape answers 100 (created) or
 			// 102 (already exists).
-			if (!/<statuscode>(10[02]|200)<\/statuscode>|"statuscode":(10[02]|200)/.test(text)) {
+			if (
+				!/<statuscode>(10[02]|200)<\/statuscode>|"statuscode":(10[02]|200)/.test(
+					text,
+				)
+			) {
 				// eslint-disable-next-line no-console
-				console.warn(`[globalSetup] provisioning ${user.id} returned an unexpected status: ${text.slice(0, 160)}`)
+				console.warn(
+					`[globalSetup] provisioning ${user.id} returned an unexpected status: ${text.slice(0, 160)}`,
+				)
 			}
 
 			// "Already exists" is NOT the same as "usable". On a long-lived
@@ -406,30 +455,54 @@ async function seedRoleUsersAndSessions(
 			// versionRouting's "non-member must receive 404" failed with 401.
 			//
 			// So prove the credentials work, and repair them if they do not.
-			const probe = await fetch(`${baseURL}/ocs/v2.php/cloud/user?format=json`, {
-				headers: {
-					'OCS-APIRequest': 'true',
-					Authorization: 'Basic ' + Buffer.from(`${user.id}:${user.pass}`).toString('base64'),
-				},
-			})
-			if (probe.status === 401) {
-				const reset = await fetch(`${baseURL}/ocs/v2.php/cloud/users/${encodeURIComponent(user.id)}`, {
-					method: 'PUT',
-					headers,
-					body: new URLSearchParams({ key: 'password', value: user.pass }).toString(),
-				})
-				const ok = await fetch(`${baseURL}/ocs/v2.php/cloud/user?format=json`, {
+			const probe = await fetch(
+				`${baseURL}/ocs/v2.php/cloud/user?format=json`,
+				{
 					headers: {
 						'OCS-APIRequest': 'true',
-						Authorization: 'Basic ' + Buffer.from(`${user.id}:${user.pass}`).toString('base64'),
+						Authorization:
+							'Basic '
+							+ Buffer.from(`${user.id}:${user.pass}`).toString(
+								'base64',
+							),
 					},
-				})
+				},
+			)
+			if (probe.status === 401) {
+				const reset = await fetch(
+					`${baseURL}/ocs/v2.php/cloud/users/${encodeURIComponent(user.id)}`,
+					{
+						method: 'PUT',
+						headers,
+						body: new URLSearchParams({
+							key: 'password',
+							value: user.pass,
+						}).toString(),
+					},
+				)
+				const ok = await fetch(
+					`${baseURL}/ocs/v2.php/cloud/user?format=json`,
+					{
+						headers: {
+							'OCS-APIRequest': 'true',
+							Authorization:
+								'Basic '
+								+ Buffer.from(`${user.id}:${user.pass}`).toString(
+									'base64',
+								),
+						},
+					},
+				)
 				// eslint-disable-next-line no-console
-				console.warn(`[globalSetup] ${user.id} existed with a different password — reset ${reset.status}, now ${ok.status === 200 ? 'usable' : `STILL UNUSABLE (${ok.status})`}`)
+				console.warn(
+					`[globalSetup] ${user.id} existed with a different password — reset ${reset.status}, now ${ok.status === 200 ? 'usable' : `STILL UNUSABLE (${ok.status})`}`,
+				)
 			}
 		} catch (e) {
 			// eslint-disable-next-line no-console
-			console.warn(`[globalSetup] could not provision ${user.id}: ${(e as Error).message}`)
+			console.warn(
+				`[globalSetup] could not provision ${user.id}: ${(e as Error).message}`,
+			)
 		}
 	}
 
@@ -441,23 +514,34 @@ async function seedRoleUsersAndSessions(
 		const context = await browser.newContext({ baseURL })
 		const page = await context.newPage()
 		try {
-			await page.goto('/index.php/login', { waitUntil: 'domcontentloaded', timeout: 90_000 })
+			await page.goto('/index.php/login', {
+				waitUntil: 'domcontentloaded',
+				timeout: 90_000,
+			})
 			await page.locator('input[name="user"]').fill(user.id)
 			await page.locator('input[name="password"]').fill(user.pass)
-			await page.locator('form').first().evaluate((form: HTMLFormElement) => form.requestSubmit())
+			await page
+				.locator('form')
+				.first()
+				.evaluate((form: HTMLFormElement) => form.requestSubmit())
 			// Wait on the URL leaving /login rather than on `#header`: the landing
 			// page differs per user (dashboard vs first-run) and a header selector
 			// races the theming bundle. Generous budget — four logins in a row is
 			// exactly the pattern Nextcloud's brute-force throttle slows down, which
 			// is why this is done ONCE here rather than per test.
-			await page.waitForURL((url) => !/\/login(\?|$|\/)/.test(url.toString()), { timeout: 60_000 })
+			await page.waitForURL(
+				(url) => !/\/login(\?|$|\/)/.test(url.toString()),
+				{ timeout: 60_000 },
+			)
 			await context.storageState({ path: statePath })
 			// eslint-disable-next-line no-console
 			console.log(`[globalSetup] ${user.id} session stored at ${statePath}`)
 		} catch (e) {
 			failed.push(user.id)
 			// eslint-disable-next-line no-console
-			console.warn(`[globalSetup] could not mint a session for ${user.id}: ${(e as Error).message}`)
+			console.warn(
+				`[globalSetup] could not mint a session for ${user.id}: ${(e as Error).message}`,
+			)
 		} finally {
 			await context.close()
 		}
@@ -486,18 +570,20 @@ async function seedRoleUsersAndSessions(
 	if (failed.length > 0 && (process.env.CI || process.env.GITHUB_ACTIONS)) {
 		throw new Error(
 			`[globalSetup] could not mint a session for the RBAC fixture user(s): ${failed.join(', ')}. `
-			+ 'Refusing to continue on CI: an RBAC spec attaching a missing storage state runs '
-			+ 'UNAUTHENTICATED, and every "must be denied" assertion then passes for the wrong reason.',
+				+ 'Refusing to continue on CI: an RBAC spec attaching a missing storage state runs '
+				+ 'UNAUTHENTICATED, and every "must be denied" assertion then passes for the wrong reason.',
 		)
 	}
 }
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
-	const baseURL = (config.projects[0].use.baseURL as string)
+	const baseURL =
+		(config.projects[0].use.baseURL as string)
 		|| process.env.PLAYWRIGHT_BASE_URL
 		|| 'http://localhost:8080'
 	const adminUser = process.env.NC_ADMIN_USER || 'admin'
-	const adminPassword = process.env.NC_ADMIN_PASSWORD || process.env.NC_ADMIN_PASS || 'admin'
+	const adminPassword =
+		process.env.NC_ADMIN_PASSWORD || process.env.NC_ADMIN_PASS || 'admin'
 	const storagePath = 'tests/e2e/.auth/admin.json'
 
 	if (existsSync(dirname(storagePath)) === false) {
@@ -508,7 +594,9 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// would otherwise 429 every app creation past the tenth, mid-run.
 	const container = resolveContainerFor(baseURL)
 	// eslint-disable-next-line no-console
-	console.log(`[globalSetup] instance under test: ${baseURL} (container: ${container ?? 'unresolved'})`)
+	console.log(
+		`[globalSetup] instance under test: ${baseURL} (container: ${container ?? 'unresolved'})`,
+	)
 	disableRateLimitProtection(container)
 
 	const browser = await chromium.launch()
@@ -524,7 +612,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	let adminAuthenticated = false
 	for (let attempt = 1; attempt <= LOGIN_ATTEMPTS; attempt++) {
 		try {
-			await page.goto('/index.php/login', { waitUntil: 'domcontentloaded', timeout: 90_000 })
+			await page.goto('/index.php/login', {
+				waitUntil: 'domcontentloaded',
+				timeout: 90_000,
+			})
 			await page.locator('input[name="user"]').fill(adminUser)
 			await page.locator('input[name="password"]').fill(adminPassword)
 			// Submit via the form rather than a button click: on a slow/loaded
@@ -532,13 +623,19 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 			// overlay/animation and never navigate. Falling back to a button
 			// click keeps it working where the form ref is unavailable.
 			await page.evaluate(() => {
-				const form = document.querySelector('form[name="login"], form') as HTMLFormElement | null
+				const form = document.querySelector(
+					'form[name="login"], form',
+				) as HTMLFormElement | null
 				if (form && typeof form.requestSubmit === 'function') {
 					form.requestSubmit()
 				} else if (form) {
 					form.submit()
 				} else {
-					document.querySelector<HTMLButtonElement>('button[type="submit"], input[type="submit"]')?.click()
+					document
+						.querySelector<HTMLButtonElement>(
+							'button[type="submit"], input[type="submit"]',
+						)
+						?.click()
 				}
 			})
 			// Accept both pretty + index.php-prefixed redirects. Generous
@@ -554,30 +651,41 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 			await page.waitForURL(/\/apps\//, { timeout: 60_000 }).catch(() => {})
 			const authed = await page.evaluate(async () => {
 				try {
-					const resp = await fetch('/index.php/apps/openbuild/api/applications', {
-						headers: { 'OCS-APIRequest': 'true' },
-					})
+					const resp = await fetch(
+						'/index.php/apps/openbuild/api/applications',
+						{
+							headers: { 'OCS-APIRequest': 'true' },
+						},
+					)
 					return resp.status !== 401
 				} catch {
 					return false
 				}
 			})
 			if (authed === false) {
-				throw new Error('session cookie not accepted by an authenticated endpoint (401)')
+				throw new Error(
+					'session cookie not accepted by an authenticated endpoint (401)',
+				)
 			}
 			await context.storageState({ path: storagePath })
 			adminAuthenticated = true
 			// eslint-disable-next-line no-console
-			console.log(`[globalSetup] authenticated session stored at ${storagePath}`)
+			console.log(
+				`[globalSetup] authenticated session stored at ${storagePath}`,
+			)
 			break
 		} catch (e) {
 			if (attempt < LOGIN_ATTEMPTS) {
-			// eslint-disable-next-line no-console
-				console.warn(`[globalSetup] login attempt ${attempt}/${LOGIN_ATTEMPTS} failed (${(e as Error).message}) — retrying`)
+				// eslint-disable-next-line no-console
+				console.warn(
+					`[globalSetup] login attempt ${attempt}/${LOGIN_ATTEMPTS} failed (${(e as Error).message}) — retrying`,
+				)
 				continue
 			}
 			// eslint-disable-next-line no-console
-			console.warn(`[globalSetup] login failed after ${LOGIN_ATTEMPTS} attempts — specs will run unauthenticated: ${(e as Error).message}`)
+			console.warn(
+				`[globalSetup] login failed after ${LOGIN_ATTEMPTS} attempts — specs will run unauthenticated: ${(e as Error).message}`,
+			)
 		}
 	}
 	await browser.close()
@@ -589,11 +697,14 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// wall of selector timeouts across ~327 tests whose common cause is stated
 	// only in a console line nobody reads, and it burns the job's entire 45
 	// minute budget to say so. One failure, named, is worth more.
-	if (adminAuthenticated === false && (process.env.CI || process.env.GITHUB_ACTIONS)) {
+	if (
+		adminAuthenticated === false
+		&& (process.env.CI || process.env.GITHUB_ACTIONS)
+	) {
 		throw new Error(
 			`[globalSetup] could not authenticate as '${adminUser}' after ${LOGIN_ATTEMPTS} attempts. `
-			+ 'Refusing to continue on CI: every spec would fail on a selector timeout that accuses '
-			+ 'the selector rather than the missing session.',
+				+ 'Refusing to continue on CI: every spec would fail on a selector timeout that accuses '
+				+ 'the selector rather than the missing session.',
 		)
 	}
 

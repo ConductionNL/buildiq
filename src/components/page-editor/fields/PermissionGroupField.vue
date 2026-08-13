@@ -30,7 +30,12 @@
 			@update:modelValue="onChange"
 			@tag="onTag" />
 		<p class="permission-group-field__hint">
-			{{ t('openbuild', 'Hides this entry from members outside the group. This is navigation only — set OpenRegister schema authorization to actually restrict the underlying data.') }}
+			{{
+				t(
+					'openbuild',
+					'Hides this entry from members outside the group. This is navigation only — set OpenRegister schema authorization to actually restrict the underlying data.',
+				)
+			}}
 		</p>
 	</div>
 </template>
@@ -48,7 +53,9 @@ function gidFromPermission(permission) {
 	if (typeof permission !== 'string') {
 		return ''
 	}
-	return permission.startsWith('group:') ? permission.slice('group:'.length) : permission
+	return permission.startsWith('group:')
+		? permission.slice('group:'.length)
+		: permission
 }
 
 export default {

@@ -40,7 +40,10 @@ const SOURCE_DIRS = ['lib', 'src', 'appinfo', 'tests', 'scripts']
  * @return {string[]} Non-empty stdout lines.
  */
 function git(args) {
-	const out = execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+	const out = execFileSync('git', args, {
+		encoding: 'utf8',
+		maxBuffer: 64 * 1024 * 1024,
+	})
 	return out.split('\n').filter((line) => line.length > 0)
 }
 
@@ -49,12 +52,21 @@ let trackedAndIgnored
 
 try {
 	tracked = git(['ls-files', '--', ...SOURCE_DIRS])
-	trackedAndIgnored = git(['ls-files', '-i', '-c', '--exclude-standard', '--', ...SOURCE_DIRS])
+	trackedAndIgnored = git([
+		'ls-files',
+		'-i',
+		'-c',
+		'--exclude-standard',
+		'--',
+		...SOURCE_DIRS,
+	])
 } catch (error) {
 	// A check that could not run must not look like a check that passed.
 	console.error('[check:gitignore] FAILED TO RUN: could not execute git.')
 	console.error('[check:gitignore] ' + error.message)
-	console.error('[check:gitignore] This is a broken instrument, not a clean result.')
+	console.error(
+		'[check:gitignore] This is a broken instrument, not a clean result.',
+	)
 	process.exit(2)
 }
 
@@ -63,34 +75,46 @@ try {
 // catch in the first place.
 if (tracked.length === 0) {
 	console.error(
-		'[check:gitignore] Enumerated ZERO tracked files under ' + SOURCE_DIRS.join(', ') + '.',
+		'[check:gitignore] Enumerated ZERO tracked files under '
+			+ SOURCE_DIRS.join(', ')
+			+ '.',
 	)
-	console.error('[check:gitignore] That is a broken enumeration, not an empty repository.')
+	console.error(
+		'[check:gitignore] That is a broken enumeration, not an empty repository.',
+	)
 	process.exit(2)
 }
 
 if (trackedAndIgnored.length > 0) {
 	console.error(
 		'[check:gitignore] '
-		+ trackedAndIgnored.length
-		+ ' tracked source file(s) are matched by .gitignore:',
+			+ trackedAndIgnored.length
+			+ ' tracked source file(s) are matched by .gitignore:',
 	)
 	for (const path of trackedAndIgnored) {
 		console.error('  ' + path)
 	}
 	console.error('')
-	console.error('[check:gitignore] git keeps versioning them today, so this is silent. It stops')
-	console.error('[check:gitignore] being silent the moment anything re-adds them from scratch, or')
-	console.error('[check:gitignore] enumerates the repo with `git ls-files` — which the hydra-gates')
-	console.error('[check:gitignore] runner does. Narrow the pattern, or add a `!` negation for the')
+	console.error(
+		'[check:gitignore] git keeps versioning them today, so this is silent. It stops',
+	)
+	console.error(
+		'[check:gitignore] being silent the moment anything re-adds them from scratch, or',
+	)
+	console.error(
+		'[check:gitignore] enumerates the repo with `git ls-files` — which the hydra-gates',
+	)
+	console.error(
+		'[check:gitignore] runner does. Narrow the pattern, or add a `!` negation for the',
+	)
 	console.error('[check:gitignore] source directory. Do NOT untrack the file.')
 	process.exit(1)
 }
 
 console.log(
 	'[check:gitignore] OK — '
-	+ tracked.length
-	+ ' tracked file(s) under '
-	+ SOURCE_DIRS.join(', ')
-	+ ', none matched by .gitignore.',
+		+ tracked.length
+		+ ' tracked file(s) under '
+		+ SOURCE_DIRS.join(', ')
+		+ ', none matched by .gitignore.',
 )

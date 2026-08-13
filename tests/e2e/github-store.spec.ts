@@ -47,7 +47,8 @@ import { test, expect, request as playwrightRequest } from '@playwright/test'
  */
 const STORE_URL = process.env.OPENBUILD_GITHUB_STORE_URL ?? 'http://localhost:8080'
 const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
-const ADMIN_PASS = process.env.NC_ADMIN_PASSWORD ?? process.env.NC_ADMIN_PASS ?? 'admin'
+const ADMIN_PASS =
+	process.env.NC_ADMIN_PASSWORD ?? process.env.NC_ADMIN_PASS ?? 'admin'
 
 /**
  * A read-only API context against the store instance, authenticated with Basic
@@ -67,7 +68,8 @@ async function storeApi() {
 	// header → 200 with the credential list. The httpCredentials form made the
 	// capability probe below silently answer "no credential granted", so these
 	// tests skipped on an instance that had one.
-	const basic = 'Basic ' + Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`).toString('base64')
+	const basic =
+		'Basic ' + Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`).toString('base64')
 	return playwrightRequest.newContext({
 		baseURL: STORE_URL,
 		extraHTTPHeaders: { 'OCS-APIRequest': 'true', Authorization: basic },
@@ -91,7 +93,11 @@ async function githubCredentialGranted(): Promise<boolean> {
 		return rows.some((row: Record<string, unknown>) => {
 			const provider = String(row?.provider ?? row?.type ?? '')
 			const apps = (row?.allowedApps ?? row?.apps ?? []) as string[]
-			return provider === 'github' && Array.isArray(apps) && apps.includes('openbuild')
+			return (
+				provider === 'github'
+				&& Array.isArray(apps)
+				&& apps.includes('openbuild')
+			)
 		})
 	} catch {
 		return false
@@ -102,54 +108,92 @@ async function githubCredentialGranted(): Promise<boolean> {
 
 test.describe('OpenBuild GitHub template store — authenticated path (read-only)', () => {
 	test('a granted GitHub credential is visible to openbuild', async () => {
-		test.skip(!(await githubCredentialGranted()),
-			`no GitHub credential granted to openbuild on ${STORE_URL} — grant one in User settings > Credentials`)
+		test.skip(
+			!(await githubCredentialGranted()),
+			`no GitHub credential granted to openbuild on ${STORE_URL} — grant one in User settings > Credentials`,
+		)
 
 		const api = await storeApi()
 		try {
-			const resp = await api.get('/index.php/apps/openregister/api/credentials')
+			const resp = await api.get(
+				'/index.php/apps/openregister/api/credentials',
+			)
 			const body = await resp.json()
 			const rows = Array.isArray(body) ? body : (body?.results ?? [])
-			const github = rows.filter((r: Record<string, unknown>) => String(r?.provider ?? r?.type ?? '') === 'github')
+			const github = rows.filter(
+				(r: Record<string, unknown>) =>
+					String(r?.provider ?? r?.type ?? '') === 'github',
+			)
 
-			expect(github.length, 'at least one GitHub credential must exist').toBeGreaterThan(0)
+			expect(
+				github.length,
+				'at least one GitHub credential must exist',
+			).toBeGreaterThan(0)
 			// The grant is per-app: openbuild must be among the apps allowed to use it.
 			expect(
-				github.some((r: Record<string, unknown>) => ((r?.allowedApps ?? r?.apps ?? []) as string[]).includes('openbuild')),
+				github.some((r: Record<string, unknown>) =>
+					((r?.allowedApps ?? r?.apps ?? []) as string[]).includes(
+						'openbuild',
+					),
+				),
 				'openbuild must be allowed to use a GitHub credential',
 			).toBe(true)
 			// The secret itself must never come back over this API.
-			expect(JSON.stringify(github), 'a credential listing must not leak its secret')
-				.not.toMatch(/gh[pousr]_[A-Za-z0-9]{16,}/)
+			expect(
+				JSON.stringify(github),
+				'a credential listing must not leak its secret',
+			).not.toMatch(/gh[pousr]_[A-Za-z0-9]{16,}/)
 		} finally {
 			await api.dispose()
 		}
 	})
 
 	test('the store search runs authenticated — not rate-limited, and returns cards', async () => {
-		test.skip(!(await githubCredentialGranted()),
-			`no GitHub credential granted to openbuild on ${STORE_URL} — grant one in User settings > Credentials`)
+		test.skip(
+			!(await githubCredentialGranted()),
+			`no GitHub credential granted to openbuild on ${STORE_URL} — grant one in User settings > Credentials`,
+		)
 
 		const api = await storeApi()
 		try {
-			const resp = await api.get('/index.php/apps/openbuild/api/shop/github/search', { params: { q: 'openbuild' } })
+			const resp = await api.get(
+				'/index.php/apps/openbuild/api/shop/github/search',
+				{ params: { q: 'openbuild' } },
+			)
 			expect(resp.ok(), 'the store search endpoint must answer').toBeTruthy()
 			const payload = await resp.json()
 
 			// This is what the credential buys. An ANONYMOUS search rate-limits
 			// quickly, and the gallery then renders its "GitHub is rate-limiting
 			// anonymous browsing right now" note instead of results.
-			expect(payload.outcome, 'an authenticated search must succeed').toBe('ok')
-			expect(payload.rateLimited, 'an authenticated search must not be rate-limited').toBeFalsy()
-			expect(payload.brokerCredentialAvailable, 'the granted credential must be visible to the store').toBe(true)
+			expect(payload.outcome, 'an authenticated search must succeed').toBe(
+				'ok',
+			)
+			expect(
+				payload.rateLimited,
+				'an authenticated search must not be rate-limited',
+			).toBeFalsy()
+			expect(
+				payload.brokerCredentialAvailable,
+				'the granted credential must be visible to the store',
+			).toBe(true)
 
 			// And it must actually return the catalogue, not an empty success.
-			expect(Array.isArray(payload.cards), 'the search must return a cards array').toBe(true)
-			expect(payload.cards.length, 'the topic:openbuild-app catalogue must not be empty').toBeGreaterThan(0)
+			expect(
+				Array.isArray(payload.cards),
+				'the search must return a cards array',
+			).toBe(true)
+			expect(
+				payload.cards.length,
+				'the topic:openbuild-app catalogue must not be empty',
+			).toBeGreaterThan(0)
 
 			// Cards are the shape the gallery renders from.
 			for (const card of payload.cards) {
-				expect(card.repo ?? card.slug ?? card.name, 'every card must be identifiable').toBeTruthy()
+				expect(
+					card.repo ?? card.slug ?? card.name,
+					'every card must be identifiable',
+				).toBeTruthy()
 			}
 		} finally {
 			await api.dispose()

@@ -103,7 +103,7 @@ export const runtimeRegistry = {
 	'my-approvals': widget(
 		MyApprovalsWidget,
 		['body', 'sidebar'],
-		'Approve/reject calls target OpenRegister\'s dedicated approval-steps endpoints directly (not the generic object-service API a built-in object-table row action can express) — no built-in widget fits.',
+		"Approve/reject calls target OpenRegister's dedicated approval-steps endpoints directly (not the generic object-service API a built-in object-table row action can express) — no built-in widget fits.",
 	),
 	// Detail-page `config.actionsComponent: "TrackLinkAction"` — mint a
 	// "track your case" link (external-form-provisioning REQ-EFP-006).

@@ -65,7 +65,9 @@ export function useManifestValidator() {
 				const result = validateManifest
 					? validateManifest(manifest)
 					: { valid: true, errors: [] }
-				const libErrors = Array.isArray(result.errors) ? result.errors.slice() : []
+				const libErrors = Array.isArray(result.errors)
+					? result.errors.slice()
+					: []
 				// App-side strict checks for forms the canonical schema carries
 				// under `additionalProperties: true` (workflow attachments,
 				// REQ-PWA-001; connector data sources, REQ-OCAS-001; document
@@ -125,10 +127,12 @@ export function useManifestValidator() {
 			if (typeof e !== 'string') {
 				return false
 			}
-			return e === prefix
+			return (
+				e === prefix
 				|| e.startsWith(prefix + '/')
 				|| e.startsWith(prefix + ' ')
 				|| e.startsWith(prefix + ':')
+			)
 		})
 	}
 

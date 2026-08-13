@@ -54,7 +54,7 @@ export async function mountedComponents(page: Page): Promise<MountedComponent[]>
 	return page.evaluate(() => {
 		type AnyRec = Record<string, any>
 
-		const out: Array<{ name: string, props: Record<string, unknown> }> = []
+		const out: Array<{ name: string; props: Record<string, unknown> }> = []
 
 		/**
 		 * Reduce a props bag to values that survive `structuredClone`-style
@@ -63,7 +63,9 @@ export async function mountedComponents(page: Page): Promise<MountedComponent[]>
 		 * @param props Raw Vue props object.
 		 * @return {Record<string, unknown>} JSON-safe subset.
 		 */
-		function safeProps(props: AnyRec | null | undefined): Record<string, unknown> {
+		function safeProps(
+			props: AnyRec | null | undefined,
+		): Record<string, unknown> {
 			const safe: Record<string, unknown> = {}
 			if (!props) {
 				return safe
