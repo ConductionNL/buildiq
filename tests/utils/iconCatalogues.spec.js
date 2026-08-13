@@ -12,7 +12,8 @@ import { resolveAppIcon } from '../../src/utils/iconCatalogues.js'
 
 describe('resolveAppIcon — author SVG sanitization', () => {
 	it('strips a <script> element from author SVG', () => {
-		const malicious = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script><rect width="1" height="1"/></svg>'
+		const malicious =
+			'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script><rect width="1" height="1"/></svg>'
 		const out = resolveAppIcon(malicious)
 		expect(typeof out).toBe('string')
 		expect(out.toLowerCase()).not.toContain('<script')
@@ -20,14 +21,16 @@ describe('resolveAppIcon — author SVG sanitization', () => {
 	})
 
 	it('strips event-handler attributes from author SVG', () => {
-		const malicious = '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><image href="x" onerror="alert(1)"/></svg>'
+		const malicious =
+			'<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><image href="x" onerror="alert(1)"/></svg>'
 		const out = resolveAppIcon(malicious)
 		expect(out.toLowerCase()).not.toContain('onload')
 		expect(out.toLowerCase()).not.toContain('onerror')
 	})
 
 	it('preserves a benign author SVG', () => {
-		const safe = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>'
+		const safe =
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>'
 		const out = resolveAppIcon(safe)
 		expect(out).toContain('<svg')
 		expect(out).toContain('<path')

@@ -12,7 +12,12 @@
 		<div class="link-repo">
 			<h2>{{ t('openbuild', 'Link a GitHub repository') }}</h2>
 			<p class="link-repo__summary">
-				{{ t('openbuild', 'Connect this app to a GitHub repository so you can publish and pull versions.') }}
+				{{
+					t(
+						'openbuild',
+						'Connect this app to a GitHub repository so you can publish and pull versions.',
+					)
+				}}
 			</p>
 			<NcTextField
 				:model-value="owner"
@@ -36,8 +41,15 @@
 				<NcButton @click="onClose">
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" :disabled="!canSubmit || submitting" @click="submit">
-					{{ submitting ? t('openbuild', 'Linking…') : t('openbuild', 'Link repository') }}
+				<NcButton
+					type="primary"
+					:disabled="!canSubmit || submitting"
+					@click="submit">
+					{{
+						submitting
+							? t('openbuild', 'Linking…')
+							: t('openbuild', 'Link repository')
+					}}
 				</NcButton>
 			</div>
 		</div>
@@ -116,7 +128,10 @@ export default {
 			this.submitting = true
 			this.error = ''
 			try {
-				const url = generateUrl('/apps/openbuild/api/applications/{slug}/github/link', { slug: this.slug })
+				const url = generateUrl(
+					'/apps/openbuild/api/applications/{slug}/github/link',
+					{ slug: this.slug },
+				)
 				const body = { owner: this.owner.trim(), name: this.name.trim() }
 				if (this.org.trim()) {
 					body.org = this.org.trim()
@@ -126,7 +141,11 @@ export default {
 				this.$emit('close')
 			} catch (e) {
 				const data = e?.response?.data
-				this.error = data?.detail || data?.error || e?.message || t('openbuild', 'Could not link the repository.')
+				this.error =
+					data?.detail
+					|| data?.error
+					|| e?.message
+					|| t('openbuild', 'Could not link the repository.')
 				this.submitting = false
 			}
 		},

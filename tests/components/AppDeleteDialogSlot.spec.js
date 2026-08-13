@@ -41,7 +41,9 @@ vi.mock('@conduction/nextcloud-vue', () => ({
 	useObjectStore: () => store,
 }))
 
-const AppDeleteDialogSlot = (await import('../../src/components/AppDeleteDialogSlot.vue')).default
+const AppDeleteDialogSlot = (
+	await import('../../src/components/AppDeleteDialogSlot.vue')
+).default
 
 // Stub the child dialog: these tests exercise the slot's endpoint wiring, not
 // the dialog's rendered markup (covered in DeleteAppDialog.spec.js).
@@ -56,7 +58,9 @@ const APP_TYPE = 'openbuild-application'
 function freshStore() {
 	return {
 		collections: { [APP_TYPE]: [{ id: 'u-app' }, { id: 'other' }] },
-		objects: { [APP_TYPE]: { 'u-app': { id: 'u-app' }, other: { id: 'other' } } },
+		objects: {
+			[APP_TYPE]: { 'u-app': { id: 'u-app' }, other: { id: 'other' } },
+		},
 	}
 }
 
@@ -139,7 +143,9 @@ describe('AppDeleteDialogSlot — destroy-endpoint wiring', () => {
 	})
 
 	it('resolves the app id from the @self envelope when no top-level id is present', async () => {
-		const wrapper = mountSlot({ item: { '@self': { id: 'self-id' }, name: 'Demo' } })
+		const wrapper = mountSlot({
+			item: { '@self': { id: 'self-id' }, name: 'Demo' },
+		})
 		dialog(wrapper).vm.$emit('confirm', false)
 		await flush()
 		expect(axiosDeleteMock).toHaveBeenCalledWith(
@@ -160,7 +166,7 @@ describe('AppDeleteDialogSlot — destroy-endpoint wiring', () => {
 		expect(wrapper.vm.busy).toBe(false)
 	})
 
-	it('closes via the dialog\'s update:open when no delete is in flight', async () => {
+	it("closes via the dialog's update:open when no delete is in flight", async () => {
 		const close = vi.fn()
 		const wrapper = mountSlot({ close })
 		dialog(wrapper).vm.$emit('update:open', false)

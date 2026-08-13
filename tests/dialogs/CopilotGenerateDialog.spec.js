@@ -15,7 +15,9 @@ import { mount } from '@vue/test-utils'
 
 const axiosGet = vi.fn()
 const axiosPost = vi.fn()
-vi.mock('@nextcloud/axios', () => ({ default: { get: (...a) => axiosGet(...a), post: (...a) => axiosPost(...a) } }))
+vi.mock('@nextcloud/axios', () => ({
+	default: { get: (...a) => axiosGet(...a), post: (...a) => axiosPost(...a) },
+}))
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
 
 import CopilotGenerateDialog from '../../src/dialogs/CopilotGenerateDialog.vue'
@@ -42,14 +44,16 @@ const stubs = {
 		name: 'NcButton',
 		props: ['type', 'disabled'],
 		emits: ['click'],
-		template: '<button :disabled="disabled || false" :data-type="type" @click="$emit(\'click\')"><slot /></button>',
+		template:
+			'<button :disabled="disabled || false" :data-type="type" @click="$emit(\'click\')"><slot /></button>',
 	},
 	// Vue 3 model API: `modelValue` in, `update:modelValue` out.
 	NcTextArea: {
 		name: 'NcTextArea',
 		props: ['modelValue', 'label', 'placeholder', 'disabled', 'rows'],
 		emits: ['update:modelValue'],
-		template: '<textarea class="nctextarea-stub" :value="modelValue" :disabled="disabled || false" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+		template:
+			'<textarea class="nctextarea-stub" :value="modelValue" :disabled="disabled || false" @input="$emit(\'update:modelValue\', $event.target.value)" />',
 	},
 }
 
@@ -62,8 +66,13 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 	})
 
 	it('renders nothing when open is false', () => {
-		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: false }, stubs })
-		expect(wrapper.find('[data-testid="copilot-brief-input"]').exists()).toBe(false)
+		const wrapper = mount(CopilotGenerateDialog, {
+			propsData: { open: false },
+			stubs,
+		})
+		expect(wrapper.find('[data-testid="copilot-brief-input"]').exists()).toBe(
+			false,
+		)
 	})
 
 	it('brief -> review -> confirm emits created with the app slug', async () => {
@@ -71,21 +80,48 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 			.mockResolvedValueOnce({
 				data: {
 					summary: 'A tool library',
-					steps: [{ tool: 'openbuild.createApp', arguments: { slug: 'tool-library', name: 'Tool Library' } }],
+					steps: [
+						{
+							tool: 'openbuild.createApp',
+							arguments: {
+								slug: 'tool-library',
+								name: 'Tool Library',
+							},
+						},
+					],
 					manifests: {},
 				},
 			})
 			.mockResolvedValueOnce({
-				data: { results: [{ success: true, created: true, app: { uuid: 'u1', slug: 'tool-library', name: 'Tool Library' } }] },
+				data: {
+					results: [
+						{
+							success: true,
+							created: true,
+							app: {
+								uuid: 'u1',
+								slug: 'tool-library',
+								name: 'Tool Library',
+							},
+						},
+					],
+				},
 			})
 
-		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
-		await wrapper.find('[data-testid="copilot-brief-input"]').setValue('A tool library where members borrow tools')
+		const wrapper = mount(CopilotGenerateDialog, {
+			propsData: { open: true },
+			stubs,
+		})
+		await wrapper
+			.find('[data-testid="copilot-brief-input"]')
+			.setValue('A tool library where members borrow tools')
 		await wrapper.vm.onGenerate()
 		await flush()
 		await wrapper.vm.$nextTick()
 
-		expect(wrapper.find('[data-testid="copilot-plan-review"]').exists()).toBe(true)
+		expect(wrapper.find('[data-testid="copilot-plan-review"]').exists()).toBe(
+			true,
+		)
 
 		await wrapper.vm.onConfirm()
 		await flush()
@@ -98,10 +134,22 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 
 	it('cancel sends no execute request', async () => {
 		axiosPost.mockResolvedValueOnce({
-			data: { summary: 'x', steps: [{ tool: 'openbuild.createApp', arguments: { slug: 'x', name: 'X' } }], manifests: {} },
+			data: {
+				summary: 'x',
+				steps: [
+					{
+						tool: 'openbuild.createApp',
+						arguments: { slug: 'x', name: 'X' },
+					},
+				],
+				manifests: {},
+			},
 		})
 
-		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
+		const wrapper = mount(CopilotGenerateDialog, {
+			propsData: { open: true },
+			stubs,
+		})
 		await wrapper.find('[data-testid="copilot-brief-input"]').setValue('x')
 		await wrapper.vm.onGenerate()
 		await flush()
@@ -116,18 +164,30 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 	})
 
 	it('Generate is disabled with a blank brief', () => {
-		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
+		const wrapper = mount(CopilotGenerateDialog, {
+			propsData: { open: true },
+			stubs,
+		})
 		// VTU v2 `findAll` returns a plain Array — v1's `.wrappers` is gone.
-		const generateButton = wrapper.findAll('button').find((b) => b.text().includes('Generate'))
+		const generateButton = wrapper
+			.findAll('button')
+			.find((b) => b.text().includes('Generate'))
 		// Vue 3 renders a true boolean attribute as `disabled=""` — a falsy
 		// empty string — so presence is the signal, not truthiness.
 		expect(generateButton.attributes('disabled')).toBeDefined()
 	})
 
 	it('Generate is enabled once a brief is entered', async () => {
-		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
-		await wrapper.find('[data-testid="copilot-brief-input"]').setValue('A tool library')
-		const generateButton = wrapper.findAll('button').find((b) => b.text().includes('Generate'))
+		const wrapper = mount(CopilotGenerateDialog, {
+			propsData: { open: true },
+			stubs,
+		})
+		await wrapper
+			.find('[data-testid="copilot-brief-input"]')
+			.setValue('A tool library')
+		const generateButton = wrapper
+			.findAll('button')
+			.find((b) => b.text().includes('Generate'))
 		expect(generateButton.attributes('disabled')).toBeUndefined()
 	})
 })

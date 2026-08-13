@@ -25,7 +25,6 @@ export const BLOCK_EXPORT_SCHEMA_VERSION = '1.0'
  * Error thrown when an imported file is not a recognisable block export.
  */
 export class BlockImportError extends Error {
-
 	/**
 	 * @param {string} code - `invalid-json` | `invalid-shape`.
 	 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
@@ -35,7 +34,6 @@ export class BlockImportError extends Error {
 		this.name = 'BlockImportError'
 		this.code = code
 	}
-
 }
 
 /**
@@ -70,7 +68,9 @@ export function exportBlockPayload(block) {
  */
 export function downloadBlockExport(block) {
 	const payload = exportBlockPayload(block)
-	const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+	const blob = new Blob([JSON.stringify(payload, null, 2)], {
+		type: 'application/json',
+	})
 	const link = document.createElement('a')
 	link.href = URL.createObjectURL(blob)
 	link.download = `${(block && block.slug) || 'component-block'}.json`
@@ -98,7 +98,13 @@ export function parseBlockImport(input) {
 			throw new BlockImportError('invalid-json')
 		}
 	}
-	if (!data || typeof data !== 'object' || data.kind !== BLOCK_EXPORT_KIND || !data.block || typeof data.block !== 'object') {
+	if (
+		!data
+		|| typeof data !== 'object'
+		|| data.kind !== BLOCK_EXPORT_KIND
+		|| !data.block
+		|| typeof data.block !== 'object'
+	) {
 		throw new BlockImportError('invalid-shape')
 	}
 	const block = { ...data.block }

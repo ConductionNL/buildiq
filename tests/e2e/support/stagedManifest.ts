@@ -141,7 +141,8 @@ export async function readStagedManifest(
 		}
 
 		const instance = found as AnyRec
-		const manifest = (instance.props && instance.props.manifest)
+		const manifest =
+			(instance.props && instance.props.manifest)
 			|| (instance.proxy && instance.proxy.manifest)
 		if (!manifest) {
 			return { error: `<${name}> is mounted but exposes no \`manifest\`` }

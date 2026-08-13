@@ -14,10 +14,26 @@
 		<div class="publish-confirm">
 			<h2>{{ t('openbuild', 'Publish to GitHub') }}</h2>
 			<p class="publish-confirm__summary">
-				{{ t('openbuild', 'Publishing adds a new commit to {repo} on branch {branch}. It never overwrites history.', { repo: repoLabel, branch: repo && repo.branch ? repo.branch : t('openbuild', 'the default branch') }) }}
+				{{
+					t(
+						'openbuild',
+						'Publishing adds a new commit to {repo} on branch {branch}. It never overwrites history.',
+						{
+							repo: repoLabel,
+							branch:
+								repo && repo.branch
+									? repo.branch
+									: t('openbuild', 'the default branch'),
+						},
+					)
+				}}
 			</p>
 			<p class="publish-confirm__cred">
-				{{ t('openbuild', 'Using credential: {name}', { name: credentialName || t('openbuild', 'none selected') }) }}
+				{{
+					t('openbuild', 'Using credential: {name}', {
+						name: credentialName || t('openbuild', 'none selected'),
+					})
+				}}
 			</p>
 			<NcSelect
 				v-model="selectedVersion"
@@ -32,8 +48,15 @@
 				<NcButton @click="onClose">
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" :disabled="!credentialId || submitting" @click="submit">
-					{{ submitting ? t('openbuild', 'Publishing…') : t('openbuild', 'Publish') }}
+				<NcButton
+					type="primary"
+					:disabled="!credentialId || submitting"
+					@click="submit">
+					{{
+						submitting
+							? t('openbuild', 'Publishing…')
+							: t('openbuild', 'Publish')
+					}}
 				</NcButton>
 			</div>
 		</div>
@@ -126,11 +149,23 @@ export default {
 		 */
 		outcomeMessage(outcome) {
 			const messages = {
-				push_conflict: t('openbuild', 'The remote branch moved ahead. Pull the latest changes first, then publish again.'),
-				broker_denied: t('openbuild', 'The credential broker denied this publish. Check the credential\'s allowed apps and scopes.'),
-				broker_unavailable: t('openbuild', 'The credential broker is unavailable. Publishing is disabled until it is configured.'),
+				push_conflict: t(
+					'openbuild',
+					'The remote branch moved ahead. Pull the latest changes first, then publish again.',
+				),
+				broker_denied: t(
+					'openbuild',
+					"The credential broker denied this publish. Check the credential's allowed apps and scopes.",
+				),
+				broker_unavailable: t(
+					'openbuild',
+					'The credential broker is unavailable. Publishing is disabled until it is configured.',
+				),
 				not_linked: t('openbuild', 'Link a repository before publishing.'),
-				github_unreachable: t('openbuild', 'GitHub could not be reached. Try again shortly.'),
+				github_unreachable: t(
+					'openbuild',
+					'GitHub could not be reached. Try again shortly.',
+				),
 			}
 			return messages[outcome] || t('openbuild', 'Publishing failed.')
 		},
@@ -149,9 +184,13 @@ export default {
 			this.submitting = true
 			this.error = ''
 			try {
-				const url = generateUrl('/apps/openbuild/api/applications/{slug}/github/push', { slug: this.slug })
+				const url = generateUrl(
+					'/apps/openbuild/api/applications/{slug}/github/push',
+					{ slug: this.slug },
+				)
 				const body = { credentialId: this.credentialId }
-				const versionSlug = this.selectedVersion?.id ?? this.selectedVersion ?? null
+				const versionSlug =
+					this.selectedVersion?.id ?? this.selectedVersion ?? null
 				if (versionSlug) {
 					body.versionSlug = versionSlug
 				}
@@ -166,8 +205,12 @@ export default {
 				this.$emit('close')
 			} catch (e) {
 				const data = e?.response?.data
-				this.error = (data?.outcome && this.outcomeMessage(data.outcome))
-					|| data?.detail || data?.error || e?.message || t('openbuild', 'Publishing failed.')
+				this.error =
+					(data?.outcome && this.outcomeMessage(data.outcome))
+					|| data?.detail
+					|| data?.error
+					|| e?.message
+					|| t('openbuild', 'Publishing failed.')
 				this.submitting = false
 			}
 		},

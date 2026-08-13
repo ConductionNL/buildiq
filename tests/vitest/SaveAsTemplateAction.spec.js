@@ -51,7 +51,9 @@ const application = {
 	status: 'draft',
 	manifest: { pages: [] },
 	permissions: { owners: ['group1'], editors: [], viewers: [] },
-	dataRegisters: [{ register: 'spectr', label: 'Spectr market intelligence data' }],
+	dataRegisters: [
+		{ register: 'spectr', label: 'Spectr market intelligence data' },
+	],
 }
 
 const t = (app, key, vars) => {
@@ -73,7 +75,13 @@ function mountActions(role) {
 	return shallowMount(ApplicationDetailActions, {
 		propsData: { object: application, objectId: 'app-uuid' },
 		mocks: { t, $router: { push: vi.fn() } },
-		stubs: { NcButton: true, PermissionsModal: true, PermissionHistoryModal: true, SaveAsTemplateDialog: true, ExportDialog: true },
+		stubs: {
+			NcButton: true,
+			PermissionsModal: true,
+			PermissionHistoryModal: true,
+			SaveAsTemplateDialog: true,
+			ExportDialog: true,
+		},
 	})
 }
 
@@ -133,7 +141,9 @@ describe('ApplicationDetailActions — Save as template action (REQ-SAT-001)', (
 				return Promise.resolve({ data: { pages: [] } })
 			}
 			if (url.includes('application-template')) {
-				return Promise.resolve({ data: { results: [{ slug: 'permit-pack', isSeeded: false }] } })
+				return Promise.resolve({
+					data: { results: [{ slug: 'permit-pack', isSeeded: false }] },
+				})
 			}
 			return Promise.resolve({ data: application })
 		})
@@ -142,10 +152,16 @@ describe('ApplicationDetailActions — Save as template action (REQ-SAT-001)', (
 
 		// The manifest comes from the resolving endpoint, not from the
 		// Application record.
-		expect(axiosMock.get).toHaveBeenCalledWith('/apps/openbuild/api/applications/my-permits/manifest')
+		expect(axiosMock.get).toHaveBeenCalledWith(
+			'/apps/openbuild/api/applications/my-permits/manifest',
+		)
 		expect(fetchSchemasMock).toHaveBeenCalled()
-		expect(wrapper.vm.saveTemplateSchemas).toEqual([{ slug: 'my-permits-permit-application' }])
-		expect(wrapper.vm.existingTemplates).toEqual([{ slug: 'permit-pack', isSeeded: false }])
+		expect(wrapper.vm.saveTemplateSchemas).toEqual([
+			{ slug: 'my-permits-permit-application' },
+		])
+		expect(wrapper.vm.existingTemplates).toEqual([
+			{ slug: 'permit-pack', isSeeded: false },
+		])
 		expect(wrapper.vm.saveTemplateOpen).toBe(true)
 		expect(wrapper.vm.saveTemplateManifest).toEqual({ pages: [] })
 		// data-registers-runtime task 2.3: the Application's declared

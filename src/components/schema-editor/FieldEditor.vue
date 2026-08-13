@@ -26,7 +26,12 @@
 		</header>
 
 		<p v-if="fields.length === 0" class="openbuild-field-editor__empty">
-			{{ t('openbuild', 'No fields yet. Add the first property to your schema.') }}
+			{{
+				t(
+					'openbuild',
+					'No fields yet. Add the first property to your schema.',
+				)
+			}}
 		</p>
 
 		<ul v-else class="openbuild-field-editor__rows">
@@ -70,7 +75,13 @@
 						:clearable="false"
 						label="label"
 						track-by="value"
-						@update:modelValue="updateField(index, 'type', $event ? $event.value : 'string')" />
+						@update:modelValue="
+							updateField(
+								index,
+								'type',
+								$event ? $event.value : 'string',
+							)
+						" />
 
 					<NcCheckboxRadioSwitch
 						:model-value="!!field.required"
@@ -82,7 +93,9 @@
 					<NcTextField
 						:model-value="field.description || ''"
 						:label="t('openbuild', 'Description')"
-						@update:modelValue="updateField(index, 'description', $event)" />
+						@update:modelValue="
+							updateField(index, 'description', $event)
+						" />
 				</div>
 
 				<div class="openbuild-field-editor__validation">
@@ -92,55 +105,140 @@
 							:model-value="field.validation.format || ''"
 							:label="t('openbuild', 'Format (optional)')"
 							:placeholder="'email, uri, date, …'"
-							@update:modelValue="updateValidation(index, 'format', $event)" />
+							@update:modelValue="
+								updateValidation(index, 'format', $event)
+							" />
 						<NcTextField
 							:model-value="field.validation.pattern || ''"
 							:label="t('openbuild', 'Pattern (regex, optional)')"
-							@update:modelValue="updateValidation(index, 'pattern', $event)" />
+							@update:modelValue="
+								updateValidation(index, 'pattern', $event)
+							" />
 						<NcTextField
-							:model-value="field.validation.minLength != null ? String(field.validation.minLength) : ''"
+							:model-value="
+								field.validation.minLength != null
+									? String(field.validation.minLength)
+									: ''
+							"
 							:label="t('openbuild', 'Min length')"
-							@update:modelValue="updateValidation(index, 'minLength', toIntOrNull($event))" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'minLength',
+									toIntOrNull($event),
+								)
+							" />
 						<NcTextField
-							:model-value="field.validation.maxLength != null ? String(field.validation.maxLength) : ''"
+							:model-value="
+								field.validation.maxLength != null
+									? String(field.validation.maxLength)
+									: ''
+							"
 							:label="t('openbuild', 'Max length')"
-							@update:modelValue="updateValidation(index, 'maxLength', toIntOrNull($event))" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'maxLength',
+									toIntOrNull($event),
+								)
+							" />
 					</template>
 
 					<!-- number / integer -->
-					<template v-else-if="field.type === 'number' || field.type === 'integer'">
+					<template
+						v-else-if="
+							field.type === 'number' || field.type === 'integer'
+						">
 						<NcTextField
-							:model-value="field.validation.minimum != null ? String(field.validation.minimum) : ''"
+							:model-value="
+								field.validation.minimum != null
+									? String(field.validation.minimum)
+									: ''
+							"
 							:label="t('openbuild', 'Minimum')"
-							@update:modelValue="updateValidation(index, 'minimum', toNumberOrNull($event))" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'minimum',
+									toNumberOrNull($event),
+								)
+							" />
 						<NcTextField
-							:model-value="field.validation.maximum != null ? String(field.validation.maximum) : ''"
+							:model-value="
+								field.validation.maximum != null
+									? String(field.validation.maximum)
+									: ''
+							"
 							:label="t('openbuild', 'Maximum')"
-							@update:modelValue="updateValidation(index, 'maximum', toNumberOrNull($event))" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'maximum',
+									toNumberOrNull($event),
+								)
+							" />
 						<NcTextField
-							:model-value="field.validation.multipleOf != null ? String(field.validation.multipleOf) : ''"
+							:model-value="
+								field.validation.multipleOf != null
+									? String(field.validation.multipleOf)
+									: ''
+							"
 							:label="t('openbuild', 'Multiple of')"
-							@update:modelValue="updateValidation(index, 'multipleOf', toNumberOrNull($event))" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'multipleOf',
+									toNumberOrNull($event),
+								)
+							" />
 					</template>
 
 					<!-- array -->
 					<template v-else-if="field.type === 'array'">
 						<NcSelect
 							:input-label="t('openbuild', 'Items type')"
-							:model-value="typeOption(field.validation.itemsType || 'string')"
+							:model-value="
+								typeOption(field.validation.itemsType || 'string')
+							"
 							:options="itemsTypeOptions"
 							:clearable="false"
 							label="label"
 							track-by="value"
-							@update:modelValue="updateValidation(index, 'itemsType', $event ? $event.value : 'string')" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'itemsType',
+									$event ? $event.value : 'string',
+								)
+							" />
 						<NcTextField
-							:model-value="field.validation.minItems != null ? String(field.validation.minItems) : ''"
+							:model-value="
+								field.validation.minItems != null
+									? String(field.validation.minItems)
+									: ''
+							"
 							:label="t('openbuild', 'Min items')"
-							@update:modelValue="updateValidation(index, 'minItems', toIntOrNull($event))" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'minItems',
+									toIntOrNull($event),
+								)
+							" />
 						<NcTextField
-							:model-value="field.validation.maxItems != null ? String(field.validation.maxItems) : ''"
+							:model-value="
+								field.validation.maxItems != null
+									? String(field.validation.maxItems)
+									: ''
+							"
 							:label="t('openbuild', 'Max items')"
-							@update:modelValue="updateValidation(index, 'maxItems', toIntOrNull($event))" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'maxItems',
+									toIntOrNull($event),
+								)
+							" />
 					</template>
 
 					<!-- relation -->
@@ -152,19 +250,37 @@
 							:clearable="false"
 							label="label"
 							track-by="value"
-							@update:modelValue="updateValidation(index, 'target', $event ? $event.value : '')" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'target',
+									$event ? $event.value : '',
+								)
+							" />
 						<NcSelect
 							:input-label="t('openbuild', 'Cardinality')"
-							:model-value="cardinalityOption(field.validation.cardinality || 'one')"
+							:model-value="
+								cardinalityOption(
+									field.validation.cardinality || 'one',
+								)
+							"
 							:options="cardinalityOptions"
 							:clearable="false"
 							label="label"
 							track-by="value"
-							@update:modelValue="updateValidation(index, 'cardinality', $event ? $event.value : 'one')" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'cardinality',
+									$event ? $event.value : 'one',
+								)
+							" />
 						<NcTextField
 							:model-value="field.validation.inverseOf || ''"
 							:label="t('openbuild', 'Inverse-of property (optional)')"
-							@update:modelValue="updateValidation(index, 'inverseOf', $event)" />
+							@update:modelValue="
+								updateValidation(index, 'inverseOf', $event)
+							" />
 					</template>
 				</div>
 
@@ -189,7 +305,12 @@
 </template>
 
 <script>
-import { NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
 import ChevronDownIcon from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUpIcon from 'vue-material-design-icons/ChevronUp.vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
@@ -199,7 +320,15 @@ import DeleteFieldDialog from '../../modals/DeleteFieldDialog.vue'
 
 const FIELD_NAME_PATTERN = /^[a-zA-Z][a-zA-Z0-9_-]*$/
 
-const SUPPORTED_TYPES = ['string', 'number', 'integer', 'boolean', 'array', 'object', 'relation']
+const SUPPORTED_TYPES = [
+	'string',
+	'number',
+	'integer',
+	'boolean',
+	'array',
+	'object',
+	'relation',
+]
 const ITEMS_TYPES = ['string', 'number', 'integer', 'boolean', 'object']
 const CARDINALITIES = ['one', 'many']
 
@@ -277,9 +406,10 @@ export default {
 		cardinalityOptions() {
 			return CARDINALITIES.map((value) => ({
 				value,
-				label: value === 'one'
-					? this.t('openbuild', 'One')
-					: this.t('openbuild', 'Many'),
+				label:
+					value === 'one'
+						? this.t('openbuild', 'One')
+						: this.t('openbuild', 'Many'),
 			}))
 		},
 	},
@@ -292,7 +422,9 @@ export default {
 		 * @return {object} Matching option.
 		 */
 		typeOption(type) {
-			return this.typeOptions.find((o) => o.value === type) || this.typeOptions[0]
+			return (
+				this.typeOptions.find((o) => o.value === type) || this.typeOptions[0]
+			)
 		},
 		/**
 		 * Resolve the selected target-schema option.
@@ -312,7 +444,10 @@ export default {
 		 * @return {object} Matching option.
 		 */
 		cardinalityOption(value) {
-			return this.cardinalityOptions.find((o) => o.value === value) || this.cardinalityOptions[0]
+			return (
+				this.cardinalityOptions.find((o) => o.value === value)
+				|| this.cardinalityOptions[0]
+			)
 		},
 		/**
 		 * Validate a field name: presence, pattern, and uniqueness.
@@ -327,9 +462,15 @@ export default {
 				return this.t('openbuild', 'Name is required.')
 			}
 			if (!FIELD_NAME_PATTERN.test(field.name)) {
-				return this.t('openbuild', 'Name must start with a letter and use letters, digits, underscores, or hyphens only.')
+				return this.t(
+					'openbuild',
+					'Name must start with a letter and use letters, digits, underscores, or hyphens only.',
+				)
 			}
-			const duplicate = this.fields.some((other, otherIndex) => otherIndex !== index && other.name === field.name)
+			const duplicate = this.fields.some(
+				(other, otherIndex) =>
+					otherIndex !== index && other.name === field.name,
+			)
 			if (duplicate) {
 				return this.t('openbuild', 'Name must be unique within the schema.')
 			}
@@ -476,7 +617,8 @@ export default {
 		 */
 		requestRemove(index) {
 			this.pendingRemoveIndex = index
-			this.pendingRemoveName = this.fields[index]?.name || this.t('openbuild', '(unnamed)')
+			this.pendingRemoveName =
+				this.fields[index]?.name || this.t('openbuild', '(unnamed)')
 			this.removeDialogOpen = true
 		},
 		/**
@@ -521,10 +663,11 @@ export default {
  */
 export function schemaToFields(schema) {
 	const properties = (schema && schema.properties) || {}
-	const required = (schema && Array.isArray(schema.required)) ? schema.required : []
-	const order = (schema && Array.isArray(schema['x-property-order']))
-		? schema['x-property-order']
-		: Object.keys(properties)
+	const required = schema && Array.isArray(schema.required) ? schema.required : []
+	const order =
+		schema && Array.isArray(schema['x-property-order'])
+			? schema['x-property-order']
+			: Object.keys(properties)
 	const fields = []
 	for (const name of order) {
 		if (!(name in properties)) {
@@ -536,16 +679,16 @@ export function schemaToFields(schema) {
 	// Append any properties that weren't in the explicit order.
 	for (const name of Object.keys(properties)) {
 		if (!order.includes(name)) {
-			fields.push(fieldFromProperty(name, properties[name], required.includes(name)))
+			fields.push(
+				fieldFromProperty(name, properties[name], required.includes(name)),
+			)
 		}
 	}
 	return fields
 }
 
 function fieldFromProperty(name, prop, isRequired) {
-	const type = prop['x-openregister-relation']
-		? 'relation'
-		: (prop.type || 'string')
+	const type = prop['x-openregister-relation'] ? 'relation' : prop.type || 'string'
 	const validation = {}
 	if (type === 'string') {
 		if (prop.format) validation.format = prop.format
@@ -612,43 +755,43 @@ function propertyFromField(field) {
 	}
 	const v = field.validation || {}
 	switch (field.type) {
-	case 'string':
-		prop.type = 'string'
-		if (v.format) prop.format = v.format
-		if (v.pattern) prop.pattern = v.pattern
-		if (v.minLength != null) prop.minLength = v.minLength
-		if (v.maxLength != null) prop.maxLength = v.maxLength
-		break
-	case 'number':
-	case 'integer':
-		prop.type = field.type
-		if (v.minimum != null) prop.minimum = v.minimum
-		if (v.maximum != null) prop.maximum = v.maximum
-		if (v.multipleOf != null) prop.multipleOf = v.multipleOf
-		break
-	case 'boolean':
-		prop.type = 'boolean'
-		break
-	case 'array':
-		prop.type = 'array'
-		prop.items = { type: v.itemsType || 'string' }
-		if (v.minItems != null) prop.minItems = v.minItems
-		if (v.maxItems != null) prop.maxItems = v.maxItems
-		break
-	case 'object':
-		prop.type = 'object'
-		break
-	case 'relation':
-		prop.type = 'string'
-		prop['x-openregister-relation'] = {
-			target: v.target || '',
-			cardinality: v.cardinality || 'one',
-			...(v.inverseOf ? { inverseOf: v.inverseOf } : {}),
-		}
-		break
-	default:
-		prop.type = 'string'
-		break
+		case 'string':
+			prop.type = 'string'
+			if (v.format) prop.format = v.format
+			if (v.pattern) prop.pattern = v.pattern
+			if (v.minLength != null) prop.minLength = v.minLength
+			if (v.maxLength != null) prop.maxLength = v.maxLength
+			break
+		case 'number':
+		case 'integer':
+			prop.type = field.type
+			if (v.minimum != null) prop.minimum = v.minimum
+			if (v.maximum != null) prop.maximum = v.maximum
+			if (v.multipleOf != null) prop.multipleOf = v.multipleOf
+			break
+		case 'boolean':
+			prop.type = 'boolean'
+			break
+		case 'array':
+			prop.type = 'array'
+			prop.items = { type: v.itemsType || 'string' }
+			if (v.minItems != null) prop.minItems = v.minItems
+			if (v.maxItems != null) prop.maxItems = v.maxItems
+			break
+		case 'object':
+			prop.type = 'object'
+			break
+		case 'relation':
+			prop.type = 'string'
+			prop['x-openregister-relation'] = {
+				target: v.target || '',
+				cardinality: v.cardinality || 'one',
+				...(v.inverseOf ? { inverseOf: v.inverseOf } : {}),
+			}
+			break
+		default:
+			prop.type = 'string'
+			break
 	}
 	return prop
 }

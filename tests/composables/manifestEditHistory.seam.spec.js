@@ -143,7 +143,10 @@ describe('useSessionHistory (manifestEditHistory integration seam)', () => {
 
 	it('a whole-state replacement lands as exactly one entry (REQ-BUR-006)', () => {
 		const h = useSessionHistory({ pages: [{ id: 'a' }], menu: [{ id: 'x' }] })
-		const wholeReplacement = { pages: [{ id: 'a' }, { id: 'b' }, { id: 'c' }], menu: [] }
+		const wholeReplacement = {
+			pages: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
+			menu: [],
+		}
 		h.push(wholeReplacement)
 		expect(h.size.value).toBe(2)
 		expect(h.undo()).toEqual({ pages: [{ id: 'a' }], menu: [{ id: 'x' }] })
@@ -157,7 +160,10 @@ describe('useSessionHistory (manifestEditHistory integration seam)', () => {
 	})
 
 	it('never issues a network request — the seam file imports no HTTP client', () => {
-		const seamPath = resolve(process.cwd(), 'src/composables/useSessionHistory.js')
+		const seamPath = resolve(
+			process.cwd(),
+			'src/composables/useSessionHistory.js',
+		)
 		const source = readFileSync(seamPath, 'utf8')
 		expect(source).not.toMatch(/axios|fetch\(/)
 		// Exercise push/undo/redo with no axios mock installed in this spec —

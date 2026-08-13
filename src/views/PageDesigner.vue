@@ -86,8 +86,17 @@
 						:app-slug="slug"
 						:data-registers="applicationDataRegisters"
 						:parent-route="selectedPage.route || ''"
-						:title="t('openbuild', 'Unsupported page type: {type}', { type: selectedPage.type })"
-						:message="t('openbuild', 'No visual editor exists for this page type yet. Edit the raw config below; unknown keys are preserved.')"
+						:title="
+							t('openbuild', 'Unsupported page type: {type}', {
+								type: selectedPage.type,
+							})
+						"
+						:message="
+							t(
+								'openbuild',
+								'No visual editor exists for this page type yet. Edit the raw config below; unknown keys are preserved.',
+							)
+						"
 						:page-id="selectedPage.id || ''"
 						:runtime-external-forms="externalForms"
 						@update:config="onConfigUpdate"
@@ -102,7 +111,14 @@
 						@saved="onBlockSaved" />
 				</div>
 				<div v-else class="page-designer__empty">
-					<p>{{ t('openbuild', 'Select a page on the left, or add one to start designing.') }}</p>
+					<p>
+						{{
+							t(
+								'openbuild',
+								'Select a page on the left, or add one to start designing.',
+							)
+						}}
+					</p>
 				</div>
 			</section>
 
@@ -114,7 +130,9 @@
 				     ever issued to OpenRegister from this instance. The v-else
 				     branch is the degraded fallback for environments whose
 				     @conduction/nextcloud-vue predates the overload. -->
-				<div v-if="previewAvailable && livePreviewProps" class="page-designer__preview">
+				<div
+					v-if="previewAvailable && livePreviewProps"
+					class="page-designer__preview">
 					<h4>{{ t('openbuild', 'Live preview') }}</h4>
 					<div class="page-designer__preview-surface">
 						<CnAppRoot
@@ -131,7 +149,12 @@
 				<div v-else class="page-designer__preview-fallback">
 					<h4>{{ t('openbuild', 'Live preview') }}</h4>
 					<p class="page-designer__preview-message">
-						{{ t('openbuild', 'Live preview is not yet installed. Save and open the built app to preview your changes.') }}
+						{{
+							t(
+								'openbuild',
+								'Live preview is not yet installed. Save and open the built app to preview your changes.',
+							)
+						}}
 					</p>
 					<button
 						type="button"
@@ -143,11 +166,19 @@
 				</div>
 				<div class="page-designer__errors">
 					<h4>{{ t('openbuild', 'Validation') }}</h4>
-					<p v-if="depthError" class="page-designer__error-row" role="alert">
+					<p
+						v-if="depthError"
+						class="page-designer__error-row"
+						role="alert">
 						{{ t('openbuild', 'Menu depth is limited to two levels.') }}
 					</p>
-					<ul v-if="validatorErrors.length" class="page-designer__error-list">
-						<li v-for="(err, i) in validatorErrors" :key="i" class="page-designer__error-row">
+					<ul
+						v-if="validatorErrors.length"
+						class="page-designer__error-list">
+						<li
+							v-for="(err, i) in validatorErrors"
+							:key="i"
+							class="page-designer__error-row">
 							{{ err }}
 						</li>
 					</ul>
@@ -165,7 +196,11 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { translate as ncT } from '@nextcloud/l10n'
 import { NcAppSidebar } from '@nextcloud/vue'
-import { CnAppRoot, defaultPageTypes, mergeManifestDelta } from '@conduction/nextcloud-vue'
+import {
+	CnAppRoot,
+	defaultPageTypes,
+	mergeManifestDelta,
+} from '@conduction/nextcloud-vue'
 import registry from '../registry.js'
 import PageListEditor from '../components/page-editor/PageListEditor.vue'
 import BlockLibraryPanel from '../components/page-editor/BlockLibraryPanel.vue'
@@ -328,7 +363,9 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		pages() {
-			return Array.isArray(this.manifest && this.manifest.pages) ? this.manifest.pages : []
+			return Array.isArray(this.manifest && this.manifest.pages)
+				? this.manifest.pages
+				: []
 		},
 		/**
 		 * Observed behaviour of `menu` (retrofit annotation).
@@ -336,7 +373,9 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		menu() {
-			return Array.isArray(this.manifest && this.manifest.menu) ? this.manifest.menu : []
+			return Array.isArray(this.manifest && this.manifest.menu)
+				? this.manifest.menu
+				: []
 		},
 		/**
 		 * `runtime.externalForms[]` (REQ-EFP-001/002) — read here so
@@ -347,7 +386,11 @@ export default {
 		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-001
 		 */
 		externalForms() {
-			return Array.isArray(this.manifest && this.manifest.runtime && this.manifest.runtime.externalForms)
+			return Array.isArray(
+				this.manifest
+					&& this.manifest.runtime
+					&& this.manifest.runtime.externalForms,
+			)
 				? this.manifest.runtime.externalForms
 				: []
 		},
@@ -440,9 +483,10 @@ export default {
 		previewFlatRegistry() {
 			const out = {}
 			for (const [name, entry] of Object.entries(this.previewRegistry || {})) {
-				const component = entry && typeof entry === 'object' && 'component' in entry
-					? entry.component
-					: entry
+				const component =
+					entry && typeof entry === 'object' && 'component' in entry
+						? entry.component
+						: entry
 				if (component) {
 					out[name] = component
 				}
@@ -536,21 +580,32 @@ export default {
 		// satisfying REQ-OBVR-008 bookmarkability).
 		// NOTE: no $router.replace() call here — that would strip ?_version=.
 		if (this.slug) {
-			const versionSlug = (this.$route && this.$route.query && this.$route.query._version) || undefined
-			const { applicationVersion, loading, error } = useApplicationVersion(this.slug, versionSlug)
+			const versionSlug =
+				(this.$route && this.$route.query && this.$route.query._version)
+				|| undefined
+			const { applicationVersion, loading, error } = useApplicationVersion(
+				this.slug,
+				versionSlug,
+			)
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
-			const unwatch = this.$watch(() => applicationVersion.value, (v) => {
-				this.applicationVersion = v
-			})
-			const unwatchLoading = this.$watch(() => loading.value, (v) => {
-				this.versionLoading = v
-				if (!v) {
-					unwatch()
-					unwatchLoading()
-					this.versionError = error.value
-				}
-			})
+			const unwatch = this.$watch(
+				() => applicationVersion.value,
+				(v) => {
+					this.applicationVersion = v
+				},
+			)
+			const unwatchLoading = this.$watch(
+				() => loading.value,
+				(v) => {
+					this.versionLoading = v
+					if (!v) {
+						unwatch()
+						unwatchLoading()
+						this.versionError = error.value
+					}
+				},
+			)
 		}
 	},
 	beforeUnmount() {
@@ -573,11 +628,20 @@ export default {
 		 */
 		async fetchApplicationDataRegisters() {
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/application')
-				const { data } = await axios.get(url, { params: { slug: this.slug, _limit: 1 } })
-				const apps = Array.isArray(data && data.results) ? data.results : (Array.isArray(data) ? data : [])
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openbuild/application',
+				)
+				const { data } = await axios.get(url, {
+					params: { slug: this.slug, _limit: 1 },
+				})
+				const apps = Array.isArray(data && data.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 				const app = apps.find((a) => a && a.slug === this.slug) || null
-				this.applicationDataRegisters = (app && Array.isArray(app.dataRegisters)) ? app.dataRegisters : []
+				this.applicationDataRegisters =
+					app && Array.isArray(app.dataRegisters) ? app.dataRegisters : []
 			} catch (e) {
 				this.applicationDataRegisters = []
 			}
@@ -596,16 +660,29 @@ export default {
 		 */
 		async fetchBlockCaptureContext() {
 			try {
-				const picker = useRegisterPicker({ appSlug: this.slug, dataRegisters: this.applicationDataRegisters })
-				const schemas = await picker.fetchSchemas(picker.resolveAppRegister())
-				this.targetSchemaSlugs = Array.isArray(schemas) ? schemas.map((s) => s && s.slug).filter(Boolean) : []
+				const picker = useRegisterPicker({
+					appSlug: this.slug,
+					dataRegisters: this.applicationDataRegisters,
+				})
+				const schemas = await picker.fetchSchemas(
+					picker.resolveAppRegister(),
+				)
+				this.targetSchemaSlugs = Array.isArray(schemas)
+					? schemas.map((s) => s && s.slug).filter(Boolean)
+					: []
 			} catch (e) {
 				this.targetSchemaSlugs = []
 			}
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/component-block')
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openbuild/component-block',
+				)
 				const { data } = await axios.get(url)
-				this.existingBlocks = Array.isArray(data && data.results) ? data.results : (Array.isArray(data) ? data : [])
+				this.existingBlocks = Array.isArray(data && data.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 			} catch (e) {
 				this.existingBlocks = []
 			}
@@ -623,11 +700,18 @@ export default {
 		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		onInsertWidgets(widgets) {
-			if (!this.selectedPage || !Array.isArray(widgets) || widgets.length === 0) {
+			if (
+				!this.selectedPage
+				|| !Array.isArray(widgets)
+				|| widgets.length === 0
+			) {
 				return
 			}
 			const delta = { pages: [{ id: this.selectedPage.id, widgets }] }
-			const { manifest: merged } = mergeManifestDelta(this.manifest || {}, delta)
+			const { manifest: merged } = mergeManifestDelta(
+				this.manifest || {},
+				delta,
+			)
 			this.emitManifest(merged)
 		},
 		/**
@@ -880,7 +964,11 @@ export default {
 		 */
 		registerConfigField(configKey) {
 			const prefix = this.configPathPrefix(configKey)
-			if (prefix && this.validator && typeof this.validator.register === 'function') {
+			if (
+				prefix
+				&& this.validator
+				&& typeof this.validator.register === 'function'
+			) {
 				this.validator.register(prefix)
 			}
 		},
@@ -895,7 +983,11 @@ export default {
 		 */
 		unregisterConfigField(configKey) {
 			const prefix = this.configPathPrefix(configKey)
-			if (prefix && this.validator && typeof this.validator.unregister === 'function') {
+			if (
+				prefix
+				&& this.validator
+				&& typeof this.validator.unregister === 'function'
+			) {
 				this.validator.unregister(prefix)
 			}
 		},

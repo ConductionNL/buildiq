@@ -30,7 +30,13 @@ describe('enablePublicCreate', () => {
 		await enablePublicCreate({ schema: 'report' }, client)
 		const [url, body] = client.patch.mock.calls[0]
 		expect(url).toContain('/apps/openregister/api/schemas/report')
-		expect(body).toEqual({ authorization: { read: ['public'], update: ['editors'], create: ['public'] } })
+		expect(body).toEqual({
+			authorization: {
+				read: ['public'],
+				update: ['editors'],
+				create: ['public'],
+			},
+		})
 	})
 
 	it('adds public to read only when publicRead is true, without removing entries', async () => {
@@ -46,7 +52,9 @@ describe('enablePublicCreate', () => {
 	})
 
 	it('never sends a partial authorization fragment (all four verbs present when set)', async () => {
-		const current = { authorization: { read: ['a'], update: ['b'], delete: ['c'] } }
+		const current = {
+			authorization: { read: ['a'], update: ['b'], delete: ['c'] },
+		}
 		const client = {
 			get: vi.fn().mockResolvedValue({ data: current }),
 			patch: vi.fn().mockResolvedValue({ data: {} }),
@@ -82,25 +90,45 @@ describe('enablePublicCreate', () => {
 
 describe('revokePublicCreate', () => {
 	it('removes only the public entry this toggle added, leaving other groups untouched', async () => {
-		const current = { authorization: { create: ['public'], read: ['public'], update: ['editors'] } }
+		const current = {
+			authorization: {
+				create: ['public'],
+				read: ['public'],
+				update: ['editors'],
+			},
+		}
 		const client = {
 			get: vi.fn().mockResolvedValue({ data: current }),
 			patch: vi.fn().mockResolvedValue({ data: {} }),
 		}
 		await revokePublicCreate({ schema: 'report', removeRead: false }, client)
 		const body = client.patch.mock.calls[0][1]
-		expect(body.authorization).toEqual({ create: [], read: ['public'], update: ['editors'] })
+		expect(body.authorization).toEqual({
+			create: [],
+			read: ['public'],
+			update: ['editors'],
+		})
 	})
 
 	it('removes public from read too when removeRead is true', async () => {
-		const current = { authorization: { create: ['public'], read: ['public'], update: ['editors'] } }
+		const current = {
+			authorization: {
+				create: ['public'],
+				read: ['public'],
+				update: ['editors'],
+			},
+		}
 		const client = {
 			get: vi.fn().mockResolvedValue({ data: current }),
 			patch: vi.fn().mockResolvedValue({ data: {} }),
 		}
 		await revokePublicCreate({ schema: 'report', removeRead: true }, client)
 		const body = client.patch.mock.calls[0][1]
-		expect(body.authorization).toEqual({ create: [], read: [], update: ['editors'] })
+		expect(body.authorization).toEqual({
+			create: [],
+			read: [],
+			update: ['editors'],
+		})
 	})
 
 	it('is a no-op-safe when public was never present', async () => {
@@ -120,13 +148,28 @@ describe('provisionPortalPage', () => {
 		const client = {
 			post: vi.fn().mockResolvedValue({ data: { '@self': { id: 'pp-1' } } }),
 		}
-		const result = await provisionPortalPage({ register: 'intake', schema: 'report' }, client)
-		expect(result).toEqual({ objectId: 'pp-1', portalPath: '/portal', unavailable: false })
+		const result = await provisionPortalPage(
+			{ register: 'intake', schema: 'report' },
+			client,
+		)
+		expect(result).toEqual({
+			objectId: 'pp-1',
+			portalPath: '/portal',
+			unavailable: false,
+		})
 		const [url, body] = client.post.mock.calls[0]
 		expect(url).toContain('/apps/openregister/api/objects/portaliq/portalPage')
 		expect(body.status).toBe('active')
-		expect(body.collections).toEqual([{ register: 'intake', schema: 'report', anonymous: true }])
-		expect(body.actions[0]).toMatchObject({ type: 'create', register: 'intake', schema: 'report', anonymous: true, minTrust: 0 })
+		expect(body.collections).toEqual([
+			{ register: 'intake', schema: 'report', anonymous: true },
+		])
+		expect(body.actions[0]).toMatchObject({
+			type: 'create',
+			register: 'intake',
+			schema: 'report',
+			anonymous: true,
+			minTrust: 0,
+		})
 	})
 
 	it('updates the SAME object on a repeat save (matched by objectId), preserving unrelated fields', async () => {
@@ -136,38 +179,76 @@ describe('provisionPortalPage', () => {
 			audience: 'public',
 			minTrust: 0,
 			collections: [{ register: 'other', schema: 'thing', anonymous: true }],
-			actions: [{ type: 'create', register: 'other', schema: 'thing', anonymous: true, minTrust: 0 }],
+			actions: [
+				{
+					type: 'create',
+					register: 'other',
+					schema: 'thing',
+					anonymous: true,
+					minTrust: 0,
+				},
+			],
 			pages: [{ id: 'p1' }],
 		}
 		const client = {
 			get: vi.fn().mockResolvedValue({ data: existing }),
 			put: vi.fn().mockResolvedValue({ data: existing }),
 		}
-		await provisionPortalPage({ register: 'intake', schema: 'report', objectId: 'pp-1' }, client)
+		await provisionPortalPage(
+			{ register: 'intake', schema: 'report', objectId: 'pp-1' },
+			client,
+		)
 		const [url, body] = client.put.mock.calls[0]
 		expect(url).toContain('portalPage/pp-1')
 		// unrelated fields survive untouched.
 		expect(body.label).toBe('Existing label')
 		expect(body.pages).toEqual([{ id: 'p1' }])
 		// the OTHER (register,schema) collection/action entries are preserved...
-		expect(body.collections).toContainEqual({ register: 'other', schema: 'thing', anonymous: true })
-		expect(body.actions).toContainEqual(expect.objectContaining({ register: 'other', schema: 'thing' }))
+		expect(body.collections).toContainEqual({
+			register: 'other',
+			schema: 'thing',
+			anonymous: true,
+		})
+		expect(body.actions).toContainEqual(
+			expect.objectContaining({ register: 'other', schema: 'thing' }),
+		)
 		// ...and the new (register,schema) pair is added alongside them.
-		expect(body.collections).toContainEqual({ register: 'intake', schema: 'report', anonymous: true })
-		expect(body.actions).toContainEqual(expect.objectContaining({ register: 'intake', schema: 'report', anonymous: true }))
+		expect(body.collections).toContainEqual({
+			register: 'intake',
+			schema: 'report',
+			anonymous: true,
+		})
+		expect(body.actions).toContainEqual(
+			expect.objectContaining({
+				register: 'intake',
+				schema: 'report',
+				anonymous: true,
+			}),
+		)
 	})
 
 	it('updating twice for the SAME (register,schema) replaces, not duplicates, the action/collection entry', async () => {
 		const existing = {
 			'@self': { id: 'pp-1' },
 			collections: [{ register: 'intake', schema: 'report', anonymous: true }],
-			actions: [{ type: 'create', register: 'intake', schema: 'report', anonymous: true, minTrust: 0 }],
+			actions: [
+				{
+					type: 'create',
+					register: 'intake',
+					schema: 'report',
+					anonymous: true,
+					minTrust: 0,
+				},
+			],
 		}
 		const client = {
 			get: vi.fn().mockResolvedValue({ data: existing }),
 			put: vi.fn().mockResolvedValue({ data: existing }),
 		}
-		await provisionPortalPage({ register: 'intake', schema: 'report', objectId: 'pp-1' }, client)
+		await provisionPortalPage(
+			{ register: 'intake', schema: 'report', objectId: 'pp-1' },
+			client,
+		)
 		const body = client.put.mock.calls[0][1]
 		expect(body.collections).toHaveLength(1)
 		expect(body.actions).toHaveLength(1)
@@ -177,15 +258,24 @@ describe('provisionPortalPage', () => {
 		const client = {
 			post: vi.fn().mockRejectedValue({ response: { status: 404 } }),
 		}
-		const result = await provisionPortalPage({ register: 'intake', schema: 'report' }, client)
-		expect(result).toEqual({ objectId: null, portalPath: null, unavailable: true })
+		const result = await provisionPortalPage(
+			{ register: 'intake', schema: 'report' },
+			client,
+		)
+		expect(result).toEqual({
+			objectId: null,
+			portalPath: null,
+			unavailable: true,
+		})
 	})
 
 	it('propagates a genuine (non-404) failure', async () => {
 		const client = {
 			post: vi.fn().mockRejectedValue({ response: { status: 500 } }),
 		}
-		await expect(provisionPortalPage({ register: 'intake', schema: 'report' }, client)).rejects.toBeTruthy()
+		await expect(
+			provisionPortalPage({ register: 'intake', schema: 'report' }, client),
+		).rejects.toBeTruthy()
 	})
 })
 
@@ -196,11 +286,20 @@ describe('draftPortalPage', () => {
 			label: 'My page',
 			status: 'active',
 			collections: [{ register: 'intake', schema: 'report', anonymous: true }],
-			actions: [{ type: 'create', register: 'intake', schema: 'report', anonymous: true }],
+			actions: [
+				{
+					type: 'create',
+					register: 'intake',
+					schema: 'report',
+					anonymous: true,
+				},
+			],
 		}
 		const client = {
 			get: vi.fn().mockResolvedValue({ data: existing }),
-			put: vi.fn().mockResolvedValue({ data: { ...existing, status: 'draft' } }),
+			put: vi
+				.fn()
+				.mockResolvedValue({ data: { ...existing, status: 'draft' } }),
 		}
 		await draftPortalPage('pp-1', client)
 		const [url, body] = client.put.mock.calls[0]

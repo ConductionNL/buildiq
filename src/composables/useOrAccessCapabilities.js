@@ -39,7 +39,8 @@ export const BASELINE_SCOPES = Object.freeze(['group'])
 export function useOrAccessCapabilities() {
 	try {
 		const capabilities = getCapabilities()
-		const scopes = capabilities
+		const scopes =
+			capabilities
 			&& capabilities.openregister
 			&& capabilities.openregister.authorization
 			&& capabilities.openregister.authorization.scopes

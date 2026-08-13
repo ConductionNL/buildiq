@@ -15,7 +15,9 @@ import registry from '../../src/registry.js'
 // src/manifest.d/*.json fragment's `pages`/`menu` arrays concatenated on
 // (mirrors src/main.js mergeManifestFragments()). The structural checks must
 // run against the merged manifest so fragment-only pages/components are seen.
-const fragmentModules = import.meta.glob('../../src/manifest.d/*.json', { eager: true })
+const fragmentModules = import.meta.glob('../../src/manifest.d/*.json', {
+	eager: true,
+})
 const manifest = {
 	...baseManifest,
 	menu: [...(baseManifest.menu || [])],
@@ -50,7 +52,9 @@ describe('src/manifest.json', () => {
 				// href / action entries don't reference a page.
 				continue
 			}
-			expect(pageIds, `menu entry "${entry.id}" → "${entry.route}"`).toContain(entry.route)
+			expect(pageIds, `menu entry "${entry.id}" → "${entry.route}"`).toContain(
+				entry.route,
+			)
 		}
 	})
 

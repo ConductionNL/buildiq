@@ -25,7 +25,8 @@ vi.mock('@conduction/nextcloud-vue', () => ({
 }))
 
 // Import AFTER vi.mock so the composable picks up the mocked export.
-const { useManifestValidator } = await import('../../src/composables/useManifestValidator.js')
+const { useManifestValidator } =
+	await import('../../src/composables/useManifestValidator.js')
 
 describe('useManifestValidator', () => {
 	beforeEach(() => {
@@ -173,7 +174,11 @@ describe('useManifestValidator', () => {
 			],
 		}))
 		const v = useManifestValidator()
-		v.validate({ runtime: { theme: { source: 'material', tokenSet: 'Den Haag', logo: 'x' } } })
+		v.validate({
+			runtime: {
+				theme: { source: 'material', tokenSet: 'Den Haag', logo: 'x' },
+			},
+		})
 		vi.advanceTimersByTime(300)
 		expect(v.hasErrors.value).toBe(true)
 		expect(v.errors.value).toEqual([

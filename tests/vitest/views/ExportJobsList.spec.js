@@ -33,10 +33,13 @@ async function flushFetch(wrapper) {
 
 describe('ExportJobsList — #104 schema-slug fix', () => {
 	beforeEach(() => {
-		vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-			ok: true,
-			json: async () => ({ results: [] }),
-		}))
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok: true,
+				json: async () => ({ results: [] }),
+			}),
+		)
 	})
 
 	it('polls OR REST at the export-job slug, not the exportJob JSON key', async () => {
@@ -48,7 +51,9 @@ describe('ExportJobsList — #104 schema-slug fix', () => {
 		expect(global.fetch).toHaveBeenCalledTimes(1)
 		const requestedUrl = global.fetch.mock.calls[0][0]
 
-		expect(requestedUrl).toContain('/apps/openregister/api/objects/openbuild/export-job')
+		expect(requestedUrl).toContain(
+			'/apps/openregister/api/objects/openbuild/export-job',
+		)
 		expect(requestedUrl).not.toContain('exportJob')
 
 		// VTU v1's `destroy()` is `unmount()` in v2.
@@ -88,7 +93,13 @@ describe('ExportJobsList — #104 schema-slug fix', () => {
 			ok: true,
 			json: async () => ({
 				results: [
-					{ uuid: 'job-1', applicationVersion: '1.0.0', target: 'zip', status: 'succeeded', downloadUrl: '/download/job-1' },
+					{
+						uuid: 'job-1',
+						applicationVersion: '1.0.0',
+						target: 'zip',
+						status: 'succeeded',
+						downloadUrl: '/download/job-1',
+					},
 				],
 			}),
 		})

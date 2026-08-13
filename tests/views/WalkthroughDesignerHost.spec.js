@@ -41,18 +41,25 @@ vi.mock('../../src/composables/useApplicationVersion.js', () => ({
 	}),
 }))
 
-vi.mock('../../src/components/walkthrough-editor/WalkthroughDesigner.vue', async () => {
-	const { h } = await import('vue')
-	return {
-		default: {
-			name: 'WalkthroughDesigner',
-			props: ['manifest', 'appSlug', 'versionSlug'],
-			render() { return h('div', { class: 'walkthrough-designer-stub' }) },
-		},
-	}
-})
+vi.mock(
+	'../../src/components/walkthrough-editor/WalkthroughDesigner.vue',
+	async () => {
+		const { h } = await import('vue')
+		return {
+			default: {
+				name: 'WalkthroughDesigner',
+				props: ['manifest', 'appSlug', 'versionSlug'],
+				render() {
+					return h('div', { class: 'walkthrough-designer-stub' })
+				},
+			},
+		}
+	},
+)
 
-const WalkthroughDesignerHost = (await import('../../src/views/WalkthroughDesignerHost.vue')).default
+const WalkthroughDesignerHost = (
+	await import('../../src/views/WalkthroughDesignerHost.vue')
+).default
 
 const flush = async (wrapper) => {
 	await new Promise((r) => setTimeout(r, 0))
@@ -78,10 +85,23 @@ describe('WalkthroughDesignerHost', () => {
 	})
 
 	it('seeds the manifest from the resolved version manifest', async () => {
-		const version = { slug: 'v1', manifest: { version: '2.0.0', pages: [{ id: 'p' }], walkthrough: { enabled: true, tours: [1] } } }
+		const version = {
+			slug: 'v1',
+			manifest: {
+				version: '2.0.0',
+				pages: [{ id: 'p' }],
+				walkthrough: { enabled: true, tours: [1] },
+			},
+		}
 		const wrapper = mountHost({
 			version,
-			appList: [{ slug: 'petstore', name: 'Pet Store', manifest: { version: '9.9.9' } }],
+			appList: [
+				{
+					slug: 'petstore',
+					name: 'Pet Store',
+					manifest: { version: '9.9.9' },
+				},
+			],
 		})
 		await flush(wrapper)
 		expect(wrapper.vm.application.name).toBe('Pet Store')
@@ -123,7 +143,9 @@ describe('WalkthroughDesignerHost', () => {
 
 	it('exposes routeSlug, versionSlug and applicationUuid computeds', async () => {
 		const wrapper = mount(WalkthroughDesignerHost, {
-			mocks: { $route: { params: { slug: 'shop' }, query: { _version: 'draft-2' } } },
+			mocks: {
+				$route: { params: { slug: 'shop' }, query: { _version: 'draft-2' } },
+			},
 		})
 		await flush(wrapper)
 		expect(wrapper.vm.routeSlug).toBe('shop')
@@ -148,23 +170,32 @@ describe('WalkthroughDesignerHost', () => {
 			appList: [{ slug: 'petstore', name: 'Pet Store' }],
 		})
 		await flush(wrapper)
-		axiosPutMock.mockResolvedValueOnce({ data: { version: { slug: 'draft-1', saved: true } } })
+		axiosPutMock.mockResolvedValueOnce({
+			data: { version: { slug: 'draft-1', saved: true } },
+		})
 		await wrapper.vm.save()
 		expect(axiosPutMock).toHaveBeenCalledWith(
 			'/apps/openbuild/api/applications/petstore/versions/draft-1',
 			{ manifest: wrapper.vm.manifest },
 		)
-		expect(wrapper.vm.applicationVersion).toEqual({ slug: 'draft-1', saved: true })
+		expect(wrapper.vm.applicationVersion).toEqual({
+			slug: 'draft-1',
+			saved: true,
+		})
 		expect(wrapper.vm.toast).toBe('Walkthrough saved.')
 	})
 
 	it('save() falls back to the application object PUT for un-versioned apps', async () => {
 		const wrapper = mountHost({
 			version: null,
-			appList: [{ slug: 'petstore', '@self': { id: 'app-uuid' }, manifest: {} }],
+			appList: [
+				{ slug: 'petstore', '@self': { id: 'app-uuid' }, manifest: {} },
+			],
 		})
 		await flush(wrapper)
-		axiosPutMock.mockResolvedValueOnce({ data: { '@self': { id: 'app-uuid' }, updated: true } })
+		axiosPutMock.mockResolvedValueOnce({
+			data: { '@self': { id: 'app-uuid' }, updated: true },
+		})
 		await wrapper.vm.save()
 		expect(axiosPutMock).toHaveBeenCalledWith(
 			'/apps/openregister/api/objects/openbuild/application/app-uuid',

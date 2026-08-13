@@ -77,22 +77,37 @@ test.describe('openbuild-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRB
 	// exercise the admin bypass (REQ-OBRBAC-006) and never reach the deny path.
 	test.use({ storageState: 'tests/e2e/.auth/rbac-outsider.json' })
 
-	test('REQ-OBRBAC-003: outsider sees no Applications in the editor list', async ({ page }) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications`, { waitUntil: 'domcontentloaded' })
+	test('REQ-OBRBAC-003: outsider sees no Applications in the editor list', async ({
+		page,
+	}) => {
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications`, {
+			waitUntil: 'domcontentloaded',
+		})
 
 		// Nothing they may not see is listed: no application cards at all, and
 		// the seeded slug appears nowhere on the page.
-		await expect(page.locator('.ob-app-card')).toHaveCount(0, { timeout: 30_000 })
+		await expect(page.locator('.ob-app-card')).toHaveCount(0, {
+			timeout: 30_000,
+		})
 		await expect(page.locator('body')).not.toContainText(TEST_SLUG)
 	})
 
-	test('REQ-OBRBAC-002: direct /builder/{slug} URL renders the no-access screen', async ({ page }) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/builder/${TEST_SLUG}`, { waitUntil: 'domcontentloaded' })
+	test('REQ-OBRBAC-002: direct /builder/{slug} URL renders the no-access screen', async ({
+		page,
+	}) => {
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/builder/${TEST_SLUG}`, {
+			waitUntil: 'domcontentloaded',
+		})
 
 		// The deny screen, not a stack trace and not a half-rendered app.
-		await expect(page.locator('body')).toContainText(/App not found|could not be loaded|no access/i, { timeout: 30_000 })
+		await expect(page.locator('body')).toContainText(
+			/App not found|could not be loaded|no access/i,
+			{ timeout: 30_000 },
+		)
 
 		// And the builder host itself must never mount for a non-member.
-		await expect(page.locator('[data-testid="openbuild-builder-host"]')).toHaveCount(0)
+		await expect(
+			page.locator('[data-testid="openbuild-builder-host"]'),
+		).toHaveCount(0)
 	})
 })

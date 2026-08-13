@@ -12,7 +12,13 @@
 		size="small"
 		@update:open="onOpenUpdate">
 		<p class="openbuild-delete-field-dialog__warning">
-			{{ t('openbuild', 'You are about to remove the property {name} from this schema. Existing objects of this schema may have data in this property that will become unreachable after Save.', { name: fieldName }) }}
+			{{
+				t(
+					'openbuild',
+					'You are about to remove the property {name} from this schema. Existing objects of this schema may have data in this property that will become unreachable after Save.',
+					{ name: fieldName },
+				)
+			}}
 		</p>
 		<template #actions>
 			<NcButton @click="onCancel">

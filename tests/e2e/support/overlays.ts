@@ -45,7 +45,10 @@ export async function dismissWalkthrough(page: Page): Promise<void> {
 	if (await closeBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
 		await closeBtn.click()
 	}
-	await page.locator('.cn-walkthrough__dim').waitFor({ state: 'detached', timeout: 5_000 }).catch(() => {})
+	await page
+		.locator('.cn-walkthrough__dim')
+		.waitFor({ state: 'detached', timeout: 5_000 })
+		.catch(() => {})
 }
 
 /**
@@ -62,7 +65,10 @@ export async function dismissWalkthrough(page: Page): Promise<void> {
  */
 export async function dismissSupportDialog(page: Page): Promise<void> {
 	const closeBtn = page.getByRole('button', { name: /^close$/i })
-	await closeBtn.waitFor({ state: 'visible', timeout: 4_000 }).then(() => closeBtn.click()).catch(() => {})
+	await closeBtn
+		.waitFor({ state: 'visible', timeout: 4_000 })
+		.then(() => closeBtn.click())
+		.catch(() => {})
 }
 
 /**

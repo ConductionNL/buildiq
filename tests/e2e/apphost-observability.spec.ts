@@ -38,16 +38,18 @@ import { test, expect } from '@playwright/test'
  */
 // @e2e openspec/specs/settings-and-observability/spec.md#the-apphost-bound-observability-routes-actually-dispatch
 test.describe('ADR-040 AppHost adoption', () => {
-	test('serves /api/health from the AppHost generic controller', async ({ request }) => {
+	test('serves /api/health from the AppHost generic controller', async ({
+		request,
+	}) => {
 		// ADR-006: health is public — no auth, no CSRF.
 		const response = await request.get('/index.php/apps/openbuild/api/health')
 
 		expect(
 			response.status(),
 			'health#index is bound only by Bootstrap::register(). A 500 here means '
-			+ 'Bootstrap::register() did not run, i.e. OCA\\OpenRegister\\ was not '
-			+ 'autoloadable during openbuild\'s register() — the ADR-040 prelude is '
-			+ 'missing or ran too late.',
+				+ 'Bootstrap::register() did not run, i.e. OCA\\OpenRegister\\ was not '
+				+ "autoloadable during openbuild's register() — the ADR-040 prelude is "
+				+ 'missing or ran too late.',
 		).toBe(200)
 
 		const body = await response.json()
@@ -61,7 +63,9 @@ test.describe('ADR-040 AppHost adoption', () => {
 		).toBe('openbuild')
 	})
 
-	test('serves /api/metrics from the AppHost generic controller', async ({ request }) => {
+	test('serves /api/metrics from the AppHost generic controller', async ({
+		request,
+	}) => {
 		// ADR-006: metrics is admin-only, so an anonymous caller must be
 		// REJECTED rather than served — but it must be rejected by the auth
 		// middleware, which only runs once the route resolves to a bound
@@ -71,7 +75,7 @@ test.describe('ADR-040 AppHost adoption', () => {
 		expect(
 			response.status(),
 			'metrics#index is bound only by Bootstrap::register(). Any 5xx here means '
-			+ 'the AppHost aliases were never created.',
+				+ 'the AppHost aliases were never created.',
 		).toBeLessThan(500)
 	})
 })

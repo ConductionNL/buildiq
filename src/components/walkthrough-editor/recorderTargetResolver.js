@@ -57,12 +57,19 @@ export function cssPath(el) {
 			break
 		}
 		let seg = node.tagName.toLowerCase()
-		const cls = (node.getAttribute('class') || '').trim().split(/\s+/).filter(Boolean)[0]
+		const cls = (node.getAttribute('class') || '')
+			.trim()
+			.split(/\s+/)
+			.filter(Boolean)[0]
 		if (cls) seg += '.' + cssEscape(cls)
 		const parent = node.parentElement
 		if (parent) {
-			const sameTag = Array.prototype.filter.call(parent.children, (c) => c.tagName === node.tagName)
-			if (sameTag.length > 1) seg += `:nth-of-type(${sameTag.indexOf(node) + 1})`
+			const sameTag = Array.prototype.filter.call(
+				parent.children,
+				(c) => c.tagName === node.tagName,
+			)
+			if (sameTag.length > 1)
+				seg += `:nth-of-type(${sameTag.indexOf(node) + 1})`
 		}
 		parts.unshift(seg)
 		node = node.parentElement
@@ -78,6 +85,7 @@ export function cssPath(el) {
  * @return {string} Escaped.
  */
 function cssEscape(v) {
-	if (typeof window !== 'undefined' && window.CSS && window.CSS.escape) return window.CSS.escape(v)
+	if (typeof window !== 'undefined' && window.CSS && window.CSS.escape)
+		return window.CSS.escape(v)
 	return String(v).replace(/[^a-zA-Z0-9_-]/g, '\\$&')
 }

@@ -16,7 +16,9 @@
 		<div v-if="loading" class="connector-data-view__state">
 			{{ t('openbuild', 'Loading…') }}
 		</div>
-		<div v-else-if="error" class="connector-data-view__state connector-data-view__state--error">
+		<div
+			v-else-if="error"
+			class="connector-data-view__state connector-data-view__state--error">
 			<p>{{ t('openbuild', 'Could not load data from OpenConnector.') }}</p>
 			<NcButton type="secondary" @click="retry">
 				{{ t('openbuild', 'Retry') }}

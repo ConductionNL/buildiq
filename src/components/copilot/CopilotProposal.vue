@@ -17,9 +17,14 @@
 		</p>
 
 		<ul class="copilot-proposal__steps">
-			<li v-for="(step, idx) in plan.steps" :key="idx" class="copilot-proposal__step">
+			<li
+				v-for="(step, idx) in plan.steps"
+				:key="idx"
+				class="copilot-proposal__step">
 				<code>{{ step.tool }}</code>
-				<span class="copilot-proposal__step-detail">{{ stepDetail(step) }}</span>
+				<span class="copilot-proposal__step-detail">{{
+					stepDetail(step)
+				}}</span>
 			</li>
 		</ul>
 
@@ -32,11 +37,19 @@
 			:to-label-text="t('openbuild', 'Predicted')" />
 
 		<p v-if="!canApprove" class="copilot-proposal__error" role="alert">
-			{{ t('openbuild', 'This proposal did not pass validation and cannot be applied.') }}
+			{{
+				t(
+					'openbuild',
+					'This proposal did not pass validation and cannot be applied.',
+				)
+			}}
 		</p>
 
 		<div class="copilot-proposal__actions">
-			<NcButton data-testid="copilot-discard" :disabled="busy" @click="$emit('discard')">
+			<NcButton
+				data-testid="copilot-discard"
+				:disabled="busy"
+				@click="$emit('discard')">
 				{{ t('openbuild', 'Discard') }}
 			</NcButton>
 			<NcButton
@@ -89,7 +102,14 @@ export default {
 		 */
 		stepDetail(step) {
 			const args = step.arguments || {}
-			return args.title || args.label || args.pageId || args.slug || args.appSlug || ''
+			return (
+				args.title
+				|| args.label
+				|| args.pageId
+				|| args.slug
+				|| args.appSlug
+				|| ''
+			)
 		},
 	},
 }

@@ -31,7 +31,12 @@
 		@closing="onClose">
 		<div class="ob-theme-picker">
 			<p v-if="!nldesignAvailable" class="ob-theme-picker__warn">
-				{{ t('openbuild', 'NL Design (nldesign) is not installed or enabled on this instance.') }}
+				{{
+					t(
+						'openbuild',
+						'NL Design (nldesign) is not installed or enabled on this instance.',
+					)
+				}}
 			</p>
 
 			<NcSelect
@@ -42,27 +47,57 @@
 				:loading="loadingList"
 				label="label" />
 
-			<p v-else-if="nldesignAvailable && !loadingList" class="ob-theme-picker__hint">
+			<p
+				v-else-if="nldesignAvailable && !loadingList"
+				class="ob-theme-picker__hint">
 				{{ t('openbuild', 'No NL Design token sets are available yet.') }}
 			</p>
 
 			<!-- swatches + name for the resolved candidate -->
 			<div v-if="candidate" class="ob-theme-picker__candidate">
-				<span class="ob-theme-picker__swatch" :style="{ background: candidate.primaryColor || 'var(--color-primary-element)' }" />
-				<span class="ob-theme-picker__swatch" :style="{ background: candidate.backgroundColor || 'var(--color-main-background)' }" />
+				<span
+					class="ob-theme-picker__swatch"
+					:style="{
+						background:
+							candidate.primaryColor || 'var(--color-primary-element)',
+					}" />
+				<span
+					class="ob-theme-picker__swatch"
+					:style="{
+						background:
+							candidate.backgroundColor
+							|| 'var(--color-main-background)',
+					}" />
 				<div class="ob-theme-picker__candidate-meta">
 					<strong>{{ candidate.tokenSetName }}</strong>
-					<span v-if="candidate.designSystem" class="ob-theme-picker__candidate-desc">{{ candidate.designSystem }}</span>
+					<span
+						v-if="candidate.designSystem"
+						class="ob-theme-picker__candidate-desc"
+						>{{ candidate.designSystem }}</span
+					>
 				</div>
 			</div>
 
 			<!-- REQ-NTS-008: warn-only contrast facts, never a save gate. -->
-			<ul v-if="contrastResults && contrastResults.length" class="ob-theme-picker__contrast">
+			<ul
+				v-if="contrastResults && contrastResults.length"
+				class="ob-theme-picker__contrast">
 				<li
 					v-for="(result, i) in contrastResults"
 					:key="i"
-					:class="['ob-theme-picker__contrast-row', result.pass ? 'ob-theme-picker__contrast-row--pass' : 'ob-theme-picker__contrast-row--warn']">
-					{{ t('openbuild', '{name}: ratio {ratio}, level {level}', { name: result.name, ratio: result.ratio, level: result.level }) }}
+					:class="[
+						'ob-theme-picker__contrast-row',
+						result.pass
+							? 'ob-theme-picker__contrast-row--pass'
+							: 'ob-theme-picker__contrast-row--warn',
+					]">
+					{{
+						t('openbuild', '{name}: ratio {ratio}, level {level}', {
+							name: result.name,
+							ratio: result.ratio,
+							level: result.level,
+						})
+					}}
 				</li>
 			</ul>
 
@@ -71,11 +106,16 @@
 					v-model="livePreview"
 					type="checkbox"
 					:disabled="!previewAvailable"
-					@change="onPreviewToggle">
+					@change="onPreviewToggle" />
 				{{ t('openbuild', 'Live preview in the designer') }}
 			</label>
 			<p v-if="!previewAvailable" class="ob-theme-picker__hint">
-				{{ t('openbuild', 'Live preview is not available in this designer session.') }}
+				{{
+					t(
+						'openbuild',
+						'Live preview is not available in this designer session.',
+					)
+				}}
 			</p>
 		</div>
 		<template #actions>
@@ -207,8 +247,12 @@ export default {
 					id: this.theme.tokenSet,
 					name: this.theme.tokenSetName || this.theme.tokenSet,
 					designSystem: '',
-					primaryColor: (this.theme.preview && this.theme.preview.primaryColor) || '',
-					backgroundColor: (this.theme.preview && this.theme.preview.backgroundColor) || '',
+					primaryColor:
+						(this.theme.preview && this.theme.preview.primaryColor)
+						|| '',
+					backgroundColor:
+						(this.theme.preview && this.theme.preview.backgroundColor)
+						|| '',
 				}
 			} else {
 				this.selectedOption = null
@@ -255,8 +299,17 @@ export default {
 				return
 			}
 			const background = c.backgroundColor || '#FFFFFF'
-			const candidates = [{ name: t('openbuild', 'Primary'), value: c.primaryColor, role: 'ui' }]
-			this.contrastResults = await this.scopedTheme.evaluateContrast(candidates, background)
+			const candidates = [
+				{
+					name: t('openbuild', 'Primary'),
+					value: c.primaryColor,
+					role: 'ui',
+				},
+			]
+			this.contrastResults = await this.scopedTheme.evaluateContrast(
+				candidates,
+				background,
+			)
 		},
 		/**
 		 * Toggle live preview: emit the candidate (or null) to the host so it
@@ -290,7 +343,11 @@ export default {
 			if (!c) {
 				return null
 			}
-			const theme = { source: 'nldesign', tokenSet: c.tokenSet, tokenSetName: c.tokenSetName }
+			const theme = {
+				source: 'nldesign',
+				tokenSet: c.tokenSet,
+				tokenSetName: c.tokenSetName,
+			}
 			const preview = {}
 			if (c.primaryColor) {
 				preview.primaryColor = c.primaryColor

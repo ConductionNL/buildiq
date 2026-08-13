@@ -43,15 +43,18 @@ const cssNoop = {
 }
 
 module.exports = {
-	plugins: [
-		cssNoop,
-		vue.default ? vue.default() : vue(),
-	],
+	plugins: [cssNoop, vue.default ? vue.default() : vue()],
 	test: {
 		environment: 'jsdom',
 		globals: false,
 		include: ['tests/**/*.spec.{js,ts}'],
-		exclude: ['tests/e2e/**', 'tests/integration/**', 'tests/Unit/**', 'tests/unit/**', 'node_modules/**'],
+		exclude: [
+			'tests/e2e/**',
+			'tests/integration/**',
+			'tests/Unit/**',
+			'tests/unit/**',
+			'node_modules/**',
+		],
 		setupFiles: [path.resolve(__dirname, 'tests/vitest/setup.js')],
 		server: {
 			deps: {
@@ -78,11 +81,17 @@ module.exports = {
 			// isolation they were written with. See the file's docblock.
 			{
 				find: /^@vue\/test-utils$/,
-				replacement: path.resolve(__dirname, 'tests/vitest/vueTestUtilsCompat.js'),
+				replacement: path.resolve(
+					__dirname,
+					'tests/vitest/vueTestUtilsCompat.js',
+				),
 			},
 			{
 				find: /^@conduction\/nextcloud-vue$/,
-				replacement: path.resolve(__dirname, 'tests/vitest/stubs/conduction-nextcloud-vue.js'),
+				replacement: path.resolve(
+					__dirname,
+					'tests/vitest/stubs/conduction-nextcloud-vue.js',
+				),
 			},
 			// vuedraggable uses SortableJS + a live DOM that jsdom can't
 			// satisfy; the page-list / menu-tree specs mock it per-test
@@ -90,7 +99,10 @@ module.exports = {
 			// passthrough stub that just renders the default slot.
 			{
 				find: /^vuedraggable$/,
-				replacement: path.resolve(__dirname, 'tests/vitest/stubs/vuedraggable.js'),
+				replacement: path.resolve(
+					__dirname,
+					'tests/vitest/stubs/vuedraggable.js',
+				),
 			},
 		],
 	},

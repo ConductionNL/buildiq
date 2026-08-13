@@ -20,11 +20,20 @@ vi.mock('@nextcloud/auth', () => ({
 	getRequestToken: () => 'test-token',
 }))
 
-import { useRegisterPicker, registerScope } from '../../src/composables/useRegisterPicker.js'
+import {
+	useRegisterPicker,
+	registerScope,
+} from '../../src/composables/useRegisterPicker.js'
 
 const REGISTERS = [
-	{ slug: 'openbuild-cowboy-production', title: 'OpenBuild — cowboy (production)' },
-	{ slug: 'openbuild-cowboy-development', title: 'OpenBuild — cowboy (development)' },
+	{
+		slug: 'openbuild-cowboy-production',
+		title: 'OpenBuild — cowboy (production)',
+	},
+	{
+		slug: 'openbuild-cowboy-development',
+		title: 'OpenBuild — cowboy (development)',
+	},
 	{ slug: 'unrelated-app', title: 'Some other app' },
 	{ slug: 'another-one', title: 'Yet another' },
 ]
@@ -49,7 +58,10 @@ function stubFetch() {
 		if (schemaMatch) {
 			const register = decodeURIComponent(schemaMatch[1])
 			schemaCalls.push(register)
-			return { ok: true, json: async () => ({ results: SCHEMAS[register] || [] }) }
+			return {
+				ok: true,
+				json: async () => ({ results: SCHEMAS[register] || [] }),
+			}
 		}
 		return { ok: true, json: async () => ({ results: REGISTERS }) }
 	})
@@ -66,24 +78,39 @@ describe('registerScope', () => {
 				{},
 			],
 		}
-		const scope = registerScope('openbuild-cowboy-production', manifest, [{ register: 'shared-crm' }, { register: 'billing' }])
-		expect(scope.sort()).toEqual(['billing', 'openbuild-cowboy-production', 'shared-crm'])
+		const scope = registerScope('openbuild-cowboy-production', manifest, [
+			{ register: 'shared-crm' },
+			{ register: 'billing' },
+		])
+		expect(scope.sort()).toEqual([
+			'billing',
+			'openbuild-cowboy-production',
+			'shared-crm',
+		])
 	})
 
 	it('returns just the per-app register for a fresh app with no data pages', () => {
-		expect(registerScope('openbuild-cowboy-production', { pages: [] })).toEqual(['openbuild-cowboy-production'])
+		expect(registerScope('openbuild-cowboy-production', { pages: [] })).toEqual([
+			'openbuild-cowboy-production',
+		])
 	})
 
 	it('tolerates a null manifest', () => {
-		expect(registerScope('openbuild-cowboy-production', null)).toEqual(['openbuild-cowboy-production'])
+		expect(registerScope('openbuild-cowboy-production', null)).toEqual([
+			'openbuild-cowboy-production',
+		])
 	})
 })
 
 describe('fetchDataSources — bounded fan-out', () => {
 	let originalFetch
 
-	beforeEach(() => { originalFetch = global.fetch })
-	afterEach(() => { global.fetch = originalFetch })
+	beforeEach(() => {
+		originalFetch = global.fetch
+	})
+	afterEach(() => {
+		global.fetch = originalFetch
+	})
 
 	it('only fetches schemas for registers in scope', async () => {
 		const { schemaCalls } = stubFetch()
@@ -94,7 +121,10 @@ describe('fetchDataSources — bounded fan-out', () => {
 		expect(schemaCalls).toEqual(['openbuild-cowboy-production'])
 		expect(result.registers).toHaveLength(1)
 		expect(result.registers[0].value).toBe('openbuild-cowboy-production')
-		expect(result.registers[0].schemas.map((s) => s.value)).toEqual(['cow', 'barn'])
+		expect(result.registers[0].schemas.map((s) => s.value)).toEqual([
+			'cow',
+			'barn',
+		])
 		expect(result.registers[0].schemas[1].columns).toEqual(['name', 'size'])
 	})
 

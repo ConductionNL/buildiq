@@ -45,44 +45,65 @@ export async function ensureApp(
 ): Promise<void> {
 	await page.goto('/apps/openbuild/', { waitUntil: 'domcontentloaded' })
 	await page.waitForTimeout(500)
-	const result = await page.evaluate(async ({ slug, name, versions }) => {
-		const tok = (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken
-			|| document.querySelector('head')?.getAttribute('data-requesttoken')
-			|| ''
-		const headers = { requesttoken: tok, 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' }
-		// Idempotency, via the applications LIST.
-		//
-		// Do NOT probe `/applications/{slug}/manifest` for this: it 404s for an
-		// app that exists but has no resolvable manifest yet, so the check said
-		// "absent" for an app that was right there and every run POSTed the
-		// wizard again. That left duplicate Application objects (4 after three
-		// runs), and re-creating an app whose register already exists takes the
-		// wizard ~180s before failing 500 — which then blows the test timeout
-		// rather than reporting anything useful.
-		const listResp = await fetch('/index.php/apps/openbuild/api/applications', { headers })
-		if (listResp.ok) {
-			const listed = await listResp.json().catch(() => null)
-			const rows = Array.isArray(listed) ? listed : (listed?.results ?? listed?.applications ?? [])
-			const found = Array.isArray(rows) && rows.some((a) => {
-				const s = a?.slug ?? a?.['@self']?.slug
-				return s === slug
-			})
-			if (found) {
-				return 'exists'
+	const result = await page.evaluate(
+		async ({ slug, name, versions }) => {
+			const tok =
+				(window as unknown as { OC?: { requestToken?: string } }).OC
+					?.requestToken
+				|| document.querySelector('head')?.getAttribute('data-requesttoken')
+				|| ''
+			const headers = {
+				requesttoken: tok,
+				'OCS-APIRequest': 'true',
+				'Content-Type': 'application/json',
 			}
-		}
-		const resp = await fetch('/index.php/apps/openbuild/api/applications/wizard', {
-			method: 'POST',
-			headers,
-			body: JSON.stringify({
-				slug,
-				name,
-				description: 'e2e fixture app',
-				versions: versions.map((v) => ({ slug: v, name: v })),
-			}),
-		})
-		return resp.status === 201 ? 'created' : `error:${resp.status}:${(await resp.text()).slice(0, 200)}`
-	}, { slug, name, versions })
+			// Idempotency, via the applications LIST.
+			//
+			// Do NOT probe `/applications/{slug}/manifest` for this: it 404s for an
+			// app that exists but has no resolvable manifest yet, so the check said
+			// "absent" for an app that was right there and every run POSTed the
+			// wizard again. That left duplicate Application objects (4 after three
+			// runs), and re-creating an app whose register already exists takes the
+			// wizard ~180s before failing 500 — which then blows the test timeout
+			// rather than reporting anything useful.
+			const listResp = await fetch(
+				'/index.php/apps/openbuild/api/applications',
+				{ headers },
+			)
+			if (listResp.ok) {
+				const listed = await listResp.json().catch(() => null)
+				const rows = Array.isArray(listed)
+					? listed
+					: (listed?.results ?? listed?.applications ?? [])
+				const found =
+					Array.isArray(rows)
+					&& rows.some((a) => {
+						const s = a?.slug ?? a?.['@self']?.slug
+						return s === slug
+					})
+				if (found) {
+					return 'exists'
+				}
+			}
+			const resp = await fetch(
+				'/index.php/apps/openbuild/api/applications/wizard',
+				{
+					method: 'POST',
+					headers,
+					body: JSON.stringify({
+						slug,
+						name,
+						description: 'e2e fixture app',
+						versions: versions.map((v) => ({ slug: v, name: v })),
+					}),
+				},
+			)
+			return resp.status === 201
+				? 'created'
+				: `error:${resp.status}:${(await resp.text()).slice(0, 200)}`
+		},
+		{ slug, name, versions },
+	)
 	if (result !== 'exists' && result !== 'created') {
 		throw new Error(`ensureApp(${slug}) failed — ${result}`)
 	}
@@ -106,17 +127,24 @@ export async function ensureApp(
 export async function dismissOverlays(page: Page): Promise<void> {
 	for (let i = 0; i < 4; i++) {
 		const mask = page.locator('.modal-mask').first()
-		if (await mask.count() === 0 || await mask.isVisible().catch(() => false) === false) {
+		if (
+			(await mask.count()) === 0
+			|| (await mask.isVisible().catch(() => false)) === false
+		) {
 			return
 		}
-		const closer = mask.getByRole('button', { name: /close|dismiss|skip|later|not now/i }).first()
-		if (await closer.count() > 0) {
+		const closer = mask
+			.getByRole('button', { name: /close|dismiss|skip|later|not now/i })
+			.first()
+		if ((await closer.count()) > 0) {
 			await closer.click({ timeout: 5_000 }).catch(() => {})
 		} else {
 			// NcDialog's close control is an icon button; fall back to its own
 			// header close, then to ESC.
-			const iconClose = mask.locator('.modal-container__close, button.icon-close').first()
-			if (await iconClose.count() > 0) {
+			const iconClose = mask
+				.locator('.modal-container__close, button.icon-close')
+				.first()
+			if ((await iconClose.count()) > 0) {
 				await iconClose.click({ timeout: 5_000 }).catch(() => {})
 			} else {
 				await page.keyboard.press('Escape').catch(() => {})

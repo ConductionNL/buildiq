@@ -33,7 +33,11 @@ function resolvePublicUrl(data) {
 		return data.url
 	}
 	const token = data && data.token
-	return token ? generateUrl(`/apps/openregister/api/public/case-tokens/${encodeURIComponent(token)}`) : ''
+	return token
+		? generateUrl(
+				`/apps/openregister/api/public/case-tokens/${encodeURIComponent(token)}`,
+			)
+		: ''
 }
 
 /**
@@ -61,7 +65,9 @@ export function useTrackLinkAction(client = defaultAxios) {
 		if (!register || !schema || !objectId) {
 			throw new Error('mintTrackLink requires register, schema and objectId')
 		}
-		const url = generateUrl(`/apps/openregister/api/objects/${register}/${schema}/${objectId}/integrations/shares`)
+		const url = generateUrl(
+			`/apps/openregister/api/objects/${register}/${schema}/${objectId}/integrations/shares`,
+		)
 		const body = { type: 'public-token', ...opts }
 		const { data } = await client.post(url, body)
 		return { token: (data && data.token) || '', url: resolvePublicUrl(data) }

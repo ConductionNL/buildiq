@@ -60,10 +60,28 @@ export const ACTION_TYPES = Object.freeze([
  * object instance, which a `schedule`/`manual` trigger does not carry.
  */
 export const MATRIX = Object.freeze({
-	'object-created': Object.freeze(['send-notification', 'approval', 'generateDocument']),
-	'object-updated': Object.freeze(['send-notification', 'approval', 'generateDocument']),
-	'object-deleted': Object.freeze(['send-notification', 'approval', 'generateDocument']),
-	'lifecycle-transition': Object.freeze(['send-notification', 'object-op', 'webhook', 'approval', 'generateDocument']),
+	'object-created': Object.freeze([
+		'send-notification',
+		'approval',
+		'generateDocument',
+	]),
+	'object-updated': Object.freeze([
+		'send-notification',
+		'approval',
+		'generateDocument',
+	]),
+	'object-deleted': Object.freeze([
+		'send-notification',
+		'approval',
+		'generateDocument',
+	]),
+	'lifecycle-transition': Object.freeze([
+		'send-notification',
+		'object-op',
+		'webhook',
+		'approval',
+		'generateDocument',
+	]),
 	schedule: Object.freeze(['run-synchronization']),
 	manual: Object.freeze(['send-notification', 'object-op', 'webhook']),
 })
@@ -111,10 +129,16 @@ export function blockedActionReason(triggerType, actionType) {
 		return ''
 	}
 	if (actionType === 'approval') {
-		return t('openbuild', 'Approval actions are only supported on object-event and lifecycle-transition triggers in v1.')
+		return t(
+			'openbuild',
+			'Approval actions are only supported on object-event and lifecycle-transition triggers in v1.',
+		)
 	}
 	if (actionType === 'generateDocument') {
-		return t('openbuild', 'Document-generation actions are only supported on object-event and lifecycle-transition triggers in v1.')
+		return t(
+			'openbuild',
+			'Document-generation actions are only supported on object-event and lifecycle-transition triggers in v1.',
+		)
 	}
 	return t(
 		'openbuild',
@@ -134,5 +158,8 @@ export function blockedConditionReason(triggerType) {
 	if (isConditionAllowed(triggerType)) {
 		return ''
 	}
-	return t('openbuild', 'A condition is only supported on the "manual" trigger in v1.')
+	return t(
+		'openbuild',
+		'A condition is only supported on the "manual" trigger in v1.',
+	)
 }

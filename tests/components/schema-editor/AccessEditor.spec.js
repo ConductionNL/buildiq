@@ -28,9 +28,11 @@ vi.mock('../../../src/composables/useOrAccessCapabilities.js', () => {
 	return { useOrAccessCapabilities: capabilityMocks.useOrAccessCapabilities }
 })
 
-const { default: AccessEditor, accessToEditor, editorToAccess } = await import(
-	'../../../src/components/schema-editor/AccessEditor.vue'
-)
+const {
+	default: AccessEditor,
+	accessToEditor,
+	editorToAccess,
+} = await import('../../../src/components/schema-editor/AccessEditor.vue')
 
 const stubs = {
 	NcNoteCard: {
@@ -40,13 +42,23 @@ const stubs = {
 	},
 	NcSelect: {
 		name: 'NcSelect',
-		props: ['inputLabel', 'value', 'options', 'clearable', 'disabled', 'multiple', 'taggable'],
-		template: '<div class="nc-select-stub" :data-input-label="inputLabel" :data-disabled="disabled" />',
+		props: [
+			'inputLabel',
+			'value',
+			'options',
+			'clearable',
+			'disabled',
+			'multiple',
+			'taggable',
+		],
+		template:
+			'<div class="nc-select-stub" :data-input-label="inputLabel" :data-disabled="disabled" />',
 	},
 	NcTextField: {
 		name: 'NcTextField',
 		props: ['value', 'label', 'disabled'],
-		template: '<label><input :value="value" :disabled="disabled" @input="$emit(\'update:value\', $event.target.value)" /></label>',
+		template:
+			'<label><input :value="value" :disabled="disabled" @input="$emit(\'update:value\', $event.target.value)" /></label>',
 	},
 }
 
@@ -91,7 +103,9 @@ describe('accessToEditor / editorToAccess round-trip', () => {
 	it('own-records scope (["@creator"]) round-trips exactly', () => {
 		const authorization = { update: ['@creator'] }
 		const editor = accessToEditor(authorization)
-		expect(editor.rows.find((r) => r.op === 'update')).toMatchObject({ kind: 'own' })
+		expect(editor.rows.find((r) => r.op === 'update')).toMatchObject({
+			kind: 'own',
+		})
 		const back = editorToAccess(editor, authorization)
 		expect(back).toEqual({ update: ['@creator'] })
 	})
@@ -99,7 +113,13 @@ describe('accessToEditor / editorToAccess round-trip', () => {
 	it('condition scope round-trips authorization.conditions.<op> alongside an empty-list entry', () => {
 		const authorization = {
 			delete: [],
-			conditions: { delete: { field: 'assignee', operator: 'equals', value: '@user.uid' } },
+			conditions: {
+				delete: {
+					field: 'assignee',
+					operator: 'equals',
+					value: '@user.uid',
+				},
+			},
 		}
 		const editor = accessToEditor(authorization)
 		const deleteRow = editor.rows.find((r) => r.op === 'delete')
@@ -122,7 +142,10 @@ describe('accessToEditor / editorToAccess round-trip', () => {
 
 describe('raw-block preservation (REQ-OBDSA-002 — strip-bug regression)', () => {
 	it('unrelated top-level keys (e.g. _note) survive editorToAccess untouched', () => {
-		const authorization = { read: ['vets'], _note: 'hand-authored, do not touch' }
+		const authorization = {
+			read: ['vets'],
+			_note: 'hand-authored, do not touch',
+		}
 		const editor = accessToEditor(authorization)
 		expect(editor.extraKeys).toEqual({ _note: 'hand-authored, do not touch' })
 		// Simulate an unrelated edit: change the delete row only.
@@ -130,7 +153,11 @@ describe('raw-block preservation (REQ-OBDSA-002 — strip-bug regression)', () =
 		deleteRow.kind = 'group'
 		deleteRow.groups = ['admin']
 		const back = editorToAccess(editor, authorization)
-		expect(back).toEqual({ read: ['vets'], delete: ['admin'], _note: 'hand-authored, do not touch' })
+		expect(back).toEqual({
+			read: ['vets'],
+			delete: ['admin'],
+			_note: 'hand-authored, do not touch',
+		})
 	})
 
 	it('an unrepresentable "@creator" entry (capability not advertised) is preserved byte-identical after an unrelated save', () => {
@@ -176,33 +203,51 @@ describe('raw-block preservation (REQ-OBDSA-002 — strip-bug regression)', () =
 
 describe('AccessEditor.vue mount — capability gating and readOnly (REQ-OBDSA-003)', () => {
 	it('baseline capabilities (only "group") hide own/condition kind options', () => {
-		capabilityMocks.useOrAccessCapabilities.mockReturnValue({ scopes: ['group'] })
+		capabilityMocks.useOrAccessCapabilities.mockReturnValue({
+			scopes: ['group'],
+		})
 		const wrapper = mountEditor()
 		const values = wrapper.vm.kindOptions.map((o) => o.value)
 		expect(values).toEqual(['everyone', 'group'])
 	})
 
 	it('advertised ["group","creator","condition"] unlocks own-records and condition options', () => {
-		capabilityMocks.useOrAccessCapabilities.mockReturnValue({ scopes: ['group', 'creator', 'condition'] })
+		capabilityMocks.useOrAccessCapabilities.mockReturnValue({
+			scopes: ['group', 'creator', 'condition'],
+		})
 		const wrapper = mountEditor()
 		const values = wrapper.vm.kindOptions.map((o) => o.value)
 		expect(values).toEqual(['everyone', 'group', 'own', 'condition'])
 	})
 
 	it('a row parsed as "own" renders read-only when the capability is not advertised', () => {
-		capabilityMocks.useOrAccessCapabilities.mockReturnValue({ scopes: ['group'] })
-		const wrapper = mountEditor({ access: accessToEditor({ update: ['@creator'] }) })
+		capabilityMocks.useOrAccessCapabilities.mockReturnValue({
+			scopes: ['group'],
+		})
+		const wrapper = mountEditor({
+			access: accessToEditor({ update: ['@creator'] }),
+		})
 		const updateRow = wrapper.vm.rows.find((r) => r.op === 'update')
 		expect(wrapper.vm.isRepresentable(updateRow)).toBe(false)
-		expect(wrapper.find('.openbuild-access-editor__managed-note').exists()).toBe(true)
+		expect(wrapper.find('.openbuild-access-editor__managed-note').exists()).toBe(
+			true,
+		)
 	})
 
 	it('readOnly disables every NcSelect / NcTextField control', () => {
-		capabilityMocks.useOrAccessCapabilities.mockReturnValue({ scopes: ['group', 'creator', 'condition'] })
+		capabilityMocks.useOrAccessCapabilities.mockReturnValue({
+			scopes: ['group', 'creator', 'condition'],
+		})
 		const wrapper = mountEditor({
 			access: accessToEditor({
 				read: ['vets'],
-				conditions: { create: { field: 'assignee', operator: 'equals', value: '@user.uid' } },
+				conditions: {
+					create: {
+						field: 'assignee',
+						operator: 'equals',
+						value: '@user.uid',
+					},
+				},
 				create: [],
 			}),
 			readOnly: true,
@@ -219,12 +264,17 @@ describe('AccessEditor.vue mount — capability gating and readOnly (REQ-OBDSA-0
 	})
 
 	it('emits update:access with a replaced row when the scope kind changes', () => {
-		capabilityMocks.useOrAccessCapabilities.mockReturnValue({ scopes: ['group'] })
+		capabilityMocks.useOrAccessCapabilities.mockReturnValue({
+			scopes: ['group'],
+		})
 		const wrapper = mountEditor()
 		wrapper.vm.onKindChange('read', 'group')
 		const emitted = wrapper.emitted('update:access')
 		expect(emitted).toBeTruthy()
 		const nextAccess = emitted[0][0]
-		expect(nextAccess.rows.find((r) => r.op === 'read')).toMatchObject({ kind: 'group', groups: [] })
+		expect(nextAccess.rows.find((r) => r.op === 'read')).toMatchObject({
+			kind: 'group',
+			groups: [],
+		})
 	})
 })

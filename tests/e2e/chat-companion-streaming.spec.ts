@@ -51,7 +51,6 @@ const CHAT_HEALTH_URL = '/index.php/apps/hermiq/api/chat/health'
 const chatUnavailable = (status: number) => status !== 200
 
 test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-companion-streaming)', () => {
-
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/apps/openbuild/', { waitUntil: 'domcontentloaded' })
 		// The OpenBuild SPA hydrates async, so every test below needs the shell
@@ -67,37 +66,57 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
 		// route when it removed its own networkidle wait. The FAB itself is
 		// deliberately NOT waited for here: whether it renders is what the
 		// tests below assert.
-		const appShell = page.locator('main, #app-content, .app-content, #content-vue').first()
-		const createApp = page.getByRole('button', { name: /create app|add application/i }).first()
+		const appShell = page
+			.locator('main, #app-content, .app-content, #content-vue')
+			.first()
+		const createApp = page
+			.getByRole('button', { name: /create app|add application/i })
+			.first()
 		await expect(
 			appShell.or(createApp).first(),
 			'the OpenBuild app shell must mount',
 		).toBeVisible({ timeout: 30_000 })
 	})
 
-	test('FAB renders on app pages when chat health is 200', async ({ page, request }) => {
+	test('FAB renders on app pages when chat health is 200', async ({
+		page,
+		request,
+	}) => {
 		const health = await request.get(CHAT_HEALTH_URL)
-		test.skip(chatUnavailable(health.status()), 'No chat backend reachable — chat companion intentionally hidden')
+		test.skip(
+			chatUnavailable(health.status()),
+			'No chat backend reachable — chat companion intentionally hidden',
+		)
 
 		const fab = page.locator('[data-testid="cn-ai-fab"]')
-		await expect(fab, 'FAB must be visible on /apps/openbuild/').toBeVisible({ timeout: 10_000 })
+		await expect(fab, 'FAB must be visible on /apps/openbuild/').toBeVisible({
+			timeout: 10_000,
+		})
 		await expect(fab).toHaveAttribute('aria-label', /chat/i)
 	})
 
-	test('Clicking the FAB opens the chat panel with the input ready', async ({ page, request }) => {
+	test('Clicking the FAB opens the chat panel with the input ready', async ({
+		page,
+		request,
+	}) => {
 		const health = await request.get(CHAT_HEALTH_URL)
 		test.skip(chatUnavailable(health.status()), 'No chat backend reachable')
 
 		await page.locator('[data-testid="cn-ai-fab"]').click()
 		const panel = page.locator('[data-testid="cn-ai-panel"]')
-		await expect(panel, 'panel must mount within 5s').toBeVisible({ timeout: 5_000 })
+		await expect(panel, 'panel must mount within 5s').toBeVisible({
+			timeout: 5_000,
+		})
 
 		const input = panel.locator('textarea')
 		await expect(input, 'message input must be focusable').toBeVisible()
 		await expect(input, 'message input must be enabled').not.toBeDisabled()
 	})
 
-	test('Submitting a message shows the user bubble + Thinking indicator', async ({ page, request }) => {
+	test('Submitting a message shows the user bubble + Thinking indicator', async ({
+		page,
+		request,
+	}) => {
 		const health = await request.get(CHAT_HEALTH_URL)
 		test.skip(chatUnavailable(health.status()), 'No chat backend reachable')
 
@@ -118,7 +137,10 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
 		// Thinking indicator with 3 animated dots is visible while the
 		// LLM call is in flight (between submit and first token/final).
 		const thinking = page.locator('[data-testid="cn-ai-thinking"]')
-		await expect(thinking, 'Thinking indicator must appear while waiting').toBeVisible({ timeout: 2_000 })
+		await expect(
+			thinking,
+			'Thinking indicator must appear while waiting',
+		).toBeVisible({ timeout: 2_000 })
 
 		const dots = thinking.locator('.cn-ai-message-list__thinking-dot')
 		await expect(dots, 'three animated dots').toHaveCount(3)
@@ -126,7 +148,10 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
 	})
 
 	// QUARANTINED: requires a live AI chat backend not available in this environment.
-	test.skip('Thinking indicator clears once the response arrives', async ({ page, request }) => {
+	test.skip('Thinking indicator clears once the response arrives', async ({
+		page,
+		request,
+	}) => {
 		const health = await request.get(CHAT_HEALTH_URL)
 		test.skip(chatUnavailable(health.status()), 'No chat backend reachable')
 
@@ -158,20 +183,23 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
  * enabled by the ai-chat-companion-streaming change.
  */
 test.describe('AI Chat Companion — true streaming (gated on ai-chat-companion-streaming)', () => {
-
 	test.skip(({}, testInfo) => {
 		// Toggle this off once the streaming change is applied + the
 		// configured provider exposes generateStreamOfText.
 		return true
 	}, 'Streaming surface not yet wired — see openspec/changes/ai-chat-companion-streaming/')
 
-	test('partial response text appears before the call completes', async ({ page }) => {
+	test('partial response text appears before the call completes', async ({
+		page,
+	}) => {
 		// Long-prompt test: ask for a multi-paragraph answer, assert the
 		// assistant bubble's text grows over time rather than appearing
 		// all at once.
 	})
 
-	test('long-running call surfaces at least one heartbeat to the frontend', async ({ page }) => {
+	test('long-running call surfaces at least one heartbeat to the frontend', async ({
+		page,
+	}) => {
 		// 35s prompt + watch network panel for `event: heartbeat` frames.
 	})
 })

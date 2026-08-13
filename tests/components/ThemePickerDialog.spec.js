@@ -17,7 +17,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-const { axiosMock } = vi.hoisted(() => ({ axiosMock: { get: vi.fn(), post: vi.fn() } }))
+const { axiosMock } = vi.hoisted(() => ({
+	axiosMock: { get: vi.fn(), post: vi.fn() },
+}))
 vi.mock('@nextcloud/axios', () => ({ default: axiosMock }))
 vi.mock('@nextcloud/router', () => ({
 	generateUrl: (p) => p,
@@ -27,17 +29,40 @@ vi.mock('@nextcloud/router', () => ({
 import ThemePickerDialog from '../../src/dialogs/ThemePickerDialog.vue'
 
 const stubs = {
-	NcDialog: { name: 'NcDialog', template: '<div><slot /><slot name="actions" /></div>' },
-	NcButton: { name: 'NcButton', props: ['type', 'disabled'], template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>' },
-	NcSelect: { name: 'NcSelect', props: ['value', 'options', 'inputLabel'], template: '<div class="select-stub" />' },
+	NcDialog: {
+		name: 'NcDialog',
+		template: '<div><slot /><slot name="actions" /></div>',
+	},
+	NcButton: {
+		name: 'NcButton',
+		props: ['type', 'disabled'],
+		template:
+			'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+	},
+	NcSelect: {
+		name: 'NcSelect',
+		props: ['value', 'options', 'inputLabel'],
+		template: '<div class="select-stub" />',
+	},
 }
 
 const catalogue = [
-	{ id: 'amsterdam', name: 'Gemeente Amsterdam', design_system: 'nldesign', theming: { primary_color: '#004699', background_color: '#FFFFFF' } },
-	{ id: 'rijkshuisstijl', name: 'Rijkshuisstijl', design_system: 'nldesign', theming: { primary_color: '#154273' } },
+	{
+		id: 'amsterdam',
+		name: 'Gemeente Amsterdam',
+		design_system: 'nldesign',
+		theming: { primary_color: '#004699', background_color: '#FFFFFF' },
+	},
+	{
+		id: 'rijkshuisstijl',
+		name: 'Rijkshuisstijl',
+		design_system: 'nldesign',
+		theming: { primary_color: '#154273' },
+	},
 ]
 
-const factory = (props = {}) => mount(ThemePickerDialog, { propsData: { open: false, ...props }, stubs })
+const factory = (props = {}) =>
+	mount(ThemePickerDialog, { propsData: { open: false, ...props }, stubs })
 
 describe('ThemePickerDialog', () => {
 	beforeEach(() => {
@@ -55,7 +80,11 @@ describe('ThemePickerDialog', () => {
 		await wrapper.vm.$nextTick()
 		wrapper.vm.onSave()
 		const saved = wrapper.emitted().save[0][0]
-		expect(saved).toMatchObject({ source: 'nldesign', tokenSet: 'amsterdam', tokenSetName: 'Gemeente Amsterdam' })
+		expect(saved).toMatchObject({
+			source: 'nldesign',
+			tokenSet: 'amsterdam',
+			tokenSetName: 'Gemeente Amsterdam',
+		})
 		expect(saved.preview.primaryColor).toBe('#004699')
 	})
 
@@ -94,7 +123,9 @@ describe('ThemePickerDialog', () => {
 		wrapper.vm.selectedOption = wrapper.vm.tokenSetOptions[0]
 		wrapper.vm.livePreview = true
 		wrapper.vm.onPreviewToggle()
-		expect(wrapper.emitted().preview[0][0]).toMatchObject({ tokenSet: 'amsterdam' })
+		expect(wrapper.emitted().preview[0][0]).toMatchObject({
+			tokenSet: 'amsterdam',
+		})
 		wrapper.vm.onClose()
 		expect(wrapper.emitted().preview.at(-1)[0]).toBeNull()
 	})
@@ -103,19 +134,29 @@ describe('ThemePickerDialog', () => {
 		const wrapper = factory({ previewAvailable: false })
 		const checkbox = wrapper.find('.ob-theme-picker__toggle input')
 		expect(checkbox.attributes('disabled')).toBeDefined()
-		expect(wrapper.text()).toContain('Live preview is not available in this designer session.')
+		expect(wrapper.text()).toContain(
+			'Live preview is not available in this designer session.',
+		)
 	})
 
 	it('shows warn-only contrast facts without disabling Save (REQ-NTS-008)', async () => {
 		axiosMock.get.mockResolvedValueOnce({ data: { tokenSets: catalogue } })
-		axiosMock.post.mockResolvedValueOnce({ data: { results: [{ name: 'Primary', ratio: 2.1, level: 'fail', pass: false }] } })
+		axiosMock.post.mockResolvedValueOnce({
+			data: {
+				results: [
+					{ name: 'Primary', ratio: 2.1, level: 'fail', pass: false },
+				],
+			},
+		})
 		const wrapper = factory()
 		await wrapper.setProps({ open: true })
 		await new Promise((r) => setTimeout(r, 0))
 		wrapper.vm.selectedOption = wrapper.vm.tokenSetOptions[0]
 		await new Promise((r) => setTimeout(r, 0))
 		await wrapper.vm.$nextTick()
-		expect(wrapper.vm.contrastResults).toEqual([{ name: 'Primary', ratio: 2.1, level: 'fail', pass: false }])
+		expect(wrapper.vm.contrastResults).toEqual([
+			{ name: 'Primary', ratio: 2.1, level: 'fail', pass: false },
+		])
 		const saveBtn = wrapper.findAll('button').at(2)
 		expect(saveBtn.attributes('disabled')).toBeUndefined()
 	})
@@ -128,7 +169,9 @@ describe('ThemePickerDialog', () => {
 		wrapper.vm.selectedOption = wrapper.vm.tokenSetOptions[0]
 		await new Promise((r) => setTimeout(r, 0))
 		for (const call of axiosMock.get.mock.calls) {
-			expect(String(call[0])).not.toMatch(/\/settings\/tokensets|\/settings\/tokenset-preview|css\/tokens\//)
+			expect(String(call[0])).not.toMatch(
+				/\/settings\/tokensets|\/settings\/tokenset-preview|css\/tokens\//,
+			)
 		}
 	})
 })

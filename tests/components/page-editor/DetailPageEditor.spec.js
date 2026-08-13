@@ -37,7 +37,9 @@ function mountEditor(config = {}, propsOverrides = {}) {
 			...propsOverrides,
 		},
 		stubs: {
-			SidebarTabBuilder: { template: '<div class="sidebar-tab-builder-stub" />' },
+			SidebarTabBuilder: {
+				template: '<div class="sidebar-tab-builder-stub" />',
+			},
 			InlineFieldMark: { template: '<span class="inline-field-stub" />' },
 		},
 		mocks: {
@@ -53,11 +55,19 @@ function mountEditor(config = {}, propsOverrides = {}) {
 
 describe('DetailPageEditor', () => {
 	it('validatedConfigKeys is [register, schema, sidebar, sidebarProps]', () => {
-		expect(mountEditor().vm.validatedConfigKeys).toEqual(['register', 'schema', 'sidebar', 'sidebarProps'])
+		expect(mountEditor().vm.validatedConfigKeys).toEqual([
+			'register',
+			'schema',
+			'sidebar',
+			'sidebarProps',
+		])
 	})
 
 	it('routeParams extracts every :name placeholder from parentRoute', () => {
-		const wrapper = mountEditor({}, { parentRoute: '/messages/:id/comments/:commentId' })
+		const wrapper = mountEditor(
+			{},
+			{ parentRoute: '/messages/:id/comments/:commentId' },
+		)
 		expect(wrapper.vm.routeParams).toEqual(['id', 'commentId'])
 		expect(wrapper.vm.routeHasParam).toBe(true)
 	})
@@ -90,11 +100,15 @@ describe('DetailPageEditor', () => {
 		const wrapper = mountEditor({ register: 'r', schema: 's' })
 		wrapper.vm.update('schema', '')
 		await wrapper.vm.$nextTick()
-		expect(wrapper.emitted('update:config').slice(-1)[0][0]).not.toHaveProperty('schema')
+		expect(wrapper.emitted('update:config').slice(-1)[0][0]).not.toHaveProperty(
+			'schema',
+		)
 
 		wrapper.vm.update('register', null)
 		await wrapper.vm.$nextTick()
-		expect(wrapper.emitted('update:config').slice(-1)[0][0]).not.toHaveProperty('register')
+		expect(wrapper.emitted('update:config').slice(-1)[0][0]).not.toHaveProperty(
+			'register',
+		)
 	})
 
 	it('setSidebarShape cycles none → boolean → object → none', async () => {
@@ -106,11 +120,15 @@ describe('DetailPageEditor', () => {
 
 		wrapper.vm.setSidebarShape('object')
 		await wrapper.vm.$nextTick()
-		expect(wrapper.emitted('update:config').slice(-1)[0][0].sidebar).toEqual({ enabled: true })
+		expect(wrapper.emitted('update:config').slice(-1)[0][0].sidebar).toEqual({
+			enabled: true,
+		})
 
 		wrapper.vm.setSidebarShape('none')
 		await wrapper.vm.$nextTick()
-		expect(wrapper.emitted('update:config').slice(-1)[0][0]).not.toHaveProperty('sidebar')
+		expect(wrapper.emitted('update:config').slice(-1)[0][0]).not.toHaveProperty(
+			'sidebar',
+		)
 	})
 
 	it('updateSidebarKey preserves prior sidebar object fields', async () => {
@@ -130,7 +148,9 @@ describe('DetailPageEditor', () => {
 	})
 
 	it('updateSidebarPropsTabs([]) preserves sidebarProps when other keys remain', async () => {
-		const wrapper = mountEditor({ sidebarProps: { tabs: [{ id: 't1' }], other: 'keep' } })
+		const wrapper = mountEditor({
+			sidebarProps: { tabs: [{ id: 't1' }], other: 'keep' },
+		})
 		wrapper.vm.updateSidebarPropsTabs([])
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config').slice(-1)[0][0]
@@ -140,6 +160,8 @@ describe('DetailPageEditor', () => {
 	it('sidebarShape reflects the current sidebar value', () => {
 		expect(mountEditor({}).vm.sidebarShape).toBe('none')
 		expect(mountEditor({ sidebar: true }).vm.sidebarShape).toBe('boolean')
-		expect(mountEditor({ sidebar: { enabled: true } }).vm.sidebarShape).toBe('object')
+		expect(mountEditor({ sidebar: { enabled: true } }).vm.sidebarShape).toBe(
+			'object',
+		)
 	})
 })

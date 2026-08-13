@@ -50,11 +50,16 @@ describe('RoadmapPageEditor', () => {
 		wrapper.vm.updateForgeField('baseUrl', 'https://codeberg.org')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
-		expect(next.forge).toEqual({ type: 'codeberg', baseUrl: 'https://codeberg.org' })
+		expect(next.forge).toEqual({
+			type: 'codeberg',
+			baseUrl: 'https://codeberg.org',
+		})
 	})
 
 	it('unsetting forge type deletes the whole forge key', async () => {
-		const wrapper = mountEditor({ forge: { type: 'github', baseUrl: 'https://github.com' } })
+		const wrapper = mountEditor({
+			forge: { type: 'github', baseUrl: 'https://github.com' },
+		})
 		wrapper.vm.updateForgeType('')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
@@ -70,7 +75,9 @@ describe('RoadmapPageEditor', () => {
 	})
 
 	it('a seeded features array survives editing repo byte-identically (lossless)', async () => {
-		const features = [{ slug: 'x', title: 'X', summary: 'summary', docsUrl: '/docs/x' }]
+		const features = [
+			{ slug: 'x', title: 'X', summary: 'summary', docsUrl: '/docs/x' },
+		]
 		const wrapper = mountEditor({ features })
 		wrapper.vm.update('repo', 'ConductionNL/openbuild')
 		await wrapper.vm.$nextTick()
@@ -80,7 +87,13 @@ describe('RoadmapPageEditor', () => {
 
 	it('validatedConfigKeys matches the surfaced keys', () => {
 		expect(mountEditor().vm.validatedConfigKeys).toEqual([
-			'repo', 'forge', 'disabled', 'documentationUrl', 'suggestUrl', 'openbuiltUrl', 'llmSkillsUrl',
+			'repo',
+			'forge',
+			'disabled',
+			'documentationUrl',
+			'suggestUrl',
+			'openbuiltUrl',
+			'llmSkillsUrl',
 		])
 	})
 
@@ -95,6 +108,8 @@ describe('RoadmapPageEditor', () => {
 		expect(emissions[0][0].documentationUrl).toBe('https://docs.example.test')
 		expect(emissions[1][0].suggestUrl).toBe('https://suggest.example.test')
 		expect(emissions[2][0].openbuiltUrl).toBe('https://openbuilt.example.test')
-		expect(emissions[3][0].llmSkillsUrl).toBe('https://docs.conduction.nl/ai-skills')
+		expect(emissions[3][0].llmSkillsUrl).toBe(
+			'https://docs.conduction.nl/ai-skills',
+		)
 	})
 })

@@ -11,35 +11,59 @@
 <template>
 	<NcModal size="normal" @close="$emit('close')">
 		<div class="automation-test-panel">
-			<h2>{{ t('openbuild', 'Test automation') }} — {{ automation.name || automation.slug }}</h2>
+			<h2>
+				{{ t('openbuild', 'Test automation') }} —
+				{{ automation.name || automation.slug }}
+			</h2>
 
 			<NcTextArea
 				v-model="payloadText"
 				:label="t('openbuild', 'Sample payload (JSON)')"
 				data-testid="dry-run-payload" />
 
-			<NcButton type="primary"
+			<NcButton
+				type="primary"
 				:disabled="running"
 				data-testid="dry-run-button"
 				@click="run">
 				{{ running ? t('openbuild', 'Running…') : t('openbuild', 'Run') }}
 			</NcButton>
 
-			<div v-if="result" class="automation-test-panel__result" data-testid="dry-run-result">
-				<p v-if="result.conditionMatched" class="automation-test-panel__matched">
+			<div
+				v-if="result"
+				class="automation-test-panel__result"
+				data-testid="dry-run-result">
+				<p
+					v-if="result.conditionMatched"
+					class="automation-test-panel__matched">
 					{{ t('openbuild', 'Condition matched — would-be actions:') }}
 				</p>
-				<p v-else class="automation-test-panel__unmatched" data-testid="dry-run-no-match">
-					{{ t('openbuild', 'Condition did not match — no actions would run.') }}
+				<p
+					v-else
+					class="automation-test-panel__unmatched"
+					data-testid="dry-run-no-match">
+					{{
+						t(
+							'openbuild',
+							'Condition did not match — no actions would run.',
+						)
+					}}
 				</p>
 
-				<ul v-if="result.conditionMatched" class="automation-test-panel__actions">
-					<li v-for="(action, index) in result.actions" :key="index" data-testid="dry-run-action">
+				<ul
+					v-if="result.conditionMatched"
+					class="automation-test-panel__actions">
+					<li
+						v-for="(action, index) in result.actions"
+						:key="index"
+						data-testid="dry-run-action">
 						{{ action }}
 					</li>
 				</ul>
 
-				<p v-if="result.errors && result.errors.length > 0" class="automation-test-panel__errors">
+				<p
+					v-if="result.errors && result.errors.length > 0"
+					class="automation-test-panel__errors">
 					{{ result.errors.join(', ') }}
 				</p>
 
@@ -47,7 +71,10 @@
 					{{ t('openbuild', 'Duration') }}: {{ result.durationMs }}ms
 				</p>
 
-				<p v-if="result.approvalState && result.approvalState !== 'none'" class="automation-test-panel__approval-state" data-testid="dry-run-approval-state">
+				<p
+					v-if="result.approvalState && result.approvalState !== 'none'"
+					class="automation-test-panel__approval-state"
+					data-testid="dry-run-approval-state">
 					{{ t('openbuild', 'Approval state') }}: {{ approvalStateLabel }}
 				</p>
 			</div>
@@ -114,13 +141,18 @@ export default {
 			try {
 				payload = JSON.parse(this.payloadText || '{}')
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'The sample payload is not valid JSON.')
+				this.errorMessage = t(
+					'openbuild',
+					'The sample payload is not valid JSON.',
+				)
 				this.running = false
 				return
 			}
 
 			try {
-				const url = generateUrl(`/apps/openbuild/api/automations/${this.automation.id}/dry-run`)
+				const url = generateUrl(
+					`/apps/openbuild/api/automations/${this.automation.id}/dry-run`,
+				)
 				const { data } = await axios.post(url, { payload })
 				this.result = data
 			} catch (error) {

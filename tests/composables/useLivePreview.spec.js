@@ -26,24 +26,29 @@ describe('useLivePreview — graceful degradation (chain spec #2 NOT installed)'
 		vi.resetModules()
 		vi.doMock('@conduction/nextcloud-vue', () => ({
 			// Legacy arity-1 shape — feature-detect returns false.
-			useAppManifest: function (_appId) { return { manifest: null } },
+			useAppManifest: function (_appId) {
+				return { manifest: null }
+			},
 		}))
 	})
 
 	it('available === false when useAppManifest.length === 1', async () => {
-		const { useLivePreview } = await import('../../src/composables/useLivePreview.js')
+		const { useLivePreview } =
+			await import('../../src/composables/useLivePreview.js')
 		const lp = useLivePreview()
 		expect(lp.available.value).toBe(false)
 	})
 
 	it('previewProps returns null while degraded', async () => {
-		const { useLivePreview } = await import('../../src/composables/useLivePreview.js')
+		const { useLivePreview } =
+			await import('../../src/composables/useLivePreview.js')
 		const lp = useLivePreview()
 		expect(lp.previewProps('hello-world', { pages: [] })).toBeNull()
 	})
 
 	it('exposes a stable shape (available + previewProps)', async () => {
-		const { useLivePreview } = await import('../../src/composables/useLivePreview.js')
+		const { useLivePreview } =
+			await import('../../src/composables/useLivePreview.js')
 		const lp = useLivePreview()
 		expect(lp).toHaveProperty('available')
 		expect(typeof lp.previewProps).toBe('function')
@@ -55,18 +60,22 @@ describe('useLivePreview — chain spec #2 overload available', () => {
 		vi.resetModules()
 		vi.doMock('@conduction/nextcloud-vue', () => ({
 			// Arity-2 shape — bumped library export with manifestObject.
-			useAppManifest: function (_appId, _manifestObject) { return { manifest: null } },
+			useAppManifest: function (_appId, _manifestObject) {
+				return { manifest: null }
+			},
 		}))
 	})
 
 	it('available === true when useAppManifest.length === 2', async () => {
-		const { useLivePreview } = await import('../../src/composables/useLivePreview.js')
+		const { useLivePreview } =
+			await import('../../src/composables/useLivePreview.js')
 		const lp = useLivePreview()
 		expect(lp.available.value).toBe(true)
 	})
 
 	it('previewProps returns the sandbox prop bag', async () => {
-		const { useLivePreview } = await import('../../src/composables/useLivePreview.js')
+		const { useLivePreview } =
+			await import('../../src/composables/useLivePreview.js')
 		const lp = useLivePreview()
 		const props = lp.previewProps('hello-world', { pages: [{ id: 'home' }] })
 		expect(props).not.toBeNull()
@@ -76,15 +85,21 @@ describe('useLivePreview — chain spec #2 overload available', () => {
 	})
 
 	it('key is stable for identical manifest content', async () => {
-		const { useLivePreview } = await import('../../src/composables/useLivePreview.js')
+		const { useLivePreview } =
+			await import('../../src/composables/useLivePreview.js')
 		const lp = useLivePreview()
-		const a = lp.previewProps('app', { pages: [{ id: 'home', config: { register: 'r' } }] })
-		const b = lp.previewProps('app', { pages: [{ id: 'home', config: { register: 'r' } }] })
+		const a = lp.previewProps('app', {
+			pages: [{ id: 'home', config: { register: 'r' } }],
+		})
+		const b = lp.previewProps('app', {
+			pages: [{ id: 'home', config: { register: 'r' } }],
+		})
 		expect(a.key).toBe(b.key)
 	})
 
 	it('key changes when manifest content changes', async () => {
-		const { useLivePreview } = await import('../../src/composables/useLivePreview.js')
+		const { useLivePreview } =
+			await import('../../src/composables/useLivePreview.js')
 		const lp = useLivePreview()
 		const a = lp.previewProps('app', { pages: [{ id: 'home' }] })
 		const b = lp.previewProps('app', { pages: [{ id: 'about' }] })
@@ -102,7 +117,8 @@ describe('useLivePreview — useAppManifest missing entirely', () => {
 	})
 
 	it('feature-detect handles undefined export gracefully', async () => {
-		const { useLivePreview } = await import('../../src/composables/useLivePreview.js')
+		const { useLivePreview } =
+			await import('../../src/composables/useLivePreview.js')
 		const lp = useLivePreview()
 		expect(lp.available.value).toBe(false)
 		expect(lp.previewProps('any', {})).toBeNull()

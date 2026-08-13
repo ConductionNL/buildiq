@@ -28,7 +28,12 @@
 		</h3>
 
 		<p class="roadmap-page-editor__hint" role="note">
-			{{ t('openbuild', 'Every field below resolves manifest config first, then the matching features_roadmap_KEY initialState value, then a built-in fallback. The features list itself is normally server-provided; edit it via the Raw JSON tab.') }}
+			{{
+				t(
+					'openbuild',
+					'Every field below resolves manifest config first, then the matching features_roadmap_KEY initialState value, then a built-in fallback. The features list itself is normally server-provided; edit it via the Raw JSON tab.',
+				)
+			}}
 		</p>
 
 		<fieldset class="roadmap-page-editor__fieldset">
@@ -40,7 +45,7 @@
 					:value="config.repo || ''"
 					:placeholder="t('openbuild', 'owner/repo')"
 					:aria-invalid="isInvalid('repo')"
-					@input="update('repo', $event.target.value)">
+					@input="update('repo', $event.target.value)" />
 				<InlineFieldMark :error="markFor('repo')" />
 			</label>
 		</fieldset>
@@ -56,18 +61,10 @@
 					<option value="">
 						{{ t('openbuild', '— not set —') }}
 					</option>
-					<option value="codeberg">
-						codeberg
-					</option>
-					<option value="forgejo">
-						forgejo
-					</option>
-					<option value="gitea">
-						gitea
-					</option>
-					<option value="github">
-						github
-					</option>
+					<option value="codeberg">codeberg</option>
+					<option value="forgejo">forgejo</option>
+					<option value="gitea">gitea</option>
+					<option value="github">github</option>
 				</select>
 			</label>
 			<label class="roadmap-page-editor__group-row">
@@ -77,7 +74,7 @@
 					:value="(config.forge && config.forge.baseUrl) || ''"
 					:disabled="!(config.forge && config.forge.type)"
 					:placeholder="t('openbuild', 'https://codeberg.org')"
-					@input="updateForgeField('baseUrl', $event.target.value)">
+					@input="updateForgeField('baseUrl', $event.target.value)" />
 			</label>
 			<InlineFieldMark :error="markFor('forge')" />
 		</fieldset>
@@ -88,7 +85,7 @@
 				<input
 					type="checkbox"
 					:checked="config.disabled === true"
-					@change="update('disabled', $event.target.checked)">
+					@change="update('disabled', $event.target.checked)" />
 				{{ t('openbuild', 'Disabled') }}
 			</label>
 			<InlineFieldMark :error="markFor('disabled')" />
@@ -102,7 +99,7 @@
 					type="text"
 					:value="config.documentationUrl || ''"
 					:aria-invalid="isInvalid('documentationUrl')"
-					@input="update('documentationUrl', $event.target.value)">
+					@input="update('documentationUrl', $event.target.value)" />
 				<InlineFieldMark :error="markFor('documentationUrl')" />
 			</label>
 			<label class="roadmap-page-editor__group-row">
@@ -111,7 +108,7 @@
 					type="text"
 					:value="config.suggestUrl || ''"
 					:aria-invalid="isInvalid('suggestUrl')"
-					@input="update('suggestUrl', $event.target.value)">
+					@input="update('suggestUrl', $event.target.value)" />
 				<InlineFieldMark :error="markFor('suggestUrl')" />
 			</label>
 			<label class="roadmap-page-editor__group-row">
@@ -120,7 +117,7 @@
 					type="text"
 					:value="config.openbuiltUrl || ''"
 					:aria-invalid="isInvalid('openbuiltUrl')"
-					@input="update('openbuiltUrl', $event.target.value)">
+					@input="update('openbuiltUrl', $event.target.value)" />
 				<InlineFieldMark :error="markFor('openbuiltUrl')" />
 			</label>
 			<label class="roadmap-page-editor__group-row">
@@ -129,7 +126,7 @@
 					type="text"
 					:value="config.llmSkillsUrl || ''"
 					:aria-invalid="isInvalid('llmSkillsUrl')"
-					@input="update('llmSkillsUrl', $event.target.value)">
+					@input="update('llmSkillsUrl', $event.target.value)" />
 				<InlineFieldMark :error="markFor('llmSkillsUrl')" />
 			</label>
 		</fieldset>
@@ -171,7 +168,15 @@ export default {
 	emits: ['update:config'],
 	computed: {
 		validatedConfigKeys() {
-			return ['repo', 'forge', 'disabled', 'documentationUrl', 'suggestUrl', 'openbuiltUrl', 'llmSkillsUrl']
+			return [
+				'repo',
+				'forge',
+				'disabled',
+				'documentationUrl',
+				'suggestUrl',
+				'openbuiltUrl',
+				'llmSkillsUrl',
+			]
 		},
 	},
 	methods: {
@@ -184,7 +189,11 @@ export default {
 		 */
 		update(key, value) {
 			const next = { ...this.config }
-			if (value === '' || value === null || (Array.isArray(value) && value.length === 0)) {
+			if (
+				value === ''
+				|| value === null
+				|| (Array.isArray(value) && value.length === 0)
+			) {
 				delete next[key]
 			} else {
 				next[key] = value

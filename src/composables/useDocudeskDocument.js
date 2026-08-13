@@ -22,7 +22,12 @@ import { generateUrl } from '@nextcloud/router'
 const GENERATE = '/apps/docudesk/api/correspondence/generate'
 
 /** Extension per Docudesk output format (pinned set, REQ-DDT-001). */
-const FORMAT_EXT = Object.freeze({ pdf: 'pdf', docx: 'docx', html: 'html', email: 'html' })
+const FORMAT_EXT = Object.freeze({
+	pdf: 'pdf',
+	docx: 'docx',
+	html: 'html',
+	email: 'html',
+})
 
 /**
  * Render a `filenameTemplate` with `{{objectProperty}}` placeholders resolved
@@ -39,7 +44,9 @@ export function renderFilename(template, object) {
 		return ''
 	}
 	return template.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key) => {
-		const value = (object && object[key]) ?? (object && object['@self'] && object['@self'][key])
+		const value =
+			(object && object[key])
+			?? (object && object['@self'] && object['@self'][key])
 		return value === undefined || value === null ? '' : String(value)
 	})
 }
@@ -152,7 +159,9 @@ export function useDocudeskDocument(opts = {}) {
 			filename,
 		}
 		try {
-			const response = await client.post(generateUrl(GENERATE), body, { responseType: 'blob' })
+			const response = await client.post(generateUrl(GENERATE), body, {
+				responseType: 'blob',
+			})
 			deliver(response, filename, format, doDownload)
 			return null
 		} catch (e) {
@@ -181,7 +190,10 @@ export function useDocudeskDocument(opts = {}) {
 		}
 		const ref2 = resolveDataRef(object, attachment) || {}
 		const ext = FORMAT_EXT[format] || 'pdf'
-		const safeLabel = String(attachment.label || 'document').replace(/[^\w.-]+/g, '-')
+		const safeLabel = String(attachment.label || 'document').replace(
+			/[^\w.-]+/g,
+			'-',
+		)
 		return `${safeLabel}-${ref2.id || 'object'}.${ext}`
 	}
 
@@ -236,7 +248,11 @@ function deliver(response, filename, format, doDownload) {
  * @return {void}
  */
 function defaultDownload(blob, filename) {
-	if (typeof document === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) {
+	if (
+		typeof document === 'undefined'
+		|| typeof URL === 'undefined'
+		|| !URL.createObjectURL
+	) {
 		return
 	}
 	const url = URL.createObjectURL(blob)

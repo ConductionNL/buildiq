@@ -26,7 +26,11 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { ensureApp, dismissOverlays, suppressSupportDialog } from './support/appFixture'
+import {
+	ensureApp,
+	dismissOverlays,
+	suppressSupportDialog,
+} from './support/appFixture'
 import { readStagedManifest } from './support/stagedManifest'
 
 // Merge note (development -> feat/vue-3-migration, 2026-07-30): arrived as
@@ -102,9 +106,15 @@ test.describe('openbuild form-editor-logic', () => {
 		})
 		const resp = await page.request.put(
 			`${BASE_URL}/index.php/apps/openbuild/api/applications/${APP_SLUG}/manifest`,
-			{ headers: { 'OCS-APIRequest': 'true' }, data: { manifest: { ...manifest, pages } } },
+			{
+				headers: { 'OCS-APIRequest': 'true' },
+				data: { manifest: { ...manifest, pages } },
+			},
 		)
-		expect(resp.ok(), 'seeding the form page via the manifest API must succeed').toBeTruthy()
+		expect(
+			resp.ok(),
+			'seeding the form page via the manifest API must succeed',
+		).toBeTruthy()
 		return pages.length - 1
 	}
 
@@ -122,9 +132,12 @@ test.describe('openbuild form-editor-logic', () => {
 	 */
 	async function seedFormPageAndSelect(page, mutate = null) {
 		const index = await seedFormPage(page, mutate)
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages?_version=production`, {
-			waitUntil: 'domcontentloaded',
-		})
+		await page.goto(
+			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages?_version=production`,
+			{
+				waitUntil: 'domcontentloaded',
+			},
+		)
 		await page.waitForSelector('.page-designer__left', { timeout: 60_000 })
 		await dismissOverlays(page)
 		// Select by dispatching the row's own click event rather than a real
@@ -137,7 +150,9 @@ test.describe('openbuild form-editor-logic', () => {
 		const row = page.locator('.page-list-editor__row').nth(index)
 		await row.scrollIntoViewIfNeeded()
 		await row.dispatchEvent('click')
-		await expect(page.locator('.form-page-editor')).toBeVisible({ timeout: 30_000 })
+		await expect(page.locator('.form-page-editor')).toBeVisible({
+			timeout: 30_000,
+		})
 	}
 
 	/**
@@ -205,15 +220,30 @@ test.describe('openbuild form-editor-logic', () => {
 		const stepRows = page.locator('.form-steps-manager__step')
 		await expect(stepRows).toHaveCount(2)
 
-		await stepRows.nth(0).getByLabel(/step title/i).fill('Contact')
-		await stepRows.nth(1).getByLabel(/step title/i).fill('Details')
+		await stepRows
+			.nth(0)
+			.getByLabel(/step title/i)
+			.fill('Contact')
+		await stepRows
+			.nth(1)
+			.getByLabel(/step title/i)
+			.fill('Details')
 
 		// Assign wantsContact + email to step 1, phone to step 2.
-		await stepRows.nth(0).locator('.form-steps-manager__select').selectOption('wantsContact')
+		await stepRows
+			.nth(0)
+			.locator('.form-steps-manager__select')
+			.selectOption('wantsContact')
 		await stepRows.nth(0).locator('.form-steps-manager__assign button').click()
-		await stepRows.nth(0).locator('.form-steps-manager__select').selectOption('email')
+		await stepRows
+			.nth(0)
+			.locator('.form-steps-manager__select')
+			.selectOption('email')
 		await stepRows.nth(0).locator('.form-steps-manager__assign button').click()
-		await stepRows.nth(1).locator('.form-steps-manager__select').selectOption('phone')
+		await stepRows
+			.nth(1)
+			.locator('.form-steps-manager__select')
+			.selectOption('phone')
 		await stepRows.nth(1).locator('.form-steps-manager__assign button').click()
 
 		let manifest = await readManifest(page)
@@ -225,7 +255,10 @@ test.describe('openbuild form-editor-logic', () => {
 		expect(formPage.config.fields).toHaveLength(3) // fields[] untouched.
 
 		// Reorder: move step 2 up.
-		await stepRows.nth(1).getByTitle(/move step up/i).click()
+		await stepRows
+			.nth(1)
+			.getByTitle(/move step up/i)
+			.click()
 		manifest = await readManifest(page)
 		formPage = manifest.pages.find((p) => p.id === FORM_PAGE_ID)
 		expect(formPage.config.steps[0].title).toBe('Details')
@@ -236,7 +269,9 @@ test.describe('openbuild form-editor-logic', () => {
 		manifest = await readManifest(page)
 		formPage = manifest.pages.find((p) => p.id === FORM_PAGE_ID)
 		expect(formPage.config.steps).toHaveLength(1)
-		await expect(page.locator('.form-steps-manager__pool')).toContainText('phone')
+		await expect(page.locator('.form-steps-manager__pool')).toContainText(
+			'phone',
+		)
 
 		// Delete the last step — `steps` key is removed entirely.
 		await page.locator('.form-steps-manager__remove').first().click()
@@ -259,7 +294,9 @@ test.describe('openbuild form-editor-logic', () => {
 		await addStepBtn.click()
 		const finalStep = page.locator('.form-steps-manager__step').first()
 		await finalStep.getByLabel(/step title/i).fill('Everything')
-		await finalStep.locator('.form-steps-manager__select').selectOption('wantsContact')
+		await finalStep
+			.locator('.form-steps-manager__select')
+			.selectOption('wantsContact')
 		await finalStep.locator('.form-steps-manager__assign button').click()
 		await expect(page.locator('.form-steps-manager__pool-note')).toBeVisible()
 
@@ -269,23 +306,33 @@ test.describe('openbuild form-editor-logic', () => {
 		// PERSISTED manifest instead — which is also the stronger check, since the
 		// complete-partition rule is a claim about what was WRITTEN.
 		await page.getByRole('button', { name: /save pages/i }).click()
-		await expect.poll(async () => {
-			const persisted = await fetchManifest(page)
-			const persistedPage = (persisted.pages || []).find((p) => p.id === FORM_PAGE_ID)
-			return persistedPage?.config?.steps?.[0]?.fields ?? null
-		}, {
-			// The repo's `expect` default (playwright.config.ts). NOT 30_000:
-			// that equals the whole per-test budget, so the poll could never
-			// actually reach it — the test would die first and report a test
-			// timeout instead of this assertion's own message, which is the
-			// exact failure mode the config's comment says the shorter expect
-			// timeout exists to prevent.
-			timeout: 15_000,
-			message: 'saving must append the still-unassigned field keys to the final step',
-		}).toEqual(['wantsContact', 'email', 'phone'])
+		await expect
+			.poll(
+				async () => {
+					const persisted = await fetchManifest(page)
+					const persistedPage = (persisted.pages || []).find(
+						(p) => p.id === FORM_PAGE_ID,
+					)
+					return persistedPage?.config?.steps?.[0]?.fields ?? null
+				},
+				{
+					// The repo's `expect` default (playwright.config.ts). NOT 30_000:
+					// that equals the whole per-test budget, so the poll could never
+					// actually reach it — the test would die first and report a test
+					// timeout instead of this assertion's own message, which is the
+					// exact failure mode the config's comment says the shorter expect
+					// timeout exists to prevent.
+					timeout: 15_000,
+					message:
+						'saving must append the still-unassigned field keys to the final step',
+				},
+			)
+			.toEqual(['wantsContact', 'email', 'phone'])
 	})
 
-	test('REQ-OBFEL-002: condition builder writes LOCAL visibleWhen', async ({ page }) => {
+	test('REQ-OBFEL-002: condition builder writes LOCAL visibleWhen', async ({
+		page,
+	}) => {
 		// @e2e openspec/specs/form-editor-logic/spec.md#authoring-a-condition-with-the-field-op-and-value-pickers
 		// @e2e openspec/specs/form-editor-logic/spec.md#ordering-op-coerces-the-value-to-a-number
 		// @e2e openspec/specs/form-editor-logic/spec.md#clearing-the-condition-removes-the-key
@@ -300,20 +347,30 @@ test.describe('openbuild form-editor-logic', () => {
 		await emailRow.getByLabel(/condition value/i).fill('true')
 
 		let manifest = await readManifest(page)
-		let email = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'email')
+		let email = manifest.pages
+			.find((p) => p.id === FORM_PAGE_ID)
+			.config.fields.find((f) => f.key === 'email')
 		expect(email.visibleWhen).toEqual({ field: 'wantsContact', value: true })
 
 		// gt + numeric coercion.
 		await emailRow.getByLabel(/condition operator/i).selectOption('gt')
 		await emailRow.getByLabel(/condition value/i).fill('3')
 		manifest = await readManifest(page)
-		email = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'email')
-		expect(email.visibleWhen).toEqual({ field: 'wantsContact', op: 'gt', value: 3 })
+		email = manifest.pages
+			.find((p) => p.id === FORM_PAGE_ID)
+			.config.fields.find((f) => f.key === 'email')
+		expect(email.visibleWhen).toEqual({
+			field: 'wantsContact',
+			op: 'gt',
+			value: 3,
+		})
 
 		// Clear removes the key.
 		await emailRow.getByTitle(/clear condition/i).click()
 		manifest = await readManifest(page)
-		email = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'email')
+		email = manifest.pages
+			.find((p) => p.id === FORM_PAGE_ID)
+			.config.fields.find((f) => f.key === 'email')
 		expect(email).not.toHaveProperty('visibleWhen')
 
 		// An advanced (endpoint-shaped) condition authored OUTSIDE the Design
@@ -327,22 +384,34 @@ test.describe('openbuild form-editor-logic', () => {
 		// API instead. Same contract under test: a shape Design cannot author
 		// must survive Design editing the field around it.
 		await seedFormPageAndSelect(page, (config) => {
-			config.fields[1].visibleWhen = { endpoint: '/api/status', field: 'ready' }
+			config.fields[1].visibleWhen = {
+				endpoint: '/api/status',
+				field: 'ready',
+			}
 		})
 		const advancedRow = fieldRow(page, 1)
 		await advancedRow.locator('.form-field-builder__disclosure').click()
-		await expect(advancedRow.locator('.visible-when-builder__advanced')).toBeVisible()
+		await expect(
+			advancedRow.locator('.visible-when-builder__advanced'),
+		).toBeVisible()
 
 		// Edit the same field's label (the row's second input) — an edit Design
 		// DOES own, right next to the condition it must not touch.
 		await advancedRow.getByPlaceholder('Label').fill('Email address')
 		manifest = await readManifest(page)
-		const advanced = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'email')
+		const advanced = manifest.pages
+			.find((p) => p.id === FORM_PAGE_ID)
+			.config.fields.find((f) => f.key === 'email')
 		expect(advanced.label).toBe('Email address')
-		expect(advanced.visibleWhen).toEqual({ endpoint: '/api/status', field: 'ready' })
+		expect(advanced.visibleWhen).toEqual({
+			endpoint: '/api/status',
+			field: 'ready',
+		})
 	})
 
-	test('REQ-OBFEL-003: validation builder writes the structured object', async ({ page }) => {
+	test('REQ-OBFEL-003: validation builder writes the structured object', async ({
+		page,
+	}) => {
 		// @e2e openspec/specs/form-editor-logic/spec.md#authoring-validation-writes-the-structured-object
 		// @e2e openspec/specs/form-editor-logic/spec.md#legacy-flat-keys-prefill-and-normalise-on-first-edit
 		// @e2e openspec/specs/form-editor-logic/spec.md#a-non-compiling-pattern-is-rejected-inline
@@ -358,7 +427,9 @@ test.describe('openbuild form-editor-logic', () => {
 		await emailRow.getByLabel(/^message$/i).fill('i18n.email-invalid')
 
 		let manifest = await readManifest(page)
-		let email = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'email')
+		let email = manifest.pages
+			.find((p) => p.id === FORM_PAGE_ID)
+			.config.fields.find((f) => f.key === 'email')
 		expect(email.validation).toEqual({
 			required: true,
 			min: 5,
@@ -370,9 +441,13 @@ test.describe('openbuild form-editor-logic', () => {
 		// A non-compiling pattern is rejected inline and is NEVER written — the
 		// last known-good pattern stays.
 		await emailRow.getByLabel(/^pattern$/i).fill('[a-')
-		await expect(emailRow.locator('.field-validation-builder__pattern-error')).toBeVisible()
+		await expect(
+			emailRow.locator('.field-validation-builder__pattern-error'),
+		).toBeVisible()
 		manifest = await readManifest(page)
-		email = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'email')
+		email = manifest.pages
+			.find((p) => p.id === FORM_PAGE_ID)
+			.config.fields.find((f) => f.key === 'email')
 		expect(email.validation.pattern).toBe('^[^@]+@[^@]+$') // unchanged
 
 		// Legacy flat `required` / `pattern` (the pre-REQ-OBFEL-003 shape) is
@@ -390,26 +465,40 @@ test.describe('openbuild form-editor-logic', () => {
 		await phoneRow.getByLabel(/^message$/i).fill('i18n.phone-invalid')
 
 		manifest = await readManifest(page)
-		const phone = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'phone')
-		expect(phone.validation).toEqual({ required: true, pattern: '^\\d+$', message: 'i18n.phone-invalid' })
+		const phone = manifest.pages
+			.find((p) => p.id === FORM_PAGE_ID)
+			.config.fields.find((f) => f.key === 'phone')
+		expect(phone.validation).toEqual({
+			required: true,
+			pattern: '^\\d+$',
+			message: 'i18n.phone-invalid',
+		})
 		expect(phone).not.toHaveProperty('required')
 		expect(phone).not.toHaveProperty('pattern')
 		// The untouched sibling keeps its own shape — normalisation is per-field.
-		const sibling = manifest.pages.find((p) => p.id === FORM_PAGE_ID).config.fields.find((f) => f.key === 'email')
+		const sibling = manifest.pages
+			.find((p) => p.id === FORM_PAGE_ID)
+			.config.fields.find((f) => f.key === 'email')
 		expect(sibling).not.toHaveProperty('validation')
 	})
 
-	test('REQ-OBFEL-004: dangling references warn live without deletion', async ({ page }) => {
+	test('REQ-OBFEL-004: dangling references warn live without deletion', async ({
+		page,
+	}) => {
 		// @e2e openspec/specs/form-editor-logic/spec.md#deleting-a-field-warns-on-the-condition-that-references-it
 		// @e2e openspec/specs/form-editor-logic/spec.md#a-step-referencing-a-removed-field-warns
 		await seedFormPageAndSelect(page)
 
 		await fieldRow(page, 1).locator('.form-field-builder__disclosure').click()
-		await fieldRow(page, 1).getByLabel(/condition field/i).selectOption('wantsContact')
+		await fieldRow(page, 1)
+			.getByLabel(/condition field/i)
+			.selectOption('wantsContact')
 
 		await page.locator('.form-steps-manager__add').click()
 		const stepRow = page.locator('.form-steps-manager__step').first()
-		await stepRow.locator('.form-steps-manager__select').selectOption('wantsContact')
+		await stepRow
+			.locator('.form-steps-manager__select')
+			.selectOption('wantsContact')
 		await stepRow.locator('.form-steps-manager__assign button').click()
 
 		// Remove the wantsContact field (row 0) — email/phone shift up by one, so
@@ -424,11 +513,15 @@ test.describe('openbuild form-editor-logic', () => {
 		// dangling reference WARNS, it never silently rewrites the author's data.
 		const manifest = await readManifest(page)
 		const formPage = manifest.pages.find((p) => p.id === FORM_PAGE_ID)
-		expect(formPage.config.fields.find((f) => f.key === 'email').visibleWhen.field).toBe('wantsContact')
+		expect(
+			formPage.config.fields.find((f) => f.key === 'email').visibleWhen.field,
+		).toBe('wantsContact')
 		expect(formPage.config.steps[0].fields).toContain('wantsContact')
 	})
 
-	test('REQ-OBFEL-006: externally-authored shapes round-trip through Design and survive save', async ({ page }) => {
+	test('REQ-OBFEL-006: externally-authored shapes round-trip through Design and survive save', async ({
+		page,
+	}) => {
 		// @e2e openspec/specs/form-editor-logic/spec.md#authored-logic-persists-via-the-existing-applicationversion-save
 		//
 		// NOT anchored here: REQ-OBFEL-006's sibling scenario
@@ -448,16 +541,27 @@ test.describe('openbuild form-editor-logic', () => {
 		// a pre-built steps array, a structured validation object, and a wholly
 		// unknown key — then edit ONE thing in Design and save. Nothing else may
 		// move, in the editor or in what lands on the server.
-		const steps = [{ id: 'contact', title: 'Contact', fields: ['wantsContact', 'email', 'phone'] }]
+		const steps = [
+			{
+				id: 'contact',
+				title: 'Contact',
+				fields: ['wantsContact', 'email', 'phone'],
+			},
+		]
 		await seedFormPageAndSelect(page, (config) => {
 			config.steps = steps
-			config.fields[1].visibleWhen = { endpoint: '/api/status', field: 'ready' }
+			config.fields[1].visibleWhen = {
+				endpoint: '/api/status',
+				field: 'ready',
+			}
 			config.fields[2].validation = { required: true }
 			config.customUnknownKey = 'preserved'
 			config.submitLabel = 'form.submit'
 		})
 		const before = await readManifest(page)
-		const beforeOtherKeys = Object.keys(before).filter((k) => k !== 'pages').sort()
+		const beforeOtherKeys = Object.keys(before)
+			.filter((k) => k !== 'pages')
+			.sort()
 
 		await page.getByLabel(/submit label/i).fill('form.submit.updated')
 
@@ -466,29 +570,46 @@ test.describe('openbuild form-editor-logic', () => {
 		const stagedPage = staged.pages.find((p) => p.id === FORM_PAGE_ID)
 		expect(stagedPage.config.submitLabel).toBe('form.submit.updated')
 		expect(stagedPage.config.steps).toEqual(steps)
-		expect(stagedPage.config.fields.find((f) => f.key === 'email').visibleWhen)
-			.toEqual({ endpoint: '/api/status', field: 'ready' })
-		expect(stagedPage.config.fields.find((f) => f.key === 'phone').validation).toEqual({ required: true })
+		expect(
+			stagedPage.config.fields.find((f) => f.key === 'email').visibleWhen,
+		).toEqual({ endpoint: '/api/status', field: 'ready' })
+		expect(
+			stagedPage.config.fields.find((f) => f.key === 'phone').validation,
+		).toEqual({ required: true })
 		expect(stagedPage.config.customUnknownKey).toBe('preserved')
 
 		// After save: the same holds of what the server actually stored. Read it
 		// back through the API rather than sniffing the request body — a payload
 		// the backend rewrites (or rejects) would still look correct on the wire.
 		await page.getByRole('button', { name: /save pages/i }).click()
-		await expect.poll(async () => {
-			const persisted = await fetchManifest(page)
-			const persistedPage = (persisted.pages || []).find((p) => p.id === FORM_PAGE_ID)
-			return persistedPage?.config?.submitLabel ?? null
-		}, { timeout: 30_000 }).toBe('form.submit.updated')
+		await expect
+			.poll(
+				async () => {
+					const persisted = await fetchManifest(page)
+					const persistedPage = (persisted.pages || []).find(
+						(p) => p.id === FORM_PAGE_ID,
+					)
+					return persistedPage?.config?.submitLabel ?? null
+				},
+				{ timeout: 30_000 },
+			)
+			.toBe('form.submit.updated')
 
 		const saved = await fetchManifest(page)
 		const savedPage = saved.pages.find((p) => p.id === FORM_PAGE_ID)
 		expect(savedPage.config.steps).toEqual(steps)
-		expect(savedPage.config.fields.find((f) => f.key === 'email').visibleWhen)
-			.toEqual({ endpoint: '/api/status', field: 'ready' })
-		expect(savedPage.config.fields.find((f) => f.key === 'phone').validation).toEqual({ required: true })
+		expect(
+			savedPage.config.fields.find((f) => f.key === 'email').visibleWhen,
+		).toEqual({ endpoint: '/api/status', field: 'ready' })
+		expect(
+			savedPage.config.fields.find((f) => f.key === 'phone').validation,
+		).toEqual({ required: true })
 		expect(savedPage.config.customUnknownKey).toBe('preserved')
 		// Every other top-level manifest key is untouched by a page-designer save.
-		expect(Object.keys(saved).filter((k) => k !== 'pages').sort()).toEqual(beforeOtherKeys)
+		expect(
+			Object.keys(saved)
+				.filter((k) => k !== 'pages')
+				.sort(),
+		).toEqual(beforeOtherKeys)
 	})
 })

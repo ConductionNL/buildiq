@@ -14,21 +14,34 @@
 			{{ t('openbuild', 'Choose a version preset') }}
 		</h3>
 		<p class="wizard-step2__description">
-			{{ t('openbuild', 'Select how many deployment versions your app will have. You can always add more versions later.') }}
+			{{
+				t(
+					'openbuild',
+					'Select how many deployment versions your app will have. You can always add more versions later.',
+				)
+			}}
 		</p>
 
-		<div class="wizard-step2__presets" role="radiogroup" :aria-label="t('openbuild', 'Version presets')">
+		<div
+			class="wizard-step2__presets"
+			role="radiogroup"
+			:aria-label="t('openbuild', 'Version presets')">
 			<button
 				v-for="option in presetOptions"
 				:key="option.id"
 				type="button"
 				class="wizard-step2__preset-card"
-				:class="{ 'wizard-step2__preset-card--selected': payload.preset === option.id }"
+				:class="{
+					'wizard-step2__preset-card--selected':
+						payload.preset === option.id,
+				}"
 				:aria-pressed="payload.preset === option.id"
 				@click="selectPreset(option.id)">
 				<strong class="wizard-step2__preset-name">{{ option.label }}</strong>
 				<span class="wizard-step2__preset-chain">{{ option.chain }}</span>
-				<span class="wizard-step2__preset-desc">{{ option.description }}</span>
+				<span class="wizard-step2__preset-desc">{{
+					option.description
+				}}</span>
 			</button>
 		</div>
 	</div>
@@ -37,9 +50,7 @@
 <script>
 /** Canonical version chains per preset. */
 const PRESET_VERSIONS = {
-	single: [
-		{ name: 'Production', slug: 'production' },
-	],
+	single: [{ name: 'Production', slug: 'production' }],
 	'dev-prod': [
 		{ name: 'Development', slug: 'development' },
 		{ name: 'Production', slug: 'production' },
@@ -78,25 +89,37 @@ export default {
 					id: 'single',
 					label: t('openbuild', 'Single'),
 					chain: 'production',
-					description: t('openbuild', 'One version only. Best for simple apps without a staging environment.'),
+					description: t(
+						'openbuild',
+						'One version only. Best for simple apps without a staging environment.',
+					),
 				},
 				{
 					id: 'dev-prod',
 					label: t('openbuild', 'Development + Production'),
 					chain: 'development → production',
-					description: t('openbuild', 'A safe playground for changes before they go live.'),
+					description: t(
+						'openbuild',
+						'A safe playground for changes before they go live.',
+					),
 				},
 				{
 					id: 'dev-staging-prod',
 					label: t('openbuild', 'Development + Staging + Production'),
 					chain: 'development → staging → production',
-					description: t('openbuild', 'Classic three-tier pipeline for larger teams.'),
+					description: t(
+						'openbuild',
+						'Classic three-tier pipeline for larger teams.',
+					),
 				},
 				{
 					id: 'custom',
 					label: t('openbuild', 'Custom'),
 					chain: t('openbuild', 'Define your own chain'),
-					description: t('openbuild', 'Name and order your versions however your team works.'),
+					description: t(
+						'openbuild',
+						'Name and order your versions however your team works.',
+					),
 				},
 			]
 		},
@@ -128,7 +151,7 @@ export default {
 
 			// For canned presets, pre-populate the versions array.
 			if (PRESET_VERSIONS[presetId]) {
-				update.versions = PRESET_VERSIONS[presetId].map(v => ({ ...v }))
+				update.versions = PRESET_VERSIONS[presetId].map((v) => ({ ...v }))
 			} else {
 				// Custom — keep existing versions or seed a default Production row.
 				if (!this.payload.versions || this.payload.versions.length === 0) {
@@ -177,7 +200,9 @@ export default {
 	background: var(--color-main-background, #fff);
 	cursor: pointer;
 	text-align: left;
-	transition: border-color 0.15s, box-shadow 0.15s;
+	transition:
+		border-color 0.15s,
+		box-shadow 0.15s;
 }
 
 .wizard-step2__preset-card:hover {

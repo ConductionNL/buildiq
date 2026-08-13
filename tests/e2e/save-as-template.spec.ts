@@ -27,14 +27,19 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { ensureApp, dismissOverlays, suppressSupportDialog } from './support/appFixture'
+import {
+	ensureApp,
+	dismissOverlays,
+	suppressSupportDialog,
+} from './support/appFixture'
 
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
 import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
 
 const SOURCE_APP = 'pw-sat-source'
 const TEMPLATE_SLUG = 'pw-sat-template'
-const OR_TEMPLATES = '/index.php/apps/openregister/api/objects/openbuild/application-template'
+const OR_TEMPLATES =
+	'/index.php/apps/openregister/api/objects/openbuild/application-template'
 
 // UN-QUARANTINED AND NARROWED 2026-07-31. #41 was not the blocker; the flow this
 // file drove is half live and half deliberately removed.
@@ -63,23 +68,40 @@ test.describe('OpenBuild save as template', () => {
 	 * @return {Promise<void>}
 	 */
 	async function resetTemplate(page) {
-		await page.evaluate(async ({ api, slug }) => {
-			const tok = window.OC?.requestToken
-				|| document.querySelector('head')?.getAttribute('data-requesttoken')
-				|| ''
-			const headers = { requesttoken: tok, 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' }
-			const listed = await (await fetch(api, { headers })).json().catch(() => null)
-			const rows = Array.isArray(listed) ? listed : (listed?.results ?? [])
-			for (const row of rows) {
-				if (row?.slug !== slug) {
-					continue
+		await page.evaluate(
+			async ({ api, slug }) => {
+				const tok =
+					window.OC?.requestToken
+					|| document
+						.querySelector('head')
+						?.getAttribute('data-requesttoken')
+					|| ''
+				const headers = {
+					requesttoken: tok,
+					'OCS-APIRequest': 'true',
+					'Content-Type': 'application/json',
 				}
-				const uuid = row?.['@self']?.id ?? row?.id
-				if (uuid) {
-					await fetch(`${api}/${encodeURIComponent(String(uuid))}`, { method: 'DELETE', headers })
+				const listed = await (
+					await fetch(api, { headers })
+				)
+					.json()
+					.catch(() => null)
+				const rows = Array.isArray(listed) ? listed : (listed?.results ?? [])
+				for (const row of rows) {
+					if (row?.slug !== slug) {
+						continue
+					}
+					const uuid = row?.['@self']?.id ?? row?.id
+					if (uuid) {
+						await fetch(`${api}/${encodeURIComponent(String(uuid))}`, {
+							method: 'DELETE',
+							headers,
+						})
+					}
 				}
-			}
-		}, { api: OR_TEMPLATES, slug: TEMPLATE_SLUG })
+			},
+			{ api: OR_TEMPLATES, slug: TEMPLATE_SLUG },
+		)
 	}
 
 	test.beforeEach(async ({ page }) => {
@@ -89,15 +111,24 @@ test.describe('OpenBuild save as template', () => {
 	})
 
 	// @e2e save-as-template::saving-captures-the-app-as-an-org-local-template
-	test('captures an app as an org-local template, config only', async ({ page }) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications/${SOURCE_APP}`, {
-			waitUntil: 'domcontentloaded',
-		})
+	test('captures an app as an org-local template, config only', async ({
+		page,
+	}) => {
+		await page.goto(
+			`${NEXTCLOUD_URL}/apps/openbuild/applications/${SOURCE_APP}`,
+			{
+				waitUntil: 'domcontentloaded',
+			},
+		)
 		await dismissOverlays(page)
 
 		// "Save as template" lives in the detail page's overflow Actions menu.
-		await page.getByRole('button', { name: /^Actions$/i }).first().click()
-		await page.getByRole('menuitem', { name: /Save as template/i })
+		await page
+			.getByRole('button', { name: /^Actions$/i })
+			.first()
+			.click()
+		await page
+			.getByRole('menuitem', { name: /Save as template/i })
 			.or(page.getByRole('button', { name: /Save as template/i }))
 			.first()
 			.click()
@@ -122,17 +153,31 @@ test.describe('OpenBuild save as template', () => {
 		// The capture is config-only — it never carries object rows.
 		await expect(saveDialog.locator('.ob-save-template__no-rows')).toBeVisible()
 
-		await page.getByRole('button', { name: /^Save as template$/i }).last().click()
+		await page
+			.getByRole('button', { name: /^Save as template$/i })
+			.last()
+			.click()
 
 		// The record must actually land in OpenRegister.
-		await expect.poll(async () => {
-			const rows = await page.evaluate(async (api) => {
-				const resp = await fetch(api, { headers: { 'OCS-APIRequest': 'true' } })
-				const data = await resp.json().catch(() => null)
-				return Array.isArray(data) ? data : (data?.results ?? [])
-			}, OR_TEMPLATES)
-			return rows.some((r) => r?.slug === TEMPLATE_SLUG)
-		}, { timeout: 30_000, message: 'the saved template must exist as an ApplicationTemplate' }).toBe(true)
+		await expect
+			.poll(
+				async () => {
+					const rows = await page.evaluate(async (api) => {
+						const resp = await fetch(api, {
+							headers: { 'OCS-APIRequest': 'true' },
+						})
+						const data = await resp.json().catch(() => null)
+						return Array.isArray(data) ? data : (data?.results ?? [])
+					}, OR_TEMPLATES)
+					return rows.some((r) => r?.slug === TEMPLATE_SLUG)
+				},
+				{
+					timeout: 30_000,
+					message:
+						'the saved template must exist as an ApplicationTemplate',
+				},
+			)
+			.toBe(true)
 
 		const stored = await page.evaluate(async (api) => {
 			const resp = await fetch(api, { headers: { 'OCS-APIRequest': 'true' } })
@@ -146,7 +191,10 @@ test.describe('OpenBuild save as template', () => {
 		// Org-local, not one of the bundled Conduction fixtures.
 		expect(stored.isSeeded ?? false).toBeFalsy()
 		// It captured the app's manifest, and no object data travelled with it.
-		expect(stored.manifest, 'the capture must carry the source manifest').toBeTruthy()
+		expect(
+			stored.manifest,
+			'the capture must carry the source manifest',
+		).toBeTruthy()
 		expect(JSON.stringify(stored.manifest)).not.toContain('"results"')
 	})
 
@@ -182,8 +230,14 @@ test.describe('OpenBuild save as template', () => {
 	// that keeps rbac-403.spec.ts and schema-access-scopes-rbac.spec.ts skipped.
 	// It is asserted at the unit level in tests/components/... via `obAppRole`,
 	// and left out here rather than faked with an admin session.
-	test('the capture action is offered per application, not on the index', async ({ page }) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild`, { waitUntil: 'domcontentloaded' })
-		await expect(page.getByRole('button', { name: /Save as template/i })).toHaveCount(0)
+	test('the capture action is offered per application, not on the index', async ({
+		page,
+	}) => {
+		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await expect(
+			page.getByRole('button', { name: /Save as template/i }),
+		).toHaveCount(0)
 	})
 })

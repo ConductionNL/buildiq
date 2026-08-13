@@ -22,7 +22,11 @@ async function getFirstAppDetailUrl(page: Page): Promise<string> {
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	const href = await card.getAttribute('href')
-	return href ? (href.startsWith('http') ? href : `${BASE}${href}`) : `${BASE}/apps/openbuild/applications`
+	return href
+		? href.startsWith('http')
+			? href
+			: `${BASE}${href}`
+		: `${BASE}/apps/openbuild/applications`
 }
 
 // QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
@@ -31,7 +35,9 @@ async function getFirstAppDetailUrl(page: Page): Promise<string> {
 // is stored on the Application. Nothing here uploads anything: the body clicks
 // into the detail page, asserts `main` is visible, guards a fatal-error check
 // behind `if (errorCount > 0)`, and ends on the app name being visible.
-test.skip('REQ-OBICON-004 — detail page exposes icon upload section', async ({ page }) => {
+test.skip('REQ-OBICON-004 — detail page exposes icon upload section', async ({
+	page,
+}) => {
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
@@ -51,7 +57,9 @@ test.skip('REQ-OBICON-004 — detail page exposes icon upload section', async ({
 	// If any error element, make sure it isn't a fatal crash
 	if (errorCount > 0) {
 		const errorText = await errorOverlay.first().textContent()
-		expect(errorText, 'page must not show a fatal error').not.toMatch(/fatal|crash|500|undefined is not/i)
+		expect(errorText, 'page must not show a fatal error').not.toMatch(
+			/fatal|crash|500|undefined is not/i,
+		)
 	}
 
 	// The detail page should render at minimum the application name heading
@@ -73,7 +81,9 @@ test.skip('REQ-OBICON-004 — detail page exposes icon upload section', async ({
 //
 // No test on this branch asserts the removal path; a real one must delete the
 // dark icon and read back the cleared reference.
-test.skip('REQ-OBICON-004 — icon tab/section is accessible on the detail page', async ({ page }) => {
+test.skip('REQ-OBICON-004 — icon tab/section is accessible on the detail page', async ({
+	page,
+}) => {
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
@@ -83,9 +93,9 @@ test.skip('REQ-OBICON-004 — icon tab/section is accessible on the detail page'
 	// The detail page should have sidebar tabs; look for an icon-related tab
 	// The spec says the icon section is on the Application detail page
 	// It may be a tab label or a section heading
-	const possibleIconTab = page.locator(
-		'[role="tab"], button, a',
-	).filter({ hasText: /icon|image|brand/i })
+	const possibleIconTab = page
+		.locator('[role="tab"], button, a')
+		.filter({ hasText: /icon|image|brand/i })
 
 	// Either the icon tab exists (full implementation) or the detail page loads without white-screen
 	const iconTabCount = await possibleIconTab.count()
@@ -95,9 +105,9 @@ test.skip('REQ-OBICON-004 — icon tab/section is accessible on the detail page'
 		await expect(page.locator('main')).toBeVisible({ timeout: 5_000 })
 	} else {
 		// Tab not yet wired to a specific label — detail page must at minimum load
-		await expect(
-			page.getByText('Hello World').first(),
-		).toBeVisible({ timeout: 10_000 })
+		await expect(page.getByText('Hello World').first()).toBeVisible({
+			timeout: 10_000,
+		})
 	}
 })
 
@@ -109,7 +119,9 @@ test.skip('REQ-OBICON-004 — icon tab/section is accessible on the detail page'
 // failing to reject is precisely the case in which nothing is asserted. The
 // body says so out loud: "the test passes vacuously because the UI is not
 // built". A vacuous pass and a real one are the same green.
-test.skip('REQ-OBICON-004 — non-SVG upload is rejected (icon section validation)', async ({ page }) => {
+test.skip('REQ-OBICON-004 — non-SVG upload is rejected (icon section validation)', async ({
+	page,
+}) => {
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
@@ -129,9 +141,9 @@ test.skip('REQ-OBICON-004 — non-SVG upload is rejected (icon section validatio
 			buffer: Buffer.from('PNG_FAKE_CONTENT'),
 		})
 		// An inline error message should appear
-		const errorMsg = page.locator(
-			'[class*="error"], [role="alert"], .nc-error-message',
-		).filter({ hasText: /svg|format|invalid|type/i })
+		const errorMsg = page
+			.locator('[class*="error"], [role="alert"], .nc-error-message')
+			.filter({ hasText: /svg|format|invalid|type/i })
 		const errorCount = await errorMsg.count()
 		// If icon upload UI renders, non-SVG should surface an inline error
 		// (if icon tab not yet visible, the test passes vacuously because the UI is not built)

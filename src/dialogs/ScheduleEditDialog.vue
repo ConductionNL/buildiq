@@ -21,11 +21,19 @@
 <template>
 	<NcModal
 		v-if="open"
-		:name="editing ? t('openbuild', 'Edit scheduled task') : t('openbuild', 'Add scheduled task')"
+		:name="
+			editing
+				? t('openbuild', 'Edit scheduled task')
+				: t('openbuild', 'Add scheduled task')
+		"
 		@close="onClose">
 		<div class="ob-schedule-edit">
 			<h2 class="ob-schedule-edit__title">
-				{{ editing ? t('openbuild', 'Edit scheduled task') : t('openbuild', 'Add scheduled task') }}
+				{{
+					editing
+						? t('openbuild', 'Edit scheduled task')
+						: t('openbuild', 'Add scheduled task')
+				}}
 			</h2>
 
 			<NcTextField
@@ -34,7 +42,8 @@
 				:placeholder="t('openbuild', 'e.g. Nightly BRP sync')"
 				@update:modelValue="onLabelInput" />
 			<p class="ob-schedule-edit__hint">
-				{{ t('openbuild', 'Identifier') }}: <code>{{ derivedId || '—' }}</code>
+				{{ t('openbuild', 'Identifier') }}:
+				<code>{{ derivedId || '—' }}</code>
 			</p>
 
 			<NcSelect
@@ -50,7 +59,11 @@
 				:label="t('openbuild', 'Cron expression (5 fields)')"
 				:placeholder="t('openbuild', 'e.g. 0 3 * * 1')"
 				:error="cron !== '' && !cronValid"
-				:helper-text="cron !== '' && !cronValid ? t('openbuild', 'Enter a valid 5-field cron expression.') : ''"
+				:helper-text="
+					cron !== '' && !cronValid
+						? t('openbuild', 'Enter a valid 5-field cron expression.')
+						: ''
+				"
 				@update:modelValue="cron = $event" />
 
 			<NcTextField
@@ -78,13 +91,24 @@
 					label="label"
 					@update:modelValue="onSyncSelect" />
 				<div v-else class="ob-schedule-edit__sync-manual">
-					<p class="ob-schedule-edit__hint ob-schedule-edit__hint--warning">
-						{{ t('openbuild', 'The synchronization list could not be loaded. Enter a synchronization id manually.') }}
+					<p
+						class="ob-schedule-edit__hint ob-schedule-edit__hint--warning">
+						{{
+							t(
+								'openbuild',
+								'The synchronization list could not be loaded. Enter a synchronization id manually.',
+							)
+						}}
 					</p>
 					<NcTextField
 						:model-value="syncId"
 						:label="t('openbuild', 'Synchronization id')"
-						:placeholder="t('openbuild', 'e.g. 00000000-0000-0000-0000-000000000000')"
+						:placeholder="
+							t(
+								'openbuild',
+								'e.g. 00000000-0000-0000-0000-000000000000',
+							)
+						"
 						@update:modelValue="syncId = $event" />
 				</div>
 			</div>
@@ -96,8 +120,16 @@
 				{{ t('openbuild', 'Enabled') }}
 			</NcCheckboxRadioSwitch>
 
-			<p v-if="showValidation && !valid" class="ob-schedule-edit__error" role="alert">
-				{{ t('openbuild', 'Please complete the scheduled task before saving.') }}
+			<p
+				v-if="showValidation && !valid"
+				class="ob-schedule-edit__error"
+				role="alert">
+				{{
+					t(
+						'openbuild',
+						'Please complete the scheduled task before saving.',
+					)
+				}}
 			</p>
 
 			<div class="ob-schedule-edit__actions">
@@ -113,10 +145,19 @@
 </template>
 
 <script>
-import { NcModal, NcButton, NcSelect, NcTextField, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import {
+	NcModal,
+	NcButton,
+	NcSelect,
+	NcTextField,
+	NcCheckboxRadioSwitch,
+} from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { validateScheduleEntry, isValidCron } from '../services/manifestValidation/schedules.js'
+import {
+	validateScheduleEntry,
+	isValidCron,
+} from '../services/manifestValidation/schedules.js'
 
 /** Cadence presets that write an `interval` in seconds. */
 const INTERVAL_PRESETS = Object.freeze([
@@ -178,7 +219,7 @@ export default {
 		// Ids used by OTHER entries in manifest.schedules[] (for uniqueness).
 		existingIds: {
 			type: Array,
-			default: () => ([]),
+			default: () => [],
 		},
 	},
 	emits: ['update:open', 'save'],
@@ -212,13 +253,19 @@ export default {
 				{ id: 'weekly', label: t('openbuild', 'Weekly') },
 				{ id: 'monthly', label: t('openbuild', 'Monthly') },
 				{ id: 'custom-cron', label: t('openbuild', 'Custom (cron)') },
-				{ id: 'custom-interval', label: t('openbuild', 'Custom interval (seconds)') },
+				{
+					id: 'custom-interval',
+					label: t('openbuild', 'Custom interval (seconds)'),
+				},
 			]
 		},
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-003 */
 		actionOptions() {
 			return [
-				{ value: 'openconnector:synchronization', label: t('openbuild', 'Run a synchronization') },
+				{
+					value: 'openconnector:synchronization',
+					label: t('openbuild', 'Run a synchronization'),
+				},
 			]
 		},
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
@@ -235,7 +282,10 @@ export default {
 		},
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-003 */
 		isSyncAction() {
-			return this.actionOption && this.actionOption.value === 'openconnector:synchronization'
+			return (
+				this.actionOption
+				&& this.actionOption.value === 'openconnector:synchronization'
+			)
 		},
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-003 */
 		syncPickerAvailable() {
@@ -331,17 +381,28 @@ export default {
 			this.cron = typeof e.cron === 'string' ? e.cron : ''
 			this.intervalSeconds = ''
 			if (typeof e.cron === 'string') {
-				this.cadenceOption = this.cadenceOptions.find((o) => o.id === 'custom-cron')
+				this.cadenceOption = this.cadenceOptions.find(
+					(o) => o.id === 'custom-cron',
+				)
 			} else {
-				const preset = INTERVAL_PRESETS.find((p) => p.interval === e.interval)
+				const preset = INTERVAL_PRESETS.find(
+					(p) => p.interval === e.interval,
+				)
 				if (preset) {
-					this.cadenceOption = this.cadenceOptions.find((o) => o.id === preset.id)
+					this.cadenceOption = this.cadenceOptions.find(
+						(o) => o.id === preset.id,
+					)
 				} else {
-					this.cadenceOption = this.cadenceOptions.find((o) => o.id === 'custom-interval')
-					this.intervalSeconds = e.interval !== undefined ? String(e.interval) : ''
+					this.cadenceOption = this.cadenceOptions.find(
+						(o) => o.id === 'custom-interval',
+					)
+					this.intervalSeconds =
+						e.interval !== undefined ? String(e.interval) : ''
 				}
 			}
-			this.actionOption = this.actionOptions.find((o) => o.value === e.action) || this.actionOptions[0]
+			this.actionOption =
+				this.actionOptions.find((o) => o.value === e.action)
+				|| this.actionOptions[0]
 			this.syncId = (e.arguments && e.arguments.synchronizationId) || ''
 			this.enabled = e.enabled !== false
 		},
@@ -366,19 +427,26 @@ export default {
 			this.syncLoading = true
 			this.syncFetchFailed = false
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openconnector/synchronization')
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openconnector/synchronization',
+				)
 				const { data } = await axios.get(url, { params: { limit: 500 } })
 				const list = Array.isArray(data && data.results)
 					? data.results
-					: Array.isArray(data) ? data : []
-				this.syncOptions = list.map((sync) => ({
-					id: String(sync.id || sync.uuid),
-					label: sync.name || sync.title || sync.id,
-				})).filter((o) => o.id && o.id !== 'undefined')
+					: Array.isArray(data)
+						? data
+						: []
+				this.syncOptions = list
+					.map((sync) => ({
+						id: String(sync.id || sync.uuid),
+						label: sync.name || sync.title || sync.id,
+					}))
+					.filter((o) => o.id && o.id !== 'undefined')
 				if (this.syncOptions.length === 0) {
 					this.syncFetchFailed = true
 				} else {
-					this.syncOption = this.syncOptions.find((o) => o.id === this.syncId) || null
+					this.syncOption =
+						this.syncOptions.find((o) => o.id === this.syncId) || null
 				}
 			} catch {
 				this.syncFetchFailed = true

@@ -13,7 +13,13 @@
 		size="small"
 		@update:open="onOpenUpdate">
 		<p class="openbuild-delete-schema-dialog__warning">
-			{{ t('openbuild', 'You are about to delete the schema {slug}. All objects of this schema may be affected. Type the schema slug below to confirm.', { slug: schemaSlug }) }}
+			{{
+				t(
+					'openbuild',
+					'You are about to delete the schema {slug}. All objects of this schema may be affected. Type the schema slug below to confirm.',
+					{ slug: schemaSlug },
+				)
+			}}
 		</p>
 		<NcTextField
 			:model-value="typed"
@@ -24,10 +30,7 @@
 			<NcButton @click="onCancel">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton
-				type="error"
-				:disabled="!canDelete"
-				@click="onConfirm">
+			<NcButton type="error" :disabled="!canDelete" @click="onConfirm">
 				{{ t('openbuild', 'Delete schema') }}
 			</NcButton>
 		</template>

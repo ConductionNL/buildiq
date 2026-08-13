@@ -71,14 +71,17 @@
 						</template>
 						{{ t('openbuild', 'Redo') }}
 					</NcButton>
-					<NcButton :disabled="!hasStagedChanges || saving" @click="discardChanges">
+					<NcButton
+						:disabled="!hasStagedChanges || saving"
+						@click="discardChanges">
 						{{ t('openbuild', 'Discard staged edits') }}
 					</NcButton>
-					<NcButton
-						type="primary"
-						:disabled="!canSave"
-						@click="save">
-						{{ saving ? t('openbuild', 'Saving...') : t('openbuild', 'Save') }}
+					<NcButton type="primary" :disabled="!canSave" @click="save">
+						{{
+							saving
+								? t('openbuild', 'Saving...')
+								: t('openbuild', 'Save')
+						}}
 					</NcButton>
 				</div>
 			</header>
@@ -93,7 +96,9 @@
 				to load. That false empty state is what a freshly created schema
 				lands on right after Add-schema navigates here.
 			-->
-			<div v-if="loadingDetail || !detailAttempted" class="openbuild-schema-designer__loading">
+			<div
+				v-if="loadingDetail || !detailAttempted"
+				class="openbuild-schema-designer__loading">
 				<NcLoadingIcon :size="32" />
 			</div>
 
@@ -102,8 +107,15 @@
 					{{ saveError }}
 				</NcNoteCard>
 
-				<NcNoteCard v-if="!hasInitialLifecycleState && hasLifecycleStates" type="warning">
-					{{ t('openbuild', 'Exactly one lifecycle state must be marked as initial before you can save.') }}
+				<NcNoteCard
+					v-if="!hasInitialLifecycleState && hasLifecycleStates"
+					type="warning">
+					{{
+						t(
+							'openbuild',
+							'Exactly one lifecycle state must be marked as initial before you can save.',
+						)
+					}}
 				</NcNoteCard>
 
 				<SchemaHeaderForm
@@ -128,7 +140,12 @@
 					@update:relations="onRelationsChange" />
 
 				<NcNoteCard v-if="authorLockedOut" type="warning">
-					{{ t('openbuild', 'Saving this read scope will make this schema\'s records invisible to you. Save remains available — this may be an intentional admin-assisted handover.') }}
+					{{
+						t(
+							'openbuild',
+							"Saving this read scope will make this schema's records invisible to you. Save remains available — this may be an intentional admin-assisted handover.",
+						)
+					}}
 				</NcNoteCard>
 
 				<AccessEditor
@@ -150,7 +167,12 @@
 			<NcEmptyContent
 				v-else
 				:name="t('openbuild', 'Schema not found')"
-				:description="t('openbuild', 'No schema with this slug exists in the current app.')">
+				:description="
+					t(
+						'openbuild',
+						'No schema with this slug exists in the current app.',
+					)
+				">
 				<template #action>
 					<NcButton @click="goToList">
 						{{ t('openbuild', 'Back to schemas') }}
@@ -180,11 +202,26 @@ import RedoIcon from 'vue-material-design-icons/Redo.vue'
 
 import SchemaListPanel from '../components/schema-editor/SchemaListPanel.vue'
 import SchemaHeaderForm from '../components/schema-editor/SchemaHeaderForm.vue'
-import FieldEditor, { fieldsToSchema, schemaToFields } from '../components/schema-editor/FieldEditor.vue'
-import LifecycleEditor, { editorToLifecycle, lifecycleToEditor } from '../components/schema-editor/LifecycleEditor.vue'
-import RelationEditor, { editorToRelations, relationsToEditor } from '../components/schema-editor/RelationEditor.vue'
-import AccessEditor, { accessToEditor, editorToAccess } from '../components/schema-editor/AccessEditor.vue'
-import WidgetEditor, { editorToWidgets, widgetsToEditor } from '../components/schema-editor/WidgetEditor.vue'
+import FieldEditor, {
+	fieldsToSchema,
+	schemaToFields,
+} from '../components/schema-editor/FieldEditor.vue'
+import LifecycleEditor, {
+	editorToLifecycle,
+	lifecycleToEditor,
+} from '../components/schema-editor/LifecycleEditor.vue'
+import RelationEditor, {
+	editorToRelations,
+	relationsToEditor,
+} from '../components/schema-editor/RelationEditor.vue'
+import AccessEditor, {
+	accessToEditor,
+	editorToAccess,
+} from '../components/schema-editor/AccessEditor.vue'
+import WidgetEditor, {
+	editorToWidgets,
+	widgetsToEditor,
+} from '../components/schema-editor/WidgetEditor.vue'
 import AggregationEditor from '../components/schema-editor/AggregationEditor.vue'
 import CalculationEditor from '../components/schema-editor/CalculationEditor.vue'
 import NotificationEditor from '../components/schema-editor/NotificationEditor.vue'
@@ -381,7 +418,8 @@ export default {
 		 * @return {string[]} Deduplicated group ids.
 		 */
 		availableGroups() {
-			const perms = (this.applicationRecord && this.applicationRecord.permissions) || {}
+			const perms =
+				(this.applicationRecord && this.applicationRecord.permissions) || {}
 			const all = [
 				...(Array.isArray(perms.owners) ? perms.owners : []),
 				...(Array.isArray(perms.editors) ? perms.editors : []),
@@ -410,7 +448,11 @@ export default {
 		 * @return {boolean}
 		 */
 		isNcAdmin() {
-			return !!(typeof OC !== 'undefined' && OC.isUserAdmin && OC.isUserAdmin())
+			return !!(
+				typeof OC !== 'undefined'
+				&& OC.isUserAdmin
+				&& OC.isUserAdmin()
+			)
 		},
 		/**
 		 * Whether the active ApplicationVersion is the Application's
@@ -424,8 +466,11 @@ export default {
 				return false
 			}
 			const pv = this.applicationRecord.productionVersion
-			const productionUuid = typeof pv === 'string' ? pv : ((pv && (pv.uuid || pv.id)) || null)
-			return !!productionUuid && productionUuid === this.applicationVersion.uuid
+			const productionUuid =
+				typeof pv === 'string' ? pv : (pv && (pv.uuid || pv.id)) || null
+			return (
+				!!productionUuid && productionUuid === this.applicationVersion.uuid
+			)
 		},
 		/**
 		 * Gate the Access sub-editor read-only on the production version
@@ -534,8 +579,10 @@ export default {
 			if (!this.staged || !this.persisted) {
 				return false
 			}
-			return JSON.stringify(this.composeSchemaBody(this.staged))
+			return (
+				JSON.stringify(this.composeSchemaBody(this.staged))
 				!== JSON.stringify(this.persisted)
+			)
 		},
 		/**
 		 * REQ-BUR-002 / REQ-BUR-005: whether an earlier staged state exists.
@@ -652,10 +699,13 @@ export default {
 		async loadApplicationRecord() {
 			try {
 				const url = generateUrl('/apps/openbuild/api/applications')
-				const { data } = await axios.get(url, { headers: { 'OCS-APIREQUEST': 'true' } })
+				const { data } = await axios.get(url, {
+					headers: { 'OCS-APIREQUEST': 'true' },
+				})
 				const list = (data && (data.results || data)) || []
 				const apps = Array.isArray(list) ? list : []
-				this.applicationRecord = apps.find((a) => a && a.slug === this.appSlug) || null
+				this.applicationRecord =
+					apps.find((a) => a && a.slug === this.appSlug) || null
 			} catch (e) {
 				this.applicationRecord = null
 			}
@@ -692,18 +742,24 @@ export default {
 			this.versionLoading = loading.value
 			this.versionError = error.value
 			// Set up watchers to keep component data in sync as the fetch resolves.
-			const unwatch = this.$watch(() => applicationVersion.value, (v) => {
-				this.applicationVersion = v
-			})
-			const unwatchLoading = this.$watch(() => loading.value, (v) => {
-				this.versionLoading = v
-				if (!v) {
-					// Fetch complete — clean up watchers to avoid leaks.
-					unwatch()
-					unwatchLoading()
-					this.versionError = error.value
-				}
-			})
+			const unwatch = this.$watch(
+				() => applicationVersion.value,
+				(v) => {
+					this.applicationVersion = v
+				},
+			)
+			const unwatchLoading = this.$watch(
+				() => loading.value,
+				(v) => {
+					this.versionLoading = v
+					if (!v) {
+						// Fetch complete — clean up watchers to avoid leaks.
+						unwatch()
+						unwatchLoading()
+						this.versionError = error.value
+					}
+				},
+			)
 		},
 		/**
 		 * Fetch the schema collection and filter to this app/version register.
@@ -730,11 +786,19 @@ export default {
 				})
 				const err = this.store.errors[SCHEMA_TYPE]
 				if (err) {
-					showError(this.t('openbuild', 'Failed to load schemas: {error}', { error: err }))
+					showError(
+						this.t('openbuild', 'Failed to load schemas: {error}', {
+							error: err,
+						}),
+					)
 				}
 			} catch (e) {
 				this.schemas = []
-				showError(this.t('openbuild', 'Failed to load schemas: {error}', { error: this.errorMessage(e) }))
+				showError(
+					this.t('openbuild', 'Failed to load schemas: {error}', {
+						error: this.errorMessage(e),
+					}),
+				)
 			} finally {
 				this.loadingList = false
 			}
@@ -774,7 +838,11 @@ export default {
 					this.persisted = null
 					const err = this.store.errors[SCHEMA_TYPE]
 					if (err) {
-						showError(this.t('openbuild', 'Failed to load schema: {error}', { error: err }))
+						showError(
+							this.t('openbuild', 'Failed to load schema: {error}', {
+								error: err,
+							}),
+						)
 					}
 					return
 				}
@@ -783,7 +851,11 @@ export default {
 			} catch (e) {
 				this.staged = null
 				this.persisted = null
-				showError(this.t('openbuild', 'Failed to load schema: {error}', { error: this.errorMessage(e) }))
+				showError(
+					this.t('openbuild', 'Failed to load schema: {error}', {
+						error: this.errorMessage(e),
+					}),
+				)
 			} finally {
 				this.loadingDetail = false
 				// The load has now been attempted for this schemaId — from here on
@@ -811,7 +883,10 @@ export default {
 			const lifecycle = body['x-openregister-lifecycle']
 			const { states, transitions } = lifecycleToEditor(lifecycle)
 			return {
-				slug: body.slug || (body['@self'] && body['@self'].slug) || this.schemaId,
+				slug:
+					body.slug
+					|| (body['@self'] && body['@self'].slug)
+					|| this.schemaId,
 				title: body.title || '',
 				description: body.description || '',
 				version: body.version || '0.1.0',
@@ -863,7 +938,10 @@ export default {
 			// preserved raw block so a Save never strips or reorders an
 			// `authorization` block set outside the designer (fixes the
 			// pre-existing strip bug — this used to be entirely absent).
-			const authorization = editorToAccess(staged.access, staged.rawAuthorization)
+			const authorization = editorToAccess(
+				staged.access,
+				staged.rawAuthorization,
+			)
 			if (authorization) {
 				body.authorization = authorization
 			}
@@ -993,7 +1071,7 @@ export default {
 				return null
 			}
 			const id = p.id ?? (p['@self'] && p['@self'].id)
-			return (id === undefined || id === null || id === '') ? null : id
+			return id === undefined || id === null || id === '' ? null : id
 		},
 		/**
 		 * The slug of the currently loaded (persisted) schema, if any.
@@ -1038,7 +1116,8 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async attachSchemaToRegister(data) {
-			const schemaId = (data && (data.id || (data['@self'] && data['@self'].id))) || null
+			const schemaId =
+				(data && (data.id || (data['@self'] && data['@self'].id))) || null
 			if (schemaId === null) {
 				return
 			}
@@ -1047,9 +1126,13 @@ export default {
 				// OpenRegister resolves GET /api/registers/{id} by slug, but its
 				// PATCH counterpart resolves ONLY by the numeric id (slug and uuid
 				// both 404), so read the register by slug first and PATCH by id.
-				const readUrl = generateUrl(`/apps/openregister/api/registers/${encodeURIComponent(register)}`)
+				const readUrl = generateUrl(
+					`/apps/openregister/api/registers/${encodeURIComponent(register)}`,
+				)
 				const { data: current } = await axios.get(readUrl)
-				const existing = Array.isArray(current && current.schemas) ? current.schemas : []
+				const existing = Array.isArray(current && current.schemas)
+					? current.schemas
+					: []
 				// Compare as strings — the array mixes numeric ids and uuids.
 				if (existing.some((id) => String(id) === String(schemaId))) {
 					return
@@ -1058,16 +1141,20 @@ export default {
 				if (numericId === undefined || numericId === null) {
 					throw new Error('register has no id')
 				}
-				const writeUrl = generateUrl(`/apps/openregister/api/registers/${encodeURIComponent(numericId)}`)
+				const writeUrl = generateUrl(
+					`/apps/openregister/api/registers/${encodeURIComponent(numericId)}`,
+				)
 				await axios.patch(writeUrl, { schemas: [...existing, schemaId] })
 			} catch (e) {
 				// Non-fatal: the schema exists and is editable; it just is not
 				// listed on the register yet. Surface it so the builder knows.
-				showError(this.t(
-					'openbuild',
-					'Schema created, but could not be attached to register {register}: {error}',
-					{ register, error: this.errorMessage(e) },
-				))
+				showError(
+					this.t(
+						'openbuild',
+						'Schema created, but could not be attached to register {register}: {error}',
+						{ register, error: this.errorMessage(e) },
+					),
+				)
 			}
 		},
 		/**
@@ -1098,17 +1185,28 @@ export default {
 			// No `id` field on the payload — store treats this as a POST.
 			const data = await this.store.saveObject(SCHEMA_TYPE, body)
 			if (!data) {
-				const err = this.store.errors[SCHEMA_TYPE] || this.t('openbuild', 'Unknown error')
+				const err =
+					this.store.errors[SCHEMA_TYPE]
+					|| this.t('openbuild', 'Unknown error')
 				// Surface duplicate-slug specifically so the AddSchemaDialog
 				// can render an inline field error per REQ-OBSD-002.
-				if (typeof err === 'string' && /409|already exists|duplicate/i.test(err)) {
+				if (
+					typeof err === 'string'
+					&& /409|already exists|duplicate/i.test(err)
+				) {
 					const duplicate = new Error('duplicate slug')
 					duplicate.status = 409
 					throw duplicate
 				}
-				throw new Error(typeof err === 'string' ? err : this.t('openbuild', 'Failed to create schema'))
+				throw new Error(
+					typeof err === 'string'
+						? err
+						: this.t('openbuild', 'Failed to create schema'),
+				)
 			}
-			const newSlug = (data && (data.slug || (data['@self'] && data['@self'].slug))) || body.slug
+			const newSlug =
+				(data && (data.slug || (data['@self'] && data['@self'].slug)))
+				|| body.slug
 			await this.attachSchemaToRegister(data)
 			await this.refreshList()
 			// Stage what the create call just returned, so the detail view we are
@@ -1133,12 +1231,16 @@ export default {
 			// that dialog.
 			await this.$nextTick()
 			// REQ-OBVR-006: use buildVersionedRoute to forward ?_version= on navigation.
-			this.$router.push(buildVersionedRoute(
-				'SchemaDesigner',
-				{ slug: this.appSlug, schemaId: newSlug },
-				this.versionSlug,
-			))
-			showSuccess(this.t('openbuild', 'Schema {slug} created.', { slug: newSlug }))
+			this.$router.push(
+				buildVersionedRoute(
+					'SchemaDesigner',
+					{ slug: this.appSlug, schemaId: newSlug },
+					this.versionSlug,
+				),
+			)
+			showSuccess(
+				this.t('openbuild', 'Schema {slug} created.', { slug: newSlug }),
+			)
 		},
 		/**
 		 * Navigate to a schema's detail, preserving ?_version=.
@@ -1149,11 +1251,13 @@ export default {
 		 */
 		openSchema(slug) {
 			// REQ-OBVR-006: use buildVersionedRoute to forward ?_version= on navigation.
-			this.$router.push(buildVersionedRoute(
-				'SchemaDesigner',
-				{ slug: this.appSlug, schemaId: slug },
-				this.versionSlug,
-			))
+			this.$router.push(
+				buildVersionedRoute(
+					'SchemaDesigner',
+					{ slug: this.appSlug, schemaId: slug },
+					this.versionSlug,
+				),
+			)
 		},
 		/**
 		 * Navigate back to the schema list, preserving ?_version=.
@@ -1163,11 +1267,13 @@ export default {
 		 */
 		goToList() {
 			// REQ-OBVR-006: use buildVersionedRoute to forward ?_version= on navigation.
-			this.$router.push(buildVersionedRoute(
-				'SchemaDesignerList',
-				{ slug: this.appSlug },
-				this.versionSlug,
-			))
+			this.$router.push(
+				buildVersionedRoute(
+					'SchemaDesignerList',
+					{ slug: this.appSlug },
+					this.versionSlug,
+				),
+			)
 		},
 		/**
 		 * Delete a schema via the store and refresh the list.
@@ -1186,11 +1292,17 @@ export default {
 			const target = (this.schemas || []).find(
 				(s) => (s.slug || (s['@self'] && s['@self'].slug)) === slug,
 			)
-			const targetId = target ? (target.id ?? (target['@self'] && target['@self'].id)) : null
+			const targetId = target
+				? (target.id ?? (target['@self'] && target['@self'].id))
+				: null
 			const ok = await this.store.deleteObject(SCHEMA_TYPE, targetId ?? slug)
 			if (!ok) {
 				const err = this.store.errors[SCHEMA_TYPE]
-				showError(this.t('openbuild', 'Failed to delete schema: {error}', { error: err || '' }))
+				showError(
+					this.t('openbuild', 'Failed to delete schema: {error}', {
+						error: err || '',
+					}),
+				)
 				return
 			}
 			await this.refreshList()
@@ -1225,12 +1337,16 @@ export default {
 				// meant every save in the designer 404'd, so no schema edit —
 				// fields, lifecycle, relations, access — ever persisted.
 				const writeId = this.persistedNumericId() ?? this.schemaId
-				const data = await this.store.saveObject(SCHEMA_TYPE, { ...body, id: writeId })
+				const data = await this.store.saveObject(SCHEMA_TYPE, {
+					...body,
+					id: writeId,
+				})
 				if (!data) {
 					const err = this.store.errors[SCHEMA_TYPE]
-					this.saveError = typeof err === 'string'
-						? err
-						: this.t('openbuild', 'Failed to save schema')
+					this.saveError =
+						typeof err === 'string'
+							? err
+							: this.t('openbuild', 'Failed to save schema')
 					return
 				}
 				this.persisted = data

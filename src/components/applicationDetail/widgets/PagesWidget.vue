@@ -22,9 +22,13 @@
 				@keyup.enter="openPage(page)"
 				@keyup.space="openPage(page)">
 				<span class="ob-pages-widget__row-id">{{ page.id }}</span>
-				<span class="ob-pages-widget__row-route"><code>{{ page.route || '—' }}</code></span>
+				<span class="ob-pages-widget__row-route"
+					><code>{{ page.route || '—' }}</code></span
+				>
 				<span class="ob-pages-widget__row-type">{{ page.type || '—' }}</span>
-				<span class="ob-pages-widget__row-title">{{ page.title || '—' }}</span>
+				<span class="ob-pages-widget__row-title">{{
+					page.title || '—'
+				}}</span>
 			</li>
 		</ul>
 		<p v-else class="ob-pages-widget__empty">

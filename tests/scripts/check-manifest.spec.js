@@ -52,15 +52,30 @@ describe('check-manifest CLI', () => {
 		const dir = mkdtempSync(join(tmpdir(), 'check-manifest-'))
 		const file = join(dir, 'ok.json')
 		try {
-			writeFileSync(file, JSON.stringify({
-				version: '1.0.0',
-				menu: [
-					{ id: 'home', label: 'Home', icon: 'icon-home', route: 'Home', order: 10 },
-				],
-				pages: [
-					{ id: 'Home', route: '/', type: 'dashboard', title: 'Home', config: { widgets: [], layout: [] } },
-				],
-			}))
+			writeFileSync(
+				file,
+				JSON.stringify({
+					version: '1.0.0',
+					menu: [
+						{
+							id: 'home',
+							label: 'Home',
+							icon: 'icon-home',
+							route: 'Home',
+							order: 10,
+						},
+					],
+					pages: [
+						{
+							id: 'Home',
+							route: '/',
+							type: 'dashboard',
+							title: 'Home',
+							config: { widgets: [], layout: [] },
+						},
+					],
+				}),
+			)
 			const { code, stdout } = runValidator([file])
 			expect(code).toBe(0)
 			expect(stdout).toContain('PASS')
@@ -89,21 +104,34 @@ describe('check-manifest CLI', () => {
 		const dir = mkdtempSync(join(tmpdir(), 'check-manifest-'))
 		const file = join(dir, 'wizard-like.json')
 		try {
-			writeFileSync(file, JSON.stringify({
-				version: '1.0.0',
-				menu: [
-					{ id: 'msgs', label: 'Messages', icon: 'icon-comment', route: 'Msgs', order: 10 },
-				],
-				pages: [
-					{
-						id: 'Msgs',
-						route: '/messages',
-						type: 'index',
-						title: 'Messages',
-						config: { register: '{registerSlug}', schema: 'hello-message', columns: ['body'] },
-					},
-				],
-			}))
+			writeFileSync(
+				file,
+				JSON.stringify({
+					version: '1.0.0',
+					menu: [
+						{
+							id: 'msgs',
+							label: 'Messages',
+							icon: 'icon-comment',
+							route: 'Msgs',
+							order: 10,
+						},
+					],
+					pages: [
+						{
+							id: 'Msgs',
+							route: '/messages',
+							type: 'index',
+							title: 'Messages',
+							config: {
+								register: '{registerSlug}',
+								schema: 'hello-message',
+								columns: ['body'],
+							},
+						},
+					],
+				}),
+			)
 			const { code, stdout } = runValidator([file])
 			expect(code).toBe(0)
 			expect(stdout).toContain('PASS')

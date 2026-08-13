@@ -57,7 +57,13 @@
 					:options="operationOptions"
 					:clearable="false"
 					label="label"
-					@update:modelValue="updateItem(index, 'operation', $event ? $event.value : 'update')" />
+					@update:modelValue="
+						updateItem(
+							index,
+							'operation',
+							$event ? $event.value : 'update',
+						)
+					" />
 				<NcTextField
 					:model-value="item.schema"
 					:label="t('openbuild', 'Target schema')"
@@ -65,7 +71,9 @@
 				<NcTextArea
 					:model-value="item.fieldMappingText"
 					:label="t('openbuild', 'Field mapping (JSON)')"
-					@update:modelValue="updateItem(index, 'fieldMappingText', $event)" />
+					@update:modelValue="
+						updateItem(index, 'fieldMappingText', $event)
+					" />
 			</template>
 
 			<template v-else-if="item.type === 'webhook'">
@@ -76,10 +84,15 @@
 				<NcTextArea
 					:model-value="item.payloadTemplateText"
 					:label="t('openbuild', 'Payload template (JSON)')"
-					@update:modelValue="updateItem(index, 'payloadTemplateText', $event)" />
+					@update:modelValue="
+						updateItem(index, 'payloadTemplateText', $event)
+					" />
 			</template>
 
-			<NcButton type="error" :aria-label="t('openbuild', 'Remove follow-up action')" @click="removeAction(index)">
+			<NcButton
+				type="error"
+				:aria-label="t('openbuild', 'Remove follow-up action')"
+				@click="removeAction(index)">
 				{{ t('openbuild', 'Remove') }}
 			</NcButton>
 		</div>
@@ -113,8 +126,14 @@ export default {
 	computed: {
 		typeOptions() {
 			return [
-				{ value: 'send-notification', label: t('openbuild', 'Send notification') },
-				{ value: 'object-op', label: t('openbuild', 'Create/update an object') },
+				{
+					value: 'send-notification',
+					label: t('openbuild', 'Send notification'),
+				},
+				{
+					value: 'object-op',
+					label: t('openbuild', 'Create/update an object'),
+				},
 				{ value: 'webhook', label: t('openbuild', 'Webhook') },
 			]
 		},
@@ -155,17 +174,29 @@ export default {
 				schema: action.schema || '',
 				fieldMappingText: JSON.stringify(action.fieldMapping || {}, null, 2),
 				url: action.url || '',
-				payloadTemplateText: JSON.stringify(action.payloadTemplate || {}, null, 2),
+				payloadTemplateText: JSON.stringify(
+					action.payloadTemplate || {},
+					null,
+					2,
+				),
 			}
 		},
 		typeOption(type) {
-			return this.typeOptions.find((o) => o.value === type) || this.typeOptions[0]
+			return (
+				this.typeOptions.find((o) => o.value === type) || this.typeOptions[0]
+			)
 		},
 		operationOption(operation) {
-			return this.operationOptions.find((o) => o.value === operation) || this.operationOptions[1]
+			return (
+				this.operationOptions.find((o) => o.value === operation)
+				|| this.operationOptions[1]
+			)
 		},
 		addAction() {
-			this.items = [...this.items, this.toEditorShape({ type: 'send-notification' })]
+			this.items = [
+				...this.items,
+				this.toEditorShape({ type: 'send-notification' }),
+			]
 			this.emit()
 		},
 		removeAction(index) {
@@ -173,10 +204,16 @@ export default {
 			this.emit()
 		},
 		onTypeChange(index, option) {
-			this.updateItem(index, 'type', option ? option.value : 'send-notification')
+			this.updateItem(
+				index,
+				'type',
+				option ? option.value : 'send-notification',
+			)
 		},
 		updateItem(index, key, value) {
-			this.items = this.items.map((item, i) => (i === index ? { ...item, [key]: value } : item))
+			this.items = this.items.map((item, i) =>
+				i === index ? { ...item, [key]: value } : item,
+			)
 			this.emit()
 		},
 		/**
@@ -187,7 +224,10 @@ export default {
 		emittedValue() {
 			return this.items.map((item) => {
 				if (item.type === 'send-notification') {
-					return { type: 'send-notification', subject: { en: item.subjectEn, nl: item.subjectNl } }
+					return {
+						type: 'send-notification',
+						subject: { en: item.subjectEn, nl: item.subjectNl },
+					}
 				}
 				if (item.type === 'object-op') {
 					let fieldMapping = {}
@@ -196,7 +236,11 @@ export default {
 					} catch (e) {
 						fieldMapping = {}
 					}
-					const objectOp = { type: 'object-op', operation: item.operation, schema: item.schema }
+					const objectOp = {
+						type: 'object-op',
+						operation: item.operation,
+						schema: item.schema,
+					}
 					// OpenRegister rejects `{}` (and `null`) for a nested array-item
 					// object property — "expects object but got empty ({})" — so an
 					// empty mapping must be OMITTED, not sent as an empty object.

@@ -17,10 +17,7 @@
   - never receive an empty string.
   -->
 <template>
-	<NcDialog
-		v-if="open"
-		:name="name"
-		@closing="$emit('update:open', false)">
+	<NcDialog v-if="open" :name="name" @closing="$emit('update:open', false)">
 		<div class="prompt-text">
 			<NcTextField
 				v-model:value="value"

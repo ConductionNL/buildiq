@@ -6,35 +6,38 @@
   -->
 <template>
 	<div class="sidebar-tab-builder">
-		<div v-for="(tab, index) in localTabs" :key="index" class="sidebar-tab-builder__row">
+		<div
+			v-for="(tab, index) in localTabs"
+			:key="index"
+			class="sidebar-tab-builder__row">
 			<input
 				:value="tab.id || ''"
 				type="text"
 				class="sidebar-tab-builder__field"
 				:placeholder="t('openbuild', 'Tab id')"
 				:aria-label="t('openbuild', 'Tab id')"
-				@input="updateField(index, 'id', $event.target.value)">
+				@input="updateField(index, 'id', $event.target.value)" />
 			<input
 				:value="tab.label || ''"
 				type="text"
 				class="sidebar-tab-builder__field"
 				:placeholder="t('openbuild', 'Label (i18n key)')"
 				:aria-label="t('openbuild', 'Label (i18n key)')"
-				@input="updateField(index, 'label', $event.target.value)">
+				@input="updateField(index, 'label', $event.target.value)" />
 			<input
 				:value="tab.icon || ''"
 				type="text"
 				class="sidebar-tab-builder__field sidebar-tab-builder__field--narrow"
 				:placeholder="t('openbuild', 'Icon')"
 				:aria-label="t('openbuild', 'Icon')"
-				@input="updateField(index, 'icon', $event.target.value)">
+				@input="updateField(index, 'icon', $event.target.value)" />
 			<input
 				:value="tab.component || ''"
 				type="text"
 				class="sidebar-tab-builder__field"
 				:placeholder="t('openbuild', 'Component (registry key)')"
 				:aria-label="t('openbuild', 'Component (registry key)')"
-				@input="updateField(index, 'component', $event.target.value)">
+				@input="updateField(index, 'component', $event.target.value)" />
 			<button
 				type="button"
 				class="sidebar-tab-builder__remove"
@@ -47,7 +50,12 @@
 			+ {{ t('openbuild', 'Add tab') }}
 		</button>
 		<p class="sidebar-tab-builder__hint">
-			{{ t('openbuild', 'Each tab declares either a list of widgets OR a component (mutually exclusive).') }}
+			{{
+				t(
+					'openbuild',
+					'Each tab declares either a list of widgets OR a component (mutually exclusive).',
+				)
+			}}
 		</p>
 	</div>
 </template>

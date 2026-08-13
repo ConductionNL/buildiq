@@ -78,7 +78,8 @@ vi.mock('@nextcloud/initial-state', () => {
 
 const { loadState } = await import('@nextcloud/initial-state')
 const { default: axios } = await import('@nextcloud/axios')
-const { default: SchemaDesigner } = await import('../../src/views/SchemaDesigner.vue')
+const { default: SchemaDesigner } =
+	await import('../../src/views/SchemaDesigner.vue')
 
 // Both `loadApplicationRecord()` (SchemaDesigner) and `useApplicationVersion()`
 // fire unrelated network fetches on mount. Spying on (not replacing) the real
@@ -92,23 +93,76 @@ const { default: SchemaDesigner } = await import('../../src/views/SchemaDesigner
 vi.spyOn(axios, 'get').mockRejectedValue(new Error('network disabled in test'))
 
 const editorStubs = {
-	SchemaListPanel: { name: 'SchemaListPanel', props: ['schemas', 'loading'], template: '<div />' },
-	SchemaHeaderForm: { name: 'SchemaHeaderForm', props: ['value', 'lockedSlug'], template: '<div />' },
-	FieldEditor: { name: 'FieldEditor', props: ['fields', 'schemaSlugs'], template: '<div />' },
-	LifecycleEditor: { name: 'LifecycleEditor', props: ['states', 'transitions'], template: '<div />' },
-	RelationEditor: { name: 'RelationEditor', props: ['relations', 'schemaSlugs'], template: '<div />' },
-	AccessEditor: { name: 'AccessEditor', props: ['access', 'fieldNames', 'availableGroups', 'readOnly'], template: '<div />' },
+	SchemaListPanel: {
+		name: 'SchemaListPanel',
+		props: ['schemas', 'loading'],
+		template: '<div />',
+	},
+	SchemaHeaderForm: {
+		name: 'SchemaHeaderForm',
+		props: ['value', 'lockedSlug'],
+		template: '<div />',
+	},
+	FieldEditor: {
+		name: 'FieldEditor',
+		props: ['fields', 'schemaSlugs'],
+		template: '<div />',
+	},
+	LifecycleEditor: {
+		name: 'LifecycleEditor',
+		props: ['states', 'transitions'],
+		template: '<div />',
+	},
+	RelationEditor: {
+		name: 'RelationEditor',
+		props: ['relations', 'schemaSlugs'],
+		template: '<div />',
+	},
+	AccessEditor: {
+		name: 'AccessEditor',
+		props: ['access', 'fieldNames', 'availableGroups', 'readOnly'],
+		template: '<div />',
+	},
 	WidgetEditor: { name: 'WidgetEditor', props: ['widgets'], template: '<div />' },
-	AggregationEditor: { name: 'AggregationEditor', props: ['aggregations'], template: '<div />' },
-	CalculationEditor: { name: 'CalculationEditor', props: ['calculations'], template: '<div />' },
-	NotificationEditor: { name: 'NotificationEditor', props: ['notifications'], template: '<div />' },
-	NcButton: { name: 'NcButton', props: ['type', 'disabled'], template: '<button :disabled="disabled"><slot name="icon" /><slot /></button>' },
-	NcEmptyContent: { name: 'NcEmptyContent', props: ['name', 'description'], template: '<div />' },
+	AggregationEditor: {
+		name: 'AggregationEditor',
+		props: ['aggregations'],
+		template: '<div />',
+	},
+	CalculationEditor: {
+		name: 'CalculationEditor',
+		props: ['calculations'],
+		template: '<div />',
+	},
+	NotificationEditor: {
+		name: 'NotificationEditor',
+		props: ['notifications'],
+		template: '<div />',
+	},
+	NcButton: {
+		name: 'NcButton',
+		props: ['type', 'disabled'],
+		template:
+			'<button :disabled="disabled"><slot name="icon" /><slot /></button>',
+	},
+	NcEmptyContent: {
+		name: 'NcEmptyContent',
+		props: ['name', 'description'],
+		template: '<div />',
+	},
 	NcLoadingIcon: { name: 'NcLoadingIcon', template: '<div />' },
-	NcNoteCard: { name: 'NcNoteCard', props: ['type'], template: '<div class="note-stub" :data-type="type"><slot /></div>' },
+	NcNoteCard: {
+		name: 'NcNoteCard',
+		props: ['type'],
+		template: '<div class="note-stub" :data-type="type"><slot /></div>',
+	},
 }
 
-function makeRouter({ slug = 'hello-world', schemaId = 'hello', version = undefined } = {}) {
+function makeRouter({
+	slug = 'hello-world',
+	schemaId = 'hello',
+	version = undefined,
+} = {}) {
 	return {
 		params: { slug, schemaId },
 		query: version ? { _version: version } : {},
@@ -137,7 +191,10 @@ beforeEach(() => {
 	globalThis.OC = { isUserAdmin: () => false }
 })
 
-async function mountDetail({ schemaObject = persistedSchemaWithAuth, route = {} } = {}) {
+async function mountDetail({
+	schemaObject = persistedSchemaWithAuth,
+	route = {},
+} = {}) {
 	storeMocks.fetchCollection.mockResolvedValue([schemaObject])
 	storeMocks.fetchObject.mockResolvedValue(schemaObject)
 	const wrapper = mount(SchemaDesigner, {
@@ -165,7 +222,9 @@ describe('SchemaDesigner — Access sub-editor wiring (REQ-OBDSA-001 / REQ-OBDSA
 				'x-property-order': ['subject'],
 			},
 		})
-		expect(wrapper.vm.staged.access.rows.every((r) => r.kind === 'everyone')).toBe(true)
+		expect(
+			wrapper.vm.staged.access.rows.every((r) => r.kind === 'everyone'),
+		).toBe(true)
 		const body = wrapper.vm.composeSchemaBody(wrapper.vm.staged)
 		expect(body.authorization).toBeUndefined()
 	})
@@ -241,7 +300,10 @@ describe('SchemaDesigner — authorLockedOut truth table (REQ-OBDSA-004)', () =>
 		mockedUserGroups = ['other-group']
 		globalThis.OC = { isUserAdmin: () => false }
 		const wrapper = await mountDetail({
-			schemaObject: { ...persistedSchemaWithAuth, authorization: { read: ['@creator'] } },
+			schemaObject: {
+				...persistedSchemaWithAuth,
+				authorization: { read: ['@creator'] },
+			},
 		})
 		expect(wrapper.vm.authorLockedOut).toBe(false)
 	})
@@ -267,7 +329,10 @@ describe('SchemaDesigner — authorLockedOut truth table (REQ-OBDSA-004)', () =>
 describe('SchemaDesigner — accessReadOnly truth table (REQ-OBDSA-007)', () => {
 	it('draft version + editor role → editable (not gated)', async () => {
 		const wrapper = await mountDetail()
-		wrapper.vm.applicationRecord = { permissions: { owners: [], editors: ['editors-group'], viewers: [] }, productionVersion: 'prod-uuid' }
+		wrapper.vm.applicationRecord = {
+			permissions: { owners: [], editors: ['editors-group'], viewers: [] },
+			productionVersion: 'prod-uuid',
+		}
 		wrapper.vm.applicationVersion = { uuid: 'draft-uuid' }
 		mockedUserGroups = ['editors-group']
 		expect(wrapper.vm.accessReadOnly).toBe(false)
@@ -275,7 +340,10 @@ describe('SchemaDesigner — accessReadOnly truth table (REQ-OBDSA-007)', () => 
 
 	it('production version + editor role → read-only', async () => {
 		const wrapper = await mountDetail()
-		wrapper.vm.applicationRecord = { permissions: { owners: [], editors: ['editors-group'], viewers: [] }, productionVersion: 'prod-uuid' }
+		wrapper.vm.applicationRecord = {
+			permissions: { owners: [], editors: ['editors-group'], viewers: [] },
+			productionVersion: 'prod-uuid',
+		}
 		wrapper.vm.applicationVersion = { uuid: 'prod-uuid' }
 		mockedUserGroups = ['editors-group']
 		expect(wrapper.vm.accessReadOnly).toBe(true)
@@ -283,7 +351,10 @@ describe('SchemaDesigner — accessReadOnly truth table (REQ-OBDSA-007)', () => 
 
 	it('production version + owner role → editable', async () => {
 		const wrapper = await mountDetail()
-		wrapper.vm.applicationRecord = { permissions: { owners: ['owners-group'], editors: [], viewers: [] }, productionVersion: 'prod-uuid' }
+		wrapper.vm.applicationRecord = {
+			permissions: { owners: ['owners-group'], editors: [], viewers: [] },
+			productionVersion: 'prod-uuid',
+		}
 		wrapper.vm.applicationVersion = { uuid: 'prod-uuid' }
 		mockedUserGroups = ['owners-group']
 		expect(wrapper.vm.accessReadOnly).toBe(false)
@@ -291,7 +362,10 @@ describe('SchemaDesigner — accessReadOnly truth table (REQ-OBDSA-007)', () => 
 
 	it('production version + viewer/no role → not editor-gated (useRole returns "viewer"/"none", not "editor")', async () => {
 		const wrapper = await mountDetail()
-		wrapper.vm.applicationRecord = { permissions: { owners: [], editors: [], viewers: ['viewers-group'] }, productionVersion: 'prod-uuid' }
+		wrapper.vm.applicationRecord = {
+			permissions: { owners: [], editors: [], viewers: ['viewers-group'] },
+			productionVersion: 'prod-uuid',
+		}
 		wrapper.vm.applicationVersion = { uuid: 'prod-uuid' }
 		mockedUserGroups = ['viewers-group']
 		expect(wrapper.vm.accessReadOnly).toBe(false)
@@ -341,7 +415,10 @@ describe('SchemaDesigner — availableGroups normalises prefixed principals (#83
 				viewers: [],
 			},
 		}
-		expect(wrapper.vm.availableGroups).toEqual(['legacy-bare-group', 'rbac-editors'])
+		expect(wrapper.vm.availableGroups).toEqual([
+			'legacy-bare-group',
+			'rbac-editors',
+		])
 	})
 
 	it('deduplicates a group that appears in both prefixed and bare form', async () => {
@@ -362,7 +439,9 @@ describe('SchemaDesigner — availableGroups normalises prefixed principals (#83
 		mockedUserGroups = ['vets']
 		globalThis.OC = { isUserAdmin: () => false }
 		const wrapper = await mountDetail()
-		wrapper.vm.applicationRecord = { permissions: { owners: [], editors: ['group:vets'], viewers: [] } }
+		wrapper.vm.applicationRecord = {
+			permissions: { owners: [], editors: ['group:vets'], viewers: [] },
+		}
 		expect(wrapper.vm.availableGroups).toEqual(['vets'])
 		expect(wrapper.vm.authorLockedOut).toBe(false)
 	})

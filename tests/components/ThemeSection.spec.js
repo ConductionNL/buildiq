@@ -13,7 +13,8 @@ import ThemeSection from '../../src/components/ThemeSection.vue'
 const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled', 'title'],
-	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+	template:
+		'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 
 const stubs = {
@@ -25,12 +26,18 @@ const stubs = {
 	},
 }
 
-const theme = { source: 'nldesign', tokenSet: 'amsterdam', tokenSetName: 'Gemeente Amsterdam', preview: { primaryColor: '#004699', backgroundColor: '#FFFFFF' } }
+const theme = {
+	source: 'nldesign',
+	tokenSet: 'amsterdam',
+	tokenSetName: 'Gemeente Amsterdam',
+	preview: { primaryColor: '#004699', backgroundColor: '#FFFFFF' },
+}
 
-const factory = (manifest, props = {}) => mount(ThemeSection, {
-	propsData: { manifest, ...props },
-	stubs,
-})
+const factory = (manifest, props = {}) =>
+	mount(ThemeSection, {
+		propsData: { manifest, ...props },
+		stubs,
+	})
 
 describe('ThemeSection', () => {
 	it('renders the Default (Nextcloud) state when no theme is set', () => {
@@ -87,6 +94,10 @@ describe('ThemeSection', () => {
 
 	it('forwards previewAvailable to ThemePickerDialog (design.md OQ-1, task 3.3)', () => {
 		const wrapper = factory({}, { previewAvailable: false })
-		expect(wrapper.findComponent({ name: 'ThemePickerDialog' }).props('previewAvailable')).toBe(false)
+		expect(
+			wrapper
+				.findComponent({ name: 'ThemePickerDialog' })
+				.props('previewAvailable'),
+		).toBe(false)
 	})
 })

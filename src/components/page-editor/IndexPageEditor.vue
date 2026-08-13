@@ -15,11 +15,17 @@
 		<div v-if="!connectorActive" class="index-page-editor__group">
 			<label>
 				{{ t('openbuild', 'Register') }}
-				<select :value="config.register || ''" :aria-invalid="isInvalid('register')" @change="update('register', $event.target.value)">
+				<select
+					:value="config.register || ''"
+					:aria-invalid="isInvalid('register')"
+					@change="update('register', $event.target.value)">
 					<option value="">
 						{{ t('openbuild', '— select register —') }}
 					</option>
-					<option v-for="r in registers" :key="r.slug || r.id" :value="r.slug">
+					<option
+						v-for="r in registers"
+						:key="r.slug || r.id"
+						:value="r.slug">
 						{{ r.title || r.slug }}
 					</option>
 				</select>
@@ -35,7 +41,10 @@
 					<option value="">
 						{{ t('openbuild', '— select schema —') }}
 					</option>
-					<option v-for="s in schemas" :key="s.slug || s.id" :value="s.slug">
+					<option
+						v-for="s in schemas"
+						:key="s.slug || s.id"
+						:value="s.slug">
 						{{ s.title || s.slug }}
 					</option>
 				</select>
@@ -48,7 +57,7 @@
 					:value="config.cardComponent || ''"
 					:placeholder="t('openbuild', 'customComponents key')"
 					:aria-invalid="isInvalid('cardComponent')"
-					@input="update('cardComponent', $event.target.value)">
+					@input="update('cardComponent', $event.target.value)" />
 				<InlineFieldMark :error="markFor('cardComponent')" />
 			</label>
 		</div>
@@ -76,7 +85,7 @@
 				<input
 					type="checkbox"
 					:checked="sidebarEnabled"
-					@change="onSidebarToggle($event.target.checked)">
+					@change="onSidebarToggle($event.target.checked)" />
 				{{ t('openbuild', 'Enabled') }}
 			</label>
 			<InlineFieldMark :error="markFor('sidebar')" />
@@ -145,7 +154,10 @@ export default {
 	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1
 	 */
 	setup(props) {
-		const picker = useRegisterPicker({ appSlug: props.appSlug, dataRegisters: props.dataRegisters })
+		const picker = useRegisterPicker({
+			appSlug: props.appSlug,
+			dataRegisters: props.dataRegisters,
+		})
 		return { picker }
 	},
 	data() {
@@ -162,7 +174,14 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
-			return ['register', 'schema', 'cardComponent', 'columns', 'actions', 'sidebar']
+			return [
+				'register',
+				'schema',
+				'cardComponent',
+				'columns',
+				'actions',
+				'sidebar',
+			]
 		},
 		/**
 		 * Whether this page binds an OpenConnector data source (hides the
@@ -241,7 +260,11 @@ export default {
 		 */
 		update(key, value) {
 			const next = { ...this.config }
-			if (value === '' || value === null || (Array.isArray(value) && value.length === 0)) {
+			if (
+				value === ''
+				|| value === null
+				|| (Array.isArray(value) && value.length === 0)
+			) {
 				delete next[key]
 			} else {
 				next[key] = value
@@ -265,7 +288,8 @@ export default {
 			if (!enabled) {
 				delete next.sidebar
 			} else {
-				const current = (typeof next.sidebar === 'object' && next.sidebar) || {}
+				const current =
+					(typeof next.sidebar === 'object' && next.sidebar) || {}
 				next.sidebar = { ...current, enabled: true }
 			}
 			this.$emit('update:config', next)
@@ -280,7 +304,9 @@ export default {
 		 */
 		updateSidebar(key, value) {
 			const next = { ...this.config }
-			const current = (typeof next.sidebar === 'object' && next.sidebar) || { enabled: true }
+			const current = (typeof next.sidebar === 'object' && next.sidebar) || {
+				enabled: true,
+			}
 			next.sidebar = { ...current, [key]: value }
 			this.$emit('update:config', next)
 		},
@@ -312,7 +338,10 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		async fetchSchemaProperties(register, schema) {
-			this.schemaProperties = await this.picker.fetchSchemaProperties(register, schema)
+			this.schemaProperties = await this.picker.fetchSchemaProperties(
+				register,
+				schema,
+			)
 		},
 		/**
 		 * Persist a `dataSource` change from the origin toggle onto the page

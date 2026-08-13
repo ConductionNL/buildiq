@@ -21,16 +21,40 @@ vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
 import ExternalFormAccessDialog from '../../src/dialogs/ExternalFormAccessDialog.vue'
 
 const stubs = {
-	NcDialog: { name: 'NcDialog', template: '<div><slot /><slot name="actions" /></div>' },
-	NcButton: { name: 'NcButton', props: ['type', 'disabled'], template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>' },
-	NcTextField: { name: 'NcTextField', props: ['value', 'label'], template: '<input class="text-stub" @input="$emit(\'update:value\', $event.target.value)" >' },
-	NcNoteCard: { name: 'NcNoteCard', props: ['type'], template: '<div class="note-stub"><slot /></div>' },
+	NcDialog: {
+		name: 'NcDialog',
+		template: '<div><slot /><slot name="actions" /></div>',
+	},
+	NcButton: {
+		name: 'NcButton',
+		props: ['type', 'disabled'],
+		template:
+			'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+	},
+	NcTextField: {
+		name: 'NcTextField',
+		props: ['value', 'label'],
+		template:
+			'<input class="text-stub" @input="$emit(\'update:value\', $event.target.value)" >',
+	},
+	NcNoteCard: {
+		name: 'NcNoteCard',
+		props: ['type'],
+		template: '<div class="note-stub"><slot /></div>',
+	},
 }
 
-const factory = (props = {}) => mount(ExternalFormAccessDialog, {
-	propsData: { open: false, register: 'intake', schema: 'report', pageId: 'page-1', ...props },
-	stubs,
-})
+const factory = (props = {}) =>
+	mount(ExternalFormAccessDialog, {
+		propsData: {
+			open: false,
+			register: 'intake',
+			schema: 'report',
+			pageId: 'page-1',
+			...props,
+		},
+		stubs,
+	})
 
 describe('ExternalFormAccessDialog', () => {
 	beforeEach(() => {
@@ -39,13 +63,24 @@ describe('ExternalFormAccessDialog', () => {
 
 	it('enabling provisions OR authorization + a portalPage and emits the resolved entry', async () => {
 		service.enablePublicCreate.mockResolvedValue({})
-		service.provisionPortalPage.mockResolvedValue({ objectId: 'pp-1', portalPath: '/portal', unavailable: false })
+		service.provisionPortalPage.mockResolvedValue({
+			objectId: 'pp-1',
+			portalPath: '/portal',
+			unavailable: false,
+		})
 		const wrapper = factory()
 		await wrapper.setProps({ open: true })
 		wrapper.vm.enabled = true
 		await wrapper.vm.onSave()
-		expect(service.enablePublicCreate).toHaveBeenCalledWith({ schema: 'report', publicRead: false })
-		expect(service.provisionPortalPage).toHaveBeenCalledWith({ register: 'intake', schema: 'report', objectId: null })
+		expect(service.enablePublicCreate).toHaveBeenCalledWith({
+			schema: 'report',
+			publicRead: false,
+		})
+		expect(service.provisionPortalPage).toHaveBeenCalledWith({
+			register: 'intake',
+			schema: 'report',
+			objectId: null,
+		})
 		const saved = wrapper.emitted().save[0][0]
 		expect(saved).toMatchObject({
 			pageId: 'page-1',
@@ -59,7 +94,11 @@ describe('ExternalFormAccessDialog', () => {
 
 	it('degrades gracefully when Portaliq is unavailable — save still completes with portalPage null + hint', async () => {
 		service.enablePublicCreate.mockResolvedValue({})
-		service.provisionPortalPage.mockResolvedValue({ objectId: null, portalPath: null, unavailable: true })
+		service.provisionPortalPage.mockResolvedValue({
+			objectId: null,
+			portalPath: null,
+			unavailable: true,
+		})
 		const wrapper = factory()
 		await wrapper.setProps({ open: true })
 		wrapper.vm.enabled = true
@@ -73,15 +112,30 @@ describe('ExternalFormAccessDialog', () => {
 
 	it('a repeat save updates the SAME portalPage object (matched by stored objectId)', async () => {
 		service.enablePublicCreate.mockResolvedValue({})
-		service.provisionPortalPage.mockResolvedValue({ objectId: 'pp-1', portalPath: '/portal', unavailable: false })
+		service.provisionPortalPage.mockResolvedValue({
+			objectId: 'pp-1',
+			portalPath: '/portal',
+			unavailable: false,
+		})
 		const entry = {
-			id: 'ef-1', pageId: 'page-1', register: 'intake', schema: 'report', status: 'enabled',
-			publicRead: false, organisationScope: null, portalPage: { objectId: 'pp-1', portalPath: '/portal' }, trackLinkAction: { enabled: false },
+			id: 'ef-1',
+			pageId: 'page-1',
+			register: 'intake',
+			schema: 'report',
+			status: 'enabled',
+			publicRead: false,
+			organisationScope: null,
+			portalPage: { objectId: 'pp-1', portalPath: '/portal' },
+			trackLinkAction: { enabled: false },
 		}
 		const wrapper = factory({ entry })
 		await wrapper.setProps({ open: true })
 		await wrapper.vm.onSave()
-		expect(service.provisionPortalPage).toHaveBeenCalledWith({ register: 'intake', schema: 'report', objectId: 'pp-1' })
+		expect(service.provisionPortalPage).toHaveBeenCalledWith({
+			register: 'intake',
+			schema: 'report',
+			objectId: 'pp-1',
+		})
 		const saved = wrapper.emitted().save[0][0]
 		expect(saved.id).toBe('ef-1')
 	})
@@ -90,13 +144,23 @@ describe('ExternalFormAccessDialog', () => {
 		service.revokePublicCreate.mockResolvedValue({})
 		service.draftPortalPage.mockResolvedValue({})
 		const entry = {
-			id: 'ef-1', pageId: 'page-1', register: 'intake', schema: 'report', status: 'enabled',
-			publicRead: true, organisationScope: null, portalPage: { objectId: 'pp-1', portalPath: '/portal' }, trackLinkAction: { enabled: false },
+			id: 'ef-1',
+			pageId: 'page-1',
+			register: 'intake',
+			schema: 'report',
+			status: 'enabled',
+			publicRead: true,
+			organisationScope: null,
+			portalPage: { objectId: 'pp-1', portalPath: '/portal' },
+			trackLinkAction: { enabled: false },
 		}
 		const wrapper = factory({ entry })
 		await wrapper.setProps({ open: true })
 		await wrapper.vm.onDisable()
-		expect(service.revokePublicCreate).toHaveBeenCalledWith({ schema: 'report', removeRead: true })
+		expect(service.revokePublicCreate).toHaveBeenCalledWith({
+			schema: 'report',
+			removeRead: true,
+		})
 		expect(service.draftPortalPage).toHaveBeenCalledWith('pp-1')
 		const saved = wrapper.emitted().save[0][0]
 		expect(saved.status).toBe('disabled')
@@ -107,8 +171,15 @@ describe('ExternalFormAccessDialog', () => {
 	it('disabling with no linked portalPage is a no-op for the Portaliq leg', async () => {
 		service.revokePublicCreate.mockResolvedValue({})
 		const entry = {
-			id: 'ef-1', pageId: 'page-1', register: 'intake', schema: 'report', status: 'enabled',
-			publicRead: false, organisationScope: null, portalPage: null, trackLinkAction: { enabled: false },
+			id: 'ef-1',
+			pageId: 'page-1',
+			register: 'intake',
+			schema: 'report',
+			status: 'enabled',
+			publicRead: false,
+			organisationScope: null,
+			portalPage: null,
+			trackLinkAction: { enabled: false },
 		}
 		const wrapper = factory({ entry })
 		await wrapper.setProps({ open: true })
@@ -124,7 +195,9 @@ describe('ExternalFormAccessDialog', () => {
 		await wrapper.vm.onSave()
 		// The stubbed t() in tests/vitest/setup.js returns the raw i18n key
 		// without interpolating placeholders (see PageDesigner.spec.js note).
-		expect(wrapper.vm.errorMessage).toContain('Could not provision external access')
+		expect(wrapper.vm.errorMessage).toContain(
+			'Could not provision external access',
+		)
 		expect(wrapper.emitted().save).toBeUndefined()
 	})
 })

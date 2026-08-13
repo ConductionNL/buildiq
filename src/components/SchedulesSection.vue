@@ -22,21 +22,37 @@
 		</header>
 
 		<p v-if="schedules.length === 0" class="ob-schedules-section__empty">
-			{{ t('openbuild', 'No scheduled tasks yet. Add one to run a synchronization on a schedule.') }}
+			{{
+				t(
+					'openbuild',
+					'No scheduled tasks yet. Add one to run a synchronization on a schedule.',
+				)
+			}}
 		</p>
 		<ul v-else class="ob-schedules-section__list">
-			<li v-for="schedule in schedules" :key="schedule.id" class="ob-schedules-section__item">
+			<li
+				v-for="schedule in schedules"
+				:key="schedule.id"
+				class="ob-schedules-section__item">
 				<div class="ob-schedules-section__item-main">
 					<strong>{{ schedule.id }}</strong>
 					<span class="ob-schedules-section__item-meta">
-						{{ cadenceSummary(schedule) }} · {{ actionSummary(schedule) }} · {{ syncSummary(schedule) }}
+						{{ cadenceSummary(schedule) }} ·
+						{{ actionSummary(schedule) }} · {{ syncSummary(schedule) }}
 					</span>
 				</div>
 				<div class="ob-schedules-section__item-side">
 					<span
 						class="ob-schedules-section__enabled"
-						:class="{ 'ob-schedules-section__enabled--off': schedule.enabled === false }">
-						{{ schedule.enabled === false ? t('openbuild', 'Disabled') : t('openbuild', 'Enabled') }}
+						:class="{
+							'ob-schedules-section__enabled--off':
+								schedule.enabled === false,
+						}">
+						{{
+							schedule.enabled === false
+								? t('openbuild', 'Disabled')
+								: t('openbuild', 'Enabled')
+						}}
 					</span>
 					<NcButton type="tertiary" @click="openEdit(schedule)">
 						{{ t('openbuild', 'Edit') }}
@@ -98,7 +114,12 @@ export default {
 	computed: {
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */
 		schedules() {
-			return (this.manifest && Array.isArray(this.manifest.schedules) && this.manifest.schedules) || []
+			return (
+				(this.manifest
+					&& Array.isArray(this.manifest.schedules)
+					&& this.manifest.schedules)
+				|| []
+			)
 		},
 		/**
 		 * Ids used by entries OTHER than the one being edited (for the
@@ -109,7 +130,9 @@ export default {
 		 */
 		otherIds() {
 			const editingId = this.editingEntry && this.editingEntry.id
-			return this.schedules.map((s) => s.id).filter((id) => id && id !== editingId)
+			return this.schedules
+				.map((s) => s.id)
+				.filter((id) => id && id !== editingId)
 		},
 	},
 	methods: {
@@ -129,7 +152,9 @@ export default {
 				if (label) {
 					return t('openbuild', label)
 				}
-				return t('openbuild', 'Every {seconds}s', { seconds: schedule.interval })
+				return t('openbuild', 'Every {seconds}s', {
+					seconds: schedule.interval,
+				})
 			}
 			return t('openbuild', 'No cadence')
 		},
@@ -184,7 +209,9 @@ export default {
 		 */
 		onDialogSave(entry) {
 			const list = this.schedules.slice()
-			const idx = this.editingEntry ? list.findIndex((s) => s.id === this.editingEntry.id) : -1
+			const idx = this.editingEntry
+				? list.findIndex((s) => s.id === this.editingEntry.id)
+				: -1
 			if (idx >= 0) {
 				list.splice(idx, 1, entry)
 			} else {

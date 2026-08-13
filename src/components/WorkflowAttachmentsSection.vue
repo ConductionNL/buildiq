@@ -21,14 +21,27 @@
 		</header>
 
 		<p v-if="attachments.length === 0" class="ob-workflows-section__empty">
-			{{ t('openbuild', 'No Procest case types are attached yet. Attach one to start a case when an object is created.') }}
+			{{
+				t(
+					'openbuild',
+					'No Procest case types are attached yet. Attach one to start a case when an object is created.',
+				)
+			}}
 		</p>
 		<ul v-else class="ob-workflows-section__list">
-			<li v-for="wf in attachments" :key="wf.id" class="ob-workflows-section__item">
+			<li
+				v-for="wf in attachments"
+				:key="wf.id"
+				class="ob-workflows-section__item">
 				<div class="ob-workflows-section__item-main">
 					<strong>{{ wf.caseTypeName }}</strong>
 					<span class="ob-workflows-section__item-meta">
-						{{ t('openbuild', 'on schema {schema} → {property}', { schema: wf.schema, property: wf.linkProperty }) }}
+						{{
+							t('openbuild', 'on schema {schema} → {property}', {
+								schema: wf.schema,
+								property: wf.linkProperty,
+							})
+						}}
 					</span>
 				</div>
 				<div class="ob-workflows-section__item-actions">
@@ -54,7 +67,12 @@
 		<ConfirmActionDialog
 			v-model:open="confirmDetachOpen"
 			:name="t('openbuild', 'Detach case type')"
-			:message="t('openbuild', 'Detach this case type? Existing linked cases are NOT deleted and object links are kept.')"
+			:message="
+				t(
+					'openbuild',
+					'Detach this case type? Existing linked cases are NOT deleted and object links are kept.',
+				)
+			"
 			:confirm-label="t('openbuild', 'Detach')"
 			destructive
 			@confirm="onConfirmDetach" />
@@ -77,7 +95,7 @@ export default {
 		// The app's schemas, passed through to the dialog's pickers.
 		schemas: {
 			type: Array,
-			default: () => ([]),
+			default: () => [],
 		},
 		procestAvailable: {
 			type: Boolean,
@@ -96,7 +114,12 @@ export default {
 	computed: {
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		attachments() {
-			return (this.manifest && this.manifest.runtime && this.manifest.runtime.workflows) || []
+			return (
+				(this.manifest
+					&& this.manifest.runtime
+					&& this.manifest.runtime.workflows)
+				|| []
+			)
 		},
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		attachedSchemas() {
@@ -210,14 +233,22 @@ export default {
 			const next = { ...manifest, pages: (manifest.pages || []).slice() }
 			next.pages = next.pages.map((page) => {
 				const cfg = page && page.config
-				const isDetail = page && (page.type === 'detail') && cfg && cfg.schema === entry.schema
+				const isDetail =
+					page
+					&& page.type === 'detail'
+					&& cfg
+					&& cfg.schema === entry.schema
 				if (!isDetail) {
 					return page
 				}
 				const sidebarProps = { ...(cfg.sidebarProps || {}) }
 				const tabs = (sidebarProps.tabs || []).slice()
 				if (!tabs.some((t2) => t2.component === 'procest-case-status')) {
-					tabs.push({ id: 'procest-case-status', label: 'Case', component: 'procest-case-status' })
+					tabs.push({
+						id: 'procest-case-status',
+						label: 'Case',
+						component: 'procest-case-status',
+					})
 				}
 				sidebarProps.tabs = tabs
 				return { ...page, config: { ...cfg, sidebarProps } }

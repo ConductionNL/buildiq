@@ -13,7 +13,16 @@
  *   - submission stays gated on a valid target (canSubmit)
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest'
+import {
+	describe,
+	it,
+	expect,
+	beforeAll,
+	afterAll,
+	beforeEach,
+	afterEach,
+	vi,
+} from 'vitest'
 import { mount } from '@vue/test-utils'
 
 // The global setup stub returns the bare key; give script-level t() real
@@ -21,18 +30,24 @@ import { mount } from '@vue/test-utils'
 // can see the file name substituted into the error string.
 const realT = globalThis.t
 beforeAll(() => {
-	globalThis.t = (_app, key, vars) => (vars
-		? String(key).replace(/\{(\w+)\}/g, (_, k) => (vars[k] != null ? vars[k] : `{${k}}`))
-		: key)
+	globalThis.t = (_app, key, vars) =>
+		vars
+			? String(key).replace(/\{(\w+)\}/g, (_, k) =>
+					vars[k] != null ? vars[k] : `{${k}}`,
+				)
+			: key
 })
-afterAll(() => { globalThis.t = realT })
+afterAll(() => {
+	globalThis.t = realT
+})
 
 const { axiosMock } = vi.hoisted(() => ({
 	axiosMock: { get: vi.fn(), post: vi.fn() },
 }))
 
 vi.mock('@nextcloud/router', () => ({
-	generateUrl: (path, params = {}) => path.replace(/\{(\w+)\}/g, (_, k) => (params[k] ?? `{${k}}`)),
+	generateUrl: (path, params = {}) =>
+		path.replace(/\{(\w+)\}/g, (_, k) => params[k] ?? `{${k}}`),
 }))
 
 vi.mock('@nextcloud/axios', () => ({ default: axiosMock }))
@@ -55,9 +70,22 @@ async function mountDialog(props = {}) {
 			...props,
 		},
 		stubs: {
-			NcModal: { name: 'NcModal', template: '<div class="nc-modal-stub"><slot /></div>' },
-			NcButton: { name: 'NcButton', props: ['disabled'], template: '<button class="nc-button-stub" :disabled="disabled" @click="$emit(\'click\', $event)"><slot /></button>' },
-			NcTextField: { name: 'NcTextField', props: ['value', 'label', 'placeholder'], template: '<input class="nc-textfield-stub" :value="value" @input="$emit(\'update:value\', $event.target.value)" />' },
+			NcModal: {
+				name: 'NcModal',
+				template: '<div class="nc-modal-stub"><slot /></div>',
+			},
+			NcButton: {
+				name: 'NcButton',
+				props: ['disabled'],
+				template:
+					'<button class="nc-button-stub" :disabled="disabled" @click="$emit(\'click\', $event)"><slot /></button>',
+			},
+			NcTextField: {
+				name: 'NcTextField',
+				props: ['value', 'label', 'placeholder'],
+				template:
+					'<input class="nc-textfield-stub" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
+			},
 		},
 	})
 	await wrapper.vm.$nextTick()
@@ -90,7 +118,12 @@ describe('CloneTemplateDialog.vue — GitHub shop install', () => {
 		expect(axiosMock.post).toHaveBeenCalledTimes(1)
 		const [url, body] = axiosMock.post.mock.calls[0]
 		expect(url).toBe('/apps/openbuild/api/shop/github/install')
-		expect(body).toEqual({ owner: 'conduction', repo: 'petstore', name: 'Pet Store', slug: 'pet-store' })
+		expect(body).toEqual({
+			owner: 'conduction',
+			repo: 'petstore',
+			name: 'Pet Store',
+			slug: 'pet-store',
+		})
 
 		expect(wrapper.emitted('installed')).toBeTruthy()
 		expect(wrapper.emitted('installed')[0][0]).toEqual(created)
@@ -107,7 +140,9 @@ describe('CloneTemplateDialog.vue — GitHub shop install', () => {
 		await wrapper.vm.$nextTick()
 
 		axiosMock.post.mockRejectedValueOnce({
-			response: { data: { error: 'schema_invalid', file: 'schemas/pet.json' } },
+			response: {
+				data: { error: 'schema_invalid', file: 'schemas/pet.json' },
+			},
 		})
 
 		await wrapper.vm.submit()

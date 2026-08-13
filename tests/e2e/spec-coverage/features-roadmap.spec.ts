@@ -36,13 +36,21 @@ test.describe('OpenBuild Features & roadmap', () => {
 		await expect(
 			page.getByRole('heading', { name: 'Features', exact: true }),
 		).toBeVisible({ timeout: 15_000 })
-		await expect(page.getByRole('button', { name: /show roadmap/i })).toBeVisible()
-		await expect(page.getByRole('button', { name: /suggest feature/i })).toBeVisible()
+		await expect(
+			page.getByRole('button', { name: /show roadmap/i }),
+		).toBeVisible()
+		await expect(
+			page.getByRole('button', { name: /suggest feature/i }),
+		).toBeVisible()
 	})
 
-	test('surfaces the documentation link to openbuild.conduction.nl', async ({ page }) => {
+	test('surfaces the documentation link to openbuild.conduction.nl', async ({
+		page,
+	}) => {
 		await page.goto(ROUTE)
-		await expect(page.getByRole('heading', { name: 'Features', exact: true })).toBeVisible({ timeout: 15_000 })
+		await expect(
+			page.getByRole('heading', { name: 'Features', exact: true }),
+		).toBeVisible({ timeout: 15_000 })
 
 		await expect(
 			page.getByRole('link', { name: /openbuild\.conduction\.nl/i }),
@@ -51,33 +59,54 @@ test.describe('OpenBuild Features & roadmap', () => {
 
 	test('toggles between the features and roadmap views', async ({ page }) => {
 		await page.goto(ROUTE)
-		await expect(page.getByRole('button', { name: /show roadmap/i })).toBeVisible({ timeout: 15_000 })
+		await expect(
+			page.getByRole('button', { name: /show roadmap/i }),
+		).toBeVisible({ timeout: 15_000 })
 
 		// Switch to roadmap.
 		await page.getByRole('button', { name: /show roadmap/i }).click()
-		await expect(page.getByRole('button', { name: /show features/i })).toBeVisible({ timeout: 10_000 })
-		await expect(page.getByRole('heading', { name: 'Roadmap', exact: true })).toBeVisible()
+		await expect(
+			page.getByRole('button', { name: /show features/i }),
+		).toBeVisible({ timeout: 10_000 })
+		await expect(
+			page.getByRole('heading', { name: 'Roadmap', exact: true }),
+		).toBeVisible()
 
 		// Switch back to features.
 		await page.getByRole('button', { name: /show features/i }).click()
-		await expect(page.getByRole('button', { name: /show roadmap/i })).toBeVisible({ timeout: 10_000 })
-		await expect(page.getByRole('heading', { name: 'Features', exact: true })).toBeVisible()
+		await expect(
+			page.getByRole('button', { name: /show roadmap/i }),
+		).toBeVisible({ timeout: 10_000 })
+		await expect(
+			page.getByRole('heading', { name: 'Features', exact: true }),
+		).toBeVisible()
 	})
 
-	test('features page load produces no openbuild-originated console errors', async ({ page }) => {
+	test('features page load produces no openbuild-originated console errors', async ({
+		page,
+	}) => {
 		const errors: string[] = []
 		page.on('console', (m) => {
 			if (m.type() !== 'error') return
 			const text = m.text()
 			// NC-core/env noise on the dev container, not openbuild.
-			if (/user_status|Failed to load user status|Failed to load resource/i.test(text)) return
+			if (
+				/user_status|Failed to load user status|Failed to load resource/i.test(
+					text,
+				)
+			)
+				return
 			errors.push(text)
 		})
 
 		await page.goto(ROUTE)
-		await expect(page.getByRole('heading', { name: 'Features', exact: true })).toBeVisible({ timeout: 15_000 })
+		await expect(
+			page.getByRole('heading', { name: 'Features', exact: true }),
+		).toBeVisible({ timeout: 15_000 })
 		await page.waitForTimeout(2000)
 
-		expect(errors, `unexpected console errors:\n${errors.join('\n')}`).toEqual([])
+		expect(errors, `unexpected console errors:\n${errors.join('\n')}`).toEqual(
+			[],
+		)
 	})
 })

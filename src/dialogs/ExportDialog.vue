@@ -32,14 +32,23 @@
 					{{ t('openbuild', 'Data registers') }}
 				</h4>
 				<p class="export-dialog__scope-hint">
-					{{ t('openbuild', 'This app is bound to shared data registers it does not own. Their schema definitions are always included as reference material. Row data is only bundled for a register when you switch it on below.') }}
+					{{
+						t(
+							'openbuild',
+							'This app is bound to shared data registers it does not own. Their schema definitions are always included as reference material. Row data is only bundled for a register when you switch it on below.',
+						)
+					}}
 				</p>
 				<NcCheckboxRadioSwitch
 					v-for="choice in dataRegisterChoices"
 					:key="choice.register"
 					v-model="choice.includeData"
 					:disabled="submitting">
-					{{ t('openbuild', 'Include row data for {label}', { label: choice.label || choice.register }) }}
+					{{
+						t('openbuild', 'Include row data for {label}', {
+							label: choice.label || choice.register,
+						})
+					}}
 				</NcCheckboxRadioSwitch>
 			</template>
 
@@ -64,11 +73,23 @@
 					:loading="loadingCredentials"
 					:disabled="submitting"
 					:placeholder="t('openbuild', 'Select a credential')" />
-				<p v-if="!loadingCredentials && !githubCredentials.length" class="export-dialog__scope-hint">
-					{{ t('openbuild', 'You have no GitHub credential yet. Add one under Personal settings → Additional settings, then reopen this dialog. OpenBuild never sees the token itself — it asks the credential broker to make each GitHub call on your behalf.') }}
+				<p
+					v-if="!loadingCredentials && !githubCredentials.length"
+					class="export-dialog__scope-hint">
+					{{
+						t(
+							'openbuild',
+							'You have no GitHub credential yet. Add one under Personal settings → Additional settings, then reopen this dialog. OpenBuild never sees the token itself — it asks the credential broker to make each GitHub call on your behalf.',
+						)
+					}}
 				</p>
 				<p v-else class="export-dialog__scope-hint">
-					{{ t('openbuild', 'The token stays in your credential vault. OpenBuild sends only the request it wants made, and the broker injects the token and refuses anything outside the allowed GitHub calls.') }}
+					{{
+						t(
+							'openbuild',
+							'The token stays in your credential vault. OpenBuild sends only the request it wants made, and the broker injects the token and refuses anything outside the allowed GitHub calls.',
+						)
+					}}
 				</p>
 			</template>
 
@@ -135,13 +156,19 @@ export default {
 			githubCredentials: [],
 			loadingCredentials: false,
 			form: {
-				version: this.availableVersions[0] || { label: '0.1.0', value: '0.1.0' },
+				version: this.availableVersions[0] || {
+					label: '0.1.0',
+					value: '0.1.0',
+				},
 				target: { label: this.t('openbuild', 'ZIP download'), value: 'zip' },
 				license: { label: 'EUPL-1.2', value: 'EUPL-1.2' },
 				includeSeedData: false,
 				githubOrg: '',
 				githubRepo: '',
-				githubVisibility: { label: this.t('openbuild', 'Private'), value: 'private' },
+				githubVisibility: {
+					label: this.t('openbuild', 'Private'),
+					value: 'private',
+				},
 				githubCredential: null,
 			},
 			// Per-binding includeData choice, unchecked by default. Built
@@ -268,7 +295,10 @@ export default {
 				}
 				if (this.form.target.value === 'github') {
 					if (!this.form.githubCredential) {
-						this.errorMessage = this.t('openbuild', 'Pick a GitHub credential to push with.')
+						this.errorMessage = this.t(
+							'openbuild',
+							'Pick a GitHub credential to push with.',
+						)
 						this.submitting = false
 						return
 					}
@@ -278,13 +308,19 @@ export default {
 					// A broker credential UUID, not a token. The secret never leaves the vault.
 					payload.githubCredentialId = this.form.githubCredential.value
 				}
-				const url = generateUrl(`/apps/openbuild/api/applications/${encodeURIComponent(this.applicationSlug)}/exports`)
+				const url = generateUrl(
+					`/apps/openbuild/api/applications/${encodeURIComponent(this.applicationSlug)}/exports`,
+				)
 				const response = await axios.post(url, payload)
 				this.$emit('queued', response.data.uuid)
 				this.$emit('close')
 			} catch (err) {
-				this.errorMessage = err?.response?.data?.error
-					|| this.t('openbuild', 'GitHub authentication failed. Please check the token scope and try again.')
+				this.errorMessage =
+					err?.response?.data?.error
+					|| this.t(
+						'openbuild',
+						'GitHub authentication failed. Please check the token scope and try again.',
+					)
 			} finally {
 				this.submitting = false
 			}

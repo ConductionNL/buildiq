@@ -27,12 +27,22 @@ describe('FieldValidationBuilder', () => {
 
 		await wrapper.setProps({ modelValue: last })
 		await wrapper.find('input[placeholder="Min"]').setValue('5')
-		await wrapper.setProps({ modelValue: wrapper.emitted('update:modelValue').at(-1)[0] })
+		await wrapper.setProps({
+			modelValue: wrapper.emitted('update:modelValue').at(-1)[0],
+		})
 		await wrapper.find('input[placeholder="Max"]').setValue('254')
-		await wrapper.setProps({ modelValue: wrapper.emitted('update:modelValue').at(-1)[0] })
-		await wrapper.find('input[placeholder="Pattern (regex)"]').setValue('^[^@]+@[^@]+$')
-		await wrapper.setProps({ modelValue: wrapper.emitted('update:modelValue').at(-1)[0] })
-		await wrapper.find('input[placeholder="Custom message (i18n key)"]').setValue('i18n.email-invalid')
+		await wrapper.setProps({
+			modelValue: wrapper.emitted('update:modelValue').at(-1)[0],
+		})
+		await wrapper
+			.find('input[placeholder="Pattern (regex)"]')
+			.setValue('^[^@]+@[^@]+$')
+		await wrapper.setProps({
+			modelValue: wrapper.emitted('update:modelValue').at(-1)[0],
+		})
+		await wrapper
+			.find('input[placeholder="Custom message (i18n key)"]')
+			.setValue('i18n.email-invalid')
 
 		last = wrapper.emitted('update:modelValue').at(-1)[0]
 		expect(last).toEqual({
@@ -45,15 +55,24 @@ describe('FieldValidationBuilder', () => {
 	})
 
 	it('prefills from an existing validation object', () => {
-		const wrapper = mountBuilder({ modelValue: { required: true, pattern: '^\\d+$' } })
+		const wrapper = mountBuilder({
+			modelValue: { required: true, pattern: '^\\d+$' },
+		})
 		expect(wrapper.find('input[type="checkbox"]').element.checked).toBe(true)
-		expect(wrapper.find('input[placeholder="Pattern (regex)"]').element.value).toBe('^\\d+$')
+		expect(
+			wrapper.find('input[placeholder="Pattern (regex)"]').element.value,
+		).toBe('^\\d+$')
 	})
 
 	it('prefills from legacy flat keys when no validation object exists yet', () => {
-		const wrapper = mountBuilder({ legacyRequired: true, legacyPattern: '^\\d+$' })
+		const wrapper = mountBuilder({
+			legacyRequired: true,
+			legacyPattern: '^\\d+$',
+		})
 		expect(wrapper.find('input[type="checkbox"]').element.checked).toBe(true)
-		expect(wrapper.find('input[placeholder="Pattern (regex)"]').element.value).toBe('^\\d+$')
+		expect(
+			wrapper.find('input[placeholder="Pattern (regex)"]').element.value,
+		).toBe('^\\d+$')
 		// A component that is never interacted with must never emit anything —
 		// the field it prefills from stays untouched (Decision 4).
 		expect(wrapper.emitted('update:modelValue')).toBeUndefined()
@@ -62,7 +81,9 @@ describe('FieldValidationBuilder', () => {
 	it('a non-compiling pattern is marked invalid and never emitted', async () => {
 		const wrapper = mountBuilder()
 		await wrapper.find('input[placeholder="Pattern (regex)"]').setValue('[a-')
-		expect(wrapper.find('.field-validation-builder__pattern-error').exists()).toBe(true)
+		expect(
+			wrapper.find('.field-validation-builder__pattern-error').exists(),
+		).toBe(true)
 		expect(wrapper.emitted('update:modelValue')).toBeUndefined()
 	})
 

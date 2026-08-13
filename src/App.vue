@@ -25,18 +25,17 @@
 			<NcAppContent class="open-register-missing">
 				<NcEmptyContent
 					:name="t('openbuild', 'OpenRegister is required')"
-					:description="t('openbuild', 'This app needs OpenRegister to store and manage data. Please install OpenRegister from the app store to get started.')">
+					:description="
+						t(
+							'openbuild',
+							'This app needs OpenRegister to store and manage data. Please install OpenRegister from the app store to get started.',
+						)
+					">
 					<template #icon>
-						<img :src="appIcon"
-							alt=""
-							width="64"
-							height="64">
+						<img :src="appIcon" alt="" width="64" height="64" />
 					</template>
 					<template #action>
-						<NcButton
-							v-if="isAdmin"
-							type="primary"
-							:href="appStoreUrl">
+						<NcButton v-if="isAdmin" type="primary" :href="appStoreUrl">
 							{{ t('openbuild', 'Install OpenRegister') }}
 						</NcButton>
 					</template>
@@ -130,9 +129,10 @@ export default {
 		flatRegistry() {
 			const out = {}
 			for (const [name, entry] of Object.entries(this.registry || {})) {
-				const component = entry && typeof entry === 'object' && 'component' in entry
-					? entry.component
-					: entry
+				const component =
+					entry && typeof entry === 'object' && 'component' in entry
+						? entry.component
+						: entry
 				if (component) {
 					out[name] = component
 				}
@@ -161,7 +161,9 @@ export default {
 			try {
 				return useSettingsStore().getIsAdmin === true
 			} catch (e) {
-				return typeof window.OC?.isUserAdmin === 'function' ? window.OC.isUserAdmin() : false
+				return typeof window.OC?.isUserAdmin === 'function'
+					? window.OC.isUserAdmin()
+					: false
 			}
 		},
 

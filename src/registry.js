@@ -223,7 +223,10 @@ export default {
 	// registration path — CnAppRoot warns that customComponents is deprecated,
 	// and the split let the manifest reference a name the registry never knew.
 	AppDeleteDialogSlot: modal(AppDeleteDialogSlot, {
-		item: { type: 'object', description: 'The row targeted for deletion; null when closed.' },
+		item: {
+			type: 'object',
+			description: 'The row targeted for deletion; null when closed.',
+		},
 		close: { type: 'function', description: 'Closes the delete dialog.' },
 	}),
 

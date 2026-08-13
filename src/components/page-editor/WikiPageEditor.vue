@@ -38,7 +38,10 @@
 					<option value="">
 						{{ t('openbuild', '— select register —') }}
 					</option>
-					<option v-for="r in registers" :key="r.slug || r.id" :value="r.slug">
+					<option
+						v-for="r in registers"
+						:key="r.slug || r.id"
+						:value="r.slug">
 						{{ r.title || r.slug }}
 					</option>
 				</select>
@@ -54,7 +57,10 @@
 					<option value="">
 						{{ t('openbuild', '— select schema —') }}
 					</option>
-					<option v-for="s in schemas" :key="s.slug || s.id" :value="s.slug">
+					<option
+						v-for="s in schemas"
+						:key="s.slug || s.id"
+						:value="s.slug">
 						{{ s.title || s.slug }}
 					</option>
 				</select>
@@ -66,11 +72,17 @@
 			<legend>{{ t('openbuild', 'Article field mapping') }}</legend>
 			<label class="wiki-page-editor__group-row">
 				{{ t('openbuild', 'Content field') }}
-				<select v-if="hasBoundSchema" :value="config.contentField || ''" @change="update('contentField', $event.target.value)">
+				<select
+					v-if="hasBoundSchema"
+					:value="config.contentField || ''"
+					@change="update('contentField', $event.target.value)">
 					<option value="">
 						{{ t('openbuild', '— default: body —') }}
 					</option>
-					<option v-for="key in schemaPropertyKeys" :key="key" :value="key">
+					<option
+						v-for="key in schemaPropertyKeys"
+						:key="key"
+						:value="key">
 						{{ key }}
 					</option>
 				</select>
@@ -79,16 +91,22 @@
 					type="text"
 					:value="config.contentField || ''"
 					:placeholder="t('openbuild', 'body')"
-					@input="update('contentField', $event.target.value)">
+					@input="update('contentField', $event.target.value)" />
 				<InlineFieldMark :error="markFor('contentField')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
 				{{ t('openbuild', 'Title field') }}
-				<select v-if="hasBoundSchema" :value="config.titleField || ''" @change="update('titleField', $event.target.value)">
+				<select
+					v-if="hasBoundSchema"
+					:value="config.titleField || ''"
+					@change="update('titleField', $event.target.value)">
 					<option value="">
 						{{ t('openbuild', '— default: title —') }}
 					</option>
-					<option v-for="key in schemaPropertyKeys" :key="key" :value="key">
+					<option
+						v-for="key in schemaPropertyKeys"
+						:key="key"
+						:value="key">
 						{{ key }}
 					</option>
 				</select>
@@ -97,7 +115,7 @@
 					type="text"
 					:value="config.titleField || ''"
 					:placeholder="t('openbuild', 'title')"
-					@input="update('titleField', $event.target.value)">
+					@input="update('titleField', $event.target.value)" />
 				<InlineFieldMark :error="markFor('titleField')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
@@ -106,7 +124,7 @@
 					type="text"
 					:value="config.idParam || ''"
 					:placeholder="t('openbuild', 'id')"
-					@input="update('idParam', $event.target.value)">
+					@input="update('idParam', $event.target.value)" />
 				<InlineFieldMark :error="markFor('idParam')" />
 			</label>
 		</fieldset>
@@ -121,7 +139,10 @@
 					<option value="">
 						{{ t('openbuild', '— defaults to article register —') }}
 					</option>
-					<option v-for="r in registers" :key="r.slug || r.id" :value="r.slug">
+					<option
+						v-for="r in registers"
+						:key="r.slug || r.id"
+						:value="r.slug">
 						{{ r.title || r.slug }}
 					</option>
 				</select>
@@ -136,7 +157,10 @@
 					<option value="">
 						{{ t('openbuild', '— select schema —') }}
 					</option>
-					<option v-for="s in sidebarSchemas" :key="s.slug || s.id" :value="s.slug">
+					<option
+						v-for="s in sidebarSchemas"
+						:key="s.slug || s.id"
+						:value="s.slug">
 						{{ s.title || s.slug }}
 					</option>
 				</select>
@@ -144,11 +168,17 @@
 			</label>
 			<label class="wiki-page-editor__group-row">
 				{{ t('openbuild', 'Tree children field') }}
-				<select v-if="hasBoundSidebarSchema" :value="config.treeField || ''" @change="update('treeField', $event.target.value)">
+				<select
+					v-if="hasBoundSidebarSchema"
+					:value="config.treeField || ''"
+					@change="update('treeField', $event.target.value)">
 					<option value="">
 						{{ t('openbuild', '— default: children —') }}
 					</option>
-					<option v-for="key in sidebarSchemaPropertyKeys" :key="key" :value="key">
+					<option
+						v-for="key in sidebarSchemaPropertyKeys"
+						:key="key"
+						:value="key">
 						{{ key }}
 					</option>
 				</select>
@@ -157,16 +187,22 @@
 					type="text"
 					:value="config.treeField || ''"
 					:placeholder="t('openbuild', 'children')"
-					@input="update('treeField', $event.target.value)">
+					@input="update('treeField', $event.target.value)" />
 				<InlineFieldMark :error="markFor('treeField')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
 				{{ t('openbuild', 'Sidebar title field') }}
-				<select v-if="hasBoundSidebarSchema" :value="config.sidebarTitleField || ''" @change="update('sidebarTitleField', $event.target.value)">
+				<select
+					v-if="hasBoundSidebarSchema"
+					:value="config.sidebarTitleField || ''"
+					@change="update('sidebarTitleField', $event.target.value)">
 					<option value="">
 						{{ t('openbuild', '— default: title field —') }}
 					</option>
-					<option v-for="key in sidebarSchemaPropertyKeys" :key="key" :value="key">
+					<option
+						v-for="key in sidebarSchemaPropertyKeys"
+						:key="key"
+						:value="key">
 						{{ key }}
 					</option>
 				</select>
@@ -174,7 +210,7 @@
 					v-else
 					type="text"
 					:value="config.sidebarTitleField || ''"
-					@input="update('sidebarTitleField', $event.target.value)">
+					@input="update('sidebarTitleField', $event.target.value)" />
 				<InlineFieldMark :error="markFor('sidebarTitleField')" />
 			</label>
 		</fieldset>
@@ -186,7 +222,7 @@
 				<input
 					type="text"
 					:value="config.emptyText || ''"
-					@input="update('emptyText', $event.target.value)">
+					@input="update('emptyText', $event.target.value)" />
 				<InlineFieldMark :error="markFor('emptyText')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
@@ -194,7 +230,7 @@
 				<input
 					type="text"
 					:value="config.emptyDescription || ''"
-					@input="update('emptyDescription', $event.target.value)">
+					@input="update('emptyDescription', $event.target.value)" />
 				<InlineFieldMark :error="markFor('emptyDescription')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
@@ -202,7 +238,7 @@
 				<input
 					type="text"
 					:value="config.emptyBodyText || ''"
-					@input="update('emptyBodyText', $event.target.value)">
+					@input="update('emptyBodyText', $event.target.value)" />
 				<InlineFieldMark :error="markFor('emptyBodyText')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
@@ -210,7 +246,7 @@
 				<input
 					type="text"
 					:value="config.emptyBodyDescription || ''"
-					@input="update('emptyBodyDescription', $event.target.value)">
+					@input="update('emptyBodyDescription', $event.target.value)" />
 				<InlineFieldMark :error="markFor('emptyBodyDescription')" />
 			</label>
 		</fieldset>
@@ -250,7 +286,10 @@ export default {
 	},
 	emits: ['update:config'],
 	setup(props) {
-		const picker = useRegisterPicker({ appSlug: props.appSlug, dataRegisters: props.dataRegisters })
+		const picker = useRegisterPicker({
+			appSlug: props.appSlug,
+			dataRegisters: props.dataRegisters,
+		})
 		return { picker }
 	},
 	data() {
@@ -265,9 +304,19 @@ export default {
 	computed: {
 		validatedConfigKeys() {
 			return [
-				'register', 'schema', 'contentField', 'titleField', 'idParam',
-				'treeField', 'sidebarTitleField', 'sidebarRegister', 'sidebarSchema',
-				'emptyText', 'emptyDescription', 'emptyBodyText', 'emptyBodyDescription',
+				'register',
+				'schema',
+				'contentField',
+				'titleField',
+				'idParam',
+				'treeField',
+				'sidebarTitleField',
+				'sidebarRegister',
+				'sidebarSchema',
+				'emptyText',
+				'emptyDescription',
+				'emptyBodyText',
+				'emptyBodyDescription',
 			]
 		},
 		hasBoundSchema() {
@@ -299,7 +348,13 @@ export default {
 				return shared
 			}
 			if (!this.config.register) {
-				return { hasError: true, message: this.t('openbuild', 'A register is required for wiki pages.') }
+				return {
+					hasError: true,
+					message: this.t(
+						'openbuild',
+						'A register is required for wiki pages.',
+					),
+				}
 			}
 			return shared || { hasError: false, message: '' }
 		},
@@ -314,7 +369,13 @@ export default {
 				return shared
 			}
 			if (!this.config.schema) {
-				return { hasError: true, message: this.t('openbuild', 'A schema is required for wiki pages.') }
+				return {
+					hasError: true,
+					message: this.t(
+						'openbuild',
+						'A schema is required for wiki pages.',
+					),
+				}
 			}
 			return shared || { hasError: false, message: '' }
 		},
@@ -354,7 +415,10 @@ export default {
 			immediate: true,
 			handler(val) {
 				if (val && this.effectiveSidebarRegister) {
-					this.fetchSidebarSchemaProperties(this.effectiveSidebarRegister, val)
+					this.fetchSidebarSchemaProperties(
+						this.effectiveSidebarRegister,
+						val,
+					)
 				} else {
 					this.sidebarSchemaProperties = {}
 				}
@@ -374,7 +438,11 @@ export default {
 		 */
 		update(key, value) {
 			const next = { ...this.config }
-			if (value === '' || value === null || (Array.isArray(value) && value.length === 0)) {
+			if (
+				value === ''
+				|| value === null
+				|| (Array.isArray(value) && value.length === 0)
+			) {
 				delete next[key]
 			} else {
 				next[key] = value
@@ -434,7 +502,10 @@ export default {
 		 * @param {string} schema - schema slug.
 		 */
 		async fetchSchemaProperties(register, schema) {
-			this.schemaProperties = await this.picker.fetchSchemaProperties(register, schema)
+			this.schemaProperties = await this.picker.fetchSchemaProperties(
+				register,
+				schema,
+			)
 		},
 		/**
 		 * Fetch the schemas in the (effective) sidebar register.
@@ -451,7 +522,10 @@ export default {
 		 * @param {string} schema - schema slug.
 		 */
 		async fetchSidebarSchemaProperties(register, schema) {
-			this.sidebarSchemaProperties = await this.picker.fetchSchemaProperties(register, schema)
+			this.sidebarSchemaProperties = await this.picker.fetchSchemaProperties(
+				register,
+				schema,
+			)
 		},
 	},
 }

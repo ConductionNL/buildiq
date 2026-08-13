@@ -19,7 +19,12 @@
 		@closing="onClose">
 		<div class="ob-block-remap">
 			<p class="ob-block-remap__intro">
-				{{ t('openbuild', 'This block references schemas that do not exist under the same name in this app. Map each one to a schema here, or leave it unresolved — an unresolved binding inserts as a visible "needs remap" placeholder, it is never silently dropped.') }}
+				{{
+					t(
+						'openbuild',
+						'This block references schemas that do not exist under the same name in this app. Map each one to a schema here, or leave it unresolved — an unresolved binding inserts as a visible "needs remap" placeholder, it is never silently dropped.',
+					)
+				}}
 			</p>
 
 			<div v-for="dep in dependencies" :key="dep" class="ob-block-remap__row">

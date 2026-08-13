@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: EUPL-1.2
 import { createApp } from 'vue'
-import { translate as t, translatePlural as n, loadTranslations } from '@nextcloud/l10n'
+import {
+	translate as t,
+	translatePlural as n,
+	loadTranslations,
+} from '@nextcloud/l10n'
 import pinia from './pinia.js'
 import AdminRoot from './views/settings/AdminRoot.vue'
 import { registerDirectives } from './registerDirectives.js'

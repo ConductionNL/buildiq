@@ -10,7 +10,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
-vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn() } }))
+vi.mock('@nextcloud/axios', () => ({
+	default: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
+}))
 
 import axios from '@nextcloud/axios'
 import AgentEditDialog from '../../src/dialogs/AgentEditDialog.vue'
@@ -21,19 +23,22 @@ const NcSelectStub = {
 	name: 'NcSelect',
 	props: ['modelValue', 'options', 'inputLabel', 'clearable', 'multiple', 'label'],
 	emits: ['update:modelValue'],
-	template: '<div class="ncselect-stub" :data-label="inputLabel" :data-count="(modelValue || []).length || (modelValue ? 1 : 0)" />',
+	template:
+		'<div class="ncselect-stub" :data-label="inputLabel" :data-count="(modelValue || []).length || (modelValue ? 1 : 0)" />',
 }
 const NcTextFieldStub = {
 	name: 'NcTextField',
 	props: ['modelValue', 'label', 'type'],
 	emits: ['update:modelValue'],
-	template: '<input class="nctextfield-stub" :data-label="label" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">',
+	template:
+		'<input class="nctextfield-stub" :data-label="label" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">',
 }
 const NcTextAreaStub = {
 	name: 'NcTextArea',
 	props: ['modelValue', 'label', 'placeholder'],
 	emits: ['update:modelValue'],
-	template: '<textarea class="nctextarea-stub" :data-label="label" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+	template:
+		'<textarea class="nctextarea-stub" :data-label="label" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
 }
 // `emits: ['click']` is load-bearing: without it Vue 3 leaves the parent's
 // `@click` in `$attrs`, it falls through onto the root <button>, and one user
@@ -42,7 +47,8 @@ const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled'],
 	emits: ['click'],
-	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+	template:
+		'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 const NcModalStub = {
 	name: 'NcModal',
@@ -66,10 +72,11 @@ const stubs = {
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
 
-const factory = (agent = null) => mount(AgentEditDialog, {
-	propsData: { open: false, agent, applicationSlug: 'tool-library' },
-	stubs,
-})
+const factory = (agent = null) =>
+	mount(AgentEditDialog, {
+		propsData: { open: false, agent, applicationSlug: 'tool-library' },
+		stubs,
+	})
 
 const openDialog = async (wrapper) => {
 	await wrapper.setProps({ open: true })
@@ -108,7 +115,10 @@ describe('AgentEditDialog', () => {
 		await openDialog(wrapper)
 
 		expect(wrapper.vm.name).toBe('Page builder assistant')
-		expect(wrapper.vm.enabledTools).toEqual(['openbuild.upsertPage', 'openbuild.addWidget'])
+		expect(wrapper.vm.enabledTools).toEqual([
+			'openbuild.upsertPage',
+			'openbuild.addWidget',
+		])
 		expect(wrapper.vm.maxActionsPerRun).toBe(5)
 		expect(wrapper.vm.editing).toBe(true)
 	})
@@ -145,7 +155,12 @@ describe('AgentEditDialog', () => {
 	})
 
 	it('saving an existing agent PUTs to its uuid', async () => {
-		const agent = { id: 'agent-1', name: 'Existing agent', enabledTools: ['openbuild.listApps'], maxActionsPerRun: 10 }
+		const agent = {
+			id: 'agent-1',
+			name: 'Existing agent',
+			enabledTools: ['openbuild.listApps'],
+			maxActionsPerRun: 10,
+		}
 		const wrapper = factory(agent)
 		await openDialog(wrapper)
 
@@ -153,15 +168,23 @@ describe('AgentEditDialog', () => {
 		await flush()
 
 		expect(axios.put).toHaveBeenCalledTimes(1)
-		expect(axios.put.mock.calls[0][0]).toBe('/apps/openregister/api/objects/openbuild/agent/agent-1')
+		expect(axios.put.mock.calls[0][0]).toBe(
+			'/apps/openregister/api/objects/openbuild/agent/agent-1',
+		)
 	})
 
 	it('an enabled-tools multi-select change updates the local list', async () => {
 		const wrapper = factory(null)
 		await openDialog(wrapper)
 
-		wrapper.vm.onEnabledToolsSelect([{ value: 'openbuild.upsertPage' }, { value: 'openbuild.addWidget' }])
-		expect(wrapper.vm.enabledTools).toEqual(['openbuild.upsertPage', 'openbuild.addWidget'])
+		wrapper.vm.onEnabledToolsSelect([
+			{ value: 'openbuild.upsertPage' },
+			{ value: 'openbuild.addWidget' },
+		])
+		expect(wrapper.vm.enabledTools).toEqual([
+			'openbuild.upsertPage',
+			'openbuild.addWidget',
+		])
 
 		wrapper.vm.onEnabledToolsSelect(null)
 		expect(wrapper.vm.enabledTools).toEqual([])

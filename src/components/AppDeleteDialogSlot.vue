@@ -98,16 +98,24 @@ export default {
 			}
 			this.busy = true
 			try {
-				await axios.delete(generateUrl(`/apps/openbuild/api/applications/${this.appUuid}`), {
-					params: { deleteData: deleteData ? 1 : 0 },
-				})
+				await axios.delete(
+					generateUrl(`/apps/openbuild/api/applications/${this.appUuid}`),
+					{
+						params: { deleteData: deleteData ? 1 : 0 },
+					},
+				)
 				this.evictFromList(this.appUuid)
 				if (typeof this.close === 'function') {
 					this.close()
 				}
 			} catch (e) {
-				const detail = (e.response && e.response.data && e.response.data.detail) || e.message || e
-				showError(this.t('openbuild', 'Delete failed: {error}', { error: detail }))
+				const detail =
+					(e.response && e.response.data && e.response.data.detail)
+					|| e.message
+					|| e
+				showError(
+					this.t('openbuild', 'Delete failed: {error}', { error: detail }),
+				)
 			} finally {
 				this.busy = false
 			}
@@ -137,7 +145,10 @@ export default {
 				}
 			} catch (e) {
 				// eslint-disable-next-line no-console
-				console.warn('[openbuild] could not evict deleted app from list cache', e)
+				console.warn(
+					'[openbuild] could not evict deleted app from list cache',
+					e,
+				)
 			}
 		},
 	},

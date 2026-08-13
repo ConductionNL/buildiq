@@ -14,10 +14,7 @@
 		<NcNoteCard v-if="!obApp" type="info">
 			{{ t('openbuild', 'Loading application…') }}
 		</NcNoteCard>
-		<IconUploadSection
-			v-else
-			:application="obApp"
-			@updated="onIconUpdated" />
+		<IconUploadSection v-else :application="obApp" @updated="onIconUpdated" />
 	</div>
 </template>
 

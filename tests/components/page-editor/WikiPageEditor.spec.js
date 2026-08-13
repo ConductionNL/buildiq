@@ -22,13 +22,24 @@ const fetchRegisters = vi.fn(async () => [
 	{ slug: 'openbuild-hello-world', title: 'Hello World' },
 ])
 const fetchSchemas = vi.fn(async () => [{ slug: 'articles', title: 'Articles' }])
-const fetchSchemaProperties = vi.fn(async () => ({ body: { type: 'string' }, title: { type: 'string' }, children: { type: 'array' } }))
-
-vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
-	useRegisterPicker: () => ({ fetchRegisters, fetchSchemas, fetchSchemaProperties, resolveAppRegister: () => '' }),
+const fetchSchemaProperties = vi.fn(async () => ({
+	body: { type: 'string' },
+	title: { type: 'string' },
+	children: { type: 'array' },
 }))
 
-const WikiPageEditor = (await import('../../../src/components/page-editor/WikiPageEditor.vue')).default
+vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
+	useRegisterPicker: () => ({
+		fetchRegisters,
+		fetchSchemas,
+		fetchSchemaProperties,
+		resolveAppRegister: () => '',
+	}),
+}))
+
+const WikiPageEditor = (
+	await import('../../../src/components/page-editor/WikiPageEditor.vue')
+).default
 
 function mountEditor(config = {}) {
 	return mount(WikiPageEditor, { propsData: { config, appSlug: 'hello-world' } })
@@ -61,29 +72,45 @@ describe('WikiPageEditor', () => {
 	})
 
 	it('bound register + schema clear the invalid marks', () => {
-		const wrapper = mountEditor({ register: 'openbuild-hello-world', schema: 'articles' })
+		const wrapper = mountEditor({
+			register: 'openbuild-hello-world',
+			schema: 'articles',
+		})
 		expect(wrapper.vm.registerMark.hasError).toBe(false)
 		expect(wrapper.vm.schemaMark.hasError).toBe(false)
 	})
 
 	it('binding a register + schema whose schema declares body/title/children lists them in the field-mapping dropdowns', async () => {
-		const wrapper = mountEditor({ register: 'openbuild-hello-world', schema: 'articles' })
+		const wrapper = mountEditor({
+			register: 'openbuild-hello-world',
+			schema: 'articles',
+		})
 		await new Promise((r) => setTimeout(r, 0))
 		await wrapper.vm.$nextTick()
-		expect(fetchSchemaProperties).toHaveBeenCalledWith('openbuild-hello-world', 'articles')
+		expect(fetchSchemaProperties).toHaveBeenCalledWith(
+			'openbuild-hello-world',
+			'articles',
+		)
 		expect(wrapper.vm.schemaPropertyKeys).toEqual(['body', 'title', 'children'])
 		expect(wrapper.vm.hasBoundSchema).toBe(true)
 	})
 
 	it('an untouched mount emits no field-mapping keys', async () => {
-		const wrapper = mountEditor({ register: 'openbuild-hello-world', schema: 'articles' })
+		const wrapper = mountEditor({
+			register: 'openbuild-hello-world',
+			schema: 'articles',
+		})
 		await new Promise((r) => setTimeout(r, 0))
 		await wrapper.vm.$nextTick()
 		expect(wrapper.emitted('update:config')).toBeUndefined()
 	})
 
 	it('an unsurfaced key survives a titleField edit', async () => {
-		const wrapper = mountEditor({ register: 'r', schema: 's', extraThing: { keep: true } })
+		const wrapper = mountEditor({
+			register: 'r',
+			schema: 's',
+			extraThing: { keep: true },
+		})
 		wrapper.vm.update('titleField', 'headline')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
@@ -111,9 +138,19 @@ describe('WikiPageEditor', () => {
 
 	it('validatedConfigKeys matches the pinned thirteen keys', () => {
 		expect(mountEditor().vm.validatedConfigKeys).toEqual([
-			'register', 'schema', 'contentField', 'titleField', 'idParam',
-			'treeField', 'sidebarTitleField', 'sidebarRegister', 'sidebarSchema',
-			'emptyText', 'emptyDescription', 'emptyBodyText', 'emptyBodyDescription',
+			'register',
+			'schema',
+			'contentField',
+			'titleField',
+			'idParam',
+			'treeField',
+			'sidebarTitleField',
+			'sidebarRegister',
+			'sidebarSchema',
+			'emptyText',
+			'emptyDescription',
+			'emptyBodyText',
+			'emptyBodyDescription',
 		])
 		expect(mountEditor().vm.validatedConfigKeys).toHaveLength(13)
 	})

@@ -19,12 +19,16 @@ describe('InlineFieldMark', () => {
 	})
 
 	it('renders nothing when hasError is false', () => {
-		const wrapper = mount(InlineFieldMark, { propsData: { error: { hasError: false, message: '' } } })
+		const wrapper = mount(InlineFieldMark, {
+			propsData: { error: { hasError: false, message: '' } },
+		})
 		expect(wrapper.find('.inline-field-mark').exists()).toBe(false)
 	})
 
 	it('renders the message + role=alert when hasError is true', () => {
-		const wrapper = mount(InlineFieldMark, { propsData: { error: { hasError: true, message: 'must be set' } } })
+		const wrapper = mount(InlineFieldMark, {
+			propsData: { error: { hasError: true, message: 'must be set' } },
+		})
 		const mark = wrapper.find('.inline-field-mark')
 		expect(mark.exists()).toBe(true)
 		expect(mark.attributes('role')).toBe('alert')
@@ -32,7 +36,9 @@ describe('InlineFieldMark', () => {
 	})
 
 	it('falls back to a generic message when one is not supplied', () => {
-		const wrapper = mount(InlineFieldMark, { propsData: { error: { hasError: true } } })
+		const wrapper = mount(InlineFieldMark, {
+			propsData: { error: { hasError: true } },
+		})
 		expect(wrapper.text().length).toBeGreaterThan(0)
 	})
 })
@@ -42,10 +48,14 @@ describe('pageEditorValidation mixin', () => {
 		mixins: [pageEditorValidationMixin],
 		props: ['config'],
 		computed: {
-			validatedConfigKeys() { return ['register', 'schema'] },
+			validatedConfigKeys() {
+				return ['register', 'schema']
+			},
 		},
 		// Vue 3 does not pass `h` into render(); it is imported instead.
-		render() { return h('div') },
+		render() {
+			return h('div')
+		},
 	}
 
 	it('registers each validated config key on mount and unregisters on destroy', () => {
@@ -53,7 +63,13 @@ describe('pageEditorValidation mixin', () => {
 		const unregister = vi.fn()
 		const wrapper = mount(Host, {
 			propsData: { config: {} },
-			provide: { pageEditorValidator: { register, unregister, errorFor: () => ({ hasError: false, message: '' }) } },
+			provide: {
+				pageEditorValidator: {
+					register,
+					unregister,
+					errorFor: () => ({ hasError: false, message: '' }),
+				},
+			},
 		})
 		expect(register).toHaveBeenCalledWith('register')
 		expect(register).toHaveBeenCalledWith('schema')
@@ -69,11 +85,17 @@ describe('pageEditorValidation mixin', () => {
 				pageEditorValidator: {
 					register: () => {},
 					unregister: () => {},
-					errorFor: (key) => (key === 'register' ? { hasError: true, message: 'required' } : { hasError: false, message: '' }),
+					errorFor: (key) =>
+						key === 'register'
+							? { hasError: true, message: 'required' }
+							: { hasError: false, message: '' },
 				},
 			},
 		})
-		expect(wrapper.vm.markFor('register')).toEqual({ hasError: true, message: 'required' })
+		expect(wrapper.vm.markFor('register')).toEqual({
+			hasError: true,
+			message: 'required',
+		})
 		expect(wrapper.vm.isInvalid('register')).toBe(true)
 		expect(wrapper.vm.isInvalid('schema')).toBe(false)
 	})

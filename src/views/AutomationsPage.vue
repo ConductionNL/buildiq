@@ -47,10 +47,20 @@
 		<NcEmptyContent
 			v-else-if="selectedVersionId && automations.length === 0"
 			:name="t('openbuild', 'No automations yet')"
-			:description="t('openbuild', 'Create an automation to compose a trigger, an optional condition, and one or more actions.')" />
+			:description="
+				t(
+					'openbuild',
+					'Create an automation to compose a trigger, an optional condition, and one or more actions.',
+				)
+			" />
 
 		<p v-else-if="!selectedVersionId" class="automations-page__hint">
-			{{ t('openbuild', 'Select an application and a version to see its automations.') }}
+			{{
+				t(
+					'openbuild',
+					'Select an application and a version to see its automations.',
+				)
+			}}
 		</p>
 
 		<ul v-else class="automations-page__list">
@@ -62,7 +72,8 @@
 				<div class="automations-page__item-main">
 					<strong>{{ automation.name || automation.slug }}</strong>
 					<span class="automations-page__item-meta">
-						{{ triggerSummary(automation) }} · {{ actionSummary(automation) }}
+						{{ triggerSummary(automation) }} ·
+						{{ actionSummary(automation) }}
 					</span>
 					<span
 						v-if="driftFor(automation.id)"
@@ -119,7 +130,12 @@
 		<ConfirmActionDialog
 			v-model:open="confirmDeleteOpen"
 			:name="t('openbuild', 'Delete automation')"
-			:message="t('openbuild', 'Delete this automation? This also removes its compiled artifacts.')"
+			:message="
+				t(
+					'openbuild',
+					'Delete this automation? This also removes its compiled artifacts.',
+				)
+			"
 			:confirm-label="t('openbuild', 'Delete')"
 			:busy="deleting"
 			destructive
@@ -130,7 +146,14 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcCheckboxRadioSwitch, NcEmptyContent, NcLoadingIcon, NcNoteCard, NcSelect } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcNoteCard,
+	NcSelect,
+} from '@nextcloud/vue'
 import AutomationEditDialog from '../dialogs/AutomationEditDialog.vue'
 import AutomationTestPanelModal from '../modals/AutomationTestPanelModal.vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
@@ -221,7 +244,9 @@ export default {
 			this.loadingVersions = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl(`/apps/openbuild/api/applications/${this.selectedApp.slug}/versions`)
+				const url = generateUrl(
+					`/apps/openbuild/api/applications/${this.selectedApp.slug}/versions`,
+				)
 				const { data } = await axios.get(url)
 				this.versions = this.extractResults(data)
 			} catch (error) {
@@ -252,11 +277,15 @@ export default {
 			this.loading = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/automation')
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openbuild/automation',
+				)
 				const { data } = await axios.get(url)
 				const all = this.extractResults(data)
 				this.automations = all.filter(
-					(a) => a.applicationSlug === this.selectedApp.slug && a.versionUuid === this.selectedVersionId,
+					(a) =>
+						a.applicationSlug === this.selectedApp.slug
+						&& a.versionUuid === this.selectedVersionId,
 				)
 				await this.refreshStatuses()
 			} catch (error) {
@@ -275,7 +304,9 @@ export default {
 			const entries = await Promise.all(
 				this.automations.map(async (automation) => {
 					try {
-						const url = generateUrl(`/apps/openbuild/api/automations/${automation.id}/status`)
+						const url = generateUrl(
+							`/apps/openbuild/api/automations/${automation.id}/status`,
+						)
 						const { data } = await axios.get(url)
 						return [automation.id, data]
 					} catch (error) {
@@ -310,7 +341,7 @@ export default {
 		approvalStateFor(uuid) {
 			const status = this.statusByUuid[uuid]
 			const state = status && status.approvalState
-			return (state && state !== 'none') ? state : ''
+			return state && state !== 'none' ? state : ''
 		},
 		/**
 		 * Human label for an approval state value.
@@ -352,7 +383,9 @@ export default {
 		 * @return {string}
 		 */
 		actionSummary(automation) {
-			const actions = Array.isArray(automation.actions) ? automation.actions : []
+			const actions = Array.isArray(automation.actions)
+				? automation.actions
+				: []
 			if (actions.length === 0) {
 				return t('openbuild', 'No actions')
 			}
@@ -418,7 +451,9 @@ export default {
 			this.errorMessage = ''
 			const action = checked ? 'enable' : 'disable'
 			try {
-				const url = generateUrl(`/apps/openbuild/api/automations/${automation.id}/${action}`)
+				const url = generateUrl(
+					`/apps/openbuild/api/automations/${automation.id}/${action}`,
+				)
 				await axios.post(url, {})
 				await this.fetchAutomations()
 			} catch (error) {
@@ -436,7 +471,9 @@ export default {
 		async recompile(automation) {
 			this.errorMessage = ''
 			try {
-				const url = generateUrl(`/apps/openbuild/api/automations/${automation.id}/compile`)
+				const url = generateUrl(
+					`/apps/openbuild/api/automations/${automation.id}/compile`,
+				)
 				await axios.post(url, {})
 				await this.fetchAutomations()
 			} catch (error) {
@@ -492,11 +529,16 @@ export default {
 				// schema is admin-only on `delete`) and, for an admin, would
 				// leave the compiled notifications/schedules live with no
 				// definition left to edit them from. Conduction/openbuild#173.
-				const url = generateUrl(`/apps/openbuild/api/automations/${automation.id}`)
+				const url = generateUrl(
+					`/apps/openbuild/api/automations/${automation.id}`,
+				)
 				await axios.delete(url)
 				await this.fetchAutomations()
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not delete the automation.')
+				this.errorMessage = t(
+					'openbuild',
+					'Could not delete the automation.',
+				)
 			} finally {
 				this.deleting = false
 				this.confirmDeleteOpen = false

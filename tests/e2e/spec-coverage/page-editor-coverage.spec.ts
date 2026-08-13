@@ -48,8 +48,10 @@ const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
 
 const SLUG = 'hello-world'
-const PAGE_DESIGNER = (slug: string) => `${BASE}/apps/openbuild/builder/${slug}/pages`
-const BUILT_PAGE = (slug: string, route: string) => `${BASE}/apps/openbuild/builder/${slug}/${route}`
+const PAGE_DESIGNER = (slug: string) =>
+	`${BASE}/apps/openbuild/builder/${slug}/pages`
+const BUILT_PAGE = (slug: string, route: string) =>
+	`${BASE}/apps/openbuild/builder/${slug}/${route}`
 
 /**
  * Click "Save & open preview" and wait for the save to actually land.
@@ -96,14 +98,22 @@ const GENERATED_PAGE_ID = /^(map|roadmap|search|wiki)-page-\d+$/
  * @param page Playwright page (authenticated via the shared storageState).
  * @return {Promise<void>}
  */
-async function removeGeneratedPages(page: import('@playwright/test').Page): Promise<void> {
+async function removeGeneratedPages(
+	page: import('@playwright/test').Page,
+): Promise<void> {
 	await page.goto(`${BASE}/apps/openbuild/`, { waitUntil: 'domcontentloaded' })
 	await page.waitForTimeout(500)
 	await page.evaluate(async (slug) => {
-		const tok = (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken
+		const tok =
+			(window as unknown as { OC?: { requestToken?: string } }).OC
+				?.requestToken
 			|| document.querySelector('head')?.getAttribute('data-requesttoken')
 			|| ''
-		const headers = { requesttoken: tok, 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' }
+		const headers = {
+			requesttoken: tok,
+			'OCS-APIRequest': 'true',
+			'Content-Type': 'application/json',
+		}
 		const url = `/index.php/apps/openbuild/api/applications/${slug}/manifest`
 		const res = await fetch(url, { headers })
 		if (!res.ok) {
@@ -112,12 +122,19 @@ async function removeGeneratedPages(page: import('@playwright/test').Page): Prom
 		const body = await res.json()
 		const manifest = body.manifest || body
 		const pages = Array.isArray(manifest.pages) ? manifest.pages : []
-		const kept = pages.filter((p: { id?: string }) => !/^(map|roadmap|search|wiki)-page-\d+$/.test(String(p?.id ?? '')))
+		const kept = pages.filter(
+			(p: { id?: string }) =>
+				!/^(map|roadmap|search|wiki)-page-\d+$/.test(String(p?.id ?? '')),
+		)
 		if (kept.length === pages.length) {
 			return
 		}
 		manifest.pages = kept
-		await fetch(url, { method: 'PUT', headers, body: JSON.stringify({ manifest }) })
+		await fetch(url, {
+			method: 'PUT',
+			headers,
+			body: JSON.stringify({ manifest }),
+		})
 	}, SLUG)
 }
 
@@ -130,15 +147,24 @@ test.beforeAll(async ({ browser }) => {
 	}
 })
 
-async function saveAndAwaitPersist(page: import('@playwright/test').Page): Promise<void> {
+async function saveAndAwaitPersist(
+	page: import('@playwright/test').Page,
+): Promise<void> {
 	const saved = page.waitForResponse(
-		(r) => /\/api\/objects\/openbuild\/(applicationVersion|application)\/[^/]+$/.test(r.url())
-			&& ['PATCH', 'PUT'].includes(r.request().method()),
+		(r) =>
+			/\/api\/objects\/openbuild\/(applicationVersion|application)\/[^/]+$/.test(
+				r.url(),
+			) && ['PATCH', 'PUT'].includes(r.request().method()),
 		{ timeout: 20_000 },
 	)
-	await page.locator('.page-designer__tool-btn--primary', { hasText: 'Save' }).click()
+	await page
+		.locator('.page-designer__tool-btn--primary', { hasText: 'Save' })
+		.click()
 	const res = await saved
-	expect(res.ok(), `the manifest write must succeed, got HTTP ${res.status()}`).toBeTruthy()
+	expect(
+		res.ok(),
+		`the manifest write must succeed, got HTTP ${res.status()}`,
+	).toBeTruthy()
 }
 
 /**
@@ -152,12 +178,17 @@ async function saveAndAwaitPersist(page: import('@playwright/test').Page): Promi
  * @param page Playwright page.
  * @return {Promise<void>}
  */
-async function dismissSupportDialog(page: import('@playwright/test').Page): Promise<void> {
+async function dismissSupportDialog(
+	page: import('@playwright/test').Page,
+): Promise<void> {
 	const closeBtn = page.getByRole('button', { name: /^close$/i })
 	// The dialog's own "have I been seen" check is an async round-trip, so it
 	// can pop up a beat AFTER this function's caller already moved on — an
 	// instantaneous isVisible() check races it and misses. waitFor() polls.
-	await closeBtn.waitFor({ state: 'visible', timeout: 4_000 }).then(() => closeBtn.click()).catch(() => {})
+	await closeBtn
+		.waitFor({ state: 'visible', timeout: 4_000 })
+		.then(() => closeBtn.click())
+		.catch(() => {})
 }
 
 /**
@@ -167,12 +198,20 @@ async function dismissSupportDialog(page: import('@playwright/test').Page): Prom
  */
 async function addPage(page: import('@playwright/test').Page, type: string) {
 	await page.goto(PAGE_DESIGNER(SLUG))
-	await expect(page.locator('.page-designer-host')).toBeVisible({ timeout: 15_000 })
+	await expect(page.locator('.page-designer-host')).toBeVisible({
+		timeout: 15_000,
+	})
 	await dismissSupportDialog(page)
 	await page.locator('.page-list-editor__add').click()
-	await expect(page.locator('.page-list-editor__add-row')).toBeVisible({ timeout: 5_000 })
+	await expect(page.locator('.page-list-editor__add-row')).toBeVisible({
+		timeout: 5_000,
+	})
 	await page.locator('.page-list-editor__select').selectOption(type)
-	await page.locator('.page-list-editor__add-row button:not([disabled])', { hasText: 'Confirm' }).click()
+	await page
+		.locator('.page-list-editor__add-row button:not([disabled])', {
+			hasText: 'Confirm',
+		})
+		.click()
 }
 
 /**
@@ -201,14 +240,25 @@ async function addPage(page: import('@playwright/test').Page, type: string) {
  * @param type Page type whose row to select, e.g. `map`.
  * @return {Promise<void>}
  */
-async function selectPageRow(page: import('@playwright/test').Page, type: string): Promise<void> {
-	await expect(page.locator('.page-designer-host')).toBeVisible({ timeout: 15_000 })
+async function selectPageRow(
+	page: import('@playwright/test').Page,
+	type: string,
+): Promise<void> {
+	await expect(page.locator('.page-designer-host')).toBeVisible({
+		timeout: 15_000,
+	})
 	await dismissSupportDialog(page)
 	const row = page
 		.locator('.page-list-editor__row')
-		.filter({ has: page.locator('.page-list-editor__type-tag', { hasText: new RegExp(`^${type}$`) }) })
+		.filter({
+			has: page.locator('.page-list-editor__type-tag', {
+				hasText: new RegExp(`^${type}$`),
+			}),
+		})
 		.first()
-	await expect(row, `a ${type} page row must be present after saving`).toBeVisible({ timeout: 10_000 })
+	await expect(row, `a ${type} page row must be present after saving`).toBeVisible(
+		{ timeout: 10_000 },
+	)
 	await row.locator('.page-list-editor__type-tag').click()
 	await expect(
 		page.locator('.page-list-editor__row--selected'),
@@ -238,11 +288,13 @@ async function selectOrFill(row: import('@playwright/test').Locator, value: stri
 	if (await select.count()) {
 		await expect
 			.poll(async () => await select.locator('option').count(), {
-				message: 'the schema-property options must load before one is chosen',
+				message:
+					'the schema-property options must load before one is chosen',
 				timeout: 10_000,
 			})
 			.toBeGreaterThan(1)
-		const hasOption = (await select.locator(`option[value="${value}"]`).count()) > 0
+		const hasOption =
+			(await select.locator(`option[value="${value}"]`).count()) > 0
 		await select.selectOption(hasOption ? value : { index: 1 })
 		return
 	}
@@ -256,10 +308,15 @@ async function selectOrFill(row: import('@playwright/test').Locator, value: stri
 // @e2e page-editor-coverage::add-page-lists-the-four-new-types
 test('REQ-PEC-002 — Add page lists the four new types', async ({ page }) => {
 	// @e2e page-editor-coverage::add-page-lists-the-four-new-types
-	test.skip(!LIVE, 'Requires a live dev env with the page designer built and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires a live dev env with the page designer built and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await page.goto(PAGE_DESIGNER(SLUG))
-	await expect(page.locator('.page-designer-host')).toBeVisible({ timeout: 15_000 })
+	await expect(page.locator('.page-designer-host')).toBeVisible({
+		timeout: 15_000,
+	})
 	await dismissSupportDialog(page)
 	await page.locator('.page-list-editor__add').click()
 
@@ -272,16 +329,24 @@ test('REQ-PEC-002 — Add page lists the four new types', async ({ page }) => {
 })
 
 // @e2e page-editor-coverage::adding-a-map-page-seeds-the-map-shaped-default-config
-test('REQ-PEC-002 — Adding a map page seeds the map-shaped default config', async ({ page }) => {
+test('REQ-PEC-002 — Adding a map page seeds the map-shaped default config', async ({
+	page,
+}) => {
 	// @e2e page-editor-coverage::adding-a-map-page-seeds-the-map-shaped-default-config
-	test.skip(!LIVE, 'Requires a live dev env with the page designer built and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires a live dev env with the page designer built and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await addPage(page, 'map')
 
 	// REQ-PEC-003: the centre pane must open MapPageEditor with the pinned
 	// default centre (52.1326, 5.2913) and zoom (7) pre-filled.
 	const editor = page.locator('.map-page-editor')
-	await expect(editor, 'MapPageEditor must mount for a freshly added map page').toBeVisible({ timeout: 5_000 })
+	await expect(
+		editor,
+		'MapPageEditor must mount for a freshly added map page',
+	).toBeVisible({ timeout: 5_000 })
 	const numberInputs = editor.locator('input[type="number"]')
 	await expect(numberInputs.nth(0)).toHaveValue('52.1326')
 	await expect(numberInputs.nth(1)).toHaveValue('5.2913')
@@ -293,33 +358,49 @@ test('REQ-PEC-002 — Adding a map page seeds the map-shaped default config', as
 // ---------------------------------------------------------------------------
 
 // @e2e page-editor-coverage::create-configure-save-and-render-a-map-page
-test('REQ-PEC-003 — Create, configure, save and render a map page', async ({ page }) => {
+test('REQ-PEC-003 — Create, configure, save and render a map page', async ({
+	page,
+}) => {
 	// @e2e page-editor-coverage::create-configure-save-and-render-a-map-page
-	test.skip(!LIVE, 'Requires a live dev env with the page designer + built app and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires a live dev env with the page designer + built app and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await addPage(page, 'map')
 	const editor = page.locator('.map-page-editor')
 	await expect(editor).toBeVisible({ timeout: 5_000 })
 
 	// Add a tile layer with a URL.
-	await editor.locator('.map-page-editor__row-add', { hasText: 'Add layer' }).click()
-	await editor.locator('.map-page-editor__row-url').fill('https://tiles.example.test/{z}/{x}/{y}.png')
+	await editor
+		.locator('.map-page-editor__row-add', { hasText: 'Add layer' })
+		.click()
+	await editor
+		.locator('.map-page-editor__row-url')
+		.fill('https://tiles.example.test/{z}/{x}/{y}.png')
 
 	// Set a marker source URL (the "Source URL" radio is selected by default).
-	const markerUrlInput = editor.locator('.map-page-editor__group-row', { hasText: 'Marker source URL' }).locator('input')
+	const markerUrlInput = editor
+		.locator('.map-page-editor__group-row', { hasText: 'Marker source URL' })
+		.locator('input')
 	await markerUrlInput.fill('https://example.test/markers.json')
 
 	await saveAndAwaitPersist(page)
 
 	await page.goto(BUILT_PAGE(SLUG, 'map'))
-	await expect(page.locator('[data-testid="cn-map-page"]'), 'built map page must render').toBeVisible({ timeout: 15_000 })
+	await expect(
+		page.locator('[data-testid="cn-map-page"]'),
+		'built map page must render',
+	).toBeVisible({ timeout: 15_000 })
 
 	// Reopen the designer and assert the values round-tripped.
 	await page.goto(PAGE_DESIGNER(SLUG))
 	await selectPageRow(page, 'map')
 	const reopened = page.locator('.map-page-editor')
 	await expect(reopened).toBeVisible({ timeout: 5_000 })
-	await expect(reopened.locator('.map-page-editor__row-url')).toHaveValue('https://tiles.example.test/{z}/{x}/{y}.png')
+	await expect(reopened.locator('.map-page-editor__row-url')).toHaveValue(
+		'https://tiles.example.test/{z}/{x}/{y}.png',
+	)
 })
 
 // ---------------------------------------------------------------------------
@@ -327,27 +408,39 @@ test('REQ-PEC-003 — Create, configure, save and render a map page', async ({ p
 // ---------------------------------------------------------------------------
 
 // @e2e page-editor-coverage::create-configure-save-and-render-a-roadmap-page
-test('REQ-PEC-004 — Create, configure, save and render a roadmap page', async ({ page }) => {
+test('REQ-PEC-004 — Create, configure, save and render a roadmap page', async ({
+	page,
+}) => {
 	// @e2e page-editor-coverage::create-configure-save-and-render-a-roadmap-page
-	test.skip(!LIVE, 'Requires a live dev env with the page designer + built app and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires a live dev env with the page designer + built app and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await addPage(page, 'roadmap')
 	const editor = page.locator('.roadmap-page-editor')
 	await expect(editor).toBeVisible({ timeout: 5_000 })
 
-	await editor.locator('input[placeholder="owner/repo"]').fill('ConductionNL/openbuild')
+	await editor
+		.locator('input[placeholder="owner/repo"]')
+		.fill('ConductionNL/openbuild')
 	await editor.locator('select').first().selectOption('github')
 
 	await saveAndAwaitPersist(page)
 
 	await page.goto(BUILT_PAGE(SLUG, 'roadmap'))
-	await expect(page.locator('.cn-features-and-roadmap-view'), 'built roadmap page must render').toBeVisible({ timeout: 15_000 })
+	await expect(
+		page.locator('.cn-features-and-roadmap-view'),
+		'built roadmap page must render',
+	).toBeVisible({ timeout: 15_000 })
 
 	await page.goto(PAGE_DESIGNER(SLUG))
 	await selectPageRow(page, 'roadmap')
 	const reopened = page.locator('.roadmap-page-editor')
 	await expect(reopened).toBeVisible({ timeout: 5_000 })
-	await expect(reopened.locator('input[placeholder="owner/repo"]')).toHaveValue('ConductionNL/openbuild')
+	await expect(reopened.locator('input[placeholder="owner/repo"]')).toHaveValue(
+		'ConductionNL/openbuild',
+	)
 	await expect(reopened.locator('select').first()).toHaveValue('github')
 })
 
@@ -356,30 +449,50 @@ test('REQ-PEC-004 — Create, configure, save and render a roadmap page', async 
 // ---------------------------------------------------------------------------
 
 // @e2e page-editor-coverage::create-configure-save-and-render-a-search-page
-test('REQ-PEC-005 — Create, configure, save and render a search page', async ({ page }) => {
+test('REQ-PEC-005 — Create, configure, save and render a search page', async ({
+	page,
+}) => {
 	// @e2e page-editor-coverage::create-configure-save-and-render-a-search-page
-	test.skip(!LIVE, 'Requires a live dev env with the page designer + built app and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires a live dev env with the page designer + built app and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await addPage(page, 'search')
 	const editor = page.locator('.search-page-editor')
 	await expect(editor).toBeVisible({ timeout: 5_000 })
 
-	const placeholderInput = editor.locator('.search-page-editor__group-row', { hasText: 'Placeholder' }).locator('input')
+	const placeholderInput = editor
+		.locator('.search-page-editor__group-row', { hasText: 'Placeholder' })
+		.locator('input')
 	await placeholderInput.fill('Search everything…')
 
 	await editor.locator('button', { hasText: 'Add facet' }).click()
 	const facetRow = editor.locator('.search-page-editor__facet').first()
 	await facetRow.locator('.search-page-editor__row input').first().fill('category')
 	await facetRow.locator('button', { hasText: 'Add option' }).click()
-	await facetRow.locator('.search-page-editor__options .search-page-editor__row input').first().fill('books')
+	await facetRow
+		.locator('.search-page-editor__options .search-page-editor__row input')
+		.first()
+		.fill('books')
 	await facetRow.locator('button', { hasText: 'Add option' }).click()
-	await facetRow.locator('.search-page-editor__options .search-page-editor__row').nth(1).locator('input').first().fill('films')
+	await facetRow
+		.locator('.search-page-editor__options .search-page-editor__row')
+		.nth(1)
+		.locator('input')
+		.first()
+		.fill('films')
 
 	await saveAndAwaitPersist(page)
 
 	await page.goto(BUILT_PAGE(SLUG, 'search'))
-	await expect(page.locator('[data-testid="cn-search-page"]'), 'built search page must render').toBeVisible({ timeout: 15_000 })
-	await expect(page.locator('input[placeholder="Search everything…"]')).toBeVisible()
+	await expect(
+		page.locator('[data-testid="cn-search-page"]'),
+		'built search page must render',
+	).toBeVisible({ timeout: 15_000 })
+	await expect(
+		page.locator('input[placeholder="Search everything…"]'),
+	).toBeVisible()
 	await expect(page.locator('text=books')).toBeVisible()
 	await expect(page.locator('text=films')).toBeVisible()
 
@@ -387,7 +500,11 @@ test('REQ-PEC-005 — Create, configure, save and render a search page', async (
 	await selectPageRow(page, 'search')
 	const reopened = page.locator('.search-page-editor')
 	await expect(reopened).toBeVisible({ timeout: 5_000 })
-	await expect(reopened.locator('.search-page-editor__group-row', { hasText: 'Placeholder' }).locator('input')).toHaveValue('Search everything…')
+	await expect(
+		reopened
+			.locator('.search-page-editor__group-row', { hasText: 'Placeholder' })
+			.locator('input'),
+	).toHaveValue('Search everything…')
 })
 
 // ---------------------------------------------------------------------------
@@ -395,9 +512,14 @@ test('REQ-PEC-005 — Create, configure, save and render a search page', async (
 // ---------------------------------------------------------------------------
 
 // @e2e page-editor-coverage::create-configure-save-and-render-a-wiki-page
-test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({ page }) => {
+test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({
+	page,
+}) => {
 	// @e2e page-editor-coverage::create-configure-save-and-render-a-wiki-page
-	test.skip(!LIVE, 'Requires a live dev env with the page designer + built app + a seed register/schema and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires a live dev env with the page designer + built app + a seed register/schema and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await addPage(page, 'wiki')
 	const editor = page.locator('.wiki-page-editor')
@@ -444,13 +566,18 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({ 
 	// — a wiki page bound to a real register + schema with its content and title
 	// fields mapped to real schema properties — asserted against the pair the
 	// seeded app genuinely uses, and it is now identical on CI and locally.
-	const registerSelect = editor.locator('.wiki-page-editor__group-row', { hasText: /^\s*Register\b/ }).locator('select')
+	const registerSelect = editor
+		.locator('.wiki-page-editor__group-row', { hasText: /^\s*Register\b/ })
+		.locator('select')
 	await expect(
 		registerSelect.locator('option[value="openbuild"]'),
 		"the seeded app's register must be offered by the register picker",
 	).toHaveCount(1, { timeout: 10_000 })
 	await registerSelect.selectOption('openbuild')
-	const schemaSelect = editor.locator('.wiki-page-editor__group-row', { hasText: 'Schema' }).locator('select').first()
+	const schemaSelect = editor
+		.locator('.wiki-page-editor__group-row', { hasText: 'Schema' })
+		.locator('select')
+		.first()
 	await expect(
 		schemaSelect.locator('option[value="hello-message"]'),
 		"the seeded app's register must offer its hello-message schema",
@@ -460,13 +587,22 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({ 
 	// contentField/titleField render as a schema-property <select> once a
 	// register + schema are bound (task 5.1); fall back to free-text input
 	// otherwise.
-	await selectOrFill(editor.locator('.wiki-page-editor__group-row', { hasText: 'Content field' }), 'body')
-	await selectOrFill(editor.locator('.wiki-page-editor__group-row', { hasText: 'Title field' }), 'title')
+	await selectOrFill(
+		editor.locator('.wiki-page-editor__group-row', { hasText: 'Content field' }),
+		'body',
+	)
+	await selectOrFill(
+		editor.locator('.wiki-page-editor__group-row', { hasText: 'Title field' }),
+		'title',
+	)
 
 	await saveAndAwaitPersist(page)
 
 	await page.goto(BUILT_PAGE(SLUG, 'wiki'))
-	await expect(page.locator('[data-testid="cn-wiki-page"]'), 'built wiki page must render').toBeVisible({ timeout: 15_000 })
+	await expect(
+		page.locator('[data-testid="cn-wiki-page"]'),
+		'built wiki page must render',
+	).toBeVisible({ timeout: 15_000 })
 
 	await page.goto(PAGE_DESIGNER(SLUG))
 	await selectPageRow(page, 'wiki')
@@ -478,12 +614,20 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({ 
 	// across two selects. Assert the exact values that were bound rather than
 	// merely "not empty" — that is what a lossless round-trip means.
 	await expect(
-		reopened.locator('.wiki-page-editor__group-row', { hasText: /^\s*Register\b/ }).locator('select'),
+		reopened
+			.locator('.wiki-page-editor__group-row', { hasText: /^\s*Register\b/ })
+			.locator('select'),
 	).toHaveValue('openbuild')
 	await expect(
-		reopened.locator('.wiki-page-editor__group-row', { hasText: /^\s*Schema\b/ }).locator('select'),
+		reopened
+			.locator('.wiki-page-editor__group-row', { hasText: /^\s*Schema\b/ })
+			.locator('select'),
 	).toHaveValue('hello-message')
 	await expect(
-		reopened.locator('.wiki-page-editor__group-row', { hasText: /^\s*Content field\b/ }).locator('select'),
+		reopened
+			.locator('.wiki-page-editor__group-row', {
+				hasText: /^\s*Content field\b/,
+			})
+			.locator('select'),
 	).toHaveValue('body')
 })

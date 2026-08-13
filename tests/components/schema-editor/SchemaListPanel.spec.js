@@ -21,18 +21,22 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-import SchemaListPanel, { scopeSummary } from '../../../src/components/schema-editor/SchemaListPanel.vue'
+import SchemaListPanel, {
+	scopeSummary,
+} from '../../../src/components/schema-editor/SchemaListPanel.vue'
 
 const stubs = {
 	NcButton: {
 		name: 'NcButton',
 		props: ['type', 'disabled'],
-		template: '<button :data-nc-button-type="type" :disabled="disabled" @click="$emit(\'click\', $event)"><slot name="icon" /><slot /></button>',
+		template:
+			'<button :data-nc-button-type="type" :disabled="disabled" @click="$emit(\'click\', $event)"><slot name="icon" /><slot /></button>',
 	},
 	NcEmptyContent: {
 		name: 'NcEmptyContent',
 		props: ['name', 'description'],
-		template: '<div class="nc-empty-stub"><span class="empty-name">{{ name }}</span><span class="empty-description">{{ description }}</span><slot name="icon" /><slot name="action" /></div>',
+		template:
+			'<div class="nc-empty-stub"><span class="empty-name">{{ name }}</span><span class="empty-description">{{ description }}</span><slot name="icon" /><slot name="action" /></div>',
 	},
 	NcLoadingIcon: {
 		name: 'NcLoadingIcon',
@@ -44,7 +48,8 @@ const stubs = {
 	},
 	NcActionButton: {
 		name: 'NcActionButton',
-		template: '<button class="nc-action-stub" @click="$emit(\'click\', $event)"><slot name="icon" /><slot /></button>',
+		template:
+			'<button class="nc-action-stub" @click="$emit(\'click\', $event)"><slot name="icon" /><slot /></button>',
 	},
 	// Capture modal props so we can drive their `confirm` event.
 	AddSchemaDialog: {
@@ -55,7 +60,8 @@ const stubs = {
 	DeleteSchemaDialog: {
 		name: 'DeleteSchemaDialog',
 		props: ['open', 'schemaSlug'],
-		template: '<div class="delete-stub" :data-open="open" :data-slug="schemaSlug" />',
+		template:
+			'<div class="delete-stub" :data-open="open" :data-slug="schemaSlug" />',
 	},
 }
 
@@ -132,7 +138,9 @@ describe('SchemaListPanel', () => {
 		})
 		// The empty state shows two Add buttons (header + empty-state CTA).
 		// Either should toggle `addOpen` to true.
-		const headerAdd = wrapper.findAll('button[data-nc-button-type="primary"]').at(0)
+		const headerAdd = wrapper
+			.findAll('button[data-nc-button-type="primary"]')
+			.at(0)
 		await headerAdd.trigger('click')
 		expect(wrapper.vm.addOpen).toBe(true)
 		const addDialog = wrapper.findComponent({ name: 'AddSchemaDialog' })
@@ -220,30 +228,47 @@ describe('scopeSummary (REQ-OBDSA-005)', () => {
 	})
 
 	it('summarises multiple operation scopes in read/create/update/delete order', () => {
-		const badge = scopeSummary(makeSchema({
-			authorization: { delete: ['admin'], read: ['vets'] },
-		}))
+		const badge = scopeSummary(
+			makeSchema({
+				authorization: { delete: ['admin'], read: ['vets'] },
+			}),
+		)
 		expect(badge.title).toBe('read: vets; delete: admin')
 	})
 
 	it('summarises an own-records (@creator) scope', () => {
-		const badge = scopeSummary(makeSchema({ authorization: { update: ['@creator'] } }))
+		const badge = scopeSummary(
+			makeSchema({ authorization: { update: ['@creator'] } }),
+		)
 		expect(badge.title).toBe('update: @creator')
 	})
 
 	it('summarises a condition scope', () => {
-		const badge = scopeSummary(makeSchema({
-			authorization: {
-				delete: [],
-				conditions: { delete: { field: 'assignee', operator: 'equals', value: '@user.uid' } },
-			},
-		}))
+		const badge = scopeSummary(
+			makeSchema({
+				authorization: {
+					delete: [],
+					conditions: {
+						delete: {
+							field: 'assignee',
+							operator: 'equals',
+							value: '@user.uid',
+						},
+					},
+				},
+			}),
+		)
 		expect(badge.title).toBe('delete: condition(assignee)')
 	})
 
 	it('falls back to a generic title when the block only carries unrelated keys', () => {
-		const badge = scopeSummary(makeSchema({ authorization: { _note: 'hand-authored' } }))
-		expect(badge).toEqual({ label: 'Restricted', title: 'Custom authorization metadata' })
+		const badge = scopeSummary(
+			makeSchema({ authorization: { _note: 'hand-authored' } }),
+		)
+		expect(badge).toEqual({
+			label: 'Restricted',
+			title: 'Custom authorization metadata',
+		})
 	})
 })
 

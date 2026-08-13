@@ -27,10 +27,16 @@
 				:key="`${row.role}-${row.principal}`"
 				class="ob-groups-widget__row">
 				<span class="ob-groups-widget__row-name">{{ row.label }}</span>
-				<span :class="['ob-groups-widget__row-role', `ob-groups-widget__row-role--${row.role}`]">
+				<span
+					:class="[
+						'ob-groups-widget__row-role',
+						`ob-groups-widget__row-role--${row.role}`,
+					]">
 					{{ roleLabel(row.role) }}
 				</span>
-				<span class="ob-groups-widget__row-members">{{ memberLabel(row) }}</span>
+				<span class="ob-groups-widget__row-members">{{
+					memberLabel(row)
+				}}</span>
 			</li>
 		</ul>
 		<p v-else class="ob-groups-widget__empty">
@@ -60,17 +66,24 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		rows() {
-			const permissions = (this.application && this.application.permissions) || {}
+			const permissions =
+				(this.application && this.application.permissions) || {}
 			const out = []
 			ROLES.forEach((role) => {
-				const bucket = Array.isArray(permissions[role]) ? permissions[role] : []
+				const bucket = Array.isArray(permissions[role])
+					? permissions[role]
+					: []
 				bucket.forEach((entry) => {
 					if (typeof entry !== 'string' || !entry) {
 						return
 					}
 					const isUser = entry.startsWith('user:')
 					const isGroup = entry.startsWith('group:') || !isUser
-					const label = isUser ? entry.slice(5) : (entry.startsWith('group:') ? entry.slice(6) : entry)
+					const label = isUser
+						? entry.slice(5)
+						: entry.startsWith('group:')
+							? entry.slice(6)
+							: entry
 					out.push({ role, principal: entry, label, isGroup })
 				})
 			})

@@ -21,16 +21,21 @@ import { mount } from '@vue/test-utils'
 // `vi.mock` factories are hoisted above the imports, so `h` is pulled in with
 // a lazy dynamic import inside the (async) factory. Vue 3 does not pass `h`
 // into render(), and vnode classes use `class`, not Vue 2's `staticClass`.
-vi.mock('../../../src/components/page-editor/fields/FormFieldBuilder.vue', async () => {
-	const { h } = await import('vue')
-	return {
-		default: {
-			name: 'FormFieldBuilder',
-			props: ['modelValue'],
-			render() { return h('div', { class: 'form-field-builder-stub' }) },
-		},
-	}
-})
+vi.mock(
+	'../../../src/components/page-editor/fields/FormFieldBuilder.vue',
+	async () => {
+		const { h } = await import('vue')
+		return {
+			default: {
+				name: 'FormFieldBuilder',
+				props: ['modelValue'],
+				render() {
+					return h('div', { class: 'form-field-builder-stub' })
+				},
+			},
+		}
+	},
+)
 
 // External access (REQ-EFP-002) pulls in the real NcDialog tree via
 // ExternalFormAccessDialog; stubbed here so these submit-shape/config tests
@@ -41,12 +46,16 @@ vi.mock('../../../src/dialogs/ExternalFormAccessDialog.vue', async () => {
 		default: {
 			name: 'ExternalFormAccessDialog',
 			props: ['open', 'register', 'schema', 'pageId', 'entry'],
-			render() { return h('div', { class: 'external-form-access-dialog-stub' }) },
+			render() {
+				return h('div', { class: 'external-form-access-dialog-stub' })
+			},
 		},
 	}
 })
 
-const FormPageEditor = (await import('../../../src/components/page-editor/FormPageEditor.vue')).default
+const FormPageEditor = (
+	await import('../../../src/components/page-editor/FormPageEditor.vue')
+).default
 
 function mountEditor(config = {}) {
 	return mount(FormPageEditor, { propsData: { config } })
@@ -161,7 +170,9 @@ describe('FormPageEditor', () => {
 	it('FormFieldBuilder add forwards through update:config', async () => {
 		const wrapper = mountEditor({ fields: [] })
 		const ffb = wrapper.findComponent({ name: 'FormFieldBuilder' })
-		ffb.vm.$emit('update:modelValue', [{ key: 'name', label: 'Name', type: 'string' }])
+		ffb.vm.$emit('update:modelValue', [
+			{ key: 'name', label: 'Name', type: 'string' },
+		])
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
 		expect(next.fields).toHaveLength(1)

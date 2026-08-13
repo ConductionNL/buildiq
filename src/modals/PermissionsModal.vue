@@ -18,7 +18,12 @@
 		@update:open="onClose">
 		<div class="openbuild-permissions-modal">
 			<p class="openbuild-permissions-modal__help">
-				{{ t('openbuild', 'Configure which Nextcloud groups can view, edit, or own this app. Members of any of these groups will see the app in their list; only owners may publish, archive, delete, transfer ownership, or change these permissions.') }}
+				{{
+					t(
+						'openbuild',
+						'Configure which Nextcloud groups can view, edit, or own this app. Members of any of these groups will see the app in their list; only owners may publish, archive, delete, transfer ownership, or change these permissions.',
+					)
+				}}
 			</p>
 
 			<NcSelect
@@ -44,7 +49,12 @@
 				track-by="value" />
 
 			<div v-if="orphanError" class="openbuild-permissions-modal__error">
-				{{ t('openbuild', 'At least one owner group is required — saving with no owners would orphan this application.') }}
+				{{
+					t(
+						'openbuild',
+						'At least one owner group is required — saving with no owners would orphan this application.',
+					)
+				}}
 			</div>
 
 			<div class="openbuild-permissions-modal__actions">
@@ -52,7 +62,11 @@
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
 				<NcButton type="primary" :disabled="saving" @click="save">
-					{{ saving ? t('openbuild', 'Saving permissions…') : t('openbuild', 'Save permissions') }}
+					{{
+						saving
+							? t('openbuild', 'Saving permissions…')
+							: t('openbuild', 'Save permissions')
+					}}
 				</NcButton>
 			</div>
 		</div>
@@ -102,7 +116,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 		 */
 		groupOptions() {
-			return this.availableGroups.map(gid => ({ label: gid, value: gid }))
+			return this.availableGroups.map((gid) => ({ label: gid, value: gid }))
 		},
 	},
 	watch: {
@@ -141,9 +155,18 @@ export default {
 		 */
 		syncFromApplication(app) {
 			const perms = (app && app.permissions) || {}
-			this.ownersModel = (perms.owners || []).map(g => ({ label: g, value: g }))
-			this.editorsModel = (perms.editors || []).map(g => ({ label: g, value: g }))
-			this.viewersModel = (perms.viewers || []).map(g => ({ label: g, value: g }))
+			this.ownersModel = (perms.owners || []).map((g) => ({
+				label: g,
+				value: g,
+			}))
+			this.editorsModel = (perms.editors || []).map((g) => ({
+				label: g,
+				value: g,
+			}))
+			this.viewersModel = (perms.viewers || []).map((g) => ({
+				label: g,
+				value: g,
+			}))
 			this.orphanError = false
 			this.saving = false
 		},
@@ -161,9 +184,9 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 		 */
 		async save() {
-			const owners = this.ownersModel.map(o => o.value)
-			const editors = this.editorsModel.map(o => o.value)
-			const viewers = this.viewersModel.map(o => o.value)
+			const owners = this.ownersModel.map((o) => o.value)
+			const editors = this.editorsModel.map((o) => o.value)
+			const viewers = this.viewersModel.map((o) => o.value)
 			if (owners.length === 0) {
 				// Orphan-check guard per REQ-OBRBAC-005 — frontend rejects
 				// the save before sending. OR REST returns 4xx if bypassed.

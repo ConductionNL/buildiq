@@ -45,7 +45,9 @@ test.describe('Schema — full CRUD with persistence (OR runtime schema API)', (
 		await cleanupByPrefix(request)
 	})
 
-	test('CREATE → schema with 2 properties persists and reads back', async ({ request }) => {
+	test('CREATE → schema with 2 properties persists and reads back', async ({
+		request,
+	}) => {
 		const slug = `${E2E_PREFIX}-schema-c-${Math.floor(Math.random() * 1e4)}`
 		const schema = await seedSchema(request, {
 			slug,
@@ -58,15 +60,23 @@ test.describe('Schema — full CRUD with persistence (OR runtime schema API)', (
 
 		const persisted = await findSchema(request, schema.id)
 		expect(persisted, 'schema must be readable back').not.toBeNull()
-		const props = (persisted?.properties ?? {}) as Record<string, { type?: string }>
-		expect(Object.keys(props).sort(), 'both seeded properties must persist').toEqual(['count', 'label'])
+		const props = (persisted?.properties ?? {}) as Record<
+			string,
+			{ type?: string }
+		>
+		expect(
+			Object.keys(props).sort(),
+			'both seeded properties must persist',
+		).toEqual(['count', 'label'])
 		expect(props.label.type).toBe('string')
 		expect(props.count.type).toBe('integer')
 
 		await deleteSchema(request, schema.id)
 	})
 
-	test('READ → persisted schema is listed in the OR schema index by slug', async ({ request }) => {
+	test('READ → persisted schema is listed in the OR schema index by slug', async ({
+		request,
+	}) => {
 		const slug = `${E2E_PREFIX}-schema-r-${Math.floor(Math.random() * 1e4)}`
 		const schema = await seedSchema(request, { slug, title: 'E2E Schema Read' })
 
@@ -89,26 +99,35 @@ test.describe('Schema — full CRUD with persistence (OR runtime schema API)', (
 			},
 		})
 
-		const putRes = await request.put(`${BASE_URL}/index.php/apps/openregister/api/schemas/${schema.id}`, {
-			headers: authHeaders,
-			data: {
-				slug,
-				title: 'E2E Schema After',
-				properties: {
-					label: { type: 'string', title: 'Label' },
-					count: { type: 'integer', title: 'Count' },
-					active: { type: 'boolean', title: 'Active' },
+		const putRes = await request.put(
+			`${BASE_URL}/index.php/apps/openregister/api/schemas/${schema.id}`,
+			{
+				headers: authHeaders,
+				data: {
+					slug,
+					title: 'E2E Schema After',
+					properties: {
+						label: { type: 'string', title: 'Label' },
+						count: { type: 'integer', title: 'Count' },
+						active: { type: 'boolean', title: 'Active' },
+					},
 				},
 			},
-		})
+		)
 		expect(putRes.status(), 'update PUT must return 200').toBe(200)
 
 		const persisted = await findSchema(request, schema.id)
-		expect(persisted?.title, 'renamed title must persist').toBe('E2E Schema After')
-		const props = (persisted?.properties ?? {}) as Record<string, { type?: string }>
-		expect(Object.keys(props).sort(), 'added property must persist alongside originals').toEqual([
-			'active', 'count', 'label',
-		])
+		expect(persisted?.title, 'renamed title must persist').toBe(
+			'E2E Schema After',
+		)
+		const props = (persisted?.properties ?? {}) as Record<
+			string,
+			{ type?: string }
+		>
+		expect(
+			Object.keys(props).sort(),
+			'added property must persist alongside originals',
+		).toEqual(['active', 'count', 'label'])
 		expect(props.active.type).toBe('boolean')
 
 		await deleteSchema(request, schema.id)
@@ -116,11 +135,17 @@ test.describe('Schema — full CRUD with persistence (OR runtime schema API)', (
 
 	test('DELETE → schema is gone (read-back 404)', async ({ request }) => {
 		const slug = `${E2E_PREFIX}-schema-d-${Math.floor(Math.random() * 1e4)}`
-		const schema = await seedSchema(request, { slug, title: 'E2E Schema Delete' })
-
-		const delRes = await request.delete(`${BASE_URL}/index.php/apps/openregister/api/schemas/${schema.id}`, {
-			headers: authHeaders,
+		const schema = await seedSchema(request, {
+			slug,
+			title: 'E2E Schema Delete',
 		})
+
+		const delRes = await request.delete(
+			`${BASE_URL}/index.php/apps/openregister/api/schemas/${schema.id}`,
+			{
+				headers: authHeaders,
+			},
+		)
 		expect([200, 204]).toContain(delRes.status())
 
 		const gone = await findSchema(request, schema.id)
@@ -128,15 +153,16 @@ test.describe('Schema — full CRUD with persistence (OR runtime schema API)', (
 	})
 
 	// ---- #41: schema designer UI quarantined -------------------------------
-	test.fixme(
-		'CRUD via the in-app schema designer UI (Conduction/openbuild#41: builder routes do not render)',
-		async ({ page }) => {
-			// The /builder/{slug}/schemas designer ("Add schema" → field editor →
-			// Save) is part of the #41-quarantined nested builder routes. When #41
-			// is fixed this should drive: Add schema → add 2 fields → Save →
-			// reload → assert both fields persist → rename → Save → assert → delete.
-			await page.goto('/apps/openbuild/builder/hello-world/schemas')
-			await expect(page.getByRole('button', { name: /add schema/i })).toBeVisible({ timeout: 15_000 })
-		},
-	)
+	test.fixme('CRUD via the in-app schema designer UI (Conduction/openbuild#41: builder routes do not render)', async ({
+		page,
+	}) => {
+		// The /builder/{slug}/schemas designer ("Add schema" → field editor →
+		// Save) is part of the #41-quarantined nested builder routes. When #41
+		// is fixed this should drive: Add schema → add 2 fields → Save →
+		// reload → assert both fields persist → rename → Save → assert → delete.
+		await page.goto('/apps/openbuild/builder/hello-world/schemas')
+		await expect(page.getByRole('button', { name: /add schema/i })).toBeVisible({
+			timeout: 15_000,
+		})
+	})
 })

@@ -11,7 +11,12 @@
 <template>
 	<div class="ob-manifest-tab">
 		<p class="ob-manifest-tab__help">
-			{{ t('openbuild', 'Integrator-only editor: edit the raw JSON manifest below. For a visual editor open "Design pages".') }}
+			{{
+				t(
+					'openbuild',
+					'Integrator-only editor: edit the raw JSON manifest below. For a visual editor open "Design pages".',
+				)
+			}}
 		</p>
 		<textarea
 			v-model="manifestText"
@@ -36,7 +41,9 @@
 				@click="save">
 				{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
 			</NcButton>
-			<span v-if="savedToast" class="ob-manifest-tab__toast">{{ savedToast }}</span>
+			<span v-if="savedToast" class="ob-manifest-tab__toast">{{
+				savedToast
+			}}</span>
 		</div>
 	</div>
 </template>
@@ -109,7 +116,9 @@ export default {
 			}
 			try {
 				const { data } = await axios.get(
-					generateUrl(`/apps/openbuild/api/applications/${encodeURIComponent(slug)}/manifest`),
+					generateUrl(
+						`/apps/openbuild/api/applications/${encodeURIComponent(slug)}/manifest`,
+					),
 				)
 				this.manifestText = JSON.stringify(data || {}, null, 2)
 			} catch (e) {
@@ -132,7 +141,9 @@ export default {
 				this.error = `${t('openbuild', 'JSON parse error')}: ${e.message}`
 				return null
 			}
-			const result = validateManifest ? validateManifest(parsed) : { valid: true, errors: [] }
+			const result = validateManifest
+				? validateManifest(parsed)
+				: { valid: true, errors: [] }
 			if (result && result.valid === false) {
 				this.error = (result.errors || ['unknown']).join('; ')
 				return null
@@ -162,7 +173,9 @@ export default {
 				// Note the endpoint's asymmetry: GET returns the manifest bare, PUT
 				// expects it wrapped in `{ manifest }`.
 				await axios.put(
-					generateUrl(`/apps/openbuild/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`),
+					generateUrl(
+						`/apps/openbuild/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+					),
 					{ manifest: parsed },
 				)
 				this.savedToast = t('openbuild', 'Saved')

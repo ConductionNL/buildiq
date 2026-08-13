@@ -9,17 +9,26 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn().mockResolvedValue({ data: {} }) } }))
+vi.mock('@nextcloud/axios', () => ({
+	default: { get: vi.fn().mockResolvedValue({ data: {} }) },
+}))
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
 
 import DataSourceOriginToggle from '../../src/components/page-editor/DataSourceOriginToggle.vue'
 
 const stubs = {
-	ConnectorSourcePicker: { name: 'ConnectorSourcePicker', template: '<div class="picker-stub" />' },
-	ConnectorFieldMapper: { name: 'ConnectorFieldMapper', template: '<div class="mapper-stub" />' },
+	ConnectorSourcePicker: {
+		name: 'ConnectorSourcePicker',
+		template: '<div class="picker-stub" />',
+	},
+	ConnectorFieldMapper: {
+		name: 'ConnectorFieldMapper',
+		template: '<div class="mapper-stub" />',
+	},
 }
 
-const factory = (dataSource) => mount(DataSourceOriginToggle, { propsData: { dataSource }, stubs })
+const factory = (dataSource) =>
+	mount(DataSourceOriginToggle, { propsData: { dataSource }, stubs })
 
 describe('DataSourceOriginToggle', () => {
 	it('derives OpenRegister origin for a register binding', () => {
@@ -42,7 +51,9 @@ describe('DataSourceOriginToggle', () => {
 	})
 
 	it('switching back to OpenRegister with a mapping asks first and clears on accept', async () => {
-		const wrapper = factory({ connector: { endpointPath: 'x', fields: { a: 'a' } } })
+		const wrapper = factory({
+			connector: { endpointPath: 'x', fields: { a: 'a' } },
+		})
 		const radios = wrapper.findAll('input[type="radio"]')
 		await radios.at(0).setChecked() // OpenRegister
 		// The mapping is still intact at this point — only the dialog opened.
@@ -55,7 +66,9 @@ describe('DataSourceOriginToggle', () => {
 	})
 
 	it('cancelling the confirm keeps the connector binding', async () => {
-		const wrapper = factory({ connector: { endpointPath: 'x', fields: { a: 'a' } } })
+		const wrapper = factory({
+			connector: { endpointPath: 'x', fields: { a: 'a' } },
+		})
 		const radios = wrapper.findAll('input[type="radio"]')
 		await radios.at(0).setChecked()
 		// Simulate dismissing the dialog: onConfirmSwitch is never called.

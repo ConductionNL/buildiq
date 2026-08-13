@@ -22,14 +22,19 @@
 		@closing="onClose">
 		<div class="ob-external-form-access">
 			<p class="ob-external-form-access__target">
-				{{ t('openbuild', 'Target: {register} / {schema}', { register, schema }) }}
+				{{
+					t('openbuild', 'Target: {register} / {schema}', {
+						register,
+						schema,
+					})
+				}}
 			</p>
 
 			<label class="ob-external-form-access__toggle">
 				<input
 					:checked="enabled"
 					type="checkbox"
-					@change="enabled = $event.target.checked">
+					@change="enabled = $event.target.checked" />
 				{{ t('openbuild', 'Allow anonymous submissions to this endpoint') }}
 			</label>
 
@@ -38,27 +43,41 @@
 					<input
 						:checked="publicRead"
 						type="checkbox"
-						@change="publicRead = $event.target.checked">
-					{{ t('openbuild', 'Also allow anonymous reads (public listing)') }}
+						@change="publicRead = $event.target.checked" />
+					{{
+						t('openbuild', 'Also allow anonymous reads (public listing)')
+					}}
 				</label>
 
 				<NcTextField
 					:model-value="organisationScope || ''"
 					:label="t('openbuild', 'Organisation scope (optional)')"
-					:placeholder="t('openbuild', 'Organisation id — leave empty for none')"
+					:placeholder="
+						t('openbuild', 'Organisation id — leave empty for none')
+					"
 					@update:modelValue="organisationScope = $event || null" />
 
 				<label class="ob-external-form-access__toggle">
 					<input
 						:checked="trackLinkEnabled"
 						type="checkbox"
-						@change="trackLinkEnabled = $event.target.checked">
-					{{ t('openbuild', 'Offer a "mint track-link" action on submitted objects') }}
+						@change="trackLinkEnabled = $event.target.checked" />
+					{{
+						t(
+							'openbuild',
+							'Offer a "mint track-link" action on submitted objects',
+						)
+					}}
 				</label>
 			</template>
 
 			<NcNoteCard v-if="portalHint" type="warning">
-				{{ t('openbuild', 'Portaliq rendering not available on this instance yet — the raw public-create URL below still works.') }}
+				{{
+					t(
+						'openbuild',
+						'Portaliq rendering not available on this instance yet — the raw public-create URL below still works.',
+					)
+				}}
 			</NcNoteCard>
 
 			<NcNoteCard v-if="errorMessage" type="error">
@@ -67,11 +86,13 @@
 
 			<div v-if="showUrls" class="ob-external-form-access__urls">
 				<p>
-					<strong>{{ t('openbuild', 'Raw public submit URL') }}</strong><br>
+					<strong>{{ t('openbuild', 'Raw public submit URL') }}</strong
+					><br />
 					<code>{{ rawSubmitUrl }}</code>
 				</p>
 				<p v-if="portalUrl">
-					<strong>{{ t('openbuild', 'Portaliq page') }}</strong><br>
+					<strong>{{ t('openbuild', 'Portaliq page') }}</strong
+					><br />
 					<code>{{ portalUrl }}</code>
 				</p>
 			</div>
@@ -87,10 +108,7 @@
 				@click="onDisable">
 				{{ t('openbuild', 'Disable') }}
 			</NcButton>
-			<NcButton
-				type="primary"
-				:disabled="saving"
-				@click="onSave">
+			<NcButton type="primary" :disabled="saving" @click="onSave">
 				{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
 			</NcButton>
 		</template>
@@ -183,7 +201,12 @@ export default {
 			if (!this.register || !this.schema) {
 				return ''
 			}
-			return window.location.origin + generateUrl(`/apps/openregister/api/objects/${this.register}/${this.schema}`)
+			return (
+				window.location.origin
+				+ generateUrl(
+					`/apps/openregister/api/objects/${this.register}/${this.schema}`,
+				)
+			)
 		},
 		/**
 		 * The Portaliq portal URL, when provisioned.
@@ -195,8 +218,15 @@ export default {
 			if (this.savedPortalUrl) {
 				return this.savedPortalUrl
 			}
-			if (this.entry && this.entry.portalPage && this.entry.portalPage.portalPath) {
-				return window.location.origin + generateUrl(this.entry.portalPage.portalPath)
+			if (
+				this.entry
+				&& this.entry.portalPage
+				&& this.entry.portalPage.portalPath
+			) {
+				return (
+					window.location.origin
+					+ generateUrl(this.entry.portalPage.portalPath)
+				)
 			}
 			return ''
 		},
@@ -241,7 +271,11 @@ export default {
 			this.enabled = !!(e && e.status === 'enabled')
 			this.publicRead = !!(e && e.publicRead)
 			this.organisationScope = (e && e.organisationScope) || null
-			this.trackLinkEnabled = !!(e && e.trackLinkAction && e.trackLinkAction.enabled)
+			this.trackLinkEnabled = !!(
+				e
+				&& e.trackLinkAction
+				&& e.trackLinkAction.enabled
+			)
 		},
 		/**
 		 * Persist the enable/update flow: read-merge-write the schema
@@ -266,15 +300,23 @@ export default {
 					await this.onDisable()
 					return
 				}
-				await enablePublicCreate({ schema: this.schema, publicRead: this.publicRead })
-				const existingObjectId = this.entry && this.entry.portalPage && this.entry.portalPage.objectId
+				await enablePublicCreate({
+					schema: this.schema,
+					publicRead: this.publicRead,
+				})
+				const existingObjectId =
+					this.entry
+					&& this.entry.portalPage
+					&& this.entry.portalPage.objectId
 				const portalResult = await provisionPortalPage({
 					register: this.register,
 					schema: this.schema,
 					objectId: existingObjectId || null,
 				})
 				this.portalHint = !!portalResult.unavailable
-				this.savedPortalUrl = portalResult.portalPath ? (window.location.origin + generateUrl(portalResult.portalPath)) : ''
+				this.savedPortalUrl = portalResult.portalPath
+					? window.location.origin + generateUrl(portalResult.portalPath)
+					: ''
 				const next = {
 					id: (this.entry && this.entry.id) || generateEntryId(),
 					pageId: this.pageId,
@@ -285,13 +327,20 @@ export default {
 					organisationScope: this.organisationScope || null,
 					portalPage: portalResult.unavailable
 						? null
-						: { objectId: portalResult.objectId, portalPath: portalResult.portalPath },
+						: {
+								objectId: portalResult.objectId,
+								portalPath: portalResult.portalPath,
+							},
 					trackLinkAction: { enabled: this.trackLinkEnabled },
 				}
 				this.saved = true
 				this.$emit('save', next)
 			} catch (e) {
-				this.errorMessage = t('openbuild', 'Could not provision external access: {error}', { error: (e && e.message) || String(e) })
+				this.errorMessage = t(
+					'openbuild',
+					'Could not provision external access: {error}',
+					{ error: (e && e.message) || String(e) },
+				)
 			} finally {
 				this.saving = false
 			}
@@ -312,8 +361,14 @@ export default {
 			this.errorMessage = ''
 			try {
 				const hadPublicRead = !!(this.entry && this.entry.publicRead)
-				await revokePublicCreate({ schema: this.schema, removeRead: hadPublicRead })
-				const objectId = this.entry && this.entry.portalPage && this.entry.portalPage.objectId
+				await revokePublicCreate({
+					schema: this.schema,
+					removeRead: hadPublicRead,
+				})
+				const objectId =
+					this.entry
+					&& this.entry.portalPage
+					&& this.entry.portalPage.objectId
 				if (objectId) {
 					await draftPortalPage(objectId)
 				}
@@ -324,7 +379,8 @@ export default {
 					schema: this.schema,
 					status: 'disabled',
 					publicRead: false,
-					organisationScope: (this.entry && this.entry.organisationScope) || null,
+					organisationScope:
+						(this.entry && this.entry.organisationScope) || null,
 					portalPage: (this.entry && this.entry.portalPage) || null,
 					trackLinkAction: { enabled: false },
 				}
@@ -332,7 +388,11 @@ export default {
 				this.saved = false
 				this.$emit('save', next)
 			} catch (e) {
-				this.errorMessage = t('openbuild', 'Could not disable external access: {error}', { error: (e && e.message) || String(e) })
+				this.errorMessage = t(
+					'openbuild',
+					'Could not disable external access: {error}',
+					{ error: (e && e.message) || String(e) },
+				)
 			} finally {
 				this.saving = false
 			}

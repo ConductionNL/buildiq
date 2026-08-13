@@ -28,7 +28,11 @@ vi.mock('@nextcloud/initial-state', () => ({
 }))
 
 import { loadState } from '@nextcloud/initial-state'
-import { useRole, hasAnyRole, getCurrentUserGroups } from '../../../src/composables/useRole.js'
+import {
+	useRole,
+	hasAnyRole,
+	getCurrentUserGroups,
+} from '../../../src/composables/useRole.js'
 
 describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 	beforeEach(() => {
@@ -58,19 +62,33 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 	describe('useRole — happy paths (REQ-OBR-008)', () => {
 		it("returns 'owner' when user is in the owners array", () => {
 			loadState.mockReturnValue(['team-alpha'])
-			const app = { permissions: { owners: ['team-alpha'], editors: [], viewers: [] } }
+			const app = {
+				permissions: { owners: ['team-alpha'], editors: [], viewers: [] },
+			}
 			expect(useRole(app)).toBe('owner')
 		})
 
 		it("returns 'editor' when user is in the editors array only", () => {
 			loadState.mockReturnValue(['team-beta'])
-			const app = { permissions: { owners: ['team-alpha'], editors: ['team-beta'], viewers: [] } }
+			const app = {
+				permissions: {
+					owners: ['team-alpha'],
+					editors: ['team-beta'],
+					viewers: [],
+				},
+			}
 			expect(useRole(app)).toBe('editor')
 		})
 
 		it("returns 'viewer' when user is in the viewers array only", () => {
 			loadState.mockReturnValue(['team-gamma'])
-			const app = { permissions: { owners: ['team-alpha'], editors: ['team-beta'], viewers: ['team-gamma'] } }
+			const app = {
+				permissions: {
+					owners: ['team-alpha'],
+					editors: ['team-beta'],
+					viewers: ['team-gamma'],
+				},
+			}
 			expect(useRole(app)).toBe('viewer')
 		})
 	})
@@ -105,7 +123,11 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 		it("returns 'none' when the user has no intersecting group", () => {
 			loadState.mockReturnValue(['team-outsider'])
 			const app = {
-				permissions: { owners: ['team-alpha'], editors: ['team-beta'], viewers: ['team-gamma'] },
+				permissions: {
+					owners: ['team-alpha'],
+					editors: ['team-beta'],
+					viewers: ['team-gamma'],
+				},
 			}
 			expect(useRole(app)).toBe('none')
 		})

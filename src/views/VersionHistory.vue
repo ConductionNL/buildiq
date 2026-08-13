@@ -19,7 +19,12 @@
 			{{ t('openbuild', 'Loading…') }}
 		</p>
 		<p v-else-if="!versions.length" class="version-history__empty">
-			{{ t('openbuild', 'No versions yet — create a draft to start a new version.') }}
+			{{
+				t(
+					'openbuild',
+					'No versions yet — create a draft to start a new version.',
+				)
+			}}
 		</p>
 		<ul v-else class="version-history__list">
 			<li
@@ -34,11 +39,17 @@
 				<div class="version-history__row-main">
 					<div class="version-history__row-title">
 						<strong>{{ rowName(row) }}</strong>
-						<small class="version-history__semver">{{ rowSemver(row) }}</small>
-						<span class="version-history__badge" :class="`version-history__badge--${rowStatus(row)}`">
+						<small class="version-history__semver">{{
+							rowSemver(row)
+						}}</small>
+						<span
+							class="version-history__badge"
+							:class="`version-history__badge--${rowStatus(row)}`">
 							{{ statusLabel(row) }}
 						</span>
-						<span v-if="isProduction(row)" class="version-history__badge version-history__badge--production">
+						<span
+							v-if="isProduction(row)"
+							class="version-history__badge version-history__badge--production">
 							{{ t('openbuild', 'Production') }}
 						</span>
 					</div>
@@ -48,7 +59,10 @@
 					<button class="version-history__btn" @click="openVersion(row)">
 						{{ t('openbuild', 'Open') }}
 					</button>
-					<button v-if="canEdit" class="version-history__btn" @click="editVersion(row)">
+					<button
+						v-if="canEdit"
+						class="version-history__btn"
+						@click="editVersion(row)">
 						{{ t('openbuild', 'Edit') }}
 					</button>
 					<button
@@ -184,12 +198,22 @@ export default {
 			try {
 				let url
 				if (this.appSlug) {
-					url = generateUrl('/apps/openbuild/api/applications/{slug}/versions', { slug: this.appSlug })
+					url = generateUrl(
+						'/apps/openbuild/api/applications/{slug}/versions',
+						{ slug: this.appSlug },
+					)
 				} else {
-					url = generateUrl('/apps/openbuild/api/applicationversions?applicationUuid={uuid}', { uuid: this.applicationUuid })
+					url = generateUrl(
+						'/apps/openbuild/api/applicationversions?applicationUuid={uuid}',
+						{ uuid: this.applicationUuid },
+					)
 				}
 				const { data } = await axios.get(url)
-				const raw = Array.isArray(data) ? data : ((data && data.results) ? data.results : [])
+				const raw = Array.isArray(data)
+					? data
+					: data && data.results
+						? data.results
+						: []
 				// The IDOR filter applies ONLY to the unscoped endpoint. The
 				// by-slug URL above is already app-scoped server-side, and its
 				// rows do not carry `applicationUuid` at all — measured, every
@@ -205,11 +229,15 @@ export default {
 				// every app, always. Filtering a server-scoped response against
 				// a field that response does not contain is not defence in
 				// depth — it is an unconditional deny.
-				const filtered = (this.applicationUuid && !this.appSlug)
-					? raw.filter(r => r && r.applicationUuid === this.applicationUuid)
-					: raw
+				const filtered =
+					this.applicationUuid && !this.appSlug
+						? raw.filter(
+								(r) =>
+									r && r.applicationUuid === this.applicationUuid,
+							)
+						: raw
 				this.versions = filtered
-					.filter(r => this.rowStatus(r) !== 'archived')
+					.filter((r) => this.rowStatus(r) !== 'archived')
 					.sort((a, b) => {
 						const bProd = this.isProduction(b) ? 1 : 0
 						const aProd = this.isProduction(a) ? 1 : 0
@@ -234,7 +262,7 @@ export default {
 		 * @return {string}
 		 */
 		rowKey(row) {
-			return this.rowUuid(row) || (this.rowSlug(row) + ':' + this.rowName(row))
+			return this.rowUuid(row) || this.rowSlug(row) + ':' + this.rowName(row)
 		},
 		/**
 		 * The version row's own UUID (from `id` or the `@self` envelope).
@@ -309,7 +337,10 @@ export default {
 		 * @return {boolean}
 		 */
 		isProduction(row) {
-			return !!this.currentVersionUuid && this.rowUuid(row) === this.currentVersionUuid
+			return (
+				!!this.currentVersionUuid
+				&& this.rowUuid(row) === this.currentVersionUuid
+			)
 		},
 		/**
 		 * Open a version in the live shell — production at the canonical URL,
@@ -324,7 +355,9 @@ export default {
 			if (!this.appSlug) {
 				return
 			}
-			const base = generateUrl('/apps/openbuild/builder/{slug}', { slug: this.appSlug })
+			const base = generateUrl('/apps/openbuild/builder/{slug}', {
+				slug: this.appSlug,
+			})
 			window.location.href = this.isProduction(row)
 				? base
 				: base + '?_version=' + encodeURIComponent(this.rowSlug(row))
@@ -342,7 +375,9 @@ export default {
 			if (!this.appSlug) {
 				return
 			}
-			const base = generateUrl('/apps/openbuild/builder/{slug}/pages', { slug: this.appSlug })
+			const base = generateUrl('/apps/openbuild/builder/{slug}/pages', {
+				slug: this.appSlug,
+			})
 			window.location.href = this.isProduction(row)
 				? base
 				: base + '?_version=' + encodeURIComponent(this.rowSlug(row))
@@ -368,12 +403,21 @@ export default {
 					{ slug: this.appSlug, versionSlug },
 				)
 				await axios.post(url, {})
-				showSuccess(t('openbuild', '“{name}” is now the production version.', { name: this.rowName(row) }))
+				showSuccess(
+					t('openbuild', '“{name}” is now the production version.', {
+						name: this.rowName(row),
+					}),
+				)
 				this.$emit('released')
 				await this.refresh()
 			} catch (e) {
-				const detail = (e && e.response && e.response.data && e.response.data.detail) || (e && e.message) || ''
-				showError(t('openbuild', 'Release failed') + (detail ? ': ' + detail : ''))
+				const detail =
+					(e && e.response && e.response.data && e.response.data.detail)
+					|| (e && e.message)
+					|| ''
+				showError(
+					t('openbuild', 'Release failed') + (detail ? ': ' + detail : ''),
+				)
 			} finally {
 				this.releasing = ''
 			}
@@ -389,7 +433,9 @@ export default {
 		askRollback(row) {
 			this.rollbackTarget = {
 				uuid: this.rowUuid(row),
-				version: this.rowSemver(row) || (this.rowName(row) + ' ' + this.rowSemver(row)).trim(),
+				version:
+					this.rowSemver(row)
+					|| (this.rowName(row) + ' ' + this.rowSemver(row)).trim(),
 				manifest: row.manifest,
 				publishedAt: (row && row.publishedAt) || '',
 			}

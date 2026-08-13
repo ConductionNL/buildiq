@@ -30,7 +30,7 @@
 						type="radio"
 						:checked="sourceShape === 'register'"
 						value="register"
-						@change="setSourceShape('register')">
+						@change="setSourceShape('register')" />
 					{{ t('openbuild', 'Register + schema') }}
 				</label>
 				<label class="logs-page-editor__inline">
@@ -38,7 +38,7 @@
 						type="radio"
 						:checked="sourceShape === 'source'"
 						value="source"
-						@change="setSourceShape('source')">
+						@change="setSourceShape('source')" />
 					{{ t('openbuild', 'Source (URL or registry key)') }}
 				</label>
 			</div>
@@ -53,7 +53,10 @@
 						<option value="">
 							{{ t('openbuild', '— select register —') }}
 						</option>
-						<option v-for="r in registers" :key="r.slug || r.id" :value="r.slug">
+						<option
+							v-for="r in registers"
+							:key="r.slug || r.id"
+							:value="r.slug">
 							{{ r.title || r.slug }}
 						</option>
 					</select>
@@ -69,7 +72,10 @@
 						<option value="">
 							{{ t('openbuild', '— select schema —') }}
 						</option>
-						<option v-for="s in schemas" :key="s.slug || s.id" :value="s.slug">
+						<option
+							v-for="s in schemas"
+							:key="s.slug || s.id"
+							:value="s.slug">
 							{{ s.title || s.slug }}
 						</option>
 					</select>
@@ -82,14 +88,24 @@
 					<input
 						type="text"
 						:value="config.source || ''"
-						:placeholder="t('openbuild', '/api/objects/:slug/audit or a customComponents key')"
+						:placeholder="
+							t(
+								'openbuild',
+								'/api/objects/:slug/audit or a customComponents key',
+							)
+						"
 						:aria-invalid="isInvalid('source')"
-						@input="update('source', $event.target.value)">
+						@input="update('source', $event.target.value)" />
 					<InlineFieldMark :error="markFor('source')" />
 				</label>
 			</div>
 			<p class="logs-page-editor__hint">
-				{{ t('openbuild', 'Exactly one of (register + schema) or source must be set.') }}
+				{{
+					t(
+						'openbuild',
+						'Exactly one of (register + schema) or source must be set.',
+					)
+				}}
 			</p>
 		</fieldset>
 
@@ -150,7 +166,10 @@ export default {
 	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1
 	 */
 	setup(props) {
-		const picker = useRegisterPicker({ appSlug: props.appSlug, dataRegisters: props.dataRegisters })
+		const picker = useRegisterPicker({
+			appSlug: props.appSlug,
+			dataRegisters: props.dataRegisters,
+		})
 		return { picker }
 	},
 	data() {
@@ -235,7 +254,11 @@ export default {
 		 */
 		update(key, value) {
 			const next = { ...this.config }
-			if (value === '' || value === null || (Array.isArray(value) && value.length === 0)) {
+			if (
+				value === ''
+				|| value === null
+				|| (Array.isArray(value) && value.length === 0)
+			) {
 				delete next[key]
 			} else {
 				next[key] = value
@@ -298,7 +321,10 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		async fetchSchemaProperties(register, schema) {
-			this.schemaProperties = await this.picker.fetchSchemaProperties(register, schema)
+			this.schemaProperties = await this.picker.fetchSchemaProperties(
+				register,
+				schema,
+			)
 		},
 	},
 }

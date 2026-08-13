@@ -10,7 +10,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
-vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn() } }))
+vi.mock('@nextcloud/axios', () => ({
+	default: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
+}))
 
 import axios from '@nextcloud/axios'
 import AutomationEditDialog from '../../src/dialogs/AutomationEditDialog.vue'
@@ -18,23 +20,35 @@ import { clearAppStatusCache } from '../../src/composables/useAppStatus.js'
 
 const NcSelectStub = {
 	name: 'NcSelect',
-	props: ['value', 'options', 'loading', 'inputLabel', 'label', 'clearable', 'disabled', 'multiple'],
+	props: [
+		'value',
+		'options',
+		'loading',
+		'inputLabel',
+		'label',
+		'clearable',
+		'disabled',
+		'multiple',
+	],
 	template: '<div class="ncselect-stub" :data-label="inputLabel" />',
 }
 const NcTextFieldStub = {
 	name: 'NcTextField',
 	props: ['value', 'label', 'placeholder', 'type'],
-	template: '<input class="nctextfield-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)">',
+	template:
+		'<input class="nctextfield-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)">',
 }
 const NcTextAreaStub = {
 	name: 'NcTextArea',
 	props: ['value', 'label'],
-	template: '<textarea class="nctextarea-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
+	template:
+		'<textarea class="nctextarea-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
 }
 const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled'],
-	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+	template:
+		'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 const NcModalStub = {
 	name: 'NcModal',
@@ -70,10 +84,11 @@ const baseAutomation = () => ({
 	actions: [],
 })
 
-const factory = (automation = baseAutomation()) => mount(AutomationEditDialog, {
-	propsData: { open: false, automation, register: '' },
-	stubs,
-})
+const factory = (automation = baseAutomation()) =>
+	mount(AutomationEditDialog, {
+		propsData: { open: false, automation, register: '' },
+		stubs,
+	})
 
 const openDialog = async (wrapper) => {
 	await wrapper.setProps({ open: true })
@@ -98,7 +113,9 @@ describe('AutomationEditDialog', () => {
 		wrapper.vm.name = 'Notify case workers'
 		wrapper.vm.triggerType = 'object-created'
 		wrapper.vm.triggerSchema = 'permit'
-		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'send-notification' })]
+		wrapper.vm.actions = [
+			wrapper.vm.actionToEditor({ type: 'send-notification' }),
+		]
 		wrapper.vm.actions[0].subjectEn = 'New permit'
 		wrapper.vm.actions[0].subjectNl = 'Nieuwe vergunning'
 		await wrapper.vm.$nextTick()
@@ -106,7 +123,9 @@ describe('AutomationEditDialog', () => {
 		expect(wrapper.vm.valid).toBe(true)
 		await wrapper.vm.onSave()
 
-		const [, payload] = axios.post.mock.calls.find(([url]) => url.includes('/automation'))
+		const [, payload] = axios.post.mock.calls.find(([url]) =>
+			url.includes('/automation'),
+		)
 		expect(payload.trigger).toEqual({ type: 'object-created', schema: 'permit' })
 		expect(payload.actions[0].type).toBe('send-notification')
 		expect(payload.actions[0].subject.en).toBe('New permit')
@@ -118,17 +137,26 @@ describe('AutomationEditDialog', () => {
 
 		wrapper.vm.name = 'Nightly sync'
 		wrapper.vm.triggerType = 'schedule'
-		wrapper.vm.cadenceOption = wrapper.vm.cadenceOptions.find((o) => o.id === 'daily')
-		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'run-synchronization' })]
+		wrapper.vm.cadenceOption = wrapper.vm.cadenceOptions.find(
+			(o) => o.id === 'daily',
+		)
+		wrapper.vm.actions = [
+			wrapper.vm.actionToEditor({ type: 'run-synchronization' }),
+		]
 		wrapper.vm.actions[0].synchronizationId = 'sync-1'
 		await wrapper.vm.$nextTick()
 
 		expect(wrapper.vm.valid).toBe(true)
 		await wrapper.vm.onSave()
 
-		const [, payload] = axios.post.mock.calls.find(([url]) => url.includes('/automation'))
+		const [, payload] = axios.post.mock.calls.find(([url]) =>
+			url.includes('/automation'),
+		)
 		expect(payload.trigger).toEqual({ type: 'schedule', interval: 86400 })
-		expect(payload.actions[0]).toEqual({ type: 'run-synchronization', synchronizationId: 'sync-1' })
+		expect(payload.actions[0]).toEqual({
+			type: 'run-synchronization',
+			synchronizationId: 'sync-1',
+		})
 	})
 
 	it('REQ-AUTD-002 scenario 3: composes a manual automation with a condition + object-op', async () => {
@@ -137,7 +165,9 @@ describe('AutomationEditDialog', () => {
 
 		wrapper.vm.name = 'Flag large claims'
 		wrapper.vm.triggerType = 'manual'
-		wrapper.vm.conditionKindOption = wrapper.vm.conditionKindOptions.find((o) => o.value === 'feel')
+		wrapper.vm.conditionKindOption = wrapper.vm.conditionKindOptions.find(
+			(o) => o.value === 'feel',
+		)
 		wrapper.vm.conditionExpression = 'payload.amount > 1000'
 		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'object-op' })]
 		wrapper.vm.actions[0].schema = 'flag'
@@ -148,9 +178,19 @@ describe('AutomationEditDialog', () => {
 		expect(wrapper.vm.valid).toBe(true)
 		await wrapper.vm.onSave()
 
-		const [, payload] = axios.post.mock.calls.find(([url]) => url.includes('/automation'))
-		expect(payload.condition).toEqual({ type: 'feel', expression: 'payload.amount > 1000' })
-		expect(payload.actions[0]).toEqual({ type: 'object-op', operation: 'create', schema: 'flag', fieldMapping: { reason: 'large-claim' } })
+		const [, payload] = axios.post.mock.calls.find(([url]) =>
+			url.includes('/automation'),
+		)
+		expect(payload.condition).toEqual({
+			type: 'feel',
+			expression: 'payload.amount > 1000',
+		})
+		expect(payload.actions[0]).toEqual({
+			type: 'object-op',
+			operation: 'create',
+			schema: 'flag',
+			fieldMapping: { reason: 'large-claim' },
+		})
 	})
 
 	it('REQ-AUTD-003: blocks an unsupported action for an event trigger and prevents save', async () => {
@@ -167,7 +207,9 @@ describe('AutomationEditDialog', () => {
 		expect(wrapper.vm.actionBlockedReason('webhook')).not.toBe('')
 
 		await wrapper.vm.onSave()
-		expect(axios.post.mock.calls.find(([url]) => url.includes('/automation'))).toBeUndefined()
+		expect(
+			axios.post.mock.calls.find(([url]) => url.includes('/automation')),
+		).toBeUndefined()
 	})
 
 	it('REQ-AUTD-003: blocks a condition on a schedule trigger', async () => {
@@ -189,19 +231,45 @@ describe('AutomationEditDialog', () => {
 		wrapper.vm.triggerSchema = 'permit-application'
 		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'approval' })]
 		wrapper.vm.actions[0].assigneeGroup = 'permit-reviewers'
-		wrapper.vm.actions[0].onApprove = [{ type: 'object-op', operation: 'update', schema: 'permit-application', fieldMapping: { status: 'approved' } }]
-		wrapper.vm.actions[0].onReject = [{ type: 'send-notification', subject: { en: 'Rejected', nl: 'Afgewezen' } }]
+		wrapper.vm.actions[0].onApprove = [
+			{
+				type: 'object-op',
+				operation: 'update',
+				schema: 'permit-application',
+				fieldMapping: { status: 'approved' },
+			},
+		]
+		wrapper.vm.actions[0].onReject = [
+			{
+				type: 'send-notification',
+				subject: { en: 'Rejected', nl: 'Afgewezen' },
+			},
+		]
 		await wrapper.vm.$nextTick()
 
 		expect(wrapper.vm.valid).toBe(true)
 		await wrapper.vm.onSave()
 
-		const [, payload] = axios.post.mock.calls.find(([url]) => url.includes('/automation'))
+		const [, payload] = axios.post.mock.calls.find(([url]) =>
+			url.includes('/automation'),
+		)
 		expect(payload.actions[0]).toEqual({
 			type: 'approval',
 			assigneeGroup: 'permit-reviewers',
-			onApprove: [{ type: 'object-op', operation: 'update', schema: 'permit-application', fieldMapping: { status: 'approved' } }],
-			onReject: [{ type: 'send-notification', subject: { en: 'Rejected', nl: 'Afgewezen' } }],
+			onApprove: [
+				{
+					type: 'object-op',
+					operation: 'update',
+					schema: 'permit-application',
+					fieldMapping: { status: 'approved' },
+				},
+			],
+			onReject: [
+				{
+					type: 'send-notification',
+					subject: { en: 'Rejected', nl: 'Afgewezen' },
+				},
+			],
 		})
 	})
 
@@ -226,7 +294,9 @@ describe('AutomationEditDialog', () => {
 		wrapper.vm.triggerType = 'lifecycle-transition'
 		wrapper.vm.triggerSchema = 'permit-application'
 		wrapper.vm.triggerTransition = 'approve'
-		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'generateDocument' })]
+		wrapper.vm.actions = [
+			wrapper.vm.actionToEditor({ type: 'generateDocument' }),
+		]
 		wrapper.vm.actions[0].templateId = 'tpl-uuid-1'
 		wrapper.vm.actions[0].output = ['attach']
 		await wrapper.vm.$nextTick()
@@ -234,7 +304,9 @@ describe('AutomationEditDialog', () => {
 		expect(wrapper.vm.valid).toBe(true)
 		await wrapper.vm.onSave()
 
-		const [, payload] = axios.post.mock.calls.find(([url]) => url.includes('/automation'))
+		const [, payload] = axios.post.mock.calls.find(([url]) =>
+			url.includes('/automation'),
+		)
 		expect(payload.actions[0]).toEqual({
 			type: 'generateDocument',
 			templateId: 'tpl-uuid-1',
@@ -248,7 +320,9 @@ describe('AutomationEditDialog', () => {
 
 		wrapper.vm.name = 'Bad generateDocument automation'
 		wrapper.vm.triggerType = 'schedule'
-		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'generateDocument' })]
+		wrapper.vm.actions = [
+			wrapper.vm.actionToEditor({ type: 'generateDocument' }),
+		]
 		await wrapper.vm.$nextTick()
 
 		expect(wrapper.vm.valid).toBe(false)
@@ -262,7 +336,9 @@ describe('AutomationEditDialog', () => {
 		wrapper.vm.name = 'Notify-only automation'
 		wrapper.vm.triggerType = 'object-created'
 		wrapper.vm.triggerSchema = 'permit-application'
-		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'generateDocument' })]
+		wrapper.vm.actions = [
+			wrapper.vm.actionToEditor({ type: 'generateDocument' }),
+		]
 		wrapper.vm.actions[0].templateId = 'tpl-uuid-1'
 		wrapper.vm.actions[0].output = ['notify']
 		await wrapper.vm.$nextTick()
@@ -286,7 +362,9 @@ describe('AutomationEditDialog', () => {
 		wrapper.vm.name = 'No docudesk automation'
 		wrapper.vm.triggerType = 'object-created'
 		wrapper.vm.triggerSchema = 'permit-application'
-		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'generateDocument' })]
+		wrapper.vm.actions = [
+			wrapper.vm.actionToEditor({ type: 'generateDocument' }),
+		]
 		wrapper.vm.actions[0].templateId = 'tpl-uuid-1'
 		wrapper.vm.actions[0].output = ['attach']
 		await wrapper.vm.$nextTick()

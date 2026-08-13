@@ -12,8 +12,15 @@
   -->
 <template>
 	<div v-if="schemaAttachments.length" class="ob-document-actions">
-		<div v-if="docudeskChecked && !docudeskUsable" class="ob-document-actions__unavailable">
-			{{ t('openbuild', 'Docudesk is not available — document generation is disabled.') }}
+		<div
+			v-if="docudeskChecked && !docudeskUsable"
+			class="ob-document-actions__unavailable">
+			{{
+				t(
+					'openbuild',
+					'Docudesk is not available — document generation is disabled.',
+				)
+			}}
 		</div>
 		<template v-else>
 			<div
@@ -74,7 +81,7 @@ export default {
 		// holds the list.
 		attachments: {
 			type: Array,
-			default: () => ([]),
+			default: () => [],
 		},
 		// Soft capability flag for Docudesk (graceful absence, REQ-DDT-005).
 		// `null` (the default) means "decide for yourself" — see
@@ -167,7 +174,9 @@ export default {
 			if (keys.length === 0) {
 				return []
 			}
-			return this.effectiveAttachments.filter((a) => a && matchesKey(a.schema, keys))
+			return this.effectiveAttachments.filter(
+				(a) => a && matchesKey(a.schema, keys),
+			)
 		},
 	},
 	mounted() {
@@ -202,7 +211,10 @@ export default {
 		errorMessage(att) {
 			return this.errorCode(att) === 'no-access'
 				? t('openbuild', 'You do not have access to generate this document.')
-				: t('openbuild', 'Generating the document failed. The object is unchanged — you can try again.')
+				: t(
+						'openbuild',
+						'Generating the document failed. The object is unchanged — you can try again.',
+					)
 		},
 		/**
 		 * Trigger generation for an attachment (guarded against absent app).
@@ -216,7 +228,10 @@ export default {
 			// /apps/docudesk. Resolve the capability BEFORE generating rather
 			// than reading a possibly-unresolved flag — `check()` is cached, so
 			// the await is free after the first call.
-			if (this.docudeskAvailable === null && this.docudesk.checked.value === false) {
+			if (
+				this.docudeskAvailable === null
+				&& this.docudesk.checked.value === false
+			) {
 				await this.docudesk.check()
 			}
 			if (!this.docudeskUsable) {

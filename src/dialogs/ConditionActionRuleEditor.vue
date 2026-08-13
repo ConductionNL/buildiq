@@ -14,12 +14,23 @@
 		size="large"
 		@closing="$emit('close')">
 		<div class="condition-action-editor">
-			<NcTextField v-model="staged.name" :label="t('openbuild', 'Rule name')" data-testid="rule-name" />
-			<NcTextField v-model="staged.description" :label="t('openbuild', 'Description')" />
+			<NcTextField
+				v-model="staged.name"
+				:label="t('openbuild', 'Rule name')"
+				data-testid="rule-name" />
+			<NcTextField
+				v-model="staged.description"
+				:label="t('openbuild', 'Description')" />
 
 			<div class="condition-action-editor__row">
-				<NcTextField v-model.number="staged.priority" type="number" :label="t('openbuild', 'Priority')" />
-				<NcTextField v-model.number="staged.salience" type="number" :label="t('openbuild', 'Salience')" />
+				<NcTextField
+					v-model.number="staged.priority"
+					type="number"
+					:label="t('openbuild', 'Priority')" />
+				<NcTextField
+					v-model.number="staged.salience"
+					type="number"
+					:label="t('openbuild', 'Salience')" />
 			</div>
 
 			<NcTextArea
@@ -28,7 +39,10 @@
 				data-testid="rule-condition" />
 
 			<h4>{{ t('openbuild', 'Actions') }}</h4>
-			<div v-for="(action, index) in staged.actions" :key="'a-' + index" class="condition-action-editor__action">
+			<div
+				v-for="(action, index) in staged.actions"
+				:key="'a-' + index"
+				class="condition-action-editor__action">
 				<NcSelect
 					v-model="action.type"
 					:input-label="t('openbuild', 'Action type')"
@@ -41,7 +55,9 @@
 				{{ t('openbuild', 'Add action') }}
 			</NcButton>
 
-			<NcCheckboxRadioSwitch v-model="staged.active" :aria-label="t('openbuild', 'Active')">
+			<NcCheckboxRadioSwitch
+				v-model="staged.active"
+				:aria-label="t('openbuild', 'Active')">
 				{{ t('openbuild', 'Active') }}
 			</NcCheckboxRadioSwitch>
 
@@ -64,7 +80,15 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcCheckboxRadioSwitch, NcDialog, NcNoteCard, NcSelect, NcTextArea, NcTextField } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcNoteCard,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
+} from '@nextcloud/vue'
 
 export default {
 	name: 'ConditionActionRuleEditor',
@@ -93,10 +117,17 @@ export default {
 				priority: this.ruleSet.priority || 0,
 				salience: this.ruleSet.salience || 0,
 				condition: this.ruleSet.condition || '',
-				actions: this.ruleSet.actions ? JSON.parse(JSON.stringify(this.ruleSet.actions)) : [],
+				actions: this.ruleSet.actions
+					? JSON.parse(JSON.stringify(this.ruleSet.actions))
+					: [],
 				active: this.ruleSet.active !== false,
 			},
-			actionTypes: ['set-field', 'send-notification', 'start-workflow', 'call-rule-set'],
+			actionTypes: [
+				'set-field',
+				'send-notification',
+				'start-workflow',
+				'call-rule-set',
+			],
 			saving: false,
 			errorMessage: '',
 		}
@@ -131,14 +162,18 @@ export default {
 			this.saving = true
 			this.errorMessage = ''
 			try {
-				const ruleSetUrl = generateUrl('/apps/openregister/api/objects/openbuild/rule-set')
+				const ruleSetUrl = generateUrl(
+					'/apps/openregister/api/objects/openbuild/rule-set',
+				)
 				await axios.post(ruleSetUrl, {
 					slug: this.staged.slug,
 					name: this.staged.name,
 					ruleType: 'condition-action',
 					status: this.ruleSet.status || 'draft',
 				})
-				const ruleUrl = generateUrl('/apps/openregister/api/objects/openbuild/condition-action-rule')
+				const ruleUrl = generateUrl(
+					'/apps/openregister/api/objects/openbuild/condition-action-rule',
+				)
 				await axios.post(ruleUrl, {
 					ruleSetId: this.staged.slug,
 					name: this.staged.name,

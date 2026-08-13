@@ -57,9 +57,12 @@ import { test, expect } from '@playwright/test'
  * @return {Promise<object|null>} `{uuid, slug, name, semver, status}` or null.
  */
 async function productionVersionDetail(page) {
-	const res = await page.request.get('/index.php/apps/openbuild/api/applications', {
-		headers: { 'OCS-APIRequest': 'true' },
-	})
+	const res = await page.request.get(
+		'/index.php/apps/openbuild/api/applications',
+		{
+			headers: { 'OCS-APIRequest': 'true' },
+		},
+	)
 	expect(res.ok(), 'the applications API must answer').toBeTruthy()
 	const body = await res.json()
 	const rows = Array.isArray(body) ? body : (body.results ?? [])
@@ -68,8 +71,9 @@ async function productionVersionDetail(page) {
 }
 
 test.describe('ApplicationCard — icon + productionVersion fields (spec A / spec C)', () => {
-
-	test('index page renders ApplicationCards with icon <img> elements', async ({ page }) => {
+	test('index page renders ApplicationCards with icon <img> elements', async ({
+		page,
+	}) => {
 		await page.goto('/apps/openbuild/applications')
 
 		// Wait for the SPA to hydrate and the Applications list to appear.
@@ -84,18 +88,25 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 		// icon src pattern: /index.php/apps/openbuild/icons/{slug}.svg
 		const firstCard = page.locator('.ob-app-card').first()
 		const icon = firstCard.locator('img.ob-app-card__icon')
-		await expect(icon, 'icon <img> must be visible on ApplicationCard').toBeVisible({ timeout: 10_000 })
+		await expect(
+			icon,
+			'icon <img> must be visible on ApplicationCard',
+		).toBeVisible({ timeout: 10_000 })
 		const src = await icon.getAttribute('src')
-		expect(src, 'icon src must point to the icon-serving endpoint').toMatch(/\/icons\/.+\.svg$/)
+		expect(src, 'icon src must point to the icon-serving endpoint').toMatch(
+			/\/icons\/.+\.svg$/,
+		)
 	})
 
-	test('hello-world ApplicationCard shows a status badge (not raw "Live" chip)', async ({ page }) => {
+	test('hello-world ApplicationCard shows a status badge (not raw "Live" chip)', async ({
+		page,
+	}) => {
 		await page.goto('/apps/openbuild/applications')
 
 		// Wait for at least the seeded hello-world card.
-		await expect(
-			page.locator('.ob-app-card').first(),
-		).toBeVisible({ timeout: 15_000 })
+		await expect(page.locator('.ob-app-card').first()).toBeVisible({
+			timeout: 15_000,
+		})
 
 		// Spec A task 4.2 removed the "Live" chip. The card must never show
 		// text "Live" in a chip regardless of Application state.
@@ -105,11 +116,18 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 			'no element with class ob-app-card__chip--live should exist (removed in spec A)',
 		).toHaveCount(0)
 
-		const liveText = page.locator('.ob-app-card').getByText('Live', { exact: true })
-		await expect(liveText, 'no "Live" text should appear in any ApplicationCard').toHaveCount(0)
+		const liveText = page
+			.locator('.ob-app-card')
+			.getByText('Live', { exact: true })
+		await expect(
+			liveText,
+			'no "Live" text should appear in any ApplicationCard',
+		).toHaveCount(0)
 	})
 
-	test('hello-world ApplicationCard status badge is one of the known values', async ({ page }) => {
+	test('hello-world ApplicationCard status badge is one of the known values', async ({
+		page,
+	}) => {
 		await page.goto('/apps/openbuild/applications')
 
 		// Target hello-world for real. The previous selector was
@@ -117,8 +135,14 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 		// renders no `data-slug` attribute, so that alternation always collapsed to
 		// "whatever card happens to be first" while the test name promised
 		// hello-world. The slug IS rendered, in the muted chip as `/{slug}`.
-		const helloCard = page.locator('.ob-app-card').filter({ hasText: '/hello-world' }).first()
-		await expect(helloCard, 'the seeded hello-world card must be on the index').toBeVisible({ timeout: 15_000 })
+		const helloCard = page
+			.locator('.ob-app-card')
+			.filter({ hasText: '/hello-world' })
+			.first()
+		await expect(
+			helloCard,
+			'the seeded hello-world card must be on the index',
+		).toBeVisible({ timeout: 15_000 })
 
 		// The badge must show the REAL lifecycle status of the app's production
 		// ApplicationVersion — not merely "one of the three words", which the
@@ -130,7 +154,7 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 		expect(
 			detail,
 			'the seeded app must expose a resolved productionVersionDetail — without it '
-			+ 'the card cannot know its status and this assertion is meaningless',
+				+ 'the card cannot know its status and this assertion is meaningless',
 		).toBeTruthy()
 
 		// RETRYING assertion, deliberately. The card first paints its placeholder
@@ -146,11 +170,19 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 		).toHaveText(new RegExp(`^${detail.status}$`, 'i'), { timeout: 15_000 })
 	})
 
-	test('hello-world ApplicationCard version chip shows semver or — placeholder', async ({ page }) => {
+	test('hello-world ApplicationCard version chip shows semver or — placeholder', async ({
+		page,
+	}) => {
 		await page.goto('/apps/openbuild/applications')
 
-		const helloCard = page.locator('.ob-app-card').filter({ hasText: '/hello-world' }).first()
-		await expect(helloCard, 'the seeded hello-world card must be on the index').toBeVisible({ timeout: 15_000 })
+		const helloCard = page
+			.locator('.ob-app-card')
+			.filter({ hasText: '/hello-world' })
+			.first()
+		await expect(
+			helloCard,
+			'the seeded hello-world card must be on the index',
+		).toBeVisible({ timeout: 15_000 })
 
 		// The version chip must render the documented shape exactly: the label
 		// followed by a semver, or by the em-dash placeholder spec C Decision 4
@@ -164,7 +196,10 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 		// The real semver, not the em-dash placeholder the pre-fix card was
 		// permanently stuck on. Retrying, for the same reason as the badge above.
 		const detail = await productionVersionDetail(page)
-		expect(detail, 'the seeded app must expose a resolved productionVersionDetail').toBeTruthy()
+		expect(
+			detail,
+			'the seeded app must expose a resolved productionVersionDetail',
+		).toBeTruthy()
 		await expect(
 			versionChip,
 			`version chip must settle on the production version's real semver ("${detail.semver}")`,

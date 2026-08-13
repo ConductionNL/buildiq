@@ -13,7 +13,8 @@
   - ADR-004 gate-modal-isolation.
   -->
 <template>
-	<NcModal v-if="open"
+	<NcModal
+		v-if="open"
 		:name="t('openbuild', 'GitHub')"
 		size="normal"
 		@close="$emit('update:open', false)">
@@ -32,24 +33,45 @@
 				<div class="github-sync__status">
 					<template v-if="linked">
 						<p class="github-sync__row">
-							<span class="github-sync__label">{{ t('openbuild', 'Linked repository') }}</span>
+							<span class="github-sync__label">{{
+								t('openbuild', 'Linked repository')
+							}}</span>
 							<span class="github-sync__value">{{ repoLabel }}</span>
 						</p>
 						<p class="github-sync__row">
-							<span class="github-sync__label">{{ t('openbuild', 'Default branch') }}</span>
-							<span class="github-sync__value">{{ status.githubDefaultBranch || '—' }}</span>
+							<span class="github-sync__label">{{
+								t('openbuild', 'Default branch')
+							}}</span>
+							<span class="github-sync__value">{{
+								status.githubDefaultBranch || '—'
+							}}</span>
 						</p>
 						<p class="github-sync__row">
-							<span class="github-sync__label">{{ t('openbuild', 'Last published commit') }}</span>
-							<span class="github-sync__value github-sync__value--mono">{{ shortSha(status.lastPushedSha) }}</span>
+							<span class="github-sync__label">{{
+								t('openbuild', 'Last published commit')
+							}}</span>
+							<span
+								class="github-sync__value github-sync__value--mono"
+								>{{ shortSha(status.lastPushedSha) }}</span
+							>
 						</p>
 						<p class="github-sync__row">
-							<span class="github-sync__label">{{ t('openbuild', 'Last pulled commit') }}</span>
-							<span class="github-sync__value github-sync__value--mono">{{ shortSha(status.lastPulledSha) }}</span>
+							<span class="github-sync__label">{{
+								t('openbuild', 'Last pulled commit')
+							}}</span>
+							<span
+								class="github-sync__value github-sync__value--mono"
+								>{{ shortSha(status.lastPulledSha) }}</span
+							>
 						</p>
 					</template>
 					<NcNoteCard v-else type="info">
-						{{ t('openbuild', 'This app is not linked to a GitHub repository yet.') }}
+						{{
+							t(
+								'openbuild',
+								'This app is not linked to a GitHub repository yet.',
+							)
+						}}
 					</NcNoteCard>
 				</div>
 
@@ -62,8 +84,15 @@
 							:options="credentialOptions"
 							:placeholder="t('openbuild', 'Select a credential')"
 							:clearable="true" />
-						<NcNoteCard v-if="credentialOptions.length === 0" type="warning">
-							{{ t('openbuild', 'No GitHub credential found. Add one in your OpenRegister credentials settings to publish and to pull private repositories.') }}
+						<NcNoteCard
+							v-if="credentialOptions.length === 0"
+							type="warning">
+							{{
+								t(
+									'openbuild',
+									'No GitHub credential found. Add one in your OpenRegister credentials settings to publish and to pull private repositories.',
+								)
+							}}
 						</NcNoteCard>
 					</div>
 
@@ -73,7 +102,11 @@
 
 					<div class="github-sync__actions">
 						<NcButton @click="linkOpen = true">
-							{{ linked ? t('openbuild', 'Re-link repository') : t('openbuild', 'Link repository') }}
+							{{
+								linked
+									? t('openbuild', 'Re-link repository')
+									: t('openbuild', 'Link repository')
+							}}
 						</NcButton>
 						<NcButton
 							type="primary"
@@ -81,15 +114,28 @@
 							@click="openPublish">
 							{{ t('openbuild', 'Publish') }}
 						</NcButton>
-						<NcButton
-							:disabled="!linked || pulling"
-							@click="doPull">
-							{{ pulling ? t('openbuild', 'Pulling…') : t('openbuild', 'Pull') }}
+						<NcButton :disabled="!linked || pulling" @click="doPull">
+							{{
+								pulling
+									? t('openbuild', 'Pulling…')
+									: t('openbuild', 'Pull')
+							}}
 						</NcButton>
 					</div>
 
 					<NcNoteCard v-if="pullResult" type="success">
-						{{ t('openbuild', 'Pulled a new draft version "{name}" from {ref}. Promote it via the version history when you are ready — your production version is unchanged.', { name: pullResult.versionSlug || pullResult.versionUuid, ref: pullResult.sourceRef }) }}
+						{{
+							t(
+								'openbuild',
+								'Pulled a new draft version "{name}" from {ref}. Promote it via the version history when you are ready — your production version is unchanged.',
+								{
+									name:
+										pullResult.versionSlug
+										|| pullResult.versionUuid,
+									ref: pullResult.sourceRef,
+								},
+							)
+						}}
 					</NcNoteCard>
 					<NcNoteCard v-if="error" type="error">
 						{{ error }}
@@ -119,13 +165,27 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess } from '@nextcloud/dialogs'
-import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcLoadingIcon,
+	NcModal,
+	NcNoteCard,
+	NcSelect,
+} from '@nextcloud/vue'
 import LinkRepoDialog from './LinkRepoDialog.vue'
 import PublishConfirmDialog from './PublishConfirmDialog.vue'
 
 export default {
 	name: 'GitHubSyncModal',
-	components: { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect, LinkRepoDialog, PublishConfirmDialog },
+	components: {
+		NcButton,
+		NcLoadingIcon,
+		NcModal,
+		NcNoteCard,
+		NcSelect,
+		LinkRepoDialog,
+		PublishConfirmDialog,
+	},
 	props: {
 		/** Whether the modal is shown (bind with `.sync`). */
 		open: { type: Boolean, default: false },
@@ -180,7 +240,11 @@ export default {
 			if (!r) {
 				return null
 			}
-			return { owner: r.owner, name: r.name, branch: this.status.githubDefaultBranch }
+			return {
+				owner: r.owner,
+				name: r.name,
+				branch: this.status.githubDefaultBranch,
+			}
 		},
 		/**
 		 * Whether publishing is available per the server feature-detection flags.
@@ -198,10 +262,12 @@ export default {
 		 * @spec openspec/changes/github-app-sync/specs/application-detail-ui/spec.md
 		 */
 		credentialOptions() {
-			return (Array.isArray(this.credentials) ? this.credentials : []).map((c) => ({
-				id: c.id,
-				label: c.name || c.id,
-			}))
+			return (Array.isArray(this.credentials) ? this.credentials : []).map(
+				(c) => ({
+					id: c.id,
+					label: c.name || c.id,
+				}),
+			)
 		},
 		/**
 		 * The selected credential id (unwraps the NcSelect option object).
@@ -239,9 +305,15 @@ export default {
 		 */
 		publishHint() {
 			if (this.status && !this.status.brokerCredentialAvailable) {
-				return t('openbuild', 'Publishing is unavailable: the credential broker or its GitHub write rules are not enabled on this instance. Pulling public repositories still works.')
+				return t(
+					'openbuild',
+					'Publishing is unavailable: the credential broker or its GitHub write rules are not enabled on this instance. Pulling public repositories still works.',
+				)
 			}
-			return t('openbuild', 'Publishing is unavailable until a GitHub credential is configured. Pulling public repositories still works.')
+			return t(
+				'openbuild',
+				'Publishing is unavailable until a GitHub credential is configured. Pulling public repositories still works.',
+			)
 		},
 	},
 	watch: {
@@ -275,7 +347,10 @@ export default {
 		async loadStatus() {
 			this.loading = true
 			try {
-				const url = generateUrl('/apps/openbuild/api/applications/{slug}/github/status', { slug: this.slug })
+				const url = generateUrl(
+					'/apps/openbuild/api/applications/{slug}/github/status',
+					{ slug: this.slug },
+				)
 				const { data } = await axios.get(url)
 				this.status = data
 			} catch (e) {
@@ -293,8 +368,14 @@ export default {
 		 */
 		async loadCredentials() {
 			try {
-				const { data } = await axios.get(generateUrl('/apps/openregister/api/credentials'))
-				const list = Array.isArray(data) ? data : (Array.isArray(data?.results) ? data.results : [])
+				const { data } = await axios.get(
+					generateUrl('/apps/openregister/api/credentials'),
+				)
+				const list = Array.isArray(data)
+					? data
+					: Array.isArray(data?.results)
+						? data.results
+						: []
 				this.credentials = list.filter((c) => c && c.provider === 'github')
 			} catch (e) {
 				this.credentials = []
@@ -308,9 +389,16 @@ export default {
 		 */
 		async loadVersions() {
 			try {
-				const url = generateUrl('/apps/openbuild/api/applications/{slug}/versions', { slug: this.slug })
+				const url = generateUrl(
+					'/apps/openbuild/api/applications/{slug}/versions',
+					{ slug: this.slug },
+				)
 				const { data } = await axios.get(url)
-				this.versions = Array.isArray(data) ? data : (Array.isArray(data?.results) ? data.results : [])
+				this.versions = Array.isArray(data)
+					? data
+					: Array.isArray(data?.results)
+						? data.results
+						: []
 			} catch (e) {
 				this.versions = []
 			}
@@ -351,7 +439,11 @@ export default {
 			if (result && result.commitSha && this.status) {
 				this.status = { ...this.status, lastPushedSha: result.commitSha }
 			}
-			showSuccess(t('openbuild', 'Published commit {sha}.', { sha: this.shortSha(result && result.commitSha) }))
+			showSuccess(
+				t('openbuild', 'Published commit {sha}.', {
+					sha: this.shortSha(result && result.commitSha),
+				}),
+			)
 			this.loadStatus()
 		},
 		/**
@@ -369,14 +461,25 @@ export default {
 			this.error = ''
 			this.pullResult = null
 			try {
-				const url = generateUrl('/apps/openbuild/api/applications/{slug}/github/pull', { slug: this.slug })
-				const body = { ref: (this.status && this.status.githubDefaultBranch) || 'main' }
+				const url = generateUrl(
+					'/apps/openbuild/api/applications/{slug}/github/pull',
+					{ slug: this.slug },
+				)
+				const body = {
+					ref: (this.status && this.status.githubDefaultBranch) || 'main',
+				}
 				if (this.selectedCredentialId) {
 					body.credentialId = this.selectedCredentialId
 				}
 				const { data } = await axios.post(url, body)
-				if (data && data.outcome && data.outcome !== 'ok' && !data.versionUuid) {
-					this.error = data.detail || data.error || t('openbuild', 'Pull failed.')
+				if (
+					data
+					&& data.outcome
+					&& data.outcome !== 'ok'
+					&& !data.versionUuid
+				) {
+					this.error =
+						data.detail || data.error || t('openbuild', 'Pull failed.')
 					return
 				}
 				this.pullResult = data
@@ -384,8 +487,17 @@ export default {
 			} catch (e) {
 				const data = e?.response?.data
 				const file = data?.file || data?.path
-				const base = data?.detail || data?.error || e?.message || t('openbuild', 'Pull failed.')
-				this.error = file ? t('openbuild', '{message} (in {file})', { message: base, file }) : base
+				const base =
+					data?.detail
+					|| data?.error
+					|| e?.message
+					|| t('openbuild', 'Pull failed.')
+				this.error = file
+					? t('openbuild', '{message} (in {file})', {
+							message: base,
+							file,
+						})
+					: base
 			} finally {
 				this.pulling = false
 			}

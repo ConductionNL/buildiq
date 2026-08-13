@@ -15,11 +15,19 @@
 	<NcModal
 		v-if="open"
 		size="large"
-		:name="editing ? t('openbuild', 'Edit automation') : t('openbuild', 'New automation')"
+		:name="
+			editing
+				? t('openbuild', 'Edit automation')
+				: t('openbuild', 'New automation')
+		"
 		@close="onClose">
 		<div class="automation-edit">
 			<h2 class="automation-edit__title">
-				{{ editing ? t('openbuild', 'Edit automation') : t('openbuild', 'New automation') }}
+				{{
+					editing
+						? t('openbuild', 'Edit automation')
+						: t('openbuild', 'New automation')
+				}}
 			</h2>
 
 			<NcTextField
@@ -27,7 +35,8 @@
 				:label="t('openbuild', 'Name')"
 				@update:modelValue="onNameInput" />
 			<p class="automation-edit__hint">
-				{{ t('openbuild', 'Identifier') }}: <code>{{ derivedSlug || '—' }}</code>
+				{{ t('openbuild', 'Identifier') }}:
+				<code>{{ derivedSlug || '—' }}</code>
 			</p>
 			<NcTextField
 				:model-value="description"
@@ -45,7 +54,8 @@
 					label="label"
 					@update:modelValue="onTriggerChange" />
 
-				<template v-if="isObjectTrigger || triggerType === 'lifecycle-transition'">
+				<template
+					v-if="isObjectTrigger || triggerType === 'lifecycle-transition'">
 					<NcSelect
 						v-if="schemaPickerAvailable"
 						v-model="schemaOption"
@@ -100,7 +110,10 @@
 			<!-- Condition -->
 			<section class="automation-edit__section">
 				<h3>{{ t('openbuild', 'Condition (optional)') }}</h3>
-				<NcNoteCard v-if="conditionBlockedReason" type="warning" data-testid="condition-blocked">
+				<NcNoteCard
+					v-if="conditionBlockedReason"
+					type="warning"
+					data-testid="condition-blocked">
 					{{ conditionBlockedReason }}
 				</NcNoteCard>
 				<template v-else>
@@ -160,11 +173,15 @@
 						<NcTextField
 							:model-value="action.subjectEn"
 							:label="t('openbuild', 'Subject (English)')"
-							@update:modelValue="updateAction(index, 'subjectEn', $event)" />
+							@update:modelValue="
+								updateAction(index, 'subjectEn', $event)
+							" />
 						<NcTextField
 							:model-value="action.subjectNl"
 							:label="t('openbuild', 'Subject (Dutch)')"
-							@update:modelValue="updateAction(index, 'subjectNl', $event)" />
+							@update:modelValue="
+								updateAction(index, 'subjectNl', $event)
+							" />
 					</template>
 
 					<template v-else-if="action.type === 'run-synchronization'">
@@ -180,7 +197,9 @@
 							v-else
 							:model-value="action.synchronizationId"
 							:label="t('openbuild', 'Synchronization id')"
-							@update:modelValue="updateAction(index, 'synchronizationId', $event)" />
+							@update:modelValue="
+								updateAction(index, 'synchronizationId', $event)
+							" />
 					</template>
 
 					<template v-else-if="action.type === 'object-op'">
@@ -190,26 +209,40 @@
 							:options="objectOpOperationOptions"
 							:clearable="false"
 							label="label"
-							@update:modelValue="updateAction(index, 'operation', $event ? $event.value : 'create')" />
+							@update:modelValue="
+								updateAction(
+									index,
+									'operation',
+									$event ? $event.value : 'create',
+								)
+							" />
 						<NcTextField
 							:model-value="action.schema"
 							:label="t('openbuild', 'Target schema')"
-							@update:modelValue="updateAction(index, 'schema', $event)" />
+							@update:modelValue="
+								updateAction(index, 'schema', $event)
+							" />
 						<NcTextArea
 							:model-value="action.fieldMappingText"
 							:label="t('openbuild', 'Field mapping (JSON)')"
-							@update:modelValue="updateAction(index, 'fieldMappingText', $event)" />
+							@update:modelValue="
+								updateAction(index, 'fieldMappingText', $event)
+							" />
 					</template>
 
 					<template v-else-if="action.type === 'webhook'">
 						<NcTextField
 							:model-value="action.url"
 							:label="t('openbuild', 'Webhook URL')"
-							@update:modelValue="updateAction(index, 'url', $event)" />
+							@update:modelValue="
+								updateAction(index, 'url', $event)
+							" />
 						<NcTextArea
 							:model-value="action.payloadTemplateText"
 							:label="t('openbuild', 'Payload template (JSON)')"
-							@update:modelValue="updateAction(index, 'payloadTemplateText', $event)" />
+							@update:modelValue="
+								updateAction(index, 'payloadTemplateText', $event)
+							" />
 					</template>
 
 					<template v-else-if="action.type === 'approval'">
@@ -225,18 +258,24 @@
 							v-else
 							:model-value="action.assigneeGroup"
 							:label="t('openbuild', 'Assignee group id')"
-							@update:modelValue="updateAction(index, 'assigneeGroup', $event)" />
+							@update:modelValue="
+								updateAction(index, 'assigneeGroup', $event)
+							" />
 
 						<AutomationActionListEditor
 							:model-value="action.onApprove"
 							:label="t('openbuild', 'On approve')"
 							data-testid="on-approve-editor"
-							@update:model-value="updateAction(index, 'onApprove', $event)" />
+							@update:model-value="
+								updateAction(index, 'onApprove', $event)
+							" />
 						<AutomationActionListEditor
 							:model-value="action.onReject"
 							:label="t('openbuild', 'On reject')"
 							data-testid="on-reject-editor"
-							@update:model-value="updateAction(index, 'onReject', $event)" />
+							@update:model-value="
+								updateAction(index, 'onReject', $event)
+							" />
 					</template>
 
 					<template v-else-if="action.type === 'generateDocument'">
@@ -254,7 +293,9 @@
 							:model-value="action.templateId"
 							:label="t('openbuild', 'Template id')"
 							data-testid="generate-document-template-text"
-							@update:modelValue="updateAction(index, 'templateId', $event)" />
+							@update:modelValue="
+								updateAction(index, 'templateId', $event)
+							" />
 						<NcSelect
 							:model-value="outputModeSelection(action)"
 							:input-label="t('openbuild', 'Output')"
@@ -263,16 +304,24 @@
 							:clearable="false"
 							label="label"
 							data-testid="generate-document-output-select"
-							@update:modelValue="onOutputModesSelect(index, $event)" />
+							@update:modelValue="
+								onOutputModesSelect(index, $event)
+							" />
 					</template>
 
-					<NcButton type="error" :aria-label="t('openbuild', 'Remove action')" @click="removeAction(index)">
+					<NcButton
+						type="error"
+						:aria-label="t('openbuild', 'Remove action')"
+						@click="removeAction(index)">
 						{{ t('openbuild', 'Remove') }}
 					</NcButton>
 				</div>
 			</section>
 
-			<p v-if="showValidation && !valid" class="automation-edit__error" role="alert">
+			<p
+				v-if="showValidation && !valid"
+				class="automation-edit__error"
+				role="alert">
 				{{ validationMessage }}
 			</p>
 			<NcNoteCard v-if="errorMessage" type="error">
@@ -294,10 +343,25 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcModal, NcNoteCard, NcSelect, NcTextArea, NcTextField } from '@nextcloud/vue'
-import { isActionAllowed, isConditionAllowed, blockedActionReason, blockedConditionReason } from '../services/automationMatrix.js'
+import {
+	NcButton,
+	NcModal,
+	NcNoteCard,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
+} from '@nextcloud/vue'
+import {
+	isActionAllowed,
+	isConditionAllowed,
+	blockedActionReason,
+	blockedConditionReason,
+} from '../services/automationMatrix.js'
 import { useAppStatus } from '../composables/useAppStatus.js'
-import { fetchDocudeskTemplates, templateToOption } from '../composables/useDocudeskTemplates.js'
+import {
+	fetchDocudeskTemplates,
+	templateToOption,
+} from '../composables/useDocudeskTemplates.js'
 import AutomationActionListEditor from '../components/AutomationActionListEditor.vue'
 
 const INTERVAL_PRESETS = Object.freeze([
@@ -329,7 +393,15 @@ function slugify(label) {
 
 export default {
 	name: 'AutomationEditDialog',
-	components: { NcButton, NcModal, NcNoteCard, NcSelect, NcTextArea, NcTextField, AutomationActionListEditor },
+	components: {
+		NcButton,
+		NcModal,
+		NcNoteCard,
+		NcSelect,
+		NcTextArea,
+		NcTextField,
+		AutomationActionListEditor,
+	},
 	props: {
 		open: { type: Boolean, default: false },
 		automation: { type: Object, default: null },
@@ -401,21 +473,29 @@ export default {
 				{ value: 'object-created', label: t('openbuild', 'Object created') },
 				{ value: 'object-updated', label: t('openbuild', 'Object updated') },
 				{ value: 'object-deleted', label: t('openbuild', 'Object deleted') },
-				{ value: 'lifecycle-transition', label: t('openbuild', 'Lifecycle transition') },
+				{
+					value: 'lifecycle-transition',
+					label: t('openbuild', 'Lifecycle transition'),
+				},
 				{ value: 'schedule', label: t('openbuild', 'Cron schedule') },
 				{ value: 'manual', label: t('openbuild', 'Manual') },
 			]
 		},
 		triggerOption: {
 			get() {
-				return this.triggerOptions.find((o) => o.value === this.triggerType) || this.triggerOptions[5]
+				return (
+					this.triggerOptions.find((o) => o.value === this.triggerType)
+					|| this.triggerOptions[5]
+				)
 			},
 			set(option) {
 				this.triggerType = option ? option.value : 'manual'
 			},
 		},
 		isObjectTrigger() {
-			return ['object-created', 'object-updated', 'object-deleted'].includes(this.triggerType)
+			return ['object-created', 'object-updated', 'object-deleted'].includes(
+				this.triggerType,
+			)
 		},
 		cadenceOptions() {
 			return [
@@ -424,7 +504,10 @@ export default {
 				{ id: 'weekly', label: t('openbuild', 'Weekly') },
 				{ id: 'monthly', label: t('openbuild', 'Monthly') },
 				{ id: 'custom-cron', label: t('openbuild', 'Custom (cron)') },
-				{ id: 'custom-interval', label: t('openbuild', 'Custom interval (seconds)') },
+				{
+					id: 'custom-interval',
+					label: t('openbuild', 'Custom interval (seconds)'),
+				},
 			]
 		},
 		isCustomCron() {
@@ -454,12 +537,24 @@ export default {
 		 */
 		actionTypeOptions() {
 			return [
-				{ value: 'send-notification', label: t('openbuild', 'Send notification') },
-				{ value: 'run-synchronization', label: t('openbuild', 'Run a synchronization') },
-				{ value: 'object-op', label: t('openbuild', 'Create/update an object') },
+				{
+					value: 'send-notification',
+					label: t('openbuild', 'Send notification'),
+				},
+				{
+					value: 'run-synchronization',
+					label: t('openbuild', 'Run a synchronization'),
+				},
+				{
+					value: 'object-op',
+					label: t('openbuild', 'Create/update an object'),
+				},
 				{ value: 'webhook', label: t('openbuild', 'Webhook') },
 				{ value: 'approval', label: t('openbuild', 'Require approval') },
-				{ value: 'generateDocument', label: t('openbuild', 'Generate document') },
+				{
+					value: 'generateDocument',
+					label: t('openbuild', 'Generate document'),
+				},
 			]
 		},
 		/**
@@ -471,7 +566,10 @@ export default {
 		 * @spec openspec/changes/automation-document-action/tasks.md#4.2
 		 */
 		docudeskAvailable() {
-			return !this.docudeskStatus.checked.value || this.docudeskStatus.available.value
+			return (
+				!this.docudeskStatus.checked.value
+				|| this.docudeskStatus.available.value
+			)
 		},
 		/**
 		 * Output-mode options for the `generateDocument` action's multi-select
@@ -495,7 +593,10 @@ export default {
 		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
 		 */
 		templatePickerAvailable() {
-			return !this.docudeskTemplatesFetchFailed && this.docudeskTemplateOptions.length > 0
+			return (
+				!this.docudeskTemplatesFetchFailed
+				&& this.docudeskTemplateOptions.length > 0
+			)
 		},
 		objectOpOperationOptions() {
 			return [
@@ -535,16 +636,23 @@ export default {
 			if (this.derivedSlug === '' || this.name.trim() === '') {
 				return false
 			}
-			if (this.conditionKind !== 'none' && !isConditionAllowed(this.triggerType)) {
+			if (
+				this.conditionKind !== 'none'
+				&& !isConditionAllowed(this.triggerType)
+			) {
 				return false
 			}
 			if (this.actions.length === 0) {
 				return false
 			}
-			if (!this.actions.every((a) => isActionAllowed(this.triggerType, a.type))) {
+			if (
+				!this.actions.every((a) => isActionAllowed(this.triggerType, a.type))
+			) {
 				return false
 			}
-			if (!this.actions.every((a) => this.actionBlockedReason(a.type) === '')) {
+			if (
+				!this.actions.every((a) => this.actionBlockedReason(a.type) === '')
+			) {
 				return false
 			}
 			return this.actions
@@ -558,7 +666,10 @@ export default {
 			if (this.actions.length === 0) {
 				return t('openbuild', 'Add at least one action.')
 			}
-			return t('openbuild', 'Please resolve the highlighted blocked combination(s) before saving.')
+			return t(
+				'openbuild',
+				'Please resolve the highlighted blocked combination(s) before saving.',
+			)
 		},
 	},
 	watch: {
@@ -598,13 +709,21 @@ export default {
 			this.triggerTransition = trigger.transition || ''
 			this.triggerCron = trigger.cron || ''
 			this.triggerInterval = trigger.interval || 86400
-			const preset = INTERVAL_PRESETS.find((p) => p.interval === trigger.interval)
+			const preset = INTERVAL_PRESETS.find(
+				(p) => p.interval === trigger.interval,
+			)
 			if (trigger.cron) {
-				this.cadenceOption = this.cadenceOptions.find((o) => o.id === 'custom-cron')
+				this.cadenceOption = this.cadenceOptions.find(
+					(o) => o.id === 'custom-cron',
+				)
 			} else if (preset) {
-				this.cadenceOption = this.cadenceOptions.find((o) => o.id === preset.id)
+				this.cadenceOption = this.cadenceOptions.find(
+					(o) => o.id === preset.id,
+				)
 			} else {
-				this.cadenceOption = this.cadenceOptions.find((o) => o.id === 'custom-interval')
+				this.cadenceOption = this.cadenceOptions.find(
+					(o) => o.id === 'custom-interval',
+				)
 			}
 
 			const condition = a.condition || null
@@ -618,10 +737,15 @@ export default {
 				this.conditionRuleSetSlug = condition.ruleSetSlug || ''
 			}
 
-			this.actions = (Array.isArray(a.actions) ? a.actions : []).map((action) => this.actionToEditor(action))
-			this.objectOpOperationOption = this.actions.map((action) => (
-				this.objectOpOperationOptions.find((o) => o.value === action.operation) || this.objectOpOperationOptions[0]
-			))
+			this.actions = (Array.isArray(a.actions) ? a.actions : []).map(
+				(action) => this.actionToEditor(action),
+			)
+			this.objectOpOperationOption = this.actions.map(
+				(action) =>
+					this.objectOpOperationOptions.find(
+						(o) => o.value === action.operation,
+					) || this.objectOpOperationOptions[0],
+			)
 		},
 		/**
 		 * Convert a stored action record into the editor's flat working shape.
@@ -638,18 +762,28 @@ export default {
 				subjectEn: subject.en || '',
 				subjectNl: subject.nl || '',
 				channels: action.channels || ['nc-notification'],
-				recipients: action.recipients || [{ kind: 'object-acl', permission: 'manage' }],
-				synchronizationId: (action.synchronizationId) || '',
+				recipients: action.recipients || [
+					{ kind: 'object-acl', permission: 'manage' },
+				],
+				synchronizationId: action.synchronizationId || '',
 				operation: action.operation || 'create',
 				schema: action.schema || '',
 				fieldMappingText: JSON.stringify(action.fieldMapping || {}, null, 2),
 				url: action.url || '',
-				payloadTemplateText: JSON.stringify(action.payloadTemplate || {}, null, 2),
+				payloadTemplateText: JSON.stringify(
+					action.payloadTemplate || {},
+					null,
+					2,
+				),
 				assigneeGroup: action.assigneeGroup || '',
 				onApprove: Array.isArray(action.onApprove) ? action.onApprove : [],
 				onReject: Array.isArray(action.onReject) ? action.onReject : [],
 				templateId: action.templateId || '',
-				output: Array.isArray(action.output) ? action.output : (action.output ? [action.output] : []),
+				output: Array.isArray(action.output)
+					? action.output
+					: action.output
+						? [action.output]
+						: [],
 			}
 		},
 		/**
@@ -666,14 +800,28 @@ export default {
 			this.schemaLoading = true
 			this.schemaFetchFailed = false
 			try {
-				const url = generateUrl(`/apps/openregister/api/registers/${encodeURIComponent(this.register)}/schemas`)
+				const url = generateUrl(
+					`/apps/openregister/api/registers/${encodeURIComponent(this.register)}/schemas`,
+				)
 				const { data } = await axios.get(url)
-				const list = Array.isArray(data) ? data : (data && Array.isArray(data.results) ? data.results : [])
-				this.schemaOptions = list.map((s) => ({ value: s.slug || s.id, label: s.title || s.slug || String(s.id) }))
-				this.schemaOption = this.schemaOptions.find((o) => o.value === this.triggerSchema) || null
+				const list = Array.isArray(data)
+					? data
+					: data && Array.isArray(data.results)
+						? data.results
+						: []
+				this.schemaOptions = list.map((s) => ({
+					value: s.slug || s.id,
+					label: s.title || s.slug || String(s.id),
+				}))
+				this.schemaOption =
+					this.schemaOptions.find((o) => o.value === this.triggerSchema)
+					|| null
 				if (this.schemaOptions.length === 0) {
 					this.schemaFetchFailed = true
-				} else if (this.triggerType === 'lifecycle-transition' && this.triggerSchema) {
+				} else if (
+					this.triggerType === 'lifecycle-transition'
+					&& this.triggerSchema
+				) {
 					this.fetchTransitions()
 				}
 			} catch (error) {
@@ -706,12 +854,20 @@ export default {
 			this.transitionFetchFailed = false
 			this.transitionOptions = []
 			try {
-				const url = generateUrl(`/apps/openregister/api/schemas/${encodeURIComponent(this.triggerSchema)}`)
+				const url = generateUrl(
+					`/apps/openregister/api/schemas/${encodeURIComponent(this.triggerSchema)}`,
+				)
 				const { data } = await axios.get(url)
 				const lifecycle = (data && data['x-openregister-lifecycle']) || {}
 				const transitions = (lifecycle && lifecycle.transitions) || {}
-				this.transitionOptions = Object.keys(transitions).map((name) => ({ value: name, label: name }))
-				this.transitionOption = this.transitionOptions.find((o) => o.value === this.triggerTransition) || null
+				this.transitionOptions = Object.keys(transitions).map((name) => ({
+					value: name,
+					label: name,
+				}))
+				this.transitionOption =
+					this.transitionOptions.find(
+						(o) => o.value === this.triggerTransition,
+					) || null
 				if (this.transitionOptions.length === 0) {
 					this.transitionFetchFailed = true
 				}
@@ -731,13 +887,21 @@ export default {
 			this.syncLoading = true
 			this.syncFetchFailed = false
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openconnector/synchronization')
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openconnector/synchronization',
+				)
 				const { data } = await axios.get(url, { params: { limit: 500 } })
-				const list = Array.isArray(data && data.results) ? data.results : (Array.isArray(data) ? data : [])
-				this.syncOptions = list.map((sync) => ({
-					id: String(sync.id || sync.uuid),
-					label: sync.name || sync.title || sync.id,
-				})).filter((o) => o.id && o.id !== 'undefined')
+				const list = Array.isArray(data && data.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
+				this.syncOptions = list
+					.map((sync) => ({
+						id: String(sync.id || sync.uuid),
+						label: sync.name || sync.title || sync.id,
+					}))
+					.filter((o) => o.id && o.id !== 'undefined')
 				if (this.syncOptions.length === 0) {
 					this.syncFetchFailed = true
 				}
@@ -773,14 +937,18 @@ export default {
 			this.groupLoading = true
 			this.groupFetchFailed = false
 			try {
-				const response = await fetch('/ocs/v1.php/cloud/groups?format=json', {
-					headers: { 'OCS-APIRequest': 'true' },
-				})
+				const response = await fetch(
+					'/ocs/v1.php/cloud/groups?format=json',
+					{
+						headers: { 'OCS-APIRequest': 'true' },
+					},
+				)
 				if (!response.ok) {
 					throw new Error('OCS groups request failed')
 				}
 				const data = await response.json()
-				const groups = (data && data.ocs && data.ocs.data && data.ocs.data.groups) || []
+				const groups =
+					(data && data.ocs && data.ocs.data && data.ocs.data.groups) || []
 				this.groupOptions = groups.map((gid) => ({ value: gid, label: gid }))
 				if (this.groupOptions.length === 0) {
 					this.groupFetchFailed = true
@@ -830,7 +998,8 @@ export default {
 			this.docudeskTemplatesLoading = true
 			const templates = await fetchDocudeskTemplates()
 			this.docudeskTemplateOptions = templates.map(templateToOption)
-			this.docudeskTemplatesFetchFailed = this.docudeskTemplateOptions.length === 0
+			this.docudeskTemplatesFetchFailed =
+				this.docudeskTemplateOptions.length === 0
 			this.docudeskTemplatesLoading = false
 		},
 		/**
@@ -842,7 +1011,10 @@ export default {
 		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
 		 */
 		templateOption(templateId) {
-			return this.docudeskTemplateOptions.find((o) => o.uuid === templateId) || null
+			return (
+				this.docudeskTemplateOptions.find((o) => o.uuid === templateId)
+				|| null
+			)
 		},
 		/**
 		 * Apply a template-picker selection to a `generateDocument` action row.
@@ -900,7 +1072,8 @@ export default {
 				return false
 			}
 			const hasNotify = modes.includes('notify')
-			const hasDeliveryMode = modes.includes('attach') || modes.includes('download-link')
+			const hasDeliveryMode =
+				modes.includes('attach') || modes.includes('download-link')
 			return !hasNotify || hasDeliveryMode
 		},
 		onNameInput(value) {
@@ -912,7 +1085,10 @@ export default {
 			}
 		},
 		actionTypeOption(type) {
-			return this.actionTypeOptions.find((o) => o.value === type) || this.actionTypeOptions[0]
+			return (
+				this.actionTypeOptions.find((o) => o.value === type)
+				|| this.actionTypeOptions[0]
+			)
 		},
 		/**
 		 * Blocked-combination reason for an action row: the matrix
@@ -931,7 +1107,10 @@ export default {
 				return matrixReason
 			}
 			if (type === 'generateDocument' && !this.docudeskAvailable) {
-				return t('openbuild', 'Docudesk is not installed — document-generation actions are unavailable.')
+				return t(
+					'openbuild',
+					'Docudesk is not installed — document-generation actions are unavailable.',
+				)
 			}
 			return ''
 		},
@@ -944,7 +1123,11 @@ export default {
 			this.objectOpOperationOption.splice(index, 1)
 		},
 		onActionTypeChange(index, option) {
-			this.updateAction(index, 'type', option ? option.value : 'send-notification')
+			this.updateAction(
+				index,
+				'type',
+				option ? option.value : 'send-notification',
+			)
 		},
 		updateAction(index, key, value) {
 			const next = this.actions.slice()
@@ -972,7 +1155,10 @@ export default {
 		 */
 		buildTrigger() {
 			const trigger = { type: this.triggerType }
-			if (this.isObjectTrigger || this.triggerType === 'lifecycle-transition') {
+			if (
+				this.isObjectTrigger
+				|| this.triggerType === 'lifecycle-transition'
+			) {
 				trigger.schema = this.triggerSchema
 			}
 			if (this.triggerType === 'lifecycle-transition') {
@@ -984,7 +1170,10 @@ export default {
 				} else if (this.isCustomInterval) {
 					trigger.interval = this.triggerInterval
 				} else {
-					const preset = INTERVAL_PRESETS.find((p) => p.id === (this.cadenceOption && this.cadenceOption.id))
+					const preset = INTERVAL_PRESETS.find(
+						(p) =>
+							p.id === (this.cadenceOption && this.cadenceOption.id),
+					)
 					trigger.interval = preset ? preset.interval : 86400
 				}
 			}
@@ -1007,7 +1196,10 @@ export default {
 					}
 				}
 				if (action.type === 'run-synchronization') {
-					return { type: 'run-synchronization', synchronizationId: action.synchronizationId }
+					return {
+						type: 'run-synchronization',
+						synchronizationId: action.synchronizationId,
+					}
 				}
 				if (action.type === 'object-op') {
 					// OpenRegister rejects BOTH an empty object ({}) and null for this
@@ -1016,11 +1208,20 @@ export default {
 					let fieldMapping = null
 					try {
 						const parsed = JSON.parse(action.fieldMappingText || 'null')
-						fieldMapping = (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) ? parsed : null
+						fieldMapping =
+							parsed
+							&& typeof parsed === 'object'
+							&& Object.keys(parsed).length > 0
+								? parsed
+								: null
 					} catch (e) {
 						fieldMapping = null
 					}
-					const objectOp = { type: 'object-op', operation: action.operation, schema: action.schema }
+					const objectOp = {
+						type: 'object-op',
+						operation: action.operation,
+						schema: action.schema,
+					}
 					if (fieldMapping !== null) {
 						objectOp.fieldMapping = fieldMapping
 					}
@@ -1030,8 +1231,12 @@ export default {
 					return {
 						type: 'approval',
 						assigneeGroup: action.assigneeGroup,
-						onApprove: Array.isArray(action.onApprove) ? action.onApprove : [],
-						onReject: Array.isArray(action.onReject) ? action.onReject : [],
+						onApprove: Array.isArray(action.onApprove)
+							? action.onApprove
+							: [],
+						onReject: Array.isArray(action.onReject)
+							? action.onReject
+							: [],
 					}
 				}
 				if (action.type === 'generateDocument') {
@@ -1046,7 +1251,12 @@ export default {
 				let payloadTemplate = null
 				try {
 					const parsed = JSON.parse(action.payloadTemplateText || 'null')
-					payloadTemplate = (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) ? parsed : null
+					payloadTemplate =
+						parsed
+						&& typeof parsed === 'object'
+						&& Object.keys(parsed).length > 0
+							? parsed
+							: null
 				} catch (e) {
 					payloadTemplate = null
 				}
@@ -1102,10 +1312,19 @@ export default {
 					await axios.put(`${base}/${this.id}`, payload)
 				} else {
 					const { data } = await axios.post(base, payload)
-					uuid = data && (data.id || data.uuid || (data['@self'] && data['@self'].id))
+					uuid =
+						data
+						&& (data.id
+							|| data.uuid
+							|| (data['@self'] && data['@self'].id))
 				}
 				if (uuid) {
-					await axios.post(generateUrl(`/apps/openbuild/api/automations/${uuid}/compile`), {})
+					await axios.post(
+						generateUrl(
+							`/apps/openbuild/api/automations/${uuid}/compile`,
+						),
+						{},
+					)
 				}
 				this.$emit('saved')
 			} catch (error) {

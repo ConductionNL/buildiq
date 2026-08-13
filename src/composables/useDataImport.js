@@ -61,12 +61,14 @@ export function summarizeImport(responseData) {
 		return empty
 	}
 
-	const summary = responseData.summary && typeof responseData.summary === 'object'
-		? responseData.summary
-		: {}
+	const summary =
+		responseData.summary && typeof responseData.summary === 'object'
+			? responseData.summary
+			: {}
 
 	const result = { ...empty }
-	result.importJobId = typeof summary.importJobId === 'string' ? summary.importJobId : null
+	result.importJobId =
+		typeof summary.importJobId === 'string' ? summary.importJobId : null
 
 	Object.keys(summary).forEach((key) => {
 		if (key === 'importJobId') {
@@ -87,15 +89,24 @@ export function summarizeImport(responseData) {
 			result.skipped += sheet.unchanged.length
 		}
 		if (Array.isArray(sheet.errors)) {
-			sheet.errors.forEach((e) => result.errors.push({ sheet: key, ...(e && typeof e === 'object' ? e : { message: String(e) }) }))
+			sheet.errors.forEach((e) =>
+				result.errors.push({
+					sheet: key,
+					...(e && typeof e === 'object' ? e : { message: String(e) }),
+				}),
+			)
 		}
 	})
 
-	if (typeof responseData.errors_csv === 'string' && responseData.errors_csv !== '') {
+	if (
+		typeof responseData.errors_csv === 'string'
+		&& responseData.errors_csv !== ''
+	) {
 		result.errorsCsv = responseData.errors_csv
-		result.errorsCsvFilename = typeof responseData.errors_csv_filename === 'string'
-			? responseData.errors_csv_filename
-			: 'import_errors.csv'
+		result.errorsCsvFilename =
+			typeof responseData.errors_csv_filename === 'string'
+				? responseData.errors_csv_filename
+				: 'import_errors.csv'
 	}
 
 	return result
@@ -133,7 +144,13 @@ export function useDataImport(opts = {}) {
 	 * @return {Promise<object>} The flattened summary from {@link summarizeImport}.
 	 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#1.1
 	 */
-	async function importFile({ registerId, file, schema, includeObjects = true, type }) {
+	async function importFile({
+		registerId,
+		file,
+		schema,
+		includeObjects = true,
+		type,
+	}) {
 		if (!registerId) {
 			throw new Error('registerId is required')
 		}
@@ -149,7 +166,9 @@ export function useDataImport(opts = {}) {
 		if (type) {
 			form.append('type', String(type))
 		}
-		const url = generateUrl(`/apps/openregister/api/registers/${encodeURIComponent(registerId)}/import`)
+		const url = generateUrl(
+			`/apps/openregister/api/registers/${encodeURIComponent(registerId)}/import`,
+		)
 		const response = await client.post(url, form, {
 			headers: { 'OCS-APIREQUEST': 'true' },
 		})
@@ -170,9 +189,13 @@ export function useDataImport(opts = {}) {
 			throw new Error('importJobId is required')
 		}
 		const url = generateUrl('/apps/openregister/api/registers/import/rollback')
-		const response = await client.post(url, { importJobId }, {
-			headers: { 'OCS-APIREQUEST': 'true' },
-		})
+		const response = await client.post(
+			url,
+			{ importJobId },
+			{
+				headers: { 'OCS-APIREQUEST': 'true' },
+			},
+		)
 		return response && response.data
 	}
 

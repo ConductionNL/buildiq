@@ -51,7 +51,9 @@ const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'pw-rollback'
  */
 async function appUuid(page: import('@playwright/test').Page): Promise<string> {
 	return page.evaluate(async (slug) => {
-		const r = await fetch('/index.php/apps/openbuild/api/applications', { headers: { 'OCS-APIRequest': 'true' } })
+		const r = await fetch('/index.php/apps/openbuild/api/applications', {
+			headers: { 'OCS-APIRequest': 'true' },
+		})
 		const d = await r.json()
 		const rows = Array.isArray(d) ? d : (d?.results ?? [])
 		const app = rows.find((x: Record<string, unknown>) => x?.slug === slug)
@@ -65,9 +67,13 @@ async function appUuid(page: import('@playwright/test').Page): Promise<string> {
  * @param page Playwright page.
  * @return {Promise<Record<string, unknown>>} The application object.
  */
-async function appRecord(page: import('@playwright/test').Page): Promise<Record<string, unknown>> {
+async function appRecord(
+	page: import('@playwright/test').Page,
+): Promise<Record<string, unknown>> {
 	return page.evaluate(async (slug) => {
-		const r = await fetch('/index.php/apps/openbuild/api/applications', { headers: { 'OCS-APIRequest': 'true' } })
+		const r = await fetch('/index.php/apps/openbuild/api/applications', {
+			headers: { 'OCS-APIRequest': 'true' },
+		})
 		const d = await r.json()
 		const rows = Array.isArray(d) ? d : (d?.results ?? [])
 		return rows.find((x: Record<string, unknown>) => x?.slug === slug) ?? {}
@@ -83,9 +89,14 @@ async function appRecord(page: import('@playwright/test').Page): Promise<Record<
  * @param page Playwright page.
  * @return {Promise<unknown>} The active manifest.
  */
-async function activeManifest(page: import('@playwright/test').Page): Promise<Record<string, unknown> | null> {
+async function activeManifest(
+	page: import('@playwright/test').Page,
+): Promise<Record<string, unknown> | null> {
 	return page.evaluate(async (slug) => {
-		const r = await fetch(`/index.php/apps/openbuild/api/applications/${slug}/manifest`, { headers: { 'OCS-APIRequest': 'true' } })
+		const r = await fetch(
+			`/index.php/apps/openbuild/api/applications/${slug}/manifest`,
+			{ headers: { 'OCS-APIRequest': 'true' } },
+		)
 		return r.ok ? await r.json() : null
 	}, TEST_SLUG)
 }
@@ -104,14 +115,26 @@ async function activeManifest(page: import('@playwright/test').Page): Promise<Re
  * @param semver The semver shown on the row being rolled back to.
  * @return {Promise<{version: string, manifest: unknown}>} The snapshot.
  */
-async function snapshotBySemver(page: import('@playwright/test').Page, semver: string): Promise<{ version: string, manifest: unknown }> {
-	return page.evaluate(async ([slug, want]) => {
-		const r = await fetch(`/index.php/apps/openbuild/api/applications/${slug}/versions`, { headers: { 'OCS-APIRequest': 'true' } })
-		const d = await r.json()
-		const rows = Array.isArray(d) ? d : (d?.results ?? [])
-		const row = rows.find((x: Record<string, unknown>) => String(x?.semver ?? '') === want) ?? {}
-		return { version: row.semver ?? '', manifest: row.manifest ?? null }
-	}, [TEST_SLUG, semver] as const)
+async function snapshotBySemver(
+	page: import('@playwright/test').Page,
+	semver: string,
+): Promise<{ version: string; manifest: unknown }> {
+	return page.evaluate(
+		async ([slug, want]) => {
+			const r = await fetch(
+				`/index.php/apps/openbuild/api/applications/${slug}/versions`,
+				{ headers: { 'OCS-APIRequest': 'true' } },
+			)
+			const d = await r.json()
+			const rows = Array.isArray(d) ? d : (d?.results ?? [])
+			const row =
+				rows.find(
+					(x: Record<string, unknown>) => String(x?.semver ?? '') === want,
+				) ?? {}
+			return { version: row.semver ?? '', manifest: row.manifest ?? null }
+		},
+		[TEST_SLUG, semver] as const,
+	)
 }
 
 /**
@@ -124,14 +147,26 @@ async function snapshotBySemver(page: import('@playwright/test').Page, semver: s
  * @param manifest The manifest to store.
  * @return {Promise<void>}
  */
-async function putActiveManifest(page: import('@playwright/test').Page, manifest: unknown): Promise<void> {
-	await page.evaluate(async ([slug, m]) => {
-		await fetch(`/index.php/apps/openbuild/api/applications/${slug}/manifest`, {
-			method: 'PUT',
-			headers: { 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' },
-			body: JSON.stringify({ manifest: m }),
-		})
-	}, [TEST_SLUG, manifest] as const)
+async function putActiveManifest(
+	page: import('@playwright/test').Page,
+	manifest: unknown,
+): Promise<void> {
+	await page.evaluate(
+		async ([slug, m]) => {
+			await fetch(
+				`/index.php/apps/openbuild/api/applications/${slug}/manifest`,
+				{
+					method: 'PUT',
+					headers: {
+						'OCS-APIRequest': 'true',
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ manifest: m }),
+				},
+			)
+		},
+		[TEST_SLUG, manifest] as const,
+	)
 }
 
 // PREVIOUSLY SKIPPED, AND THE RECORDED REASON WAS WRONG. Both tests now run.
@@ -174,8 +209,13 @@ async function putActiveManifest(page: import('@playwright/test').Page, manifest
  * @param uuid The application uuid.
  * @return {Promise<void>}
  */
-async function openVersionHistory(page: import('@playwright/test').Page, uuid: string): Promise<void> {
-	await page.goto(`${BASE_URL}/apps/openbuild/applications/${uuid}`, { waitUntil: 'domcontentloaded' })
+async function openVersionHistory(
+	page: import('@playwright/test').Page,
+	uuid: string,
+): Promise<void> {
+	await page.goto(`${BASE_URL}/apps/openbuild/applications/${uuid}`, {
+		waitUntil: 'domcontentloaded',
+	})
 
 	// Target the TAB, not its label. `getByText('Version history')` resolves to
 	// the `<span class="_sidebarTabsButton__name_…">` inside the tab button, and
@@ -218,14 +258,21 @@ async function openVersionHistory(page: import('@playwright/test').Page, uuid: s
 	// TWICE inside a 150s budget, so a larger window could not elapse before the
 	// test timeout swallowed its message — the same "guard that cannot fire"
 	// trap the describe below records about its own 45s waits.
-	const openSidebar = page.getByRole('button', { name: 'Open sidebar', exact: true })
-	const panelBody = page.locator('.version-history__row, .version-history__empty').first()
+	const openSidebar = page.getByRole('button', {
+		name: 'Open sidebar',
+		exact: true,
+	})
+	const panelBody = page
+		.locator('.version-history__row, .version-history__empty')
+		.first()
 	await expect(async () => {
 		if (!(await tab.isVisible().catch(() => false))) {
 			await openSidebar.click({ timeout: 10_000 })
 		}
 		await tab.click({ timeout: 10_000 })
-		await expect(tab).toHaveAttribute('aria-selected', 'true', { timeout: 5_000 })
+		await expect(tab).toHaveAttribute('aria-selected', 'true', {
+			timeout: 5_000,
+		})
 		await expect(panelBody).toBeVisible({ timeout: 5_000 })
 	}, 'the Version history panel must open and render its body').toPass({
 		timeout: 60_000,
@@ -245,7 +292,9 @@ test.describe('openbuild-versioning — rollback (REQ-OBV-003)', () => {
 	test.beforeEach(async ({ page }) => {
 		await suppressSupportDialog(page)
 		await suppressSetupWizard(page)
-		await page.goto(`${BASE_URL}/apps/openbuild/`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${BASE_URL}/apps/openbuild/`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await ensureVersionChain(page, TEST_SLUG, 'PW Rollback Fixture')
 	})
 
@@ -255,14 +304,20 @@ test.describe('openbuild-versioning — rollback (REQ-OBV-003)', () => {
 		// The regression guard: this panel used to render `.version-history__empty`
 		// for every app because of the applicationUuid filter described above.
 		const rows = page.locator('.version-history__row')
-		await expect(rows, 'the seeded development -> staging -> production chain must be listed')
-			.toHaveCount(3, { timeout: 15_000 })
+		await expect(
+			rows,
+			'the seeded development -> staging -> production chain must be listed',
+		).toHaveCount(3, { timeout: 15_000 })
 		await expect(page.locator('.version-history__empty')).toHaveCount(0)
 	})
 
-	test('rolling back RESTORES the snapshot manifest onto the active version', async ({ page }) => {
+	test('rolling back RESTORES the snapshot manifest onto the active version', async ({
+		page,
+	}) => {
 		await openVersionHistory(page, await appUuid(page))
-		await expect(page.locator('.version-history__row').first()).toBeVisible({ timeout: 20_000 })
+		await expect(page.locator('.version-history__row').first()).toBeVisible({
+			timeout: 20_000,
+		})
 
 		// "Roll back" only renders on a NON-production row (`v-if="!isProduction(row)"`),
 		// so this also proves the terminal production version offers no rollback.
@@ -274,12 +329,18 @@ test.describe('openbuild-versioning — rollback (REQ-OBV-003)', () => {
 		).toBe(total - 1)
 
 		// Resolve the target from the row that OWNS the first Roll back button.
-		const targetRow = page.locator('.version-history__row')
+		const targetRow = page
+			.locator('.version-history__row')
 			.filter({ has: page.locator('.version-history__btn--danger') })
 			.first()
-		const targetSemver = (await targetRow.locator('.version-history__semver').innerText()).trim()
+		const targetSemver = (
+			await targetRow.locator('.version-history__semver').innerText()
+		).trim()
 		const target = await snapshotBySemver(page, targetSemver)
-		expect(target.manifest, `the snapshot under test (${targetSemver}) must carry a stored manifest`).toBeTruthy()
+		expect(
+			target.manifest,
+			`the snapshot under test (${targetSemver}) must carry a stored manifest`,
+		).toBeTruthy()
 
 		// POSITIVE CONTROL. The seeded snapshots all carry the SAME (empty
 		// menu/pages) manifest, so "restored the snapshot" and "did nothing at
@@ -289,8 +350,24 @@ test.describe('openbuild-versioning — rollback (REQ-OBV-003)', () => {
 		// target FIRST, so the restore has something observable to undo.
 		const planted = {
 			version: '1.0.0',
-			menu: [{ id: 'planted', label: 'PLANTED_BEFORE_ROLLBACK', icon: 'icon-category-dashboard', route: 'Planted', order: 10 }],
-			pages: [{ id: 'Planted', route: '/planted', type: 'dashboard', title: 'Planted', config: { widgets: [], layout: [] } }],
+			menu: [
+				{
+					id: 'planted',
+					label: 'PLANTED_BEFORE_ROLLBACK',
+					icon: 'icon-category-dashboard',
+					route: 'Planted',
+					order: 10,
+				},
+			],
+			pages: [
+				{
+					id: 'Planted',
+					route: '/planted',
+					type: 'dashboard',
+					title: 'Planted',
+					config: { widgets: [], layout: [] },
+				},
+			],
 		}
 		await putActiveManifest(page, planted)
 		expect(
@@ -300,12 +377,16 @@ test.describe('openbuild-versioning — rollback (REQ-OBV-003)', () => {
 
 		await page.reload({ waitUntil: 'domcontentloaded' })
 		await openVersionHistory(page, await appUuid(page))
-		await expect(page.locator('.version-history__row').first()).toBeVisible({ timeout: 20_000 })
+		await expect(page.locator('.version-history__row').first()).toBeVisible({
+			timeout: 20_000,
+		})
 		await page.locator('.version-history__btn--danger').first().click()
 
 		// RollbackConfirmModal — copy is "Roll back" (no ellipsis).
 		const confirm = page.getByRole('button', { name: /^roll back$/i }).last()
-		await expect(confirm, 'the confirm modal must appear').toBeVisible({ timeout: 10_000 })
+		await expect(confirm, 'the confirm modal must appear').toBeVisible({
+			timeout: 10_000,
+		})
 		await confirm.click()
 
 		// THE regression guard. Rollback used to PUT `{manifest, version, status}`
@@ -314,13 +395,26 @@ test.describe('openbuild-versioning — rollback (REQ-OBV-003)', () => {
 		// never came back. Compare menu/pages only: the GET returns an EFFECTIVE
 		// manifest, with `runtime` injected and `name` added server-side, so a
 		// whole-document comparison can never match a stored snapshot.
-		await expect.poll(async () => JSON.stringify((await activeManifest(page))?.menu ?? null), {
-			message: 'the active menu must become the snapshot menu',
-			timeout: 30_000,
-		}).toBe(JSON.stringify((target.manifest as Record<string, unknown>)?.menu ?? null))
+		await expect
+			.poll(
+				async () =>
+					JSON.stringify((await activeManifest(page))?.menu ?? null),
+				{
+					message: 'the active menu must become the snapshot menu',
+					timeout: 30_000,
+				},
+			)
+			.toBe(
+				JSON.stringify(
+					(target.manifest as Record<string, unknown>)?.menu ?? null,
+				),
+			)
 
 		const after = await appRecord(page)
-		expect(after.status, 'a rollback must land as a DRAFT — it never silently republishes').toBe('draft')
+		expect(
+			after.status,
+			'a rollback must land as a DRAFT — it never silently republishes',
+		).toBe('draft')
 		expect(
 			(await activeManifest(page))?.menu,
 			'the planted manifest must be GONE — proves the restore actually wrote',

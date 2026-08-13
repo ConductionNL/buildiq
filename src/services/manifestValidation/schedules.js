@@ -24,7 +24,14 @@
 export const SCHEDULE_ACTIONS = Object.freeze(['openconnector:synchronization'])
 
 /** The only keys a schedule entry may carry. */
-const ALLOWED_KEYS = Object.freeze(['id', 'enabled', 'interval', 'cron', 'action', 'arguments'])
+const ALLOWED_KEYS = Object.freeze([
+	'id',
+	'enabled',
+	'interval',
+	'cron',
+	'action',
+	'arguments',
+])
 
 /** kebab-case slug id (e.g. `nightly-brp-sync`). */
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/
@@ -73,7 +80,9 @@ export function validateScheduleEntry(entry, idx = 0) {
 	}
 	for (const key of Object.keys(entry)) {
 		if (!ALLOWED_KEYS.includes(key)) {
-			errors.push(`/schedules/${idx}/${key}: openbuild.schedule.error.unknown-key`)
+			errors.push(
+				`/schedules/${idx}/${key}: openbuild.schedule.error.unknown-key`,
+			)
 		}
 	}
 	// id
@@ -90,7 +99,11 @@ export function validateScheduleEntry(entry, idx = 0) {
 	} else if (!hasInterval && !hasCron) {
 		errors.push(at('openbuild.schedule.error.cadence-required'))
 	} else if (hasInterval) {
-		if (typeof entry.interval !== 'number' || !Number.isInteger(entry.interval) || entry.interval <= 0) {
+		if (
+			typeof entry.interval !== 'number'
+			|| !Number.isInteger(entry.interval)
+			|| entry.interval <= 0
+		) {
 			errors.push(at('openbuild.schedule.error.interval-invalid'))
 		}
 	} else if (!isValidCron(entry.cron)) {
@@ -137,7 +150,9 @@ export function validateSchedules(manifest) {
 		// cross-entry uniqueness (only when the id is a usable string)
 		if (entry && typeof entry.id === 'string' && entry.id.trim() !== '') {
 			if (seenIds.has(entry.id)) {
-				errors.push(`/schedules/${idx}: openbuild.schedule.error.duplicate-id`)
+				errors.push(
+					`/schedules/${idx}: openbuild.schedule.error.duplicate-id`,
+				)
 			}
 			seenIds.set(entry.id, idx)
 		}

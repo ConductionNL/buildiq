@@ -82,9 +82,13 @@ describe('FormStepsManager', () => {
 	it('lists unassigned keys with the final-step note when steps exist', () => {
 		const steps = [{ id: 'contact', title: 'Contact', fields: ['email'] }]
 		const wrapper = mountManager(steps)
-		expect(wrapper.find('.form-steps-manager__pool').text()).toContain('wantsContact')
+		expect(wrapper.find('.form-steps-manager__pool').text()).toContain(
+			'wantsContact',
+		)
 		expect(wrapper.find('.form-steps-manager__pool').text()).toContain('phone')
-		expect(wrapper.find('.form-steps-manager__pool').text()).not.toContain('email')
+		expect(wrapper.find('.form-steps-manager__pool').text()).not.toContain(
+			'email',
+		)
 		expect(wrapper.text()).toContain('automatically added to the last step')
 	})
 
@@ -95,7 +99,9 @@ describe('FormStepsManager', () => {
 			{ id: 'c', title: 'C', fields: [] },
 		]
 		const wrapper = mountManager(steps)
-		const upButtons = wrapper.findAll('.form-steps-manager__icon-button').filter((b) => b.text() === '▲')
+		const upButtons = wrapper
+			.findAll('.form-steps-manager__icon-button')
+			.filter((b) => b.text() === '▲')
 		await upButtons.at(1).trigger('click')
 		const next = wrapper.emitted('update:steps')[0][0]
 		expect(next.map((s) => s.id)).toEqual(['b', 'a', 'c'])

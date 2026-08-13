@@ -21,9 +21,14 @@ import MyApprovalsWidget from '../../src/components/runtime/MyApprovalsWidget.vu
 const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled'],
-	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+	template:
+		'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
-const NcNoteCardStub = { name: 'NcNoteCard', props: ['type'], template: '<div class="ncnotecard-stub"><slot /></div>' }
+const NcNoteCardStub = {
+	name: 'NcNoteCard',
+	props: ['type'],
+	template: '<div class="ncnotecard-stub"><slot /></div>',
+}
 
 const stubs = { NcButton: NcButtonStub, NcNoteCard: NcNoteCardStub }
 
@@ -41,7 +46,7 @@ describe('MyApprovalsWidget', () => {
 		loadState.mockReset()
 	})
 
-	it('lists only pending steps whose role is in the viewer\'s groups', async () => {
+	it("lists only pending steps whose role is in the viewer's groups", async () => {
 		loadState.mockReturnValue(['permit-reviewers'])
 		axios.get.mockResolvedValue({ data: stepsFixture })
 
@@ -55,7 +60,7 @@ describe('MyApprovalsWidget', () => {
 		expect(wrapper.text()).not.toContain('finance-reviewers')
 	})
 
-	it('renders an empty state when the viewer\'s groups match no pending step', async () => {
+	it("renders an empty state when the viewer's groups match no pending step", async () => {
 		loadState.mockReturnValue(['no-match-group'])
 		axios.get.mockResolvedValue({ data: stepsFixture })
 
@@ -63,11 +68,13 @@ describe('MyApprovalsWidget', () => {
 		await flush()
 		await wrapper.vm.$nextTick()
 
-		expect(wrapper.find('[data-testid="my-approvals-empty"]').exists()).toBe(true)
+		expect(wrapper.find('[data-testid="my-approvals-empty"]').exists()).toBe(
+			true,
+		)
 		expect(wrapper.find('[data-testid="my-approvals-row"]').exists()).toBe(false)
 	})
 
-	it('approve calls OpenRegister\'s approval-steps endpoint directly', async () => {
+	it("approve calls OpenRegister's approval-steps endpoint directly", async () => {
 		loadState.mockReturnValue(['permit-reviewers'])
 		axios.get.mockResolvedValue({ data: stepsFixture })
 		axios.post.mockResolvedValue({ data: {} })
@@ -85,7 +92,7 @@ describe('MyApprovalsWidget', () => {
 		)
 	})
 
-	it('reject calls OpenRegister\'s approval-steps endpoint directly', async () => {
+	it("reject calls OpenRegister's approval-steps endpoint directly", async () => {
 		loadState.mockReturnValue(['permit-reviewers'])
 		axios.get.mockResolvedValue({ data: stepsFixture })
 		axios.post.mockResolvedValue({ data: {} })

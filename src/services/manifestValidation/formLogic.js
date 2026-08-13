@@ -29,7 +29,14 @@
  */
 
 /** The visibleWhen op allow-list (mirrors `$defs/visibleWhen.properties.op.enum`). */
-export const VISIBLE_WHEN_OPS = Object.freeze(['eq', 'neq', 'gt', 'gte', 'lt', 'lte'])
+export const VISIBLE_WHEN_OPS = Object.freeze([
+	'eq',
+	'neq',
+	'gt',
+	'gte',
+	'lt',
+	'lte',
+])
 
 /**
  * Whether `value` is a plain object (not an array, not null).
@@ -70,21 +77,29 @@ function validateSteps(config, pathBase, declaredKeys) {
 			return
 		}
 		if (typeof step.title !== 'string' || step.title.trim() === '') {
-			errors.push(`${stepPath}/title: openbuild.formLogic.error.step-title-required`)
+			errors.push(
+				`${stepPath}/title: openbuild.formLogic.error.step-title-required`,
+			)
 		}
 		if (!Array.isArray(step.fields)) {
-			errors.push(`${stepPath}/fields: openbuild.formLogic.error.step-fields-not-array`)
+			errors.push(
+				`${stepPath}/fields: openbuild.formLogic.error.step-fields-not-array`,
+			)
 			return
 		}
 		if (typeof step.id === 'string' && step.id !== '') {
 			if (seenIds.has(step.id)) {
-				errors.push(`${stepPath}/id: openbuild.formLogic.error.duplicate-step-id`)
+				errors.push(
+					`${stepPath}/id: openbuild.formLogic.error.duplicate-step-id`,
+				)
 			}
 			seenIds.add(step.id)
 		}
 		step.fields.forEach((key, fIndex) => {
 			if (typeof key !== 'string' || !declaredKeys.has(key)) {
-				errors.push(`${stepPath}/fields/${fIndex}: openbuild.formLogic.error.dangling-step-field`)
+				errors.push(
+					`${stepPath}/fields/${fIndex}: openbuild.formLogic.error.dangling-step-field`,
+				)
 				return
 			}
 			assignmentCount.set(key, (assignmentCount.get(key) || 0) + 1)
@@ -93,7 +108,9 @@ function validateSteps(config, pathBase, declaredKeys) {
 
 	assignmentCount.forEach((count, key) => {
 		if (count > 1) {
-			errors.push(`${pathBase}/steps: openbuild.formLogic.error.duplicate-field-assignment(${key})`)
+			errors.push(
+				`${pathBase}/steps: openbuild.formLogic.error.duplicate-field-assignment(${key})`,
+			)
 		}
 	})
 
@@ -119,49 +136,87 @@ function validateFieldLogic(field, fieldPath, declaredKeys) {
 	const visibleWhen = isPlainObject(field.visibleWhen) ? field.visibleWhen : null
 	if (visibleWhen && !visibleWhen.endpoint && !visibleWhen.source) {
 		// LOCAL mode.
-		if (typeof visibleWhen.field !== 'string' || visibleWhen.field.trim() === '') {
-			errors.push(`${fieldPath}/visibleWhen/field: openbuild.formLogic.error.condition-field-required`)
+		if (
+			typeof visibleWhen.field !== 'string'
+			|| visibleWhen.field.trim() === ''
+		) {
+			errors.push(
+				`${fieldPath}/visibleWhen/field: openbuild.formLogic.error.condition-field-required`,
+			)
 		} else if (!declaredKeys.has(visibleWhen.field)) {
-			errors.push(`${fieldPath}/visibleWhen/field: openbuild.formLogic.error.dangling-condition-field`)
+			errors.push(
+				`${fieldPath}/visibleWhen/field: openbuild.formLogic.error.dangling-condition-field`,
+			)
 		}
-		if (visibleWhen.op !== undefined && !VISIBLE_WHEN_OPS.includes(visibleWhen.op)) {
-			errors.push(`${fieldPath}/visibleWhen/op: openbuild.formLogic.error.condition-op-not-allowed`)
+		if (
+			visibleWhen.op !== undefined
+			&& !VISIBLE_WHEN_OPS.includes(visibleWhen.op)
+		) {
+			errors.push(
+				`${fieldPath}/visibleWhen/op: openbuild.formLogic.error.condition-op-not-allowed`,
+			)
 		}
 	}
 
 	const validation = isPlainObject(field.validation) ? field.validation : null
 	if (validation) {
-		if (validation.required !== undefined && typeof validation.required !== 'boolean') {
-			errors.push(`${fieldPath}/validation/required: openbuild.formLogic.error.validation-required-not-boolean`)
+		if (
+			validation.required !== undefined
+			&& typeof validation.required !== 'boolean'
+		) {
+			errors.push(
+				`${fieldPath}/validation/required: openbuild.formLogic.error.validation-required-not-boolean`,
+			)
 		}
 		const hasMin = validation.min !== undefined
 		const hasMax = validation.max !== undefined
 		if (hasMin && typeof validation.min !== 'number') {
-			errors.push(`${fieldPath}/validation/min: openbuild.formLogic.error.validation-min-not-number`)
+			errors.push(
+				`${fieldPath}/validation/min: openbuild.formLogic.error.validation-min-not-number`,
+			)
 		}
 		if (hasMax && typeof validation.max !== 'number') {
-			errors.push(`${fieldPath}/validation/max: openbuild.formLogic.error.validation-max-not-number`)
+			errors.push(
+				`${fieldPath}/validation/max: openbuild.formLogic.error.validation-max-not-number`,
+			)
 		}
-		if (hasMin && hasMax && typeof validation.min === 'number' && typeof validation.max === 'number' && validation.min > validation.max) {
-			errors.push(`${fieldPath}/validation: openbuild.formLogic.error.validation-min-greater-than-max`)
+		if (
+			hasMin
+			&& hasMax
+			&& typeof validation.min === 'number'
+			&& typeof validation.max === 'number'
+			&& validation.min > validation.max
+		) {
+			errors.push(
+				`${fieldPath}/validation: openbuild.formLogic.error.validation-min-greater-than-max`,
+			)
 		}
 		if (typeof validation.pattern === 'string') {
 			try {
 				// eslint-disable-next-line no-new
 				new RegExp(validation.pattern)
 			} catch {
-				errors.push(`${fieldPath}/validation/pattern: openbuild.formLogic.error.validation-pattern-does-not-compile`)
+				errors.push(
+					`${fieldPath}/validation/pattern: openbuild.formLogic.error.validation-pattern-does-not-compile`,
+				)
 			}
 		}
-		if (validation.message !== undefined && typeof validation.message !== 'string') {
-			errors.push(`${fieldPath}/validation/message: openbuild.formLogic.error.validation-message-not-string`)
+		if (
+			validation.message !== undefined
+			&& typeof validation.message !== 'string'
+		) {
+			errors.push(
+				`${fieldPath}/validation/message: openbuild.formLogic.error.validation-message-not-string`,
+			)
 		}
 		// Warning-level: an un-migrated field carries both the structured
 		// object AND a legacy flat key (Decision 4 — migration is opt-in
 		// per field, so this can legitimately persist until the developer
 		// edits that field's Validation section).
 		if (field.required !== undefined || field.pattern !== undefined) {
-			errors.push(`${fieldPath}: openbuild.formLogic.warning.flat-and-structured-validation`)
+			errors.push(
+				`${fieldPath}: openbuild.formLogic.warning.flat-and-structured-validation`,
+			)
 		}
 	}
 
@@ -192,13 +247,21 @@ export function validateFormLogic(manifest) {
 		const pathBase = `/pages/${pIndex}/config`
 		const fieldList = Array.isArray(config.fields) ? config.fields : []
 		const declaredKeys = new Set(
-			fieldList.filter((f) => f && typeof f.key === 'string').map((f) => f.key),
+			fieldList
+				.filter((f) => f && typeof f.key === 'string')
+				.map((f) => f.key),
 		)
 
 		errors.push(...validateSteps(config, pathBase, declaredKeys))
 
 		fieldList.forEach((field, fIndex) => {
-			errors.push(...validateFieldLogic(field, `${pathBase}/fields/${fIndex}`, declaredKeys))
+			errors.push(
+				...validateFieldLogic(
+					field,
+					`${pathBase}/fields/${fIndex}`,
+					declaredKeys,
+				),
+			)
 		})
 	})
 
@@ -241,7 +304,9 @@ export function assignUnassignedFieldsToFinalStep(manifest) {
 			.map((f) => f.key)
 		const assigned = new Set()
 		config.steps.forEach((step) => {
-			(Array.isArray(step && step.fields) ? step.fields : []).forEach((k) => assigned.add(k))
+			;(Array.isArray(step && step.fields) ? step.fields : []).forEach((k) =>
+				assigned.add(k),
+			)
 		})
 		const unassigned = declaredKeys.filter((k) => !assigned.has(k))
 		if (unassigned.length === 0) {
@@ -253,7 +318,10 @@ export function assignUnassignedFieldsToFinalStep(manifest) {
 		const lastStep = steps[lastIndex] || {}
 		steps[lastIndex] = {
 			...lastStep,
-			fields: [...(Array.isArray(lastStep.fields) ? lastStep.fields : []), ...unassigned],
+			fields: [
+				...(Array.isArray(lastStep.fields) ? lastStep.fields : []),
+				...unassigned,
+			],
 		}
 		return { ...page, config: { ...config, steps } }
 	})

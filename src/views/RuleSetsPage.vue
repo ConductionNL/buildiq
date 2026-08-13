@@ -26,7 +26,12 @@
 		<NcEmptyContent
 			v-else-if="ruleSets.length === 0"
 			:name="t('openbuild', 'No rule sets yet')"
-			:description="t('openbuild', 'Create a decision table or a condition-action rule set to get started.')" />
+			:description="
+				t(
+					'openbuild',
+					'Create a decision table or a condition-action rule set to get started.',
+				)
+			" />
 
 		<table v-else class="rule-sets-page__table">
 			<thead>
@@ -59,14 +64,18 @@
 					<td>{{ rs.name }}</td>
 					<td>{{ rs.ruleType }}</td>
 					<td>
-						<span class="rule-sets-page__status" :class="'rule-sets-page__status--' + rs.status">
+						<span
+							class="rule-sets-page__status"
+							:class="'rule-sets-page__status--' + rs.status">
 							{{ rs.status }}
 						</span>
 					</td>
 					<td>{{ rs.version }}</td>
 					<td>{{ rs.ownerApp }}</td>
 					<td>
-						<span class="rule-sets-page__test" :class="testBadgeClass(rs.slug)">
+						<span
+							class="rule-sets-page__test"
+							:class="testBadgeClass(rs.slug)">
 							{{ testBadgeLabel(rs.slug) }}
 						</span>
 					</td>
@@ -151,7 +160,9 @@ export default {
 			this.loading = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/rule-set')
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openbuild/rule-set',
+				)
 				const { data } = await axios.get(url)
 				this.ruleSets = this.extractResults(data)
 			} catch (error) {
@@ -188,12 +199,20 @@ export default {
 		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-001-ruleset-schema-declaration-with-lifecycle
 		 */
 		openCreate() {
-			this.activeRuleSet = { slug: '', name: '', ruleType: 'decision-table', status: 'draft', version: '1.0.0' }
+			this.activeRuleSet = {
+				slug: '',
+				name: '',
+				ruleType: 'decision-table',
+				status: 'draft',
+				version: '1.0.0',
+			}
 			this.showDecisionEditor = true
 		},
 		async runTests(ruleSet) {
 			try {
-				const url = generateUrl(`/apps/openbuild/api/rules/${ruleSet.slug}/test-all`)
+				const url = generateUrl(
+					`/apps/openbuild/api/rules/${ruleSet.slug}/test-all`,
+				)
 				const { data } = await axios.post(url, {})
 				this.testResults[ruleSet.slug] = data
 			} catch (error) {
@@ -217,7 +236,9 @@ export default {
 			return `${result.passed}/${result.total}`
 		},
 		exportRuleSet(ruleSet) {
-			const blob = new Blob([JSON.stringify(ruleSet, null, 2)], { type: 'application/json' })
+			const blob = new Blob([JSON.stringify(ruleSet, null, 2)], {
+				type: 'application/json',
+			})
 			const link = document.createElement('a')
 			link.href = URL.createObjectURL(blob)
 			link.download = `${ruleSet.slug || 'rule-set'}.json`

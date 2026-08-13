@@ -135,7 +135,9 @@ export function useApplicationVersion(appSlug, versionSlug) {
 			const { data: versionsData } = await axios.get(versionsUrl)
 			const versions = Array.isArray(versionsData)
 				? versionsData
-				: (versionsData && Array.isArray(versionsData.results) ? versionsData.results : [])
+				: versionsData && Array.isArray(versionsData.results)
+					? versionsData.results
+					: []
 
 			if (versions.length === 0) {
 				applicationVersion.value = null
@@ -146,22 +148,35 @@ export function useApplicationVersion(appSlug, versionSlug) {
 			// Uses OR's objects endpoint — the application-level slug lookup.
 			let productionUuid = null
 			try {
-				const appUrl = generateUrl('/apps/openregister/api/objects/openbuild/application')
-				const { data: appData } = await axios.get(appUrl, { params: { slug: appSlug, _limit: 1 } })
-				const apps = (appData && Array.isArray(appData.results))
-					? appData.results
-					: (Array.isArray(appData) ? appData : [])
+				const appUrl = generateUrl(
+					'/apps/openregister/api/objects/openbuild/application',
+				)
+				const { data: appData } = await axios.get(appUrl, {
+					params: { slug: appSlug, _limit: 1 },
+				})
+				const apps =
+					appData && Array.isArray(appData.results)
+						? appData.results
+						: Array.isArray(appData)
+							? appData
+							: []
 				const app = apps.find((a) => a && a.slug === appSlug) || null
 				if (app) {
 					const pv = app.productionVersion
-					productionUuid = typeof pv === 'string' ? pv : (pv && (pv.uuid || pv.id)) || null
+					productionUuid =
+						typeof pv === 'string'
+							? pv
+							: (pv && (pv.uuid || pv.id)) || null
 				}
 			} catch (appErr) {
 				// Degraded: can't read productionVersion — fallback rule still works
 				// but won't distinguish production from non-production.
 			}
 
-			applicationVersion.value = defaultEditableVersion(versions, productionUuid)
+			applicationVersion.value = defaultEditableVersion(
+				versions,
+				productionUuid,
+			)
 		} catch (e) {
 			error.value = e instanceof Error ? e : new Error(String(e))
 			applicationVersion.value = null
@@ -180,9 +195,8 @@ export function useApplicationVersion(appSlug, versionSlug) {
 	// the Application record for productionVersion), so it reliably settles LATER
 	// than a single-request caller — the race is not theoretical, it is the
 	// common case (#174).
-	const ready = (versionSlug && versionSlug !== '')
-		? fetchBySlug()
-		: fetchDefaultVersion()
+	const ready =
+		versionSlug && versionSlug !== '' ? fetchBySlug() : fetchDefaultVersion()
 
 	return { applicationVersion, loading, error, ready }
 }

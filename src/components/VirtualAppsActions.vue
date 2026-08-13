@@ -16,7 +16,10 @@
   -->
 <template>
 	<div class="ob-va-actions">
-		<div class="ob-va-actions__filter" role="group" :aria-label="t('openbuild', 'Filter apps by type')">
+		<div
+			class="ob-va-actions__filter"
+			role="group"
+			:aria-label="t('openbuild', 'Filter apps by type')">
 			<NcButton
 				v-for="opt in filterOptions"
 				:key="opt.value"
@@ -27,9 +30,7 @@
 			</NcButton>
 		</div>
 
-		<NcButton
-			type="primary"
-			@click="showWizard = true">
+		<NcButton type="primary" @click="showWizard = true">
 			{{ t('openbuild', 'Add app') }}
 		</NcButton>
 
@@ -79,7 +80,8 @@ export default {
 		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 		 */
 		activeFilter() {
-			const filter = this.$route && this.$route.query ? this.$route.query.filter : null
+			const filter =
+				this.$route && this.$route.query ? this.$route.query.filter : null
 			return ['virtual', 'hybrid'].includes(filter) ? filter : 'all'
 		},
 	},

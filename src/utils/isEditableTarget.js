@@ -21,7 +21,8 @@ const EDITABLE_TAGS = new Set(['input', 'textarea', 'select'])
  *   text-field undo instead of being consumed as a draft-level shortcut.
  */
 export function isEditableTarget(event) {
-	const target = (event && event.target)
+	const target =
+		(event && event.target)
 		|| (typeof document !== 'undefined' ? document.activeElement : null)
 	if (!target || typeof target.tagName !== 'string') {
 		return false

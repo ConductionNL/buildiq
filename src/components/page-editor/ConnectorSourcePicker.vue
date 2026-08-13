@@ -26,14 +26,24 @@
 			<p v-if="error" class="connector-source-picker__error">
 				{{ t('openbuild', 'Could not load OpenConnector endpoints.') }}
 			</p>
-			<p v-else-if="!loading && endpointOptions.length === 0" class="connector-source-picker__hint">
-				{{ t('openbuild', 'No OpenConnector endpoints are configured yet.') }}
+			<p
+				v-else-if="!loading && endpointOptions.length === 0"
+				class="connector-source-picker__hint">
+				{{
+					t('openbuild', 'No OpenConnector endpoints are configured yet.')
+				}}
 			</p>
 		</div>
 
 		<div v-else class="connector-source-picker__manual">
-			<p class="connector-source-picker__hint connector-source-picker__hint--warning">
-				{{ t('openbuild', 'OpenConnector is not installed or enabled on this instance. You can still author an endpoint path manually, but it cannot be verified here.') }}
+			<p
+				class="connector-source-picker__hint connector-source-picker__hint--warning">
+				{{
+					t(
+						'openbuild',
+						'OpenConnector is not installed or enabled on this instance. You can still author an endpoint path manually, but it cannot be verified here.',
+					)
+				}}
 			</p>
 			<label class="connector-source-picker__manual-label">
 				{{ t('openbuild', 'Endpoint path') }}
@@ -41,10 +51,15 @@
 					type="text"
 					:value="manualPath"
 					:placeholder="t('openbuild', 'e.g. kvk/companies')"
-					@input="onManualInput($event.target.value)">
+					@input="onManualInput($event.target.value)" />
 			</label>
 			<p v-if="manualPath" class="connector-source-picker__unverified">
-				{{ t('openbuild', 'This binding cannot be verified on this instance.') }}
+				{{
+					t(
+						'openbuild',
+						'This binding cannot be verified on this instance.',
+					)
+				}}
 			</p>
 		</div>
 	</div>
@@ -144,10 +159,16 @@ export default {
 				const url = generateUrl('/apps/openconnector/api/endpoints')
 				const { data } = await axios.get(url)
 				const list = (data && (data.results || data)) || []
-				this.endpoints = (Array.isArray(list) ? list : []).map((row) => ({
-					path: row.path || row.endpoint || row.slug || row.id || '',
-					sourceName: row.sourceName || row.source || (row.sourceObject && row.sourceObject.name) || '',
-				})).filter((e) => e.path)
+				this.endpoints = (Array.isArray(list) ? list : [])
+					.map((row) => ({
+						path: row.path || row.endpoint || row.slug || row.id || '',
+						sourceName:
+							row.sourceName
+							|| row.source
+							|| (row.sourceObject && row.sourceObject.name)
+							|| '',
+					}))
+					.filter((e) => e.path)
 			} catch {
 				this.error = true
 				this.endpoints = []
@@ -177,7 +198,9 @@ export default {
 		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.2
 		 */
 		onManualInput(value) {
-			const cleaned = String(value || '').replace(/^https?:\/\/[^/]+/, '').replace(/^\/+/, '')
+			const cleaned = String(value || '')
+				.replace(/^https?:\/\/[^/]+/, '')
+				.replace(/^\/+/, '')
 			this.manualPath = cleaned
 			this.$emit('update:endpointPath', cleaned)
 			if (cleaned) {

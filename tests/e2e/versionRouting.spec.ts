@@ -70,7 +70,9 @@ test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008
 		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 	})
 
-	test('navigating to /builder/{slug}/schemas?_version=staging preserves the param after reload', async ({ page }) => {
+	test('navigating to /builder/{slug}/schemas?_version=staging preserves the param after reload', async ({
+		page,
+	}) => {
 		// No `/index.php` prefix: every other spec navigates the pretty form, and the
 		// SPA's router base is resolved from it.
 		const targetUrl = `${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`
@@ -87,7 +89,9 @@ test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008
 		// `.ob-schema-designer`, neither of which exists in src/, with an
 		// `h2, h3` text fallback — so it would have passed on any page with a
 		// matching heading. The real panel is `.openbuild-schema-list`.
-		await expect(page.locator('.openbuild-schema-list')).toBeVisible({ timeout: 30_000 })
+		await expect(page.locator('.openbuild-schema-list')).toBeVisible({
+			timeout: 30_000,
+		})
 
 		// Assert the URL still contains ?_version= after SPA init.
 		expect(
@@ -100,7 +104,9 @@ test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008
 		// URL is fully usable — and its render is again what proves the URL is
 		// being read after the SPA has had its say.
 		await page.reload({ waitUntil: 'domcontentloaded' })
-		await expect(page.locator('.openbuild-schema-list')).toBeVisible({ timeout: 30_000 })
+		await expect(page.locator('.openbuild-schema-list')).toBeVisible({
+			timeout: 30_000,
+		})
 
 		expect(
 			page.url(),
@@ -138,7 +144,9 @@ test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', 
 		const page = await context.newPage()
 		try {
 			await suppressSupportDialog(page)
-			await page.goto(`${BASE}/apps/openbuild/`, { waitUntil: 'domcontentloaded' })
+			await page.goto(`${BASE}/apps/openbuild/`, {
+				waitUntil: 'domcontentloaded',
+			})
 			await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 			// Without this the roles below are all "non-member" and the editor
 			// control cannot distinguish a working gate from a broken fixture.
@@ -178,7 +186,10 @@ test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', 
 			const resp = await api.get(
 				`/index.php/apps/openbuild/api/applications/${TEST_SLUG}/manifest?_version=${version}`,
 			)
-			return { status: resp.status(), body: await resp.json().catch(() => null) }
+			return {
+				status: resp.status(),
+				body: await resp.json().catch(() => null),
+			}
 		} finally {
 			await api.dispose()
 		}
@@ -191,23 +202,31 @@ test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', 
 		// The spec pins the body exactly — "no mention of authorisation", so that a
 		// 404 for "unauthorised" is indistinguishable from one for "no such version".
 		expect(body).toEqual({ status: 404, message: 'Version not found' })
-		expect(JSON.stringify(body), 'the 404 must not hint that authorisation was the reason')
-			.not.toMatch(/forbid|denied|permission|unauthoris|unauthoriz|role/i)
+		expect(
+			JSON.stringify(body),
+			'the 404 must not hint that authorisation was the reason',
+		).not.toMatch(/forbid|denied|permission|unauthoris|unauthoriz|role/i)
 	})
 
 	test('a non-member gets the identical 404 — no existence leak', async () => {
 		const viewer = await manifestAs('rbac-viewer', STAGING_VERSION)
 		const outsider = await manifestAs('rbac-outsider', STAGING_VERSION)
 
-		expect(outsider.status, 'REQ-OBVR-003: non-member must receive 404').toBe(404)
+		expect(outsider.status, 'REQ-OBVR-003: non-member must receive 404').toBe(
+			404,
+		)
 		// The point of the requirement: a caller must not be able to tell a
 		// version they may not see from one that does not exist. Byte-identical.
-		expect(outsider.body, 'non-member and viewer responses must be indistinguishable')
-			.toEqual(viewer.body)
+		expect(
+			outsider.body,
+			'non-member and viewer responses must be indistinguishable',
+		).toEqual(viewer.body)
 
 		const unknown = await manifestAs('rbac-outsider', 'no-such-version-xyz')
-		expect(unknown.body, 'an unknown version must answer identically to a forbidden one')
-			.toEqual(outsider.body)
+		expect(
+			unknown.body,
+			'an unknown version must answer identically to a forbidden one',
+		).toEqual(outsider.body)
 	})
 
 	test('an editor gets 200 for the same non-production version (positive control)', async () => {
@@ -215,8 +234,13 @@ test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', 
 
 		// Without this row the 404s above prove nothing: a broken fixture, a
 		// missing version chain or a blanket denial would produce them too.
-		expect(status, 'REQ-OBVR-003: an editor must receive the staging manifest').toBe(200)
-		expect(body, 'the editor must receive an actual manifest').toHaveProperty('version')
+		expect(
+			status,
+			'REQ-OBVR-003: an editor must receive the staging manifest',
+		).toBe(200)
+		expect(body, 'the editor must receive an actual manifest').toHaveProperty(
+			'version',
+		)
 	})
 
 	// This test previously asserted `.openbuild-schema-list` has count 0 for the
@@ -237,8 +261,12 @@ test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', 
 	// security one: the builder renders no version-not-found state for a version
 	// the caller may not see. The GATE itself is asserted properly by the three
 	// request-level tests above, which is where it is actually enforced.
-	test('the viewer UI leaks no schema data and no stack trace on a forbidden version', async ({ browser }) => {
-		const context = await browser.newContext({ storageState: 'tests/e2e/.auth/rbac-viewer.json' })
+	test('the viewer UI leaks no schema data and no stack trace on a forbidden version', async ({
+		browser,
+	}) => {
+		const context = await browser.newContext({
+			storageState: 'tests/e2e/.auth/rbac-viewer.json',
+		})
 		const page = await context.newPage()
 		try {
 			await page.goto(
@@ -308,17 +336,25 @@ test.describe('9.3 Default version resolution — a version-less URL still rende
 		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 	})
 
-	test('navigating without ?_version= resolves a version and renders the builder', async ({ page }) => {
-		await page.goto(`${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas`, { waitUntil: 'domcontentloaded' })
+	test('navigating without ?_version= resolves a version and renders the builder', async ({
+		page,
+	}) => {
+		await page.goto(`${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas`, {
+			waitUntil: 'domcontentloaded',
+		})
 
 		// It must resolve to a usable designer without a version in the URL.
-		await expect(page.locator('.openbuild-schema-list')).toBeVisible({ timeout: 30_000 })
+		await expect(page.locator('.openbuild-schema-list')).toBeVisible({
+			timeout: 30_000,
+		})
 
 		// And it must not have silently rewritten itself onto production: when a
 		// non-production upstream exists, production is the WRONG fallback
 		// (REQ-OBVR-004 Scenario 2). This is the one part of the original
 		// assertion that carries meaning, kept deliberately.
-		expect(page.url(), 'production must not be selected while an upstream version exists')
-			.not.toContain('_version=production')
+		expect(
+			page.url(),
+			'production must not be selected while an upstream version exists',
+		).not.toContain('_version=production')
 	})
 })

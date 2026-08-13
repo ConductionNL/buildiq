@@ -86,7 +86,12 @@ export function ensureProductionVersionsLoaded() {
 			for (const row of rows) {
 				const uuid = row?.productionVersion
 				const detail = row?.productionVersionDetail
-				if (typeof uuid === 'string' && uuid !== '' && detail && typeof detail === 'object') {
+				if (
+					typeof uuid === 'string'
+					&& uuid !== ''
+					&& detail
+					&& typeof detail === 'object'
+				) {
 					productionVersions[uuid] = detail
 				}
 			}
@@ -94,7 +99,7 @@ export function ensureProductionVersionsLoaded() {
 			// eslint-disable-next-line no-console
 			console.warn(
 				'[openbuild] could not resolve production versions; app cards will show '
-				+ 'their placeholder status/version until this succeeds',
+					+ 'their placeholder status/version until this succeeds',
 				e,
 			)
 		}

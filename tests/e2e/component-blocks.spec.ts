@@ -36,7 +36,11 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { ensureApp, dismissOverlays, suppressSupportDialog } from './support/appFixture'
+import {
+	ensureApp,
+	dismissOverlays,
+	suppressSupportDialog,
+} from './support/appFixture'
 import { readStagedManifest } from './support/stagedManifest'
 
 // Merge note (development -> feat/vue-3-migration, 2026-07-30): development's
@@ -58,14 +62,25 @@ const PAGE_ID = 'e2e-cb-page'
 /** Every fixture block slug shares this prefix so the baseline reset can find them. */
 const BLOCK_PREFIX = 'pw-cb-'
 /** Blocks live as OpenRegister objects, not in the app manifest. */
-const BLOCKS_API = '/index.php/apps/openregister/api/objects/openbuild/component-block'
+const BLOCKS_API =
+	'/index.php/apps/openregister/api/objects/openbuild/component-block'
 /** blockInsert.js#UNRESOLVED_SCHEMA_PLACEHOLDER — the "needs remap" sentinel. */
 const UNRESOLVED = '__needs-remap__'
 
 /** The two widgets seeded onto the source app's page; both bound to one schema. */
 const SOURCE_WIDGETS = [
-	{ id: 'invoice-list', widgetKey: 'object-list', slot: 'main', config: { schema: `${SOURCE_APP}-invoice`, title: 'Invoices' } },
-	{ id: 'invoice-stat', widgetKey: 'stat-card', slot: 'main', config: { schema: `${SOURCE_APP}-invoice`, metric: 'count' } },
+	{
+		id: 'invoice-list',
+		widgetKey: 'object-list',
+		slot: 'main',
+		config: { schema: `${SOURCE_APP}-invoice`, title: 'Invoices' },
+	},
+	{
+		id: 'invoice-stat',
+		widgetKey: 'stat-card',
+		slot: 'main',
+		config: { schema: `${SOURCE_APP}-invoice`, metric: 'count' },
+	},
 ]
 
 test.describe('OpenBuild component blocks', () => {
@@ -87,24 +102,34 @@ test.describe('OpenBuild component blocks', () => {
 	 * @return {Promise<{status: number, data: *}>} status + parsed body.
 	 */
 	async function api(page, method, url, body = null) {
-		return page.evaluate(async ({ method, url, body }) => {
-			const tok = window.OC?.requestToken
-				|| document.querySelector('head')?.getAttribute('data-requesttoken')
-				|| ''
-			const resp = await fetch(url, {
-				method,
-				headers: { requesttoken: tok, 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' },
-				...(body ? { body: JSON.stringify(body) } : {}),
-			})
-			const text = await resp.text()
-			let data = null
-			try {
-				data = JSON.parse(text)
-			} catch {
-				data = text
-			}
-			return { status: resp.status, data }
-		}, { method, url, body })
+		return page.evaluate(
+			async ({ method, url, body }) => {
+				const tok =
+					window.OC?.requestToken
+					|| document
+						.querySelector('head')
+						?.getAttribute('data-requesttoken')
+					|| ''
+				const resp = await fetch(url, {
+					method,
+					headers: {
+						requesttoken: tok,
+						'OCS-APIRequest': 'true',
+						'Content-Type': 'application/json',
+					},
+					...(body ? { body: JSON.stringify(body) } : {}),
+				})
+				const text = await resp.text()
+				let data = null
+				try {
+					data = JSON.parse(text)
+				} catch {
+					data = text
+				}
+				return { status: resp.status, data }
+			},
+			{ method, url, body },
+		)
 	}
 
 	/**
@@ -121,8 +146,16 @@ test.describe('OpenBuild component blocks', () => {
 		const current = await api(page, 'GET', base)
 		expect(current.status, `GET ${app} manifest`).toBe(200)
 		const pages = (current.data.pages || []).filter((p) => p.id !== PAGE_ID)
-		pages.push({ id: PAGE_ID, type: 'index', route: `/${PAGE_ID}`, config: {}, widgets })
-		const written = await api(page, 'PUT', base, { manifest: { ...current.data, pages } })
+		pages.push({
+			id: PAGE_ID,
+			type: 'index',
+			route: `/${PAGE_ID}`,
+			config: {},
+			widgets,
+		})
+		const written = await api(page, 'PUT', base, {
+			manifest: { ...current.data, pages },
+		})
 		expect(written.status, `PUT ${app} manifest`).toBe(200)
 		return pages.length - 1
 	}
@@ -140,15 +173,20 @@ test.describe('OpenBuild component blocks', () => {
 	 * @return {Promise<void>}
 	 */
 	async function openDesigner(page, app, index) {
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${app}/pages?_version=production`, {
-			waitUntil: 'domcontentloaded',
-		})
+		await page.goto(
+			`${BASE_URL}/apps/openbuild/builder/${app}/pages?_version=production`,
+			{
+				waitUntil: 'domcontentloaded',
+			},
+		)
 		await page.waitForSelector('.page-designer__left', { timeout: 60_000 })
 		await dismissOverlays(page)
 		const row = page.locator('.page-list-editor__row').nth(index)
 		await row.scrollIntoViewIfNeeded()
 		await row.dispatchEvent('click')
-		await expect(page.locator('.widget-selection-panel')).toBeVisible({ timeout: 30_000 })
+		await expect(page.locator('.widget-selection-panel')).toBeVisible({
+			timeout: 30_000,
+		})
 	}
 
 	/**
@@ -195,7 +233,11 @@ test.describe('OpenBuild component blocks', () => {
 			}
 			const uuid = block?.['@self']?.id ?? block?.id
 			if (uuid) {
-				await api(page, 'DELETE', `${BLOCKS_API}/${encodeURIComponent(String(uuid))}`)
+				await api(
+					page,
+					'DELETE',
+					`${BLOCKS_API}/${encodeURIComponent(String(uuid))}`,
+				)
 			}
 		}
 	}
@@ -217,7 +259,12 @@ test.describe('OpenBuild component blocks', () => {
 			category: 'display',
 			schemaDependencies: ['invoice'],
 			sourceApplicationSlug: SOURCE_APP,
-			fragment: { id: 'invoice-list', widgetKey: 'object-list', slot: 'main', config: { schema: 'invoice', title: 'Invoices' } },
+			fragment: {
+				id: 'invoice-list',
+				widgetKey: 'object-list',
+				slot: 'main',
+				config: { schema: 'invoice', title: 'Invoices' },
+			},
 			...overrides,
 		}
 		const resp = await api(page, 'POST', BLOCKS_API, record)
@@ -251,15 +298,18 @@ test.describe('OpenBuild component blocks', () => {
 
 	// @e2e component-blocks::saving-a-widget-captures-its-config-not-its-data
 	// @e2e component-blocks::save-a-single-widget-as-a-block
-	test('saves a single widget as a block, capturing its config and no object data', async ({ page }) => {
+	test('saves a single widget as a block, capturing its config and no object data', async ({
+		page,
+	}) => {
 		const index = await seedPage(page, SOURCE_APP, SOURCE_WIDGETS)
 		await openDesigner(page, SOURCE_APP, index)
 
 		const panel = page.locator('.widget-selection-panel')
 		await expect(panel.locator('.widget-selection-panel__row')).toHaveCount(2)
 		await panel.locator('input[type="checkbox"]').first().check()
-		await expect(panel.locator('.widget-selection-panel__save-btn'))
-			.toHaveText(/Save selected widget as block/i)
+		await expect(panel.locator('.widget-selection-panel__save-btn')).toHaveText(
+			/Save selected widget as block/i,
+		)
 		await panel.locator('.widget-selection-panel__save-btn').click()
 
 		const dialog = page.locator('.ob-save-block')
@@ -271,15 +321,24 @@ test.describe('OpenBuild component blocks', () => {
 		// The capture summary names the schema the widget binds to, DE-NAMESPACED
 		// (`pw-cb-source-invoice` → `invoice`), and states outright that no object
 		// rows travel with the block.
-		await expect(dialog.locator('.ob-save-block__schemas')).toContainText('invoice')
-		await expect(dialog.locator('.ob-save-block__no-rows')).toContainText(/No object data/i)
+		await expect(dialog.locator('.ob-save-block__schemas')).toContainText(
+			'invoice',
+		)
+		await expect(dialog.locator('.ob-save-block__no-rows')).toContainText(
+			/No object data/i,
+		)
 
 		await page.getByRole('button', { name: /^Save block$/i }).click()
 
-		await expect.poll(async () => (await listBlocks(page)).map((b) => b.slug), { timeout: 30_000 })
+		await expect
+			.poll(async () => (await listBlocks(page)).map((b) => b.slug), {
+				timeout: 30_000,
+			})
 			.toContain(`${BLOCK_PREFIX}invoice-list`)
 
-		const stored = (await listBlocks(page)).find((b) => b.slug === `${BLOCK_PREFIX}invoice-list`)
+		const stored = (await listBlocks(page)).find(
+			(b) => b.slug === `${BLOCK_PREFIX}invoice-list`,
+		)
 		expect(stored.schemaDependencies).toEqual(['invoice'])
 		expect(stored.sourceApplicationSlug).toBe(SOURCE_APP)
 		// Config travels; the source app's namespace does not.
@@ -299,8 +358,9 @@ test.describe('OpenBuild component blocks', () => {
 		await panel.locator('input[type="checkbox"]').nth(0).check()
 		await panel.locator('input[type="checkbox"]').nth(1).check()
 		// Selecting more than one flips the same affordance to a section capture.
-		await expect(panel.locator('.widget-selection-panel__save-btn'))
-			.toHaveText(/Save selected section as block/i)
+		await expect(panel.locator('.widget-selection-panel__save-btn')).toHaveText(
+			/Save selected section as block/i,
+		)
 		await panel.locator('.widget-selection-panel__save-btn').click()
 
 		const dialog = page.locator('.ob-save-block')
@@ -310,21 +370,31 @@ test.describe('OpenBuild component blocks', () => {
 		await dialog.getByLabel(/Category/i).fill('layout')
 		await page.getByRole('button', { name: /^Save block$/i }).click()
 
-		await expect.poll(async () => (await listBlocks(page)).map((b) => b.slug), { timeout: 30_000 })
+		await expect
+			.poll(async () => (await listBlocks(page)).map((b) => b.slug), {
+				timeout: 30_000,
+			})
 			.toContain(`${BLOCK_PREFIX}invoice-section`)
 
-		const stored = (await listBlocks(page)).find((b) => b.slug === `${BLOCK_PREFIX}invoice-section`)
+		const stored = (await listBlocks(page)).find(
+			(b) => b.slug === `${BLOCK_PREFIX}invoice-section`,
+		)
 		// A section fragment wraps the widgets; both are captured, both rewritten.
 		expect(Array.isArray(stored.fragment.widgets)).toBe(true)
 		expect(stored.fragment.widgets).toHaveLength(2)
-		expect(stored.fragment.widgets.map((w) => w.config.schema)).toEqual(['invoice', 'invoice'])
+		expect(stored.fragment.widgets.map((w) => w.config.schema)).toEqual([
+			'invoice',
+			'invoice',
+		])
 		expect(stored.schemaDependencies).toEqual(['invoice'])
 	})
 
 	// @e2e component-blocks::library-lists-org-wide-blocks
 	// @e2e component-blocks::cross-app-insert-with-no-matching-schema-requires-remap
 	// @e2e component-blocks::unresolved-remap-inserts-a-visible-placeholder-not-a-silent-drop
-	test('inserting into another app prompts for a remap and, left unresolved, inserts a visible placeholder', async ({ page }) => {
+	test('inserting into another app prompts for a remap and, left unresolved, inserts a visible placeholder', async ({
+		page,
+	}) => {
 		const block = await seedBlock(page)
 		const index = await seedPage(page, TARGET_APP, [])
 		await openDesigner(page, TARGET_APP, index)
@@ -355,7 +425,9 @@ test.describe('OpenBuild component blocks', () => {
 	})
 
 	// @e2e component-blocks::inserting-the-same-block-twice-does-not-collide
-	test('inserting the same block twice mints distinct widget ids', async ({ page }) => {
+	test('inserting the same block twice mints distinct widget ids', async ({
+		page,
+	}) => {
 		const block = await seedBlock(page)
 		const index = await seedPage(page, TARGET_APP, [])
 		await openDesigner(page, TARGET_APP, index)
@@ -363,9 +435,13 @@ test.describe('OpenBuild component blocks', () => {
 		const card = await openBlockLibrary(page, block.name)
 		for (let i = 0; i < 2; i++) {
 			await card.getByRole('button', { name: /^Insert$/ }).click()
-			await expect(page.locator('.ob-block-remap')).toBeVisible({ timeout: 15_000 })
+			await expect(page.locator('.ob-block-remap')).toBeVisible({
+				timeout: 15_000,
+			})
 			await page.getByRole('button', { name: /^Insert block$/ }).click()
-			await expect(page.locator('.ob-block-remap')).toBeHidden({ timeout: 15_000 })
+			await expect(page.locator('.ob-block-remap')).toBeHidden({
+				timeout: 15_000,
+			})
 		}
 
 		const manifest = await readStaged(page)
@@ -374,45 +450,83 @@ test.describe('OpenBuild component blocks', () => {
 		const ids = target.widgets.map((w) => w.id)
 		expect(new Set(ids).size).toBe(2)
 		// Both copies are real, complete widgets — not one widget and one stub.
-		expect(target.widgets.map((w) => w.widgetKey)).toEqual(['object-list', 'object-list'])
+		expect(target.widgets.map((w) => w.widgetKey)).toEqual([
+			'object-list',
+			'object-list',
+		])
 	})
 
 	// @e2e component-blocks::editing-the-source-block-does-not-affect-an-inserted-copy
-	test('editing the source block afterwards never changes an already-inserted copy', async ({ page }) => {
+	test('editing the source block afterwards never changes an already-inserted copy', async ({
+		page,
+	}) => {
 		const block = await seedBlock(page)
 		const index = await seedPage(page, TARGET_APP, [])
 		await openDesigner(page, TARGET_APP, index)
 
 		const card = await openBlockLibrary(page, block.name)
 		await card.getByRole('button', { name: /^Insert$/ }).click()
-		await expect(page.locator('.ob-block-remap')).toBeVisible({ timeout: 15_000 })
+		await expect(page.locator('.ob-block-remap')).toBeVisible({
+			timeout: 15_000,
+		})
 		await page.getByRole('button', { name: /^Insert block$/ }).click()
 
 		// Persist the insert, so what follows is tested against stored state.
 		await page.getByRole('button', { name: /save pages/i }).click()
-		await expect.poll(async () => {
-			const resp = await api(page, 'GET', `/index.php/apps/openbuild/api/applications/${TARGET_APP}/manifest`)
-			return (resp.data.pages || []).find((p) => p.id === PAGE_ID)?.widgets?.length ?? 0
-		}, { timeout: 30_000 }).toBe(1)
+		await expect
+			.poll(
+				async () => {
+					const resp = await api(
+						page,
+						'GET',
+						`/index.php/apps/openbuild/api/applications/${TARGET_APP}/manifest`,
+					)
+					return (
+						(resp.data.pages || []).find((p) => p.id === PAGE_ID)
+							?.widgets?.length ?? 0
+					)
+				},
+				{ timeout: 30_000 },
+			)
+			.toBe(1)
 
-		const before = (await api(page, 'GET', `/index.php/apps/openbuild/api/applications/${TARGET_APP}/manifest`))
-			.data.pages.find((p) => p.id === PAGE_ID).widgets[0]
+		const before = (
+			await api(
+				page,
+				'GET',
+				`/index.php/apps/openbuild/api/applications/${TARGET_APP}/manifest`,
+			)
+		).data.pages.find((p) => p.id === PAGE_ID).widgets[0]
 
 		// Now edit the SOURCE block — a deep copy was inserted, so this must not
 		// reach back into the copy.
 		const uuid = block['@self']?.id ?? block.id
-		const edited = await api(page, 'PUT', `${BLOCKS_API}/${encodeURIComponent(String(uuid))}`, {
-			...block,
-			name: 'PW seeded invoice list (edited)',
-			fragment: { ...block.fragment, widgetKey: 'totally-different-widget', config: { ...block.fragment.config, title: 'Changed' } },
-		})
+		const edited = await api(
+			page,
+			'PUT',
+			`${BLOCKS_API}/${encodeURIComponent(String(uuid))}`,
+			{
+				...block,
+				name: 'PW seeded invoice list (edited)',
+				fragment: {
+					...block.fragment,
+					widgetKey: 'totally-different-widget',
+					config: { ...block.fragment.config, title: 'Changed' },
+				},
+			},
+		)
 		expect([200, 201]).toContain(edited.status)
 
 		await page.reload({ waitUntil: 'domcontentloaded' })
 		await page.waitForSelector('.page-designer__left', { timeout: 60_000 })
 
-		const after = (await api(page, 'GET', `/index.php/apps/openbuild/api/applications/${TARGET_APP}/manifest`))
-			.data.pages.find((p) => p.id === PAGE_ID).widgets[0]
+		const after = (
+			await api(
+				page,
+				'GET',
+				`/index.php/apps/openbuild/api/applications/${TARGET_APP}/manifest`,
+			)
+		).data.pages.find((p) => p.id === PAGE_ID).widgets[0]
 		expect(after).toEqual(before)
 		expect(after.widgetKey).toBe('object-list')
 		expect(after.config.title).toBe('Invoices')
@@ -437,17 +551,27 @@ test.describe('OpenBuild component blocks', () => {
 	// the scenario's THEN says the cards carry "name, description, category and
 	// a preview"; this test asserts the NAME and the AND (no clone action). The
 	// distinguishing behaviour — browse-only, no clone affordance — is covered.
-	test('the template gallery Blocks tab lists blocks, without a clone action', async ({ page }) => {
+	test('the template gallery Blocks tab lists blocks, without a clone action', async ({
+		page,
+	}) => {
 		const block = await seedBlock(page)
-		await page.goto(`${BASE_URL}/apps/openbuild/templates`, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('.template-gallery')).toBeVisible({ timeout: 45_000 })
+		await page.goto(`${BASE_URL}/apps/openbuild/templates`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await expect(page.locator('.template-gallery')).toBeVisible({
+			timeout: 45_000,
+		})
 		await dismissOverlays(page)
 
 		await page.getByRole('tab', { name: /^Blocks$/ }).click()
 		const cards = page.locator('.template-card')
-		await expect(cards.filter({ hasText: block.name })).toBeVisible({ timeout: 20_000 })
+		await expect(cards.filter({ hasText: block.name })).toBeVisible({
+			timeout: 20_000,
+		})
 		// Browse-only: blocks are inserted from the designer, never cloned into an
 		// app from here.
-		await expect(page.getByRole('button', { name: /Use this template/i })).toHaveCount(0)
+		await expect(
+			page.getByRole('button', { name: /Use this template/i }),
+		).toHaveCount(0)
 	})
 })

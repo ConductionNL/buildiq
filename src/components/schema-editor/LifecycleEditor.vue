@@ -12,7 +12,12 @@
 		<header class="openbuild-lifecycle-editor__header">
 			<h3>{{ t('openbuild', 'Lifecycle') }}</h3>
 			<p class="openbuild-lifecycle-editor__hint">
-				{{ t('openbuild', 'Declare states and transitions. Every action is a typed declarative record per ADR-031 — no free-text code.') }}
+				{{
+					t(
+						'openbuild',
+						'Declare states and transitions. Every action is a typed declarative record per ADR-031 — no free-text code.',
+					)
+				}}
 			</p>
 		</header>
 
@@ -47,7 +52,14 @@
 						:model-value="state.name"
 						:label="t('openbuild', 'State slug')"
 						:error="!stateNameValid(state, sIndex)"
-						:helper-text="!stateNameValid(state, sIndex) ? t('openbuild', 'State slug must be kebab-case and unique.') : ''"
+						:helper-text="
+							!stateNameValid(state, sIndex)
+								? t(
+										'openbuild',
+										'State slug must be kebab-case and unique.',
+									)
+								: ''
+						"
 						@update:modelValue="updateState(sIndex, 'name', $event)" />
 					<NcTextField
 						:model-value="state.label"
@@ -63,7 +75,9 @@
 					</NcButton>
 				</li>
 			</ul>
-			<p v-if="states.length > 0 && initialCount !== 1" class="openbuild-lifecycle-editor__error">
+			<p
+				v-if="states.length > 0 && initialCount !== 1"
+				class="openbuild-lifecycle-editor__error">
 				{{ t('openbuild', 'Exactly one initial state is required.') }}
 			</p>
 		</div>
@@ -79,7 +93,9 @@
 					{{ t('openbuild', 'Add transition') }}
 				</NcButton>
 			</div>
-			<p v-if="transitions.length === 0" class="openbuild-lifecycle-editor__empty">
+			<p
+				v-if="transitions.length === 0"
+				class="openbuild-lifecycle-editor__empty">
 				{{ t('openbuild', 'No transitions yet.') }}
 			</p>
 			<ul v-else class="openbuild-lifecycle-editor__list">
@@ -95,7 +111,13 @@
 							:clearable="false"
 							label="label"
 							track-by="value"
-							@update:modelValue="updateTransition(tIndex, 'from', $event ? $event.value : '')" />
+							@update:modelValue="
+								updateTransition(
+									tIndex,
+									'from',
+									$event ? $event.value : '',
+								)
+							" />
 						<NcSelect
 							:input-label="t('openbuild', 'To')"
 							:model-value="stateOption(transition.to)"
@@ -103,11 +125,19 @@
 							:clearable="false"
 							label="label"
 							track-by="value"
-							@update:modelValue="updateTransition(tIndex, 'to', $event ? $event.value : '')" />
+							@update:modelValue="
+								updateTransition(
+									tIndex,
+									'to',
+									$event ? $event.value : '',
+								)
+							" />
 						<NcTextField
 							:model-value="transition.label || ''"
 							:label="t('openbuild', 'Label (optional)')"
-							@update:modelValue="updateTransition(tIndex, 'label', $event)" />
+							@update:modelValue="
+								updateTransition(tIndex, 'label', $event)
+							" />
 						<NcButton
 							type="error"
 							:aria-label="t('openbuild', 'Remove transition')"
@@ -129,7 +159,12 @@
 								{{ t('openbuild', 'Add action') }}
 							</NcButton>
 						</div>
-						<p v-if="!transition.actions || transition.actions.length === 0" class="openbuild-lifecycle-editor__empty">
+						<p
+							v-if="
+								!transition.actions
+								|| transition.actions.length === 0
+							"
+							class="openbuild-lifecycle-editor__empty">
 							{{ t('openbuild', 'No actions on this transition.') }}
 						</p>
 						<ul v-else class="openbuild-lifecycle-editor__list">
@@ -144,12 +179,35 @@
 									:clearable="false"
 									label="label"
 									track-by="value"
-									@update:modelValue="updateAction(tIndex, aIndex, 'type', $event ? $event.value : 'audit-event-emit')" />
+									@update:modelValue="
+										updateAction(
+											tIndex,
+											aIndex,
+											'type',
+											$event
+												? $event.value
+												: 'audit-event-emit',
+										)
+									" />
 								<NcTextField
 									:model-value="action.payload || ''"
-									:label="t('openbuild', 'Payload key (declarative)')"
-									:placeholder="t('openbuild', 'e.g. event name, template slug')"
-									@update:modelValue="updateAction(tIndex, aIndex, 'payload', $event)" />
+									:label="
+										t('openbuild', 'Payload key (declarative)')
+									"
+									:placeholder="
+										t(
+											'openbuild',
+											'e.g. event name, template slug',
+										)
+									"
+									@update:modelValue="
+										updateAction(
+											tIndex,
+											aIndex,
+											'payload',
+											$event,
+										)
+									" />
 								<NcButton
 									type="error"
 									:aria-label="t('openbuild', 'Remove action')"
@@ -168,7 +226,12 @@
 </template>
 
 <script>
-import { NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 
@@ -257,7 +320,10 @@ export default {
 		 * @return {object} Matching option.
 		 */
 		actionOption(value) {
-			return this.actionOptions.find((o) => o.value === value) || this.actionOptions[0]
+			return (
+				this.actionOptions.find((o) => o.value === value)
+				|| this.actionOptions[0]
+			)
 		},
 		/**
 		 * Validate a state name: pattern and uniqueness.
@@ -271,7 +337,10 @@ export default {
 			if (!STATE_NAME_PATTERN.test(state.name || '')) {
 				return false
 			}
-			const duplicate = this.states.some((other, otherIndex) => otherIndex !== index && other.name === state.name)
+			const duplicate = this.states.some(
+				(other, otherIndex) =>
+					otherIndex !== index && other.name === state.name,
+			)
 			return !duplicate
 		},
 		/**
@@ -465,7 +534,7 @@ export function lifecycleToEditor(lifecycle) {
 	const initial = lifecycle.initial
 	const states = (lifecycle.states || []).map((s) => {
 		const name = typeof s === 'string' ? s : s.name
-		const label = typeof s === 'string' ? s : (s.label || s.name)
+		const label = typeof s === 'string' ? s : s.label || s.name
 		return {
 			_key: nextKey(),
 			name,
@@ -478,7 +547,11 @@ export function lifecycleToEditor(lifecycle) {
 		from: tr.from || '',
 		to: tr.to || '',
 		label: tr.label || '',
-		actions: ((tr.on_transition && tr.on_transition.actions) || tr.actions || []).map((a) => ({
+		actions: (
+			(tr.on_transition && tr.on_transition.actions)
+			|| tr.actions
+			|| []
+		).map((a) => ({
 			_key: nextKey(),
 			type: a.type || 'audit-event-emit',
 			payload: a.payload || a.event || a.template || a.url || '',
@@ -502,25 +575,29 @@ export function editorToLifecycle(states, transitions) {
 	const initial = (states.find((s) => s.initial) || states[0]).name
 	return {
 		initial,
-		states: states.filter((s) => s.name).map((s) => ({
-			name: s.name,
-			label: s.label || s.name,
-		})),
-		transitions: (transitions || []).filter((tr) => tr.from && tr.to).map((tr) => ({
-			from: tr.from,
-			to: tr.to,
-			...(tr.label ? { label: tr.label } : {}),
-			...((tr.actions && tr.actions.length > 0)
-				? {
-					on_transition: {
-						actions: tr.actions.map((a) => ({
-							type: a.type,
-							...(a.payload ? { payload: a.payload } : {}),
-						})),
-					},
-				}
-				: {}),
-		})),
+		states: states
+			.filter((s) => s.name)
+			.map((s) => ({
+				name: s.name,
+				label: s.label || s.name,
+			})),
+		transitions: (transitions || [])
+			.filter((tr) => tr.from && tr.to)
+			.map((tr) => ({
+				from: tr.from,
+				to: tr.to,
+				...(tr.label ? { label: tr.label } : {}),
+				...(tr.actions && tr.actions.length > 0
+					? {
+							on_transition: {
+								actions: tr.actions.map((a) => ({
+									type: a.type,
+									...(a.payload ? { payload: a.payload } : {}),
+								})),
+							},
+						}
+					: {}),
+			})),
 	}
 }
 </script>

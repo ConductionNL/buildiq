@@ -27,7 +27,12 @@
 			v-else-if="showAdminHint"
 			data-testid="copilot-admin-hint"
 			class="wizard-step1__ai-hint">
-			{{ t('openbuild', 'Tip: configure an AI provider in the Nextcloud AI settings to unlock "Generate with AI".') }}
+			{{
+				t(
+					'openbuild',
+					'Tip: configure an AI provider in the Nextcloud AI settings to unlock "Generate with AI".',
+				)
+			}}
 			<a :href="aiSettingsUrl">{{ t('openbuild', 'Open AI settings') }}</a>
 		</p>
 
@@ -46,7 +51,9 @@
 		     order to break the tie. That is also why an earlier <Teleport to="body">
 		     attempt here changed nothing: both masks were already in <body>.
 		     Requires >= 2.1.0-vue3.7; do not downgrade below it. -->
-		<CopilotGenerateDialog v-model:open="showCopilotDialog" @created="onAiAppCreated" />
+		<CopilotGenerateDialog
+			v-model:open="showCopilotDialog"
+			@created="onAiAppCreated" />
 
 		<!-- Name input -->
 		<div class="wizard-step1__field">
@@ -60,7 +67,7 @@
 				:value="payload.name"
 				:placeholder="t('openbuild', 'e.g. My Permit Tracker')"
 				autocomplete="off"
-				@input="onNameInput">
+				@input="onNameInput" />
 		</div>
 
 		<!-- Slug chip + Advanced toggle -->
@@ -69,14 +76,20 @@
 				<span class="wizard-step1__slug-label">
 					{{ t('openbuild', 'Slug') }}:
 				</span>
-				<code class="wizard-step1__slug-chip" :class="{ 'wizard-step1__slug-chip--error': slugError }">
+				<code
+					class="wizard-step1__slug-chip"
+					:class="{ 'wizard-step1__slug-chip--error': slugError }">
 					{{ payload.slug || '—' }}
 				</code>
 				<button
 					type="button"
 					class="wizard-step1__advanced-toggle"
 					@click="showAdvanced = !showAdvanced">
-					{{ showAdvanced ? t('openbuild', 'Hide') : t('openbuild', 'Advanced') }}
+					{{
+						showAdvanced
+							? t('openbuild', 'Hide')
+							: t('openbuild', 'Advanced')
+					}}
 				</button>
 			</div>
 
@@ -92,7 +105,7 @@
 					:value="payload.slug"
 					:placeholder="t('openbuild', 'kebab-case-slug')"
 					autocomplete="off"
-					@input="onSlugInput">
+					@input="onSlugInput" />
 				<p v-if="slugError" class="wizard-step1__error-msg" role="alert">
 					{{ slugError }}
 				</p>
@@ -108,7 +121,9 @@
 				id="wizard-app-description"
 				class="wizard-step1__textarea"
 				:value="payload.description"
-				:placeholder="t('openbuild', 'Optional: describe what this app does')"
+				:placeholder="
+					t('openbuild', 'Optional: describe what this app does')
+				"
 				rows="3"
 				@input="onDescriptionInput" />
 		</div>
@@ -133,14 +148,24 @@
 
 				<!-- Live preview of the resolved app icon on both backgrounds. -->
 				<div class="wizard-step1__icon-preview">
-					<div class="wizard-step1__preview-box wizard-step1__preview-box--light" :title="t('openbuild', 'On the app header (light icon)')">
+					<div
+						class="wizard-step1__preview-box wizard-step1__preview-box--light"
+						:title="t('openbuild', 'On the app header (light icon)')">
 						<!-- eslint-disable-next-line vue/no-v-html -->
-						<span v-if="lightPreview" class="wizard-step1__preview-svg" v-html="lightPreview" />
+						<span
+							v-if="lightPreview"
+							class="wizard-step1__preview-svg"
+							v-html="lightPreview" />
 						<span v-else class="wizard-step1__preview-empty">—</span>
 					</div>
-					<div class="wizard-step1__preview-box wizard-step1__preview-box--dark" :title="t('openbuild', 'On a light background (dark icon)')">
+					<div
+						class="wizard-step1__preview-box wizard-step1__preview-box--dark"
+						:title="t('openbuild', 'On a light background (dark icon)')">
 						<!-- eslint-disable-next-line vue/no-v-html -->
-						<span v-if="darkPreview" class="wizard-step1__preview-svg" v-html="darkPreview" />
+						<span
+							v-if="darkPreview"
+							class="wizard-step1__preview-svg"
+							v-html="darkPreview" />
 						<span v-else class="wizard-step1__preview-empty">—</span>
 					</div>
 				</div>
@@ -148,28 +173,43 @@
 
 			<!-- Upload fallback: read a user SVG as text and use it directly. -->
 			<div class="wizard-step1__icon-actions">
-				<label class="wizard-step1__advanced-toggle wizard-step1__upload-link">
+				<label
+					class="wizard-step1__advanced-toggle wizard-step1__upload-link">
 					<input
 						ref="uploadInput"
 						type="file"
 						accept=".svg,image/svg+xml"
 						class="wizard-step1__file-input"
-						@change="onUploadSvg">
+						@change="onUploadSvg" />
 					{{ t('openbuild', 'Upload your own SVG') }}
 				</label>
 				<button
 					type="button"
 					class="wizard-step1__advanced-toggle"
 					@click="showDarkOverride = !showDarkOverride">
-					{{ showDarkOverride ? t('openbuild', 'Hide dark override') : t('openbuild', 'Add a dark override') }}
+					{{
+						showDarkOverride
+							? t('openbuild', 'Hide dark override')
+							: t('openbuild', 'Add a dark override')
+					}}
 				</button>
-				<span v-if="iconError" class="wizard-step1__error-msg" role="alert">{{ iconError }}</span>
+				<span
+					v-if="iconError"
+					class="wizard-step1__error-msg"
+					role="alert"
+					>{{ iconError }}</span
+				>
 			</div>
 
 			<!-- Optional dark-variant override. -->
 			<div v-if="showDarkOverride" class="wizard-step1__dark-override">
 				<p class="wizard-step1__file-label">
-					{{ t('openbuild', 'Dark variant (optional — defaults to the icon above)') }}
+					{{
+						t(
+							'openbuild',
+							'Dark variant (optional — defaults to the icon above)',
+						)
+					}}
 				</p>
 				<CnIconPicker
 					:value="payload.iconDarkValue"
@@ -188,7 +228,11 @@ import { NcButton } from '@nextcloud/vue'
 import { CnIconPicker } from '@conduction/nextcloud-vue'
 import { generateUrl } from '@nextcloud/router'
 import { toKebabCase, validateSlug } from '../../utils/slugPattern.js'
-import { ICON_SOURCES, buildIconCatalogues, resolveAppIcon } from '../../utils/iconCatalogues.js'
+import {
+	ICON_SOURCES,
+	buildIconCatalogues,
+	resolveAppIcon,
+} from '../../utils/iconCatalogues.js'
 import { useCopilot } from '../../composables/useCopilot.js'
 import CopilotGenerateDialog from '../CopilotGenerateDialog.vue'
 
@@ -250,8 +294,16 @@ export default {
 		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
 		 */
 		showAdminHint() {
-			const isAdmin = !!(typeof OC !== 'undefined' && OC.isUserAdmin && OC.isUserAdmin())
-			return isAdmin && !!this.copilot.health.value && this.copilot.health.value.available === false
+			const isAdmin = !!(
+				typeof OC !== 'undefined'
+				&& OC.isUserAdmin
+				&& OC.isUserAdmin()
+			)
+			return (
+				isAdmin
+				&& !!this.copilot.health.value
+				&& this.copilot.health.value.available === false
+			)
 		},
 
 		/**
@@ -434,9 +486,13 @@ export default {
 			}
 			const reader = new FileReader()
 			reader.onload = (e) => {
-				const text = typeof e.target.result === 'string' ? e.target.result.trim() : ''
+				const text =
+					typeof e.target.result === 'string' ? e.target.result.trim() : ''
 				if (!text.includes('<svg')) {
-					this.iconError = t('openbuild', 'That file does not contain an SVG')
+					this.iconError = t(
+						'openbuild',
+						'That file does not contain an SVG',
+					)
 				} else {
 					this.$emit('update:payload', { iconValue: text })
 				}

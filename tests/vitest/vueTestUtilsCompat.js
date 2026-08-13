@@ -79,5 +79,7 @@ function hoistGlobalOptions(options) {
 
 export * from '../../node_modules/@vue/test-utils/dist/vue-test-utils.esm-bundler.mjs'
 
-export const mount = (component, options) => vtu.mount(component, hoistGlobalOptions(options))
-export const shallowMount = (component, options) => vtu.shallowMount(component, hoistGlobalOptions(options))
+export const mount = (component, options) =>
+	vtu.mount(component, hoistGlobalOptions(options))
+export const shallowMount = (component, options) =>
+	vtu.shallowMount(component, hoistGlobalOptions(options))

@@ -23,13 +23,31 @@ vi.mock('@nextcloud/router', () => ({
 }))
 
 const baseStubs = {
-	NcDialog: { name: 'NcDialog', props: ['name', 'open'], template: '<div><slot /></div>' },
-	NcButton: { name: 'NcButton', props: ['disabled', 'type'], template: '<button><slot /></button>' },
-	NcSelect: { name: 'NcSelect', props: ['inputLabel', 'options', 'disabled'], template: '<div class="nc-select-stub" />' },
-	NcTextField: { name: 'NcTextField', props: ['value', 'label'], template: '<input />' },
+	NcDialog: {
+		name: 'NcDialog',
+		props: ['name', 'open'],
+		template: '<div><slot /></div>',
+	},
+	NcButton: {
+		name: 'NcButton',
+		props: ['disabled', 'type'],
+		template: '<button><slot /></button>',
+	},
+	NcSelect: {
+		name: 'NcSelect',
+		props: ['inputLabel', 'options', 'disabled'],
+		template: '<div class="nc-select-stub" />',
+	},
+	NcTextField: {
+		name: 'NcTextField',
+		props: ['value', 'label'],
+		template: '<input />',
+	},
 }
 
-const DocumentTemplateAttachmentDialog = (await import('../../src/dialogs/DocumentTemplateAttachmentDialog.vue')).default
+const DocumentTemplateAttachmentDialog = (
+	await import('../../src/dialogs/DocumentTemplateAttachmentDialog.vue')
+).default
 
 async function previewWith(payload) {
 	const wrapper = mount(DocumentTemplateAttachmentDialog, {
@@ -61,7 +79,9 @@ describe('DocumentTemplateAttachmentDialog — preview sanitization', () => {
 	})
 
 	it('preserves benign formatting markup', async () => {
-		const out = await previewWith({ content: '<h2>Title</h2><ul><li>a</li></ul>' })
+		const out = await previewWith({
+			content: '<h2>Title</h2><ul><li>a</li></ul>',
+		})
 		expect(out).toContain('<h2>Title</h2>')
 		expect(out).toContain('<li>a</li>')
 	})

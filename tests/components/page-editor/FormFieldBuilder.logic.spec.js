@@ -58,10 +58,18 @@ describe('FormFieldBuilder (show-logic=true)', () => {
 	it('emitting null from VisibleWhenBuilder deletes the visibleWhen key', async () => {
 		const withCondition = [
 			{ key: 'wantsContact', label: 'Wants contact', type: 'boolean' },
-			{ key: 'email', label: 'Email', type: 'string', visibleWhen: { field: 'wantsContact', value: true } },
+			{
+				key: 'email',
+				label: 'Email',
+				type: 'string',
+				visibleWhen: { field: 'wantsContact', value: true },
+			},
 		]
 		const wrapper = mountBuilder(withCondition)
-		await wrapper.findAll('.form-field-builder__disclosure').at(1).trigger('click')
+		await wrapper
+			.findAll('.form-field-builder__disclosure')
+			.at(1)
+			.trigger('click')
 		// Only the expanded row (index 1) mounts a VisibleWhenBuilder.
 		const vwb = wrapper.findComponent({ name: 'VisibleWhenBuilder' })
 		vwb.vm.$emit('update:modelValue', null)
@@ -70,14 +78,31 @@ describe('FormFieldBuilder (show-logic=true)', () => {
 		expect(next[1]).not.toHaveProperty('visibleWhen')
 	})
 
-	it('writing validation migrates only the edited field\'s legacy flat keys', async () => {
+	it("writing validation migrates only the edited field's legacy flat keys", async () => {
 		const withFlat = [
-			{ key: 'email', label: 'Email', type: 'string', required: true, pattern: '^\\d+$' },
-			{ key: 'phone', label: 'Phone', type: 'string', required: true, pattern: '^\\d+$' },
+			{
+				key: 'email',
+				label: 'Email',
+				type: 'string',
+				required: true,
+				pattern: '^\\d+$',
+			},
+			{
+				key: 'phone',
+				label: 'Phone',
+				type: 'string',
+				required: true,
+				pattern: '^\\d+$',
+			},
 		]
 		const wrapper = mountBuilder(withFlat)
-		await wrapper.findAll('.form-field-builder__disclosure').at(0).trigger('click')
-		const fvb = wrapper.findAllComponents({ name: 'FieldValidationBuilder' }).at(0)
+		await wrapper
+			.findAll('.form-field-builder__disclosure')
+			.at(0)
+			.trigger('click')
+		const fvb = wrapper
+			.findAllComponents({ name: 'FieldValidationBuilder' })
+			.at(0)
 		fvb.vm.$emit('update:modelValue', { required: true, pattern: '^\\d+$' })
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:modelValue')[0][0]
@@ -92,7 +117,12 @@ describe('FormFieldBuilder (show-logic=true)', () => {
 
 	it('shows a live dangling-condition warning when the referenced field is removed, without deleting the stale visibleWhen', async () => {
 		const withDangling = [
-			{ key: 'email', label: 'Email', type: 'string', visibleWhen: { field: 'ghost', value: true } },
+			{
+				key: 'email',
+				label: 'Email',
+				type: 'string',
+				visibleWhen: { field: 'ghost', value: true },
+			},
 		]
 		const wrapper = mountBuilder(withDangling)
 		await wrapper.find('.form-field-builder__disclosure').trigger('click')
@@ -108,7 +138,12 @@ describe('FormFieldBuilder (show-logic=true)', () => {
 
 	it('danglingConditionMark reports the actual dangling key (t() interpolation happens at render time)', () => {
 		const wrapper = mountBuilder([
-			{ key: 'email', label: 'Email', type: 'string', visibleWhen: { field: 'ghost', value: true } },
+			{
+				key: 'email',
+				label: 'Email',
+				type: 'string',
+				visibleWhen: { field: 'ghost', value: true },
+			},
 		])
 		const mark = wrapper.vm.danglingConditionMark(wrapper.vm.localFields[0])
 		expect(mark.hasError).toBe(true)
@@ -125,7 +160,10 @@ describe('FormFieldBuilder (show-logic=true)', () => {
 			{ key: 'email', label: 'Email', type: 'string' },
 		])
 		// Open the SECOND row's details.
-		await wrapper.findAll('.form-field-builder__disclosure').at(1).trigger('click')
+		await wrapper
+			.findAll('.form-field-builder__disclosure')
+			.at(1)
+			.trigger('click')
 		expect(wrapper.vm.expandedIndices).toEqual([1])
 
 		// Remove the FIRST row — email shifts to index 0 and must stay open.
@@ -146,10 +184,18 @@ describe('FormFieldBuilder (show-logic=true)', () => {
 
 	it('shows a compact summary in the collapsed row', () => {
 		const withLogic = [
-			{ key: 'email', label: 'Email', type: 'string', validation: { required: true, pattern: '^\\d+$' }, visibleWhen: { field: 'x', value: 1 } },
+			{
+				key: 'email',
+				label: 'Email',
+				type: 'string',
+				validation: { required: true, pattern: '^\\d+$' },
+				visibleWhen: { field: 'x', value: 1 },
+			},
 		]
 		const wrapper = mountBuilder(withLogic)
-		expect(wrapper.find('.form-field-builder__summary').text()).toBe('required · pattern · 1 condition')
+		expect(wrapper.find('.form-field-builder__summary').text()).toBe(
+			'required · pattern · 1 condition',
+		)
 	})
 })
 

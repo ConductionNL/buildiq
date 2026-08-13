@@ -63,39 +63,77 @@ vi.mock('@nextcloud/dialogs', () => {
 })
 
 // Import the view AFTER mocks are registered.
-const { default: SchemaDesigner } = await import('../../src/views/SchemaDesigner.vue')
+const { default: SchemaDesigner } =
+	await import('../../src/views/SchemaDesigner.vue')
 
 // Mute the sub-editor children — they each have their own spec.
 const editorStubs = {
 	SchemaListPanel: {
 		name: 'SchemaListPanel',
 		props: ['schemas', 'loading'],
-		template: '<div class="schema-list-stub"><button class="emit-add" @click="$emit(\'add\', { slug: \'new\', title: \'New\', version: \'0.1.0\' })" /><button class="emit-open" @click="$emit(\'open\', \'hello\')" /><button class="emit-delete" @click="$emit(\'delete\', \'hello\')" /></div>',
+		template:
+			"<div class=\"schema-list-stub\"><button class=\"emit-add\" @click=\"$emit('add', { slug: 'new', title: 'New', version: '0.1.0' })\" /><button class=\"emit-open\" @click=\"$emit('open', 'hello')\" /><button class=\"emit-delete\" @click=\"$emit('delete', 'hello')\" /></div>",
 	},
 	SchemaHeaderForm: {
 		name: 'SchemaHeaderForm',
 		props: ['value', 'lockedSlug'],
 		template: '<div class="schema-header-stub" />',
 	},
-	FieldEditor: { name: 'FieldEditor', props: ['fields', 'schemaSlugs'], template: '<div class="field-editor-stub" />' },
-	LifecycleEditor: { name: 'LifecycleEditor', props: ['states', 'transitions'], template: '<div class="lifecycle-editor-stub" />' },
-	RelationEditor: { name: 'RelationEditor', props: ['relations', 'schemaSlugs'], template: '<div class="relation-editor-stub" />' },
-	AccessEditor: { name: 'AccessEditor', props: ['access', 'fieldNames', 'availableGroups', 'readOnly'], template: '<div class="access-editor-stub" />' },
-	WidgetEditor: { name: 'WidgetEditor', props: ['widgets'], template: '<div class="widget-editor-stub" />' },
-	AggregationEditor: { name: 'AggregationEditor', props: ['aggregations'], template: '<div class="agg-stub" />' },
-	CalculationEditor: { name: 'CalculationEditor', props: ['calculations'], template: '<div class="calc-stub" />' },
-	NotificationEditor: { name: 'NotificationEditor', props: ['notifications'], template: '<div class="notif-stub" />' },
+	FieldEditor: {
+		name: 'FieldEditor',
+		props: ['fields', 'schemaSlugs'],
+		template: '<div class="field-editor-stub" />',
+	},
+	LifecycleEditor: {
+		name: 'LifecycleEditor',
+		props: ['states', 'transitions'],
+		template: '<div class="lifecycle-editor-stub" />',
+	},
+	RelationEditor: {
+		name: 'RelationEditor',
+		props: ['relations', 'schemaSlugs'],
+		template: '<div class="relation-editor-stub" />',
+	},
+	AccessEditor: {
+		name: 'AccessEditor',
+		props: ['access', 'fieldNames', 'availableGroups', 'readOnly'],
+		template: '<div class="access-editor-stub" />',
+	},
+	WidgetEditor: {
+		name: 'WidgetEditor',
+		props: ['widgets'],
+		template: '<div class="widget-editor-stub" />',
+	},
+	AggregationEditor: {
+		name: 'AggregationEditor',
+		props: ['aggregations'],
+		template: '<div class="agg-stub" />',
+	},
+	CalculationEditor: {
+		name: 'CalculationEditor',
+		props: ['calculations'],
+		template: '<div class="calc-stub" />',
+	},
+	NotificationEditor: {
+		name: 'NotificationEditor',
+		props: ['notifications'],
+		template: '<div class="notif-stub" />',
+	},
 	NcButton: {
 		name: 'NcButton',
 		props: ['type', 'disabled'],
-		template: '<button :disabled="disabled" @click="$emit(\'click\', $event)"><slot name="icon" /><slot /></button>',
+		template:
+			'<button :disabled="disabled" @click="$emit(\'click\', $event)"><slot name="icon" /><slot /></button>',
 	},
 	NcEmptyContent: {
 		name: 'NcEmptyContent',
 		props: ['name', 'description'],
 		template: '<div class="empty-stub" />',
 	},
-	NcLoadingIcon: { name: 'NcLoadingIcon', template: '<div class="loading-stub" />' },
+	NcLoadingIcon: {
+		name: 'NcLoadingIcon',
+		template: '<div class="loading-stub" />',
+	},
 	NcNoteCard: {
 		name: 'NcNoteCard',
 		props: ['type'],
@@ -103,7 +141,11 @@ const editorStubs = {
 	},
 }
 
-function makeRouter({ slug = 'hello-world', schemaId = '', version = undefined } = {}) {
+function makeRouter({
+	slug = 'hello-world',
+	schemaId = '',
+	version = undefined,
+} = {}) {
 	return {
 		params: { slug, schemaId },
 		query: version ? { _version: version } : {},
@@ -177,7 +219,11 @@ describe('SchemaDesigner', () => {
 		storeMocks.fetchCollection.mockResolvedValue([])
 		// The store echoes back the namespaced slug the designer sent, which is
 		// what addSchema() then navigates to.
-		storeMocks.saveObject.mockResolvedValue({ slug: 'hello-world-new', title: 'New', version: '0.1.0' })
+		storeMocks.saveObject.mockResolvedValue({
+			slug: 'hello-world-new',
+			title: 'New',
+			version: '0.1.0',
+		})
 		const push = vi.fn()
 		const wrapper = mount(SchemaDesigner, {
 			stubs: editorStubs,
