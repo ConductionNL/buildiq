@@ -113,7 +113,7 @@ export function captureBlock(fragment, appSlug, metadata) {
 	for (const sourceSlug of sourceSlugs) {
 		const { slug: canonical, shared } = deNamespaceSlug(sourceSlug, appSlug)
 		if (
-			Object.prototype.hasOwnProperty.call(canonicalToSource, canonical)
+			Object.hasOwn(canonicalToSource, canonical)
 			&& canonicalToSource[canonical] !== sourceSlug
 		) {
 			throw new SlugCollisionError(canonical, [

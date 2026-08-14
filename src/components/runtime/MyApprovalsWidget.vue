@@ -34,7 +34,7 @@
 			v-else-if="error"
 			class="my-approvals-widget__state my-approvals-widget__state--error">
 			<p>{{ t('openbuild', 'Could not load pending approvals.') }}</p>
-			<NcButton type="secondary" @click="load">
+			<NcButton variant="secondary" @click="load">
 				{{ t('openbuild', 'Retry') }}
 			</NcButton>
 		</div>
@@ -60,14 +60,14 @@
 				</div>
 				<div class="my-approvals-widget__row-actions">
 					<NcButton
-						type="primary"
+						variant="primary"
 						:disabled="!!deciding[step.id]"
 						data-testid="approve-button"
 						@click="decide(step, 'approve')">
 						{{ t('openbuild', 'Approve') }}
 					</NcButton>
 					<NcButton
-						type="error"
+						variant="error"
 						:disabled="!!deciding[step.id]"
 						data-testid="reject-button"
 						@click="decide(step, 'reject')">
@@ -102,6 +102,7 @@ export default {
 			decideError: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Pending steps whose `role` is one of the viewer's NC groups
@@ -117,9 +118,11 @@ export default {
 			return this.steps.filter((step) => groups.includes(step.role))
 		},
 	},
+
 	mounted() {
 		this.load()
 	},
+
 	methods: {
 		/**
 		 * Load pending approval steps directly from OpenRegister's REST API.
@@ -143,6 +146,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Approve or reject a step by calling OpenRegister's endpoint DIRECTLY
 		 * — no OpenBuild controller mediates the call (task 4.2).

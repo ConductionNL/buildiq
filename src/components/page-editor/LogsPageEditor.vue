@@ -112,8 +112,8 @@
 		<fieldset class="logs-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Columns') }}</legend>
 			<ColumnBuilder
-				:model-value="config.columns || []"
-				:schema-properties="schemaProperties"
+				:modelValue="config.columns || []"
+				:schemaProperties="schemaProperties"
 				@update:modelValue="update('columns', $event)" />
 			<InlineFieldMark :error="markFor('columns')" />
 		</fieldset>
@@ -135,25 +135,30 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'logs',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		// The Application's declared `dataRegisters` bindings, forwarded into
 		// useRegisterPicker so the register picker labels/hoists them.
 		dataRegisters: {
 			type: Array,
 			default: () => [],
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	/**
 	 * Build the register/schema picker for this editor. Options-API `data`
@@ -172,6 +177,7 @@ export default {
 		})
 		return { picker }
 	},
+
 	data() {
 		return {
 			registers: [],
@@ -179,6 +185,7 @@ export default {
 			schemaProperties: {},
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
@@ -188,6 +195,7 @@ export default {
 		validatedConfigKeys() {
 			return ['register', 'schema', 'source', 'columns']
 		},
+
 		/**
 		 * Observed behaviour of `sourceShape` (retrofit annotation).
 		 *
@@ -202,6 +210,7 @@ export default {
 			return 'register'
 		},
 	},
+
 	watch: {
 		'config.register': {
 			immediate: true,
@@ -220,6 +229,7 @@ export default {
 				}
 			},
 		},
+
 		'config.schema': {
 			immediate: true,
 			/**
@@ -238,9 +248,11 @@ export default {
 			},
 		},
 	},
+
 	async mounted() {
 		await this.fetchRegisters()
 	},
+
 	methods: {
 		/**
 		 * Write one key on the page's `config` block and keep the
@@ -275,6 +287,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Switch between the two mutually exclusive data-source branches by
 		 * deleting the keys of the branch being left, so the emitted config
@@ -293,6 +306,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Observed behaviour of `fetchRegisters` (retrofit annotation).
 		 *
@@ -301,6 +315,7 @@ export default {
 		async fetchRegisters() {
 			this.registers = await this.picker.fetchRegisters()
 		},
+
 		/**
 		 * Load the schemas of one register into the schema dropdown.
 		 *
@@ -311,6 +326,7 @@ export default {
 		async fetchSchemas(register) {
 			this.schemas = await this.picker.fetchSchemas(register)
 		},
+
 		/**
 		 * Load one schema's JSON-Schema `properties` map, which ColumnBuilder
 		 * turns into the column field picker's options.

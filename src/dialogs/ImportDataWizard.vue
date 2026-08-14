@@ -20,7 +20,7 @@
 <template>
 	<NcDialog
 		:name="t('openbuild', 'Import data')"
-		:can-close="!importing"
+		:canClose="!importing"
 		size="large"
 		@closing="onClose">
 		<div class="ob-import-wizard">
@@ -67,7 +67,7 @@
 					<NcSelect
 						v-model="selectedSchema"
 						class="ob-import-wizard__schema-select"
-						:input-label="t('openbuild', 'Target schema')"
+						:inputLabel="t('openbuild', 'Target schema')"
 						:options="schemaOptions"
 						:placeholder="
 							schemaOptions.length
@@ -78,7 +78,7 @@
 						:disabled="!schemaOptions.length" />
 					<NcButton
 						v-if="selectedSchema"
-						type="tertiary"
+						variant="tertiary"
 						class="ob-import-wizard__template-btn"
 						@click="downloadTemplate">
 						<template #icon>
@@ -109,7 +109,7 @@
 					class="ob-import-wizard__file-input"
 					accept=".xlsx,.xls,.csv,.json"
 					@change="onFileChosen" />
-				<NcButton type="secondary" @click="pickFile">
+				<NcButton variant="secondary" @click="pickFile">
 					<template #icon>
 						<UploadIcon :size="20" />
 					</template>
@@ -273,7 +273,7 @@
 				</ul>
 				<NcButton
 					v-if="result.errorsCsv"
-					type="tertiary"
+					variant="tertiary"
 					@click="downloadErrorCsv">
 					<template #icon>
 						<DownloadIcon :size="20" />
@@ -286,20 +286,20 @@
 		<template #actions>
 			<NcButton
 				v-if="step > 1 && step < 5 && !importing"
-				type="tertiary"
+				variant="tertiary"
 				@click="back">
 				{{ t('openbuild', 'Back') }}
 			</NcButton>
 			<NcButton
 				v-if="step < 4"
-				type="primary"
+				variant="primary"
 				:disabled="!canAdvance"
 				@click="next">
 				{{ t('openbuild', 'Next') }}
 			</NcButton>
 			<NcButton
 				v-else-if="step === 4"
-				type="primary"
+				variant="primary"
 				:disabled="importing"
 				@click="runImport">
 				{{ t('openbuild', 'Import') }}
@@ -307,7 +307,7 @@
 			<template v-else>
 				<NcButton
 					v-if="result.importJobId"
-					type="warning"
+					variant="warning"
 					:disabled="undoing"
 					@click="undo">
 					{{
@@ -316,7 +316,7 @@
 							: t('openbuild', 'Undo import')
 					}}
 				</NcButton>
-				<NcButton type="primary" @click="onClose">
+				<NcButton variant="primary" @click="onClose">
 					{{ t('openbuild', 'Done') }}
 				</NcButton>
 			</template>
@@ -325,15 +325,14 @@
 </template>
 
 <script>
-import NcDialog from '@nextcloud/vue/components/NcDialog'
 import NcButton from '@nextcloud/vue/components/NcButton'
-import NcSelect from '@nextcloud/vue/components/NcSelect'
-import NcNoteCard from '@nextcloud/vue/components/NcNoteCard'
-import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
+import NcDialog from '@nextcloud/vue/components/NcDialog'
+import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
+import NcNoteCard from '@nextcloud/vue/components/NcNoteCard'
+import NcSelect from '@nextcloud/vue/components/NcSelect'
 import DownloadIcon from 'vue-material-design-icons/Download.vue'
 import UploadIcon from 'vue-material-design-icons/Upload.vue'
-
 import { useDataImport } from '../composables/useDataImport.js'
 
 const MAX_SAMPLE_ROWS = 5
@@ -351,6 +350,7 @@ export default {
 		DownloadIcon,
 		UploadIcon,
 	},
+
 	props: {
 		/**
 		 * The target register slug — ALWAYS the active version's own
@@ -371,6 +371,7 @@ export default {
 		 */
 		importClient: { type: Object, default: null },
 	},
+
 	emits: ['close', 'imported'],
 	data() {
 		return {
@@ -392,9 +393,11 @@ export default {
 				errorsCsv: null,
 				errorsCsvFilename: null,
 			},
+
 			importer: this.importClient || useDataImport(),
 		}
 	},
+
 	computed: {
 		/**
 		 * The sample table's header cells — the CSV's own header line.
@@ -410,6 +413,7 @@ export default {
 		sampleHeader() {
 			return this.sampleRows.length > 0 ? this.sampleRows[0] : []
 		},
+
 		/**
 		 * The sample table's data rows — everything after the header line.
 		 *
@@ -420,6 +424,7 @@ export default {
 		sampleBody() {
 			return this.sampleRows.slice(1)
 		},
+
 		/**
 		 * Step-rail labels.
 		 *
@@ -435,6 +440,7 @@ export default {
 				{ n: 5, label: t('openbuild', 'Result') },
 			]
 		},
+
 		/**
 		 * Schema options for the NcSelect, projected from the schemas prop.
 		 * Only the active version register's schemas are passed in, so shared
@@ -458,6 +464,7 @@ export default {
 				}))
 				.filter((o) => o.id)
 		},
+
 		/**
 		 * OR import type inferred from the file extension (display only; OR
 		 * re-detects server-side).
@@ -484,6 +491,7 @@ export default {
 			}
 			return ''
 		},
+
 		/**
 		 * Human label for the detected file type.
 		 *
@@ -498,6 +506,7 @@ export default {
 			}
 			return map[this.detectedType] || t('openbuild', 'Unsupported file type')
 		},
+
 		/**
 		 * Human-readable file size.
 		 *
@@ -514,6 +523,7 @@ export default {
 			}
 			return `${(b / (1024 * 1024)).toFixed(1)} MB`
 		},
+
 		/**
 		 * Whether the chosen file exceeds the synchronous-import size hint.
 		 *
@@ -523,6 +533,7 @@ export default {
 		isLargeFile() {
 			return !!this.file && this.file.size > LARGE_FILE_BYTES
 		},
+
 		/**
 		 * Confirmation-step summary text.
 		 *
@@ -545,6 +556,7 @@ export default {
 				{ file: fileName },
 			)
 		},
+
 		/**
 		 * Whether the current step's requirements are met to advance.
 		 *
@@ -561,6 +573,7 @@ export default {
 			return true
 		},
 	},
+
 	watch: {
 		/**
 		 * Clear any stale error when the target schema changes.
@@ -572,6 +585,7 @@ export default {
 			this.error = ''
 		},
 	},
+
 	/**
 	 * Pre-select the schema the wizard was opened on (Schema Designer entry).
 	 *
@@ -586,6 +600,7 @@ export default {
 			}
 		}
 	},
+
 	methods: {
 		/**
 		 * Open the native file picker.
@@ -598,6 +613,7 @@ export default {
 				this.$refs.fileInput.click()
 			}
 		},
+
 		/**
 		 * Store the chosen file. For CSV we read the header + first rows for a
 		 * DISPLAY-ONLY preview (no schema inference, no transform, no persist —
@@ -614,6 +630,7 @@ export default {
 			this.previewColumns = []
 			this.sampleRows = []
 		},
+
 		/**
 		 * Build the preview: target-schema columns (from OR metadata) for the
 		 * existing-schema path, plus a display-only CSV sample.
@@ -645,6 +662,7 @@ export default {
 				this.readCsvSample()
 			}
 		},
+
 		/**
 		 * Read the first lines of a CSV for a display-only sample. This does
 		 * NOT infer a schema or write anything — OpenRegister owns the
@@ -681,6 +699,7 @@ export default {
 			// Only read a small slice — the sample is cosmetic.
 			reader.readAsText(this.file.slice(0, 64 * 1024))
 		},
+
 		/**
 		 * Advance to the next step, building the preview when leaving upload.
 		 *
@@ -696,6 +715,7 @@ export default {
 			}
 			this.step += 1
 		},
+
 		/**
 		 * Go back one step.
 		 *
@@ -707,6 +727,7 @@ export default {
 				this.step -= 1
 			}
 		},
+
 		/**
 		 * Run the import by delegating to OpenRegister. OpenBuild uploads the
 		 * file bytes only; OR parses, infers, and writes.
@@ -736,6 +757,7 @@ export default {
 				this.importing = false
 			}
 		},
+
 		/**
 		 * Undo the import via OpenRegister's rollback endpoint.
 		 *
@@ -764,6 +786,7 @@ export default {
 				this.undoing = false
 			}
 		},
+
 		/**
 		 * Download the offline import template for the selected schema.
 		 *
@@ -784,6 +807,7 @@ export default {
 				window.location.href = url
 			}
 		},
+
 		/**
 		 * Download the per-row error report OR returned (base64 CSV).
 		 *
@@ -801,6 +825,7 @@ export default {
 			a.click()
 			document.body.removeChild(a)
 		},
+
 		/**
 		 * Extract a human error message from an OR error (e.g. 403 manage gate).
 		 *
@@ -817,6 +842,7 @@ export default {
 				? String(e.message)
 				: t('openbuild', 'Import failed.')
 		},
+
 		/**
 		 * Close the wizard.
 		 *

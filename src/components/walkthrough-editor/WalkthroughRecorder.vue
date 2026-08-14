@@ -5,7 +5,7 @@
 		<div class="wt-recorder__bar">
 			<NcCheckboxRadioSwitch
 				type="switch"
-				:model-value="recording"
+				:modelValue="recording"
 				@update:modelValue="setRecording">
 				{{
 					recording
@@ -27,7 +27,7 @@
 					}}{{ lastPick.ref ? ' · ' + lastPick.ref : '' }}</code
 				>
 			</span>
-			<NcButton type="tertiary" @click="$emit('close')">
+			<NcButton variant="tertiary" @click="$emit('close')">
 				{{ t('openbuild', 'Done recording') }}
 			</NcButton>
 		</div>
@@ -102,6 +102,7 @@ export default {
 		setRecording(v) {
 			this.recording = v
 		},
+
 		/**
 		 * Attach the capture-phase click listener to the (same-origin) iframe
 		 * document once it loads. SPA navigation inside the iframe keeps the same
@@ -124,6 +125,7 @@ export default {
 				// Cross-origin (shouldn't happen for the same-origin runtime) — ignore.
 			}
 		},
+
 		/**
 		 * Handle a click inside the iframe: while recording, swallow it and emit
 		 * the resolved target instead of letting the app act on it.
@@ -137,6 +139,7 @@ export default {
 			e.stopPropagation()
 			this.handlePick(e.target)
 		},
+
 		/**
 		 * Resolve an element to a target and emit it.
 		 *
@@ -153,6 +156,7 @@ export default {
 			 */
 			this.$emit('pick', target)
 		},
+
 		/**
 		 * Remove the iframe click listener.
 		 *

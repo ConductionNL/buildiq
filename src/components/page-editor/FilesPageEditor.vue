@@ -111,19 +111,23 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'files',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	data() {
 		return {
@@ -131,6 +135,7 @@ export default {
 			TYPE_SUGGESTIONS,
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
@@ -140,6 +145,7 @@ export default {
 		validatedConfigKeys() {
 			return ['folder', 'allowedTypes']
 		},
+
 		/**
 		 * Observed behaviour of `allowedTypes` (retrofit annotation).
 		 *
@@ -151,6 +157,7 @@ export default {
 				: []
 		},
 	},
+
 	methods: {
 		/**
 		 * Write one key on the page's `config` block. Only the named key is
@@ -174,6 +181,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Observed behaviour of `commitDraft` (retrofit annotation).
 		 *
@@ -187,6 +195,7 @@ export default {
 			}
 			this.update('allowedTypes', [...this.allowedTypes, value])
 		},
+
 		/**
 		 * Remove one allowed-type tag. Removing the last one deletes
 		 * `allowedTypes` altogether (via `update`), which the runtime reads

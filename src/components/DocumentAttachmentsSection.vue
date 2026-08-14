@@ -17,7 +17,7 @@
 				{{ t('openbuild', 'Documents') }}
 			</h3>
 			<NcButton
-				type="secondary"
+				variant="secondary"
 				:disabled="!docudeskAvailable"
 				:title="
 					docudeskAvailable
@@ -66,10 +66,10 @@
 					</span>
 				</div>
 				<div class="ob-documents-section__item-actions">
-					<NcButton type="tertiary" @click="openEdit(doc)">
+					<NcButton variant="tertiary" @click="openEdit(doc)">
 						{{ t('openbuild', 'Edit') }}
 					</NcButton>
-					<NcButton type="tertiary" @click="detach(doc)">
+					<NcButton variant="tertiary" @click="detach(doc)">
 						{{ t('openbuild', 'Detach') }}
 					</NcButton>
 				</div>
@@ -81,7 +81,7 @@
 			:schemas="schemas"
 			:attachments="attachments"
 			:attachment="editingAttachment"
-			:docudesk-available="docudeskAvailable"
+			:docudeskAvailable="docudeskAvailable"
 			@save="onDialogSave" />
 
 		<ConfirmActionDialog
@@ -93,7 +93,7 @@
 					'Detach this template? Previously generated documents are NOT deleted.',
 				)
 			"
-			:confirm-label="t('openbuild', 'Detach')"
+			:confirmLabel="t('openbuild', 'Detach')"
 			destructive
 			@confirm="onConfirmDetach" />
 	</section>
@@ -101,8 +101,8 @@
 
 <script>
 import { NcButton } from '@nextcloud/vue'
-import DocumentTemplateAttachmentDialog from '../dialogs/DocumentTemplateAttachmentDialog.vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
+import DocumentTemplateAttachmentDialog from '../dialogs/DocumentTemplateAttachmentDialog.vue'
 
 export default {
 	name: 'DocumentAttachmentsSection',
@@ -112,16 +112,19 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		// The app's schemas, passed through to the dialog's pickers.
 		schemas: {
 			type: Array,
 			default: () => [],
 		},
+
 		docudeskAvailable: {
 			type: Boolean,
 			default: true,
 		},
 	},
+
 	emits: ['update:manifest'],
 	data() {
 		return {
@@ -131,6 +134,7 @@ export default {
 			pendingDetach: null,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		attachments() {
@@ -142,6 +146,7 @@ export default {
 			)
 		},
 	},
+
 	methods: {
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		openAdd() {
@@ -151,6 +156,7 @@ export default {
 			this.editingAttachment = null
 			this.dialogOpen = true
 		},
+
 		/**
 		 * Open the attachment dialog on an existing entry.
 		 *
@@ -165,6 +171,7 @@ export default {
 			this.editingAttachment = doc
 			this.dialogOpen = true
 		},
+
 		/**
 		 * Persist an added/edited attachment into `runtime.documents[]`.
 		 *
@@ -186,6 +193,7 @@ export default {
 			}
 			this.$emit('update:manifest', next)
 		},
+
 		/**
 		 * Detach an attachment (previously generated documents are unaffected).
 		 *
@@ -196,6 +204,7 @@ export default {
 			this.pendingDetach = doc
 			this.confirmDetachOpen = true
 		},
+
 		/**
 		 * Detach the pending attachment once the user has confirmed.
 		 *
@@ -215,6 +224,7 @@ export default {
 			const list = this.attachments.filter((a) => a.id !== doc.id)
 			this.$emit('update:manifest', this.withDocuments(list))
 		},
+
 		/**
 		 * Return a manifest copy with the given documents list set (or the
 		 * `runtime.documents` key removed when empty so zero-attachment
@@ -239,6 +249,7 @@ export default {
 			}
 			return next
 		},
+
 		/**
 		 * Inject a `docudesk-document-actions` tab into the detail page that
 		 * targets the attachment's schema, if such a page exists and lacks one.

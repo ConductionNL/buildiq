@@ -204,11 +204,13 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
 		fields: {
 			type: Array,
 			default: () => [],
 		},
 	},
+
 	emits: ['update:steps'],
 	data() {
 		return {
@@ -217,6 +219,7 @@ export default {
 			pendingAssignment: {},
 		}
 	},
+
 	computed: {
 		/**
 		 * The steps array, tolerant of an absent/non-array prop.
@@ -226,6 +229,7 @@ export default {
 		localSteps() {
 			return Array.isArray(this.steps) ? this.steps : []
 		},
+
 		/**
 		 * `config.fields[].key` values declared on the sibling field list.
 		 *
@@ -236,6 +240,7 @@ export default {
 				.map((f) => f && f.key)
 				.filter((k) => typeof k === 'string' && k !== '')
 		},
+
 		/**
 		 * Declared field keys not yet referenced by any step's `fields[]`.
 		 *
@@ -251,6 +256,7 @@ export default {
 			return this.declaredKeys.filter((k) => !assigned.has(k))
 		},
 	},
+
 	methods: {
 		/**
 		 * A stable-ish v-for key: prefer the step id, fall back to index.
@@ -262,6 +268,7 @@ export default {
 		stepKey(step, index) {
 			return (step && step.id) || `step-${index}`
 		},
+
 		/**
 		 * Whether a field key referenced by a step no longer exists in
 		 * `config.fields[]` (REQ-OBFEL-004).
@@ -272,6 +279,7 @@ export default {
 		isDangling(key) {
 			return !this.declaredKeys.includes(key)
 		},
+
 		/**
 		 * The `{ hasError, message }` bag for a step's dangling field
 		 * references, shaped for `<InlineFieldMark>`. Never mutates —
@@ -294,6 +302,7 @@ export default {
 				}),
 			}
 		},
+
 		/**
 		 * Emit the next steps array — `null` when it would be empty, so the
 		 * caller's spread-write (`FormPageEditor.update`) drops the `steps`
@@ -305,6 +314,7 @@ export default {
 		emitSteps(next) {
 			this.$emit('update:steps', next.length ? next : null)
 		},
+
 		/**
 		 * The ids of every OTHER step (for uniqueness when deriving/typing
 		 * an id).
@@ -318,6 +328,7 @@ export default {
 				.map((s) => s && s.id)
 				.filter(Boolean)
 		},
+
 		/**
 		 * Update a single step's field, shallow-cloning the array and the
 		 * step object so unknown sibling keys survive.
@@ -332,6 +343,7 @@ export default {
 			next[index] = { ...next[index], [key]: value }
 			this.emitSteps(next)
 		},
+
 		/**
 		 * Title input handler — re-derives the id from the new title as
 		 * long as the id still looks auto-derived (i.e. the developer has
@@ -357,6 +369,7 @@ export default {
 			next[index] = updated
 			this.emitSteps(next)
 		},
+
 		/**
 		 * Move a step up (-1) or down (+1); no-op past the array bounds.
 		 *
@@ -374,6 +387,7 @@ export default {
 			next.splice(target, 0, item)
 			this.emitSteps(next)
 		},
+
 		/**
 		 * Delete a step. Its field-key references simply drop out of every
 		 * step's `fields[]` — no field DEFINITION is touched, so the keys
@@ -387,6 +401,7 @@ export default {
 			next.splice(index, 1)
 			this.emitSteps(next)
 		},
+
 		/**
 		 * Add a new step with a placeholder title and an empty field list.
 		 *
@@ -402,6 +417,7 @@ export default {
 			next.push({ id, title, fields: [] })
 			this.emitSteps(next)
 		},
+
 		/**
 		 * Assign the step's currently pending pool selection to its
 		 * `fields[]` list, then clear the selection.
@@ -420,6 +436,7 @@ export default {
 			this.pendingAssignment[index] = ''
 			this.emitSteps(next)
 		},
+
 		/**
 		 * Remove one field-key reference from a step, returning it to the
 		 * unassigned pool.

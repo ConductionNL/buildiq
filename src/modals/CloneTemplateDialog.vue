@@ -3,7 +3,7 @@
 	<NcModal
 		v-if="open"
 		size="normal"
-		label-id="clone-template-dialog-title"
+		labelId="clone-template-dialog-title"
 		@close="onClose">
 		<div class="clone-dialog">
 			<h2 id="clone-template-dialog-title">
@@ -16,12 +16,12 @@
 				{{ t('openbuild', 'You can edit everything after cloning.') }}
 			</p>
 			<NcTextField
-				:model-value="localName"
+				:modelValue="localName"
 				:label="t('openbuild', 'Application name')"
 				:placeholder="t('openbuild', 'My permits')"
 				@update:modelValue="localName = $event" />
 			<NcTextField
-				:model-value="localSlug"
+				:modelValue="localSlug"
 				:label="t('openbuild', 'Slug (kebab-case, max 32 chars)')"
 				:placeholder="t('openbuild', 'my-permits')"
 				@update:modelValue="localSlug = $event" />
@@ -33,7 +33,7 @@
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
 				<NcButton
-					type="primary"
+					variant="primary"
 					:disabled="!canSubmit || submitting"
 					@click="submit">
 					{{ submitLabel }}
@@ -66,6 +66,7 @@ export default {
 		// The GitHub repo identity to install `{ owner, repo, ref? }`.
 		githubRepo: { type: Object, default: null },
 	},
+
 	emits: ['close', 'submit', 'installed'],
 	data() {
 		return {
@@ -75,6 +76,7 @@ export default {
 			submitting: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Title shown in the dialog heading and used as the NcModal `name`
@@ -87,6 +89,7 @@ export default {
 				? t('openbuild', 'Install template')
 				: t('openbuild', 'Use this template')
 		},
+
 		/**
 		 * Observed behaviour of `resolvedTitle` (retrofit annotation).
 		 *
@@ -96,6 +99,7 @@ export default {
 			if (!this.template) return ''
 			return t('openbuild', this.template.title || this.template.slug)
 		},
+
 		/**
 		 * Observed behaviour of `canSubmit` (retrofit annotation).
 		 *
@@ -108,6 +112,7 @@ export default {
 				&& this.localSlug.length <= 32
 			)
 		},
+
 		/**
 		 * Label for the primary action button — installing for a remote store
 		 * template, cloning for a local built-in template.
@@ -125,6 +130,7 @@ export default {
 				? t('openbuild', 'Cloning…')
 				: t('openbuild', 'Clone template')
 		},
+
 		/**
 		 * Modal heading — install wording for a remote store / GitHub app,
 		 * clone wording for a local template.
@@ -140,6 +146,7 @@ export default {
 				? t('openbuild', 'Install template')
 				: t('openbuild', 'Use this template')
 		},
+
 		/**
 		 * Lead-in sentence of the summary line, matching the install/clone verb.
 		 *
@@ -153,6 +160,7 @@ export default {
 			return t('openbuild', 'Create a new application from')
 		},
 	},
+
 	watch: {
 		/**
 		 * Observed behaviour of `open` (retrofit annotation).
@@ -175,6 +183,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
@@ -185,6 +194,7 @@ export default {
 			if (this.submitting) return
 			this.$emit('close')
 		},
+
 		/**
 		 * Observed behaviour of `submit` (retrofit annotation).
 		 *
@@ -219,6 +229,7 @@ export default {
 				this.submitting = false
 			}
 		},
+
 		/**
 		 * Install a remote store template via the backend store install
 		 * endpoint, then emit `installed` with the created application so the
@@ -247,6 +258,7 @@ export default {
 				this.submitting = false
 			}
 		},
+
 		/**
 		 * Install a GitHub-shop app via the GitHub shop install endpoint, then
 		 * emit `installed` with the created application so the parent can redirect
@@ -300,6 +312,7 @@ export default {
 				this.submitting = false
 			}
 		},
+
 		/**
 		 * Suggest a kebab-case slug from an arbitrary source string.
 		 *
@@ -315,6 +328,7 @@ export default {
 				.slice(0, 32)
 				.replace(/-+$/g, '')
 		},
+
 		/**
 		 * Observed behaviour of `setError` (retrofit annotation).
 		 *

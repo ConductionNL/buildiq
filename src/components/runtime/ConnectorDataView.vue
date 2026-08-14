@@ -20,7 +20,7 @@
 			v-else-if="error"
 			class="connector-data-view__state connector-data-view__state--error">
 			<p>{{ t('openbuild', 'Could not load data from OpenConnector.') }}</p>
-			<NcButton type="secondary" @click="retry">
+			<NcButton variant="secondary" @click="retry">
 				{{ t('openbuild', 'Retry') }}
 			</NcButton>
 		</div>
@@ -64,12 +64,14 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		// The virtual app id (cache namespacing).
 		appId: {
 			type: String,
 			default: '',
 		},
 	},
+
 	/**
 	 * Bind the runtime resolver to the connector block.
 	 *
@@ -81,32 +83,39 @@ export default {
 		const resolver = useConnectorDataSource({ appId: props.appId, binding })
 		return { resolver }
 	},
+
 	computed: {
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		loading() {
 			return this.resolver.loading.value
 		},
+
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		error() {
 			return this.resolver.error.value
 		},
+
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		isStale() {
 			return this.resolver.isStale.value
 		},
+
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		rows() {
 			return this.resolver.data.value || []
 		},
+
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		columns() {
 			const connector = (this.dataSource && this.dataSource.connector) || {}
 			return Object.keys(connector.fields || {})
 		},
 	},
+
 	mounted() {
 		this.resolver.load()
 	},
+
 	methods: {
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		retry() {

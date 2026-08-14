@@ -31,7 +31,7 @@
 			</h2>
 
 			<NcTextField
-				:model-value="name"
+				:modelValue="name"
 				:label="t('openbuild', 'Name')"
 				@update:modelValue="onNameInput" />
 			<p class="automation-edit__hint">
@@ -39,7 +39,7 @@
 				<code>{{ derivedSlug || '—' }}</code>
 			</p>
 			<NcTextField
-				:model-value="description"
+				:modelValue="description"
 				:label="t('openbuild', 'Description (optional)')"
 				@update:modelValue="description = $event" />
 
@@ -48,7 +48,7 @@
 				<h3>{{ t('openbuild', 'Trigger') }}</h3>
 				<NcSelect
 					v-model="triggerOption"
-					:input-label="t('openbuild', 'When')"
+					:inputLabel="t('openbuild', 'When')"
 					:options="triggerOptions"
 					:clearable="false"
 					label="label"
@@ -59,14 +59,14 @@
 					<NcSelect
 						v-if="schemaPickerAvailable"
 						v-model="schemaOption"
-						:input-label="t('openbuild', 'Schema')"
+						:inputLabel="t('openbuild', 'Schema')"
 						:options="schemaOptions"
 						:loading="schemaLoading"
 						label="label"
 						@update:modelValue="onSchemaSelect" />
 					<NcTextField
 						v-else
-						:model-value="triggerSchema"
+						:modelValue="triggerSchema"
 						:label="t('openbuild', 'Schema slug')"
 						@update:modelValue="triggerSchema = $event" />
 				</template>
@@ -75,13 +75,13 @@
 					<NcSelect
 						v-if="transitionPickerAvailable"
 						v-model="transitionOption"
-						:input-label="t('openbuild', 'Transition')"
+						:inputLabel="t('openbuild', 'Transition')"
 						:options="transitionOptions"
 						:loading="transitionLoading"
 						label="label" />
 					<NcTextField
 						v-else
-						:model-value="triggerTransition"
+						:modelValue="triggerTransition"
 						:label="t('openbuild', 'Transition action name')"
 						@update:modelValue="triggerTransition = $event" />
 				</template>
@@ -89,18 +89,18 @@
 				<template v-if="triggerType === 'schedule'">
 					<NcSelect
 						v-model="cadenceOption"
-						:input-label="t('openbuild', 'Cadence')"
+						:inputLabel="t('openbuild', 'Cadence')"
 						:options="cadenceOptions"
 						:clearable="false"
 						label="label" />
 					<NcTextField
 						v-if="isCustomCron"
-						:model-value="triggerCron"
+						:modelValue="triggerCron"
 						:label="t('openbuild', 'Cron expression (5 fields)')"
 						@update:modelValue="triggerCron = $event" />
 					<NcTextField
 						v-if="isCustomInterval"
-						:model-value="String(triggerInterval)"
+						:modelValue="String(triggerInterval)"
 						type="number"
 						:label="t('openbuild', 'Interval (seconds)')"
 						@update:modelValue="triggerInterval = Number($event)" />
@@ -119,18 +119,18 @@
 				<template v-else>
 					<NcSelect
 						v-model="conditionKindOption"
-						:input-label="t('openbuild', 'Condition type')"
+						:inputLabel="t('openbuild', 'Condition type')"
 						:options="conditionKindOptions"
 						label="label" />
 					<NcTextField
 						v-if="conditionKind === 'feel'"
-						:model-value="conditionExpression"
+						:modelValue="conditionExpression"
 						:label="t('openbuild', 'FEEL expression')"
 						placeholder="payload.amount > 1000"
 						@update:modelValue="conditionExpression = $event" />
 					<NcTextField
 						v-if="conditionKind === 'rule-set'"
-						:model-value="conditionRuleSetSlug"
+						:modelValue="conditionRuleSetSlug"
 						:label="t('openbuild', 'Rule set slug')"
 						@update:modelValue="conditionRuleSetSlug = $event" />
 				</template>
@@ -155,8 +155,8 @@
 					class="automation-edit__action"
 					data-testid="action-row">
 					<NcSelect
-						:model-value="actionTypeOption(action.type)"
-						:input-label="t('openbuild', 'Action type')"
+						:modelValue="actionTypeOption(action.type)"
+						:inputLabel="t('openbuild', 'Action type')"
 						:options="actionTypeOptions"
 						:clearable="false"
 						label="label"
@@ -171,13 +171,13 @@
 
 					<template v-else-if="action.type === 'send-notification'">
 						<NcTextField
-							:model-value="action.subjectEn"
+							:modelValue="action.subjectEn"
 							:label="t('openbuild', 'Subject (English)')"
 							@update:modelValue="
 								updateAction(index, 'subjectEn', $event)
 							" />
 						<NcTextField
-							:model-value="action.subjectNl"
+							:modelValue="action.subjectNl"
 							:label="t('openbuild', 'Subject (Dutch)')"
 							@update:modelValue="
 								updateAction(index, 'subjectNl', $event)
@@ -187,15 +187,15 @@
 					<template v-else-if="action.type === 'run-synchronization'">
 						<NcSelect
 							v-if="syncPickerAvailable"
-							:model-value="syncOption(action.synchronizationId)"
-							:input-label="t('openbuild', 'Synchronization')"
+							:modelValue="syncOption(action.synchronizationId)"
+							:inputLabel="t('openbuild', 'Synchronization')"
 							:options="syncOptions"
 							:loading="syncLoading"
 							label="label"
 							@update:modelValue="onSyncSelect(index, $event)" />
 						<NcTextField
 							v-else
-							:model-value="action.synchronizationId"
+							:modelValue="action.synchronizationId"
 							:label="t('openbuild', 'Synchronization id')"
 							@update:modelValue="
 								updateAction(index, 'synchronizationId', $event)
@@ -205,7 +205,7 @@
 					<template v-else-if="action.type === 'object-op'">
 						<NcSelect
 							v-model="objectOpOperationOption[index]"
-							:input-label="t('openbuild', 'Operation')"
+							:inputLabel="t('openbuild', 'Operation')"
 							:options="objectOpOperationOptions"
 							:clearable="false"
 							label="label"
@@ -217,13 +217,13 @@
 								)
 							" />
 						<NcTextField
-							:model-value="action.schema"
+							:modelValue="action.schema"
 							:label="t('openbuild', 'Target schema')"
 							@update:modelValue="
 								updateAction(index, 'schema', $event)
 							" />
 						<NcTextArea
-							:model-value="action.fieldMappingText"
+							:modelValue="action.fieldMappingText"
 							:label="t('openbuild', 'Field mapping (JSON)')"
 							@update:modelValue="
 								updateAction(index, 'fieldMappingText', $event)
@@ -232,13 +232,13 @@
 
 					<template v-else-if="action.type === 'webhook'">
 						<NcTextField
-							:model-value="action.url"
+							:modelValue="action.url"
 							:label="t('openbuild', 'Webhook URL')"
 							@update:modelValue="
 								updateAction(index, 'url', $event)
 							" />
 						<NcTextArea
-							:model-value="action.payloadTemplateText"
+							:modelValue="action.payloadTemplateText"
 							:label="t('openbuild', 'Payload template (JSON)')"
 							@update:modelValue="
 								updateAction(index, 'payloadTemplateText', $event)
@@ -248,32 +248,32 @@
 					<template v-else-if="action.type === 'approval'">
 						<NcSelect
 							v-if="groupPickerAvailable"
-							:model-value="groupOption(action.assigneeGroup)"
-							:input-label="t('openbuild', 'Assignee group')"
+							:modelValue="groupOption(action.assigneeGroup)"
+							:inputLabel="t('openbuild', 'Assignee group')"
 							:options="groupOptions"
 							:loading="groupLoading"
 							label="label"
 							@update:modelValue="onGroupSelect(index, $event)" />
 						<NcTextField
 							v-else
-							:model-value="action.assigneeGroup"
+							:modelValue="action.assigneeGroup"
 							:label="t('openbuild', 'Assignee group id')"
 							@update:modelValue="
 								updateAction(index, 'assigneeGroup', $event)
 							" />
 
 						<AutomationActionListEditor
-							:model-value="action.onApprove"
+							:modelValue="action.onApprove"
 							:label="t('openbuild', 'On approve')"
 							data-testid="on-approve-editor"
-							@update:model-value="
+							@update:modelValue="
 								updateAction(index, 'onApprove', $event)
 							" />
 						<AutomationActionListEditor
-							:model-value="action.onReject"
+							:modelValue="action.onReject"
 							:label="t('openbuild', 'On reject')"
 							data-testid="on-reject-editor"
-							@update:model-value="
+							@update:modelValue="
 								updateAction(index, 'onReject', $event)
 							" />
 					</template>
@@ -281,8 +281,8 @@
 					<template v-else-if="action.type === 'generateDocument'">
 						<NcSelect
 							v-if="templatePickerAvailable"
-							:model-value="templateOption(action.templateId)"
-							:input-label="t('openbuild', 'Document template')"
+							:modelValue="templateOption(action.templateId)"
+							:inputLabel="t('openbuild', 'Document template')"
 							:options="docudeskTemplateOptions"
 							:loading="docudeskTemplatesLoading"
 							label="label"
@@ -290,15 +290,15 @@
 							@update:modelValue="onTemplateSelect(index, $event)" />
 						<NcTextField
 							v-else
-							:model-value="action.templateId"
+							:modelValue="action.templateId"
 							:label="t('openbuild', 'Template id')"
 							data-testid="generate-document-template-text"
 							@update:modelValue="
 								updateAction(index, 'templateId', $event)
 							" />
 						<NcSelect
-							:model-value="outputModeSelection(action)"
-							:input-label="t('openbuild', 'Output')"
+							:modelValue="outputModeSelection(action)"
+							:inputLabel="t('openbuild', 'Output')"
 							:options="outputModeOptions"
 							:multiple="true"
 							:clearable="false"
@@ -310,7 +310,7 @@
 					</template>
 
 					<NcButton
-						type="error"
+						variant="error"
 						:aria-label="t('openbuild', 'Remove action')"
 						@click="removeAction(index)">
 						{{ t('openbuild', 'Remove') }}
@@ -332,7 +332,7 @@
 				<NcButton @click="onClose">
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" :disabled="saving" @click="onSave">
+				<NcButton variant="primary" :disabled="saving" @click="onSave">
 					{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
 				</NcButton>
 			</div>
@@ -351,18 +351,18 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
-import {
-	isActionAllowed,
-	isConditionAllowed,
-	blockedActionReason,
-	blockedConditionReason,
-} from '../services/automationMatrix.js'
+import AutomationActionListEditor from '../components/AutomationActionListEditor.vue'
 import { useAppStatus } from '../composables/useAppStatus.js'
 import {
 	fetchDocudeskTemplates,
 	templateToOption,
 } from '../composables/useDocudeskTemplates.js'
-import AutomationActionListEditor from '../components/AutomationActionListEditor.vue'
+import {
+	blockedActionReason,
+	blockedConditionReason,
+	isActionAllowed,
+	isConditionAllowed,
+} from '../services/automationMatrix.js'
 
 const INTERVAL_PRESETS = Object.freeze([
 	{ id: 'hourly', interval: 3600 },
@@ -372,6 +372,9 @@ const INTERVAL_PRESETS = Object.freeze([
 ])
 
 let keyCounter = 0
+/**
+ *
+ */
 function nextKey() {
 	keyCounter += 1
 	return `aut-action-${keyCounter}`
@@ -402,11 +405,13 @@ export default {
 		NcTextField,
 		AutomationActionListEditor,
 	},
+
 	props: {
 		open: { type: Boolean, default: false },
 		automation: { type: Object, default: null },
 		register: { type: String, default: '' },
 	},
+
 	emits: ['update:open', 'saved'],
 	/**
 	 * Soft capability check for Docudesk (automation-document-action,
@@ -419,6 +424,7 @@ export default {
 		const docudeskStatus = useAppStatus('docudesk')
 		return { docudeskStatus }
 	},
+
 	data() {
 		return {
 			id: null,
@@ -458,16 +464,19 @@ export default {
 			errorMessage: '',
 		}
 	},
+
 	computed: {
 		editing() {
 			return !!(this.automation && this.automation.slug)
 		},
+
 		derivedSlug() {
 			if (this.editing) {
 				return this.slug
 			}
 			return slugify(this.name)
 		},
+
 		triggerOptions() {
 			return [
 				{ value: 'object-created', label: t('openbuild', 'Object created') },
@@ -481,6 +490,7 @@ export default {
 				{ value: 'manual', label: t('openbuild', 'Manual') },
 			]
 		},
+
 		triggerOption: {
 			get() {
 				return (
@@ -488,15 +498,18 @@ export default {
 					|| this.triggerOptions[5]
 				)
 			},
+
 			set(option) {
 				this.triggerType = option ? option.value : 'manual'
 			},
 		},
+
 		isObjectTrigger() {
 			return ['object-created', 'object-updated', 'object-deleted'].includes(
 				this.triggerType,
 			)
 		},
+
 		cadenceOptions() {
 			return [
 				{ id: 'hourly', label: t('openbuild', 'Hourly') },
@@ -510,12 +523,15 @@ export default {
 				},
 			]
 		},
+
 		isCustomCron() {
 			return this.cadenceOption && this.cadenceOption.id === 'custom-cron'
 		},
+
 		isCustomInterval() {
 			return this.cadenceOption && this.cadenceOption.id === 'custom-interval'
 		},
+
 		conditionKindOptions() {
 			return [
 				{ value: 'none', label: t('openbuild', 'None') },
@@ -523,12 +539,15 @@ export default {
 				{ value: 'rule-set', label: t('openbuild', 'Reference a rule set') },
 			]
 		},
+
 		conditionKind() {
 			return this.conditionKindOption ? this.conditionKindOption.value : 'none'
 		},
+
 		conditionBlockedReason() {
 			return blockedConditionReason(this.triggerType)
 		},
+
 		/**
 		 * Action type options for the type picker on each action row.
 		 *
@@ -557,6 +576,7 @@ export default {
 				},
 			]
 		},
+
 		/**
 		 * Whether Docudesk is available; assume available until the async
 		 * soft-check resolves so the live UI does not flash (mirrors
@@ -571,6 +591,7 @@ export default {
 				|| this.docudeskStatus.available.value
 			)
 		},
+
 		/**
 		 * Output-mode options for the `generateDocument` action's multi-select
 		 * (design.md Decision 3 of automation-document-action).
@@ -585,6 +606,7 @@ export default {
 				{ value: 'notify', label: t('openbuild', 'Notify') },
 			]
 		},
+
 		/**
 		 * Whether the live Docudesk template picker is usable, or the field
 		 * should degrade to a free-text template id.
@@ -598,21 +620,26 @@ export default {
 				&& this.docudeskTemplateOptions.length > 0
 			)
 		},
+
 		objectOpOperationOptions() {
 			return [
 				{ value: 'create', label: t('openbuild', 'Create') },
 				{ value: 'update', label: t('openbuild', 'Update') },
 			]
 		},
+
 		schemaPickerAvailable() {
 			return !this.schemaFetchFailed && this.schemaOptions.length > 0
 		},
+
 		transitionPickerAvailable() {
 			return !this.transitionFetchFailed && this.transitionOptions.length > 0
 		},
+
 		syncPickerAvailable() {
 			return !this.syncFetchFailed && this.syncOptions.length > 0
 		},
+
 		/**
 		 * Whether the live NC-group picker is usable (loaded successfully with
 		 * at least one option), or the field should degrade to free-text.
@@ -623,6 +650,7 @@ export default {
 		groupPickerAvailable() {
 			return !this.groupFetchFailed && this.groupOptions.length > 0
 		},
+
 		/**
 		 * Whether the current shape (trigger + condition + every action) is
 		 * savable per the v1 matrix (REQ-AUTD-003), extended by the
@@ -659,6 +687,7 @@ export default {
 				.filter((a) => a.type === 'generateDocument')
 				.every((a) => this.generateDocumentActionValid(a))
 		},
+
 		validationMessage() {
 			if (this.derivedSlug === '' || this.name.trim() === '') {
 				return t('openbuild', 'Please enter a name.')
@@ -672,6 +701,7 @@ export default {
 			)
 		},
 	},
+
 	watch: {
 		/**
 		 * Re-hydrate and refresh every live picker's options whenever the
@@ -692,6 +722,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/** @spec openspec/changes/automation-designer/tasks.md#5.2 */
 		hydrate() {
@@ -747,6 +778,7 @@ export default {
 					) || this.objectOpOperationOptions[0],
 			)
 		},
+
 		/**
 		 * Convert a stored action record into the editor's flat working shape.
 		 *
@@ -765,6 +797,7 @@ export default {
 				recipients: action.recipients || [
 					{ kind: 'object-acl', permission: 'manage' },
 				],
+
 				synchronizationId: action.synchronizationId || '',
 				operation: action.operation || 'create',
 				schema: action.schema || '',
@@ -775,6 +808,7 @@ export default {
 					null,
 					2,
 				),
+
 				assigneeGroup: action.assigneeGroup || '',
 				onApprove: Array.isArray(action.onApprove) ? action.onApprove : [],
 				onReject: Array.isArray(action.onReject) ? action.onReject : [],
@@ -786,6 +820,7 @@ export default {
 						: [],
 			}
 		},
+
 		/**
 		 * Load the version register's schemas for the schema picker; degrades
 		 * to free-text on failure (mirrors BuilderHost's picker).
@@ -831,6 +866,7 @@ export default {
 				this.schemaLoading = false
 			}
 		},
+
 		/**
 		 * Handle a schema selection from the live picker.
 		 *
@@ -843,6 +879,7 @@ export default {
 				this.fetchTransitions()
 			}
 		},
+
 		/**
 		 * Load the selected schema's `x-openregister-lifecycle` transitions;
 		 * degrades to free-text on failure.
@@ -877,6 +914,7 @@ export default {
 				this.transitionLoading = false
 			}
 		},
+
 		/**
 		 * Load OpenConnector synchronizations for the run-synchronization
 		 * action picker; degrades to free-text on failure.
@@ -912,6 +950,7 @@ export default {
 				this.syncLoading = false
 			}
 		},
+
 		/**
 		 * Resolve the selected sync option for an action row.
 		 *
@@ -921,9 +960,11 @@ export default {
 		syncOption(syncId) {
 			return this.syncOptions.find((o) => o.id === syncId) || null
 		},
+
 		onSyncSelect(index, option) {
 			this.updateAction(index, 'synchronizationId', option ? option.id : '')
 		},
+
 		/**
 		 * Load Nextcloud groups for the `approval` action's assignee-group
 		 * picker; degrades to free-text on failure (task 3.1). Mirrors the
@@ -960,6 +1001,7 @@ export default {
 				this.groupLoading = false
 			}
 		},
+
 		/**
 		 * Resolve the selected group option for an approval action row.
 		 *
@@ -970,6 +1012,7 @@ export default {
 		groupOption(groupId) {
 			return this.groupOptions.find((o) => o.value === groupId) || null
 		},
+
 		/**
 		 * Apply a group-picker selection to an approval action row.
 		 *
@@ -981,6 +1024,7 @@ export default {
 		onGroupSelect(index, option) {
 			this.updateAction(index, 'assigneeGroup', option ? option.value : '')
 		},
+
 		/**
 		 * Load Docudesk's template list for the `generateDocument` action's
 		 * template picker — the SAME shared fetch the Documents-section
@@ -1002,6 +1046,7 @@ export default {
 				this.docudeskTemplateOptions.length === 0
 			this.docudeskTemplatesLoading = false
 		},
+
 		/**
 		 * Resolve the selected template option for a `generateDocument`
 		 * action row.
@@ -1016,6 +1061,7 @@ export default {
 				|| null
 			)
 		},
+
 		/**
 		 * Apply a template-picker selection to a `generateDocument` action row.
 		 *
@@ -1027,6 +1073,7 @@ export default {
 		onTemplateSelect(index, option) {
 			this.updateAction(index, 'templateId', option ? option.uuid : '')
 		},
+
 		/**
 		 * Resolve the selected output-mode options for a `generateDocument`
 		 * action row's multi-select.
@@ -1039,6 +1086,7 @@ export default {
 			const modes = Array.isArray(action.output) ? action.output : []
 			return this.outputModeOptions.filter((o) => modes.includes(o.value))
 		},
+
 		/**
 		 * Apply an output-mode multi-select change to a `generateDocument`
 		 * action row.
@@ -1052,6 +1100,7 @@ export default {
 			const modes = Array.isArray(options) ? options.map((o) => o.value) : []
 			this.updateAction(index, 'output', modes)
 		},
+
 		/**
 		 * Mirrors `AutomationCompilerService::assertGenerateDocumentActions()`
 		 * — `templateId` present, `output` non-empty, `notify` never alone —
@@ -1076,20 +1125,24 @@ export default {
 				modes.includes('attach') || modes.includes('download-link')
 			return !hasNotify || hasDeliveryMode
 		},
+
 		onNameInput(value) {
 			this.name = value
 		},
+
 		onTriggerChange() {
 			if (this.triggerType === 'lifecycle-transition' && this.triggerSchema) {
 				this.fetchTransitions()
 			}
 		},
+
 		actionTypeOption(type) {
 			return (
 				this.actionTypeOptions.find((o) => o.value === type)
 				|| this.actionTypeOptions[0]
 			)
 		},
+
 		/**
 		 * Blocked-combination reason for an action row: the matrix
 		 * (trigger/action) reason, OR — for `generateDocument` specifically —
@@ -1114,14 +1167,17 @@ export default {
 			}
 			return ''
 		},
+
 		addAction() {
 			this.actions.push(this.actionToEditor({ type: 'send-notification' }))
 			this.objectOpOperationOption.push(null)
 		},
+
 		removeAction(index) {
 			this.actions.splice(index, 1)
 			this.objectOpOperationOption.splice(index, 1)
 		},
+
 		onActionTypeChange(index, option) {
 			this.updateAction(
 				index,
@@ -1129,11 +1185,13 @@ export default {
 				option ? option.value : 'send-notification',
 			)
 		},
+
 		updateAction(index, key, value) {
 			const next = this.actions.slice()
 			next[index] = { ...next[index], [key]: value }
 			this.actions = next
 		},
+
 		/**
 		 * Assemble the persisted `condition` block from the working state.
 		 *
@@ -1148,6 +1206,7 @@ export default {
 			}
 			return null
 		},
+
 		/**
 		 * Assemble the persisted `trigger` block from the working state.
 		 *
@@ -1179,6 +1238,7 @@ export default {
 			}
 			return trigger
 		},
+
 		/**
 		 * Assemble the persisted `actions[]` from the working state.
 		 *
@@ -1267,6 +1327,7 @@ export default {
 				return webhook
 			})
 		},
+
 		/**
 		 * Persist the working automation through OpenBuild's own write routes.
 		 *
@@ -1333,6 +1394,7 @@ export default {
 				this.saving = false
 			}
 		},
+
 		onClose() {
 			this.$emit('update:open', false)
 		},

@@ -13,8 +13,8 @@
 
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { useRole, getCurrentUserGroups } from '../composables/useRole.js'
 import { fetchApplicationRecord } from '../composables/useApplicationRecord.js'
+import { getCurrentUserGroups, useRole } from '../composables/useRole.js'
 
 const OR_OBJECTS = '/apps/openregister/api/objects/openbuild/application'
 

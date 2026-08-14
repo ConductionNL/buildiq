@@ -146,6 +146,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Human-readable label for a run's outcome.
 		 *
@@ -162,6 +163,7 @@ export default {
 			}
 			return labels[outcome] || outcome
 		},
+
 		/**
 		 * Pretty-print a tool call's arguments/result for the expandable detail view.
 		 *

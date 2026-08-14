@@ -146,25 +146,30 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'roadmap',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		// Kept for contract uniformity with the other sub-editors; the
 		// roadmap page needs no register/schema picker.
 		dataRegisters: {
 			type: Array,
 			default: () => [],
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	computed: {
 		validatedConfigKeys() {
@@ -179,6 +184,7 @@ export default {
 			]
 		},
 	},
+
 	methods: {
 		/**
 		 * Lossless top-level `config` key update: clone, delete-on-empty,
@@ -200,6 +206,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Update `forge.type`; unsetting it deletes the whole `forge` key
 		 * (an empty `{ baseUrl }` with no type is not a valid forge shape).
@@ -214,6 +221,7 @@ export default {
 			const next = { ...(this.config.forge || {}), type: value }
 			this.update('forge', next)
 		},
+
 		/**
 		 * Update a non-`type` `forge` field (currently only `baseUrl`),
 		 * preserving `forge.type`.

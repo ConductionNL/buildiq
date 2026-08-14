@@ -1,3 +1,5 @@
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useConnectorDataSource — runtime resolver for a `dataSource.connector`
@@ -22,10 +24,8 @@
  * @spec openspec/changes/openconnector-api-sources/tasks.md#task-4.1
  */
 import { ref } from 'vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
+import { cacheKey, readThrough, ttlToMs } from '../services/connectorCache.js'
 import { extractItems, projectFields } from '../services/selectors.js'
-import { cacheKey, ttlToMs, readThrough } from '../services/connectorCache.js'
 
 /**
  * Resolve a connector binding into reactive render state.

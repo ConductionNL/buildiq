@@ -20,8 +20,8 @@
 
 <script>
 import { NcNoteCard } from '@nextcloud/vue'
-import applicationContext from '../../mixins/applicationContext.js'
 import IconUploadSection from '../../dialogs/IconUploadSection.vue'
+import applicationContext from '../../mixins/applicationContext.js'
 
 export default {
 	name: 'ApplicationIconTab',

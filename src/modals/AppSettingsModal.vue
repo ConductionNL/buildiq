@@ -22,7 +22,7 @@
 			<div class="app-settings__row">
 				<NcCheckboxRadioSwitch
 					type="switch"
-					:model-value="isPublished"
+					:modelValue="isPublished"
 					:disabled="busy"
 					@update:modelValue="$emit('set-published', $event)">
 					{{ t('openbuild', 'Published') }}
@@ -40,7 +40,7 @@
 			<div class="app-settings__row">
 				<NcCheckboxRadioSwitch
 					type="switch"
-					:model-value="allowUserOverrides"
+					:modelValue="allowUserOverrides"
 					:disabled="busy"
 					@update:modelValue="$emit('update:allow-overrides', $event)">
 					{{ t('openbuild', 'Allow per-user customisation') }}
@@ -72,24 +72,24 @@
 					:key="index"
 					class="app-settings__data-register-row">
 					<NcTextField
-						:model-value="row.register"
+						:modelValue="row.register"
 						:label="t('openbuild', 'Register slug')"
 						:disabled="busy"
 						@update:modelValue="updateRow(index, 'register', $event)" />
 					<NcTextField
-						:model-value="row.label"
+						:modelValue="row.label"
 						:label="t('openbuild', 'Label (optional)')"
 						:disabled="busy"
 						@update:modelValue="updateRow(index, 'label', $event)" />
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:disabled="busy"
 						:aria-label="t('openbuild', 'Remove data register')"
 						@click="removeRow(index)">
 						{{ t('openbuild', 'Remove') }}
 					</NcButton>
 				</div>
-				<NcButton type="secondary" :disabled="busy" @click="addRow">
+				<NcButton variant="secondary" :disabled="busy" @click="addRow">
 					{{ t('openbuild', 'Add data register') }}
 				</NcButton>
 			</div>
@@ -98,9 +98,9 @@
 </template>
 
 <script>
-import NcModal from '@nextcloud/vue/components/NcModal'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
+import NcModal from '@nextcloud/vue/components/NcModal'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 
 export default {
@@ -111,6 +111,7 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcTextField,
 	},
+
 	props: {
 		/** Whether the modal is shown (bind with `.sync`). */
 		open: { type: Boolean, default: false },
@@ -125,12 +126,14 @@ export default {
 		/** Whether an action is in flight (disables the switches). */
 		busy: { type: Boolean, default: false },
 	},
+
 	emits: [
 		'update:open',
 		'set-published',
 		'update:allow-overrides',
 		'update:data-registers',
 	],
+
 	data() {
 		return {
 			// Staged editing rows, kept in sync with the `dataRegisters` prop
@@ -139,6 +142,7 @@ export default {
 			rows: this.toRows(this.dataRegisters),
 		}
 	},
+
 	watch: {
 		dataRegisters: {
 			deep: true,
@@ -156,6 +160,7 @@ export default {
 			},
 		},
 	},
+
 	methods: {
 		/**
 		 * Normalise a `dataRegisters` array into editable rows.
@@ -169,6 +174,7 @@ export default {
 				label: (binding && binding.label) || '',
 			}))
 		},
+
 		/**
 		 * Append a new, empty row. Not emitted until it carries a
 		 * non-empty `register` (see emitRows()).
@@ -181,6 +187,7 @@ export default {
 			this.rows = next
 			this.emitRows()
 		},
+
 		/**
 		 * Remove a row by index.
 		 *
@@ -193,6 +200,7 @@ export default {
 			this.rows = next
 			this.emitRows()
 		},
+
 		/**
 		 * Update a single field on a row by index.
 		 *
@@ -207,6 +215,7 @@ export default {
 			this.rows = next
 			this.emitRows()
 		},
+
 		/**
 		 * Emit the full `dataRegisters` array — every change (add/remove/
 		 * edit) emits immediately, matching the existing

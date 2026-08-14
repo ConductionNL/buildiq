@@ -45,13 +45,13 @@
 				class="condition-action-editor__action">
 				<NcSelect
 					v-model="action.type"
-					:input-label="t('openbuild', 'Action type')"
+					:inputLabel="t('openbuild', 'Action type')"
 					:options="actionTypes" />
-				<NcButton type="tertiary" @click="removeAction(index)">
+				<NcButton variant="tertiary" @click="removeAction(index)">
 					{{ t('openbuild', 'Remove') }}
 				</NcButton>
 			</div>
-			<NcButton type="secondary" @click="addAction">
+			<NcButton variant="secondary" @click="addAction">
 				{{ t('openbuild', 'Add action') }}
 			</NcButton>
 
@@ -70,7 +70,7 @@
 			<NcButton @click="$emit('close')">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="saving" @click="save">
+			<NcButton variant="primary" :disabled="saving" @click="save">
 				{{ saving ? t('openbuild', 'Saving...') : t('openbuild', 'Save') }}
 			</NcButton>
 		</template>
@@ -101,12 +101,14 @@ export default {
 		NcTextArea,
 		NcTextField,
 	},
+
 	props: {
 		ruleSet: {
 			type: Object,
 			required: true,
 		},
 	},
+
 	emits: ['close', 'saved'],
 	data() {
 		return {
@@ -120,18 +122,22 @@ export default {
 				actions: this.ruleSet.actions
 					? JSON.parse(JSON.stringify(this.ruleSet.actions))
 					: [],
+
 				active: this.ruleSet.active !== false,
 			},
+
 			actionTypes: [
 				'set-field',
 				'send-notification',
 				'start-workflow',
 				'call-rule-set',
 			],
+
 			saving: false,
 			errorMessage: '',
 		}
 	},
+
 	methods: {
 		/**
 		 * Append an empty action row to the staged rule.
@@ -142,6 +148,7 @@ export default {
 		addAction() {
 			this.staged.actions.push({ type: 'set-field', parameters: {} })
 		},
+
 		/**
 		 * Remove one action row from the staged rule.
 		 *
@@ -152,6 +159,7 @@ export default {
 		removeAction(index) {
 			this.staged.actions.splice(index, 1)
 		},
+
 		/**
 		 * Persist the RuleSet and its ConditionActionRule via OpenRegister.
 		 *

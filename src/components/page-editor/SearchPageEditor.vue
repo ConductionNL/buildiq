@@ -238,23 +238,28 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'search',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		dataRegisters: {
 			type: Array,
 			default: () => [],
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	setup(props) {
 		const picker = useRegisterPicker({
@@ -263,12 +268,14 @@ export default {
 		})
 		return { picker }
 	},
+
 	data() {
 		return {
 			registers: [],
 			schemas: [],
 		}
 	},
+
 	computed: {
 		validatedConfigKeys() {
 			return [
@@ -282,10 +289,12 @@ export default {
 				'facets',
 			]
 		},
+
 		facets() {
 			return Array.isArray(this.config.facets) ? this.config.facets : []
 		},
 	},
+
 	watch: {
 		'config.register': {
 			immediate: true,
@@ -298,9 +307,11 @@ export default {
 			},
 		},
 	},
+
 	async mounted() {
 		await this.fetchRegisters()
 	},
+
 	methods: {
 		/**
 		 * Lossless top-level `config` key update: clone, delete-on-empty,
@@ -322,6 +333,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Register-picker change handler: writes `register` and resets the
 		 * dependent `schema` dropdown (same partner-clear as LogsPageEditor).
@@ -338,6 +350,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * The options list of one facet row (always an array).
 		 *
@@ -347,12 +360,14 @@ export default {
 		facetOptions(facet) {
 			return Array.isArray(facet && facet.options) ? facet.options : []
 		},
+
 		/**
 		 * Append a blank facet row.
 		 */
 		addFacet() {
 			this.update('facets', this.facets.concat([{ key: '', options: [] }]))
 		},
+
 		/**
 		 * Remove a facet row by index.
 		 *
@@ -363,6 +378,7 @@ export default {
 			next.splice(index, 1)
 			this.update('facets', next)
 		},
+
 		/**
 		 * Update one field of one facet row.
 		 *
@@ -381,6 +397,7 @@ export default {
 			next[index] = current
 			this.update('facets', next)
 		},
+
 		/**
 		 * Append a blank `{ value }` option row to a facet.
 		 *
@@ -393,6 +410,7 @@ export default {
 			next[facetIndex] = current
 			this.update('facets', next)
 		},
+
 		/**
 		 * Remove one option row from a facet.
 		 *
@@ -408,6 +426,7 @@ export default {
 			next[facetIndex] = current
 			this.update('facets', next)
 		},
+
 		/**
 		 * Update one field of one option row within a facet.
 		 *
@@ -431,12 +450,14 @@ export default {
 			next[facetIndex] = current
 			this.update('facets', next)
 		},
+
 		/**
 		 * Fetch the registers list for the picker dropdown.
 		 */
 		async fetchRegisters() {
 			this.registers = await this.picker.fetchRegisters()
 		},
+
 		/**
 		 * Fetch the schemas for a given register.
 		 *

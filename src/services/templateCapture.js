@@ -110,7 +110,7 @@ export function rewriteSchemaRefs(node, map) {
 		if (
 			(key === 'schema' || key === 'relatedSchema')
 			&& typeof value === 'string'
-			&& Object.prototype.hasOwnProperty.call(map, value)
+			&& Object.hasOwn(map, value)
 		) {
 			out[key] = map[value]
 			continue
@@ -178,7 +178,7 @@ export function captureTemplate(application, schemas, manifest, metadata) {
 		}
 		const { slug: canonical, shared } = deNamespaceSlug(sourceSlug, appSlug)
 		if (
-			Object.prototype.hasOwnProperty.call(canonicalToSource, canonical)
+			Object.hasOwn(canonicalToSource, canonical)
 			&& canonicalToSource[canonical] !== sourceSlug
 		) {
 			throw new SlugCollisionError(canonical, [

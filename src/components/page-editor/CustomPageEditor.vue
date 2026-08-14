@@ -72,8 +72,8 @@
 
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
-import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 import { useLivePreview } from '../../composables/useLivePreview.js'
+import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'CustomPageEditor',
@@ -84,19 +84,23 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'custom',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	/**
 	 * Observed behaviour of `setup` (retrofit annotation).
@@ -110,12 +114,14 @@ export default {
 		const preview = useLivePreview()
 		return { preview }
 	},
+
 	data() {
 		return {
 			propsDraft: this.stringifyProps(this.config && this.config.props),
 			propsError: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
@@ -125,6 +131,7 @@ export default {
 		validatedConfigKeys() {
 			return ['component', 'props']
 		},
+
 		/**
 		 * Observed behaviour of `registryKeys` (retrofit annotation).
 		 *
@@ -140,6 +147,7 @@ export default {
 			}
 			return []
 		},
+
 		/**
 		 * Observed behaviour of `otherKeys` (retrofit annotation).
 		 *
@@ -151,6 +159,7 @@ export default {
 			)
 		},
 	},
+
 	watch: {
 		'config.props': {
 			/**
@@ -171,6 +180,7 @@ export default {
 			},
 		},
 	},
+
 	methods: {
 		/**
 		 * Render a prop bag as the pretty-printed JSON shown in the textarea.
@@ -189,6 +199,7 @@ export default {
 				return ''
 			}
 		},
+
 		/**
 		 * Write one key on the page's `config` block. Only the named key is
 		 * touched, which is what lets the arbitrary extra keys a custom page
@@ -207,6 +218,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Parse the props textarea on every keystroke. Invalid JSON only sets
 		 * `propsError` and does NOT emit, so a half-typed object can never

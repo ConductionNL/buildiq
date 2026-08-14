@@ -25,10 +25,10 @@
 			</dl>
 		</template>
 		<template #actions>
-			<NcButton type="tertiary" @click="cancel">
+			<NcButton variant="tertiary" @click="cancel">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="primary" @click="confirm">
+			<NcButton variant="primary" @click="confirm">
 				{{ t('openbuild', 'Roll back') }}
 			</NcButton>
 		</template>
@@ -36,7 +36,7 @@
 </template>
 
 <script>
-import { NcDialog, NcButton } from '@nextcloud/vue'
+import { NcButton, NcDialog } from '@nextcloud/vue'
 
 export default {
 	name: 'RollbackConfirmModal',
@@ -44,16 +44,19 @@ export default {
 		NcDialog,
 		NcButton,
 	},
+
 	props: {
 		open: {
 			type: Boolean,
 			required: true,
 		},
+
 		version: {
 			type: Object,
 			default: null,
 		},
 	},
+
 	emits: ['confirm', 'cancel', 'update:open'],
 	computed: {
 		/**
@@ -65,6 +68,7 @@ export default {
 			const v = this.version?.version || ''
 			return t('openbuild', 'Roll back to version {version}?', { version: v })
 		},
+
 		/**
 		 * Observed behaviour of `formattedPublishedAt` (retrofit annotation).
 		 *
@@ -81,6 +85,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `confirm` (retrofit annotation).
@@ -91,6 +96,7 @@ export default {
 			this.$emit('confirm', this.version)
 			this.$emit('update:open', false)
 		},
+
 		/**
 		 * Observed behaviour of `cancel` (retrofit annotation).
 		 *
@@ -100,6 +106,7 @@ export default {
 			this.$emit('cancel')
 			this.$emit('update:open', false)
 		},
+
 		/**
 		 * Observed behaviour of `onUpdateOpen` (retrofit annotation).
 		 *

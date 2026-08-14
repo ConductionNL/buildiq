@@ -14,14 +14,14 @@
 		<SchemaHeaderForm
 			ref="form"
 			:value="local"
-			:slug-error="slugError"
+			:slugError="slugError"
 			@input="onInput" />
 		<template #actions>
 			<NcButton @click="onCancel">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="!isValid || submitting"
 				@click="onConfirm">
 				{{
@@ -49,6 +49,7 @@ export default {
 		submitting: { type: Boolean, default: false },
 		slugError: { type: String, default: '' },
 	},
+
 	emits: ['confirm', 'cancel', 'update:open'],
 	data() {
 		return {
@@ -60,6 +61,7 @@ export default {
 			},
 		}
 	},
+
 	computed: {
 		/**
 		 * Validate the new-schema slug, title, and semver version.
@@ -75,6 +77,7 @@ export default {
 			)
 		},
 	},
+
 	watch: {
 		/**
 		 * Reset the local form when the dialog opens.
@@ -94,6 +97,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Merge partial form input into the local draft.
@@ -105,6 +109,7 @@ export default {
 		onInput(value) {
 			this.local = { ...this.local, ...value }
 		},
+
 		/**
 		 * Confirm only when valid, emitting the new schema payload.
 		 *
@@ -117,6 +122,7 @@ export default {
 			}
 			this.$emit('confirm', { ...this.local })
 		},
+
 		/**
 		 * Emit a cancel event.
 		 *
@@ -126,6 +132,7 @@ export default {
 		onCancel() {
 			this.$emit('cancel')
 		},
+
 		/**
 		 * Sync the modal open state and emit cancel when closed.
 		 *

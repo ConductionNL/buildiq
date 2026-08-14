@@ -102,19 +102,23 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'chat',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	computed: {
 		/**
@@ -125,6 +129,7 @@ export default {
 		validatedConfigKeys() {
 			return ['conversationSource', 'postUrl', 'schema']
 		},
+
 		/**
 		 * Observed behaviour of `transportShape` (retrofit annotation).
 		 *
@@ -137,6 +142,7 @@ export default {
 			return 'conversationSource'
 		},
 	},
+
 	methods: {
 		/**
 		 * Write one key on the page's `config` block. Only the named key is
@@ -157,6 +163,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Switch between the two mutually exclusive transports by deleting
 		 * the key of the branch being left, so the emitted config never
@@ -175,6 +182,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Write the active transport endpoint and clear its partner in the
 		 * same emit, so typing in one branch can never leave a stale value in

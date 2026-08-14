@@ -149,6 +149,7 @@ export default {
 			const self = this.application['@self'] || {}
 			return self.id || this.application.uuid || this.application.id || ''
 		},
+
 		/**
 		 * Observed behaviour of `iconLightUrl` (retrofit annotation).
 		 *
@@ -158,6 +159,7 @@ export default {
 			if (!this.objectUuid) return null
 			return `/index.php/apps/openbuild/icons/${this.application.slug}.svg?v=${this.lightNonce}`
 		},
+
 		/**
 		 * Observed behaviour of `iconDarkUrl` (retrofit annotation).
 		 *
@@ -204,6 +206,7 @@ export default {
 		onLightPreviewError(e) {
 			e.target.style.display = 'none'
 		},
+
 		/**
 		 * Observed behaviour of `onDarkPreviewError` (retrofit annotation).
 		 *

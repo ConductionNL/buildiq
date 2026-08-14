@@ -267,23 +267,28 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'wiki',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		dataRegisters: {
 			type: Array,
 			default: () => [],
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	setup(props) {
 		const picker = useRegisterPicker({
@@ -292,6 +297,7 @@ export default {
 		})
 		return { picker }
 	},
+
 	data() {
 		return {
 			registers: [],
@@ -301,6 +307,7 @@ export default {
 			sidebarSchemaProperties: {},
 		}
 	},
+
 	computed: {
 		validatedConfigKeys() {
 			return [
@@ -319,21 +326,27 @@ export default {
 				'emptyBodyDescription',
 			]
 		},
+
 		hasBoundSchema() {
 			return !!(this.config.register && this.config.schema)
 		},
+
 		schemaPropertyKeys() {
 			return Object.keys(this.schemaProperties || {})
 		},
+
 		effectiveSidebarRegister() {
 			return this.config.sidebarRegister || this.config.register || ''
 		},
+
 		hasBoundSidebarSchema() {
 			return !!(this.effectiveSidebarRegister && this.config.sidebarSchema)
 		},
+
 		sidebarSchemaPropertyKeys() {
 			return Object.keys(this.sidebarSchemaProperties || {})
 		},
+
 		/**
 		 * `register` is REQUIRED per the canonical v2 enum description —
 		 * mark invalid when empty even before the shared validator has a
@@ -358,6 +371,7 @@ export default {
 			}
 			return shared || { hasError: false, message: '' }
 		},
+
 		/**
 		 * Same required-field treatment as `registerMark`, for `schema`.
 		 *
@@ -380,6 +394,7 @@ export default {
 			return shared || { hasError: false, message: '' }
 		},
 	},
+
 	watch: {
 		'config.register': {
 			immediate: true,
@@ -391,6 +406,7 @@ export default {
 				}
 			},
 		},
+
 		'config.schema': {
 			immediate: true,
 			handler(val) {
@@ -401,6 +417,7 @@ export default {
 				}
 			},
 		},
+
 		effectiveSidebarRegister: {
 			immediate: true,
 			handler(val) {
@@ -411,6 +428,7 @@ export default {
 				}
 			},
 		},
+
 		'config.sidebarSchema': {
 			immediate: true,
 			handler(val) {
@@ -425,9 +443,11 @@ export default {
 			},
 		},
 	},
+
 	async mounted() {
 		await this.fetchRegisters()
 	},
+
 	methods: {
 		/**
 		 * Lossless top-level `config` key update: clone, delete-on-empty,
@@ -449,6 +469,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Register-picker change handler: writes `register` and resets the
 		 * dependent `schema` dropdown (same partner-clear as LogsPageEditor).
@@ -465,6 +486,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Sidebar-register change handler: writes `sidebarRegister` and
 		 * resets the dependent `sidebarSchema` dropdown.
@@ -481,12 +503,14 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Fetch the registers list for the picker dropdowns.
 		 */
 		async fetchRegisters() {
 			this.registers = await this.picker.fetchRegisters()
 		},
+
 		/**
 		 * Fetch the schemas in the bound article register.
 		 *
@@ -495,6 +519,7 @@ export default {
 		async fetchSchemas(register) {
 			this.schemas = await this.picker.fetchSchemas(register)
 		},
+
 		/**
 		 * Fetch schema properties for the article field-mapping dropdowns.
 		 *
@@ -507,6 +532,7 @@ export default {
 				schema,
 			)
 		},
+
 		/**
 		 * Fetch the schemas in the (effective) sidebar register.
 		 *
@@ -515,6 +541,7 @@ export default {
 		async fetchSidebarSchemas(register) {
 			this.sidebarSchemas = await this.picker.fetchSchemas(register)
 		},
+
 		/**
 		 * Fetch schema properties for the sidebar field-mapping dropdowns.
 		 *

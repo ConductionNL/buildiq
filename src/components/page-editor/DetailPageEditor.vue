@@ -119,7 +119,7 @@
 					{{ t('openbuild', 'Show') }}
 				</label>
 				<SidebarTabBuilder
-					:model-value="(config.sidebar && config.sidebar.tabs) || []"
+					:modelValue="(config.sidebar && config.sidebar.tabs) || []"
 					@update:modelValue="updateSidebarKey('tabs', $event)" />
 			</div>
 			<InlineFieldMark :error="markFor('sidebar')" />
@@ -130,9 +130,7 @@
 				{{ t('openbuild', 'sidebarProps.tabs (alternate path)') }}
 			</legend>
 			<SidebarTabBuilder
-				:model-value="
-					(config.sidebarProps && config.sidebarProps.tabs) || []
-				"
+				:modelValue="(config.sidebarProps && config.sidebarProps.tabs) || []"
 				@update:modelValue="updateSidebarPropsTabs($event)" />
 			<InlineFieldMark :error="markFor('sidebarProps')" />
 		</fieldset>
@@ -140,8 +138,8 @@
 </template>
 
 <script>
-import SidebarTabBuilder from './fields/SidebarTabBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import SidebarTabBuilder from './fields/SidebarTabBuilder.vue'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
@@ -154,27 +152,32 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
+
 		// Current Application slug. Drives the hybrid register model so the
 		// register picker hoists `openbuild-{slug}` to the top of the list.
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		// The Application's declared `dataRegisters` bindings, forwarded into
 		// useRegisterPicker so the register picker labels/hoists them.
 		dataRegisters: {
 			type: Array,
 			default: () => [],
 		},
+
 		pageType: {
 			type: String,
 			default: 'detail',
 		},
 	},
+
 	emits: ['update:config'],
 	/**
 	 * Build the register/schema picker for this editor. Options-API `data`
@@ -193,12 +196,14 @@ export default {
 		})
 		return { picker }
 	},
+
 	data() {
 		return {
 			registers: [],
 			schemas: [],
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
@@ -208,6 +213,7 @@ export default {
 		validatedConfigKeys() {
 			return ['register', 'schema', 'sidebar', 'sidebarProps']
 		},
+
 		/**
 		 * Observed behaviour of `routeParams` (retrofit annotation).
 		 *
@@ -218,6 +224,7 @@ export default {
 				this.parentRoute.match(/:([A-Za-z_][A-Za-z0-9_]*)/g) || []
 			return matches.map((m) => m.slice(1))
 		},
+
 		/**
 		 * Observed behaviour of `routeHasParam` (retrofit annotation).
 		 *
@@ -226,6 +233,7 @@ export default {
 		routeHasParam() {
 			return this.routeParams.length > 0
 		},
+
 		/**
 		 * Observed behaviour of `sidebarShape` (retrofit annotation).
 		 *
@@ -242,6 +250,7 @@ export default {
 			return 'object'
 		},
 	},
+
 	watch: {
 		'config.register': {
 			immediate: true,
@@ -261,9 +270,11 @@ export default {
 			},
 		},
 	},
+
 	async mounted() {
 		await this.fetchRegisters()
 	},
+
 	methods: {
 		/**
 		 * Write one key on the page's `config` block and emit the whole block
@@ -286,6 +297,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Switch `config.sidebar` between the three shapes the manifest
 		 * accepts. Switching discards whatever the previous shape held — the
@@ -305,6 +317,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Write one key inside the object-shaped sidebar, promoting a legacy
 		 * boolean `sidebar: true` to `{ enabled: true }` on the way.
@@ -321,6 +334,7 @@ export default {
 			next.sidebar = { ...current, [key]: value }
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Write the alternate `config.sidebarProps.tabs` path. Emptying the
 		 * list removes just the `tabs` key, and removes `sidebarProps`
@@ -346,6 +360,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Observed behaviour of `fetchRegisters` (retrofit annotation).
 		 *
@@ -354,6 +369,7 @@ export default {
 		async fetchRegisters() {
 			this.registers = await this.picker.fetchRegisters()
 		},
+
 		/**
 		 * Load the schemas of one register into the schema dropdown.
 		 *

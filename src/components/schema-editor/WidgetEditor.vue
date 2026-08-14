@@ -38,21 +38,21 @@
 				:key="widget._key"
 				class="openbuild-widget-editor__row">
 				<NcTextField
-					:model-value="widget.slot"
+					:modelValue="widget.slot"
 					:label="t('openbuild', 'Slot')"
 					@update:modelValue="updateWidget(index, 'slot', $event)" />
 				<NcTextField
-					:model-value="widget.widget"
+					:modelValue="widget.widget"
 					:label="t('openbuild', 'Widget id')"
 					@update:modelValue="updateWidget(index, 'widget', $event)" />
 				<NcTextField
-					:model-value="widget.configJson"
+					:modelValue="widget.configJson"
 					:label="t('openbuild', 'Config (JSON)')"
 					:error="!!widget.configError"
-					:helper-text="widget.configError"
+					:helperText="widget.configError"
 					@update:modelValue="updateConfig(index, $event)" />
 				<NcButton
-					type="error"
+					variant="error"
 					:aria-label="t('openbuild', 'Remove widget')"
 					@click="removeWidget(index)">
 					<template #icon>
@@ -70,6 +70,9 @@ import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 
 let keyCounter = 0
+/**
+ *
+ */
 function nextKey() {
 	keyCounter += 1
 	return `widget-${keyCounter}`
@@ -81,6 +84,7 @@ export default {
 	props: {
 		widgets: { type: Array, default: () => [] },
 	},
+
 	emits: ['update:widgets'],
 	methods: {
 		/**
@@ -93,6 +97,7 @@ export default {
 		emitWidgets(next) {
 			this.$emit('update:widgets', next)
 		},
+
 		/**
 		 * Append a new blank widget row.
 		 *
@@ -110,6 +115,7 @@ export default {
 			})
 			this.emitWidgets(next)
 		},
+
 		/**
 		 * Update a single field of a widget row.
 		 *
@@ -124,6 +130,7 @@ export default {
 			next[index] = { ...next[index], [key]: value }
 			this.emitWidgets(next)
 		},
+
 		/**
 		 * Update a widget's config JSON, validating it parses.
 		 *
@@ -143,6 +150,7 @@ export default {
 			next[index] = { ...next[index], configJson: value, configError: error }
 			this.emitWidgets(next)
 		},
+
 		/**
 		 * Remove a widget row by index.
 		 *

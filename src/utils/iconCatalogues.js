@@ -23,8 +23,8 @@
  * @license  EUPL-1.2
  */
 
-import * as mdiJs from '@mdi/js'
 import { fromMdiJs, fromOpenGemeenten } from '@conduction/nextcloud-vue'
+import * as mdiJs from '@mdi/js'
 import DOMPurify from 'dompurify'
 import openGemeentenIcons from './openGemeentenIcons.json'
 

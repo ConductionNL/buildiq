@@ -27,13 +27,13 @@
 			</h2>
 
 			<NcTextField
-				:model-value="name"
+				:modelValue="name"
 				:label="t('openbuild', 'Name')"
 				data-testid="agent-name-field"
 				@update:modelValue="name = $event" />
 
 			<NcTextArea
-				:model-value="instructions"
+				:modelValue="instructions"
 				:label="t('openbuild', 'Instructions')"
 				:placeholder="
 					t(
@@ -46,15 +46,15 @@
 
 			<NcSelect
 				v-model="modelTaskTypeOption"
-				:input-label="t('openbuild', 'Model task type')"
+				:inputLabel="t('openbuild', 'Model task type')"
 				:options="modelTaskTypeOptions"
 				:clearable="false"
 				label="label"
 				data-testid="agent-model-task-type-select" />
 
 			<NcSelect
-				:model-value="enabledToolsSelection"
-				:input-label="t('openbuild', 'Enabled tools')"
+				:modelValue="enabledToolsSelection"
+				:inputLabel="t('openbuild', 'Enabled tools')"
 				:options="toolOptions"
 				:multiple="true"
 				:clearable="false"
@@ -71,7 +71,7 @@
 			</p>
 
 			<NcTextField
-				:model-value="String(maxActionsPerRun)"
+				:modelValue="String(maxActionsPerRun)"
 				type="number"
 				:label="t('openbuild', 'Max actions per run')"
 				data-testid="agent-max-actions-field"
@@ -92,7 +92,7 @@
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
 				<NcButton
-					type="primary"
+					variant="primary"
 					:disabled="saving"
 					data-testid="agent-save-button"
 					@click="onSave">
@@ -137,6 +137,7 @@ export default {
 				value: 'TextToText',
 				label: t('openbuild', 'Text to text'),
 			},
+
 			enabledTools: [],
 			maxActionsPerRun: 10,
 			showValidation: false,
@@ -150,6 +151,7 @@ export default {
 		editing() {
 			return !!this.id
 		},
+
 		/**
 		 * The eight OpenBuildToolProvider tool ids, mirrored 1:1 with the schema enum.
 		 *
@@ -189,6 +191,7 @@ export default {
 				},
 			]
 		},
+
 		/**
 		 * v1 exposes exactly one task type — schema field kept for a v1.1 follow-up (design.md Open Questions).
 		 *
@@ -198,6 +201,7 @@ export default {
 		modelTaskTypeOptions() {
 			return [{ value: 'TextToText', label: t('openbuild', 'Text to text') }]
 		},
+
 		/**
 		 * Selected NcSelect option objects for `enabledTools`.
 		 *
@@ -209,6 +213,7 @@ export default {
 				this.enabledTools.includes(o.value),
 			)
 		},
+
 		/**
 		 * @return {boolean} Whether the form can be saved.
 		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
@@ -220,6 +225,7 @@ export default {
 				&& this.maxActionsPerRun >= 1
 			)
 		},
+
 		/**
 		 * @return {string} The first-violated validation message.
 		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
@@ -275,6 +281,7 @@ export default {
 				? a.maxActionsPerRun
 				: 10
 		},
+
 		/**
 		 * Apply an enabled-tools multi-select change.
 		 *
@@ -287,6 +294,7 @@ export default {
 				? options.map((o) => o.value)
 				: []
 		},
+
 		/**
 		 * Apply the max-actions-per-run numeric field change, clamped to >= 1.
 		 *
@@ -299,6 +307,7 @@ export default {
 			this.maxActionsPerRun =
 				Number.isFinite(parsed) && parsed > 0 ? parsed : 1
 		},
+
 		/**
 		 * Persist the agent via OpenRegister's generic REST surface (ADR-022).
 		 *
@@ -318,6 +327,7 @@ export default {
 				modelTaskType: this.modelTaskTypeOption
 					? this.modelTaskTypeOption.value
 					: 'TextToText',
+
 				enabledTools: this.enabledTools,
 				maxActionsPerRun: this.maxActionsPerRun,
 				applicationSlug: this.applicationSlug,
@@ -338,6 +348,7 @@ export default {
 				this.saving = false
 			}
 		},
+
 		/**
 		 * @return {void}
 		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend

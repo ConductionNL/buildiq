@@ -1,0 +1,374 @@
+{
+  "src/App.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/components/ApplicationDetailActions.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    }
+  },
+  "src/components/AutomationActionListEditor.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    },
+    "no-useless-assignment": {
+      "count": 2
+    }
+  },
+  "src/components/WorkflowAttachmentsSection.vue": {
+    "vue/custom-event-name-casing": {
+      "count": 1
+    }
+  },
+  "src/components/agents/AgentRunHistory.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    }
+  },
+  "src/components/applicationDetail/ApplicationDetailDashboard.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    },
+    "vue/custom-event-name-casing": {
+      "count": 1
+    }
+  },
+  "src/components/applicationDetail/ApplicationDetailHeader.vue": {
+    "no-console": {
+      "count": 2
+    }
+  },
+  "src/components/applicationDetail/widgets/GroupsWidget.vue": {
+    "vue/custom-event-name-casing": {
+      "count": 1
+    }
+  },
+  "src/components/applicationDetail/widgets/ManifestWidget.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    },
+    "vue/custom-event-name-casing": {
+      "count": 5
+    }
+  },
+  "src/components/applicationDetail/widgets/RegisterWidget.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "vue/custom-event-name-casing": {
+      "count": 1
+    }
+  },
+  "src/components/applicationDetail/widgets/SchemasWidget.vue": {
+    "no-console": {
+      "count": 2
+    },
+    "vue/custom-event-name-casing": {
+      "count": 1
+    }
+  },
+  "src/components/page-editor/BlockLibraryPanel.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    },
+    "vue/custom-event-name-casing": {
+      "count": 1
+    }
+  },
+  "src/components/page-editor/ConnectorFieldMapper.vue": {
+    "vue/custom-event-name-casing": {
+      "count": 1
+    },
+    "vue/prefer-prop-type-boolean-first": {
+      "count": 1
+    }
+  },
+  "src/components/page-editor/ConnectorSourcePicker.vue": {
+    "vue/custom-event-name-casing": {
+      "count": 2
+    }
+  },
+  "src/components/page-editor/FormPageEditor.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 2
+    }
+  },
+  "src/components/page-editor/IndexPageEditor.vue": {
+    "eqeqeq": {
+      "count": 1
+    }
+  },
+  "src/components/page-editor/MapPageEditor.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 1
+    }
+  },
+  "src/components/page-editor/MenuTreeEditor.vue": {
+    "jsdoc/check-tag-names": {
+      "count": 1
+    },
+    "vue/custom-event-name-casing": {
+      "count": 1
+    }
+  },
+  "src/components/runtime/MyApprovalsWidget.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    }
+  },
+  "src/components/schema-editor/FieldEditor.vue": {
+    "eqeqeq": {
+      "count": 19
+    },
+    "jsdoc/require-param-type": {
+      "count": 4
+    }
+  },
+  "src/components/schema-editor/WidgetEditor.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/components/walkthrough-editor/WalkthroughDesigner.vue": {
+    "vue/custom-event-name-casing": {
+      "count": 1
+    }
+  },
+  "src/components/walkthrough-editor/WalkthroughRecorder.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    }
+  },
+  "src/composables/useApplicationVersion.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/composables/useOrAccessCapabilities.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/composables/useRole.js": {
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "src/dialogs/AgentEditDialog.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/dialogs/AutomationEditDialog.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 7
+    },
+    "no-useless-assignment": {
+      "count": 2
+    }
+  },
+  "src/dialogs/ConditionActionRuleEditor.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/dialogs/CopilotGenerateDialog.vue": {
+    "@nextcloud/no-deprecated-library-props": {
+      "count": 1
+    }
+  },
+  "src/dialogs/CreateApplicationWizard.vue": {
+    "no-console": {
+      "count": 1
+    }
+  },
+  "src/dialogs/CreateApplicationWizard/Step1Basics.vue": {
+    "vue/custom-event-name-casing": {
+      "count": 1
+    }
+  },
+  "src/dialogs/DecisionTableEditor.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/dialogs/ExportDialog.vue": {
+    "@nextcloud/no-deprecated-library-props": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/dialogs/ImportDataWizard.vue": {
+    "@nextcloud/no-deprecated-library-props": {
+      "count": 1
+    }
+  },
+  "src/dialogs/PromoteVersionDialog.vue": {
+    "@nextcloud/no-deprecated-library-props": {
+      "count": 1
+    }
+  },
+  "src/dialogs/SaveAsTemplateDialog.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/dialogs/SaveBlockDialog.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/dialogs/WorkflowAttachmentDialog.vue": {
+    "vue/custom-event-name-casing": {
+      "count": 1
+    }
+  },
+  "src/main.js": {
+    "no-undef": {
+      "count": 1
+    }
+  },
+  "src/modals/AppSettingsModal.vue": {
+    "vue/custom-event-name-casing": {
+      "count": 3
+    }
+  },
+  "src/modals/AutomationTestPanelModal.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/modals/GitHubSyncModal.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 3
+    }
+  },
+  "src/modals/PermissionHistoryModal.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    }
+  },
+  "src/modals/RollbackConfirmModal.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/modals/RuleSetTestSandboxModal.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 3
+    }
+  },
+  "src/modals/UserDeltaEditModal.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/services/blockExport.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/services/blockInsert.js": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/services/copilot.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/store/modules/object.js": {
+    "no-console": {
+      "count": 2
+    }
+  },
+  "src/store/modules/settings.js": {
+    "no-console": {
+      "count": 2
+    }
+  },
+  "src/views/AgentsPage.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 3
+    }
+  },
+  "src/views/AutomationsPage.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 7
+    }
+  },
+  "src/views/DashboardIndex.vue": {
+    "no-console": {
+      "count": 1
+    }
+  },
+  "src/views/ExportJobsList.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/views/ManifestLayersDetail.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 6
+    }
+  },
+  "src/views/PageDesigner.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 3
+    },
+    "vue/custom-event-name-casing": {
+      "count": 1
+    }
+  },
+  "src/views/RuleSetsPage.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    }
+  },
+  "src/views/SchemaDesigner.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    }
+  },
+  "src/views/TemplateGallery.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 3
+    }
+  },
+  "src/views/VersionHistory.vue": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/views/settings/Settings.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 1
+    },
+    "vue/multi-word-component-names": {
+      "count": 1
+    }
+  }
+}

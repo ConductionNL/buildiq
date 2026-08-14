@@ -33,7 +33,7 @@
 					style="width: 48px; height: 48px; display: block" />
 			</template>
 			<template #action>
-				<NcButton type="primary" @click="goToApps">
+				<NcButton variant="primary" @click="goToApps">
 					{{ t('openbuild', 'Create an app') }}
 				</NcButton>
 			</template>
@@ -103,7 +103,7 @@
 					</td>
 					<td class="ob-apps-list-widget__col-actions">
 						<NcButton
-							type="tertiary"
+							variant="tertiary"
 							:aria-label="
 								t('openbuild', 'Open {name}', {
 									name: app.name || app.slug,
@@ -122,7 +122,7 @@
 		<div
 			v-if="!loading && total > apps.length"
 			class="ob-apps-list-widget__footer">
-			<NcButton type="tertiary" @click="goToApps">
+			<NcButton variant="tertiary" @click="goToApps">
 				{{ t('openbuild', 'View all {count} apps', { count: total }) }}
 			</NcButton>
 		</div>
@@ -130,9 +130,9 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl, imagePath } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 

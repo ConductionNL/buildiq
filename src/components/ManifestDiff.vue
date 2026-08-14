@@ -45,14 +45,17 @@ export default {
 			type: String,
 			default: '',
 		},
+
 		from: {
 			type: String,
 			default: 'draft',
 		},
+
 		to: {
 			type: String,
 			default: '',
 		},
+
 		/**
 		 * Static mode (spec ai-copilot REQ-OBAIC-003/007): when either of
 		 * `fromManifest`/`toManifest` is provided the component diffs those
@@ -64,21 +67,25 @@ export default {
 			type: Object,
 			default: null,
 		},
+
 		toManifest: {
 			type: Object,
 			default: null,
 		},
+
 		/** Label shown for `from` in static mode (ignored otherwise). */
 		fromLabelText: {
 			type: String,
 			default: '',
 		},
+
 		/** Label shown for `to` in static mode (ignored otherwise). */
 		toLabelText: {
 			type: String,
 			default: '',
 		},
 	},
+
 	data() {
 		return {
 			fromBlob: null,
@@ -87,6 +94,7 @@ export default {
 			error: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Static mode (spec ai-copilot REQ-OBAIC-003/007): diff two in-memory
@@ -98,6 +106,7 @@ export default {
 		isStaticMode() {
 			return this.fromManifest !== null || this.toManifest !== null
 		},
+
 		/**
 		 * Observed behaviour of `fromLabel` (retrofit annotation).
 		 *
@@ -111,6 +120,7 @@ export default {
 				? t('openbuild', 'Current draft')
 				: this.from.slice(0, 8) + '…'
 		},
+
 		/**
 		 * Observed behaviour of `toLabel` (retrofit annotation).
 		 *
@@ -126,12 +136,14 @@ export default {
 					? this.to.slice(0, 8) + '…'
 					: '—'
 		},
+
 		hasAnyContent() {
 			if (this.isStaticMode) {
 				return this.fromManifest !== null || this.toManifest !== null
 			}
 			return this.fromBlob !== null || this.toBlob !== null
 		},
+
 		/**
 		 * Observed behaviour of `diffParts` (retrofit annotation).
 		 *
@@ -152,6 +164,7 @@ export default {
 			return diffLines(fromText, toText)
 		},
 	},
+
 	watch: {
 		/**
 		 * Observed behaviour of `from` (retrofit annotation).
@@ -161,6 +174,7 @@ export default {
 		from() {
 			this.fetch()
 		},
+
 		/**
 		 * Observed behaviour of `to` (retrofit annotation).
 		 *
@@ -169,6 +183,7 @@ export default {
 		to() {
 			this.fetch()
 		},
+
 		/**
 		 * Observed behaviour of `slug` (retrofit annotation).
 		 *
@@ -178,6 +193,7 @@ export default {
 			this.fetch()
 		},
 	},
+
 	/**
 	 * Observed behaviour of `mounted` (retrofit annotation).
 	 *
@@ -191,6 +207,7 @@ export default {
 			this.fetch()
 		}
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `fetch` (retrofit annotation).
@@ -220,6 +237,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Observed behaviour of `prettyManifest` (retrofit annotation).
 		 *
@@ -238,6 +256,7 @@ export default {
 			}
 			return JSON.stringify(value, this.sortReplacer.bind(this), 2)
 		},
+
 		/**
 		 * Observed behaviour of `sortReplacer` (retrofit annotation).
 		 *
@@ -262,6 +281,7 @@ export default {
 			}
 			return val
 		},
+
 		/**
 		 * Observed behaviour of `partClass` (retrofit annotation).
 		 *

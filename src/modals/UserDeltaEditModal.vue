@@ -41,10 +41,10 @@
 			</p>
 
 			<div class="ob-user-delta-modal__actions">
-				<NcButton type="tertiary" @click="onClose">
+				<NcButton variant="tertiary" @click="onClose">
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" :disabled="saving" @click="save">
+				<NcButton variant="primary" :disabled="saving" @click="save">
 					{{
 						saving
 							? t('openbuild', 'Saving…')
@@ -57,11 +57,11 @@
 </template>
 
 <script>
+import { CnJsonViewer } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import NcModal from '@nextcloud/vue/components/NcModal'
 import NcButton from '@nextcloud/vue/components/NcButton'
-import { CnJsonViewer } from '@conduction/nextcloud-vue'
+import NcModal from '@nextcloud/vue/components/NcModal'
 
 export default {
 	name: 'UserDeltaEditModal',
@@ -74,6 +74,7 @@ export default {
 		/** The current user-delta object to seed the editor with. */
 		delta: { type: Object, default: () => ({}) },
 	},
+
 	emits: ['update:open', 'saved'],
 	data() {
 		return {
@@ -82,6 +83,7 @@ export default {
 			error: '',
 		}
 	},
+
 	watch: {
 		open(isOpen) {
 			if (isOpen) {
@@ -90,6 +92,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Close the modal (sync the open prop back to the parent).
@@ -99,6 +102,7 @@ export default {
 		onClose() {
 			this.$emit('update:open', false)
 		},
+
 		/**
 		 * Validate the JSON, PUT the user delta, and emit `saved` on success.
 		 *

@@ -74,6 +74,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:modelValue'],
 	computed: {
 		/**
@@ -85,6 +86,7 @@ export default {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
@@ -100,6 +102,7 @@ export default {
 			next[index] = { ...next[index], [key]: value }
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `updateNum` (retrofit annotation).
 		 *
@@ -113,6 +116,7 @@ export default {
 			const num = parseInt(value, 10)
 			this.updateField(index, key, Number.isNaN(num) ? 0 : num)
 		},
+
 		/**
 		 * Observed behaviour of `addItem` (retrofit annotation).
 		 *
@@ -130,6 +134,7 @@ export default {
 			})
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `removeItem` (retrofit annotation).
 		 *

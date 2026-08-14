@@ -51,6 +51,7 @@ export default {
 		versionSlug: { type: String, default: '' },
 		menu: { type: Array, default: () => [] },
 	},
+
 	methods: {
 		/**
 		 * Open the page designer with the menu pane focused (REQ-OBADO-010).

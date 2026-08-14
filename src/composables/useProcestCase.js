@@ -1,3 +1,5 @@
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useProcestCase — runtime integration with Procest's ZGW API for workflow
@@ -15,8 +17,6 @@
  * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-003
  */
 import { ref } from 'vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { caseUuidFromReference } from '../services/procestLinks.js'
 
 const ZRC = '/apps/procest/api/zgw/zaken/v1'

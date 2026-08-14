@@ -91,8 +91,8 @@
 						t('openbuild', 'Conditions')
 					}}</span>
 					<VisibleWhenBuilder
-						:model-value="field.visibleWhen || null"
-						:field-options="siblingKeys(index)"
+						:modelValue="field.visibleWhen || null"
+						:fieldOptions="siblingKeys(index)"
 						@update:modelValue="updateVisibleWhen(index, $event)" />
 					<InlineFieldMark :error="danglingConditionMark(field)" />
 				</div>
@@ -101,9 +101,9 @@
 						t('openbuild', 'Validation')
 					}}</span>
 					<FieldValidationBuilder
-						:model-value="field.validation || null"
-						:legacy-required="!!field.required"
-						:legacy-pattern="field.pattern || ''"
+						:modelValue="field.validation || null"
+						:legacyRequired="!!field.required"
+						:legacyPattern="field.pattern || ''"
 						@update:modelValue="updateValidation(index, $event)" />
 				</div>
 			</div>
@@ -115,9 +115,9 @@
 </template>
 
 <script>
-import VisibleWhenBuilder from './VisibleWhenBuilder.vue'
 import FieldValidationBuilder from './FieldValidationBuilder.vue'
 import InlineFieldMark from './InlineFieldMark.vue'
+import VisibleWhenBuilder from './VisibleWhenBuilder.vue'
 
 const FIELD_TYPES = ['string', 'number', 'boolean', 'select', 'textarea', 'date']
 
@@ -129,6 +129,7 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
 		// Opt-in (REQ-OBFEL-002/003/004): mount the Conditions/Validation
 		// details area. Only FormPageEditor sets this; SettingsSectionBuilder
 		// keeps the original flat required/pattern inputs unchanged.
@@ -137,6 +138,7 @@ export default {
 			default: false,
 		},
 	},
+
 	emits: ['update:modelValue'],
 	data() {
 		return {
@@ -144,6 +146,7 @@ export default {
 			expandedIndices: [],
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `localFields` (retrofit annotation).
@@ -153,6 +156,7 @@ export default {
 		localFields() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
+
 		/**
 		 * Every declared `key` across the field list (used for the
 		 * dangling-condition-reference check, REQ-OBFEL-004).
@@ -165,6 +169,7 @@ export default {
 				.filter((k) => typeof k === 'string' && k !== '')
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
@@ -196,6 +201,7 @@ export default {
 			}
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Write (or delete, on `null`) one field's `visibleWhen` — the
 		 * `VisibleWhenBuilder` output (REQ-OBFEL-002). Unknown sibling keys
@@ -216,6 +222,7 @@ export default {
 			next[index] = current
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Write (or delete, on `null`) one field's structured `validation`
 		 * object (REQ-OBFEL-003). Per Decision 4, writing `validation` also
@@ -239,6 +246,7 @@ export default {
 			next[index] = current
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `addField` (retrofit annotation).
 		 *
@@ -249,6 +257,7 @@ export default {
 			next.push({ key: '', label: '', type: 'string' })
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Remove a field row, keeping the expanded-details state pinned to the
 		 * SAME fields it was pinned to before.
@@ -274,6 +283,7 @@ export default {
 				.map((i) => (i > index ? i - 1 : i))
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Sibling `key` values available to the Conditions field picker —
 		 * every declared key EXCEPT the field currently being edited
@@ -287,6 +297,7 @@ export default {
 				.map((f, i) => (i === index ? null : f && f.key))
 				.filter((k) => typeof k === 'string' && k !== '')
 		},
+
 		/**
 		 * The `{ hasError, message }` bag for a field's dangling LOCAL
 		 * `visibleWhen.field` reference (REQ-OBFEL-004) — never mutates,
@@ -312,6 +323,7 @@ export default {
 				),
 			}
 		},
+
 		/**
 		 * A compact collapsed-row summary of a field's logic, e.g.
 		 * "required · pattern · 1 condition" (task 4.3).
@@ -340,6 +352,7 @@ export default {
 			}
 			return parts.join(' · ')
 		},
+
 		/**
 		 * Whether a field row's details area is expanded.
 		 *
@@ -349,6 +362,7 @@ export default {
 		isExpanded(index) {
 			return this.expandedIndices.includes(index)
 		},
+
 		/**
 		 * Toggle a field row's details-area disclosure.
 		 *

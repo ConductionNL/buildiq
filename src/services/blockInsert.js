@@ -14,8 +14,8 @@
  * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
  */
 
-import { deepClone, rewriteSchemaRefs } from './templateCapture.js'
 import { isSectionFragment } from './blockCapture.js'
+import { deepClone, rewriteSchemaRefs } from './templateCapture.js'
 
 export { isSectionFragment }
 

@@ -16,7 +16,7 @@
 <template>
 	<div class="ob-manifest-detail">
 		<header class="ob-manifest-detail__header">
-			<NcButton type="tertiary" @click="goBack">
+			<NcButton variant="tertiary" @click="goBack">
 				<template #icon>
 					<ArrowLeft :size="20" />
 				</template>
@@ -61,7 +61,7 @@
 				</p>
 				<NcButton
 					v-if="adminVersionUuid"
-					type="tertiary"
+					variant="tertiary"
 					@click="openInOpenRegister(adminVersionUuid)">
 					{{ t('openbuild', 'Open version history in OpenRegister') }}
 				</NcButton>
@@ -78,15 +78,15 @@
 					v-if="allowUserOverrides"
 					class="ob-manifest-detail__layer-actions">
 					<template v-if="userDelta.exists">
-						<NcButton type="secondary" @click="showEditModal = true">
+						<NcButton variant="secondary" @click="showEditModal = true">
 							{{ t('openbuild', 'Edit') }}
 						</NcButton>
-						<NcButton type="tertiary" @click="resetOverride">
+						<NcButton variant="tertiary" @click="resetOverride">
 							{{ t('openbuild', 'Reset') }}
 						</NcButton>
 						<NcButton
 							v-if="userDelta.versionUuid"
-							type="tertiary"
+							variant="tertiary"
 							@click="openInOpenRegister(userDelta.versionUuid)">
 							{{
 								t(
@@ -98,7 +98,7 @@
 					</template>
 					<NcButton
 						v-else
-						type="secondary"
+						variant="secondary"
 						:disabled="creating"
 						@click="createOverride">
 						{{ t('openbuild', 'Create override') }}
@@ -143,7 +143,7 @@
 					</div>
 					<NcButton
 						v-if="ovr.versionUuid"
-						type="tertiary"
+						variant="tertiary"
 						@click="openInOpenRegister(ovr.versionUuid)">
 						{{ t('openbuild', 'Open in OpenRegister') }}
 					</NcButton>
@@ -156,7 +156,7 @@
 		<section class="ob-manifest-detail__history">
 			<div v-if="canEdit" class="ob-manifest-detail__history-actions">
 				<NcButton
-					type="secondary"
+					variant="secondary"
 					:disabled="creatingDraft"
 					@click="createDraft">
 					<template #icon>
@@ -168,34 +168,33 @@
 			<VersionHistory
 				v-if="appUuid"
 				ref="versionHistory"
-				:app-slug="appSlug"
-				:application-uuid="appUuid"
-				:current-version-uuid="adminVersionUuid"
-				:can-edit="canEdit"
-				:can-release="canRelease"
+				:appSlug="appSlug"
+				:applicationUuid="appUuid"
+				:currentVersionUuid="adminVersionUuid"
+				:canEdit="canEdit"
+				:canRelease="canRelease"
 				@rollback="onRollback"
 				@released="loadAll" />
 		</section>
 
 		<UserDeltaEditModal
 			v-model:open="showEditModal"
-			:app-slug="appSlug"
+			:appSlug="appSlug"
 			:delta="userDelta.manifestDelta"
 			@saved="onUserDeltaSaved" />
 	</div>
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { getCurrentUser } from '@nextcloud/auth'
+import axios from '@nextcloud/axios'
 import { showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-
-import VersionHistory from './VersionHistory.vue'
 import UserDeltaEditModal from '../modals/UserDeltaEditModal.vue'
+import VersionHistory from './VersionHistory.vue'
 
 export default {
 	name: 'ManifestLayersDetail',
@@ -204,6 +203,7 @@ export default {
 		// The app UUID, forwarded from the route param by CnPageRenderer.
 		objectId: { type: String, default: '' },
 	},
+
 	data() {
 		return {
 			application: null,
@@ -214,6 +214,7 @@ export default {
 				versionUuid: null,
 				manifestDelta: {},
 			},
+
 			creating: false,
 			creatingDraft: false,
 			showEditModal: false,
@@ -223,6 +224,7 @@ export default {
 			canViewUserOverrides: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * The app UUID (from the route param or the loaded record).
@@ -238,6 +240,7 @@ export default {
 				|| ''
 			)
 		},
+
 		/**
 		 * The app's kebab-case slug.
 		 *
@@ -246,6 +249,7 @@ export default {
 		appSlug() {
 			return (this.application && this.application.slug) || ''
 		},
+
 		/**
 		 * The app's display name.
 		 *
@@ -254,6 +258,7 @@ export default {
 		appName() {
 			return (this.application && this.application.name) || this.appSlug
 		},
+
 		/**
 		 * Whether this is a hybrid app.
 		 *
@@ -262,6 +267,7 @@ export default {
 		isHybrid() {
 			return (this.application && this.application.appType) === 'hybrid'
 		},
+
 		/**
 		 * Whether the app allows per-user overrides.
 		 *
@@ -270,6 +276,7 @@ export default {
 		allowUserOverrides() {
 			return !!(this.application && this.application.allowUserOverrides)
 		},
+
 		/**
 		 * Whether the caller may edit versions (owner / editor / NC admin).
 		 *
@@ -280,6 +287,7 @@ export default {
 		canEdit() {
 			return this.hasRole('owners') || this.hasRole('editors') || this.isAdmin
 		},
+
 		/**
 		 * Whether the caller may release a draft to production (owner only).
 		 *
@@ -291,6 +299,7 @@ export default {
 		canRelease() {
 			return this.hasRole('owners')
 		},
+
 		/**
 		 * Whether the current user is a Nextcloud admin.
 		 *
@@ -303,6 +312,7 @@ export default {
 				&& OC.isUserAdmin()
 			)
 		},
+
 		/**
 		 * Pre-translated meta line for the user-delta layer.
 		 *
@@ -323,9 +333,11 @@ export default {
 				: t('openbuild', 'You have no personal override yet.')
 		},
 	},
+
 	mounted() {
 		this.loadAll()
 	},
+
 	methods: {
 		/**
 		 * Load the app record, its admin version, and the caller's user delta.
@@ -340,6 +352,7 @@ export default {
 				this.loadUserOverrides(),
 			])
 		},
+
 		/**
 		 * Whether the current user is listed (by `user:<uid>`) in a permission
 		 * role bucket on the loaded Application. Group membership is enforced
@@ -357,6 +370,7 @@ export default {
 			const bucket = Array.isArray(perms[role]) ? perms[role] : []
 			return bucket.includes('user:' + uid)
 		},
+
 		/**
 		 * Load ALL users' overrides for this app (maintainer view). A 403 means
 		 * the caller is not an owner/editor/admin — the section stays hidden.
@@ -380,6 +394,7 @@ export default {
 				this.userOverrides = []
 			}
 		},
+
 		/**
 		 * Format an ISO timestamp for display, falling back to the raw value.
 		 *
@@ -394,6 +409,7 @@ export default {
 				return iso
 			}
 		},
+
 		/**
 		 * Load the Application record by UUID.
 		 *
@@ -412,6 +428,7 @@ export default {
 				this.error = t('openbuild', 'Could not load the app.')
 			}
 		},
+
 		/**
 		 * Resolve the admin (production) version UUID for the version-history reuse.
 		 *
@@ -424,6 +441,7 @@ export default {
 					typeof pv === 'string' ? pv : pv.uuid || pv.id || ''
 			}
 		},
+
 		/**
 		 * Load the caller's own user-delta state.
 		 *
@@ -452,6 +470,7 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * Create an empty user delta.
 		 *
@@ -474,6 +493,7 @@ export default {
 				this.creating = false
 			}
 		},
+
 		/**
 		 * Delete the caller's own user delta.
 		 *
@@ -493,6 +513,7 @@ export default {
 				this.error = t('openbuild', 'Could not reset your override.')
 			}
 		},
+
 		/**
 		 * Refresh the user delta after the edit modal saved.
 		 *
@@ -501,6 +522,7 @@ export default {
 		onUserDeltaSaved() {
 			this.loadUserDelta()
 		},
+
 		/**
 		 * No-op rollback handler — OpenRegister performs the version rollback;
 		 * we just refresh the layer state afterwards.
@@ -510,6 +532,7 @@ export default {
 		onRollback() {
 			this.loadAll()
 		},
+
 		/**
 		 * The own UUID of an ApplicationVersion row (`id` or `@self` envelope).
 		 *
@@ -520,6 +543,7 @@ export default {
 			const self = (row && row['@self']) || {}
 			return (row && row.id) || self.id || self.uuid || (row && row.uuid) || ''
 		},
+
 		/**
 		 * Create a new draft version: clone the production manifest, share the
 		 * production register (omit `register` so the backend inherits it), and
@@ -597,6 +621,7 @@ export default {
 				this.creatingDraft = false
 			}
 		},
+
 		/**
 		 * Deep-link to an ApplicationVersion row's OpenRegister object page
 		 * (which carries OR's native version history / time-travel / rollback).
@@ -612,6 +637,7 @@ export default {
 			)
 			window.location.href = url
 		},
+
 		/**
 		 * Navigate back to the app detail page.
 		 *

@@ -22,7 +22,7 @@
 				data-testid="dry-run-payload" />
 
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="running"
 				data-testid="dry-run-button"
 				@click="run">
@@ -100,6 +100,7 @@ export default {
 			required: true,
 		},
 	},
+
 	emits: ['close'],
 	data() {
 		return {
@@ -109,6 +110,7 @@ export default {
 			errorMessage: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Human label for the automation's live approval state
@@ -127,6 +129,7 @@ export default {
 			return (this.result && labels[this.result.approvalState]) || ''
 		},
 	},
+
 	methods: {
 		/**
 		 * Run the dry-run evaluation (spec REQ-AUTD-007).

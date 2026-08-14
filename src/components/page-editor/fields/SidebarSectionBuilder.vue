@@ -56,6 +56,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:modelValue'],
 	computed: {
 		/**
@@ -67,6 +68,7 @@ export default {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
@@ -84,6 +86,7 @@ export default {
 			next[index] = { ...current, [key]: value }
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `updateColumns` (retrofit annotation).
 		 *
@@ -99,6 +102,7 @@ export default {
 				.filter(Boolean)
 			this.updateField(index, 'columns', cols)
 		},
+
 		/**
 		 * Observed behaviour of `addSection` (retrofit annotation).
 		 *
@@ -109,6 +113,7 @@ export default {
 			next.push({ id: '', label: '', columns: [] })
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `removeSection` (retrofit annotation).
 		 *

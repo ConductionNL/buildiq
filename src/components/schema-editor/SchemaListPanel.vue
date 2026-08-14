@@ -16,7 +16,7 @@
 	<div class="openbuild-schema-list">
 		<header class="openbuild-schema-list__header">
 			<h2>{{ t('openbuild', 'Schemas') }}</h2>
-			<NcButton type="primary" @click="addOpen = true">
+			<NcButton variant="primary" @click="addOpen = true">
 				<template #icon>
 					<PlusIcon :size="20" />
 				</template>
@@ -41,7 +41,7 @@
 					<DatabaseIcon :size="64" />
 				</template>
 				<template #action>
-					<NcButton type="primary" @click="addOpen = true">
+					<NcButton variant="primary" @click="addOpen = true">
 						{{ t('openbuild', 'Add schema') }}
 					</NcButton>
 				</template>
@@ -105,14 +105,14 @@
 		<AddSchemaDialog
 			:open="addOpen"
 			:submitting="addSubmitting"
-			:slug-error="addSlugError"
+			:slugError="addSlugError"
 			@confirm="onAddConfirm"
 			@cancel="addOpen = false"
 			@update:open="addOpen = $event" />
 
 		<DeleteSchemaDialog
 			:open="deleteOpen"
-			:schema-slug="pendingDeleteSlug"
+			:schemaSlug="pendingDeleteSlug"
 			@confirm="onDeleteConfirm"
 			@cancel="cancelDelete"
 			@update:open="deleteOpen = $event" />
@@ -131,7 +131,6 @@ import DatabaseIcon from 'vue-material-design-icons/Database.vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PencilIcon from 'vue-material-design-icons/Pencil.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
-
 import AddSchemaDialog from '../../modals/AddSchemaDialog.vue'
 import DeleteSchemaDialog from '../../modals/DeleteSchemaDialog.vue'
 
@@ -191,10 +190,12 @@ export default {
 		PencilIcon,
 		PlusIcon,
 	},
+
 	props: {
 		schemas: { type: Array, default: () => [] },
 		loading: { type: Boolean, default: false },
 	},
+
 	emits: ['add', 'open', 'delete'],
 	data() {
 		return {
@@ -205,6 +206,7 @@ export default {
 			pendingDeleteSlug: '',
 		}
 	},
+
 	methods: {
 		getSlug(schema) {
 			return (
@@ -214,6 +216,7 @@ export default {
 				|| ''
 			)
 		},
+
 		/**
 		 * Expose the pure `scopeSummary` helper as an instance method so
 		 * the template can call it directly (REQ-OBDSA-005).
@@ -225,6 +228,7 @@ export default {
 		scopeSummary(schema) {
 			return scopeSummary(schema)
 		},
+
 		/**
 		 * Count the declared properties on a schema row.
 		 *
@@ -238,6 +242,7 @@ export default {
 			}
 			return Object.keys(schema.properties).length
 		},
+
 		/**
 		 * Build a human-readable lifecycle-state-count label.
 		 *
@@ -262,6 +267,7 @@ export default {
 				{ n: lifecycle.states.length },
 			)
 		},
+
 		/**
 		 * Emit an open event for the activated schema row.
 		 *
@@ -272,6 +278,7 @@ export default {
 		onOpen(schema) {
 			this.$emit('open', this.getSlug(schema))
 		},
+
 		/**
 		 * Confirm the add-schema dialog: emit add and surface slug conflicts.
 		 *
@@ -303,6 +310,7 @@ export default {
 				this.addSubmitting = false
 			}
 		},
+
 		/**
 		 * Open the delete-confirmation dialog for a schema.
 		 *
@@ -314,6 +322,7 @@ export default {
 			this.pendingDeleteSlug = this.getSlug(schema)
 			this.deleteOpen = true
 		},
+
 		/**
 		 * Confirm deletion: emit delete and reset the pending state.
 		 *
@@ -325,6 +334,7 @@ export default {
 			this.deleteOpen = false
 			this.pendingDeleteSlug = ''
 		},
+
 		/**
 		 * Cancel the pending deletion.
 		 *

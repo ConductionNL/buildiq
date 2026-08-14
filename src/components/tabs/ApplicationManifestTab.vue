@@ -35,7 +35,7 @@
 		<div class="ob-manifest-tab__actions">
 			<NcButton
 				v-if="obAppRole === 'editor' || obAppRole === 'owner'"
-				type="primary"
+				variant="primary"
 				:disabled="!obApp || saving"
 				data-testid="openbuild-editor-save"
 				@click="save">
@@ -49,10 +49,10 @@
 </template>
 
 <script>
+import { validateManifest } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
-import { validateManifest } from '@conduction/nextcloud-vue'
 import applicationContext from '../../mixins/applicationContext.js'
 
 export default {
@@ -67,6 +67,7 @@ export default {
 			savedToast: '',
 		}
 	},
+
 	watch: {
 		obApp: {
 			immediate: true,
@@ -89,6 +90,7 @@ export default {
 			},
 		},
 	},
+
 	methods: {
 		/**
 		 * Load the app's manifest into the editor buffer, from the ACTIVE VERSION.
@@ -128,6 +130,7 @@ export default {
 				this.error = `${t('openbuild', 'Could not load the manifest')}: ${e.message || e}`
 			}
 		},
+
 		/**
 		 * Observed behaviour of `parseAndValidate` (retrofit annotation).
 		 *
@@ -151,6 +154,7 @@ export default {
 			this.error = ''
 			return parsed
 		},
+
 		/**
 		 * Observed behaviour of `save` (retrofit annotation).
 		 *

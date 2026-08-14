@@ -5,12 +5,12 @@
 		<div class="wt-designer__bar">
 			<div class="wt-designer__modes" role="tablist">
 				<NcButton
-					:type="mode === 'walkthrough' ? 'primary' : 'tertiary'"
+					:variant="mode === 'walkthrough' ? 'primary' : 'tertiary'"
 					@click="mode = 'walkthrough'">
 					{{ t('openbuild', 'Walkthrough') }}
 				</NcButton>
 				<NcButton
-					:type="mode === 'setup' ? 'primary' : 'tertiary'"
+					:variant="mode === 'setup' ? 'primary' : 'tertiary'"
 					@click="mode = 'setup'">
 					{{ t('openbuild', 'Setup wizard') }}
 				</NcButton>
@@ -19,19 +19,19 @@
 			<NcCheckboxRadioSwitch
 				v-if="mode === 'walkthrough'"
 				type="switch"
-				:model-value="enabled"
+				:modelValue="enabled"
 				@update:modelValue="setEnabled">
 				{{ t('openbuild', 'Enabled') }}
 			</NcCheckboxRadioSwitch>
 			<NcCheckboxRadioSwitch
 				v-else
 				type="switch"
-				:model-value="setupEnabled"
+				:modelValue="setupEnabled"
 				@update:modelValue="setSetupEnabled">
 				{{ t('openbuild', 'Enabled') }}
 			</NcCheckboxRadioSwitch>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="!valid"
 				@click="$emit('save-and-preview')">
 				{{ t('openbuild', 'Save & preview') }}
@@ -51,7 +51,7 @@
 		<div v-if="mode === 'setup'" class="wt-designer__setup">
 			<div class="wt-designer__steps-head">
 				<strong>{{ t('openbuild', 'Setup steps') }}</strong>
-				<NcButton type="secondary" @click="addSetupStep">
+				<NcButton variant="secondary" @click="addSetupStep">
 					<template #icon>
 						<Plus :size="20" />
 					</template>
@@ -67,10 +67,10 @@
 						<span class="wt-designer__step-num">{{ si + 1 }}</span>
 						<NcTextField
 							:label="t('openbuild', 'Step id')"
-							:model-value="step.id || ''"
+							:modelValue="step.id || ''"
 							@update:modelValue="(v) => setSetupStep(si, 'id', v)" />
 						<NcButton
-							type="tertiary"
+							variant="tertiary"
 							:disabled="si === 0"
 							:aria-label="t('openbuild', 'Move up')"
 							@click="moveSetupStep(si, -1)">
@@ -79,7 +79,7 @@
 							</template>
 						</NcButton>
 						<NcButton
-							type="tertiary"
+							variant="tertiary"
 							:disabled="si === setupSteps.length - 1"
 							:aria-label="t('openbuild', 'Move down')"
 							@click="moveSetupStep(si, 1)">
@@ -88,7 +88,7 @@
 							</template>
 						</NcButton>
 						<NcButton
-							type="tertiary"
+							variant="tertiary"
 							:aria-label="t('openbuild', 'Delete step')"
 							@click="deleteSetupStep(si)">
 							<template #icon>
@@ -98,21 +98,21 @@
 					</div>
 					<div class="wt-designer__step-grid">
 						<NcSelect
-							:input-label="t('openbuild', 'Type')"
+							:inputLabel="t('openbuild', 'Type')"
 							:options="SETUP_TYPES"
-							:model-value="step.type || 'info'"
+							:modelValue="step.type || 'info'"
 							@update:modelValue="
 								(v) => setSetupStep(si, 'type', v)
 							" />
 						<NcTextField
 							:label="t('openbuild', 'Title')"
-							:model-value="step.title || ''"
+							:modelValue="step.title || ''"
 							@update:modelValue="
 								(v) => setSetupStep(si, 'title', v)
 							" />
 						<NcTextField
 							:label="t('openbuild', 'Body')"
-							:model-value="step.body || ''"
+							:modelValue="step.body || ''"
 							@update:modelValue="
 								(v) => setSetupStep(si, 'body', v)
 							" />
@@ -122,21 +122,21 @@
 								|| step.type === 'config-fields'
 							"
 							:label="t('openbuild', 'Config key')"
-							:model-value="step.configKey || ''"
+							:modelValue="step.configKey || ''"
 							@update:modelValue="
 								(v) => setSetupStep(si, 'configKey', v)
 							" />
 						<NcTextField
 							v-if="step.type === 'run-action'"
 							:label="t('openbuild', 'Action id')"
-							:model-value="step.action || ''"
+							:modelValue="step.action || ''"
 							@update:modelValue="
 								(v) => setSetupStep(si, 'action', v)
 							" />
 						<NcTextField
 							v-if="step.type === 'component'"
 							:label="t('openbuild', 'Component')"
-							:model-value="step.component || ''"
+							:modelValue="step.component || ''"
 							@update:modelValue="
 								(v) => setSetupStep(si, 'component', v)
 							" />
@@ -145,7 +145,7 @@
 						<div class="wt-designer__options-head">
 							<span>{{ t('openbuild', 'Options') }}</span>
 							<NcButton
-								type="tertiary"
+								variant="tertiary"
 								:aria-label="t('openbuild', 'Add option')"
 								@click="addSetupOption(si)">
 								<template #icon>
@@ -159,7 +159,7 @@
 							class="wt-designer__option-row">
 							<NcTextField
 								:label="t('openbuild', 'Value')"
-								:model-value="
+								:modelValue="
 									opt.value != null ? String(opt.value) : ''
 								"
 								@update:modelValue="
@@ -167,12 +167,12 @@
 								" />
 							<NcTextField
 								:label="t('openbuild', 'Label')"
-								:model-value="opt.label || ''"
+								:modelValue="opt.label || ''"
 								@update:modelValue="
 									(v) => setSetupOption(si, oi, 'label', v)
 								" />
 							<NcButton
-								type="tertiary"
+								variant="tertiary"
 								:aria-label="t('openbuild', 'Remove option')"
 								@click="deleteSetupOption(si, oi)">
 								<template #icon>
@@ -184,7 +184,7 @@
 					<div class="wt-designer__step-switches">
 						<NcCheckboxRadioSwitch
 							type="switch"
-							:model-value="step.required === true"
+							:modelValue="step.required === true"
 							@update:modelValue="
 								(v) => setSetupStep(si, 'required', v)
 							">
@@ -193,7 +193,7 @@
 						<NcCheckboxRadioSwitch
 							v-if="step.type === 'choice'"
 							type="switch"
-							:model-value="step.multiple === true"
+							:modelValue="step.multiple === true"
 							@update:modelValue="
 								(v) => setSetupStep(si, 'multiple', v)
 							">
@@ -202,7 +202,7 @@
 						<NcCheckboxRadioSwitch
 							v-if="step.type === 'summary'"
 							type="switch"
-							:model-value="step.healthCheck === true"
+							:modelValue="step.healthCheck === true"
 							@update:modelValue="
 								(v) => setSetupStep(si, 'healthCheck', v)
 							">
@@ -218,8 +218,8 @@
 
 		<WalkthroughRecorder
 			v-else-if="recording"
-			:app-slug="appSlug"
-			:version-slug="versionSlug"
+			:appSlug="appSlug"
+			:versionSlug="versionSlug"
 			@pick="onRecorderPick"
 			@close="recording = false" />
 
@@ -229,7 +229,7 @@
 				<div class="wt-designer__rail-head">
 					<strong>{{ t('openbuild', 'Tours') }}</strong>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openbuild', 'Add tour')"
 						@click="addTour">
 						<template #icon>
@@ -277,22 +277,22 @@
 				<div class="wt-designer__fields">
 					<NcTextField
 						:label="t('openbuild', 'Tour id')"
-						:model-value="activeTour.id || ''"
+						:modelValue="activeTour.id || ''"
 						@update:modelValue="(v) => setTour('id', v)" />
 					<NcTextField
 						:label="t('openbuild', 'Title')"
-						:model-value="activeTour.title || ''"
+						:modelValue="activeTour.title || ''"
 						@update:modelValue="(v) => setTour('title', v)" />
 					<NcSelect
-						:input-label="t('openbuild', 'Trigger')"
+						:inputLabel="t('openbuild', 'Trigger')"
 						:options="TRIGGERS"
-						:model-value="activeTour.trigger || 'manual'"
+						:modelValue="activeTour.trigger || 'manual'"
 						@update:modelValue="(v) => setTour('trigger', v)" />
 					<NcTextField
 						:label="t('openbuild', 'Min app version')"
-						:model-value="activeTour.minAppVersion || ''"
+						:modelValue="activeTour.minAppVersion || ''"
 						@update:modelValue="(v) => setTour('minAppVersion', v)" />
-					<NcButton type="error" @click="deleteTour">
+					<NcButton variant="error" @click="deleteTour">
 						{{ t('openbuild', 'Delete tour') }}
 					</NcButton>
 				</div>
@@ -302,14 +302,14 @@
 					<span class="wt-designer__spacer" />
 					<NcButton
 						v-if="appSlug"
-						type="secondary"
+						variant="secondary"
 						@click="recording = true">
 						<template #icon>
 							<RecordCircleOutline :size="20" />
 						</template>
 						{{ t('openbuild', 'Record from app') }}
 					</NcButton>
-					<NcButton type="secondary" @click="addStep">
+					<NcButton variant="secondary" @click="addStep">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
@@ -326,10 +326,10 @@
 							<span class="wt-designer__step-num">{{ si + 1 }}</span>
 							<NcTextField
 								:label="t('openbuild', 'Step id')"
-								:model-value="step.id || ''"
+								:modelValue="step.id || ''"
 								@update:modelValue="(v) => setStep(si, 'id', v)" />
 							<NcButton
-								type="tertiary"
+								variant="tertiary"
 								:disabled="si === 0"
 								:aria-label="t('openbuild', 'Move up')"
 								@click="moveStep(si, -1)">
@@ -338,7 +338,7 @@
 								</template>
 							</NcButton>
 							<NcButton
-								type="tertiary"
+								variant="tertiary"
 								:disabled="si === activeTour.steps.length - 1"
 								:aria-label="t('openbuild', 'Move down')"
 								@click="moveStep(si, 1)">
@@ -347,7 +347,7 @@
 								</template>
 							</NcButton>
 							<NcButton
-								type="tertiary"
+								variant="tertiary"
 								:aria-label="t('openbuild', 'Delete step')"
 								@click="deleteStep(si)">
 								<template #icon>
@@ -358,35 +358,35 @@
 						<div class="wt-designer__step-grid">
 							<NcTextField
 								:label="t('openbuild', 'Title')"
-								:model-value="step.title || ''"
+								:modelValue="step.title || ''"
 								@update:modelValue="
 									(v) => setStep(si, 'title', v)
 								" />
 							<NcTextField
 								:label="t('openbuild', 'Body')"
-								:model-value="step.body || ''"
+								:modelValue="step.body || ''"
 								@update:modelValue="(v) => setStep(si, 'body', v)" />
 							<NcTextField
 								:label="t('openbuild', 'Task (optional)')"
-								:model-value="step.task || ''"
+								:modelValue="step.task || ''"
 								@update:modelValue="(v) => setStep(si, 'task', v)" />
 							<NcTextField
 								:label="t('openbuild', 'Since version')"
-								:model-value="step.sinceVersion || ''"
+								:modelValue="step.sinceVersion || ''"
 								@update:modelValue="
 									(v) => setStep(si, 'sinceVersion', v)
 								" />
 							<NcSelect
-								:input-label="t('openbuild', 'Placement')"
+								:inputLabel="t('openbuild', 'Placement')"
 								:options="PLACEMENTS"
-								:model-value="step.placement || 'auto'"
+								:modelValue="step.placement || 'auto'"
 								@update:modelValue="
 									(v) => setStep(si, 'placement', v)
 								" />
 							<NcSelect
-								:input-label="t('openbuild', 'Target kind')"
+								:inputLabel="t('openbuild', 'Target kind')"
 								:options="TARGET_KINDS"
-								:model-value="
+								:modelValue="
 									(step.target && step.target.kind) || 'nav-item'
 								"
 								@update:modelValue="
@@ -399,14 +399,14 @@
 										'Target ref (route / widgetKey / id)',
 									)
 								"
-								:model-value="(step.target && step.target.ref) || ''"
+								:modelValue="(step.target && step.target.ref) || ''"
 								@update:modelValue="
 									(v) => setTarget(si, 'ref', v)
 								" />
 							<NcSelect
-								:input-label="t('openbuild', 'Advance on')"
+								:inputLabel="t('openbuild', 'Advance on')"
 								:options="ADVANCE_TYPES"
-								:model-value="
+								:modelValue="
 									(step.advanceOn && step.advanceOn.type)
 									|| 'manual'
 								"
@@ -416,7 +416,7 @@
 							<NcTextField
 								v-if="(step.advanceOn || {}).type === 'route-match'"
 								:label="t('openbuild', 'Route')"
-								:model-value="
+								:modelValue="
 									(step.advanceOn && step.advanceOn.route) || ''
 								"
 								@update:modelValue="
@@ -428,7 +428,7 @@
 								">
 								<NcTextField
 									:label="t('openbuild', 'Register')"
-									:model-value="
+									:modelValue="
 										(step.advanceOn && step.advanceOn.register)
 										|| ''
 									"
@@ -437,7 +437,7 @@
 									" />
 								<NcTextField
 									:label="t('openbuild', 'Schema')"
-									:model-value="
+									:modelValue="
 										(step.advanceOn && step.advanceOn.schema)
 										|| ''
 									"
@@ -449,7 +449,7 @@
 						<div class="wt-designer__step-switches">
 							<NcCheckboxRadioSwitch
 								type="switch"
-								:model-value="step.optional === true"
+								:modelValue="step.optional === true"
 								@update:modelValue="
 									(v) => setStep(si, 'optional', v)
 								">
@@ -457,7 +457,7 @@
 							</NcCheckboxRadioSwitch>
 							<NcCheckboxRadioSwitch
 								type="switch"
-								:model-value="step.allowManualNext === true"
+								:modelValue="step.allowManualNext === true"
 								@update:modelValue="
 									(v) => setStep(si, 'allowManualNext', v)
 								">
@@ -480,20 +480,20 @@
 </template>
 
 <script>
+import { validateManifest } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import {
 	NcButton,
-	NcTextField,
-	NcSelect,
 	NcCheckboxRadioSwitch,
 	NcNoteCard,
+	NcSelect,
+	NcTextField,
 } from '@nextcloud/vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
-import ArrowUp from 'vue-material-design-icons/ArrowUp.vue'
 import ArrowDown from 'vue-material-design-icons/ArrowDown.vue'
+import ArrowUp from 'vue-material-design-icons/ArrowUp.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 import RecordCircleOutline from 'vue-material-design-icons/RecordCircleOutline.vue'
-import { validateManifest } from '@conduction/nextcloud-vue'
 import WalkthroughRecorder from './WalkthroughRecorder.vue'
 
 const TRIGGERS = ['first-visit', 'version-bump', 'empty-index', 'manual']
@@ -574,25 +574,31 @@ export default {
 				}
 			)
 		},
+
 		enabled() {
 			return this.walkthrough.enabled !== false
 		},
+
 		tours() {
 			return Array.isArray(this.walkthrough.tours)
 				? this.walkthrough.tours
 				: []
 		},
+
 		activeTour() {
 			return this.tours[this.activeTourIndex] || null
 		},
+
 		errors() {
 			const { errors } = validateManifest(this.manifest || {})
 			const scope = this.mode === 'setup' ? 'setup' : 'walkthrough'
 			return (errors || []).filter((e) => String(e).includes(scope))
 		},
+
 		valid() {
 			return this.errors.length === 0
 		},
+
 		setup() {
 			return (
 				(this.manifest && this.manifest.setup) || {
@@ -601,9 +607,11 @@ export default {
 				}
 			)
 		},
+
 		setupEnabled() {
 			return this.setup.enabled !== false
 		},
+
 		setupSteps() {
 			return Array.isArray(this.setup.steps) ? this.setup.steps : []
 		},
@@ -620,14 +628,17 @@ export default {
 		commit(walkthrough) {
 			this.$emit('update:manifest', { ...(this.manifest || {}), walkthrough })
 		},
+
 		clone() {
 			return JSON.parse(JSON.stringify(this.walkthrough))
 		},
+
 		setEnabled(v) {
 			const w = this.clone()
 			w.enabled = v
 			this.commit(w)
 		},
+
 		addTour() {
 			const w = this.clone()
 			if (!Array.isArray(w.tours)) w.tours = []
@@ -642,17 +653,20 @@ export default {
 				this.activeTourIndex = w.tours.length - 1
 			})
 		},
+
 		deleteTour() {
 			const w = this.clone()
 			w.tours.splice(this.activeTourIndex, 1)
 			this.commit(w)
 			this.activeTourIndex = Math.max(0, this.activeTourIndex - 1)
 		},
+
 		setTour(key, value) {
 			const w = this.clone()
 			w.tours[this.activeTourIndex][key] = value
 			this.commit(w)
 		},
+
 		addStep() {
 			const w = this.clone()
 			const tour = w.tours[this.activeTourIndex]
@@ -665,6 +679,7 @@ export default {
 			})
 			this.commit(w)
 		},
+
 		/**
 		 * Append a step from a recorder pick. The resolved target drives a
 		 * sensible default advance: clicking an instrumented control records a
@@ -693,11 +708,13 @@ export default {
 			})
 			this.commit(w)
 		},
+
 		deleteStep(si) {
 			const w = this.clone()
 			w.tours[this.activeTourIndex].steps.splice(si, 1)
 			this.commit(w)
 		},
+
 		moveStep(si, dir) {
 			const w = this.clone()
 			const steps = w.tours[this.activeTourIndex].steps
@@ -707,17 +724,20 @@ export default {
 			steps.splice(j, 0, moved)
 			this.commit(w)
 		},
+
 		setStep(si, key, value) {
 			const w = this.clone()
 			w.tours[this.activeTourIndex].steps[si][key] = value
 			this.commit(w)
 		},
+
 		setTarget(si, key, value) {
 			const w = this.clone()
 			const step = w.tours[this.activeTourIndex].steps[si]
 			step.target = { ...(step.target || {}), [key]: value }
 			this.commit(w)
 		},
+
 		setAdvance(si, key, value) {
 			const w = this.clone()
 			const step = w.tours[this.activeTourIndex].steps[si]
@@ -735,14 +755,17 @@ export default {
 		commitSetup(setup) {
 			this.$emit('update:manifest', { ...(this.manifest || {}), setup })
 		},
+
 		cloneSetup() {
 			return JSON.parse(JSON.stringify(this.setup))
 		},
+
 		setSetupEnabled(v) {
 			const s = this.cloneSetup()
 			s.enabled = v
 			this.commitSetup(s)
 		},
+
 		addSetupStep() {
 			const s = this.cloneSetup()
 			if (!Array.isArray(s.steps)) s.steps = []
@@ -753,11 +776,13 @@ export default {
 			})
 			this.commitSetup(s)
 		},
+
 		deleteSetupStep(si) {
 			const s = this.cloneSetup()
 			s.steps.splice(si, 1)
 			this.commitSetup(s)
 		},
+
 		moveSetupStep(si, dir) {
 			const s = this.cloneSetup()
 			const j = si + dir
@@ -766,11 +791,13 @@ export default {
 			s.steps.splice(j, 0, moved)
 			this.commitSetup(s)
 		},
+
 		setSetupStep(si, key, value) {
 			const s = this.cloneSetup()
 			s.steps[si][key] = value
 			this.commitSetup(s)
 		},
+
 		addSetupOption(si) {
 			const s = this.cloneSetup()
 			const step = s.steps[si]
@@ -778,11 +805,13 @@ export default {
 			step.options.push({ value: '', label: '' })
 			this.commitSetup(s)
 		},
+
 		setSetupOption(si, oi, key, value) {
 			const s = this.cloneSetup()
 			s.steps[si].options[oi][key] = value
 			this.commitSetup(s)
 		},
+
 		deleteSetupOption(si, oi) {
 			const s = this.cloneSetup()
 			s.steps[si].options.splice(oi, 1)

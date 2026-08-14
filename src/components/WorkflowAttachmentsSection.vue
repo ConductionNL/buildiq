@@ -15,7 +15,7 @@
 			<h3 class="ob-workflows-section__title">
 				{{ t('openbuild', 'Workflows') }}
 			</h3>
-			<NcButton type="secondary" @click="openAdd">
+			<NcButton variant="secondary" @click="openAdd">
 				{{ t('openbuild', 'Attach case type') }}
 			</NcButton>
 		</header>
@@ -45,10 +45,10 @@
 					</span>
 				</div>
 				<div class="ob-workflows-section__item-actions">
-					<NcButton type="tertiary" @click="openEdit(wf)">
+					<NcButton variant="tertiary" @click="openEdit(wf)">
 						{{ t('openbuild', 'Edit') }}
 					</NcButton>
-					<NcButton type="tertiary" @click="detach(wf)">
+					<NcButton variant="tertiary" @click="detach(wf)">
 						{{ t('openbuild', 'Detach') }}
 					</NcButton>
 				</div>
@@ -58,11 +58,11 @@
 		<WorkflowAttachmentDialog
 			v-model:open="dialogOpen"
 			:schemas="schemas"
-			:attached-schemas="attachedSchemas"
+			:attachedSchemas="attachedSchemas"
 			:attachment="editingAttachment"
-			:procest-available="procestAvailable"
+			:procestAvailable="procestAvailable"
 			@save="onDialogSave"
-			@create-link-property="$emit('create-link-property', $event)" />
+			@createLinkProperty="$emit('create-link-property', $event)" />
 
 		<ConfirmActionDialog
 			v-model:open="confirmDetachOpen"
@@ -73,7 +73,7 @@
 					'Detach this case type? Existing linked cases are NOT deleted and object links are kept.',
 				)
 			"
-			:confirm-label="t('openbuild', 'Detach')"
+			:confirmLabel="t('openbuild', 'Detach')"
 			destructive
 			@confirm="onConfirmDetach" />
 	</section>
@@ -81,8 +81,8 @@
 
 <script>
 import { NcButton } from '@nextcloud/vue'
-import WorkflowAttachmentDialog from '../dialogs/WorkflowAttachmentDialog.vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
+import WorkflowAttachmentDialog from '../dialogs/WorkflowAttachmentDialog.vue'
 
 export default {
 	name: 'WorkflowAttachmentsSection',
@@ -92,16 +92,19 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		// The app's schemas, passed through to the dialog's pickers.
 		schemas: {
 			type: Array,
 			default: () => [],
 		},
+
 		procestAvailable: {
 			type: Boolean,
 			default: true,
 		},
 	},
+
 	emits: ['update:manifest', 'create-link-property'],
 	data() {
 		return {
@@ -111,6 +114,7 @@ export default {
 			pendingDetach: null,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		attachments() {
@@ -121,17 +125,20 @@ export default {
 				|| []
 			)
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		attachedSchemas() {
 			return this.attachments.map((wf) => wf.schema)
 		},
 	},
+
 	methods: {
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		openAdd() {
 			this.editingAttachment = null
 			this.dialogOpen = true
 		},
+
 		/**
 		 * Open the attachment dialog on an existing entry.
 		 *
@@ -146,6 +153,7 @@ export default {
 			this.editingAttachment = wf
 			this.dialogOpen = true
 		},
+
 		/**
 		 * Persist an added/edited attachment into `runtime.workflows[]`.
 		 *
@@ -167,6 +175,7 @@ export default {
 			}
 			this.$emit('update:manifest', next)
 		},
+
 		/**
 		 * Detach an attachment (existing linked cases are unaffected).
 		 *
@@ -177,6 +186,7 @@ export default {
 			this.pendingDetach = wf
 			this.confirmDetachOpen = true
 		},
+
 		/**
 		 * Detach the pending attachment once the user has confirmed.
 		 *
@@ -196,6 +206,7 @@ export default {
 			const list = this.attachments.filter((a) => a.id !== wf.id)
 			this.$emit('update:manifest', this.withWorkflows(list))
 		},
+
 		/**
 		 * Return a manifest copy with the given workflows list set (or the
 		 * `runtime.workflows` key removed when empty so zero-attachment
@@ -220,6 +231,7 @@ export default {
 			}
 			return next
 		},
+
 		/**
 		 * Inject a `procest-case-status` tab into the detail page that targets
 		 * the attachment's schema, if such a page exists and lacks one.

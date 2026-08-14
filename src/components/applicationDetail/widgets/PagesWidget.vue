@@ -47,6 +47,7 @@ export default {
 		versionSlug: { type: String, default: '' },
 		pages: { type: Array, default: () => [] },
 	},
+
 	methods: {
 		/**
 		 * Open the page designer for the clicked row, preserving `?_version=`

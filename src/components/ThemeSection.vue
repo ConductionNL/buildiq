@@ -17,7 +17,7 @@
 			</h3>
 			<div class="ob-theme-section__actions">
 				<NcButton
-					type="secondary"
+					variant="secondary"
 					:disabled="!nldesignAvailable"
 					:title="
 						nldesignAvailable
@@ -30,7 +30,7 @@
 					@click="openPicker">
 					{{ t('openbuild', 'Change') }}
 				</NcButton>
-				<NcButton v-if="theme" type="tertiary" @click="removeTheme">
+				<NcButton v-if="theme" variant="tertiary" @click="removeTheme">
 					{{ t('openbuild', 'Remove') }}
 				</NcButton>
 			</div>
@@ -61,8 +61,8 @@
 		<ThemePickerDialog
 			v-model:open="dialogOpen"
 			:theme="theme"
-			:nldesign-available="nldesignAvailable"
-			:preview-available="previewAvailable"
+			:nldesignAvailable="nldesignAvailable"
+			:previewAvailable="previewAvailable"
 			@save="onSave"
 			@clear="removeTheme"
 			@preview="$emit('preview', $event)" />
@@ -76,7 +76,7 @@
 					'Remove the theme? This app will render in the default Nextcloud styling.',
 				)
 			"
-			:confirm-label="t('openbuild', 'Remove')"
+			:confirmLabel="t('openbuild', 'Remove')"
 			destructive
 			@confirm="onConfirmRemoveTheme" />
 	</section>
@@ -84,8 +84,8 @@
 
 <script>
 import { NcButton } from '@nextcloud/vue'
-import ThemePickerDialog from '../dialogs/ThemePickerDialog.vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
+import ThemePickerDialog from '../dialogs/ThemePickerDialog.vue'
 
 export default {
 	name: 'ThemeSection',
@@ -95,10 +95,12 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		nldesignAvailable: {
 			type: Boolean,
 			default: true,
 		},
+
 		// REQ-NTS-002 (design.md OQ-1, task 3.3): whether the page-designer
 		// live-preview-pane's sandboxed CnAppRoot is mounted — forwarded to
 		// ThemePickerDialog so its live-preview toggle disables with a hint
@@ -108,6 +110,7 @@ export default {
 			default: true,
 		},
 	},
+
 	emits: ['update:manifest', 'preview'],
 	data() {
 		return {
@@ -115,6 +118,7 @@ export default {
 			confirmRemoveOpen: false,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		theme() {
@@ -125,6 +129,7 @@ export default {
 				|| null
 			)
 		},
+
 		/** @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		primaryColor() {
 			return (
@@ -132,6 +137,7 @@ export default {
 				|| 'var(--color-primary-element)'
 			)
 		},
+
 		/** @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		backgroundColor() {
 			return (
@@ -142,6 +148,7 @@ export default {
 			)
 		},
 	},
+
 	methods: {
 		/** @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		openPicker() {
@@ -150,6 +157,7 @@ export default {
 			}
 			this.dialogOpen = true
 		},
+
 		/**
 		 * Persist the chosen theme into `runtime.theme`.
 		 *
@@ -159,6 +167,7 @@ export default {
 		onSave(theme) {
 			this.$emit('update:manifest', this.withTheme(theme))
 		},
+
 		/**
 		 * Remove the theme (delete `runtime.theme` entirely).
 		 *
@@ -167,6 +176,7 @@ export default {
 		removeTheme() {
 			this.confirmRemoveOpen = true
 		},
+
 		/**
 		 * Apply the removal once the user has confirmed it in the dialog.
 		 *
@@ -181,6 +191,7 @@ export default {
 			this.confirmRemoveOpen = false
 			this.$emit('update:manifest', this.withTheme(null))
 		},
+
 		/**
 		 * Return a manifest copy with `runtime.theme` set (or removed when null
 		 * so themeless manifests serialize byte-identically). Never touches

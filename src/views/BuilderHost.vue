@@ -34,9 +34,9 @@
 		<CnAppRoot
 			v-else
 			:key="cacheKey"
-			:app-id="appId"
-			:ai-companion="true"
-			:bundled-manifest="placeholderManifest"
+			:appId="appId"
+			:aiCompanion="true"
+			:bundledManifest="placeholderManifest"
 			:registry="runtimeRegistry"
 			:data-sources-loader="dataSourcesLoader"
 			:options="manifestOptions" />
@@ -46,21 +46,21 @@
 <script>
 import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { generateUrl } from '@nextcloud/router'
-
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import {
-	useRegisterPicker,
 	registerScope,
+	useRegisterPicker,
 } from '../composables/useRegisterPicker.js'
+import placeholderManifest from '../manifests/placeholder.json'
 import { runtimeRegistry } from '../runtimeRegistry.js'
 import { registerSlugForApp } from '../store/schemas.js'
-import placeholderManifest from '../manifests/placeholder.json'
 
 export default {
 	name: 'BuilderHost',
 	components: {
 		CnAppRoot,
 	},
+
 	data() {
 		return {
 			// REQ-OBVR-004: reactive version state from useApplicationVersion.
@@ -74,6 +74,7 @@ export default {
 			runtimeRegistry,
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `slug` (retrofit annotation).
@@ -83,6 +84,7 @@ export default {
 		slug() {
 			return this.$route.params.slug
 		},
+
 		/**
 		 * REQ-OBVR-004: read `?_version=` from the URL query.
 		 * Underscore-prefix to avoid colliding with user-defined `?version=` params.
@@ -93,6 +95,7 @@ export default {
 		versionSlug() {
 			return this.$route.query._version || undefined
 		},
+
 		/**
 		 * Observed behaviour of `appId` (retrofit annotation).
 		 *
@@ -101,6 +104,7 @@ export default {
 		appId() {
 			return `openbuild-${this.slug}`
 		},
+
 		/**
 		 * Cache key forces CnAppRoot remount when slug OR version changes.
 		 *
@@ -110,6 +114,7 @@ export default {
 		cacheKey() {
 			return `${this.slug}:${this.versionSlug || 'default'}`
 		},
+
 		/**
 		 * REQ-OBVR-009: true when the version fetch completed with an error
 		 * (e.g. 404 for unknown or unauthorised version). The view renders a
@@ -126,6 +131,7 @@ export default {
 				&& this.applicationVersion === null
 			)
 		},
+
 		/**
 		 * Observed behaviour of `placeholderManifest` (retrofit annotation).
 		 *
@@ -134,6 +140,7 @@ export default {
 		placeholderManifest() {
 			return placeholderManifest
 		},
+
 		/**
 		 * Observed behaviour of `manifestOptions` (retrofit annotation).
 		 *
@@ -152,6 +159,7 @@ export default {
 			}
 		},
 	},
+
 	watch: {
 		/**
 		 * Observed behaviour of `slug` (retrofit annotation).
@@ -161,6 +169,7 @@ export default {
 		slug() {
 			this.resolveVersion()
 		},
+
 		/**
 		 * Observed behaviour of `versionSlug` (retrofit annotation).
 		 *
@@ -170,6 +179,7 @@ export default {
 			this.resolveVersion()
 		},
 	},
+
 	/**
 	 * Observed behaviour of `created` (retrofit annotation).
 	 *
@@ -181,6 +191,7 @@ export default {
 		// and break bookmarkability (REQ-OBVR-008).
 		this.resolveVersion()
 	},
+
 	// REQ-NTS-003: no beforeDestroy teardown needed — CnAppRoot owns its own
 	// scoped-theme lifecycle (mount-apply/unmount-teardown) via `useScopedTheme`,
 	// with zero OpenBuild-side wiring (theme-picker-consumes-nldesign).
@@ -222,6 +233,7 @@ export default {
 				},
 			)
 		},
+
 		/**
 		 * Load the `dataSources` for the nested CnAppRoot's in-app pages editor
 		 * (ADR-041), so its Register / Schema / Columns pickers render as populated

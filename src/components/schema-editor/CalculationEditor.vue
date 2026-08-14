@@ -39,6 +39,7 @@ export default {
 	props: {
 		calculations: { type: [Object, Array], default: null },
 	},
+
 	computed: {
 		/**
 		 * Render the calculations block as pretty JSON for read-only display.

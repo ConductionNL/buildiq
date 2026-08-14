@@ -69,7 +69,7 @@
 			class="settings-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Sections') }}</legend>
 			<SettingsSectionBuilder
-				:model-value="config.sections || []"
+				:modelValue="config.sections || []"
 				@update:modelValue="update('sections', $event)" />
 			<InlineFieldMark :error="markFor('sections')" />
 		</fieldset>
@@ -115,7 +115,7 @@
 					</button>
 				</div>
 				<SettingsSectionBuilder
-					:model-value="tab.sections || []"
+					:modelValue="tab.sections || []"
 					@update:modelValue="updateTabField(index, 'sections', $event)" />
 			</div>
 			<button type="button" class="settings-page-editor__add" @click="addTab">
@@ -127,8 +127,8 @@
 </template>
 
 <script>
-import SettingsSectionBuilder from './fields/SettingsSectionBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import SettingsSectionBuilder from './fields/SettingsSectionBuilder.vue'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
@@ -140,19 +140,23 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'settings',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	computed: {
 		/**
@@ -163,6 +167,7 @@ export default {
 		validatedConfigKeys() {
 			return ['saveEndpoint', 'sections', 'tabs']
 		},
+
 		/**
 		 * Observed behaviour of `layoutShape` (retrofit annotation).
 		 *
@@ -179,6 +184,7 @@ export default {
 			}
 			return 'sections'
 		},
+
 		/**
 		 * Observed behaviour of `tabs` (retrofit annotation).
 		 *
@@ -188,6 +194,7 @@ export default {
 			return Array.isArray(this.config.tabs) ? this.config.tabs : []
 		},
 	},
+
 	methods: {
 		/**
 		 * Write one key on the page's `config` block. Only the named key is
@@ -216,6 +223,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Switch between the two mutually exclusive layouts, deleting the key
 		 * of the branch being left and seeding an empty array for the branch
@@ -241,6 +249,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Write one key on one tab of the tabbed layout, leaving that tab's
 		 * other keys and the rest of the tab list alone.
@@ -263,6 +272,7 @@ export default {
 			next.tabs = tabsArr
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Observed behaviour of `addTab` (retrofit annotation).
 		 *
@@ -274,6 +284,7 @@ export default {
 			delete next.sections
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Drop one tab, along with the sections authored under it. `tabs` is
 		 * kept even when the last tab goes, so the layout stays on the tabbed

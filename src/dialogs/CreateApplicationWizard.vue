@@ -21,23 +21,23 @@
 	<CnWizardDialog
 		v-if="show"
 		ref="wizard"
-		:dialog-title="t('openbuild', 'Create app')"
+		:dialogTitle="t('openbuild', 'Create app')"
 		:steps="wizardSteps"
 		:defaults="defaults"
 		:validate="validateStep"
-		:cancel-label="t('openbuild', 'Cancel')"
-		:back-label="t('openbuild', 'Back')"
-		:next-label="t('openbuild', 'Next')"
-		:submit-label="t('openbuild', 'Create')"
-		:close-label="t('openbuild', 'Close')"
-		:success-text="t('openbuild', 'App created.')"
+		:cancelLabel="t('openbuild', 'Cancel')"
+		:backLabel="t('openbuild', 'Back')"
+		:nextLabel="t('openbuild', 'Next')"
+		:submitLabel="t('openbuild', 'Create')"
+		:closeLabel="t('openbuild', 'Close')"
+		:successText="t('openbuild', 'App created.')"
 		@submit="onSubmit"
 		@close="onClose">
 		<template #step-basics="{ stepData, setStepData }">
 			<Step1Basics
 				:payload="stepData"
 				@update:payload="setStepData"
-				@ai-app-created="onAiAppCreated" />
+				@aiAppCreated="onAiAppCreated" />
 		</template>
 
 		<template #step-preset="{ stepData, setStepData }">
@@ -59,15 +59,14 @@
 </template>
 
 <script>
+import { CnWizardDialog } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { CnWizardDialog } from '@conduction/nextcloud-vue'
-
-import { resolveAppIcon } from '../utils/iconCatalogues.js'
 import Step1Basics from './CreateApplicationWizard/Step1Basics.vue'
 import Step2Preset from './CreateApplicationWizard/Step2Preset.vue'
 import Step3Custom from './CreateApplicationWizard/Step3Custom.vue'
 import Step4Review from './CreateApplicationWizard/Step4Review.vue'
+import { resolveAppIcon } from '../utils/iconCatalogues.js'
 
 export default {
 	name: 'CreateApplicationWizard',
@@ -150,7 +149,7 @@ export default {
 		 */
 		onPresetUpdate(partial, setStepData) {
 			setStepData(partial)
-			if (partial && Object.prototype.hasOwnProperty.call(partial, 'preset')) {
+			if (partial && Object.hasOwn(partial, 'preset')) {
 				this.presetSelected = partial.preset
 			}
 		},

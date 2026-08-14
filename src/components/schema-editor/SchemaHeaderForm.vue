@@ -11,12 +11,12 @@
 	<form class="openbuild-schema-header-form" @submit.prevent>
 		<div class="openbuild-schema-header-form__row">
 			<NcTextField
-				:model-value="value.slug"
+				:modelValue="value.slug"
 				:label="t('openbuild', 'Schema slug')"
 				:placeholder="t('openbuild', 'kebab-case, e.g. customer')"
 				:disabled="lockedSlug"
 				:error="!!slugError || (touched.slug && !slugValid)"
-				:helper-text="
+				:helperText="
 					slugError
 					|| (touched.slug && !slugValid
 						? t(
@@ -30,10 +30,10 @@
 		</div>
 		<div class="openbuild-schema-header-form__row">
 			<NcTextField
-				:model-value="value.title"
+				:modelValue="value.title"
 				:label="t('openbuild', 'Title')"
 				:error="touched.title && !titleValid"
-				:helper-text="
+				:helperText="
 					touched.title && !titleValid
 						? t('openbuild', 'Title is required.')
 						: ''
@@ -43,18 +43,18 @@
 		</div>
 		<div class="openbuild-schema-header-form__row">
 			<NcTextField
-				:model-value="value.description || ''"
+				:modelValue="value.description || ''"
 				:label="t('openbuild', 'Description')"
 				:placeholder="t('openbuild', 'Optional')"
 				@update:modelValue="onChange('description', $event)" />
 		</div>
 		<div class="openbuild-schema-header-form__row">
 			<NcTextField
-				:model-value="value.version"
+				:modelValue="value.version"
 				:label="t('openbuild', 'Version (semver)')"
-				:placeholder="'0.1.0'"
+				placeholder="0.1.0"
 				:error="touched.version && !versionValid"
-				:helper-text="
+				:helperText="
 					touched.version && !versionValid
 						? t(
 								'openbuild',
@@ -82,9 +82,11 @@ export default {
 			type: Object,
 			required: true,
 		},
+
 		slugError: { type: String, default: '' },
 		lockedSlug: { type: Boolean, default: false },
 	},
+
 	emits: ['input'],
 	data() {
 		return {
@@ -95,6 +97,7 @@ export default {
 			},
 		}
 	},
+
 	computed: {
 		/**
 		 * Validate the slug against the lowercase-kebab pattern.
@@ -105,6 +108,7 @@ export default {
 		slugValid() {
 			return SLUG_PATTERN.test(this.value.slug || '')
 		},
+
 		/**
 		 * Validate that a non-empty title is present.
 		 *
@@ -114,6 +118,7 @@ export default {
 		titleValid() {
 			return !!(this.value.title && this.value.title.trim())
 		},
+
 		/**
 		 * Validate the version string against semver MAJOR.MINOR.PATCH.
 		 *
@@ -123,6 +128,7 @@ export default {
 		versionValid() {
 			return SEMVER_PATTERN.test(this.value.version || '')
 		},
+
 		/**
 		 * Aggregate validity of the whole header form.
 		 *
@@ -133,6 +139,7 @@ export default {
 			return this.slugValid && this.titleValid && this.versionValid
 		},
 	},
+
 	methods: {
 		/**
 		 * Emit an updated header object when a field changes.

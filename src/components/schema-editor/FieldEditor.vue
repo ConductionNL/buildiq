@@ -41,7 +41,7 @@
 				class="openbuild-field-editor__row">
 				<div class="openbuild-field-editor__handle">
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openbuild', 'Move up')"
 						:disabled="index === 0"
 						@click="moveUp(index)">
@@ -50,7 +50,7 @@
 						</template>
 					</NcButton>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openbuild', 'Move down')"
 						:disabled="index === fields.length - 1"
 						@click="moveDown(index)">
@@ -62,19 +62,19 @@
 
 				<div class="openbuild-field-editor__row-grid">
 					<NcTextField
-						:model-value="field.name"
+						:modelValue="field.name"
 						:label="t('openbuild', 'Name')"
 						:error="!!nameError(field, index)"
-						:helper-text="nameError(field, index)"
+						:helperText="nameError(field, index)"
 						@update:modelValue="updateField(index, 'name', $event)" />
 
 					<NcSelect
-						:input-label="t('openbuild', 'Type')"
-						:model-value="typeOption(field.type)"
+						:inputLabel="t('openbuild', 'Type')"
+						:modelValue="typeOption(field.type)"
 						:options="typeOptions"
 						:clearable="false"
 						label="label"
-						track-by="value"
+						trackBy="value"
 						@update:modelValue="
 							updateField(
 								index,
@@ -84,14 +84,14 @@
 						" />
 
 					<NcCheckboxRadioSwitch
-						:model-value="!!field.required"
+						:modelValue="!!field.required"
 						type="switch"
 						@update:modelValue="updateField(index, 'required', $event)">
 						{{ t('openbuild', 'Required') }}
 					</NcCheckboxRadioSwitch>
 
 					<NcTextField
-						:model-value="field.description || ''"
+						:modelValue="field.description || ''"
 						:label="t('openbuild', 'Description')"
 						@update:modelValue="
 							updateField(index, 'description', $event)
@@ -102,20 +102,20 @@
 					<!-- string -->
 					<template v-if="field.type === 'string'">
 						<NcTextField
-							:model-value="field.validation.format || ''"
+							:modelValue="field.validation.format || ''"
 							:label="t('openbuild', 'Format (optional)')"
-							:placeholder="'email, uri, date, …'"
+							placeholder="email, uri, date, …"
 							@update:modelValue="
 								updateValidation(index, 'format', $event)
 							" />
 						<NcTextField
-							:model-value="field.validation.pattern || ''"
+							:modelValue="field.validation.pattern || ''"
 							:label="t('openbuild', 'Pattern (regex, optional)')"
 							@update:modelValue="
 								updateValidation(index, 'pattern', $event)
 							" />
 						<NcTextField
-							:model-value="
+							:modelValue="
 								field.validation.minLength != null
 									? String(field.validation.minLength)
 									: ''
@@ -129,7 +129,7 @@
 								)
 							" />
 						<NcTextField
-							:model-value="
+							:modelValue="
 								field.validation.maxLength != null
 									? String(field.validation.maxLength)
 									: ''
@@ -150,7 +150,7 @@
 							field.type === 'number' || field.type === 'integer'
 						">
 						<NcTextField
-							:model-value="
+							:modelValue="
 								field.validation.minimum != null
 									? String(field.validation.minimum)
 									: ''
@@ -164,7 +164,7 @@
 								)
 							" />
 						<NcTextField
-							:model-value="
+							:modelValue="
 								field.validation.maximum != null
 									? String(field.validation.maximum)
 									: ''
@@ -178,7 +178,7 @@
 								)
 							" />
 						<NcTextField
-							:model-value="
+							:modelValue="
 								field.validation.multipleOf != null
 									? String(field.validation.multipleOf)
 									: ''
@@ -196,14 +196,14 @@
 					<!-- array -->
 					<template v-else-if="field.type === 'array'">
 						<NcSelect
-							:input-label="t('openbuild', 'Items type')"
-							:model-value="
+							:inputLabel="t('openbuild', 'Items type')"
+							:modelValue="
 								typeOption(field.validation.itemsType || 'string')
 							"
 							:options="itemsTypeOptions"
 							:clearable="false"
 							label="label"
-							track-by="value"
+							trackBy="value"
 							@update:modelValue="
 								updateValidation(
 									index,
@@ -212,7 +212,7 @@
 								)
 							" />
 						<NcTextField
-							:model-value="
+							:modelValue="
 								field.validation.minItems != null
 									? String(field.validation.minItems)
 									: ''
@@ -226,7 +226,7 @@
 								)
 							" />
 						<NcTextField
-							:model-value="
+							:modelValue="
 								field.validation.maxItems != null
 									? String(field.validation.maxItems)
 									: ''
@@ -244,12 +244,12 @@
 					<!-- relation -->
 					<template v-else-if="field.type === 'relation'">
 						<NcSelect
-							:input-label="t('openbuild', 'Target schema')"
-							:model-value="schemaOption(field.validation.target)"
+							:inputLabel="t('openbuild', 'Target schema')"
+							:modelValue="schemaOption(field.validation.target)"
 							:options="schemaOptions"
 							:clearable="false"
 							label="label"
-							track-by="value"
+							trackBy="value"
 							@update:modelValue="
 								updateValidation(
 									index,
@@ -258,8 +258,8 @@
 								)
 							" />
 						<NcSelect
-							:input-label="t('openbuild', 'Cardinality')"
-							:model-value="
+							:inputLabel="t('openbuild', 'Cardinality')"
+							:modelValue="
 								cardinalityOption(
 									field.validation.cardinality || 'one',
 								)
@@ -267,7 +267,7 @@
 							:options="cardinalityOptions"
 							:clearable="false"
 							label="label"
-							track-by="value"
+							trackBy="value"
 							@update:modelValue="
 								updateValidation(
 									index,
@@ -276,7 +276,7 @@
 								)
 							" />
 						<NcTextField
-							:model-value="field.validation.inverseOf || ''"
+							:modelValue="field.validation.inverseOf || ''"
 							:label="t('openbuild', 'Inverse-of property (optional)')"
 							@update:modelValue="
 								updateValidation(index, 'inverseOf', $event)
@@ -285,7 +285,7 @@
 				</div>
 
 				<div class="openbuild-field-editor__actions">
-					<NcButton type="error" @click="requestRemove(index)">
+					<NcButton variant="error" @click="requestRemove(index)">
 						<template #icon>
 							<DeleteIcon :size="20" />
 						</template>
@@ -297,7 +297,7 @@
 
 		<DeleteFieldDialog
 			:open="removeDialogOpen"
-			:field-name="pendingRemoveName"
+			:fieldName="pendingRemoveName"
 			@confirm="confirmRemove"
 			@cancel="cancelRemove"
 			@update:open="removeDialogOpen = $event" />
@@ -315,7 +315,6 @@ import ChevronDownIcon from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUpIcon from 'vue-material-design-icons/ChevronUp.vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
-
 import DeleteFieldDialog from '../../modals/DeleteFieldDialog.vue'
 
 const FIELD_NAME_PATTERN = /^[a-zA-Z][a-zA-Z0-9_-]*$/
@@ -333,6 +332,9 @@ const ITEMS_TYPES = ['string', 'number', 'integer', 'boolean', 'object']
 const CARDINALITIES = ['one', 'many']
 
 let keyCounter = 0
+/**
+ *
+ */
 function nextKey() {
 	keyCounter += 1
 	return `field-${keyCounter}`
@@ -351,10 +353,12 @@ export default {
 		NcTextField,
 		PlusIcon,
 	},
+
 	props: {
 		fields: { type: Array, default: () => [] },
 		schemaSlugs: { type: Array, default: () => [] },
 	},
+
 	emits: ['update:fields'],
 	data() {
 		return {
@@ -363,6 +367,7 @@ export default {
 			pendingRemoveName: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Build the field-type picker options.
@@ -376,6 +381,7 @@ export default {
 				label: this.t('openbuild', value),
 			}))
 		},
+
 		/**
 		 * Build the array-items-type picker options.
 		 *
@@ -388,6 +394,7 @@ export default {
 				label: this.t('openbuild', value),
 			}))
 		},
+
 		/**
 		 * Build relation target-schema picker options.
 		 *
@@ -397,6 +404,7 @@ export default {
 		schemaOptions() {
 			return this.schemaSlugs.map((slug) => ({ value: slug, label: slug }))
 		},
+
 		/**
 		 * Build cardinality picker options (one/many).
 		 *
@@ -413,6 +421,7 @@ export default {
 			}))
 		},
 	},
+
 	methods: {
 		/**
 		 * Resolve the selected field-type option.
@@ -426,6 +435,7 @@ export default {
 				this.typeOptions.find((o) => o.value === type) || this.typeOptions[0]
 			)
 		},
+
 		/**
 		 * Resolve the selected target-schema option.
 		 *
@@ -436,6 +446,7 @@ export default {
 		schemaOption(value) {
 			return this.schemaOptions.find((o) => o.value === value) || null
 		},
+
 		/**
 		 * Resolve the selected cardinality option.
 		 *
@@ -449,6 +460,7 @@ export default {
 				|| this.cardinalityOptions[0]
 			)
 		},
+
 		/**
 		 * Validate a field name: presence, pattern, and uniqueness.
 		 *
@@ -476,6 +488,7 @@ export default {
 			}
 			return ''
 		},
+
 		/**
 		 * Coerce an input to an integer or null.
 		 *
@@ -490,6 +503,7 @@ export default {
 			const parsed = parseInt(value, 10)
 			return Number.isFinite(parsed) ? parsed : null
 		},
+
 		/**
 		 * Coerce an input to a number or null.
 		 *
@@ -504,6 +518,7 @@ export default {
 			const parsed = Number(value)
 			return Number.isFinite(parsed) ? parsed : null
 		},
+
 		/**
 		 * Emit the updated fields array to the parent.
 		 *
@@ -514,6 +529,7 @@ export default {
 		emitFields(next) {
 			this.$emit('update:fields', next)
 		},
+
 		/**
 		 * Append a new blank field row.
 		 *
@@ -533,6 +549,7 @@ export default {
 			})
 			this.emitFields(next)
 		},
+
 		/**
 		 * Update a single field property; resets validation on type change.
 		 *
@@ -554,6 +571,7 @@ export default {
 			next[index] = current
 			this.emitFields(next)
 		},
+
 		/**
 		 * Set or clear a single validation slot on a field.
 		 *
@@ -576,6 +594,7 @@ export default {
 			next[index] = current
 			this.emitFields(next)
 		},
+
 		/**
 		 * Move a field up one position.
 		 *
@@ -592,6 +611,7 @@ export default {
 			next.splice(index - 1, 0, moved)
 			this.emitFields(next)
 		},
+
 		/**
 		 * Move a field down one position.
 		 *
@@ -608,6 +628,7 @@ export default {
 			next.splice(index + 1, 0, moved)
 			this.emitFields(next)
 		},
+
 		/**
 		 * Open the remove-field confirmation dialog.
 		 *
@@ -621,6 +642,7 @@ export default {
 				this.fields[index]?.name || this.t('openbuild', '(unnamed)')
 			this.removeDialogOpen = true
 		},
+
 		/**
 		 * Confirm removal of the pending field.
 		 *
@@ -637,6 +659,7 @@ export default {
 			this.emitFields(next)
 			this.cancelRemove()
 		},
+
 		/**
 		 * Cancel the pending field removal and reset state.
 		 *
@@ -687,6 +710,12 @@ export function schemaToFields(schema) {
 	return fields
 }
 
+/**
+ *
+ * @param name
+ * @param prop
+ * @param isRequired
+ */
 function fieldFromProperty(name, prop, isRequired) {
 	const type = prop['x-openregister-relation'] ? 'relation' : prop.type || 'string'
 	const validation = {}
@@ -745,6 +774,10 @@ export function fieldsToSchema(fields) {
 	return { properties, required, order }
 }
 
+/**
+ *
+ * @param field
+ */
 function propertyFromField(field) {
 	const prop = {}
 	if (field.description) {

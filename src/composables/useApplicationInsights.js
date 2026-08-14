@@ -18,9 +18,9 @@
 // Spec: openbuild-app-detail-overview / capability application-insights
 // (REQ-OBAI-001, REQ-OBAI-002, REQ-OBAI-006).
 
-import { ref, watch } from 'vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { ref, watch } from 'vue'
 
 /**
  * Composable that exposes the live insights payload for an Application + Version.

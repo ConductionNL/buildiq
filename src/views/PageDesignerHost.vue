@@ -60,7 +60,7 @@
 				</NcButton>
 				<NcButton
 					v-if="application"
-					type="primary"
+					variant="primary"
 					:disabled="saving"
 					@click="save">
 					{{
@@ -104,9 +104,9 @@
 			v-else
 			:manifest="manifest"
 			:slug="routeSlug"
-			:session-key="sessionKey"
+			:sessionKey="sessionKey"
 			@update:manifest="onManifestUpdate"
-			@save-and-preview="save" />
+			@saveAndPreview="save" />
 
 		<!-- REQ-PWA-002: Workflows section — attach Procest case types to the
 		     app's schemas. Soft-checks Procest availability for graceful absence. -->
@@ -114,9 +114,9 @@
 			v-if="application"
 			:manifest="manifest"
 			:schemas="appSchemas"
-			:procest-available="procestAvailable"
+			:procestAvailable="procestAvailable"
 			@update:manifest="onManifestUpdate"
-			@create-link-property="onCreateLinkProperty" />
+			@createLinkProperty="onCreateLinkProperty" />
 
 		<!-- REQ-NTS-002: Theme section — pick an NL Design token set for this
 		     app. Soft-checks nldesign availability for graceful absence.
@@ -126,8 +126,8 @@
 		<ThemeSection
 			v-if="application"
 			:manifest="manifest"
-			:nldesign-available="nldesignAvailable"
-			:preview-available="livePreviewAvailable"
+			:nldesignAvailable="nldesignAvailable"
+			:previewAvailable="livePreviewAvailable"
 			@update:manifest="onManifestUpdate"
 			@preview="onThemePreview" />
 
@@ -137,7 +137,7 @@
 			v-if="application"
 			:manifest="manifest"
 			:schemas="appSchemas"
-			:docudesk-available="docudeskAvailable"
+			:docudeskAvailable="docudeskAvailable"
 			@update:manifest="onManifestUpdate" />
 
 		<!-- REQ-OBSA-001: Scheduled tasks section — author the app's top-level
@@ -154,7 +154,7 @@
 		<aside
 			v-if="copilotToggleVisible && showCopilotPanel"
 			class="page-designer-host__copilot">
-			<CopilotPanel :app-slug="routeSlug" @executed="load" />
+			<CopilotPanel :appSlug="routeSlug" @executed="load" />
 		</aside>
 	</div>
 </template>
@@ -163,23 +163,23 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import CopilotPanel from '../components/copilot/CopilotPanel.vue'
+import DocumentAttachmentsSection from '../components/DocumentAttachmentsSection.vue'
+import SchedulesSection from '../components/SchedulesSection.vue'
+import ThemeSection from '../components/ThemeSection.vue'
+import WorkflowAttachmentsSection from '../components/WorkflowAttachmentsSection.vue'
+import PageDesigner from './PageDesigner.vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useAppStatus } from '../composables/useAppStatus.js'
-import { useLivePreview } from '../composables/useLivePreview.js'
 import { useCopilot } from '../composables/useCopilot.js'
+import { useLivePreview } from '../composables/useLivePreview.js'
 import {
-	reconcileWorkflowDependency,
 	reconcileConnectorDependency,
 	reconcileDocumentDependency,
+	reconcileWorkflowDependency,
 	stripDependencyMarker,
 } from '../services/manifestDependencies.js'
 import { assignUnassignedFieldsToFinalStep } from '../services/manifestValidation/formLogic.js'
-import PageDesigner from './PageDesigner.vue'
-import WorkflowAttachmentsSection from '../components/WorkflowAttachmentsSection.vue'
-import ThemeSection from '../components/ThemeSection.vue'
-import DocumentAttachmentsSection from '../components/DocumentAttachmentsSection.vue'
-import SchedulesSection from '../components/SchedulesSection.vue'
-import CopilotPanel from '../components/copilot/CopilotPanel.vue'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
 
@@ -286,6 +286,7 @@ export default {
 			}
 			return []
 		},
+
 		/**
 		 * The virtual-app slug from the route (/builder/:slug/pages).
 		 *
@@ -396,6 +397,7 @@ export default {
 			await this.resolveVersion()
 			await this.load()
 		},
+
 		/**
 		 * A `?_version=` switch must reload the manifest from the newly
 		 * resolved ApplicationVersion — pre-existing gap fixed here
@@ -498,6 +500,7 @@ export default {
 			)
 			this.themePreviewBaseline = undefined
 		},
+
 		/**
 		 * Return a manifest copy with `runtime.theme` set (or removed when
 		 * `theme` is falsy, so a themeless revert serializes byte-identically).
@@ -525,6 +528,7 @@ export default {
 			}
 			return next
 		},
+
 		/**
 		 * Delegate one-click link-property creation to the schema designer.
 		 * Emitted up from the Workflows dialog; opens the schema designer for
@@ -548,6 +552,7 @@ export default {
 			)
 			window.location.href = `${base}?schema=${encodeURIComponent(schemaSlug)}&addProperty=zaakUrl`
 		},
+
 		/**
 		 * Resolve the active ApplicationVersion via useApplicationVersion composable
 		 * (REQ-OBVR-004 / REQ-OBVR-005). Called on created and when slug/versionSlug change.

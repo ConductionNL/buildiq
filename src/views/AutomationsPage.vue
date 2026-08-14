@@ -15,7 +15,10 @@
 	<div class="automations-page">
 		<header class="automations-page__header">
 			<h2>{{ t('openbuild', 'Automations') }}</h2>
-			<NcButton type="primary" :disabled="!selectedVersionId" @click="openNew">
+			<NcButton
+				variant="primary"
+				:disabled="!selectedVersionId"
+				@click="openNew">
 				{{ t('openbuild', 'New automation') }}
 			</NcButton>
 		</header>
@@ -24,21 +27,21 @@
 			<NcSelect
 				v-model="selectedApp"
 				class="automations-page__picker"
-				:input-label="t('openbuild', 'Application')"
+				:inputLabel="t('openbuild', 'Application')"
 				:options="applications"
 				:loading="loadingApplications"
 				label="name"
-				track-by="slug"
+				trackBy="slug"
 				@update:modelValue="onAppChange" />
 			<NcSelect
 				v-model="selectedVersion"
 				class="automations-page__picker"
-				:input-label="t('openbuild', 'Version')"
+				:inputLabel="t('openbuild', 'Version')"
 				:options="versions"
 				:loading="loadingVersions"
 				:disabled="!selectedApp"
 				label="name"
-				track-by="id"
+				trackBy="id"
 				@update:modelValue="onVersionChange" />
 		</div>
 
@@ -80,7 +83,7 @@
 						class="automations-page__drift-badge"
 						data-testid="drift-badge">
 						{{ t('openbuild', 'Drift detected') }}
-						<NcButton type="tertiary" @click="recompile(automation)">
+						<NcButton variant="tertiary" @click="recompile(automation)">
 							{{ t('openbuild', 'Recompile (overwrite)') }}
 						</NcButton>
 					</span>
@@ -95,17 +98,17 @@
 				<div class="automations-page__item-side">
 					<NcCheckboxRadioSwitch
 						type="switch"
-						:model-value="automation.enabled !== false"
+						:modelValue="automation.enabled !== false"
 						@update:modelValue="toggleEnabled(automation, $event)">
 						{{ t('openbuild', 'Enabled') }}
 					</NcCheckboxRadioSwitch>
-					<NcButton type="tertiary" @click="openTestPanel(automation)">
+					<NcButton variant="tertiary" @click="openTestPanel(automation)">
 						{{ t('openbuild', 'Test') }}
 					</NcButton>
-					<NcButton type="tertiary" @click="openEdit(automation)">
+					<NcButton variant="tertiary" @click="openEdit(automation)">
 						{{ t('openbuild', 'Edit') }}
 					</NcButton>
-					<NcButton type="tertiary" @click="remove(automation)">
+					<NcButton variant="tertiary" @click="remove(automation)">
 						{{ t('openbuild', 'Delete') }}
 					</NcButton>
 				</div>
@@ -136,7 +139,7 @@
 					'Delete this automation? This also removes its compiled artifacts.',
 				)
 			"
-			:confirm-label="t('openbuild', 'Delete')"
+			:confirmLabel="t('openbuild', 'Delete')"
 			:busy="deleting"
 			destructive
 			@confirm="onConfirmDelete" />
@@ -155,8 +158,8 @@ import {
 	NcSelect,
 } from '@nextcloud/vue'
 import AutomationEditDialog from '../dialogs/AutomationEditDialog.vue'
-import AutomationTestPanelModal from '../modals/AutomationTestPanelModal.vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
+import AutomationTestPanelModal from '../modals/AutomationTestPanelModal.vue'
 
 export default {
 	name: 'AutomationsPage',
@@ -171,6 +174,7 @@ export default {
 		AutomationTestPanelModal,
 		ConfirmActionDialog,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -192,15 +196,18 @@ export default {
 			deleting: false,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/automation-designer/tasks.md#5.1 */
 		selectedVersionId() {
 			return this.selectedVersion ? this.selectedVersion.id : ''
 		},
 	},
+
 	mounted() {
 		this.fetchApplications()
 	},
+
 	methods: {
 		/**
 		 * Load the caller's Applications for the picker.
@@ -221,6 +228,7 @@ export default {
 				this.loadingApplications = false
 			}
 		},
+
 		/**
 		 * Handle an application selection: reset the version + list, fetch versions.
 		 *
@@ -234,6 +242,7 @@ export default {
 				this.fetchVersions()
 			}
 		},
+
 		/**
 		 * Load the selected Application's versions for the picker (REQ-AUTD-001
 		 * version selector).
@@ -255,6 +264,7 @@ export default {
 				this.loadingVersions = false
 			}
 		},
+
 		/**
 		 * Handle a version selection: fetch its automations.
 		 *
@@ -266,6 +276,7 @@ export default {
 				this.fetchAutomations()
 			}
 		},
+
 		/**
 		 * Load every `automation` object and filter to the selected
 		 * Application + ApplicationVersion, then fetch drift status for each.
@@ -294,6 +305,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Refresh the drift-status badge for every listed automation.
 		 *
@@ -320,6 +332,7 @@ export default {
 			})
 			this.statusByUuid = map
 		},
+
 		/**
 		 * Whether the given automation has detected drift.
 		 *
@@ -330,6 +343,7 @@ export default {
 			const status = this.statusByUuid[uuid]
 			return !!(status && status.drift === true)
 		},
+
 		/**
 		 * The automation's live aggregate approval state, or '' when none/absent
 		 * (spec REQ-AUTD-007 — status surfaces approval state).
@@ -343,6 +357,7 @@ export default {
 			const state = status && status.approvalState
 			return state && state !== 'none' ? state : ''
 		},
+
 		/**
 		 * Human label for an approval state value.
 		 *
@@ -358,6 +373,7 @@ export default {
 			}
 			return labels[state] || state
 		},
+
 		/**
 		 * Human trigger summary for a row.
 		 *
@@ -376,6 +392,7 @@ export default {
 			}
 			return labels[trigger.type] || t('openbuild', 'No trigger')
 		},
+
 		/**
 		 * Human action summary for a row.
 		 *
@@ -391,6 +408,7 @@ export default {
 			}
 			return actions.map((a) => a.type).join(', ')
 		},
+
 		/**
 		 * Open the dialog for a new automation, pre-seeded with the selected
 		 * Application + Version.
@@ -411,6 +429,7 @@ export default {
 			}
 			this.editDialogOpen = true
 		},
+
 		/**
 		 * Open the dialog to edit an existing automation.
 		 *
@@ -421,6 +440,7 @@ export default {
 			this.editingAutomation = automation
 			this.editDialogOpen = true
 		},
+
 		/**
 		 * Refresh the list after the dialog saves.
 		 *
@@ -430,6 +450,7 @@ export default {
 			this.editDialogOpen = false
 			this.fetchAutomations()
 		},
+
 		/**
 		 * Open the dry-run test panel for an automation.
 		 *
@@ -440,6 +461,7 @@ export default {
 			this.testingAutomation = automation
 			this.testPanelOpen = true
 		},
+
 		/**
 		 * Enable or disable an automation (spec REQ-AUTD-006).
 		 *
@@ -462,6 +484,7 @@ export default {
 					: t('openbuild', 'Could not disable the automation.')
 			}
 		},
+
 		/**
 		 * Recompile-overwrite a drifted automation (spec REQ-AUTD-005).
 		 *
@@ -480,6 +503,7 @@ export default {
 				this.errorMessage = t('openbuild', 'Recompile failed.')
 			}
 		},
+
 		/**
 		 * Delete an automation. The OR delete triggers the server-side
 		 * AutomationCleanupListener, which removes exactly the
@@ -502,6 +526,7 @@ export default {
 			this.pendingDelete = automation
 			this.confirmDeleteOpen = true
 		},
+
 		/**
 		 * Delete the pending automation once the user has confirmed it.
 		 *
@@ -545,6 +570,7 @@ export default {
 				this.pendingDelete = null
 			}
 		},
+
 		/**
 		 * Normalise an OR REST list response to a plain array.
 		 *

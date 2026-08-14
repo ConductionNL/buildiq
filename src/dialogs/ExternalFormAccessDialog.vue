@@ -50,7 +50,7 @@
 				</label>
 
 				<NcTextField
-					:model-value="organisationScope || ''"
+					:modelValue="organisationScope || ''"
 					:label="t('openbuild', 'Organisation scope (optional)')"
 					:placeholder="
 						t('openbuild', 'Organisation id — leave empty for none')
@@ -103,12 +103,12 @@
 			</NcButton>
 			<NcButton
 				v-if="hadEnabledEntry"
-				type="tertiary"
+				variant="tertiary"
 				:disabled="saving"
 				@click="onDisable">
 				{{ t('openbuild', 'Disable') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="saving" @click="onSave">
+			<NcButton variant="primary" :disabled="saving" @click="onSave">
 				{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
 			</NcButton>
 		</template>
@@ -116,13 +116,13 @@
 </template>
 
 <script>
-import { NcDialog, NcButton, NcTextField, NcNoteCard } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
+import { NcButton, NcDialog, NcNoteCard, NcTextField } from '@nextcloud/vue'
 import {
-	enablePublicCreate,
-	revokePublicCreate,
-	provisionPortalPage,
 	draftPortalPage,
+	enablePublicCreate,
+	provisionPortalPage,
+	revokePublicCreate,
 } from '../services/externalFormProvisioningService.js'
 
 /**
@@ -147,25 +147,30 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		// The resolved OR target the page's submitEndpoint points at.
 		register: {
 			type: String,
 			default: '',
 		},
+
 		schema: {
 			type: String,
 			default: '',
 		},
+
 		pageId: {
 			type: String,
 			default: '',
 		},
+
 		// The current `runtime.externalForms` entry for this page, or null.
 		entry: {
 			type: Object,
 			default: null,
 		},
 	},
+
 	emits: ['update:open', 'save'],
 	data() {
 		return {
@@ -180,6 +185,7 @@ export default {
 			savedPortalUrl: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Whether a previously-enabled entry exists to offer the Disable action.
@@ -190,6 +196,7 @@ export default {
 		hadEnabledEntry() {
 			return !!(this.entry && this.entry.status === 'enabled')
 		},
+
 		/**
 		 * The raw anonymous-create endpoint, shown so the builder can copy it
 		 * into an external form/website (REQ-EFP-002).
@@ -208,6 +215,7 @@ export default {
 				)
 			)
 		},
+
 		/**
 		 * The Portaliq portal URL, when provisioned.
 		 *
@@ -230,6 +238,7 @@ export default {
 			}
 			return ''
 		},
+
 		/**
 		 * Show the URL panel once the toggle is enabled and either a save has
 		 * completed or an entry already exists (reopen case).
@@ -241,6 +250,7 @@ export default {
 			return this.enabled && (this.saved || this.hadEnabledEntry)
 		},
 	},
+
 	watch: {
 		/**
 		 * Re-hydrate the form from `entry` each time the dialog (re)opens.
@@ -255,6 +265,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Seed the form from the current entry when (re)opening.
@@ -277,6 +288,7 @@ export default {
 				&& e.trackLinkAction.enabled
 			)
 		},
+
 		/**
 		 * Persist the enable/update flow: read-merge-write the schema
 		 * authorization, then provision (create/update) the Portaliq
@@ -331,6 +343,7 @@ export default {
 								objectId: portalResult.objectId,
 								portalPath: portalResult.portalPath,
 							},
+
 					trackLinkAction: { enabled: this.trackLinkEnabled },
 				}
 				this.saved = true
@@ -345,6 +358,7 @@ export default {
 				this.saving = false
 			}
 		},
+
 		/**
 		 * Revoke: reverse the schema-authorization merge and draft the linked
 		 * `portalPage` (never delete it). No-ops the Portaliq leg when no
@@ -381,6 +395,7 @@ export default {
 					publicRead: false,
 					organisationScope:
 						(this.entry && this.entry.organisationScope) || null,
+
 					portalPage: (this.entry && this.entry.portalPage) || null,
 					trackLinkAction: { enabled: false },
 				}
@@ -397,6 +412,7 @@ export default {
 				this.saving = false
 			}
 		},
+
 		/**
 		 * NcDialog's `update:open` fires on backdrop/esc close too — route it
 		 * through the same close handler as the explicit Close button.
@@ -410,6 +426,7 @@ export default {
 				this.onClose()
 			}
 		},
+
 		/**
 		 * @return {void}
 		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002

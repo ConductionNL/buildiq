@@ -60,7 +60,7 @@ function schemaPropsAccessor(manifest, schemaSlug) {
 		return null
 	}
 	return {
-		has: (name) => Object.prototype.hasOwnProperty.call(props, name),
+		has: (name) => Object.hasOwn(props, name),
 		isString: (name) => {
 			const p = props[name]
 			if (!p) {
@@ -89,7 +89,7 @@ function schemaKnown(manifest, schemaSlug) {
 			return true
 		}
 	} else if (schemas && typeof schemas === 'object') {
-		if (Object.prototype.hasOwnProperty.call(schemas, schemaSlug)) {
+		if (Object.hasOwn(schemas, schemaSlug)) {
 			return true
 		}
 	}

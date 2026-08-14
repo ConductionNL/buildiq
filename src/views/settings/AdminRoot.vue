@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <template>
 	<CnAdminSettingsShell
-		app-id="openbuild"
-		app-name="OpenBuild"
+		appId="openbuild"
+		appName="OpenBuild"
 		@reimported="onReimported">
 		<Settings v-if="storesReady" :key="settingsKey" />
 	</CnAdminSettingsShell>
@@ -19,6 +19,7 @@ export default {
 		CnAdminSettingsShell,
 		Settings,
 	},
+
 	data() {
 		return {
 			storesReady: false,
@@ -27,6 +28,7 @@ export default {
 			settingsKey: 0,
 		}
 	},
+
 	/**
 	 * Observed behaviour of `created` (retrofit annotation).
 	 *
@@ -36,6 +38,7 @@ export default {
 		await initializeStores()
 		this.storesReady = true
 	},
+
 	methods: {
 		/**
 		 * Re-load the app stores after the shell's Re-import action so the

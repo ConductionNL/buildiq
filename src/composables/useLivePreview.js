@@ -1,3 +1,4 @@
+import { useAppManifest } from '@conduction/nextcloud-vue'
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useLivePreview — feature-detect the in-memory `useAppManifest(appId,
@@ -15,7 +16,6 @@
  * and `available` flips to true without any editor code change.
  */
 import { computed } from 'vue'
-import { useAppManifest } from '@conduction/nextcloud-vue'
 
 /**
  * Observed behaviour of `useLivePreview` (retrofit annotation).

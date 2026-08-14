@@ -1,31 +1,30 @@
-// SPDX-License-Identifier: EUPL-1.2
-import { createApp } from 'vue'
-import { createRouter, createWebHistory } from 'vue-router'
 import {
-	translate as t,
-	translatePlural as n,
-	loadTranslations,
-} from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
-import {
-	CnPageRenderer,
 	buildManifest,
+	CnPageRenderer,
 	defaultPageTypes,
 	registerBuiltinDashboardWidgets,
 	registerIcons,
 	registerTranslations,
 } from '@conduction/nextcloud-vue'
-import pinia from './pinia.js'
+import {
+	loadTranslations,
+	translatePlural as n,
+	translate as t,
+} from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
+// SPDX-License-Identifier: EUPL-1.2
+import { createApp } from 'vue'
+import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
+import appIcons from './icons.js'
 import bundledManifest from './manifest.json'
 import menuLayout from './menu-layout.json'
-import registry from './registry.js'
-import appIcons from './icons.js'
+import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
+import registry from './registry.js'
 
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages).
 import '@conduction/nextcloud-vue/css/index.css'
-
 // nc-vue's CnDashboardGrid/CnWidgetGrid no longer bundle gridstack's JS or
 // CSS (nc-vue#557) — it is a peerDependency now, so this app must supply
 // both. Without this import every grid item renders 0px wide (height comes
@@ -34,7 +33,6 @@ import '@conduction/nextcloud-vue/css/index.css'
 // silently disagree with height). gridstack-extra.min.css does not exist in
 // v12 — the main stylesheet is all that is needed.
 import 'gridstack/dist/gridstack.min.css'
-
 // Global (unscoped) app styles.
 import './assets/app.css'
 
@@ -64,6 +62,9 @@ try {
 // (and on dev installs that rewrite non-allowlisted paths to index.php it
 // always 404s). Boot MUST NOT depend on this resolving — strings just fall
 // back to their source on miss.
+/**
+ *
+ */
 function tryLoadTranslations() {
 	try {
 		const result = loadTranslations('openbuild', () => {})

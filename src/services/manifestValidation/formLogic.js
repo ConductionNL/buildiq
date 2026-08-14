@@ -193,7 +193,6 @@ function validateFieldLogic(field, fieldPath, declaredKeys) {
 		}
 		if (typeof validation.pattern === 'string') {
 			try {
-				// eslint-disable-next-line no-new
 				new RegExp(validation.pattern)
 			} catch {
 				errors.push(

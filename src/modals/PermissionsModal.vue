@@ -30,23 +30,23 @@
 				v-model="ownersModel"
 				:options="groupOptions"
 				:multiple="true"
-				:input-label="t('openbuild', 'Owners (full control)')"
+				:inputLabel="t('openbuild', 'Owners (full control)')"
 				label="label"
-				track-by="value" />
+				trackBy="value" />
 			<NcSelect
 				v-model="editorsModel"
 				:options="groupOptions"
 				:multiple="true"
-				:input-label="t('openbuild', 'Editors (can save drafts)')"
+				:inputLabel="t('openbuild', 'Editors (can save drafts)')"
 				label="label"
-				track-by="value" />
+				trackBy="value" />
 			<NcSelect
 				v-model="viewersModel"
 				:options="groupOptions"
 				:multiple="true"
-				:input-label="t('openbuild', 'Viewers (read-only)')"
+				:inputLabel="t('openbuild', 'Viewers (read-only)')"
 				label="label"
-				track-by="value" />
+				trackBy="value" />
 
 			<div v-if="orphanError" class="openbuild-permissions-modal__error">
 				{{
@@ -58,10 +58,10 @@
 			</div>
 
 			<div class="openbuild-permissions-modal__actions">
-				<NcButton type="tertiary" @click="onClose">
+				<NcButton variant="tertiary" @click="onClose">
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" :disabled="saving" @click="save">
+				<NcButton variant="primary" :disabled="saving" @click="save">
 					{{
 						saving
 							? t('openbuild', 'Saving permissions…')
@@ -85,20 +85,24 @@ export default {
 		NcDialog,
 		NcSelect,
 	},
+
 	props: {
 		open: {
 			type: Boolean,
 			required: true,
 		},
+
 		application: {
 			type: Object,
 			default: null,
 		},
+
 		availableGroups: {
 			type: Array,
 			default: () => [],
 		},
 	},
+
 	emits: ['update:open', 'save'],
 	data() {
 		return {
@@ -109,6 +113,7 @@ export default {
 			saving: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `groupOptions` (retrofit annotation).
@@ -119,6 +124,7 @@ export default {
 			return this.availableGroups.map((gid) => ({ label: gid, value: gid }))
 		},
 	},
+
 	watch: {
 		application: {
 			immediate: true,
@@ -138,6 +144,7 @@ export default {
 			},
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `syncFromApplication` (retrofit annotation).
@@ -170,6 +177,7 @@ export default {
 			this.orphanError = false
 			this.saving = false
 		},
+
 		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
 		 *
@@ -178,6 +186,7 @@ export default {
 		onClose() {
 			this.$emit('update:open', false)
 		},
+
 		/**
 		 * Observed behaviour of `save` (retrofit annotation).
 		 *

@@ -15,13 +15,13 @@
 		</p>
 		<VersionHistory
 			v-if="obAppUuid"
-			:app-slug="(obApp && obApp.slug) || ''"
-			:application-uuid="obAppUuid"
-			:current-version-uuid="
+			:appSlug="(obApp && obApp.slug) || ''"
+			:applicationUuid="obAppUuid"
+			:currentVersionUuid="
 				(obApp && (obApp.productionVersion || obApp.currentVersion)) || ''
 			"
-			:can-edit="canEdit"
-			:can-release="canRelease"
+			:canEdit="canEdit"
+			:canRelease="canRelease"
 			@rollback="onRollback"
 			@released="onReleased" />
 		<p v-if="rollbackError" class="ob-versions-tab__error">
@@ -43,6 +43,7 @@ export default {
 	data() {
 		return { rollbackError: '' }
 	},
+
 	computed: {
 		/**
 		 * Whether the caller may edit versions (owner / editor role).
@@ -52,6 +53,7 @@ export default {
 		canEdit() {
 			return this.obAppRole === 'owner' || this.obAppRole === 'editor'
 		},
+
 		/**
 		 * Whether the caller may release a draft to production (owner only).
 		 *
@@ -61,6 +63,7 @@ export default {
 			return this.obAppRole === 'owner'
 		},
 	},
+
 	methods: {
 		/**
 		 * Refresh the application after a release so the production marker moves.
@@ -70,6 +73,7 @@ export default {
 		onReleased() {
 			this.obLoadApp()
 		},
+
 		/**
 		 * Restore a snapshot's manifest onto the application's ACTIVE VERSION.
 		 *

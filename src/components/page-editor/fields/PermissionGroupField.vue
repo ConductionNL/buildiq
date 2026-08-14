@@ -19,14 +19,14 @@
 <template>
 	<div class="permission-group-field">
 		<NcSelect
-			:input-label="t('openbuild', 'Visible only to group (optional)')"
-			:model-value="selectedOption"
+			:inputLabel="t('openbuild', 'Visible only to group (optional)')"
+			:modelValue="selectedOption"
 			:options="options"
 			:taggable="true"
 			:clearable="true"
 			:placeholder="t('openbuild', 'Everyone with app access')"
 			label="label"
-			track-by="value"
+			trackBy="value"
 			@update:modelValue="onChange"
 			@tag="onTag" />
 		<p class="permission-group-field__hint">
@@ -70,6 +70,7 @@ export default {
 			type: String,
 			default: '',
 		},
+
 		/**
 		 * Group ids already referenced elsewhere in this manifest (other
 		 * menu/page `permission` entries), offered as quick-pick options
@@ -80,6 +81,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:permission'],
 	computed: {
 		/**
@@ -99,6 +101,7 @@ export default {
 			}
 			return opts
 		},
+
 		/**
 		 * The currently-selected option, derived from `permission`.
 		 *
@@ -110,6 +113,7 @@ export default {
 			return gid ? { value: gid, label: gid } : null
 		},
 	},
+
 	methods: {
 		/**
 		 * Handle a picked or cleared option.
@@ -125,6 +129,7 @@ export default {
 			}
 			this.$emit('update:permission', `group:${option.value}`)
 		},
+
 		/**
 		 * Handle a free-typed (taggable) group id.
 		 *

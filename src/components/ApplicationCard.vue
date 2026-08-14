@@ -64,10 +64,10 @@
 
 <script>
 import { imagePath } from '@nextcloud/router'
-import { useRole, getCurrentUserGroups } from '../composables/useRole.js'
+import { getCurrentUserGroups, useRole } from '../composables/useRole.js'
 import {
-	productionVersions,
 	ensureProductionVersionsLoaded,
+	productionVersions,
 } from '../store/productionVersions.js'
 
 export default {
@@ -78,6 +78,7 @@ export default {
 		item: { type: Object, default: null },
 		selected: { type: Boolean, default: false },
 	},
+
 	emits: ['click', 'select'],
 	computed: {
 		/**
@@ -88,6 +89,7 @@ export default {
 		app() {
 			return this.object || this.item || {}
 		},
+
 		/**
 		 * Resolve the production ApplicationVersion this card reports on.
 		 *
@@ -129,6 +131,7 @@ export default {
 			}
 			return null
 		},
+
 		/**
 		 * Semver string from the production ApplicationVersion, or '—' while
 		 * loading / when the application has no production version yet.
@@ -139,6 +142,7 @@ export default {
 		productionSemver() {
 			return (this.productionVersion && this.productionVersion.semver) || '—'
 		},
+
 		// CnDetailPage reads :objectId from $route.params, which we set here.
 		// OR returns the canonical id under @self.id; fall back to uuid/id for
 		// objects coming from older mock fixtures or pre-@self responses.
@@ -151,6 +155,7 @@ export default {
 			const self = this.app['@self'] || {}
 			return self.id || this.app.uuid || this.app.id || ''
 		},
+
 		/**
 		 * The app's type discriminator (unify-apps-with-app-type). An absent
 		 * `appType` reads as `virtual` (legacy default), matching the schema.
@@ -161,6 +166,7 @@ export default {
 		appTypeKey() {
 			return this.app.appType === 'hybrid' ? 'hybrid' : 'virtual'
 		},
+
 		/**
 		 * Human-readable label for the app type pill.
 		 *
@@ -172,6 +178,7 @@ export default {
 				? t('openbuild', 'Hybrid')
 				: t('openbuild', 'Virtual')
 		},
+
 		/**
 		 * Whether this card is hidden by the active all/virtual/hybrid filter,
 		 * read from the `?filter=` URL query param (set by VirtualAppsActions and
@@ -189,6 +196,7 @@ export default {
 			}
 			return filter !== this.appTypeKey
 		},
+
 		/**
 		 * Status key resolved from productionVersion (spec C). Falls back to
 		 * 'draft' when no production version is present so the card has a
@@ -203,6 +211,7 @@ export default {
 				? status
 				: 'draft'
 		},
+
 		/**
 		 * Observed behaviour of `statusLabel` (retrofit annotation).
 		 *
@@ -215,6 +224,7 @@ export default {
 				archived: t('openbuild', 'Archived'),
 			}[this.statusKey]
 		},
+
 		/**
 		 * Observed behaviour of `role` (retrofit annotation).
 		 *
@@ -223,6 +233,7 @@ export default {
 		role() {
 			return useRole(this.app, getCurrentUserGroups())
 		},
+
 		/**
 		 * Observed behaviour of `roleLabel` (retrofit annotation).
 		 *
@@ -238,6 +249,7 @@ export default {
 			)
 		},
 	},
+
 	/**
 	 * Kick off the page-wide production-version lookup.
 	 *
@@ -251,6 +263,7 @@ export default {
 	created() {
 		ensureProductionVersionsLoaded()
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `onIconError` (retrofit annotation).
@@ -277,6 +290,7 @@ export default {
 			}
 			e.target.src = fallback
 		},
+
 		/**
 		 * Observed behaviour of `onCardActivate` (retrofit annotation).
 		 *

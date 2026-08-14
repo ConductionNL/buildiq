@@ -12,8 +12,8 @@
 	<div class="ob-exports-tab">
 		<ExportJobsList
 			v-if="obApp && obApp.slug"
-			:application-slug="obApp.slug"
-			:application-uuid="obAppUuid" />
+			:applicationSlug="obApp.slug"
+			:applicationUuid="obAppUuid" />
 		<p v-else-if="obAppError" class="ob-exports-tab__error">
 			{{ obAppError }}
 		</p>

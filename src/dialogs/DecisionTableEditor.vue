@@ -24,7 +24,7 @@
 
 			<NcSelect
 				v-model="staged.hitPolicy"
-				:input-label="t('openbuild', 'Hit policy')"
+				:inputLabel="t('openbuild', 'Hit policy')"
 				:options="hitPolicies"
 				data-testid="hit-policy" />
 
@@ -37,11 +37,11 @@
 				<NcTextField
 					v-model="col.expressionPath"
 					:label="t('openbuild', 'Payload path')" />
-				<NcButton type="tertiary" @click="removeInput(index)">
+				<NcButton variant="tertiary" @click="removeInput(index)">
 					{{ t('openbuild', 'Remove') }}
 				</NcButton>
 			</div>
-			<NcButton type="secondary" @click="addInput">
+			<NcButton variant="secondary" @click="addInput">
 				{{ t('openbuild', 'Add input column') }}
 			</NcButton>
 
@@ -84,7 +84,7 @@
 					</tr>
 				</tbody>
 			</table>
-			<NcButton type="secondary" @click="addRule">
+			<NcButton variant="secondary" @click="addRule">
 				{{ t('openbuild', 'Add rule') }}
 			</NcButton>
 
@@ -106,7 +106,7 @@
 			<NcButton @click="$emit('close')">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="saving" @click="save">
+			<NcButton variant="primary" :disabled="saving" @click="save">
 				{{ saving ? t('openbuild', 'Saving...') : t('openbuild', 'Save') }}
 			</NcButton>
 		</template>
@@ -123,7 +123,6 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
-
 import { isCellConditionValid } from '../utils/feelCell.js'
 
 export default {
@@ -135,12 +134,14 @@ export default {
 		NcSelect,
 		NcTextField,
 	},
+
 	props: {
 		ruleSet: {
 			type: Object,
 			required: true,
 		},
 	},
+
 	emits: ['close', 'saved'],
 	data() {
 		return {
@@ -152,10 +153,12 @@ export default {
 				inputColumns: this.ruleSet.inputColumns
 					? JSON.parse(JSON.stringify(this.ruleSet.inputColumns))
 					: [],
+
 				rules: this.ruleSet.rules
 					? JSON.parse(JSON.stringify(this.ruleSet.rules))
 					: [],
 			},
+
 			hitPolicies: [
 				'unique',
 				'first',
@@ -164,10 +167,12 @@ export default {
 				'collect',
 				'rule-order',
 			],
+
 			saving: false,
 			errorMessage: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Editor feedback: flag a catch-all rule that makes later rules unreachable.
@@ -194,10 +199,12 @@ export default {
 			return issues
 		},
 	},
+
 	methods: {
 		isCellValid(value) {
 			return isCellConditionValid(value)
 		},
+
 		markDirty() {},
 		/**
 		 * Append an empty input column to the staged table.
@@ -212,6 +219,7 @@ export default {
 				expressionPath: '',
 			})
 		},
+
 		/**
 		 * Remove one input column from the staged table.
 		 *
@@ -222,6 +230,7 @@ export default {
 		removeInput(index) {
 			this.staged.inputColumns.splice(index, 1)
 		},
+
 		/**
 		 * Append an empty rule row to the staged table.
 		 *
@@ -235,6 +244,7 @@ export default {
 				label: '',
 			})
 		},
+
 		/**
 		 * Persist the RuleSet and its DecisionTable via OpenRegister.
 		 *

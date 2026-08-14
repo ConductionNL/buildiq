@@ -39,6 +39,7 @@ export default {
 	props: {
 		notifications: { type: [Object, Array], default: null },
 	},
+
 	computed: {
 		/**
 		 * Render the notifications block as pretty JSON for read-only display.

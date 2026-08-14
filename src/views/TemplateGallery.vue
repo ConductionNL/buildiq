@@ -19,8 +19,8 @@
 				type="button"
 				role="tab"
 				:aria-selected="viewMode === 'templates'"
+				class="template-gallery__view-btn"
 				:class="[
-					'template-gallery__view-btn',
 					{
 						'template-gallery__view-btn--active':
 							viewMode === 'templates',
@@ -33,8 +33,8 @@
 				type="button"
 				role="tab"
 				:aria-selected="viewMode === 'blocks'"
+				class="template-gallery__view-btn"
 				:class="[
-					'template-gallery__view-btn',
 					{ 'template-gallery__view-btn--active': viewMode === 'blocks' },
 				]"
 				@click="onSelectBlocksTab">
@@ -46,7 +46,7 @@
 			<!-- GitHub store: server-backed search against topic:openbuild-app. -->
 			<div class="template-gallery__filters">
 				<NcTextField
-					:model-value="githubQuery"
+					:modelValue="githubQuery"
 					:label="t('openbuild', 'Search GitHub')"
 					:placeholder="
 						t(
@@ -149,7 +149,7 @@
 					<div class="template-card__actions">
 						<NcButton
 							v-if="card.installable && !card.unparseable"
-							type="primary"
+							variant="primary"
 							@click="openGithubInstall(card)">
 							{{ t('openbuild', 'Install') }}
 						</NcButton>
@@ -173,7 +173,7 @@
 			<div class="template-gallery__filters">
 				<NcSelect
 					v-model="blockCategoryFilter"
-					:input-label="t('openbuild', 'Filter by category')"
+					:inputLabel="t('openbuild', 'Filter by category')"
 					:options="blockCategoryOptions"
 					:clearable="true"
 					:placeholder="t('openbuild', 'All categories')" />
@@ -222,7 +222,7 @@
 			:open="cloneOpen"
 			:template="cloneTarget"
 			:github="true"
-			:github-repo="cloneGithubRepo"
+			:githubRepo="cloneGithubRepo"
 			@close="cloneOpen = false"
 			@installed="onInstalled" />
 	</div>
@@ -261,6 +261,7 @@ export default {
 		NcTextField,
 		CloneTemplateDialog,
 	},
+
 	data() {
 		return {
 			cloneOpen: false,
@@ -285,6 +286,7 @@ export default {
 			blockCategoryFilter: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Whether GitHub browsing is currently degraded (rate-limited or
@@ -299,6 +301,7 @@ export default {
 				|| (this.githubOutcome !== '' && this.githubOutcome !== 'ok')
 			)
 		},
+
 		/**
 		 * Distinct categories present across the loaded blocks, for the filter.
 		 *
@@ -312,6 +315,7 @@ export default {
 				.filter((c) => c && !seen.has(c) && seen.add(c))
 				.map((c) => ({ id: c, label: c }))
 		},
+
 		/**
 		 * The visible blocks after the category filter is applied.
 		 *
@@ -328,6 +332,7 @@ export default {
 			return this.blocks.filter((b) => b && b.category === selected)
 		},
 	},
+
 	mounted() {
 		// The store is GitHub-only: run the initial (empty-query) search so the
 		// topic:openbuild-app repositories appear, and feature-detect a github
@@ -335,6 +340,7 @@ export default {
 		this.searchGithub()
 		this.fetchGithubCredentials()
 	},
+
 	methods: {
 		/**
 		 * Debounced handler for the GitHub search box.
@@ -352,6 +358,7 @@ export default {
 				this.searchGithub()
 			}, 350)
 		},
+
 		/**
 		 * Call the GitHub shop search endpoint and render the result cards.
 		 * Passes the user's advisory github credential id (when present) so
@@ -382,6 +389,7 @@ export default {
 				this.githubLoading = false
 			}
 		},
+
 		/**
 		 * Feature-detect an allowed github credential via OpenRegister's
 		 * credentials API (advisory only — the server-side broker is the
@@ -409,6 +417,7 @@ export default {
 				this.githubCredentialId = null
 			}
 		},
+
 		/**
 		 * Open the clone dialog to install a GitHub app, seeded with the card.
 		 *
@@ -425,6 +434,7 @@ export default {
 			this.cloneGithubRepo = { owner: card.owner, repo: card.repo }
 			this.cloneOpen = true
 		},
+
 		/**
 		 * Redirect to the new application after a GitHub install (the dialog owns
 		 * the POST and emits `installed`).
@@ -437,6 +447,7 @@ export default {
 			this.cloneOpen = false
 			this.redirectAfterClone(created)
 		},
+
 		/**
 		 * Human-readable label for a template/app category.
 		 *
@@ -447,6 +458,7 @@ export default {
 		categoryLabel(category) {
 			return t('openbuild', CATEGORY_LABELS[category] || category || '')
 		},
+
 		/**
 		 * Observed behaviour of `redirectAfterClone` (retrofit annotation).
 		 *
@@ -477,6 +489,7 @@ export default {
 			}
 			this.$router.push({ name: 'Dashboard' })
 		},
+
 		/**
 		 * Whether a named route is registered on the router. Routes are built
 		 * from the manifest (flat, `name = page.id`), so a shallow scan of
@@ -490,6 +503,7 @@ export default {
 			const routes = this.$router?.options?.routes || []
 			return routes.some((route) => route.name === name)
 		},
+
 		/**
 		 * Switch to the "Blocks" filter, lazily fetching the block list the
 		 * first time it is opened.
@@ -503,6 +517,7 @@ export default {
 				this.fetchBlocks()
 			}
 		},
+
 		/**
 		 * Fetch every `ComponentBlock` visible to the caller (org-scoped, same
 		 * OR REST listing the page designer's block-library panel uses).

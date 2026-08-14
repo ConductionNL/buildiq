@@ -88,16 +88,16 @@
 						</span>
 					</template>
 					<template v-else-if="userDelta.exists">
-						<NcButton type="tertiary" @click="$emit('edit-override')">
+						<NcButton variant="tertiary" @click="$emit('edit-override')">
 							{{ t('openbuild', 'Edit') }}
 						</NcButton>
-						<NcButton type="tertiary" @click="resetOverride">
+						<NcButton variant="tertiary" @click="resetOverride">
 							{{ t('openbuild', 'Reset') }}
 						</NcButton>
 					</template>
 					<template v-else>
 						<NcButton
-							type="secondary"
+							variant="secondary"
 							:disabled="creating"
 							@click="createOverride">
 							{{ t('openbuild', 'Create override') }}
@@ -157,6 +157,7 @@ export default {
 		/** Lifecycle status of the admin delta's current version. */
 		adminStatus: { type: String, default: '' },
 	},
+
 	emits: ['open-detail', 'edit-override', 'changed'],
 	data() {
 		return {
@@ -169,6 +170,7 @@ export default {
 			userOverrideCount: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Pre-translated label for the admin delta's lifecycle status.
@@ -183,6 +185,7 @@ export default {
 			}
 			return map[this.adminStatus] || t('openbuild', 'Current')
 		},
+
 		/**
 		 * Pre-translated meta line for the user-delta layer.
 		 *
@@ -203,14 +206,17 @@ export default {
 				: t('openbuild', 'No personal override yet')
 		},
 	},
+
 	watch: {
 		appSlug: 'loadUserDelta',
 		allowUserOverrides: 'loadUserDelta',
 	},
+
 	mounted() {
 		this.loadUserDelta()
 		this.loadOverrideCount()
 	},
+
 	methods: {
 		/**
 		 * Load the count of ALL users' overrides (maintainer-only). Stays null
@@ -232,6 +238,7 @@ export default {
 				this.userOverrideCount = null
 			}
 		},
+
 		/**
 		 * Load the calling user's own user-delta state for this app.
 		 *
@@ -259,6 +266,7 @@ export default {
 				this.userLoading = false
 			}
 		},
+
 		/**
 		 * Create an empty user delta (the "I want my own override" no-op state).
 		 *
@@ -285,6 +293,7 @@ export default {
 				this.creating = false
 			}
 		},
+
 		/**
 		 * Delete the caller's own user delta.
 		 *
@@ -308,6 +317,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Extract a human error message from an axios failure.
 		 *

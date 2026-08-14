@@ -2,23 +2,23 @@
 <template>
 	<NcDialog
 		:name="t('openbuild', 'Export application')"
-		:can-close="!submitting"
+		:canClose="!submitting"
 		size="normal"
 		@closing="onClose">
 		<form class="export-dialog" @submit.prevent="submit">
 			<NcSelect
 				v-model="form.version"
-				:input-label="t('openbuild', 'Version')"
+				:inputLabel="t('openbuild', 'Version')"
 				:options="versionOptions"
 				:disabled="submitting" />
 			<NcSelect
 				v-model="form.target"
-				:input-label="t('openbuild', 'Target')"
+				:inputLabel="t('openbuild', 'Target')"
 				:options="targetOptions"
 				:disabled="submitting" />
 			<NcSelect
 				v-model="form.license"
-				:input-label="t('openbuild', 'License')"
+				:inputLabel="t('openbuild', 'License')"
 				:options="licenseOptions"
 				:disabled="submitting" />
 			<NcCheckboxRadioSwitch
@@ -63,12 +63,12 @@
 					:disabled="submitting" />
 				<NcSelect
 					v-model="form.githubVisibility"
-					:input-label="t('openbuild', 'Visibility')"
+					:inputLabel="t('openbuild', 'Visibility')"
 					:options="visibilityOptions"
 					:disabled="submitting" />
 				<NcSelect
 					v-model="form.githubCredential"
-					:input-label="t('openbuild', 'GitHub credential')"
+					:inputLabel="t('openbuild', 'GitHub credential')"
 					:options="githubCredentials"
 					:loading="loadingCredentials"
 					:disabled="submitting"
@@ -102,7 +102,7 @@
 			<NcButton :disabled="submitting" @click="onClose">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="submitting" @click="submit">
+			<NcButton variant="primary" :disabled="submitting" @click="submit">
 				{{ t('openbuild', 'Start export') }}
 			</NcButton>
 		</template>
@@ -110,6 +110,8 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -117,8 +119,6 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
-import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
 
 export default {
 	name: 'ExportDialog',
@@ -129,15 +129,18 @@ export default {
 		NcSelect,
 		NcTextField,
 	},
+
 	props: {
 		applicationSlug: {
 			type: String,
 			required: true,
 		},
+
 		availableVersions: {
 			type: Array,
 			default: () => [{ label: '0.1.0', value: '0.1.0' }],
 		},
+
 		// The source Application's declared `dataRegisters` bindings
 		// (data-registers-runtime design.md Decision 5). One toggle is
 		// rendered per binding, unchecked by default (schema-defs-only).
@@ -146,6 +149,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['close', 'queued'],
 	data() {
 		return {
@@ -160,6 +164,7 @@ export default {
 					label: '0.1.0',
 					value: '0.1.0',
 				},
+
 				target: { label: this.t('openbuild', 'ZIP download'), value: 'zip' },
 				license: { label: 'EUPL-1.2', value: 'EUPL-1.2' },
 				includeSeedData: false,
@@ -169,8 +174,10 @@ export default {
 					label: this.t('openbuild', 'Private'),
 					value: 'private',
 				},
+
 				githubCredential: null,
 			},
+
 			// Per-binding includeData choice, unchecked by default. Built
 			// once from the dataRegisters prop — mirrors `form`'s own
 			// once-at-creation pattern above.
@@ -181,6 +188,7 @@ export default {
 			})),
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `versionOptions` (retrofit annotation).
@@ -190,6 +198,7 @@ export default {
 		versionOptions() {
 			return this.availableVersions
 		},
+
 		/**
 		 * Observed behaviour of `targetOptions` (retrofit annotation).
 		 *
@@ -201,6 +210,7 @@ export default {
 				{ label: this.t('openbuild', 'Push to GitHub'), value: 'github' },
 			]
 		},
+
 		/**
 		 * Observed behaviour of `licenseOptions` (retrofit annotation).
 		 *
@@ -213,6 +223,7 @@ export default {
 				{ label: 'MIT', value: 'MIT' },
 			]
 		},
+
 		/**
 		 * Observed behaviour of `visibilityOptions` (retrofit annotation).
 		 *
@@ -225,9 +236,11 @@ export default {
 			]
 		},
 	},
+
 	mounted() {
 		this.fetchGithubCredentials()
 	},
+
 	methods: {
 		/**
 		 * Load the user's `github` credentials from OpenRegister's broker.
@@ -260,6 +273,7 @@ export default {
 				this.loadingCredentials = false
 			}
 		},
+
 		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
 		 *
@@ -271,6 +285,7 @@ export default {
 			}
 			this.$emit('close')
 		},
+
 		/**
 		 * Observed behaviour of `submit` (retrofit annotation).
 		 *
