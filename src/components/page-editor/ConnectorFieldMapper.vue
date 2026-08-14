@@ -121,16 +121,16 @@
 			v-model:open="promptOpen"
 			:name="t('openbuild', 'Add field')"
 			:label="t('openbuild', 'Display field name')"
-			:initial-value="promptSuggestion"
-			:confirm-label="t('openbuild', 'Confirm')"
+			:initialValue="promptSuggestion"
+			:confirmLabel="t('openbuild', 'Confirm')"
 			@submit="onPromptSubmit" />
 	</div>
 </template>
 
 <script>
 import { NcButton } from '@nextcloud/vue'
-import { flattenSample, resolveSelector } from '../../services/selectors.js'
 import PromptTextDialog from '../../dialogs/PromptTextDialog.vue'
+import { flattenSample, resolveSelector } from '../../services/selectors.js'
 
 export default {
 	name: 'ConnectorFieldMapper',
@@ -141,16 +141,19 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		// The sample response payload fetched from the endpoint.
 		sample: {
 			type: [Object, Array, String, Number, Boolean],
 			default: null,
 		},
+
 		refreshing: {
 			type: Boolean,
 			default: false,
 		},
 	},
+
 	emits: ['update:itemsPath', 'update:fields'],
 	data() {
 		return {
@@ -159,15 +162,18 @@ export default {
 			pendingNode: null,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
 		itemsPath() {
 			return (this.binding && this.binding.itemsPath) || ''
 		},
+
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
 		fields() {
 			return (this.binding && this.binding.fields) || {}
 		},
+
 		/**
 		 * The sub-tree the field selectors are relative to — the first item
 		 * under `itemsPath` when set, otherwise the sample root.
@@ -182,6 +188,7 @@ export default {
 			const list = resolveSelector(this.sample, this.itemsPath)
 			return Array.isArray(list) && list.length ? list[0] : null
 		},
+
 		/**
 		 * Flattened tree nodes for display, computed against the item context
 		 * so leaf selectors are relative to a single item.
@@ -199,6 +206,7 @@ export default {
 				depth: n.path ? n.path.split('.').length : 0,
 			}))
 		},
+
 		/**
 		 * The mapped field list with live sample values + dead-selector flags.
 		 *
@@ -219,6 +227,7 @@ export default {
 			})
 		},
 	},
+
 	methods: {
 		/**
 		 * @param {object} node - tree node.
@@ -232,6 +241,7 @@ export default {
 			const segs = node.path.split('.')
 			return segs[segs.length - 1]
 		},
+
 		/**
 		 * Set the list-root selector from a clicked array node. The clicked
 		 * path is relative to the current root, which for the initial mapping
@@ -243,6 +253,7 @@ export default {
 		setItemsPath(path) {
 			this.$emit('update:itemsPath', path)
 		},
+
 		/**
 		 * Append a field mapping from a clicked leaf node. The display-field
 		 * name is pre-filled from the leaf key; the selector is the leaf's
@@ -256,6 +267,7 @@ export default {
 			this.promptSuggestion = this.nodeLabel(node)
 			this.promptOpen = true
 		},
+
 		/**
 		 * Add the mapping once the user has named the display field.
 		 *
@@ -277,6 +289,7 @@ export default {
 			const next = { ...this.fields, [name]: node.path }
 			this.$emit('update:fields', next)
 		},
+
 		/**
 		 * Remove a mapped field.
 		 *

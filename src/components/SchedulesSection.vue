@@ -67,14 +67,14 @@
 		<ScheduleEditDialog
 			v-model:open="dialogOpen"
 			:entry="editingEntry"
-			:existing-ids="otherIds"
+			:existingIds="otherIds"
 			@save="onDialogSave" />
 
 		<ConfirmActionDialog
 			v-model:open="confirmRemoveOpen"
 			:name="t('openbuild', 'Remove scheduled task')"
 			:message="t('openbuild', 'Remove this scheduled task?')"
-			:confirm-label="t('openbuild', 'Remove')"
+			:confirmLabel="t('openbuild', 'Remove')"
 			destructive
 			@confirm="onConfirmRemove" />
 	</section>
@@ -82,8 +82,8 @@
 
 <script>
 import { NcButton } from '@nextcloud/vue'
-import ScheduleEditDialog from '../dialogs/ScheduleEditDialog.vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
+import ScheduleEditDialog from '../dialogs/ScheduleEditDialog.vue'
 
 /** Known interval presets, seconds → i18n cadence label key. */
 const INTERVAL_LABELS = Object.freeze({
@@ -102,6 +102,7 @@ export default {
 			default: () => ({}),
 		},
 	},
+
 	emits: ['update:manifest'],
 	data() {
 		return {
@@ -111,6 +112,7 @@ export default {
 			pendingRemoval: null,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */
 		schedules() {
@@ -121,6 +123,7 @@ export default {
 				|| []
 			)
 		},
+
 		/**
 		 * Ids used by entries OTHER than the one being edited (for the
 		 * dialog's uniqueness check).
@@ -135,6 +138,7 @@ export default {
 				.filter((id) => id && id !== editingId)
 		},
 	},
+
 	methods: {
 		/**
 		 * Human cadence summary for a schedule row.
@@ -158,6 +162,7 @@ export default {
 			}
 			return t('openbuild', 'No cadence')
 		},
+
 		/**
 		 * Human action summary for a schedule row.
 		 *
@@ -171,6 +176,7 @@ export default {
 			}
 			return schedule.action || t('openbuild', 'No action')
 		},
+
 		/**
 		 * The target synchronization id for a schedule row.
 		 *
@@ -182,11 +188,13 @@ export default {
 			const id = schedule.arguments && schedule.arguments.synchronizationId
 			return id || t('openbuild', 'No synchronization')
 		},
+
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */
 		openAdd() {
 			this.editingEntry = null
 			this.dialogOpen = true
 		},
+
 		/**
 		 * Open the schedule dialog on an existing entry.
 		 *
@@ -201,6 +209,7 @@ export default {
 			this.editingEntry = schedule
 			this.dialogOpen = true
 		},
+
 		/**
 		 * Persist an added / edited entry into `manifest.schedules[]`.
 		 *
@@ -219,6 +228,7 @@ export default {
 			}
 			this.$emit('update:manifest', this.withSchedules(list))
 		},
+
 		/**
 		 * Remove an entry from `manifest.schedules[]`.
 		 *
@@ -229,6 +239,7 @@ export default {
 			this.pendingRemoval = schedule
 			this.confirmRemoveOpen = true
 		},
+
 		/**
 		 * Drop the pending entry once the user has confirmed it.
 		 *
@@ -249,6 +260,7 @@ export default {
 			const list = this.schedules.filter((s) => s.id !== schedule.id)
 			this.$emit('update:manifest', this.withSchedules(list))
 		},
+
 		/**
 		 * Return a manifest copy with the given schedules list set (or the
 		 * `schedules` key removed when empty so zero-schedule manifests

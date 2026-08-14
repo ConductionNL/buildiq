@@ -315,23 +315,28 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'map',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		dataRegisters: {
 			type: Array,
 			default: () => [],
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	setup(props) {
 		const picker = useRegisterPicker({
@@ -340,6 +345,7 @@ export default {
 		})
 		return { picker }
 	},
+
 	data() {
 		return {
 			registers: [],
@@ -347,22 +353,28 @@ export default {
 			schemaProperties: {},
 		}
 	},
+
 	computed: {
 		validatedConfigKeys() {
 			return ['center', 'zoom', 'height', 'layers', 'markers']
 		},
+
 		centerLat() {
 			return Array.isArray(this.config.center) ? this.config.center[0] : ''
 		},
+
 		centerLng() {
 			return Array.isArray(this.config.center) ? this.config.center[1] : ''
 		},
+
 		layers() {
 			return Array.isArray(this.config.layers) ? this.config.layers : []
 		},
+
 		markerDataSource() {
 			return (this.config.markers && this.config.markers.dataSource) || {}
 		},
+
 		markerSourceShape() {
 			// Register wins only when explicitly bound and no URL is set, so a
 			// half-edited config never silently flips branches.
@@ -371,6 +383,7 @@ export default {
 			}
 			return 'url'
 		},
+
 		hasBoundSchema() {
 			return (
 				this.markerSourceShape === 'register'
@@ -378,10 +391,12 @@ export default {
 				&& !!this.markerDataSource.schema
 			)
 		},
+
 		schemaPropertyKeys() {
 			return Object.keys(this.schemaProperties || {})
 		},
 	},
+
 	watch: {
 		'config.markers': {
 			deep: true,
@@ -401,9 +416,11 @@ export default {
 			},
 		},
 	},
+
 	async mounted() {
 		await this.fetchRegisters()
 	},
+
 	methods: {
 		/**
 		 * Lossless top-level `config` key update: clone, delete-on-empty,
@@ -425,6 +442,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Write one element of the `center` [lat, lng] pair.
 		 *
@@ -439,6 +457,7 @@ export default {
 			current[index] = Number.isFinite(num) ? num : current[index]
 			this.update('center', current)
 		},
+
 		/**
 		 * Write the `zoom` number field; invalid input is a no-op.
 		 *
@@ -451,12 +470,14 @@ export default {
 			}
 			this.update('zoom', num)
 		},
+
 		/**
 		 * Append a blank `layers[]` row.
 		 */
 		addLayer() {
 			this.update('layers', this.layers.concat([{ type: 'tile', url: '' }]))
 		},
+
 		/**
 		 * Remove a `layers[]` row by index.
 		 *
@@ -467,6 +488,7 @@ export default {
 			next.splice(index, 1)
 			this.update('layers', next)
 		},
+
 		/**
 		 * Update one field of one `layers[]` row.
 		 *
@@ -479,6 +501,7 @@ export default {
 			next[index] = { ...next[index], [key]: value }
 			this.update('layers', next)
 		},
+
 		/**
 		 * Update a flat `markers` field (latField/lngField/popupField/clustering),
 		 * preserving `dataSource` and any other unsurfaced markers keys.
@@ -495,6 +518,7 @@ export default {
 			}
 			this.update('markers', next)
 		},
+
 		/**
 		 * Update one field of `markers.dataSource`, preserving sibling
 		 * `markers` keys.
@@ -517,6 +541,7 @@ export default {
 			}
 			this.update('markers', nextMarkers)
 		},
+
 		/**
 		 * Register-picker change handler: writes `dataSource.register` and
 		 * resets `dataSource.schema` (the dependent dropdown).
@@ -539,6 +564,7 @@ export default {
 			}
 			this.update('markers', nextMarkers)
 		},
+
 		/**
 		 * Switch the marker-source one-of radio, mutually clearing the
 		 * other branch's `dataSource` keys only.
@@ -561,12 +587,14 @@ export default {
 			}
 			this.update('markers', nextMarkers)
 		},
+
 		/**
 		 * Fetch the registers list for the picker dropdown.
 		 */
 		async fetchRegisters() {
 			this.registers = await this.picker.fetchRegisters()
 		},
+
 		/**
 		 * Fetch the schemas for a given register.
 		 *
@@ -575,6 +603,7 @@ export default {
 		async fetchSchemas(register) {
 			this.schemas = await this.picker.fetchSchemas(register)
 		},
+
 		/**
 		 * Fetch schema properties for the field-mapping dropdowns.
 		 *

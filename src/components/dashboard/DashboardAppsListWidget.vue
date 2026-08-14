@@ -130,9 +130,9 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl, imagePath } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 

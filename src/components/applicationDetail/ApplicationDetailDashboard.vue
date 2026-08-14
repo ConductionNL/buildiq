@@ -73,11 +73,11 @@
 						:icon="iconUsers"
 						:title="t('openbuild', 'Active users')"
 						:count="kpis.activeUsers"
-						:count-label="t('openbuild', 'users')"
+						:countLabel="t('openbuild', 'users')"
 						variant="primary"
 						:loading="!loaded"
-						:loading-label="t('openbuild', 'Loading…')"
-						:show-zero-count="loaded" />
+						:loadingLabel="t('openbuild', 'Loading…')"
+						:showZeroCount="loaded" />
 				</div>
 				<div
 					class="ob-detail-dashboard__kpi-link"
@@ -95,11 +95,11 @@
 						:icon="iconObjects"
 						:title="t('openbuild', 'Object count')"
 						:count="kpis.objectCount"
-						:count-label="t('openbuild', 'objects')"
+						:countLabel="t('openbuild', 'objects')"
 						variant="primary"
 						:loading="!loaded"
-						:loading-label="t('openbuild', 'Loading…')"
-						:show-zero-count="loaded" />
+						:loadingLabel="t('openbuild', 'Loading…')"
+						:showZeroCount="loaded" />
 				</div>
 				<!-- Storage: the KPI value is the SUM of attached-file sizes (bytes)
 				     from the audit trail, NOT a file count — so we label it Storage and
@@ -123,9 +123,9 @@
 						:icon="iconStorage"
 						:title="t('openbuild', 'Storage')"
 						:count="kpis.filesCount"
-						:count-label="''"
+						countLabel=""
 						variant="success"
-						show-zero-count>
+						showZeroCount>
 						<template #value="{ count }">
 							{{ formatBytes(count) }}
 						</template>
@@ -139,7 +139,7 @@
 						:count="0"
 						variant="success"
 						loading
-						:loading-label="t('openbuild', 'Loading…')" />
+						:loadingLabel="t('openbuild', 'Loading…')" />
 				</div>
 				<div
 					class="ob-detail-dashboard__kpi-link"
@@ -157,11 +157,11 @@
 						:icon="iconAudit"
 						:title="t('openbuild', 'Audit events')"
 						:count="kpis.auditEventCount"
-						:count-label="t('openbuild', 'events')"
+						:countLabel="t('openbuild', 'events')"
 						variant="warning"
 						:loading="!loaded"
-						:loading-label="t('openbuild', 'Loading…')"
-						:show-zero-count="loaded" />
+						:loadingLabel="t('openbuild', 'Loading…')"
+						:showZeroCount="loaded" />
 				</div>
 			</div>
 		</section>
@@ -214,35 +214,35 @@
 		     (layered-versioned-app-deltas). -->
 		<section class="ob-detail-dashboard__widgets">
 			<ManifestWidget
-				:app-slug="appSlug"
-				:is-hybrid="isHybrid"
-				:allow-user-overrides="allowUserOverrides"
-				:admin-label="adminVersionLabel"
-				:admin-status="adminVersionStatus"
-				@open-detail="openManifestDetail"
-				@edit-override="showUserDeltaModal = true"
+				:appSlug="appSlug"
+				:isHybrid="isHybrid"
+				:allowUserOverrides="allowUserOverrides"
+				:adminLabel="adminVersionLabel"
+				:adminStatus="adminVersionStatus"
+				@openDetail="openManifestDetail"
+				@editOverride="showUserDeltaModal = true"
 				@changed="onUserDeltaChanged" />
 			<RegisterWidget
-				:app-slug="appSlug"
-				:version-slug="activeVersionSlug"
-				:register-slug-override="registerSlug"
-				:is-hybrid="isHybrid"
-				:can-import="canImport"
-				@import-data="onImportData" />
+				:appSlug="appSlug"
+				:versionSlug="activeVersionSlug"
+				:registerSlugOverride="registerSlug"
+				:isHybrid="isHybrid"
+				:canImport="canImport"
+				@importData="onImportData" />
 			<GroupsWidget
 				:application="application"
-				@open-permissions="onOpenPermissions" />
+				@openPermissions="onOpenPermissions" />
 		</section>
 
 		<UserDeltaEditModal
 			v-model:open="showUserDeltaModal"
-			:app-slug="appSlug"
+			:appSlug="appSlug"
 			:delta="userDeltaContent"
 			@saved="onUserDeltaChanged" />
 
 		<ImportDataWizard
 			v-if="showImportWizard"
-			:register-id="registerSlug"
+			:registerId="registerSlug"
 			:schemas="importSchemas"
 			@imported="onImported"
 			@close="showImportWizard = false" />
@@ -250,27 +250,24 @@
 </template>
 
 <script>
+import { CnStatsBlock } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-
-import { CnStatsBlock } from '@conduction/nextcloud-vue'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import Harddisk from 'vue-material-design-icons/Harddisk.vue'
 import History from 'vue-material-design-icons/History.vue'
-
-import { fetchApplicationRecord } from '../../composables/useApplicationRecord.js'
+import ImportDataWizard from '../../dialogs/ImportDataWizard.vue'
+import UserDeltaEditModal from '../../modals/UserDeltaEditModal.vue'
 import GroupsWidget from './widgets/GroupsWidget.vue'
 import ManifestWidget from './widgets/ManifestWidget.vue'
 import RegisterWidget from './widgets/RegisterWidget.vue'
-import UserDeltaEditModal from '../../modals/UserDeltaEditModal.vue'
-import ImportDataWizard from '../../dialogs/ImportDataWizard.vue'
-
-import { buildVersionedRoute } from '../../router/helpers.js'
+import { fetchApplicationRecord } from '../../composables/useApplicationRecord.js'
 import { useInsightsWindow } from '../../composables/useInsightsWindow.js'
-import { useRole } from '../../composables/useRole.js'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import { useRole } from '../../composables/useRole.js'
+import { buildVersionedRoute } from '../../router/helpers.js'
 
 export default {
 	name: 'ApplicationDetailDashboard',
@@ -283,12 +280,14 @@ export default {
 		UserDeltaEditModal,
 		ImportDataWizard,
 	},
+
 	props: {
 		// CnDetailPage's #before-body slot forwards the resolved record as
 		// `object` plus the route-resolved `objectId`.
 		object: { type: Object, default: null },
 		objectId: { type: String, default: '' },
 	},
+
 	/**
 	 * Expose the shared insights-window ref (driven by the header toggle) so the
 	 * KPI/activity widgets re-fetch when the user changes 7d/30d/90d — plus the
@@ -307,6 +306,7 @@ export default {
 			iconAudit: History,
 		}
 	},
+
 	data() {
 		return {
 			application: this.object || null,
@@ -318,6 +318,7 @@ export default {
 				filesCount: 0,
 				auditEventCount: 0,
 			},
+
 			activity: [],
 			versionNoLongerAccessible: false,
 			loading: false,
@@ -334,6 +335,7 @@ export default {
 			importSchemas: [],
 		}
 	},
+
 	computed: {
 		/**
 		 * App slug from the resolved Application record.
@@ -344,6 +346,7 @@ export default {
 		appSlug() {
 			return (this.application && this.application.slug) || ''
 		},
+
 		/**
 		 * Production version UUID resolved from the Application record.
 		 *
@@ -356,6 +359,7 @@ export default {
 			if (typeof pv === 'string') return pv
 			return pv.uuid || pv.id || null
 		},
+
 		/**
 		 * Versions ordered along the promotesTo chain (most-upstream first).
 		 *
@@ -384,6 +388,7 @@ export default {
 			all.forEach((v) => walk(v))
 			return ordered
 		},
+
 		/**
 		 * Currently active version (selected, or production, or first).
 		 *
@@ -399,6 +404,7 @@ export default {
 				|| null
 			)
 		},
+
 		/**
 		 * Active version UUID.
 		 *
@@ -408,6 +414,7 @@ export default {
 		activeVersionUuid() {
 			return this.activeVersion ? this.activeVersion.uuid : ''
 		},
+
 		/**
 		 * Active version slug.
 		 *
@@ -417,6 +424,7 @@ export default {
 		activeVersionSlug() {
 			return this.activeVersion ? this.activeVersion.slug : ''
 		},
+
 		/**
 		 * Manifest of the active version.
 		 *
@@ -426,6 +434,7 @@ export default {
 		activeManifest() {
 			return (this.activeVersion && this.activeVersion.manifest) || {}
 		},
+
 		/**
 		 * Pages declared in the active version's manifest.
 		 *
@@ -436,6 +445,7 @@ export default {
 			const pages = this.activeManifest.pages
 			return Array.isArray(pages) ? pages : []
 		},
+
 		/**
 		 * Menu items declared in the active version's manifest.
 		 *
@@ -446,6 +456,7 @@ export default {
 			const menu = this.activeManifest.menu
 			return Array.isArray(menu) ? menu : []
 		},
+
 		/**
 		 * Distinct schemas referenced by the active version's pages.
 		 *
@@ -464,6 +475,7 @@ export default {
 			})
 			return out
 		},
+
 		/**
 		 * The production version row (for the chain/star resolution).
 		 *
@@ -478,6 +490,7 @@ export default {
 				) || null
 			)
 		},
+
 		/**
 		 * Total activity events across all buckets.
 		 *
@@ -490,6 +503,7 @@ export default {
 				0,
 			)
 		},
+
 		/**
 		 * SVG polyline points for the activity sparkline.
 		 *
@@ -514,6 +528,7 @@ export default {
 				})
 				.join(' ')
 		},
+
 		/**
 		 * The "version no longer accessible" banner descriptor, or null.
 		 *
@@ -533,12 +548,14 @@ export default {
 						'openbuild',
 						'This version is no longer accessible. Switch to production?',
 					),
+
 					actionLabel: t('openbuild', 'Switch to production'),
 					action: () => this.switchToProduction(),
 				}
 			}
 			return null
 		},
+
 		/**
 		 * Whether this is a hybrid app (mirrors an installed Nextcloud app).
 		 *
@@ -548,6 +565,7 @@ export default {
 		isHybrid() {
 			return (this.application && this.application.appType) === 'hybrid'
 		},
+
 		/**
 		 * Whether this app allows per-user manifest overrides
 		 * (layered-versioned-app-deltas).
@@ -557,6 +575,7 @@ export default {
 		allowUserOverrides() {
 			return !!(this.application && this.application.allowUserOverrides)
 		},
+
 		/**
 		 * Human label for the admin delta's current version (the production
 		 * version's name/semver, falling back to the active version).
@@ -568,6 +587,7 @@ export default {
 			if (!v) return t('openbuild', 'current')
 			return v.semver || v.name || v.slug || t('openbuild', 'current')
 		},
+
 		/**
 		 * Lifecycle status of the admin delta's current version.
 		 *
@@ -577,6 +597,7 @@ export default {
 			const v = this.productionVersion || this.activeVersion
 			return (v && v.status) || ''
 		},
+
 		/**
 		 * Slug of the OpenRegister register the KPIs reflect. Hybrid apps use the
 		 * installed fleet app's register (== appSlug); virtual apps use the
@@ -597,6 +618,7 @@ export default {
 			if (!this.activeVersionSlug) return ''
 			return `openbuild-${this.appSlug}-${this.activeVersionSlug}`
 		},
+
 		/**
 		 * Whether the caller holds a build/manage role (owner or editor) on this
 		 * Application. Gates the "Import data" affordance (REQ: the import is
@@ -611,6 +633,7 @@ export default {
 			return role === 'owner' || role === 'editor'
 		},
 	},
+
 	watch: {
 		/**
 		 * Re-bind to a freshly resolved record and reload its versions.
@@ -625,7 +648,8 @@ export default {
 				this.loadVersions()
 			}
 		},
-		'$route.query._version'(newSlug) {
+
+		'$route.query._version': function (newSlug) {
 			if (!newSlug) {
 				if (this.productionVersionUuid)
 					this.selectedVersionUuid = this.productionVersionUuid
@@ -634,6 +658,7 @@ export default {
 			const match = this.orderedVersions.find((v) => v.slug === newSlug)
 			if (match) this.selectedVersionUuid = match.uuid
 		},
+
 		/**
 		 * Re-fetch insights when the active version changes.
 		 *
@@ -643,6 +668,7 @@ export default {
 		activeVersionUuid() {
 			this.scheduleInsightsFetch()
 		},
+
 		/**
 		 * Re-fetch insights when the shared window selection changes.
 		 *
@@ -653,6 +679,7 @@ export default {
 			this.scheduleInsightsFetch()
 		},
 	},
+
 	/**
 	 * Load the version list (and seed the active version) on mount.
 	 *
@@ -666,6 +693,7 @@ export default {
 			this.loadVersions()
 		}
 	},
+
 	/**
 	 * Clear the pending insights debounce timer on teardown.
 	 *
@@ -678,6 +706,7 @@ export default {
 			this.insightsDebounce = null
 		}
 	},
+
 	methods: {
 		/**
 		 * Deep-link a KPI into OpenRegister — the system of record behind the
@@ -700,6 +729,7 @@ export default {
 			}
 			window.location.href = url
 		},
+
 		/**
 		 * Format a byte count as a human-readable storage size (e.g. 517 KB).
 		 *

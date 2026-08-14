@@ -22,7 +22,7 @@
 			}}
 		</p>
 		<NcTextField
-			:model-value="typed"
+			:modelValue="typed"
 			:label="t('openbuild', 'Type the slug to confirm')"
 			:placeholder="schemaSlug"
 			@update:modelValue="typed = $event" />
@@ -47,12 +47,14 @@ export default {
 		open: { type: Boolean, default: false },
 		schemaSlug: { type: String, default: '' },
 	},
+
 	emits: ['confirm', 'cancel', 'update:open'],
 	data() {
 		return {
 			typed: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Enable delete only when the typed slug matches the target exactly.
@@ -64,6 +66,7 @@ export default {
 			return this.typed === this.schemaSlug && this.schemaSlug !== ''
 		},
 	},
+
 	watch: {
 		/**
 		 * Clear the typed confirmation when the dialog closes.
@@ -78,6 +81,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Confirm deletion only when the confirmation gate is met.
@@ -92,6 +96,7 @@ export default {
 			this.$emit('confirm')
 			this.typed = ''
 		},
+
 		/**
 		 * Cancel deletion and reset the confirmation input.
 		 *
@@ -102,6 +107,7 @@ export default {
 			this.typed = ''
 			this.$emit('cancel')
 		},
+
 		/**
 		 * Sync modal open state and emit cancel when closed.
 		 *

@@ -17,17 +17,17 @@
 <template>
 	<DeleteAppDialog
 		:open="!!item"
-		:app-name="appName"
+		:appName="appName"
 		:busy="busy"
 		@update:open="onOpenChange"
 		@confirm="onConfirm" />
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showError } from '@nextcloud/dialogs'
 import { useObjectStore } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
+import { showError } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
 
 // The applications index self-fetches under this object-type key
@@ -61,6 +61,7 @@ export default {
 			const i = this.item || {}
 			return String(i.name || i.slug || '')
 		},
+
 		/**
 		 * OpenRegister object id / UUID of the targeted app.
 		 *

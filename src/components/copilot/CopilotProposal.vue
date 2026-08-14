@@ -31,10 +31,10 @@
 		<ManifestDiff
 			v-for="(pair, versionKey) in plan.manifests"
 			:key="versionKey"
-			:from-manifest="pair.current"
-			:to-manifest="pair.predicted"
-			:from-label-text="t('openbuild', 'Current')"
-			:to-label-text="t('openbuild', 'Predicted')" />
+			:fromManifest="pair.current"
+			:toManifest="pair.predicted"
+			:fromLabelText="t('openbuild', 'Current')"
+			:toLabelText="t('openbuild', 'Predicted')" />
 
 		<p v-if="!canApprove" class="copilot-proposal__error" role="alert">
 			{{
@@ -78,11 +78,13 @@ export default {
 			type: Object,
 			required: true,
 		},
+
 		/** False while any predicted manifest fails the canonical validator. */
 		canApprove: {
 			type: Boolean,
 			default: false,
 		},
+
 		/** True while the approved plan is executing. */
 		busy: {
 			type: Boolean,

@@ -20,12 +20,12 @@
 		     v-for in the default slot throws "draggable element must have an
 		     item slot" at render. -->
 		<Draggable
-			:model-value="menu"
+			:modelValue="menu"
 			handle=".menu-tree-editor__drag-handle"
 			:animation="150"
-			item-key="id"
+			itemKey="id"
 			class="menu-tree-editor__list"
-			@update:model-value="onTopLevelReorder">
+			@update:modelValue="onTopLevelReorder">
 			<template #item="{ element: entry, index }">
 				<div class="menu-tree-editor__entry">
 					<div class="menu-tree-editor__row">
@@ -122,18 +122,18 @@
 					</p>
 					<PermissionGroupField
 						:permission="entry.permission || ''"
-						:known-groups="knownGroups"
+						:knownGroups="knownGroups"
 						@update:permission="
 							updateField(index, 'permission', $event || '')
 						" />
 					<Draggable
 						v-if="entry.children && entry.children.length"
-						:model-value="entry.children"
+						:modelValue="entry.children"
 						handle=".menu-tree-editor__drag-handle"
 						:animation="150"
-						item-key="id"
+						itemKey="id"
 						class="menu-tree-editor__children"
-						@update:model-value="onChildrenReorder(index, $event)">
+						@update:modelValue="onChildrenReorder(index, $event)">
 						<template #item="{ element: child, index: cIndex }">
 							<div
 								class="menu-tree-editor__row menu-tree-editor__row--child">
@@ -233,12 +233,14 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:menu', 'depth-violation'],
 	data() {
 		return {
 			depthError: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Group ids already referenced by any menu entry's `permission`
@@ -263,6 +265,7 @@ export default {
 			return Array.from(gids)
 		},
 	},
+
 	methods: {
 		/**
 		 * Single write-path out of this component: renumber `order` and hand
@@ -278,6 +281,7 @@ export default {
 			const next = menu.map((e, i) => ({ ...e, order: i }))
 			this.$emit('update:menu', next)
 		},
+
 		/**
 		 * Write one scalar key on one top-level menu entry. Clearing a field
 		 * removes the key entirely rather than storing `''`, so the emitted
@@ -299,6 +303,7 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+
 		/**
 		 * Write the `action` enum on a top-level entry. Canonical rule: an
 		 * entry that triggers an action MUST NOT also carry navigation, so
@@ -323,6 +328,7 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+
 		/**
 		 * Observed behaviour of `addEntry` (retrofit annotation).
 		 *
@@ -333,6 +339,7 @@ export default {
 			next.push({ id: '', label: '', target: 'main' })
 			this.emit(next)
 		},
+
 		/**
 		 * Drop a top-level entry (and, with it, any children it owns).
 		 *
@@ -344,6 +351,7 @@ export default {
 			next.splice(index, 1)
 			this.emit(next)
 		},
+
 		/**
 		 * Append an empty second-level entry under a top-level entry. Only
 		 * top-level rows expose the "Add child" button, which is what keeps
@@ -363,6 +371,7 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+
 		/**
 		 * Write one scalar key on a second-level entry. Also the depth guard:
 		 * a `children` key on a child would make a third level, so that call
@@ -396,6 +405,7 @@ export default {
 			next[index] = parent
 			this.emit(next)
 		},
+
 		/**
 		 * Drop one second-level entry. Removing the last child deletes the
 		 * `children` key altogether so a childless entry round-trips without
@@ -418,6 +428,7 @@ export default {
 			next[index] = parent
 			this.emit(next)
 		},
+
 		/**
 		 * Drag-reorder of the top-level list. vuedraggable v4 hands the whole
 		 * reordered array through `update:modelValue` (it does not mutate the
@@ -429,6 +440,7 @@ export default {
 		onTopLevelReorder(newOrder) {
 			this.emit(newOrder)
 		},
+
 		/**
 		 * Drag-reorder inside one parent's child list. Children carry no
 		 * `order` key of their own — array position is their order — so the

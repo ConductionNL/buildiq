@@ -52,6 +52,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:modelValue'],
 	computed: {
 		/**
@@ -63,6 +64,7 @@ export default {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
@@ -79,6 +81,7 @@ export default {
 			next[index] = { ...current, [key]: value }
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `addWidget` (retrofit annotation).
 		 *
@@ -89,6 +92,7 @@ export default {
 			next.push({ id: '', title: '', type: 'custom' })
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `removeWidget` (retrofit annotation).
 		 *

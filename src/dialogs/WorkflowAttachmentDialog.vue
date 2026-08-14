@@ -33,7 +33,7 @@
 
 			<NcSelect
 				v-model="caseTypeOption"
-				:input-label="t('openbuild', 'Case type')"
+				:inputLabel="t('openbuild', 'Case type')"
 				:options="caseTypeOptions"
 				:loading="loadingCaseTypes"
 				:disabled="!procestAvailable"
@@ -41,14 +41,14 @@
 
 			<NcSelect
 				v-model="schemaOption"
-				:input-label="t('openbuild', 'Schema')"
+				:inputLabel="t('openbuild', 'Schema')"
 				:options="schemaOptions"
 				label="label" />
 
 			<div class="ob-workflow-attach__link">
 				<NcSelect
 					v-model="linkPropertyOption"
-					:input-label="t('openbuild', 'Link property')"
+					:inputLabel="t('openbuild', 'Link property')"
 					:options="linkPropertyOptions"
 					label="label" />
 				<NcButton
@@ -59,7 +59,7 @@
 			</div>
 
 			<NcTextField
-				:model-value="descriptionTemplate"
+				:modelValue="descriptionTemplate"
 				:label="t('openbuild', 'Description template (optional)')"
 				:placeholder="t('openbuild', 'e.g. Application for {{title}}')"
 				@update:modelValue="descriptionTemplate = $event" />
@@ -90,9 +90,9 @@
 </template>
 
 <script>
-import { NcDialog, NcButton, NcSelect, NcTextField } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { NcButton, NcDialog, NcSelect, NcTextField } from '@nextcloud/vue'
 
 export default {
 	name: 'WorkflowAttachmentDialog',
@@ -102,27 +102,32 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		// The app's schemas as `[{ slug, title, properties }]`.
 		schemas: {
 			type: Array,
 			default: () => [],
 		},
+
 		// Schema slugs already attached (excluded from the schema picker).
 		attachedSchemas: {
 			type: Array,
 			default: () => [],
 		},
+
 		// Existing attachment when editing (null when adding).
 		attachment: {
 			type: Object,
 			default: null,
 		},
+
 		// Soft capability flag for Procest.
 		procestAvailable: {
 			type: Boolean,
 			default: true,
 		},
 	},
+
 	emits: ['update:open', 'save', 'create-link-property'],
 	data() {
 		return {
@@ -136,11 +141,13 @@ export default {
 			error: '',
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		editing() {
 			return !!this.attachment
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		caseTypeOptions() {
 			return this.caseTypes.map((ct) => ({
@@ -151,6 +158,7 @@ export default {
 				name: ct.omschrijving || ct.identificatie || '',
 			}))
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		schemaOptions() {
 			const exclude = this.editing ? [] : this.attachedSchemas
@@ -158,10 +166,12 @@ export default {
 				.filter((s) => !exclude.includes(s.slug))
 				.map((s) => ({ label: s.title || s.slug, slug: s.slug }))
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		selectedSchemaSlug() {
 			return this.schemaOption ? this.schemaOption.slug : ''
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		linkPropertyOptions() {
 			const schema = this.schemas.find(
@@ -179,6 +189,7 @@ export default {
 				})
 				.map((name) => ({ label: name, name }))
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		canSave() {
 			return !!(
@@ -188,6 +199,7 @@ export default {
 			)
 		},
 	},
+
 	watch: {
 		/**
 		 * @param {boolean} isOpen - The dialog's new `open` state. Opening re-seeds the
@@ -204,6 +216,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Seed the form from an existing attachment when editing.
@@ -235,6 +248,7 @@ export default {
 				this.addStatusTab = false
 			}
 		},
+
 		/**
 		 * Load published case types from Procest's ZTC list endpoint.
 		 *
@@ -256,6 +270,7 @@ export default {
 				this.loadingCaseTypes = false
 			}
 		},
+
 		/**
 		 * Assemble + emit the workflow attachment entry.
 		 *
@@ -282,6 +297,7 @@ export default {
 			this.$emit('save', { entry, addStatusTab: this.addStatusTab })
 			this.$emit('update:open', false)
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		onClose() {
 			this.$emit('update:open', false)

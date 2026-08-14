@@ -31,7 +31,7 @@
 				<span class="ob-block-remap__source">{{ dep }}</span>
 				<NcSelect
 					v-model="selections[dep]"
-					:input-label="t('openbuild', 'Map “{dep}” to', { dep })"
+					:inputLabel="t('openbuild', 'Map “{dep}” to', { dep })"
 					:options="schemaOptions"
 					:clearable="true"
 					:placeholder="t('openbuild', 'Leave unresolved')" />
@@ -66,6 +66,7 @@ export default {
 		// Schema slugs available in the target app.
 		targetSchemaSlugs: { type: Array, default: () => [] },
 	},
+
 	emits: ['update:open', 'resolved'],
 	data() {
 		return {
@@ -73,6 +74,7 @@ export default {
 			selections: {},
 		}
 	},
+
 	computed: {
 		/**
 		 * Options offered in every remap picker.
@@ -84,6 +86,7 @@ export default {
 			return this.targetSchemaSlugs.map((slug) => ({ id: slug, label: slug }))
 		},
 	},
+
 	watch: {
 		/**
 		 * Reset every dependency's picker whenever the dialog opens.
@@ -97,6 +100,7 @@ export default {
 				this.resetSelections()
 			}
 		},
+
 		/**
 		 * Reset the picker state whenever the mismatched-dependency list changes.
 		 *
@@ -107,6 +111,7 @@ export default {
 			this.resetSelections()
 		},
 	},
+
 	/**
 	 * Reset the picker state when already open on mount.
 	 *
@@ -118,6 +123,7 @@ export default {
 			this.resetSelections()
 		}
 	},
+
 	methods: {
 		/**
 		 * Reset every dependency's picker to unresolved (null).
@@ -132,6 +138,7 @@ export default {
 			}
 			this.selections = next
 		},
+
 		/**
 		 * Close without resolving anything.
 		 *
@@ -141,6 +148,7 @@ export default {
 		onClose() {
 			this.$emit('update:open', false)
 		},
+
 		/**
 		 * Build `{ remapMap, unresolvedDependencies }` from the current
 		 * picker state and emit it — `blockInsert.js#insertBlock` consumes

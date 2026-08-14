@@ -93,8 +93,8 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import RollbackConfirmModal from '../modals/RollbackConfirmModal.vue'
 
 export default {
@@ -102,33 +102,39 @@ export default {
 	components: {
 		RollbackConfirmModal,
 	},
+
 	props: {
 		/** The parent Application slug — drives the working versions endpoint. */
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		/** The parent Application UUID (kept for back-compat callers). */
 		applicationUuid: {
 			type: String,
 			default: '',
 		},
+
 		/** The current production version UUID — marks the "Production" row. */
 		currentVersionUuid: {
 			type: String,
 			default: '',
 		},
+
 		/** Whether the caller may edit versions (owner/editor/admin). */
 		canEdit: {
 			type: Boolean,
 			default: false,
 		},
+
 		/** Whether the caller may release a draft to production (owner only). */
 		canRelease: {
 			type: Boolean,
 			default: false,
 		},
 	},
+
 	emits: ['rollback', 'released'],
 	data() {
 		return {
@@ -139,6 +145,7 @@ export default {
 			rollbackTarget: null,
 		}
 	},
+
 	watch: {
 		appSlug: {
 			immediate: true,
@@ -158,6 +165,7 @@ export default {
 				}
 			},
 		},
+
 		applicationUuid: {
 			immediate: true,
 			/**
@@ -176,6 +184,7 @@ export default {
 			},
 		},
 	},
+
 	methods: {
 		/**
 		 * Load the ApplicationVersion rows.  When appSlug is available the slug
@@ -255,6 +264,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Stable key for a version row.
 		 *
@@ -264,6 +274,7 @@ export default {
 		rowKey(row) {
 			return this.rowUuid(row) || this.rowSlug(row) + ':' + this.rowName(row)
 		},
+
 		/**
 		 * The version row's own UUID (from `id` or the `@self` envelope).
 		 *
@@ -274,6 +285,7 @@ export default {
 			const self = (row && row['@self']) || {}
 			return (row && row.id) || self.id || self.uuid || (row && row.uuid) || ''
 		},
+
 		/**
 		 * The version row's human label (name, falling back to slug).
 		 *
@@ -283,6 +295,7 @@ export default {
 		rowName(row) {
 			return (row && (row.name || row.slug)) || ''
 		},
+
 		/**
 		 * The version row's slug (used for `?_version=`).
 		 *
@@ -292,6 +305,7 @@ export default {
 		rowSlug(row) {
 			return (row && row.slug) || ''
 		},
+
 		/**
 		 * The version row's semver string.  Reads the canonical `semver` field
 		 * first, then falls back to the `version` field used by the OR-backed
@@ -305,6 +319,7 @@ export default {
 		rowSemver(row) {
 			return (row && (row.semver || row.version)) || ''
 		},
+
 		/**
 		 * The version row's lifecycle status.
 		 *
@@ -314,6 +329,7 @@ export default {
 		rowStatus(row) {
 			return (row && row.status) || 'draft'
 		},
+
 		/**
 		 * Translated label for a row's status.
 		 *
@@ -330,6 +346,7 @@ export default {
 			}
 			return t('openbuild', 'Draft')
 		},
+
 		/**
 		 * Whether the row is the Application's current production version.
 		 *
@@ -342,6 +359,7 @@ export default {
 				&& this.rowUuid(row) === this.currentVersionUuid
 			)
 		},
+
 		/**
 		 * Open a version in the live shell — production at the canonical URL,
 		 * any other version via `?_version=` (RBAC-gated server-side).
@@ -362,6 +380,7 @@ export default {
 				? base
 				: base + '?_version=' + encodeURIComponent(this.rowSlug(row))
 		},
+
 		/**
 		 * Edit a version in the page designer, scoped via `?_version=` for
 		 * non-production versions (editor+ only — gated by `canEdit`).
@@ -382,6 +401,7 @@ export default {
 				? base
 				: base + '?_version=' + encodeURIComponent(this.rowSlug(row))
 		},
+
 		/**
 		 * Release a draft version: set-as-production + publish + demote previous
 		 * production (owner only, server-enforced). Refreshes on success.
@@ -422,6 +442,7 @@ export default {
 				this.releasing = ''
 			}
 		},
+
 		/**
 		 * Open the rollback confirmation for a non-production version.
 		 *
@@ -436,11 +457,13 @@ export default {
 				version:
 					this.rowSemver(row)
 					|| (this.rowName(row) + ' ' + this.rowSemver(row)).trim(),
+
 				manifest: row.manifest,
 				publishedAt: (row && row.publishedAt) || '',
 			}
 			this.rollbackOpen = true
 		},
+
 		/**
 		 * Forward a confirmed rollback to the parent (which performs the PUT).
 		 *
@@ -452,6 +475,7 @@ export default {
 			this.rollbackOpen = false
 			this.rollbackTarget = null
 		},
+
 		/**
 		 * Dismiss the rollback confirmation.
 		 *

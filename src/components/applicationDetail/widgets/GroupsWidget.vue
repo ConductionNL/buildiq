@@ -28,10 +28,8 @@
 				class="ob-groups-widget__row">
 				<span class="ob-groups-widget__row-name">{{ row.label }}</span>
 				<span
-					:class="[
-						'ob-groups-widget__row-role',
-						`ob-groups-widget__row-role--${row.role}`,
-					]">
+					class="ob-groups-widget__row-role"
+					:class="[`ob-groups-widget__row-role--${row.role}`]">
 					{{ roleLabel(row.role) }}
 				</span>
 				<span class="ob-groups-widget__row-members">{{
@@ -56,6 +54,7 @@ export default {
 	props: {
 		application: { type: Object, default: () => ({}) },
 	},
+
 	computed: {
 		/**
 		 * Flatten `permissions.{owners,editors,viewers}` into a row array.
@@ -90,6 +89,7 @@ export default {
 			return out
 		},
 	},
+
 	methods: {
 		/**
 		 * Human-readable role label.

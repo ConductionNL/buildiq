@@ -76,15 +76,15 @@
 
 		<ExportDialog
 			v-if="showDialog"
-			:application-slug="applicationSlug"
+			:applicationSlug="applicationSlug"
 			@close="showDialog = false"
 			@queued="onQueued" />
 	</section>
 </template>
 
 <script>
-import { NcButton } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
+import { NcButton } from '@nextcloud/vue'
 import ExportDialog from '../dialogs/ExportDialog.vue'
 
 export default {
@@ -93,18 +93,21 @@ export default {
 		NcButton,
 		ExportDialog,
 	},
+
 	props: {
 		/** Slug — the key the export SUBMIT endpoint takes. */
 		applicationSlug: {
 			type: String,
 			required: true,
 		},
+
 		/** Object id — the key stored jobs are actually filterable by. */
 		applicationUuid: {
 			type: String,
 			default: '',
 		},
 	},
+
 	data() {
 		return {
 			jobs: [],
@@ -112,6 +115,7 @@ export default {
 			poller: null,
 		}
 	},
+
 	/**
 	 * Observed behaviour of `mounted` (retrofit annotation).
 	 *
@@ -121,6 +125,7 @@ export default {
 		this.fetchJobs()
 		this.poller = setInterval(this.fetchJobs, 2000)
 	},
+
 	/**
 	 * Observed behaviour of `beforeDestroy` (retrofit annotation).
 	 *
@@ -131,6 +136,7 @@ export default {
 			clearInterval(this.poller)
 		}
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `openDialog` (retrofit annotation).
@@ -140,6 +146,7 @@ export default {
 		openDialog() {
 			this.showDialog = true
 		},
+
 		/**
 		 * Observed behaviour of `onQueued` (retrofit annotation).
 		 *
@@ -148,6 +155,7 @@ export default {
 		onQueued() {
 			this.fetchJobs()
 		},
+
 		/**
 		 * Observed behaviour of `fetchJobs` (retrofit annotation).
 		 *
@@ -194,6 +202,7 @@ export default {
 				// Silent fail; polling will retry.
 			}
 		},
+
 		/**
 		 * Observed behaviour of `statusLabel` (retrofit annotation).
 		 *

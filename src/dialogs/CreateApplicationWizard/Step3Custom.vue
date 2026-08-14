@@ -145,6 +145,9 @@
 import { toKebabCase, validateSlug } from '../../utils/slugPattern.js'
 
 let _idCounter = 0
+/**
+ *
+ */
 function nextId() {
 	return ++_idCounter
 }

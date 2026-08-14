@@ -32,8 +32,8 @@
 			class="automation-action-list__row"
 			data-testid="follow-up-action-row">
 			<NcSelect
-				:model-value="typeOption(item.type)"
-				:input-label="t('openbuild', 'Action type')"
+				:modelValue="typeOption(item.type)"
+				:inputLabel="t('openbuild', 'Action type')"
 				:options="typeOptions"
 				:clearable="false"
 				label="label"
@@ -41,19 +41,19 @@
 
 			<template v-if="item.type === 'send-notification'">
 				<NcTextField
-					:model-value="item.subjectEn"
+					:modelValue="item.subjectEn"
 					:label="t('openbuild', 'Subject (English)')"
 					@update:modelValue="updateItem(index, 'subjectEn', $event)" />
 				<NcTextField
-					:model-value="item.subjectNl"
+					:modelValue="item.subjectNl"
 					:label="t('openbuild', 'Subject (Dutch)')"
 					@update:modelValue="updateItem(index, 'subjectNl', $event)" />
 			</template>
 
 			<template v-else-if="item.type === 'object-op'">
 				<NcSelect
-					:model-value="operationOption(item.operation)"
-					:input-label="t('openbuild', 'Operation')"
+					:modelValue="operationOption(item.operation)"
+					:inputLabel="t('openbuild', 'Operation')"
 					:options="operationOptions"
 					:clearable="false"
 					label="label"
@@ -65,11 +65,11 @@
 						)
 					" />
 				<NcTextField
-					:model-value="item.schema"
+					:modelValue="item.schema"
 					:label="t('openbuild', 'Target schema')"
 					@update:modelValue="updateItem(index, 'schema', $event)" />
 				<NcTextArea
-					:model-value="item.fieldMappingText"
+					:modelValue="item.fieldMappingText"
 					:label="t('openbuild', 'Field mapping (JSON)')"
 					@update:modelValue="
 						updateItem(index, 'fieldMappingText', $event)
@@ -78,11 +78,11 @@
 
 			<template v-else-if="item.type === 'webhook'">
 				<NcTextField
-					:model-value="item.url"
+					:modelValue="item.url"
 					:label="t('openbuild', 'Webhook URL')"
 					@update:modelValue="updateItem(index, 'url', $event)" />
 				<NcTextArea
-					:model-value="item.payloadTemplateText"
+					:modelValue="item.payloadTemplateText"
 					:label="t('openbuild', 'Payload template (JSON)')"
 					@update:modelValue="
 						updateItem(index, 'payloadTemplateText', $event)
@@ -103,6 +103,9 @@
 import { NcButton, NcSelect, NcTextArea, NcTextField } from '@nextcloud/vue'
 
 let keyCounter = 0
+/**
+ *
+ */
 function nextKey() {
 	keyCounter += 1
 	return `follow-up-${keyCounter}`
@@ -117,12 +120,14 @@ export default {
 		/** Section label, e.g. "On approve" / "On reject". */
 		label: { type: String, required: true },
 	},
+
 	emits: ['update:modelValue'],
 	data() {
 		return {
 			items: (this.modelValue || []).map((a) => this.toEditorShape(a)),
 		}
 	},
+
 	computed: {
 		typeOptions() {
 			return [
@@ -137,6 +142,7 @@ export default {
 				{ value: 'webhook', label: t('openbuild', 'Webhook') },
 			]
 		},
+
 		operationOptions() {
 			return [
 				{ value: 'create', label: t('openbuild', 'Create') },
@@ -144,6 +150,7 @@ export default {
 			]
 		},
 	},
+
 	watch: {
 		modelValue(next) {
 			// Only resync from an external reset (e.g. the parent dialog's
@@ -156,6 +163,7 @@ export default {
 			this.items = (next || []).map((a) => this.toEditorShape(a))
 		},
 	},
+
 	methods: {
 		/**
 		 * Convert a stored follow-up action record to the flat editor shape.
@@ -181,17 +189,20 @@ export default {
 				),
 			}
 		},
+
 		typeOption(type) {
 			return (
 				this.typeOptions.find((o) => o.value === type) || this.typeOptions[0]
 			)
 		},
+
 		operationOption(operation) {
 			return (
 				this.operationOptions.find((o) => o.value === operation)
 				|| this.operationOptions[1]
 			)
 		},
+
 		addAction() {
 			this.items = [
 				...this.items,
@@ -199,10 +210,12 @@ export default {
 			]
 			this.emit()
 		},
+
 		removeAction(index) {
 			this.items = this.items.filter((_, i) => i !== index)
 			this.emit()
 		},
+
 		onTypeChange(index, option) {
 			this.updateItem(
 				index,
@@ -210,12 +223,14 @@ export default {
 				option ? option.value : 'send-notification',
 			)
 		},
+
 		updateItem(index, key, value) {
 			this.items = this.items.map((item, i) =>
 				i === index ? { ...item, [key]: value } : item,
 			)
 			this.emit()
 		},
+
 		/**
 		 * Build the persisted action-record shape from the editor's flat state.
 		 *
@@ -263,6 +278,7 @@ export default {
 				return webhook
 			})
 		},
+
 		emit() {
 			this.$emit('update:modelValue', this.emittedValue())
 		},

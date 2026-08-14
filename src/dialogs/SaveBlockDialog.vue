@@ -34,19 +34,19 @@
 			</p>
 
 			<NcTextField
-				:model-value="form.name"
+				:modelValue="form.name"
 				:label="t('openbuild', 'Block name')"
 				@update:modelValue="onNameInput" />
 			<NcTextField
-				:model-value="form.slug"
+				:modelValue="form.slug"
 				:label="t('openbuild', 'Slug (kebab-case, max 48 chars)')"
 				@update:modelValue="form.slug = $event" />
 			<NcTextArea
-				:model-value="form.description"
+				:modelValue="form.description"
 				:label="t('openbuild', 'Description')"
 				@update:modelValue="form.description = $event" />
 			<NcTextField
-				:model-value="form.category"
+				:modelValue="form.category"
 				:label="
 					t('openbuild', 'Category (e.g. {examples})', {
 						examples: categoryHint,
@@ -121,11 +121,10 @@
 </template>
 
 <script>
+import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { getCurrentUser } from '@nextcloud/auth'
-import { NcButton, NcDialog, NcTextField, NcTextArea } from '@nextcloud/vue'
-
+import { NcButton, NcDialog, NcTextArea, NcTextField } from '@nextcloud/vue'
 import {
 	BLOCK_CATEGORIES,
 	captureBlock,
@@ -149,6 +148,7 @@ export default {
 		// Blocks already visible to the caller, for slug-collision checking.
 		existingBlocks: { type: Array, default: () => [] },
 	},
+
 	emits: ['update:open', 'saved'],
 	data() {
 		return {
@@ -158,12 +158,14 @@ export default {
 				description: '',
 				category: '',
 			},
+
 			slugEditedManually: false,
 			saving: false,
 			saveError: '',
 			collisionError: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Whether the current selection is a multi-widget section capture.
@@ -174,6 +176,7 @@ export default {
 		isSection() {
 			return isSectionFragment(this.fragment)
 		},
+
 		/**
 		 * Dialog title — varies for a single-widget vs a section capture.
 		 *
@@ -185,6 +188,7 @@ export default {
 				? t('openbuild', 'Save section as block')
 				: t('openbuild', 'Save widget as block')
 		},
+
 		/**
 		 * Suggested category examples shown in the field label.
 		 *
@@ -194,6 +198,7 @@ export default {
 		categoryHint() {
 			return BLOCK_CATEGORIES.join(', ')
 		},
+
 		/**
 		 * The capture result, or null when capture throws a de-namespace
 		 * collision (surfaced via `collisionError`).
@@ -217,6 +222,7 @@ export default {
 				return null
 			}
 		},
+
 		/**
 		 * The source Application's slug (used for de-namespacing).
 		 *
@@ -226,6 +232,7 @@ export default {
 		appSlug() {
 			return (this.application && this.application.slug) || ''
 		},
+
 		/**
 		 * The current Nextcloud user id, recorded as `createdBy`.
 		 *
@@ -236,6 +243,7 @@ export default {
 			const user = getCurrentUser()
 			return (user && user.uid) || ''
 		},
+
 		/**
 		 * Schema-dependency summary rendered in the capture-summary section.
 		 *
@@ -245,6 +253,7 @@ export default {
 		dependencySummary() {
 			return this.capture ? this.capture.summary.schemaDependencies : []
 		},
+
 		/**
 		 * Slug well-formedness (mirrors the schema's `^[a-z0-9][a-z0-9-]*[a-z0-9]$`).
 		 *
@@ -257,6 +266,7 @@ export default {
 				&& this.form.slug.length <= 48
 			)
 		},
+
 		/**
 		 * Whether the chosen slug already belongs to a visible block (v1:
 		 * create-only, no update-in-place — see design.md's "no version
@@ -268,6 +278,7 @@ export default {
 		slugTakenError() {
 			return this.existingBlocks.some((b) => b && b.slug === this.form.slug)
 		},
+
 		/**
 		 * Whether Save is allowed.
 		 *
@@ -284,6 +295,7 @@ export default {
 				&& !this.slugTakenError
 			)
 		},
+
 		/**
 		 * Save button label.
 		 *
@@ -296,6 +308,7 @@ export default {
 				: t('openbuild', 'Save block')
 		},
 	},
+
 	watch: {
 		/**
 		 * Reset the form each time the dialog opens.
@@ -309,6 +322,7 @@ export default {
 				this.resetForm()
 			}
 		},
+
 		fragment: {
 			/**
 			 * Re-check the de-namespace collision whenever the selected
@@ -320,12 +334,15 @@ export default {
 			handler() {
 				this.recomputeCollision()
 			},
+
 			immediate: true,
 		},
-		'form.slug'() {
+
+		'form.slug': function () {
 			this.slugEditedManually = true
 		},
 	},
+
 	/**
 	 * Prefill on mount when already open (the parent renders the dialog
 	 * with `v-if="open"`, so `created` fires with `open: true`).
@@ -338,6 +355,7 @@ export default {
 			this.resetForm()
 		}
 	},
+
 	methods: {
 		/**
 		 * Reset the form, prefilled from the selected fragment.
@@ -364,6 +382,7 @@ export default {
 			this.saveError = ''
 			this.recomputeCollision()
 		},
+
 		/**
 		 * Update the name and auto-suggest the slug until the user edits
 		 * the slug field by hand.
@@ -379,6 +398,7 @@ export default {
 				this.slugEditedManually = false
 			}
 		},
+
 		/**
 		 * Recompute the de-namespace collision message by attempting a
 		 * capture; `SlugCollisionError` names both colliding schemas.
@@ -406,6 +426,7 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * Close the dialog.
 		 *
@@ -418,6 +439,7 @@ export default {
 			}
 			this.$emit('update:open', false)
 		},
+
 		/**
 		 * Persist the captured block via OR REST (create-only, v1).
 		 *

@@ -62,6 +62,7 @@ export default {
 		versionSlug: { type: String, default: '' },
 		schemas: { type: Array, default: () => [] },
 	},
+
 	methods: {
 		/**
 		 * Format an object-count value for inline display.

@@ -37,7 +37,7 @@
 			</p>
 			<NcSelect
 				v-model="selectedVersion"
-				:input-label="t('openbuild', 'Version to publish')"
+				:inputLabel="t('openbuild', 'Version to publish')"
 				:options="versionOptions"
 				:placeholder="t('openbuild', 'Production version')"
 				:clearable="true" />
@@ -85,6 +85,7 @@ export default {
 		/** The linked repo `{ owner, name, branch }` for the summary line. */
 		repo: { type: Object, default: null },
 	},
+
 	emits: ['close', 'published'],
 	data() {
 		return {
@@ -93,6 +94,7 @@ export default {
 			error: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Human label of the linked repository for the summary line.
@@ -106,6 +108,7 @@ export default {
 			}
 			return t('openbuild', 'the linked repository')
 		},
+
 		/**
 		 * The version picker options (`{ id: slug, label }`).
 		 *
@@ -119,6 +122,7 @@ export default {
 			}))
 		},
 	},
+
 	watch: {
 		open(value) {
 			if (value) {
@@ -128,6 +132,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Close the dialog unless a request is in flight.
@@ -140,6 +145,7 @@ export default {
 			}
 			this.$emit('close')
 		},
+
 		/**
 		 * Map a non-ok push outcome to a clear, actionable message.
 		 *
@@ -153,14 +159,17 @@ export default {
 					'openbuild',
 					'The remote branch moved ahead. Pull the latest changes first, then publish again.',
 				),
+
 				broker_denied: t(
 					'openbuild',
 					"The credential broker denied this publish. Check the credential's allowed apps and scopes.",
 				),
+
 				broker_unavailable: t(
 					'openbuild',
 					'The credential broker is unavailable. Publishing is disabled until it is configured.',
 				),
+
 				not_linked: t('openbuild', 'Link a repository before publishing.'),
 				github_unreachable: t(
 					'openbuild',
@@ -169,6 +178,7 @@ export default {
 			}
 			return messages[outcome] || t('openbuild', 'Publishing failed.')
 		},
+
 		/**
 		 * POST the push to the GitHub sync endpoint. Surfaces push_conflict /
 		 * broker_* outcomes as errors; emits `published` with the commit sha on

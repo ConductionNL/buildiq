@@ -103,19 +103,19 @@
 
 		<DecisionTableEditor
 			v-if="showDecisionEditor"
-			:rule-set="activeRuleSet"
+			:ruleSet="activeRuleSet"
 			@close="showDecisionEditor = false"
 			@saved="onSaved" />
 
 		<ConditionActionRuleEditor
 			v-if="showConditionEditor"
-			:rule-set="activeRuleSet"
+			:ruleSet="activeRuleSet"
 			@close="showConditionEditor = false"
 			@saved="onSaved" />
 
 		<RuleSetTestSandbox
 			v-if="showSandbox"
-			:rule-set="activeRuleSet"
+			:ruleSet="activeRuleSet"
 			@close="showSandbox = false" />
 	</div>
 </template>
@@ -124,7 +124,6 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-
 import ConditionActionRuleEditor from '../dialogs/ConditionActionRuleEditor.vue'
 import DecisionTableEditor from '../dialogs/DecisionTableEditor.vue'
 import RuleSetTestSandbox from '../modals/RuleSetTestSandboxModal.vue'
@@ -140,6 +139,7 @@ export default {
 		ConditionActionRuleEditor,
 		RuleSetTestSandbox,
 	},
+
 	data() {
 		return {
 			loading: true,
@@ -152,9 +152,11 @@ export default {
 			testResults: {},
 		}
 	},
+
 	mounted() {
 		this.fetchRuleSets()
 	},
+
 	methods: {
 		async fetchRuleSets() {
 			this.loading = true
@@ -171,6 +173,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		extractResults(data) {
 			if (Array.isArray(data)) {
 				return data
@@ -180,6 +183,7 @@ export default {
 			}
 			return []
 		},
+
 		edit(ruleSet) {
 			this.activeRuleSet = ruleSet
 			if (ruleSet.ruleType === 'condition-action') {
@@ -188,10 +192,12 @@ export default {
 				this.showDecisionEditor = true
 			}
 		},
+
 		openSandbox(ruleSet) {
 			this.activeRuleSet = ruleSet
 			this.showSandbox = true
 		},
+
 		/**
 		 * Open the decision-table editor on a blank draft RuleSet.
 		 *
@@ -208,6 +214,7 @@ export default {
 			}
 			this.showDecisionEditor = true
 		},
+
 		async runTests(ruleSet) {
 			try {
 				const url = generateUrl(
@@ -219,6 +226,7 @@ export default {
 				this.errorMessage = t('openbuild', 'Test run failed.')
 			}
 		},
+
 		testBadgeClass(slug) {
 			const result = this.testResults[slug]
 			if (!result) {
@@ -228,6 +236,7 @@ export default {
 				? 'rule-sets-page__test--pass'
 				: 'rule-sets-page__test--fail'
 		},
+
 		testBadgeLabel(slug) {
 			const result = this.testResults[slug]
 			if (!result) {
@@ -235,6 +244,7 @@ export default {
 			}
 			return `${result.passed}/${result.total}`
 		},
+
 		exportRuleSet(ruleSet) {
 			const blob = new Blob([JSON.stringify(ruleSet, null, 2)], {
 				type: 'application/json',
@@ -245,6 +255,7 @@ export default {
 			link.click()
 			URL.revokeObjectURL(link.href)
 		},
+
 		onSaved() {
 			this.showDecisionEditor = false
 			this.showConditionEditor = false

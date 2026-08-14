@@ -1,3 +1,4 @@
+import { validateManifest } from '@conduction/nextcloud-vue'
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useCopilot — Vue 2.7 composable owning the copilot state machine
@@ -10,13 +11,12 @@
  *
  * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
  */
-import { ref, computed } from 'vue'
-import { validateManifest } from '@conduction/nextcloud-vue'
+import { computed, ref } from 'vue'
 import {
+	discardRun,
+	executePlan,
 	fetchCopilotHealth,
 	requestPlan,
-	executePlan,
-	discardRun,
 } from '../services/copilot.js'
 
 /** @type {{available: boolean, reason?: string}|null} */

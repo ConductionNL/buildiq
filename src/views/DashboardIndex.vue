@@ -42,9 +42,9 @@
 						:icon="iconApps"
 						:title="t('openbuild', 'Apps')"
 						:count="counts.apps"
-						:count-label="t('openbuild', 'apps')"
+						:countLabel="t('openbuild', 'apps')"
 						variant="primary"
-						show-zero-count />
+						showZeroCount />
 				</div>
 			</template>
 
@@ -61,9 +61,9 @@
 						:icon="iconHybrid"
 						:title="t('openbuild', 'Hybrid apps')"
 						:count="counts.hybrid"
-						:count-label="t('openbuild', 'hybrid')"
+						:countLabel="t('openbuild', 'hybrid')"
 						variant="default"
-						show-zero-count />
+						showZeroCount />
 				</div>
 			</template>
 
@@ -80,9 +80,9 @@
 						:icon="iconVersions"
 						:title="t('openbuild', 'Published versions')"
 						:count="counts.versions"
-						:count-label="t('openbuild', 'versions')"
+						:countLabel="t('openbuild', 'versions')"
 						variant="success"
-						show-zero-count />
+						showZeroCount />
 				</div>
 			</template>
 
@@ -102,7 +102,7 @@
 						:columns="recentColumns"
 						:loading="false"
 						:selectable="false"
-						@row-click="goToApp">
+						@rowClick="goToApp">
 						<template #actions-header>
 							{{ t('openbuild', 'Edit') }}
 						</template>
@@ -132,18 +132,18 @@
 </template>
 
 <script>
+import {
+	CnDashboardPage,
+	CnDataTable,
+	CnStatsBlock,
+} from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent } from '@nextcloud/vue'
-import {
-	CnDashboardPage,
-	CnStatsBlock,
-	CnDataTable,
-} from '@conduction/nextcloud-vue'
-import ShapeOutline from 'vue-material-design-icons/ShapeOutline.vue'
-import PuzzleOutline from 'vue-material-design-icons/PuzzleOutline.vue'
 import History from 'vue-material-design-icons/History.vue'
 import PencilOutline from 'vue-material-design-icons/PencilOutline.vue'
+import PuzzleOutline from 'vue-material-design-icons/PuzzleOutline.vue'
+import ShapeOutline from 'vue-material-design-icons/ShapeOutline.vue'
 import CreateApplicationWizard from '../dialogs/CreateApplicationWizard.vue'
 
 export default {

@@ -11,7 +11,7 @@
 		</h3>
 		<DataSourceOriginToggle
 			:data-source="config.dataSource || {}"
-			@update:data-source="onDataSourceUpdate" />
+			@update:dataSource="onDataSourceUpdate" />
 		<div v-if="!connectorActive" class="index-page-editor__group">
 			<label>
 				{{ t('openbuild', 'Register') }}
@@ -65,8 +65,8 @@
 		<fieldset class="index-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Columns') }}</legend>
 			<ColumnBuilder
-				:model-value="config.columns || []"
-				:schema-properties="schemaProperties"
+				:modelValue="config.columns || []"
+				:schemaProperties="schemaProperties"
 				@update:modelValue="update('columns', $event)" />
 			<InlineFieldMark :error="markFor('columns')" />
 		</fieldset>
@@ -74,7 +74,7 @@
 		<fieldset class="index-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Actions') }}</legend>
 			<ActionBuilder
-				:model-value="config.actions || []"
+				:modelValue="config.actions || []"
 				@update:modelValue="update('actions', $event)" />
 			<InlineFieldMark :error="markFor('actions')" />
 		</fieldset>
@@ -91,18 +91,18 @@
 			<InlineFieldMark :error="markFor('sidebar')" />
 			<SidebarSectionBuilder
 				v-if="sidebarEnabled"
-				:model-value="(config.sidebar && config.sidebar.columnGroups) || []"
+				:modelValue="(config.sidebar && config.sidebar.columnGroups) || []"
 				@update:modelValue="updateSidebar('columnGroups', $event)" />
 		</fieldset>
 	</div>
 </template>
 
 <script>
-import ColumnBuilder from './fields/ColumnBuilder.vue'
-import ActionBuilder from './fields/ActionBuilder.vue'
-import SidebarSectionBuilder from './fields/SidebarSectionBuilder.vue'
-import InlineFieldMark from './fields/InlineFieldMark.vue'
 import DataSourceOriginToggle from './DataSourceOriginToggle.vue'
+import ActionBuilder from './fields/ActionBuilder.vue'
+import ColumnBuilder from './fields/ColumnBuilder.vue'
+import InlineFieldMark from './fields/InlineFieldMark.vue'
+import SidebarSectionBuilder from './fields/SidebarSectionBuilder.vue'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
@@ -115,33 +115,39 @@ export default {
 		InlineFieldMark,
 		DataSourceOriginToggle,
 	},
+
 	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
 			type: Object,
 			default: () => ({}),
 		},
+
 		// Current Application slug. Drives the hybrid register model so the
 		// register picker hoists `openbuild-{slug}` to the top of the list.
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		// The Application's declared `dataRegisters` bindings, forwarded into
 		// useRegisterPicker so the register picker labels/hoists them.
 		dataRegisters: {
 			type: Array,
 			default: () => [],
 		},
+
 		pageType: {
 			type: String,
 			default: 'index',
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	/**
 	 * Build the register/schema picker for this editor. Options-API `data`
@@ -160,6 +166,7 @@ export default {
 		})
 		return { picker }
 	},
+
 	data() {
 		return {
 			registers: [],
@@ -167,6 +174,7 @@ export default {
 			schemaProperties: {},
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
@@ -183,6 +191,7 @@ export default {
 				'sidebar',
 			]
 		},
+
 		/**
 		 * Whether this page binds an OpenConnector data source (hides the
 		 * OpenRegister register/schema pickers). REQ-OCAS-002.
@@ -193,6 +202,7 @@ export default {
 		connectorActive() {
 			return !!(this.config.dataSource && this.config.dataSource.connector)
 		},
+
 		/**
 		 * Observed behaviour of `sidebarEnabled` (retrofit annotation).
 		 *
@@ -209,6 +219,7 @@ export default {
 			return s && s.enabled !== false
 		},
 	},
+
 	watch: {
 		'config.register': {
 			immediate: true,
@@ -227,6 +238,7 @@ export default {
 				}
 			},
 		},
+
 		'config.schema': {
 			immediate: true,
 			/**
@@ -245,9 +257,11 @@ export default {
 			},
 		},
 	},
+
 	async mounted() {
 		await this.fetchRegisters()
 	},
+
 	methods: {
 		/**
 		 * Write one key on the page's `config` block and emit the whole block
@@ -275,6 +289,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Turn the sidebar block on or off. Switching it off deletes
 		 * `config.sidebar` outright — including any column groups authored
@@ -294,6 +309,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Write one key inside the sidebar block, promoting a legacy boolean
 		 * `sidebar: true` to the object form `{ enabled: true }` on the way.
@@ -310,6 +326,7 @@ export default {
 			next.sidebar = { ...current, [key]: value }
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Observed behaviour of `fetchRegisters` (retrofit annotation).
 		 *
@@ -318,6 +335,7 @@ export default {
 		async fetchRegisters() {
 			this.registers = await this.picker.fetchRegisters()
 		},
+
 		/**
 		 * Load the schemas of one register into the schema dropdown.
 		 *
@@ -328,6 +346,7 @@ export default {
 		async fetchSchemas(register) {
 			this.schemas = await this.picker.fetchSchemas(register)
 		},
+
 		/**
 		 * Load one schema's JSON-Schema `properties` map, which ColumnBuilder
 		 * turns into the column field picker's options.
@@ -343,6 +362,7 @@ export default {
 				schema,
 			)
 		},
+
 		/**
 		 * Persist a `dataSource` change from the origin toggle onto the page
 		 * config. Clearing the connector block deletes `dataSource` entirely

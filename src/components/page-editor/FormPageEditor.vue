@@ -98,8 +98,8 @@
 		<fieldset class="form-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Fields') }}</legend>
 			<FormFieldBuilder
-				:model-value="config.fields || []"
-				show-logic
+				:modelValue="config.fields || []"
+				showLogic
 				@update:modelValue="update('fields', $event)" />
 			<InlineFieldMark :error="markFor('fields')" />
 		</fieldset>
@@ -146,7 +146,7 @@
 					v-model:open="externalDialogOpen"
 					:register="externalTarget.register"
 					:schema="externalTarget.schema"
-					:page-id="pageId"
+					:pageId="pageId"
 					:entry="externalFormEntry"
 					@save="onExternalFormSave" />
 			</template>
@@ -163,10 +163,10 @@
 </template>
 
 <script>
+import ExternalFormAccessDialog from '../../dialogs/ExternalFormAccessDialog.vue'
 import FormFieldBuilder from './fields/FormFieldBuilder.vue'
 import FormStepsManager from './fields/FormStepsManager.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
-import ExternalFormAccessDialog from '../../dialogs/ExternalFormAccessDialog.vue'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
@@ -177,24 +177,29 @@ export default {
 		InlineFieldMark,
 		ExternalFormAccessDialog,
 	},
+
 	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'form',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
+
 		// The selected page's `id` (mergeManifestDelta's page key) — the
 		// `runtime.externalForms[].pageId` this editor writes/reads
 		// (REQ-EFP-001/002).
@@ -202,6 +207,7 @@ export default {
 			type: String,
 			default: '',
 		},
+
 		// The manifest's full `runtime.externalForms[]` array — this editor
 		// filters to the entry (if any) owned by `pageId`.
 		runtimeExternalForms: {
@@ -209,12 +215,14 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:config', 'update:runtimeExternalForms'],
 	data() {
 		return {
 			externalDialogOpen: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * `{register, schema}` resolved from `config.submitEndpoint` when it
@@ -236,6 +244,7 @@ export default {
 				)
 			return match ? { register: match[1], schema: match[2] } : null
 		},
+
 		/**
 		 * The existing `runtime.externalForms[]` entry for THIS page, if any.
 		 *
@@ -252,6 +261,7 @@ export default {
 				) || null
 			)
 		},
+
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 * `steps` added by REQ-OBFEL-001 so `formLogic.js` / the canonical
@@ -273,6 +283,7 @@ export default {
 				'steps',
 			]
 		},
+
 		/**
 		 * Observed behaviour of `submitShape` (retrofit annotation).
 		 *
@@ -288,6 +299,7 @@ export default {
 			return 'handler'
 		},
 	},
+
 	methods: {
 		/**
 		 * Write one key on the page's `config` block. Only the named key is
@@ -308,6 +320,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Switch between the two mutually exclusive submit targets by
 		 * deleting the key of the branch being left, so the emitted config
@@ -325,6 +338,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Write `submitHandler` and clear `submitEndpoint` in the same emit,
 		 * so typing a handler can never leave a stale endpoint behind.
@@ -343,6 +357,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Write `submitEndpoint` and clear `submitHandler` in the same emit.
 		 * The value is also what `externalTarget` parses, so an OR
@@ -362,6 +377,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Persist the provisioned/revoked entry from ExternalFormAccessDialog
 		 * into `runtime.externalForms[]` (find-or-append by pageId, per

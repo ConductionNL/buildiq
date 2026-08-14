@@ -21,7 +21,7 @@
 	<NcDialog
 		v-if="open"
 		:name="name"
-		:no-close="busy"
+		:noClose="busy"
 		@closing="$emit('update:open', false)">
 		<div class="confirm-action">
 			<p class="confirm-action__message">
@@ -49,8 +49,8 @@
 </template>
 
 <script>
-import NcDialog from '@nextcloud/vue/components/NcDialog'
 import NcButton from '@nextcloud/vue/components/NcButton'
+import NcDialog from '@nextcloud/vue/components/NcDialog'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 
 export default {
@@ -72,6 +72,7 @@ export default {
 		/** Whether the confirmed action is in flight. */
 		busy: { type: Boolean, default: false },
 	},
+
 	emits: ['update:open', 'confirm'],
 }
 </script>

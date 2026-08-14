@@ -41,6 +41,7 @@ export default {
 		open: { type: Boolean, default: false },
 		fieldName: { type: String, default: '' },
 	},
+
 	emits: ['confirm', 'cancel', 'update:open'],
 	methods: {
 		/**
@@ -52,6 +53,7 @@ export default {
 		onConfirm() {
 			this.$emit('confirm')
 		},
+
 		/**
 		 * Cancel field removal.
 		 *
@@ -61,6 +63,7 @@ export default {
 		onCancel() {
 			this.$emit('cancel')
 		},
+
 		/**
 		 * Sync modal open state and emit cancel when closed.
 		 *

@@ -34,15 +34,18 @@ export default {
 			type: String,
 			required: true,
 		},
+
 		message: {
 			type: String,
 			required: true,
 		},
+
 		config: {
 			type: Object,
 			default: () => ({}),
 		},
 	},
+
 	emits: ['update:config'],
 	data() {
 		return {
@@ -50,6 +53,7 @@ export default {
 			parseError: '',
 		}
 	},
+
 	watch: {
 		config: {
 			deep: true,
@@ -74,6 +78,7 @@ export default {
 			},
 		},
 	},
+
 	methods: {
 		/**
 		 * Parse the raw-config textarea on every keystroke. Invalid JSON only

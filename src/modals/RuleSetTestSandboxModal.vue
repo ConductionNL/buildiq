@@ -116,12 +116,14 @@ export default {
 		NcTextArea,
 		NcTextField,
 	},
+
 	props: {
 		ruleSet: {
 			type: Object,
 			required: true,
 		},
 	},
+
 	emits: ['close'],
 	data() {
 		return {
@@ -140,9 +142,11 @@ export default {
 			},
 		}
 	},
+
 	mounted() {
 		this.fetchTestCases()
 	},
+
 	methods: {
 		async fetchTestCases() {
 			this.loading = true
@@ -161,6 +165,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		async runAll() {
 			this.running = true
 			this.errorMessage = ''
@@ -177,6 +182,7 @@ export default {
 				this.running = false
 			}
 		},
+
 		/**
 		 * CSS modifier for a test case's last-run outcome.
 		 *
@@ -193,6 +199,7 @@ export default {
 			}
 			return 'rule-set-test-sandbox__result--unknown'
 		},
+
 		/**
 		 * Human-readable label for a test case's last-run outcome.
 		 *
@@ -209,6 +216,7 @@ export default {
 			}
 			return t('openbuild', 'Not run')
 		},
+
 		/**
 		 * Create a new TestCase against the current RuleSet.
 		 *

@@ -1,3 +1,5 @@
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useDocudeskDocument — runtime integration with Docudesk's correspondence
@@ -16,8 +18,6 @@
  * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-003
  */
 import { ref } from 'vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 
 const GENERATE = '/apps/docudesk/api/correspondence/generate'
 

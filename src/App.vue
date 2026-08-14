@@ -13,12 +13,12 @@
 -->
 <template>
 	<CnAppRoot
-		app-id="openbuild"
-		:ai-companion="true"
+		appId="openbuild"
+		:aiCompanion="true"
 		:manifest="manifest"
 		:registry="registry"
-		:custom-components="flatRegistry"
-		:page-types="pageTypes"
+		:customComponents="flatRegistry"
+		:pageTypes="pageTypes"
 		:translate="translateForApp"
 		:permissions="permissions">
 		<template #dependency-missing>
@@ -46,12 +46,12 @@
 </template>
 
 <script>
+import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { translate as ncT } from '@nextcloud/l10n'
 import { generateUrl, imagePath } from '@nextcloud/router'
-import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { NcAppContent, NcButton, NcEmptyContent } from '@nextcloud/vue'
-import { initializeStores } from './store/store.js'
 import { useSettingsStore } from './store/modules/settings.js'
+import { initializeStores } from './store/store.js'
 
 export default {
 	name: 'App',
@@ -75,6 +75,7 @@ export default {
 			type: Object,
 			required: true,
 		},
+
 		/**
 		 * V2 kind-tagged registry (ADR-036) — map of registry key →
 		 * `{ kind: "page", component }`. CnPageRenderer resolves every
@@ -89,6 +90,7 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		/**
 		 * Page-type registry — `{ index, detail, dashboard, custom, ... }`.
 		 * Wired through to descendant CnPageRenderer instances.

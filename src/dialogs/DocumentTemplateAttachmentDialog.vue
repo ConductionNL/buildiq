@@ -67,7 +67,7 @@
 
 			<NcSelect
 				v-model="templateOption"
-				:input-label="t('openbuild', 'Template')"
+				:inputLabel="t('openbuild', 'Template')"
 				:options="templateOptions"
 				:loading="loadingTemplates"
 				:disabled="!docudeskAvailable"
@@ -75,24 +75,24 @@
 
 			<NcSelect
 				v-model="schemaOption"
-				:input-label="t('openbuild', 'Schema')"
+				:inputLabel="t('openbuild', 'Schema')"
 				:options="schemaOptions"
 				label="label" />
 
 			<NcTextField
-				:model-value="label"
+				:modelValue="label"
 				:label="t('openbuild', 'Action label')"
 				:placeholder="t('openbuild', 'e.g. Generate confirmation letter')"
 				@update:modelValue="label = $event" />
 
 			<NcSelect
 				v-model="formatOption"
-				:input-label="t('openbuild', 'Output format (optional)')"
+				:inputLabel="t('openbuild', 'Output format (optional)')"
 				:options="formatOptions"
 				label="label" />
 
 			<NcTextField
-				:model-value="filenameTemplate"
+				:modelValue="filenameTemplate"
 				:label="t('openbuild', 'Filename template (optional)')"
 				:placeholder="
 					t('openbuild', 'e.g. bevestiging-{{dossiernummer}}.pdf')
@@ -164,15 +164,15 @@
 </template>
 
 <script>
-import { NcDialog, NcButton, NcSelect, NcTextField } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { NcButton, NcDialog, NcSelect, NcTextField } from '@nextcloud/vue'
 import DOMPurify from 'dompurify'
-import { DOCUMENT_FORMATS } from '../services/manifestValidation/documentAttachments.js'
 import {
 	fetchDocudeskTemplates,
 	templateToOption,
 } from '../composables/useDocudeskTemplates.js'
+import { DOCUMENT_FORMATS } from '../services/manifestValidation/documentAttachments.js'
 
 export default {
 	name: 'DocumentTemplateAttachmentDialog',
@@ -182,27 +182,32 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		// The app's schemas as `[{ slug, title, properties }]`.
 		schemas: {
 			type: Array,
 			default: () => [],
 		},
+
 		// Existing attachments (for the (schema,label) uniqueness check).
 		attachments: {
 			type: Array,
 			default: () => [],
 		},
+
 		// Existing attachment when editing (null when adding).
 		attachment: {
 			type: Object,
 			default: null,
 		},
+
 		// Soft capability flag for Docudesk.
 		docudeskAvailable: {
 			type: Boolean,
 			default: true,
 		},
 	},
+
 	emits: ['update:open', 'save'],
 	data() {
 		return {
@@ -220,11 +225,13 @@ export default {
 			templateMissing: false,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		editing() {
 			return !!this.attachment
 		},
+
 		/**
 		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
@@ -232,6 +239,7 @@ export default {
 		templateOptions() {
 			return this.templates.map(templateToOption)
 		},
+
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		schemaOptions() {
 			return this.schemas.map((s) => ({
@@ -239,24 +247,29 @@ export default {
 				slug: s.slug,
 			}))
 		},
+
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-001 */
 		formatOptions() {
 			return [{ label: t('openbuild', 'Template default'), value: '' }].concat(
 				DOCUMENT_FORMATS.map((f) => ({ label: f.toUpperCase(), value: f })),
 			)
 		},
+
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		selectedSchemaSlug() {
 			return this.schemaOption ? this.schemaOption.slug : ''
 		},
+
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		selectedTemplateId() {
 			return this.templateOption ? this.templateOption.uuid : ''
 		},
+
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		canPreview() {
 			return this.docudeskAvailable && !!this.selectedTemplateId
 		},
+
 		/**
 		 * True when the (schema, label) pair already exists on another
 		 * attachment (REQ-DDT-001 uniqueness, surfaced before save).
@@ -279,6 +292,7 @@ export default {
 					&& a.id !== editingId,
 			)
 		},
+
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		canSave() {
 			return !!(
@@ -289,6 +303,7 @@ export default {
 			)
 		},
 	},
+
 	watch: {
 		/**
 		 * @param {boolean} isOpen - The dialog's new `open` state. Opening re-seeds the
@@ -309,6 +324,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Seed the form from an existing attachment when editing.
@@ -350,6 +366,7 @@ export default {
 				this.addActionsTab = false
 			}
 		},
+
 		/**
 		 * Load templates from Docudesk's template index — the SHARED fetch
 		 * also used by AutomationEditDialog's `generateDocument` template
@@ -364,6 +381,7 @@ export default {
 			this.templates = await fetchDocudeskTemplates()
 			this.loadingTemplates = false
 		},
+
 		/**
 		 * On edit, refresh the template-name snapshot via the show endpoint and
 		 * flag a missing template (404).
@@ -391,6 +409,7 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * Render a preview of the selected template without saving.
 		 *
@@ -421,6 +440,7 @@ export default {
 				this.previewing = false
 			}
 		},
+
 		/**
 		 * Assemble + emit the document-attachment entry.
 		 *
@@ -450,6 +470,7 @@ export default {
 			this.$emit('save', { entry, addActionsTab: this.addActionsTab })
 			this.$emit('update:open', false)
 		},
+
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		onClose() {
 			this.$emit('update:open', false)

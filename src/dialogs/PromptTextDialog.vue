@@ -37,8 +37,8 @@
 </template>
 
 <script>
-import NcDialog from '@nextcloud/vue/components/NcDialog'
 import NcButton from '@nextcloud/vue/components/NcButton'
+import NcDialog from '@nextcloud/vue/components/NcDialog'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 
 export default {
@@ -58,12 +58,14 @@ export default {
 		/** Label for the submitting button; falls back to "Confirm". */
 		confirmLabel: { type: String, default: '' },
 	},
+
 	emits: ['update:open', 'submit'],
 	data() {
 		return {
 			value: this.initialValue,
 		}
 	},
+
 	watch: {
 		/**
 		 * Re-seed the input each time the dialog opens.
@@ -82,6 +84,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Emit the trimmed value, ignoring a blank entry.

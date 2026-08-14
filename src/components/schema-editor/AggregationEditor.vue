@@ -39,6 +39,7 @@ export default {
 	props: {
 		aggregations: { type: [Object, Array], default: null },
 	},
+
 	computed: {
 		/**
 		 * Render the aggregations block as pretty JSON for read-only display.

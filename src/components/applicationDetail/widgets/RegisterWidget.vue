@@ -116,6 +116,7 @@ export default {
 		 */
 		canImport: { type: Boolean, default: false },
 	},
+
 	emits: ['import-data'],
 	data() {
 		return {
@@ -126,6 +127,7 @@ export default {
 			visibleLimit: 12,
 		}
 	},
+
 	computed: {
 		/**
 		 * The register to show. For a HYBRID app this is the installed fleet
@@ -141,6 +143,7 @@ export default {
 				? this.appSlug
 				: `openbuild-${this.appSlug}-${this.versionSlug}`
 		},
+
 		/**
 		 * The schemas shown inline (the rest collapse into a "+N more" row).
 		 *
@@ -150,12 +153,15 @@ export default {
 			return this.schemas.slice(0, this.visibleLimit)
 		},
 	},
+
 	watch: {
 		registerSlug: 'loadSchemas',
 	},
+
 	mounted() {
 		this.loadSchemas()
 	},
+
 	methods: {
 		/**
 		 * Resolve the register by slug and list its schemas by name. Two reads:
@@ -229,6 +235,7 @@ export default {
 			this.schemas = result
 			this.loading = false
 		},
+
 		/**
 		 * Deep-link to OpenRegister's register detail page (top-level Nextcloud
 		 * URL, not a Vue Router internal route).

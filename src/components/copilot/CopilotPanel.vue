@@ -46,7 +46,7 @@
 				<CopilotProposal
 					v-else-if="message.role === 'assistant' && message.plan"
 					:plan="message.plan"
-					:can-approve="isPendingProposal(message) ? canApprove : false"
+					:canApprove="isPendingProposal(message) ? canApprove : false"
 					:busy="isPendingProposal(message) && state === 'executing'"
 					@approve="onApprove(message)"
 					@discard="onDiscard(message)" />
@@ -90,8 +90,8 @@
 
 <script>
 import { NcButton } from '@nextcloud/vue'
-import { useCopilot } from '../../composables/useCopilot.js'
 import CopilotProposal from './CopilotProposal.vue'
+import { useCopilot } from '../../composables/useCopilot.js'
 
 export default {
 	name: 'CopilotPanel',
@@ -104,6 +104,7 @@ export default {
 			type: String,
 			required: true,
 		},
+
 		/**
 		 * Optional Agent id (spec `agent-workspace` design.md Decision 3).
 		 * Omitted entirely, this panel behaves exactly as the bare copilot
@@ -114,16 +115,19 @@ export default {
 			type: String,
 			default: '',
 		},
+
 		/** The agent's name, shown in the "Acting as" header when `agentId` is set. */
 		name: {
 			type: String,
 			default: '',
 		},
+
 		/** The agent's instructions, shown as a hint under the "Acting as" header. */
 		instructions: {
 			type: String,
 			default: '',
 		},
+
 		/**
 		 * The agent's effective enabled tools — a client-side HINT only
 		 * (e.g. future greyed-out affordance). Never the security boundary,
@@ -160,6 +164,7 @@ export default {
 		state() {
 			return this.copilot.state.value
 		},
+
 		/**
 		 * Whether the pending proposal's predicted manifests all pass the
 		 * canonical manifest v2 validator.
@@ -170,6 +175,7 @@ export default {
 		canApprove() {
 			return this.copilot.canApprove.value
 		},
+
 		/**
 		 * The input is disabled while a plan is in flight or a proposal is
 		 * pending review/execution — the user must Approve or Discard first

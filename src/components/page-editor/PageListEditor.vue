@@ -35,12 +35,12 @@
 		     a v-for in the default slot throws "draggable element must have an
 		     item slot" at render. -->
 		<Draggable
-			:model-value="pages"
+			:modelValue="pages"
 			handle=".page-list-editor__drag-handle"
 			:animation="150"
-			item-key="id"
+			itemKey="id"
 			class="page-list-editor__list"
-			@update:model-value="onReorder">
+			@update:modelValue="onReorder">
 			<template #item="{ element: page, index }">
 				<!--
 					The row is selected by CLICK, and until now by click only:
@@ -97,7 +97,7 @@
 					<PermissionGroupField
 						class="page-list-editor__permission"
 						:permission="page.permission || ''"
-						:known-groups="knownGroups"
+						:knownGroups="knownGroups"
 						@click.stop
 						@update:permission="
 							updateField(index, 'permission', $event || '')
@@ -170,11 +170,13 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
 		selectedIndex: {
 			type: Number,
 			default: -1,
 		},
 	},
+
 	emits: ['update:pages', 'select'],
 	data() {
 		return {
@@ -182,6 +184,7 @@ export default {
 			addingType: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Group ids already referenced by any page's `permission` (spec
@@ -203,6 +206,7 @@ export default {
 			}
 			return Array.from(gids)
 		},
+
 		/**
 		 * Observed behaviour of `duplicateIds` (retrofit annotation).
 		 *
@@ -219,6 +223,7 @@ export default {
 				.filter(([, c]) => c > 1)
 				.map(([id]) => id)
 		},
+
 		/**
 		 * Observed behaviour of `invalidRoutes` (retrofit annotation).
 		 *
@@ -230,6 +235,7 @@ export default {
 				.map((p) => p.route)
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `startAdd` (retrofit annotation).
@@ -239,6 +245,7 @@ export default {
 		startAdd() {
 			this.addingType = ''
 		},
+
 		/**
 		 * Observed behaviour of `cancelAdd` (retrofit annotation).
 		 *
@@ -247,6 +254,7 @@ export default {
 		cancelAdd() {
 			this.addingType = null
 		},
+
 		/**
 		 * Observed behaviour of `confirmAdd` (retrofit annotation).
 		 *
@@ -270,6 +278,7 @@ export default {
 			this.$emit('select', next.length - 1)
 			this.addingType = null
 		},
+
 		/**
 		 * Write one scalar key on one page. Clearing a field deletes the key
 		 * rather than storing `''`, so `manifest.pages[n]` never carries
@@ -292,6 +301,7 @@ export default {
 			next[index] = current
 			this.$emit('update:pages', next)
 		},
+
 		/**
 		 * Drop a page from the manifest. When the removed page was the
 		 * selected one, `select` is re-emitted with -1 so PageDesigner clears
@@ -308,6 +318,7 @@ export default {
 				this.$emit('select', -1)
 			}
 		},
+
 		/**
 		 * Drag-reorder of the page list. vuedraggable v4 hands the whole
 		 * reordered array through `update:modelValue` rather than mutating
@@ -320,6 +331,7 @@ export default {
 		onReorder(newOrder) {
 			this.$emit('update:pages', newOrder)
 		},
+
 		/**
 		 * Whether a row should be outlined red: its `id` collides with another
 		 * page's, or its `route` fails the route-pattern grammar.

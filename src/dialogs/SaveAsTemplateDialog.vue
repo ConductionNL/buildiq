@@ -30,28 +30,28 @@
 			</p>
 
 			<NcTextField
-				:model-value="form.title"
+				:modelValue="form.title"
 				:label="t('openbuild', 'Template title')"
 				@update:modelValue="onTitleInput" />
 			<NcTextField
-				:model-value="form.slug"
+				:modelValue="form.slug"
 				:label="t('openbuild', 'Slug (kebab-case, max 32 chars)')"
 				@update:modelValue="form.slug = $event" />
 			<NcTextField
-				:model-value="form.useCase"
+				:modelValue="form.useCase"
 				:label="t('openbuild', 'Use case (one line)')"
 				@update:modelValue="form.useCase = $event" />
 			<NcTextArea
-				:model-value="form.description"
+				:modelValue="form.description"
 				:label="t('openbuild', 'Description')"
 				@update:modelValue="form.description = $event" />
 			<NcSelect
 				v-model="categoryOption"
-				:input-label="t('openbuild', 'Category')"
+				:inputLabel="t('openbuild', 'Category')"
 				:options="categoryOptions"
 				:clearable="false" />
 			<NcTextField
-				:model-value="form.sourceUrl"
+				:modelValue="form.sourceUrl"
 				:label="t('openbuild', 'Source URL (optional)')"
 				@update:modelValue="form.sourceUrl = $event" />
 
@@ -169,24 +169,23 @@
 </template>
 
 <script>
+import { validateManifest } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcDialog,
 	NcSelect,
-	NcTextField,
 	NcTextArea,
+	NcTextField,
 } from '@nextcloud/vue'
-import { validateManifest } from '@conduction/nextcloud-vue'
-
 import {
-	TEMPLATE_CATEGORIES,
-	captureTemplate,
-	suggestSlug,
 	bumpMinor,
+	captureTemplate,
 	resolveSaveTarget,
 	SlugCollisionError,
+	suggestSlug,
+	TEMPLATE_CATEGORIES,
 } from '../services/templateCapture.js'
 
 const OR_TEMPLATES = '/apps/openregister/api/objects/openbuild/application-template'
@@ -214,6 +213,7 @@ export default {
 		// OR's per-object writability hint off each record.
 		existingTemplates: { type: Array, default: () => [] },
 	},
+
 	emits: ['update:open', 'saved'],
 	data() {
 		return {
@@ -224,6 +224,7 @@ export default {
 				description: '',
 				sourceUrl: '',
 			},
+
 			categoryOption: null,
 			slugEditedManually: false,
 			saving: false,
@@ -231,6 +232,7 @@ export default {
 			collisionError: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Category picker options over the REQ-OBTC-001 enum.
@@ -243,6 +245,7 @@ export default {
 				label: t('openbuild', CATEGORY_LABELS[value] || value),
 			}))
 		},
+
 		/**
 		 * The selected category id (or '' when none picked).
 		 *
@@ -251,6 +254,7 @@ export default {
 		selectedCategory() {
 			return this.categoryOption?.id ?? this.categoryOption ?? ''
 		},
+
 		/**
 		 * The capture result — record + summary — or null when capture
 		 * throws a de-namespace collision (surfaced via `collisionError`).
@@ -277,6 +281,7 @@ export default {
 				return null
 			}
 		},
+
 		/**
 		 * Capture summary (companion schema list) for the dialog body.
 		 *
@@ -285,6 +290,7 @@ export default {
 		captureSummary() {
 			return this.capture ? this.capture.summary.companionSchemas : []
 		},
+
 		/**
 		 * Validation errors of the CAPTURED (de-namespaced) manifest — the
 		 * exact blob a clone will consume (REQ-SAT-003).
@@ -304,6 +310,7 @@ export default {
 				return [`validator threw: ${e && e.message ? e.message : e}`]
 			}
 		},
+
 		/**
 		 * Resolve what saving this slug does (create / update / error)
 		 * against the visible templates (REQ-SAT-004).
@@ -315,6 +322,7 @@ export default {
 				this.isWritable(tpl),
 			)
 		},
+
 		/**
 		 * The slug-collision error code (`seeded-slug` / `slug-taken`) or ''.
 		 *
@@ -323,6 +331,7 @@ export default {
 		slugError() {
 			return this.saveTarget.error || ''
 		},
+
 		/**
 		 * True when saving will update an existing own template in place.
 		 *
@@ -331,6 +340,7 @@ export default {
 		updateMode() {
 			return this.saveTarget.mode === 'update'
 		},
+
 		/**
 		 * Slug well-formedness (mirrors the clone dialog's pattern).
 		 *
@@ -342,6 +352,7 @@ export default {
 				&& this.form.slug.length <= 32
 			)
 		},
+
 		/**
 		 * Whether Save is allowed (REQ-SAT-002/003/004 gates).
 		 *
@@ -358,6 +369,7 @@ export default {
 				&& !this.slugError
 			)
 		},
+
 		/**
 		 * Save button label — varies for create vs update-in-place.
 		 *
@@ -372,6 +384,7 @@ export default {
 				: t('openbuild', 'Save as template')
 		},
 	},
+
 	watch: {
 		/**
 		 * Reset the form each time the dialog opens, prefilled from the app.
@@ -387,6 +400,7 @@ export default {
 				this.resetForm()
 			}
 		},
+
 		/**
 		 * Keep the de-namespace collision message in sync with the capture
 		 * attempt (capture throws when two schemas collide).
@@ -400,15 +414,18 @@ export default {
 			handler() {
 				this.recomputeCollision()
 			},
+
 			immediate: true,
 		},
+
 		/**
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
-		'form.slug'() {
+		'form.slug': function () {
 			this.slugEditedManually = true
 		},
 	},
+
 	/**
 	 * Prefill on mount when already open (the parent renders the dialog
 	 * with `v-if="open"`, so `created` fires with `open: true`).
@@ -421,6 +438,7 @@ export default {
 			this.resetForm()
 		}
 	},
+
 	methods: {
 		/**
 		 * Prefill the form from the source Application.
@@ -436,6 +454,7 @@ export default {
 				useCase: app.description
 					? String(app.description).split('\n')[0].slice(0, 120)
 					: '',
+
 				description: app.description || '',
 				sourceUrl: '',
 			}
@@ -445,6 +464,7 @@ export default {
 			this.saveError = ''
 			this.recomputeCollision()
 		},
+
 		/**
 		 * Update the title and auto-suggest the slug until the user edits
 		 * the slug field by hand.
@@ -461,6 +481,7 @@ export default {
 				this.slugEditedManually = false
 			}
 		},
+
 		/**
 		 * Recompute the de-namespace collision message by attempting a
 		 * capture; SlugCollisionError names both colliding schemas.
@@ -489,6 +510,7 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * Read OR's per-object writability for a template record. OR returns
 		 * an `@self.permissions` / `permissions` hint; we treat an explicit
@@ -507,6 +529,7 @@ export default {
 			}
 			return true
 		},
+
 		/**
 		 * Close the dialog.
 		 *
@@ -519,6 +542,7 @@ export default {
 			}
 			this.$emit('update:open', false)
 		},
+
 		/**
 		 * Persist the captured template via OR REST — create or
 		 * update-in-place per `saveTarget` (REQ-SAT-004, REQ-SAT-006).

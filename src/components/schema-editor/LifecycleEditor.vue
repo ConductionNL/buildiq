@@ -42,17 +42,17 @@
 					class="openbuild-lifecycle-editor__state-row">
 					<NcCheckboxRadioSwitch
 						type="radio"
-						:model-value="state.initial ? state._key : null"
+						:modelValue="state.initial ? state._key : null"
 						:value="state._key"
 						name="lifecycle-initial-state"
 						@update:modelValue="setInitial(sIndex)">
 						{{ t('openbuild', 'Initial') }}
 					</NcCheckboxRadioSwitch>
 					<NcTextField
-						:model-value="state.name"
+						:modelValue="state.name"
 						:label="t('openbuild', 'State slug')"
 						:error="!stateNameValid(state, sIndex)"
-						:helper-text="
+						:helperText="
 							!stateNameValid(state, sIndex)
 								? t(
 										'openbuild',
@@ -62,7 +62,7 @@
 						"
 						@update:modelValue="updateState(sIndex, 'name', $event)" />
 					<NcTextField
-						:model-value="state.label"
+						:modelValue="state.label"
 						:label="t('openbuild', 'Label')"
 						@update:modelValue="updateState(sIndex, 'label', $event)" />
 					<NcButton
@@ -105,12 +105,12 @@
 					class="openbuild-lifecycle-editor__transition-row">
 					<div class="openbuild-lifecycle-editor__transition-grid">
 						<NcSelect
-							:input-label="t('openbuild', 'From')"
-							:model-value="stateOption(transition.from)"
+							:inputLabel="t('openbuild', 'From')"
+							:modelValue="stateOption(transition.from)"
 							:options="stateOptions"
 							:clearable="false"
 							label="label"
-							track-by="value"
+							trackBy="value"
 							@update:modelValue="
 								updateTransition(
 									tIndex,
@@ -119,12 +119,12 @@
 								)
 							" />
 						<NcSelect
-							:input-label="t('openbuild', 'To')"
-							:model-value="stateOption(transition.to)"
+							:inputLabel="t('openbuild', 'To')"
+							:modelValue="stateOption(transition.to)"
 							:options="stateOptions"
 							:clearable="false"
 							label="label"
-							track-by="value"
+							trackBy="value"
 							@update:modelValue="
 								updateTransition(
 									tIndex,
@@ -133,7 +133,7 @@
 								)
 							" />
 						<NcTextField
-							:model-value="transition.label || ''"
+							:modelValue="transition.label || ''"
 							:label="t('openbuild', 'Label (optional)')"
 							@update:modelValue="
 								updateTransition(tIndex, 'label', $event)
@@ -173,12 +173,12 @@
 								:key="action._key"
 								class="openbuild-lifecycle-editor__action-row">
 								<NcSelect
-									:input-label="t('openbuild', 'Action type')"
-									:model-value="actionOption(action.type)"
+									:inputLabel="t('openbuild', 'Action type')"
+									:modelValue="actionOption(action.type)"
 									:options="actionOptions"
 									:clearable="false"
 									label="label"
-									track-by="value"
+									trackBy="value"
 									@update:modelValue="
 										updateAction(
 											tIndex,
@@ -190,7 +190,7 @@
 										)
 									" />
 								<NcTextField
-									:model-value="action.payload || ''"
+									:modelValue="action.payload || ''"
 									:label="
 										t('openbuild', 'Payload key (declarative)')
 									"
@@ -247,6 +247,9 @@ const ACTION_TYPES = [
 const STATE_NAME_PATTERN = /^[a-z][a-z0-9-]*$/
 
 let keyCounter = 0
+/**
+ *
+ */
 function nextKey() {
 	keyCounter += 1
 	return `lc-${keyCounter}`
@@ -262,10 +265,12 @@ export default {
 		NcTextField,
 		PlusIcon,
 	},
+
 	props: {
 		states: { type: Array, default: () => [] },
 		transitions: { type: Array, default: () => [] },
 	},
+
 	emits: ['update:states', 'update:transitions'],
 	computed: {
 		/**
@@ -277,6 +282,7 @@ export default {
 		initialCount() {
 			return this.states.filter((s) => s.initial).length
 		},
+
 		/**
 		 * Build state picker options from named states.
 		 *
@@ -288,6 +294,7 @@ export default {
 				.filter((s) => s.name)
 				.map((s) => ({ value: s.name, label: s.label || s.name }))
 		},
+
 		/**
 		 * Build transition-action-type picker options.
 		 *
@@ -301,6 +308,7 @@ export default {
 			}))
 		},
 	},
+
 	methods: {
 		/**
 		 * Resolve the selected state option.
@@ -312,6 +320,7 @@ export default {
 		stateOption(value) {
 			return this.stateOptions.find((o) => o.value === value) || null
 		},
+
 		/**
 		 * Resolve the selected action-type option.
 		 *
@@ -325,6 +334,7 @@ export default {
 				|| this.actionOptions[0]
 			)
 		},
+
 		/**
 		 * Validate a state name: pattern and uniqueness.
 		 *
@@ -343,6 +353,7 @@ export default {
 			)
 			return !duplicate
 		},
+
 		/**
 		 * Emit the updated states array.
 		 *
@@ -353,6 +364,7 @@ export default {
 		emitStates(next) {
 			this.$emit('update:states', next)
 		},
+
 		/**
 		 * Emit the updated transitions array.
 		 *
@@ -363,6 +375,7 @@ export default {
 		emitTransitions(next) {
 			this.$emit('update:transitions', next)
 		},
+
 		/**
 		 * Append a new state (first state defaults to initial).
 		 *
@@ -379,6 +392,7 @@ export default {
 			})
 			this.emitStates(next)
 		},
+
 		/**
 		 * Update a single field of a state row.
 		 *
@@ -393,6 +407,7 @@ export default {
 			next[index] = { ...next[index], [key]: value }
 			this.emitStates(next)
 		},
+
 		/**
 		 * Mark a single state as the initial one (clears the others).
 		 *
@@ -404,6 +419,7 @@ export default {
 			const next = this.states.map((s, i) => ({ ...s, initial: i === index }))
 			this.emitStates(next)
 		},
+
 		/**
 		 * Remove a state row by index.
 		 *
@@ -416,6 +432,7 @@ export default {
 			next.splice(index, 1)
 			this.emitStates(next)
 		},
+
 		/**
 		 * Append a new transition between the first two states.
 		 *
@@ -435,6 +452,7 @@ export default {
 			})
 			this.emitTransitions(next)
 		},
+
 		/**
 		 * Update a single field of a transition row.
 		 *
@@ -449,6 +467,7 @@ export default {
 			next[index] = { ...next[index], [key]: value }
 			this.emitTransitions(next)
 		},
+
 		/**
 		 * Remove a transition row by index.
 		 *
@@ -461,6 +480,7 @@ export default {
 			next.splice(index, 1)
 			this.emitTransitions(next)
 		},
+
 		/**
 		 * Append a new action to a transition.
 		 *
@@ -481,6 +501,7 @@ export default {
 			next[tIndex] = transition
 			this.emitTransitions(next)
 		},
+
 		/**
 		 * Update a single field of a transition action.
 		 *
@@ -500,6 +521,7 @@ export default {
 			next[tIndex] = transition
 			this.emitTransitions(next)
 		},
+
 		/**
 		 * Remove an action from a transition.
 		 *

@@ -55,27 +55,27 @@
 
 				<template v-if="isRepresentable(row)">
 					<NcSelect
-						:input-label="t('openbuild', 'Scope')"
-						:model-value="kindOption(row.kind)"
+						:inputLabel="t('openbuild', 'Scope')"
+						:modelValue="kindOption(row.kind)"
 						:options="kindOptions"
 						:clearable="false"
 						:disabled="readOnly"
 						label="label"
-						track-by="value"
+						trackBy="value"
 						@update:modelValue="
 							onKindChange(row.op, $event ? $event.value : 'everyone')
 						" />
 
 					<NcSelect
 						v-if="row.kind === 'group'"
-						:input-label="t('openbuild', 'Groups')"
-						:model-value="groupOptionsFor(row.groups)"
+						:inputLabel="t('openbuild', 'Groups')"
+						:modelValue="groupOptionsFor(row.groups)"
 						:options="availableGroupOptions"
 						:multiple="true"
 						:taggable="true"
 						:disabled="readOnly"
 						label="label"
-						track-by="value"
+						trackBy="value"
 						@update:modelValue="onGroupsChange(row.op, $event)"
 						@tag="onGroupTag(row.op, $event)" />
 
@@ -83,15 +83,15 @@
 						v-if="row.kind === 'condition'"
 						class="openbuild-access-editor__condition">
 						<NcSelect
-							:input-label="t('openbuild', 'Field')"
-							:model-value="
+							:inputLabel="t('openbuild', 'Field')"
+							:modelValue="
 								fieldOption(row.condition && row.condition.field)
 							"
 							:options="fieldOptions"
 							:clearable="false"
 							:disabled="readOnly"
 							label="label"
-							track-by="value"
+							trackBy="value"
 							@update:modelValue="
 								onConditionFieldChange(
 									row.op,
@@ -99,8 +99,8 @@
 								)
 							" />
 						<NcSelect
-							:input-label="t('openbuild', 'Operator')"
-							:model-value="{
+							:inputLabel="t('openbuild', 'Operator')"
+							:modelValue="{
 								value: 'equals',
 								label: t('openbuild', 'equals'),
 							}"
@@ -110,9 +110,9 @@
 							:clearable="false"
 							:disabled="true"
 							label="label"
-							track-by="value" />
+							trackBy="value" />
 						<NcTextField
-							:model-value="
+							:modelValue="
 								(row.condition && row.condition.value) || ''
 							"
 							:label="t('openbuild', 'Value (@user.uid or a literal)')"
@@ -157,7 +157,6 @@
 
 <script>
 import { NcNoteCard, NcSelect, NcTextField } from '@nextcloud/vue'
-
 import { useOrAccessCapabilities } from '../../composables/useOrAccessCapabilities.js'
 
 /** Operations authored by the sub-editor, in display order. */
@@ -294,13 +293,10 @@ export function editorToAccess(access, rawAuthorization) {
 		const { op } = row
 		if (row.kind === 'unrepresentable') {
 			// Preserve exactly what was persisted for this operation.
-			if (Object.prototype.hasOwnProperty.call(raw, op)) {
+			if (Object.hasOwn(raw, op)) {
 				result[op] = raw[op]
 			}
-			if (
-				raw.conditions
-				&& Object.prototype.hasOwnProperty.call(raw.conditions, op)
-			) {
+			if (raw.conditions && Object.hasOwn(raw.conditions, op)) {
 				conditions[op] = raw.conditions[op]
 			}
 			return
@@ -344,12 +340,14 @@ export default {
 		NcSelect,
 		NcTextField,
 	},
+
 	props: {
 		access: { type: Object, default: () => ({ rows: [], extraKeys: {} }) },
 		fieldNames: { type: Array, default: () => [] },
 		availableGroups: { type: Array, default: () => [] },
 		readOnly: { type: Boolean, default: false },
 	},
+
 	emits: ['update:access'],
 	computed: {
 		/**
@@ -362,6 +360,7 @@ export default {
 		rows() {
 			return (this.access && this.access.rows) || []
 		},
+
 		/**
 		 * Scope kinds the connected OpenRegister advertises
 		 * (REQ-OBDSA-003), read once per render via the capability
@@ -372,6 +371,7 @@ export default {
 		capabilityScopes() {
 			return useOrAccessCapabilities().scopes
 		},
+
 		/**
 		 * Scope-kind picker options, filtered to what the connected
 		 * OpenRegister can enforce (REQ-OBDSA-003): everyone + groups are
@@ -401,6 +401,7 @@ export default {
 			}
 			return options
 		},
+
 		/**
 		 * Group picker options seeded from the Application's referenced
 		 * groups (design.md Decision 2) — no full group-directory listing.
@@ -413,6 +414,7 @@ export default {
 				label: gid,
 			}))
 		},
+
 		/**
 		 * Field picker options for condition rows, sourced from the
 		 * staged FieldEditor field names.
@@ -425,6 +427,7 @@ export default {
 				label: name,
 			}))
 		},
+
 		/**
 		 * Whether any unrelated top-level authorization keys are present.
 		 *
@@ -437,6 +440,7 @@ export default {
 				&& Object.keys(this.access.extraKeys).length > 0
 			)
 		},
+
 		/**
 		 * Pretty-printed preview of the preserved extra top-level keys.
 		 *
@@ -450,6 +454,7 @@ export default {
 			)
 		},
 	},
+
 	methods: {
 		/**
 		 * Human label for an operation.
@@ -466,6 +471,7 @@ export default {
 			}
 			return labels[op] || op
 		},
+
 		/**
 		 * Whether a row can be rendered with editable controls: it must
 		 * not be genuinely unrepresentable, and its kind must be within
@@ -492,6 +498,7 @@ export default {
 			}
 			return true
 		},
+
 		/**
 		 * Pretty-printed preview of a row's preserved raw value.
 		 *
@@ -507,6 +514,7 @@ export default {
 			}
 			return JSON.stringify(row.condition || {}, null, 2)
 		},
+
 		/**
 		 * Resolve the selected kind option for the picker.
 		 *
@@ -518,6 +526,7 @@ export default {
 				this.kindOptions.find((o) => o.value === kind) || this.kindOptions[0]
 			)
 		},
+
 		/**
 		 * Resolve the selected group options for a row's group tag input.
 		 *
@@ -527,6 +536,7 @@ export default {
 		groupOptionsFor(groups) {
 			return (groups || []).map((gid) => ({ value: gid, label: gid }))
 		},
+
 		/**
 		 * Resolve the selected field option for a condition row.
 		 *
@@ -536,6 +546,7 @@ export default {
 		fieldOption(name) {
 			return this.fieldOptions.find((o) => o.value === name) || null
 		},
+
 		/**
 		 * Emit an updated `access` model with one row replaced.
 		 *
@@ -547,6 +558,7 @@ export default {
 			const nextRows = this.rows.map((r) => (r.op === op ? nextRow : r))
 			this.$emit('update:access', { ...this.access, rows: nextRows })
 		},
+
 		/**
 		 * Switch a row's scope kind, resetting to sensible defaults.
 		 *
@@ -569,6 +581,7 @@ export default {
 				this.emitRowChange(op, { op, kind: 'everyone' })
 			}
 		},
+
 		/**
 		 * Apply a full-replace groups selection (NcSelect `multiple` input).
 		 *
@@ -591,6 +604,7 @@ export default {
 				: []
 			this.emitRowChange(op, { op, kind: 'group', groups })
 		},
+
 		/**
 		 * Append a free-entry group tag (NcSelect `taggable`).
 		 *
@@ -606,6 +620,7 @@ export default {
 			const groups = [...((row && row.groups) || []), tag]
 			this.emitRowChange(op, { op, kind: 'group', groups })
 		},
+
 		/**
 		 * Update the condition field for a condition row.
 		 *
@@ -622,6 +637,7 @@ export default {
 			}
 			this.emitRowChange(op, { op, kind: 'condition', condition })
 		},
+
 		/**
 		 * Update the condition value for a condition row.
 		 *

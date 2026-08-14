@@ -16,10 +16,10 @@
 	<div class="connector-source-picker">
 		<div v-if="appAvailable" class="connector-source-picker__live">
 			<NcSelect
-				:model-value="selectedOption"
+				:modelValue="selectedOption"
 				:options="endpointOptions"
 				:loading="loading"
-				:input-label="t('openbuild', 'OpenConnector endpoint')"
+				:inputLabel="t('openbuild', 'OpenConnector endpoint')"
 				:placeholder="t('openbuild', 'Select an endpoint')"
 				label="label"
 				@update:modelValue="onSelect" />
@@ -66,9 +66,9 @@
 </template>
 
 <script>
-import { NcSelect } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { NcSelect } from '@nextcloud/vue'
 import { useAppStatus } from '../../composables/useAppStatus.js'
 
 export default {
@@ -81,6 +81,7 @@ export default {
 			default: () => ({}),
 		},
 	},
+
 	emits: ['update:endpointPath', 'sample-fetch'],
 	/**
 	 * Soft capability check for OpenConnector (REQ-OCAS-005).
@@ -91,6 +92,7 @@ export default {
 		const status = useAppStatus('openconnector')
 		return { status }
 	},
+
 	data() {
 		return {
 			endpoints: [],
@@ -99,6 +101,7 @@ export default {
 			manualPath: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Whether OpenConnector is available; assume available until the
@@ -110,6 +113,7 @@ export default {
 		appAvailable() {
 			return !this.status.checked.value || this.status.available.value
 		},
+
 		/**
 		 * Endpoint rows projected to NcSelect options — path + Source name
 		 * ONLY (REQ-OCAS-004: never a credential).
@@ -123,6 +127,7 @@ export default {
 				path: e.path,
 			}))
 		},
+
 		/**
 		 * The option matching the current binding, for NcSelect's value.
 		 *
@@ -134,6 +139,7 @@ export default {
 			return this.endpointOptions.find((o) => o.path === current) || null
 		},
 	},
+
 	/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002 */
 	async mounted() {
 		await this.status.check()
@@ -142,6 +148,7 @@ export default {
 		}
 		this.manualPath = (this.binding && this.binding.endpointPath) || ''
 	},
+
 	methods: {
 		/**
 		 * Fetch the configured OpenConnector endpoints. The list is mapped to
@@ -176,6 +183,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Handle endpoint selection from the live list.
 		 *
@@ -189,6 +197,7 @@ export default {
 				this.$emit('sample-fetch', path)
 			}
 		},
+
 		/**
 		 * Handle manual endpoint-path entry (escape hatch when OpenConnector
 		 * is absent). Strips any scheme/host so the runtime call stays

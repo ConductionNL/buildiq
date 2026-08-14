@@ -79,8 +79,8 @@
 </template>
 
 <script>
-import { NcButton } from '@nextcloud/vue'
 import { CnSettingsSection } from '@conduction/nextcloud-vue'
+import { NcButton } from '@nextcloud/vue'
 import { useSettingsStore } from '../../store/modules/settings.js'
 
 export default {
@@ -89,6 +89,7 @@ export default {
 		NcButton,
 		CnSettingsSection,
 	},
+
 	data() {
 		return {
 			form: {
@@ -97,11 +98,13 @@ export default {
 				registry_register: 'openbuild',
 				registry_token: '',
 			},
+
 			tokenIsSet: false,
 			saving: false,
 			successMessage: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Placeholder for the registry token field — hides whether a token is
@@ -116,6 +119,7 @@ export default {
 				: t('openbuild', 'Bearer token (optional)')
 		},
 	},
+
 	/**
 	 * Observed behaviour of `created` (retrofit annotation).
 	 *
@@ -129,6 +133,7 @@ export default {
 		this.form.registry_register = settings.registry_register || 'openbuild'
 		this.tokenIsSet = !!settings.registry_token_set
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `save` (retrofit annotation).

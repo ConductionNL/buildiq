@@ -64,6 +64,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:modelValue'],
 	computed: {
 		/**
@@ -75,6 +76,7 @@ export default {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
@@ -97,6 +99,7 @@ export default {
 			}
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `addAction` (retrofit annotation).
 		 *
@@ -107,6 +110,7 @@ export default {
 			next.push({ id: '', label: '' })
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `removeAction` (retrofit annotation).
 		 *

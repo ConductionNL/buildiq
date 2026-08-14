@@ -70,17 +70,20 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
 		schemaProperties: {
 			type: Object,
 			default: () => ({}),
 		},
 	},
+
 	emits: ['update:modelValue'],
 	data() {
 		return {
 			SELF_VIRTUAL_KEYS,
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `localColumns` (retrofit annotation).
@@ -90,6 +93,7 @@ export default {
 		localColumns() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
+
 		/**
 		 * Observed behaviour of `schemaPropertyKeys` (retrofit annotation).
 		 *
@@ -99,6 +103,7 @@ export default {
 			return Object.keys(this.schemaProperties || {})
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `rowKey` (retrofit annotation).
@@ -116,6 +121,7 @@ export default {
 			}
 			return (col && (col.key || col.property)) || ''
 		},
+
 		/**
 		 * Observed behaviour of `rowLabel` (retrofit annotation).
 		 *
@@ -131,6 +137,7 @@ export default {
 			}
 			return (col && col.label) || ''
 		},
+
 		/**
 		 * Observed behaviour of `onKeyChange` (retrofit annotation).
 		 *
@@ -151,6 +158,7 @@ export default {
 			}
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `onLabelInput` (retrofit annotation).
 		 *
@@ -168,12 +176,13 @@ export default {
 			if (value) {
 				next[index] = { key, label: value }
 			} else if (typeof existing === 'object' && existing) {
-				const { label, ...rest } = existing // eslint-disable-line no-unused-vars
+				const { label, ...rest } = existing
 				next[index] =
 					Object.keys(rest).length === 1 && rest.key ? rest.key : rest
 			}
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `addColumn` (retrofit annotation).
 		 *
@@ -184,6 +193,7 @@ export default {
 			next.push('')
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `removeColumn` (retrofit annotation).
 		 *

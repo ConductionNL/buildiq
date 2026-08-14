@@ -22,7 +22,7 @@
 
 		<NcSelect
 			v-model="categoryFilter"
-			:input-label="t('openbuild', 'Filter by category')"
+			:inputLabel="t('openbuild', 'Filter by category')"
 			:options="categoryOptions"
 			:clearable="true"
 			:placeholder="t('openbuild', 'All categories')" />
@@ -91,7 +91,7 @@
 		<BlockRemapDialog
 			:open="remapOpen"
 			:dependencies="remapDependencies"
-			:target-schema-slugs="targetSchemaSlugs"
+			:targetSchemaSlugs="targetSchemaSlugs"
 			@update:open="remapOpen = $event"
 			@resolved="onRemapResolved" />
 	</div>
@@ -101,19 +101,18 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
-
 import BlockRemapDialog from '../../dialogs/BlockRemapDialog.vue'
 import { isSectionFragment } from '../../services/blockCapture.js'
+import {
+	BlockImportError,
+	downloadBlockExport,
+	parseBlockImport,
+} from '../../services/blockExport.js'
 import {
 	computeSchemaMismatches,
 	insertBlock,
 	remapBlockRecord,
 } from '../../services/blockInsert.js'
-import {
-	downloadBlockExport,
-	BlockImportError,
-	parseBlockImport,
-} from '../../services/blockExport.js'
 
 const OR_BLOCKS = '/apps/openregister/api/objects/openbuild/component-block'
 
@@ -126,6 +125,7 @@ export default {
 		NcSelect,
 		BlockRemapDialog,
 	},
+
 	props: {
 		// Whether the panel is currently visible — controls the fetch.
 		open: { type: Boolean, default: false },
@@ -136,6 +136,7 @@ export default {
 		// collisions when insert mints fresh widget ids.
 		targetWidgets: { type: Array, default: () => [] },
 	},
+
 	emits: ['insert-widgets'],
 	data() {
 		return {
@@ -151,6 +152,7 @@ export default {
 			pendingRemap: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Distinct categories present across the loaded blocks, for the filter.
@@ -165,6 +167,7 @@ export default {
 				.filter((c) => c && !seen.has(c) && seen.add(c))
 				.map((c) => ({ id: c, label: c }))
 		},
+
 		/**
 		 * The visible blocks after the category filter is applied.
 		 *
@@ -181,6 +184,7 @@ export default {
 			return this.blocks.filter((b) => b && b.category === selected)
 		},
 	},
+
 	watch: {
 		/**
 		 * Fetch the block list whenever the sidebar panel is opened.
@@ -195,6 +199,7 @@ export default {
 			}
 		},
 	},
+
 	/**
 	 * Fetch the block list when already open on mount.
 	 *
@@ -206,6 +211,7 @@ export default {
 			this.fetchBlocks()
 		}
 	},
+
 	methods: {
 		/**
 		 * Fetch every `ComponentBlock` visible to the caller (org-scoped by
@@ -229,6 +235,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * One-line preview label for a block card.
 		 *
@@ -248,6 +255,7 @@ export default {
 				(fragment && fragment.widgetKey) || t('openbuild', 'Single widget')
 			)
 		},
+
 		/**
 		 * Begin the insert flow for a block: compute schema-dependency
 		 * mismatches against the current app; open `BlockRemapDialog` when
@@ -270,6 +278,7 @@ export default {
 			this.remapDependencies = mismatches
 			this.remapOpen = true
 		},
+
 		/**
 		 * Finish the insert flow: build the widgetEntry objects and hand
 		 * them to the parent (which merges them via `mergeManifestDelta`).
@@ -287,6 +296,7 @@ export default {
 			})
 			this.$emit('insert-widgets', widgets)
 		},
+
 		/**
 		 * Trigger a browser download of a block's export JSON.
 		 *
@@ -297,6 +307,7 @@ export default {
 		onExport(block) {
 			downloadBlockExport(block)
 		},
+
 		/**
 		 * Read an imported block export file, resolve any schema-dependency
 		 * mismatch against the current app's schemas, then create the new
@@ -337,6 +348,7 @@ export default {
 							})
 			}
 		},
+
 		/**
 		 * `BlockRemapDialog` resolution handler — dispatches to the insert
 		 * or import completion path depending on which flow opened it.
@@ -362,6 +374,7 @@ export default {
 			)
 			await this.createBlock(finalRecord)
 		},
+
 		/**
 		 * POST a new `ComponentBlock` record and refresh the list.
 		 *
@@ -382,6 +395,7 @@ export default {
 					|| t('openbuild', 'Import failed.')
 			}
 		},
+
 		/**
 		 * Delete a block after inline confirmation.
 		 *

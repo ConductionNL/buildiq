@@ -1,3 +1,4 @@
+import { validateManifest } from '@conduction/nextcloud-vue'
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useManifestValidator — debounced wrapper around `validateManifest` from
@@ -28,14 +29,13 @@
  * 2.20.0+); the local `manifestValidation/theme.js` duplicate is deleted
  * (design.md Decision 5, theme-picker-consumes-nldesign).
  */
-import { ref, reactive, computed } from 'vue'
-import { validateManifest } from '@conduction/nextcloud-vue'
-import { validateWorkflowAttachments } from '../services/manifestValidation/workflowAttachments.js'
+import { computed, reactive, ref } from 'vue'
 import { validateManifestConnectors } from '../services/manifestValidation/connectorDataSource.js'
 import { validateDocumentAttachments } from '../services/manifestValidation/documentAttachments.js'
-import { validateSchedules } from '../services/manifestValidation/schedules.js'
-import { validateFormLogic } from '../services/manifestValidation/formLogic.js'
 import { validateExternalForms } from '../services/manifestValidation/externalForms.js'
+import { validateFormLogic } from '../services/manifestValidation/formLogic.js'
+import { validateSchedules } from '../services/manifestValidation/schedules.js'
+import { validateWorkflowAttachments } from '../services/manifestValidation/workflowAttachments.js'
 
 const DEBOUNCE_MS = 300
 
@@ -107,6 +107,10 @@ export function useManifestValidator() {
 		fieldRefs.set(pathPrefix, fieldRef)
 	}
 
+	/**
+	 *
+	 * @param pathPrefix
+	 */
 	function unregister(pathPrefix) {
 		fieldRefs.delete(pathPrefix)
 	}

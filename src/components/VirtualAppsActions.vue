@@ -72,6 +72,7 @@ export default {
 				{ value: 'hybrid', label: t('openbuild', 'Hybrid') },
 			]
 		},
+
 		/**
 		 * The active filter, read from the `?filter=` URL query param. Defaults
 		 * to 'all' when absent or unrecognised.
@@ -111,6 +112,7 @@ export default {
 				this.$router.replace({ query }).catch(() => {})
 			}
 		},
+
 		/**
 		 * Observed behaviour of `onWizardCreated` (retrofit annotation).
 		 *

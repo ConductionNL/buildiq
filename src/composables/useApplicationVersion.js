@@ -28,9 +28,9 @@
 // frontend. All four builder views delegate to it rather than duplicating the
 // lookup (REQ-OBVR-005).
 
-import { ref } from 'vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { ref } from 'vue'
 
 /**
  * Pure function: from a list of ApplicationVersion records, find the

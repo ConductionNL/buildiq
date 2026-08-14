@@ -14,7 +14,7 @@
 	<NcModal
 		v-if="open"
 		:name="t('openbuild', 'Generate an app with AI')"
-		:can-close="state !== 'planning' && state !== 'executing'"
+		:canClose="state !== 'planning' && state !== 'executing'"
 		@close="onCancel">
 		<div class="copilot-generate">
 			<h2 class="copilot-generate__title">
@@ -142,7 +142,7 @@
 </template>
 
 <script>
-import { NcModal, NcButton, NcTextArea } from '@nextcloud/vue'
+import { NcButton, NcModal, NcTextArea } from '@nextcloud/vue'
 import { useCopilot } from '../composables/useCopilot.js'
 
 export default {
@@ -180,6 +180,7 @@ export default {
 		state() {
 			return this.copilot.state.value
 		},
+
 		/**
 		 * The current plan response, or null before one has been generated.
 		 *
@@ -189,6 +190,7 @@ export default {
 		plan() {
 			return this.copilot.plan.value
 		},
+
 		/**
 		 * Whether every predicted manifest passes the canonical validator.
 		 *
@@ -198,6 +200,7 @@ export default {
 		canApprove() {
 			return this.copilot.canApprove.value
 		},
+
 		/**
 		 * The current error message, or '' when there is none.
 		 *
@@ -207,6 +210,7 @@ export default {
 		errorMessage() {
 			return this.copilot.errorMessage.value
 		},
+
 		/**
 		 * Proposed `upsertSchema` steps, for the "Schemas" review group.
 		 *
@@ -216,6 +220,7 @@ export default {
 		schemaSteps() {
 			return this.stepsByTool('openbuild.upsertSchema')
 		},
+
 		/**
 		 * Proposed `upsertPage` steps, for the "Pages" review group.
 		 *
@@ -225,6 +230,7 @@ export default {
 		pageSteps() {
 			return this.stepsByTool('openbuild.upsertPage')
 		},
+
 		/**
 		 * Proposed `upsertMenuItem` steps, for the "Menu items" review group.
 		 *

@@ -14,17 +14,6 @@
 // Designer surfaces (/builder/{slug}/pages, /schemas) stay in the OpenBuild SPA;
 // only the bare /builder/{slug} runtime is served by this entry.
 
-import { createApp, h, reactive } from 'vue'
-import { createRouter, createWebHistory } from 'vue-router'
-import {
-	translate as t,
-	translatePlural as n,
-	loadTranslations,
-} from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
-import { loadState } from '@nextcloud/initial-state'
-import axios from '@nextcloud/axios'
-import { NcEmptyContent } from '@nextcloud/vue'
 import {
 	CnAppRoot,
 	CnPageRenderer,
@@ -33,10 +22,21 @@ import {
 	registerIcons,
 	registerTranslations,
 } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
+import { loadState } from '@nextcloud/initial-state'
+import {
+	loadTranslations,
+	translatePlural as n,
+	translate as t,
+} from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
+import { NcEmptyContent } from '@nextcloud/vue'
+import { createApp, h, reactive } from 'vue'
+import { createRouter, createWebHistory } from 'vue-router'
+import { registerScope, useRegisterPicker } from './composables/useRegisterPicker.js'
 import pinia from './pinia.js'
-import { runtimeRegistry } from './runtimeRegistry.js'
 import { registerDirectives } from './registerDirectives.js'
-import { useRegisterPicker, registerScope } from './composables/useRegisterPicker.js'
+import { runtimeRegistry } from './runtimeRegistry.js'
 import { registerSlugForApp } from './store/schemas.js'
 
 import '@conduction/nextcloud-vue/css/index.css'

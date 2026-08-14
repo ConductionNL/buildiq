@@ -26,11 +26,11 @@
 			<NcSelect
 				v-model="selectedApp"
 				class="agents-page__picker-select"
-				:input-label="t('openbuild', 'Application')"
+				:inputLabel="t('openbuild', 'Application')"
 				:options="applications"
 				:loading="loadingApplications"
 				label="name"
-				track-by="slug"
+				trackBy="slug"
 				@update:modelValue="onAppChange" />
 		</div>
 
@@ -101,16 +101,16 @@
 				<CopilotPanel
 					v-if="activeTab === 'chat'"
 					:key="selectedAgent.id"
-					:app-slug="selectedApp.slug"
-					:agent-id="selectedAgent.id"
+					:appSlug="selectedApp.slug"
+					:agentId="selectedAgent.id"
 					:name="selectedAgent.name"
 					:instructions="selectedAgent.instructions"
-					:enabled-tools="selectedAgent.enabledTools || []" />
+					:enabledTools="selectedAgent.enabledTools || []" />
 
 				<AgentRunHistory
 					v-else
 					:key="`history-${selectedAgent.id}`"
-					:agent-id="selectedAgent.id" />
+					:agentId="selectedAgent.id" />
 			</div>
 		</div>
 
@@ -121,7 +121,7 @@
 		<AgentEditDialog
 			v-model:open="editDialogOpen"
 			:agent="editingAgent"
-			:application-slug="selectedApp ? selectedApp.slug : ''"
+			:applicationSlug="selectedApp ? selectedApp.slug : ''"
 			@saved="onDialogSaved" />
 	</div>
 </template>
@@ -136,8 +136,8 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-import CopilotPanel from '../components/copilot/CopilotPanel.vue'
 import AgentRunHistory from '../components/agents/AgentRunHistory.vue'
+import CopilotPanel from '../components/copilot/CopilotPanel.vue'
 import AgentEditDialog from '../dialogs/AgentEditDialog.vue'
 
 export default {
@@ -152,6 +152,7 @@ export default {
 		AgentRunHistory,
 		AgentEditDialog,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -166,9 +167,11 @@ export default {
 			editingAgent: null,
 		}
 	},
+
 	mounted() {
 		this.fetchApplications()
 	},
+
 	methods: {
 		/**
 		 * Load the caller's Applications for the picker.
@@ -189,6 +192,7 @@ export default {
 				this.loadingApplications = false
 			}
 		},
+
 		/**
 		 * Handle an application selection: reset the agent list + selection, fetch agents.
 		 *
@@ -202,6 +206,7 @@ export default {
 				this.fetchAgents()
 			}
 		},
+
 		/**
 		 * Load every `agent` object and filter to the selected Application
 		 * (mirrors AutomationsPage's fetch-all-then-filter pattern for the
@@ -228,6 +233,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Select an agent for the chat/history detail panel.
 		 *
@@ -239,6 +245,7 @@ export default {
 			this.selectedAgent = agent
 			this.activeTab = 'chat'
 		},
+
 		/**
 		 * @return {void}
 		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
@@ -247,6 +254,7 @@ export default {
 			this.editingAgent = null
 			this.editDialogOpen = true
 		},
+
 		/**
 		 * @param {object} agent - the agent row to edit.
 		 * @return {void}
@@ -256,6 +264,7 @@ export default {
 			this.editingAgent = agent
 			this.editDialogOpen = true
 		},
+
 		/**
 		 * @return {void}
 		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
@@ -264,6 +273,7 @@ export default {
 			this.editDialogOpen = false
 			this.fetchAgents()
 		},
+
 		/**
 		 * Delete an agent via OpenRegister's generic REST surface.
 		 *
@@ -285,6 +295,7 @@ export default {
 				this.errorMessage = t('openbuild', 'Could not delete the agent.')
 			}
 		},
+
 		/**
 		 * Normalise an OpenRegister list response (bare array or `{results}` envelope).
 		 *

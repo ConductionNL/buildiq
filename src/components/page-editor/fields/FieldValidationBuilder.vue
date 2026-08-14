@@ -75,15 +75,18 @@ export default {
 			type: Object,
 			default: null,
 		},
+
 		legacyRequired: {
 			type: Boolean,
 			default: false,
 		},
+
 		legacyPattern: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:modelValue'],
 	data() {
 		return {
@@ -93,6 +96,7 @@ export default {
 			patternDraft: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * `required`, prefilled from the legacy flat key when no structured
@@ -105,24 +109,28 @@ export default {
 				? !!this.modelValue.required
 				: !!this.legacyRequired
 		},
+
 		/** @return {number|string} */
 		minDisplay() {
 			return this.modelValue && this.modelValue.min !== undefined
 				? this.modelValue.min
 				: ''
 		},
+
 		/** @return {number|string} */
 		maxDisplay() {
 			return this.modelValue && this.modelValue.max !== undefined
 				? this.modelValue.max
 				: ''
 		},
+
 		/** @return {string} */
 		messageDisplay() {
 			return this.modelValue && this.modelValue.message !== undefined
 				? this.modelValue.message
 				: ''
 		},
+
 		/**
 		 * `pattern`, prefilled from the legacy flat key when no structured
 		 * `validation.pattern` exists yet, preferring the live typing draft.
@@ -138,6 +146,7 @@ export default {
 			}
 			return this.legacyPattern || ''
 		},
+
 		/**
 		 * Whether the currently displayed pattern fails to compile.
 		 *
@@ -149,7 +158,6 @@ export default {
 				return false
 			}
 			try {
-				// eslint-disable-next-line no-new
 				new RegExp(pattern)
 				return false
 			} catch {
@@ -157,6 +165,7 @@ export default {
 			}
 		},
 	},
+
 	watch: {
 		modelValue() {
 			// Resync the pattern draft with the (possibly externally, e.g.
@@ -164,6 +173,7 @@ export default {
 			this.patternDraft = null
 		},
 	},
+
 	methods: {
 		/**
 		 * Merge one overridden field into the current display values and
@@ -218,6 +228,7 @@ export default {
 			}
 			return next
 		},
+
 		/**
 		 * Emit the merged validation object (or `null` when every rule is
 		 * cleared).
@@ -229,18 +240,23 @@ export default {
 			const next = this.buildValidation(overrides)
 			this.$emit('update:modelValue', Object.keys(next).length ? next : null)
 		},
+
 		onRequiredChange(checked) {
 			this.commit({ required: checked })
 		},
+
 		onMinInput(value) {
 			this.commit({ min: value })
 		},
+
 		onMaxInput(value) {
 			this.commit({ max: value })
 		},
+
 		onMessageInput(value) {
 			this.commit({ message: value })
 		},
+
 		/**
 		 * Live-compile the typed pattern; only commit (and thus write) it
 		 * when it compiles. An invalid pattern stays visible (and marked)
@@ -253,7 +269,6 @@ export default {
 			this.patternDraft = value
 			if (value !== '') {
 				try {
-					// eslint-disable-next-line no-new
 					new RegExp(value)
 				} catch {
 					return

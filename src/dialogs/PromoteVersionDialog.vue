@@ -3,7 +3,7 @@
 <template>
 	<NcDialog
 		:name="t('openbuild', 'Promote version')"
-		:can-close="true"
+		:canClose="true"
 		size="normal"
 		@closing="onCancel">
 		<!-- No-target state -->
@@ -103,7 +103,7 @@
 					:label="confirmInputLabel"
 					:placeholder="application ? application.slug : ''"
 					autocomplete="off"
-					:helper-text="confirmHelperText" />
+					:helperText="confirmHelperText" />
 			</div>
 		</form>
 
@@ -128,7 +128,6 @@ import NcButton from '@nextcloud/vue/components/NcButton'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
 import NcDialog from '@nextcloud/vue/components/NcDialog'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
-
 import { defaultStrategyFor } from './promoteVersionDefaults.js'
 
 /**
@@ -163,26 +162,31 @@ export default {
 		NcDialog,
 		NcTextField,
 	},
+
 	props: {
 		sourceVersion: {
 			type: Object,
 			required: true,
 		},
+
 		targetVersion: {
 			type: Object,
 			default: null,
 		},
+
 		application: {
 			type: Object,
 			required: true,
 		},
 	},
+
 	data() {
 		return {
 			selectedStrategy: this.computeDefaultStrategy(),
 			typedSlug: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Summary heading rendered above the strategy radio group.
@@ -245,6 +249,7 @@ export default {
 			)
 		},
 	},
+
 	watch: {
 		/**
 		 * Observed behaviour of `targetVersion` (retrofit annotation).
@@ -255,6 +260,7 @@ export default {
 			this.selectedStrategy = this.computeDefaultStrategy()
 			this.typedSlug = ''
 		},
+
 		/**
 		 * Observed behaviour of `application` (retrofit annotation).
 		 *
@@ -264,6 +270,7 @@ export default {
 			this.selectedStrategy = this.computeDefaultStrategy()
 		},
 	},
+
 	methods: {
 		/**
 		 * Compute the default strategy via the pure-function rule.

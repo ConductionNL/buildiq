@@ -53,7 +53,7 @@
 			:open="saveDialogOpen"
 			:application="application"
 			:fragment="captureFragment"
-			:existing-blocks="existingBlocks"
+			:existingBlocks="existingBlocks"
 			@update:open="saveDialogOpen = $event"
 			@saved="onSaved" />
 	</fieldset>
@@ -74,6 +74,7 @@ export default {
 		// Blocks already visible to the caller, for slug-collision checking.
 		existingBlocks: { type: Array, default: () => [] },
 	},
+
 	emits: ['saved'],
 	data() {
 		return {
@@ -81,6 +82,7 @@ export default {
 			saveDialogOpen: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * The fragment `SaveBlockDialog` will capture: the single selected
@@ -106,6 +108,7 @@ export default {
 			)
 		},
 	},
+
 	watch: {
 		/**
 		 * Drop any selection that no longer exists on the (possibly
@@ -119,6 +122,7 @@ export default {
 			this.selectedIds = this.selectedIds.filter((id) => ids.has(id))
 		},
 	},
+
 	methods: {
 		/**
 		 * Whether a widget id is currently checked.
@@ -129,6 +133,7 @@ export default {
 		isSelected(id) {
 			return this.selectedIds.includes(id)
 		},
+
 		/**
 		 * Toggle a widget's checked state.
 		 *
@@ -141,6 +146,7 @@ export default {
 				? this.selectedIds.filter((existing) => existing !== id)
 				: [...this.selectedIds, id]
 		},
+
 		/**
 		 * Open `SaveBlockDialog` for the current selection.
 		 *
@@ -152,6 +158,7 @@ export default {
 				this.saveDialogOpen = true
 			}
 		},
+
 		/**
 		 * Forward the saved event and reset selection.
 		 *

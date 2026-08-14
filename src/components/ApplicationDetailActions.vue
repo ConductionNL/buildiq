@@ -30,8 +30,8 @@
 			</NcButton>
 			<NcActions
 				v-if="openableVersions.length"
-				:menu-name="t('openbuild', 'Open a version')"
-				:force-menu="true"
+				:menuName="t('openbuild', 'Open a version')"
+				:forceMenu="true"
 				class="ob-detail-actions__open-chevron">
 				<!-- Vue 3 requires the v-for key on the <template> itself, not on
 				     its children (Vue 2 allowed the per-child form used before). -->
@@ -60,7 +60,7 @@
 			{{ t('openbuild', 'Export') }}
 		</NcButton>
 
-		<NcActions :menu-name="t('openbuild', 'Actions')" :force-menu="true">
+		<NcActions :menuName="t('openbuild', 'Actions')" :forceMenu="true">
 			<NcActionButton
 				v-if="obAppRole === 'owner'"
 				:disabled="!obApp"
@@ -135,42 +135,42 @@
 
 		<ExportDialog
 			v-if="exportOpen && obApp"
-			:application-slug="obApp.slug"
+			:applicationSlug="obApp.slug"
 			:data-registers="obApp.dataRegisters || []"
 			@close="exportOpen = false" />
 		<GitHubSyncModal
 			v-if="obApp && obApp.slug"
 			:open="githubOpen"
 			:slug="obApp.slug"
-			:is-owner="obAppRole === 'owner'"
+			:isOwner="obAppRole === 'owner'"
 			@update:open="githubOpen = $event" />
 		<AppSettingsModal
 			:open="settingsOpen"
-			:app-name="(obApp && (obApp.name || obApp.slug)) || ''"
-			:is-published="(obApp && obApp.status) === 'published'"
-			:allow-user-overrides="!!(obApp && obApp.allowUserOverrides)"
+			:appName="(obApp && (obApp.name || obApp.slug)) || ''"
+			:isPublished="(obApp && obApp.status) === 'published'"
+			:allowUserOverrides="!!(obApp && obApp.allowUserOverrides)"
 			:data-registers="(obApp && obApp.dataRegisters) || []"
 			:busy="publishing"
 			@update:open="settingsOpen = $event"
-			@set-published="setPublished"
-			@update:allow-overrides="setAllowOverrides"
-			@update:data-registers="setDataRegisters" />
+			@setPublished="setPublished"
+			@update:allowOverrides="setAllowOverrides"
+			@update:dataRegisters="setDataRegisters" />
 		<DeleteAppDialog
 			:open="deleteOpen"
-			:app-name="(obApp && (obApp.name || obApp.slug)) || ''"
+			:appName="(obApp && (obApp.name || obApp.slug)) || ''"
 			:busy="deleting"
 			@update:open="deleteOpen = $event"
 			@confirm="deleteApp" />
 		<PermissionsModal
 			:open="permissionsOpen"
 			:application="obApp"
-			:available-groups="availableGroups"
+			:availableGroups="availableGroups"
 			@update:open="permissionsOpen = $event"
 			@save="onPermissionsSave" />
 		<PermissionHistoryModal
 			v-if="obApp"
 			:open="historyOpen"
-			:application-uuid="obAppUuid"
+			:applicationUuid="obAppUuid"
 			@update:open="historyOpen = $event" />
 		<SaveAsTemplateDialog
 			v-if="saveTemplateOpen && obApp"
@@ -178,34 +178,34 @@
 			:application="obApp"
 			:manifest="saveTemplateManifest"
 			:schemas="saveTemplateSchemas"
-			:existing-templates="existingTemplates"
+			:existingTemplates="existingTemplates"
 			@update:open="saveTemplateOpen = $event"
 			@saved="onTemplateSaved" />
 	</div>
 </template>
 
 <script>
-import { defineAsyncComponent } from 'vue'
-import { NcButton, NcActions, NcActionButton, NcActionLink } from '@nextcloud/vue'
-import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
-import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
-import PencilRulerOutline from 'vue-material-design-icons/PencilRulerOutline.vue'
+import { generateUrl } from '@nextcloud/router'
+import { NcActionButton, NcActionLink, NcActions, NcButton } from '@nextcloud/vue'
+import { defineAsyncComponent } from 'vue'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
-import History from 'vue-material-design-icons/History.vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import HelpCircleOutline from 'vue-material-design-icons/HelpCircleOutline.vue'
+import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import Github from 'vue-material-design-icons/Github.vue'
-import PermissionsModal from '../modals/PermissionsModal.vue'
-import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
-import AppSettingsModal from '../modals/AppSettingsModal.vue'
-import GitHubSyncModal from '../modals/GitHubSyncModal.vue'
+import HelpCircleOutline from 'vue-material-design-icons/HelpCircleOutline.vue'
+import History from 'vue-material-design-icons/History.vue'
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+import PencilRulerOutline from 'vue-material-design-icons/PencilRulerOutline.vue'
 import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
 import SaveAsTemplateDialog from '../dialogs/SaveAsTemplateDialog.vue'
-import { getCurrentUserGroups } from '../composables/useRole.js'
+import AppSettingsModal from '../modals/AppSettingsModal.vue'
+import GitHubSyncModal from '../modals/GitHubSyncModal.vue'
+import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
+import PermissionsModal from '../modals/PermissionsModal.vue'
 import { useRegisterPicker } from '../composables/useRegisterPicker.js'
+import { getCurrentUserGroups } from '../composables/useRole.js'
 import applicationContext from '../mixins/applicationContext.js'
 
 // Vue 3 requires `defineAsyncComponent()` around a lazy import. The bare
@@ -246,6 +246,7 @@ export default {
 		SaveAsTemplateDialog,
 		ExportDialog,
 	},
+
 	mixins: [applicationContext],
 	data() {
 		return {
@@ -267,6 +268,7 @@ export default {
 			error: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * URL of the app's own manifest runtime (the nested CnAppRoot host at
@@ -281,6 +283,7 @@ export default {
 			}
 			return generateUrl(`/apps/openbuild/builder/${this.obApp.slug}`)
 		},
+
 		/**
 		 * "Save as template" is offered to owners and editors only — same
 		 * rbac source of truth as the edit actions (REQ-SAT-001).
@@ -291,6 +294,7 @@ export default {
 		canSaveAsTemplate() {
 			return this.obAppRole === 'owner' || this.obAppRole === 'editor'
 		},
+
 		/**
 		 * Whether the caller may edit versions (owner / editor) — gates the
 		 * per-version Edit entries in the Open-a-version chevron.
@@ -300,6 +304,7 @@ export default {
 		canEditVersions() {
 			return this.obAppRole === 'owner' || this.obAppRole === 'editor'
 		},
+
 		/**
 		 * The current production version UUID (handles string + inline-object).
 		 *
@@ -312,6 +317,7 @@ export default {
 			}
 			return typeof pv === 'string' ? pv : pv.uuid || pv.id || ''
 		},
+
 		/**
 		 * Versions offered in the Open-a-version chevron — non-archived, with the
 		 * production version first (decision 4: archived hidden by default).
@@ -328,6 +334,7 @@ export default {
 						- (this.isProductionVersion(a) ? 1 : 0),
 				)
 		},
+
 		/**
 		 * Group ids selectable in the permissions modal (current user's groups
 		 * unioned with any already-referenced principals).
@@ -345,6 +352,7 @@ export default {
 			return Array.from(gids)
 		},
 	},
+
 	watch: {
 		'obApp.slug': {
 			immediate: true,
@@ -362,6 +370,7 @@ export default {
 			},
 		},
 	},
+
 	methods: {
 		/**
 		 * Load the app's ApplicationVersion rows for the Open-a-version chevron.
@@ -390,6 +399,7 @@ export default {
 				this.versions = []
 			}
 		},
+
 		/**
 		 * The own UUID of a version row (`id` or the `@self` envelope).
 		 *
@@ -400,6 +410,7 @@ export default {
 			const self = (v && v['@self']) || {}
 			return (v && v.id) || self.id || self.uuid || (v && v.uuid) || ''
 		},
+
 		/**
 		 * Whether a version row is the current production version.
 		 *
@@ -412,6 +423,7 @@ export default {
 				&& this.versionRowUuid(v) === this.productionUuid
 			)
 		},
+
 		/**
 		 * Human label for a version in the chevron (name + semver + marker).
 		 *
@@ -426,6 +438,7 @@ export default {
 				: ''
 			return `${name}${semver}${prod}`
 		},
+
 		/**
 		 * Open a version in the live shell — production at the canonical URL,
 		 * any other via `?_version=` (RBAC-gated server-side).
@@ -444,6 +457,7 @@ export default {
 			// Open in a new tab to match the open-in-new affordance (OpenInNew icon).
 			window.open(url, '_blank', 'noopener,noreferrer')
 		},
+
 		/**
 		 * Edit a version in the page designer, scoped via `?_version=` for
 		 * non-production versions.
@@ -462,6 +476,7 @@ export default {
 				? base
 				: `${base}?_version=${encodeURIComponent(v.slug)}`
 		},
+
 		/**
 		 * Publish or unpublish the app (owner-only, enforced again server-side).
 		 * Publishing makes it appear in the Nextcloud app menu.
@@ -506,6 +521,7 @@ export default {
 				this.publishing = false
 			}
 		},
+
 		/**
 		 * Toggle per-user manifest overrides on the app.
 		 *
@@ -523,6 +539,7 @@ export default {
 				this.error = `${t('openbuild', 'Failed to save settings')}: ${e.message || e}`
 			}
 		},
+
 		/**
 		 * Persist an add/remove/edit of the app's `dataRegisters` bindings
 		 * from the settings modal — same shape as `setAllowOverrides()`
@@ -542,6 +559,7 @@ export default {
 				this.error = `${t('openbuild', 'Failed to save settings')}: ${e.message || e}`
 			}
 		},
+
 		/**
 		 * Delete the app (Application + versions + per-version registers + routes),
 		 * then navigate back to the apps list. Owner-only (enforced server-side
@@ -584,6 +602,7 @@ export default {
 				this.deleting = false
 			}
 		},
+
 		/**
 		 * Persist edited permissions from the permissions modal.
 		 *
@@ -602,6 +621,7 @@ export default {
 				this.error = `${t('openbuild', 'Failed to save permissions')}: ${e.message || e}`
 			}
 		},
+
 		/**
 		 * Gather the app's manifest + companion schemas + visible templates, then
 		 * open the SaveAsTemplateDialog (REQ-SAT-001).
@@ -655,6 +675,7 @@ export default {
 				this.saveTemplateLoading = false
 			}
 		},
+
 		/**
 		 * Read the templates visible to the caller (for slug-collision
 		 * resolution). Plain OR REST read — no new PHP (REQ-SAT-006).
@@ -674,6 +695,7 @@ export default {
 				return []
 			}
 		},
+
 		/**
 		 * Surface a toast after a successful template save/update.
 		 *

@@ -42,7 +42,7 @@
 			<NcSelect
 				v-if="nldesignAvailable && tokenSetOptions.length"
 				v-model="selectedOption"
-				:input-label="t('openbuild', 'Token set')"
+				:inputLabel="t('openbuild', 'Token set')"
 				:options="tokenSetOptions"
 				:loading="loadingList"
 				label="label" />
@@ -85,8 +85,8 @@
 				<li
 					v-for="(result, i) in contrastResults"
 					:key="i"
+					class="ob-theme-picker__contrast-row"
 					:class="[
-						'ob-theme-picker__contrast-row',
 						result.pass
 							? 'ob-theme-picker__contrast-row--pass'
 							: 'ob-theme-picker__contrast-row--warn',
@@ -133,8 +133,8 @@
 </template>
 
 <script>
-import { NcDialog, NcButton, NcSelect } from '@nextcloud/vue'
 import { useScopedTheme } from '@conduction/nextcloud-vue'
+import { NcButton, NcDialog, NcSelect } from '@nextcloud/vue'
 
 export default {
 	name: 'ThemePickerDialog',
@@ -144,16 +144,19 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		// The current runtime.theme object (null when none).
 		theme: {
 			type: Object,
 			default: null,
 		},
+
 		// Soft capability flag for nldesign.
 		nldesignAvailable: {
 			type: Boolean,
 			default: true,
 		},
+
 		// REQ-NTS-002 (design.md OQ-1, task 3.3): whether the live-preview
 		// pane's sandboxed CnAppRoot is mounted; gates the preview toggle.
 		previewAvailable: {
@@ -161,6 +164,7 @@ export default {
 			default: true,
 		},
 	},
+
 	emits: ['update:open', 'save', 'clear', 'preview'],
 	data() {
 		return {
@@ -177,6 +181,7 @@ export default {
 			contrastResults: null,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		tokenSetOptions() {
@@ -189,6 +194,7 @@ export default {
 				backgroundColor: (s.theming && s.theming.background_color) || '',
 			}))
 		},
+
 		/**
 		 * The resolved theme candidate to save, from the selected catalogue
 		 * entry — the only population path left (REQ-NTS-002/006).
@@ -209,6 +215,7 @@ export default {
 			}
 		},
 	},
+
 	watch: {
 		/**
 		 * @param {boolean} isOpen - The dialog's new `open` state. Opening re-seeds the
@@ -227,11 +234,13 @@ export default {
 				this.revertPreview()
 			}
 		},
+
 		/** @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-008 */
 		selectedOption() {
 			this.evaluateCandidateContrast()
 		},
 	},
+
 	methods: {
 		/**
 		 * Seed the form from the current theme when reopening.
@@ -250,6 +259,7 @@ export default {
 					primaryColor:
 						(this.theme.preview && this.theme.preview.primaryColor)
 						|| '',
+
 					backgroundColor:
 						(this.theme.preview && this.theme.preview.backgroundColor)
 						|| '',
@@ -258,6 +268,7 @@ export default {
 				this.selectedOption = null
 			}
 		},
+
 		/**
 		 * Populate the picker list via nldesign's real non-admin catalogue
 		 * endpoint. `listTokenSets()` resolves `[]` on ANY failure — the
@@ -276,6 +287,7 @@ export default {
 				this.loadingList = false
 			}
 		},
+
 		/**
 		 * Warn-only contrast facts for the selected candidate's primary colour
 		 * against its background — informational only, never a save gate
@@ -311,6 +323,7 @@ export default {
 				background,
 			)
 		},
+
 		/**
 		 * Toggle live preview: emit the candidate (or null) to the host so it
 		 * retargets the sandboxed live-preview-pane CnAppRoot (design.md
@@ -321,6 +334,7 @@ export default {
 		onPreviewToggle() {
 			this.$emit('preview', this.livePreview ? this.buildTheme() : null)
 		},
+
 		/**
 		 * Revert any live preview (used on cancel/close).
 		 *
@@ -332,6 +346,7 @@ export default {
 				this.$emit('preview', null)
 			}
 		},
+
 		/**
 		 * Assemble the runtime.theme object from the resolved candidate.
 		 *
@@ -360,6 +375,7 @@ export default {
 			}
 			return theme
 		},
+
 		/** @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		onSave() {
 			const theme = this.buildTheme()
@@ -370,12 +386,14 @@ export default {
 			this.$emit('save', theme)
 			this.$emit('update:open', false)
 		},
+
 		/** @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		onClearTheme() {
 			this.revertPreview()
 			this.$emit('clear')
 			this.$emit('update:open', false)
 		},
+
 		/** @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		onClose() {
 			this.revertPreview()

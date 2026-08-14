@@ -224,17 +224,17 @@
 </template>
 
 <script>
-import { NcButton } from '@nextcloud/vue'
 import { CnIconPicker } from '@conduction/nextcloud-vue'
 import { generateUrl } from '@nextcloud/router'
-import { toKebabCase, validateSlug } from '../../utils/slugPattern.js'
+import { NcButton } from '@nextcloud/vue'
+import CopilotGenerateDialog from '../CopilotGenerateDialog.vue'
+import { useCopilot } from '../../composables/useCopilot.js'
 import {
-	ICON_SOURCES,
 	buildIconCatalogues,
+	ICON_SOURCES,
 	resolveAppIcon,
 } from '../../utils/iconCatalogues.js'
-import { useCopilot } from '../../composables/useCopilot.js'
-import CopilotGenerateDialog from '../CopilotGenerateDialog.vue'
+import { toKebabCase, validateSlug } from '../../utils/slugPattern.js'
 
 export default {
 	name: 'Step1Basics',

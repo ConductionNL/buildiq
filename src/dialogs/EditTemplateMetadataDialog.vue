@@ -17,24 +17,24 @@
 		@closing="onClose">
 		<div class="ob-edit-template">
 			<NcTextField
-				:model-value="form.title"
+				:modelValue="form.title"
 				:label="t('openbuild', 'Template title')"
 				@update:modelValue="form.title = $event" />
 			<NcTextField
-				:model-value="form.useCase"
+				:modelValue="form.useCase"
 				:label="t('openbuild', 'Use case (one line)')"
 				@update:modelValue="form.useCase = $event" />
 			<NcTextArea
-				:model-value="form.description"
+				:modelValue="form.description"
 				:label="t('openbuild', 'Description')"
 				@update:modelValue="form.description = $event" />
 			<NcSelect
 				v-model="categoryOption"
-				:input-label="t('openbuild', 'Category')"
+				:inputLabel="t('openbuild', 'Category')"
 				:options="categoryOptions"
 				:clearable="false" />
 			<NcTextField
-				:model-value="form.sourceUrl"
+				:modelValue="form.sourceUrl"
 				:label="t('openbuild', 'Source URL (optional)')"
 				@update:modelValue="form.sourceUrl = $event" />
 			<p v-if="saveError" class="ob-edit-template__error" role="alert">
@@ -63,8 +63,8 @@ import {
 	NcButton,
 	NcDialog,
 	NcSelect,
-	NcTextField,
 	NcTextArea,
+	NcTextField,
 } from '@nextcloud/vue'
 import { TEMPLATE_CATEGORIES } from '../services/templateCapture.js'
 
@@ -84,6 +84,7 @@ export default {
 		open: { type: Boolean, default: false },
 		template: { type: Object, default: null },
 	},
+
 	emits: ['update:open', 'saved'],
 	data() {
 		return {
@@ -93,6 +94,7 @@ export default {
 			saveError: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
@@ -103,12 +105,14 @@ export default {
 				label: t('openbuild', CATEGORY_LABELS[value] || value),
 			}))
 		},
+
 		/**
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
 		selectedCategory() {
 			return this.categoryOption?.id ?? this.categoryOption ?? ''
 		},
+
 		/**
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
@@ -116,6 +120,7 @@ export default {
 			return this.form.title.trim().length > 0 && !!this.selectedCategory
 		},
 	},
+
 	watch: {
 		/**
 		 * @param {boolean} value - The dialog's new `open` state. Only the transition
@@ -129,6 +134,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Prefill from the template being edited.
@@ -151,6 +157,7 @@ export default {
 			this.saving = false
 			this.saveError = ''
 		},
+
 		/**
 		 * @return {void}
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
@@ -161,6 +168,7 @@ export default {
 			}
 			this.$emit('update:open', false)
 		},
+
 		/**
 		 * PUT a metadata-only patch onto the template record via OR REST.
 		 * The manifest + companionSchemas are carried over unchanged from the

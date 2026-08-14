@@ -1,3 +1,4 @@
+import { getRequestToken } from '@nextcloud/auth'
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useRegisterPicker — composable that fetches registers + schemas for
@@ -20,7 +21,6 @@
  *    consistent across pickers; no direct axios import in the consumers.
  */
 import { generateUrl } from '@nextcloud/router'
-import { getRequestToken } from '@nextcloud/auth'
 
 /**
  * The registers the pages editor can bind a page to: the app's own register,
@@ -57,11 +57,16 @@ export function registerScope(perAppRegister, manifest, dataRegisters = []) {
 	return [...scope]
 }
 
-const PICKER_HEADERS = () => ({
-	'Content-Type': 'application/json',
-	Accept: 'application/json',
-	requesttoken: getRequestToken(),
-})
+/**
+ *
+ */
+function PICKER_HEADERS() {
+	return {
+		'Content-Type': 'application/json',
+		Accept: 'application/json',
+		requesttoken: getRequestToken(),
+	}
+}
 
 /**
  * Fetch helpers for the register / schema pickers used by IndexPageEditor
@@ -174,6 +179,10 @@ export function useRegisterPicker(opts = {}) {
 
 			// Tier 0: per-app register. Tier 1: dataRegisters bindings (in
 			// declaration order). Tier 2: everything else (OR's order).
+			/**
+			 *
+			 * @param entry
+			 */
 			function tierFor(entry) {
 				const key = entry && (entry.slug || entry.id)
 				if (perApp && key === perApp) {

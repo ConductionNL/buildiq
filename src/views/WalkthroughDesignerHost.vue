@@ -28,17 +28,17 @@
 			</NcNoteCard>
 			<WalkthroughDesigner
 				:manifest="manifest"
-				:app-slug="routeSlug"
-				:version-slug="versionSlug || ''"
+				:appSlug="routeSlug"
+				:versionSlug="versionSlug || ''"
 				@update:manifest="onManifestUpdate"
-				@save-and-preview="save" />
+				@saveAndPreview="save" />
 		</template>
 	</div>
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import WalkthroughDesigner from '../components/walkthrough-editor/WalkthroughDesigner.vue'
@@ -73,10 +73,12 @@ export default {
 		routeSlug() {
 			return this.$route.params.slug || ''
 		},
+
 		/** The optional version slug from `?_version=`. */
 		versionSlug() {
 			return this.$route.query._version || undefined
 		},
+
 		/** The Application object's OR uuid (persist fallback target). */
 		applicationUuid() {
 			const self = this.application && this.application['@self']
@@ -93,6 +95,7 @@ export default {
 			this.resolveVersion()
 			this.load()
 		},
+
 		versionSlug() {
 			this.resolveVersion()
 			this.load()
@@ -126,6 +129,7 @@ export default {
 				},
 			)
 		},
+
 		/**
 		 * Load the Application and seed the editor manifest from the resolved
 		 * version's manifest (falling back to the Application's manifest).
@@ -172,6 +176,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Receive the edited manifest from the controlled designer.
 		 *
@@ -181,6 +186,7 @@ export default {
 		onManifestUpdate(next) {
 			this.manifest = next
 		},
+
 		/**
 		 * Persist the manifest onto the active ApplicationVersion (or the
 		 * Application object for un-migrated apps) — surgical-merge so version

@@ -77,7 +77,7 @@
 				v-if="bodyKind(section) === 'fields'"
 				class="settings-section-builder__body">
 				<FormFieldBuilder
-					:model-value="section.fields || []"
+					:modelValue="section.fields || []"
 					@update:modelValue="updateField(index, 'fields', $event)" />
 			</div>
 			<div
@@ -196,6 +196,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:modelValue'],
 	data() {
 		return {
@@ -207,6 +208,7 @@ export default {
 			propsError: {},
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `localSections` (retrofit annotation).
@@ -217,6 +219,7 @@ export default {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `bodyKind` (retrofit annotation).
@@ -238,6 +241,7 @@ export default {
 			}
 			return 'fields'
 		},
+
 		/**
 		 * Observed behaviour of `stringifyProps` (retrofit annotation).
 		 *
@@ -257,6 +261,7 @@ export default {
 				return ''
 			}
 		},
+
 		/**
 		 * Observed behaviour of `emit` (retrofit annotation).
 		 *
@@ -268,6 +273,7 @@ export default {
 		emit(sections) {
 			this.$emit('update:modelValue', sections)
 		},
+
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *
@@ -297,6 +303,7 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+
 		/**
 		 * Observed behaviour of `setBodyKind` (retrofit annotation).
 		 *
@@ -326,6 +333,7 @@ export default {
 			this.propsError[index] = ''
 			this.emit(next)
 		},
+
 		/**
 		 * Observed behaviour of `onPropsInput` (retrofit annotation).
 		 *
@@ -352,6 +360,7 @@ export default {
 				this.propsError[index] = (e && e.message) || String(e)
 			}
 		},
+
 		/**
 		 * Observed behaviour of `addWidget` (retrofit annotation).
 		 *
@@ -366,6 +375,7 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+
 		/**
 		 * Observed behaviour of `updateWidget` (retrofit annotation).
 		 *
@@ -393,6 +403,7 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+
 		/**
 		 * Observed behaviour of `onWidgetPropsInput` (retrofit annotation).
 		 *
@@ -417,6 +428,7 @@ export default {
 				// settings validator surfaces the malformed state.
 			}
 		},
+
 		/**
 		 * Observed behaviour of `removeWidget` (retrofit annotation).
 		 *
@@ -435,6 +447,7 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+
 		/**
 		 * Observed behaviour of `addSection` (retrofit annotation).
 		 *
@@ -445,6 +458,7 @@ export default {
 			next.push({ title: '', fields: [] })
 			this.emit(next)
 		},
+
 		/**
 		 * Observed behaviour of `removeSection` (retrofit annotation).
 		 *

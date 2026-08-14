@@ -102,6 +102,7 @@ export default {
 			decideError: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Pending steps whose `role` is one of the viewer's NC groups
@@ -117,9 +118,11 @@ export default {
 			return this.steps.filter((step) => groups.includes(step.role))
 		},
 	},
+
 	mounted() {
 		this.load()
 	},
+
 	methods: {
 		/**
 		 * Load pending approval steps directly from OpenRegister's REST API.
@@ -143,6 +146,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Approve or reject a step by calling OpenRegister's endpoint DIRECTLY
 		 * — no OpenBuild controller mediates the call (task 4.2).

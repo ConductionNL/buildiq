@@ -100,8 +100,8 @@
 					:key="version.uuid"
 					class="ob-detail-header__pill-group">
 					<button
+						class="ob-detail-header__pill"
 						:class="[
-							'ob-detail-header__pill',
 							isActiveVersion(version)
 								? 'ob-detail-header__pill--active'
 								: '',
@@ -138,11 +138,9 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-
-import { buildVersionedRoute } from '../../router/helpers.js'
 import { fetchApplicationRecord } from '../../composables/useApplicationRecord.js'
+import { buildVersionedRoute } from '../../router/helpers.js'
 
 export default {
 	name: 'ApplicationDetailHeader',
@@ -154,6 +152,7 @@ export default {
 		object: { type: Object, default: null },
 		objectId: { type: String, default: '' },
 	},
+
 	/**
 	 * Local component state. The insights time-range control now lives in the
 	 * body dashboard (ApplicationDetailDashboard), not the header.
@@ -172,6 +171,7 @@ export default {
 				|| '',
 		}
 	},
+
 	computed: {
 		/**
 		 * App slug from the resolved Application record.
@@ -182,6 +182,7 @@ export default {
 		appSlug() {
 			return (this.application && this.application.slug) || ''
 		},
+
 		/**
 		 * Display name of the application.
 		 *
@@ -195,6 +196,7 @@ export default {
 				|| t('openbuild', 'Untitled application')
 			)
 		},
+
 		/**
 		 * Application description.
 		 *
@@ -204,6 +206,7 @@ export default {
 		applicationDescription() {
 			return (this.application && this.application.description) || ''
 		},
+
 		/**
 		 * Application lifecycle label for the header badge.
 		 *
@@ -230,6 +233,7 @@ export default {
 				|| t('openbuild', 'draft')
 			)
 		},
+
 		/**
 		 * The app's type discriminator (unify-apps-with-app-type). Absent reads
 		 * as 'virtual' (legacy default), matching the schema.
@@ -242,6 +246,7 @@ export default {
 				? 'hybrid'
 				: 'virtual'
 		},
+
 		/**
 		 * Human-readable label for the app-type badge.
 		 *
@@ -253,6 +258,7 @@ export default {
 				? t('openbuild', 'Hybrid')
 				: t('openbuild', 'Virtual')
 		},
+
 		/**
 		 * Whether this is a hybrid app whose identity metadata (name/slug) is
 		 * read-only — it mirrors the installed Nextcloud app it customizes.
@@ -263,6 +269,7 @@ export default {
 		isHybrid() {
 			return this.appTypeKey === 'hybrid'
 		},
+
 		/**
 		 * URL of the app's icon SVG.
 		 *
@@ -275,6 +282,7 @@ export default {
 				`/apps/openbuild/icons/${encodeURIComponent(this.appSlug)}.svg`,
 			)
 		},
+
 		/**
 		 * URL of the live installed Nextcloud app a hybrid app mirrors. A hybrid
 		 * app's slug equals the installed app id, so it is always reachable at
@@ -287,6 +295,7 @@ export default {
 			if (this.isHybrid === false || !this.appSlug) return ''
 			return generateUrl(`/apps/${encodeURIComponent(this.appSlug)}/`)
 		},
+
 		/**
 		 * Production version UUID resolved from the Application record.
 		 *
@@ -299,6 +308,7 @@ export default {
 			if (typeof pv === 'string') return pv
 			return pv.uuid || pv.id || null
 		},
+
 		/**
 		 * Currently active version (selected, or production, or first).
 		 *
@@ -314,6 +324,7 @@ export default {
 				|| null
 			)
 		},
+
 		/**
 		 * Active version UUID.
 		 *
@@ -323,6 +334,7 @@ export default {
 		activeVersionUuid() {
 			return this.activeVersion ? this.activeVersion.uuid : ''
 		},
+
 		/**
 		 * The production version row (for the chain/star resolution).
 		 *
@@ -337,6 +349,7 @@ export default {
 				) || null
 			)
 		},
+
 		/**
 		 * Semver of the production version (badge in the hero).
 		 *
@@ -346,6 +359,7 @@ export default {
 		productionSemver() {
 			return (this.productionVersion && this.productionVersion.semver) || ''
 		},
+
 		/**
 		 * The caller's role on this application (owner / editor / viewer).
 		 *
@@ -365,6 +379,7 @@ export default {
 			if (inBucket(permissions.viewers)) return t('openbuild', 'viewer')
 			return ''
 		},
+
 		/**
 		 * Versions ordered along the promotesTo chain (most-upstream first).
 		 *
@@ -393,6 +408,7 @@ export default {
 			all.forEach((v) => walk(v))
 			return ordered
 		},
+
 		/**
 		 * Versions visible as pills — production is always shown; non-production
 		 * versions are shown to editors/owners only.
@@ -416,6 +432,7 @@ export default {
 			})
 		},
 	},
+
 	watch: {
 		/**
 		 * Re-bind to a freshly resolved record and reload its versions.
@@ -430,6 +447,7 @@ export default {
 				this.loadVersions()
 			}
 		},
+
 		/**
 		 * Re-load when the route's objectId changes.
 		 *
@@ -439,7 +457,8 @@ export default {
 		objectId() {
 			this.refreshApplication()
 		},
-		'$route.query._version'(newSlug) {
+
+		'$route.query._version': function (newSlug) {
 			if (!newSlug) {
 				if (this.productionVersionUuid)
 					this.selectedVersionUuid = this.productionVersionUuid
@@ -449,6 +468,7 @@ export default {
 			if (match) this.selectedVersionUuid = match.uuid
 		},
 	},
+
 	/**
 	 * Fetch the Application + versions on mount.
 	 *
@@ -462,6 +482,7 @@ export default {
 			this.loadVersions()
 		}
 	},
+
 	methods: {
 		/**
 		 * Check whether a given version is the currently selected one.

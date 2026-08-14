@@ -80,7 +80,7 @@
 					<div class="github-sync__credential">
 						<NcSelect
 							v-model="selectedCredential"
-							:input-label="t('openbuild', 'GitHub credential')"
+							:inputLabel="t('openbuild', 'GitHub credential')"
 							:options="credentialOptions"
 							:placeholder="t('openbuild', 'Select a credential')"
 							:clearable="true" />
@@ -152,8 +152,8 @@
 		<PublishConfirmDialog
 			:open="publishOpen"
 			:slug="slug"
-			:credential-id="selectedCredentialId"
-			:credential-name="selectedCredentialName"
+			:credentialId="selectedCredentialId"
+			:credentialName="selectedCredentialName"
 			:versions="versions"
 			:repo="repoContext"
 			@close="publishOpen = false"
@@ -163,8 +163,8 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcLoadingIcon,
@@ -186,6 +186,7 @@ export default {
 		LinkRepoDialog,
 		PublishConfirmDialog,
 	},
+
 	props: {
 		/** Whether the modal is shown (bind with `.sync`). */
 		open: { type: Boolean, default: false },
@@ -194,6 +195,7 @@ export default {
 		/** Whether the caller is an owner (gates the write controls). */
 		isOwner: { type: Boolean, default: false },
 	},
+
 	emits: ['update:open'],
 	data() {
 		return {
@@ -209,6 +211,7 @@ export default {
 			error: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Whether the app is linked to a GitHub repository.
@@ -219,6 +222,7 @@ export default {
 		linked() {
 			return !!(this.status && this.status.githubRepo)
 		},
+
 		/**
 		 * Human label of the linked repository.
 		 *
@@ -229,6 +233,7 @@ export default {
 			const r = this.status && this.status.githubRepo
 			return r ? `${r.owner}/${r.name}` : '—'
 		},
+
 		/**
 		 * The linked repo context passed to the publish dialog.
 		 *
@@ -246,6 +251,7 @@ export default {
 				branch: this.status.githubDefaultBranch,
 			}
 		},
+
 		/**
 		 * Whether publishing is available per the server feature-detection flags.
 		 *
@@ -255,6 +261,7 @@ export default {
 		publishAvailable() {
 			return !!(this.status && this.status.publishAvailable)
 		},
+
 		/**
 		 * The credential picker options (`{ id, label }`).
 		 *
@@ -269,6 +276,7 @@ export default {
 				}),
 			)
 		},
+
 		/**
 		 * The selected credential id (unwraps the NcSelect option object).
 		 *
@@ -278,6 +286,7 @@ export default {
 		selectedCredentialId() {
 			return this.selectedCredential?.id ?? this.selectedCredential ?? ''
 		},
+
 		/**
 		 * The selected credential display name.
 		 *
@@ -287,6 +296,7 @@ export default {
 		selectedCredentialName() {
 			return this.selectedCredential?.label ?? ''
 		},
+
 		/**
 		 * Whether the Publish control may be enabled — available AND a credential
 		 * is chosen. (Advisory; the server broker is the authoritative gate.)
@@ -297,6 +307,7 @@ export default {
 		canPublish() {
 			return this.publishAvailable && !!this.selectedCredentialId
 		},
+
 		/**
 		 * The disabled-publish hint explaining what is missing.
 		 *
@@ -316,6 +327,7 @@ export default {
 			)
 		},
 	},
+
 	watch: {
 		open(value) {
 			if (value) {
@@ -327,6 +339,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Shorten a commit sha for display.
@@ -338,6 +351,7 @@ export default {
 		shortSha(sha) {
 			return sha ? String(sha).slice(0, 8) : '—'
 		},
+
 		/**
 		 * Load the app's GitHub status (linked repo, shas, feature flags).
 		 *
@@ -360,6 +374,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Load the user's github credentials via OpenRegister's credentials API.
 		 *
@@ -381,6 +396,7 @@ export default {
 				this.credentials = []
 			}
 		},
+
 		/**
 		 * Load the app's versions for the publish version picker.
 		 *
@@ -403,6 +419,7 @@ export default {
 				this.versions = []
 			}
 		},
+
 		/**
 		 * Refresh status after a successful link.
 		 *
@@ -414,6 +431,7 @@ export default {
 			showSuccess(t('openbuild', 'Repository linked.'))
 			this.loadStatus()
 		},
+
 		/**
 		 * Open the publish confirm dialog (requires a chosen credential).
 		 *
@@ -426,6 +444,7 @@ export default {
 			}
 			this.publishOpen = true
 		},
+
 		/**
 		 * Reflect a successful publish: update the status readout with the new
 		 * commit sha.
@@ -446,6 +465,7 @@ export default {
 			)
 			this.loadStatus()
 		},
+
 		/**
 		 * Pull the linked repo's default branch into a NEW draft version. Never
 		 * overwrites production. Surfaces a strict-parse failure naming the file.

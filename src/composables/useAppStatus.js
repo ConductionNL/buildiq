@@ -1,3 +1,5 @@
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useAppStatus — soft capability check: is a sibling Nextcloud app
@@ -21,8 +23,6 @@
  * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.2
  */
 import { ref } from 'vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 
 /** @type {Map<string, boolean>} */
 const statusCache = new Map()

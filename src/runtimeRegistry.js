@@ -14,24 +14,20 @@
  * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
  */
 
-// Runtime panel — renders the linked Procest case for the current object on a
-// detail page (sidebar tab `procest-case-status`).
-import ProcestCaseStatusPanel from './components/runtime/ProcestCaseStatusPanel.vue'
-
 // Runtime widget — renders an OpenConnector-bound data source for a manifest
 // page/widget that declares `dataSource.connector` (REQ-OCAS-006).
 import ConnectorDataView from './components/runtime/ConnectorDataView.vue'
-
 // Runtime surface — generate-and-download buttons for the Docudesk document
 // templates attached to the current object's schema (sidebar tab / detail
 // action group `docudesk-document-actions`, REQ-DDT-004).
 import DocumentActions from './components/runtime/DocumentActions.vue'
-
 // Runtime widget — "My approvals" (automation-approval-steps task 4.1):
 // lists the viewer's pending OpenRegister ApprovalSteps with approve/reject
 // actions calling OR's REST API directly.
 import MyApprovalsWidget from './components/runtime/MyApprovalsWidget.vue'
-
+// Runtime panel — renders the linked Procest case for the current object on a
+// detail page (sidebar tab `procest-case-status`).
+import ProcestCaseStatusPanel from './components/runtime/ProcestCaseStatusPanel.vue'
 // Runtime action — Detail-page `actionsComponent` letting staff mint a
 // "track your case" link for the object they are viewing
 // (external-form-provisioning REQ-EFP-006). Owner-context only; self-gates

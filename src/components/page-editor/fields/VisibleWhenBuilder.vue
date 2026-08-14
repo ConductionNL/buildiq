@@ -97,15 +97,18 @@ export default {
 			type: Object,
 			default: null,
 		},
+
 		fieldOptions: {
 			type: Array,
 			default: () => [],
 		},
 	},
+
 	emits: ['update:modelValue'],
 	data() {
 		return { OPS }
 	},
+
 	computed: {
 		/**
 		 * Whether the current `visibleWhen` uses an advanced (`endpoint` /
@@ -119,6 +122,7 @@ export default {
 				&& (this.modelValue.endpoint || this.modelValue.source)
 			)
 		},
+
 		/**
 		 * The currently-picked sibling field key, or '' (no condition).
 		 *
@@ -134,6 +138,7 @@ export default {
 			}
 			return this.modelValue.field
 		},
+
 		/**
 		 * The current op, defaulting to `eq` when absent.
 		 *
@@ -144,6 +149,7 @@ export default {
 				? this.modelValue.op
 				: 'eq'
 		},
+
 		/**
 		 * The current value, stringified for the text input.
 		 *
@@ -156,6 +162,7 @@ export default {
 			return String(this.modelValue.value)
 		},
 	},
+
 	methods: {
 		/**
 		 * Assemble and emit the next `visibleWhen` from the three inputs,
@@ -178,15 +185,19 @@ export default {
 			}
 			this.$emit('update:modelValue', next)
 		},
+
 		onFieldChange(value) {
 			this.emitCondition(value, this.currentOp, this.currentValueDisplay)
 		},
+
 		onOpChange(value) {
 			this.emitCondition(this.currentField, value, this.currentValueDisplay)
 		},
+
 		onValueInput(value) {
 			this.emitCondition(this.currentField, this.currentOp, value)
 		},
+
 		/**
 		 * Clear the condition entirely.
 		 *

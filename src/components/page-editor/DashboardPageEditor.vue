@@ -11,12 +11,12 @@
 
 		<DataSourceOriginToggle
 			:data-source="config.dataSource || {}"
-			@update:data-source="onDataSourceUpdate" />
+			@update:dataSource="onDataSourceUpdate" />
 
 		<fieldset class="dashboard-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Widgets') }}</legend>
 			<WidgetBuilder
-				:model-value="config.widgets || []"
+				:modelValue="config.widgets || []"
 				@update:modelValue="update('widgets', $event)" />
 			<InlineFieldMark :error="markFor('widgets')" />
 		</fieldset>
@@ -24,7 +24,7 @@
 		<fieldset class="dashboard-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Layout') }}</legend>
 			<LayoutItemBuilder
-				:model-value="config.layout || []"
+				:modelValue="config.layout || []"
 				@update:modelValue="update('layout', $event)" />
 			<InlineFieldMark :error="markFor('layout')" />
 		</fieldset>
@@ -32,10 +32,10 @@
 </template>
 
 <script>
-import WidgetBuilder from './fields/WidgetBuilder.vue'
-import LayoutItemBuilder from './fields/LayoutItemBuilder.vue'
-import InlineFieldMark from './fields/InlineFieldMark.vue'
 import DataSourceOriginToggle from './DataSourceOriginToggle.vue'
+import InlineFieldMark from './fields/InlineFieldMark.vue'
+import LayoutItemBuilder from './fields/LayoutItemBuilder.vue'
+import WidgetBuilder from './fields/WidgetBuilder.vue'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
@@ -46,25 +46,30 @@ export default {
 		InlineFieldMark,
 		DataSourceOriginToggle,
 	},
+
 	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'dashboard',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	computed: {
 		/**
@@ -76,6 +81,7 @@ export default {
 			return ['widgets', 'layout']
 		},
 	},
+
 	methods: {
 		/**
 		 * Write one key on the page's `config` block. Only the named key is
@@ -95,6 +101,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Persist a `dataSource` change from the origin toggle onto the
 		 * dashboard config (REQ-OCAS-002).

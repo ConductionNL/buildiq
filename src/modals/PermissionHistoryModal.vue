@@ -99,10 +99,10 @@ import {
 	NcEmptyContent,
 	NcLoadingIcon,
 } from '@conduction/nextcloud-vue'
-import HistoryIcon from 'vue-material-design-icons/History.vue'
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { showError } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
+import HistoryIcon from 'vue-material-design-icons/History.vue'
 
 /**
  * PermissionHistoryModal — owner-only read view of permission changes
@@ -126,6 +126,7 @@ export default {
 			type: Boolean,
 			required: true,
 		},
+
 		applicationUuid: {
 			type: String,
 			required: true,

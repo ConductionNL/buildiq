@@ -37,7 +37,7 @@
 			</h2>
 
 			<NcTextField
-				:model-value="label"
+				:modelValue="label"
 				:label="t('openbuild', 'Label')"
 				:placeholder="t('openbuild', 'e.g. Nightly BRP sync')"
 				@update:modelValue="onLabelInput" />
@@ -48,18 +48,18 @@
 
 			<NcSelect
 				v-model="cadenceOption"
-				:input-label="t('openbuild', 'Cadence')"
+				:inputLabel="t('openbuild', 'Cadence')"
 				:options="cadenceOptions"
 				:clearable="false"
 				label="label" />
 
 			<NcTextField
 				v-if="isCustomCron"
-				:model-value="cron"
+				:modelValue="cron"
 				:label="t('openbuild', 'Cron expression (5 fields)')"
 				:placeholder="t('openbuild', 'e.g. 0 3 * * 1')"
 				:error="cron !== '' && !cronValid"
-				:helper-text="
+				:helperText="
 					cron !== '' && !cronValid
 						? t('openbuild', 'Enter a valid 5-field cron expression.')
 						: ''
@@ -68,7 +68,7 @@
 
 			<NcTextField
 				v-if="isCustomInterval"
-				:model-value="String(intervalSeconds)"
+				:modelValue="String(intervalSeconds)"
 				type="number"
 				:label="t('openbuild', 'Interval (seconds)')"
 				:placeholder="t('openbuild', 'e.g. 43200')"
@@ -76,7 +76,7 @@
 
 			<NcSelect
 				v-model="actionOption"
-				:input-label="t('openbuild', 'Action')"
+				:inputLabel="t('openbuild', 'Action')"
 				:options="actionOptions"
 				:clearable="false"
 				label="label" />
@@ -85,7 +85,7 @@
 				<NcSelect
 					v-if="syncPickerAvailable"
 					v-model="syncOption"
-					:input-label="t('openbuild', 'Synchronization')"
+					:inputLabel="t('openbuild', 'Synchronization')"
 					:options="syncOptions"
 					:loading="syncLoading"
 					label="label"
@@ -101,7 +101,7 @@
 						}}
 					</p>
 					<NcTextField
-						:model-value="syncId"
+						:modelValue="syncId"
 						:label="t('openbuild', 'Synchronization id')"
 						:placeholder="
 							t(
@@ -114,7 +114,7 @@
 			</div>
 
 			<NcCheckboxRadioSwitch
-				:model-value="enabled"
+				:modelValue="enabled"
 				type="switch"
 				@update:modelValue="enabled = $event">
 				{{ t('openbuild', 'Enabled') }}
@@ -145,18 +145,18 @@
 </template>
 
 <script>
-import {
-	NcModal,
-	NcButton,
-	NcSelect,
-	NcTextField,
-	NcCheckboxRadioSwitch,
-} from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import {
-	validateScheduleEntry,
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcModal,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
+import {
 	isValidCron,
+	validateScheduleEntry,
 } from '../services/manifestValidation/schedules.js'
 
 /** Cadence presets that write an `interval` in seconds. */
@@ -211,17 +211,20 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		// Existing entry when editing (null when adding).
 		entry: {
 			type: Object,
 			default: null,
 		},
+
 		// Ids used by OTHER entries in manifest.schedules[] (for uniqueness).
 		existingIds: {
 			type: Array,
 			default: () => [],
 		},
 	},
+
 	emits: ['update:open', 'save'],
 	data() {
 		return {
@@ -240,11 +243,13 @@ export default {
 			showValidation: false,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-005 */
 		editing() {
 			return !!this.entry
 		},
+
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
 		cadenceOptions() {
 			return [
@@ -259,6 +264,7 @@ export default {
 				},
 			]
 		},
+
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-003 */
 		actionOptions() {
 			return [
@@ -268,18 +274,22 @@ export default {
 				},
 			]
 		},
+
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
 		isCustomCron() {
 			return this.cadenceOption && this.cadenceOption.id === 'custom-cron'
 		},
+
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
 		isCustomInterval() {
 			return this.cadenceOption && this.cadenceOption.id === 'custom-interval'
 		},
+
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
 		cronValid() {
 			return isValidCron(this.cron)
 		},
+
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-003 */
 		isSyncAction() {
 			return (
@@ -287,10 +297,12 @@ export default {
 				&& this.actionOption.value === 'openconnector:synchronization'
 			)
 		},
+
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-003 */
 		syncPickerAvailable() {
 			return !this.syncFetchFailed && this.syncOptions.length > 0
 		},
+
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-004 */
 		derivedId() {
 			if (this.editing) {
@@ -299,6 +311,7 @@ export default {
 			const base = this.manualId ? slugify(this.manualId) : slugify(this.label)
 			return uniqueSlug(base, this.existingIds)
 		},
+
 		/**
 		 * Assemble the candidate entry from the form state, enforcing the
 		 * one-of `interval`|`cron` invariant.
@@ -328,6 +341,7 @@ export default {
 			}
 			return entry
 		},
+
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-006 */
 		valid() {
 			if (validateScheduleEntry(this.candidateEntry).length > 0) {
@@ -337,6 +351,7 @@ export default {
 			return !this.existingIds.includes(this.candidateEntry.id)
 		},
 	},
+
 	watch: {
 		/**
 		 * @param {boolean} isOpen - The dialog's new `open` state. Opening re-seeds the
@@ -352,6 +367,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Seed the form from an existing entry when editing, reverse-mapping
@@ -406,6 +422,7 @@ export default {
 			this.syncId = (e.arguments && e.arguments.synchronizationId) || ''
 			this.enabled = e.enabled !== false
 		},
+
 		/**
 		 * Keep the label field and the auto-slug in sync.
 		 *
@@ -415,6 +432,7 @@ export default {
 		onLabelInput(value) {
 			this.label = value
 		},
+
 		/**
 		 * Load synchronizations from OpenRegister objects, mapping to
 		 * `{ id, label }`. On any failure the picker degrades to a free-text
@@ -455,6 +473,7 @@ export default {
 				this.syncLoading = false
 			}
 		},
+
 		/**
 		 * Handle a synchronization selection from the live picker.
 		 *
@@ -464,6 +483,7 @@ export default {
 		onSyncSelect(option) {
 			this.syncId = option && option.id ? option.id : ''
 		},
+
 		/**
 		 * Assemble + emit the schedule entry (only when valid).
 		 *
@@ -477,6 +497,7 @@ export default {
 			this.$emit('save', this.candidateEntry)
 			this.$emit('update:open', false)
 		},
+
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */
 		onClose() {
 			this.$emit('update:open', false)
