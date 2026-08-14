@@ -33,7 +33,6 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -68,6 +67,7 @@ abstract class AbstractToolHandler {
 		protected readonly ContainerInterface $container,
 		protected readonly LoggerInterface $logger,
 		protected readonly IGroupManager $groupManager,
+		private readonly ObjectService $objectService,
 		protected readonly ?PermissionResolver $permissionResolver = null,
 		protected readonly ?AuditTrailMapper $auditTrailMapper = null,
 	) {
@@ -157,10 +157,9 @@ abstract class AbstractToolHandler {
 			return $this->errorResult(error: 'forbidden', message: 'You must be signed in.');
 		}
 
-		$objectService = $this->container->get('OCA\OpenRegister\Service\ObjectService');
 		// Openbuild is a system-wide register (not org-scoped); bypass the
 		// organisation filter so MCP callers in any org can resolve apps.
-		$apps = $objectService->searchObjectsBySlug(
+		$apps = $this->objectService->searchObjectsBySlug(
 			self::REGISTER_SLUG,
 			'application',
 			['slug' => $appSlug],
@@ -191,7 +190,7 @@ abstract class AbstractToolHandler {
 				// Copilot path (harden-rules-authz-and-audit-parity, L2 / #3).
 				$appEntity = null;
 				try {
-					$appEntity = $objectService->find((string)($app['uuid'] ?? ($app['id'] ?? '')));
+					$appEntity = $this->objectService->find((string)($app['uuid'] ?? ($app['id'] ?? '')));
 				} catch (\Throwable $e) {
 					$appEntity = null;
 				}
@@ -559,7 +558,7 @@ abstract class AbstractToolHandler {
 	 * @return array{version?: array, appUuid?: string, appName?: string, error?: string, message?: string}
 	 */
 	protected function loadVersion(object $objectService, string $appSlug, string $versionSlug): array {
-		$apps = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'application', ['slug' => $appSlug], _rbac: true, _multitenancy: false);
+		$apps = $this->objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'application', ['slug' => $appSlug], _rbac: true, _multitenancy: false);
 		if (is_array($apps) === false || $apps === []) {
 			return ['error' => 'not_found', 'message' => "No virtual app found for slug '{$appSlug}'."];
 		}
@@ -567,7 +566,7 @@ abstract class AbstractToolHandler {
 		$app = $this->toArray(item: $apps[0]);
 		$appUuid = $this->extractUuid(item: $app);
 
-		$versions = $objectService->searchObjectsBySlug(
+		$versions = $this->objectService->searchObjectsBySlug(
 			self::REGISTER_SLUG,
 			'applicationVersion',
 			['application' => $appUuid, 'slug' => $versionSlug],
@@ -617,7 +616,7 @@ abstract class AbstractToolHandler {
 		// H3: guard removed — fail loudly (503) rather than silently skip locking.
 		$locked = false;
 		try {
-			$objectService->lockObject(
+			$this->objectService->lockObject(
 				identifier: $versionUuid,
 				process: 'openbuild.mcp-manifest-edit',
 				duration: 30
@@ -643,7 +642,7 @@ abstract class AbstractToolHandler {
 			// saveObject treats the input as a clean property bag.
 			unset($payload['@self'], $payload['id'], $payload['uuid']);
 
-			$saved = $objectService->saveObject(
+			$saved = $this->objectService->saveObject(
 				object: $payload,
 				register: self::REGISTER_SLUG,
 				schema: 'applicationVersion',
@@ -654,7 +653,7 @@ abstract class AbstractToolHandler {
 		} finally {
 			if ($locked === true) {
 				try {
-					$objectService->unlockObject(identifier: $versionUuid);
+					$this->objectService->unlockObject(identifier: $versionUuid);
 				} catch (\Throwable $unlockError) {
 					$this->logger->warning(
 						'OpenBuild MCP: failed to release manifest lock on ' . $versionUuid,
