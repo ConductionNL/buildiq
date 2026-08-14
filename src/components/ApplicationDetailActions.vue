@@ -19,7 +19,7 @@
 		     view/use (and edit, editor+). Production is always the canonical URL. -->
 		<div v-if="builderUrl" class="ob-detail-actions__open">
 			<NcButton
-				variant="primary"
+				type="primary"
 				:href="builderUrl"
 				target="_blank"
 				class="ob-detail-actions__open-primary">

@@ -3,7 +3,7 @@
 	<section class="export-jobs">
 		<header class="export-jobs__header">
 			<h2>{{ t('openbuild', 'Export application') }}</h2>
-			<NcButton v-if="applicationSlug" variant="primary" @click="openDialog">
+			<NcButton v-if="applicationSlug" type="primary" @click="openDialog">
 				{{ t('openbuild', 'Start export') }}
 			</NcButton>
 		</header>

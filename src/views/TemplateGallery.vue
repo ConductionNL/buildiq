@@ -149,7 +149,7 @@
 					<div class="template-card__actions">
 						<NcButton
 							v-if="card.installable && !card.unparseable"
-							variant="primary"
+							type="primary"
 							@click="openGithubInstall(card)">
 							{{ t('openbuild', 'Install') }}
 						</NcButton>

@@ -35,10 +35,7 @@
 						<img :src="appIcon" alt="" width="64" height="64" />
 					</template>
 					<template #action>
-						<NcButton
-							v-if="isAdmin"
-							variant="primary"
-							:href="appStoreUrl">
+						<NcButton v-if="isAdmin" type="primary" :href="appStoreUrl">
 							{{ t('openbuild', 'Install OpenRegister') }}
 						</NcButton>
 					</template>

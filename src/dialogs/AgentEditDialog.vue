@@ -92,7 +92,7 @@
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
 				<NcButton
-					variant="primary"
+					type="primary"
 					:disabled="saving"
 					data-testid="agent-save-button"
 					@click="onSave">

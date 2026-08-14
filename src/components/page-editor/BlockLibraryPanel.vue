@@ -67,14 +67,14 @@
 					</p>
 				</div>
 				<div class="block-card__actions">
-					<NcButton variant="primary" @click="onInsert(block)">
+					<NcButton type="primary" @click="onInsert(block)">
 						{{ t('openbuild', 'Insert') }}
 					</NcButton>
 					<NcButton @click="onExport(block)">
 						{{ t('openbuild', 'Export') }}
 					</NcButton>
 					<template v-if="confirmDeleteSlug === block.slug">
-						<NcButton variant="error" @click="onDelete(block)">
+						<NcButton type="error" @click="onDelete(block)">
 							{{ t('openbuild', 'Confirm delete') }}
 						</NcButton>
 						<NcButton @click="confirmDeleteSlug = ''">

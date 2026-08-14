@@ -50,7 +50,7 @@
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				variant="error"
+				type="error"
 				:disabled="busy"
 				@click="$emit('confirm', deleteData)">
 				<template v-if="busy" #icon>

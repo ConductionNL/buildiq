@@ -79,7 +79,7 @@
 				rows="2"
 				@keydown.enter.exact.prevent="onSend" />
 			<NcButton
-				variant="primary"
+				type="primary"
 				:disabled="inputDisabled || !draft.trim()"
 				@click="onSend">
 				{{ t('openbuild', 'Send') }}

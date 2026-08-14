@@ -27,7 +27,7 @@
 					}}{{ lastPick.ref ? ' · ' + lastPick.ref : '' }}</code
 				>
 			</span>
-			<NcButton variant="tertiary" @click="$emit('close')">
+			<NcButton type="tertiary" @click="$emit('close')">
 				{{ t('openbuild', 'Done recording') }}
 			</NcButton>
 		</div>

@@ -60,7 +60,7 @@
 				</NcButton>
 				<NcButton
 					v-if="application"
-					variant="primary"
+					type="primary"
 					:disabled="saving"
 					@click="save">
 					{{

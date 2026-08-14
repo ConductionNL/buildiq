@@ -17,7 +17,7 @@
 	<div class="agents-page">
 		<header class="agents-page__header">
 			<h2>{{ t('openbuild', 'Agents') }}</h2>
-			<NcButton variant="primary" :disabled="!selectedApp" @click="openNew">
+			<NcButton type="primary" :disabled="!selectedApp" @click="openNew">
 				{{ t('openbuild', 'New agent') }}
 			</NcButton>
 		</header>
@@ -74,10 +74,10 @@
 						</span>
 					</button>
 					<div class="agents-page__item-side">
-						<NcButton variant="tertiary" @click="openEdit(agent)">
+						<NcButton type="tertiary" @click="openEdit(agent)">
 							{{ t('openbuild', 'Edit') }}
 						</NcButton>
-						<NcButton variant="tertiary" @click="remove(agent)">
+						<NcButton type="tertiary" @click="remove(agent)">
 							{{ t('openbuild', 'Delete') }}
 						</NcButton>
 					</div>
@@ -87,12 +87,12 @@
 			<div v-if="selectedAgent" class="agents-page__detail">
 				<div class="agents-page__detail-tabs">
 					<NcButton
-						:variant="activeTab === 'chat' ? 'primary' : 'tertiary'"
+						:type="activeTab === 'chat' ? 'primary' : 'tertiary'"
 						@click="activeTab = 'chat'">
 						{{ t('openbuild', 'Chat') }}
 					</NcButton>
 					<NcButton
-						:variant="activeTab === 'history' ? 'primary' : 'tertiary'"
+						:type="activeTab === 'history' ? 'primary' : 'tertiary'"
 						@click="activeTab = 'history'">
 						{{ t('openbuild', 'Run history') }}
 					</NcButton>

@@ -52,7 +52,7 @@
 					:helperText="widget.configError"
 					@update:modelValue="updateConfig(index, $event)" />
 				<NcButton
-					variant="error"
+					type="error"
 					:aria-label="t('openbuild', 'Remove widget')"
 					@click="removeWidget(index)">
 					<template #icon>

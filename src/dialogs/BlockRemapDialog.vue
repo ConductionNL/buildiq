@@ -46,7 +46,7 @@
 			<NcButton @click="onClose">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton variant="primary" @click="confirm">
+			<NcButton type="primary" @click="confirm">
 				{{ t('openbuild', 'Insert block') }}
 			</NcButton>
 		</template>

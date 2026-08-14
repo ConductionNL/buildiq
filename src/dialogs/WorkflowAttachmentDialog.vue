@@ -52,7 +52,7 @@
 					:options="linkPropertyOptions"
 					label="label" />
 				<NcButton
-					variant="tertiary"
+					type="tertiary"
 					@click="$emit('create-link-property', selectedSchemaSlug)">
 					{{ t('openbuild', 'Create zaakUrl property') }}
 				</NcButton>
@@ -82,7 +82,7 @@
 			<NcButton @click="onClose">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
+			<NcButton type="primary" :disabled="!canSave" @click="onSave">
 				{{ t('openbuild', 'Save') }}
 			</NcButton>
 		</template>

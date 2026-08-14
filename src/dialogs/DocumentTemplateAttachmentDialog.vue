@@ -111,7 +111,7 @@
 
 			<div class="ob-document-attach__preview">
 				<NcButton
-					variant="secondary"
+					type="secondary"
 					:disabled="!canPreview || previewing"
 					@click="onPreview">
 					{{
@@ -156,7 +156,7 @@
 			<NcButton @click="onClose">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
+			<NcButton type="primary" :disabled="!canSave" @click="onSave">
 				{{ t('openbuild', 'Save') }}
 			</NcButton>
 		</template>

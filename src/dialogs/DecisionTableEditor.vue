@@ -37,11 +37,11 @@
 				<NcTextField
 					v-model="col.expressionPath"
 					:label="t('openbuild', 'Payload path')" />
-				<NcButton variant="tertiary" @click="removeInput(index)">
+				<NcButton type="tertiary" @click="removeInput(index)">
 					{{ t('openbuild', 'Remove') }}
 				</NcButton>
 			</div>
-			<NcButton variant="secondary" @click="addInput">
+			<NcButton type="secondary" @click="addInput">
 				{{ t('openbuild', 'Add input column') }}
 			</NcButton>
 
@@ -84,7 +84,7 @@
 					</tr>
 				</tbody>
 			</table>
-			<NcButton variant="secondary" @click="addRule">
+			<NcButton type="secondary" @click="addRule">
 				{{ t('openbuild', 'Add rule') }}
 			</NcButton>
 
@@ -106,7 +106,7 @@
 			<NcButton @click="$emit('close')">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="saving" @click="save">
+			<NcButton type="primary" :disabled="saving" @click="save">
 				{{ saving ? t('openbuild', 'Saving...') : t('openbuild', 'Save') }}
 			</NcButton>
 		</template>

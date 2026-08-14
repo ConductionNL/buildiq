@@ -30,7 +30,7 @@
 			<NcButton @click="onCancel">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton variant="error" :disabled="!canDelete" @click="onConfirm">
+			<NcButton type="error" :disabled="!canDelete" @click="onConfirm">
 				{{ t('openbuild', 'Delete schema') }}
 			</NcButton>
 		</template>

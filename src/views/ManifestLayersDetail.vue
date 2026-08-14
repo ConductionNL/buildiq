@@ -16,7 +16,7 @@
 <template>
 	<div class="ob-manifest-detail">
 		<header class="ob-manifest-detail__header">
-			<NcButton variant="tertiary" @click="goBack">
+			<NcButton type="tertiary" @click="goBack">
 				<template #icon>
 					<ArrowLeft :size="20" />
 				</template>
@@ -61,7 +61,7 @@
 				</p>
 				<NcButton
 					v-if="adminVersionUuid"
-					variant="tertiary"
+					type="tertiary"
 					@click="openInOpenRegister(adminVersionUuid)">
 					{{ t('openbuild', 'Open version history in OpenRegister') }}
 				</NcButton>
@@ -78,15 +78,15 @@
 					v-if="allowUserOverrides"
 					class="ob-manifest-detail__layer-actions">
 					<template v-if="userDelta.exists">
-						<NcButton variant="secondary" @click="showEditModal = true">
+						<NcButton type="secondary" @click="showEditModal = true">
 							{{ t('openbuild', 'Edit') }}
 						</NcButton>
-						<NcButton variant="tertiary" @click="resetOverride">
+						<NcButton type="tertiary" @click="resetOverride">
 							{{ t('openbuild', 'Reset') }}
 						</NcButton>
 						<NcButton
 							v-if="userDelta.versionUuid"
-							variant="tertiary"
+							type="tertiary"
 							@click="openInOpenRegister(userDelta.versionUuid)">
 							{{
 								t(
@@ -98,7 +98,7 @@
 					</template>
 					<NcButton
 						v-else
-						variant="secondary"
+						type="secondary"
 						:disabled="creating"
 						@click="createOverride">
 						{{ t('openbuild', 'Create override') }}
@@ -143,7 +143,7 @@
 					</div>
 					<NcButton
 						v-if="ovr.versionUuid"
-						variant="tertiary"
+						type="tertiary"
 						@click="openInOpenRegister(ovr.versionUuid)">
 						{{ t('openbuild', 'Open in OpenRegister') }}
 					</NcButton>
@@ -156,7 +156,7 @@
 		<section class="ob-manifest-detail__history">
 			<div v-if="canEdit" class="ob-manifest-detail__history-actions">
 				<NcButton
-					variant="secondary"
+					type="secondary"
 					:disabled="creatingDraft"
 					@click="createDraft">
 					<template #icon>

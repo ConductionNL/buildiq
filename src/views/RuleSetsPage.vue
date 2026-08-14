@@ -16,7 +16,7 @@
 	<div class="rule-sets-page">
 		<div class="rule-sets-page__header">
 			<h2>{{ t('openbuild', 'Business rules') }}</h2>
-			<NcButton variant="primary" @click="openCreate">
+			<NcButton type="primary" @click="openCreate">
 				{{ t('openbuild', 'New rule set') }}
 			</NcButton>
 		</div>
@@ -80,16 +80,16 @@
 						</span>
 					</td>
 					<td class="rule-sets-page__actions">
-						<NcButton variant="tertiary" @click="edit(rs)">
+						<NcButton type="tertiary" @click="edit(rs)">
 							{{ t('openbuild', 'Edit') }}
 						</NcButton>
-						<NcButton variant="tertiary" @click="openSandbox(rs)">
+						<NcButton type="tertiary" @click="openSandbox(rs)">
 							{{ t('openbuild', 'Test') }}
 						</NcButton>
-						<NcButton variant="tertiary" @click="runTests(rs)">
+						<NcButton type="tertiary" @click="runTests(rs)">
 							{{ t('openbuild', 'Run tests') }}
 						</NcButton>
-						<NcButton variant="tertiary" @click="exportRuleSet(rs)">
+						<NcButton type="tertiary" @click="exportRuleSet(rs)">
 							{{ t('openbuild', 'Export') }}
 						</NcButton>
 					</td>

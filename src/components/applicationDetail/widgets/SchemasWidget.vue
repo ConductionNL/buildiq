@@ -17,7 +17,7 @@
 			<h3 class="ob-schemas-widget__title">
 				{{ t('openbuild', 'Schemas') }}
 			</h3>
-			<NcButton variant="tertiary" @click="addSchema">
+			<NcButton type="tertiary" @click="addSchema">
 				{{ t('openbuild', '+ Add schema') }}
 			</NcButton>
 		</header>

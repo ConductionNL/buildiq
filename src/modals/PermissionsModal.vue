@@ -58,10 +58,10 @@
 			</div>
 
 			<div class="openbuild-permissions-modal__actions">
-				<NcButton variant="tertiary" @click="onClose">
+				<NcButton type="tertiary" @click="onClose">
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
-				<NcButton variant="primary" :disabled="saving" @click="save">
+				<NcButton type="primary" :disabled="saving" @click="save">
 					{{
 						saving
 							? t('openbuild', 'Saving permissions…')

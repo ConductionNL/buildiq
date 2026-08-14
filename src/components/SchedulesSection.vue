@@ -16,7 +16,7 @@
 			<h3 class="ob-schedules-section__title">
 				{{ t('openbuild', 'Scheduled tasks') }}
 			</h3>
-			<NcButton variant="secondary" @click="openAdd">
+			<NcButton type="secondary" @click="openAdd">
 				{{ t('openbuild', 'Add scheduled task') }}
 			</NcButton>
 		</header>
@@ -54,10 +54,10 @@
 								: t('openbuild', 'Enabled')
 						}}
 					</span>
-					<NcButton variant="tertiary" @click="openEdit(schedule)">
+					<NcButton type="tertiary" @click="openEdit(schedule)">
 						{{ t('openbuild', 'Edit') }}
 					</NcButton>
-					<NcButton variant="tertiary" @click="remove(schedule)">
+					<NcButton type="tertiary" @click="remove(schedule)">
 						{{ t('openbuild', 'Remove') }}
 					</NcButton>
 				</div>

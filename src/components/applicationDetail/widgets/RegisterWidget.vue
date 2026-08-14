@@ -68,11 +68,11 @@
 		<footer class="ob-register-widget__footer">
 			<NcButton
 				v-if="canImport"
-				variant="secondary"
+				type="secondary"
 				@click="$emit('import-data', { registerSlug, schemas })">
 				{{ t('openbuild', 'Import data') }}
 			</NcButton>
-			<NcButton variant="primary" @click="openInOpenRegister">
+			<NcButton type="primary" @click="openInOpenRegister">
 				{{ t('openbuild', 'Open in OpenRegister') }}
 			</NcButton>
 		</footer>

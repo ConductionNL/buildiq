@@ -36,7 +36,7 @@
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				:variant="destructive ? 'error' : 'primary'"
+				:type="destructive ? 'error' : 'primary'"
 				:disabled="busy"
 				@click="$emit('confirm')">
 				<template v-if="busy" #icon>

@@ -17,7 +17,7 @@
 				{{ t('openbuild', 'Documents') }}
 			</h3>
 			<NcButton
-				variant="secondary"
+				type="secondary"
 				:disabled="!docudeskAvailable"
 				:title="
 					docudeskAvailable
@@ -66,10 +66,10 @@
 					</span>
 				</div>
 				<div class="ob-documents-section__item-actions">
-					<NcButton variant="tertiary" @click="openEdit(doc)">
+					<NcButton type="tertiary" @click="openEdit(doc)">
 						{{ t('openbuild', 'Edit') }}
 					</NcButton>
-					<NcButton variant="tertiary" @click="detach(doc)">
+					<NcButton type="tertiary" @click="detach(doc)">
 						{{ t('openbuild', 'Detach') }}
 					</NcButton>
 				</div>

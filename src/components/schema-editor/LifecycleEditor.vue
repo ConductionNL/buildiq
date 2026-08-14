@@ -66,7 +66,7 @@
 						:label="t('openbuild', 'Label')"
 						@update:modelValue="updateState(sIndex, 'label', $event)" />
 					<NcButton
-						variant="error"
+						type="error"
 						:aria-label="t('openbuild', 'Remove state')"
 						@click="removeState(sIndex)">
 						<template #icon>
@@ -139,7 +139,7 @@
 								updateTransition(tIndex, 'label', $event)
 							" />
 						<NcButton
-							variant="error"
+							type="error"
 							:aria-label="t('openbuild', 'Remove transition')"
 							@click="removeTransition(tIndex)">
 							<template #icon>
@@ -209,7 +209,7 @@
 										)
 									" />
 								<NcButton
-									variant="error"
+									type="error"
 									:aria-label="t('openbuild', 'Remove action')"
 									@click="removeAction(tIndex, aIndex)">
 									<template #icon>

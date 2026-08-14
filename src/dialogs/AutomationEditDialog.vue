@@ -310,7 +310,7 @@
 					</template>
 
 					<NcButton
-						variant="error"
+						type="error"
 						:aria-label="t('openbuild', 'Remove action')"
 						@click="removeAction(index)">
 						{{ t('openbuild', 'Remove') }}
@@ -332,7 +332,7 @@
 				<NcButton @click="onClose">
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
-				<NcButton variant="primary" :disabled="saving" @click="onSave">
+				<NcButton type="primary" :disabled="saving" @click="onSave">
 					{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
 				</NcButton>
 			</div>

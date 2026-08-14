@@ -88,16 +88,16 @@
 						</span>
 					</template>
 					<template v-else-if="userDelta.exists">
-						<NcButton variant="tertiary" @click="$emit('edit-override')">
+						<NcButton type="tertiary" @click="$emit('edit-override')">
 							{{ t('openbuild', 'Edit') }}
 						</NcButton>
-						<NcButton variant="tertiary" @click="resetOverride">
+						<NcButton type="tertiary" @click="resetOverride">
 							{{ t('openbuild', 'Reset') }}
 						</NcButton>
 					</template>
 					<template v-else>
 						<NcButton
-							variant="secondary"
+							type="secondary"
 							:disabled="creating"
 							@click="createOverride">
 							{{ t('openbuild', 'Create override') }}

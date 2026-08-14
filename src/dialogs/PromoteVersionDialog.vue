@@ -109,12 +109,12 @@
 
 		<!-- Actions slot — always at NcDialog level -->
 		<template #actions>
-			<NcButton variant="tertiary" @click="onCancel">
+			<NcButton type="tertiary" @click="onCancel">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				v-if="targetVersion"
-				variant="primary"
+				type="primary"
 				:disabled="!isDestructiveGateMet"
 				@click="onConfirm">
 				{{ t('openbuild', 'Promote') }}

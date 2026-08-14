@@ -15,7 +15,7 @@
 			<h3 class="ob-workflows-section__title">
 				{{ t('openbuild', 'Workflows') }}
 			</h3>
-			<NcButton variant="secondary" @click="openAdd">
+			<NcButton type="secondary" @click="openAdd">
 				{{ t('openbuild', 'Attach case type') }}
 			</NcButton>
 		</header>
@@ -45,10 +45,10 @@
 					</span>
 				</div>
 				<div class="ob-workflows-section__item-actions">
-					<NcButton variant="tertiary" @click="openEdit(wf)">
+					<NcButton type="tertiary" @click="openEdit(wf)">
 						{{ t('openbuild', 'Edit') }}
 					</NcButton>
-					<NcButton variant="tertiary" @click="detach(wf)">
+					<NcButton type="tertiary" @click="detach(wf)">
 						{{ t('openbuild', 'Detach') }}
 					</NcButton>
 				</div>

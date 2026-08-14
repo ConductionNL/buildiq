@@ -22,7 +22,7 @@
 				data-testid="dry-run-payload" />
 
 			<NcButton
-				variant="primary"
+				type="primary"
 				:disabled="running"
 				data-testid="dry-run-button"
 				@click="run">

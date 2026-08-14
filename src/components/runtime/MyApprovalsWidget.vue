@@ -34,7 +34,7 @@
 			v-else-if="error"
 			class="my-approvals-widget__state my-approvals-widget__state--error">
 			<p>{{ t('openbuild', 'Could not load pending approvals.') }}</p>
-			<NcButton variant="secondary" @click="load">
+			<NcButton type="secondary" @click="load">
 				{{ t('openbuild', 'Retry') }}
 			</NcButton>
 		</div>
@@ -60,14 +60,14 @@
 				</div>
 				<div class="my-approvals-widget__row-actions">
 					<NcButton
-						variant="primary"
+						type="primary"
 						:disabled="!!deciding[step.id]"
 						data-testid="approve-button"
 						@click="decide(step, 'approve')">
 						{{ t('openbuild', 'Approve') }}
 					</NcButton>
 					<NcButton
-						variant="error"
+						type="error"
 						:disabled="!!deciding[step.id]"
 						data-testid="reject-button"
 						@click="decide(step, 'reject')">

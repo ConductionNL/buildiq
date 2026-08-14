@@ -15,10 +15,7 @@
 	<div class="automations-page">
 		<header class="automations-page__header">
 			<h2>{{ t('openbuild', 'Automations') }}</h2>
-			<NcButton
-				variant="primary"
-				:disabled="!selectedVersionId"
-				@click="openNew">
+			<NcButton type="primary" :disabled="!selectedVersionId" @click="openNew">
 				{{ t('openbuild', 'New automation') }}
 			</NcButton>
 		</header>
@@ -83,7 +80,7 @@
 						class="automations-page__drift-badge"
 						data-testid="drift-badge">
 						{{ t('openbuild', 'Drift detected') }}
-						<NcButton variant="tertiary" @click="recompile(automation)">
+						<NcButton type="tertiary" @click="recompile(automation)">
 							{{ t('openbuild', 'Recompile (overwrite)') }}
 						</NcButton>
 					</span>
@@ -102,13 +99,13 @@
 						@update:modelValue="toggleEnabled(automation, $event)">
 						{{ t('openbuild', 'Enabled') }}
 					</NcCheckboxRadioSwitch>
-					<NcButton variant="tertiary" @click="openTestPanel(automation)">
+					<NcButton type="tertiary" @click="openTestPanel(automation)">
 						{{ t('openbuild', 'Test') }}
 					</NcButton>
-					<NcButton variant="tertiary" @click="openEdit(automation)">
+					<NcButton type="tertiary" @click="openEdit(automation)">
 						{{ t('openbuild', 'Edit') }}
 					</NcButton>
-					<NcButton variant="tertiary" @click="remove(automation)">
+					<NcButton type="tertiary" @click="remove(automation)">
 						{{ t('openbuild', 'Delete') }}
 					</NcButton>
 				</div>

@@ -17,7 +17,7 @@
 	<div class="automation-action-list">
 		<div class="automation-action-list__header">
 			<span class="automation-action-list__label">{{ label }}</span>
-			<NcButton variant="tertiary" @click="addAction">
+			<NcButton type="tertiary" @click="addAction">
 				{{ t('openbuild', 'Add action') }}
 			</NcButton>
 		</div>
@@ -90,7 +90,7 @@
 			</template>
 
 			<NcButton
-				variant="error"
+				type="error"
 				:aria-label="t('openbuild', 'Remove follow-up action')"
 				@click="removeAction(index)">
 				{{ t('openbuild', 'Remove') }}
