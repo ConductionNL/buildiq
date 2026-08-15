@@ -205,9 +205,16 @@ test.describe('Exporting the flows an app is made of', () => {
 			.getByRole('button', { name: /^Actions$/i })
 			.first()
 			.click()
-		await page
+
+		// ⚠️ SCOPED TO THE OPENED MENU. An unscoped /^Settings$/i matches
+		// NEXTCLOUD'S OWN Settings button in the header user menu — the trace
+		// from the previous run shows it sitting there `[expanded]`, because
+		// that is what the click hit. The app's settings modal never opened and
+		// the failure surfaced 20 s later on the picker.
+		const actionsMenu = page.getByRole('menu').first()
+		await actionsMenu
 			.getByRole('menuitem', { name: /^Settings$/i })
-			.or(page.getByRole('button', { name: /^Settings$/i }))
+			.or(actionsMenu.getByRole('button', { name: /^Settings$/i }))
 			.first()
 			.click()
 
