@@ -551,7 +551,7 @@ abstract class AbstractToolHandler {
 	/**
 	 * Resolve <appSlug, versionSlug> to {version, appUuid, appName}, or {error, message}.
 	 *
-	 * @param object $objectService OpenRegister ObjectService instance.
+	 * @param object $this->objectService OpenRegister ObjectService instance.
 	 * @param string $appSlug Application slug to resolve.
 	 * @param string $versionSlug ApplicationVersion slug to resolve.
 	 *
