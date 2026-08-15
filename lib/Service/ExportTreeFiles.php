@@ -43,6 +43,8 @@ class ExportTreeFiles {
 	 * @param string $dir The directory.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-export-must-carry-the-flows-the-application-binds-and-the-agents-that-point-at-it
 	 */
 	public function removeTree(string $dir): void {
 		if (is_dir($dir) === false) {
@@ -77,6 +79,8 @@ class ExportTreeFiles {
 	 * @param string $dir The root to walk.
 	 *
 	 * @return array<int, string> Absolute file paths.
+	 *
+	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-export-must-carry-the-flows-the-application-binds-and-the-agents-that-point-at-it
 	 */
 	public function filePaths(string $dir): array {
 		$paths = [];
@@ -108,6 +112,8 @@ class ExportTreeFiles {
 	 * @param integer $timestamp mtime to stamp on every copied file.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-export-must-carry-the-flows-the-application-binds-and-the-agents-that-point-at-it
 	 */
 	public function copyTree(string $source, string $dest, array $skip, int $timestamp): void {
 		$iterator = new RecursiveIteratorIterator(
@@ -145,6 +151,8 @@ class ExportTreeFiles {
 	 * @param string $baseDir The root to walk.
 	 *
 	 * @return array<int, string> Relative paths, sorted.
+	 *
+	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-export-must-carry-the-flows-the-application-binds-and-the-agents-that-point-at-it
 	 */
 	public function listFilesSorted(string $baseDir): array {
 		$files = [];

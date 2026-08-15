@@ -110,6 +110,9 @@ class FlowAndAgentExportBundler {
 	 * @param string $applicationSlug Slug of the application whose agents to collect.
 	 *
 	 * @return array<int, array{kind: string, ref: string, reason: string}> What was skipped, for the job result.
+	 *
+	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-composition-bindings/spec.md#requirement-a-binding-must-be-resolved-against-the-openregister-flow-entity
+	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-unresolvable-binding-must-be-reported-not-silently-dropped
 	 */
 	public function bundle(string $rootDir, array $flows, string $applicationSlug): array {
 		$skipped = $this->bundleFlows(rootDir: $rootDir, flows: $flows);

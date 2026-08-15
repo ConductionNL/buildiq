@@ -50,6 +50,8 @@ class InitializeSettings implements IRepairStep {
 	 * Get the name of this repair step.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-imported-flow-must-be-runnable-not-merely-present
 	 */
 	public function getName(): string {
 		return 'Initialize AppTemplate register and schemas via ConfigurationService';
@@ -61,6 +63,9 @@ class InitializeSettings implements IRepairStep {
 	 * @param IOutput $output The output interface for progress reporting
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-imported-flow-must-be-runnable-not-merely-present
+	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-a-flow-naming-an-unregistered-node-type-must-be-surfaced-at-seeding
 	 */
 	public function run(IOutput $output): void {
 		$output->info('Initializing AppTemplate configuration...');
