@@ -1,0 +1,71 @@
+{
+	"_comment": "OpenSpec register fragment — openbuild-app-binds-flows-and-agents (chain head, kind: config; ADR-032 chaining, ADR-031 declarative-only, ADR-065 one flow engine). Adds the optional `flows` and `agents` array properties to the shared `openbuild` register's Application schema, siblings to `dataRegisters` (20-) and `connectors` (21-). SettingsService::deepMergeConfig recurses into components.schemas.Application.properties — both keyed objects already exist in the base config — and adds only these two keys; Application.required and every other Application property are untouched, and no other schema is touched. Both bindings are OPTIONAL: absent means 'binds none', which is what all 30 Application objects that predate this fragment mean. Nothing reads these bindings yet — the follower spec openbuild-exports-flows-and-agents (kind: code) adds the export bundler, the install/update-time seeding and the e2e coverage. Bindings address the target by SLUG rather than numeric id because ids are per-instance and an exported app carrying one would resolve to a different object, or to nothing, wherever it landed. Validation constrains the string SHAPE only; resolvability is the consumer's problem and the consumer reports it, matching DataRegisterExportBundler's existing precedent of skipping an unresolvable binding with a log line rather than failing the export. See design.md Decisions 1-3 and specs/app-composition-bindings/spec.md.",
+	"components": {
+		"schemas": {
+			"Application": {
+				"properties": {
+					"flows": {
+						"title": "Flows",
+						"type": "array",
+						"default": [],
+						"items": {
+							"type": "object",
+							"title": "Flow Binding",
+							"required": [
+								"flow"
+							],
+							"additionalProperties": false,
+							"properties": {
+								"flow": {
+									"title": "Flow Slug",
+									"type": "string",
+									"pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+									"minLength": 2,
+									"maxLength": 64,
+									"description": "Slug of the OpenRegister flow this app is composed of, resolved against the OpenRegister `Flow` ENTITY (OCA\\OpenRegister\\Db\\FlowMapper) — the store the flow engine actually executes. ⚠️ An `agentflow` OBJECT store in the hermiq register mirrors some definitions and drifts from the entity: a definition written to the object left the engine executing the previous graph, with the run log showing the old node set and no error surfaced anywhere. Consumers MUST resolve the entity. Per ADR-065 there is exactly ONE flow engine, in OpenRegister; a flow that calls an agent is an ORDINARY flow whose nodes are agentic node types contributed to the engine's registry by hermiq (`hermiq.workload-step`, `hermiq.workload-collect`), not a separate kind of object, and it binds through this property like any other flow."
+								},
+								"label": {
+									"title": "Display Label",
+									"type": "string",
+									"maxLength": 128,
+									"description": "Optional human-readable label shown instead of the raw flow slug (e.g. `Hydra sequencer`). Purely a UI convenience; absent falls back to the raw slug."
+								}
+							}
+						},
+						"description": "OpenRegister flows this Application is composed of. Read by the export so an exported app carries the flows that make it do anything; absent means the app binds none. Slug-addressed so the binding survives export to another instance. A slug that resolves to nothing MUST NOT make the Application invalid — renaming a flow is ordinary — and is reported by the consumer rather than dropped at write time."
+					},
+					"agents": {
+						"title": "Agents",
+						"type": "array",
+						"default": [],
+						"items": {
+							"type": "object",
+							"title": "Agent Binding",
+							"required": [
+								"agent"
+							],
+							"additionalProperties": false,
+							"properties": {
+								"agent": {
+									"title": "Agent Slug",
+									"type": "string",
+									"pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+									"minLength": 2,
+									"maxLength": 64,
+									"description": "Slug of the agent this app is composed of (e.g. `juan-claude-van-damme`). Slug rather than numeric id for the same reason as `flows`: ids are per-instance and do not survive an export."
+								},
+								"label": {
+									"title": "Display Label",
+									"type": "string",
+									"maxLength": 128,
+									"description": "Optional human-readable label shown instead of the raw agent slug (e.g. `Code reviewer`). Purely a UI convenience; absent falls back to the raw slug."
+								}
+							}
+						},
+						"description": "Agents this Application is composed of. Read by the export so an exported app carries its agents; absent means the app binds none. Same binding rules as `flows`: slug-addressed, optional, and a dangling reference is reported by the consumer rather than rejected at write time."
+					}
+				}
+			}
+		}
+	}
+}
