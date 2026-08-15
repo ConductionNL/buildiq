@@ -106,3 +106,35 @@ The "no builder UI picker" gap below is CLOSED, and the e2e now drives the inter
 
 - **The e2e round trip re-imports onto the SAME instance.** It exercises definition → entity → execution and UUID preservation, which is the chain that fails silently. It does not exercise cross-instance collision, which needs a second Nextcloud.
 - **One eslint rule fails on the new spec** (`import-extensions/extensions`, wanting `./support/baseUrl.ts`). All 22 e2e specs violate it and `allowImportingTsExtensions` is unset, so adding the extension would break compilation. Pre-existing repo-wide config mismatch; not fixed here.
+
+## Verified against the live instance (2026-08-15)
+
+Unit tests prove the decisions; this proves the feature works on real data, which is a different claim.
+
+`hydra-console` was bound to its three real flows and bundled:
+
+| | |
+| --- | --- |
+| flows bundled | 3, **0 skipped** |
+| Hydra sequencer | **76 nodes, 93 edges**, uuid `6b14a1fd-…` preserved |
+| agentic node types carried | `hermiq.workload-step`, `hermiq.workload-collect` |
+| `enabled` exported | `false` |
+
+That last row is ADR-065 proven on production-shaped data rather than a fixture: the sequencer is an ordinary OpenRegister flow that happens to use hermiq's node types, and it exported through the same path as any other with those nodes untouched.
+
+**The agent path, with no binding at all** — `hello-world`, bundled with `flows: []`:
+
+- 1 agent found by `applicationSlug` alone
+- the `@self` envelope stripped (it is instance-local and must not travel)
+- no empty `flows/` directory created
+
+**A dangling binding**, mixed with a good one:
+
+```
+skipped: [{"kind":"flow","ref":"00000000-0000-0000-0000-000000000000","reason":"no flow with that UUID"}]
+flows written: 1
+```
+
+The good flow survives the bad one, and the bad one is REPORTED rather than dropped — an operator reads the finished job, never the log.
+
+⚠️ `hydra-console` keeps its three flow bindings. The chain head listed back-filling as a Non-Goal, and this is a deliberate exception: making hydra exportable is the question that started this work, and the binding is what makes the answer true rather than theoretical.
