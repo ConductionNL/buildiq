@@ -526,7 +526,7 @@ class Application extends App implements IBootstrap {
 			ApplicationVersionOwnerGuard::class,
 			static function ($c): ApplicationVersionOwnerGuard {
 				return new ApplicationVersionOwnerGuard(
-					objectService: $c->get(ObjectService::class),
+					objectService: $c->get(ObjectServiceInterface::class),
 					permissionResolver: $c->get(PermissionResolver::class),
 					userManager: $c->get(IUserManager::class),
 					logger: $c->get(LoggerInterface::class)

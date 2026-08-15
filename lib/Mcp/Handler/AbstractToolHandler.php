@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Mcp\Handler;
 
+use Psr\Container\ContainerInterface;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
