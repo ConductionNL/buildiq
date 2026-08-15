@@ -38,7 +38,14 @@ use RuntimeException;
 require_once __DIR__ . '/../../../lib/Resources/template/lib/Service/FlowSeedService.php';
 
 /**
- * @coversNothing Template scaffold, required explicitly; excluded from the classmap by design.
+ * @covers \OCA\AppTemplate\Service\FlowSeedService
+ *
+ * The subject is template scaffold — excluded from the CLASSMAP, but `lib/` is
+ * included in COVERAGE with no exclusion for `lib/Resources/template/`, so its
+ * statements count as source either way. `@coversNothing` therefore had the
+ * effect of shipping ~200 uncovered statements while running tests that
+ * exercise every one of them: the ratchet was right, and it was measuring an
+ * annotation rather than a gap.
  */
 final class FlowSeedServiceTest extends TestCase {
 
