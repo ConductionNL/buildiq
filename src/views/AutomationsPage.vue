@@ -15,6 +15,9 @@
 	<div class="automations-page">
 		<header class="automations-page__header">
 			<h2>{{ t('openbuild', 'Automations') }}</h2>
+			<NcButton type="secondary" :disabled="!selectedApp" @click="openFlows">
+				{{ t('openbuild', 'Edit flows…') }}
+			</NcButton>
 			<NcButton type="primary" :disabled="!selectedVersionId" @click="openNew">
 				{{ t('openbuild', 'New automation') }}
 			</NcButton>
@@ -127,6 +130,20 @@
 			:automation="testingAutomation"
 			@close="testPanelOpen = false" />
 
+		<!--
+		  flow-engine-unification task 6.4: the shared node/edge canvas, scoped
+		  to this built application (`app`), not the fixed "openbuild" — each
+		  application under construction gets its own flows, mirroring how
+		  automations are already scoped by `applicationSlug` above. CnFlowDetail
+		  treats the literal id "new" as "start blank", so this always opens
+		  usably even before the app has a first flow.
+		-->
+		<CnFlowEditModal
+			v-if="flowModalOpen"
+			:flowId="editingFlowId"
+			:app="selectedApp ? selectedApp.slug : null"
+			@close="flowModalOpen = false" />
+
 		<ConfirmActionDialog
 			v-model:open="confirmDeleteOpen"
 			:name="t('openbuild', 'Delete automation')"
@@ -154,6 +171,7 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
+import { CnFlowEditModal } from '@conduction/nextcloud-vue'
 import AutomationEditDialog from '../dialogs/AutomationEditDialog.vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 import AutomationTestPanelModal from '../modals/AutomationTestPanelModal.vue'
@@ -170,6 +188,7 @@ export default {
 		AutomationEditDialog,
 		AutomationTestPanelModal,
 		ConfirmActionDialog,
+		CnFlowEditModal,
 	},
 
 	data() {
@@ -185,6 +204,8 @@ export default {
 			statusByUuid: {},
 			errorMessage: '',
 			editDialogOpen: false,
+			flowModalOpen: false,
+			editingFlowId: 'new',
 			editingAutomation: null,
 			testPanelOpen: false,
 			testingAutomation: null,
@@ -425,6 +446,20 @@ export default {
 				actions: [],
 			}
 			this.editDialogOpen = true
+		},
+
+		/**
+		 * Open the shared flow canvas for the selected application.
+		 *
+		 * `flow-engine-unification` task 6.4. Always opens "new" — this is a
+		 * single entry point, not a list; a picker over this application's
+		 * existing flows can be added if more than one turns out to be needed.
+		 *
+		 * @return {void}
+		 */
+		openFlows() {
+			this.editingFlowId = 'new'
+			this.flowModalOpen = true
 		},
 
 		/**
