@@ -56,27 +56,38 @@ webpackConfig.entry = {
 // of the resolved node_modules package, producing wrong/broken builds.
 const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
 const localLibPkg = path.resolve(__dirname, '../nextcloud-vue/package.json')
-let useLocalLib = process.env.USE_LOCAL_LIB !== 'false' && fs.existsSync(localLib)
-if (useLocalLib && fs.existsSync(localLibPkg)) {
+// USE_LOCAL_LIB is opt-IN (ADR-090). Building against a developer's working
+// checkout is the wrong default for a build that can ship.
+let useLocalLib = process.env.USE_LOCAL_LIB === 'true' && fs.existsSync(localLib)
+if (useLocalLib) {
+	let localVersion = 'unreadable'
+	let satisfied = false
 	try {
-		// semver is an optional transitive dep — the try/catch degrades
-		// gracefully when it is absent, so it is intentionally not declared
-		// as a direct dependency of this app.
+		// semver is an optional transitive dep, so the require can fail.
 		// eslint-disable-next-line n/no-extraneous-require
 		const semver = require('semver')
 		const required =
 			require('./package.json').dependencies['@conduction/nextcloud-vue']
-		const localVersion = require(localLibPkg).version
-		if (!semver.satisfies(localVersion, required, { includePrerelease: true })) {
-			// eslint-disable-next-line no-console
-			console.warn(
-				`[webpack] Ignoring local ../nextcloud-vue (v${localVersion}); it does not satisfy `
-					+ `the required range "${required}". Building against node_modules instead.`,
-			)
-			useLocalLib = false
-		}
+		localVersion = require(localLibPkg).version
+		satisfied = semver.satisfies(localVersion, required, {
+			includePrerelease: true,
+		})
 	} catch (e) {
-		// semver unavailable or package read failed — keep the existsSync default.
+		// Fail CLOSED. This previously kept the existsSync default, so an absent
+		// semver silently left the sibling ENABLED — the one case the check exists
+		// for is the case it stopped covering. A guard that degrades to "allow" is
+		// not a guard.
+		satisfied = false
+	}
+
+	if (!satisfied) {
+		// eslint-disable-next-line no-console
+		console.warn(
+			`[webpack] Ignoring local ../nextcloud-vue (v${localVersion}); it does not `
+				+ "satisfy this app's declared @conduction/nextcloud-vue range. "
+				+ 'Building against node_modules instead.',
+		)
+		useLocalLib = false
 	}
 }
 
