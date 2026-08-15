@@ -84,6 +84,18 @@ class ExportService {
 	private string $templateRoot;
 
 	/**
+	 * What the last bundling run could not resolve.
+	 *
+	 * Returned to the caller so the export job's RESULT can name it. The
+	 * data-register precedent logs a skip and moves on, which is correct about
+	 * not failing the export and wrong about who finds out: an operator reads
+	 * the finished job, never the log.
+	 *
+	 * @var array<int, array{kind: string, ref: string, reason: string}>
+	 */
+	private array $lastSkipped = [];
+
+	/**
 	 * Deterministic ZIP entry timestamp (REQ-OBEX-008).
 	 *
 	 * @var integer
@@ -106,6 +118,7 @@ class ExportService {
 		private PlaceholderResolver $placeholderResolver,
 		private LoggerInterface $logger,
 		private DataRegisterExportBundler $dataRegisterBundler,
+		private FlowAndAgentExportBundler $flowAndAgentBundler,
 	) {
 		$this->templateRoot = dirname(__DIR__) . '/Resources/template';
 		// 2026-01-01T00:00:00Z — fixed for deterministic ZIPs.
@@ -139,11 +152,22 @@ class ExportService {
 		array $context,
 		string $jobUuid,
 		array $dataRegisters = [],
+		array $flows = [],
+		string $applicationSlug = '',
 	): string {
 		$scratchDir = $this->prepareScratchDir(jobUuid: $jobUuid);
 		$this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
 		$this->resolvePlaceholders(rootDir: $scratchDir, context: $context);
 		$this->bundleDataRegisterSchemas(rootDir: $scratchDir, dataRegisters: $dataRegisters);
+
+		// The flows the app is composed of, and the agents that point at it.
+		// Skips are RETURNED so the job result can name them — an operator
+		// reads the finished job, not the log.
+		$this->lastSkipped = $this->flowAndAgentBundler->bundle(
+			rootDir: $scratchDir,
+			flows: $flows,
+			applicationSlug: $applicationSlug
+		);
 
 		// Audit-trail entry names only the source — never the PAT, never secret values.
 		$this->logger->info(
@@ -157,6 +181,15 @@ class ExportService {
 
 		return $this->packageZip(sourceDir: $scratchDir, jobUuid: $jobUuid);
 	}//end generateAppZip()
+
+	/**
+	 * What the last export could not resolve.
+	 *
+	 * @return array<int, array{kind: string, ref: string, reason: string}> Skips, empty when everything resolved.
+	 */
+	public function lastSkipped(): array {
+		return $this->lastSkipped;
+	}//end lastSkipped()
 
 	/**
 	 * Build the installable NC-app scaffold as an in-memory `path => contents` map.
@@ -183,7 +216,7 @@ class ExportService {
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 */
-	public function buildScaffoldMap(array $context, array $dataRegisters = []): array {
+	public function buildScaffoldMap(array $context, array $dataRegisters = [], array $flows = [], string $applicationSlug = ''): array {
 		$jobUuid = 'scaffold-' . ((string)($context['appId'] ?? 'app')) . '-' . uniqid();
 		$scratch = $this->prepareScratchDir(jobUuid: $jobUuid);
 
@@ -192,6 +225,14 @@ class ExportService {
 			$this->resolvePlaceholders(rootDir: $scratch, context: $context);
 			if ($dataRegisters !== []) {
 				$this->bundleDataRegisterSchemas(rootDir: $scratch, dataRegisters: $dataRegisters);
+			}
+
+			if ($flows !== [] || $applicationSlug !== '') {
+				$this->lastSkipped = $this->flowAndAgentBundler->bundle(
+					rootDir: $scratch,
+					flows: $flows,
+					applicationSlug: $applicationSlug
+				);
 			}
 
 			$map = [];
