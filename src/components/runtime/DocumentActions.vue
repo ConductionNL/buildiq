@@ -28,7 +28,7 @@
 				:key="att.id"
 				class="ob-document-actions__row">
 				<NcButton
-					type="secondary"
+					variant="secondary"
 					:disabled="isBusy(att)"
 					@click="onGenerate(att)">
 					{{ isBusy(att) ? t('openbuild', 'Generating…') : att.label }}

@@ -17,7 +17,7 @@
 			<h3 class="ob-groups-widget__title">
 				{{ t('openbuild', 'Groups & users') }}
 			</h3>
-			<NcButton type="tertiary" @click="openEditor">
+			<NcButton variant="tertiary" @click="openEditor">
 				{{ t('openbuild', 'Manage permissions') }}
 			</NcButton>
 		</header>

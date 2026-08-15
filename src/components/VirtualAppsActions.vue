@@ -23,14 +23,14 @@
 			<NcButton
 				v-for="opt in filterOptions"
 				:key="opt.value"
-				:type="activeFilter === opt.value ? 'secondary' : 'tertiary'"
+				:variant="activeFilter === opt.value ? 'secondary' : 'tertiary'"
 				:pressed="activeFilter === opt.value"
 				@click="setFilter(opt.value)">
 				{{ opt.label }}
 			</NcButton>
 		</div>
 
-		<NcButton type="primary" @click="showWizard = true">
+		<NcButton variant="primary" @click="showWizard = true">
 			{{ t('openbuild', 'Add app') }}
 		</NcButton>
 

@@ -24,7 +24,7 @@
 			:loading="loading">
 			<!-- Create app — primary header action (opens the creation wizard). -->
 			<template #header-actions>
-				<NcButton type="primary" @click="showWizard = true">
+				<NcButton variant="primary" @click="showWizard = true">
 					{{ t('openbuild', 'Create app') }}
 				</NcButton>
 			</template>
@@ -108,7 +108,7 @@
 						</template>
 						<template #row-actions="{ row }">
 							<NcButton
-								type="tertiary"
+								variant="tertiary"
 								:aria-label="
 									t('openbuild', 'Open {name}', {
 										name: row.name || row.slug,

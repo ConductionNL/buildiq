@@ -45,8 +45,8 @@
 				type="text"
 				class="form-page-editor__input"
 				:value="config.submitEndpoint || ''"
-				:placeholder="t('openbuild', '/api/objects/:slug/...')"
-				:aria-label="t('openbuild', '/api/objects/:slug/...')"
+				:placeholder="t('openbuild', '/api/objects/:slug/…')"
+				:aria-label="t('openbuild', '/api/objects/:slug/…')"
 				:aria-invalid="isInvalid('submitEndpoint')"
 				@input="setSubmitEndpoint($event.target.value)" />
 			<InlineFieldMark

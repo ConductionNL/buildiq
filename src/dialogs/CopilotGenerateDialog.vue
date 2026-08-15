@@ -115,7 +115,7 @@
 					v-if="
 						state === 'idle' || state === 'planning' || state === 'error'
 					"
-					type="primary"
+					variant="primary"
 					:disabled="!brief.trim() || state === 'planning'"
 					@click="onGenerate">
 					{{
@@ -127,7 +127,7 @@
 				<NcButton
 					v-else
 					data-testid="copilot-confirm"
-					type="primary"
+					variant="primary"
 					:disabled="!canApprove || state === 'executing'"
 					@click="onConfirm">
 					{{

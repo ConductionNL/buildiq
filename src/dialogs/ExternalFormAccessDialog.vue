@@ -103,12 +103,12 @@
 			</NcButton>
 			<NcButton
 				v-if="hadEnabledEntry"
-				type="tertiary"
+				variant="tertiary"
 				:disabled="saving"
 				@click="onDisable">
 				{{ t('openbuild', 'Disable') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="saving" @click="onSave">
+			<NcButton variant="primary" :disabled="saving" @click="onSave">
 				{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
 			</NcButton>
 		</template>

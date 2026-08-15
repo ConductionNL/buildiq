@@ -23,7 +23,7 @@
 			v-else-if="detailError"
 			class="procest-case-status-panel__state procest-case-status-panel__state--error">
 			<p>{{ t('openbuild', 'Could not load the linked case.') }}</p>
-			<NcButton type="secondary" @click="reload">
+			<NcButton variant="secondary" @click="reload">
 				{{ t('openbuild', 'Retry') }}
 			</NcButton>
 		</div>
@@ -32,7 +32,7 @@
 			<p>
 				{{ t('openbuild', 'No Procest case is linked to this object yet.') }}
 			</p>
-			<NcButton type="primary" :disabled="starting" @click="startNow">
+			<NcButton variant="primary" :disabled="starting" @click="startNow">
 				{{
 					starting
 						? t('openbuild', 'Starting…')
