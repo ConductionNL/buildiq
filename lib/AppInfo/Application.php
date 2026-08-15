@@ -43,6 +43,7 @@ use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenBuild\Service\SettingsService;
 use OCA\OpenBuild\Settings\AdminSettings;
 use OCA\OpenRegister\AppHost\Bootstrap;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Event\ApprovalStepApprovedEvent;
 use OCA\OpenRegister\Event\ApprovalStepRejectedEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -94,6 +95,22 @@ class Application extends App implements IBootstrap {
 	 * @spec openspec/specs/openbuild-rbac/spec.md
 	 */
 	public function register(IRegistrationContext $context): void {
+
+		// ADR-084: services type-hint OpenRegister's PUBLISHED interface, never its
+		// concrete class, so this app's unit tests can mock a type they are able to
+		// load. Nextcloud autowires concrete classes across apps but not interfaces,
+		// so the binding has to be stated — and the composition root is where this
+		// app says how it is wired.
+		//
+		// An ALIAS, not a factory: it resolves when something actually asks for the
+		// interface, so an instance without OpenRegister fails at the route that
+		// needed the data rather than at registration. Both names are strings and
+		// neither triggers an autoload, which is what keeps ADR-083 rule 3's promise
+		// that the start screen still boots.
+		$context->registerServiceAlias(
+			ObjectServiceInterface::class,
+			'OCA\OpenRegister\Service\ObjectService'
+		);
 		// ADR-040 AppHost adoption: one call wires the standard plumbing —
 		// the generic dashboard/settings/preferences controllers, the
 		// observability (health + metrics) controllers, the install repair

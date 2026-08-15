@@ -45,7 +45,7 @@ namespace OCA\OpenBuild\Service;
 use OCA\OpenBuild\Exception\AppRepoParseException;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Server;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -129,7 +129,7 @@ class GitHubAppSyncService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OR object CRUD (load/save Application + versions).
+	 * @param ObjectServiceInterface $objectService OR object CRUD (load/save Application + versions).
 	 * @param RegisterMapper $registerMapper Provisions the draft register on pull.
 	 * @param SchemaMapper $schemaMapper Clones pulled companion schemas into the draft register.
 	 * @param AppRepoSerializer $serializer Local → repo file map (change 1).
@@ -141,7 +141,7 @@ class GitHubAppSyncService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly AppRepoSerializer $serializer,

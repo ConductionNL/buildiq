@@ -45,7 +45,7 @@ use OCA\OpenBuild\AppInfo\Application;
 use OCA\OpenBuild\Service\ApplicationVersionService;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -113,7 +113,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics
-	 * @param ObjectService $objectService OpenRegister object service
+	 * @param ObjectServiceInterface $objectService OpenRegister object service
 	 * @param RegisterService $registerService OpenRegister register service
 	 * @param RegisterMapper $registerMapper Resolves register slugs
 	 * @param SchemaMapper $schemaMapper Resolves schema slugs
@@ -123,7 +123,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterService $registerService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,

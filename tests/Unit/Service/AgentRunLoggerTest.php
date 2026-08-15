@@ -26,6 +26,7 @@ namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\AgentRunLogger;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -38,7 +39,7 @@ use RuntimeException;
 class AgentRunLoggerTest extends TestCase {
 
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -55,7 +56,7 @@ class AgentRunLoggerTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 	}//end setUp()
 

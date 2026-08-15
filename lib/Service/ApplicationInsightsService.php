@@ -58,7 +58,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IUser;
@@ -125,7 +125,7 @@ class ApplicationInsightsService {
 	 * Per ADR-022 — no app-local DB access; everything flows through
 	 * OpenRegister abstractions.
 	 *
-	 * @param ObjectService $objectService OR object surface
+	 * @param ObjectServiceInterface $objectService OR object surface
 	 * @param AuditTrailMapper $auditTrailMapper Audit-trail aggregations (chart + actors + counts)
 	 * @param SchemaMapper $schemaMapper Schema slug-to-integer-ID resolver
 	 * @param RegisterMapper $registerMapper Register lookup (installed-app footprint for hybrid apps)
@@ -136,7 +136,7 @@ class ApplicationInsightsService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly AuditTrailMapper $auditTrailMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly RegisterMapper $registerMapper,

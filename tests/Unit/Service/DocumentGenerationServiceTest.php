@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Files\AppData\IAppDataFactory;
 use OCP\Files\Folder;
@@ -59,7 +60,7 @@ use stdClass;
  */
 final class DocumentGenerationServiceTest extends TestCase {
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -135,7 +136,7 @@ final class DocumentGenerationServiceTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->ownerImpersonator = $this->createMock(JobOwnerImpersonator::class);
@@ -405,7 +406,7 @@ final class DocumentGenerationServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testUnresolvableApplicationFailsClosed(): void {
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
 		$this->service = new DocumentGenerationService(

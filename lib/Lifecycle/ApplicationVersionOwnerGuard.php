@@ -49,7 +49,7 @@ use OCA\OpenBuild\Service\ApplicationVersionService;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
@@ -78,7 +78,7 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OR object surface used to load the parent Application.
+	 * @param ObjectServiceInterface $objectService OR object surface used to load the parent Application.
 	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (same grammar as the controllers).
 	 * @param IUserManager $userManager Resolves the acting UID to an IUser for the resolver.
 	 * @param LoggerInterface $logger PSR logger for fail-closed diagnostics.
@@ -86,7 +86,7 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly PermissionResolver $permissionResolver,
 		private readonly IUserManager $userManager,
 		private readonly LoggerInterface $logger,

@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Service;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -53,13 +53,13 @@ class AgentRunLogger {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OpenRegister object surface — the only write path this class uses.
+	 * @param ObjectServiceInterface $objectService OpenRegister object surface — the only write path this class uses.
 	 * @param LoggerInterface $logger PSR logger for non-fatal persistence failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

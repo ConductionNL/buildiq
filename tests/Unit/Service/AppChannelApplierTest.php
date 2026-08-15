@@ -42,6 +42,7 @@ use OCA\OpenBuild\Service\SkillChannelDelegate;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -64,7 +65,7 @@ class AppChannelApplierTest extends TestCase {
 	/**
 	 * OR object read/write double.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -102,7 +103,7 @@ class AppChannelApplierTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->appManager = $this->createMock(IAppManager::class);

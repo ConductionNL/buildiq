@@ -39,7 +39,7 @@ namespace OCA\OpenBuild\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 
@@ -81,7 +81,7 @@ class IconService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OpenRegister object service
+	 * @param ObjectServiceInterface $objectService OpenRegister object service
 	 * @param FileService $fileService OpenRegister file service
 	 * @param LoggerInterface $logger PSR logger
 	 * @param string|null $serverRoot Server root override (defaults to \OC::$SERVERROOT)
@@ -91,7 +91,7 @@ class IconService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly FileService $fileService,
 		private readonly LoggerInterface $logger,
 		?string $serverRoot = null,

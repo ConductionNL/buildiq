@@ -43,7 +43,7 @@ use OCA\OpenBuild\Service\Copilot\CopilotPlanValidator;
 use OCA\OpenBuild\Service\Copilot\CopilotPromptBuilder;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -138,7 +138,7 @@ class CopilotService {
 	 *                                      `OCP\TaskProcessing\IManager` (NC
 	 *                                      30+ only).
 	 * @param LoggerInterface $logger PSR logger for diagnostics.
-	 * @param ObjectService $objectService OpenRegister object surface (reads only
+	 * @param ObjectServiceInterface $objectService OpenRegister object surface (reads only
 	 *                                     — writes flow through
 	 *                                     `invokeTool()`).
 	 * @param IUserManager $userManager Resolves a uid string to an `IUser` for RBAC.
@@ -159,7 +159,7 @@ class CopilotService {
 	public function __construct(
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
 		private readonly PermissionResolver $permissionResolver,

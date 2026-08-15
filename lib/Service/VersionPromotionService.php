@@ -59,7 +59,7 @@ use OCA\OpenBuild\Exception\NoPromoteTargetException;
 use OCA\OpenBuild\Exception\PromotionFailedException;
 use OCA\OpenBuild\Exception\VersionLockedException;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -125,14 +125,14 @@ class VersionPromotionService {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger
-	 * @param ObjectService $objectService OR object surface (lock, save, search, delete)
+	 * @param ObjectServiceInterface $objectService OR object surface (lock, save, search, delete)
 	 * @param RegisterMapper $registerMapper Resolves register slugs to entities
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterMapper $registerMapper,
 	) {
 	}//end __construct()

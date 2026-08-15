@@ -29,6 +29,7 @@ namespace OCA\OpenBuild\Tests\Unit\Repair;
 use OCA\OpenBuild\Repair\SeedApplicationTemplates;
 use OCA\OpenBuild\Service\TemplateSeedService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
@@ -63,7 +64,7 @@ class SeedApplicationTemplatesTest extends TestCase {
 	/**
 	 * Mock OR ObjectService.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -99,7 +100,7 @@ class SeedApplicationTemplatesTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->output = $this->createMock(IOutput::class);
 		$this->appManager = $this->createMock(IAppManager::class);
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 	}//end setUp()
 
 	/**

@@ -30,6 +30,7 @@ use OCA\OpenBuild\Service\ApplicationVersionService;
 use OCA\OpenBuild\Service\AutomationCompilerService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -41,7 +42,7 @@ use Psr\Log\NullLogger;
  */
 final class ApplicationVersionServiceAutomationCloneTest extends TestCase {
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -63,7 +64,7 @@ final class ApplicationVersionServiceAutomationCloneTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->automationCompiler = $this->createMock(AutomationCompilerService::class);
 
 		$this->service = new ApplicationVersionService(

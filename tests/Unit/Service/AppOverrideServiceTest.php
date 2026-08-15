@@ -31,6 +31,7 @@ namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\AppOverrideService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -44,7 +45,7 @@ class AppOverrideServiceTest extends TestCase {
 	/**
 	 * Mock OR object service.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -75,7 +76,7 @@ class AppOverrideServiceTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->appManager = $this->createMock(IAppManager::class);
 

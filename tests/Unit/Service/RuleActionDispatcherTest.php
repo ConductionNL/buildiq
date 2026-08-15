@@ -29,6 +29,7 @@ namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\JobOwnerImpersonator;
 use OCA\OpenBuild\Service\RuleActionDispatcher;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -47,7 +48,7 @@ use Psr\Log\NullLogger;
  */
 final class RuleActionDispatcherTest extends TestCase {
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -79,7 +80,7 @@ final class RuleActionDispatcherTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->notificationManager = $this->createMock(IManager::class);
 		$this->httpClientService = $this->createMock(IClientService::class);
 		$this->userSession = $this->createMock(IUserSession::class);

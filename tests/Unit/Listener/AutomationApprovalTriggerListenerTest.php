@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Service\ApprovalService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -47,7 +48,7 @@ use Psr\Log\NullLogger;
  */
 final class AutomationApprovalTriggerListenerTest extends TestCase {
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -84,7 +85,7 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->chainMapper = $this->createMock(ApprovalChainMapper::class);
 		$this->stepMapper = $this->createMock(ApprovalStepMapper::class);

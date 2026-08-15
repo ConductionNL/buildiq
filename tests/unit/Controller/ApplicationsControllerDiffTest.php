@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -61,7 +62,7 @@ class ApplicationsControllerDiffTest extends TestCase {
 	/**
 	 * Mock OR ObjectService.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -82,7 +83,7 @@ class ApplicationsControllerDiffTest extends TestCase {
 
 		$request = $this->createMock(IRequest::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 
 		$registerEntity = $this->getMockBuilder(Register::class)
 			->disableOriginalConstructor()
@@ -336,7 +337,7 @@ class ApplicationsControllerDiffTest extends TestCase {
 		// outsider is NOT an admin.
 		$noAdminGroupManager->method('isInGroup')->willReturn(false);
 
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
 
 		$route = ['applicationUuid' => 'app-uuid-1'];
 		$application = [

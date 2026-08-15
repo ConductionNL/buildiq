@@ -39,6 +39,7 @@ namespace OCA\OpenBuild\Tests\Integration;
 use OCA\OpenBuild\Listener\ApplicationVersionSnapshotListener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -61,7 +62,7 @@ class PublishRollbackTest extends TestCase {
 	/**
 	 * Mocked OR ObjectService — records every saveObject call.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $fakeObjectService;
 
@@ -105,7 +106,7 @@ class PublishRollbackTest extends TestCase {
 		$this->store = [];
 		$this->uuidCounter = 0;
 
-		$this->fakeObjectService = $this->createMock(ObjectService::class);
+		$this->fakeObjectService = $this->createMock(ObjectServiceInterface::class);
 
 		// ObjectService::saveObject(array|ObjectEntity $object, ?array $extend, mixed $register, mixed $schema):
 		// the SUT calls it with named args (object/register/schema) — captured here as positional [object, [], register, schema].

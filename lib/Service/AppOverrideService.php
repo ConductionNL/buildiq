@@ -42,7 +42,7 @@ namespace OCA\OpenBuild\Service;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -81,7 +81,7 @@ class AppOverrideService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OpenRegister object service (hard dep via info.xml).
+	 * @param ObjectServiceInterface $objectService OpenRegister object service (hard dep via info.xml).
 	 * @param LoggerInterface $logger PSR logger for diagnostics.
 	 * @param IAppManager $appManager Resolves a fleet app's human-readable display name.
 	 * @param AppOverrideDeltaValidator $deltaValidator Stateless delta shape + blank-detection validator.
@@ -89,7 +89,7 @@ class AppOverrideService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly LoggerInterface $logger,
 		private readonly IAppManager $appManager,
 		private readonly AppOverrideDeltaValidator $deltaValidator = new AppOverrideDeltaValidator(),

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Tests\Unit\Repair;
 
 use OCA\OpenBuild\Repair\PopulateApplicationPermissions;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -43,7 +44,7 @@ class PopulateApplicationPermissionsTest extends TestCase {
 	/**
 	 * Mock OR ObjectService.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -64,7 +65,7 @@ class PopulateApplicationPermissionsTest extends TestCase {
 
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->output = $this->createMock(IOutput::class);
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 
 		// `ObjectService::runAsSystem()` really invokes the given callable and
 		// returns its result — mirrors the real elevation, which is
@@ -221,7 +222,7 @@ class PopulateApplicationPermissionsTest extends TestCase {
 		// Fresh mock, scoped to this test: a single matcher owns both the
 		// "called exactly once" assertion and the invoke-the-callable
 		// behaviour, so there is no ambiguity with setUp()'s default stub.
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 
 		$missing = [
 			'@self' => ['id' => 'uuid-missing'],

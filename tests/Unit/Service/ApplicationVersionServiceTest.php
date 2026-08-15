@@ -31,6 +31,7 @@ use OCA\OpenBuild\Service\ApplicationVersionService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -52,7 +53,7 @@ class ApplicationVersionServiceTest extends TestCase {
 	/**
 	 * Mock object service.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -84,7 +85,7 @@ class ApplicationVersionServiceTest extends TestCase {
 		parent::setUp();
 
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->registerService = $this->createMock(RegisterService::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 

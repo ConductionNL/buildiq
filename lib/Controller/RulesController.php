@@ -46,7 +46,7 @@ namespace OCA\OpenBuild\Controller;
 use OCA\OpenBuild\AppInfo\Application;
 use OCA\OpenBuild\Service\RuleEngineService;
 use OCA\OpenBuild\Service\RuleSetVersioningService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -78,7 +78,7 @@ class RulesController extends Controller {
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param RuleEngineService $ruleEngine The rule-evaluation orchestrator.
 	 * @param RuleSetVersioningService $versioningService Test-gate runner for test-all.
-	 * @param ObjectService $objectService OpenRegister object service.
+	 * @param ObjectServiceInterface $objectService OpenRegister object service.
 	 * @param IUserSession $userSession Current user session.
 	 *
 	 * @return void
@@ -88,7 +88,7 @@ class RulesController extends Controller {
 		private readonly LoggerInterface $logger,
 		private readonly RuleEngineService $ruleEngine,
 		private readonly RuleSetVersioningService $versioningService,
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);

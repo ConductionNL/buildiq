@@ -27,6 +27,7 @@ namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\RuleEngineService;
 use OCA\OpenBuild\Service\RuleSetVersioningService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -39,7 +40,7 @@ use RuntimeException;
 final class RuleSetVersioningServiceTest extends TestCase {
 
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -61,7 +62,7 @@ final class RuleSetVersioningServiceTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->ruleEngine = $this->createMock(RuleEngineService::class);
 		$this->service = new RuleSetVersioningService(
 			$this->objectService,

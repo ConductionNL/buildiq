@@ -85,7 +85,7 @@ namespace OCA\OpenBuild\Service;
 
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Authentication\Token\IToken;
 use OCP\Files\AppData\IAppDataFactory;
 use OCP\Files\Folder;
@@ -164,7 +164,7 @@ class DocumentGenerationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OpenRegister object service (ADR-022 boundary)
+	 * @param ObjectServiceInterface $objectService OpenRegister object service (ADR-022 boundary)
 	 *                                     — resolves the owning Application by slug
 	 *                                     and writes the `attach`-mode object file
 	 *                                     reference.
@@ -189,7 +189,7 @@ class DocumentGenerationService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly JobOwnerImpersonator $ownerImpersonator,

@@ -33,6 +33,7 @@ use OCA\OpenBuild\Exception\VersionLockedException;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenBuild\Service\VersionPromotionService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -58,7 +59,7 @@ class VersionPromotionControllerTest extends TestCase {
 	private LoggerInterface&MockObject $logger;
 
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -87,7 +88,7 @@ class VersionPromotionControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->promotionService = $this->createMock(VersionPromotionService::class);
 

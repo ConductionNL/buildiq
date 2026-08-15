@@ -33,6 +33,7 @@ use OCA\OpenBuild\Service\ExpressionEvaluator;
 use OCA\OpenBuild\Service\RuleActionDispatcher;
 use OCA\OpenBuild\Service\RuleEngineService;
 use OCA\OpenBuild\Service\RuleSetCacheManager;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -49,7 +50,7 @@ final class RuleEngineServiceTest extends TestCase {
 	/**
 	 * Mock OpenRegister object service.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -87,7 +88,7 @@ final class RuleEngineServiceTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->cacheManager = $this->createMock(RuleSetCacheManager::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 

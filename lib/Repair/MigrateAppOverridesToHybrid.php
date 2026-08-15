@@ -42,7 +42,7 @@ namespace OCA\OpenBuild\Repair;
 use OCA\OpenBuild\Service\AppOverrideService;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -63,7 +63,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics.
-	 * @param ObjectService $objectService OpenRegister object service.
+	 * @param ObjectServiceInterface $objectService OpenRegister object service.
 	 * @param RegisterMapper $registerMapper Resolves the openbuild register id.
 	 * @param SchemaMapper $schemaMapper Resolves + drops the app-override schema.
 	 * @param AppOverrideService $appOverrideService Unified hybrid-app store (create/update path).
@@ -72,7 +72,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly AppOverrideService $appOverrideService,

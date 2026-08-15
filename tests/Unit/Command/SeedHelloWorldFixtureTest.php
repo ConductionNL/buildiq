@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -54,7 +55,7 @@ class SeedHelloWorldFixtureTest extends TestCase {
 	/**
 	 * Mock OR object service.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -101,7 +102,7 @@ class SeedHelloWorldFixtureTest extends TestCase {
 	 */
 	private function wire(bool $helloWorldAlreadyPresent): void {
 		$this->saved = [];
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 

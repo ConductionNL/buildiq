@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Tests\Unit\BackgroundJob;
 
 use OCA\OpenBuild\BackgroundJob\RuleExecutionLogCleanup;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -39,7 +40,7 @@ use ReflectionMethod;
 final class RuleExecutionLogCleanupTest extends TestCase {
 
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
 	private ObjectService&MockObject $objectService;
 
@@ -56,7 +57,7 @@ final class RuleExecutionLogCleanupTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->job = new RuleExecutionLogCleanup(
 			$this->createMock(ITimeFactory::class),
 			$this->objectService,

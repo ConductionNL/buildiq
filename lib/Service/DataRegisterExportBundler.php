@@ -33,7 +33,7 @@ namespace OCA\OpenBuild\Service;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -60,13 +60,13 @@ class DataRegisterExportBundler {
 	 *
 	 * @param RegisterMapper $registerMapper Resolves a bound data register's slug.
 	 * @param SchemaMapper $schemaMapper Resolves a bound data register's schema definitions.
-	 * @param ObjectService $objectService Reads a bound data register's row data (includeData opt-in).
+	 * @param ObjectServiceInterface $objectService Reads a bound data register's row data (includeData opt-in).
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
