@@ -33,12 +33,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Service;
 
-use FilesystemIterator;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use RuntimeException;
 use ZipArchive;
 
@@ -391,15 +388,7 @@ class ExportService {
 
 		$map = $this->placeholderResolver->buildMap(context: $stringContext);
 
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator($rootDir, FilesystemIterator::SKIP_DOTS)
-		);
-		foreach ($iterator as $file) {
-			if ($file->isFile() === false) {
-				continue;
-			}
-
-			$path = (string)$file->getPathname();
+		foreach ($this->treeFiles->filePaths(dir: $rootDir) as $path) {
 			if ($this->isBinary(path: $path) === true) {
 				continue;
 			}
@@ -456,28 +445,12 @@ class ExportService {
 
 		$skip = ['.snapshot-meta.json', '.path-manifest.txt'];
 
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS),
-			RecursiveIteratorIterator::SELF_FIRST
+		$this->treeFiles->copyTree(
+			source: $source,
+			dest: $dest,
+			skip: $skip,
+			timestamp: $this->zipTimestamp
 		);
-		foreach ($iterator as $entry) {
-			$relative = ltrim(str_replace($source, '', (string)$entry->getPathname()), '/');
-			if (in_array($relative, $skip, true) === true) {
-				continue;
-			}
-
-			$target = $dest . '/' . $relative;
-			if ($entry->isDir() === true) {
-				if (is_dir($target) === false) {
-					mkdir($target, 0o755, true);
-				}
-
-				continue;
-			}
-
-			copy((string)$entry->getPathname(), $target);
-			touch($target, $this->zipTimestamp);
-		}
 	}//end copyTemplate()
 
 	/**

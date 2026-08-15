@@ -67,6 +67,75 @@ class ExportTreeFiles {
 	}//end removeTree()
 
 	/**
+	 * Absolute paths of every FILE under a directory, unsorted.
+	 *
+	 * For callers that need to touch each file's contents rather than list
+	 * them. Kept here with the other walkers so one class knows how to walk a
+	 * tree — having three iterator classes imported into a service that also
+	 * builds ZIPs is what phpmd's coupling metric was reporting.
+	 *
+	 * @param string $dir The root to walk.
+	 *
+	 * @return array<int, string> Absolute file paths.
+	 */
+	public function filePaths(string $dir): array {
+		$paths = [];
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS)
+		);
+
+		foreach ($iterator as $entry) {
+			if ($entry->isFile() === false) {
+				continue;
+			}
+
+			$paths[] = (string)$entry->getPathname();
+		}
+
+		return $paths;
+	}//end filePaths()
+
+	/**
+	 * Copy a tree, skipping named entries and stamping a fixed mtime.
+	 *
+	 * The timestamp is fixed so two exports of the same input produce
+	 * byte-identical ZIPs; a live mtime makes every archive differ from the
+	 * last for no reason a reader can see.
+	 *
+	 * @param string $source Source root.
+	 * @param string $dest Destination root.
+	 * @param array<int, string> $skip Relative paths to leave behind.
+	 * @param integer $timestamp mtime to stamp on every copied file.
+	 *
+	 * @return void
+	 */
+	public function copyTree(string $source, string $dest, array $skip, int $timestamp): void {
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS),
+			RecursiveIteratorIterator::SELF_FIRST
+		);
+
+		foreach ($iterator as $entry) {
+			$relative = ltrim(str_replace($source, '', (string)$entry->getPathname()), '/');
+			if (in_array($relative, $skip, true) === true) {
+				continue;
+			}
+
+			$target = $dest . '/' . $relative;
+			if ($entry->isDir() === true) {
+				if (is_dir($target) === false) {
+					mkdir($target, 0o755, true);
+				}
+
+				continue;
+			}
+
+			copy((string)$entry->getPathname(), $target);
+			touch($target, $timestamp);
+		}
+	}//end copyTree()
+
+	/**
 	 * Every file under a directory, relative and sorted.
 	 *
 	 * Sorted because the ZIP must be byte-identical between two exports of the

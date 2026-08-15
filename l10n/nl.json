@@ -1,10 +1,17 @@
 {
     "translations": {
+        "Failed to load flows": "Flows laden mislukt",
+        "Flows": "Flows",
+        "Flows this app is made of": "Flows waaruit deze app bestaat",
+        "No flows exist on this instance yet. Create one in OpenRegister first.": "Er bestaan nog geen flows op deze omgeving. Maak er eerst een aan in OpenRegister.",
         "Production": "Productie",
         "Release": "Vrijgeven",
         "New draft": "Nieuw concept",
         "Open a version": "Een versie openen",
         "No versions yet — create a draft to start a new version.": "Nog geen versies — maak een concept om een nieuwe versie te starten.",
+        "The flows this app is made of. Included by default — an exported app without them installs and does nothing. They arrive switched off on the importing instance, so nothing runs until somebody enables it there.": "De flows waaruit deze app bestaat. Standaard inbegrepen — een geëxporteerde app zonder deze flows installeert wel, maar doet niets. Ze komen uitgeschakeld aan op de importerende omgeving, dus er draait niets totdat iemand ze daar aanzet.",
+        "The OpenRegister flows this app is made of. Exporting the app carries them, so an installed copy can actually do something. Agents are not listed here: they already belong to an app and are collected automatically.": "De OpenRegister-flows waaruit deze app bestaat. Bij export gaan ze mee, zodat een geïnstalleerde kopie ook echt iets kan. Agents staan hier niet: die horen al bij een app en worden automatisch meegenomen.",
+        "{uuid} (no longer exists)": "{uuid} (bestaat niet meer)",
         "“{name}” is now the production version.": "“{name}” is nu de productieversie.",
         "Release failed": "Vrijgeven mislukt",
         "Draft “{name}” created.": "Concept “{name}” aangemaakt.",

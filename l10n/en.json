@@ -1,5 +1,12 @@
 {
     "translations": {
+        "Failed to load flows": "Failed to load flows",
+        "Flows": "Flows",
+        "Flows this app is made of": "Flows this app is made of",
+        "No flows exist on this instance yet. Create one in OpenRegister first.": "No flows exist on this instance yet. Create one in OpenRegister first.",
+        "The flows this app is made of. Included by default — an exported app without them installs and does nothing. They arrive switched off on the importing instance, so nothing runs until somebody enables it there.": "The flows this app is made of. Included by default — an exported app without them installs and does nothing. They arrive switched off on the importing instance, so nothing runs until somebody enables it there.",
+        "The OpenRegister flows this app is made of. Exporting the app carries them, so an installed copy can actually do something. Agents are not listed here: they already belong to an app and are collected automatically.": "The OpenRegister flows this app is made of. Exporting the app carries them, so an installed copy can actually do something. Agents are not listed here: they already belong to an app and are collected automatically.",
+        "{uuid} (no longer exists)": "{uuid} (no longer exists)",
         "— action —": "— action —",
         "— select column —": "— select column —",
         "— select page type —": "— select page type —",
