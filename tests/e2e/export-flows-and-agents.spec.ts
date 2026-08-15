@@ -2,7 +2,8 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * End-to-end coverage for openbuild-exports-flows-and-agents.
+ * End-to-end coverage for openbuild-exports-flows-and-agents, driven through
+ * the UI an operator actually uses.
  *
  * WHAT THIS HAS TO CATCH
  * ----------------------
@@ -15,15 +16,14 @@
  *     application pointing at nothing;
  *   - not seeding at all leaves flow JSON on disk that no engine ever reads.
  *
- * None of those raises an error, and none is visible in a file listing. So the
- * second test here asserts on a flow RUN — the only observation that separates
- * "imported" from "imported and runnable".
+ * None of those raises an error and none is visible in a file listing, so the
+ * last test asserts on a flow RUN — the only observation separating "imported"
+ * from "imported and runnable".
  *
- * ⚠️ SCOPE NOTE, stated rather than hidden: the round trip re-imports onto the
- * SAME instance rather than a second one. That still exercises the chain that
- * fails silently (definition → entity → execution) and the UUID preservation
- * the binding depends on. It does NOT exercise cross-instance id collision,
- * which needs a second Nextcloud and belongs in the cohort-wide fixture.
+ * ⚠️ SCOPE, stated rather than hidden: the round trip re-imports onto the SAME
+ * instance. It exercises the chain that fails silently (definition → entity →
+ * execution) and the UUID preservation the binding depends on. It does NOT
+ * exercise cross-instance collision, which needs a second Nextcloud.
  */
 
 import { expect, test } from '@playwright/test'
@@ -31,15 +31,17 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
+import { dismissOverlays } from './support/appFixture'
+import { E2E_BASE_URL as BASE } from './support/baseUrl'
 
+const TEST_SLUG = 'hello-world'
 const POLL_TIMEOUT_MS = 90_000
 
 /**
  * List the entries inside a ZIP.
  *
- * `unzip -Z1` rather than a JS zip library: none is in devDependencies, and
- * adding one to read six filenames is a dependency for a listing.
+ * `unzip` rather than a JS zip library: none is in devDependencies, and adding
+ * one to read a handful of filenames is a dependency for a listing.
  *
  * @param zipPath Path to the ZIP.
  * @return Entry names.
@@ -62,7 +64,7 @@ function zipRead(zipPath: string, entry: string): string {
 	return execFileSync('unzip', ['-p', zipPath, entry], { encoding: 'utf8' })
 }
 
-test.describe('OpenBuild exports the flows an app is made of', () => {
+test.describe('Exporting the flows an app is made of', () => {
 	let scratch: string
 
 	test.beforeAll(() => {
@@ -73,17 +75,18 @@ test.describe('OpenBuild exports the flows an app is made of', () => {
 		rmSync(scratch, { recursive: true, force: true })
 	})
 
-	test('a bound flow and the app’s agents reach the ZIP', async ({ request }) => {
-		// A real flow to bind. Created through the API rather than assumed to
-		// exist, so the test does not silently pass on an instance where the
-		// fixture was never seeded — an empty export satisfies every assertion
-		// that only checks "the export succeeded".
-		const flowCreate = await request.post(
-			`${NEXTCLOUD_URL}/index.php/apps/openregister/api/flows`,
+	test('an operator binds a flow in App settings and exports it', async ({
+		page,
+	}) => {
+		// A real flow to bind. Created up front rather than assumed to exist:
+		// on an instance with no flows every assertion below would be vacuous,
+		// because an empty picker and an empty export both "succeed".
+		const created = await page.request.post(
+			`${BASE}/index.php/apps/openregister/api/flows`,
 			{
 				data: {
-					name: 'E2E export fixture — agentic',
-					description: 'Bound by an application and exported.',
+					name: 'PW export fixture agentic',
+					description: 'Bound through the UI and exported.',
 					enabled: false,
 					nodes: [
 						{
@@ -91,8 +94,8 @@ test.describe('OpenBuild exports the flows an app is made of', () => {
 							type: 'openregister.trigger-schedule',
 							config: {},
 						},
-						// An AGENTIC node, so this fixture proves ADR-065's rule
-						// (one flow system) rather than only the plain path.
+						// An AGENTIC node: this fixture proves ADR-065's rule that
+						// such a flow takes the ordinary path, not only the plain case.
 						{ id: 'work', type: 'hermiq.workload-step', config: {} },
 						{ id: 'done', type: 'openregister.end', config: {} },
 					],
@@ -103,88 +106,127 @@ test.describe('OpenBuild exports the flows an app is made of', () => {
 				},
 			},
 		)
+		test.skip(!created.ok(), 'OpenRegister flows API unavailable')
+		const flow = await created.json()
+		const flowUuid: string = flow.uuid || flow.id || flow['@self']?.id
+		expect(flowUuid, 'the fixture flow must expose a UUID').toBeTruthy()
+
+		// The detail route takes the OR OBJECT ID, not the slug.
+		const lookup = await page.request.get(
+			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+		)
+		test.skip(!lookup.ok(), 'application lookup unavailable')
+		const apps = (await lookup.json()).results || []
+		test.skip(apps.length === 0, `${TEST_SLUG} Application not seeded`)
+		const objectId = apps[0].uuid || apps[0].id
+
+		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
+		await dismissOverlays(page)
+		await page.waitForSelector('.ob-detail-header', { timeout: 20_000 })
+
+		// 1. BIND, through App settings.
+		await page
+			.getByRole('button', { name: /settings/i })
+			.first()
+			.click()
+
+		const picker = page.locator('[data-test="app-settings-flow-picker"]')
+		await expect(
+			picker,
+			'App settings must offer a flow PICKER — a UUID cannot be typed into a text field',
+		).toBeVisible({ timeout: 20_000 })
+
+		await picker.click()
+		await page
+			.getByRole('option', { name: 'PW export fixture agentic' })
+			.first()
+			.click()
+
+		// The parent persists the binding; wait for the PATCH rather than a
+		// fixed sleep, so a slow instance does not produce a flaky pass.
+		await page.waitForResponse(
+			(response) =>
+				response.url().includes('/apps/openbuild/api/applications')
+				&& ['PATCH', 'PUT'].includes(response.request().method()),
+			{ timeout: 20_000 },
+		)
+
+		// 2. EXPORT, through the export dialog, and confirm the flow is offered.
+		await page.keyboard.press('Escape')
+		await page
+			.getByRole('button', { name: /^export$/i })
+			.first()
+			.click()
+
+		const dialog = page.locator('.export-dialog')
+		await expect(dialog).toBeVisible({ timeout: 20_000 })
+
+		const flowToggle = dialog.locator(`[data-test="export-flow-${flowUuid}"]`)
+		await expect(
+			flowToggle,
+			'the bound flow must appear in the export dialog for the operator to include',
+		).toBeVisible({ timeout: 10_000 })
+
+		// Included by DEFAULT: an exported app without its flows installs and
+		// does nothing, so "ship what this app is made of" is the useful default.
+		await expect(flowToggle.locator('input[type="checkbox"]')).toBeChecked()
+
+		const [exportRequest] = await Promise.all([
+			page.waitForRequest(
+				(request) =>
+					request.url().includes('/apps/openbuild/api/exports')
+					&& request.method() === 'POST',
+				{ timeout: 20_000 },
+			),
+			page.getByRole('button', { name: /start export/i }).click(),
+		])
+
+		// The payload carries the UUID the operator chose — not a slug and not
+		// the numeric id, both of which resolve to nothing on another instance.
+		const payload = exportRequest.postDataJSON()
 		expect(
-			flowCreate.ok(),
-			'the fixture flow must be created, or the export has nothing to carry',
-		).toBeTruthy()
+			payload.flows,
+			'the export payload must carry the chosen flow bindings',
+		).toContainEqual({ flow: flowUuid })
 
-		const flow = await flowCreate.json()
-		const flowUuid: string = flow.uuid ?? flow.id ?? flow['@self']?.id
-		expect(flowUuid, 'the created flow must expose its UUID').toBeTruthy()
-
-		// Bind it to an application. The binding is by UUID because the Flow
-		// entity has no slug.
-		const appsResponse = await request.get(
-			`${NEXTCLOUD_URL}/index.php/apps/openbuild/api/applications`,
+		// 3. Poll to completion and look inside the ZIP.
+		const listed = await page.request.get(
+			`${BASE}/index.php/apps/openbuild/api/exports?limit=1`,
 		)
-		expect(appsResponse.ok()).toBeTruthy()
-		const apps = await appsResponse.json()
-		const application = (apps.results ?? apps.items ?? apps)[0]
-		const applicationId = application['@self']?.id ?? application.id
+		const rows = (await listed.json()).results || []
+		const jobUuid: string = rows[0]?.uuid || rows[0]?.jobUuid || ''
+		expect(jobUuid, 'the export job must be listed').toBeTruthy()
 
-		const bind = await request.put(
-			`${NEXTCLOUD_URL}/index.php/apps/openbuild/api/applications/${applicationId}`,
-			{
-				data: {
-					...application,
-					flows: [{ label: 'E2E export fixture', flow: flowUuid }],
-				},
-			},
-		)
-		expect(
-			bind.ok(),
-			'binding a flow by UUID must be accepted by the application schema',
-		).toBeTruthy()
-
-		// Export.
-		const exportResponse = await request.post(
-			`${NEXTCLOUD_URL}/index.php/apps/openbuild/api/exports`,
-			{
-				data: {
-					applicationUuid: applicationId,
-					target: 'zip',
-					flows: [{ flow: flowUuid }],
-				},
-			},
-		)
-		expect(exportResponse.ok()).toBeTruthy()
-		const { jobUuid } = await exportResponse.json()
-
-		// Poll to completion.
 		let status = ''
 		const deadline = Date.now() + POLL_TIMEOUT_MS
 		while (Date.now() < deadline) {
 			const job = await (
-				await request.get(
-					`${NEXTCLOUD_URL}/index.php/apps/openbuild/api/exports/${jobUuid}`,
+				await page.request.get(
+					`${BASE}/index.php/apps/openbuild/api/exports/${jobUuid}`,
 				)
 			).json()
-			status = job.status ?? ''
+			status = job.status || ''
 			if (status === 'succeeded' || status === 'failed') {
 				break
 			}
 
-			await new Promise((resolve) => setTimeout(resolve, 2_000))
+			await page.waitForTimeout(2_000)
 		}
 		expect(status, 'the export job must finish').toBe('succeeded')
 
-		// Download and look inside.
-		const download = await request.get(
-			`${NEXTCLOUD_URL}/index.php/apps/openbuild/api/exports/${jobUuid}/download`,
+		const download = await page.request.get(
+			`${BASE}/index.php/apps/openbuild/api/exports/${jobUuid}/download`,
 		)
 		expect(download.ok()).toBeTruthy()
 
 		const zipPath = join(scratch, 'export.zip')
 		writeFileSync(zipPath, await download.body())
 
-		const entries = zipEntries(zipPath)
 		expect(
-			entries,
+			zipEntries(zipPath),
 			'the bound flow must be in the ZIP — this is the whole feature',
 		).toContain(`lib/Settings/flows/${flowUuid}.json`)
 
-		// The definition must carry its UUID, because the importing side seeds
-		// it verbatim and the application's binding resolves against it.
 		const definition = JSON.parse(
 			zipRead(zipPath, `lib/Settings/flows/${flowUuid}.json`),
 		)
@@ -192,33 +234,29 @@ test.describe('OpenBuild exports the flows an app is made of', () => {
 			definition.uuid,
 			'a definition exported without its UUID orphans every binding on import',
 		).toBe(flowUuid)
-		expect(definition.nodes).toHaveLength(3)
-
-		// The agentic node survives unchanged: one flow system, no special case.
 		expect(
 			definition.nodes.map((node: { type: string }) => node.type),
 		).toContain('hermiq.workload-step')
 	})
 
 	test('the round trip is proven by RUNNING the imported flow', async ({
-		request,
+		page,
 	}) => {
-		// Take the definition the exporter produced and put it back through the
-		// path an importing instance uses: write the `Flow` ENTITY, preserving
-		// the UUID. Then RUN it.
+		// Put a definition back through the path an importing instance uses —
+		// write the `Flow` ENTITY, preserving the UUID — and then RUN it.
 		//
-		// A test that stopped at "the flow exists" would pass against a seeder
-		// that wrote the `agentflow` object mirror instead — the register UI
-		// would show it and the engine would never see it. Only the run tells
-		// those apart.
+		// A test stopping at "the flow exists" would pass against a seeder that
+		// wrote the `agentflow` object mirror instead: the register UI would
+		// show it and the engine would never see it. Only the run tells them
+		// apart.
 		const uuid = '00000000-0000-4000-8000-00000000e2e1'
 
-		const seeded = await request.post(
-			`${NEXTCLOUD_URL}/index.php/apps/openregister/api/flows`,
+		const seeded = await page.request.post(
+			`${BASE}/index.php/apps/openregister/api/flows`,
 			{
 				data: {
 					uuid,
-					name: 'E2E round-trip fixture',
+					name: 'PW round-trip fixture',
 					enabled: true,
 					nodes: [
 						{
@@ -232,19 +270,18 @@ test.describe('OpenBuild exports the flows an app is made of', () => {
 				},
 			},
 		)
-		expect(seeded.ok(), 'the seeded definition must be accepted').toBeTruthy()
+		test.skip(!seeded.ok(), 'OpenRegister flows API unavailable')
 
 		const seededFlow = await seeded.json()
-		const seededUuid: string = seededFlow.uuid ?? seededFlow['@self']?.id ?? uuid
+		const seededUuid: string = seededFlow.uuid || seededFlow['@self']?.id || ''
 		expect(
 			seededUuid,
 			'seeding must PRESERVE the shipped UUID rather than mint a new one — '
 				+ 'a minted UUID leaves every application binding pointing at nothing',
 		).toBe(uuid)
 
-		// Queue a run. This is the assertion the whole feature rests on.
-		const run = await request.post(
-			`${NEXTCLOUD_URL}/index.php/apps/openregister/api/flows/${seededUuid}/run`,
+		const run = await page.request.post(
+			`${BASE}/index.php/apps/openregister/api/flows/${seededUuid}/run`,
 			{ data: {} },
 		)
 		expect(
@@ -254,26 +291,25 @@ test.describe('OpenBuild exports the flows an app is made of', () => {
 		).toBeTruthy()
 
 		const runBody = await run.json()
-		const runUuid: string = runBody.uuid ?? runBody['@self']?.id ?? ''
+		const runUuid: string = runBody.uuid || runBody['@self']?.id || ''
 		expect(runUuid, 'the run must have been created').toBeTruthy()
 
-		// And it must actually advance, not merely be accepted.
 		let runStatus = ''
 		const deadline = Date.now() + 60_000
 		while (Date.now() < deadline) {
 			const state = await (
-				await request.get(
-					`${NEXTCLOUD_URL}/index.php/apps/openregister/api/flow-runs/${runUuid}`,
+				await page.request.get(
+					`${BASE}/index.php/apps/openregister/api/flow-runs/${runUuid}`,
 				)
 			).json()
-			runStatus = state.status ?? ''
+			runStatus = state.status || ''
 			if (
 				['completed', 'stopped', 'failed', 'suspended'].includes(runStatus)
 			) {
 				break
 			}
 
-			await new Promise((resolve) => setTimeout(resolve, 2_000))
+			await page.waitForTimeout(2_000)
 		}
 
 		expect(

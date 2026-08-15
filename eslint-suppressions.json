@@ -8,9 +8,6 @@
     }
   },
   "src/components/ApplicationDetailActions.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
     }
@@ -368,7 +365,7 @@
   },
   "src/dialogs/ExportDialog.vue": {
     "@nextcloud/no-deprecated-library-props": {
-      "count": 2
+      "count": 1
     },
     "@typescript-eslint/no-unused-vars": {
       "count": 1
@@ -439,9 +436,6 @@
     }
   },
   "src/modals/AppSettingsModal.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
     "vue/custom-event-name-casing": {
       "count": 3
     }

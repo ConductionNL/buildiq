@@ -84,6 +84,13 @@ class ExportService {
 	private string $templateRoot;
 
 	/**
+	 * Filesystem chores for the scratch tree.
+	 *
+	 * @var ExportTreeFiles
+	 */
+	private ExportTreeFiles $treeFiles;
+
+	/**
 	 * What the last bundling run could not resolve.
 	 *
 	 * Returned to the caller so the export job's RESULT can name it. The
@@ -119,8 +126,14 @@ class ExportService {
 		private LoggerInterface $logger,
 		private DataRegisterExportBundler $dataRegisterBundler,
 		private FlowAndAgentExportBundler $flowAndAgentBundler,
-		private ExportTreeFiles $treeFiles,
 	) {
+		// Constructed rather than injected: it is stateless, has no
+		// dependencies of its own, and is deterministic — so injecting it buys
+		// no seam and costs a constructor dependency, which is what phpmd's
+		// CouplingBetweenObjects was measuring. Extracting it fixed the
+		// complexity finding and created this one; the fix for both is that it
+		// is a helper, not a collaborator.
+		$this->treeFiles = new ExportTreeFiles();
 		$this->templateRoot = dirname(__DIR__) . '/Resources/template';
 		// 2026-01-01T00:00:00Z — fixed for deterministic ZIPs.
 		$this->zipTimestamp = 1767225600;

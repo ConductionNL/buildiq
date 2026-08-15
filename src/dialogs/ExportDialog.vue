@@ -52,6 +52,28 @@
 				</NcCheckboxRadioSwitch>
 			</template>
 
+			<template v-if="flowChoices.length">
+				<h4 class="export-dialog__section-title">
+					{{ t('openbuild', 'Flows') }}
+				</h4>
+				<p class="export-dialog__scope-hint">
+					{{
+						t(
+							'openbuild',
+							'The flows this app is made of. Included by default — an exported app without them installs and does nothing. They arrive switched off on the importing instance, so nothing runs until somebody enables it there.',
+						)
+					}}
+				</p>
+				<NcCheckboxRadioSwitch
+					v-for="choice in flowChoices"
+					:key="choice.flow"
+					v-model="choice.include"
+					:data-test="`export-flow-${choice.flow}`"
+					:disabled="submitting">
+					{{ choice.label || choice.flow }}
+				</NcCheckboxRadioSwitch>
+			</template>
+
 			<template v-if="form.target && form.target.value === 'github'">
 				<NcTextField
 					v-model="form.githubOrg"
@@ -102,7 +124,7 @@
 			<NcButton :disabled="submitting" @click="onClose">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="submitting" @click="submit">
+			<NcButton variant="primary" :disabled="submitting" @click="submit">
 				{{ t('openbuild', 'Start export') }}
 			</NcButton>
 		</template>
@@ -148,6 +170,19 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
+		// The source Application's declared `flows` bindings. Each entry is
+		// `{ label, flow }` where `flow` is the OpenRegister flow's UUID —
+		// the `Flow` entity has no slug, so there is nothing more readable to
+		// bind by, which is why `label` carries the weight in this picker.
+		//
+		// There is deliberately no `agents` prop: agents carry
+		// `applicationSlug` and are collected from the application itself, so
+		// there is nothing for an operator to choose.
+		flows: {
+			type: Array,
+			default: () => [],
+		},
 	},
 
 	emits: ['close', 'queued'],
@@ -185,6 +220,16 @@ export default {
 				register: binding.register,
 				label: binding.label,
 				includeData: false,
+			})),
+
+			// Per-flow include choice, checked by DEFAULT — unlike row data.
+			// A flow is what makes an exported app do anything, so the useful
+			// default is "ship what this app is made of"; row data is somebody
+			// else's content and defaults off for that reason.
+			flowChoices: this.flows.map((binding) => ({
+				flow: binding.flow,
+				label: binding.label,
+				include: true,
 			})),
 		}
 	},
@@ -307,6 +352,13 @@ export default {
 						register: choice.register,
 						includeData: choice.includeData,
 					})),
+
+					// Only the chosen flows, and only their UUIDs — `label` is
+					// a picker convenience, and the exporter writes the flow's
+					// own name into the bundle rather than trusting this one.
+					flows: this.flowChoices
+						.filter((choice) => choice.include)
+						.map((choice) => ({ flow: choice.flow })),
 				}
 				if (this.form.target.value === 'github') {
 					if (!this.form.githubCredential) {

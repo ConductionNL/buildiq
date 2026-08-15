@@ -92,8 +92,17 @@ Quality reminders (not checkboxes): `composer check:strict` (PHPCS, PHPMD, Psalm
 2. **My test wrote fixtures into the source tree.** It passed as the file owner and failed as `www-data`, because a test that writes into `lib/Resources/template/` needs write access to the app under test — and leaves artefacts in the repository when it succeeds. The flow directory is now a constructor parameter and the test uses a temp dir.
 3. **Adding a required constructor argument broke 11 existing tests.** Fixed by giving the two construction sites the collaborator rather than making it optional — an optional bundler would let production run without bundling and report success.
 
+### UI added, and the e2e moved onto it (2026-08-15, second pass)
+
+The "no builder UI picker" gap below is CLOSED, and the e2e now drives the interface rather than the API:
+
+- **App settings** gains a flow **picker** — an `NcSelect`, not the free-text field the data registers use, because a register is bound by a slug somebody can read and type while a flow is bound by a UUID, which nobody can. The parent loads the instance's flows lazily when the modal opens (86 on one dev box) and labels them by NAME. A binding whose UUID no longer resolves is shown as `<uuid> (no longer exists)` rather than dropped: silently removing it hides it from the person who could fix it.
+- **The export dialog** gains a Flows section mirroring the data-registers block, one toggle per bound flow, **checked by default** — an exported app without its flows installs and does nothing, whereas row data is somebody else's content and stays off.
+- **The e2e is UI-driven**: open the app, bind a flow through the picker, open the export dialog, assert the flow appears and is checked, click Start export, and assert the POST payload carries that UUID. It waits on the PATCH response rather than sleeping, so a slow instance cannot produce a flaky pass.
+
+⚠️ `eslint --fix` on those components also migrated `NcButton type="primary"` → `variant="primary"` (a deprecated-prop autofix). Verified before accepting it: `variant` appears throughout NcButton in the installed @nextcloud/vue 9.9.0 and six other files in `src/` already use it. An autofix that renames a prop can change what renders, so it was checked rather than trusted. The now-unused suppression entries were pruned.
+
 ### Known gaps, stated rather than hidden
 
-- **No builder UI picker.** An operator cannot yet choose flows in the export dialog; the e2e binds via the API. The dialog work is a follow-up.
 - **The e2e round trip re-imports onto the SAME instance.** It exercises definition → entity → execution and UUID preservation, which is the chain that fails silently. It does not exercise cross-instance collision, which needs a second Nextcloud.
 - **One eslint rule fails on the new spec** (`import-extensions/extensions`, wanting `./support/baseUrl.ts`). All 22 e2e specs violate it and `allowImportingTsExtensions` is unset, so adding the extension would break compilation. Pre-existing repo-wide config mismatch; not fixed here.

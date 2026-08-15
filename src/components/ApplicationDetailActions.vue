@@ -19,7 +19,7 @@
 		     view/use (and edit, editor+). Production is always the canonical URL. -->
 		<div v-if="builderUrl" class="ob-detail-actions__open">
 			<NcButton
-				type="primary"
+				variant="primary"
 				:href="builderUrl"
 				target="_blank"
 				class="ob-detail-actions__open-primary">
@@ -137,6 +137,7 @@
 			v-if="exportOpen && obApp"
 			:applicationSlug="obApp.slug"
 			:data-registers="obApp.dataRegisters || []"
+			:flows="obApp.flows || []"
 			@close="exportOpen = false" />
 		<GitHubSyncModal
 			v-if="obApp && obApp.slug"
@@ -150,11 +151,15 @@
 			:isPublished="(obApp && obApp.status) === 'published'"
 			:allowUserOverrides="!!(obApp && obApp.allowUserOverrides)"
 			:data-registers="(obApp && obApp.dataRegisters) || []"
+			:flows="(obApp && obApp.flows) || []"
+			:availableFlows="availableFlows"
+			:loadingFlows="loadingFlows"
 			:busy="publishing"
-			@update:open="settingsOpen = $event"
+			@update:open="onSettingsOpen"
 			@setPublished="setPublished"
 			@update:allowOverrides="setAllowOverrides"
-			@update:dataRegisters="setDataRegisters" />
+			@update:dataRegisters="setDataRegisters"
+			@update:flows="setFlows" />
 		<DeleteAppDialog
 			:open="deleteOpen"
 			:appName="(obApp && (obApp.name || obApp.slug)) || ''"
@@ -255,6 +260,10 @@ export default {
 			deleting: false,
 			githubOpen: false,
 			settingsOpen: false,
+			// Every flow on the instance, as picker options. Loaded lazily when
+			// the settings modal opens — see onSettingsOpen().
+			availableFlows: [],
+			loadingFlows: false,
 			deleteOpen: false,
 			permissionsOpen: false,
 			historyOpen: false,
@@ -548,6 +557,61 @@ export default {
 		 * @param {Array<{register: string, label?: string}>} dataRegisters The full updated bindings array.
 		 * @return {Promise<void>}
 		 */
+		/**
+		 * Open/close the settings modal, loading the flow list on the way in.
+		 *
+		 * Loaded lazily rather than with the page: most visits never open
+		 * settings, and an instance can hold many flows (86 on one dev box).
+		 *
+		 * @param {boolean} open Whether the modal is opening.
+		 * @return {Promise<void>}
+		 */
+		async onSettingsOpen(open) {
+			this.settingsOpen = open
+			if (!open || this.availableFlows.length || this.loadingFlows) {
+				return
+			}
+
+			this.loadingFlows = true
+			try {
+				const { data } = await axios.get(
+					generateUrl('/apps/openregister/api/flows'),
+				)
+				const list = data.results || data.items || data || []
+				// Label by NAME, value by UUID: the binding is a UUID because
+				// the Flow entity has no slug, and a UUID in a picker is
+				// unreadable.
+				this.availableFlows = list
+					.map((flow) => ({
+						label: flow.name || flow.uuid,
+						value: flow.uuid || (flow['@self'] && flow['@self'].id),
+					}))
+					.filter((option) => !!option.value)
+			} catch (e) {
+				this.error = `${t('openbuild', 'Failed to load flows')}: ${e.message || e}`
+			} finally {
+				this.loadingFlows = false
+			}
+		},
+
+		/**
+		 * Persist the app's `flows` bindings from the settings modal.
+		 *
+		 * @param {Array<{flow: string, label?: string}>} flows The full updated bindings array.
+		 * @return {Promise<void>}
+		 */
+		async setFlows(flows) {
+			if (this.obAppRole !== 'owner' || !this.obApp) {
+				return
+			}
+			this.error = ''
+			try {
+				await this.obPatchApp({ flows })
+			} catch (e) {
+				this.error = `${t('openbuild', 'Failed to save settings')}: ${e.message || e}`
+			}
+		},
+
 		async setDataRegisters(dataRegisters) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {
 				return
