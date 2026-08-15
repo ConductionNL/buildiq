@@ -75,7 +75,8 @@ final class DocumentGenerationListenerTest extends TestCase {
 		$this->listener = new DocumentGenerationListener(
 			$this->objectService,
 			$this->documentGenerator,
-			new NullLogger()
+			new NullLogger(),
+			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end setUp()

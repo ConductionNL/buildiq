@@ -76,7 +76,9 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->compiler = $this->createMock(AutomationCompilerService::class);
 		$this->dispatcher = $this->createMock(RuleActionDispatcher::class);
-		$this->listener = new ApprovalOutcomeListener($this->objectService, $this->compiler, $this->dispatcher, new NullLogger());
+		$this->listener = new ApprovalOutcomeListener($this->objectService, $this->compiler, $this->dispatcher, new NullLogger(),
+			objectService: $this->createMock(ObjectServiceInterface::class),
+		);
 
 	}//end setUp()
 

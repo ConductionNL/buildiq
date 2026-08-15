@@ -136,7 +136,8 @@ class AppChannelApplierTest extends TestCase {
 				$this->createMock(LoggerInterface::class)
 			),
 			$this->appManager,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end applier()

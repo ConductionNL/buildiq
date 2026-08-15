@@ -160,7 +160,8 @@ class SeedHelloWorldFixtureTest extends TestCase {
 		$this->command = new SeedHelloWorldFixture(
 			$this->objectService,
 			$registerMapper,
-			$schemaMapper
+			$schemaMapper,
+			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 	}//end wire()
 

@@ -101,7 +101,8 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 			$this->stepMapper,
 			$this->approvalService,
 			$userSession,
-			new NullLogger()
+			new NullLogger(),
+			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end setUp()

@@ -187,7 +187,8 @@ final class DocumentGenerationServiceTest extends TestCase {
 			$this->rootFolder,
 			$this->appDataFactory,
 			$this->container,
-			new NullLogger()
+			new NullLogger(),
+			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end setUp()
@@ -235,7 +236,8 @@ final class DocumentGenerationServiceTest extends TestCase {
 			$this->rootFolder,
 			$this->appDataFactory,
 			$this->container,
-			new NullLogger()
+			new NullLogger(),
+			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end wireSuccessfulDocudeskCall()
@@ -421,7 +423,8 @@ final class DocumentGenerationServiceTest extends TestCase {
 			$this->rootFolder,
 			$this->appDataFactory,
 			$this->container,
-			new NullLogger()
+			new NullLogger(),
+			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 		$this->ownerImpersonator->expects($this->never())->method('runAsOwner');

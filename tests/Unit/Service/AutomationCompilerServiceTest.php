@@ -96,7 +96,8 @@ final class AutomationCompilerServiceTest extends TestCase {
 			$this->approvalChainMapper,
 			$this->approvalStepMapper,
 			$this->appManager,
-			new NullLogger()
+			new NullLogger(),
+			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end setUp()
@@ -855,7 +856,8 @@ final class AutomationCompilerServiceTest extends TestCase {
 			$this->approvalChainMapper,
 			$this->approvalStepMapper,
 			$this->appManager,
-			new NullLogger()
+			new NullLogger(),
+			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 		$automation = [

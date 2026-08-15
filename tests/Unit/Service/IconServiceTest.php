@@ -82,7 +82,8 @@ class IconServiceTest extends TestCase {
 			$this->objectService,
 			$this->fileService,
 			$this->logger,
-			sys_get_temp_dir()
+			sys_get_temp_dir(),
+			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 	}//end setUp()
 

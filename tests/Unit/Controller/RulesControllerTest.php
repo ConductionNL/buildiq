@@ -98,7 +98,8 @@ final class RulesControllerTest extends TestCase {
 			$this->ruleEngine,
 			$this->versioningService,
 			$this->objectService,
-			$this->userSession
+			$this->userSession,
+			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end controller()
