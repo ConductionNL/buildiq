@@ -161,7 +161,7 @@ class SeedHelloWorldFixtureTest extends TestCase {
 			$this->objectService,
 			$registerMapper,
 			$schemaMapper,
-			objectService: $this->createMock(ObjectServiceInterface::class),
+			objectService: $entity,
 		);
 	}//end wire()
 
