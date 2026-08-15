@@ -158,3 +158,22 @@ Verified positively afterwards, not just by reading: `POST /api/flows` returns *
 A run is created `queued` and advanced by `FlowRunWorker`, a background job. Measured on the dev instance: queued runs sat unadvanced indefinitely, and `executionMode: sync` made no difference — the POST queues either way. An assertion on a terminal status would therefore fail for want of a cron worker rather than for want of a working import, which is a test that reports the wrong thing.
 
 What the test asserts instead still separates the two implementations this feature can have: `POST /flows/{uuid}/run` is served by the ENGINE, which reads the `Flow` entity. A definition seeded into the `agentflow` OBJECT mirror would be visible in the register UI and answer "no such flow" here. So a created run — bound to the UUID we preserved — proves the seeded definition reached the store that executes. And if the run does reach a terminal state in budget, it must not be `failed`: the engine seeing a flow it cannot execute is a real defect.
+
+## 🔴 The e2e SKIPPED itself green for four CI runs (2026-08-15)
+
+Both tests reported nothing wrong and tested nothing at all. The CI log said `70 skipped` and named them with a `-`:
+
+```
+-   74 [chromium] › export-flows-and-agents.spec.ts:78 › an operator binds a flow in App settings and exports it
+-   75 [chromium] › export-flows-and-agents.spec.ts:255 › the round trip is proven by RUNNING the imported flow
+```
+
+Two facts should have caught it earlier and did not: the suite reported **182 passed on this PR and 182 on development** — an unchanged count while two tests were added — and Playwright names only FAILING tests, so "my spec is not in the log" was read as "it passed".
+
+**Cause:** `page.request.post()` carries the session cookie but no `requesttoken`, and Nextcloud rejects a session-authenticated POST without one. The fixture create returned non-ok, and `test.skip(!created.ok(), 'OpenRegister flows API unavailable')` turned that into a green skip. The guard was written to tolerate an environment without OpenRegister and instead tolerated the test being broken.
+
+**Fixes, all three:**
+
+1. POSTs now go through `apiPost()`, issued from inside the page with the token read off the document — mirroring `tests/e2e/support/appFixture.ts`, which has done it correctly all along.
+2. **Every skip guard is gone.** A fixture that cannot be created now FAILS with its status code. A skip and a pass are the same colour, and this feature's whole risk is failures that look like passes.
+3. The round trip generates a **fresh UUID per run** rather than a fixed one, which would collide with itself the second time the spec ran against an instance — a test that passes once and then reports its own fixture as a defect.

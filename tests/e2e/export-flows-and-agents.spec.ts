@@ -26,7 +26,8 @@
  * exercise cross-instance collision, which needs a second Nextcloud.
  */
 
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
+import { randomUUID } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -64,6 +65,53 @@ function zipRead(zipPath: string, entry: string): string {
 	return execFileSync('unzip', ['-p', zipPath, entry], { encoding: 'utf8' })
 }
 
+/**
+ * POST as the logged-in browser does.
+ *
+ * ⚠️ NOT `page.request.post()`. That carries the session cookie but no
+ * `requesttoken`, and Nextcloud rejects a session-authenticated POST without
+ * one — which this spec discovered the expensive way: both its tests SKIPPED
+ * in CI for four runs, green, because the skip guard read a rejected create as
+ * "environment unavailable". A skip and a pass are the same colour.
+ *
+ * Issued from inside the page with the token read off the document, mirroring
+ * tests/e2e/support/appFixture.ts.
+ *
+ * @param page The Playwright page (must already be on a Nextcloud document).
+ * @param url Absolute path, e.g. /index.php/apps/openregister/api/flows.
+ * @param body JSON body.
+ * @return status and parsed body.
+ */
+async function apiPost(
+	page: Page,
+	url: string,
+	body: unknown,
+): Promise<{ status: number; ok: boolean; json: any }> {
+	return page.evaluate(
+		async ({ url, body }) => {
+			const tok =
+				document.querySelector('head')?.getAttribute('data-requesttoken')
+				|| ''
+			const response = await fetch(url, {
+				method: 'POST',
+				headers: {
+					requesttoken: tok,
+					'OCS-APIRequest': 'true',
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(body),
+			})
+
+			return {
+				status: response.status,
+				ok: response.ok,
+				json: await response.json().catch(() => null),
+			}
+		},
+		{ url, body },
+	)
+}
+
 test.describe('Exporting the flows an app is made of', () => {
 	let scratch: string
 
@@ -78,46 +126,57 @@ test.describe('Exporting the flows an app is made of', () => {
 	test('an operator binds a flow in App settings and exports it', async ({
 		page,
 	}) => {
+		// A Nextcloud document must exist before apiPost() can read the
+		// requesttoken off it, so navigate first.
+		await page.goto(`${BASE}/apps/openbuild/`)
+		await dismissOverlays(page)
+
 		// A real flow to bind. Created up front rather than assumed to exist:
 		// on an instance with no flows every assertion below would be vacuous,
 		// because an empty picker and an empty export both "succeed".
-		const created = await page.request.post(
-			`${BASE}/index.php/apps/openregister/api/flows`,
+		const created = await apiPost(
+			page,
+			'/index.php/apps/openregister/api/flows',
 			{
-				data: {
-					name: 'PW export fixture agentic',
-					description: 'Bound through the UI and exported.',
-					enabled: false,
-					nodes: [
-						{
-							id: 'start',
-							type: 'openregister.trigger-schedule',
-							config: {},
-						},
-						// An AGENTIC node: this fixture proves ADR-065's rule that
-						// such a flow takes the ordinary path, not only the plain case.
-						{ id: 'work', type: 'hermiq.workload-step', config: {} },
-						{ id: 'done', type: 'openregister.end', config: {} },
-					],
-					edges: [
-						{ from: 'start', to: 'work' },
-						{ from: 'work', to: 'done' },
-					],
-				},
+				name: 'PW export fixture agentic',
+				description: 'Bound through the UI and exported.',
+				enabled: false,
+				nodes: [
+					{
+						id: 'start',
+						type: 'openregister.trigger-schedule',
+						config: {},
+					},
+					// An AGENTIC node: this fixture proves ADR-065's rule that
+					// such a flow takes the ordinary path, not only the plain case.
+					{ id: 'work', type: 'hermiq.workload-step', config: {} },
+					{ id: 'done', type: 'openregister.end', config: {} },
+				],
+				edges: [
+					{ from: 'start', to: 'work' },
+					{ from: 'work', to: 'done' },
+				],
 			},
 		)
-		test.skip(!created.ok(), 'OpenRegister flows API unavailable')
-		const flow = await created.json()
-		const flowUuid: string = flow.uuid || flow.id || flow['@self']?.id
+		// ASSERTED, not skipped. A skip guard here is what hid four green CI
+		// runs in which neither test ran at all.
+		expect(
+			created.status,
+			`creating the fixture flow must succeed (got ${created.status})`,
+		).toBe(201)
+		const flowUuid: string = created.json?.uuid || created.json?.id || ''
 		expect(flowUuid, 'the fixture flow must expose a UUID').toBeTruthy()
 
 		// The detail route takes the OR OBJECT ID, not the slug.
 		const lookup = await page.request.get(
 			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
-		test.skip(!lookup.ok(), 'application lookup unavailable')
+		expect(lookup.ok(), 'the application lookup must succeed').toBeTruthy()
 		const apps = (await lookup.json()).results || []
-		test.skip(apps.length === 0, `${TEST_SLUG} Application not seeded`)
+		expect(
+			apps.length,
+			`${TEST_SLUG} must be seeded — an empty result makes every assertion below vacuous`,
+		).toBeGreaterThan(0)
 		const objectId = apps[0].uuid || apps[0].id
 
 		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
@@ -262,31 +321,43 @@ test.describe('Exporting the flows an app is made of', () => {
 		// wrote the `agentflow` object mirror instead: the register UI would
 		// show it and the engine would never see it. Only the run tells them
 		// apart.
-		const uuid = '00000000-0000-4000-8000-00000000e2e1'
+		// A FRESH uuid per run. A fixed one collides with itself the second
+		// time this spec runs against the same instance, which is a test that
+		// passes once and then reports a defect that is its own fixture.
+		//
+		// The assertion is unchanged: we send a uuid and require the seeded
+		// flow to come back carrying THAT one, which is what an application's
+		// binding depends on.
+		const uuid = randomUUID()
 
-		const seeded = await page.request.post(
-			`${BASE}/index.php/apps/openregister/api/flows`,
+		await page.goto(`${BASE}/apps/openbuild/`)
+		await dismissOverlays(page)
+
+		const seeded = await apiPost(
+			page,
+			'/index.php/apps/openregister/api/flows',
 			{
-				data: {
-					uuid,
-					name: 'PW round-trip fixture',
-					enabled: true,
-					nodes: [
-						{
-							id: 'start',
-							type: 'openregister.trigger-schedule',
-							config: {},
-						},
-						{ id: 'done', type: 'openregister.end', config: {} },
-					],
-					edges: [{ from: 'start', to: 'done' }],
-				},
+				uuid,
+				name: 'PW round-trip fixture',
+				enabled: true,
+				nodes: [
+					{
+						id: 'start',
+						type: 'openregister.trigger-schedule',
+						config: {},
+					},
+					{ id: 'done', type: 'openregister.end', config: {} },
+				],
+				edges: [{ from: 'start', to: 'done' }],
 			},
 		)
-		test.skip(!seeded.ok(), 'OpenRegister flows API unavailable')
+		expect(
+			seeded.status,
+			`seeding the definition must succeed (got ${seeded.status})`,
+		).toBe(201)
 
-		const seededFlow = await seeded.json()
-		const seededUuid: string = seededFlow.uuid || seededFlow['@self']?.id || ''
+		const seededUuid: string =
+			seeded.json?.uuid || seeded.json?.['@self']?.id || ''
 		expect(
 			seededUuid,
 			'seeding must PRESERVE the shipped UUID rather than mint a new one — '
@@ -301,17 +372,18 @@ test.describe('Exporting the flows an app is made of', () => {
 		// engine would answer "no such flow". So a created run proves the seeded
 		// definition reached the store the engine actually executes, which is
 		// the failure this whole feature is exposed to.
-		const run = await page.request.post(
-			`${BASE}/index.php/apps/openregister/api/flows/${seededUuid}/run`,
-			{ data: {} },
+		const run = await apiPost(
+			page,
+			`/index.php/apps/openregister/api/flows/${seededUuid}/run`,
+			{},
 		)
 		expect(
-			run.ok(),
+			run.ok,
 			'the engine must accept a run for the seeded flow — a definition it '
 				+ 'cannot see is a flow that exists only in a mirror',
 		).toBeTruthy()
 
-		const runBody = await run.json()
+		const runBody = run.json || {}
 		const runUuid: string = runBody.uuid || runBody['@self']?.id || ''
 		expect(runUuid, 'the run must have been created').toBeTruthy()
 		expect(
