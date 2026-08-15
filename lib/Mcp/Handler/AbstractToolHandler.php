@@ -559,7 +559,7 @@ abstract class AbstractToolHandler {
 	 * @return array{version?: array, appUuid?: string, appName?: string, error?: string, message?: string}
 	 */
 	protected function loadVersion(object $objectService, string $appSlug, string $versionSlug): array {
-		$apps = $this->objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'application', ['slug' => $appSlug], _rbac: true, _multitenancy: false);
+		$apps = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'application', ['slug' => $appSlug], _rbac: true, _multitenancy: false);
 		if (is_array($apps) === false || $apps === []) {
 			return ['error' => 'not_found', 'message' => "No virtual app found for slug '{$appSlug}'."];
 		}
@@ -567,7 +567,7 @@ abstract class AbstractToolHandler {
 		$app = $this->toArray(item: $apps[0]);
 		$appUuid = $this->extractUuid(item: $app);
 
-		$versions = $this->objectService->searchObjectsBySlug(
+		$versions = $objectService->searchObjectsBySlug(
 			self::REGISTER_SLUG,
 			'applicationVersion',
 			['application' => $appUuid, 'slug' => $versionSlug],
@@ -617,7 +617,7 @@ abstract class AbstractToolHandler {
 		// H3: guard removed — fail loudly (503) rather than silently skip locking.
 		$locked = false;
 		try {
-			$this->objectService->lockObject(
+			$objectService->lockObject(
 				identifier: $versionUuid,
 				process: 'openbuild.mcp-manifest-edit',
 				duration: 30
@@ -643,7 +643,7 @@ abstract class AbstractToolHandler {
 			// saveObject treats the input as a clean property bag.
 			unset($payload['@self'], $payload['id'], $payload['uuid']);
 
-			$saved = $this->objectService->saveObject(
+			$saved = $objectService->saveObject(
 				object: $payload,
 				register: self::REGISTER_SLUG,
 				schema: 'applicationVersion',
@@ -654,7 +654,7 @@ abstract class AbstractToolHandler {
 		} finally {
 			if ($locked === true) {
 				try {
-					$this->objectService->unlockObject(identifier: $versionUuid);
+					$objectService->unlockObject(identifier: $versionUuid);
 				} catch (\Throwable $unlockError) {
 					$this->logger->warning(
 						'OpenBuild MCP: failed to release manifest lock on ' . $versionUuid,
