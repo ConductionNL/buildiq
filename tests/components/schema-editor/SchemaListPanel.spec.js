@@ -28,9 +28,9 @@ import SchemaListPanel, {
 const stubs = {
 	NcButton: {
 		name: 'NcButton',
-		props: ['type', 'disabled'],
+		props: ['type', 'variant', 'disabled'],
 		template:
-			'<button :data-nc-button-type="type" :disabled="disabled" @click="$emit(\'click\', $event)"><slot name="icon" /><slot /></button>',
+			'<button :data-nc-button-type="variant || type" :disabled="disabled" @click="$emit(\'click\', $event)"><slot name="icon" /><slot /></button>',
 	},
 	NcEmptyContent: {
 		name: 'NcEmptyContent',

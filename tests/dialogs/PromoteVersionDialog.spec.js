@@ -30,9 +30,9 @@ const baseStubs = {
 	},
 	NcButton: {
 		name: 'NcButton',
-		props: ['type', 'disabled'],
+		props: ['type', 'variant', 'disabled'],
 		template:
-			'<button :disabled="disabled || false" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
+			'<button :disabled="disabled || false" :data-type="variant || type" @click="$emit(\'click\', $event)"><slot /></button>',
 	},
 	NcCheckboxRadioSwitch: {
 		name: 'NcCheckboxRadioSwitch',
