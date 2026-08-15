@@ -51,7 +51,7 @@ class ApplicationVersionUserScopeGuardTest extends TestCase {
 	 *
 	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * Mocked group manager passed to the real PermissionResolver.

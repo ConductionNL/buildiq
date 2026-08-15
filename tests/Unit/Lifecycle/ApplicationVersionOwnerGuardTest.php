@@ -53,7 +53,7 @@ class ApplicationVersionOwnerGuardTest extends TestCase {
 	 *
 	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * Mocked IGroupManager passed to the real PermissionResolver.

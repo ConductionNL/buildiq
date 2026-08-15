@@ -52,7 +52,7 @@ final class RuleEngineServiceTest extends TestCase {
 	 *
 	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * Mock cache manager (always a miss so OR is queried).

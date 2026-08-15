@@ -76,7 +76,7 @@ class CreateFromTemplateTest extends TestCase {
 	 *
 	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * Mock RegisterMapper.

@@ -57,7 +57,7 @@ class SeedHelloWorldFixtureTest extends TestCase {
 	 *
 	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * Every saveObject() call the command made, in order.

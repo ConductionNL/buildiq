@@ -59,7 +59,7 @@ class ApplicationPublishControllerTest extends TestCase {
 	/**
 	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * @var IUserSession&MockObject

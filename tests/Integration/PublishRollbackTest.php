@@ -64,7 +64,7 @@ class PublishRollbackTest extends TestCase {
 	 *
 	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $fakeObjectService;
+	private ObjectServiceInterface&MockObject $fakeObjectService;
 
 	/**
 	 * Every saveObject call's `{schema, object}` pair — used for assertions.
