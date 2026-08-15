@@ -177,3 +177,17 @@ Two facts should have caught it earlier and did not: the suite reported **182 pa
 1. POSTs now go through `apiPost()`, issued from inside the page with the token read off the document — mirroring `tests/e2e/support/appFixture.ts`, which has done it correctly all along.
 2. **Every skip guard is gone.** A fixture that cannot be created now FAILS with its status code. A skip and a pass are the same colour, and this feature's whole risk is failures that look like passes.
 3. The round trip generates a **fresh UUID per run** rather than a fixed one, which would collide with itself the second time the spec ran against an instance — a test that passes once and then reports its own fixture as a defect.
+
+## What running the e2e for real then found (2026-08-15)
+
+With the skip guards gone, both tests executed and both failed — which is what a working test looks like when the thing around it is wrong.
+
+**1. The Settings action is inside a collapsed overflow menu.** `NcActions` is `forceMenu`, so the button does not exist in the DOM until the menu is opened, and it renders only for an app OWNER. Reaching straight for a button named `/settings/i` found nothing and the failure surfaced on the flow picker instead of on the menu. Fixed to the pattern `save-as-template.spec.ts` already uses: click `Actions`, then `Settings`. Ownership verified rather than assumed — the seeded `hello-world` carries `permissions.owners: ["user:admin"]`, which is the e2e user.
+
+**2. 🔴 `POST /api/flows` MINTS a uuid and ignores one supplied in the body.** Measured: sent `6d67a16d-…`, got back `d5edb726-…`.
+
+That is a fact about OpenRegister's API, not about this feature, and the product path is unaffected — but it is worth stating plainly, because an importing instance that seeded through that API instead of the repair step would orphan every application binding while every file looked correct.
+
+`FlowSeedService` writes the entity through `FlowMapper::insert()`, which DOES preserve a supplied uuid. Verified directly rather than reasoned about: `insert()` returned the uuid it was given and `findByUuid()` resolved it.
+
+So the preservation assertion moved OFF the e2e — where it was testing the HTTP API and failing for the wrong reason — and stays where seeding actually happens, in `FlowSeedServiceTest`, mutation-controlled. What the e2e still proves is the part no unit test can: a definition in the entity store is visible to the ENGINE.

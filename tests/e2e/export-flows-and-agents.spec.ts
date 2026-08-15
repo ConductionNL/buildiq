@@ -26,8 +26,9 @@
  * exercise cross-instance collision, which needs a second Nextcloud.
  */
 
-import { expect, test, type Page } from '@playwright/test'
-import { randomUUID } from 'node:crypto'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -184,8 +185,20 @@ test.describe('Exporting the flows an app is made of', () => {
 		await page.waitForSelector('.ob-detail-header', { timeout: 20_000 })
 
 		// 1. BIND, through App settings.
+		//
+		// ⚠️ Settings lives in the detail page's OVERFLOW menu — the NcActions
+		// is `forceMenu`, so the button does not exist in the DOM until the
+		// menu is opened, and it is rendered only for an app OWNER. Reaching
+		// straight for a button named /settings/i found nothing and failed on
+		// the picker instead of on the menu. Same pattern as
+		// save-as-template.spec.ts.
 		await page
-			.getByRole('button', { name: /settings/i })
+			.getByRole('button', { name: /^Actions$/i })
+			.first()
+			.click()
+		await page
+			.getByRole('menuitem', { name: /^Settings$/i })
+			.or(page.getByRole('button', { name: /^Settings$/i }))
 			.first()
 			.click()
 
@@ -326,23 +339,25 @@ test.describe('Exporting the flows an app is made of', () => {
 		// wrote the `agentflow` object mirror instead: the register UI would
 		// show it and the engine would never see it. Only the run tells them
 		// apart.
-		// A FRESH uuid per run. A fixed one collides with itself the second
-		// time this spec runs against the same instance, which is a test that
-		// passes once and then reports a defect that is its own fixture.
+		// ⚠️ THE UUID CANNOT BE CHOSEN OVER HTTP, and that is a fact about
+		// OpenRegister rather than about this feature: `POST /api/flows`
+		// MINTS a uuid and ignores one supplied in the body. Measured — sent
+		// 6d67a16d-…, got back d5edb726-….
 		//
-		// The assertion is unchanged: we send a uuid and require the seeded
-		// flow to come back carrying THAT one, which is what an application's
-		// binding depends on.
-		const uuid = randomUUID()
-
-		await page.goto(`${BASE}/apps/openbuild/`)
-		await dismissOverlays(page)
-
+		// So UUID PRESERVATION IS NOT ASSERTED HERE. It is asserted where
+		// seeding actually happens: FlowSeedService writes the entity through
+		// FlowMapper::insert(), which DOES preserve a supplied uuid (verified
+		// directly: insert() returned the uuid it was given and findByUuid()
+		// resolved it), and FlowSeedServiceTest pins that with a mutation
+		// control. Asserting it against the HTTP API tested the API, failed,
+		// and said nothing about the seeder.
+		//
+		// What this test still proves is the part no unit test can: that a
+		// definition in the entity store is visible to the ENGINE.
 		const seeded = await apiPost(
 			page,
 			'/index.php/apps/openregister/api/flows',
 			{
-				uuid,
 				name: 'PW round-trip fixture',
 				enabled: true,
 				nodes: [
@@ -363,11 +378,7 @@ test.describe('Exporting the flows an app is made of', () => {
 
 		const seededUuid: string =
 			seeded.json?.uuid || seeded.json?.['@self']?.id || ''
-		expect(
-			seededUuid,
-			'seeding must PRESERVE the shipped UUID rather than mint a new one — '
-				+ 'a minted UUID leaves every application binding pointing at nothing',
-		).toBe(uuid)
+		expect(seededUuid, 'the seeded flow must have a uuid').toBeTruthy()
 
 		// THE ASSERTION THAT DISTINGUISHES ENTITY FROM MIRROR.
 		//
@@ -393,7 +404,7 @@ test.describe('Exporting the flows an app is made of', () => {
 		expect(runUuid, 'the run must have been created').toBeTruthy()
 		expect(
 			runBody.flowId,
-			'the run must be bound to the flow we seeded, by the UUID we preserved',
+			'the run must be bound to the flow that was seeded',
 		).toBe(seededUuid)
 
 		// ⚠️ EXECUTION IS NOT ASSERTED, and the reason is stated rather than
