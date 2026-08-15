@@ -63,8 +63,9 @@
 		<NcActions :menuName="t('openbuild', 'Actions')" :forceMenu="true">
 			<NcActionButton
 				v-if="obAppRole === 'owner'"
+				data-test="app-settings-action"
 				:disabled="!obApp"
-				@click="settingsOpen = true">
+				@click="onSettingsOpen(true)">
 				<template #icon>
 					<CogOutline :size="20" />
 				</template>
