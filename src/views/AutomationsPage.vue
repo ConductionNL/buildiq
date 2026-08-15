@@ -15,10 +15,10 @@
 	<div class="automations-page">
 		<header class="automations-page__header">
 			<h2>{{ t('openbuild', 'Automations') }}</h2>
-			<NcButton type="secondary" :disabled="!selectedApp" @click="openFlows">
+			<NcButton variant="secondary" :disabled="!selectedApp" @click="openFlows">
 				{{ t('openbuild', 'Edit flows…') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="!selectedVersionId" @click="openNew">
+			<NcButton variant="primary" :disabled="!selectedVersionId" @click="openNew">
 				{{ t('openbuild', 'New automation') }}
 			</NcButton>
 		</header>
@@ -83,7 +83,7 @@
 						class="automations-page__drift-badge"
 						data-testid="drift-badge">
 						{{ t('openbuild', 'Drift detected') }}
-						<NcButton type="tertiary" @click="recompile(automation)">
+						<NcButton variant="tertiary" @click="recompile(automation)">
 							{{ t('openbuild', 'Recompile (overwrite)') }}
 						</NcButton>
 					</span>
@@ -102,13 +102,13 @@
 						@update:modelValue="toggleEnabled(automation, $event)">
 						{{ t('openbuild', 'Enabled') }}
 					</NcCheckboxRadioSwitch>
-					<NcButton type="tertiary" @click="openTestPanel(automation)">
+					<NcButton variant="tertiary" @click="openTestPanel(automation)">
 						{{ t('openbuild', 'Test') }}
 					</NcButton>
-					<NcButton type="tertiary" @click="openEdit(automation)">
+					<NcButton variant="tertiary" @click="openEdit(automation)">
 						{{ t('openbuild', 'Edit') }}
 					</NcButton>
-					<NcButton type="tertiary" @click="remove(automation)">
+					<NcButton variant="tertiary" @click="remove(automation)">
 						{{ t('openbuild', 'Delete') }}
 					</NcButton>
 				</div>
@@ -161,6 +161,7 @@
 </template>
 
 <script>
+import { CnFlowEditModal } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import {
@@ -171,7 +172,6 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-import { CnFlowEditModal } from '@conduction/nextcloud-vue'
 import AutomationEditDialog from '../dialogs/AutomationEditDialog.vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 import AutomationTestPanelModal from '../modals/AutomationTestPanelModal.vue'
