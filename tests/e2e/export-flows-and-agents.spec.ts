@@ -114,6 +114,15 @@ async function apiPost(
 }
 
 test.describe('Exporting the flows an app is made of', () => {
+	// The config default is 30_000, and this spec cannot fit in it: binding
+	// through the UI, then an export job that is polled for up to 90 s, then a
+	// download and a ZIP read. The first run blew the budget mid-wait and
+	// reported the picker as missing — a timeout wearing the costume of a
+	// missing element.
+	//
+	// iconUpload.spec.ts raises it the same way for the same reason.
+	test.setTimeout(240_000)
+
 	let scratch: string
 
 	test.beforeAll(() => {
@@ -354,6 +363,14 @@ test.describe('Exporting the flows an app is made of', () => {
 		//
 		// What this test still proves is the part no unit test can: that a
 		// definition in the entity store is visible to the ENGINE.
+		//
+		// ⚠️ NAVIGATE FIRST. apiPost() fetches from inside the page with a
+		// RELATIVE url, and a page still on about:blank has no base to resolve
+		// it against — "Failed to parse URL from /index.php/…". My previous
+		// edit removed this goto along with the block it was sitting in.
+		await page.goto(`${BASE}/apps/openbuild/`)
+		await dismissOverlays(page)
+
 		const seeded = await apiPost(
 			page,
 			'/index.php/apps/openregister/api/flows',
