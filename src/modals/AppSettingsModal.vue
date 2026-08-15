@@ -106,15 +106,19 @@
 						)
 					}}
 				</p>
-				<NcSelect
-					:modelValue="selectedFlows"
-					:options="availableFlows"
-					:multiple="true"
-					:disabled="busy || loadingFlows"
-					:loading="loadingFlows"
-					:inputLabel="t('openbuild', 'Flows this app is made of')"
-					data-test="app-settings-flow-picker"
-					@update:modelValue="onFlowsPicked" />
+				<!-- Wrapper carries the test hook; NcSelect, like
+				     NcCheckboxRadioSwitch, does not forward stray attributes
+				     to the DOM. -->
+				<div data-test="app-settings-flow-picker">
+					<NcSelect
+						:modelValue="selectedFlows"
+						:options="availableFlows"
+						:multiple="true"
+						:disabled="busy || loadingFlows"
+						:loading="loadingFlows"
+						:inputLabel="t('openbuild', 'Flows this app is made of')"
+						@update:modelValue="onFlowsPicked" />
+				</div>
 				<p
 					v-if="!loadingFlows && !availableFlows.length"
 					class="app-settings__hint">

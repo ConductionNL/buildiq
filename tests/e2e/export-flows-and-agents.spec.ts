@@ -236,7 +236,12 @@ test.describe('Exporting the flows an app is made of', () => {
 
 		// Included by DEFAULT: an exported app without its flows installs and
 		// does nothing, so "ship what this app is made of" is the useful default.
-		await expect(flowToggle.locator('input[type="checkbox"]')).toBeChecked()
+		//
+		// The hook is on a WRAPPER, so the input is inside it — NcCheckboxRadioSwitch
+		// sets `inheritAttrs: false` and never renders an attribute passed to it.
+		await expect(
+			flowToggle.locator('input[type="checkbox"]').first(),
+		).toBeChecked()
 
 		const [exportRequest] = await Promise.all([
 			page.waitForRequest(

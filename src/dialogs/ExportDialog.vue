@@ -64,14 +64,20 @@
 						)
 					}}
 				</p>
-				<NcCheckboxRadioSwitch
+				<!-- The data-test hook lives on a plain wrapper, not on the
+				     NcCheckboxRadioSwitch: that component sets
+				     `inheritAttrs: false`, so an attribute passed to it does
+				     not reach the DOM and a selector for it finds nothing. -->
+				<div
 					v-for="choice in flowChoices"
 					:key="choice.flow"
-					v-model="choice.include"
-					:data-test="`export-flow-${choice.flow}`"
-					:disabled="submitting">
-					{{ choice.label || choice.flow }}
-				</NcCheckboxRadioSwitch>
+					:data-test="`export-flow-${choice.flow}`">
+					<NcCheckboxRadioSwitch
+						v-model="choice.include"
+						:disabled="submitting">
+						{{ choice.label || choice.flow }}
+					</NcCheckboxRadioSwitch>
+				</div>
 			</template>
 
 			<template v-if="form.target && form.target.value === 'github'">
