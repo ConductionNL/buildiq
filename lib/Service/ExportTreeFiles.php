@@ -12,14 +12,14 @@
  * Extracted rather than suppressed. The complexity number was a fair report of
  * a class doing two jobs.
  *
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Service
  * @package  OCA\OpenBuild\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license   AGPL-3.0-or-later
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://conduction.nl
  */

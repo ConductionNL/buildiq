@@ -20,7 +20,7 @@
  * @package  OCA\OpenBuild\Tests\Unit\Service
  *
  * @author  Conduction Development Team <dev@conduction.nl>
- * @license AGPL-3.0-or-later
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
 
 declare(strict_types=1);
