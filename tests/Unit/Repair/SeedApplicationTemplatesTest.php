@@ -200,6 +200,9 @@ class SeedApplicationTemplatesTest extends TestCase {
 
 		$step = new SeedApplicationTemplates(
 			seedService: new TemplateSeedService(
+				logger: $this->logger,
+				appManager: $this->appManager,
+				objectService: $this->objectService,
 			),
 		);
 
@@ -229,6 +232,9 @@ class SeedApplicationTemplatesTest extends TestCase {
 
 		$step = new SeedApplicationTemplates(
 			seedService: new TemplateSeedService(
+				logger: $this->logger,
+				appManager: $this->appManager,
+				objectService: $this->objectService,
 			),
 		);
 
@@ -264,6 +270,9 @@ class SeedApplicationTemplatesTest extends TestCase {
 
 		$step = new SeedApplicationTemplates(
 			seedService: new TemplateSeedService(
+				logger: $this->logger,
+				appManager: $this->appManager,
+				objectService: $this->objectService,
 			),
 		);
 
@@ -296,6 +305,9 @@ class SeedApplicationTemplatesTest extends TestCase {
 
 		$step = new SeedApplicationTemplates(
 			seedService: new TemplateSeedService(
+				logger: $this->logger,
+				appManager: $this->appManager,
+				objectService: $this->objectService,
 			),
 		);
 
