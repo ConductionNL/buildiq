@@ -4,7 +4,7 @@ kind: config
 
 ## Why
 
-An OpenBuild application cannot say which flows or agents it is made of, so an export cannot carry them.
+An OpenBuild application cannot say which flows it is made of, so an export cannot carry them — and it turns out it can already say which agents it has, which is why only one of the two needs a new binding.
 
 The `application` schema declares fifteen properties — `slug`, `name`, `description`, `appType`, `status`, `baseRef`, `productionVersion`, `icon`, `iconDark`, `allowUserOverrides`, `permissions`, `githubRepo`, `githubDefaultBranch`, `dataRegisters`, `connectors`. Two of those are bindings to other things the app is composed of. Neither is a flow, and neither is an agent.
 
@@ -22,21 +22,30 @@ That naming is load-bearing rather than cosmetic. ADR-065 exists because the wor
 
 ## What Changes
 
-A new `register.d` fragment adds two array bindings to the `application` schema, shaped exactly like the existing `dataRegisters` binding so the UI, the export payload, and the reviewer all recognise it:
+A new `register.d` fragment adds ONE array binding to the `application` schema, shaped like the existing `dataRegisters` binding so the UI, the export payload and the reviewer all recognise it:
 
-- **`flows`** — each entry `{ label, flow }`, where `flow` is the OpenRegister flow's **slug**, resolved against the `Flow` entity.
-- **`agents`** — each entry `{ label, agent }`, where `agent` is the agent's slug.
+- **`flows`** — each entry `{ label, flow }`, where `flow` is the OpenRegister flow's **UUID**, resolved against the `Flow` entity via `FlowMapper::findByUuid()`.
 
-Both are declarative additions to `lib/Settings/register.d/`. No PHP changes, no export behaviour, no UI. The bundler, the install-time seeding, and the e2e coverage are the next spec in the chain (`openbuild-exports-flows-and-agents`), which cannot start until this lands because it has nothing to read until then.
+It is a declarative addition to `lib/Settings/register.d/`. No PHP changes, no export behaviour, no UI. The bundler, the install-time seeding and the e2e coverage are the next spec in the chain (`openbuild-exports-flows-and-agents`), which cannot start until this lands because it has nothing to read until then.
 
-### Why slug and not id
+### Why UUID and not slug — corrected during implementation
 
-`dataRegisters` binds by slug (`{"label":"Hydra pipeline cache","register":"hydra-cache"}`) and an export that carried numeric ids would be unusable on any other instance — ids are per-instance, slugs travel. A dangling slug is also a recoverable, reportable state, which the existing bundler already models: an unresolvable data register is skipped with a log line rather than failing the export.
+This proposal originally specified a slug for both bindings, by analogy with `dataRegisters`. Implementing it showed the analogy does not hold: **the `Flow` entity has no slug.** It carries `uuid`, `name`, `app`, `enabled`, `trigger`, `nodes`, `edges` — and `FlowMapper` offers `findByUuid()`, with no slug lookup to offer.
+
+The portability argument survives intact, because it was always an argument against the numeric `id`: an auto-increment column is per-instance and would resolve to a different flow, or to nothing, after an export. A UUID is globally unique and travels — provided the importing side seeds the flow with the same UUID rather than minting a new one, which the follower spec now requires explicitly.
+
+The cost is readability: a UUID means nothing in a picker. That is what `label` is for, and it matters more here than it would for a slug.
+
+### Why there is NO `agents` binding
+
+Also corrected during implementation. The `agent` schema already carries **`applicationSlug`**, and `AgentsController` already resolves an application's agents through it. Adding an `agents` array to the application would create a SECOND edge for a relationship that already exists, pointing the other way — two links that can disagree, with nothing to say which is right.
+
+So the exporter resolves an app's agents by querying agents whose `applicationSlug` matches, and the application schema gains nothing for agents at all. This is the same instinct ADR-065 applies to flows, in a smaller domain: one representation of a relationship, not two.
 
 ## Capabilities
 
 ### New Capabilities
-- `app-composition-bindings`: what an OpenBuild application declares itself to be composed of — data registers, connectors, and now flows and agents — and the rules those bindings follow (slug-addressed, resolvable, and pointing at the one flow engine).
+- `app-composition-bindings`: what an OpenBuild application declares itself to be composed of — data registers, connectors, and now flows — and the rules those bindings follow (portably addressed, resolvable against the one flow engine, and not duplicating a relationship that already exists elsewhere).
 
 ### Modified Capabilities
 <!-- None. This change introduces the binding vocabulary; it modifies no existing requirement. -->
@@ -44,6 +53,7 @@ Both are declarative additions to `lib/Settings/register.d/`. No PHP changes, no
 ## Impact
 
 - **`openbuild/lib/Settings/register.d/`** — one new fragment (numbered alongside `20-data-registers.json` / `21-connectors.json`).
-- **The `application` schema** (register `openbuild`, schema 28) gains two optional array properties. Existing application objects remain valid: both bindings are optional and absent means "binds none", which is what all 30 existing applications mean today.
+- **The `application` schema** (register `openbuild`, schema 28) gains ONE optional array property. Existing application objects remain valid: the binding is optional and absent means "binds none", which is what all 30 existing applications mean today.
+- **Nothing for agents.** The app→agent relationship already exists as `agent.applicationSlug`; this change deliberately does not duplicate it.
 - **No runtime behaviour changes.** Nothing reads these bindings until the next spec in the chain.
 - **Downstream:** `openbuild-exports-flows-and-agents` (`kind: code`) depends on this.

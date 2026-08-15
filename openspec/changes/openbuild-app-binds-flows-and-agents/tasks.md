@@ -45,11 +45,21 @@
 
 Quality reminders (not checkboxes): no PHP, controller, route or listener may be added by this change — it is `kind: config` and any code surface belongs to the follower. Run the app's JSON lint and `composer check:strict` to confirm the fragment parses and nothing else moved. Fix any pre-existing quality issue encountered in files this change touches.
 
+## Correction applied during implementation (2026-08-15)
+
+Two things this spec asserted turned out to be false about the code, and both were found by writing the follower's bundler rather than by reading:
+
+1. **The `Flow` entity has no slug.** It carries `uuid`, `name`, `app`, `enabled`, `trigger`, `nodes`, `edges`, and `FlowMapper` exposes `findByUuid()` with no slug lookup beside it. The binding is now **UUID**-addressed. The argument that produced "slug" was really an argument against the numeric `id` — an auto-increment column that resolves to a different flow on another instance — and that argument is exactly why a UUID works, conditional on the importing side seeding the same UUID rather than minting a new one. That condition is now an explicit requirement on the follower.
+2. **There must be no `agents` binding.** The `agent` schema already carries `applicationSlug`, and `AgentsController` already resolves an application's agents through it. A second edge for the same relationship, pointing the other way, is two facts that can disagree with nothing to arbitrate. The exporter queries agents by `applicationSlug`; the schema gains nothing.
+
+Had either shipped as written, the follower would have hit them while writing the bundler — one spec too late, with the binding already in a merged schema and thirty objects potentially carrying it.
+
 ## Applied — measured results (2026-08-15)
 
 Schema read back through `SchemaMapper`, not from the fragment file:
 
-- `application` now declares **17** properties (was 15); `flows` and `agents` present with `type: array`, `required: ["flow"]` / `["agent"]`, `additionalProperties: false`, item keys `flow|agent` + `label`.
+- `application` now declares **16** properties (was 15): `flows` only, with `type: array`, `required: ["flow"]`, `additionalProperties: false`, item keys `flow` + `label`, and the UUID pattern live on `flow`.
+- `agents` is deliberately ABSENT — verified as absent after the correction, not merely never added.
 - `Application.required` is still `["slug","name"]` — neither binding was added to it.
 - `dataRegisters` and `connectors` unchanged.
 
@@ -57,13 +67,14 @@ Constraint behaviour, each observed as an accept **or** a refusal against a pair
 
 | case | result |
 | --- | --- |
-| valid binding, round-tripped | ACCEPTED, both fields preserved |
-| valid entry **plus** an unknown key (`typo`) | REFUSED — `failed validation for rule 'additionalProperties'` |
-| same entry without the unknown key (control) | ACCEPTED |
-| slug with uppercase (`Hydra-Sequencer`) | REFUSED — pattern |
-| numeric id in place of a slug (`5020`) | REFUSED — type |
-| no bindings at all | ACCEPTED |
-| dangling slug (`flow-that-was-deleted`) | ACCEPTED |
+| real sequencer UUID `6b14a1fd-…`, round-tripped | ACCEPTED, both fields preserved |
+| valid UUID **plus** an unknown key (`typo`) | REFUSED — `failed validation for rule 'additionalProperties'` |
+| **the slug this design first specified** (`hydra-sequencer`) | REFUSED — pattern |
+| numeric id (`5020`) | REFUSED — type |
+| no `flows` key at all | ACCEPTED |
+| dangling but well-formed UUID (`00000000-…`) | ACCEPTED |
+
+The slug case is kept as a permanent regression guard: it is what this spec originally asked for, and a schema that accepted it would resolve to nothing at export time.
 
 ⚠️ The first attempt at the unknown-key test OMITTED `flow`, so it was refused for a MISSING REQUIRED PROPERTY and proved nothing about `additionalProperties`. Re-run with `flow` present plus a stray key, and paired with an accepted control — a refusal with no matching acceptance cannot distinguish a working rule from a rule that refuses everything.
 

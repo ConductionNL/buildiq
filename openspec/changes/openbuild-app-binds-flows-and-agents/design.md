@@ -10,7 +10,8 @@ Two facts about the target of the new binding, both measured rather than assumed
 ## Goals / Non-Goals
 
 **Goals:**
-- Give an application somewhere to declare the flows and agents it is composed of.
+- Give an application somewhere to declare the flows it is composed of.
+- Establish that agents need no such binding, because `agent.applicationSlug` already expresses it.
 - Make the binding shape identical to `dataRegisters`, so the builder pickers, export payload and reviewer treat it as a known thing.
 - Name the referent unambiguously as the OpenRegister `Flow`, so ADR-065's single-engine rule is expressed in the data model rather than only in prose.
 
@@ -22,6 +23,16 @@ Two facts about the target of the new binding, both measured rather than assumed
 
 ## Decisions
 
+### 0. No `agents` binding at all — the edge already exists
+
+`agent` objects carry **`applicationSlug`**, and `AgentsController` already resolves an application's agents through it. An `agents` array on the application would be a second edge for the same relationship, pointing the other way.
+
+Two edges can disagree. Bind agent X to app A while X's own `applicationSlug` says B, and nothing in the model says which is true — the exporter, the UI and the reviewer would each have to pick, and they would not all pick the same one.
+
+So the exporter queries agents by `applicationSlug` and the schema gains nothing. This is ADR-065's instinct applied in a smaller domain: one representation of a relationship, not two.
+
+**Alternative rejected:** binding agents anyway "for symmetry" with `flows`. Symmetry between a relationship that exists and one that does not is a false symmetry, and it costs a drift class that cannot be validated away.
+
 ### 1. One `flows` binding, addressing the OpenRegister `Flow` — never a second flow vocabulary
 
 ADR-065 exists because "flow" meant five things across the fleet, and that ambiguity "already produced one dead feature and one silent data-loss bug". A binding named `agentFlows`, or a hermiq-specific sibling, would rebuild the ambiguity inside a single schema.
@@ -30,11 +41,17 @@ A flow that calls an agent is an ordinary OpenRegister flow whose nodes are the 
 
 **Alternative rejected:** a single polymorphic `components` binding covering registers, connectors, flows and agents. It reads tidier and it loses the type at exactly the moment the exporter needs it, forcing a discriminator field that the existing two bindings do not have.
 
-### 2. Slug, not id — and a dangling slug is reportable, not fatal
+### 2. UUID, not slug and not id — corrected against the entity
 
-`dataRegisters` binds by slug, with a `^[a-z0-9][a-z0-9-]*[a-z0-9]$` pattern. Ids are per-instance; an exported app carrying `flow: 5020` would resolve to a different flow, or to nothing, wherever it landed. That is the failure mode this whole change exists to prevent, so it must not be reintroduced in the binding.
+The first version of this design said slug, by analogy with `dataRegisters`. The analogy fails: **the `Flow` entity has no slug.** It carries `uuid`, `name`, `app`, `enabled`, `trigger`, `nodes`, `edges`, and `FlowMapper` exposes `findByUuid()` with no slug lookup beside it. A slug binding would have been unresolvable — the follower would have discovered this while writing the bundler, one spec too late.
 
-A slug that resolves to nothing must not make the application unsaveable. Renaming a flow is ordinary. The existing bundler already models this: an unresolvable data register is skipped with a log line rather than failing the export. Validation therefore constrains the STRING SHAPE only; resolvability is the consumer's problem and the consumer reports it.
+The reasoning behind "not an id" is untouched and is the reason UUID works: an id is an auto-increment column, per-instance, and an exported `flow: 5020` resolves to a different flow or to nothing wherever it lands. A UUID is globally unique, so it survives the trip — **conditional on the importing side seeding the flow with the same UUID rather than minting a new one.** That condition is now an explicit requirement on the follower; without it the binding breaks on exactly the round trip it exists to support.
+
+The cost is legibility. `hydra-sequencer` tells a reader what it is; `6b14a1fd-…` does not. That is what `label` is for, and it is why `label` matters more on this binding than on `dataRegisters`.
+
+A UUID that resolves to nothing must not make the application unsaveable — deleting a flow is ordinary. Validation constrains the STRING SHAPE only; resolvability is the consumer's problem and the consumer reports it.
+
+**Alternative rejected:** adding a `slug` column to the `Flow` entity. It would read better, and it is an OpenRegister change — outside this app's remit (ADR-022), and a schema migration on a table with 86 rows on one dev instance alone. If OR grows a flow slug later, this binding can accept one alongside the UUID.
 
 ### 3. `additionalProperties: false`, matching the precedent
 
@@ -46,32 +63,37 @@ The `dataRegisters` item sets it. A binding that silently accepts extra keys is 
 
 ## Seed Data
 
-The change adds properties to an existing schema rather than a new schema, so there are no new objects to seed. What the follower spec and any manual test need is a realistic binding to exercise, and the instance already provides one:
+The change adds one property to an existing schema rather than a new schema, so there are no new objects to seed. What the follower spec and any manual test need is a realistic binding to exercise. Real UUIDs read off the dev instance, so the fixtures resolve rather than merely parse:
 
-**`hydra-console` (existing application object)** — a plausible fully-populated binding, for use as an example in the follower spec's fixtures rather than as a migration to apply now:
+**`hydra-console`** — a plausible fully-populated binding, for the follower's fixtures rather than as a migration to apply now:
 
 ```json
 {
   "slug": "hydra-console",
   "dataRegisters": [{ "label": "Hydra pipeline cache", "register": "hydra-cache" }],
   "flows": [
-    { "label": "Hydra sequencer", "flow": "hydra-sequencer" },
-    { "label": "Hydra triage", "flow": "hydra-triage" },
-    { "label": "Hydra lock reaper", "flow": "hydra-lock-reaper" }
-  ],
-  "agents": [
-    { "label": "Code reviewer", "agent": "juan-claude-van-damme" },
-    { "label": "Security reviewer", "agent": "clyde-barcode" },
-    { "label": "Applier", "agent": "axel-plier" }
+    { "label": "Hydra sequencer", "flow": "6b14a1fd-0cab-40c0-a3e7-7fea3be29bdc" },
+    { "label": "Hydra Triage", "flow": "2973f673-1886-4d7e-ab3a-3232fb8de20e" },
+    { "label": "Hydra lock reaper", "flow": "782158f5-0852-477e-a80f-e9ac01793b1e" }
   ]
 }
 ```
 
-General-organisation equivalents for the follower spec's fixtures, so the feature is not only ever exercised against hydra:
+No `agents` key: the app's agents are the `agent` objects whose `applicationSlug` is `hydra-console`.
 
-- **Municipality** — app `vergunningen`, flows `aanvraag-intake` and `bezwaar-termijnbewaking`, agent `dossier-samenvatter`.
-- **Consultancy** — app `urenregistratie`, flow `weekstaat-herinnering`, agent `factuur-controleur`.
-- **Travel agency** — app `boekingen`, flow `annulering-terugbetaling`, agent `reisdocument-checker`.
+The sequencer is the useful fixture precisely because it is not a toy — 76 nodes, and its graph includes `hermiq.workload-step`, so it exercises decision 1 (an agentic flow binds and exports like any other) rather than only the happy path.
+
+Fixtures for the follower that must FAIL, which matter more than the ones that pass:
+
+- **Dangling** — a well-formed UUID (`00000000-0000-0000-0000-000000000000`) that resolves to no flow. Proves the export still succeeds and the skip reaches the operator.
+- **Divergent** — a flow whose `Flow` entity and `agentflow` object differ in node count. The only fixture that can tell a bundler reading the entity from one reading the mirror.
+- **Malformed** — `"flow": "hydra-sequencer"`, i.e. the slug this design originally specified. Refused by the UUID pattern, and worth keeping as a regression guard precisely because it was the first design.
+
+General-organisation fixtures, so the feature is not only ever exercised against hydra:
+
+- **Municipality** — app `vergunningen`, flow "Aanvraag intake" (no agentic nodes).
+- **Consultancy** — app `urenregistratie`, flow "Weekstaat herinnering".
+- **Travel agency** — app `boekingen`, flow "Annulering terugbetaling".
 
 ## Risks / Trade-offs
 

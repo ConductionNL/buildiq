@@ -4,14 +4,16 @@ Defines what an exported OpenBuild application contains and what that export is 
 
 ## ADDED Requirements
 
-### Requirement: An export MUST carry the flows and agents the application binds
+### Requirement: An export MUST carry the flows the application binds, and the agents that point at it
 
-The exporter MUST resolve the application's `flows` and `agents` bindings and write each definition into the scaffold as JSON, alongside the data-register schemas it already bundles.
+The exporter MUST resolve the application's `flows` binding — by UUID, via `FlowMapper::findByUuid()` — and MUST resolve its agents by querying `agent` objects whose `applicationSlug` matches the application. Each definition MUST be written into the scaffold as JSON, alongside the data-register schemas it already bundles.
+
+There is deliberately no `agents` binding to read: that relationship is expressed once, on the agent.
 
 Flow definitions MUST be read from the OpenRegister **`Flow` entity**. They MUST NOT be read from the `agentflow` object store, which mirrors some definitions and drifts from the entity — a definition present in the object store and stale relative to the entity would export a graph that is not the one the engine runs.
 
 #### Scenario: A bound flow is written into the export
-- **WHEN** an application binding `{"label": "Hydra sequencer", "flow": "hydra-sequencer"}` is exported
+- **WHEN** an application binding `{"label": "Hydra sequencer", "flow": "6b14a1fd-0cab-40c0-a3e7-7fea3be29bdc"}` is exported
 - **THEN** the ZIP MUST contain that flow's definition as JSON
 - **AND** its nodes and edges MUST match the `Flow` entity, node for node
 
@@ -19,9 +21,11 @@ Flow definitions MUST be read from the OpenRegister **`Flow` entity**. They MUST
 - **WHEN** a flow exists in BOTH the `Flow` entity and the `agentflow` object store, with different node counts
 - **THEN** the exported definition MUST be the one from the `Flow` entity
 
-#### Scenario: A bound agent is written into the export
-- **WHEN** an application binds an agent by slug
-- **THEN** the ZIP MUST contain that agent's definition as JSON
+#### Scenario: An app's agents are resolved WITHOUT a binding
+- **WHEN** an application is exported
+- **THEN** its agents MUST be found by querying `agent` objects whose `applicationSlug` matches the application's slug
+- **AND** each MUST be written into the ZIP as JSON
+- **AND** the exporter MUST NOT read an `agents` array off the application, because none exists — the relationship is expressed once, on the agent
 
 ### Requirement: A flow using AGENTIC nodes MUST export through the ordinary path
 
@@ -40,9 +44,12 @@ An app that ships flow JSON MUST seed it into the importing instance's `Flow` ta
 
 Seeding MUST write the `Flow` entity, for the same reason the exporter reads it.
 
+⚠️ Seeding MUST PRESERVE THE UUID the definition carries, rather than minting a new one. The binding addresses a flow by UUID; an import that re-generates it leaves every binding in the exported application pointing at nothing, which breaks precisely the round trip this feature exists to support.
+
 #### Scenario: A seeded flow can actually execute
 - **WHEN** an exported app is installed on an instance that did not have the flow
 - **THEN** the flow MUST exist as a `Flow` entity
+- **AND** its UUID MUST equal the one in the exported definition, so the application's binding still resolves
 - **AND** queueing a run of it MUST execute its nodes — the proof is a run, not a read-back
 
 #### Scenario: Seeding happens on update, not only on first install
@@ -56,7 +63,7 @@ Re-running the seeder MUST NOT duplicate a flow. An operator who has edited a se
 
 #### Scenario: Seeding twice yields one flow
 - **WHEN** the seeder runs twice with the same definition
-- **THEN** exactly one `Flow` entity MUST exist for that slug
+- **THEN** exactly one `Flow` entity MUST exist for that UUID
 
 #### Scenario: A locally edited flow is not silently overwritten
 - **WHEN** a seeded flow has been modified on the importing instance and the app is updated
@@ -64,12 +71,12 @@ Re-running the seeder MUST NOT duplicate a flow. An operator who has edited a se
 
 ### Requirement: An unresolvable binding MUST be reported, not silently dropped
 
-A bound slug that resolves to nothing MUST NOT fail the export, and MUST NOT vanish either. The export job's result MUST name what was skipped.
+A bound UUID that resolves to nothing MUST NOT fail the export, and MUST NOT vanish either. The export job's result MUST name what was skipped.
 
 This follows the existing precedent — an unresolvable data register is skipped with a log line — but strengthens it: a log line alone is not a report, because the operator reading the finished job never sees it.
 
 #### Scenario: A dangling flow binding is named in the result
-- **WHEN** an application binds `{"flow": "flow-that-was-deleted"}` and is exported
+- **WHEN** an application binds a well-formed UUID that resolves to no flow, and is exported
 - **THEN** the export MUST succeed
 - **AND** the job result MUST name that binding as skipped, with the reason
 

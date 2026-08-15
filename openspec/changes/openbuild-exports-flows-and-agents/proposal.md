@@ -28,9 +28,11 @@ Per **ADR-065**, OpenRegister is the only home for a flow engine. This change ad
 
 ## What Changes
 
-**Bundling.** A `FlowAndAgentExportBundler`, sibling to `DataRegisterExportBundler`, resolves the application's `flows` and `agents` bindings and writes `lib/Settings/flows/<slug>.json` and `lib/Settings/agents/<slug>.json` into the scaffold. Flows are read from the `Flow` entity via `FlowMapper`. A binding that resolves to nothing is skipped with a log line — the precedent the data-register bundler already sets — and the skip is reported in the job result rather than only in a log.
+**Bundling.** A `FlowAndAgentExportBundler`, sibling to `DataRegisterExportBundler`, resolves the application's `flows` binding (by UUID, via `FlowMapper::findByUuid()`) and its agents (by querying `agent` objects whose `applicationSlug` matches — there is deliberately no `agents` binding, because that edge already exists) and writes `lib/Settings/flows/<slug>.json` and `lib/Settings/agents/<slug>.json` into the scaffold. Flows are read from the `Flow` entity via `FlowMapper`. A binding that resolves to nothing is skipped with a log line — the precedent the data-register bundler already sets — and the skip is reported in the job result rather than only in a log.
 
-**Export payload.** `ExportJobService` accepts `flows` and `agents` alongside `dataRegisters`, sanitised the same way.
+**Export payload.** `ExportJobService` accepts `flows` alongside `dataRegisters`, sanitised the same way. Agents need no payload entry: they follow from the application.
+
+**UUID preservation.** Seeding writes each flow with the UUID it was exported with. Minting a new one on import would leave every binding in the imported application pointing at nothing — the one failure that breaks the round trip while every file looks correct.
 
 **Install-time seeding.** An exported app that ships flow JSON needs something to put it into the `Flow` table on the importing instance, or the export round-trips into a register with no runnable flows. The scaffold template gains that seeding, wired to the app's existing install/update hook.
 
