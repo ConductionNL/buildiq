@@ -138,3 +138,23 @@ flows written: 1
 The good flow survives the bad one, and the bad one is REPORTED rather than dropped — an operator reads the finished job, never the log.
 
 ⚠️ `hydra-console` keeps its three flow bindings. The chain head listed back-filling as a Non-Goal, and this is a deliberate exception: making hydra exportable is the question that started this work, and the binding is what makes the answer true rather than theoretical.
+
+## The e2e called endpoints that do not exist (2026-08-15)
+
+Checking whether CI actually RUNS the new spec turned up that three of its calls were wrong. Playwright names only failing tests in its log, so "not referenced" meant passed **or silently skipped** — and the spec's `test.skip(!created.ok(), …)` guards mean a wrong URL skips green. Every endpoint was then checked against `appinfo/routes.php` rather than assumed:
+
+| the spec called | the route that exists |
+| --- | --- |
+| `POST /apps/openbuild/api/exports` | `POST /api/applications/{slug}/exports` |
+| `GET /apps/openbuild/api/exports?limit=1` and `/exports/{uuid}` | none — an ExportJob is an OpenRegister OBJECT, read at `/api/objects/openbuild/export-job`, exactly as `ExportJobsList.vue` reads it |
+| `PUT /apps/openbuild/api/applications/…` | `obPatchApp()` PUTs the OR object at `/api/objects/openbuild/application/{uuid}` |
+
+`/api/exports/{uuid}/download` was the one that was right.
+
+Verified positively afterwards, not just by reading: `POST /api/flows` returns **201** with a `uuid` for the spec's exact payload, and `POST /flows/{uuid}/run` returns **201** with a run bound to that flow.
+
+### Execution is deliberately NOT asserted, and why
+
+A run is created `queued` and advanced by `FlowRunWorker`, a background job. Measured on the dev instance: queued runs sat unadvanced indefinitely, and `executionMode: sync` made no difference — the POST queues either way. An assertion on a terminal status would therefore fail for want of a cron worker rather than for want of a working import, which is a test that reports the wrong thing.
+
+What the test asserts instead still separates the two implementations this feature can have: `POST /flows/{uuid}/run` is served by the ENGINE, which reads the `Flow` entity. A definition seeded into the `agentflow` OBJECT mirror would be visible in the register UI and answer "no such flow" here. So a created run — bound to the UUID we preserved — proves the seeded definition reached the store that executes. And if the run does reach a terminal state in budget, it must not be `failed`: the engine seeing a flow it cannot execute is a real defect.

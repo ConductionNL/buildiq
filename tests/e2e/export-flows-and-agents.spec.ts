@@ -142,12 +142,20 @@ test.describe('Exporting the flows an app is made of', () => {
 			.first()
 			.click()
 
-		// The parent persists the binding; wait for the PATCH rather than a
+		// The parent persists the binding; wait for the WRITE rather than a
 		// fixed sleep, so a slow instance does not produce a flaky pass.
+		//
+		// ⚠️ It is a PUT to the OpenRegister OBJECT
+		// (/apps/openregister/api/objects/openbuild/application/{uuid}), not to
+		// an openbuild route — `obPatchApp()` writes the Application object
+		// directly. Waiting on /apps/openbuild/api/applications would wait for
+		// a request that is never made.
 		await page.waitForResponse(
 			(response) =>
-				response.url().includes('/apps/openbuild/api/applications')
-				&& ['PATCH', 'PUT'].includes(response.request().method()),
+				response
+					.url()
+					.includes('/apps/openregister/api/objects/openbuild/application')
+				&& response.request().method() === 'PUT',
 			{ timeout: 20_000 },
 		)
 
@@ -174,8 +182,13 @@ test.describe('Exporting the flows an app is made of', () => {
 		const [exportRequest] = await Promise.all([
 			page.waitForRequest(
 				(request) =>
-					request.url().includes('/apps/openbuild/api/exports')
-					&& request.method() === 'POST',
+					// The REAL submit route is
+					// /api/applications/{slug}/exports — not /api/exports,
+					// which is only the download path. Matching the wrong URL
+					// here made this test wait for a request that never came.
+					/\/apps\/openbuild\/api\/applications\/[^/]+\/exports$/.test(
+						request.url(),
+					) && request.method() === 'POST',
 				{ timeout: 20_000 },
 			),
 			page.getByRole('button', { name: /start export/i }).click(),
@@ -190,21 +203,19 @@ test.describe('Exporting the flows an app is made of', () => {
 		).toContainEqual({ flow: flowUuid })
 
 		// 3. Poll to completion and look inside the ZIP.
-		const listed = await page.request.get(
-			`${BASE}/index.php/apps/openbuild/api/exports?limit=1`,
-		)
-		const rows = (await listed.json()).results || []
-		const jobUuid: string = rows[0]?.uuid || rows[0]?.jobUuid || ''
-		expect(jobUuid, 'the export job must be listed').toBeTruthy()
+		//
+		// An ExportJob is an OpenRegister OBJECT, not an openbuild route: there
+		// is no GET /api/exports. `ExportJobsList.vue` reads it the same way.
+		const jobsUrl = `${BASE}/index.php/apps/openregister/api/objects/openbuild/export-job?applicationUuid=${encodeURIComponent(objectId)}`
 
 		let status = ''
+		let jobUuid = ''
 		const deadline = Date.now() + POLL_TIMEOUT_MS
 		while (Date.now() < deadline) {
-			const job = await (
-				await page.request.get(
-					`${BASE}/index.php/apps/openbuild/api/exports/${jobUuid}`,
-				)
-			).json()
+			const rows =
+				(await (await page.request.get(jobsUrl)).json()).results || []
+			const job = rows[0] || {}
+			jobUuid = job.uuid || job['@self']?.id || ''
 			status = job.status || ''
 			if (status === 'succeeded' || status === 'failed') {
 				break
@@ -212,11 +223,13 @@ test.describe('Exporting the flows an app is made of', () => {
 
 			await page.waitForTimeout(2_000)
 		}
+		expect(jobUuid, 'the export job must exist').toBeTruthy()
 		expect(status, 'the export job must finish').toBe('succeeded')
 
 		const download = await page.request.get(
 			`${BASE}/index.php/apps/openbuild/api/exports/${jobUuid}/download`,
 		)
+		// ↑ the one /api/exports/… route that DOES exist.
 		expect(download.ok()).toBeTruthy()
 
 		const zipPath = join(scratch, 'export.zip')
@@ -280,29 +293,52 @@ test.describe('Exporting the flows an app is made of', () => {
 				+ 'a minted UUID leaves every application binding pointing at nothing',
 		).toBe(uuid)
 
+		// THE ASSERTION THAT DISTINGUISHES ENTITY FROM MIRROR.
+		//
+		// `POST /flows/{uuid}/run` is served by the flow ENGINE, which reads the
+		// `Flow` entity. A definition seeded into the `agentflow` OBJECT store
+		// instead would be visible in the register UI and invisible here — the
+		// engine would answer "no such flow". So a created run proves the seeded
+		// definition reached the store the engine actually executes, which is
+		// the failure this whole feature is exposed to.
 		const run = await page.request.post(
 			`${BASE}/index.php/apps/openregister/api/flows/${seededUuid}/run`,
 			{ data: {} },
 		)
 		expect(
 			run.ok(),
-			'an imported flow must be RUNNABLE — files that never reach the engine '
-				+ 'pass every assertion that only inspects the ZIP',
+			'the engine must accept a run for the seeded flow — a definition it '
+				+ 'cannot see is a flow that exists only in a mirror',
 		).toBeTruthy()
 
 		const runBody = await run.json()
 		const runUuid: string = runBody.uuid || runBody['@self']?.id || ''
 		expect(runUuid, 'the run must have been created').toBeTruthy()
+		expect(
+			runBody.flowId,
+			'the run must be bound to the flow we seeded, by the UUID we preserved',
+		).toBe(seededUuid)
 
-		let runStatus = ''
-		const deadline = Date.now() + 60_000
+		// ⚠️ EXECUTION IS NOT ASSERTED, and the reason is stated rather than
+		// hidden: a run is created `queued` and advanced by `FlowRunWorker`,
+		// which is a background job. Nothing guarantees cron has run inside a
+		// test's patience — measured on the dev instance, queued runs sat
+		// unadvanced indefinitely — so an assertion on a terminal status would
+		// fail for want of a worker rather than for want of a working import.
+		//
+		// What IS asserted above is the part that separates a seeded entity
+		// from a seeded mirror. If the run does reach a terminal state within
+		// the budget, it must not be `failed`: that would mean the engine saw
+		// the flow and could not execute it, which is a real defect.
+		let runStatus = 'queued'
+		const deadline = Date.now() + 30_000
 		while (Date.now() < deadline) {
 			const state = await (
 				await page.request.get(
 					`${BASE}/index.php/apps/openregister/api/flow-runs/${runUuid}`,
 				)
 			).json()
-			runStatus = state.status || ''
+			runStatus = state.status || runStatus
 			if (
 				['completed', 'stopped', 'failed', 'suspended'].includes(runStatus)
 			) {
@@ -313,8 +349,8 @@ test.describe('Exporting the flows an app is made of', () => {
 		}
 
 		expect(
-			['completed', 'stopped', 'suspended'],
-			`the seeded flow must execute; it reported "${runStatus}"`,
-		).toContain(runStatus)
+			runStatus,
+			'a run the engine started and could not execute is a real defect',
+		).not.toBe('failed')
 	})
 })
