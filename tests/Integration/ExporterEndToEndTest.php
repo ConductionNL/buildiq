@@ -303,7 +303,8 @@ final class ExporterEndToEndTest extends TestCase {
 				$this->createMock(\OCA\OpenRegister\Db\FlowMapper::class),
 				$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
 				new NullLogger()
-			)
+			),
+			new \OCA\OpenBuild\Service\ExportTreeFiles()
 		);
 	}//end buildService()
 

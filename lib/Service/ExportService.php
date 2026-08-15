@@ -119,6 +119,7 @@ class ExportService {
 		private LoggerInterface $logger,
 		private DataRegisterExportBundler $dataRegisterBundler,
 		private FlowAndAgentExportBundler $flowAndAgentBundler,
+		private ExportTreeFiles $treeFiles,
 	) {
 		$this->templateRoot = dirname(__DIR__) . '/Resources/template';
 		// 2026-01-01T00:00:00Z — fixed for deterministic ZIPs.
@@ -236,7 +237,7 @@ class ExportService {
 			}
 
 			$map = [];
-			foreach ($this->listFilesSorted(baseDir: $scratch) as $relative) {
+			foreach ($this->treeFiles->listFilesSorted(baseDir: $scratch) as $relative) {
 				$contents = file_get_contents($scratch . '/' . $relative);
 				if ($contents !== false) {
 					$map[$relative] = $contents;
@@ -245,7 +246,7 @@ class ExportService {
 
 			return $map;
 		} finally {
-			$this->rrmdir(dir: $scratch);
+			$this->treeFiles->removeTree(dir: $scratch);
 		}//end try
 
 	}//end buildScaffoldMap()
@@ -338,7 +339,7 @@ class ExportService {
 			throw new RuntimeException('Unable to open ZIP archive: ' . $zipPath);
 		}
 
-		$entries = $this->listFilesSorted(baseDir: $sourceDir);
+		$entries = $this->treeFiles->listFilesSorted(baseDir: $sourceDir);
 		foreach ($entries as $relativePath) {
 			$absolute = $sourceDir . '/' . $relativePath;
 			$zip->addFile($absolute, $relativePath);
@@ -356,36 +357,6 @@ class ExportService {
 		return $zipPath;
 	}//end packageZip()
 
-	/**
-	 * Returns a recursive sorted list of file paths relative to $baseDir.
-	 *
-	 * Case-sensitive ASCII sort guarantees stable archive ordering.
-	 *
-	 * @param string $baseDir Directory to walk.
-	 *
-	 * @return array<int,string> Sorted relative file paths.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-41
-	 */
-	private function listFilesSorted(string $baseDir): array {
-		$files = [];
-		if (is_dir($baseDir) === false) {
-			return $files;
-		}
-
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator($baseDir, FilesystemIterator::SKIP_DOTS)
-		);
-		foreach ($iterator as $file) {
-			if ($file->isFile() === true) {
-				$relative = ltrim(str_replace($baseDir, '', (string)$file->getPathname()), '/');
-				$files[] = $relative;
-			}
-		}
-
-		sort($files, SORT_STRING);
-		return $files;
-	}//end listFilesSorted()
 
 	/**
 	 * Resolve placeholders across the scratch tree, in-place.
@@ -509,7 +480,7 @@ class ExportService {
 		$scratch = $this->scratchTreeDir(jobUuid: $jobUuid);
 
 		if (is_dir($scratch) === true) {
-			$this->rrmdir(dir: $scratch);
+			$this->treeFiles->removeTree(dir: $scratch);
 		}
 
 		mkdir($scratch, 0o755, true);
@@ -581,34 +552,4 @@ class ExportService {
 		return $local;
 	}//end getOrCreateAppDataDir()
 
-	/**
-	 * Recursive directory removal.
-	 *
-	 * @param string $dir Directory to remove.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
-	 */
-	private function rrmdir(string $dir): void {
-		if (is_dir($dir) === false) {
-			return;
-		}
-
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
-			RecursiveIteratorIterator::CHILD_FIRST
-		);
-		foreach ($iterator as $entry) {
-			$path = (string)$entry->getPathname();
-			if ($entry->isDir() === true) {
-				rmdir($path);
-				continue;
-			}
-
-			unlink($path);
-		}
-
-		rmdir($dir);
-	}//end rrmdir()
 }//end class

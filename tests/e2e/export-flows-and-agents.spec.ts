@@ -73,9 +73,7 @@ test.describe('OpenBuild exports the flows an app is made of', () => {
 		rmSync(scratch, { recursive: true, force: true })
 	})
 
-	test('a bound flow and the app’s agents reach the ZIP', async ({
-		request,
-	}) => {
+	test('a bound flow and the app’s agents reach the ZIP', async ({ request }) => {
 		// A real flow to bind. Created through the API rather than assumed to
 		// exist, so the test does not silently pass on an instance where the
 		// fixture was never seeded — an empty export satisfies every assertion
@@ -88,7 +86,11 @@ test.describe('OpenBuild exports the flows an app is made of', () => {
 					description: 'Bound by an application and exported.',
 					enabled: false,
 					nodes: [
-						{ id: 'start', type: 'openregister.trigger-schedule', config: {} },
+						{
+							id: 'start',
+							type: 'openregister.trigger-schedule',
+							config: {},
+						},
 						// An AGENTIC node, so this fixture proves ADR-065's rule
 						// (one flow system) rather than only the plain path.
 						{ id: 'work', type: 'hermiq.workload-step', config: {} },
@@ -219,7 +221,11 @@ test.describe('OpenBuild exports the flows an app is made of', () => {
 					name: 'E2E round-trip fixture',
 					enabled: true,
 					nodes: [
-						{ id: 'start', type: 'openregister.trigger-schedule', config: {} },
+						{
+							id: 'start',
+							type: 'openregister.trigger-schedule',
+							config: {},
+						},
 						{ id: 'done', type: 'openregister.end', config: {} },
 					],
 					edges: [{ from: 'start', to: 'done' }],
@@ -229,12 +235,11 @@ test.describe('OpenBuild exports the flows an app is made of', () => {
 		expect(seeded.ok(), 'the seeded definition must be accepted').toBeTruthy()
 
 		const seededFlow = await seeded.json()
-		const seededUuid: string =
-			seededFlow.uuid ?? seededFlow['@self']?.id ?? uuid
+		const seededUuid: string = seededFlow.uuid ?? seededFlow['@self']?.id ?? uuid
 		expect(
 			seededUuid,
-			'seeding must PRESERVE the shipped UUID rather than mint a new one — ' +
-				'a minted UUID leaves every application binding pointing at nothing',
+			'seeding must PRESERVE the shipped UUID rather than mint a new one — '
+				+ 'a minted UUID leaves every application binding pointing at nothing',
 		).toBe(uuid)
 
 		// Queue a run. This is the assertion the whole feature rests on.
@@ -244,8 +249,8 @@ test.describe('OpenBuild exports the flows an app is made of', () => {
 		)
 		expect(
 			run.ok(),
-			'an imported flow must be RUNNABLE — files that never reach the engine ' +
-				'pass every assertion that only inspects the ZIP',
+			'an imported flow must be RUNNABLE — files that never reach the engine '
+				+ 'pass every assertion that only inspects the ZIP',
 		).toBeTruthy()
 
 		const runBody = await run.json()
@@ -262,7 +267,9 @@ test.describe('OpenBuild exports the flows an app is made of', () => {
 				)
 			).json()
 			runStatus = state.status ?? ''
-			if (['completed', 'stopped', 'failed', 'suspended'].includes(runStatus)) {
+			if (
+				['completed', 'stopped', 'failed', 'suspended'].includes(runStatus)
+			) {
 				break
 			}
 

@@ -91,6 +91,11 @@
                 <referencedClass name="OCA\OpenRegister\Db\AuditTrail"/>
                 <referencedClass name="OCA\OpenRegister\Db\RegisterMapper"/>
                 <referencedClass name="OCA\OpenRegister\Db\SchemaMapper"/>
+                <!-- The flow ENTITY the engine executes, and its mapper. Read by
+                     FlowAndAgentExportBundler so an exported app carries the
+                     flows it is made of. -->
+                <referencedClass name="OCA\OpenRegister\Db\FlowMapper"/>
+                <referencedClass name="OCA\OpenRegister\Db\Flow"/>
                 <!-- Schema itself was missing while its Mapper was listed, so
                      AutomationCompilerService's 7 uses of it were simply red. -->
                 <referencedClass name="OCA\OpenRegister\Db\Schema"/>
