@@ -27,7 +27,7 @@
 		</NcButton>
 		<div v-if="link" class="ob-track-link-action__result">
 			<code>{{ link }}</code>
-			<NcButton type="tertiary" @click="copy">
+			<NcButton variant="tertiary" @click="copy">
 				{{ t('openbuild', 'Copy') }}
 			</NcButton>
 		</div>

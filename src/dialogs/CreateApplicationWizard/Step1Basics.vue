@@ -18,7 +18,7 @@
 		<div v-if="copilotAvailable" class="wizard-step1__ai-row">
 			<NcButton
 				data-testid="copilot-generate-button"
-				type="secondary"
+				variant="secondary"
 				@click="showCopilotDialog = true">
 				{{ t('openbuild', 'Generate with AI') }}
 			</NcButton>

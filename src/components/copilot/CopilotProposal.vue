@@ -54,7 +54,7 @@
 			</NcButton>
 			<NcButton
 				data-testid="copilot-approve"
-				type="primary"
+				variant="primary"
 				:disabled="!canApprove || busy"
 				@click="$emit('approve')">
 				{{ busy ? t('openbuild', 'Applying…') : t('openbuild', 'Approve') }}

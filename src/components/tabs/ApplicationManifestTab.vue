@@ -35,7 +35,7 @@
 		<div class="ob-manifest-tab__actions">
 			<NcButton
 				v-if="obAppRole === 'editor' || obAppRole === 'owner'"
-				type="primary"
+				variant="primary"
 				:disabled="!obApp || saving"
 				data-testid="openbuild-editor-save"
 				@click="save">

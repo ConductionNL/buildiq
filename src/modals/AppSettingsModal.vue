@@ -82,14 +82,14 @@
 						:disabled="busy"
 						@update:modelValue="updateRow(index, 'label', $event)" />
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:disabled="busy"
 						:aria-label="t('openbuild', 'Remove data register')"
 						@click="removeRow(index)">
 						{{ t('openbuild', 'Remove') }}
 					</NcButton>
 				</div>
-				<NcButton type="secondary" :disabled="busy" @click="addRow">
+				<NcButton variant="secondary" :disabled="busy" @click="addRow">
 					{{ t('openbuild', 'Add data register') }}
 				</NcButton>
 			</div>

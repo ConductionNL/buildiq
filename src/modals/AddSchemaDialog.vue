@@ -21,7 +21,7 @@
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="!isValid || submitting"
 				@click="onConfirm">
 				{{

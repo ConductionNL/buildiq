@@ -20,7 +20,7 @@
 	<NcDialog v-if="open" :name="name" @closing="$emit('update:open', false)">
 		<div class="prompt-text">
 			<NcTextField
-				v-model:value="value"
+				v-model="value"
 				:label="label"
 				:placeholder="placeholder"
 				@keydown.enter="onSubmit" />
@@ -29,7 +29,7 @@
 			<NcButton @click="$emit('update:open', false)">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="!value.trim()" @click="onSubmit">
+			<NcButton variant="primary" :disabled="!value.trim()" @click="onSubmit">
 				{{ confirmLabel || t('openbuild', 'Confirm') }}
 			</NcButton>
 		</template>

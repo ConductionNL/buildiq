@@ -113,7 +113,7 @@
 			<NcButton @click="onClose">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="!canSave || saving" @click="save">
+			<NcButton variant="primary" :disabled="!canSave || saving" @click="save">
 				{{ saveLabel }}
 			</NcButton>
 		</template>

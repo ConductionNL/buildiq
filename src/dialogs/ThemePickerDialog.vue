@@ -122,10 +122,10 @@
 			<NcButton @click="onClose">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="tertiary" @click="onClearTheme">
+			<NcButton variant="tertiary" @click="onClearTheme">
 				{{ t('openbuild', 'Default (Nextcloud)') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="!candidate" @click="onSave">
+			<NcButton variant="primary" :disabled="!candidate" @click="onSave">
 				{{ t('openbuild', 'Save') }}
 			</NcButton>
 		</template>

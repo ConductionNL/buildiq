@@ -16,7 +16,7 @@
 	<div class="openbuild-schema-list">
 		<header class="openbuild-schema-list__header">
 			<h2>{{ t('openbuild', 'Schemas') }}</h2>
-			<NcButton type="primary" @click="addOpen = true">
+			<NcButton variant="primary" @click="addOpen = true">
 				<template #icon>
 					<PlusIcon :size="20" />
 				</template>
@@ -41,7 +41,7 @@
 					<DatabaseIcon :size="64" />
 				</template>
 				<template #action>
-					<NcButton type="primary" @click="addOpen = true">
+					<NcButton variant="primary" @click="addOpen = true">
 						{{ t('openbuild', 'Add schema') }}
 					</NcButton>
 				</template>

@@ -13,14 +13,14 @@
 			<h2>{{ t('openbuild', 'Test sandbox') }} — {{ ruleSet.name }}</h2>
 
 			<div class="rule-set-test-sandbox__toolbar">
-				<NcButton type="primary" :disabled="running" @click="runAll">
+				<NcButton variant="primary" :disabled="running" @click="runAll">
 					{{
 						running
-							? t('openbuild', 'Running...')
+							? t('openbuild', 'Running…')
 							: t('openbuild', 'Run all tests')
 					}}
 				</NcButton>
-				<NcButton type="secondary" @click="showAdd = !showAdd">
+				<NcButton variant="secondary" @click="showAdd = !showAdd">
 					{{ t('openbuild', 'Add test case') }}
 				</NcButton>
 			</div>
@@ -82,7 +82,7 @@
 				<NcTextArea
 					v-model="draft.expectedText"
 					:label="t('openbuild', 'Expected result (JSON)')" />
-				<NcButton type="primary" :disabled="saving" @click="addTestCase">
+				<NcButton variant="primary" :disabled="saving" @click="addTestCase">
 					{{ t('openbuild', 'Save test case') }}
 				</NcButton>
 			</div>

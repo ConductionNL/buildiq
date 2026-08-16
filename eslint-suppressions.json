@@ -1,24 +1,15 @@
 {
   "src/App.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },
   "src/components/ApplicationDetailActions.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
     }
   },
   "src/components/AutomationActionListEditor.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
     },
@@ -26,30 +17,7 @@
       "count": 2
     }
   },
-  "src/components/DocumentAttachmentsSection.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 3
-    }
-  },
-  "src/components/SchedulesSection.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 3
-    }
-  },
-  "src/components/ThemeSection.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    }
-  },
-  "src/components/VirtualAppsActions.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    }
-  },
   "src/components/WorkflowAttachmentsSection.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 3
-    },
     "vue/custom-event-name-casing": {
       "count": 1
     }
@@ -60,9 +28,6 @@
     }
   },
   "src/components/applicationDetail/ApplicationDetailDashboard.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
     },
@@ -76,17 +41,11 @@
     }
   },
   "src/components/applicationDetail/widgets/GroupsWidget.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "vue/custom-event-name-casing": {
       "count": 1
     }
   },
   "src/components/applicationDetail/widgets/ManifestWidget.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 3
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
     },
@@ -95,9 +54,6 @@
     }
   },
   "src/components/applicationDetail/widgets/RegisterWidget.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     },
@@ -106,9 +62,6 @@
     }
   },
   "src/components/applicationDetail/widgets/SchemasWidget.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "no-console": {
       "count": 2
     },
@@ -116,25 +69,7 @@
       "count": 1
     }
   },
-  "src/components/copilot/CopilotPanel.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
-  "src/components/copilot/CopilotProposal.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
-  "src/components/dashboard/DashboardAppsListWidget.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 3
-    }
-  },
   "src/components/page-editor/BlockLibraryPanel.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
     },
@@ -143,9 +78,6 @@
     }
   },
   "src/components/page-editor/ConnectorFieldMapper.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
     "vue/custom-event-name-casing": {
       "count": 1
     },
@@ -158,18 +90,8 @@
       "count": 2
     }
   },
-  "src/components/page-editor/FormPageEditor.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 2
-    }
-  },
   "src/components/page-editor/IndexPageEditor.vue": {
     "eqeqeq": {
-      "count": 1
-    }
-  },
-  "src/components/page-editor/MapPageEditor.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
       "count": 1
     }
   },
@@ -181,38 +103,12 @@
       "count": 1
     }
   },
-  "src/components/runtime/ConnectorDataView.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
-  "src/components/runtime/DocumentActions.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
   "src/components/runtime/MyApprovalsWidget.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 3
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
     }
   },
-  "src/components/runtime/ProcestCaseStatusPanel.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    }
-  },
-  "src/components/runtime/TrackLinkAction.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
   "src/components/schema-editor/FieldEditor.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 3
-    },
     "eqeqeq": {
       "count": 19
     },
@@ -220,25 +116,7 @@
       "count": 4
     }
   },
-  "src/components/schema-editor/LifecycleEditor.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 3
-    }
-  },
-  "src/components/schema-editor/RelationEditor.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
-  "src/components/schema-editor/SchemaListPanel.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    }
-  },
   "src/components/schema-editor/WidgetEditor.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     },
@@ -246,23 +124,12 @@
       "count": 1
     }
   },
-  "src/components/tabs/ApplicationManifestTab.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
   "src/components/walkthrough-editor/WalkthroughDesigner.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 16
-    },
     "vue/custom-event-name-casing": {
       "count": 1
     }
   },
   "src/components/walkthrough-editor/WalkthroughRecorder.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
     }
@@ -283,17 +150,11 @@
     }
   },
   "src/dialogs/AgentEditDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },
   "src/dialogs/AutomationEditDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 7
     },
@@ -301,30 +162,14 @@
       "count": 2
     }
   },
-  "src/dialogs/BlockRemapDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
   "src/dialogs/ConditionActionRuleEditor.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 3
-    },
     "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "src/dialogs/ConfirmActionDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
       "count": 1
     }
   },
   "src/dialogs/CopilotGenerateDialog.vue": {
     "@nextcloud/no-deprecated-library-props": {
-      "count": 3
+      "count": 1
     }
   },
   "src/dialogs/CreateApplicationWizard.vue": {
@@ -333,97 +178,44 @@
     }
   },
   "src/dialogs/CreateApplicationWizard/Step1Basics.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "vue/custom-event-name-casing": {
       "count": 1
     }
   },
   "src/dialogs/DecisionTableEditor.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 4
-    },
     "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "src/dialogs/DeleteAppDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
-  "src/dialogs/DocumentTemplateAttachmentDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    }
-  },
-  "src/dialogs/EditTemplateMetadataDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
       "count": 1
     }
   },
   "src/dialogs/ExportDialog.vue": {
     "@nextcloud/no-deprecated-library-props": {
-      "count": 2
+      "count": 1
     },
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },
-  "src/dialogs/ExternalFormAccessDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    }
-  },
   "src/dialogs/ImportDataWizard.vue": {
     "@nextcloud/no-deprecated-library-props": {
-      "count": 9
+      "count": 1
     }
   },
   "src/dialogs/PromoteVersionDialog.vue": {
     "@nextcloud/no-deprecated-library-props": {
-      "count": 3
-    }
-  },
-  "src/dialogs/PromptTextDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
+      "count": 1
     }
   },
   "src/dialogs/SaveAsTemplateDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },
   "src/dialogs/SaveBlockDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },
-  "src/dialogs/ScheduleEditDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
-  "src/dialogs/ThemePickerDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    }
-  },
   "src/dialogs/WorkflowAttachmentDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
     "vue/custom-event-name-casing": {
       "count": 1
     }
@@ -433,23 +225,12 @@
       "count": 1
     }
   },
-  "src/modals/AddSchemaDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
   "src/modals/AppSettingsModal.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
     "vue/custom-event-name-casing": {
       "count": 3
     }
   },
   "src/modals/AutomationTestPanelModal.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
     },
@@ -457,75 +238,27 @@
       "count": 1
     }
   },
-  "src/modals/CloneTemplateDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
-  "src/modals/DeleteFieldDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
-  "src/modals/DeleteSchemaDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
   "src/modals/GitHubSyncModal.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 3
     }
   },
-  "src/modals/LinkRepoDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
   "src/modals/PermissionHistoryModal.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
     }
   },
-  "src/modals/PermissionsModal.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    }
-  },
-  "src/modals/PublishConfirmDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
   "src/modals/RollbackConfirmModal.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },
   "src/modals/RuleSetTestSandboxModal.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 3
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 3
     }
   },
   "src/modals/UserDeltaEditModal.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
@@ -556,41 +289,26 @@
     }
   },
   "src/views/AgentsPage.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 5
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 3
     }
   },
   "src/views/AutomationsPage.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 5
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 7
     }
   },
   "src/views/DashboardIndex.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
     "no-console": {
       "count": 1
     }
   },
   "src/views/ExportJobsList.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },
   "src/views/ManifestLayersDetail.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 8
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 6
     }
@@ -603,34 +321,17 @@
       "count": 1
     }
   },
-  "src/views/PageDesignerHost.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
   "src/views/RuleSetsPage.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 5
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
     }
   },
   "src/views/SchemaDesigner.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 5
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
     }
   },
   "src/views/TemplateGallery.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 3
     }
@@ -641,9 +342,6 @@
     }
   },
   "src/views/settings/Settings.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
     "vue/multi-word-component-names": {
       "count": 1
     }

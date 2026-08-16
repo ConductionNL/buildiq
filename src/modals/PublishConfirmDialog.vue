@@ -49,7 +49,7 @@
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
 				<NcButton
-					type="primary"
+					variant="primary"
 					:disabled="!credentialId || submitting"
 					@click="submit">
 					{{
