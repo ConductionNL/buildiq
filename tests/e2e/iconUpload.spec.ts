@@ -57,25 +57,15 @@ const MINIMAL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
  * @param request Playwright request context carrying the admin session.
  * @return {Promise<object>} `{ objectId, app }` for the seeded application.
  */
-async function resolveApp(
-	request: APIRequestContext,
-): Promise<{ objectId: string; app: Record<string, any> }> {
-	const res = await request.get(
-		`${BASE}/index.php/apps/openbuild/api/applications`,
-		{
-			headers: { 'OCS-APIRequest': 'true' },
-		},
-	)
+async function resolveApp(request: APIRequestContext): Promise<{ objectId: string, app: Record<string, any> }> {
+	const res = await request.get(`${BASE}/index.php/apps/openbuild/api/applications`, {
+		headers: { 'OCS-APIRequest': 'true' },
+	})
 	expect(res.ok(), 'the applications API must answer').toBeTruthy()
 	const body = await res.json()
-	const rows: Array<Record<string, any>> = Array.isArray(body)
-		? body
-		: (body.results ?? [])
+	const rows: Array<Record<string, any>> = Array.isArray(body) ? body : (body.results ?? [])
 	const app = rows.find((a) => (a.slug ?? a['@self']?.slug) === HELLO_WORLD_SLUG)
-	expect(
-		app,
-		`the seeded "${HELLO_WORLD_SLUG}" Application must exist`,
-	).toBeTruthy()
+	expect(app, `the seeded "${HELLO_WORLD_SLUG}" Application must exist`).toBeTruthy()
 	const found = app as Record<string, any>
 	const objectId = found['@self']?.id || found.uuid || found.id
 	expect(objectId, 'the Application must carry an object id').toBeTruthy()
@@ -95,9 +85,7 @@ async function resolveApp(
  * @return {Promise<void>}
  */
 async function openIconsTab(page: Page, objectId: string): Promise<void> {
-	await page.goto(`/apps/openbuild/applications/${objectId}`, {
-		waitUntil: 'domcontentloaded',
-	})
+	await page.goto(`/apps/openbuild/applications/${objectId}`, { waitUntil: 'domcontentloaded' })
 	await dismissFirstVisitOverlays(page)
 	await expect(
 		page.locator('.ob-detail-header__name'),
@@ -108,14 +96,9 @@ async function openIconsTab(page: Page, objectId: string): Promise<void> {
 	if (!(await sidebar.isVisible().catch(() => false))) {
 		await page.locator('.app-sidebar__toggle').first().click()
 	}
-	await expect(sidebar, 'the object sidebar must open').toBeVisible({
-		timeout: 15_000,
-	})
+	await expect(sidebar, 'the object sidebar must open').toBeVisible({ timeout: 15_000 })
 
-	await page
-		.getByRole('tab', { name: /^icons$/i })
-		.first()
-		.click()
+	await page.getByRole('tab', { name: /^icons$/i }).first().click()
 	await expect(
 		page.locator('[data-testid="cn-object-sidebar-tab-icons"]'),
 		'the Icons tab panel must render',
@@ -123,10 +106,7 @@ async function openIconsTab(page: Page, objectId: string): Promise<void> {
 }
 
 test.describe('Icon upload on the Application detail page (spec A task 7.5)', () => {
-	test('the Icons tab mounts the upload section with light + dark variants and an SVG-only picker', async ({
-		page,
-		request,
-	}) => {
+	test('the Icons tab mounts the upload section with light + dark variants and an SVG-only picker', async ({ page, request }) => {
 		const { objectId } = await resolveApp(request)
 		await openIconsTab(page, objectId)
 
@@ -148,15 +128,16 @@ test.describe('Icon upload on the Application detail page (spec A task 7.5)', ()
 		await expect(inputs.nth(1)).toHaveAttribute('accept', '.svg')
 	})
 
-	test('a non-SVG pick is rejected inline and never reaches the server', async ({
-		page,
-		request,
-	}) => {
+	// @e2e app-icon-management::non-svg-file-is-rejected-client-side
+	//
+	// The scenario is "the uploader displays an inline error message and does not
+	// submit the file to OR". Both halves are asserted below: the inline error by
+	// its literal text, and the negative half by recording every POST the page
+	// issues and requiring the list to be empty.
+	test('a non-SVG pick is rejected inline and never reaches the server', async ({ page, request }) => {
 		const { objectId } = await resolveApp(request)
 		await openIconsTab(page, objectId)
-		await expect(page.locator('.ob-icon-section')).toBeVisible({
-			timeout: 15_000,
-		})
+		await expect(page.locator('.ob-icon-section')).toBeVisible({ timeout: 15_000 })
 
 		// The rejection must be client-side: nothing may be POSTed.
 		const uploads: string[] = []
@@ -166,31 +147,28 @@ test.describe('Icon upload on the Application detail page (spec A task 7.5)', ()
 			}
 		})
 
-		await page
-			.locator('.ob-icon-section__file-input')
-			.first()
-			.setInputFiles({
-				name: 'not-an-icon.png',
-				mimeType: 'image/png',
-				// A PNG magic header is enough — validation is on the extension.
-				buffer: Buffer.from('89504e470d0a1a0a', 'hex'),
-			})
+		await page.locator('.ob-icon-section__file-input').first().setInputFiles({
+			name: 'not-an-icon.png',
+			mimeType: 'image/png',
+			// A PNG magic header is enough — validation is on the extension.
+			buffer: Buffer.from('89504e470d0a1a0a', 'hex'),
+		})
 
 		const error = page.locator('.ob-icon-section__error').first()
-		await expect(
-			error,
-			'a non-SVG pick must surface the inline rejection',
-		).toBeVisible({ timeout: 10_000 })
+		await expect(error, 'a non-SVG pick must surface the inline rejection').toBeVisible({ timeout: 10_000 })
 		await expect(error).toContainText(/only \.svg files are accepted/i)
 
 		await page.waitForTimeout(1_500)
 		expect(uploads, 'a rejected file must not be uploaded').toEqual([])
 	})
 
-	test('uploading an SVG persists it on the Application and shows it in the preview', async ({
-		page,
-		request,
-	}) => {
+	// @e2e app-icon-management::user-uploads-a-light-icon
+	//
+	// The scenario's three clauses map onto the assertions below: the file is
+	// POSTed to OR's attachment endpoint and `icon.ref` is patched (proven by
+	// reading the Application back independently rather than trusting optimistic
+	// UI state), and the light-background preview renders the SVG.
+	test('uploading an SVG persists it on the Application and shows it in the preview', async ({ page, request }) => {
 		// Two navigations plus an upload round-trip. The 30s project default is
 		// sized for single-navigation tests; every assertion below keeps its own
 		// tight timeout.
@@ -199,32 +177,20 @@ test.describe('Icon upload on the Application detail page (spec A task 7.5)', ()
 		const { objectId } = await resolveApp(request)
 
 		await openIconsTab(page, objectId)
-		await expect(page.locator('.ob-icon-section')).toBeVisible({
-			timeout: 15_000,
-		})
+		await expect(page.locator('.ob-icon-section')).toBeVisible({ timeout: 15_000 })
 
-		await page
-			.locator('.ob-icon-section__file-input')
-			.first()
-			.setInputFiles({
-				name: 'app-icon.svg',
-				mimeType: 'image/svg+xml',
-				buffer: Buffer.from(MINIMAL_SVG, 'utf8'),
-			})
+		await page.locator('.ob-icon-section__file-input').first().setInputFiles({
+			name: 'app-icon.svg',
+			mimeType: 'image/svg+xml',
+			buffer: Buffer.from(MINIMAL_SVG, 'utf8'),
+		})
 
 		// The preview swaps from the em-dash placeholder to an <img> pointed at
 		// the icon-serving endpoint.
-		const preview = page.locator(
-			'.ob-icon-section__preview--light .ob-icon-section__preview-img',
-		)
-		await expect(
-			preview,
-			'the light preview must render the uploaded icon',
-		).toBeVisible({ timeout: 30_000 })
+		const preview = page.locator('.ob-icon-section__preview--light .ob-icon-section__preview-img')
+		await expect(preview, 'the light preview must render the uploaded icon').toBeVisible({ timeout: 30_000 })
 		const src = await preview.getAttribute('src')
-		expect(src, 'the preview must point at the icon-serving endpoint').toMatch(
-			/\/apps\/openbuild\/icons\//,
-		)
+		expect(src, 'the preview must point at the icon-serving endpoint').toMatch(/\/apps\/openbuild\/icons\//)
 
 		// No error was raised on the happy path.
 		await expect(page.locator('.ob-icon-section__error')).toHaveCount(0)
@@ -232,15 +198,10 @@ test.describe('Icon upload on the Application detail page (spec A task 7.5)', ()
 
 		// The write actually persisted — read the Application back independently
 		// rather than trusting optimistic UI state.
-		await expect
-			.poll(
-				async () => {
-					const { app: reloaded } = await resolveApp(request)
-					return reloaded.icon ?? null
-				},
-				{ timeout: 30_000 },
-			)
-			.toBeTruthy()
+		await expect.poll(async () => {
+			const { app: reloaded } = await resolveApp(request)
+			return reloaded.icon ?? null
+		}, { timeout: 30_000 }).toBeTruthy()
 
 		// A Remove control appears once an icon is stored (`v-if="lightRef"`).
 		await expect(
