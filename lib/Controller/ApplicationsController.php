@@ -1513,6 +1513,30 @@ class ApplicationsController extends Controller {
 			return ['status' => $persistResult['status'], 'data' => $persistResult['error']];
 		}
 
+		// Create the ApplicationVersion the manifest actually lives on and wire
+		// productionVersion to it. `persistApplication()` above stores a
+		// `manifest` key directly on the Application object, but the `application`
+		// schema does not declare that property — OpenRegister silently drops it
+		// on save (confirmed live: a freshly cloned Application has NO `manifest`
+		// key at all). `getManifest()` resolves via `productionVersion` →
+		// ApplicationVersion.manifest (ADR-002); its application-level fallback
+		// can therefore never fire. Without this step every template-installed
+		// app (local, remote-registry, or GitHub-shop) publishes successfully
+		// but its manifest/builder endpoints permanently 404 `no_manifest` —
+		// live-verified on a fresh instance for both spectr and hydra-console
+		// before this fix.
+		$newAppUuid = (string)($persistResult['uuid'] ?? '');
+		if ($newAppUuid !== '') {
+			$this->linkProductionVersion(
+				appUuid: $newAppUuid,
+				appSlug: $newSlug,
+				appName: $name,
+				manifest: $manifest,
+				registerSlug: $cloneResult['register']->getSlug(),
+				ownerUid: $ownerUid
+			);
+		}
+
 		// Apply the app-repo-format-v2 channels. Until this call existed, the four
 		// channels were parsed and then dropped, so an installed app arrived with
 		// its manifest and nothing that makes it run — and reported success.
@@ -1719,6 +1743,81 @@ class ApplicationsController extends Controller {
 		$createdArray = $this->normaliseObject(object: $created);
 		return ['uuid' => ($createdArray['uuid'] ?? $createdArray['id'] ?? null)];
 	}//end persistApplication()
+
+	/**
+	 * Create the single ApplicationVersion a template-installed app's manifest
+	 * actually lives on, and point the Application's `productionVersion` at it.
+	 *
+	 * Best-effort + never-throw: a failure here leaves the app installed and
+	 * published but unreachable by slug (the pre-existing behaviour), logged
+	 * for follow-up rather than failing the whole install over a step that
+	 * only affects manifest resolution, not data/connectors/skills.
+	 *
+	 * @param string $appUuid The just-created Application's UUID.
+	 * @param string $appSlug The application's slug.
+	 * @param string $appName The application's display name.
+	 * @param array<string,mixed> $manifest The cloned manifest.
+	 * @param string $registerSlug The per-app register slug already provisioned for this install.
+	 * @param string $ownerUid The owner UID.
+	 *
+	 * @return void
+	 */
+	private function linkProductionVersion(
+		string $appUuid,
+		string $appSlug,
+		string $appName,
+		array $manifest,
+		string $registerSlug,
+		string $ownerUid,
+	): void {
+		try {
+			$versionPayload = [
+				'name' => 'Production',
+				'slug' => 'production',
+				'manifest' => $manifest,
+				'register' => $registerSlug,
+				'semver' => '1.0.0',
+				'status' => 'published',
+				'application' => $appUuid,
+			];
+
+			$createdVersion = $this->objectService->saveObject(
+				object: $versionPayload,
+				register: ApplicationVersionService::REGISTER_SLUG,
+				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+			);
+			$versionData = $this->normaliseObject(object: $createdVersion);
+			$versionUuid = (string)($versionData['uuid'] ?? $versionData['id'] ?? '');
+			if ($versionUuid === '') {
+				return;
+			}
+
+			// Full-payload re-save, not a partial PATCH: OR runs full-schema
+			// `required[]` validation on saveObject even with a uuid set
+			// (the same constraint ApplicationCreationService's chain-wiring
+			// and productionVersion steps already work around).
+			$this->objectService->saveObject(
+				object: [
+					'slug' => $appSlug,
+					'name' => $appName,
+					'permissions' => [
+						'owners' => ['user:' . $ownerUid],
+						'editors' => [],
+						'viewers' => [],
+					],
+					'productionVersion' => $versionUuid,
+				],
+				register: ApplicationVersionService::REGISTER_SLUG,
+				schema: ApplicationVersionService::APPLICATION_SCHEMA,
+				uuid: $appUuid
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'OpenBuild: linkProductionVersion failed for ' . $appSlug . ': ' . $e->getMessage(),
+				['exception' => $e]
+			);
+		}//end try
+	}//end linkProductionVersion()
 
 	/**
 	 * Validate the clone-from-template request body.
