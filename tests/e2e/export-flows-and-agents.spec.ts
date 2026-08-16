@@ -483,9 +483,45 @@ test.describe('Exporting the flows an app is made of', () => {
 			await page.waitForTimeout(2_000)
 		}
 		expect(jobUuid, 'the export job must exist').toBeTruthy()
+
+		// ⚠️ NAME THE CAUSE, DO NOT JUST REPORT THE SYMPTOM. A job stuck at
+		// `queued` has two very different explanations and they look
+		// identical from the status alone:
+		//
+		//   - the worker never ran it, or
+		//   - the worker ran it and the STATUS COULD NOT MOVE, because
+		//     `RunExportJob` never writes `status` directly — it fires the
+		//     declarative `start` transition, and a schema whose deployed
+		//     `x-openregister-lifecycle` is missing makes that a silent
+		//     no-op.
+		//
+		// The second is a real defect this suite already caught once
+		// (openregister#2525): openbuild declared the lifecycle at schema
+		// version 0.1.0 while the instance carried 1.0.0, the import was
+		// version-skipped, and every export sat at `queued` forever with no
+		// log line anywhere. `available-actions` is the one-call check —
+		// empty means the object's schema has no live state machine.
+		let actionsAccount = 'available-actions not read'
+		try {
+			const actionsResponse = await page.request.get(
+				`${BASE}/index.php/apps/openregister/api/objects/${jobUuid}/available-actions`,
+			)
+			const actions = (await actionsResponse.json())?.actions ?? []
+			actionsAccount = `available-actions=[${actions
+				.map((a: { action?: string }) => a?.action)
+				.join(',')}]`
+			if (actions.length === 0) {
+				actionsAccount +=
+					' — the deployed export-job schema has NO live lifecycle, so the'
+					+ ' status can never move (see openregister#2525)'
+			}
+		} catch (error) {
+			actionsAccount = `available-actions failed: ${String(error).slice(0, 120)}`
+		}
+
 		expect(
 			status,
-			`the export job must finish — last status "${status}"; last worker pass: ${workerAccount}`,
+			`the export job must finish — last status "${status}"; ${actionsAccount}; last worker pass: ${workerAccount}`,
 		).toBe('succeeded')
 
 		const download = await page.request.get(
