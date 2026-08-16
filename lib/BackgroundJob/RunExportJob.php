@@ -155,6 +155,11 @@ class RunExportJob extends QueuedJob {
 			$dataRegisters = $job['dataRegisters'];
 		}
 
+		$flows = [];
+		if (is_array($job['flows'] ?? null) === true) {
+			$flows = $job['flows'];
+		}
+
 		if ($applicationUuid === '') {
 			throw new RuntimeException(
 				sprintf('OpenBuild RunExportJob: ExportJob %s has an empty applicationUuid', $jobUuid)
@@ -176,12 +181,23 @@ class RunExportJob extends QueuedJob {
 			versionSlug: $applicationVersion,
 			context: $context,
 			jobUuid: $jobUuid,
-			dataRegisters: $dataRegisters
+			dataRegisters: $dataRegisters,
+			flows: $flows,
+			// The application's own slug IS the agent lookup: agents carry
+			// `applicationSlug`, so there is no agent binding to pass.
+			applicationSlug: $applicationSlug
 		);
+
+		// Name what could not be resolved on the job itself. A skip that only
+		// reaches the log reaches nobody: the operator reads the finished job.
+		$skipped = $this->exportService->lastSkipped();
 
 		$pushResult = $this->maybePush(jobUuid: $jobUuid, job: $job);
 
 		$extra = $this->buildSuccessFields(jobUuid: $jobUuid, pushResult: $pushResult);
+		if ($skipped !== []) {
+			$extra['skipped'] = $skipped;
+		}
 
 		$this->exportJobService->transitionJob(jobUuid: $jobUuid, action: 'succeed', extraFields: $extra);
 		$this->logger->info('OpenBuild export succeeded', ['jobUuid' => $jobUuid]);

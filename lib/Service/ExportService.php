@@ -33,12 +33,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Service;
 
-use FilesystemIterator;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use RuntimeException;
 use ZipArchive;
 
@@ -84,6 +81,25 @@ class ExportService {
 	private string $templateRoot;
 
 	/**
+	 * Filesystem chores for the scratch tree.
+	 *
+	 * @var ExportTreeFiles
+	 */
+	private ExportTreeFiles $treeFiles;
+
+	/**
+	 * What the last bundling run could not resolve.
+	 *
+	 * Returned to the caller so the export job's RESULT can name it. The
+	 * data-register precedent logs a skip and moves on, which is correct about
+	 * not failing the export and wrong about who finds out: an operator reads
+	 * the finished job, never the log.
+	 *
+	 * @var array<int, array{kind: string, ref: string, reason: string}>
+	 */
+	private array $lastSkipped = [];
+
+	/**
 	 * Deterministic ZIP entry timestamp (REQ-OBEX-008).
 	 *
 	 * @var integer
@@ -106,7 +122,15 @@ class ExportService {
 		private PlaceholderResolver $placeholderResolver,
 		private LoggerInterface $logger,
 		private DataRegisterExportBundler $dataRegisterBundler,
+		private FlowAndAgentExportBundler $flowAndAgentBundler,
 	) {
+		// Constructed rather than injected: it is stateless, has no
+		// dependencies of its own, and is deterministic — so injecting it buys
+		// no seam and costs a constructor dependency, which is what phpmd's
+		// CouplingBetweenObjects was measuring. Extracting it fixed the
+		// complexity finding and created this one; the fix for both is that it
+		// is a helper, not a collaborator.
+		$this->treeFiles = new ExportTreeFiles();
 		$this->templateRoot = dirname(__DIR__) . '/Resources/template';
 		// 2026-01-01T00:00:00Z — fixed for deterministic ZIPs.
 		$this->zipTimestamp = 1767225600;
@@ -139,11 +163,22 @@ class ExportService {
 		array $context,
 		string $jobUuid,
 		array $dataRegisters = [],
+		array $flows = [],
+		string $applicationSlug = '',
 	): string {
 		$scratchDir = $this->prepareScratchDir(jobUuid: $jobUuid);
 		$this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
 		$this->resolvePlaceholders(rootDir: $scratchDir, context: $context);
 		$this->bundleDataRegisterSchemas(rootDir: $scratchDir, dataRegisters: $dataRegisters);
+
+		// The flows the app is composed of, and the agents that point at it.
+		// Skips are RETURNED so the job result can name them — an operator
+		// reads the finished job, not the log.
+		$this->lastSkipped = $this->flowAndAgentBundler->bundle(
+			rootDir: $scratchDir,
+			flows: $flows,
+			applicationSlug: $applicationSlug
+		);
 
 		// Audit-trail entry names only the source — never the PAT, never secret values.
 		$this->logger->info(
@@ -157,6 +192,18 @@ class ExportService {
 
 		return $this->packageZip(sourceDir: $scratchDir, jobUuid: $jobUuid);
 	}//end generateAppZip()
+
+	/**
+	 * What the last export could not resolve.
+	 *
+	 * @return array<int, array{kind: string, ref: string, reason: string}> Skips, empty when everything resolved.
+	 *
+	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-unresolvable-binding-must-be-reported-not-silently-dropped
+	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-composition-bindings/spec.md#requirement-a-dangling-binding-must-reach-the-operator
+	 */
+	public function lastSkipped(): array {
+		return $this->lastSkipped;
+	}//end lastSkipped()
 
 	/**
 	 * Build the installable NC-app scaffold as an in-memory `path => contents` map.
@@ -183,7 +230,7 @@ class ExportService {
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 */
-	public function buildScaffoldMap(array $context, array $dataRegisters = []): array {
+	public function buildScaffoldMap(array $context, array $dataRegisters = [], array $flows = [], string $applicationSlug = ''): array {
 		$jobUuid = 'scaffold-' . ((string)($context['appId'] ?? 'app')) . '-' . uniqid();
 		$scratch = $this->prepareScratchDir(jobUuid: $jobUuid);
 
@@ -194,8 +241,16 @@ class ExportService {
 				$this->bundleDataRegisterSchemas(rootDir: $scratch, dataRegisters: $dataRegisters);
 			}
 
+			if ($flows !== [] || $applicationSlug !== '') {
+				$this->lastSkipped = $this->flowAndAgentBundler->bundle(
+					rootDir: $scratch,
+					flows: $flows,
+					applicationSlug: $applicationSlug
+				);
+			}
+
 			$map = [];
-			foreach ($this->listFilesSorted(baseDir: $scratch) as $relative) {
+			foreach ($this->treeFiles->listFilesSorted(baseDir: $scratch) as $relative) {
 				$contents = file_get_contents($scratch . '/' . $relative);
 				if ($contents !== false) {
 					$map[$relative] = $contents;
@@ -204,7 +259,7 @@ class ExportService {
 
 			return $map;
 		} finally {
-			$this->rrmdir(dir: $scratch);
+			$this->treeFiles->removeTree(dir: $scratch);
 		}//end try
 
 	}//end buildScaffoldMap()
@@ -297,7 +352,7 @@ class ExportService {
 			throw new RuntimeException('Unable to open ZIP archive: ' . $zipPath);
 		}
 
-		$entries = $this->listFilesSorted(baseDir: $sourceDir);
+		$entries = $this->treeFiles->listFilesSorted(baseDir: $sourceDir);
 		foreach ($entries as $relativePath) {
 			$absolute = $sourceDir . '/' . $relativePath;
 			$zip->addFile($absolute, $relativePath);
@@ -315,36 +370,6 @@ class ExportService {
 		return $zipPath;
 	}//end packageZip()
 
-	/**
-	 * Returns a recursive sorted list of file paths relative to $baseDir.
-	 *
-	 * Case-sensitive ASCII sort guarantees stable archive ordering.
-	 *
-	 * @param string $baseDir Directory to walk.
-	 *
-	 * @return array<int,string> Sorted relative file paths.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-41
-	 */
-	private function listFilesSorted(string $baseDir): array {
-		$files = [];
-		if (is_dir($baseDir) === false) {
-			return $files;
-		}
-
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator($baseDir, FilesystemIterator::SKIP_DOTS)
-		);
-		foreach ($iterator as $file) {
-			if ($file->isFile() === true) {
-				$relative = ltrim(str_replace($baseDir, '', (string)$file->getPathname()), '/');
-				$files[] = $relative;
-			}
-		}
-
-		sort($files, SORT_STRING);
-		return $files;
-	}//end listFilesSorted()
 
 	/**
 	 * Resolve placeholders across the scratch tree, in-place.
@@ -366,15 +391,7 @@ class ExportService {
 
 		$map = $this->placeholderResolver->buildMap(context: $stringContext);
 
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator($rootDir, FilesystemIterator::SKIP_DOTS)
-		);
-		foreach ($iterator as $file) {
-			if ($file->isFile() === false) {
-				continue;
-			}
-
-			$path = (string)$file->getPathname();
+		foreach ($this->treeFiles->filePaths(dir: $rootDir) as $path) {
 			if ($this->isBinary(path: $path) === true) {
 				continue;
 			}
@@ -431,28 +448,12 @@ class ExportService {
 
 		$skip = ['.snapshot-meta.json', '.path-manifest.txt'];
 
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS),
-			RecursiveIteratorIterator::SELF_FIRST
+		$this->treeFiles->copyTree(
+			source: $source,
+			dest: $dest,
+			skip: $skip,
+			timestamp: $this->zipTimestamp
 		);
-		foreach ($iterator as $entry) {
-			$relative = ltrim(str_replace($source, '', (string)$entry->getPathname()), '/');
-			if (in_array($relative, $skip, true) === true) {
-				continue;
-			}
-
-			$target = $dest . '/' . $relative;
-			if ($entry->isDir() === true) {
-				if (is_dir($target) === false) {
-					mkdir($target, 0o755, true);
-				}
-
-				continue;
-			}
-
-			copy((string)$entry->getPathname(), $target);
-			touch($target, $this->zipTimestamp);
-		}
 	}//end copyTemplate()
 
 	/**
@@ -468,7 +469,7 @@ class ExportService {
 		$scratch = $this->scratchTreeDir(jobUuid: $jobUuid);
 
 		if (is_dir($scratch) === true) {
-			$this->rrmdir(dir: $scratch);
+			$this->treeFiles->removeTree(dir: $scratch);
 		}
 
 		mkdir($scratch, 0o755, true);
@@ -540,34 +541,4 @@ class ExportService {
 		return $local;
 	}//end getOrCreateAppDataDir()
 
-	/**
-	 * Recursive directory removal.
-	 *
-	 * @param string $dir Directory to remove.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
-	 */
-	private function rrmdir(string $dir): void {
-		if (is_dir($dir) === false) {
-			return;
-		}
-
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
-			RecursiveIteratorIterator::CHILD_FIRST
-		);
-		foreach ($iterator as $entry) {
-			$path = (string)$entry->getPathname();
-			if ($entry->isDir() === true) {
-				rmdir($path);
-				continue;
-			}
-
-			unlink($path);
-		}
-
-		rmdir($dir);
-	}//end rrmdir()
 }//end class

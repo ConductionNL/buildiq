@@ -1,6 +1,15 @@
 {
     "translations": {
         "Edit flows…": "Edit flows…",
+        "/api/objects/:slug/…": "/api/objects/:slug/…",
+        "https://…/markers.json": "https://…/markers.json",
+        "Failed to load flows": "Failed to load flows",
+        "Flows": "Flows",
+        "Flows this app is made of": "Flows this app is made of",
+        "No flows exist on this instance yet. Create one in OpenRegister first.": "No flows exist on this instance yet. Create one in OpenRegister first.",
+        "The flows this app is made of. Included by default — an exported app without them installs and does nothing. They arrive switched off on the importing instance, so nothing runs until somebody enables it there.": "The flows this app is made of. Included by default — an exported app without them installs and does nothing. They arrive switched off on the importing instance, so nothing runs until somebody enables it there.",
+        "The OpenRegister flows this app is made of. Exporting the app carries them, so an installed copy can actually do something. Agents are not listed here: they already belong to an app and are collected automatically.": "The OpenRegister flows this app is made of. Exporting the app carries them, so an installed copy can actually do something. Agents are not listed here: they already belong to an app and are collected automatically.",
+        "{uuid} (no longer exists)": "{uuid} (no longer exists)",
         "— action —": "— action —",
         "— select column —": "— select column —",
         "— select page type —": "— select page type —",
@@ -21,7 +30,7 @@
         "{n} properties": "{n} properties",
         "{n} property": "{n} property",
         "{template} on schema {schema}": "{template} on schema {schema}",
-        "/api/objects/:slug/…": "/api/objects/:slug/…",
+        "/api/objects/:slug/...": "/api/objects/:slug/...",
         "/api/objects/:slug/audit or a customComponents key": "/api/objects/:slug/audit or a customComponents key",
         "/api/objects/:slug/messages": "/api/objects/:slug/messages",
         "/api/objects/:slug/messages or a stream URL": "/api/objects/:slug/messages or a stream URL",
@@ -795,7 +804,7 @@
         "Run all tests": "Run all tests",
         "Run tests": "Run tests",
         "Running": "Running",
-        "Running…": "Running…",
+        "Running...": "Running...",
         "Salience": "Salience",
         "sample": "sample",
         "Sample value": "Sample value",
@@ -816,6 +825,7 @@
         "saveEndpoint (optional)": "saveEndpoint (optional)",
         "Saving permissions…": "Saving permissions…",
         "Saving the template failed.": "Saving the template failed.",
+        "Saving...": "Saving...",
         "Saving…": "Saving…",
         "Scheduled tasks": "Scheduled tasks",
         "Schema": "Schema",
@@ -1120,6 +1130,7 @@
         "Reference a rule set": "Reference a rule set",
         "Rule set slug": "Rule set slug",
         "Run": "Run",
+        "Running…": "Running…",
         "Sample payload (JSON)": "Sample payload (JSON)",
         "Select an application and a version to see its automations.": "Select an application and a version to see its automations.",
         "Send notification": "Send notification",
@@ -1176,7 +1187,7 @@
         "Forge type": "Forge type",
         "Groups": "Groups",
         "Height (optional)": "Height (optional)",
-        "https://…/markers.json": "https://…/markers.json",
+        "https://.../markers.json": "https://.../markers.json",
         "https://codeberg.org": "https://codeberg.org",
         "id": "id",
         "Idle label": "Idle label",
@@ -1405,8 +1416,7 @@
         "This page has no widgets yet.": "This page has no widgets yet.",
         "Visible only to group (optional)": "Visible only to group (optional)",
         "Widgets on this page": "Widgets on this page",
-        "Page {position}": "Page {position}",
-        "Edit flows…": "Edit flows…"
+        "Page {position}": "Page {position}"
     },
     "plurals": ""
 }

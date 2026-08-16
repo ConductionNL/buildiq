@@ -93,6 +93,43 @@
 					{{ t('openbuild', 'Add data register') }}
 				</NcButton>
 			</div>
+
+			<div class="app-settings__row">
+				<h4 class="app-settings__subtitle">
+					{{ t('openbuild', 'Flows') }}
+				</h4>
+				<p class="app-settings__hint app-settings__hint--inline">
+					{{
+						t(
+							'openbuild',
+							'The OpenRegister flows this app is made of. Exporting the app carries them, so an installed copy can actually do something. Agents are not listed here: they already belong to an app and are collected automatically.',
+						)
+					}}
+				</p>
+				<!-- Wrapper carries the test hook; NcSelect, like
+				     NcCheckboxRadioSwitch, does not forward stray attributes
+				     to the DOM. -->
+				<div data-test="app-settings-flow-picker">
+					<NcSelect
+						:modelValue="selectedFlows"
+						:options="availableFlows"
+						:multiple="true"
+						:disabled="busy || loadingFlows"
+						:loading="loadingFlows"
+						:inputLabel="t('openbuild', 'Flows this app is made of')"
+						@update:modelValue="onFlowsPicked" />
+				</div>
+				<p
+					v-if="!loadingFlows && !availableFlows.length"
+					class="app-settings__hint">
+					{{
+						t(
+							'openbuild',
+							'No flows exist on this instance yet. Create one in OpenRegister first.',
+						)
+					}}
+				</p>
+			</div>
 		</div>
 	</NcModal>
 </template>
@@ -101,6 +138,7 @@
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
 import NcModal from '@nextcloud/vue/components/NcModal'
+import NcSelect from '@nextcloud/vue/components/NcSelect'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 
 export default {
@@ -110,6 +148,7 @@ export default {
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcTextField,
+		NcSelect,
 	},
 
 	props: {
@@ -123,6 +162,20 @@ export default {
 		allowUserOverrides: { type: Boolean, default: false },
 		/** The Application's declared `dataRegisters` bindings (`{register, label?}`). */
 		dataRegisters: { type: Array, default: () => [] },
+		/**
+		 * The Application's declared `flows` bindings (`{flow, label?}`), where
+		 * `flow` is the OpenRegister flow's UUID.
+		 *
+		 * A PICKER rather than the text fields the data registers use: a
+		 * register is bound by a slug somebody can read and type, and a flow is
+		 * bound by a UUID, which nobody can. The `Flow` entity has no slug to
+		 * offer instead.
+		 */
+		flows: { type: Array, default: () => [] },
+		/** Every flow on the instance, as `{label, value}` picker options. */
+		availableFlows: { type: Array, default: () => [] },
+		/** Whether the flow list is still being fetched. */
+		loadingFlows: { type: Boolean, default: false },
 		/** Whether an action is in flight (disables the switches). */
 		busy: { type: Boolean, default: false },
 	},
@@ -132,6 +185,7 @@ export default {
 		'set-published',
 		'update:allow-overrides',
 		'update:data-registers',
+		'update:flows',
 	],
 
 	data() {
@@ -141,6 +195,38 @@ export default {
 			// NcTextField always receives a string, never undefined.
 			rows: this.toRows(this.dataRegisters),
 		}
+	},
+
+	computed: {
+		/**
+		 * The bound flows, as picker options.
+		 *
+		 * Resolved against `availableFlows` so the picker shows the flow's
+		 * NAME. A binding whose UUID no longer resolves is kept and shown as
+		 * the raw UUID rather than dropped: a flow that was deleted is an
+		 * ordinary situation, and silently removing the binding would hide it
+		 * from the person who could fix it.
+		 *
+		 * @return {Array<{label: string, value: string}>} Selected options.
+		 */
+		selectedFlows() {
+			return this.flows.map((binding) => {
+				const known = this.availableFlows.find(
+					(option) => option.value === binding.flow,
+				)
+
+				return (
+					known || {
+						label:
+							binding.label
+							|| this.t('openbuild', '{uuid} (no longer exists)', {
+								uuid: binding.flow,
+							}),
+						value: binding.flow,
+					}
+				)
+			})
+		},
 	},
 
 	watch: {
@@ -162,6 +248,26 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Emit the new bindings when the picker changes.
+		 *
+		 * `label` is stored alongside the UUID so a later reader — and the
+		 * export dialog's checkbox list — has something legible even if the
+		 * flow is renamed or removed.
+		 *
+		 * @param {Array<{label: string, value: string}>} picked The chosen options.
+		 * @return {void}
+		 */
+		onFlowsPicked(picked) {
+			this.$emit(
+				'update:flows',
+				(picked || []).map((option) => ({
+					flow: option.value,
+					label: option.label,
+				})),
+			)
+		},
+
 		/**
 		 * Normalise a `dataRegisters` array into editable rows.
 		 *

@@ -140,6 +140,7 @@ class ExportJobService {
 			'requestedBy' => (string)($requestedBy ?? ''),
 			'includeSeedData' => (bool)($payload['includeSeedData'] ?? false),
 			'dataRegisters' => $this->sanitiseDataRegisters(raw: $payload['dataRegisters'] ?? []),
+			'flows' => $this->sanitiseFlows(raw: $payload['flows'] ?? []),
 			'license' => (string)($payload['license'] ?? 'EUPL-1.2'),
 			'log' => [],
 		];
@@ -192,6 +193,46 @@ class ExportJobService {
 
 		return $out;
 	}//end sanitiseDataRegisters()
+
+	/**
+	 * Normalise the submit request's `flows` choice.
+	 *
+	 * Mirrors `sanitiseDataRegisters()`: same defensive shape, because this is
+	 * the same untrusted request payload arriving by the same route.
+	 *
+	 * Only the UUID is kept. `label` is a builder-UI convenience and has no
+	 * meaning to the exporter, which resolves the flow and writes the flow's
+	 * own name into the bundle.
+	 *
+	 * No sibling `sanitiseAgents()` exists on purpose: agents carry
+	 * `applicationSlug` and are found by asking which agents point at the
+	 * application, so there is no agent choice in the payload to sanitise.
+	 *
+	 * @param mixed $raw The request payload's `flows` value.
+	 *
+	 * @return array<int, array{flow: string}> Normalised bindings.
+	 */
+	private function sanitiseFlows(mixed $raw): array {
+		if (is_array($raw) === false) {
+			return [];
+		}
+
+		$out = [];
+		foreach ($raw as $entry) {
+			if (is_array($entry) === false) {
+				continue;
+			}
+
+			$flow = trim((string)($entry['flow'] ?? ''));
+			if ($flow === '') {
+				continue;
+			}
+
+			$out[] = ['flow' => $flow];
+		}
+
+		return $out;
+	}//end sanitiseFlows()
 
 	/**
 	 * Persist the ExportJob record via OR (best-effort; falls back to a no-op

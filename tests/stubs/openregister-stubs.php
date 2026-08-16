@@ -399,6 +399,144 @@ namespace OCA\OpenRegister\Db {
 		}//end class
 	}
 
+	if (class_exists(Flow::class, autoload: false) === false) {
+		/**
+		 * Stub Flow — the OpenRegister entity the flow ENGINE executes.
+		 *
+		 * ⚠️ Not to be confused with the `agentflow` OBJECT store in the hermiq
+		 * register, which mirrors some definitions and drifts from this entity.
+		 * The exporter and the seeder both address THIS.
+		 *
+		 * Note there is no `slug`: a flow is addressed by `uuid`, which is why
+		 * `Application.flows[].flow` binds a UUID.
+		 */
+		class Flow extends \OCP\AppFramework\Db\Entity {
+
+			/**
+			 * Stub uuid column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $uuid = null;
+
+			/**
+			 * Stub name column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $name = null;
+
+			/**
+			 * Stub description column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $description = null;
+
+			/**
+			 * Stub enabled column.
+			 *
+			 * @var boolean|null
+			 */
+			protected ?bool $enabled = false;
+
+			/**
+			 * Stub trigger column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $trigger = null;
+
+			/**
+			 * Stub triggerRegister column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $triggerRegister = null;
+
+			/**
+			 * Stub triggerSchema column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $triggerSchema = null;
+
+			/**
+			 * Stub cron column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $cron = null;
+
+			/**
+			 * Stub executionMode column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $executionMode = null;
+
+			/**
+			 * Stub nodes column.
+			 *
+			 * @var array|null
+			 */
+			protected ?array $nodes = null;
+
+			/**
+			 * Stub edges column.
+			 *
+			 * @var array|null
+			 */
+			protected ?array $edges = null;
+
+			/**
+			 * Stub limits column.
+			 *
+			 * @var array|null
+			 */
+			protected ?array $limits = null;
+		}//end class
+	}//end if
+
+	if (class_exists(FlowMapper::class, autoload: false) === false) {
+		/**
+		 * Stub FlowMapper — the real one extends QBMapper, so the write surface
+		 * is `insert`/`update`, NOT a `createFromArray`.
+		 *
+		 * Lookup is by UUID; the real mapper offers no slug lookup, because the
+		 * entity has no slug.
+		 */
+		class FlowMapper {
+
+			/**
+			 * @param string $uuid The flow's UUID.
+			 *
+			 * @return Flow The flow.
+			 */
+			public function findByUuid(string $uuid): Flow {
+				return new Flow();
+			}//end findByUuid()
+
+			/**
+			 * @param Flow $entity The entity to insert.
+			 *
+			 * @return Flow The inserted entity.
+			 */
+			public function insert(Flow $entity): Flow {
+				return $entity;
+			}//end insert()
+
+			/**
+			 * @param Flow $entity The entity to update.
+			 *
+			 * @return Flow The updated entity.
+			 */
+			public function update(Flow $entity): Flow {
+				return $entity;
+			}//end update()
+		}//end class
+	}//end if
+
 	if (class_exists(RegisterMapper::class, autoload: false) === false) {
 		/**
 		 * Stub RegisterMapper — `find`/`createFromArray`/`update` call surface.
