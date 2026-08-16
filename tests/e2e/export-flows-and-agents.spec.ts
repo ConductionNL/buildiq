@@ -230,6 +230,25 @@ test.describe('Exporting the flows an app is made of', () => {
 		// from the previous run shows it sitting there `[expanded]`, because
 		// that is what the click hit. The app's settings modal never opened and
 		// the failure surfaced 20 s later on the picker.
+		// Arm the wait BEFORE the click that triggers the fetch, or the
+		// response can land first and this waits forever.
+		//
+		// This is the assertion that the picker's loader RAN. It is the honest
+		// form of the check: the product bug this spec first caught was the
+		// Settings action assigning `settingsOpen = true` and never calling
+		// `onSettingsOpen()`, so NO GET was issued at all — and with no
+		// request there is nothing for this to resolve. Asserting on the
+		// absence of the "No flows exist" hint instead does NOT work: while
+		// the fetch is in flight `loadingFlows` is true, which hides that hint
+		// too, so the assertion passes on the LOADING state and tells you
+		// nothing. That mistake cost a CI cycle.
+		const flowsLoaded = page.waitForResponse(
+			(response) =>
+				response.url().includes('/apps/openregister/api/flows')
+				&& response.request().method() === 'GET',
+			{ timeout: 60_000 },
+		)
+
 		const actionsMenu = page.getByRole('menu').first()
 		await actionsMenu
 			.getByRole('menuitem', { name: /^Settings$/i })
@@ -243,27 +262,34 @@ test.describe('Exporting the flows an app is made of', () => {
 			'App settings must offer a flow PICKER — a UUID cannot be typed into a text field',
 		).toBeVisible({ timeout: 20_000 })
 
-		// The list must actually have loaded. Asserted separately from the
-		// option click so the two failures are told apart: an empty picker is
-		// a PRODUCT bug (the loader was never called — see the
-		// `onSettingsOpen` wiring), while a present-but-unopenable picker is a
-		// TEST bug. Chasing the second while looking at the first cost a full
-		// CI cycle.
-		await expect(
-			page.getByText(/No flows exist on this instance yet/i),
-			'the flow list must be loaded by the time the modal is open',
-		).toHaveCount(0)
+		const flowsResponse = await flowsLoaded
+		expect(
+			flowsResponse.ok(),
+			`opening App settings must READ the flow list (got ${flowsResponse.status()})`,
+		).toBeTruthy()
 
-		// ⚠️ CLICK THE COMBOBOX, NOT THE WRAPPER. `data-test` sits on a
+		// ⚠️ DRIVE THE COMBOBOX, NOT THE WRAPPER. `data-test` sits on a
 		// wrapper div because NcSelect does not forward stray attributes;
-		// clicking that div lands on padding and does NOT open the dropdown,
-		// so the option never renders and the test times out looking for it.
+		// clicking that div lands on padding and never opens the dropdown.
 		// Every other NcSelect in this suite (agents.spec.ts,
-		// automations.spec.ts) drives the control by its `combobox` role,
-		// named from `inputLabel`.
-		await page
-			.getByRole('combobox', { name: /flows this app is made of/i })
-			.click()
+		// automations.spec.ts) uses the `combobox` role, named from
+		// `inputLabel`.
+		//
+		// ⚠️ The control is `:disabled` while `loadingFlows` is true, and the
+		// GET measured ~1.3 s on CI. Wait for ENABLED before clicking — a
+		// click on the disabled input focuses it without opening anything, and
+		// the screenshot of that state is indistinguishable from a control
+		// that simply refused to open.
+		const combo = page.getByRole('combobox', {
+			name: /flows this app is made of/i,
+		})
+		await expect(combo).toBeEnabled({ timeout: 30_000 })
+		await combo.click()
+
+		// Typing both opens the dropdown and filters it, which is the
+		// vue-select interaction least sensitive to where the click landed.
+		await combo.fill(FIXTURE_FLOW_NAME)
+
 		await page
 			.getByRole('option', { name: looseOptionName(FIXTURE_FLOW_NAME) })
 			.first()
