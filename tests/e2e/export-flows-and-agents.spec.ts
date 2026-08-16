@@ -313,7 +313,25 @@ test.describe('Exporting the flows an app is made of', () => {
 		)
 
 		// 2. EXPORT, through the export dialog, and confirm the flow is offered.
+		//
+		// ⚠️ CLOSE THE SETTINGS MODAL FIRST, AND PROVE IT CLOSED. A bare
+		// `Escape` here was not enough: focus is still inside the NcSelect
+		// after picking an option, so Escape closes the vue-select DROPDOWN
+		// and leaves the modal up. The Export button then resolves, reports
+		// "visible, enabled and stable", and every click is swallowed by
+		// `.modal-mask` — Playwright retried 441 times and the test died on
+		// the 240 s budget with a call log that never once says "modal".
+		//
+		// `dismissOverlays` is the suite's own helper for this and handles
+		// NcModal's icon close; the assertion after it is what turns a silent
+		// swallow into a named failure.
 		await page.keyboard.press('Escape')
+		await dismissOverlays(page)
+		await expect(
+			page.locator('.modal-mask'),
+			'the App settings modal must be closed before Export is clickable — an open one silently intercepts every click',
+		).toHaveCount(0, { timeout: 20_000 })
+
 		await page
 			.getByRole('button', { name: /^export$/i })
 			.first()
