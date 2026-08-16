@@ -388,6 +388,21 @@ test.describe('Exporting the flows an app is made of', () => {
 		let jobUuid = ''
 		const deadline = Date.now() + POLL_TIMEOUT_MS
 		while (Date.now() < deadline) {
+			// ⚠️ DRIVE THE QUEUE. The export is an `IJobList` background job —
+			// there is no synchronous run path — and nothing on the test
+			// instance ticks it on our schedule. Nextcloud's own ajax ticker
+			// does call `/cron.php`, but on ITS interval, and each web
+			// invocation runs exactly ONE job (`CronService::runWeb()`), so
+			// with unrelated jobs already queued the export was still
+			// `queued` when the 90 s budget ran out.
+			//
+			// Two calls per iteration drains ~90 jobs over the poll, which
+			// reaches ours. Failures here are deliberately ignored: cron.php
+			// answers non-200 in some modes, and that must not fail the test
+			// on its own — the job status below is the assertion.
+			await page.request.get(`${BASE}/cron.php`).catch(() => undefined)
+			await page.request.get(`${BASE}/cron.php`).catch(() => undefined)
+
 			const rows =
 				(await (await page.request.get(jobsUrl)).json()).results || []
 			const job = rows[0] || {}
@@ -400,7 +415,10 @@ test.describe('Exporting the flows an app is made of', () => {
 			await page.waitForTimeout(2_000)
 		}
 		expect(jobUuid, 'the export job must exist').toBeTruthy()
-		expect(status, 'the export job must finish').toBe('succeeded')
+		expect(
+			status,
+			`the export job must finish (last status "${status}" — if it is still "queued", the background queue was not drained)`,
+		).toBe('succeeded')
 
 		const download = await page.request.get(
 			`${BASE}/index.php/apps/openbuild/api/exports/${jobUuid}/download`,
