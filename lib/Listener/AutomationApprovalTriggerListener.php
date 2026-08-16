@@ -83,7 +83,11 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectServiceInterface $objectService Scans the `automation` register for matching triggers.
+	 * @param ContainerInterface $container Resolves OpenRegister's object service lazily — see objectService(),
+	 *                                     which scans the `automation` register for matching triggers. The
+	 *                                     interface cannot be constructor-injected here: a listener is built
+	 *                                     during event dispatch, before OpenRegister's DI registrations are
+	 *                                     guaranteed to be available.
 	 * @param SchemaMapper $schemaMapper Resolves a schema slug to its numeric id.
 	 * @param ApprovalChainMapper $chainMapper Resolves the compiled `ApprovalChain` by schema + name.
 	 * @param ApprovalStepMapper $stepMapper Idempotency guard — checks for an
