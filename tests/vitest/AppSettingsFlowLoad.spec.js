@@ -117,9 +117,7 @@ describe('ApplicationDetailActions — App settings loads the flow list', () => 
 		await new Promise((resolve) => setTimeout(resolve, 0))
 
 		expect(wrapper.vm.settingsOpen).toBe(true)
-		expect(axiosMock.get).toHaveBeenCalledWith(
-			'/apps/openregister/api/flows',
-		)
+		expect(axiosMock.get).toHaveBeenCalledWith('/apps/openregister/api/flows')
 	})
 
 	it('the fetched flows become picker options labelled by name, valued by uuid', async () => {
