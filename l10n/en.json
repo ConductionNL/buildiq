@@ -1406,7 +1406,8 @@
         "This page has no widgets yet.": "This page has no widgets yet.",
         "Visible only to group (optional)": "Visible only to group (optional)",
         "Widgets on this page": "Widgets on this page",
-        "Page {position}": "Page {position}"
+        "Page {position}": "Page {position}",
+        "Edit flows…": "Edit flows…"
     },
     "plurals": ""
 }
