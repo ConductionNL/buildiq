@@ -104,10 +104,6 @@ class RuleExecutionLogCleanup extends TimedJob {
 			return;
 		}
 
-		if (is_array($results) === false) {
-			return;
-		}
-
 		$purged = 0;
 		foreach ($results as $row) {
 			$data = $this->normalise(object: $row);

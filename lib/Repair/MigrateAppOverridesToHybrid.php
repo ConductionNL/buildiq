@@ -186,10 +186,6 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 			]
 		);
 
-		if (is_array($rows) === false) {
-			return [];
-		}
-
 		$normalised = [];
 		foreach ($rows as $row) {
 			$normalised[] = $this->normaliseObjectArray(object: $row);

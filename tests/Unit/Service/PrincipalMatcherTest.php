@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -385,7 +386,7 @@ class PrincipalMatcherTest extends TestCase {
 			'applicationUuid' => 'app-uuid-1234',
 		];
 
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->method('searchObjectsBySlug')->willReturn([$routeObject]);
 		$objectService->method('find')->willReturn($applicationEntity);
 
@@ -397,7 +398,12 @@ class PrincipalMatcherTest extends TestCase {
 			$this->groupManager,
 			$container,
 			$this->logger,
-			$this->resolver,
+			// The RBAC gate reads the INJECTED object service (ADR-084), while the
+			// handler bodies still resolve one from the container. Both must be the
+			// same double or the gate answers not_found and the assertion below
+			// stops testing the role check it names.
+			$objectService,
+			permissionResolver: $this->resolver,
 		);
 
 		$result = $provider->invokeTool('openbuild.getAppManifest', ['slug' => 'test-app']);
@@ -443,7 +449,7 @@ class PrincipalMatcherTest extends TestCase {
 			'applicationUuid' => 'app-uuid-5678',
 		];
 
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->method('searchObjectsBySlug')->willReturn([$routeObject]);
 		$objectService->method('find')->willReturn($applicationEntity);
 
@@ -455,7 +461,12 @@ class PrincipalMatcherTest extends TestCase {
 			$this->groupManager,
 			$container,
 			$this->logger,
-			$this->resolver,
+			// The RBAC gate reads the INJECTED object service (ADR-084), while the
+			// handler bodies still resolve one from the container. Both must be the
+			// same double or the gate answers not_found and the assertion below
+			// stops testing the role check it names.
+			$objectService,
+			permissionResolver: $this->resolver,
 		);
 
 		$result = $provider->invokeTool('openbuild.getAppManifest', ['slug' => 'my-app']);
@@ -483,7 +494,7 @@ class PrincipalMatcherTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($caller);
 
 		$container = $this->createMock(\Psr\Container\ContainerInterface::class);
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->method('searchObjectsBySlug')->willReturn([]);
 		$container->method('get')->willReturn($objectService);
 
@@ -492,7 +503,12 @@ class PrincipalMatcherTest extends TestCase {
 			$this->groupManager,
 			$container,
 			$this->logger,
-			$this->resolver,
+			// The RBAC gate reads the INJECTED object service (ADR-084), while the
+			// handler bodies still resolve one from the container. Both must be the
+			// same double or the gate answers not_found and the assertion below
+			// stops testing the role check it names.
+			$objectService,
+			permissionResolver: $this->resolver,
 		);
 
 		$result = $provider->invokeTool('openbuild.listApps', []);

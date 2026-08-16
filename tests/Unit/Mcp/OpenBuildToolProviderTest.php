@@ -78,6 +78,20 @@ class OpenBuildToolProviderTest extends TestCase {
 	private LoggerInterface&MockObject $logger;
 
 	/**
+	 * OR object read/write double.
+	 *
+	 * Shared deliberately with the container stub below: the per-Application RBAC
+	 * gate reads the INJECTED ObjectServiceInterface (ADR-084) while the handler
+	 * bodies still resolve one from the container. Wiring only the container
+	 * leaves the gate looking at an unstubbed service, which answers `not_found`
+	 * — the very code the "allowed for owner" tests assert as proof that the gate
+	 * was cleared, so they would pass without the gate ever being reached.
+	 *
+	 * @var ObjectServiceInterface&MockObject
+	 */
+	private ObjectServiceInterface&MockObject $objectService;
+
+	/**
 	 * Set up mocks and the provider instance.
 	 *
 	 * @return void
@@ -87,13 +101,14 @@ class OpenBuildToolProviderTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 
 		$this->provider = new OpenBuildToolProvider(
 			$this->userSession,
 			$this->groupManager,
 			$this->container,
 			$this->logger,
-			$this->createMock(ObjectServiceInterface::class),
+			$this->objectService,
 		);
 
 	}//end setUp()
@@ -376,7 +391,7 @@ class OpenBuildToolProviderTest extends TestCase {
 		$this->groupManager->method('getUserGroups')->willReturn([]);
 
 		// App exists but bob is not an owner/editor.
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')->willReturn([
 			['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:alice'], 'editors' => []]],
 		]);
@@ -416,7 +431,7 @@ class OpenBuildToolProviderTest extends TestCase {
 		$this->groupManager->method('getUserGroups')->willReturn([]);
 
 		$callCount = 0;
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')
 			->willReturnCallback(function () use (&$callCount) {
 				$callCount++;
@@ -465,7 +480,7 @@ class OpenBuildToolProviderTest extends TestCase {
 		$this->groupManager->method('isAdmin')->with('bob')->willReturn(false);
 		$this->groupManager->method('getUserGroups')->willReturn([]);
 
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')->willReturn([
 			['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:alice'], 'editors' => []]],
 		]);
@@ -498,7 +513,7 @@ class OpenBuildToolProviderTest extends TestCase {
 		$this->groupManager->method('isAdmin')->with('bob')->willReturn(false);
 		$this->groupManager->method('getUserGroups')->willReturn([]);
 
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')->willReturn([
 			['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:alice'], 'editors' => []]],
 		]);
@@ -534,7 +549,7 @@ class OpenBuildToolProviderTest extends TestCase {
 		$this->groupManager->method('isAdmin')->with('admin-user')->willReturn(true);
 		$this->groupManager->method('getUserGroups')->willReturn([]);
 
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')->willReturn([
 			['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:alice'], 'editors' => []]],
 		]);
@@ -572,7 +587,7 @@ class OpenBuildToolProviderTest extends TestCase {
 		$this->groupManager->method('getUserGroups')->willReturn([]);
 
 		$callCount = 0;
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')
 			->willReturnCallback(function () use (&$callCount) {
 				$callCount++;

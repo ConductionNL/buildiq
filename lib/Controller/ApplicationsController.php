@@ -61,6 +61,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -722,13 +723,17 @@ class ApplicationsController extends Controller {
 	 * Resolve a virtual-app slug to the Application object + array form + uuid.
 	 *
 	 * Returns either a `JSONResponse` (404 / 500) when resolution fails, or a
-	 * tuple `[ObjectEntity|array, array, string]` of (raw entity, normalised
-	 * data, applicationUuid) for the happy path. Splitting this out keeps
-	 * `getManifest` below PHPMD's 100-line method-length budget.
+	 * tuple `[ObjectEntityInterface|array, array, string]` of (raw entity,
+	 * normalised data, applicationUuid) for the happy path. Splitting this out
+	 * keeps `getManifest` below PHPMD's 100-line method-length budget.
+	 *
+	 * Element 0 is whatever `ObjectServiceInterface::find()` returns, i.e. an
+	 * `ObjectEntityInterface` (ADR-084). The callers that need the concrete
+	 * `ObjectEntity` for an audit-trail write still narrow with `instanceof`.
 	 *
 	 * @param string $slug The virtual-app slug from the URL
 	 *
-	 * @return JSONResponse|array{0: ObjectEntity|array<string, mixed>, 1: array<string, mixed>, 2: string}
+	 * @return JSONResponse|array{0: ObjectEntityInterface|array<string, mixed>, 1: array<string, mixed>, 2: string}
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
 	 */

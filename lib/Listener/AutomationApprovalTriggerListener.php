@@ -234,10 +234,6 @@ class AutomationApprovalTriggerListener implements IEventListener {
 			return [];
 		}
 
-		if (is_array($results) === false) {
-			return [];
-		}
-
 		$matches = [];
 		foreach ($results as $row) {
 			$automation = $this->normalise(object: $row);
