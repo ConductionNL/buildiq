@@ -137,7 +137,36 @@ class JobOwnerImpersonator {
 				return [null, false];
 			}
 
-			$object = $service->find($objectId);
+			// ⚠️ RBAC IS DELIBERATELY OFF FOR THIS ONE READ, AND ONLY THIS ONE.
+			//
+			// This lookup exists to discover WHO to impersonate. It necessarily
+			// runs BEFORE the impersonation, so the caller is still the
+			// background job's session — which is nobody. An RBAC-checked read
+			// therefore evaluates as `Anonymous`, and any schema that does not
+			// grant anonymous `read` refuses it:
+			//
+			//   OpenBuild: owner impersonation lookup failed for object <uuid>:
+			//   User 'Anonymous' does not have permission to 'read' objects in
+			//   schema 'Export Job'
+			//
+			// That is a chicken-and-egg, not a permission decision: you cannot
+			// read the object to learn its owner without already being someone.
+			// Observed on a live instance — every export sat at `status:
+			// queued` because `start` could not fire, and the `fail` transition
+			// that should have recorded why was refused for the same reason.
+			//
+			// Why this is safe rather than a hole:
+			//   * the id is not user input — it is the argument the pipeline
+			//     itself enqueued for a job it created;
+			//   * exactly ONE field is consumed from the result, `getOwner()`;
+			//   * the outcome is strictly MORE restrictive, not less: the work
+			//     then runs as that owner, and every write inside `$work` is
+			//     RBAC-checked against them. Failing this lookup does not deny
+			//     the write — it runs the job as Anonymous instead, which is
+			//     the weaker identity.
+			// `_multitenancy` is off for the same reason: a session-less job
+			// has no organisation context to scope the lookup by.
+			$object = $service->find($objectId, _rbac: false, _multitenancy: false);
 			if ($object === null) {
 				return [null, false];
 			}

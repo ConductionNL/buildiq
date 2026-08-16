@@ -282,4 +282,83 @@ final class JobOwnerImpersonatorTest extends TestCase {
 
 		self::assertTrue($workRan, 'work must still run even when the object cannot be found');
 	}//end testRunAsOwnerDoesNotImpersonateWhenObjectNotFound()
+
+	/**
+	 * The owner lookup MUST bypass RBAC and multitenancy.
+	 *
+	 * It runs before the impersonation it exists to set up, so the caller is
+	 * still the background job's session — nobody. An RBAC-checked read is
+	 * therefore evaluated as `Anonymous` and refused by any schema that does
+	 * not grant anonymous `read`, which is a chicken-and-egg rather than a
+	 * permission decision: you cannot read the object to learn its owner
+	 * without already being someone.
+	 *
+	 * Observed on a live instance before this was fixed — every export sat at
+	 * `status: queued` because the `start` transition could not fire:
+	 *
+	 *   OpenBuild: owner impersonation lookup failed for object <uuid>:
+	 *   User 'Anonymous' does not have permission to 'read' objects in schema
+	 *   'Export Job'
+	 *
+	 * Pinned as an explicit assertion because the failure it prevents is
+	 * SILENT at the unit layer: with RBAC on, the mock still returns an
+	 * object and every other test here keeps passing.
+	 *
+	 * @return void
+	 */
+	public function testOwnerLookupBypassesRbacAndMultitenancy(): void {
+		$object = new ObjectEntity();
+		$object->setOwner('alice');
+
+		// ⚠️ A HAND-WRITTEN FAKE, NOT A PHPUnit MOCK. The production call uses
+		// NAMED arguments (`_rbac: false`), and a mock cannot observe those:
+		// when named arguments skip intermediate positions, PHP hands the
+		// generated mock only the positional ones, so a `willReturnCallback`
+		// sees its OWN defaults — `_rbac => true` — whether or not the fix is
+		// present. The test then passes on broken code and fails on fixed
+		// code, which is worse than no test.
+		//
+		// A real method binds named arguments correctly. The impersonator
+		// resolves the service duck-typed (`method_exists($service, 'find')`)
+		// rather than by type, so a two-method fake is a faithful stand-in.
+		$objectService = new class($object) {
+
+			/** @var array<string,bool> */
+			public array $captured = [];
+
+			public function __construct(private object $object) {
+			}
+
+			public function find(
+				int|string $id,
+				?array $_extend=[],
+				bool $files=false,
+				string|int|null $register=null,
+				string|int|null $schema=null,
+				bool $_rbac=true,
+				bool $_multitenancy=true,
+				bool $_render=true,
+				bool $_audit=true
+			): object {
+				$this->captured = ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
+				return $this->object;
+			}
+		};
+
+		$this->container->method('has')->willReturn(true);
+		$this->container->method('get')->willReturn($objectService);
+
+		$this->userManager->method('get')->willReturn($this->createMock(IUser::class));
+		$this->userSession->method('getUser')->willReturn(null);
+
+		$this->buildImpersonator()->runAsOwner('object-uuid', static function (): void {
+		});
+
+		self::assertSame(
+			['_rbac' => false, '_multitenancy' => false],
+			$objectService->captured,
+			'the owner lookup must opt out of RBAC and multitenancy — checked, '
+			. 'it runs as Anonymous here and is refused before impersonation starts'
+		);
+	}//end testOwnerLookupBypassesRbacAndMultitenancy()
 }//end class
